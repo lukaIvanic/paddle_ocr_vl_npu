@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Benchmark experiment-4 fixed-cohort batched static decode.
+"""Benchmark experiment-4 batched static decode schedules.
 
 Experiment 4 starts with the serving-relevant part only: sequential no-padding
 prefill for real crops, then true batched static decode over the filled KV
-cache rows. It does not do slot hot-swapping yet.
+cache rows. It can also prefill a larger NPU-resident ready bank and hot-swap
+finished items into fixed compiled decode slots.
 """
 
 from __future__ import annotations
@@ -42,6 +43,8 @@ from run_local_recognition import (
 
 PROFILE_METRIC_CHOICES = ("pipe", "memory", "l2", "memory_access")
 EOS_MODE_CHOICES = ("none", "overlap_event_flags")
+SCHEDULE_CHOICES = ("fixed_cohort", "hotswap")
+STEP_TIMING_CHOICES = ("off", "cpu", "npu", "both")
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -64,6 +67,14 @@ class BatchedPrefill:
 
 
 @dataclass
+class ReadyBank:
+    cache: LocalPaddleOCRVLStaticCache
+    rope_deltas: torch.Tensor
+    next_cache_position: torch.Tensor
+    next_token: torch.Tensor
+
+
+@dataclass
 class DecodeLoopResult:
     ids: torch.Tensor
     last_logits: torch.Tensor | None
@@ -71,6 +82,98 @@ class DecodeLoopResult:
     finished: torch.Tensor | None
     eos_steps: torch.Tensor | None
     stopped_all_eos: bool
+    step_timing: list[dict[str, Any]] | None = None
+    timing_recorder: Any | None = None
+
+
+@dataclass
+class HotSwapDecodeResult:
+    ids: torch.Tensor
+    lengths: torch.Tensor
+    last_logits: torch.Tensor | None
+    decode_calls: int
+    completed_by_item: list[bool]
+    completion_decode_calls: list[int | None]
+    eos_hit_by_item: list[bool]
+    length_cap_hit_by_item: list[bool]
+    swap_events: list[dict[str, Any]]
+    step_timing: list[dict[str, Any]] | None
+    stopped_all_items: bool
+    timing_recorder: Any | None = None
+
+
+class StepTimingRecorder:
+    def __init__(self, mode: str, device: torch.device):
+        if mode not in STEP_TIMING_CHOICES:
+            raise ValueError(f"unsupported step timing mode: {mode!r}")
+        self.mode = mode
+        self.device = device
+        self.cpu_enabled = mode in ("cpu", "both")
+        self.npu_enabled = mode in ("npu", "both")
+        self.records: list[dict[str, Any]] = []
+        self._event_records: list[tuple[int, dict[str, tuple[Any, Any]]]] = []
+        self._torch_npu = None
+        if self.npu_enabled:
+            if device.type != "npu":
+                raise ValueError("--step-timing npu/both requires --device npu:0")
+            import torch_npu
+
+            self._torch_npu = torch_npu
+
+    def cpu_now(self) -> int | None:
+        if not self.cpu_enabled:
+            return None
+        return time.perf_counter_ns()
+
+    @staticmethod
+    def cpu_elapsed_s(start_ns: int | None) -> float | None:
+        if start_ns is None:
+            return None
+        return (time.perf_counter_ns() - int(start_ns)) / 1e9
+
+    def npu_event(self, stream: Any | None = None) -> Any | None:
+        if not self.npu_enabled:
+            return None
+        assert self._torch_npu is not None
+        event = self._torch_npu.npu.Event(enable_timing=True)
+        if stream is None:
+            event.record(self._torch_npu.npu.current_stream())
+        else:
+            event.record(stream)
+        return event
+
+    def add(self, record: dict[str, Any], events: dict[str, tuple[Any, Any]] | None = None) -> None:
+        if self.mode == "off":
+            return
+        clean_record = {key: value for key, value in record.items() if value is not None}
+        self.records.append(clean_record)
+        if self.npu_enabled and events:
+            event_pairs = {
+                name: pair
+                for name, pair in events.items()
+                if pair[0] is not None and pair[1] is not None
+            }
+            if event_pairs:
+                self._event_records.append((len(self.records) - 1, event_pairs))
+
+    def finalize(self) -> list[dict[str, Any]]:
+        if self.npu_enabled and self._event_records:
+            assert self._torch_npu is not None
+            self._torch_npu.npu.synchronize()
+            for record_idx, event_pairs in self._event_records:
+                for name, (start_event, end_event) in event_pairs.items():
+                    try:
+                        self.records[record_idx][f"{name}_ms"] = float(start_event.elapsed_time(end_event))
+                    except Exception as exc:
+                        self.records[record_idx][f"{name}_ms_error"] = repr(exc)
+        return self.records
+
+
+def finalize_step_timing(result: DecodeLoopResult | HotSwapDecodeResult) -> None:
+    recorder = result.timing_recorder
+    if recorder is not None:
+        result.step_timing = recorder.finalize()
+        result.timing_recorder = None
 
 
 def json_default(value: Any) -> Any:
@@ -108,8 +211,12 @@ def select_manifest_entries(
     manifest: list[dict[str, Any]],
     *,
     batch_size: int,
+    num_items: int | None = None,
     crop_ids: list[str] | None,
+    schedule: str = "fixed_cohort",
 ) -> list[dict[str, Any]]:
+    if schedule not in SCHEDULE_CHOICES:
+        raise ValueError(f"unsupported --schedule={schedule!r}")
     if batch_size <= 0:
         raise ValueError(f"--batch-size must be positive, got {batch_size}")
     if crop_ids:
@@ -117,12 +224,20 @@ def select_manifest_entries(
         missing = [crop_id for crop_id in crop_ids if crop_id not in by_id]
         if missing:
             raise ValueError(f"unknown --crop-ids entries: {missing}")
-        if len(crop_ids) != batch_size:
+        if schedule == "fixed_cohort" and len(crop_ids) != batch_size:
             raise ValueError(f"--batch-size={batch_size} but --crop-ids contains {len(crop_ids)} ids")
+        if schedule == "hotswap" and len(crop_ids) < batch_size:
+            raise ValueError(f"--schedule hotswap requires at least --batch-size ids, got {len(crop_ids)}")
+        if num_items is not None and len(crop_ids) != int(num_items):
+            raise ValueError(f"--num-items={num_items} but --crop-ids contains {len(crop_ids)} ids")
         return [by_id[crop_id] for crop_id in crop_ids]
-    if batch_size > len(manifest):
-        raise ValueError(f"--batch-size={batch_size} requires {batch_size} real crops, but manifest has {len(manifest)}")
-    return manifest[:batch_size]
+
+    selected_count = int(batch_size) if schedule == "fixed_cohort" else int(num_items or len(manifest))
+    if schedule == "hotswap" and selected_count < int(batch_size):
+        raise ValueError(f"--schedule hotswap requires --num-items >= --batch-size, got {selected_count} < {batch_size}")
+    if selected_count > len(manifest):
+        raise ValueError(f"requested {selected_count} real crops, but manifest has {len(manifest)}")
+    return manifest[:selected_count]
 
 
 def build_cohort_inputs(
@@ -185,6 +300,58 @@ def row_trimmed_token_lists(ids: torch.Tensor, eos_token_id: int) -> list[list[i
     return trimmed
 
 
+def length_trimmed_token_lists(ids: torch.Tensor, lengths: torch.Tensor) -> list[list[int]]:
+    rows = row_token_lists(ids)
+    length_values = [int(value) for value in lengths.detach().cpu().tolist()]
+    return [row[: max(0, length)] for row, length in zip(rows, length_values)]
+
+
+def summarize_step_timing(records: list[dict[str, Any]] | None) -> dict[str, Any] | None:
+    if not records:
+        return None
+
+    def stats_for(values: list[float]) -> dict[str, float] | None:
+        if not values:
+            return None
+        ordered = sorted(values)
+        return {
+            "count": int(len(values)),
+            "avg": float(sum(values) / len(values)),
+            "min": float(ordered[0]),
+            "p50": float(ordered[len(ordered) // 2]),
+            "max": float(ordered[-1]),
+        }
+
+    def collect(group: list[dict[str, Any]]) -> dict[str, Any]:
+        keys = [
+            "host_iter_s",
+            "host_wait_prev_flag_s",
+            "host_swap_s",
+            "host_decode_enqueue_s",
+            "host_flag_copy_enqueue_s",
+            "npu_iter_ms",
+            "npu_swap_ms",
+            "npu_decode_ms",
+            "npu_flag_copy_ms",
+        ]
+        output: dict[str, Any] = {"count": int(len(group))}
+        for key in keys:
+            values = [float(record[key]) for record in group if key in record]
+            key_stats = stats_for(values)
+            if key_stats is not None:
+                output[key] = key_stats
+        return output
+
+    swap_records = [record for record in records if int(record.get("swap_count", 0)) > 0]
+    no_swap_records = [record for record in records if int(record.get("swap_count", 0)) == 0]
+    return {
+        "all": collect(records),
+        "no_swap": collect(no_swap_records),
+        "swap": collect(swap_records),
+        "swap_steps": [int(record["step"]) for record in swap_records if "step" in record],
+    }
+
+
 def decode_loop_summary(result: DecodeLoopResult, *, eos_token_id: int) -> dict[str, Any]:
     trimmed_rows = row_trimmed_token_lists(result.ids, eos_token_id)
     effective_decode_calls_by_row = [max(0, len(row) - 1) for row in trimmed_rows]
@@ -205,6 +372,29 @@ def decode_loop_summary(result: DecodeLoopResult, *, eos_token_id: int) -> dict[
         "finished_by_row": finished,
         "eos_steps_by_row": eos_steps,
         "stopped_all_eos": bool(result.stopped_all_eos),
+        "step_timing_summary": summarize_step_timing(result.step_timing),
+    }
+
+
+def hotswap_loop_summary(result: HotSwapDecodeResult, *, batch_size: int) -> dict[str, Any]:
+    lengths = [int(value) for value in result.lengths.detach().cpu().tolist()]
+    effective_decode_calls_by_item = [max(0, length - 1) for length in lengths]
+    return {
+        "batch_size": int(batch_size),
+        "num_items": int(result.ids.shape[0]),
+        "generated_new_tokens_by_item": lengths,
+        "decode_calls": int(result.decode_calls),
+        "raw_decode_token_calls": int(result.decode_calls) * int(batch_size),
+        "effective_decode_calls_by_item": effective_decode_calls_by_item,
+        "effective_decode_token_calls": int(sum(effective_decode_calls_by_item)),
+        "completed_by_item": [bool(value) for value in result.completed_by_item],
+        "completion_decode_calls": result.completion_decode_calls,
+        "eos_hit_by_item": [bool(value) for value in result.eos_hit_by_item],
+        "length_cap_hit_by_item": [bool(value) for value in result.length_cap_hit_by_item],
+        "stopped_all_items": bool(result.stopped_all_items),
+        "swap_event_count": int(len(result.swap_events)),
+        "total_swapped_in_items": int(sum(len(event.get("swapped_in_item_ids", [])) for event in result.swap_events)),
+        "step_timing_summary": summarize_step_timing(result.step_timing),
     }
 
 
@@ -217,6 +407,7 @@ def static_flat_decode_loop(
     max_new_tokens: int,
     eos_mode: str = "none",
     eos_token_id: int | None = None,
+    step_timing: str = "off",
 ) -> DecodeLoopResult:
     if eos_mode not in EOS_MODE_CHOICES:
         raise ValueError(f"unsupported eos_mode={eos_mode!r}")
@@ -239,6 +430,7 @@ def static_flat_decode_loop(
     copy_stream = None
     pending_eos_event = None
     pending_eos_step = None
+    timing = StepTimingRecorder(step_timing, next_token.device)
 
     if eos_mode == "overlap_event_flags":
         if next_token.device.type != "npu":
@@ -252,7 +444,22 @@ def static_flat_decode_loop(
         copy_stream = torch_npu.npu.Stream(device=next_token.device)
 
     for step in range(max_decode_calls):
+        record: dict[str, Any] = {
+            "step": int(step),
+            "decode_call": int(step) + 1,
+            "swap_count": 0,
+        }
+        events: dict[str, tuple[Any, Any]] = {}
+        host_iter_start = timing.cpu_now()
+        npu_iter_start = timing.npu_event()
+        host_decode_start = timing.cpu_now()
+        npu_decode_start = timing.npu_event()
         last_logits = decode_fn(next_token, cache_position, prefill.rope_deltas, *flat_cache)
+        npu_decode_end = timing.npu_event()
+        decode_enqueue_s = timing.cpu_elapsed_s(host_decode_start)
+        if decode_enqueue_s is not None:
+            record["host_decode_enqueue_s"] = decode_enqueue_s
+        events["npu_decode"] = (npu_decode_start, npu_decode_end)
         next_token = torch.argmax(last_logits[:, -1, :].float(), dim=-1, keepdim=True)
         if eos_mode == "overlap_event_flags":
             assert finished is not None
@@ -269,19 +476,45 @@ def static_flat_decode_loop(
         decode_calls += 1
 
         if eos_mode == "overlap_event_flags" and async_cpu_flags is not None and copy_stream is not None:
+            host_flag_copy_start = timing.cpu_now()
             eos_ready_event = torch_npu.npu.current_stream().record_event()
             copy_done_event = torch_npu.npu.Event()
+            npu_flag_copy_start = None
+            npu_flag_copy_end = None
             with torch_npu.npu.stream(copy_stream):
                 copy_stream.wait_event(eos_ready_event)
+                npu_flag_copy_start = timing.npu_event(copy_stream)
                 async_cpu_flags[step].copy_(finished, non_blocking=True)
+                npu_flag_copy_end = timing.npu_event(copy_stream)
                 copy_done_event.record(copy_stream)
+            flag_copy_enqueue_s = timing.cpu_elapsed_s(host_flag_copy_start)
+            if flag_copy_enqueue_s is not None:
+                record["host_flag_copy_enqueue_s"] = flag_copy_enqueue_s
+            events["npu_flag_copy"] = (npu_flag_copy_start, npu_flag_copy_end)
             if pending_eos_event is not None and pending_eos_step is not None:
+                host_wait_start = timing.cpu_now()
                 pending_eos_event.synchronize()
+                wait_s = timing.cpu_elapsed_s(host_wait_start)
+                if wait_s is not None:
+                    record["host_wait_prev_flag_s"] = wait_s
                 if bool(async_cpu_flags[pending_eos_step].all().item()):
                     stopped_all_eos = True
+                    npu_iter_end = timing.npu_event()
+                    iter_s = timing.cpu_elapsed_s(host_iter_start)
+                    if iter_s is not None:
+                        record["host_iter_s"] = iter_s
+                    events["npu_iter"] = (npu_iter_start, npu_iter_end)
+                    timing.add(record, events)
                     break
             pending_eos_event = copy_done_event
             pending_eos_step = int(step)
+
+        npu_iter_end = timing.npu_event()
+        iter_s = timing.cpu_elapsed_s(host_iter_start)
+        if iter_s is not None:
+            record["host_iter_s"] = iter_s
+        events["npu_iter"] = (npu_iter_start, npu_iter_end)
+        timing.add(record, events)
 
     if eos_mode == "overlap_event_flags" and not stopped_all_eos and pending_eos_event is not None and pending_eos_step is not None:
         pending_eos_event.synchronize()
@@ -295,6 +528,8 @@ def static_flat_decode_loop(
         finished=finished,
         eos_steps=eos_steps,
         stopped_all_eos=stopped_all_eos,
+        step_timing=timing.records,
+        timing_recorder=timing if step_timing != "off" else None,
     )
 
 
@@ -357,6 +592,381 @@ def make_batched_prefill(
         next_cache_position=torch.cat([slot.next_cache_position.reshape(1) for slot in slot_prefills], dim=0).contiguous(),
     )
     return batched_prefill, torch.cat(slot_next_tokens, dim=0).contiguous(), slot_prefills, slot_next_tokens
+
+
+@torch.inference_mode()
+def make_ready_bank(
+    *,
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    cohort: list[CohortInput],
+    cache_length: int,
+    device: torch.device,
+) -> tuple[ReadyBank, list[Any]]:
+    if not cohort:
+        raise ValueError("hot-swap ready bank requires at least one crop")
+    cache_dtype = next(model.parameters()).dtype
+    bank_cache = model.allocate_static_cache(
+        batch_size=len(cohort),
+        cache_length=cache_length,
+        device=device,
+        dtype=cache_dtype,
+        init_mode="zeros",
+    )
+    slot_prefills = []
+    next_token_rows = []
+    cache_position_rows = []
+    rope_delta_rows = []
+    for item_idx, item in enumerate(cohort):
+        row_cache = LocalPaddleOCRVLStaticCache(
+            tuple(cache[item_idx : item_idx + 1] for cache in bank_cache.key_caches),
+            tuple(cache[item_idx : item_idx + 1] for cache in bank_cache.value_caches),
+            int(cache_length),
+        )
+        prefill = model.forward_static_prefill(
+            input_ids=item.input_ids.to(device),
+            attention_mask=item.attention_mask.to(device),
+            pixel_values=item.pixel_values.to(device),
+            image_grid_thw=item.image_grid_thw.to(device),
+            cache_length=cache_length,
+            cache=row_cache,
+            logits_to_keep=1,
+        )
+        next_token = torch.argmax(prefill.logits[:, -1, :].float(), dim=-1, keepdim=True)
+        slot_prefills.append(prefill)
+        next_token_rows.append(next_token)
+        cache_position_rows.append(prefill.next_cache_position.reshape(1))
+        rope_delta_rows.append(prefill.rope_deltas)
+
+    ready = ReadyBank(
+        cache=bank_cache,
+        rope_deltas=torch.cat(rope_delta_rows, dim=0).contiguous(),
+        next_cache_position=torch.cat(cache_position_rows, dim=0).contiguous(),
+        next_token=torch.cat(next_token_rows, dim=0).contiguous(),
+    )
+    return ready, slot_prefills
+
+
+@torch.inference_mode()
+def copy_ready_item_to_active_slot_(
+    *,
+    ready: ReadyBank,
+    active: BatchedPrefill,
+    active_next_token: torch.Tensor,
+    active_item_indices: torch.Tensor,
+    active_mask: torch.Tensor,
+    slot: int,
+    item_idx: int,
+) -> None:
+    slot_slice = slice(int(slot), int(slot) + 1)
+    item_slice = slice(int(item_idx), int(item_idx) + 1)
+    for layer_idx in range(len(active.cache.key_caches)):
+        active.cache.key_caches[layer_idx][slot_slice].copy_(ready.cache.key_caches[layer_idx][item_slice])
+        active.cache.value_caches[layer_idx][slot_slice].copy_(ready.cache.value_caches[layer_idx][item_slice])
+    active.rope_deltas[slot_slice].copy_(ready.rope_deltas[item_slice])
+    active.next_cache_position[slot_slice].copy_(ready.next_cache_position[item_slice])
+    active_next_token[slot_slice].copy_(ready.next_token[item_slice])
+    active_item_indices[slot_slice].fill_(int(item_idx))
+    active_mask[slot_slice].fill_(True)
+
+
+@torch.inference_mode()
+def static_hotswap_decode_loop(
+    decode_fn: Callable,
+    ready: ReadyBank,
+    *,
+    batch_size: int,
+    max_new_tokens: int,
+    eos_mode: str,
+    eos_token_id: int,
+    step_timing: str = "off",
+) -> HotSwapDecodeResult:
+    if eos_mode != "overlap_event_flags":
+        raise ValueError("--schedule hotswap requires --eos-mode overlap_event_flags")
+    if ready.next_token.device.type != "npu":
+        raise ValueError("--schedule hotswap currently requires NPU tensors.")
+    if int(batch_size) <= 0:
+        raise ValueError(f"--batch-size must be positive, got {batch_size}")
+    if int(max_new_tokens) <= 0:
+        raise ValueError(f"--max-new-tokens must be positive, got {max_new_tokens}")
+
+    import torch_npu
+
+    device = ready.next_token.device
+    num_items = int(ready.next_token.shape[0])
+    if int(batch_size) > num_items:
+        raise ValueError(f"hot-swap batch_size={batch_size} exceeds num_items={num_items}")
+
+    active_cache_shape = (
+        int(batch_size),
+        int(ready.cache.key_caches[0].shape[1]),
+        int(ready.cache.cache_length),
+        int(ready.cache.key_caches[0].shape[3]),
+    )
+    active_key_caches = tuple(
+        torch.zeros(active_cache_shape, device=device, dtype=ready.cache.key_caches[layer_idx].dtype)
+        for layer_idx in range(len(ready.cache.key_caches))
+    )
+    active_value_caches = tuple(
+        torch.zeros(active_cache_shape, device=device, dtype=ready.cache.value_caches[layer_idx].dtype)
+        for layer_idx in range(len(ready.cache.value_caches))
+    )
+    active_cache = LocalPaddleOCRVLStaticCache(
+        active_key_caches,
+        active_value_caches,
+        int(ready.cache.cache_length),
+    )
+    active_rope_deltas = torch.empty((int(batch_size), int(ready.rope_deltas.shape[1])), device=device, dtype=ready.rope_deltas.dtype)
+    active_cache_position = torch.empty((int(batch_size),), device=device, dtype=ready.next_cache_position.dtype)
+    active_next_token = torch.empty((int(batch_size), 1), device=device, dtype=ready.next_token.dtype)
+    active_item_indices = torch.full((int(batch_size),), -1, device=device, dtype=torch.int64)
+    active_mask = torch.zeros((int(batch_size),), device=device, dtype=torch.bool)
+    slot_finished = torch.zeros((int(batch_size),), device=device, dtype=torch.bool)
+    generated_ids = torch.full((num_items, int(max_new_tokens)), int(eos_token_id), device=device, dtype=ready.next_token.dtype)
+    generated_lengths = torch.zeros((num_items,), device=device, dtype=torch.int64)
+    item_eos_hit = torch.zeros((num_items,), device=device, dtype=torch.bool)
+    item_length_cap_hit = torch.zeros((num_items,), device=device, dtype=torch.bool)
+    active = BatchedPrefill(
+        cache=active_cache,
+        rope_deltas=active_rope_deltas,
+        next_cache_position=active_cache_position,
+    )
+    flat_cache = active.cache.flat_tensors()
+    active_item_indices_cpu = [-1 for _ in range(int(batch_size))]
+    completed_by_item = [False for _ in range(num_items)]
+    completion_decode_calls: list[int | None] = [None for _ in range(num_items)]
+    completed_count = 0
+    next_ready_idx = 0
+    swap_events: list[dict[str, Any]] = []
+    last_logits = None
+    decode_calls = 0
+    timing = StepTimingRecorder(step_timing, device)
+
+    def load_item_to_slot(slot: int, item_idx: int) -> None:
+        copy_ready_item_to_active_slot_(
+            ready=ready,
+            active=active,
+            active_next_token=active_next_token,
+            active_item_indices=active_item_indices,
+            active_mask=active_mask,
+            slot=slot,
+            item_idx=item_idx,
+        )
+        active_item_indices_cpu[int(slot)] = int(item_idx)
+        generated_ids[int(item_idx), 0].copy_(ready.next_token[int(item_idx), 0])
+        generated_lengths[int(item_idx)].fill_(1)
+        first_token_eos = ready.next_token[int(item_idx) : int(item_idx) + 1].reshape(-1) == int(eos_token_id)
+        first_token_cap = torch.full((1,), int(max_new_tokens) <= 1, device=device, dtype=torch.bool)
+        initial_finished = first_token_eos | first_token_cap
+        slot_finished[int(slot) : int(slot) + 1].copy_(initial_finished)
+        item_eos_hit[int(item_idx) : int(item_idx) + 1].copy_(first_token_eos)
+        item_length_cap_hit[int(item_idx) : int(item_idx) + 1].copy_(first_token_cap)
+
+    def deactivate_slot(slot: int) -> None:
+        active_item_indices_cpu[int(slot)] = -1
+        active_item_indices[int(slot) : int(slot) + 1].fill_(-1)
+        active_mask[int(slot) : int(slot) + 1].fill_(False)
+        slot_finished[int(slot) : int(slot) + 1].fill_(False)
+        active_next_token[int(slot) : int(slot) + 1].fill_(int(eos_token_id))
+
+    def consume_finished_slots(finished_flags: list[bool], completion_decode_call: int, record: dict[str, Any] | None = None) -> dict[str, Any]:
+        nonlocal completed_count
+        nonlocal next_ready_idx
+
+        finished_slots = [
+            slot
+            for slot, flag in enumerate(finished_flags)
+            if bool(flag) and active_item_indices_cpu[slot] >= 0
+        ]
+        completed_item_ids = []
+        swapped_slots = []
+        swapped_in_item_ids = []
+        deactivated_slots = []
+        for slot in finished_slots:
+            finished_item = active_item_indices_cpu[slot]
+            if not completed_by_item[finished_item]:
+                completed_by_item[finished_item] = True
+                completion_decode_calls[finished_item] = int(completion_decode_call)
+                completed_count += 1
+                completed_item_ids.append(int(finished_item))
+            if next_ready_idx < num_items:
+                new_item = int(next_ready_idx)
+                next_ready_idx += 1
+                load_item_to_slot(slot, new_item)
+                swapped_slots.append(int(slot))
+                swapped_in_item_ids.append(int(new_item))
+            else:
+                deactivate_slot(slot)
+                deactivated_slots.append(int(slot))
+
+        event = {
+            "completion_decode_call": int(completion_decode_call),
+            "finished_slots": [int(slot) for slot in finished_slots],
+            "completed_item_ids": completed_item_ids,
+            "swapped_slots": swapped_slots,
+            "swapped_in_item_ids": swapped_in_item_ids,
+            "deactivated_slots": deactivated_slots,
+            "completed_count": int(completed_count),
+            "remaining_ready_items": int(num_items - next_ready_idx),
+        }
+        if finished_slots:
+            swap_events.append(event)
+        if record is not None:
+            record["swap_count"] = int(len(swapped_slots))
+            record["finished_slot_count"] = int(len(finished_slots))
+            record["deactivated_slot_count"] = int(len(deactivated_slots))
+            record["completed_item_ids"] = completed_item_ids
+            record["swapped_slots"] = swapped_slots
+            record["swapped_in_item_ids"] = swapped_in_item_ids
+        return event
+
+    for slot in range(int(batch_size)):
+        load_item_to_slot(slot, next_ready_idx)
+        next_ready_idx += 1
+
+    # Handle the rare case where the prefill-selected first token is already EOS
+    # or the run intentionally requests only one generated token.
+    while True:
+        initial_finished_flags = [bool(value) for value in slot_finished.detach().cpu().tolist()]
+        if not any(initial_finished_flags):
+            break
+        consume_finished_slots(initial_finished_flags, completion_decode_call=0)
+        if completed_count >= num_items:
+            break
+
+    max_decode_calls_per_item = max(0, int(max_new_tokens) - 1)
+    max_decode_call_budget = max(1, int(num_items) * max_decode_calls_per_item + max_decode_calls_per_item + int(batch_size))
+    async_cpu_flags = torch.zeros((max_decode_call_budget, int(batch_size)), dtype=torch.bool, pin_memory=True)
+    copy_stream = torch_npu.npu.Stream(device=device)
+    pending_flag_event = None
+    pending_flag_row = None
+    pending_completion_decode_call = None
+
+    while completed_count < num_items:
+        if decode_calls >= max_decode_call_budget:
+            raise RuntimeError(
+                f"hot-swap decode exceeded safety budget {max_decode_call_budget}; "
+                f"completed {completed_count}/{num_items} items"
+            )
+        if not any(item_idx >= 0 for item_idx in active_item_indices_cpu):
+            break
+
+        record: dict[str, Any] = {
+            "step": int(decode_calls),
+            "decode_call": int(decode_calls) + 1,
+            "swap_count": 0,
+            "finished_slot_count": 0,
+            "deactivated_slot_count": 0,
+        }
+        events: dict[str, tuple[Any, Any]] = {}
+        host_iter_start = timing.cpu_now()
+        npu_iter_start = timing.npu_event()
+
+        if pending_flag_event is not None and pending_flag_row is not None and pending_completion_decode_call is not None:
+            host_wait_start = timing.cpu_now()
+            pending_flag_event.synchronize()
+            wait_s = timing.cpu_elapsed_s(host_wait_start)
+            if wait_s is not None:
+                record["host_wait_prev_flag_s"] = wait_s
+            finished_flags = [bool(value) for value in async_cpu_flags[int(pending_flag_row)].tolist()]
+            host_swap_start = timing.cpu_now()
+            npu_swap_start = timing.npu_event()
+            consume_finished_slots(finished_flags, int(pending_completion_decode_call), record)
+            npu_swap_end = timing.npu_event()
+            swap_s = timing.cpu_elapsed_s(host_swap_start)
+            if swap_s is not None:
+                record["host_swap_s"] = swap_s
+            events["npu_swap"] = (npu_swap_start, npu_swap_end)
+            pending_flag_event = None
+            pending_flag_row = None
+            pending_completion_decode_call = None
+            if completed_count >= num_items:
+                npu_iter_end = timing.npu_event()
+                iter_s = timing.cpu_elapsed_s(host_iter_start)
+                if iter_s is not None:
+                    record["host_iter_s"] = iter_s
+                events["npu_iter"] = (npu_iter_start, npu_iter_end)
+                timing.add(record, events)
+                break
+
+        active_before_step = active_mask & ~slot_finished
+        host_decode_start = timing.cpu_now()
+        npu_decode_start = timing.npu_event()
+        last_logits = decode_fn(active_next_token, active.next_cache_position, active.rope_deltas, *flat_cache)
+        npu_decode_end = timing.npu_event()
+        decode_enqueue_s = timing.cpu_elapsed_s(host_decode_start)
+        if decode_enqueue_s is not None:
+            record["host_decode_enqueue_s"] = decode_enqueue_s
+        events["npu_decode"] = (npu_decode_start, npu_decode_end)
+
+        sampled_token = torch.argmax(last_logits[:, -1, :].float(), dim=-1, keepdim=True)
+        eos_fill = torch.full_like(sampled_token, int(eos_token_id))
+        active_next_token.copy_(torch.where(active_before_step.view(-1, 1), sampled_token, eos_fill))
+
+        safe_item_indices = active_item_indices.clamp_min(0)
+        write_positions = generated_lengths[safe_item_indices]
+        within_length = active_before_step & (write_positions < int(max_new_tokens))
+        target_items = safe_item_indices[within_length]
+        target_positions = write_positions[within_length]
+        target_tokens = active_next_token.reshape(-1)[within_length]
+        generated_ids[target_items, target_positions] = target_tokens
+        generated_lengths[target_items] = generated_lengths[target_items] + 1
+
+        new_eos_by_slot = active_before_step & hits_eos(active_next_token, int(eos_token_id))
+        after_lengths = generated_lengths[safe_item_indices]
+        new_cap_by_slot = active_before_step & (after_lengths >= int(max_new_tokens))
+        eos_items = safe_item_indices[new_eos_by_slot]
+        cap_items = safe_item_indices[new_cap_by_slot]
+        item_eos_hit[eos_items] = True
+        item_length_cap_hit[cap_items] = True
+        slot_finished.logical_or_(new_eos_by_slot | new_cap_by_slot)
+        active.next_cache_position.add_(active_before_step.to(dtype=active.next_cache_position.dtype))
+        decode_calls += 1
+
+        host_flag_copy_start = timing.cpu_now()
+        flag_ready_event = torch_npu.npu.current_stream().record_event()
+        copy_done_event = torch_npu.npu.Event()
+        npu_flag_copy_start = None
+        npu_flag_copy_end = None
+        with torch_npu.npu.stream(copy_stream):
+            copy_stream.wait_event(flag_ready_event)
+            npu_flag_copy_start = timing.npu_event(copy_stream)
+            async_cpu_flags[int(decode_calls) - 1].copy_(slot_finished, non_blocking=True)
+            npu_flag_copy_end = timing.npu_event(copy_stream)
+            copy_done_event.record(copy_stream)
+        flag_copy_enqueue_s = timing.cpu_elapsed_s(host_flag_copy_start)
+        if flag_copy_enqueue_s is not None:
+            record["host_flag_copy_enqueue_s"] = flag_copy_enqueue_s
+        events["npu_flag_copy"] = (npu_flag_copy_start, npu_flag_copy_end)
+        pending_flag_event = copy_done_event
+        pending_flag_row = int(decode_calls) - 1
+        pending_completion_decode_call = int(decode_calls)
+
+        npu_iter_end = timing.npu_event()
+        iter_s = timing.cpu_elapsed_s(host_iter_start)
+        if iter_s is not None:
+            record["host_iter_s"] = iter_s
+        events["npu_iter"] = (npu_iter_start, npu_iter_end)
+        timing.add(record, events)
+
+    if completed_count < num_items and pending_flag_event is not None and pending_flag_row is not None and pending_completion_decode_call is not None:
+        pending_flag_event.synchronize()
+        finished_flags = [bool(value) for value in async_cpu_flags[int(pending_flag_row)].tolist()]
+        consume_finished_slots(finished_flags, int(pending_completion_decode_call))
+
+    return HotSwapDecodeResult(
+        ids=generated_ids,
+        lengths=generated_lengths,
+        last_logits=last_logits,
+        decode_calls=int(decode_calls),
+        completed_by_item=completed_by_item,
+        completion_decode_calls=completion_decode_calls,
+        eos_hit_by_item=[bool(value) for value in item_eos_hit.detach().cpu().tolist()],
+        length_cap_hit_by_item=[bool(value) for value in item_length_cap_hit.detach().cpu().tolist()],
+        swap_events=swap_events,
+        step_timing=timing.records,
+        stopped_all_items=bool(completed_count >= num_items),
+        timing_recorder=timing if step_timing != "off" else None,
+    )
 
 
 @torch.inference_mode()
@@ -502,9 +1112,10 @@ def profile_compiled_decode(
     shutil.rmtree(profile_dir, ignore_errors=True)
     profile_dir.mkdir(parents=True, exist_ok=True)
 
+    warm_cohort = cohort[: int(args.batch_size)]
     warm_prefill, warm_next_token, _warm_slots, _warm_nexts = make_batched_prefill(
         model=model,
-        cohort=cohort,
+        cohort=warm_cohort,
         cache_length=cache_length,
         device=device,
     )
@@ -582,8 +1193,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default="PaddlePaddle/PaddleOCR-VL-1.6")
     parser.add_argument("--manifest", type=Path, default=Path("crops") / "manifest.json")
+    parser.add_argument("--schedule", default="fixed_cohort", choices=SCHEDULE_CHOICES)
     parser.add_argument("--batch-size", type=int, default=2)
-    parser.add_argument("--crop-ids", nargs="*", default=None, help="Optional explicit manifest ids; count must equal --batch-size.")
+    parser.add_argument("--num-items", type=int, default=None, help="Number of manifest items for --schedule hotswap. Defaults to the full manifest.")
+    parser.add_argument("--crop-ids", nargs="*", default=None, help="Optional explicit manifest ids. Fixed cohort requires count == --batch-size; hot-swap requires count >= --batch-size.")
     parser.add_argument("--prompt", default=None, help="Optional prompt override. By default, each crop uses its manifest suggested_prompt.")
     parser.add_argument("--max-new-tokens", type=int, default=32)
     parser.add_argument("--cache-length", type=int, default=None)
@@ -593,6 +1206,7 @@ def main() -> None:
     parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
     parser.add_argument("--torchair-cache-dir", type=Path, default=DEFAULT_TORCHAIR_CACHE_DIR)
     parser.add_argument("--eos-mode", default="none", choices=EOS_MODE_CHOICES)
+    parser.add_argument("--step-timing", default="off", choices=STEP_TIMING_CHOICES)
     parser.add_argument("--profile-dir", type=Path, default=None, help="Write one post-warmup torch_npu profiler capture for compiled batched decode.")
     parser.add_argument("--profile-metric", default="pipe", choices=PROFILE_METRIC_CHOICES)
     parser.add_argument("--json", action="store_true", help="Print a compact JSON summary instead of human-readable lines.")
@@ -600,6 +1214,10 @@ def main() -> None:
 
     if int(args.max_new_tokens) <= 0:
         raise ValueError(f"--max-new-tokens must be positive, got {args.max_new_tokens}")
+    if args.schedule == "hotswap" and args.eos_mode != "overlap_event_flags":
+        raise ValueError("--schedule hotswap requires --eos-mode overlap_event_flags")
+    if args.schedule == "hotswap" and args.profile_dir is not None:
+        raise ValueError("--profile-dir currently profiles fixed-cohort decode only; run hot-swap without profiler first.")
 
     model_dir = _resolve_model_dir(args.model)
     device = resolve_device(args.device)
@@ -609,7 +1227,13 @@ def main() -> None:
     pre_cfg = load_preprocessor_config(model_dir)
     tokenizer = Tokenizer.from_file(str(model_dir / "tokenizer.json"))
     manifest = load_manifest(args.manifest)
-    entries = select_manifest_entries(manifest, batch_size=int(args.batch_size), crop_ids=args.crop_ids)
+    entries = select_manifest_entries(
+        manifest,
+        batch_size=int(args.batch_size),
+        num_items=args.num_items,
+        crop_ids=args.crop_ids,
+        schedule=args.schedule,
+    )
     cohort = build_cohort_inputs(
         entries=entries,
         manifest_path=args.manifest,
@@ -644,9 +1268,10 @@ def main() -> None:
     maybe_sync(device)
     compile_wrapper_s = time.perf_counter() - compile_start
 
+    warm_cohort = cohort[: int(args.batch_size)]
     warm_prefill, warm_next_token, _warm_slots, _warm_nexts = make_batched_prefill(
         model=model,
-        cohort=cohort,
+        cohort=warm_cohort,
         cache_length=cache_length,
         device=device,
     )
@@ -659,6 +1284,114 @@ def main() -> None:
             *warm_prefill.cache.flat_tensors(),
         ),
     )
+
+    if args.schedule == "hotswap":
+        ready_bank_result, ready_bank_prefill_s = timed(
+            device,
+            lambda: make_ready_bank(
+                model=model,
+                cohort=cohort,
+                cache_length=cache_length,
+                device=device,
+            ),
+        )
+        ready_bank, _ready_slot_prefills = ready_bank_result
+        hotswap_result, hotswap_decode_s = timed(
+            device,
+            lambda: static_hotswap_decode_loop(
+                compiled_decode,
+                ready_bank,
+                batch_size=int(args.batch_size),
+                max_new_tokens=int(args.max_new_tokens),
+                eos_mode=args.eos_mode,
+                eos_token_id=eos_token_id,
+                step_timing=args.step_timing,
+            ),
+        )
+        finalize_step_timing(hotswap_result)
+        hotswap_rows = length_trimmed_token_lists(hotswap_result.ids, hotswap_result.lengths)
+        hotswap_loop = hotswap_loop_summary(hotswap_result, batch_size=int(args.batch_size))
+        raw_token_calls = int(hotswap_loop["raw_decode_token_calls"])
+        effective_token_calls = int(hotswap_loop["effective_decode_token_calls"])
+        summary = {
+            "experiment": "04_batched_fixed_cohort_decode",
+            "schedule": args.schedule,
+            "backend": args.backend,
+            "device": str(device),
+            "dtype": str(dtype),
+            "npu_jit_compile": args.npu_jit_compile,
+            "decode_attention": DECODE_ATTENTION,
+            "eos_mode": args.eos_mode,
+            "eos_token_id": eos_token_id,
+            "batch_size": int(args.batch_size),
+            "num_items": int(len(cohort)),
+            "cohort": [
+                {
+                    "item": idx,
+                    "id": str(item.entry.get("id")),
+                    "file": str(item.crop_path),
+                    "prompt": item.prompt,
+                    "prompt_tokens": int(item.input_ids.shape[1]),
+                    "category_type": item.entry.get("category_type"),
+                }
+                for idx, item in enumerate(cohort)
+            ],
+            "linear_weight_format": weight_format_meta,
+            "compile": compile_meta,
+            "cache_update": "prefill_slice_decode_npu_scatter",
+            "prompt_tokens": {
+                "per_item": prompt_tokens,
+                "min": int(min(prompt_tokens)),
+                "max": int(max(prompt_tokens)),
+            },
+            "generated_tokens_per_item": int(args.max_new_tokens),
+            "cache_length": int(cache_length),
+            "loop": {
+                "hotswap": hotswap_loop,
+            },
+            "timing_s": {
+                "compile_wrapper": float(compile_wrapper_s),
+                "compile_first_call": float(compile_first_s),
+                "ready_bank_prefill": float(ready_bank_prefill_s),
+                "hotswap_decode": float(hotswap_decode_s),
+            },
+            "tok_per_s": {
+                "hotswap_decode_steps": tok_per_s(hotswap_result.decode_calls, hotswap_decode_s),
+                "hotswap_raw_batch_tokens": tok_per_s(raw_token_calls, hotswap_decode_s),
+                "hotswap_effective_item_tokens": tok_per_s(effective_token_calls, hotswap_decode_s),
+            },
+            "swap_events": hotswap_result.swap_events,
+            "step_timing": hotswap_result.step_timing,
+            "texts": {
+                "hotswap_trimmed": [
+                    tokenizer.decode(row, skip_special_tokens=True)
+                    for row in hotswap_rows
+                ],
+            },
+        }
+        if args.json:
+            print(json.dumps(summary, indent=2, sort_keys=True, default=json_default))
+            return
+
+        print(
+            f"experiment={summary['experiment']} schedule={summary['schedule']} backend={summary['backend']} "
+            f"device={summary['device']} dtype={summary['dtype']} batch_size={summary['batch_size']} "
+            f"num_items={summary['num_items']} npu_jit_compile={summary['npu_jit_compile']} "
+            f"decode_attention={summary['decode_attention']} eos_mode={summary['eos_mode']}"
+        )
+        print("linear_weight_format=" + json.dumps(summary["linear_weight_format"], sort_keys=True))
+        print("cache_update=" + summary["cache_update"])
+        print(
+            f"prompt_tokens={{'min': {summary['prompt_tokens']['min']}, 'max': {summary['prompt_tokens']['max']}}} "
+            f"generated_tokens_per_item={summary['generated_tokens_per_item']} cache_length={summary['cache_length']}"
+        )
+        print("loop=" + json.dumps(summary["loop"], sort_keys=True))
+        print("timing_s=" + json.dumps(summary["timing_s"], sort_keys=True))
+        print("tok_per_s=" + json.dumps(summary["tok_per_s"], sort_keys=True))
+        print("step_timing_summary=" + json.dumps(hotswap_loop["step_timing_summary"], sort_keys=True))
+        print("swap_events_sample=" + json.dumps(summary["swap_events"][:8], sort_keys=True))
+        print("hotswap_texts_sample=" + repr(summary["texts"]["hotswap_trimmed"][: min(8, len(hotswap_rows))]))
+        return
 
     static_prefill, static_next_token, static_slot_prefills, static_slot_next_tokens = make_batched_prefill(
         model=model,
@@ -675,8 +1408,10 @@ def main() -> None:
             max_new_tokens=args.max_new_tokens,
             eos_mode=args.eos_mode,
             eos_token_id=eos_token_id,
+            step_timing=args.step_timing,
         ),
     )
+    finalize_step_timing(static_result)
     static_ids = static_result.ids
 
     single_ref_matches = compare_batched_to_single_refs(
@@ -704,8 +1439,10 @@ def main() -> None:
             max_new_tokens=args.max_new_tokens,
             eos_mode=args.eos_mode,
             eos_token_id=eos_token_id,
+            step_timing=args.step_timing,
         ),
     )
+    finalize_step_timing(compiled_result)
     compiled_ids = compiled_result.ids
 
     compare_eager_prefill, compare_eager_next, _compare_eager_slots, _compare_eager_nexts = make_batched_prefill(
@@ -811,6 +1548,10 @@ def main() -> None:
             "compiled_raw_batch_tokens": tok_per_s(compiled_raw_token_calls, compiled_decode_s),
             "compiled_effective_batch_tokens": tok_per_s(compiled_effective_token_calls, compiled_decode_s),
         },
+        "step_timing": {
+            "static_eager": static_result.step_timing,
+            "compiled": compiled_result.step_timing,
+        },
         "texts": {
             "static_eager": [
                 tokenizer.decode(row, skip_special_tokens=True)
@@ -854,6 +1595,11 @@ def main() -> None:
     print("logit_diff_static_eager_vs_compiled_decode=" + json.dumps(summary["logit_diff_static_eager_vs_compiled_decode"], sort_keys=True))
     print("timing_s=" + json.dumps(summary["timing_s"], sort_keys=True))
     print("tok_per_s=" + json.dumps(summary["tok_per_s"], sort_keys=True))
+    if args.step_timing != "off":
+        print("step_timing_summary=" + json.dumps({
+            "static_eager": static_loop_summary["step_timing_summary"],
+            "compiled": compiled_loop_summary["step_timing_summary"],
+        }, sort_keys=True))
     if profile_summary is not None:
         print("profile=" + json.dumps(profile_summary, sort_keys=True, default=json_default))
     print("compiled_texts=" + repr(summary["texts"]["compiled_trimmed"]))

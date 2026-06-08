@@ -54,7 +54,7 @@ This folder currently contains:
 - `02_local_eager_recognition/local_modeling_paddleocr_vl.py`: local PyTorch implementation of the recognition VLM with no Transformers imports.
 - `02_local_eager_recognition/run_local_recognition.py`: local recognizer runner using `tokenizers`, local image preprocessing, and the local model.
 - `03_compiled_single_batch_decode/`: single-batch decode optimization lane, copied from the local eager implementation and extended with static KV cache decode, TorchAir cache compile, profiler hooks, and flat `torch.compile(fullgraph=True, dynamic=False)` probes.
-- `04_batched_fixed_cohort_decode/`: first batch-decode lane. It keeps prefill sequential and padding-free for real crops, concatenates the filled per-crop KV cache rows, then benchmarks true fixed-cohort batched static decode. It does not do vLLM-style slot hot-swapping yet.
+- `04_batched_fixed_cohort_decode/`: batch-decode scheduler lane. It keeps prefill sequential and padding-free for real crops, benchmarks true fixed-cohort batched static decode, and can also prefill an NPU-resident ready KV bank then hot-swap finished items into fixed compiled decode slots.
 - `refs/`: small architecture reference artifacts.
 - `refs/PaddleOCR`: ignored sparse reference checkout of the official PaddleOCR repo.
 
@@ -133,6 +133,82 @@ For experiment 4 throughput, treat `*_decode_steps` as graph calls per second
 and `*_raw_batch_tokens` as batch token-slots per second. With
 `overlap_event_flags`, `*_effective_batch_tokens` excludes EOS-fill tokens after
 per-row completion.
+
+Experiment 4 hot-swap mode is the first vLLM-style decode scheduler probe. It
+assumes preprocessing and prefill are solved outside the measured decode loop:
+the script prefills all selected crops into an NPU-resident ready bank, then
+keeps only `--batch-size` rows in the active compiled decode cache. When one or
+more active rows finish, the host consumes the copied finished-flag vector and
+swaps every finished slot in one pass. Do not assume only one slot can finish at
+a time; check `swap_events[*].finished_slots` and `swapped_in_item_ids`.
+
+Hot-swap requires `--eos-mode overlap_event_flags`; `--eos-mode none` is only a
+fixed-step fixed-cohort speed baseline and the script rejects it for hot-swap.
+The decode mask is still built on device from each row's `cache_position`, so a
+slot swap resets the row cache, next token, `cache_position`, and `rope_deltas`;
+no text/image padding is introduced.
+
+Recommended NPU run order for experiment 4:
+
+```sh
+# 1. Small hot-swap scheduler smoke. This catches slot-swap and multi-item
+# completion bookkeeping without waiting for the full 100-crop run.
+python3 04_batched_fixed_cohort_decode/bench_static_compile.py \
+  --schedule hotswap \
+  --manifest crops/hotswap_100_manifest.json \
+  --batch-size 2 \
+  --num-items 4 \
+  --backend torchair \
+  --device npu:0 \
+  --eos-mode overlap_event_flags \
+  --max-new-tokens 8 \
+  --step-timing both \
+  --json
+
+# 2. Fixed-cohort baseline at the target batch size. Compare this against
+# hot-swap raw batch token-slots; it measures decode without row replacement.
+python3 04_batched_fixed_cohort_decode/bench_static_compile.py \
+  --schedule fixed_cohort \
+  --manifest crops/hotswap_100_manifest.json \
+  --batch-size 8 \
+  --backend torchair \
+  --device npu:0 \
+  --eos-mode overlap_event_flags \
+  --max-new-tokens 32 \
+  --step-timing both \
+  --json
+
+# 3. Full hot-swap run over the prepared 100 real crops.
+python3 04_batched_fixed_cohort_decode/bench_static_compile.py \
+  --schedule hotswap \
+  --manifest crops/hotswap_100_manifest.json \
+  --batch-size 8 \
+  --num-items 100 \
+  --backend torchair \
+  --device npu:0 \
+  --eos-mode overlap_event_flags \
+  --max-new-tokens 32 \
+  --step-timing both \
+  --json
+```
+
+Read the timing fields carefully:
+
+- `compile_first_call` is TorchAir cache load/compile warmup; do not count it
+  as steady decode. If the cache is warm, this should be much smaller than the
+  original cold compile.
+- `ready_bank_prefill` exists only for hot-swap and is intentionally outside
+  the decode throughput comparison.
+- Fixed-cohort `tok_per_s.compiled_raw_batch_tokens` is the main decode baseline.
+- Hot-swap `tok_per_s.hotswap_raw_batch_tokens` is the direct scheduler-overhead
+  comparison against the fixed baseline.
+- Hot-swap `tok_per_s.hotswap_effective_item_tokens` counts only useful item
+  tokens and will drop if EOS/length-cap completions create tail bubbles.
+- `step_timing_summary.swap` versus `step_timing_summary.no_swap` shows whether
+  slot replacement is expensive. Watch `npu_swap_ms`, `host_swap_s`, and
+  `host_wait_prev_flag_s`. CPU timings show realized cadence and may attribute
+  async backlog to the next wait point; NPU timings isolate recorded device
+  regions.
 
 On the Vast/CUDA smoke box on 2026-06-08, the local model matched Transformers
 eager bf16 exactly for next-token logits on all eight crops when using the slow
