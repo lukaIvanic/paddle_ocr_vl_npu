@@ -147,6 +147,10 @@ def summarize_kernel_details(path: Path, *, topn: int) -> dict[str, Any]:
     by_format: dict[str, dict[str, Any]] = {}
     by_dtype: dict[str, dict[str, Any]] = {}
     shape_signatures: dict[str, dict[str, Any]] = {}
+    matmul_names: dict[str, dict[str, Any]] = {}
+    matmul_shape_signatures: dict[str, dict[str, Any]] = {}
+    transdata_names: dict[str, dict[str, Any]] = {}
+    transdata_shape_signatures: dict[str, dict[str, Any]] = {}
     suspect_rows: list[dict[str, Any]] = []
     total_duration_us = 0.0
     total_wait_us = 0.0
@@ -163,8 +167,11 @@ def summarize_kernel_details(path: Path, *, topn: int) -> dict[str, Any]:
                 "duration_us": 0.0,
                 "wait_us": 0.0,
                 "aicore_time_us": 0.0,
+                "kernel_name_samples": [],
                 "input_shape_samples": [],
+                "output_shape_samples": [],
                 "input_format_samples": [],
+                "output_format_samples": [],
                 "input_dtype_samples": [],
             },
         )
@@ -172,8 +179,11 @@ def summarize_kernel_details(path: Path, *, topn: int) -> dict[str, Any]:
         bucket["duration_us"] += duration_us
         bucket["wait_us"] += parse_float(row.get("Wait Time(us)"))
         bucket["aicore_time_us"] += parse_float(row.get("aicore_time(us)"))
+        add_sample(bucket, "kernel_name_samples", row.get("Name") or row.get("Task Name"))
         add_sample(bucket, "input_shape_samples", row.get("Input Shapes"))
+        add_sample(bucket, "output_shape_samples", row.get("Output Shapes"))
         add_sample(bucket, "input_format_samples", row.get("Input Formats"))
+        add_sample(bucket, "output_format_samples", row.get("Output Formats"))
         add_sample(bucket, "input_dtype_samples", row.get("Input Data Types"))
 
     for row in rows:
@@ -192,6 +202,10 @@ def summarize_kernel_details(path: Path, *, topn: int) -> dict[str, Any]:
         input_formats = row.get("Input Formats") or "unknown"
         input_dtypes = row.get("Input Data Types") or "unknown"
         shape_key = f"{op_type} | {row.get('Input Shapes') or ''} -> {row.get('Output Shapes') or ''}"
+        shape_format_key = (
+            f"{op_type} | {row.get('Input Shapes') or ''} -> {row.get('Output Shapes') or ''} | "
+            f"{row.get('Input Formats') or ''} -> {row.get('Output Formats') or ''}"
+        )
 
         add_group(by_name, name, duration_us, row)
         add_group(by_type, op_type, duration_us, row)
@@ -200,7 +214,16 @@ def summarize_kernel_details(path: Path, *, topn: int) -> dict[str, Any]:
         add_group(by_dtype, input_dtypes, duration_us, row)
         add_group(shape_signatures, shape_key, duration_us, row)
 
-        haystack = " ".join(str(row.get(field) or "") for field in ("Name", "Type", "Input Formats", "Output Formats")).lower()
+        haystack = " ".join(
+            [name, op_type]
+            + [str(row.get(field) or "") for field in ("Task Name", "Input Formats", "Output Formats")]
+        ).lower()
+        if "matmul" in haystack:
+            add_group(matmul_names, name, duration_us, row)
+            add_group(matmul_shape_signatures, shape_format_key, duration_us, row)
+        if "transdata" in haystack:
+            add_group(transdata_names, name, duration_us, row)
+            add_group(transdata_shape_signatures, shape_format_key, duration_us, row)
         if any(term in haystack for term in SUSPECT_TERMS):
             suspect_rows.append(
                 {
@@ -232,6 +255,10 @@ def summarize_kernel_details(path: Path, *, topn: int) -> dict[str, Any]:
         "top_input_formats": top_items(by_format, key="duration_us", topn=topn),
         "top_input_dtypes": top_items(by_dtype, key="duration_us", topn=topn),
         "top_shape_signatures": top_items(shape_signatures, key="duration_us", topn=topn),
+        "top_matmul_names": top_items(matmul_names, key="duration_us", topn=topn),
+        "top_matmul_shape_signatures": top_items(matmul_shape_signatures, key="duration_us", topn=topn),
+        "top_transdata_names": top_items(transdata_names, key="duration_us", topn=topn),
+        "top_transdata_shape_signatures": top_items(transdata_shape_signatures, key="duration_us", topn=topn),
         "suspect_kernel_rows": suspect_rows,
     }
 
@@ -394,6 +421,14 @@ def write_markdown(path: Path, summary: dict[str, Any], *, topn: int) -> None:
             lines.append(render_table(kernel["top_kernel_types"], name_key="name", value_key="duration_us", limit=topn))
             lines.append("### Kernel Names")
             lines.append(render_table(kernel["top_kernel_names"], name_key="name", value_key="duration_us", limit=topn))
+            lines.append("### MatMul Names")
+            lines.append(render_table(kernel["top_matmul_names"], name_key="name", value_key="duration_us", limit=topn))
+            lines.append("### MatMul Shape And Format Signatures")
+            lines.append(render_table(kernel["top_matmul_shape_signatures"], name_key="name", value_key="duration_us", limit=topn))
+            lines.append("### TransData Names")
+            lines.append(render_table(kernel["top_transdata_names"], name_key="name", value_key="duration_us", limit=topn))
+            lines.append("### TransData Shape And Format Signatures")
+            lines.append(render_table(kernel["top_transdata_shape_signatures"], name_key="name", value_key="duration_us", limit=topn))
             lines.append("### Suspect Kernels")
             lines.append(render_table(kernel["suspect_kernel_rows"], name_key="name", value_key="duration_us", limit=topn))
         if "operator_details" in run:
