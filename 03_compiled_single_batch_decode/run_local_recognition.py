@@ -15,7 +15,7 @@ from PIL import Image
 from tokenizers import Tokenizer
 
 from local_modeling_paddleocr_vl import (
-    DECODE_ATTENTION_MODE_CHOICES,
+    DECODE_ATTENTION,
     LocalPaddleOCRVLForConditionalGeneration,
     _resolve_model_dir,
 )
@@ -207,7 +207,6 @@ def main() -> None:
     parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
     parser.add_argument("--static", action="store_true", help="Use the experiment-3 static KV cache decode path.")
     parser.add_argument("--cache-length", type=int, default=None, help="Static KV cache length; defaults to input length + max new tokens.")
-    parser.add_argument("--decode-attention", default="manual", choices=DECODE_ATTENTION_MODE_CHOICES)
     args = parser.parse_args()
 
     model_dir = _resolve_model_dir(args.model)
@@ -224,7 +223,6 @@ def main() -> None:
     input_ids, attention_mask = build_inputs(tokenizer, image_grid_thw, args.prompt, merge_size=int(pre_cfg["merge_size"]))
 
     model = LocalPaddleOCRVLForConditionalGeneration.from_pretrained(model_dir, dtype=dtype, device=device)
-    model.set_decode_attention_mode(args.decode_attention)
     pixel_values = pixel_values.to(device)
     image_grid_thw = image_grid_thw.to(device)
     input_ids = input_ids.to(device)
@@ -256,10 +254,11 @@ def main() -> None:
 
     generated = new_ids[0].detach().cpu().tolist()
     text = tokenizer.decode(generated, skip_special_tokens=True)
+    decode_attention = DECODE_ATTENTION if args.static else "dynamic_reference"
     print(text.strip())
     print(
         f"\n[local] device={device} dtype={dtype} static={args.static} "
-        f"decode_attention={args.decode_attention} input_tokens={input_ids.shape[1]} "
+        f"decode_attention={decode_attention} input_tokens={input_ids.shape[1]} "
         f"new_tokens={len(generated)} elapsed_s={elapsed:.3f}"
     )
 

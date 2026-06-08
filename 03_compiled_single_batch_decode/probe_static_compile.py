@@ -13,7 +13,7 @@ import torch
 from tokenizers import Tokenizer
 
 from local_modeling_paddleocr_vl import (
-    DECODE_ATTENTION_MODE_CHOICES,
+    DECODE_ATTENTION,
     DECODE_LINEAR_WEIGHT_FORMAT,
     LocalPaddleOCRVLForConditionalGeneration,
     _resolve_model_dir,
@@ -66,10 +66,8 @@ def compile_backend(name: str):
     return name
 
 
-def torchair_cache_dir_for_shape(cache_root: Path, *, batch_size: int, cache_length: int, decode_attention: str) -> Path:
-    if decode_attention not in DECODE_ATTENTION_MODE_CHOICES:
-        raise ValueError(f"unsupported decode_attention={decode_attention!r}")
-    shape_key = f"{DECODE_LINEAR_WEIGHT_FORMAT}_{decode_attention}_bs{int(batch_size)}_cache{int(cache_length)}"
+def torchair_cache_dir_for_shape(cache_root: Path, *, batch_size: int, cache_length: int) -> Path:
+    shape_key = f"{DECODE_LINEAR_WEIGHT_FORMAT}_{DECODE_ATTENTION}_bs{int(batch_size)}_cache{int(cache_length)}"
     return cache_root.expanduser().resolve() / shape_key
 
 
@@ -81,7 +79,6 @@ def compile_decode_module(
     cache_root: Path,
     batch_size: int,
     cache_length: int,
-    decode_attention: str,
 ) -> tuple[Any, dict[str, Any]]:
     if backend_name == "torchair":
         if device.type != "npu":
@@ -92,7 +89,6 @@ def compile_decode_module(
             cache_root,
             batch_size=batch_size,
             cache_length=cache_length,
-            decode_attention=decode_attention,
         )
         shape_cache_dir.mkdir(parents=True, exist_ok=True)
         compiled_decode = torchair.inference.cache_compile(
@@ -108,7 +104,7 @@ def compile_decode_module(
             "torchair_ge_cache": True,
             "compile_api": "torchair.inference.cache_compile",
             "linear_weight_format": DECODE_LINEAR_WEIGHT_FORMAT,
-            "decode_attention": decode_attention,
+            "decode_attention": DECODE_ATTENTION,
         }
 
     backend = compile_backend(backend_name)
@@ -119,7 +115,7 @@ def compile_decode_module(
         "backend": backend_name,
         "compile_api": "torch.compile",
         "linear_weight_format": DECODE_LINEAR_WEIGHT_FORMAT,
-        "decode_attention": decode_attention,
+        "decode_attention": DECODE_ATTENTION,
     }
 
 
@@ -145,7 +141,6 @@ def main() -> None:
     parser.add_argument("--backend", default="eager", choices=["eager", "aot_eager", "inductor", "default", "torchair"])
     parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
     parser.add_argument("--torchair-cache-dir", type=Path, default=DEFAULT_TORCHAIR_CACHE_DIR)
-    parser.add_argument("--decode-attention", default="manual", choices=DECODE_ATTENTION_MODE_CHOICES)
     args = parser.parse_args()
 
     model_dir = _resolve_model_dir(args.model)
@@ -162,7 +157,6 @@ def main() -> None:
     input_ids, attention_mask = build_inputs(tokenizer, image_grid_thw, args.prompt, merge_size=int(pre_cfg["merge_size"]))
 
     model = LocalPaddleOCRVLForConditionalGeneration.from_pretrained(model_dir, dtype=dtype, device=device)
-    model.set_decode_attention_mode(args.decode_attention)
     maybe_sync(device)
     weight_format_start = time.perf_counter()
     weight_format_meta = cast_decode_linear_weights_to_nz(model)
@@ -214,7 +208,6 @@ def main() -> None:
         cache_root=args.torchair_cache_dir,
         batch_size=int(input_ids.shape[0]),
         cache_length=cache_length,
-        decode_attention=args.decode_attention,
     )
     maybe_sync(device)
     compile_setup_s = time.perf_counter() - start
@@ -235,7 +228,7 @@ def main() -> None:
     diff = (eager_logits.float() - compiled_logits.float()).abs()
     print(f"compile_backend={args.backend} fullgraph=True dynamic=False")
     print("compile_meta=" + repr(compile_meta))
-    print(f"decode_attention={args.decode_attention}")
+    print(f"decode_attention={DECODE_ATTENTION}")
     print("linear_weight_format=" + repr(weight_format_meta))
     print(f"compile_setup_s={compile_setup_s:.6f} eager_decode_s={eager_s:.6f} compiled_first_s={compiled_first_s:.6f}")
     print(f"compiled_matches_eager=max_abs:{float(diff.max())} mean_abs:{float(diff.mean())}")

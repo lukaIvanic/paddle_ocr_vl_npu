@@ -13,6 +13,7 @@ import argparse
 import json
 import shutil
 import time
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
@@ -21,7 +22,7 @@ import torch
 from tokenizers import Tokenizer
 
 from local_modeling_paddleocr_vl import (
-    DECODE_ATTENTION_MODE_CHOICES,
+    DECODE_ATTENTION,
     DECODE_LINEAR_WEIGHT_FORMAT,
     LocalPaddleOCRVLForConditionalGeneration,
     _resolve_model_dir,
@@ -40,6 +41,16 @@ from run_local_recognition import (
 
 
 PROFILE_METRIC_CHOICES = ("pipe", "memory", "l2", "memory_access")
+EOS_MODE_CHOICES = ("none", "sync", "overlap_event_flags")
+
+
+@dataclass
+class DecodeLoopResult:
+    ids: torch.Tensor
+    last_logits: torch.Tensor | None
+    decode_calls: int
+    eos_detected: bool
+    eos_step: int | None
 
 
 def json_default(value: Any) -> Any:
@@ -56,6 +67,31 @@ def timed(device: torch.device, fn: Callable):
     result = fn()
     maybe_sync(device)
     return result, time.perf_counter() - start
+
+
+def hits_eos(token_ids: torch.Tensor, eos_token_id: int) -> torch.Tensor:
+    return token_ids.reshape(-1) == int(eos_token_id)
+
+
+def trim_after_first_eos(ids: torch.Tensor, eos_token_id: int) -> torch.Tensor:
+    values = [int(value) for value in ids[0].detach().cpu().tolist()]
+    try:
+        first_eos = values.index(int(eos_token_id))
+    except ValueError:
+        return ids
+    return ids[:, : first_eos + 1]
+
+
+def decode_loop_summary(result: DecodeLoopResult, *, eos_token_id: int) -> dict[str, Any]:
+    trimmed = trim_after_first_eos(result.ids, eos_token_id)
+    return {
+        "generated_new_tokens": int(result.ids.shape[1]),
+        "trimmed_new_tokens": int(trimmed.shape[1]),
+        "decode_calls": int(result.decode_calls),
+        "effective_decode_calls": max(0, int(trimmed.shape[1]) - 1),
+        "eos_detected": bool(result.eos_detected),
+        "eos_step": None if result.eos_step is None else int(result.eos_step),
+    }
 
 
 @torch.inference_mode()
@@ -106,17 +142,74 @@ def static_flat_decode_loop(
     next_token: torch.Tensor,
     *,
     max_new_tokens: int,
-):
+    eos_mode: str = "none",
+    eos_token_id: int | None = None,
+) -> DecodeLoopResult:
+    if eos_mode not in EOS_MODE_CHOICES:
+        raise ValueError(f"unsupported eos_mode={eos_mode!r}")
+    if eos_mode != "none" and eos_token_id is None:
+        raise ValueError(f"eos_mode={eos_mode!r} requires eos_token_id")
     generated = [next_token]
     cache_position = prefill.next_cache_position
     flat_cache = prefill.cache.flat_tensors()
     last_logits = None
-    for _ in range(max(0, int(max_new_tokens) - 1)):
+    max_decode_calls = max(0, int(max_new_tokens) - 1)
+    decode_calls = 0
+    eos_detected = False
+    eos_step = None
+    async_cpu_flags = None
+    copy_stream = None
+    pending_eos_event = None
+    pending_eos_step = None
+    if eos_mode == "overlap_event_flags":
+        if next_token.device.type != "npu":
+            raise ValueError("--eos-mode overlap_event_flags requires NPU tensors.")
+        import torch_npu
+
+        async_cpu_flags = torch.zeros((max_decode_calls,), dtype=torch.bool, pin_memory=True)
+        copy_stream = torch_npu.npu.Stream(device=next_token.device)
+
+    for step in range(max_decode_calls):
         last_logits = decode_fn(next_token, cache_position, prefill.rope_deltas, *flat_cache)
         next_token = torch.argmax(last_logits[:, -1, :].float(), dim=-1, keepdim=True)
         generated.append(next_token)
         cache_position = cache_position + 1
-    return torch.cat(generated, dim=1), last_logits
+        decode_calls += 1
+        if eos_mode == "sync":
+            if bool(hits_eos(next_token, int(eos_token_id)).all().item()):
+                eos_detected = True
+                eos_step = int(step)
+                break
+        elif eos_mode == "overlap_event_flags" and async_cpu_flags is not None and copy_stream is not None:
+            hit_eos = hits_eos(next_token, int(eos_token_id)).all()
+            eos_ready_event = torch_npu.npu.current_stream().record_event()
+            copy_done_event = torch_npu.npu.Event()
+            with torch_npu.npu.stream(copy_stream):
+                copy_stream.wait_event(eos_ready_event)
+                async_cpu_flags[step : step + 1].copy_(hit_eos.reshape(1), non_blocking=True)
+                copy_done_event.record(copy_stream)
+            if pending_eos_event is not None and pending_eos_step is not None:
+                pending_eos_event.synchronize()
+                if bool(async_cpu_flags[pending_eos_step].item()):
+                    eos_detected = True
+                    eos_step = int(pending_eos_step)
+                    break
+            pending_eos_event = copy_done_event
+            pending_eos_step = int(step)
+
+    if eos_mode == "overlap_event_flags" and not eos_detected and pending_eos_event is not None and pending_eos_step is not None:
+        pending_eos_event.synchronize()
+        if bool(async_cpu_flags[pending_eos_step].item()):
+            eos_detected = True
+            eos_step = int(pending_eos_step)
+
+    return DecodeLoopResult(
+        ids=torch.cat(generated, dim=1),
+        last_logits=last_logits,
+        decode_calls=decode_calls,
+        eos_detected=eos_detected,
+        eos_step=eos_step,
+    )
 
 
 @torch.inference_mode()
@@ -204,9 +297,9 @@ def npu_profiler_config(metric: str):
     )
 
 
-def make_profile_run_dir(root: Path, *, backend: str, decode_attention: str, max_new_tokens: int) -> Path:
+def make_profile_run_dir(root: Path, *, backend: str, eos_mode: str, max_new_tokens: int) -> Path:
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
-    return root / f"bench_static_compile_{timestamp}_{backend}_{decode_attention}_{max_new_tokens}tok"
+    return root / f"bench_static_compile_{timestamp}_{backend}_{DECODE_ATTENTION}_{eos_mode}_{max_new_tokens}tok"
 
 
 @torch.inference_mode()
@@ -235,7 +328,7 @@ def profile_compiled_decode(
     profile_dir = make_profile_run_dir(
         args.profile_dir.expanduser().resolve(),
         backend=args.backend,
-        decode_attention=args.decode_attention,
+        eos_mode=args.eos_mode,
         max_new_tokens=int(args.max_new_tokens),
     )
     shutil.rmtree(profile_dir, ignore_errors=True)
@@ -249,9 +342,16 @@ def profile_compiled_decode(
         image_grid_thw,
         cache_length=cache_length,
     )
-    (_, _), profile_warmup_s = timed(
+    _profile_warmup_result, profile_warmup_s = timed(
         device,
-        lambda: static_flat_decode_loop(compiled_decode, warm_prefill, warm_next_token, max_new_tokens=args.max_new_tokens),
+        lambda: static_flat_decode_loop(
+            compiled_decode,
+            warm_prefill,
+            warm_next_token,
+            max_new_tokens=args.max_new_tokens,
+            eos_mode=args.eos_mode,
+            eos_token_id=int(model.config.eos_token_id),
+        ),
     )
 
     prof_prefill, prof_next_token = make_static_prefill(
@@ -275,11 +375,13 @@ def profile_compiled_decode(
         with_stack=True,
     ) as profiler:
         with torch.profiler.record_function("paddle_ocr_vl.compiled_decode_profile"):
-            profile_ids, _last_logits = static_flat_decode_loop(
+            profile_result = static_flat_decode_loop(
                 compiled_decode,
                 prof_prefill,
                 prof_next_token,
                 max_new_tokens=args.max_new_tokens,
+                eos_mode=args.eos_mode,
+                eos_token_id=int(model.config.eos_token_id),
             )
         maybe_sync(device)
         profiler.step()
@@ -290,16 +392,18 @@ def profile_compiled_decode(
         "profile_dir": str(profile_dir),
         "metric": args.profile_metric,
         "linear_weight_format": DECODE_LINEAR_WEIGHT_FORMAT,
-        "decode_attention": args.decode_attention,
+        "decode_attention": DECODE_ATTENTION,
+        "eos_mode": args.eos_mode,
         "with_stack": True,
         "record_shapes": True,
         "profile_memory": False,
         "profile_warmup_s": float(profile_warmup_s),
         "profile_wall_s": float(profile_wall_s),
         "profiled_generated_tokens": int(args.max_new_tokens),
-        "profiled_decode_steps": max(0, int(args.max_new_tokens) - 1),
-        "generated_ids": [int(v) for v in profile_ids[0].detach().cpu().tolist()],
-        "generated_text": tokenizer.decode(profile_ids[0].detach().cpu().tolist(), skip_special_tokens=True),
+        "profiled_decode_steps": int(profile_result.decode_calls),
+        "loop": decode_loop_summary(profile_result, eos_token_id=int(model.config.eos_token_id)),
+        "generated_ids": [int(v) for v in profile_result.ids[0].detach().cpu().tolist()],
+        "generated_text": tokenizer.decode(profile_result.ids[0].detach().cpu().tolist(), skip_special_tokens=True),
     }
     (profile_dir / "bench_profile_summary.json").write_text(json.dumps(profile_summary, indent=2, default=json_default), encoding="utf-8")
     return profile_summary
@@ -318,7 +422,7 @@ def main() -> None:
     parser.add_argument("--backend", default="eager", choices=["eager", "aot_eager", "inductor", "default", "torchair"])
     parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
     parser.add_argument("--torchair-cache-dir", type=Path, default=DEFAULT_TORCHAIR_CACHE_DIR)
-    parser.add_argument("--decode-attention", default="manual", choices=DECODE_ATTENTION_MODE_CHOICES)
+    parser.add_argument("--eos-mode", default="none", choices=EOS_MODE_CHOICES)
     parser.add_argument("--profile-dir", type=Path, default=None, help="Write one post-warmup torch_npu profiler capture for compiled decode.")
     parser.add_argument("--profile-metric", default="pipe", choices=PROFILE_METRIC_CHOICES)
     parser.add_argument("--json", action="store_true", help="Print a compact JSON summary instead of human-readable lines.")
@@ -344,7 +448,7 @@ def main() -> None:
     decode_steps = max(0, int(args.max_new_tokens) - 1)
 
     model = LocalPaddleOCRVLForConditionalGeneration.from_pretrained(model_dir, dtype=dtype, device=device)
-    model.set_decode_attention_mode(args.decode_attention)
+    eos_token_id = int(model.config.eos_token_id)
     maybe_sync(device)
     weight_format_start = time.perf_counter()
     weight_format_meta = cast_decode_linear_weights_to_nz(model)
@@ -361,7 +465,6 @@ def main() -> None:
         cache_root=args.torchair_cache_dir,
         batch_size=int(input_ids.shape[0]),
         cache_length=cache_length,
-        decode_attention=args.decode_attention,
     )
     maybe_sync(device)
     compile_wrapper_s = time.perf_counter() - compile_start
@@ -399,10 +502,18 @@ def main() -> None:
         image_grid_thw,
         cache_length=cache_length,
     )
-    (static_ids, _), static_decode_s = timed(
+    static_result, static_decode_s = timed(
         device,
-        lambda: static_flat_decode_loop(flat_decode, static_prefill, static_next_token, max_new_tokens=args.max_new_tokens),
+        lambda: static_flat_decode_loop(
+            flat_decode,
+            static_prefill,
+            static_next_token,
+            max_new_tokens=args.max_new_tokens,
+            eos_mode=args.eos_mode,
+            eos_token_id=eos_token_id,
+        ),
     )
+    static_ids = static_result.ids
 
     compiled_prefill, compiled_next_token = make_static_prefill(
         model,
@@ -412,10 +523,18 @@ def main() -> None:
         image_grid_thw,
         cache_length=cache_length,
     )
-    (compiled_ids, _), compiled_decode_s = timed(
+    compiled_result, compiled_decode_s = timed(
         device,
-        lambda: static_flat_decode_loop(compiled_decode, compiled_prefill, compiled_next_token, max_new_tokens=args.max_new_tokens),
+        lambda: static_flat_decode_loop(
+            compiled_decode,
+            compiled_prefill,
+            compiled_next_token,
+            max_new_tokens=args.max_new_tokens,
+            eos_mode=args.eos_mode,
+            eos_token_id=eos_token_id,
+        ),
     )
+    compiled_ids = compiled_result.ids
 
     compare_eager_prefill, compare_eager_next = make_static_prefill(
         model,
@@ -458,24 +577,38 @@ def main() -> None:
             device=device,
         )
 
+    dynamic_trimmed_ids = trim_after_first_eos(dynamic_ids, eos_token_id)
+    static_trimmed_ids = trim_after_first_eos(static_ids, eos_token_id)
+    compiled_trimmed_ids = trim_after_first_eos(compiled_ids, eos_token_id)
+    static_loop_summary = decode_loop_summary(static_result, eos_token_id=eos_token_id)
+    compiled_loop_summary = decode_loop_summary(compiled_result, eos_token_id=eos_token_id)
     summary = {
         "backend": args.backend,
         "device": str(device),
         "dtype": str(dtype),
         "npu_jit_compile": args.npu_jit_compile,
-        "decode_attention": args.decode_attention,
+        "decode_attention": DECODE_ATTENTION,
+        "eos_mode": args.eos_mode,
+        "eos_token_id": eos_token_id,
         "linear_weight_format": weight_format_meta,
         "compile": compile_meta,
         "cache_update": "prefill_slice_decode_npu_scatter",
         "prompt_tokens": int(input_ids.shape[1]),
         "generated_tokens": int(args.max_new_tokens),
-        "decode_steps": int(decode_steps),
+        "requested_decode_steps": int(decode_steps),
         "cache_length": int(cache_length),
+        "loop": {
+            "static_eager": static_loop_summary,
+            "compiled": compiled_loop_summary,
+        },
         "matches": {
             "dynamic_vs_static_eager": bool(torch.equal(dynamic_ids, static_ids)),
             "dynamic_vs_compiled": bool(torch.equal(dynamic_ids, compiled_ids)),
             "static_eager_vs_compiled": bool(torch.equal(static_ids, compiled_ids)),
             "compare_loop_static_vs_compiled": bool(torch.equal(compare_static_ids, compare_compiled_ids)),
+            "dynamic_vs_static_eager_trimmed": bool(torch.equal(dynamic_trimmed_ids, static_trimmed_ids)),
+            "dynamic_vs_compiled_trimmed": bool(torch.equal(dynamic_trimmed_ids, compiled_trimmed_ids)),
+            "static_eager_vs_compiled_trimmed": bool(torch.equal(static_trimmed_ids, compiled_trimmed_ids)),
         },
         "logit_diff_static_eager_vs_compiled_decode": {
             "steps": int(compared_steps),
@@ -491,13 +624,18 @@ def main() -> None:
         },
         "tok_per_s": {
             "dynamic_decode": tok_per_s(decode_steps, dynamic_decode_s),
-            "static_eager_decode": tok_per_s(decode_steps, static_decode_s),
-            "compiled_decode": tok_per_s(decode_steps, compiled_decode_s),
+            "static_eager_decode_raw": tok_per_s(static_result.decode_calls, static_decode_s),
+            "static_eager_decode_effective": tok_per_s(static_loop_summary["effective_decode_calls"], static_decode_s),
+            "compiled_decode_raw": tok_per_s(compiled_result.decode_calls, compiled_decode_s),
+            "compiled_decode_effective": tok_per_s(compiled_loop_summary["effective_decode_calls"], compiled_decode_s),
         },
         "texts": {
             "dynamic": tokenizer.decode(dynamic_ids[0].detach().cpu().tolist(), skip_special_tokens=True),
             "static_eager": tokenizer.decode(static_ids[0].detach().cpu().tolist(), skip_special_tokens=True),
             "compiled": tokenizer.decode(compiled_ids[0].detach().cpu().tolist(), skip_special_tokens=True),
+            "dynamic_trimmed": tokenizer.decode(dynamic_trimmed_ids[0].detach().cpu().tolist(), skip_special_tokens=True),
+            "static_eager_trimmed": tokenizer.decode(static_trimmed_ids[0].detach().cpu().tolist(), skip_special_tokens=True),
+            "compiled_trimmed": tokenizer.decode(compiled_trimmed_ids[0].detach().cpu().tolist(), skip_special_tokens=True),
         },
     }
     if profile_summary is not None:
@@ -507,10 +645,11 @@ def main() -> None:
         print(json.dumps(summary, indent=2, sort_keys=True, default=json_default))
         return
 
-    print(f"backend={summary['backend']} device={summary['device']} dtype={summary['dtype']} npu_jit_compile={summary['npu_jit_compile']} decode_attention={summary['decode_attention']}")
+    print(f"backend={summary['backend']} device={summary['device']} dtype={summary['dtype']} npu_jit_compile={summary['npu_jit_compile']} decode_attention={summary['decode_attention']} eos_mode={summary['eos_mode']}")
     print("linear_weight_format=" + json.dumps(summary["linear_weight_format"], sort_keys=True))
     print(f"cache_update={summary['cache_update']}")
-    print(f"prompt_tokens={summary['prompt_tokens']} generated_tokens={summary['generated_tokens']} decode_steps={summary['decode_steps']} cache_length={summary['cache_length']}")
+    print(f"prompt_tokens={summary['prompt_tokens']} generated_tokens={summary['generated_tokens']} requested_decode_steps={summary['requested_decode_steps']} cache_length={summary['cache_length']}")
+    print("loop=" + json.dumps(summary["loop"], sort_keys=True))
     print("matches=" + json.dumps(summary["matches"], sort_keys=True))
     print("logit_diff_static_eager_vs_compiled_decode=" + json.dumps(summary["logit_diff_static_eager_vs_compiled_decode"], sort_keys=True))
     print("timing_s=" + json.dumps(summary["timing_s"], sort_keys=True))

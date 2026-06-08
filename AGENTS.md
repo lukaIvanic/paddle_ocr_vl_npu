@@ -96,10 +96,18 @@ In `03_compiled_single_batch_decode`, the bench/probe scripts always
 preconvert the text-decoder and `lm_head` Linear weights to FRACTAL_NZ on NPU
 before compile. There is intentionally no ND/linear-format option now.
 
-`03_compiled_single_batch_decode` defaults to manual decode attention. Use
-`--decode-attention increfa` to opt into masked
-`torch_npu.npu_incre_flash_attention` for static decode. This path uses a bool
-future-slot mask and does not use `actual_seq_lengths`.
+`03_compiled_single_batch_decode` static decode is IncreFA-only. It uses masked
+`torch_npu.npu_incre_flash_attention` with a bool future-slot mask and does not
+use `actual_seq_lengths`. There is intentionally no manual/static attention
+option now.
+
+Use `03_compiled_single_batch_decode/bench_static_compile.py --eos-mode` to
+compare decode-loop EOS behavior:
+
+- `none`: fixed-step decode with no per-token host EOS check.
+- `sync`: synchronous per-token EOS `.item()` check.
+- `overlap_event_flags`: GLM-OCR-style queue-depth-1 EOS check using a second
+  NPU stream, event wait/record, and pinned CPU bool flags.
 
 On the Vast/CUDA smoke box on 2026-06-08, the local model matched Transformers
 eager bf16 exactly for next-token logits on all eight crops when using the slow
