@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import argparse
+import importlib
 import time
 from pathlib import Path
+from typing import Any
 
 import torch
 from tokenizers import Tokenizer
@@ -22,23 +24,29 @@ from run_local_recognition import (
 )
 
 
+DEFAULT_TORCHAIR_CACHE_DIR = Path("outputs") / "torchair_cache"
+
+
 def import_torchair():
     try:
         import torchair
 
-        return torchair, torchair.CompilerConfig
+        CompilerConfig = torchair.CompilerConfig
     except Exception as direct_error:
         try:
             from torch_npu.dynamo import torchair
             from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
 
-            return torchair, CompilerConfig
         except Exception as fallback_error:
             raise RuntimeError(
                 "TorchAir is unavailable: direct `import torchair` failed with "
                 f"{direct_error!r}, and `from torch_npu.dynamo import torchair` "
                 f"failed with {fallback_error!r}."
             ) from fallback_error
+
+    if not hasattr(torchair, "inference"):
+        torchair.inference = importlib.import_module(f"{torchair.__name__}.inference")
+    return torchair, CompilerConfig
 
 
 def compile_backend(name: str):
@@ -50,6 +58,50 @@ def compile_backend(name: str):
 
         return torchair.get_npu_backend(compiler_config=config)
     return name
+
+
+def torchair_cache_dir_for_shape(cache_root: Path, *, batch_size: int, cache_length: int) -> Path:
+    return cache_root.expanduser().resolve() / f"bs{int(batch_size)}_cache{int(cache_length)}"
+
+
+def compile_decode_module(
+    flat_decode: torch.nn.Module,
+    *,
+    backend_name: str,
+    device: torch.device,
+    cache_root: Path,
+    batch_size: int,
+    cache_length: int,
+) -> tuple[Any, dict[str, Any]]:
+    if backend_name == "torchair":
+        if device.type != "npu":
+            raise ValueError("--backend torchair requires an NPU device.")
+        torchair, CompilerConfig = import_torchair()
+        config = CompilerConfig()
+        shape_cache_dir = torchair_cache_dir_for_shape(cache_root, batch_size=batch_size, cache_length=cache_length)
+        shape_cache_dir.mkdir(parents=True, exist_ok=True)
+        compiled_decode = torchair.inference.cache_compile(
+            flat_decode.forward,
+            config=config,
+            dynamic=False,
+            cache_dir=str(shape_cache_dir),
+            ge_cache=True,
+        )
+        return compiled_decode, {
+            "backend": backend_name,
+            "torchair_cache_dir": str(shape_cache_dir),
+            "torchair_ge_cache": True,
+            "compile_api": "torchair.inference.cache_compile",
+        }
+
+    backend = compile_backend(backend_name)
+    compile_kwargs = {"fullgraph": True, "dynamic": False}
+    if backend is not None:
+        compile_kwargs["backend"] = backend
+    return torch.compile(flat_decode, **compile_kwargs), {
+        "backend": backend_name,
+        "compile_api": "torch.compile",
+    }
 
 
 def maybe_sync(device: torch.device) -> None:
@@ -73,6 +125,7 @@ def main() -> None:
     parser.add_argument("--dtype", default="auto", choices=["auto", "bf16", "bfloat16", "fp16", "float16", "fp32", "float32"])
     parser.add_argument("--backend", default="eager", choices=["eager", "aot_eager", "inductor", "default", "torchair"])
     parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
+    parser.add_argument("--torchair-cache-dir", type=Path, default=DEFAULT_TORCHAIR_CACHE_DIR)
     args = parser.parse_args()
 
     model_dir = _resolve_model_dir(args.model)
@@ -125,14 +178,17 @@ def main() -> None:
     )
     next_token = torch.argmax(prefill.logits[:, -1, :].float(), dim=-1, keepdim=True)
     flat_decode = model.make_flat_static_decode_module().eval()
-    backend = compile_backend(args.backend)
-    compile_kwargs = {"fullgraph": True, "dynamic": False}
-    if backend is not None:
-        compile_kwargs["backend"] = backend
 
     maybe_sync(device)
     start = time.perf_counter()
-    compiled_decode = torch.compile(flat_decode, **compile_kwargs)
+    compiled_decode, compile_meta = compile_decode_module(
+        flat_decode,
+        backend_name=args.backend,
+        device=device,
+        cache_root=args.torchair_cache_dir,
+        batch_size=int(input_ids.shape[0]),
+        cache_length=cache_length,
+    )
     maybe_sync(device)
     compile_setup_s = time.perf_counter() - start
 
@@ -151,6 +207,7 @@ def main() -> None:
 
     diff = (eager_logits.float() - compiled_logits.float()).abs()
     print(f"compile_backend={args.backend} fullgraph=True dynamic=False")
+    print("compile_meta=" + repr(compile_meta))
     print(f"compile_setup_s={compile_setup_s:.6f} eager_decode_s={eager_s:.6f} compiled_first_s={compiled_first_s:.6f}")
     print(f"compiled_matches_eager=max_abs:{float(diff.max())} mean_abs:{float(diff.mean())}")
     print(f"compiled_next_token={int(torch.argmax(compiled_logits[:, -1, :].float(), dim=-1).item())}")

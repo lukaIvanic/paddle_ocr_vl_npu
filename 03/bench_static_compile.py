@@ -21,7 +21,7 @@ import torch
 from tokenizers import Tokenizer
 
 from local_modeling_paddleocr_vl import LocalPaddleOCRVLForConditionalGeneration, _resolve_model_dir
-from probe_static_compile import compile_backend, maybe_sync
+from probe_static_compile import DEFAULT_TORCHAIR_CACHE_DIR, compile_decode_module, maybe_sync
 from run_local_recognition import (
     NPU_JIT_COMPILE_CHOICES,
     build_inputs,
@@ -304,6 +304,7 @@ def main() -> None:
     parser.add_argument("--dtype", default="auto", choices=["auto", "bf16", "bfloat16", "fp16", "float16", "fp32", "float32"])
     parser.add_argument("--backend", default="eager", choices=["eager", "aot_eager", "inductor", "default", "torchair"])
     parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
+    parser.add_argument("--torchair-cache-dir", type=Path, default=DEFAULT_TORCHAIR_CACHE_DIR)
     parser.add_argument("--profile-dir", type=Path, default=None, help="Write one post-warmup torch_npu profiler capture for compiled decode.")
     parser.add_argument("--profile-metric", default="pipe", choices=PROFILE_METRIC_CHOICES)
     parser.add_argument("--json", action="store_true", help="Print a compact JSON summary instead of human-readable lines.")
@@ -330,14 +331,17 @@ def main() -> None:
 
     model = LocalPaddleOCRVLForConditionalGeneration.from_pretrained(model_dir, dtype=dtype, device=device)
     flat_decode = model.make_flat_static_decode_module().eval()
-    backend = compile_backend(args.backend)
-    compile_kwargs = {"fullgraph": True, "dynamic": False}
-    if backend is not None:
-        compile_kwargs["backend"] = backend
 
     maybe_sync(device)
     compile_start = time.perf_counter()
-    compiled_decode = torch.compile(flat_decode, **compile_kwargs)
+    compiled_decode, compile_meta = compile_decode_module(
+        flat_decode,
+        backend_name=args.backend,
+        device=device,
+        cache_root=args.torchair_cache_dir,
+        batch_size=int(input_ids.shape[0]),
+        cache_length=cache_length,
+    )
     maybe_sync(device)
     compile_wrapper_s = time.perf_counter() - compile_start
 
@@ -438,6 +442,7 @@ def main() -> None:
         "device": str(device),
         "dtype": str(dtype),
         "npu_jit_compile": args.npu_jit_compile,
+        "compile": compile_meta,
         "cache_update": "prefill_slice_decode_npu_scatter",
         "prompt_tokens": int(input_ids.shape[1]),
         "generated_tokens": int(args.max_new_tokens),
