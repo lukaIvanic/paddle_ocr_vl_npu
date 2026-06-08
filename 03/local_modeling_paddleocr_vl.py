@@ -944,9 +944,13 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
             )
         return inputs_embeds.masked_scatter(image_mask, image_embeds)
 
-    def set_static_cache_update_mode(self, mode: str) -> None:
+    def set_static_cache_update_mode(self, mode: str, *, prefill_mode: str = "index_copy") -> None:
+        if mode not in {"index_copy", "scatter_update"}:
+            raise ValueError(f"unknown decode cache update mode: {mode!r}")
+        if prefill_mode not in {"index_copy", "slice_copy", "scatter_update"}:
+            raise ValueError(f"unknown prefill cache update mode: {prefill_mode!r}")
         for layer in self.model.layers:
-            layer.prefill_cache_update_mode = mode
+            layer.prefill_cache_update_mode = prefill_mode
             layer.self_attn.cache_update_mode = mode
 
     def allocate_static_cache(

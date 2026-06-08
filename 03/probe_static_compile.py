@@ -11,16 +11,44 @@ import torch
 from tokenizers import Tokenizer
 
 from local_modeling_paddleocr_vl import LocalPaddleOCRVLForConditionalGeneration, _resolve_model_dir
-from run_local_recognition import build_inputs, load_preprocessor_config, parse_dtype, preprocess_image, resolve_device
+from run_local_recognition import (
+    NPU_JIT_COMPILE_CHOICES,
+    build_inputs,
+    configure_npu_jit_compile,
+    load_preprocessor_config,
+    parse_dtype,
+    preprocess_image,
+    resolve_device,
+)
+
+
+def import_torchair():
+    try:
+        import torchair
+
+        return torchair, torchair.CompilerConfig
+    except Exception as direct_error:
+        try:
+            from torch_npu.dynamo import torchair
+            from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
+
+            return torchair, CompilerConfig
+        except Exception as fallback_error:
+            raise RuntimeError(
+                "TorchAir is unavailable: direct `import torchair` failed with "
+                f"{direct_error!r}, and `from torch_npu.dynamo import torchair` "
+                f"failed with {fallback_error!r}."
+            ) from fallback_error
 
 
 def compile_backend(name: str):
     if name == "default":
         return None
     if name == "torchair":
-        import torchair
+        torchair, CompilerConfig = import_torchair()
+        config = CompilerConfig()
 
-        return torchair.get_npu_backend()
+        return torchair.get_npu_backend(compiler_config=config)
     return name
 
 
@@ -45,6 +73,8 @@ def main() -> None:
     parser.add_argument("--dtype", default="auto", choices=["auto", "bf16", "bfloat16", "fp16", "float16", "fp32", "float32"])
     parser.add_argument("--backend", default="eager", choices=["eager", "aot_eager", "inductor", "default", "torchair"])
     parser.add_argument("--cache-update", default="index_copy", choices=["index_copy", "scatter_update"])
+    parser.add_argument("--prefill-cache-update", default="index_copy", choices=["index_copy", "slice_copy", "scatter_update"])
+    parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
     args = parser.parse_args()
 
     model_dir = _resolve_model_dir(args.model)
@@ -53,6 +83,7 @@ def main() -> None:
         crop = Path(__file__).resolve().parents[1] / args.crop
     device = resolve_device(args.device)
     dtype = parse_dtype(args.dtype, device)
+    configure_npu_jit_compile(args.npu_jit_compile, device)
 
     pre_cfg = load_preprocessor_config(model_dir)
     tokenizer = Tokenizer.from_file(str(model_dir / "tokenizer.json"))
@@ -60,7 +91,7 @@ def main() -> None:
     input_ids, attention_mask = build_inputs(tokenizer, image_grid_thw, args.prompt, merge_size=int(pre_cfg["merge_size"]))
 
     model = LocalPaddleOCRVLForConditionalGeneration.from_pretrained(model_dir, dtype=dtype, device=device)
-    model.set_static_cache_update_mode(args.cache_update)
+    model.set_static_cache_update_mode(args.cache_update, prefill_mode=args.prefill_cache_update)
     pixel_values = pixel_values.to(device)
     image_grid_thw = image_grid_thw.to(device)
     input_ids = input_ids.to(device)
@@ -83,6 +114,7 @@ def main() -> None:
         cache_length=cache_length,
     )
     print(f"static_matches_dynamic={bool(torch.equal(static_ids, dynamic_ids))}")
+    print(f"cache_update_decode={args.cache_update} cache_update_prefill={args.prefill_cache_update} npu_jit_compile={args.npu_jit_compile}")
     print(f"dynamic_text={tokenizer.decode(dynamic_ids[0].detach().cpu().tolist(), skip_special_tokens=True)!r}")
     print(f"static_text={tokenizer.decode(static_ids[0].detach().cpu().tolist(), skip_special_tokens=True)!r}")
 
