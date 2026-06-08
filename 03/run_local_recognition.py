@@ -140,15 +140,11 @@ def build_inputs(
     return input_ids, attention_mask
 
 
-def parse_dtype(name: str, device: torch.device) -> torch.dtype:
-    if name == "auto":
-        return torch.bfloat16 if device.type == "cuda" else torch.float32
-    if name in {"bf16", "bfloat16"}:
-        return torch.bfloat16
+def parse_dtype(name: str, _device: torch.device) -> torch.dtype:
     if name in {"fp16", "float16"}:
         return torch.float16
-    if name in {"fp32", "float32"}:
-        return torch.float32
+    if name in {"bf16", "bfloat16"}:
+        return torch.bfloat16
     raise ValueError(f"unsupported dtype: {name}")
 
 
@@ -203,7 +199,7 @@ def main() -> None:
     parser.add_argument("--prompt", default="OCR:", help="Recognition prompt, e.g. OCR:, Table Recognition:, Formula Recognition:.")
     parser.add_argument("--max-new-tokens", type=int, default=96)
     parser.add_argument("--device", default="auto")
-    parser.add_argument("--dtype", default="auto", choices=["auto", "bf16", "bfloat16", "fp16", "float16", "fp32", "float32"])
+    parser.add_argument("--dtype", default="fp16", choices=["fp16", "float16", "bf16", "bfloat16"])
     parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
     parser.add_argument("--static", action="store_true", help="Use the experiment-3 static KV cache decode path.")
     parser.add_argument("--cache-length", type=int, default=None, help="Static KV cache length; defaults to input length + max new tokens.")

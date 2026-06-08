@@ -792,7 +792,7 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
         cls,
         model_id_or_path: str | Path = "PaddlePaddle/PaddleOCR-VL-1.6",
         *,
-        dtype: torch.dtype | None = torch.bfloat16,
+        dtype: torch.dtype | None = torch.float16,
         device: str | torch.device | None = None,
     ) -> "LocalPaddleOCRVLForConditionalGeneration":
         model_dir = _resolve_model_dir(model_id_or_path)

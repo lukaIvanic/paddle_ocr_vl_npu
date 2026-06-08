@@ -25,15 +25,11 @@ def default_prompt_for(crop: Path) -> str:
     return "OCR:"
 
 
-def parse_dtype(torch, name: str, device):
-    if name == "auto":
-        return torch.bfloat16 if device.type == "cuda" else torch.float32
-    if name in {"bf16", "bfloat16"}:
-        return torch.bfloat16
+def parse_dtype(torch, name: str, _device):
     if name in {"fp16", "float16"}:
         return torch.float16
-    if name in {"fp32", "float32"}:
-        return torch.float32
+    if name in {"bf16", "bfloat16"}:
+        return torch.bfloat16
     raise ValueError(f"unsupported dtype: {name}")
 
 
@@ -90,7 +86,7 @@ def main() -> None:
     parser.add_argument("--crop", type=Path, default=DEFAULT_CROP)
     parser.add_argument("--prompt", default=None)
     parser.add_argument("--device", default=None)
-    parser.add_argument("--dtype", default="auto", choices=["auto", "bf16", "bfloat16", "fp16", "float16", "fp32", "float32"])
+    parser.add_argument("--dtype", default="fp16", choices=["fp16", "float16", "bf16", "bfloat16"])
     parser.add_argument("--attn-implementation", default="eager", help="Attention backend for Transformers; use 'default' to omit.")
     parser.add_argument("--trust-remote-code", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
