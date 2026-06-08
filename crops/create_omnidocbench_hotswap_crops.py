@@ -24,7 +24,10 @@ DEFAULT_DATASET_DIR = (
     / "remote_artifacts/aos_research_remote_shutdown_20260531"
     / "glm_ocr_portable_bundle/data/OmniDocBench"
 )
-DEFAULT_OUT_DIR = WORK_DIR / "crops_hotswap_100"
+DEFAULT_OUT_DIR = WORK_DIR / "crops"
+DEFAULT_MANIFEST_NAME = "hotswap_100_manifest.json"
+DEFAULT_SUMMARY_NAME = "hotswap_100_summary.json"
+DEFAULT_CONTACT_SHEET_NAME = "hotswap_100_contact_sheet.jpg"
 
 
 CATEGORY_QUOTAS = {
@@ -174,7 +177,13 @@ def evenly_select(candidates: list[Candidate], count: int) -> list[Candidate]:
     return selected
 
 
-def make_contact_sheet(out_dir: Path, manifest: list[dict[str, Any]], *, columns: int = 10) -> None:
+def make_contact_sheet(
+    out_dir: Path,
+    manifest: list[dict[str, Any]],
+    *,
+    filename: str,
+    columns: int = 10,
+) -> None:
     cell_w, cell_h = 280, 230
     rows = (len(manifest) + columns - 1) // columns
     sheet = Image.new("RGB", (cell_w * columns, cell_h * rows), "white")
@@ -192,12 +201,12 @@ def make_contact_sheet(out_dir: Path, manifest: list[dict[str, Any]], *, columns
         draw.text((x + 14, y + cell_h - 38), label, fill=(20, 20, 20), font=font)
         draw.text((x + 14, y + cell_h - 22), item["id"], fill=(70, 70, 70), font=font)
 
-    sheet.save(out_dir / "contact_sheet.jpg", quality=90)
+    sheet.save(out_dir / filename, quality=90)
 
 
 def write_crops(selected: list[Candidate], out_dir: Path) -> list[dict[str, Any]]:
     out_dir.mkdir(parents=True, exist_ok=True)
-    for path in out_dir.glob("*.png"):
+    for path in out_dir.glob("hotswap_*.png"):
         path.unlink()
 
     manifest = []
@@ -238,6 +247,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset-dir", type=Path, default=DEFAULT_DATASET_DIR)
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
+    parser.add_argument("--manifest-name", default=DEFAULT_MANIFEST_NAME)
+    parser.add_argument("--summary-name", default=DEFAULT_SUMMARY_NAME)
+    parser.add_argument("--contact-sheet-name", default=DEFAULT_CONTACT_SHEET_NAME)
     parser.add_argument("--pad", type=int, default=12)
     args = parser.parse_args()
 
@@ -260,7 +272,7 @@ def main() -> None:
     )
     manifest = write_crops(selected, out_dir)
 
-    with (out_dir / "manifest.json").open("w", encoding="utf-8") as f:
+    with (out_dir / args.manifest_name).open("w", encoding="utf-8") as f:
         json.dump(manifest, f, ensure_ascii=False, indent=2)
 
     summary = {
@@ -271,10 +283,10 @@ def main() -> None:
         "pad": int(args.pad),
         "quotas": CATEGORY_QUOTAS,
     }
-    with (out_dir / "summary.json").open("w", encoding="utf-8") as f:
+    with (out_dir / args.summary_name).open("w", encoding="utf-8") as f:
         json.dump(summary, f, ensure_ascii=False, indent=2)
 
-    make_contact_sheet(out_dir, manifest)
+    make_contact_sheet(out_dir, manifest, filename=args.contact_sheet_name)
 
     print(f"Wrote {len(manifest)} crops to {out_dir}")
     print("category_counts=" + json.dumps(summary["category_counts"], sort_keys=True))
