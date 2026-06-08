@@ -8,10 +8,10 @@ import json
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parent
+REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MODEL = "PaddlePaddle/PaddleOCR-VL-1.6"
-DEFAULT_CROP = ROOT / "crops" / "crop_01_text_block_en.png"
-MANIFEST = ROOT / "crops" / "manifest.json"
+DEFAULT_CROP = REPO_ROOT / "crops" / "crop_01_text_block_en.png"
+MANIFEST = REPO_ROOT / "crops" / "manifest.json"
 
 
 def default_prompt_for(crop: Path) -> str:

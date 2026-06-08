@@ -47,7 +47,8 @@ This folder currently contains:
 - `crops/`: eight OmniDocBench region crops, not full pages.
 - `crops/manifest.json`: source image, category, bbox, suggested prompt, and ground truth for each crop.
 - `crops/create_omnidocbench_recognition_crops.py`: reproducible crop generator.
-- `01_run_transformers_recognition.py`: minimal Transformers recognizer smoke script.
+- `01/run_transformers_recognition.py`: minimal Transformers recognizer smoke script.
+- `02/`: reserved for a local Transformers implementation once there is real code to put there.
 - `refs/`: small architecture reference artifacts.
 - `refs/PaddleOCR`: ignored sparse reference checkout of the official PaddleOCR repo.
 
@@ -64,13 +65,13 @@ python3 crops/create_omnidocbench_recognition_crops.py
 Run the core recognition model on one crop with Transformers:
 
 ```sh
-python3 01_run_transformers_recognition.py
+python3 01/run_transformers_recognition.py
 ```
 
 For another crop:
 
 ```sh
-python3 01_run_transformers_recognition.py \
+python3 01/run_transformers_recognition.py \
   --crop crops/crop_05_table_rwkv_dims.png \
   --prompt "Table Recognition:"
 ```
@@ -115,7 +116,7 @@ stalled during the first model-weight download, while normal Hub HTTP completed:
 HF_HOME=/workspace/.hf_home \
 HF_HUB_DISABLE_XET=1 \
 HF_XET_DISABLE=1 \
-/workspace/venvs/paddle_ocr_vl/bin/python 01_run_transformers_recognition.py \
+/workspace/venvs/paddle_ocr_vl/bin/python 01/run_transformers_recognition.py \
   --crop crops/crop_01_text_block_en.png \
   --max-new-tokens 96
 ```
