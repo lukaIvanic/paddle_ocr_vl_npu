@@ -2,6 +2,7 @@ refs/PaddleOCR/
 .venv/
 __pycache__/
 *.py[cod]
+AGENTS_NPU.md
 
 # Local caches and bulky generated outputs.
 .cache/
