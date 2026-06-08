@@ -52,7 +52,7 @@ This folder currently contains:
 - `02_local_eager_recognition/local_modeling_paddleocr_vl.py`: local PyTorch implementation of the recognition VLM with no Transformers imports.
 - `02_local_eager_recognition/run_local_recognition.py`: local recognizer runner using `tokenizers`, local image preprocessing, and the local model.
 - `03_compiled_single_batch_decode/`: single-batch decode optimization lane, copied from the local eager implementation and extended with static KV cache decode, TorchAir cache compile, profiler hooks, and flat `torch.compile(fullgraph=True, dynamic=False)` probes.
-- Planned next lane: `04_batch_decode_serving/` for batch sizing and vLLM-style iteration hot-swapping once single-batch decode is satisfactory.
+- `04_batched_fixed_cohort_decode/`: first batch-decode lane. It keeps prefill sequential and padding-free for real crops, concatenates the filled per-crop KV cache rows, then benchmarks true fixed-cohort batched static decode. It does not do vLLM-style slot hot-swapping yet.
 - `refs/`: small architecture reference artifacts.
 - `refs/PaddleOCR`: ignored sparse reference checkout of the official PaddleOCR repo.
 
@@ -107,6 +107,28 @@ compare decode-loop EOS behavior:
 - `none`: fixed-step decode with no per-token host EOS check.
 - `overlap_event_flags`: GLM-OCR-style queue-depth-1 EOS check using a second
   NPU stream, event wait/record, and pinned CPU bool flags.
+
+Use `04_batched_fixed_cohort_decode/bench_static_compile.py` to benchmark
+batched decode over distinct real crops:
+
+```sh
+python3 04_batched_fixed_cohort_decode/bench_static_compile.py \
+  --batch-size 4 \
+  --backend torchair \
+  --device npu:0 \
+  --eos-mode overlap_event_flags
+```
+
+Experiment 4 deliberately avoids padded text/image prefill. It selects real
+entries from `crops/manifest.json`, runs preprocessing and prefill one crop at
+a time, then concatenates the B single-row static KV caches and runs decode as
+a batch. The shared `cache_length` is static decode capacity, not text padding;
+each row keeps its own `cache_position` and future-slot mask.
+
+For experiment 4 throughput, treat `*_decode_steps` as graph calls per second
+and `*_raw_batch_tokens` as batch token-slots per second. With
+`overlap_event_flags`, `*_effective_batch_tokens` excludes EOS-fill tokens after
+per-row completion.
 
 On the Vast/CUDA smoke box on 2026-06-08, the local model matched Transformers
 eager bf16 exactly for next-token logits on all eight crops when using the slow
