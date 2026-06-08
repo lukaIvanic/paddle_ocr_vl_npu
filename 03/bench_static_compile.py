@@ -11,9 +11,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import time
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
 
 import torch
 from tokenizers import Tokenizer
@@ -29,6 +31,17 @@ from run_local_recognition import (
     preprocess_image,
     resolve_device,
 )
+
+
+PROFILE_METRIC_CHOICES = ("pipe", "memory", "l2", "memory_access")
+
+
+def json_default(value: Any) -> Any:
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, torch.Tensor):
+        return value.detach().cpu().tolist()
+    return str(value)
 
 
 def timed(device: torch.device, fn: Callable):
@@ -168,6 +181,117 @@ def tok_per_s(tokens: int, seconds: float) -> float:
     return float(tokens) / float(seconds) if seconds > 0 else float("inf")
 
 
+def npu_profiler_config(metric: str):
+    import torch_npu.profiler as npu_prof
+
+    metrics = {
+        "pipe": npu_prof.AiCMetrics.PipeUtilization,
+        "memory": npu_prof.AiCMetrics.Memory,
+        "l2": npu_prof.AiCMetrics.L2Cache,
+        "memory_access": npu_prof.AiCMetrics.MemoryAccess,
+    }
+    return npu_prof._ExperimentalConfig(
+        profiler_level=npu_prof.ProfilerLevel.Level1,
+        aic_metrics=metrics[metric],
+        l2_cache=metric == "l2",
+        export_type=npu_prof.ExportType.Text,
+    )
+
+
+def make_profile_run_dir(root: Path, *, backend: str, max_new_tokens: int) -> Path:
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    return root / f"bench_static_compile_{timestamp}_{backend}_{max_new_tokens}tok"
+
+
+@torch.inference_mode()
+def profile_compiled_decode(
+    *,
+    args: argparse.Namespace,
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    compiled_decode: Callable,
+    input_ids: torch.Tensor,
+    attention_mask: torch.Tensor,
+    pixel_values: torch.Tensor,
+    image_grid_thw: torch.Tensor,
+    cache_length: int,
+    tokenizer: Tokenizer,
+    device: torch.device,
+) -> dict[str, Any]:
+    if device.type != "npu":
+        raise ValueError("--profile-dir requires --device npu:0; torch_npu profiler is NPU-only.")
+    if args.backend != "torchair":
+        raise ValueError("--profile-dir requires --backend torchair so the profile captures compiled NPU decode.")
+    if int(args.max_new_tokens) >= 16:
+        raise ValueError("--profile-dir requires --max-new-tokens < 16 to keep profiler JSON bounded.")
+
+    import torch_npu.profiler as npu_prof
+
+    profile_dir = make_profile_run_dir(args.profile_dir.expanduser().resolve(), backend=args.backend, max_new_tokens=int(args.max_new_tokens))
+    shutil.rmtree(profile_dir, ignore_errors=True)
+    profile_dir.mkdir(parents=True, exist_ok=True)
+
+    warm_prefill, warm_next_token = make_static_prefill(
+        model,
+        input_ids,
+        attention_mask,
+        pixel_values,
+        image_grid_thw,
+        cache_length=cache_length,
+    )
+    (_, _), profile_warmup_s = timed(
+        device,
+        lambda: static_flat_decode_loop(compiled_decode, warm_prefill, warm_next_token, max_new_tokens=args.max_new_tokens),
+    )
+
+    prof_prefill, prof_next_token = make_static_prefill(
+        model,
+        input_ids,
+        attention_mask,
+        pixel_values,
+        image_grid_thw,
+        cache_length=cache_length,
+    )
+    schedule = npu_prof.schedule(wait=0, warmup=0, active=1, repeat=1)
+    maybe_sync(device)
+    start = time.perf_counter()
+    with npu_prof.profile(
+        activities=[npu_prof.ProfilerActivity.CPU, npu_prof.ProfilerActivity.NPU],
+        schedule=schedule,
+        experimental_config=npu_profiler_config(args.profile_metric),
+        on_trace_ready=npu_prof.tensorboard_trace_handler(str(profile_dir), analyse_flag=True),
+        record_shapes=True,
+        profile_memory=False,
+        with_stack=True,
+    ) as profiler:
+        with torch.profiler.record_function("paddle_ocr_vl.compiled_decode_profile"):
+            profile_ids, _last_logits = static_flat_decode_loop(
+                compiled_decode,
+                prof_prefill,
+                prof_next_token,
+                max_new_tokens=args.max_new_tokens,
+            )
+        maybe_sync(device)
+        profiler.step()
+    maybe_sync(device)
+    profile_wall_s = time.perf_counter() - start
+
+    profile_summary = {
+        "profile_dir": str(profile_dir),
+        "metric": args.profile_metric,
+        "with_stack": True,
+        "record_shapes": True,
+        "profile_memory": False,
+        "profile_warmup_s": float(profile_warmup_s),
+        "profile_wall_s": float(profile_wall_s),
+        "profiled_generated_tokens": int(args.max_new_tokens),
+        "profiled_decode_steps": max(0, int(args.max_new_tokens) - 1),
+        "generated_ids": [int(v) for v in profile_ids[0].detach().cpu().tolist()],
+        "generated_text": tokenizer.decode(profile_ids[0].detach().cpu().tolist(), skip_special_tokens=True),
+    }
+    (profile_dir / "bench_profile_summary.json").write_text(json.dumps(profile_summary, indent=2, default=json_default), encoding="utf-8")
+    return profile_summary
+
+
 @torch.inference_mode()
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -180,6 +304,8 @@ def main() -> None:
     parser.add_argument("--dtype", default="auto", choices=["auto", "bf16", "bfloat16", "fp16", "float16", "fp32", "float32"])
     parser.add_argument("--backend", default="eager", choices=["eager", "aot_eager", "inductor", "default", "torchair"])
     parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
+    parser.add_argument("--profile-dir", type=Path, default=None, help="Write one post-warmup torch_npu profiler capture for compiled decode.")
+    parser.add_argument("--profile-metric", default="pipe", choices=PROFILE_METRIC_CHOICES)
     parser.add_argument("--json", action="store_true", help="Print a compact JSON summary instead of human-readable lines.")
     args = parser.parse_args()
 
@@ -292,6 +418,21 @@ def main() -> None:
         max_new_tokens=args.max_new_tokens,
     )
 
+    profile_summary = None
+    if args.profile_dir is not None:
+        profile_summary = profile_compiled_decode(
+            args=args,
+            model=model,
+            compiled_decode=compiled_decode,
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            pixel_values=pixel_values,
+            image_grid_thw=image_grid_thw,
+            cache_length=cache_length,
+            tokenizer=tokenizer,
+            device=device,
+        )
+
     summary = {
         "backend": args.backend,
         "device": str(device),
@@ -331,9 +472,11 @@ def main() -> None:
             "compiled": tokenizer.decode(compiled_ids[0].detach().cpu().tolist(), skip_special_tokens=True),
         },
     }
+    if profile_summary is not None:
+        summary["profile"] = profile_summary
 
     if args.json:
-        print(json.dumps(summary, indent=2, sort_keys=True))
+        print(json.dumps(summary, indent=2, sort_keys=True, default=json_default))
         return
 
     print(f"backend={summary['backend']} device={summary['device']} dtype={summary['dtype']} npu_jit_compile={summary['npu_jit_compile']}")
@@ -343,6 +486,8 @@ def main() -> None:
     print("logit_diff_static_eager_vs_compiled_decode=" + json.dumps(summary["logit_diff_static_eager_vs_compiled_decode"], sort_keys=True))
     print("timing_s=" + json.dumps(summary["timing_s"], sort_keys=True))
     print("tok_per_s=" + json.dumps(summary["tok_per_s"], sort_keys=True))
+    if profile_summary is not None:
+        print("profile=" + json.dumps(profile_summary, sort_keys=True, default=json_default))
     print(f"compiled_text={summary['texts']['compiled']!r}")
 
 
