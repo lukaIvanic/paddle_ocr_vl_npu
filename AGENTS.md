@@ -47,6 +47,8 @@ This folder currently contains:
 - `crops/`: eight OmniDocBench region crops, not full pages.
 - `crops/manifest.json`: source image, category, bbox, suggested prompt, and ground truth for each crop.
 - `crops/create_omnidocbench_recognition_crops.py`: reproducible crop generator.
+- `crops/create_omnidocbench_hotswap_crops.py`: reproducible generator for the larger fixed-cohort / future hot-swap crop set.
+- `crops_hotswap_100/`: 100 additional OmniDocBench region crops for batch sizing and future vLLM-style slot hot-swapping tests. Use its manifest explicitly; the default tiny smoke manifest remains `crops/manifest.json`.
 - `01_transformers_recognition_baseline/run_transformers_recognition.py`: minimal Transformers recognizer smoke script. It uses the slow image processor by default so it matches the source-backed local preprocessing path; pass `--use-fast` only when deliberately comparing to the fast HF image processor.
 - `02_local_eager_recognition/config.py`: dependency-free dataclass mirror of the PaddleOCR-VL config fields needed for inference.
 - `02_local_eager_recognition/local_modeling_paddleocr_vl.py`: local PyTorch implementation of the recognition VLM with no Transformers imports.
@@ -64,6 +66,7 @@ Regenerate the crops from the parent repo's restored OmniDocBench copy:
 
 ```sh
 python3 crops/create_omnidocbench_recognition_crops.py
+python3 crops/create_omnidocbench_hotswap_crops.py
 ```
 
 Run the core recognition model on one crop with Transformers:
@@ -114,6 +117,7 @@ batched decode over distinct real crops:
 ```sh
 python3 04_batched_fixed_cohort_decode/bench_static_compile.py \
   --batch-size 4 \
+  --manifest crops_hotswap_100/manifest.json \
   --backend torchair \
   --device npu:0 \
   --eos-mode overlap_event_flags
