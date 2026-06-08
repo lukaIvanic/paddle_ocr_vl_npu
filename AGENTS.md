@@ -105,7 +105,6 @@ Use `03_compiled_single_batch_decode/bench_static_compile.py --eos-mode` to
 compare decode-loop EOS behavior:
 
 - `none`: fixed-step decode with no per-token host EOS check.
-- `sync`: synchronous per-token EOS `.item()` check.
 - `overlap_event_flags`: GLM-OCR-style queue-depth-1 EOS check using a second
   NPU stream, event wait/record, and pinned CPU bool flags.
 

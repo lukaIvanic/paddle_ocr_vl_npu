@@ -41,7 +41,7 @@ from run_local_recognition import (
 
 
 PROFILE_METRIC_CHOICES = ("pipe", "memory", "l2", "memory_access")
-EOS_MODE_CHOICES = ("none", "sync", "overlap_event_flags")
+EOS_MODE_CHOICES = ("none", "overlap_event_flags")
 
 
 @dataclass
@@ -175,12 +175,7 @@ def static_flat_decode_loop(
         generated.append(next_token)
         cache_position = cache_position + 1
         decode_calls += 1
-        if eos_mode == "sync":
-            if bool(hits_eos(next_token, int(eos_token_id)).all().item()):
-                eos_detected = True
-                eos_step = int(step)
-                break
-        elif eos_mode == "overlap_event_flags" and async_cpu_flags is not None and copy_stream is not None:
+        if eos_mode == "overlap_event_flags" and async_cpu_flags is not None and copy_stream is not None:
             hit_eos = hits_eos(next_token, int(eos_token_id)).all()
             eos_ready_event = torch_npu.npu.current_stream().record_event()
             copy_done_event = torch_npu.npu.Event()
