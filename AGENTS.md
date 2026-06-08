@@ -47,8 +47,10 @@ This folder currently contains:
 - `crops/`: eight OmniDocBench region crops, not full pages.
 - `crops/manifest.json`: source image, category, bbox, suggested prompt, and ground truth for each crop.
 - `crops/create_omnidocbench_recognition_crops.py`: reproducible crop generator.
-- `01/run_transformers_recognition.py`: minimal Transformers recognizer smoke script.
-- `02/`: reserved for a local Transformers implementation once there is real code to put there.
+- `01/run_transformers_recognition.py`: minimal Transformers recognizer smoke script. It uses the slow image processor by default so it matches the source-backed local preprocessing path; pass `--use-fast` only when deliberately comparing to the fast HF image processor.
+- `02/config.py`: dependency-free dataclass mirror of the PaddleOCR-VL config fields needed for inference.
+- `02/local_modeling_paddleocr_vl.py`: local PyTorch implementation of the recognition VLM with no Transformers imports.
+- `02/run_local_recognition.py`: local recognizer runner using `tokenizers`, local image preprocessing, and the local model.
 - `refs/`: small architecture reference artifacts.
 - `refs/PaddleOCR`: ignored sparse reference checkout of the official PaddleOCR repo.
 
@@ -75,6 +77,20 @@ python3 01/run_transformers_recognition.py \
   --crop crops/crop_05_table_rwkv_dims.png \
   --prompt "Table Recognition:"
 ```
+
+Run the local no-Transformers recognition path:
+
+```sh
+python3 02/run_local_recognition.py \
+  --crop crops/crop_01_text_block_en.png \
+  --prompt "OCR:"
+```
+
+On the Vast/CUDA smoke box on 2026-06-08, the local model matched Transformers
+eager bf16 exactly for next-token logits on all eight crops when using the slow
+HF/source-matched processor path. The local processor intentionally follows the
+slow PaddleOCR-VL image processor source; the HF fast processor has small resize
+rounding differences and is not the exact parity target.
 
 ## Hardware Rules
 

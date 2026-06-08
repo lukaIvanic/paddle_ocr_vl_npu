@@ -31,6 +31,7 @@ def main() -> None:
     parser.add_argument("--prompt", default=None)
     parser.add_argument("--device", default=None)
     parser.add_argument("--max-new-tokens", type=int, default=512)
+    parser.add_argument("--use-fast", action="store_true", help="Use the fast HF image processor instead of the source-matched slow path.")
     args = parser.parse_args()
 
     import torch
@@ -43,7 +44,7 @@ def main() -> None:
     dtype = torch.bfloat16 if device != "cpu" else torch.float32
 
     image = Image.open(crop).convert("RGB")
-    processor = AutoProcessor.from_pretrained(args.model)
+    processor = AutoProcessor.from_pretrained(args.model, use_fast=args.use_fast)
     model = (
         AutoModelForImageTextToText.from_pretrained(args.model, torch_dtype=dtype)
         .to(device)
