@@ -14,7 +14,8 @@ from config import PaddleOCRTextConfig, PaddleOCRVLConfig, PaddleOCRVisionConfig
 
 
 FRACTAL_NZ = 29
-LINEAR_WEIGHT_FORMAT_CHOICES = ("nd", "decode_nz")
+DECODE_LINEAR_WEIGHT_FORMAT = "decode_nz"
+DECODE_ATTENTION_MODE_CHOICES = ("manual", "increfa")
 
 
 def _resolve_model_dir(model_id_or_path: str | Path) -> Path:
@@ -133,6 +134,12 @@ def build_static_decode_mask(inputs_embeds: torch.Tensor, cache_position: torch.
     return mask.masked_fill(~allowed, torch.finfo(inputs_embeds.dtype).min)
 
 
+def build_static_decode_bool_mask(cache_position: torch.Tensor, cache_length: int) -> torch.Tensor:
+    cache_position = cache_position.reshape(-1).to(dtype=torch.int64)
+    kv_positions = torch.arange(int(cache_length), device=cache_position.device, dtype=torch.int64)
+    return (kv_positions.unsqueeze(0) > cache_position.unsqueeze(1)).view(cache_position.shape[0], 1, 1, int(cache_length))
+
+
 def update_prefill_kv_cache_(
     key_cache: torch.Tensor,
     value_cache: torch.Tensor,
@@ -164,33 +171,28 @@ def update_decode_kv_cache_(
 
 def cast_decode_linear_weights_to_nz(
     model: "LocalPaddleOCRVLForConditionalGeneration",
-    mode: str,
 ) -> dict[str, object]:
-    if mode not in LINEAR_WEIGHT_FORMAT_CHOICES:
-        raise ValueError(f"unsupported linear weight format mode: {mode}")
-    if mode == "nd":
-        return {
-            "mode": mode,
-            "target_format": "ND",
-            "target_count": 0,
-            "cast_count": 0,
-            "converted_count": 0,
-            "already_nz_count": 0,
-            "all_after_are_nz": False,
-        }
-
     modules = [
         (f"model.{name}", module)
         for name, module in model.model.named_modules()
         if isinstance(module, nn.Linear)
     ]
     modules.append(("lm_head", model.lm_head))
-    for name, module in modules:
-        if module.weight.device.type != "npu":
-            raise RuntimeError(
-                f"--linear-weight-format decode_nz requires NPU-resident weights; "
-                f"{name}.weight is on {module.weight.device}."
-            )
+    non_npu_modules = [(name, str(module.weight.device)) for name, module in modules if module.weight.device.type != "npu"]
+    if non_npu_modules:
+        return {
+            "mode": DECODE_LINEAR_WEIGHT_FORMAT,
+            "target_format": "FRACTAL_NZ",
+            "target_format_code": FRACTAL_NZ,
+            "target_count": len(modules),
+            "cast_count": 0,
+            "converted_count": 0,
+            "already_nz_count": 0,
+            "skipped": True,
+            "skip_reason": "requires_npu_resident_weights",
+            "non_npu_modules_sample": non_npu_modules[:16],
+            "all_after_are_nz": False,
+        }
 
     import torch_npu
 
@@ -209,7 +211,7 @@ def cast_decode_linear_weights_to_nz(
         if before != FRACTAL_NZ and after == FRACTAL_NZ:
             converted.append(name)
     return {
-        "mode": mode,
+        "mode": DECODE_LINEAR_WEIGHT_FORMAT,
         "target_format": "FRACTAL_NZ",
         "target_format_code": FRACTAL_NZ,
         "target_count": len(modules),
@@ -388,6 +390,32 @@ class PaddleOCRAttention(nn.Module):
         attn_output = attn_output.transpose(1, 2).contiguous().reshape(batch, query_length, -1)
         return self.o_proj(attn_output)
 
+    def attend_decode_increfa(
+        self,
+        query_states: torch.Tensor,
+        key_cache: torch.Tensor,
+        value_cache: torch.Tensor,
+        attention_mask: torch.Tensor | None,
+    ) -> torch.Tensor:
+        if query_states.device.type != "npu":
+            raise RuntimeError("decode_attention=increfa requires NPU tensors and torch_npu.")
+        import torch_npu
+
+        batch = query_states.shape[0]
+        attn_output = torch_npu.npu_incre_flash_attention(
+            query_states.contiguous(),
+            key_cache.contiguous(),
+            value_cache.contiguous(),
+            atten_mask=None if attention_mask is None else attention_mask.contiguous(),
+            actual_seq_lengths=None,
+            num_heads=int(self.num_heads),
+            num_key_value_heads=int(self.num_key_value_heads),
+            input_layout="BNSD",
+            scale_value=float(self.scaling),
+        )
+        attn_output = attn_output.transpose(1, 2).contiguous().reshape(batch, 1, self.num_heads * self.head_dim)
+        return self.o_proj(attn_output)
+
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -423,6 +451,7 @@ class PaddleOCRAttention(nn.Module):
         key_cache: torch.Tensor,
         value_cache: torch.Tensor,
         cache_position: torch.Tensor,
+        decode_attention_mode: str,
     ) -> torch.Tensor:
         query_states, key_states, value_states = self.project_qkv(hidden_states)
         query_states, key_states = self.apply_rotary(query_states, key_states, position_embeddings)
@@ -433,7 +462,11 @@ class PaddleOCRAttention(nn.Module):
             key_states,
             value_states,
         )
-        return self.attend(query_states, key_cache, value_cache, attention_mask)
+        if decode_attention_mode == "manual":
+            return self.attend(query_states, key_cache, value_cache, attention_mask)
+        if decode_attention_mode == "increfa":
+            return self.attend_decode_increfa(query_states, key_cache, value_cache, attention_mask)
+        raise ValueError(f"unsupported decode_attention_mode: {decode_attention_mode}")
 
 
 class PaddleOCRDecoderLayer(nn.Module):
@@ -507,6 +540,7 @@ class PaddleOCRDecoderLayer(nn.Module):
         key_cache: torch.Tensor,
         value_cache: torch.Tensor,
         cache_position: torch.Tensor,
+        decode_attention_mode: str,
     ) -> torch.Tensor:
         residual = hidden_states
         hidden_states = self.input_layernorm(hidden_states)
@@ -517,6 +551,7 @@ class PaddleOCRDecoderLayer(nn.Module):
             key_cache,
             value_cache,
             cache_position,
+            decode_attention_mode,
         )
         return self.apply_blocks(residual, attn_output)
 
@@ -529,6 +564,7 @@ class PaddleOCRTextModel(nn.Module):
         self.layers = nn.ModuleList([PaddleOCRDecoderLayer(config, layer_idx) for layer_idx in range(config.num_hidden_layers)])
         self.norm = PaddleOCRRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.rotary_emb = PaddleOCRRotaryEmbedding(config)
+        self.decode_attention_mode = "manual"
 
     def forward(
         self,
@@ -610,8 +646,14 @@ class PaddleOCRTextModel(nn.Module):
             cache_position = cache_position.expand(batch_size)
         if cache_position.numel() != batch_size:
             raise ValueError(f"cache_position must be scalar or batch-shaped, got {tuple(cache_position.shape)}")
+        decode_attention_mode = self.decode_attention_mode
+        if decode_attention_mode not in DECODE_ATTENTION_MODE_CHOICES:
+            raise ValueError(f"unsupported decode_attention_mode: {decode_attention_mode}")
         if attention_mask is None:
-            attention_mask = build_static_decode_mask(inputs_embeds, cache_position, cache_length)
+            if decode_attention_mode == "manual":
+                attention_mask = build_static_decode_mask(inputs_embeds, cache_position, cache_length)
+            else:
+                attention_mask = build_static_decode_bool_mask(cache_position, cache_length)
         position_ids = cache_position.view(batch_size, 1) + rope_deltas.to(device=inputs_embeds.device, dtype=torch.int64)
         position_ids = position_ids.unsqueeze(0).expand(3, -1, -1)
         position_embeddings = self.rotary_emb(inputs_embeds, position_ids)
@@ -624,6 +666,7 @@ class PaddleOCRTextModel(nn.Module):
                 key_caches[layer_idx],
                 value_caches[layer_idx],
                 cache_position,
+                decode_attention_mode,
             )
         return self.norm(hidden_states)
 
@@ -888,6 +931,11 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
         for module in self.modules():
             if isinstance(module, (PaddleOCRRotaryEmbedding, PaddleOCRVisionRotaryEmbedding)):
                 module.reset_inv_freq(device=module.inv_freq.device)
+
+    def set_decode_attention_mode(self, mode: str) -> None:
+        if mode not in DECODE_ATTENTION_MODE_CHOICES:
+            raise ValueError(f"unsupported decode_attention_mode={mode!r}")
+        self.model.decode_attention_mode = mode
 
     def get_image_features(self, pixel_values: torch.Tensor, image_grid_thw: torch.Tensor) -> torch.Tensor:
         pixel_values = pixel_values.type(self.visual.dtype).unsqueeze(0)

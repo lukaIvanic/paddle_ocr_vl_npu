@@ -92,9 +92,14 @@ All experiment CLIs default to `--dtype fp16`. `bf16` remains an explicit
 override for CUDA parity checks, but `fp32` is intentionally not a supported
 run mode.
 
-In `03_compiled_single_batch_decode`, `--linear-weight-format decode_nz`
-preconverts only the text-decoder and `lm_head` Linear weights to FRACTAL_NZ
-before compile. The default `nd` path is unchanged.
+In `03_compiled_single_batch_decode`, the bench/probe scripts always
+preconvert the text-decoder and `lm_head` Linear weights to FRACTAL_NZ on NPU
+before compile. There is intentionally no ND/linear-format option now.
+
+`03_compiled_single_batch_decode` defaults to manual decode attention. Use
+`--decode-attention increfa` to opt into masked
+`torch_npu.npu_incre_flash_attention` for static decode. This path uses a bool
+future-slot mask and does not use `actual_seq_lengths`.
 
 On the Vast/CUDA smoke box on 2026-06-08, the local model matched Transformers
 eager bf16 exactly for next-token logits on all eight crops when using the slow
