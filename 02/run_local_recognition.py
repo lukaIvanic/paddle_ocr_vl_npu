@@ -21,6 +21,7 @@ IMAGE_TOKEN = "<|IMAGE_PLACEHOLDER|>"
 IMAGE_START = "<|IMAGE_START|>"
 IMAGE_END = "<|IMAGE_END|>"
 BOS = "<|begin_of_sentence|>"
+NPU_JIT_COMPILE_CHOICES = ("default", "off", "on")
 
 
 def smart_resize(
@@ -141,7 +142,7 @@ def build_inputs(
 
 def parse_dtype(name: str, device: torch.device) -> torch.dtype:
     if name == "auto":
-        return torch.float32 if device.type == "cpu" else torch.bfloat16
+        return torch.bfloat16 if device.type == "cuda" else torch.float32
     if name in {"bf16", "bfloat16"}:
         return torch.bfloat16
     if name in {"fp16", "float16"}:
@@ -151,10 +152,22 @@ def parse_dtype(name: str, device: torch.device) -> torch.dtype:
     raise ValueError(f"unsupported dtype: {name}")
 
 
+def npu_is_available() -> bool:
+    try:
+        import torch_npu  # noqa: F401
+    except ModuleNotFoundError:
+        return False
+    except Exception as exc:
+        raise RuntimeError(f"torch_npu is installed but failed to initialize: {exc.__class__.__name__}: {exc}") from exc
+    return hasattr(torch, "npu") and torch.npu.is_available()
+
+
 def resolve_device(name: str) -> torch.device:
     if name == "auto":
         if torch.cuda.is_available():
             return torch.device("cuda")
+        if npu_is_available():
+            return torch.device("npu:0")
         if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
             return torch.device("mps")
         return torch.device("cpu")
@@ -166,6 +179,22 @@ def resolve_device(name: str) -> torch.device:
     return torch.device(name)
 
 
+def configure_npu_jit_compile(mode: str, device: torch.device, *, verbose: bool = True) -> None:
+    if mode not in NPU_JIT_COMPILE_CHOICES:
+        raise ValueError(f"unsupported npu_jit_compile={mode!r}")
+    if mode == "default" or device.type != "npu":
+        return
+    try:
+        import torch_npu  # noqa: F401
+
+        requested = mode == "on"
+        torch.npu.set_compile_mode(jit_compile=requested)
+        if verbose:
+            print(f"[npu] set torch.npu compile mode: jit_compile={requested}", flush=True)
+    except Exception as exc:
+        raise RuntimeError(f"failed to set NPU jit_compile={mode}: {exc.__class__.__name__}: {exc}") from exc
+
+
 @torch.inference_mode()
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -175,6 +204,7 @@ def main() -> None:
     parser.add_argument("--max-new-tokens", type=int, default=96)
     parser.add_argument("--device", default="auto")
     parser.add_argument("--dtype", default="auto", choices=["auto", "bf16", "bfloat16", "fp16", "float16", "fp32", "float32"])
+    parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
     args = parser.parse_args()
 
     model_dir = _resolve_model_dir(args.model)
@@ -183,6 +213,7 @@ def main() -> None:
         crop = Path(__file__).resolve().parents[1] / args.crop
     device = resolve_device(args.device)
     dtype = parse_dtype(args.dtype, device)
+    configure_npu_jit_compile(args.npu_jit_compile, device)
 
     pre_cfg = load_preprocessor_config(model_dir)
     tokenizer = Tokenizer.from_file(str(model_dir / "tokenizer.json"))
