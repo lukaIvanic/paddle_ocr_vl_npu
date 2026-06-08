@@ -207,7 +207,6 @@ def main() -> None:
     parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
     parser.add_argument("--static", action="store_true", help="Use the experiment-3 static KV cache decode path.")
     parser.add_argument("--cache-length", type=int, default=None, help="Static KV cache length; defaults to input length + max new tokens.")
-    parser.add_argument("--cache-update", default="index_copy", choices=["index_copy", "scatter_update"], help="Static cache update op.")
     args = parser.parse_args()
 
     model_dir = _resolve_model_dir(args.model)
@@ -228,7 +227,6 @@ def main() -> None:
     image_grid_thw = image_grid_thw.to(device)
     input_ids = input_ids.to(device)
     attention_mask = attention_mask.to(device)
-    model.set_static_cache_update_mode(args.cache_update)
 
     if device.type == "cuda":
         torch.cuda.synchronize()

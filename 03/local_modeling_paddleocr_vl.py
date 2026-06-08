@@ -132,29 +132,12 @@ def build_static_decode_mask(inputs_embeds: torch.Tensor, cache_position: torch.
 def update_prefill_kv_cache_(
     key_cache: torch.Tensor,
     value_cache: torch.Tensor,
-    cache_positions: torch.Tensor,
     key_states: torch.Tensor,
     value_states: torch.Tensor,
-    *,
-    mode: str = "index_copy",
 ) -> None:
-    positions = cache_positions.reshape(-1).to(device=key_cache.device, dtype=torch.int64).contiguous()
-    if mode == "index_copy":
-        key_cache.index_copy_(2, positions, key_states.contiguous())
-        value_cache.index_copy_(2, positions, value_states.contiguous())
-        return
-    if mode == "slice_copy":
-        sequence_length = int(key_states.shape[2])
-        key_cache[:, :, :sequence_length, :].copy_(key_states.contiguous())
-        value_cache[:, :, :sequence_length, :].copy_(value_states.contiguous())
-        return
-    if mode == "scatter_update":
-        import torch_npu
-
-        torch_npu.scatter_update_(key_cache, positions, key_states.contiguous(), 2)
-        torch_npu.scatter_update_(value_cache, positions, value_states.contiguous(), 2)
-        return
-    raise ValueError(f"unknown cache update mode: {mode!r}")
+    sequence_length = int(key_states.shape[2])
+    key_cache[:, :, :sequence_length, :].copy_(key_states.contiguous())
+    value_cache[:, :, :sequence_length, :].copy_(value_states.contiguous())
 
 
 def update_decode_kv_cache_(
@@ -163,21 +146,16 @@ def update_decode_kv_cache_(
     cache_position: torch.Tensor,
     key_states: torch.Tensor,
     value_states: torch.Tensor,
-    *,
-    mode: str = "index_copy",
 ) -> None:
     positions = cache_position.reshape(-1).to(device=key_cache.device, dtype=torch.int64).contiguous()
-    if mode == "index_copy":
-        key_cache.index_copy_(2, positions, key_states.contiguous())
-        value_cache.index_copy_(2, positions, value_states.contiguous())
-        return
-    if mode == "scatter_update":
+    if key_cache.device.type == "npu":
         import torch_npu
 
         torch_npu.scatter_update_(key_cache, positions, key_states.contiguous(), 2)
         torch_npu.scatter_update_(value_cache, positions, value_states.contiguous(), 2)
         return
-    raise ValueError(f"unknown cache update mode: {mode!r}")
+    key_cache.index_copy_(2, positions, key_states.contiguous())
+    value_cache.index_copy_(2, positions, value_states.contiguous())
 
 
 @dataclass
@@ -305,7 +283,6 @@ class PaddleOCRAttention(nn.Module):
         self.k_proj = nn.Linear(config.hidden_size, config.num_key_value_heads * config.head_dim, bias=config.use_bias)
         self.v_proj = nn.Linear(config.hidden_size, config.num_key_value_heads * config.head_dim, bias=config.use_bias)
         self.o_proj = nn.Linear(config.num_attention_heads * config.head_dim, config.hidden_size, bias=config.use_bias)
-        self.cache_update_mode = "index_copy"
 
     def project_qkv(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         batch, query_length, _hidden = hidden_states.shape
@@ -390,7 +367,6 @@ class PaddleOCRAttention(nn.Module):
             cache_position,
             key_states,
             value_states,
-            mode=self.cache_update_mode,
         )
         return self.attend(query_states, key_cache, value_cache, attention_mask)
 
@@ -403,7 +379,6 @@ class PaddleOCRDecoderLayer(nn.Module):
         self.mlp = PaddleOCRMLP(config)
         self.input_layernorm = PaddleOCRRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = PaddleOCRRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
-        self.prefill_cache_update_mode = "index_copy"
 
     def forward(
         self,
@@ -441,7 +416,6 @@ class PaddleOCRDecoderLayer(nn.Module):
         attention_mask: torch.Tensor | None,
         position_embeddings: tuple[torch.Tensor, torch.Tensor],
         cache: LocalPaddleOCRVLStaticCache | None = None,
-        cache_positions: torch.Tensor | None = None,
     ) -> torch.Tensor:
         residual = hidden_states
         hidden_states = self.input_layernorm(hidden_states)
@@ -451,16 +425,12 @@ class PaddleOCRDecoderLayer(nn.Module):
             position_embeddings,
         )
         if cache is not None:
-            if cache_positions is None:
-                raise ValueError("cache_positions are required when writing prefill cache")
             key_cache, value_cache = cache.layer(self.layer_idx)
             update_prefill_kv_cache_(
                 key_cache,
                 value_cache,
-                cache_positions,
                 key_states,
                 value_states,
-                mode=self.prefill_cache_update_mode,
             )
         return self.apply_blocks(residual, attn_output)
 
@@ -554,7 +524,6 @@ class PaddleOCRTextModel(nn.Module):
                 causal_mask,
                 position_embeddings,
                 cache=cache,
-                cache_positions=cache_position,
             )
         return self.norm(hidden_states)
 
@@ -943,15 +912,6 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
                 f"features={int(image_embeds.shape[0])}"
             )
         return inputs_embeds.masked_scatter(image_mask, image_embeds)
-
-    def set_static_cache_update_mode(self, mode: str, *, prefill_mode: str = "index_copy") -> None:
-        if mode not in {"index_copy", "scatter_update"}:
-            raise ValueError(f"unknown decode cache update mode: {mode!r}")
-        if prefill_mode not in {"index_copy", "slice_copy", "scatter_update"}:
-            raise ValueError(f"unknown prefill cache update mode: {prefill_mode!r}")
-        for layer in self.model.layers:
-            layer.prefill_cache_update_mode = prefill_mode
-            layer.self_attn.cache_update_mode = mode
 
     def allocate_static_cache(
         self,

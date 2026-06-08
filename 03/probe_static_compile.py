@@ -72,8 +72,6 @@ def main() -> None:
     parser.add_argument("--device", default="auto")
     parser.add_argument("--dtype", default="auto", choices=["auto", "bf16", "bfloat16", "fp16", "float16", "fp32", "float32"])
     parser.add_argument("--backend", default="eager", choices=["eager", "aot_eager", "inductor", "default", "torchair"])
-    parser.add_argument("--cache-update", default="index_copy", choices=["index_copy", "scatter_update"])
-    parser.add_argument("--prefill-cache-update", default="index_copy", choices=["index_copy", "slice_copy", "scatter_update"])
     parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
     args = parser.parse_args()
 
@@ -91,7 +89,6 @@ def main() -> None:
     input_ids, attention_mask = build_inputs(tokenizer, image_grid_thw, args.prompt, merge_size=int(pre_cfg["merge_size"]))
 
     model = LocalPaddleOCRVLForConditionalGeneration.from_pretrained(model_dir, dtype=dtype, device=device)
-    model.set_static_cache_update_mode(args.cache_update, prefill_mode=args.prefill_cache_update)
     pixel_values = pixel_values.to(device)
     image_grid_thw = image_grid_thw.to(device)
     input_ids = input_ids.to(device)
@@ -114,7 +111,7 @@ def main() -> None:
         cache_length=cache_length,
     )
     print(f"static_matches_dynamic={bool(torch.equal(static_ids, dynamic_ids))}")
-    print(f"cache_update_decode={args.cache_update} cache_update_prefill={args.prefill_cache_update} npu_jit_compile={args.npu_jit_compile}")
+    print(f"cache_update=prefill_slice_decode_npu_scatter npu_jit_compile={args.npu_jit_compile}")
     print(f"dynamic_text={tokenizer.decode(dynamic_ids[0].detach().cpu().tolist(), skip_special_tokens=True)!r}")
     print(f"static_text={tokenizer.decode(static_ids[0].detach().cpu().tolist(), skip_special_tokens=True)!r}")
 

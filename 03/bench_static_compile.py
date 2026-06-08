@@ -179,8 +179,6 @@ def main() -> None:
     parser.add_argument("--device", default="auto")
     parser.add_argument("--dtype", default="auto", choices=["auto", "bf16", "bfloat16", "fp16", "float16", "fp32", "float32"])
     parser.add_argument("--backend", default="eager", choices=["eager", "aot_eager", "inductor", "default", "torchair"])
-    parser.add_argument("--cache-update", default="index_copy", choices=["index_copy", "scatter_update"])
-    parser.add_argument("--prefill-cache-update", default="index_copy", choices=["index_copy", "slice_copy", "scatter_update"])
     parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
     parser.add_argument("--json", action="store_true", help="Print a compact JSON summary instead of human-readable lines.")
     args = parser.parse_args()
@@ -205,7 +203,6 @@ def main() -> None:
     decode_steps = max(0, int(args.max_new_tokens) - 1)
 
     model = LocalPaddleOCRVLForConditionalGeneration.from_pretrained(model_dir, dtype=dtype, device=device)
-    model.set_static_cache_update_mode(args.cache_update, prefill_mode=args.prefill_cache_update)
     flat_decode = model.make_flat_static_decode_module().eval()
     backend = compile_backend(args.backend)
     compile_kwargs = {"fullgraph": True, "dynamic": False}
@@ -300,8 +297,7 @@ def main() -> None:
         "device": str(device),
         "dtype": str(dtype),
         "npu_jit_compile": args.npu_jit_compile,
-        "cache_update_decode": args.cache_update,
-        "cache_update_prefill": args.prefill_cache_update,
+        "cache_update": "prefill_slice_decode_npu_scatter",
         "prompt_tokens": int(input_ids.shape[1]),
         "generated_tokens": int(args.max_new_tokens),
         "decode_steps": int(decode_steps),
@@ -341,7 +337,7 @@ def main() -> None:
         return
 
     print(f"backend={summary['backend']} device={summary['device']} dtype={summary['dtype']} npu_jit_compile={summary['npu_jit_compile']}")
-    print(f"cache_update_decode={summary['cache_update_decode']} cache_update_prefill={summary['cache_update_prefill']}")
+    print(f"cache_update={summary['cache_update']}")
     print(f"prompt_tokens={summary['prompt_tokens']} generated_tokens={summary['generated_tokens']} decode_steps={summary['decode_steps']} cache_length={summary['cache_length']}")
     print("matches=" + json.dumps(summary["matches"], sort_keys=True))
     print("logit_diff_static_eager_vs_compiled_decode=" + json.dumps(summary["logit_diff_static_eager_vs_compiled_decode"], sort_keys=True))
