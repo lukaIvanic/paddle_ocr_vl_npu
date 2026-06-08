@@ -399,6 +399,66 @@ def hotswap_loop_summary(result: HotSwapDecodeResult, *, batch_size: int) -> dic
 
 
 @torch.inference_mode()
+def validate_hotswap_against_single_refs(
+    *,
+    flat_decode: Callable,
+    ready: ReadyBank,
+    hotswap_ids: torch.Tensor,
+    hotswap_lengths: torch.Tensor,
+    max_new_tokens: int,
+    eos_token_id: int,
+) -> dict[str, Any]:
+    hotswap_rows = length_trimmed_token_lists(hotswap_ids, hotswap_lengths)
+    reference_rows = []
+    first_mismatches = []
+
+    for item_idx in range(int(ready.next_token.shape[0])):
+        single_prefill = BatchedPrefill(
+            cache=LocalPaddleOCRVLStaticCache(
+                tuple(cache[item_idx : item_idx + 1] for cache in ready.cache.key_caches),
+                tuple(cache[item_idx : item_idx + 1] for cache in ready.cache.value_caches),
+                int(ready.cache.cache_length),
+            ),
+            rope_deltas=ready.rope_deltas[item_idx : item_idx + 1],
+            next_cache_position=ready.next_cache_position[item_idx : item_idx + 1],
+        )
+        single_result = static_flat_decode_loop(
+            flat_decode,
+            single_prefill,
+            ready.next_token[item_idx : item_idx + 1],
+            max_new_tokens=int(max_new_tokens),
+            eos_mode="overlap_event_flags",
+            eos_token_id=int(eos_token_id),
+            step_timing="off",
+        )
+        reference_row = row_trimmed_token_lists(single_result.ids, int(eos_token_id))[0]
+        reference_rows.append(reference_row)
+        if hotswap_rows[item_idx] != reference_row and len(first_mismatches) < 8:
+            first_mismatches.append(
+                {
+                    "item": int(item_idx),
+                    "hotswap": hotswap_rows[item_idx],
+                    "reference": reference_row,
+                    "hotswap_len": int(len(hotswap_rows[item_idx])),
+                    "reference_len": int(len(reference_row)),
+                }
+            )
+
+    matches_by_item = [
+        hotswap_row == reference_row
+        for hotswap_row, reference_row in zip(hotswap_rows, reference_rows)
+    ]
+    return {
+        "reference": "single_item_static_eager_from_ready_bank",
+        "items_checked": int(len(matches_by_item)),
+        "trimmed_matches_by_item": [bool(value) for value in matches_by_item],
+        "all_trimmed_match": bool(all(matches_by_item)),
+        "mismatch_count": int(sum(1 for value in matches_by_item if not value)),
+        "first_mismatches": first_mismatches,
+    }
+
+
+@torch.inference_mode()
 def static_flat_decode_loop(
     decode_fn: Callable,
     prefill: BatchedPrefill,
@@ -1309,10 +1369,22 @@ def main() -> None:
             ),
         )
         finalize_step_timing(hotswap_result)
+        hotswap_validation, hotswap_validation_s = timed(
+            device,
+            lambda: validate_hotswap_against_single_refs(
+                flat_decode=flat_decode,
+                ready=ready_bank,
+                hotswap_ids=hotswap_result.ids,
+                hotswap_lengths=hotswap_result.lengths,
+                max_new_tokens=int(args.max_new_tokens),
+                eos_token_id=eos_token_id,
+            ),
+        )
         hotswap_rows = length_trimmed_token_lists(hotswap_result.ids, hotswap_result.lengths)
         hotswap_loop = hotswap_loop_summary(hotswap_result, batch_size=int(args.batch_size))
         raw_token_calls = int(hotswap_loop["raw_decode_token_calls"])
         effective_token_calls = int(hotswap_loop["effective_decode_token_calls"])
+        hotswap_required_checks_passed = bool(hotswap_validation["all_trimmed_match"])
         summary = {
             "experiment": "04_batched_fixed_cohort_decode",
             "schedule": args.schedule,
@@ -1349,11 +1421,16 @@ def main() -> None:
             "loop": {
                 "hotswap": hotswap_loop,
             },
+            "matches": {
+                "hotswap_vs_single_refs": hotswap_validation,
+                "all_required_checks_passed": hotswap_required_checks_passed,
+            },
             "timing_s": {
                 "compile_wrapper": float(compile_wrapper_s),
                 "compile_first_call": float(compile_first_s),
                 "ready_bank_prefill": float(ready_bank_prefill_s),
                 "hotswap_decode": float(hotswap_decode_s),
+                "hotswap_validation": float(hotswap_validation_s),
             },
             "tok_per_s": {
                 "hotswap_decode_steps": tok_per_s(hotswap_result.decode_calls, hotswap_decode_s),
@@ -1371,6 +1448,8 @@ def main() -> None:
         }
         if args.json:
             print(json.dumps(summary, indent=2, sort_keys=True, default=json_default))
+            if not hotswap_required_checks_passed:
+                raise SystemExit(1)
             return
 
         print(
@@ -1386,11 +1465,14 @@ def main() -> None:
             f"generated_tokens_per_item={summary['generated_tokens_per_item']} cache_length={summary['cache_length']}"
         )
         print("loop=" + json.dumps(summary["loop"], sort_keys=True))
+        print("matches=" + json.dumps(summary["matches"], sort_keys=True))
         print("timing_s=" + json.dumps(summary["timing_s"], sort_keys=True))
         print("tok_per_s=" + json.dumps(summary["tok_per_s"], sort_keys=True))
         print("step_timing_summary=" + json.dumps(hotswap_loop["step_timing_summary"], sort_keys=True))
         print("swap_events_sample=" + json.dumps(summary["swap_events"][:8], sort_keys=True))
         print("hotswap_texts_sample=" + repr(summary["texts"]["hotswap_trimmed"][: min(8, len(hotswap_rows))]))
+        if not hotswap_required_checks_passed:
+            raise SystemExit(1)
         return
 
     static_prefill, static_next_token, static_slot_prefills, static_slot_next_tokens = make_batched_prefill(
@@ -1487,6 +1569,13 @@ def main() -> None:
     compiled_raw_token_calls = int(compiled_loop_summary["raw_decode_token_calls"])
     static_effective_token_calls = int(static_loop_summary["effective_decode_token_calls"])
     compiled_effective_token_calls = int(compiled_loop_summary["effective_decode_token_calls"])
+    single_ref_required_match = bool(single_ref_matches["all_trimmed_match"])
+    fixed_required_checks_passed = bool(
+        torch.equal(static_ids, compiled_ids)
+        and static_trimmed_rows == compiled_trimmed_rows
+        and torch.equal(compare_static_ids, compare_compiled_ids)
+        and single_ref_required_match
+    )
     summary = {
         "experiment": "04_batched_fixed_cohort_decode",
         "backend": args.backend,
@@ -1528,6 +1617,7 @@ def main() -> None:
             "static_eager_vs_compiled_trimmed": bool(static_trimmed_rows == compiled_trimmed_rows),
             "compare_loop_static_vs_compiled": bool(torch.equal(compare_static_ids, compare_compiled_ids)),
             "static_eager_vs_single_refs": single_ref_matches,
+            "all_required_checks_passed": fixed_required_checks_passed,
         },
         "logit_diff_static_eager_vs_compiled_decode": {
             "steps": int(compared_steps),
@@ -1576,6 +1666,8 @@ def main() -> None:
 
     if args.json:
         print(json.dumps(summary, indent=2, sort_keys=True, default=json_default))
+        if not fixed_required_checks_passed:
+            raise SystemExit(1)
         return
 
     print(
@@ -1603,6 +1695,8 @@ def main() -> None:
     if profile_summary is not None:
         print("profile=" + json.dumps(profile_summary, sort_keys=True, default=json_default))
     print("compiled_texts=" + repr(summary["texts"]["compiled_trimmed"]))
+    if not fixed_required_checks_passed:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

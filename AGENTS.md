@@ -199,11 +199,19 @@ Read the timing fields carefully:
   original cold compile.
 - `ready_bank_prefill` exists only for hot-swap and is intentionally outside
   the decode throughput comparison.
+- `hotswap_validation` exists only for hot-swap and is also outside the decode
+  throughput comparison. It replays every item as a single-item static-eager
+  reference from the same ready-bank prefill row.
 - Fixed-cohort `tok_per_s.compiled_raw_batch_tokens` is the main decode baseline.
 - Hot-swap `tok_per_s.hotswap_raw_batch_tokens` is the direct scheduler-overhead
   comparison against the fixed baseline.
 - Hot-swap `tok_per_s.hotswap_effective_item_tokens` counts only useful item
   tokens and will drop if EOS/length-cap completions create tail bubbles.
+- Before interpreting any throughput, check `matches`. The script sets
+  `matches.all_required_checks_passed` and exits nonzero after printing the
+  summary if required generation checks fail. For hot-swap,
+  `matches.hotswap_vs_single_refs.all_trimmed_match` must be true; if false,
+  inspect `first_mismatches` before discussing speed.
 - `step_timing_summary.swap` versus `step_timing_summary.no_swap` shows whether
   slot replacement is expensive. Watch `npu_swap_ms`, `host_swap_s`, and
   `host_wait_prev_flag_s`. CPU timings show realized cadence and may attribute
