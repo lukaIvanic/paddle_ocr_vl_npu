@@ -5,14 +5,14 @@
 First classify where you are running from actual machine state, not from memory:
 
 - Work/NPU lane: Ascend NPU tooling is present, such as `npu-smi` or `torch_npu`.
-- Blue-zone/GPU lane: NVIDIA CUDA tooling is present, such as `nvidia-smi`, but no Ascend NPU.
-- Local-only lane: neither NPU nor CUDA is available.
+- Vast/CUDA lane: a rented Vast.ai GPU box, usually under `/workspace`, where `nvidia-smi` works but Ascend NPU tooling does not.
+- Authoring lane: Luka's local code-editing checkout. It may have no accelerator tools at all.
 
 The work/NPU lane is pull-only. Its job is to set up the environment, pull the repo, run scripts, inspect outputs, debug failures, and summarize exact findings. Do not edit tracked files, commit, push, or create branches from the work/NPU lane. If a code change seems necessary, report the minimal proposed change, the command that failed, and the relevant logs instead of applying it.
 
-The blue-zone/GPU lane may edit this repo only when Luka is using it as the authoring environment. CUDA results are smoke-test evidence only. They are useful for dependency bring-up and model-loading checks, but they are not NPU or Ascend performance evidence.
+The Vast/CUDA lane is for dependency bring-up, CUDA smoke tests, model-loading checks, and quick debugging. It should not be confused with the work/NPU lane. CUDA results are smoke-test evidence only; they are not NPU or Ascend performance evidence. Do not commit or push from Vast unless Luka explicitly designates that specific instance as the authoring lane.
 
-The local-only lane should prepare scripts, crops, docs, and GitHub sync. It should not present unrun local code as validated inference.
+The authoring lane may edit tracked files, prepare scripts, manage crops/docs, commit, and sync with GitHub. If it has no accelerator, it should not present unrun local code as validated inference.
 
 ## Project Direction
 
@@ -137,7 +137,7 @@ This folder is intended to become a public GitHub repo. Avoid committing:
 
 Small reproducible scripts, notes, crop examples, manifests, and concise result summaries are fine.
 
-Only the authoring lane should commit and push. The work/NPU lane should only pull from `origin`, run, and report.
+Only the authoring lane should commit and push. The work/NPU lane should only pull from `origin`, run, and report. The Vast/CUDA lane should normally run and report too, unless Luka explicitly asks to use it for authoring.
 
 ## Style
 
