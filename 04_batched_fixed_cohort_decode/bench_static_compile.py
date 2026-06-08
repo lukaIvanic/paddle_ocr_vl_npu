@@ -517,17 +517,17 @@ def validate_hotswap_against_single_refs(
     for item_idx in range(int(ready.next_token.shape[0])):
         single_prefill = BatchedPrefill(
             cache=LocalPaddleOCRVLStaticCache(
-                tuple(cache[item_idx : item_idx + 1] for cache in ready.cache.key_caches),
-                tuple(cache[item_idx : item_idx + 1] for cache in ready.cache.value_caches),
+                tuple(cache[item_idx : item_idx + 1].clone().contiguous() for cache in ready.cache.key_caches),
+                tuple(cache[item_idx : item_idx + 1].clone().contiguous() for cache in ready.cache.value_caches),
                 int(ready.cache.cache_length),
             ),
-            rope_deltas=ready.rope_deltas[item_idx : item_idx + 1],
-            next_cache_position=ready.next_cache_position[item_idx : item_idx + 1],
+            rope_deltas=ready.rope_deltas[item_idx : item_idx + 1].clone().contiguous(),
+            next_cache_position=ready.next_cache_position[item_idx : item_idx + 1].clone().contiguous(),
         )
         single_result = static_flat_decode_loop(
             flat_decode,
             single_prefill,
-            ready.next_token[item_idx : item_idx + 1],
+            ready.next_token[item_idx : item_idx + 1].clone().contiguous(),
             max_new_tokens=int(max_new_tokens),
             eos_mode="overlap_event_flags",
             eos_token_id=int(eos_token_id),
@@ -551,7 +551,8 @@ def validate_hotswap_against_single_refs(
         for hotswap_row, reference_row in zip(hotswap_rows, reference_rows)
     ]
     return {
-        "reference": "single_item_static_eager_from_ready_bank",
+        "reference": "single_item_static_eager_from_contiguous_ready_bank_clone",
+        "why_clone": "ready bank rows are non-contiguous views from a larger NPU cache; validation must use normal B=1 cache tensors",
         "items_checked": int(len(matches_by_item)),
         "trimmed_matches_by_item": [bool(value) for value in matches_by_item],
         "all_trimmed_match": bool(all(matches_by_item)),

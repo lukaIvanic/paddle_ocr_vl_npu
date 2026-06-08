@@ -201,7 +201,10 @@ Read the timing fields carefully:
   the decode throughput comparison.
 - `hotswap_validation` exists only for hot-swap and is also outside the decode
   throughput comparison. It replays every item as a single-item static-eager
-  reference from the same ready-bank prefill row.
+  reference from the same ready-bank prefill row. The reference first clones the
+  ready-bank row into contiguous B=1 cache tensors; do not validate directly on
+  ready-bank row views because those are non-contiguous slices from the larger
+  NPU cache bank and can behave differently from a normal single-item cache.
 - Fixed-cohort `tok_per_s.compiled_raw_batch_tokens` is the main decode baseline.
 - Hot-swap `tok_per_s.hotswap_raw_batch_tokens` is the direct scheduler-overhead
   comparison against the fixed baseline.
