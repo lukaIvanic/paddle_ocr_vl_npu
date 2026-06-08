@@ -1,5 +1,19 @@
 # AGENTS.md
 
+## Operating Lanes
+
+First classify where you are running from actual machine state, not from memory:
+
+- Work/NPU lane: Ascend NPU tooling is present, such as `npu-smi` or `torch_npu`.
+- Blue-zone/GPU lane: NVIDIA CUDA tooling is present, such as `nvidia-smi`, but no Ascend NPU.
+- Local-only lane: neither NPU nor CUDA is available.
+
+The work/NPU lane is pull-only. Its job is to set up the environment, pull the repo, run scripts, inspect outputs, debug failures, and summarize exact findings. Do not edit tracked files, commit, push, or create branches from the work/NPU lane. If a code change seems necessary, report the minimal proposed change, the command that failed, and the relevant logs instead of applying it.
+
+The blue-zone/GPU lane may edit this repo only when Luka is using it as the authoring environment. CUDA results are smoke-test evidence only. They are useful for dependency bring-up and model-loading checks, but they are not NPU or Ascend performance evidence.
+
+The local-only lane should prepare scripts, crops, docs, and GitHub sync. It should not present unrun local code as validated inference.
+
 ## Project Direction
 
 This folder is a standalone research workspace for PaddleOCR-VL on Ascend/NPU, with a near-term focus on the `PaddleOCR-VL-1.6-0.9B` recognition VLM.
@@ -122,6 +136,8 @@ This folder is intended to become a public GitHub repo. Avoid committing:
 - private parent-repo artifacts outside this subproject.
 
 Small reproducible scripts, notes, crop examples, manifests, and concise result summaries are fine.
+
+Only the authoring lane should commit and push. The work/NPU lane should only pull from `origin`, run, and report.
 
 ## Style
 
