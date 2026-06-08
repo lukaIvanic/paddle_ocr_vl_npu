@@ -75,25 +75,23 @@ python3 01_run_transformers_recognition.py \
   --prompt "Table Recognition:"
 ```
 
-## Remote / Hardware Rules
+## Hardware Rules
 
-As of 2026-06-08, there is no active Ascend/NPU rental attached to this folder. NPU validation will happen later from a work laptop or a new Ascend environment.
+Always apply the lane rules at the top of this file before deciding what to do.
 
-CUDA/Vast.ai runs are allowed for basic bring-up, dependency checks, and algorithmic evidence only. Do not describe Vast results as NPU or Ascend throughput. If a result comes from CUDA, label it as CUDA/Vast.
+The authoring checkout may have no accelerator attached. That is fine for editing code, preparing crops, committing, and pushing, but not for claiming inference validation.
 
-When an Ascend target is available, do not silently fall back to CPU for NPU experiments. If the NPU path fails, stop and fix or document the blocker. CPU is acceptable for local file checks, JSON/image processing, and other tooling boundaries.
+The work/NPU lane is the real validation lane. When an Ascend target is available, do not silently fall back to CPU or CUDA for NPU experiments. If the NPU path fails, inspect the environment and summarize the blocker. Do not patch tracked files from the work/NPU lane.
+
+The Vast/CUDA lane is only for dependency bring-up, model-load smoke tests, and quick debugging. Do not describe Vast results as NPU or Ascend throughput. If a result comes from CUDA, label it as CUDA/Vast.
 
 For Huawei Ascend NPU, current public PaddleOCR guidance says local direct inference is not the supported path; the official route is PaddleOCR client/pipeline plus a vLLM VLM service, or the two-container full API service. Treat direct Transformers-on-NPU work as an experiment until validated.
 
-## Vast.ai Setup Intent
+## Vast/CUDA Notes
 
-Use Vast.ai only as a temporary CUDA validation lane. The likely first goal is:
+This section applies only in the Vast/CUDA lane. Work/NPU agents should not treat these commands as their setup instructions.
 
-1. Put this subproject on the Vast box.
-2. Create a clean Python environment.
-3. Install Transformers/PyTorch/Pillow.
-4. Run `01_run_transformers_recognition.py` against one crop.
-5. Record whether the Transformers recognizer loads, preprocesses, and generates.
+The Vast/CUDA lane is useful for checking whether the Transformers recognizer loads, preprocesses, and generates on a crop before sending scripts to the NPU lane.
 
 Keep bulky model caches and generated outputs out of Git.
 
