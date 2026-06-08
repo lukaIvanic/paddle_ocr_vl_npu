@@ -12,3 +12,5 @@ models/
 outputs/
 artifacts/
 logs/
+kernel_meta/
+ge_check_op.json
