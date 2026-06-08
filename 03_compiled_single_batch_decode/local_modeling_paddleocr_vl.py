@@ -13,6 +13,10 @@ from torch import nn
 from config import PaddleOCRTextConfig, PaddleOCRVLConfig, PaddleOCRVisionConfig
 
 
+FRACTAL_NZ = 29
+LINEAR_WEIGHT_FORMAT_CHOICES = ("nd", "decode_nz")
+
+
 def _resolve_model_dir(model_id_or_path: str | Path) -> Path:
     path = Path(model_id_or_path).expanduser()
     if path.exists():
@@ -156,6 +160,67 @@ def update_decode_kv_cache_(
         return
     key_cache.index_copy_(2, positions, key_states.contiguous())
     value_cache.index_copy_(2, positions, value_states.contiguous())
+
+
+def cast_decode_linear_weights_to_nz(
+    model: "LocalPaddleOCRVLForConditionalGeneration",
+    mode: str,
+) -> dict[str, object]:
+    if mode not in LINEAR_WEIGHT_FORMAT_CHOICES:
+        raise ValueError(f"unsupported linear weight format mode: {mode}")
+    if mode == "nd":
+        return {
+            "mode": mode,
+            "target_format": "ND",
+            "target_count": 0,
+            "cast_count": 0,
+            "converted_count": 0,
+            "already_nz_count": 0,
+            "all_after_are_nz": False,
+        }
+
+    modules = [
+        (f"model.{name}", module)
+        for name, module in model.model.named_modules()
+        if isinstance(module, nn.Linear)
+    ]
+    modules.append(("lm_head", model.lm_head))
+    for name, module in modules:
+        if module.weight.device.type != "npu":
+            raise RuntimeError(
+                f"--linear-weight-format decode_nz requires NPU-resident weights; "
+                f"{name}.weight is on {module.weight.device}."
+            )
+
+    import torch_npu
+
+    before_formats: dict[str, int] = {}
+    after_formats: dict[str, int] = {}
+    converted: list[str] = []
+    already_nz: list[str] = []
+    for name, module in modules:
+        before = int(torch_npu.get_npu_format(module.weight))
+        before_formats[name] = before
+        if before == FRACTAL_NZ:
+            already_nz.append(name)
+        module.weight.data = torch_npu.npu_format_cast(module.weight.data, FRACTAL_NZ)
+        after = int(torch_npu.get_npu_format(module.weight))
+        after_formats[name] = after
+        if before != FRACTAL_NZ and after == FRACTAL_NZ:
+            converted.append(name)
+    return {
+        "mode": mode,
+        "target_format": "FRACTAL_NZ",
+        "target_format_code": FRACTAL_NZ,
+        "target_count": len(modules),
+        "cast_count": len(modules),
+        "converted_count": len(converted),
+        "already_nz_count": len(already_nz),
+        "converted_modules_sample": converted[:16],
+        "before_formats_sample": dict(list(before_formats.items())[:16]),
+        "after_formats_sample": dict(list(after_formats.items())[:16]),
+        "all_after_are_nz": bool(after_formats) and all(value == FRACTAL_NZ for value in after_formats.values()),
+    }
 
 
 @dataclass

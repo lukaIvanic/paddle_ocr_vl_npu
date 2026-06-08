@@ -12,7 +12,12 @@ from typing import Any
 import torch
 from tokenizers import Tokenizer
 
-from local_modeling_paddleocr_vl import LocalPaddleOCRVLForConditionalGeneration, _resolve_model_dir
+from local_modeling_paddleocr_vl import (
+    LINEAR_WEIGHT_FORMAT_CHOICES,
+    LocalPaddleOCRVLForConditionalGeneration,
+    _resolve_model_dir,
+    cast_decode_linear_weights_to_nz,
+)
 from run_local_recognition import (
     NPU_JIT_COMPILE_CHOICES,
     build_inputs,
@@ -60,8 +65,11 @@ def compile_backend(name: str):
     return name
 
 
-def torchair_cache_dir_for_shape(cache_root: Path, *, batch_size: int, cache_length: int) -> Path:
-    return cache_root.expanduser().resolve() / f"bs{int(batch_size)}_cache{int(cache_length)}"
+def torchair_cache_dir_for_shape(cache_root: Path, *, batch_size: int, cache_length: int, linear_weight_format: str = "nd") -> Path:
+    shape_key = f"bs{int(batch_size)}_cache{int(cache_length)}"
+    if linear_weight_format != "nd":
+        shape_key = f"{linear_weight_format}_{shape_key}"
+    return cache_root.expanduser().resolve() / shape_key
 
 
 def compile_decode_module(
@@ -72,13 +80,19 @@ def compile_decode_module(
     cache_root: Path,
     batch_size: int,
     cache_length: int,
+    linear_weight_format: str = "nd",
 ) -> tuple[Any, dict[str, Any]]:
     if backend_name == "torchair":
         if device.type != "npu":
             raise ValueError("--backend torchair requires an NPU device.")
         torchair, CompilerConfig = import_torchair()
         config = CompilerConfig()
-        shape_cache_dir = torchair_cache_dir_for_shape(cache_root, batch_size=batch_size, cache_length=cache_length)
+        shape_cache_dir = torchair_cache_dir_for_shape(
+            cache_root,
+            batch_size=batch_size,
+            cache_length=cache_length,
+            linear_weight_format=linear_weight_format,
+        )
         shape_cache_dir.mkdir(parents=True, exist_ok=True)
         compiled_decode = torchair.inference.cache_compile(
             flat_decode.forward,
@@ -92,6 +106,7 @@ def compile_decode_module(
             "torchair_cache_dir": str(shape_cache_dir),
             "torchair_ge_cache": True,
             "compile_api": "torchair.inference.cache_compile",
+            "linear_weight_format": linear_weight_format,
         }
 
     backend = compile_backend(backend_name)
@@ -101,6 +116,7 @@ def compile_decode_module(
     return torch.compile(flat_decode, **compile_kwargs), {
         "backend": backend_name,
         "compile_api": "torch.compile",
+        "linear_weight_format": linear_weight_format,
     }
 
 
@@ -126,6 +142,7 @@ def main() -> None:
     parser.add_argument("--backend", default="eager", choices=["eager", "aot_eager", "inductor", "default", "torchair"])
     parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
     parser.add_argument("--torchair-cache-dir", type=Path, default=DEFAULT_TORCHAIR_CACHE_DIR)
+    parser.add_argument("--linear-weight-format", default="nd", choices=LINEAR_WEIGHT_FORMAT_CHOICES)
     args = parser.parse_args()
 
     model_dir = _resolve_model_dir(args.model)
@@ -142,6 +159,11 @@ def main() -> None:
     input_ids, attention_mask = build_inputs(tokenizer, image_grid_thw, args.prompt, merge_size=int(pre_cfg["merge_size"]))
 
     model = LocalPaddleOCRVLForConditionalGeneration.from_pretrained(model_dir, dtype=dtype, device=device)
+    maybe_sync(device)
+    weight_format_start = time.perf_counter()
+    weight_format_meta = cast_decode_linear_weights_to_nz(model, args.linear_weight_format)
+    maybe_sync(device)
+    weight_format_meta["setup_s"] = time.perf_counter() - weight_format_start
     pixel_values = pixel_values.to(device)
     image_grid_thw = image_grid_thw.to(device)
     input_ids = input_ids.to(device)
@@ -188,6 +210,7 @@ def main() -> None:
         cache_root=args.torchair_cache_dir,
         batch_size=int(input_ids.shape[0]),
         cache_length=cache_length,
+        linear_weight_format=args.linear_weight_format,
     )
     maybe_sync(device)
     compile_setup_s = time.perf_counter() - start
@@ -208,6 +231,7 @@ def main() -> None:
     diff = (eager_logits.float() - compiled_logits.float()).abs()
     print(f"compile_backend={args.backend} fullgraph=True dynamic=False")
     print("compile_meta=" + repr(compile_meta))
+    print("linear_weight_format=" + repr(weight_format_meta))
     print(f"compile_setup_s={compile_setup_s:.6f} eager_decode_s={eager_s:.6f} compiled_first_s={compiled_first_s:.6f}")
     print(f"compiled_matches_eager=max_abs:{float(diff.max())} mean_abs:{float(diff.mean())}")
     print(f"compiled_next_token={int(torch.argmax(compiled_logits[:, -1, :].float(), dim=-1).item())}")

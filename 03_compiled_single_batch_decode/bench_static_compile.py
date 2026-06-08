@@ -20,7 +20,12 @@ from typing import Any, Callable
 import torch
 from tokenizers import Tokenizer
 
-from local_modeling_paddleocr_vl import LocalPaddleOCRVLForConditionalGeneration, _resolve_model_dir
+from local_modeling_paddleocr_vl import (
+    LINEAR_WEIGHT_FORMAT_CHOICES,
+    LocalPaddleOCRVLForConditionalGeneration,
+    _resolve_model_dir,
+    cast_decode_linear_weights_to_nz,
+)
 from probe_static_compile import DEFAULT_TORCHAIR_CACHE_DIR, compile_decode_module, maybe_sync
 from run_local_recognition import (
     NPU_JIT_COMPILE_CHOICES,
@@ -278,6 +283,7 @@ def profile_compiled_decode(
     profile_summary = {
         "profile_dir": str(profile_dir),
         "metric": args.profile_metric,
+        "linear_weight_format": args.linear_weight_format,
         "with_stack": True,
         "record_shapes": True,
         "profile_memory": False,
@@ -305,6 +311,7 @@ def main() -> None:
     parser.add_argument("--backend", default="eager", choices=["eager", "aot_eager", "inductor", "default", "torchair"])
     parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
     parser.add_argument("--torchair-cache-dir", type=Path, default=DEFAULT_TORCHAIR_CACHE_DIR)
+    parser.add_argument("--linear-weight-format", default="nd", choices=LINEAR_WEIGHT_FORMAT_CHOICES)
     parser.add_argument("--profile-dir", type=Path, default=None, help="Write one post-warmup torch_npu profiler capture for compiled decode.")
     parser.add_argument("--profile-metric", default="pipe", choices=PROFILE_METRIC_CHOICES)
     parser.add_argument("--json", action="store_true", help="Print a compact JSON summary instead of human-readable lines.")
@@ -330,6 +337,11 @@ def main() -> None:
     decode_steps = max(0, int(args.max_new_tokens) - 1)
 
     model = LocalPaddleOCRVLForConditionalGeneration.from_pretrained(model_dir, dtype=dtype, device=device)
+    maybe_sync(device)
+    weight_format_start = time.perf_counter()
+    weight_format_meta = cast_decode_linear_weights_to_nz(model, args.linear_weight_format)
+    maybe_sync(device)
+    weight_format_meta["setup_s"] = time.perf_counter() - weight_format_start
     flat_decode = model.make_flat_static_decode_module().eval()
 
     maybe_sync(device)
@@ -341,6 +353,7 @@ def main() -> None:
         cache_root=args.torchair_cache_dir,
         batch_size=int(input_ids.shape[0]),
         cache_length=cache_length,
+        linear_weight_format=args.linear_weight_format,
     )
     maybe_sync(device)
     compile_wrapper_s = time.perf_counter() - compile_start
@@ -442,6 +455,7 @@ def main() -> None:
         "device": str(device),
         "dtype": str(dtype),
         "npu_jit_compile": args.npu_jit_compile,
+        "linear_weight_format": weight_format_meta,
         "compile": compile_meta,
         "cache_update": "prefill_slice_decode_npu_scatter",
         "prompt_tokens": int(input_ids.shape[1]),
@@ -485,6 +499,7 @@ def main() -> None:
         return
 
     print(f"backend={summary['backend']} device={summary['device']} dtype={summary['dtype']} npu_jit_compile={summary['npu_jit_compile']}")
+    print("linear_weight_format=" + json.dumps(summary["linear_weight_format"], sort_keys=True))
     print(f"cache_update={summary['cache_update']}")
     print(f"prompt_tokens={summary['prompt_tokens']} generated_tokens={summary['generated_tokens']} decode_steps={summary['decode_steps']} cache_length={summary['cache_length']}")
     print("matches=" + json.dumps(summary["matches"], sort_keys=True))

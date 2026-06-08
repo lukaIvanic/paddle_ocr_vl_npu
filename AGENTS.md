@@ -92,6 +92,10 @@ All experiment CLIs default to `--dtype fp16`. `bf16` remains an explicit
 override for CUDA parity checks, but `fp32` is intentionally not a supported
 run mode.
 
+In `03_compiled_single_batch_decode`, `--linear-weight-format decode_nz`
+preconverts only the text-decoder and `lm_head` Linear weights to FRACTAL_NZ
+before compile. The default `nd` path is unchanged.
+
 On the Vast/CUDA smoke box on 2026-06-08, the local model matched Transformers
 eager bf16 exactly for next-token logits on all eight crops when using the slow
 HF/source-matched processor path. The local processor intentionally follows the
