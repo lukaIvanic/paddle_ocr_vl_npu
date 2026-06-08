@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parse torch_npu profiler output from experiment 3.
+"""Parse torch_npu profiler output from the single-batch decode lane.
 
 The parser intentionally stays model-agnostic: it summarizes the CANN CSVs and
 trace JSON emitted by torch_npu.profiler/tensorboard_trace_handler rather than

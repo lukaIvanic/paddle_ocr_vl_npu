@@ -47,11 +47,12 @@ This folder currently contains:
 - `crops/`: eight OmniDocBench region crops, not full pages.
 - `crops/manifest.json`: source image, category, bbox, suggested prompt, and ground truth for each crop.
 - `crops/create_omnidocbench_recognition_crops.py`: reproducible crop generator.
-- `01/run_transformers_recognition.py`: minimal Transformers recognizer smoke script. It uses the slow image processor by default so it matches the source-backed local preprocessing path; pass `--use-fast` only when deliberately comparing to the fast HF image processor.
-- `02/config.py`: dependency-free dataclass mirror of the PaddleOCR-VL config fields needed for inference.
-- `02/local_modeling_paddleocr_vl.py`: local PyTorch implementation of the recognition VLM with no Transformers imports.
-- `02/run_local_recognition.py`: local recognizer runner using `tokenizers`, local image preprocessing, and the local model.
-- `03/`: experiment 3, copied from `02/` and extended with static KV cache decode plus a flat `torch.compile(fullgraph=True, dynamic=False)` probe.
+- `01_transformers_recognition_baseline/run_transformers_recognition.py`: minimal Transformers recognizer smoke script. It uses the slow image processor by default so it matches the source-backed local preprocessing path; pass `--use-fast` only when deliberately comparing to the fast HF image processor.
+- `02_local_eager_recognition/config.py`: dependency-free dataclass mirror of the PaddleOCR-VL config fields needed for inference.
+- `02_local_eager_recognition/local_modeling_paddleocr_vl.py`: local PyTorch implementation of the recognition VLM with no Transformers imports.
+- `02_local_eager_recognition/run_local_recognition.py`: local recognizer runner using `tokenizers`, local image preprocessing, and the local model.
+- `03_compiled_single_batch_decode/`: single-batch decode optimization lane, copied from the local eager implementation and extended with static KV cache decode, TorchAir cache compile, profiler hooks, and flat `torch.compile(fullgraph=True, dynamic=False)` probes.
+- Planned next lane: `04_batch_decode_serving/` for batch sizing and vLLM-style iteration hot-swapping once single-batch decode is satisfactory.
 - `refs/`: small architecture reference artifacts.
 - `refs/PaddleOCR`: ignored sparse reference checkout of the official PaddleOCR repo.
 
@@ -68,13 +69,13 @@ python3 crops/create_omnidocbench_recognition_crops.py
 Run the core recognition model on one crop with Transformers:
 
 ```sh
-python3 01/run_transformers_recognition.py
+python3 01_transformers_recognition_baseline/run_transformers_recognition.py
 ```
 
 For another crop:
 
 ```sh
-python3 01/run_transformers_recognition.py \
+python3 01_transformers_recognition_baseline/run_transformers_recognition.py \
   --crop crops/crop_05_table_rwkv_dims.png \
   --prompt "Table Recognition:"
 ```
@@ -82,7 +83,7 @@ python3 01/run_transformers_recognition.py \
 Run the local no-Transformers recognition path:
 
 ```sh
-python3 02/run_local_recognition.py \
+python3 02_local_eager_recognition/run_local_recognition.py \
   --crop crops/crop_01_text_block_en.png \
   --prompt "OCR:"
 ```
@@ -97,10 +98,10 @@ HF/source-matched processor path. The local processor intentionally follows the
 slow PaddleOCR-VL image processor source; the HF fast processor has small resize
 rounding differences and is not the exact parity target.
 
-Run experiment 3 static-cache decode:
+Run single-batch static-cache decode:
 
 ```sh
-python3 03/run_local_recognition.py \
+python3 03_compiled_single_batch_decode/run_local_recognition.py \
   --crop crops/crop_01_text_block_en.png \
   --prompt "OCR:" \
   --static
@@ -109,7 +110,7 @@ python3 03/run_local_recognition.py \
 Probe compile compatibility:
 
 ```sh
-python3 03/probe_static_compile.py \
+python3 03_compiled_single_batch_decode/probe_static_compile.py \
   --crop crops/crop_01_text_block_en.png \
   --prompt "OCR:" \
   --backend eager
@@ -118,15 +119,15 @@ python3 03/probe_static_compile.py \
 Benchmark compiled static decode:
 
 ```sh
-python3 03/bench_static_compile.py \
+python3 03_compiled_single_batch_decode/bench_static_compile.py \
   --crop crops/crop_01_text_block_en.png \
   --prompt "OCR:" \
   --backend inductor
 ```
 
 Use `--backend inductor` on CUDA for stronger local codegen smoke. Use
-`--backend torchair --device npu --cache-update scatter_update` on the work/NPU
-lane for the real Ascend check. CUDA fullgraph/static passing is only a
+`--backend torchair --device npu` on the work/NPU lane for the real Ascend
+check. CUDA fullgraph/static passing is only a
 structural compile-compatibility filter; it does not prove TorchAir/NPU lowering
 will succeed or that NPU throughput is good.
 
@@ -180,7 +181,7 @@ stalled during the first model-weight download, while normal Hub HTTP completed:
 HF_HOME=/workspace/.hf_home \
 HF_HUB_DISABLE_XET=1 \
 HF_XET_DISABLE=1 \
-/workspace/venvs/paddle_ocr_vl/bin/python 01/run_transformers_recognition.py \
+/workspace/venvs/paddle_ocr_vl/bin/python 01_transformers_recognition_baseline/run_transformers_recognition.py \
   --crop crops/crop_01_text_block_en.png \
   --max-new-tokens 96
 ```
