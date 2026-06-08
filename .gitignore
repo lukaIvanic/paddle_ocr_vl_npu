@@ -1,0 +1,13 @@
+refs/PaddleOCR/
+.venv/
+__pycache__/
+*.py[cod]
+
+# Local caches and bulky generated outputs.
+.cache/
+.hf_home/
+hf_cache/
+models/
+outputs/
+artifacts/
+logs/
