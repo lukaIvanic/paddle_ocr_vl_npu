@@ -217,6 +217,16 @@ Read the timing fields carefully:
   `host_wait_prev_flag_s`. CPU timings show realized cadence and may attribute
   async backlog to the next wait point; NPU timings isolate recorded device
   regions.
+- If hot-swap is much slower than fixed cohort, do not rely on p50 alone. Check
+  `step_timing_summary.by_swap_count`, `by_finished_slot_count`, and the
+  `top_*` slow-step lists. A large jump from `swap_count=1` to `swap_count=2+`
+  points at the Python per-layer/per-slot KV row-copy loop. Large
+  `host_wait_prev_flag_s` outliers point at hidden synchronization. If
+  `timing_accounting.wall_minus_host_iter_sum_s` is large, some time is being
+  spent outside the instrumented loop or in final synchronization. Compare
+  fixed-cohort and hot-swap `timing_accounting.npu_event_region_sums_s.decode`;
+  if decode sums are similar but wall time diverges, the gap is scheduler/copy
+  overhead rather than the compiled decode graph.
 
 On the Vast/CUDA smoke box on 2026-06-08, the local model matched Transformers
 eager bf16 exactly for next-token logits on all eight crops when using the slow

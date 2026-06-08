@@ -310,15 +310,25 @@ def summarize_step_timing(records: list[dict[str, Any]] | None) -> dict[str, Any
     if not records:
         return None
 
+    def percentile(ordered: list[float], q: float) -> float:
+        if not ordered:
+            raise ValueError("percentile requires at least one value")
+        idx = min(len(ordered) - 1, max(0, int(round((len(ordered) - 1) * q))))
+        return float(ordered[idx])
+
     def stats_for(values: list[float]) -> dict[str, float] | None:
         if not values:
             return None
         ordered = sorted(values)
         return {
             "count": int(len(values)),
+            "sum": float(sum(values)),
             "avg": float(sum(values) / len(values)),
             "min": float(ordered[0]),
-            "p50": float(ordered[len(ordered) // 2]),
+            "p50": percentile(ordered, 0.50),
+            "p90": percentile(ordered, 0.90),
+            "p95": percentile(ordered, 0.95),
+            "p99": percentile(ordered, 0.99),
             "max": float(ordered[-1]),
         }
 
@@ -342,13 +352,105 @@ def summarize_step_timing(records: list[dict[str, Any]] | None) -> dict[str, Any
                 output[key] = key_stats
         return output
 
+    def group_by_int(field: str) -> dict[str, Any]:
+        groups: dict[int, list[dict[str, Any]]] = {}
+        for record in records:
+            value = int(record.get(field, 0))
+            groups.setdefault(value, []).append(record)
+        return {str(value): collect(group) for value, group in sorted(groups.items())}
+
+    def top_records(key: str, limit: int = 8) -> list[dict[str, Any]]:
+        candidates = [record for record in records if key in record]
+        candidates.sort(key=lambda record: float(record[key]), reverse=True)
+        fields = [
+            "step",
+            "decode_call",
+            "swap_count",
+            "finished_slot_count",
+            "deactivated_slot_count",
+            "completed_item_ids",
+            "swapped_slots",
+            "swapped_in_item_ids",
+            "host_iter_s",
+            "host_wait_prev_flag_s",
+            "host_swap_s",
+            "host_decode_enqueue_s",
+            "host_flag_copy_enqueue_s",
+            "npu_iter_ms",
+            "npu_swap_ms",
+            "npu_decode_ms",
+            "npu_flag_copy_ms",
+        ]
+        return [
+            {field: record[field] for field in fields if field in record}
+            for record in candidates[:limit]
+        ]
+
     swap_records = [record for record in records if int(record.get("swap_count", 0)) > 0]
     no_swap_records = [record for record in records if int(record.get("swap_count", 0)) == 0]
     return {
         "all": collect(records),
         "no_swap": collect(no_swap_records),
         "swap": collect(swap_records),
+        "by_swap_count": group_by_int("swap_count"),
+        "by_finished_slot_count": group_by_int("finished_slot_count"),
+        "top_host_iter_s": top_records("host_iter_s"),
+        "top_npu_iter_ms": top_records("npu_iter_ms"),
+        "top_npu_swap_ms": top_records("npu_swap_ms"),
+        "top_host_swap_s": top_records("host_swap_s"),
+        "top_host_wait_prev_flag_s": top_records("host_wait_prev_flag_s"),
         "swap_steps": [int(record["step"]) for record in swap_records if "step" in record],
+    }
+
+
+def step_timing_accounting(
+    records: list[dict[str, Any]] | None,
+    *,
+    wall_s: float,
+    batch_size: int,
+    raw_token_calls: int,
+    effective_token_calls: int,
+) -> dict[str, Any] | None:
+    if not records:
+        return None
+
+    def sum_key(key: str) -> float:
+        return float(sum(float(record[key]) for record in records if key in record))
+
+    host_iter_sum_s = sum_key("host_iter_s")
+    npu_iter_sum_s = sum_key("npu_iter_ms") / 1000.0
+    npu_decode_sum_s = sum_key("npu_decode_ms") / 1000.0
+    npu_swap_sum_s = sum_key("npu_swap_ms") / 1000.0
+    npu_flag_copy_sum_s = sum_key("npu_flag_copy_ms") / 1000.0
+    host_swap_sum_s = sum_key("host_swap_s")
+    host_wait_sum_s = sum_key("host_wait_prev_flag_s")
+    host_decode_enqueue_sum_s = sum_key("host_decode_enqueue_s")
+    host_flag_copy_enqueue_sum_s = sum_key("host_flag_copy_enqueue_s")
+
+    return {
+        "step_records": int(len(records)),
+        "batch_size": int(batch_size),
+        "wall_decode_s": float(wall_s),
+        "wall_avg_step_s": float(wall_s / len(records)) if records else 0.0,
+        "wall_decode_steps_per_s": tok_per_s(len(records), wall_s),
+        "wall_raw_batch_tokens_per_s": tok_per_s(raw_token_calls, wall_s),
+        "wall_effective_tokens_per_s": tok_per_s(effective_token_calls, wall_s),
+        "host_iter_sum_s": host_iter_sum_s,
+        "host_iter_sum_to_wall_ratio": float(host_iter_sum_s / wall_s) if wall_s > 0 else float("inf"),
+        "wall_minus_host_iter_sum_s": float(wall_s - host_iter_sum_s),
+        "host_region_sums": {
+            "swap": host_swap_sum_s,
+            "wait_prev_flag": host_wait_sum_s,
+            "decode_enqueue": host_decode_enqueue_sum_s,
+            "flag_copy_enqueue": host_flag_copy_enqueue_sum_s,
+        },
+        "npu_event_region_sums_s": {
+            "iter": npu_iter_sum_s,
+            "decode": npu_decode_sum_s,
+            "swap": npu_swap_sum_s,
+            "flag_copy": npu_flag_copy_sum_s,
+        },
+        "npu_iter_sum_to_wall_ratio": float(npu_iter_sum_s / wall_s) if wall_s > 0 else float("inf"),
     }
 
 
@@ -1384,6 +1486,13 @@ def main() -> None:
         hotswap_loop = hotswap_loop_summary(hotswap_result, batch_size=int(args.batch_size))
         raw_token_calls = int(hotswap_loop["raw_decode_token_calls"])
         effective_token_calls = int(hotswap_loop["effective_decode_token_calls"])
+        hotswap_timing_accounting = step_timing_accounting(
+            hotswap_result.step_timing,
+            wall_s=hotswap_decode_s,
+            batch_size=int(args.batch_size),
+            raw_token_calls=raw_token_calls,
+            effective_token_calls=effective_token_calls,
+        )
         hotswap_required_checks_passed = bool(hotswap_validation["all_trimmed_match"])
         summary = {
             "experiment": "04_batched_fixed_cohort_decode",
@@ -1432,6 +1541,7 @@ def main() -> None:
                 "hotswap_decode": float(hotswap_decode_s),
                 "hotswap_validation": float(hotswap_validation_s),
             },
+            "timing_accounting": hotswap_timing_accounting,
             "tok_per_s": {
                 "hotswap_decode_steps": tok_per_s(hotswap_result.decode_calls, hotswap_decode_s),
                 "hotswap_raw_batch_tokens": tok_per_s(raw_token_calls, hotswap_decode_s),
@@ -1467,6 +1577,7 @@ def main() -> None:
         print("loop=" + json.dumps(summary["loop"], sort_keys=True))
         print("matches=" + json.dumps(summary["matches"], sort_keys=True))
         print("timing_s=" + json.dumps(summary["timing_s"], sort_keys=True))
+        print("timing_accounting=" + json.dumps(summary["timing_accounting"], sort_keys=True))
         print("tok_per_s=" + json.dumps(summary["tok_per_s"], sort_keys=True))
         print("step_timing_summary=" + json.dumps(hotswap_loop["step_timing_summary"], sort_keys=True))
         print("swap_events_sample=" + json.dumps(summary["swap_events"][:8], sort_keys=True))
@@ -1569,6 +1680,20 @@ def main() -> None:
     compiled_raw_token_calls = int(compiled_loop_summary["raw_decode_token_calls"])
     static_effective_token_calls = int(static_loop_summary["effective_decode_token_calls"])
     compiled_effective_token_calls = int(compiled_loop_summary["effective_decode_token_calls"])
+    static_timing_accounting = step_timing_accounting(
+        static_result.step_timing,
+        wall_s=static_decode_s,
+        batch_size=int(args.batch_size),
+        raw_token_calls=static_raw_token_calls,
+        effective_token_calls=static_effective_token_calls,
+    )
+    compiled_timing_accounting = step_timing_accounting(
+        compiled_result.step_timing,
+        wall_s=compiled_decode_s,
+        batch_size=int(args.batch_size),
+        raw_token_calls=compiled_raw_token_calls,
+        effective_token_calls=compiled_effective_token_calls,
+    )
     single_ref_required_match = bool(single_ref_matches["all_trimmed_match"])
     fixed_required_checks_passed = bool(
         torch.equal(static_ids, compiled_ids)
@@ -1630,6 +1755,10 @@ def main() -> None:
             "static_eager_decode": float(static_decode_s),
             "compiled_decode": float(compiled_decode_s),
         },
+        "timing_accounting": {
+            "static_eager": static_timing_accounting,
+            "compiled": compiled_timing_accounting,
+        },
         "tok_per_s": {
             "static_eager_decode_steps": tok_per_s(static_result.decode_calls, static_decode_s),
             "static_eager_raw_batch_tokens": tok_per_s(static_raw_token_calls, static_decode_s),
@@ -1686,6 +1815,7 @@ def main() -> None:
     print("matches=" + json.dumps(summary["matches"], sort_keys=True))
     print("logit_diff_static_eager_vs_compiled_decode=" + json.dumps(summary["logit_diff_static_eager_vs_compiled_decode"], sort_keys=True))
     print("timing_s=" + json.dumps(summary["timing_s"], sort_keys=True))
+    print("timing_accounting=" + json.dumps(summary["timing_accounting"], sort_keys=True))
     print("tok_per_s=" + json.dumps(summary["tok_per_s"], sort_keys=True))
     if args.step_timing != "off":
         print("step_timing_summary=" + json.dumps({
