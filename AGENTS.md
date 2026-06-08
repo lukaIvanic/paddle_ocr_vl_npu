@@ -111,11 +111,30 @@ python3 03/probe_static_compile.py \
   --backend eager
 ```
 
+Benchmark compiled static decode:
+
+```sh
+python3 03/bench_static_compile.py \
+  --crop crops/crop_01_text_block_en.png \
+  --prompt "OCR:" \
+  --backend inductor
+```
+
 Use `--backend inductor` on CUDA for stronger local codegen smoke. Use
 `--backend torchair --device npu --cache-update scatter_update` on the work/NPU
 lane for the real Ascend check. CUDA fullgraph/static passing is only a
 structural compile-compatibility filter; it does not prove TorchAir/NPU lowering
 will succeed or that NPU throughput is good.
+
+Vast/CUDA smoke on 2026-06-08 for `crop_01`, 32 generated tokens, 31 measured
+decode steps, bf16:
+
+- `backend=eager`: all output IDs matched; static-eager-vs-compiled decode logits
+  matched exactly; compiled decode measured about 56 tok/s.
+- `backend=inductor`: all output IDs matched; static-eager-vs-compiled decode
+  logits differed numerically (`max_abs` about 0.226, `mean_abs` about 0.0338)
+  but argmax output matched; compiled decode measured about 139 tok/s after a
+  roughly 24.6s first compile call.
 
 ## Hardware Rules
 
