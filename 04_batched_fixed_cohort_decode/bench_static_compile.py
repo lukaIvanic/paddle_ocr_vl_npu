@@ -1040,6 +1040,47 @@ def make_ready_bank(
 
 
 @torch.inference_mode()
+def copy_batch_row_(
+    target: torch.Tensor,
+    slot: int,
+    source_row: torch.Tensor,
+) -> None:
+    slot = int(slot)
+    row_shape = (1, *target.shape[1:])
+    row = source_row.to(device=target.device, dtype=target.dtype).reshape(row_shape).contiguous()
+    if target.device.type == "npu":
+        indices = torch.tensor([slot], device=target.device, dtype=torch.int64)
+        target.index_copy_(0, indices, row)
+        return
+    target[slot : slot + 1].copy_(row)
+
+
+@torch.inference_mode()
+def fill_batch_row_(
+    target: torch.Tensor,
+    slot: int,
+    value: int | bool,
+) -> None:
+    row = torch.full((1, *target.shape[1:]), value, device=target.device, dtype=target.dtype)
+    copy_batch_row_(target, int(slot), row)
+
+
+@torch.inference_mode()
+def copy_vector_position_(
+    target: torch.Tensor,
+    position: int,
+    source_value: torch.Tensor,
+) -> None:
+    position = int(position)
+    value = source_value.to(device=target.device, dtype=target.dtype).reshape(1).contiguous()
+    if target.device.type == "npu":
+        indices = torch.tensor([position], device=target.device, dtype=torch.int64)
+        target.index_copy_(0, indices, value)
+        return
+    target[position : position + 1].copy_(value)
+
+
+@torch.inference_mode()
 def copy_ready_item_to_active_slot_(
     *,
     ready: ReadyBank,
@@ -1070,11 +1111,11 @@ def copy_ready_item_to_active_slot_(
         rope_row = rope_row.clone().contiguous()
         position_row = position_row.clone().contiguous()
         next_token_row = next_token_row.clone().contiguous()
-    active.rope_deltas[slot_slice].copy_(rope_row)
-    active.next_cache_position[slot_slice].copy_(position_row)
-    active_next_token[slot_slice].copy_(next_token_row)
-    active_item_indices[slot_slice].fill_(int(item_idx))
-    active_mask[slot_slice].fill_(True)
+    copy_batch_row_(active.rope_deltas, int(slot), rope_row)
+    copy_batch_row_(active.next_cache_position, int(slot), position_row)
+    copy_batch_row_(active_next_token, int(slot), next_token_row)
+    fill_batch_row_(active_item_indices, int(slot), int(item_idx))
+    fill_batch_row_(active_mask, int(slot), True)
 
 
 def verify_ready_item_in_active_slot(
@@ -1305,25 +1346,25 @@ def static_hotswap_decode_loop(
                     )
                 )
         active_item_indices_cpu[int(slot)] = int(item_idx)
-        generated_rows[int(item_idx)][0:1].copy_(ready.next_token[int(item_idx) : int(item_idx) + 1].reshape(1))
+        copy_vector_position_(generated_rows[int(item_idx)], 0, ready.next_token[int(item_idx) : int(item_idx) + 1])
         generated_lengths_cpu[int(item_idx)] = 1
         first_token_eos = ready_first_tokens_cpu[int(item_idx)] == int(eos_token_id)
         first_token_cap = int(max_new_tokens) <= 1
         initial_finished = bool(first_token_eos or first_token_cap)
         slot_finished_cpu[int(slot)] = initial_finished
-        slot_finished[int(slot) : int(slot) + 1].fill_(initial_finished)
+        fill_batch_row_(slot_finished, int(slot), initial_finished)
         item_eos_hit_cpu[int(item_idx)] = bool(first_token_eos)
         item_length_cap_hit_cpu[int(item_idx)] = bool(first_token_cap)
 
     def deactivate_slot(slot: int) -> None:
         active_item_indices_cpu[int(slot)] = -1
-        active_item_indices[int(slot) : int(slot) + 1].fill_(-1)
-        active_mask[int(slot) : int(slot) + 1].fill_(False)
+        fill_batch_row_(active_item_indices, int(slot), -1)
+        fill_batch_row_(active_mask, int(slot), False)
         slot_finished_cpu[int(slot)] = False
-        slot_finished[int(slot) : int(slot) + 1].fill_(False)
-        active_next_token[int(slot) : int(slot) + 1].fill_(int(eos_token_id))
-        active.next_cache_position[int(slot) : int(slot) + 1].fill_(0)
-        active.rope_deltas[int(slot) : int(slot) + 1].fill_(0)
+        fill_batch_row_(slot_finished, int(slot), False)
+        fill_batch_row_(active_next_token, int(slot), int(eos_token_id))
+        fill_batch_row_(active.next_cache_position, int(slot), 0)
+        fill_batch_row_(active.rope_deltas, int(slot), 0)
 
     def consume_finished_slots(finished_flags: list[bool], completion_decode_call: int, record: dict[str, Any] | None = None) -> dict[str, Any]:
         nonlocal completed_count
@@ -1504,7 +1545,7 @@ def static_hotswap_decode_loop(
             position = int(generated_lengths_cpu[item_idx])
             if position >= int(max_new_tokens):
                 continue
-            generated_rows[item_idx][position : position + 1].copy_(active_next_token[slot : slot + 1].reshape(1))
+            copy_vector_position_(generated_rows[item_idx], position, active_next_token[slot : slot + 1])
             new_length = position + 1
             generated_lengths_cpu[item_idx] = new_length
             if new_length >= int(max_new_tokens):
@@ -1512,7 +1553,7 @@ def static_hotswap_decode_loop(
                 slot_finished_cpu[int(slot)] = True
                 item_length_cap_hit_cpu[item_idx] = True
         for slot in length_cap_slots:
-            slot_finished[int(slot) : int(slot) + 1].fill_(True)
+            fill_batch_row_(slot_finished, int(slot), True)
 
         new_eos_by_slot = active_before_step & hits_eos(active_next_token, int(eos_token_id))
         slot_finished.logical_or_(new_eos_by_slot)
@@ -1604,6 +1645,7 @@ def static_hotswap_decode_loop(
             "verify_swap_copies": bool(diagnostic_verify_swap_copies),
             "sync_finished_flags": bool(diagnostic_sync_finished_flags),
             "history_storage": "per_item_device_rows",
+            "slot_control_write_mode": "index_copy_on_npu_slice_copy_elsewhere",
             "deactivated_slot_state": "eos_token_cache_pos_0_rope_delta_0",
             "step_trace_enabled": bool(diagnostic_step_trace or trace_item_indices),
             "step_trace_full_generated_ids": bool(diagnostic_step_trace),
@@ -2127,6 +2169,7 @@ def main() -> None:
             "cache_update": f"prefill_slice_decode_{get_decode_cache_update_mode()}",
             "decode_cache_update": get_decode_cache_update_mode(),
             "history_write_mode": "per_item_device_rows",
+            "slot_control_write_mode": "index_copy_on_npu_slice_copy_elsewhere",
             "prompt_tokens": {
                 "per_item": prompt_tokens,
                 "min": int(min(prompt_tokens)),
@@ -2188,6 +2231,7 @@ def main() -> None:
         print("cache_update=" + summary["cache_update"])
         print("decode_cache_update=" + summary["decode_cache_update"])
         print("history_write_mode=" + summary["history_write_mode"])
+        print("slot_control_write_mode=" + summary["slot_control_write_mode"])
         print(
             f"prompt_tokens={{'min': {summary['prompt_tokens']['min']}, 'max': {summary['prompt_tokens']['max']}}} "
             f"generated_tokens_per_item={summary['generated_tokens_per_item']} cache_length={summary['cache_length']}"
