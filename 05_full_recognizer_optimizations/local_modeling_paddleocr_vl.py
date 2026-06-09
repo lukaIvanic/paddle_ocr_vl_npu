@@ -20,6 +20,8 @@ DECODE_ATTENTION = "increfa"
 DECODE_CACHE_UPDATE = "npu_scatter"
 VISION_ATTENTION_ENV = "PADDLE_OCR_VL_VISION_ATTENTION"
 VISION_ATTENTION_CHOICES = ("manual", "prompt_flash_attention")
+VISION_PROMPT_FA_LAYOUT_ENV = "PADDLE_OCR_VL_VISION_PROMPT_FA_LAYOUT"
+VISION_PROMPT_FA_LAYOUT_CHOICES = ("bnsd", "bsnd", "bsh")
 
 
 def get_vision_attention_impl() -> str:
@@ -27,6 +29,67 @@ def get_vision_attention_impl() -> str:
     if mode not in VISION_ATTENTION_CHOICES:
         raise ValueError(f"{VISION_ATTENTION_ENV} must be one of {VISION_ATTENTION_CHOICES}, got {mode!r}")
     return mode
+
+
+def get_vision_prompt_fa_layout() -> str:
+    layout = os.environ.get(VISION_PROMPT_FA_LAYOUT_ENV, "bnsd").strip().lower() or "bnsd"
+    if layout not in VISION_PROMPT_FA_LAYOUT_CHOICES:
+        raise ValueError(f"{VISION_PROMPT_FA_LAYOUT_ENV} must be one of {VISION_PROMPT_FA_LAYOUT_CHOICES}, got {layout!r}")
+    return layout
+
+
+def vision_prompt_flash_attention_bnsd(
+    q_bnsd: torch.Tensor,
+    k_bnsd: torch.Tensor,
+    v_bnsd: torch.Tensor,
+    *,
+    num_heads: int,
+    scale: float,
+    layout: str | None = None,
+) -> torch.Tensor:
+    """Run PromptFA with a selectable public layout and return BNSD output."""
+    if q_bnsd.device.type != "npu":
+        raise RuntimeError("vision prompt_flash_attention requires NPU tensors plus torch_npu.")
+    import torch_npu
+
+    selected_layout = get_vision_prompt_fa_layout() if layout is None else layout.strip().lower()
+    if selected_layout not in VISION_PROMPT_FA_LAYOUT_CHOICES:
+        raise ValueError(f"unsupported vision PromptFA layout: {selected_layout!r}")
+
+    if selected_layout == "bnsd":
+        return torch_npu.npu_prompt_flash_attention(
+            q_bnsd.contiguous(),
+            k_bnsd.contiguous(),
+            v_bnsd.contiguous(),
+            num_heads=int(num_heads),
+            input_layout="BNSD",
+            scale_value=float(scale),
+            sparse_mode=0,
+        )
+
+    if selected_layout == "bsnd":
+        out_bsnd = torch_npu.npu_prompt_flash_attention(
+            q_bnsd.transpose(1, 2).contiguous(),
+            k_bnsd.transpose(1, 2).contiguous(),
+            v_bnsd.transpose(1, 2).contiguous(),
+            num_heads=int(num_heads),
+            input_layout="BSND",
+            scale_value=float(scale),
+            sparse_mode=0,
+        )
+        return out_bsnd.transpose(1, 2).contiguous()
+
+    batch, heads, seq_len, head_dim = q_bnsd.shape
+    out_bsh = torch_npu.npu_prompt_flash_attention(
+        q_bnsd.transpose(1, 2).contiguous().view(batch, seq_len, heads * head_dim),
+        k_bnsd.transpose(1, 2).contiguous().view(batch, seq_len, heads * head_dim),
+        v_bnsd.transpose(1, 2).contiguous().view(batch, seq_len, heads * head_dim),
+        num_heads=int(num_heads),
+        input_layout="BSH",
+        scale_value=float(scale),
+        sparse_mode=0,
+    )
+    return out_bsh.view(batch, seq_len, heads, head_dim).transpose(1, 2).contiguous()
 
 
 def _resolve_model_dir(model_id_or_path: str | Path) -> Path:
@@ -803,19 +866,13 @@ class PaddleOCRVisionAttention(nn.Module):
         attention_impl = get_vision_attention_impl()
         for q, k, v in zip(q_splits, k_splits, v_splits):
             if attention_impl == "prompt_flash_attention":
-                if q.device.type != "npu":
-                    raise RuntimeError("vision prompt_flash_attention requires NPU tensors plus torch_npu.")
-                import torch_npu
-
                 outputs.append(
-                    torch_npu.npu_prompt_flash_attention(
-                        q.contiguous(),
-                        k.contiguous(),
-                        v.contiguous(),
+                    vision_prompt_flash_attention_bnsd(
+                        q,
+                        k,
+                        v,
                         num_heads=int(self.num_heads),
-                        input_layout="BNSD",
-                        scale_value=float(self.scaling),
-                        sparse_mode=0,
+                        scale=float(self.scaling),
                     )
                 )
             elif attention_impl == "manual":

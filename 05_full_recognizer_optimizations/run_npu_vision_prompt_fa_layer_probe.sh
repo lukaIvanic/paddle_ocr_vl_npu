@@ -10,8 +10,9 @@ MANIFEST="${MANIFEST:-${REPO_ROOT}/crops/hotswap_100_manifest.json}"
 DEVICE="${DEVICE:-npu:0}"
 CROP_ID="${CROP_ID:-hotswap_002_code_txt_p1474_11}"
 MAX_LAYERS="${MAX_LAYERS:-27}"
+PROMPT_FA_LAYOUT="${PROMPT_FA_LAYOUT:-bnsd}"
 OUTPUT_DIR="${OUTPUT_DIR:-${SCRIPT_DIR}/outputs/vision_prompt_fa_layer_probe}"
-OUTPUT_PATH="${OUTPUT_PATH:-${OUTPUT_DIR}/layer_probe_${CROP_ID}_${MAX_LAYERS}.json}"
+OUTPUT_PATH="${OUTPUT_PATH:-${OUTPUT_DIR}/layer_probe_${CROP_ID}_${PROMPT_FA_LAYOUT}_${MAX_LAYERS}.json}"
 
 mkdir -p "${OUTPUT_DIR}"
 
@@ -24,6 +25,7 @@ CMD=(
   --dtype fp16
   --npu-jit-compile off
   --max-layers "${MAX_LAYERS}"
+  --prompt-fa-layout "${PROMPT_FA_LAYOUT}"
 )
 
 echo "COMMAND ${CMD[*]}"
@@ -38,6 +40,7 @@ path = Path(sys.argv[1])
 data = json.loads(path.read_text(encoding="utf-8"))
 print("VISION_PROMPT_FA_LAYER_PROBE", json.dumps({
     "crop_id": data.get("crop_id"),
+    "prompt_fa_layout": data.get("prompt_fa_layout"),
     "vision_tokens": data.get("vision_tokens"),
     "hidden_size": data.get("hidden_size"),
     "layers_checked": data.get("layers_checked"),

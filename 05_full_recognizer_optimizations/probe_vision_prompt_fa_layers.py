@@ -15,8 +15,10 @@ from tokenizers import Tokenizer
 from bench_stage_timing import build_cohort_inputs, load_manifest, select_manifest_entries
 from local_modeling_paddleocr_vl import (
     LocalPaddleOCRVLForConditionalGeneration,
+    VISION_PROMPT_FA_LAYOUT_CHOICES,
     _resolve_model_dir,
     apply_rotary_pos_emb_vision,
+    vision_prompt_flash_attention_bnsd,
 )
 from probe_static_compile import maybe_sync
 from profile_vision_encoder import DEFAULT_CROP_ID
@@ -90,17 +92,22 @@ def qkv_bnsd(layer, hidden_states: torch.Tensor, position_embeddings: tuple[torc
     )
 
 
-def prompt_fa_minimal(q_bnsd: torch.Tensor, k_bnsd: torch.Tensor, v_bnsd: torch.Tensor, *, num_heads: int, scale: float):
-    import torch_npu
-
-    return torch_npu.npu_prompt_flash_attention(
+def prompt_fa_layout(
+    q_bnsd: torch.Tensor,
+    k_bnsd: torch.Tensor,
+    v_bnsd: torch.Tensor,
+    *,
+    num_heads: int,
+    scale: float,
+    layout: str,
+) -> torch.Tensor:
+    return vision_prompt_flash_attention_bnsd(
         q_bnsd,
         k_bnsd,
         v_bnsd,
         num_heads=int(num_heads),
-        input_layout="BNSD",
-        scale_value=float(scale),
-        sparse_mode=0,
+        scale=float(scale),
+        layout=layout,
     )
 
 
@@ -113,10 +120,10 @@ def layer_output_from_attention(layer, hidden_states: torch.Tensor, attn_project
     return hidden_states + layer.mlp(layer.layer_norm2(hidden_states))
 
 
-def attention_outputs(layer, hidden_states: torch.Tensor, position_embeddings: tuple[torch.Tensor, torch.Tensor]):
+def attention_outputs(layer, hidden_states: torch.Tensor, position_embeddings: tuple[torch.Tensor, torch.Tensor], *, layout: str):
     q, k, v, seq_length, scale, num_heads = qkv_bnsd(layer, hidden_states, position_embeddings)
     manual_raw = manual_attention(q, k, v, scale)
-    prompt_raw = prompt_fa_minimal(q, k, v, num_heads=num_heads, scale=scale)
+    prompt_raw = prompt_fa_layout(q, k, v, num_heads=num_heads, scale=scale, layout=layout)
     manual_merged = merge_heads(manual_raw, seq_length)
     prompt_merged = merge_heads(prompt_raw, seq_length)
     manual_projected = layer.self_attn.out_proj(manual_merged)
@@ -142,6 +149,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dtype", default="fp16", choices=["fp16", "float16", "bf16", "bfloat16"])
     parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
     parser.add_argument("--max-layers", type=int, default=27)
+    parser.add_argument("--prompt-fa-layout", default="bnsd", choices=VISION_PROMPT_FA_LAYOUT_CHOICES)
     return parser.parse_args()
 
 
@@ -179,8 +187,24 @@ def main() -> None:
     rows = []
     for layer_idx in range(max_layers):
         layer = layers[layer_idx]
-        common, common_s = timed(device, lambda layer=layer, manual_state=manual_state: attention_outputs(layer, manual_state, position_embeddings))
-        propagated_prompt, prompt_s = timed(device, lambda layer=layer, prompt_state=prompt_state: attention_outputs(layer, prompt_state, position_embeddings))
+        common, common_s = timed(
+            device,
+            lambda layer=layer, manual_state=manual_state: attention_outputs(
+                layer,
+                manual_state,
+                position_embeddings,
+                layout=str(args.prompt_fa_layout),
+            ),
+        )
+        propagated_prompt, prompt_s = timed(
+            device,
+            lambda layer=layer, prompt_state=prompt_state: attention_outputs(
+                layer,
+                prompt_state,
+                position_embeddings,
+                layout=str(args.prompt_fa_layout),
+            ),
+        )
         manual_next = common["manual_layer"]
         prompt_next_same_input = common["prompt_layer"]
         prompt_next_propagated = propagated_prompt["prompt_layer"]
@@ -207,6 +231,7 @@ def main() -> None:
         "dtype": str(dtype),
         "crop_id": str(item.entry.get("id")),
         "crop_size": item.entry.get("crop_size"),
+        "prompt_fa_layout": str(args.prompt_fa_layout),
         "vision_tokens": int(hidden0.shape[0]),
         "hidden_size": int(hidden0.shape[-1]),
         "layers_checked": int(max_layers),

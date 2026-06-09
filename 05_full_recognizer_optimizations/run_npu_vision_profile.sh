@@ -10,16 +10,18 @@ MANIFEST="${MANIFEST:-${REPO_ROOT}/crops/hotswap_100_manifest.json}"
 DEVICE="${DEVICE:-npu:0}"
 CROP_ID="${CROP_ID:-hotswap_002_code_txt_p1474_11}"
 VISION_ATTENTION_IMPL="${VISION_ATTENTION_IMPL:-prompt_flash_attention}"
+VISION_PROMPT_FA_LAYOUT="${VISION_PROMPT_FA_LAYOUT:-bnsd}"
 PROFILE_METRIC="${PROFILE_METRIC:-pipe}"
 WARMUP_ITERS="${WARMUP_ITERS:-1}"
 PROFILE_ITERS="${PROFILE_ITERS:-1}"
 TOPN="${TOPN:-20}"
 OUTPUT_ROOT="${OUTPUT_ROOT:-${SCRIPT_DIR}/outputs/vision_encoder_profiles}"
 RUN_ID="${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
-PROFILE_RUN_DIR="${PROFILE_RUN_DIR:-${OUTPUT_ROOT}/vision_encoder_${RUN_ID}_${CROP_ID}_${VISION_ATTENTION_IMPL}_${PROFILE_METRIC}}"
+PROFILE_RUN_DIR="${PROFILE_RUN_DIR:-${OUTPUT_ROOT}/vision_encoder_${RUN_ID}_${CROP_ID}_${VISION_ATTENTION_IMPL}_${VISION_PROMPT_FA_LAYOUT}_${PROFILE_METRIC}}"
 
 mkdir -p "${OUTPUT_ROOT}"
 export PADDLE_OCR_VL_VISION_ATTENTION="${VISION_ATTENTION_IMPL}"
+export PADDLE_OCR_VL_VISION_PROMPT_FA_LAYOUT="${VISION_PROMPT_FA_LAYOUT}"
 
 CMD=(
   "${PYTHON_BIN}" "${SCRIPT_DIR}/profile_vision_encoder.py"
@@ -32,6 +34,7 @@ CMD=(
   --profile-run-dir "${PROFILE_RUN_DIR}"
   --profile-metric "${PROFILE_METRIC}"
   --vision-attention "${VISION_ATTENTION_IMPL}"
+  --vision-prompt-fa-layout "${VISION_PROMPT_FA_LAYOUT}"
   --warmup-iters "${WARMUP_ITERS}"
   --profile-iters "${PROFILE_ITERS}"
 )
@@ -69,6 +72,7 @@ print("VISION_PROFILE_SUMMARY", json.dumps({
     "profile_iters": vision_summary.get("profile_iters"),
     "profile_metric": vision_summary.get("profile_metric"),
     "vision_attention": vision_summary.get("vision_attention"),
+    "vision_prompt_fa_layout": vision_summary.get("vision_prompt_fa_layout"),
 }, sort_keys=True))
 print("VISION_ATTENTION_VALIDATION", json.dumps(vision_summary.get("validation", {}), sort_keys=True))
 

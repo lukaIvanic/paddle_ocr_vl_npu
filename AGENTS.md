@@ -304,23 +304,37 @@ manual attention against several PromptFlashAttention call variants on the first
 vision layer only, before the output projection and before 27-layer error
 accumulation.
 
-The model integration should use the minimal BNSD full-attention call on 310P:
-no `actual_seq_lengths`, no `actual_seq_lengths_kv`, and no explicit
+The default model integration should use the minimal BNSD full-attention call on
+310P: no `actual_seq_lengths`, no `actual_seq_lengths_kv`, and no explicit
 `num_key_value_heads`. Huawei documents those arguments as limited on Atlas
 inference-series products, while the no-length/no-GQA variants are both correct
-and faster in the single-layer probe.
+and faster in the single-layer probe. The public `torch_npu.npu_prompt_flash_attention`
+Python API currently does not expose the lower-level CANN `innerPrecise`
+precision mode, so do not try to fix propagated drift by inventing an
+`inner_precise` keyword unless the installed `torch_npu` signature explicitly
+shows it.
 
 If the minimal PromptFlashAttention integration still fails full-encoder
-validation, run the layer-by-layer probe:
+validation, run the layout sweep:
 
 ```sh
 cd /home/lukaiv/paddle_ocr_vl_npu/05_full_recognizer_optimizations
-bash run_npu_vision_prompt_fa_layer_probe.sh
+bash run_npu_vision_prompt_fa_layout_sweep.sh
 ```
 
-Paste back `VISION_PROMPT_FA_LAYER_PROBE` and `LAYER_DIFFS`. This identifies
-whether divergence appears with identical per-layer inputs or only after
-propagating PromptFlashAttention states through multiple layers.
+Paste back each `VISION_PROMPT_FA_LAYER_PROBE` and its `LAYER_DIFFS`. This tests
+`bnsd`, `bsnd`, and `bsh` layouts without any inline scripts. If all three
+layouts still show small same-input layer differences but large propagated
+drift, treat PromptFlashAttention as a lower-precision vision attention
+replacement and move to a deliberate hybrid/manual fallback experiment instead
+of changing random call arguments.
+
+To profile a specific PromptFlashAttention layout after it passes validation,
+set `VISION_PROMPT_FA_LAYOUT`, for example:
+
+```sh
+VISION_ATTENTION_IMPL=prompt_flash_attention VISION_PROMPT_FA_LAYOUT=bsh bash run_npu_vision_profile.sh
+```
 
 Older manual smoke order:
 

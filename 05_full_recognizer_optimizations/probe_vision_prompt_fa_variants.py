@@ -222,12 +222,42 @@ def prompt_fa_variants(
         )
         return out.transpose(1, 2).contiguous()
 
+    def bsnd_no_lengths_to_bnsd() -> torch.Tensor:
+        out = torch_npu.npu_prompt_flash_attention(
+            q_bsnd,
+            k_bsnd,
+            v_bsnd,
+            num_heads=int(num_heads),
+            input_layout="BSND",
+            scale_value=float(scale),
+            sparse_mode=0,
+        )
+        return out.transpose(1, 2).contiguous()
+
+    q_bsh = q_bsnd.reshape(1, int(length), int(num_heads) * q_bnsd.shape[-1]).contiguous()
+    k_bsh = k_bsnd.reshape(1, int(length), int(num_heads) * k_bnsd.shape[-1]).contiguous()
+    v_bsh = v_bsnd.reshape(1, int(length), int(num_heads) * v_bnsd.shape[-1]).contiguous()
+
+    def bsh_no_lengths_to_bnsd() -> torch.Tensor:
+        out = torch_npu.npu_prompt_flash_attention(
+            q_bsh,
+            k_bsh,
+            v_bsh,
+            num_heads=int(num_heads),
+            input_layout="BSH",
+            scale_value=float(scale),
+            sparse_mode=0,
+        )
+        return out.view(1, int(length), int(num_heads), q_bnsd.shape[-1]).transpose(1, 2).contiguous()
+
     return {
         "bnsd_lengths": bnsd_lengths,
         "bnsd_lengths_pre_next": bnsd_lengths_pre_next,
         "bnsd_no_lengths": bnsd_no_lengths,
         "bnsd_no_kv_heads": bnsd_no_kv_heads,
         "bsnd_lengths_pre_next": bsnd_lengths_pre_next_to_bnsd,
+        "bsnd_no_lengths": bsnd_no_lengths_to_bnsd,
+        "bsh_no_lengths": bsh_no_lengths_to_bnsd,
     }
 
 

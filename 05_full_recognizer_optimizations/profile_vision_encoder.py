@@ -27,9 +27,12 @@ from bench_stage_timing import build_cohort_inputs, load_manifest, select_manife
 from local_modeling_paddleocr_vl import (
     VISION_ATTENTION_CHOICES,
     VISION_ATTENTION_ENV,
+    VISION_PROMPT_FA_LAYOUT_CHOICES,
+    VISION_PROMPT_FA_LAYOUT_ENV,
     LocalPaddleOCRVLForConditionalGeneration,
     _resolve_model_dir,
     get_vision_attention_impl,
+    get_vision_prompt_fa_layout,
 )
 from probe_static_compile import maybe_sync
 from run_local_recognition import (
@@ -45,6 +48,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 PROFILE_METRIC_CHOICES = ("pipe", "memory", "l2", "memory_access")
 DEFAULT_CROP_ID = "hotswap_002_code_txt_p1474_11"
 DEFAULT_VISION_ATTENTION = os.environ.get(VISION_ATTENTION_ENV, "prompt_flash_attention").strip() or "prompt_flash_attention"
+DEFAULT_VISION_PROMPT_FA_LAYOUT = os.environ.get(VISION_PROMPT_FA_LAYOUT_ENV, "bnsd").strip().lower() or "bnsd"
 
 
 def npu_profiler_config(metric: str):
@@ -165,6 +169,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--profile-run-dir", type=Path, default=None)
     parser.add_argument("--profile-metric", default="pipe", choices=PROFILE_METRIC_CHOICES)
     parser.add_argument("--vision-attention", default=DEFAULT_VISION_ATTENTION, choices=VISION_ATTENTION_CHOICES)
+    parser.add_argument("--vision-prompt-fa-layout", default=DEFAULT_VISION_PROMPT_FA_LAYOUT, choices=VISION_PROMPT_FA_LAYOUT_CHOICES)
     parser.add_argument("--warmup-iters", type=int, default=1)
     parser.add_argument("--profile-iters", type=int, default=1)
     return parser.parse_args()
@@ -184,6 +189,7 @@ def main() -> None:
     import torch_npu.profiler as npu_prof
 
     os.environ[VISION_ATTENTION_ENV] = str(args.vision_attention)
+    os.environ[VISION_PROMPT_FA_LAYOUT_ENV] = str(args.vision_prompt_fa_layout)
     configure_npu_jit_compile(args.npu_jit_compile, device)
     dtype = parse_dtype(args.dtype, device)
     model_dir = _resolve_model_dir(args.model)
@@ -218,6 +224,7 @@ def main() -> None:
     validation: dict[str, Any] = {
         "reference": "manual_vision_encoder",
         "tested": str(args.vision_attention),
+        "prompt_fa_layout": str(args.vision_prompt_fa_layout),
         "enabled": bool(str(args.vision_attention) != "manual"),
     }
     if str(args.vision_attention) != "manual":
@@ -232,6 +239,7 @@ def main() -> None:
         )
         manual_reference, manual_s = timed(device, lambda: run_vision_encoder(model=model, encoder_inputs=ref_inputs))
         os.environ[VISION_ATTENTION_ENV] = str(args.vision_attention)
+        os.environ[VISION_PROMPT_FA_LAYOUT_ENV] = str(args.vision_prompt_fa_layout)
         selected_inputs = prepare_encoder_inputs(
             model=model,
             input_ids=input_ids,
@@ -252,10 +260,12 @@ def main() -> None:
         )
 
     os.environ[VISION_ATTENTION_ENV] = str(args.vision_attention)
+    os.environ[VISION_PROMPT_FA_LAYOUT_ENV] = str(args.vision_prompt_fa_layout)
     warmup_times_s = []
     warmup_output_shape: list[int] | None = None
     for _ in range(int(args.warmup_iters)):
         os.environ[VISION_ATTENTION_ENV] = str(args.vision_attention)
+        os.environ[VISION_PROMPT_FA_LAYOUT_ENV] = str(args.vision_prompt_fa_layout)
         warm_inputs = prepare_encoder_inputs(
             model=model,
             input_ids=input_ids,
@@ -300,6 +310,7 @@ def main() -> None:
         with torch.profiler.record_function("paddle_ocr_vl.vision_encoder_profile"):
             for _ in range(int(args.profile_iters)):
                 os.environ[VISION_ATTENTION_ENV] = str(args.vision_attention)
+                os.environ[VISION_PROMPT_FA_LAYOUT_ENV] = str(args.vision_prompt_fa_layout)
                 outputs.append(run_vision_encoder(model=model, encoder_inputs=prof_inputs))
         maybe_sync(device)
         profiler.step()
@@ -312,6 +323,7 @@ def main() -> None:
         "profile_dir": str(profile_run_dir),
         "profile_metric": str(args.profile_metric),
         "vision_attention": get_vision_attention_impl(),
+        "vision_prompt_fa_layout": get_vision_prompt_fa_layout(),
         "validation": validation,
         "with_stack": True,
         "record_shapes": True,
