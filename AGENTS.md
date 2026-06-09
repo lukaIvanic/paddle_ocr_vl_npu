@@ -162,6 +162,21 @@ IncreFA/scatter behavior.
 
 Recommended NPU run order for experiment 4:
 
+For the current hot-swap bottleneck investigation, prefer the committed matrix
+runner instead of ad hoc shell snippets:
+
+```sh
+cd /home/lukaiv/paddle_ocr_vl_npu/04_batched_fixed_cohort_decode
+bash run_npu_hotswap_bottleneck_matrix.sh
+```
+
+The runner executes the fixed baseline plus hot-swap `num-items=8,9,16,32,100`
+matrix and writes one summary JSON per run. See
+`04_batched_fixed_cohort_decode/NPU_HOTSWAP_BOTTLENECK_MATRIX.md` for what to
+paste back.
+
+Older manual smoke order:
+
 ```sh
 # 1. Small hot-swap scheduler smoke. This catches slot-swap and multi-item
 # completion bookkeeping without waiting for the full 100-crop run.
@@ -228,12 +243,14 @@ Read the timing fields carefully:
   `matches.hotswap_vs_single_refs.all_trimmed_match` must be true; if false,
   inspect `first_mismatches` before discussing speed.
 - Hot-swap output history is written with `history_write_mode:
-  host_indexed_2d_slice_copy`. This deliberately avoids NPU boolean advanced
-  indexing with `active_item_indices.clamp_min(0)` and avoids scalar 0-D NPU
-  `copy_` into `generated_ids`; inactive slots must never be able to target item
-  0 or any other completed item. If `token_ids.invalid_count` is nonzero, debug
-  output-history writes before interpreting OCR text mismatches as model
-  failures.
+  cpu_rows_from_token_copy`. The decode loop copies the active next-token vector
+  to CPU through the overlap path, then updates per-item CPU token rows from
+  the previous step's copied token vector. This deliberately avoids NPU boolean
+  advanced indexing with `active_item_indices.clamp_min(0)` and avoids scalar
+  0-D NPU `copy_` into `generated_ids`; inactive slots must never be able to
+  target item 0 or any other completed item. If `token_ids.invalid_count` is
+  nonzero, debug output-history writes before interpreting OCR text mismatches
+  as model failures.
 - If CUDA/Vast raw eager passes hot-swap but NPU still mismatches, use the
   experiment-4 diagnostic flags only for isolation, not as serving knobs:
   `--diagnostic-verify-swap-copies`, `--diagnostic-swap-copy-mode clone`, and
