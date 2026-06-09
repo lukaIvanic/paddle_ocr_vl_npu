@@ -311,6 +311,44 @@ def length_trimmed_token_lists(ids: torch.Tensor, lengths: torch.Tensor) -> list
     return [row[: max(0, length)] for row, length in zip(rows, length_values)]
 
 
+def token_id_range_summary(
+    ids: torch.Tensor,
+    *,
+    vocab_size: int,
+    lengths: torch.Tensor | None = None,
+    max_samples: int = 8,
+) -> dict[str, Any]:
+    rows = length_trimmed_token_lists(ids, lengths) if lengths is not None else row_token_lists(ids)
+    min_id = None
+    max_id = None
+    invalid_samples = []
+    token_count = 0
+    for row_idx, row in enumerate(rows):
+        for col_idx, value in enumerate(row):
+            token_count += 1
+            min_id = int(value) if min_id is None else min(min_id, int(value))
+            max_id = int(value) if max_id is None else max(max_id, int(value))
+            if (int(value) < 0 or int(value) >= int(vocab_size)) and len(invalid_samples) < int(max_samples):
+                invalid_samples.append(
+                    {
+                        "row": int(row_idx),
+                        "position": int(col_idx),
+                        "value": int(value),
+                    }
+                )
+    invalid_count = 0
+    for row in rows:
+        invalid_count += sum(1 for value in row if int(value) < 0 or int(value) >= int(vocab_size))
+    return {
+        "vocab_size": int(vocab_size),
+        "token_count": int(token_count),
+        "min_id": None if min_id is None else int(min_id),
+        "max_id": None if max_id is None else int(max_id),
+        "invalid_count": int(invalid_count),
+        "invalid_samples": invalid_samples,
+    }
+
+
 def summarize_step_timing(records: list[dict[str, Any]] | None) -> dict[str, Any] | None:
     if not records:
         return None
@@ -1025,7 +1063,7 @@ def static_hotswap_decode_loop(
                     )
                 )
         active_item_indices_cpu[int(slot)] = int(item_idx)
-        generated_ids[int(item_idx), 0].copy_(ready.next_token[int(item_idx), 0])
+        generated_ids[int(item_idx) : int(item_idx) + 1, 0:1].copy_(ready.next_token[int(item_idx) : int(item_idx) + 1])
         generated_lengths_cpu[int(item_idx)] = 1
         generated_lengths[int(item_idx)].fill_(1)
         first_token_eos = ready_first_tokens_cpu[int(item_idx)] == int(eos_token_id)
@@ -1206,7 +1244,7 @@ def static_hotswap_decode_loop(
             position = int(generated_lengths_cpu[item_idx])
             if position >= int(max_new_tokens):
                 continue
-            generated_ids[item_idx, position].copy_(active_next_token[slot, 0])
+            generated_ids[item_idx : item_idx + 1, position : position + 1].copy_(active_next_token[slot : slot + 1])
             new_length = position + 1
             generated_lengths_cpu[item_idx] = new_length
             generated_lengths[item_idx : item_idx + 1].fill_(new_length)
@@ -1670,6 +1708,11 @@ def main() -> None:
             ),
         )
         hotswap_rows = length_trimmed_token_lists(hotswap_result.ids, hotswap_result.lengths)
+        hotswap_token_ids = token_id_range_summary(
+            hotswap_result.ids,
+            lengths=hotswap_result.lengths,
+            vocab_size=int(model.config.vocab_size),
+        )
         hotswap_loop = hotswap_loop_summary(hotswap_result, batch_size=int(args.batch_size))
         raw_token_calls = int(hotswap_loop["raw_decode_token_calls"])
         effective_token_calls = int(hotswap_loop["effective_decode_token_calls"])
@@ -1680,7 +1723,10 @@ def main() -> None:
             raw_token_calls=raw_token_calls,
             effective_token_calls=effective_token_calls,
         )
-        hotswap_required_checks_passed = bool(hotswap_validation["all_trimmed_match"])
+        hotswap_required_checks_passed = bool(
+            hotswap_validation["all_trimmed_match"]
+            and int(hotswap_token_ids["invalid_count"]) == 0
+        )
         summary = {
             "experiment": "04_batched_fixed_cohort_decode",
             "schedule": args.schedule,
@@ -1708,12 +1754,13 @@ def main() -> None:
             "linear_weight_format": weight_format_meta,
             "compile": compile_meta,
             "cache_update": "prefill_slice_decode_npu_scatter",
-            "history_write_mode": "host_indexed_per_slot_copy",
+            "history_write_mode": "host_indexed_2d_slice_copy",
             "prompt_tokens": {
                 "per_item": prompt_tokens,
                 "min": int(min(prompt_tokens)),
                 "max": int(max(prompt_tokens)),
             },
+            "token_ids": hotswap_token_ids,
             "generated_tokens_per_item": int(args.max_new_tokens),
             "cache_length": int(cache_length),
             "loop": {
@@ -1740,10 +1787,14 @@ def main() -> None:
             "step_timing": hotswap_result.step_timing,
             "diagnostics": hotswap_result.diagnostics,
             "texts": {
-                "hotswap_trimmed": [
-                    tokenizer.decode(row, skip_special_tokens=True)
-                    for row in hotswap_rows
-                ],
+                "hotswap_trimmed": (
+                    [
+                        tokenizer.decode(row, skip_special_tokens=True)
+                        for row in hotswap_rows
+                    ]
+                    if int(hotswap_token_ids["invalid_count"]) == 0
+                    else []
+                ),
             },
         }
         if args.json:

@@ -228,12 +228,12 @@ Read the timing fields carefully:
   `matches.hotswap_vs_single_refs.all_trimmed_match` must be true; if false,
   inspect `first_mismatches` before discussing speed.
 - Hot-swap output history is written with `history_write_mode:
-  host_indexed_per_slot_copy`. This deliberately avoids NPU boolean advanced
-  indexing with `active_item_indices.clamp_min(0)`, because inactive slots must
-  never be able to target item 0 or any other completed item in `generated_ids`.
-  If a work/NPU run still mismatches with this mode, prioritize decode/logit
-  isolation (`--backend eager`, first-step batch-vs-single logits) over
-  generated-history collision debugging.
+  host_indexed_2d_slice_copy`. This deliberately avoids NPU boolean advanced
+  indexing with `active_item_indices.clamp_min(0)` and avoids scalar 0-D NPU
+  `copy_` into `generated_ids`; inactive slots must never be able to target item
+  0 or any other completed item. If `token_ids.invalid_count` is nonzero, debug
+  output-history writes before interpreting OCR text mismatches as model
+  failures.
 - If CUDA/Vast raw eager passes hot-swap but NPU still mismatches, use the
   experiment-4 diagnostic flags only for isolation, not as serving knobs:
   `--diagnostic-verify-swap-copies`, `--diagnostic-swap-copy-mode clone`, and
