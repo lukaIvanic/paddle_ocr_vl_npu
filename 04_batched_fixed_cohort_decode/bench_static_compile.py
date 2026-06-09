@@ -929,6 +929,7 @@ def static_hotswap_decode_loop(
     step_timing: str = "off",
     diagnostic_swap_copy_mode: str = "direct",
     diagnostic_verify_swap_copies: bool = False,
+    diagnostic_sync_finished_flags: bool = False,
 ) -> HotSwapDecodeResult:
     if eos_mode != "overlap_event_flags":
         raise ValueError("--schedule hotswap requires --eos-mode overlap_event_flags")
@@ -938,7 +939,7 @@ def static_hotswap_decode_loop(
         raise ValueError(f"--max-new-tokens must be positive, got {max_new_tokens}")
 
     device = ready.next_token.device
-    use_npu_overlap = device.type == "npu"
+    use_npu_overlap = device.type == "npu" and not bool(diagnostic_sync_finished_flags)
     if use_npu_overlap:
         import torch_npu
 
@@ -1280,6 +1281,7 @@ def static_hotswap_decode_loop(
             "decode_attention_mode": get_decode_attention_mode(),
             "swap_copy_mode": diagnostic_swap_copy_mode,
             "verify_swap_copies": bool(diagnostic_verify_swap_copies),
+            "sync_finished_flags": bool(diagnostic_sync_finished_flags),
             "copy_verification_checks": int(copy_verification_checks),
             "copy_verification_failure_count": int(len(copy_verification_failures)),
             "copy_verification_failures": copy_verification_failures,
@@ -1543,6 +1545,11 @@ def main() -> None:
         action="store_true",
         help="Diagnostic only: compare active slot rows against ready-bank rows after each load/swap.",
     )
+    parser.add_argument(
+        "--diagnostic-sync-finished-flags",
+        action="store_true",
+        help="Diagnostic only: on NPU, read finished-slot flags synchronously instead of using the overlap copy stream.",
+    )
     parser.add_argument("--profile-dir", type=Path, default=None, help="Write one post-warmup torch_npu profiler capture for compiled batched decode.")
     parser.add_argument("--profile-metric", default="pipe", choices=PROFILE_METRIC_CHOICES)
     parser.add_argument("--json", action="store_true", help="Print a compact JSON summary instead of human-readable lines.")
@@ -1647,6 +1654,7 @@ def main() -> None:
                 step_timing=args.step_timing,
                 diagnostic_swap_copy_mode=args.diagnostic_swap_copy_mode,
                 diagnostic_verify_swap_copies=bool(args.diagnostic_verify_swap_copies),
+                diagnostic_sync_finished_flags=bool(args.diagnostic_sync_finished_flags),
             ),
         )
         finalize_step_timing(hotswap_result)
