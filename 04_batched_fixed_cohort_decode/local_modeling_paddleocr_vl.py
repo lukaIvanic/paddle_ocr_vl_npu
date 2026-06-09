@@ -1198,7 +1198,18 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
         eos_token_id: int | None = None,
     ) -> torch.Tensor:
         eos_token_id = int(self.config.eos_token_id if eos_token_id is None else eos_token_id)
-        cache_length = int(cache_length or (int(input_ids.shape[1]) + int(max_new_tokens)))
+        prompt_length = int(input_ids.shape[1])
+        min_cache_length = prompt_length + max(0, int(max_new_tokens) - 1)
+        cache_length = int(
+            cache_length
+            if cache_length is not None
+            else (prompt_length + int(max_new_tokens))
+        )
+        if cache_length < min_cache_length:
+            raise ValueError(
+                f"cache_length={cache_length} is too small for prompt length {prompt_length} "
+                f"and max_new_tokens={max_new_tokens}; need at least {min_cache_length}"
+            )
         outputs = self.forward_static_prefill(
             input_ids=input_ids,
             attention_mask=attention_mask,

@@ -183,7 +183,18 @@ def main() -> None:
     image_grid_thw = image_grid_thw.to(device)
     input_ids = input_ids.to(device)
     attention_mask = attention_mask.to(device)
-    cache_length = int(args.cache_length or (input_ids.shape[1] + args.max_new_tokens))
+    prompt_length = int(input_ids.shape[1])
+    min_cache_length = prompt_length + max(0, int(args.max_new_tokens) - 1)
+    cache_length = int(
+        args.cache_length
+        if args.cache_length is not None
+        else (prompt_length + int(args.max_new_tokens))
+    )
+    if cache_length < min_cache_length:
+        raise ValueError(
+            f"--cache-length={cache_length} is too small for prompt length {prompt_length} "
+            f"and --max-new-tokens={args.max_new_tokens}; need at least {min_cache_length}"
+        )
 
     dynamic_ids = model.generate_ids(
         input_ids=input_ids,

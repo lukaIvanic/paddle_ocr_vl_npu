@@ -130,17 +130,18 @@ a batch. The shared `cache_length` is static decode capacity, not text padding;
 each row keeps its own `cache_position` and future-slot mask.
 
 For experiment 4 throughput, treat `*_decode_steps` as graph calls per second
-and `*_raw_batch_tokens` as batch token-slots per second. With
-`overlap_event_flags`, `*_effective_batch_tokens` excludes EOS-fill tokens after
-per-row completion.
+and `*_raw_batch_tokens` as batch token-slots per second. Effective token
+metrics exclude EOS-fill tokens after per-row or per-item completion.
 
 Experiment 4 hot-swap mode is the first vLLM-style decode scheduler probe. It
 assumes preprocessing and prefill are solved outside the measured decode loop:
 the script prefills all selected crops into an NPU-resident ready bank, then
 keeps only `--batch-size` rows in the active compiled decode cache. When one or
-more active rows finish, the host consumes the copied finished-flag vector and
-swaps every finished slot in one pass. Do not assume only one slot can finish at
-a time; check `swap_events[*].finished_slots` and `swapped_in_item_ids`.
+more active rows finish, the overlap path copies the active next-token vector
+to pinned CPU memory, the host computes per-slot completion from that copied
+token vector, and every finished slot is swapped in one pass. Do not assume
+only one slot can finish at a time; check `swap_events[*].finished_slots` and
+`swapped_in_item_ids`.
 
 Hot-swap requires `--eos-mode overlap_event_flags`; `--eos-mode none` is only a
 fixed-step fixed-cohort speed baseline and the script rejects it for hot-swap.
@@ -154,8 +155,8 @@ Experiment 4 can also run a CUDA debug version of hot-swap with
 `raw_eager` is true uncompiled Python/PyTorch execution. Use `raw_eager` for
 CUDA hot-swap debugging because the non-NPU static-cache update contains
 host-side per-row indexing that should not be sent through Dynamo. CUDA uses
-manual PyTorch static-decode attention and a synchronous finished-flag path
-instead of NPU IncreFA, TorchAir, and the overlap event stream. Treat CUDA
+manual PyTorch static-decode attention and a synchronous token-consume path
+instead of NPU IncreFA, TorchAir, and the NPU overlap copy stream. Treat CUDA
 hot-swap as a scheduler and `generated_ids` bookkeeping check only; it is not
 an Ascend throughput result and does not validate NPU-specific
 IncreFA/scatter behavior.
@@ -172,7 +173,8 @@ bash run_npu_hotswap_bottleneck_matrix.sh
 
 The runner executes the fixed baseline plus hot-swap `num-items=8,9,16,32,100`
 matrix once with `--step-timing off` for clean throughput and once with
-`--step-timing both` for diagnostics. It writes one summary JSON per run. See
+`--step-timing both` for diagnostics. It writes and validates one summary JSON
+per run. See
 `04_batched_fixed_cohort_decode/NPU_HOTSWAP_BOTTLENECK_MATRIX.md` for what to
 paste back.
 
@@ -260,10 +262,11 @@ Read the timing fields carefully:
 - If CUDA/Vast raw eager passes hot-swap but NPU still mismatches, use the
   experiment-4 diagnostic flags only for isolation, not as serving knobs:
   `--diagnostic-verify-swap-copies`, `--diagnostic-swap-copy-mode clone`, and
-  `--diagnostic-decode-attention manual --backend raw_eager`. Use
-  `--diagnostic-sync-finished-flags` to rule out the NPU overlap flag-copy
-  stream. Manual attention is intentionally uncompiled and exists to separate
-  NPU IncreFA behavior from scheduler/cache-copy behavior.
+  `--diagnostic-sync-finished-flags`. On NPU, `--backend raw_eager` removes
+  TorchAir compile but still uses the NPU IncreFA and scatter-update decode
+  path; there is no `--diagnostic-decode-attention` flag in experiment 4. Use
+  CUDA raw eager as the manual-attention scheduler/bookkeeping comparison, not
+  as an NPU attention validation.
 - `step_timing_summary.swap` versus `step_timing_summary.no_swap` shows whether
   slot replacement is expensive. Watch `npu_swap_ms`, `host_swap_s`, and
   `host_wait_prev_flag_s`. CPU timings show realized cadence and may attribute

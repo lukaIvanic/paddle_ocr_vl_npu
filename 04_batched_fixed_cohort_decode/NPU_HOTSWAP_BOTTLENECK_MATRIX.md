@@ -15,7 +15,8 @@ The runner executes the fixed-cohort warmup/reference and the hot-swap
 
 Both passes use the same batch size, cache length, TorchAir cache directory,
 dtype, and EOS mode. The runner writes one JSON file per run under
-`outputs/hotswap_bottleneck_matrix/` and prints the same JSON to stdout.
+`outputs/hotswap_bottleneck_matrix/`, validates each file with
+`python -m json.tool`, and prints the same JSON to stdout.
 
 Environment overrides are supported without editing tracked files:
 

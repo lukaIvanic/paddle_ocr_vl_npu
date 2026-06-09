@@ -49,6 +49,7 @@ run_case() {
   echo "BEGIN ${timing_mode}_${name}"
   echo "COMMAND ${PYTHON_BIN} ${SCRIPT_DIR}/bench_static_compile.py $* ${COMMON[*]} --step-timing ${timing_mode}"
   "${PYTHON_BIN}" "${SCRIPT_DIR}/bench_static_compile.py" "$@" "${COMMON[@]}" --step-timing "${timing_mode}" | tee "${output_path}"
+  "${PYTHON_BIN}" -m json.tool "${output_path}" >/dev/null
   echo "END ${timing_mode}_${name}"
   echo "WROTE ${output_path}"
 }

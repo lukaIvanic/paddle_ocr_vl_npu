@@ -2287,9 +2287,19 @@ def main() -> None:
         prompt_override=args.prompt,
     )
     prompt_tokens = [int(item.input_ids.shape[1]) for item in cohort]
-    cache_length = int(args.cache_length or (max(prompt_tokens) + int(args.max_new_tokens)))
-    if cache_length < max(prompt_tokens):
-        raise ValueError(f"--cache-length={cache_length} is smaller than max prompt length {max(prompt_tokens)}")
+    max_prompt_tokens = int(max(prompt_tokens))
+    min_cache_length = max_prompt_tokens + max(0, int(args.max_new_tokens) - 1)
+    cache_length = int(
+        args.cache_length
+        if args.cache_length is not None
+        else (max_prompt_tokens + int(args.max_new_tokens))
+    )
+    if cache_length < min_cache_length:
+        raise ValueError(
+            f"--cache-length={cache_length} is too small for max prompt length {max_prompt_tokens} "
+            f"and --max-new-tokens={args.max_new_tokens}; need at least {min_cache_length} "
+            "because static decode writes max_new_tokens - 1 generated-token KV positions"
+        )
 
     model = LocalPaddleOCRVLForConditionalGeneration.from_pretrained(model_dir, dtype=dtype, device=device)
     eos_token_id = int(model.config.eos_token_id)

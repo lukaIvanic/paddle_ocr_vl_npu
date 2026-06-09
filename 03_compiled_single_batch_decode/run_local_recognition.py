@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import sys
 import time
 from pathlib import Path
 
@@ -190,7 +191,7 @@ def configure_npu_jit_compile(mode: str, device: torch.device, *, verbose: bool 
         requested = mode == "on"
         torch.npu.set_compile_mode(jit_compile=requested)
         if verbose:
-            print(f"[npu] set torch.npu compile mode: jit_compile={requested}", flush=True)
+            print(f"[npu] set torch.npu compile mode: jit_compile={requested}", file=sys.stderr, flush=True)
     except Exception as exc:
         raise RuntimeError(f"failed to set NPU jit_compile={mode}: {exc.__class__.__name__}: {exc}") from exc
 
