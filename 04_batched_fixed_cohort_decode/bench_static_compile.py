@@ -1591,11 +1591,23 @@ def compare_batched_to_single_refs(
         batch_row == single_row
         for batch_row, single_row in zip(batched_trimmed_rows, single_trimmed_rows)
     ]
+    first_mismatches = []
+    for row_idx, (batch_row, single_row) in enumerate(zip(batched_trimmed_rows, single_trimmed_rows)):
+        if batch_row != single_row and len(first_mismatches) < 8:
+            first_mismatches.append(
+                {
+                    "row": int(row_idx),
+                    "batched": [int(value) for value in batch_row],
+                    "single_ref": [int(value) for value in single_row],
+                    "comparison": token_comparison_summary(batch_row, single_row),
+                }
+            )
     return {
         "full_matches_by_row": full_matches,
         "trimmed_matches_by_row": trimmed_matches,
         "all_full_match": bool(all(full_matches)),
         "all_trimmed_match": bool(all(trimmed_matches)),
+        "first_mismatches": first_mismatches,
     }
 
 
