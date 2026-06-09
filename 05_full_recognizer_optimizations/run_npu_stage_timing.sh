@@ -34,4 +34,15 @@ CMD=(
 echo "COMMAND ${CMD[*]}"
 "${CMD[@]}" | tee "${OUTPUT_PATH}"
 "${PYTHON_BIN}" -m json.tool "${OUTPUT_PATH}" >/dev/null
+"${PYTHON_BIN}" - "${OUTPUT_PATH}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+data = json.loads(path.read_text(encoding="utf-8"))
+if not data.get("correctness", {}).get("all_required_checks_passed", False):
+    print(json.dumps(data.get("correctness", {}), indent=2, sort_keys=True), file=sys.stderr)
+    raise SystemExit(f"correctness failed for {path}")
+PY
 echo "WROTE ${OUTPUT_PATH}"

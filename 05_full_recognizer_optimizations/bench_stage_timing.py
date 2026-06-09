@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import json
 import time
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
@@ -19,12 +20,6 @@ import torch
 import torch.nn.functional as F
 from tokenizers import Tokenizer
 
-from bench_static_compile import (
-    CohortInput,
-    build_cohort_inputs,
-    load_manifest,
-    select_manifest_entries,
-)
 from local_modeling_paddleocr_vl import (
     DECODE_ATTENTION,
     DECODE_CACHE_UPDATE,
@@ -35,15 +30,28 @@ from local_modeling_paddleocr_vl import (
 from probe_static_compile import DEFAULT_TORCHAIR_CACHE_DIR, compile_decode_module, maybe_sync
 from run_local_recognition import (
     NPU_JIT_COMPILE_CHOICES,
+    build_inputs,
     configure_npu_jit_compile,
     load_preprocessor_config,
     parse_dtype,
+    preprocess_image,
     resolve_device,
 )
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 BACKEND_CHOICES = ("raw_eager", "eager", "aot_eager", "inductor", "default", "torchair")
+
+
+@dataclass
+class CohortInput:
+    entry: dict[str, Any]
+    crop_path: Path
+    prompt: str
+    input_ids: torch.Tensor
+    attention_mask: torch.Tensor
+    pixel_values: torch.Tensor
+    image_grid_thw: torch.Tensor
 
 
 class StageTimer:
@@ -66,6 +74,80 @@ def json_default(value: Any) -> Any:
     if isinstance(value, torch.Tensor):
         return value.detach().cpu().tolist()
     return str(value)
+
+
+def resolve_repo_path(path: Path) -> Path:
+    path = path.expanduser()
+    if path.exists():
+        return path
+    candidate = REPO_ROOT / path
+    if candidate.exists():
+        return candidate
+    return path
+
+
+def load_manifest(path: Path) -> list[dict[str, Any]]:
+    return json.loads(resolve_repo_path(path).read_text(encoding="utf-8"))
+
+
+def select_manifest_entries(
+    manifest: list[dict[str, Any]],
+    *,
+    num_items: int,
+    crop_ids: list[str] | None,
+) -> list[dict[str, Any]]:
+    if crop_ids:
+        by_id = {str(entry["id"]): entry for entry in manifest}
+        missing = [crop_id for crop_id in crop_ids if crop_id not in by_id]
+        if missing:
+            raise ValueError(f"unknown --crop-ids entries: {missing}")
+        if len(crop_ids) != int(num_items):
+            raise ValueError(f"--num-items={num_items} but --crop-ids contains {len(crop_ids)} ids")
+        return [by_id[crop_id] for crop_id in crop_ids]
+    if int(num_items) <= 0:
+        raise ValueError(f"--num-items must be positive, got {num_items}")
+    if int(num_items) > len(manifest):
+        raise ValueError(f"requested {num_items} crops, but manifest has {len(manifest)}")
+    return manifest[: int(num_items)]
+
+
+def build_cohort_inputs(
+    *,
+    entries: list[dict[str, Any]],
+    manifest_path: Path,
+    tokenizer: Tokenizer,
+    pre_cfg: dict[str, Any],
+    prompt_override: str | None,
+) -> list[CohortInput]:
+    manifest_path = resolve_repo_path(manifest_path)
+    crops_dir = manifest_path.parent
+    cohort = []
+    for entry in entries:
+        crop_path = Path(str(entry["file"]))
+        if not crop_path.is_absolute():
+            crop_path = crops_dir / crop_path
+        if not crop_path.exists():
+            raise FileNotFoundError(f"crop not found for {entry.get('id')}: {crop_path}")
+        prompt = str(prompt_override if prompt_override is not None else entry.get("suggested_prompt", "OCR:"))
+        pixel_values, image_grid_thw = preprocess_image(crop_path, pre_cfg)
+        input_ids, attention_mask = build_inputs(
+            tokenizer,
+            image_grid_thw,
+            prompt,
+            merge_size=int(pre_cfg["merge_size"]),
+        )
+        cohort.append(
+            CohortInput(
+                entry=entry,
+                crop_path=crop_path,
+                prompt=prompt,
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                pixel_values=pixel_values,
+                image_grid_thw=image_grid_thw,
+            )
+        )
+    return cohort
 
 
 def stats(values: list[float]) -> dict[str, float | int | None]:
@@ -124,6 +206,61 @@ def timed_static_decode(
         "decode_mode": "fixed_steps_no_eos_check",
         "last_logits_shape": None if last_logits is None else [int(v) for v in last_logits.shape],
     }
+
+
+def first_mismatch(left: list[int], right: list[int]) -> dict[str, Any] | None:
+    for idx, (left_value, right_value) in enumerate(zip(left, right)):
+        if int(left_value) != int(right_value):
+            return {
+                "position": int(idx),
+                "staged": int(left_value),
+                "direct_static": int(right_value),
+            }
+    if len(left) != len(right):
+        return {
+            "position": int(min(len(left), len(right))),
+            "staged": None if len(left) <= len(right) else int(left[min(len(left), len(right))]),
+            "direct_static": None if len(right) <= len(left) else int(right[min(len(left), len(right))]),
+        }
+    return None
+
+
+@torch.inference_mode()
+def direct_static_fixed_steps(
+    *,
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    input_ids: torch.Tensor,
+    attention_mask: torch.Tensor,
+    pixel_values: torch.Tensor,
+    image_grid_thw: torch.Tensor,
+    cache_length: int,
+    max_new_tokens: int,
+) -> torch.Tensor:
+    outputs = model.forward_static_prefill(
+        input_ids=input_ids,
+        attention_mask=attention_mask,
+        pixel_values=pixel_values,
+        image_grid_thw=image_grid_thw,
+        cache_length=int(cache_length),
+        logits_to_keep=1,
+    )
+    cache = outputs.cache
+    rope_deltas = outputs.rope_deltas
+    cache_position = outputs.next_cache_position
+    next_token = torch.argmax(outputs.logits[:, -1, :].float(), dim=-1, keepdim=True)
+    generated = [next_token]
+    for _ in range(max(0, int(max_new_tokens) - 1)):
+        outputs_decode = model.forward_static_decode(
+            input_ids=next_token,
+            cache=cache,
+            cache_position=cache_position,
+            rope_deltas=rope_deltas,
+            logits_to_keep=1,
+        )
+        next_token = torch.argmax(outputs_decode.logits[:, -1, :].float(), dim=-1, keepdim=True)
+        generated.append(next_token)
+        cache_position = cache_position + 1
+    return torch.cat(generated, dim=1)
 
 
 @torch.inference_mode()
@@ -231,6 +368,24 @@ def run_item_stage_timing(
             max_new_tokens=int(max_new_tokens),
         ),
     )
+    staged_ids = decode_result["ids"]
+
+    validation_timer = StageTimer(device)
+    direct_ids = validation_timer.measure(
+        "direct_static_fixed_steps",
+        lambda: direct_static_fixed_steps(
+            model=model,
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            pixel_values=pixel_values,
+            image_grid_thw=image_grid_thw,
+            cache_length=int(cache_length),
+            max_new_tokens=int(max_new_tokens),
+        ),
+    )
+    staged_row = [int(value) for value in staged_ids[0].detach().cpu().tolist()]
+    direct_row = [int(value) for value in direct_ids[0].detach().cpu().tolist()]
+    tokens_match = staged_row == direct_row
 
     model_prefill_total = (
         timer.timings["vision_prepare"]
@@ -269,6 +424,15 @@ def run_item_stage_timing(
         "generated_tokens": int(decode_result["generated_tokens"]),
         "decode_calls": int(decode_result["decode_calls"]),
         "decode_mode": str(decode_result["decode_mode"]),
+        "correctness": {
+            "reference": "direct_local_static_fixed_steps",
+            "tokens_match": bool(tokens_match),
+            "first_mismatch": first_mismatch(staged_row, direct_row),
+            "validation_timing_s": {
+                key: float(value)
+                for key, value in sorted(validation_timer.timings.items())
+            },
+        },
         "timing_s": {key: float(value) for key, value in sorted(timer.timings.items())},
     }
 
@@ -303,10 +467,8 @@ def main() -> None:
     manifest = load_manifest(args.manifest)
     entries = select_manifest_entries(
         manifest,
-        batch_size=1,
         num_items=int(args.num_items),
         crop_ids=args.crop_ids,
-        schedule="hotswap",
     )
     cohort = build_cohort_inputs(
         entries=entries,
@@ -380,6 +542,15 @@ def main() -> None:
     ]
 
     timing_summary = aggregate_item_timings(items)
+    mismatches = [
+        {
+            "item": int(idx),
+            "id": str(item["id"]),
+            "first_mismatch": item["correctness"]["first_mismatch"],
+        }
+        for idx, item in enumerate(items)
+        if not bool(item["correctness"]["tokens_match"])
+    ]
     output = {
         "experiment": "05_full_recognizer_optimizations",
         "model": str(model_dir),
@@ -405,6 +576,12 @@ def main() -> None:
             "compile_wrapper": float(compile_wrapper_s),
             "compile_first_call": float(compile_first_s),
         },
+        "correctness": {
+            "reference": "direct_local_static_fixed_steps",
+            "all_required_checks_passed": bool(not mismatches),
+            "mismatch_count": int(len(mismatches)),
+            "first_mismatches": mismatches[:8],
+        },
         "stage_timing_summary_s": timing_summary,
         "items": items,
         "stage_notes": {
@@ -415,6 +592,7 @@ def main() -> None:
             "prefill_total_excluding_device_transfer": "vision + projector + text embeddings/scatter/mRoPE/cache allocation/text prefill/lm_head/argmax.",
             "model_total_excluding_device_transfer": "prefill_total_excluding_device_transfer + static_decode_total.",
             "static_decode_total": "Fixed-step decode with no per-token EOS host sync; use experiment 4 for scheduler/EOS throughput.",
+            "correctness": "The staged path is compared against direct local static fixed-step generation outside the timed stage measurements.",
         },
     }
     if args.json:

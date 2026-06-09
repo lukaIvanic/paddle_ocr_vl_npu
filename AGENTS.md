@@ -180,12 +180,14 @@ paste back.
 
 ## Experiment 5
 
-`05_full_recognizer_optimizations` starts from the current experiment-4 code but
-moves the optimization target from decode scheduling to the full recognition
-model. Layout detection and image preprocessing are still out of scope. The
-first experiment-5 question is stage cost: how expensive are the
-native-resolution vision transformer, adaptive MLP connector, text prefill, LM
-head, and static decode on the real OmniDocBench crops in `crops/`.
+`05_full_recognizer_optimizations` is derived from the current experiment-4
+local model/compiled-decode baseline, but the experiment-4 hot-swap matrix
+runner is intentionally not copied forward. Experiment 5 moves the optimization
+target from decode scheduling to the full recognition model. Layout detection
+and image preprocessing are still out of scope. The first experiment-5 question
+is stage cost: how expensive are the native-resolution vision transformer,
+adaptive MLP connector, text prefill, LM head, and static decode on the real
+OmniDocBench crops in `crops/`.
 
 Run the committed NPU stage-timing harness instead of writing ad hoc snippets:
 
@@ -195,8 +197,11 @@ bash run_npu_stage_timing.sh
 ```
 
 The runner writes and validates one JSON under
-`outputs/full_recognizer_stage_timing/`. For the first report, paste back:
+`outputs/full_recognizer_stage_timing/`, then fails if staged generation does
+not match direct local static fixed-step generation. For the first report, paste
+back:
 
+- `correctness`
 - `setup_timing_s`
 - `stage_timing_summary_s.native_resolution_visual_encoder_total`
 - `stage_timing_summary_s.vision_total`
@@ -207,7 +212,7 @@ The runner writes and validates one JSON under
 - `stage_timing_summary_s.static_decode_total`
 - `stage_timing_summary_s.model_total_excluding_device_transfer`
 - each item's `input_tokens`, `vision_tokens`, `projected_image_tokens`,
-  `decode_calls`, and `timing_s`
+  `decode_calls`, `decode_mode`, `correctness`, and `timing_s`
 
 Stage timing uses device synchronization around each measured model stage. This
 adds measurement overhead, so use it to identify bottleneck proportions before
