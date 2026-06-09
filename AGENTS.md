@@ -291,6 +291,19 @@ prompt flash attention call crashes, stop and paste back the error/validation
 block. Do not continue to full stage timing until the vision-only validation is
 acceptable.
 
+If prompt flash attention diverges from manual attention, run the committed
+single-layer call-contract probe next:
+
+```sh
+cd /home/lukaiv/paddle_ocr_vl_npu/05_full_recognizer_optimizations
+bash run_npu_vision_prompt_fa_probe.sh
+```
+
+Paste back `VISION_PROMPT_FA_PROBE` and `VARIANT_RESULTS`. This probe compares
+manual attention against several PromptFlashAttention call variants on the first
+vision layer only, before the output projection and before 27-layer error
+accumulation.
+
 Older manual smoke order:
 
 ```sh
