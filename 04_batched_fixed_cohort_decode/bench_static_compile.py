@@ -591,6 +591,8 @@ def slim_step_timing_summary(step_summary: dict[str, Any] | None) -> dict[str, A
         "host_iter_s",
         "host_wait_prev_flag_s",
         "host_swap_s",
+        "host_decode_enqueue_s",
+        "host_flag_copy_enqueue_s",
         "npu_iter_ms",
         "npu_decode_ms",
         "npu_swap_ms",
@@ -607,8 +609,81 @@ def slim_step_timing_summary(step_summary: dict[str, Any] | None) -> dict[str, A
             if metric_stats is not None:
                 slim_group[metric_key] = metric_stats
         groups[group_name] = slim_group
+    for grouped_name in ("by_swap_count", "by_finished_slot_count"):
+        grouped = step_summary.get(grouped_name)
+        if not grouped:
+            continue
+        groups[grouped_name] = {}
+        for value, group in grouped.items():
+            slim_group = {"count": int(group.get("count", 0))}
+            for metric_key in metric_keys:
+                metric_stats = slim_stats(group.get(metric_key))
+                if metric_stats is not None:
+                    slim_group[metric_key] = metric_stats
+            groups[grouped_name][str(value)] = slim_group
+    for top_key in (
+        "top_host_iter_s",
+        "top_npu_iter_ms",
+        "top_npu_swap_ms",
+        "top_host_swap_s",
+        "top_host_wait_prev_flag_s",
+    ):
+        top_records = step_summary.get(top_key)
+        if top_records:
+            groups[top_key] = top_records[:4]
     groups["swap_steps_count"] = int(len(step_summary.get("swap_steps", [])))
     return groups
+
+
+def speed_debug_summary(
+    *,
+    loop_summary: dict[str, Any],
+    timing_accounting: dict[str, Any] | None,
+    wall_s: float | None,
+) -> dict[str, Any]:
+    decode_calls = int(loop_summary.get("decode_calls", 0) or 0)
+    raw_calls = int(loop_summary.get("raw_decode_token_calls", 0) or 0)
+    effective_calls = int(loop_summary.get("effective_decode_token_calls", 0) or 0)
+    output: dict[str, Any] = {
+        "decode_calls": decode_calls,
+        "raw_decode_token_calls": raw_calls,
+        "effective_decode_token_calls": effective_calls,
+        "wall_step_ms": (float(wall_s) * 1000.0 / decode_calls) if wall_s and decode_calls else None,
+        "raw_tokens_per_decode_call": (float(raw_calls) / decode_calls) if decode_calls else None,
+        "effective_tokens_per_decode_call": (float(effective_calls) / decode_calls) if decode_calls else None,
+    }
+    if not timing_accounting:
+        return output
+
+    step_records = int(timing_accounting.get("step_records", 0) or 0)
+
+    def avg_ms_from_seconds(value: float) -> float | None:
+        return (float(value) * 1000.0 / step_records) if step_records else None
+
+    host_regions = timing_accounting.get("host_region_sums", {}) or {}
+    npu_regions = timing_accounting.get("npu_event_region_sums_s", {}) or {}
+    output["timed_step_records"] = step_records
+    output["timing_avg_ms_per_record"] = {
+        "host_iter": avg_ms_from_seconds(float(timing_accounting.get("host_iter_sum_s", 0.0) or 0.0)),
+        "wall_minus_host_iter": avg_ms_from_seconds(float(timing_accounting.get("wall_minus_host_iter_sum_s", 0.0) or 0.0)),
+        "host_swap": avg_ms_from_seconds(float(host_regions.get("swap", 0.0) or 0.0)),
+        "host_wait_prev_flag": avg_ms_from_seconds(float(host_regions.get("wait_prev_flag", 0.0) or 0.0)),
+        "host_decode_enqueue": avg_ms_from_seconds(float(host_regions.get("decode_enqueue", 0.0) or 0.0)),
+        "host_flag_copy_enqueue": avg_ms_from_seconds(float(host_regions.get("flag_copy_enqueue", 0.0) or 0.0)),
+        "npu_iter": avg_ms_from_seconds(float(npu_regions.get("iter", 0.0) or 0.0)),
+        "npu_decode": avg_ms_from_seconds(float(npu_regions.get("decode", 0.0) or 0.0)),
+        "npu_swap": avg_ms_from_seconds(float(npu_regions.get("swap", 0.0) or 0.0)),
+        "npu_flag_copy": avg_ms_from_seconds(float(npu_regions.get("flag_copy", 0.0) or 0.0)),
+    }
+    output["timing_sum_s"] = {
+        "host_iter": float(timing_accounting.get("host_iter_sum_s", 0.0) or 0.0),
+        "wall_minus_host_iter": float(timing_accounting.get("wall_minus_host_iter_sum_s", 0.0) or 0.0),
+        "npu_iter": float(npu_regions.get("iter", 0.0) or 0.0),
+        "npu_decode": float(npu_regions.get("decode", 0.0) or 0.0),
+        "npu_swap": float(npu_regions.get("swap", 0.0) or 0.0),
+        "npu_flag_copy": float(npu_regions.get("flag_copy", 0.0) or 0.0),
+    }
+    return output
 
 
 def benchmark_report(summary: dict[str, Any]) -> dict[str, Any]:
@@ -652,6 +727,11 @@ def benchmark_report(summary: dict[str, Any]) -> dict[str, Any]:
                 "total_swapped_in_items": hotswap_loop.get("total_swapped_in_items"),
                 "step_timing_summary": slim_step_timing_summary(hotswap_loop.get("step_timing_summary")),
             },
+            "speed_debug": speed_debug_summary(
+                loop_summary=hotswap_loop,
+                timing_accounting=summary.get("timing_accounting"),
+                wall_s=summary.get("timing_s", {}).get("hotswap_decode"),
+            ),
         }
     compiled_loop = summary.get("loop", {}).get("compiled", {})
     static_loop = summary.get("loop", {}).get("static_eager", {})
@@ -685,6 +765,18 @@ def benchmark_report(summary: dict[str, Any]) -> dict[str, Any]:
                 "effective_decode_token_calls": compiled_loop.get("effective_decode_token_calls"),
                 "step_timing_summary": slim_step_timing_summary(compiled_loop.get("step_timing_summary")),
             },
+        },
+        "speed_debug": {
+            "static_eager": speed_debug_summary(
+                loop_summary=static_loop,
+                timing_accounting=summary.get("timing_accounting", {}).get("static_eager"),
+                wall_s=summary.get("timing_s", {}).get("static_eager_decode"),
+            ),
+            "compiled": speed_debug_summary(
+                loop_summary=compiled_loop,
+                timing_accounting=summary.get("timing_accounting", {}).get("compiled"),
+                wall_s=summary.get("timing_s", {}).get("compiled_decode"),
+            ),
         },
     }
 
