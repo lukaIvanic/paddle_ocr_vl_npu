@@ -1147,6 +1147,7 @@ def static_hotswap_decode_loop(
     diagnostic_sync_finished_flags: bool = False,
     diagnostic_step_trace: bool = False,
     diagnostic_step_trace_items: list[int] | None = None,
+    diagnostic_step_trace_print: bool = False,
 ) -> HotSwapDecodeResult:
     if eos_mode != "overlap_event_flags":
         raise ValueError("--schedule hotswap requires --eos-mode overlap_event_flags")
@@ -1274,6 +1275,8 @@ def static_hotswap_decode_loop(
         if extra:
             record.update(extra)
         step_trace.append(record)
+        if diagnostic_step_trace_print:
+            print("DIAGNOSTIC_STEP_TRACE " + json.dumps(record, sort_keys=True, default=json_default), flush=True)
 
     def load_item_to_slot(slot: int, item_idx: int) -> None:
         copy_ready_item_to_active_slot_(
@@ -1606,6 +1609,7 @@ def static_hotswap_decode_loop(
             "step_trace_full_generated_ids": bool(diagnostic_step_trace),
             "step_trace_items": [int(value) for value in trace_item_indices],
             "step_trace_syncs_device": bool(diagnostic_step_trace or trace_item_indices),
+            "step_trace_print": bool(diagnostic_step_trace_print),
             "copy_verification_checks": int(copy_verification_checks),
             "copy_verification_failure_count": int(len(copy_verification_failures)),
             "copy_verification_failures": copy_verification_failures,
@@ -1912,6 +1916,11 @@ def main() -> None:
         default=None,
         help="Diagnostic only for --schedule hotswap: snapshot selected generated_ids rows at every hot-swap loop stage.",
     )
+    parser.add_argument(
+        "--diagnostic-step-trace-print",
+        action="store_true",
+        help="Diagnostic only for --schedule hotswap: print each step-trace snapshot immediately as a JSON line.",
+    )
     parser.add_argument("--profile-dir", type=Path, default=None, help="Write one post-warmup torch_npu profiler capture for compiled batched decode.")
     parser.add_argument("--profile-metric", default="pipe", choices=PROFILE_METRIC_CHOICES)
     parser.add_argument("--json", action="store_true", help="Print a compact JSON summary instead of human-readable lines.")
@@ -1929,6 +1938,12 @@ def main() -> None:
         raise ValueError("--diagnostic-step-trace is currently available for --schedule hotswap only")
     if args.schedule != "hotswap" and args.diagnostic_step_trace_items:
         raise ValueError("--diagnostic-step-trace-items is currently available for --schedule hotswap only")
+    if args.schedule != "hotswap" and args.diagnostic_step_trace_print:
+        raise ValueError("--diagnostic-step-trace-print is currently available for --schedule hotswap only")
+    if args.diagnostic_step_trace_print and args.json:
+        raise ValueError("--diagnostic-step-trace-print writes live stdout lines; run without --json")
+    if args.diagnostic_step_trace_print and not args.diagnostic_step_trace and not args.diagnostic_step_trace_items:
+        raise ValueError("--diagnostic-step-trace-print requires --diagnostic-step-trace or --diagnostic-step-trace-items")
     if args.diagnostic_decode_attention == "manual" and args.backend != "raw_eager":
         raise ValueError("--diagnostic-decode-attention manual is an uncompiled diagnostic; use --backend raw_eager")
     if args.diagnostic_decode_cache_update == "per_row_copy" and args.backend != "raw_eager":
@@ -2028,6 +2043,7 @@ def main() -> None:
                 diagnostic_sync_finished_flags=bool(args.diagnostic_sync_finished_flags),
                 diagnostic_step_trace=bool(args.diagnostic_step_trace),
                 diagnostic_step_trace_items=[int(value) for value in args.diagnostic_step_trace_items] if args.diagnostic_step_trace_items else None,
+                diagnostic_step_trace_print=bool(args.diagnostic_step_trace_print),
             ),
         )
         finalize_step_timing(hotswap_result)
