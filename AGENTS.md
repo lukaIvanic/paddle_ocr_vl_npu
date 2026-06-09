@@ -215,6 +215,13 @@ Read the timing fields carefully:
   summary if required generation checks fail. For hot-swap,
   `matches.hotswap_vs_single_refs.all_trimmed_match` must be true; if false,
   inspect `first_mismatches` before discussing speed.
+- Hot-swap output history is written with `history_write_mode:
+  host_indexed_per_slot_copy`. This deliberately avoids NPU boolean advanced
+  indexing with `active_item_indices.clamp_min(0)`, because inactive slots must
+  never be able to target item 0 or any other completed item in `generated_ids`.
+  If a work/NPU run still mismatches with this mode, prioritize decode/logit
+  isolation (`--backend eager`, first-step batch-vs-single logits) over
+  generated-history collision debugging.
 - `step_timing_summary.swap` versus `step_timing_summary.no_swap` shows whether
   slot replacement is expensive. Watch `npu_swap_ms`, `host_swap_s`, and
   `host_wait_prev_flag_s`. CPU timings show realized cadence and may attribute

@@ -886,8 +886,10 @@ def static_hotswap_decode_loop(
     slot_finished = torch.zeros((int(batch_size),), device=device, dtype=torch.bool)
     generated_ids = torch.full((num_items, int(max_new_tokens)), int(eos_token_id), device=device, dtype=ready.next_token.dtype)
     generated_lengths = torch.zeros((num_items,), device=device, dtype=torch.int64)
-    item_eos_hit = torch.zeros((num_items,), device=device, dtype=torch.bool)
-    item_length_cap_hit = torch.zeros((num_items,), device=device, dtype=torch.bool)
+    ready_first_tokens_cpu = [int(value) for value in ready.next_token.reshape(-1).detach().cpu().tolist()]
+    generated_lengths_cpu = [0 for _ in range(num_items)]
+    item_eos_hit_cpu = [False for _ in range(num_items)]
+    item_length_cap_hit_cpu = [False for _ in range(num_items)]
     active = BatchedPrefill(
         cache=active_cache,
         rope_deltas=active_rope_deltas,
@@ -895,6 +897,7 @@ def static_hotswap_decode_loop(
     )
     flat_cache = active.cache.flat_tensors()
     active_item_indices_cpu = [-1 for _ in range(int(batch_size))]
+    slot_finished_cpu = [False for _ in range(int(batch_size))]
     completed_by_item = [False for _ in range(num_items)]
     completion_decode_calls: list[int | None] = [None for _ in range(num_items)]
     completed_count = 0
@@ -916,18 +919,21 @@ def static_hotswap_decode_loop(
         )
         active_item_indices_cpu[int(slot)] = int(item_idx)
         generated_ids[int(item_idx), 0].copy_(ready.next_token[int(item_idx), 0])
+        generated_lengths_cpu[int(item_idx)] = 1
         generated_lengths[int(item_idx)].fill_(1)
-        first_token_eos = ready.next_token[int(item_idx) : int(item_idx) + 1].reshape(-1) == int(eos_token_id)
-        first_token_cap = torch.full((1,), int(max_new_tokens) <= 1, device=device, dtype=torch.bool)
-        initial_finished = first_token_eos | first_token_cap
-        slot_finished[int(slot) : int(slot) + 1].copy_(initial_finished)
-        item_eos_hit[int(item_idx) : int(item_idx) + 1].copy_(first_token_eos)
-        item_length_cap_hit[int(item_idx) : int(item_idx) + 1].copy_(first_token_cap)
+        first_token_eos = ready_first_tokens_cpu[int(item_idx)] == int(eos_token_id)
+        first_token_cap = int(max_new_tokens) <= 1
+        initial_finished = bool(first_token_eos or first_token_cap)
+        slot_finished_cpu[int(slot)] = initial_finished
+        slot_finished[int(slot) : int(slot) + 1].fill_(initial_finished)
+        item_eos_hit_cpu[int(item_idx)] = bool(first_token_eos)
+        item_length_cap_hit_cpu[int(item_idx)] = bool(first_token_cap)
 
     def deactivate_slot(slot: int) -> None:
         active_item_indices_cpu[int(slot)] = -1
         active_item_indices[int(slot) : int(slot) + 1].fill_(-1)
         active_mask[int(slot) : int(slot) + 1].fill_(False)
+        slot_finished_cpu[int(slot)] = False
         slot_finished[int(slot) : int(slot) + 1].fill_(False)
         active_next_token[int(slot) : int(slot) + 1].fill_(int(eos_token_id))
 
@@ -951,6 +957,8 @@ def static_hotswap_decode_loop(
                 completion_decode_calls[finished_item] = int(completion_decode_call)
                 completed_count += 1
                 completed_item_ids.append(int(finished_item))
+                if not item_length_cap_hit_cpu[int(finished_item)]:
+                    item_eos_hit_cpu[int(finished_item)] = True
             if next_ready_idx < num_items:
                 new_item = int(next_ready_idx)
                 next_ready_idx += 1
@@ -1052,6 +1060,10 @@ def static_hotswap_decode_loop(
                 break
 
         active_before_step = active_mask & ~slot_finished
+        active_before_step_cpu = [
+            int(item_idx) >= 0 and not bool(slot_finished_cpu[slot])
+            for slot, item_idx in enumerate(active_item_indices_cpu)
+        ]
         host_decode_start = timing.cpu_now()
         npu_decode_start = timing.npu_event()
         last_logits = decode_fn(active_next_token, active.next_cache_position, active.rope_deltas, *flat_cache)
@@ -1065,23 +1077,29 @@ def static_hotswap_decode_loop(
         eos_fill = torch.full_like(sampled_token, int(eos_token_id))
         active_next_token.copy_(torch.where(active_before_step.view(-1, 1), sampled_token, eos_fill))
 
-        safe_item_indices = active_item_indices.clamp_min(0)
-        write_positions = generated_lengths[safe_item_indices]
-        within_length = active_before_step & (write_positions < int(max_new_tokens))
-        target_items = safe_item_indices[within_length]
-        target_positions = write_positions[within_length]
-        target_tokens = active_next_token.reshape(-1)[within_length]
-        generated_ids[target_items, target_positions] = target_tokens
-        generated_lengths[target_items] = generated_lengths[target_items] + 1
+        # Keep output history writes host-indexed. NPU boolean advanced
+        # indexing here can accidentally involve inactive -1 slots.
+        length_cap_slots = []
+        for slot, should_write in enumerate(active_before_step_cpu):
+            if not should_write:
+                continue
+            item_idx = int(active_item_indices_cpu[slot])
+            position = int(generated_lengths_cpu[item_idx])
+            if position >= int(max_new_tokens):
+                continue
+            generated_ids[item_idx, position].copy_(active_next_token[slot, 0])
+            new_length = position + 1
+            generated_lengths_cpu[item_idx] = new_length
+            generated_lengths[item_idx : item_idx + 1].fill_(new_length)
+            if new_length >= int(max_new_tokens):
+                length_cap_slots.append(int(slot))
+                slot_finished_cpu[int(slot)] = True
+                item_length_cap_hit_cpu[item_idx] = True
+        for slot in length_cap_slots:
+            slot_finished[int(slot) : int(slot) + 1].fill_(True)
 
         new_eos_by_slot = active_before_step & hits_eos(active_next_token, int(eos_token_id))
-        after_lengths = generated_lengths[safe_item_indices]
-        new_cap_by_slot = active_before_step & (after_lengths >= int(max_new_tokens))
-        eos_items = safe_item_indices[new_eos_by_slot]
-        cap_items = safe_item_indices[new_cap_by_slot]
-        item_eos_hit[eos_items] = True
-        item_length_cap_hit[cap_items] = True
-        slot_finished.logical_or_(new_eos_by_slot | new_cap_by_slot)
+        slot_finished.logical_or_(new_eos_by_slot)
         active.next_cache_position.add_(active_before_step.to(dtype=active.next_cache_position.dtype))
         decode_calls += 1
 
@@ -1123,8 +1141,8 @@ def static_hotswap_decode_loop(
         decode_calls=int(decode_calls),
         completed_by_item=completed_by_item,
         completion_decode_calls=completion_decode_calls,
-        eos_hit_by_item=[bool(value) for value in item_eos_hit.detach().cpu().tolist()],
-        length_cap_hit_by_item=[bool(value) for value in item_length_cap_hit.detach().cpu().tolist()],
+        eos_hit_by_item=item_eos_hit_cpu,
+        length_cap_hit_by_item=item_length_cap_hit_cpu,
         swap_events=swap_events,
         step_timing=timing.records,
         stopped_all_items=bool(completed_count >= num_items),
@@ -1521,6 +1539,7 @@ def main() -> None:
             "linear_weight_format": weight_format_meta,
             "compile": compile_meta,
             "cache_update": "prefill_slice_decode_npu_scatter",
+            "history_write_mode": "host_indexed_per_slot_copy",
             "prompt_tokens": {
                 "per_item": prompt_tokens,
                 "min": int(min(prompt_tokens)),
@@ -1571,6 +1590,7 @@ def main() -> None:
         )
         print("linear_weight_format=" + json.dumps(summary["linear_weight_format"], sort_keys=True))
         print("cache_update=" + summary["cache_update"])
+        print("history_write_mode=" + summary["history_write_mode"])
         print(
             f"prompt_tokens={{'min': {summary['prompt_tokens']['min']}, 'max': {summary['prompt_tokens']['max']}}} "
             f"generated_tokens_per_item={summary['generated_tokens_per_item']} cache_length={summary['cache_length']}"
