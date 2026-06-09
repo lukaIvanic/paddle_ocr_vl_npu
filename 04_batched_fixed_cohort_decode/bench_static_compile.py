@@ -1271,67 +1271,84 @@ def make_ready_bank(
 
 
 @torch.inference_mode()
-def copy_batch_row_(
+def copy_batch_rows_(
     target: torch.Tensor,
-    slot: int,
-    source_row: torch.Tensor,
+    slots: list[int],
+    source_rows: torch.Tensor,
 ) -> None:
-    slot = int(slot)
-    row_shape = (1, *target.shape[1:])
-    row = source_row.to(device=target.device, dtype=target.dtype).reshape(row_shape).contiguous()
-    if target.device.type == "npu":
-        indices = torch.tensor([slot], device=target.device, dtype=torch.int64)
-        target.index_copy_(0, indices, row)
+    if not slots:
         return
-    target[slot : slot + 1].copy_(row)
+    slot_indices = torch.tensor([int(slot) for slot in slots], device=target.device, dtype=torch.int64)
+    rows = source_rows.to(device=target.device, dtype=target.dtype).reshape(
+        len(slots),
+        *target.shape[1:],
+    ).contiguous()
+    target.index_copy_(0, slot_indices, rows)
 
 
 @torch.inference_mode()
-def fill_batch_row_(
-    target: torch.Tensor,
-    slot: int,
-    value: int | bool,
-) -> None:
-    row = torch.full((1, *target.shape[1:]), value, device=target.device, dtype=target.dtype)
-    copy_batch_row_(target, int(slot), row)
-
-
-@torch.inference_mode()
-def copy_ready_item_to_active_slot_(
+def copy_ready_items_to_active_slots_(
     *,
     ready: ReadyBank,
     active: BatchedPrefill,
     active_next_token: torch.Tensor,
     active_item_indices: torch.Tensor,
     active_mask: torch.Tensor,
-    slot: int,
-    item_idx: int,
+    slots: list[int],
+    item_indices: list[int],
     copy_mode: str = "direct",
 ) -> None:
     if copy_mode not in DIAGNOSTIC_SWAP_COPY_CHOICES:
         raise ValueError(f"unsupported hot-swap copy mode: {copy_mode!r}")
-    slot_slice = slice(int(slot), int(slot) + 1)
-    item_slice = slice(int(item_idx), int(item_idx) + 1)
+    if len(slots) != len(item_indices):
+        raise ValueError(f"slots/item_indices length mismatch: {len(slots)} != {len(item_indices)}")
+    if not slots:
+        return
+
+    slot_indices = torch.tensor([int(slot) for slot in slots], device=active_next_token.device, dtype=torch.int64)
+    normalized_items = [int(item_idx) for item_idx in item_indices]
+    contiguous_items = normalized_items == list(range(normalized_items[0], normalized_items[0] + len(normalized_items)))
+    if contiguous_items:
+        item_slice = slice(normalized_items[0], normalized_items[0] + len(normalized_items))
+        item_index_tensor = None
+    else:
+        item_slice = None
+        item_index_tensor = torch.tensor(normalized_items, device=ready.next_token.device, dtype=torch.int64)
+
+    def select_ready_rows(tensor: torch.Tensor) -> torch.Tensor:
+        if item_slice is not None:
+            return tensor[item_slice]
+        assert item_index_tensor is not None
+        return tensor.index_select(0, item_index_tensor)
+
     for layer_idx in range(len(active.cache.key_caches)):
-        key_row = ready.cache.key_caches[layer_idx][item_slice]
-        value_row = ready.cache.value_caches[layer_idx][item_slice]
+        key_rows = select_ready_rows(ready.cache.key_caches[layer_idx])
+        value_rows = select_ready_rows(ready.cache.value_caches[layer_idx])
         if copy_mode == "clone":
-            key_row = key_row.clone().contiguous()
-            value_row = value_row.clone().contiguous()
-        active.cache.key_caches[layer_idx][slot_slice].copy_(key_row)
-        active.cache.value_caches[layer_idx][slot_slice].copy_(value_row)
-    rope_row = ready.rope_deltas[item_slice]
-    position_row = ready.next_cache_position[item_slice]
-    next_token_row = ready.next_token[item_slice]
+            key_rows = key_rows.clone().contiguous()
+            value_rows = value_rows.clone().contiguous()
+        else:
+            key_rows = key_rows.contiguous()
+            value_rows = value_rows.contiguous()
+        active.cache.key_caches[layer_idx].index_copy_(0, slot_indices, key_rows)
+        active.cache.value_caches[layer_idx].index_copy_(0, slot_indices, value_rows)
+
+    rope_rows = select_ready_rows(ready.rope_deltas)
+    position_rows = select_ready_rows(ready.next_cache_position)
+    next_token_rows = select_ready_rows(ready.next_token)
     if copy_mode == "clone":
-        rope_row = rope_row.clone().contiguous()
-        position_row = position_row.clone().contiguous()
-        next_token_row = next_token_row.clone().contiguous()
-    copy_batch_row_(active.rope_deltas, int(slot), rope_row)
-    copy_batch_row_(active.next_cache_position, int(slot), position_row)
-    copy_batch_row_(active_next_token, int(slot), next_token_row)
-    fill_batch_row_(active_item_indices, int(slot), int(item_idx))
-    fill_batch_row_(active_mask, int(slot), True)
+        rope_rows = rope_rows.clone().contiguous()
+        position_rows = position_rows.clone().contiguous()
+        next_token_rows = next_token_rows.clone().contiguous()
+    copy_batch_rows_(active.rope_deltas, slots, rope_rows)
+    copy_batch_rows_(active.next_cache_position, slots, position_rows)
+    copy_batch_rows_(active_next_token, slots, next_token_rows)
+    active_item_indices.index_copy_(
+        0,
+        slot_indices,
+        torch.tensor(normalized_items, device=active_item_indices.device, dtype=active_item_indices.dtype),
+    )
+    active_mask.index_copy_(0, slot_indices, torch.ones(len(slots), device=active_mask.device, dtype=active_mask.dtype))
 
 
 def verify_ready_item_in_active_slot(
@@ -1550,52 +1567,98 @@ def static_hotswap_decode_loop(
         if diagnostic_step_trace_print:
             print("DIAGNOSTIC_STEP_TRACE " + json.dumps(record, sort_keys=True, default=json_default), flush=True)
 
-    def load_item_to_slot(slot: int, item_idx: int) -> None:
-        copy_ready_item_to_active_slot_(
+    def verify_loaded_slots(slots: list[int], item_indices: list[int]) -> None:
+        nonlocal copy_verification_checks
+        if not diagnostic_verify_swap_copies:
+            return
+        for slot, item_idx in zip(slots, item_indices):
+            copy_verification_checks += 1
+            if len(copy_verification_failures) >= max_copy_verification_failures:
+                continue
+            copy_verification_failures.extend(
+                verify_ready_item_in_active_slot(
+                    ready=ready,
+                    active=active,
+                    active_next_token=active_next_token,
+                    slot=int(slot),
+                    item_idx=int(item_idx),
+                    stage="load_items_to_slots",
+                    max_failures=max_copy_verification_failures - len(copy_verification_failures),
+                )
+            )
+
+    def load_items_to_slots(slots: list[int], item_indices: list[int]) -> None:
+        if len(slots) != len(item_indices):
+            raise ValueError(f"slots/item_indices length mismatch: {len(slots)} != {len(item_indices)}")
+        if not slots:
+            return
+        copy_ready_items_to_active_slots_(
             ready=ready,
             active=active,
             active_next_token=active_next_token,
             active_item_indices=active_item_indices,
             active_mask=active_mask,
-            slot=slot,
-            item_idx=item_idx,
+            slots=[int(slot) for slot in slots],
+            item_indices=[int(item_idx) for item_idx in item_indices],
             copy_mode=diagnostic_swap_copy_mode,
         )
-        nonlocal copy_verification_checks
-        if diagnostic_verify_swap_copies:
-            copy_verification_checks += 1
-            if len(copy_verification_failures) < max_copy_verification_failures:
-                copy_verification_failures.extend(
-                    verify_ready_item_in_active_slot(
-                        ready=ready,
-                        active=active,
-                        active_next_token=active_next_token,
-                        slot=slot,
-                        item_idx=item_idx,
-                        stage="load_item_to_slot",
-                        max_failures=max_copy_verification_failures - len(copy_verification_failures),
-                    )
-                )
-        active_item_indices_cpu[int(slot)] = int(item_idx)
-        generated_rows_cpu[int(item_idx)][0] = ready_first_tokens_cpu[int(item_idx)]
-        generated_lengths_cpu[int(item_idx)] = 1
-        first_token_eos = ready_first_tokens_cpu[int(item_idx)] == int(eos_token_id)
-        first_token_cap = int(max_new_tokens) <= 1
-        initial_finished = bool(first_token_eos or first_token_cap)
-        slot_finished_cpu[int(slot)] = initial_finished
-        fill_batch_row_(slot_finished, int(slot), initial_finished)
-        item_eos_hit_cpu[int(item_idx)] = bool(first_token_eos)
-        item_length_cap_hit_cpu[int(item_idx)] = bool(first_token_cap)
+        verify_loaded_slots(slots, item_indices)
+        initial_finished_values: list[bool] = []
+        for slot, item_idx in zip(slots, item_indices):
+            slot = int(slot)
+            item_idx = int(item_idx)
+            active_item_indices_cpu[slot] = item_idx
+            generated_rows_cpu[item_idx][0] = ready_first_tokens_cpu[item_idx]
+            generated_lengths_cpu[item_idx] = 1
+            first_token_eos = ready_first_tokens_cpu[item_idx] == int(eos_token_id)
+            first_token_cap = int(max_new_tokens) <= 1
+            initial_finished = bool(first_token_eos or first_token_cap)
+            initial_finished_values.append(initial_finished)
+            slot_finished_cpu[slot] = initial_finished
+            item_eos_hit_cpu[item_idx] = bool(first_token_eos)
+            item_length_cap_hit_cpu[item_idx] = bool(first_token_cap)
+        copy_batch_rows_(
+            slot_finished,
+            [int(slot) for slot in slots],
+            torch.tensor(initial_finished_values, device=device, dtype=slot_finished.dtype),
+        )
 
-    def deactivate_slot(slot: int) -> None:
-        active_item_indices_cpu[int(slot)] = -1
-        fill_batch_row_(active_item_indices, int(slot), -1)
-        fill_batch_row_(active_mask, int(slot), False)
-        slot_finished_cpu[int(slot)] = False
-        fill_batch_row_(slot_finished, int(slot), False)
-        fill_batch_row_(active_next_token, int(slot), int(eos_token_id))
-        fill_batch_row_(active.next_cache_position, int(slot), 0)
-        fill_batch_row_(active.rope_deltas, int(slot), 0)
+    def deactivate_slots(slots: list[int]) -> None:
+        if not slots:
+            return
+        for slot in slots:
+            active_item_indices_cpu[int(slot)] = -1
+            slot_finished_cpu[int(slot)] = False
+        copy_batch_rows_(
+            active_item_indices,
+            [int(slot) for slot in slots],
+            torch.full((len(slots),), -1, device=device, dtype=active_item_indices.dtype),
+        )
+        copy_batch_rows_(
+            active_mask,
+            [int(slot) for slot in slots],
+            torch.zeros((len(slots),), device=device, dtype=active_mask.dtype),
+        )
+        copy_batch_rows_(
+            slot_finished,
+            [int(slot) for slot in slots],
+            torch.zeros((len(slots),), device=device, dtype=slot_finished.dtype),
+        )
+        copy_batch_rows_(
+            active_next_token,
+            [int(slot) for slot in slots],
+            torch.full((len(slots), *active_next_token.shape[1:]), int(eos_token_id), device=device, dtype=active_next_token.dtype),
+        )
+        copy_batch_rows_(
+            active.next_cache_position,
+            [int(slot) for slot in slots],
+            torch.zeros((len(slots),), device=device, dtype=active.next_cache_position.dtype),
+        )
+        copy_batch_rows_(
+            active.rope_deltas,
+            [int(slot) for slot in slots],
+            torch.zeros((len(slots), *active.rope_deltas.shape[1:]), device=device, dtype=active.rope_deltas.dtype),
+        )
 
     def consume_finished_slots(finished_flags: list[bool], completion_decode_call: int, record: dict[str, Any] | None = None) -> dict[str, Any]:
         nonlocal completed_count
@@ -1610,6 +1673,8 @@ def static_hotswap_decode_loop(
         swapped_slots = []
         swapped_in_item_ids = []
         deactivated_slots = []
+        pending_swap_slots: list[int] = []
+        pending_swap_items: list[int] = []
         for slot in finished_slots:
             finished_item = active_item_indices_cpu[slot]
             if not completed_by_item[finished_item]:
@@ -1622,12 +1687,15 @@ def static_hotswap_decode_loop(
             if next_ready_idx < num_items:
                 new_item = int(next_ready_idx)
                 next_ready_idx += 1
-                load_item_to_slot(slot, new_item)
+                pending_swap_slots.append(int(slot))
+                pending_swap_items.append(int(new_item))
                 swapped_slots.append(int(slot))
                 swapped_in_item_ids.append(int(new_item))
             else:
-                deactivate_slot(slot)
                 deactivated_slots.append(int(slot))
+
+        load_items_to_slots(pending_swap_slots, pending_swap_items)
+        deactivate_slots(deactivated_slots)
 
         event = {
             "completion_decode_call": int(completion_decode_call),
@@ -1680,9 +1748,10 @@ def static_hotswap_decode_loop(
         return finished_flags
 
     initial_load_start_s = phase_start()
-    for slot in range(int(batch_size)):
-        load_item_to_slot(slot, next_ready_idx)
-        next_ready_idx += 1
+    initial_slots = list(range(int(batch_size)))
+    initial_items = list(range(next_ready_idx, next_ready_idx + int(batch_size)))
+    load_items_to_slots(initial_slots, initial_items)
+    next_ready_idx += int(batch_size)
     add_phase("initial_slot_load_s", initial_load_start_s)
     snapshot_step("after_initial_loads")
 
@@ -1932,7 +2001,7 @@ def static_hotswap_decode_loop(
             "verify_swap_copies": bool(diagnostic_verify_swap_copies),
             "sync_finished_flags": bool(diagnostic_sync_finished_flags),
             "history_storage": "cpu_rows_from_token_copy",
-            "slot_control_write_mode": "index_copy_on_npu_slice_copy_elsewhere",
+            "slot_control_write_mode": "batched_index_copy_for_swaps_and_slot_control",
             "deactivated_slot_state": "eos_token_cache_pos_0_rope_delta_0",
             "step_trace_enabled": bool(diagnostic_step_trace or trace_item_indices),
             "step_trace_full_generated_ids": bool(diagnostic_step_trace),
@@ -2456,7 +2525,7 @@ def main() -> None:
             "cache_update": f"prefill_slice_decode_{decode_cache_update_label(device)}",
             "decode_cache_update": decode_cache_update_label(device),
             "history_write_mode": "cpu_rows_from_token_copy",
-            "slot_control_write_mode": "index_copy_on_npu_slice_copy_elsewhere",
+            "slot_control_write_mode": "batched_index_copy_for_swaps_and_slot_control",
             "prompt_tokens": {
                 "per_item": prompt_tokens,
                 "min": int(min(prompt_tokens)),

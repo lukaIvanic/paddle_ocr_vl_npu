@@ -272,11 +272,17 @@ Read the timing fields carefully:
   `host_wait_prev_flag_s`. CPU timings show realized cadence and may attribute
   async backlog to the next wait point; NPU timings isolate recorded device
   regions.
+- Current hot-swap slot replacement uses
+  `slot_control_write_mode: batched_index_copy_for_swaps_and_slot_control`.
+  Slots that finish in the same iteration are copied as one group per KV
+  layer/control tensor, instead of running the full KV/control copy path once
+  per finished slot.
 - If hot-swap is much slower than fixed cohort, do not rely on p50 alone. Check
   `step_timing_summary.by_swap_count`, `by_finished_slot_count`, and the
-  `top_*` slow-step lists. A large jump from `swap_count=1` to `swap_count=2+`
-  points at the Python per-layer/per-slot KV row-copy loop. Large
-  `host_wait_prev_flag_s` outliers point at hidden synchronization. If
+  `top_*` slow-step lists. After the batched-copy change, compare
+  `swap_count=1` against `swap_count=2+`; multi-slot swap cost should scale
+  much less sharply if the batched path is working. Large `host_wait_prev_flag_s`
+  outliers point at hidden synchronization. If
   `timing_accounting.wall_minus_host_iter_sum_s` is large, some time is being
   spent outside the instrumented loop or in final synchronization. Compare
   fixed-cohort and hot-swap `timing_accounting.npu_event_region_sums_s.decode`;
