@@ -16,11 +16,17 @@ from config import PaddleOCRTextConfig, PaddleOCRVLConfig, PaddleOCRVisionConfig
 FRACTAL_NZ = 29
 DECODE_LINEAR_WEIGHT_FORMAT = "decode_nz"
 DECODE_ATTENTION = "increfa"
+DECODE_CACHE_UPDATE = "npu_scatter"
 _DECODE_ATTENTION_MODE = DECODE_ATTENTION
+_DECODE_CACHE_UPDATE_MODE = DECODE_CACHE_UPDATE
 
 
 def get_decode_attention_mode() -> str:
     return _DECODE_ATTENTION_MODE
+
+
+def get_decode_cache_update_mode() -> str:
+    return _DECODE_CACHE_UPDATE_MODE
 
 
 def set_decode_attention_mode(mode: str) -> None:
@@ -28,6 +34,13 @@ def set_decode_attention_mode(mode: str) -> None:
     if mode not in {"increfa", "manual"}:
         raise ValueError(f"unsupported decode attention mode: {mode!r}")
     _DECODE_ATTENTION_MODE = mode
+
+
+def set_decode_cache_update_mode(mode: str) -> None:
+    global _DECODE_CACHE_UPDATE_MODE
+    if mode not in {"npu_scatter", "per_row_copy"}:
+        raise ValueError(f"unsupported decode cache update mode: {mode!r}")
+    _DECODE_CACHE_UPDATE_MODE = mode
 
 
 def _resolve_model_dir(model_id_or_path: str | Path) -> Path:
@@ -161,7 +174,7 @@ def update_decode_kv_cache_(
     value_states: torch.Tensor,
 ) -> None:
     positions = cache_position.reshape(-1).to(device=key_cache.device, dtype=torch.int64).contiguous()
-    if key_cache.device.type == "npu":
+    if key_cache.device.type == "npu" and get_decode_cache_update_mode() == "npu_scatter":
         import torch_npu
 
         torch_npu.scatter_update_(key_cache, positions, key_states.contiguous(), 2)

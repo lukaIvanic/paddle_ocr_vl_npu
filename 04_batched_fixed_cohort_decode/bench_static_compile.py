@@ -28,7 +28,9 @@ from local_modeling_paddleocr_vl import (
     LocalPaddleOCRVLStaticCache,
     _resolve_model_dir,
     cast_decode_linear_weights_to_nz,
+    get_decode_cache_update_mode,
     get_decode_attention_mode,
+    set_decode_cache_update_mode,
     set_decode_attention_mode,
 )
 from probe_static_compile import DEFAULT_TORCHAIR_CACHE_DIR, compile_decode_module, maybe_sync
@@ -48,6 +50,7 @@ EOS_MODE_CHOICES = ("none", "overlap_event_flags")
 SCHEDULE_CHOICES = ("fixed_cohort", "hotswap")
 STEP_TIMING_CHOICES = ("off", "cpu", "npu", "both")
 DIAGNOSTIC_DECODE_ATTENTION_CHOICES = ("increfa", "manual")
+DIAGNOSTIC_DECODE_CACHE_UPDATE_CHOICES = ("npu_scatter", "per_row_copy")
 DIAGNOSTIC_SWAP_COPY_CHOICES = ("direct", "clone")
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -1322,6 +1325,7 @@ def static_hotswap_decode_loop(
         stopped_all_items=bool(completed_count >= num_items),
         diagnostics={
             "decode_attention_mode": get_decode_attention_mode(),
+            "decode_cache_update_mode": get_decode_cache_update_mode(),
             "swap_copy_mode": diagnostic_swap_copy_mode,
             "verify_swap_copies": bool(diagnostic_verify_swap_copies),
             "sync_finished_flags": bool(diagnostic_sync_finished_flags),
@@ -1580,6 +1584,12 @@ def main() -> None:
         help="Diagnostic only: force manual decode attention to isolate NPU IncreFA issues. Use with --backend raw_eager.",
     )
     parser.add_argument(
+        "--diagnostic-decode-cache-update",
+        default="npu_scatter",
+        choices=DIAGNOSTIC_DECODE_CACHE_UPDATE_CHOICES,
+        help="Diagnostic only: force the CUDA-style per-row decode KV copy on NPU. Use with --backend raw_eager.",
+    )
+    parser.add_argument(
         "--diagnostic-swap-copy-mode",
         default="direct",
         choices=DIAGNOSTIC_SWAP_COPY_CHOICES,
@@ -1608,12 +1618,15 @@ def main() -> None:
         raise ValueError("--profile-dir currently profiles fixed-cohort decode only; run hot-swap without profiler first.")
     if args.diagnostic_decode_attention == "manual" and args.backend != "raw_eager":
         raise ValueError("--diagnostic-decode-attention manual is an uncompiled diagnostic; use --backend raw_eager")
+    if args.diagnostic_decode_cache_update == "per_row_copy" and args.backend != "raw_eager":
+        raise ValueError("--diagnostic-decode-cache-update per_row_copy is an uncompiled diagnostic; use --backend raw_eager")
 
     model_dir = _resolve_model_dir(args.model)
     device = resolve_device(args.device)
     dtype = parse_dtype(args.dtype, device)
     configure_npu_jit_compile(args.npu_jit_compile, device)
     set_decode_attention_mode(args.diagnostic_decode_attention)
+    set_decode_cache_update_mode(args.diagnostic_decode_cache_update)
 
     pre_cfg = load_preprocessor_config(model_dir)
     tokenizer = Tokenizer.from_file(str(model_dir / "tokenizer.json"))
@@ -1760,7 +1773,8 @@ def main() -> None:
             ],
             "linear_weight_format": weight_format_meta,
             "compile": compile_meta,
-            "cache_update": "prefill_slice_decode_npu_scatter",
+            "cache_update": f"prefill_slice_decode_{get_decode_cache_update_mode()}",
+            "decode_cache_update": get_decode_cache_update_mode(),
             "history_write_mode": "per_item_device_rows",
             "prompt_tokens": {
                 "per_item": prompt_tokens,
@@ -1818,6 +1832,7 @@ def main() -> None:
         )
         print("linear_weight_format=" + json.dumps(summary["linear_weight_format"], sort_keys=True))
         print("cache_update=" + summary["cache_update"])
+        print("decode_cache_update=" + summary["decode_cache_update"])
         print("history_write_mode=" + summary["history_write_mode"])
         print(
             f"prompt_tokens={{'min': {summary['prompt_tokens']['min']}, 'max': {summary['prompt_tokens']['max']}}} "
@@ -1974,7 +1989,8 @@ def main() -> None:
         ],
         "linear_weight_format": weight_format_meta,
         "compile": compile_meta,
-        "cache_update": "prefill_slice_decode_npu_scatter",
+        "cache_update": f"prefill_slice_decode_{get_decode_cache_update_mode()}",
+        "decode_cache_update": get_decode_cache_update_mode(),
         "prompt_tokens": {
             "per_row": prompt_tokens,
             "min": int(min(prompt_tokens)),
@@ -2057,6 +2073,7 @@ def main() -> None:
     print("cohort=" + json.dumps(summary["cohort"], sort_keys=True))
     print("linear_weight_format=" + json.dumps(summary["linear_weight_format"], sort_keys=True))
     print("cache_update=" + summary["cache_update"])
+    print("decode_cache_update=" + summary["decode_cache_update"])
     print(
         f"prompt_tokens={summary['prompt_tokens']} generated_tokens_per_row={summary['generated_tokens_per_row']} "
         f"requested_decode_steps={summary['requested_decode_steps']} cache_length={summary['cache_length']}"
