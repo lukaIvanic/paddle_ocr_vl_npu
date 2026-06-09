@@ -304,6 +304,24 @@ manual attention against several PromptFlashAttention call variants on the first
 vision layer only, before the output projection and before 27-layer error
 accumulation.
 
+The model integration should use the minimal BNSD full-attention call on 310P:
+no `actual_seq_lengths`, no `actual_seq_lengths_kv`, and no explicit
+`num_key_value_heads`. Huawei documents those arguments as limited on Atlas
+inference-series products, while the no-length/no-GQA variants are both correct
+and faster in the single-layer probe.
+
+If the minimal PromptFlashAttention integration still fails full-encoder
+validation, run the layer-by-layer probe:
+
+```sh
+cd /home/lukaiv/paddle_ocr_vl_npu/05_full_recognizer_optimizations
+bash run_npu_vision_prompt_fa_layer_probe.sh
+```
+
+Paste back `VISION_PROMPT_FA_LAYER_PROBE` and `LAYER_DIFFS`. This identifies
+whether divergence appears with identical per-layer inputs or only after
+propagating PromptFlashAttention states through multiple layers.
+
 Older manual smoke order:
 
 ```sh

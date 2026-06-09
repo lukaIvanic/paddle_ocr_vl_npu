@@ -807,16 +807,12 @@ class PaddleOCRVisionAttention(nn.Module):
                     raise RuntimeError("vision prompt_flash_attention requires NPU tensors plus torch_npu.")
                 import torch_npu
 
-                length = int(q.shape[2])
                 outputs.append(
                     torch_npu.npu_prompt_flash_attention(
                         q.contiguous(),
                         k.contiguous(),
                         v.contiguous(),
-                        actual_seq_lengths=[length],
-                        actual_seq_lengths_kv=[length],
                         num_heads=int(self.num_heads),
-                        num_key_value_heads=int(self.num_heads),
                         input_layout="BNSD",
                         scale_value=float(self.scaling),
                         sparse_mode=0,
