@@ -308,6 +308,13 @@ def row_trimmed_token_lists(ids: torch.Tensor, eos_token_id: int) -> list[list[i
     return trimmed
 
 
+def safe_decode_tokens(tokenizer: Tokenizer, row: list[int]) -> str:
+    try:
+        return tokenizer.decode(row, skip_special_tokens=True)
+    except Exception as exc:
+        return f"<decode_error {type(exc).__name__}: {exc}>"
+
+
 def length_trimmed_token_lists(ids: torch.Tensor, lengths: torch.Tensor) -> list[list[int]]:
     rows = row_token_lists(ids)
     length_values = [int(value) for value in lengths.detach().cpu().tolist()]
@@ -349,6 +356,71 @@ def token_id_range_summary(
         "max_id": None if max_id is None else int(max_id),
         "invalid_count": int(invalid_count),
         "invalid_samples": invalid_samples,
+    }
+
+
+def first_mismatch_index(left: list[int], right: list[int]) -> int | None:
+    for idx, (left_value, right_value) in enumerate(zip(left, right)):
+        if int(left_value) != int(right_value):
+            return int(idx)
+    if len(left) != len(right):
+        return int(min(len(left), len(right)))
+    return None
+
+
+def token_comparison_summary(left: list[int], right: list[int]) -> dict[str, Any]:
+    mismatch = first_mismatch_index(left, right)
+    return {
+        "equal": bool(mismatch is None),
+        "left_len": int(len(left)),
+        "right_len": int(len(right)),
+        "first_mismatch": None if mismatch is None else int(mismatch),
+        "left_from_mismatch": [] if mismatch is None else [int(value) for value in left[mismatch : mismatch + 8]],
+        "right_from_mismatch": [] if mismatch is None else [int(value) for value in right[mismatch : mismatch + 8]],
+    }
+
+
+def tensor_diff_summary(left: torch.Tensor, right: torch.Tensor) -> dict[str, Any]:
+    if tuple(left.shape) != tuple(right.shape):
+        return {
+            "same_shape": False,
+            "left_shape": [int(value) for value in left.shape],
+            "right_shape": [int(value) for value in right.shape],
+        }
+    exact = bool(torch.equal(left, right))
+    diff = (left.float() - right.float()).abs()
+    return {
+        "same_shape": True,
+        "exact_equal": exact,
+        "max_abs": float(diff.max().item()) if diff.numel() else 0.0,
+        "mean_abs": float(diff.mean().item()) if diff.numel() else 0.0,
+    }
+
+
+def cache_diff_summary(left: LocalPaddleOCRVLStaticCache, right: LocalPaddleOCRVLStaticCache) -> dict[str, Any]:
+    max_abs = 0.0
+    sum_abs = 0.0
+    count = 0
+    exact = True
+    for left_tensor, right_tensor in zip(left.key_caches + left.value_caches, right.key_caches + right.value_caches):
+        if tuple(left_tensor.shape) != tuple(right_tensor.shape):
+            return {
+                "same_shape": False,
+                "exact_equal": False,
+                "max_abs": None,
+                "mean_abs": None,
+            }
+        exact = exact and bool(torch.equal(left_tensor, right_tensor))
+        diff = (left_tensor.float() - right_tensor.float()).abs()
+        if diff.numel():
+            max_abs = max(max_abs, float(diff.max().item()))
+            sum_abs += float(diff.sum().item())
+            count += int(diff.numel())
+    return {
+        "same_shape": True,
+        "exact_equal": bool(exact),
+        "max_abs": float(max_abs),
+        "mean_abs": float(sum_abs / count) if count else 0.0,
     }
 
 
@@ -546,6 +618,18 @@ def hotswap_loop_summary(result: HotSwapDecodeResult, *, batch_size: int) -> dic
     }
 
 
+def make_single_prefill_from_ready(ready: ReadyBank, item_idx: int) -> BatchedPrefill:
+    return BatchedPrefill(
+        cache=LocalPaddleOCRVLStaticCache(
+            tuple(cache[item_idx : item_idx + 1].clone().contiguous() for cache in ready.cache.key_caches),
+            tuple(cache[item_idx : item_idx + 1].clone().contiguous() for cache in ready.cache.value_caches),
+            int(ready.cache.cache_length),
+        ),
+        rope_deltas=ready.rope_deltas[item_idx : item_idx + 1].clone().contiguous(),
+        next_cache_position=ready.next_cache_position[item_idx : item_idx + 1].clone().contiguous(),
+    )
+
+
 @torch.inference_mode()
 def validate_hotswap_against_single_refs(
     *,
@@ -561,15 +645,7 @@ def validate_hotswap_against_single_refs(
     first_mismatches = []
 
     for item_idx in range(int(ready.next_token.shape[0])):
-        single_prefill = BatchedPrefill(
-            cache=LocalPaddleOCRVLStaticCache(
-                tuple(cache[item_idx : item_idx + 1].clone().contiguous() for cache in ready.cache.key_caches),
-                tuple(cache[item_idx : item_idx + 1].clone().contiguous() for cache in ready.cache.value_caches),
-                int(ready.cache.cache_length),
-            ),
-            rope_deltas=ready.rope_deltas[item_idx : item_idx + 1].clone().contiguous(),
-            next_cache_position=ready.next_cache_position[item_idx : item_idx + 1].clone().contiguous(),
-        )
+        single_prefill = make_single_prefill_from_ready(ready, item_idx)
         single_result = static_flat_decode_loop(
             flat_decode,
             single_prefill,
@@ -605,6 +681,103 @@ def validate_hotswap_against_single_refs(
         "mismatch_count": int(sum(1 for value in matches_by_item if not value)),
         "first_mismatches": first_mismatches,
     }
+
+
+@torch.inference_mode()
+def diagnose_hotswap_item_traces(
+    *,
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    flat_decode: Callable,
+    ready: ReadyBank,
+    cohort: list[CohortInput],
+    hotswap_ids: torch.Tensor,
+    hotswap_lengths: torch.Tensor,
+    item_indices: list[int],
+    cache_length: int,
+    max_new_tokens: int,
+    eos_token_id: int,
+    device: torch.device,
+    tokenizer: Tokenizer,
+) -> list[dict[str, Any]]:
+    hotswap_rows = length_trimmed_token_lists(hotswap_ids, hotswap_lengths)
+    traces = []
+    for item_idx in item_indices:
+        if int(item_idx) < 0 or int(item_idx) >= len(cohort):
+            raise ValueError(f"--diagnostic-trace-items contains out-of-range item index {item_idx}; num_items={len(cohort)}")
+
+        item = cohort[int(item_idx)]
+        ready_single_prefill = make_single_prefill_from_ready(ready, int(item_idx))
+        ready_single_result = static_flat_decode_loop(
+            flat_decode,
+            ready_single_prefill,
+            ready.next_token[int(item_idx) : int(item_idx) + 1].clone().contiguous(),
+            max_new_tokens=int(max_new_tokens),
+            eos_mode="overlap_event_flags",
+            eos_token_id=int(eos_token_id),
+            step_timing="off",
+        )
+        direct_prefill, direct_next_token = make_static_prefill(
+            model,
+            item.input_ids.to(device),
+            item.attention_mask.to(device),
+            item.pixel_values.to(device),
+            item.image_grid_thw.to(device),
+            cache_length=int(cache_length),
+        )
+        direct_result = static_flat_decode_loop(
+            flat_decode,
+            direct_prefill,
+            direct_next_token,
+            max_new_tokens=int(max_new_tokens),
+            eos_mode="overlap_event_flags",
+            eos_token_id=int(eos_token_id),
+            step_timing="off",
+        )
+
+        hotswap_row = hotswap_rows[int(item_idx)]
+        ready_single_row = row_trimmed_token_lists(ready_single_result.ids, int(eos_token_id))[0]
+        direct_row = row_trimmed_token_lists(direct_result.ids, int(eos_token_id))[0]
+        traces.append(
+            {
+                "item": int(item_idx),
+                "id": str(item.entry.get("id")),
+                "file": str(item.crop_path),
+                "category_type": item.entry.get("category_type"),
+                "prompt": item.prompt,
+                "prompt_tokens": int(item.input_ids.shape[1]),
+                "generated": {
+                    "hotswap": [int(value) for value in hotswap_row],
+                    "single_ready_clone": [int(value) for value in ready_single_row],
+                    "single_direct_prefill": [int(value) for value in direct_row],
+                },
+                "texts": {
+                    "hotswap": safe_decode_tokens(tokenizer, hotswap_row),
+                    "single_ready_clone": safe_decode_tokens(tokenizer, ready_single_row),
+                    "single_direct_prefill": safe_decode_tokens(tokenizer, direct_row),
+                },
+                "comparisons": {
+                    "hotswap_vs_single_ready_clone": token_comparison_summary(hotswap_row, ready_single_row),
+                    "hotswap_vs_single_direct_prefill": token_comparison_summary(hotswap_row, direct_row),
+                    "single_ready_clone_vs_single_direct_prefill": token_comparison_summary(ready_single_row, direct_row),
+                },
+                "prefill_compare_ready_bank_vs_direct": {
+                    "next_token": tensor_diff_summary(
+                        ready.next_token[int(item_idx) : int(item_idx) + 1].clone().contiguous(),
+                        direct_next_token,
+                    ),
+                    "next_cache_position": tensor_diff_summary(
+                        ready.next_cache_position[int(item_idx) : int(item_idx) + 1].clone().contiguous(),
+                        direct_prefill.next_cache_position.reshape(1),
+                    ),
+                    "rope_deltas": tensor_diff_summary(
+                        ready.rope_deltas[int(item_idx) : int(item_idx) + 1].clone().contiguous(),
+                        direct_prefill.rope_deltas,
+                    ),
+                    "kv_cache": cache_diff_summary(ready_single_prefill.cache, direct_prefill.cache),
+                },
+            }
+        )
+    return traces
 
 
 @torch.inference_mode()
@@ -1605,6 +1778,13 @@ def main() -> None:
         action="store_true",
         help="Diagnostic only: on NPU, read finished-slot flags synchronously instead of using the overlap copy stream.",
     )
+    parser.add_argument(
+        "--diagnostic-trace-items",
+        nargs="*",
+        type=int,
+        default=None,
+        help="Diagnostic only for --schedule hotswap: emit token traces for selected 0-indexed item indices.",
+    )
     parser.add_argument("--profile-dir", type=Path, default=None, help="Write one post-warmup torch_npu profiler capture for compiled batched decode.")
     parser.add_argument("--profile-metric", default="pipe", choices=PROFILE_METRIC_CHOICES)
     parser.add_argument("--json", action="store_true", help="Print a compact JSON summary instead of human-readable lines.")
@@ -1616,6 +1796,8 @@ def main() -> None:
         raise ValueError("--schedule hotswap requires --eos-mode overlap_event_flags")
     if args.schedule == "hotswap" and args.profile_dir is not None:
         raise ValueError("--profile-dir currently profiles fixed-cohort decode only; run hot-swap without profiler first.")
+    if args.schedule != "hotswap" and args.diagnostic_trace_items:
+        raise ValueError("--diagnostic-trace-items is currently available for --schedule hotswap only")
     if args.diagnostic_decode_attention == "manual" and args.backend != "raw_eager":
         raise ValueError("--diagnostic-decode-attention manual is an uncompiled diagnostic; use --backend raw_eager")
     if args.diagnostic_decode_cache_update == "per_row_copy" and args.backend != "raw_eager":
@@ -1727,6 +1909,26 @@ def main() -> None:
                 eos_token_id=eos_token_id,
             ),
         )
+        diagnostic_item_traces = []
+        diagnostic_item_trace_s = 0.0
+        if args.diagnostic_trace_items:
+            diagnostic_item_traces, diagnostic_item_trace_s = timed(
+                device,
+                lambda: diagnose_hotswap_item_traces(
+                    model=model,
+                    flat_decode=flat_decode,
+                    ready=ready_bank,
+                    cohort=cohort,
+                    hotswap_ids=hotswap_result.ids,
+                    hotswap_lengths=hotswap_result.lengths,
+                    item_indices=[int(value) for value in args.diagnostic_trace_items],
+                    cache_length=cache_length,
+                    max_new_tokens=int(args.max_new_tokens),
+                    eos_token_id=eos_token_id,
+                    device=device,
+                    tokenizer=tokenizer,
+                ),
+            )
         hotswap_rows = length_trimmed_token_lists(hotswap_result.ids, hotswap_result.lengths)
         hotswap_token_ids = token_id_range_summary(
             hotswap_result.ids,
@@ -1797,6 +1999,7 @@ def main() -> None:
                 "ready_bank_prefill": float(ready_bank_prefill_s),
                 "hotswap_decode": float(hotswap_decode_s),
                 "hotswap_validation": float(hotswap_validation_s),
+                "diagnostic_item_trace": float(diagnostic_item_trace_s),
             },
             "timing_accounting": hotswap_timing_accounting,
             "tok_per_s": {
@@ -1807,10 +2010,11 @@ def main() -> None:
             "swap_events": hotswap_result.swap_events,
             "step_timing": hotswap_result.step_timing,
             "diagnostics": hotswap_result.diagnostics,
+            "diagnostic_item_traces": diagnostic_item_traces,
             "texts": {
                 "hotswap_trimmed": (
                     [
-                        tokenizer.decode(row, skip_special_tokens=True)
+                        safe_decode_tokens(tokenizer, row)
                         for row in hotswap_rows
                     ]
                     if int(hotswap_token_ids["invalid_count"]) == 0
@@ -1845,6 +2049,8 @@ def main() -> None:
         print("tok_per_s=" + json.dumps(summary["tok_per_s"], sort_keys=True))
         print("step_timing_summary=" + json.dumps(hotswap_loop["step_timing_summary"], sort_keys=True))
         print("swap_events_sample=" + json.dumps(summary["swap_events"][:8], sort_keys=True))
+        if diagnostic_item_traces:
+            print("diagnostic_item_traces=" + json.dumps(diagnostic_item_traces, sort_keys=True))
         print("hotswap_texts_sample=" + repr(summary["texts"]["hotswap_trimmed"][: min(8, len(hotswap_rows))]))
         if not hotswap_required_checks_passed:
             raise SystemExit(1)
