@@ -829,7 +829,7 @@ class PaddleOCRVisionAttention(nn.Module):
             else:
                 raise ValueError(f"unknown vision attention implementation: {attention_impl!r}")
         attn_output = torch.cat(outputs, dim=2)
-        attn_output = attn_output.transpose(1, 2).reshape(seq_length, -1).contiguous()
+        attn_output = attn_output.transpose(1, 2).contiguous().view(seq_length, -1)
         return self.out_proj(attn_output)
 
 
