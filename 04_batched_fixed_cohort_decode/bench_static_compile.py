@@ -1417,7 +1417,7 @@ def main() -> None:
     parser.add_argument("--cache-length", type=int, default=None)
     parser.add_argument("--device", default="auto")
     parser.add_argument("--dtype", default="fp16", choices=["fp16", "float16", "bf16", "bfloat16"])
-    parser.add_argument("--backend", default="eager", choices=["eager", "aot_eager", "inductor", "default", "torchair"])
+    parser.add_argument("--backend", default="eager", choices=["raw_eager", "eager", "aot_eager", "inductor", "default", "torchair"])
     parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
     parser.add_argument("--torchair-cache-dir", type=Path, default=DEFAULT_TORCHAIR_CACHE_DIR)
     parser.add_argument("--eos-mode", default="none", choices=EOS_MODE_CHOICES)

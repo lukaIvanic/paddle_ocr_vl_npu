@@ -149,11 +149,16 @@ slot swap resets the row cache, next token, `cache_position`, and `rope_deltas`;
 no text/image padding is introduced.
 
 Experiment 4 can also run a CUDA debug version of hot-swap with
-`--backend eager --device cuda`. CUDA uses manual PyTorch static-decode
-attention and a synchronous finished-flag path instead of NPU IncreFA,
-TorchAir, and the overlap event stream. Treat CUDA hot-swap as a scheduler and
-`generated_ids` bookkeeping check only; it is not an Ascend throughput result
-and does not validate NPU-specific IncreFA/scatter behavior.
+`--backend raw_eager --device cuda`. In this repo, `--backend eager` means
+`torch.compile(..., backend="eager", fullgraph=True, dynamic=False)`;
+`raw_eager` is true uncompiled Python/PyTorch execution. Use `raw_eager` for
+CUDA hot-swap debugging because the non-NPU static-cache update contains
+host-side per-row indexing that should not be sent through Dynamo. CUDA uses
+manual PyTorch static-decode attention and a synchronous finished-flag path
+instead of NPU IncreFA, TorchAir, and the overlap event stream. Treat CUDA
+hot-swap as a scheduler and `generated_ids` bookkeeping check only; it is not
+an Ascend throughput result and does not validate NPU-specific
+IncreFA/scatter behavior.
 
 Recommended NPU run order for experiment 4:
 

@@ -80,6 +80,14 @@ def compile_decode_module(
     batch_size: int,
     cache_length: int,
 ) -> tuple[Any, dict[str, Any]]:
+    if backend_name == "raw_eager":
+        return flat_decode, {
+            "backend": backend_name,
+            "compile_api": "none",
+            "linear_weight_format": DECODE_LINEAR_WEIGHT_FORMAT,
+            "decode_attention": DECODE_ATTENTION,
+        }
+
     if backend_name == "torchair":
         if device.type != "npu":
             raise ValueError("--backend torchair requires an NPU device.")
@@ -138,7 +146,7 @@ def main() -> None:
     parser.add_argument("--cache-length", type=int, default=None)
     parser.add_argument("--device", default="auto")
     parser.add_argument("--dtype", default="fp16", choices=["fp16", "float16", "bf16", "bfloat16"])
-    parser.add_argument("--backend", default="eager", choices=["eager", "aot_eager", "inductor", "default", "torchair"])
+    parser.add_argument("--backend", default="eager", choices=["raw_eager", "eager", "aot_eager", "inductor", "default", "torchair"])
     parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
     parser.add_argument("--torchair-cache-dir", type=Path, default=DEFAULT_TORCHAIR_CACHE_DIR)
     args = parser.parse_args()
