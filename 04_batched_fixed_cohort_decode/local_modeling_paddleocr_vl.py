@@ -155,8 +155,12 @@ def update_decode_kv_cache_(
         torch_npu.scatter_update_(key_cache, positions, key_states.contiguous(), 2)
         torch_npu.scatter_update_(value_cache, positions, value_states.contiguous(), 2)
         return
-    key_cache.index_copy_(2, positions, key_states.contiguous())
-    value_cache.index_copy_(2, positions, value_states.contiguous())
+    key_states = key_states.contiguous()
+    value_states = value_states.contiguous()
+    for batch_idx in range(int(key_cache.shape[0])):
+        position = int(positions[batch_idx].item())
+        key_cache[batch_idx : batch_idx + 1, :, position : position + 1, :].copy_(key_states[batch_idx : batch_idx + 1])
+        value_cache[batch_idx : batch_idx + 1, :, position : position + 1, :].copy_(value_states[batch_idx : batch_idx + 1])
 
 
 def cast_decode_linear_weights_to_nz(
