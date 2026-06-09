@@ -52,7 +52,10 @@ For diagnostic timing, read `both_*.json`: paste back `correctness`,
 `timing_s`, and `timing_accounting`.
 
 In hot-swap results, `hotswap_total_*` includes active-cache setup, initial
-slot loads, steady loop, final drain, and result materialization. The
-`hotswap_steady_*` rates use only `phase_timing_s.steady_decode_loop_s` and are
-the better comparison for scheduler steady-state decode. Do not write inline
-parsing scripts.
+slot loads, steady loop, final drain, and result materialization. The reusable
+queue-depth-1 token-copy buffer is allocated before the measured decode window;
+its one-time setup cost is reported separately as
+`timing_s.hotswap_overlap_buffer_setup` and
+`phase_timing_s.external_overlap_buffer_setup_s`. The `hotswap_steady_*` rates
+use only `phase_timing_s.steady_decode_loop_s` and are the better comparison
+for scheduler steady-state decode. Do not write inline parsing scripts.

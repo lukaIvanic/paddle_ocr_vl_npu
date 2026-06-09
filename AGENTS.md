@@ -242,7 +242,10 @@ Read the timing fields carefully:
 - Hot-swap `tok_per_s.hotswap_steady_raw_batch_tokens` uses only
   `phase_timing_s.steady_decode_loop_s` and is the preferred steady-state
   scheduler comparison. `hotswap_total_*` includes active-cache setup, initial
-  slot loads, the steady loop, final drain, and result materialization.
+  slot loads, the steady loop, final drain, and result materialization. The
+  reusable overlap token-copy buffer is allocated before the measured decode
+  window and reported separately as `timing_s.hotswap_overlap_buffer_setup` /
+  `phase_timing_s.external_overlap_buffer_setup_s`.
 - Hot-swap `tok_per_s.hotswap_effective_item_tokens` counts only useful item
   tokens and will drop if EOS/length-cap completions create tail bubbles.
 - Before interpreting any throughput, check `matches`. The script sets
@@ -277,6 +280,11 @@ Read the timing fields carefully:
   Slots that finish in the same iteration are copied as one group per KV
   layer/control tensor, instead of running the full KV/control copy path once
   per finished slot.
+- Current overlap token copying uses a reusable one-row pinned CPU ring buffer
+  (`overlap_buffer_source: provided_ring1` in normal NPU summary reports).
+  A large `phase_timing_s.overlap_buffer_setup_s` inside the decode loop would
+  mean the benchmark fell back to allocating the buffer internally and should
+  be treated as a setup bug.
 - If hot-swap is much slower than fixed cohort, do not rely on p50 alone. Check
   `step_timing_summary.by_swap_count`, `by_finished_slot_count`, and the
   `top_*` slow-step lists. After the batched-copy change, compare

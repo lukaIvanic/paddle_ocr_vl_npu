@@ -721,6 +721,8 @@ def benchmark_report(summary: dict[str, Any]) -> dict[str, Any]:
             **common,
             "history_write_mode": summary.get("history_write_mode"),
             "slot_control_write_mode": summary.get("slot_control_write_mode"),
+            "overlap_buffer_source": (summary.get("diagnostics") or {}).get("overlap_buffer_source"),
+            "overlap_buffer_shape": (summary.get("diagnostics") or {}).get("overlap_buffer_shape"),
             "correctness": {
                 "scope": "local hot-swap parity against local single-item static references from the ready bank; not an external Transformers parity check",
                 "all_required_checks_passed": summary.get("matches", {}).get("all_required_checks_passed"),
@@ -1422,6 +1424,8 @@ def static_hotswap_decode_loop(
     diagnostic_step_trace: bool = False,
     diagnostic_step_trace_items: list[int] | None = None,
     diagnostic_step_trace_print: bool = False,
+    overlap_cpu_tokens: torch.Tensor | None = None,
+    overlap_copy_stream: Any | None = None,
 ) -> HotSwapDecodeResult:
     if eos_mode != "overlap_event_flags":
         raise ValueError("--schedule hotswap requires --eos-mode overlap_event_flags")
@@ -1773,9 +1777,25 @@ def static_hotswap_decode_loop(
     max_decode_call_budget = max(1, int(num_items) * max_decode_calls_per_item + max_decode_calls_per_item + int(batch_size))
     async_cpu_tokens = None
     copy_stream = None
+    overlap_buffer_source = "none"
     if use_npu_overlap:
-        async_cpu_tokens = torch.empty((max_decode_call_budget, int(batch_size)), dtype=ready.next_token.dtype, pin_memory=True)
-        copy_stream = torch_npu.npu.Stream(device=device)
+        if overlap_cpu_tokens is None:
+            async_cpu_tokens = torch.empty((1, int(batch_size)), dtype=ready.next_token.dtype, pin_memory=True)
+            overlap_buffer_source = "allocated_inside_ring1"
+        else:
+            if overlap_cpu_tokens.device.type != "cpu":
+                raise ValueError("overlap_cpu_tokens must be a CPU pinned-memory tensor")
+            if tuple(overlap_cpu_tokens.shape) != (1, int(batch_size)):
+                raise ValueError(
+                    f"overlap_cpu_tokens shape must be {(1, int(batch_size))}, got {tuple(overlap_cpu_tokens.shape)}"
+                )
+            if overlap_cpu_tokens.dtype != ready.next_token.dtype:
+                raise ValueError(
+                    f"overlap_cpu_tokens dtype must be {ready.next_token.dtype}, got {overlap_cpu_tokens.dtype}"
+                )
+            async_cpu_tokens = overlap_cpu_tokens
+            overlap_buffer_source = "provided_ring1"
+        copy_stream = overlap_copy_stream if overlap_copy_stream is not None else torch_npu.npu.Stream(device=device)
     add_phase("overlap_buffer_setup_s", overlap_setup_start_s)
     pending_token_event = None
     pending_token_row = None
@@ -1916,7 +1936,7 @@ def static_hotswap_decode_loop(
             with torch_npu.npu.stream(copy_stream):
                 copy_stream.wait_event(flag_ready_event)
                 npu_flag_copy_start = timing.npu_event(copy_stream)
-                async_cpu_tokens[int(decode_calls) - 1].copy_(active_next_token.reshape(-1), non_blocking=True)
+                async_cpu_tokens[0].copy_(active_next_token.reshape(-1), non_blocking=True)
                 npu_flag_copy_end = timing.npu_event(copy_stream)
                 copy_done_event.record(copy_stream)
             flag_copy_enqueue_s = timing.cpu_elapsed_s(host_flag_copy_start)
@@ -1924,7 +1944,7 @@ def static_hotswap_decode_loop(
                 record["host_flag_copy_enqueue_s"] = flag_copy_enqueue_s
             events["npu_flag_copy"] = (npu_flag_copy_start, npu_flag_copy_end)
             pending_token_event = copy_done_event
-            pending_token_row = int(decode_calls) - 1
+            pending_token_row = 0
         else:
             pending_token_values = [int(row[0]) for row in active_next_token.detach().cpu().tolist()]
         pending_active_before_step_cpu = [bool(value) for value in active_before_step_cpu]
@@ -2002,6 +2022,8 @@ def static_hotswap_decode_loop(
             "sync_finished_flags": bool(diagnostic_sync_finished_flags),
             "history_storage": "cpu_rows_from_token_copy",
             "slot_control_write_mode": "batched_index_copy_for_swaps_and_slot_control",
+            "overlap_buffer_source": overlap_buffer_source,
+            "overlap_buffer_shape": list(async_cpu_tokens.shape) if async_cpu_tokens is not None else None,
             "deactivated_slot_state": "eos_token_cache_pos_0_rope_delta_0",
             "step_trace_enabled": bool(diagnostic_step_trace or trace_item_indices),
             "step_trace_full_generated_ids": bool(diagnostic_step_trace),
@@ -2420,6 +2442,20 @@ def main() -> None:
             ),
         )
         ready_bank, _ready_slot_prefills = ready_bank_result
+        hotswap_overlap_buffer_setup_s = 0.0
+        hotswap_overlap_cpu_tokens = None
+        hotswap_overlap_copy_stream = None
+        if device.type == "npu" and not bool(args.diagnostic_sync_finished_flags):
+            import torch_npu
+
+            overlap_buffer_start = time.perf_counter()
+            hotswap_overlap_cpu_tokens = torch.empty(
+                (1, int(args.batch_size)),
+                dtype=ready_bank.next_token.dtype,
+                pin_memory=True,
+            )
+            hotswap_overlap_copy_stream = torch_npu.npu.Stream(device=device)
+            hotswap_overlap_buffer_setup_s = time.perf_counter() - overlap_buffer_start
         hotswap_result, hotswap_decode_s = timed(
             device,
             lambda: static_hotswap_decode_loop(
@@ -2436,6 +2472,8 @@ def main() -> None:
                 diagnostic_step_trace=bool(args.diagnostic_step_trace),
                 diagnostic_step_trace_items=[int(value) for value in args.diagnostic_step_trace_items] if args.diagnostic_step_trace_items else None,
                 diagnostic_step_trace_print=bool(args.diagnostic_step_trace_print),
+                overlap_cpu_tokens=hotswap_overlap_cpu_tokens,
+                overlap_copy_stream=hotswap_overlap_copy_stream,
             ),
         )
         finalize_step_timing(hotswap_result)
@@ -2480,6 +2518,7 @@ def main() -> None:
         raw_token_calls = int(hotswap_loop["raw_decode_token_calls"])
         effective_token_calls = int(hotswap_loop["effective_decode_token_calls"])
         hotswap_phase_timing_s = dict(hotswap_result.phase_timing_s or {})
+        hotswap_phase_timing_s["external_overlap_buffer_setup_s"] = float(hotswap_overlap_buffer_setup_s)
         hotswap_phase_timing_s["outer_minus_function_wall_s"] = float(
             hotswap_decode_s - hotswap_phase_timing_s.get("function_wall_s", 0.0)
         )
@@ -2545,6 +2584,7 @@ def main() -> None:
                 "compile_wrapper": float(compile_wrapper_s),
                 "compile_first_call": float(compile_first_s),
                 "ready_bank_prefill": float(ready_bank_prefill_s),
+                "hotswap_overlap_buffer_setup": float(hotswap_overlap_buffer_setup_s),
                 "hotswap_decode": float(hotswap_decode_s),
                 "hotswap_total": float(hotswap_decode_s),
                 "hotswap_steady_decode_loop": float(hotswap_steady_decode_s),
