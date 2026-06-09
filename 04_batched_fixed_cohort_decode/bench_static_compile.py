@@ -1911,9 +1911,9 @@ def main() -> None:
     parser.add_argument("--dtype", default="fp16", choices=["fp16", "float16", "bf16", "bfloat16"])
     parser.add_argument("--backend", default="eager", choices=["raw_eager", "eager", "aot_eager", "inductor", "default", "torchair"])
     parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
-    parser.add_argument("--torchair-cache-dir", type=Path, default=DEFAULT_TORCHAIR_CACHE_DIR)
+    parser.add_argument("--torchair-cache-dir", type=Path, default=DEFAULT_TORCHAIR_CACHE_DIR, help="TorchAir GE cache root. Reuse this for warm runs; use a fresh path after model code changes.")
     parser.add_argument("--eos-mode", default="none", choices=EOS_MODE_CHOICES)
-    parser.add_argument("--step-timing", default="off", choices=STEP_TIMING_CHOICES)
+    parser.add_argument("--step-timing", default="off", choices=STEP_TIMING_CHOICES, help="Use 'both' for NPU speed runs; JSON output includes per-step host/NPU decode, swap, and flag-copy timing.")
     parser.add_argument(
         "--diagnostic-swap-copy-mode",
         default="direct",
@@ -1954,7 +1954,7 @@ def main() -> None:
         action="store_true",
         help="Diagnostic only for --schedule hotswap: print each step-trace snapshot immediately as a JSON line.",
     )
-    parser.add_argument("--profile-dir", type=Path, default=None, help="Write one post-warmup torch_npu profiler capture for compiled batched decode.")
+    parser.add_argument("--profile-dir", type=Path, default=None, help="Fixed-cohort only: write one post-warmup torch_npu profiler capture for compiled batched decode with --max-new-tokens < 16.")
     parser.add_argument("--profile-metric", default="pipe", choices=PROFILE_METRIC_CHOICES)
     parser.add_argument("--json", action="store_true", help="Print a compact JSON summary instead of human-readable lines.")
     args = parser.parse_args()
