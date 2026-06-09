@@ -107,6 +107,7 @@ class HotSwapDecodeResult:
     step_timing: list[dict[str, Any]] | None
     stopped_all_items: bool
     diagnostics: dict[str, Any] | None = None
+    diagnostic_step_trace: list[dict[str, Any]] | None = None
     timing_recorder: Any | None = None
 
 
@@ -1144,6 +1145,8 @@ def static_hotswap_decode_loop(
     diagnostic_swap_copy_mode: str = "direct",
     diagnostic_verify_swap_copies: bool = False,
     diagnostic_sync_finished_flags: bool = False,
+    diagnostic_step_trace: bool = False,
+    diagnostic_step_trace_items: list[int] | None = None,
 ) -> HotSwapDecodeResult:
     if eos_mode != "overlap_event_flags":
         raise ValueError("--schedule hotswap requires --eos-mode overlap_event_flags")
@@ -1213,6 +1216,64 @@ def static_hotswap_decode_loop(
     copy_verification_failures: list[dict[str, Any]] = []
     copy_verification_checks = 0
     max_copy_verification_failures = 16
+    step_trace: list[dict[str, Any]] = []
+    trace_item_indices = (
+        [int(value) for value in diagnostic_step_trace_items]
+        if diagnostic_step_trace_items
+        else []
+    )
+    for trace_item in trace_item_indices:
+        if trace_item < 0 or trace_item >= num_items:
+            raise ValueError(f"--diagnostic-step-trace-items contains out-of-range item index {trace_item}; num_items={num_items}")
+
+    def snapshot_step(stage: str, *, extra: dict[str, Any] | None = None) -> None:
+        if not diagnostic_step_trace and not trace_item_indices:
+            return
+        active_item_indices_tensor = [int(value) for value in active_item_indices.detach().cpu().tolist()]
+        active_mask_values = [bool(value) for value in active_mask.detach().cpu().tolist()]
+        slot_finished_values = [bool(value) for value in slot_finished.detach().cpu().tolist()]
+        cache_position_values = [int(value) for value in active.next_cache_position.detach().cpu().tolist()]
+        active_next_token_values = [int(row[0]) for row in active_next_token.detach().cpu().tolist()]
+        selected_items = list(range(num_items)) if diagnostic_step_trace else trace_item_indices
+        generated_full = None
+        generated_trimmed = None
+        if diagnostic_step_trace:
+            generated_full = [[int(value) for value in row.detach().cpu().tolist()] for row in generated_rows]
+            generated_trimmed = [
+                row[: max(0, int(length))]
+                for row, length in zip(generated_full, generated_lengths_cpu)
+            ]
+        selected_generated_full = {
+            str(item_idx): [int(value) for value in generated_rows[item_idx].detach().cpu().tolist()]
+            for item_idx in selected_items
+        }
+        selected_generated_trimmed = {
+            str(item_idx): selected_generated_full[str(item_idx)][: max(0, int(generated_lengths_cpu[item_idx]))]
+            for item_idx in selected_items
+        }
+        record = {
+            "stage": stage,
+            "decode_calls": int(decode_calls),
+            "completed_count": int(completed_count),
+            "next_ready_idx": int(next_ready_idx),
+            "active_item_indices_cpu": [int(value) for value in active_item_indices_cpu],
+            "active_item_indices_tensor": active_item_indices_tensor,
+            "active_mask": active_mask_values,
+            "slot_finished_cpu": [bool(value) for value in slot_finished_cpu],
+            "slot_finished_tensor": slot_finished_values,
+            "active_next_token": active_next_token_values,
+            "active_cache_position": cache_position_values,
+            "generated_lengths": [int(value) for value in generated_lengths_cpu],
+            "selected_items": [int(value) for value in selected_items],
+            "selected_generated_ids_full": selected_generated_full,
+            "selected_generated_ids_trimmed": selected_generated_trimmed,
+        }
+        if diagnostic_step_trace:
+            record["generated_ids_full"] = generated_full
+            record["generated_ids_trimmed"] = generated_trimmed
+        if extra:
+            record.update(extra)
+        step_trace.append(record)
 
     def load_item_to_slot(slot: int, item_idx: int) -> None:
         copy_ready_item_to_active_slot_(
@@ -1317,6 +1378,7 @@ def static_hotswap_decode_loop(
     for slot in range(int(batch_size)):
         load_item_to_slot(slot, next_ready_idx)
         next_ready_idx += 1
+    snapshot_step("after_initial_loads")
 
     # Handle the rare case where the prefill-selected first token is already EOS
     # or the run intentionally requests only one generated token.
@@ -1324,7 +1386,8 @@ def static_hotswap_decode_loop(
         initial_finished_flags = [bool(value) for value in slot_finished.detach().cpu().tolist()]
         if not any(initial_finished_flags):
             break
-        consume_finished_slots(initial_finished_flags, completion_decode_call=0)
+        initial_event = consume_finished_slots(initial_finished_flags, completion_decode_call=0)
+        snapshot_step("after_initial_finished_consume", extra={"consume_event": initial_event})
         if completed_count >= num_items:
             break
 
@@ -1376,12 +1439,20 @@ def static_hotswap_decode_loop(
                 finished_flags = list(pending_finished_flags)
             host_swap_start = timing.cpu_now()
             npu_swap_start = timing.npu_event()
-            consume_finished_slots(finished_flags, int(pending_completion_decode_call), record)
+            consume_event = consume_finished_slots(finished_flags, int(pending_completion_decode_call), record)
             npu_swap_end = timing.npu_event()
             swap_s = timing.cpu_elapsed_s(host_swap_start)
             if swap_s is not None:
                 record["host_swap_s"] = swap_s
             events["npu_swap"] = (npu_swap_start, npu_swap_end)
+            snapshot_step(
+                "after_pending_finished_consume",
+                extra={
+                    "pending_completion_decode_call": int(pending_completion_decode_call),
+                    "finished_flags": [bool(value) for value in finished_flags],
+                    "consume_event": consume_event,
+                },
+            )
             pending_flag_event = None
             pending_flag_row = None
             pending_finished_flags = None
@@ -1400,6 +1471,13 @@ def static_hotswap_decode_loop(
             int(item_idx) >= 0 and not bool(slot_finished_cpu[slot])
             for slot, item_idx in enumerate(active_item_indices_cpu)
         ]
+        snapshot_step(
+            "before_decode",
+            extra={
+                "next_decode_call": int(decode_calls) + 1,
+                "active_before_step_cpu": [bool(value) for value in active_before_step_cpu],
+            },
+        )
         host_decode_start = timing.cpu_now()
         npu_decode_start = timing.npu_event()
         last_logits = decode_fn(active_next_token, active.next_cache_position, active.rope_deltas, *flat_cache)
@@ -1437,6 +1515,17 @@ def static_hotswap_decode_loop(
         slot_finished.logical_or_(new_eos_by_slot)
         active.next_cache_position.add_(active_before_step.to(dtype=active.next_cache_position.dtype))
         decode_calls += 1
+        snapshot_step(
+            "after_decode_write",
+            extra={
+                "decode_call": int(decode_calls),
+                "active_before_step_cpu": [bool(value) for value in active_before_step_cpu],
+                "sampled_token": [int(row[0]) for row in sampled_token.detach().cpu().tolist()],
+                "written_next_token": [int(row[0]) for row in active_next_token.detach().cpu().tolist()],
+                "length_cap_slots": [int(slot) for slot in length_cap_slots],
+                "new_eos_by_slot": [bool(value) for value in new_eos_by_slot.detach().cpu().tolist()],
+            },
+        )
 
         if use_npu_overlap:
             assert async_cpu_flags is not None
@@ -1479,10 +1568,19 @@ def static_hotswap_decode_loop(
             finished_flags = [bool(value) for value in async_cpu_flags[int(pending_flag_row)].tolist()]
         else:
             finished_flags = list(pending_finished_flags)
-        consume_finished_slots(finished_flags, int(pending_completion_decode_call))
+        final_event = consume_finished_slots(finished_flags, int(pending_completion_decode_call))
+        snapshot_step(
+            "after_final_finished_consume",
+            extra={
+                "pending_completion_decode_call": int(pending_completion_decode_call),
+                "finished_flags": [bool(value) for value in finished_flags],
+                "consume_event": final_event,
+            },
+        )
 
     generated_ids = torch.stack(generated_rows, dim=0)
     generated_lengths = torch.tensor(generated_lengths_cpu, device=device, dtype=torch.int64)
+    snapshot_step("final")
 
     return HotSwapDecodeResult(
         ids=generated_ids,
@@ -1504,10 +1602,15 @@ def static_hotswap_decode_loop(
             "sync_finished_flags": bool(diagnostic_sync_finished_flags),
             "history_storage": "per_item_device_rows",
             "deactivated_slot_state": "eos_token_cache_pos_0_rope_delta_0",
+            "step_trace_enabled": bool(diagnostic_step_trace or trace_item_indices),
+            "step_trace_full_generated_ids": bool(diagnostic_step_trace),
+            "step_trace_items": [int(value) for value in trace_item_indices],
+            "step_trace_syncs_device": bool(diagnostic_step_trace or trace_item_indices),
             "copy_verification_checks": int(copy_verification_checks),
             "copy_verification_failure_count": int(len(copy_verification_failures)),
             "copy_verification_failures": copy_verification_failures,
         },
+        diagnostic_step_trace=step_trace if (diagnostic_step_trace or trace_item_indices) else None,
         timing_recorder=timing if step_timing != "off" else None,
     )
 
@@ -1797,6 +1900,18 @@ def main() -> None:
         default=None,
         help="Diagnostic only for --schedule hotswap: emit token traces for selected 0-indexed item indices.",
     )
+    parser.add_argument(
+        "--diagnostic-step-trace",
+        action="store_true",
+        help="Diagnostic only for --schedule hotswap: snapshot the full generated_ids matrix at every hot-swap loop stage.",
+    )
+    parser.add_argument(
+        "--diagnostic-step-trace-items",
+        nargs="*",
+        type=int,
+        default=None,
+        help="Diagnostic only for --schedule hotswap: snapshot selected generated_ids rows at every hot-swap loop stage.",
+    )
     parser.add_argument("--profile-dir", type=Path, default=None, help="Write one post-warmup torch_npu profiler capture for compiled batched decode.")
     parser.add_argument("--profile-metric", default="pipe", choices=PROFILE_METRIC_CHOICES)
     parser.add_argument("--json", action="store_true", help="Print a compact JSON summary instead of human-readable lines.")
@@ -1810,6 +1925,10 @@ def main() -> None:
         raise ValueError("--profile-dir currently profiles fixed-cohort decode only; run hot-swap without profiler first.")
     if args.schedule != "hotswap" and args.diagnostic_trace_items:
         raise ValueError("--diagnostic-trace-items is currently available for --schedule hotswap only")
+    if args.schedule != "hotswap" and args.diagnostic_step_trace:
+        raise ValueError("--diagnostic-step-trace is currently available for --schedule hotswap only")
+    if args.schedule != "hotswap" and args.diagnostic_step_trace_items:
+        raise ValueError("--diagnostic-step-trace-items is currently available for --schedule hotswap only")
     if args.diagnostic_decode_attention == "manual" and args.backend != "raw_eager":
         raise ValueError("--diagnostic-decode-attention manual is an uncompiled diagnostic; use --backend raw_eager")
     if args.diagnostic_decode_cache_update == "per_row_copy" and args.backend != "raw_eager":
@@ -1907,6 +2026,8 @@ def main() -> None:
                 diagnostic_swap_copy_mode=args.diagnostic_swap_copy_mode,
                 diagnostic_verify_swap_copies=bool(args.diagnostic_verify_swap_copies),
                 diagnostic_sync_finished_flags=bool(args.diagnostic_sync_finished_flags),
+                diagnostic_step_trace=bool(args.diagnostic_step_trace),
+                diagnostic_step_trace_items=[int(value) for value in args.diagnostic_step_trace_items] if args.diagnostic_step_trace_items else None,
             ),
         )
         finalize_step_timing(hotswap_result)
@@ -2022,6 +2143,7 @@ def main() -> None:
             "swap_events": hotswap_result.swap_events,
             "step_timing": hotswap_result.step_timing,
             "diagnostics": hotswap_result.diagnostics,
+            "diagnostic_step_trace": hotswap_result.diagnostic_step_trace or [],
             "diagnostic_item_traces": diagnostic_item_traces,
             "texts": {
                 "hotswap_trimmed": (
@@ -2063,6 +2185,8 @@ def main() -> None:
         print("swap_events_sample=" + json.dumps(summary["swap_events"][:8], sort_keys=True))
         if diagnostic_item_traces:
             print("diagnostic_item_traces=" + json.dumps(diagnostic_item_traces, sort_keys=True))
+        if hotswap_result.diagnostic_step_trace:
+            print("diagnostic_step_trace=" + json.dumps(hotswap_result.diagnostic_step_trace, sort_keys=True))
         print("hotswap_texts_sample=" + repr(summary["texts"]["hotswap_trimmed"][: min(8, len(hotswap_rows))]))
         if not hotswap_required_checks_passed:
             raise SystemExit(1)
