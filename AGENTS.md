@@ -234,6 +234,12 @@ Read the timing fields carefully:
   If a work/NPU run still mismatches with this mode, prioritize decode/logit
   isolation (`--backend eager`, first-step batch-vs-single logits) over
   generated-history collision debugging.
+- If CUDA/Vast raw eager passes hot-swap but NPU still mismatches, use the
+  experiment-4 diagnostic flags only for isolation, not as serving knobs:
+  `--diagnostic-verify-swap-copies`, `--diagnostic-swap-copy-mode clone`, and
+  `--diagnostic-decode-attention manual --backend raw_eager`. Manual attention
+  is intentionally uncompiled and exists to separate NPU IncreFA behavior from
+  scheduler/cache-copy behavior.
 - `step_timing_summary.swap` versus `step_timing_summary.no_swap` shows whether
   slot replacement is expensive. Watch `npu_swap_ms`, `host_swap_s`, and
   `host_wait_prev_flag_s`. CPU timings show realized cadence and may attribute

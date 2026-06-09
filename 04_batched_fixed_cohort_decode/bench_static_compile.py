@@ -28,6 +28,8 @@ from local_modeling_paddleocr_vl import (
     LocalPaddleOCRVLStaticCache,
     _resolve_model_dir,
     cast_decode_linear_weights_to_nz,
+    get_decode_attention_mode,
+    set_decode_attention_mode,
 )
 from probe_static_compile import DEFAULT_TORCHAIR_CACHE_DIR, compile_decode_module, maybe_sync
 from run_local_recognition import (
@@ -45,6 +47,8 @@ PROFILE_METRIC_CHOICES = ("pipe", "memory", "l2", "memory_access")
 EOS_MODE_CHOICES = ("none", "overlap_event_flags")
 SCHEDULE_CHOICES = ("fixed_cohort", "hotswap")
 STEP_TIMING_CHOICES = ("off", "cpu", "npu", "both")
+DIAGNOSTIC_DECODE_ATTENTION_CHOICES = ("increfa", "manual")
+DIAGNOSTIC_SWAP_COPY_CHOICES = ("direct", "clone")
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -99,6 +103,7 @@ class HotSwapDecodeResult:
     swap_events: list[dict[str, Any]]
     step_timing: list[dict[str, Any]] | None
     stopped_all_items: bool
+    diagnostics: dict[str, Any] | None = None
     timing_recorder: Any | None = None
 
 
@@ -829,17 +834,87 @@ def copy_ready_item_to_active_slot_(
     active_mask: torch.Tensor,
     slot: int,
     item_idx: int,
+    copy_mode: str = "direct",
 ) -> None:
+    if copy_mode not in DIAGNOSTIC_SWAP_COPY_CHOICES:
+        raise ValueError(f"unsupported hot-swap copy mode: {copy_mode!r}")
     slot_slice = slice(int(slot), int(slot) + 1)
     item_slice = slice(int(item_idx), int(item_idx) + 1)
     for layer_idx in range(len(active.cache.key_caches)):
-        active.cache.key_caches[layer_idx][slot_slice].copy_(ready.cache.key_caches[layer_idx][item_slice])
-        active.cache.value_caches[layer_idx][slot_slice].copy_(ready.cache.value_caches[layer_idx][item_slice])
-    active.rope_deltas[slot_slice].copy_(ready.rope_deltas[item_slice])
-    active.next_cache_position[slot_slice].copy_(ready.next_cache_position[item_slice])
-    active_next_token[slot_slice].copy_(ready.next_token[item_slice])
+        key_row = ready.cache.key_caches[layer_idx][item_slice]
+        value_row = ready.cache.value_caches[layer_idx][item_slice]
+        if copy_mode == "clone":
+            key_row = key_row.clone().contiguous()
+            value_row = value_row.clone().contiguous()
+        active.cache.key_caches[layer_idx][slot_slice].copy_(key_row)
+        active.cache.value_caches[layer_idx][slot_slice].copy_(value_row)
+    rope_row = ready.rope_deltas[item_slice]
+    position_row = ready.next_cache_position[item_slice]
+    next_token_row = ready.next_token[item_slice]
+    if copy_mode == "clone":
+        rope_row = rope_row.clone().contiguous()
+        position_row = position_row.clone().contiguous()
+        next_token_row = next_token_row.clone().contiguous()
+    active.rope_deltas[slot_slice].copy_(rope_row)
+    active.next_cache_position[slot_slice].copy_(position_row)
+    active_next_token[slot_slice].copy_(next_token_row)
     active_item_indices[slot_slice].fill_(int(item_idx))
     active_mask[slot_slice].fill_(True)
+
+
+def verify_ready_item_in_active_slot(
+    *,
+    ready: ReadyBank,
+    active: BatchedPrefill,
+    active_next_token: torch.Tensor,
+    slot: int,
+    item_idx: int,
+    stage: str,
+    max_failures: int,
+) -> list[dict[str, Any]]:
+    if max_failures <= 0:
+        return []
+    slot_slice = slice(int(slot), int(slot) + 1)
+    item_slice = slice(int(item_idx), int(item_idx) + 1)
+    failures: list[dict[str, Any]] = []
+
+    def check_tensor(name: str, active_tensor: torch.Tensor, ready_tensor: torch.Tensor, layer_idx: int | None = None) -> None:
+        if len(failures) >= max_failures:
+            return
+        if torch.equal(active_tensor, ready_tensor):
+            return
+        diff = (active_tensor.float() - ready_tensor.float()).abs()
+        failure = {
+            "stage": stage,
+            "slot": int(slot),
+            "item": int(item_idx),
+            "tensor": name,
+            "max_abs": float(diff.max()),
+            "mean_abs": float(diff.mean()),
+        }
+        if layer_idx is not None:
+            failure["layer"] = int(layer_idx)
+        failures.append(failure)
+
+    for layer_idx in range(len(active.cache.key_caches)):
+        if len(failures) >= max_failures:
+            break
+        check_tensor(
+            "key_cache",
+            active.cache.key_caches[layer_idx][slot_slice],
+            ready.cache.key_caches[layer_idx][item_slice],
+            layer_idx,
+        )
+        check_tensor(
+            "value_cache",
+            active.cache.value_caches[layer_idx][slot_slice],
+            ready.cache.value_caches[layer_idx][item_slice],
+            layer_idx,
+        )
+    check_tensor("rope_deltas", active.rope_deltas[slot_slice], ready.rope_deltas[item_slice])
+    check_tensor("next_cache_position", active.next_cache_position[slot_slice], ready.next_cache_position[item_slice])
+    check_tensor("next_token", active_next_token[slot_slice], ready.next_token[item_slice])
+    return failures
 
 
 @torch.inference_mode()
@@ -852,6 +927,8 @@ def static_hotswap_decode_loop(
     eos_mode: str,
     eos_token_id: int,
     step_timing: str = "off",
+    diagnostic_swap_copy_mode: str = "direct",
+    diagnostic_verify_swap_copies: bool = False,
 ) -> HotSwapDecodeResult:
     if eos_mode != "overlap_event_flags":
         raise ValueError("--schedule hotswap requires --eos-mode overlap_event_flags")
@@ -916,6 +993,9 @@ def static_hotswap_decode_loop(
     last_logits = None
     decode_calls = 0
     timing = StepTimingRecorder(step_timing, device)
+    copy_verification_failures: list[dict[str, Any]] = []
+    copy_verification_checks = 0
+    max_copy_verification_failures = 16
 
     def load_item_to_slot(slot: int, item_idx: int) -> None:
         copy_ready_item_to_active_slot_(
@@ -926,7 +1006,23 @@ def static_hotswap_decode_loop(
             active_mask=active_mask,
             slot=slot,
             item_idx=item_idx,
+            copy_mode=diagnostic_swap_copy_mode,
         )
+        nonlocal copy_verification_checks
+        if diagnostic_verify_swap_copies:
+            copy_verification_checks += 1
+            if len(copy_verification_failures) < max_copy_verification_failures:
+                copy_verification_failures.extend(
+                    verify_ready_item_in_active_slot(
+                        ready=ready,
+                        active=active,
+                        active_next_token=active_next_token,
+                        slot=slot,
+                        item_idx=item_idx,
+                        stage="load_item_to_slot",
+                        max_failures=max_copy_verification_failures - len(copy_verification_failures),
+                    )
+                )
         active_item_indices_cpu[int(slot)] = int(item_idx)
         generated_ids[int(item_idx), 0].copy_(ready.next_token[int(item_idx), 0])
         generated_lengths_cpu[int(item_idx)] = 1
@@ -1180,6 +1276,14 @@ def static_hotswap_decode_loop(
         swap_events=swap_events,
         step_timing=timing.records,
         stopped_all_items=bool(completed_count >= num_items),
+        diagnostics={
+            "decode_attention_mode": get_decode_attention_mode(),
+            "swap_copy_mode": diagnostic_swap_copy_mode,
+            "verify_swap_copies": bool(diagnostic_verify_swap_copies),
+            "copy_verification_checks": int(copy_verification_checks),
+            "copy_verification_failure_count": int(len(copy_verification_failures)),
+            "copy_verification_failures": copy_verification_failures,
+        },
         timing_recorder=timing if step_timing != "off" else None,
     )
 
@@ -1422,6 +1526,23 @@ def main() -> None:
     parser.add_argument("--torchair-cache-dir", type=Path, default=DEFAULT_TORCHAIR_CACHE_DIR)
     parser.add_argument("--eos-mode", default="none", choices=EOS_MODE_CHOICES)
     parser.add_argument("--step-timing", default="off", choices=STEP_TIMING_CHOICES)
+    parser.add_argument(
+        "--diagnostic-decode-attention",
+        default="increfa",
+        choices=DIAGNOSTIC_DECODE_ATTENTION_CHOICES,
+        help="Diagnostic only: force manual decode attention to isolate NPU IncreFA issues. Use with --backend raw_eager.",
+    )
+    parser.add_argument(
+        "--diagnostic-swap-copy-mode",
+        default="direct",
+        choices=DIAGNOSTIC_SWAP_COPY_CHOICES,
+        help="Diagnostic only: clone ready-bank rows before copying them into active slots.",
+    )
+    parser.add_argument(
+        "--diagnostic-verify-swap-copies",
+        action="store_true",
+        help="Diagnostic only: compare active slot rows against ready-bank rows after each load/swap.",
+    )
     parser.add_argument("--profile-dir", type=Path, default=None, help="Write one post-warmup torch_npu profiler capture for compiled batched decode.")
     parser.add_argument("--profile-metric", default="pipe", choices=PROFILE_METRIC_CHOICES)
     parser.add_argument("--json", action="store_true", help="Print a compact JSON summary instead of human-readable lines.")
@@ -1433,11 +1554,14 @@ def main() -> None:
         raise ValueError("--schedule hotswap requires --eos-mode overlap_event_flags")
     if args.schedule == "hotswap" and args.profile_dir is not None:
         raise ValueError("--profile-dir currently profiles fixed-cohort decode only; run hot-swap without profiler first.")
+    if args.diagnostic_decode_attention == "manual" and args.backend != "raw_eager":
+        raise ValueError("--diagnostic-decode-attention manual is an uncompiled diagnostic; use --backend raw_eager")
 
     model_dir = _resolve_model_dir(args.model)
     device = resolve_device(args.device)
     dtype = parse_dtype(args.dtype, device)
     configure_npu_jit_compile(args.npu_jit_compile, device)
+    set_decode_attention_mode(args.diagnostic_decode_attention)
 
     pre_cfg = load_preprocessor_config(model_dir)
     tokenizer = Tokenizer.from_file(str(model_dir / "tokenizer.json"))
@@ -1521,6 +1645,8 @@ def main() -> None:
                 eos_mode=args.eos_mode,
                 eos_token_id=eos_token_id,
                 step_timing=args.step_timing,
+                diagnostic_swap_copy_mode=args.diagnostic_swap_copy_mode,
+                diagnostic_verify_swap_copies=bool(args.diagnostic_verify_swap_copies),
             ),
         )
         finalize_step_timing(hotswap_result)
@@ -1554,7 +1680,8 @@ def main() -> None:
             "device": str(device),
             "dtype": str(dtype),
             "npu_jit_compile": args.npu_jit_compile,
-            "decode_attention": DECODE_ATTENTION,
+            "decode_attention": get_decode_attention_mode(),
+            "default_decode_attention": DECODE_ATTENTION,
             "eos_mode": args.eos_mode,
             "eos_token_id": eos_token_id,
             "batch_size": int(args.batch_size),
@@ -1603,6 +1730,7 @@ def main() -> None:
             },
             "swap_events": hotswap_result.swap_events,
             "step_timing": hotswap_result.step_timing,
+            "diagnostics": hotswap_result.diagnostics,
             "texts": {
                 "hotswap_trimmed": [
                     tokenizer.decode(row, skip_special_tokens=True)
@@ -1762,7 +1890,8 @@ def main() -> None:
         "device": str(device),
         "dtype": str(dtype),
         "npu_jit_compile": args.npu_jit_compile,
-        "decode_attention": DECODE_ATTENTION,
+        "decode_attention": get_decode_attention_mode(),
+        "default_decode_attention": DECODE_ATTENTION,
         "eos_mode": args.eos_mode,
         "eos_token_id": eos_token_id,
         "batch_size": int(args.batch_size),

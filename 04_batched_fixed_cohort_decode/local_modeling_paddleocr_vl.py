@@ -16,6 +16,18 @@ from config import PaddleOCRTextConfig, PaddleOCRVLConfig, PaddleOCRVisionConfig
 FRACTAL_NZ = 29
 DECODE_LINEAR_WEIGHT_FORMAT = "decode_nz"
 DECODE_ATTENTION = "increfa"
+_DECODE_ATTENTION_MODE = DECODE_ATTENTION
+
+
+def get_decode_attention_mode() -> str:
+    return _DECODE_ATTENTION_MODE
+
+
+def set_decode_attention_mode(mode: str) -> None:
+    global _DECODE_ATTENTION_MODE
+    if mode not in {"increfa", "manual"}:
+        raise ValueError(f"unsupported decode attention mode: {mode!r}")
+    _DECODE_ATTENTION_MODE = mode
 
 
 def _resolve_model_dir(model_id_or_path: str | Path) -> Path:
@@ -470,7 +482,7 @@ class PaddleOCRAttention(nn.Module):
             key_states,
             value_states,
         )
-        if query_states.device.type != "npu":
+        if query_states.device.type != "npu" or get_decode_attention_mode() == "manual":
             return self.attend_decode_manual(query_states, key_cache, value_cache, attention_mask)
         return self.attend_decode_increfa(query_states, key_cache, value_cache, attention_mask)
 
