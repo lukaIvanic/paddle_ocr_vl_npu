@@ -1,0 +1,443 @@
+#!/usr/bin/env python3
+"""Measure full recognizer stage costs for experiment 5.
+
+This benchmark keeps layout detection and image preprocessing outside the model
+timing. It uses real crop inputs, then breaks the recognition model into the
+native-resolution vision transformer, adaptive MLP connector, text prefill, LM
+head, and static decode stages.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import time
+from pathlib import Path
+from typing import Any, Callable
+
+import torch
+import torch.nn.functional as F
+from tokenizers import Tokenizer
+
+from bench_static_compile import (
+    CohortInput,
+    build_cohort_inputs,
+    load_manifest,
+    select_manifest_entries,
+)
+from local_modeling_paddleocr_vl import (
+    DECODE_ATTENTION,
+    DECODE_CACHE_UPDATE,
+    LocalPaddleOCRVLForConditionalGeneration,
+    _resolve_model_dir,
+    cast_decode_linear_weights_to_nz,
+)
+from probe_static_compile import DEFAULT_TORCHAIR_CACHE_DIR, compile_decode_module, maybe_sync
+from run_local_recognition import (
+    NPU_JIT_COMPILE_CHOICES,
+    configure_npu_jit_compile,
+    load_preprocessor_config,
+    parse_dtype,
+    resolve_device,
+)
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+BACKEND_CHOICES = ("raw_eager", "eager", "aot_eager", "inductor", "default", "torchair")
+
+
+class StageTimer:
+    def __init__(self, device: torch.device):
+        self.device = device
+        self.timings: dict[str, float] = {}
+
+    def measure(self, name: str, fn: Callable[[], Any]) -> Any:
+        maybe_sync(self.device)
+        start = time.perf_counter()
+        result = fn()
+        maybe_sync(self.device)
+        self.timings[name] = self.timings.get(name, 0.0) + (time.perf_counter() - start)
+        return result
+
+
+def json_default(value: Any) -> Any:
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, torch.Tensor):
+        return value.detach().cpu().tolist()
+    return str(value)
+
+
+def stats(values: list[float]) -> dict[str, float | int | None]:
+    if not values:
+        return {"count": 0, "sum": 0.0, "avg": None, "min": None, "p50": None, "p90": None, "max": None}
+    ordered = sorted(float(value) for value in values)
+
+    def percentile(q: float) -> float:
+        idx = min(len(ordered) - 1, max(0, int(round((len(ordered) - 1) * q))))
+        return float(ordered[idx])
+
+    return {
+        "count": int(len(ordered)),
+        "sum": float(sum(ordered)),
+        "avg": float(sum(ordered) / len(ordered)),
+        "min": float(ordered[0]),
+        "p50": percentile(0.50),
+        "p90": percentile(0.90),
+        "max": float(ordered[-1]),
+    }
+
+
+def aggregate_item_timings(items: list[dict[str, Any]]) -> dict[str, Any]:
+    keys: set[str] = set()
+    for item in items:
+        keys.update((item.get("timing_s") or {}).keys())
+    return {
+        key: stats([float(item["timing_s"][key]) for item in items if key in item.get("timing_s", {})])
+        for key in sorted(keys)
+    }
+
+
+def timed_static_decode(
+    *,
+    decode_fn: Callable,
+    next_token: torch.Tensor,
+    cache_position: torch.Tensor,
+    rope_deltas: torch.Tensor,
+    flat_cache: tuple[torch.Tensor, ...],
+    max_new_tokens: int,
+) -> dict[str, Any]:
+    generated = [next_token]
+    decode_calls = 0
+    last_logits = None
+    for _ in range(max(0, int(max_new_tokens) - 1)):
+        last_logits = decode_fn(next_token, cache_position, rope_deltas, *flat_cache)
+        next_token = torch.argmax(last_logits[:, -1, :].float(), dim=-1, keepdim=True)
+        generated.append(next_token)
+        cache_position = cache_position + 1
+        decode_calls += 1
+    ids = torch.cat(generated, dim=1)
+    return {
+        "ids": ids,
+        "decode_calls": int(decode_calls),
+        "generated_tokens": int(ids.shape[1]),
+        "decode_mode": "fixed_steps_no_eos_check",
+        "last_logits_shape": None if last_logits is None else [int(v) for v in last_logits.shape],
+    }
+
+
+@torch.inference_mode()
+def run_item_stage_timing(
+    *,
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    decode_fn: Callable,
+    item: CohortInput,
+    cache_length: int,
+    max_new_tokens: int,
+    device: torch.device,
+) -> dict[str, Any]:
+    timer = StageTimer(device)
+
+    moved = timer.measure(
+        "device_transfer",
+        lambda: (
+            item.input_ids.to(device),
+            item.attention_mask.to(device),
+            item.pixel_values.to(device),
+            item.image_grid_thw.to(device),
+        ),
+    )
+    input_ids, attention_mask, pixel_values, image_grid_thw = moved
+
+    vision_inputs = timer.measure(
+        "vision_prepare",
+        lambda: {
+            "pixel_values": pixel_values.type(model.visual.dtype).unsqueeze(0),
+            "cu_seqlens": F.pad(
+                torch.repeat_interleave(
+                    image_grid_thw[:, 1] * image_grid_thw[:, 2],
+                    image_grid_thw[:, 0],
+                ).cumsum(dim=0, dtype=torch.int32),
+                (1, 0),
+                value=0,
+            ),
+        },
+    )
+    vision_model = model.visual.vision_model
+    vision_hidden = timer.measure(
+        "vision_embeddings",
+        lambda: vision_model.embeddings(vision_inputs["pixel_values"], image_grid_thw=image_grid_thw),
+    )
+    vision_hidden = timer.measure(
+        "vision_encoder",
+        lambda: vision_model.encoder(
+            vision_hidden,
+            cu_seqlens=vision_inputs["cu_seqlens"],
+            image_grid_thw=image_grid_thw,
+        ),
+    )
+    image_features = timer.measure("vision_post_layernorm", lambda: vision_model.post_layernorm(vision_hidden))
+    image_embeds = timer.measure("adaptive_mlp_projector", lambda: model.mlp_AR(image_features, image_grid_thw))
+
+    inputs_embeds = timer.measure("text_token_embedding", lambda: model.model.embed_tokens(input_ids))
+
+    def scatter_image_embeds() -> torch.Tensor:
+        projected = image_embeds.to(device=inputs_embeds.device, dtype=inputs_embeds.dtype)
+        image_mask = (input_ids == model.config.image_token_id).unsqueeze(-1).expand_as(inputs_embeds)
+        if inputs_embeds[image_mask].numel() != projected.numel():
+            raise ValueError(
+                "image features and image tokens do not match: "
+                f"tokens={int((input_ids == model.config.image_token_id).sum().item())} "
+                f"features={int(projected.shape[0])}"
+            )
+        return inputs_embeds.masked_scatter(image_mask, projected)
+
+    inputs_embeds = timer.measure("image_embed_scatter", scatter_image_embeds)
+    position_ids, rope_deltas = timer.measure(
+        "mrope_index",
+        lambda: model.get_rope_index(input_ids, image_grid_thw, attention_mask),
+    )
+    cache = timer.measure(
+        "static_cache_alloc",
+        lambda: model.allocate_static_cache(
+            batch_size=int(inputs_embeds.shape[0]),
+            cache_length=int(cache_length),
+            device=inputs_embeds.device,
+            dtype=inputs_embeds.dtype,
+            init_mode="zeros",
+        ),
+    )
+    hidden_states = timer.measure(
+        "text_prefill",
+        lambda: model.model.forward_prefill_static(
+            inputs_embeds=inputs_embeds,
+            attention_mask=attention_mask,
+            position_ids=position_ids,
+            cache=cache,
+        ),
+    )
+    logits = timer.measure("prefill_lm_head", lambda: model.lm_head(hidden_states[:, -1:, :]))
+    next_token = timer.measure("prefill_argmax", lambda: torch.argmax(logits[:, -1, :].float(), dim=-1, keepdim=True))
+    cache_position = torch.full((int(input_ids.shape[0]),), int(input_ids.shape[1]), device=device, dtype=torch.int64)
+
+    decode_result = timer.measure(
+        "static_decode_total",
+        lambda: timed_static_decode(
+            decode_fn=decode_fn,
+            next_token=next_token,
+            cache_position=cache_position,
+            rope_deltas=rope_deltas,
+            flat_cache=cache.flat_tensors(),
+            max_new_tokens=int(max_new_tokens),
+        ),
+    )
+
+    model_prefill_total = (
+        timer.timings["vision_prepare"]
+        + timer.timings["vision_embeddings"]
+        + timer.timings["vision_encoder"]
+        + timer.timings["vision_post_layernorm"]
+        + timer.timings["adaptive_mlp_projector"]
+        + timer.timings["text_token_embedding"]
+        + timer.timings["image_embed_scatter"]
+        + timer.timings["mrope_index"]
+        + timer.timings["static_cache_alloc"]
+        + timer.timings["text_prefill"]
+        + timer.timings["prefill_lm_head"]
+        + timer.timings["prefill_argmax"]
+    )
+    timer.timings["native_resolution_visual_encoder_total"] = (
+        timer.timings["vision_embeddings"]
+        + timer.timings["vision_encoder"]
+        + timer.timings["vision_post_layernorm"]
+    )
+    timer.timings["vision_total"] = timer.timings["vision_prepare"] + timer.timings["native_resolution_visual_encoder_total"]
+    timer.timings["prefill_total_excluding_device_transfer"] = model_prefill_total
+    timer.timings["model_total_excluding_device_transfer"] = model_prefill_total + timer.timings["static_decode_total"]
+
+    grid = [int(value) for value in image_grid_thw.reshape(-1).detach().cpu().tolist()]
+    return {
+        "id": str(item.entry.get("id")),
+        "file": str(item.crop_path),
+        "category_type": item.entry.get("category_type"),
+        "prompt": item.prompt,
+        "crop_size": item.entry.get("crop_size"),
+        "input_tokens": int(input_ids.shape[1]),
+        "image_grid_thw": grid,
+        "vision_tokens": int(image_features.shape[0]),
+        "projected_image_tokens": int(image_embeds.shape[0]),
+        "generated_tokens": int(decode_result["generated_tokens"]),
+        "decode_calls": int(decode_result["decode_calls"]),
+        "decode_mode": str(decode_result["decode_mode"]),
+        "timing_s": {key: float(value) for key, value in sorted(timer.timings.items())},
+    }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--model", default="PaddlePaddle/PaddleOCR-VL-1.6")
+    parser.add_argument("--manifest", type=Path, default=REPO_ROOT / "crops" / "hotswap_100_manifest.json")
+    parser.add_argument("--num-items", type=int, default=8)
+    parser.add_argument("--crop-ids", nargs="*", default=None)
+    parser.add_argument("--prompt", default=None)
+    parser.add_argument("--max-new-tokens", type=int, default=32)
+    parser.add_argument("--cache-length", type=int, default=None)
+    parser.add_argument("--device", default="auto")
+    parser.add_argument("--dtype", default="fp16", choices=["fp16", "float16", "bf16", "bfloat16"])
+    parser.add_argument("--decode-backend", default="raw_eager", choices=BACKEND_CHOICES)
+    parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
+    parser.add_argument("--torchair-cache-dir", type=Path, default=DEFAULT_TORCHAIR_CACHE_DIR)
+    parser.add_argument("--json", action="store_true")
+    args = parser.parse_args()
+
+    if int(args.max_new_tokens) <= 0:
+        raise ValueError(f"--max-new-tokens must be positive, got {args.max_new_tokens}")
+
+    model_dir = _resolve_model_dir(args.model)
+    device = resolve_device(args.device)
+    dtype = parse_dtype(args.dtype, device)
+    configure_npu_jit_compile(args.npu_jit_compile, device)
+
+    pre_cfg = load_preprocessor_config(model_dir)
+    tokenizer = Tokenizer.from_file(str(model_dir / "tokenizer.json"))
+    manifest = load_manifest(args.manifest)
+    entries = select_manifest_entries(
+        manifest,
+        batch_size=1,
+        num_items=int(args.num_items),
+        crop_ids=args.crop_ids,
+        schedule="hotswap",
+    )
+    cohort = build_cohort_inputs(
+        entries=entries,
+        manifest_path=args.manifest,
+        tokenizer=tokenizer,
+        pre_cfg=pre_cfg,
+        prompt_override=args.prompt,
+    )
+    prompt_tokens = [int(item.input_ids.shape[1]) for item in cohort]
+    max_prompt_tokens = int(max(prompt_tokens))
+    min_cache_length = max_prompt_tokens + max(0, int(args.max_new_tokens) - 1)
+    cache_length = int(args.cache_length if args.cache_length is not None else max_prompt_tokens + int(args.max_new_tokens))
+    if cache_length < min_cache_length:
+        raise ValueError(
+            f"--cache-length={cache_length} is too small for max prompt length {max_prompt_tokens} "
+            f"and --max-new-tokens={args.max_new_tokens}; need at least {min_cache_length}"
+        )
+
+    maybe_sync(device)
+    model_load_start = time.perf_counter()
+    model = LocalPaddleOCRVLForConditionalGeneration.from_pretrained(model_dir, dtype=dtype, device=device)
+    maybe_sync(device)
+    model_load_s = time.perf_counter() - model_load_start
+
+    maybe_sync(device)
+    weight_format_start = time.perf_counter()
+    weight_format_meta = cast_decode_linear_weights_to_nz(model)
+    maybe_sync(device)
+    weight_format_meta["setup_s"] = time.perf_counter() - weight_format_start
+
+    flat_decode = model.make_flat_static_decode_module().eval()
+    maybe_sync(device)
+    compile_start = time.perf_counter()
+    decode_fn, compile_meta = compile_decode_module(
+        flat_decode,
+        backend_name=args.decode_backend,
+        device=device,
+        cache_root=args.torchair_cache_dir,
+        batch_size=1,
+        cache_length=int(cache_length),
+    )
+    maybe_sync(device)
+    compile_wrapper_s = time.perf_counter() - compile_start
+
+    warm_cache = model.allocate_static_cache(
+        batch_size=1,
+        cache_length=int(cache_length),
+        device=device,
+        dtype=dtype,
+        init_mode="zeros",
+    )
+    warm_input = torch.zeros((1, 1), device=device, dtype=torch.int64)
+    warm_position = torch.zeros((1,), device=device, dtype=torch.int64)
+    warm_rope = torch.zeros((1, 1), device=device, dtype=torch.int64)
+    maybe_sync(device)
+    compile_first_start = time.perf_counter()
+    decode_fn(warm_input, warm_position, warm_rope, *warm_cache.flat_tensors())
+    maybe_sync(device)
+    compile_first_s = time.perf_counter() - compile_first_start
+
+    items = [
+        run_item_stage_timing(
+            model=model,
+            decode_fn=decode_fn,
+            item=item,
+            cache_length=int(cache_length),
+            max_new_tokens=int(args.max_new_tokens),
+            device=device,
+        )
+        for item in cohort
+    ]
+
+    timing_summary = aggregate_item_timings(items)
+    output = {
+        "experiment": "05_full_recognizer_optimizations",
+        "model": str(model_dir),
+        "device": str(device),
+        "dtype": str(dtype),
+        "decode_backend": str(args.decode_backend),
+        "npu_jit_compile": args.npu_jit_compile,
+        "decode_attention": DECODE_ATTENTION if device.type == "npu" else "manual",
+        "decode_cache_update": DECODE_CACHE_UPDATE if device.type == "npu" else "per_row_copy",
+        "linear_weight_format": weight_format_meta,
+        "compile": compile_meta,
+        "num_items": int(len(items)),
+        "max_new_tokens": int(args.max_new_tokens),
+        "cache_length": int(cache_length),
+        "prompt_tokens": {
+            "min": int(min(prompt_tokens)),
+            "max": int(max(prompt_tokens)),
+            "per_item": prompt_tokens,
+        },
+        "setup_timing_s": {
+            "model_load": float(model_load_s),
+            "decode_weight_format": float(weight_format_meta.get("setup_s", 0.0) or 0.0),
+            "compile_wrapper": float(compile_wrapper_s),
+            "compile_first_call": float(compile_first_s),
+        },
+        "stage_timing_summary_s": timing_summary,
+        "items": items,
+        "stage_notes": {
+            "preprocessing": "PIL resize/normalize/patchify is outside model timing; device_transfer is reported separately.",
+            "vision_total": "vision_prepare + patch/position embeddings + native-resolution vision encoder + post layernorm.",
+            "native_resolution_visual_encoder_total": "patch/position embeddings + native-resolution vision encoder + post layernorm, excluding cu_seqlens/pixel reshape preparation.",
+            "adaptive_mlp_projector": "2x2 spatial merge and MLP connector into text hidden size.",
+            "prefill_total_excluding_device_transfer": "vision + projector + text embeddings/scatter/mRoPE/cache allocation/text prefill/lm_head/argmax.",
+            "model_total_excluding_device_transfer": "prefill_total_excluding_device_transfer + static_decode_total.",
+            "static_decode_total": "Fixed-step decode with no per-token EOS host sync; use experiment 4 for scheduler/EOS throughput.",
+        },
+    }
+    if args.json:
+        print(json.dumps(output, indent=2, sort_keys=True, default=json_default))
+        return
+
+    print(f"experiment={output['experiment']} device={output['device']} dtype={output['dtype']} decode_backend={output['decode_backend']}")
+    print(f"num_items={output['num_items']} max_new_tokens={output['max_new_tokens']} cache_length={output['cache_length']}")
+    for key in (
+        "vision_total",
+        "native_resolution_visual_encoder_total",
+        "vision_encoder",
+        "adaptive_mlp_projector",
+        "text_prefill",
+        "static_decode_total",
+        "model_total_excluding_device_transfer",
+    ):
+        stat = timing_summary.get(key, {})
+        print(
+            f"{key}: p50={stat.get('p50')} avg={stat.get('avg')} "
+            f"max={stat.get('max')} sum={stat.get('sum')}"
+        )
+
+
+if __name__ == "__main__":
+    main()

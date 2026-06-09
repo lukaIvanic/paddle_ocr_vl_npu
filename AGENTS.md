@@ -178,6 +178,41 @@ per run. See
 `04_batched_fixed_cohort_decode/NPU_HOTSWAP_BOTTLENECK_MATRIX.md` for what to
 paste back.
 
+## Experiment 5
+
+`05_full_recognizer_optimizations` starts from the current experiment-4 code but
+moves the optimization target from decode scheduling to the full recognition
+model. Layout detection and image preprocessing are still out of scope. The
+first experiment-5 question is stage cost: how expensive are the
+native-resolution vision transformer, adaptive MLP connector, text prefill, LM
+head, and static decode on the real OmniDocBench crops in `crops/`.
+
+Run the committed NPU stage-timing harness instead of writing ad hoc snippets:
+
+```sh
+cd /home/lukaiv/paddle_ocr_vl_npu/05_full_recognizer_optimizations
+bash run_npu_stage_timing.sh
+```
+
+The runner writes and validates one JSON under
+`outputs/full_recognizer_stage_timing/`. For the first report, paste back:
+
+- `setup_timing_s`
+- `stage_timing_summary_s.native_resolution_visual_encoder_total`
+- `stage_timing_summary_s.vision_total`
+- `stage_timing_summary_s.vision_encoder`
+- `stage_timing_summary_s.adaptive_mlp_projector`
+- `stage_timing_summary_s.text_prefill`
+- `stage_timing_summary_s.prefill_lm_head`
+- `stage_timing_summary_s.static_decode_total`
+- `stage_timing_summary_s.model_total_excluding_device_transfer`
+- each item's `input_tokens`, `vision_tokens`, `projected_image_tokens`,
+  `decode_calls`, and `timing_s`
+
+Stage timing uses device synchronization around each measured model stage. This
+adds measurement overhead, so use it to identify bottleneck proportions before
+turning any stage into a throughput benchmark.
+
 Older manual smoke order:
 
 ```sh
