@@ -200,6 +200,13 @@ The runner prints `CORRECTNESS`, `SETUP_TIMING_S`, `STAGE_SUMMARY_S`, and
 `ITEM_SUMMARY` after validating the JSON. Paste those printed sections back
 instead of writing a separate parser.
 
+By default, the runner uses `WARMUP_ITEMS=1`. That warmup item is recorded under
+`STAGE_WARMUP` and excluded from the measured item summary. This is intentional:
+experiment 5 is measuring steady-state recognizer stage latency, while cold
+TorchAir/CANN compile and first-use behavior belong in setup/warmup fields. If
+you intentionally need the cold first-item behavior again, run with
+`WARMUP_ITEMS=0`.
+
 If the first measured item has a huge `static_decode_total` outlier, rerun these
 two diagnostics exactly:
 

@@ -548,7 +548,8 @@ def main() -> None:
         init_mode="zeros",
     )
     warm_input = torch.zeros((1, 1), device=device, dtype=torch.int64)
-    warm_position = torch.zeros((1,), device=device, dtype=torch.int64)
+    warm_decode_position = min(int(max_prompt_tokens), int(cache_length) - 1)
+    warm_position = torch.full((1,), int(warm_decode_position), device=device, dtype=torch.int64)
     warm_rope = torch.zeros((1, 1), device=device, dtype=torch.int64)
     maybe_sync(device)
     compile_first_start = time.perf_counter()
@@ -637,6 +638,7 @@ def main() -> None:
             "decode_weight_format": float(weight_format_meta.get("setup_s", 0.0) or 0.0),
             "compile_wrapper": float(compile_wrapper_s),
             "compile_first_call": float(compile_first_s),
+            "compile_first_call_cache_position": int(warm_decode_position),
         },
         "stage_warmup": {
             "count": int(len(warmup_items)),
