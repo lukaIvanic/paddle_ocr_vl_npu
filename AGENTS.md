@@ -245,6 +245,35 @@ Stage timing uses device synchronization around each measured model stage. This
 adds measurement overhead, so use it to identify bottleneck proportions before
 turning any stage into a throughput benchmark.
 
+For native-resolution vision encoder profiling, use the committed profiler
+runner. It profiles only `vision_model.encoder`; crop preprocessing, device
+transfer, patch/position embeddings, post layernorm, the adaptive MLP projector,
+text prefill, and decode are outside the profiler window.
+
+```sh
+cd /home/lukaiv/paddle_ocr_vl_npu/05_full_recognizer_optimizations
+bash run_npu_vision_profile.sh
+```
+
+The default crop is `hotswap_002_code_txt_p1474_11`, the large 3036-vision-token
+crop from the first stage-timing report. The default profiler metric is
+`PROFILE_METRIC=pipe`, with one warmup encoder pass and one profiled encoder
+pass. Paste back the printed sections:
+
+- `VISION_PROFILE_SUMMARY`
+- `STEP_TRACE_TOTALS_US`
+- `TOP_KERNEL_TYPES`
+- `TOP_MATMUL_SHAPES`
+- `TOP_TRANSDATA_SHAPES`
+- `TOP_SUSPECT_KERNELS`
+- `TOP_OPERATORS_BY_DEVICE_US`
+- `PROFILE_PARSE_MD`
+
+Do not write a separate parser; the runner already calls `parse_npu_profile.py`
+and prints the important rows. If the pipe profile points at memory bandwidth or
+cache behavior, rerun the same command with `PROFILE_METRIC=memory` or
+`PROFILE_METRIC=l2` and label the result clearly.
+
 Older manual smoke order:
 
 ```sh
