@@ -1182,21 +1182,6 @@ def fill_batch_row_(
 
 
 @torch.inference_mode()
-def copy_vector_position_(
-    target: torch.Tensor,
-    position: int,
-    source_value: torch.Tensor,
-) -> None:
-    position = int(position)
-    value = source_value.to(device=target.device, dtype=target.dtype).reshape(1).contiguous()
-    if target.device.type == "npu":
-        indices = torch.tensor([position], device=target.device, dtype=torch.int64)
-        target.index_copy_(0, indices, value)
-        return
-    target[position : position + 1].copy_(value)
-
-
-@torch.inference_mode()
 def copy_ready_item_to_active_slot_(
     *,
     ready: ReadyBank,
@@ -1347,8 +1332,8 @@ def static_hotswap_decode_loop(
     active_item_indices = torch.full((int(batch_size),), -1, device=device, dtype=torch.int64)
     active_mask = torch.zeros((int(batch_size),), device=device, dtype=torch.bool)
     slot_finished = torch.zeros((int(batch_size),), device=device, dtype=torch.bool)
-    generated_rows = [
-        torch.full((int(max_new_tokens),), int(eos_token_id), device=device, dtype=ready.next_token.dtype)
+    generated_rows_cpu = [
+        [int(eos_token_id) for _ in range(int(max_new_tokens))]
         for _ in range(num_items)
     ]
     ready_first_tokens_cpu = [int(value) for value in ready.next_token.reshape(-1).detach().cpu().tolist()]
@@ -1396,13 +1381,13 @@ def static_hotswap_decode_loop(
         generated_full = None
         generated_trimmed = None
         if diagnostic_step_trace:
-            generated_full = [[int(value) for value in row.detach().cpu().tolist()] for row in generated_rows]
+            generated_full = [[int(value) for value in row] for row in generated_rows_cpu]
             generated_trimmed = [
                 row[: max(0, int(length))]
                 for row, length in zip(generated_full, generated_lengths_cpu)
             ]
         selected_generated_full = {
-            str(item_idx): [int(value) for value in generated_rows[item_idx].detach().cpu().tolist()]
+            str(item_idx): [int(value) for value in generated_rows_cpu[item_idx]]
             for item_idx in selected_items
         }
         selected_generated_trimmed = {
@@ -1462,7 +1447,7 @@ def static_hotswap_decode_loop(
                     )
                 )
         active_item_indices_cpu[int(slot)] = int(item_idx)
-        copy_vector_position_(generated_rows[int(item_idx)], 0, ready.next_token[int(item_idx) : int(item_idx) + 1])
+        generated_rows_cpu[int(item_idx)][0] = ready_first_tokens_cpu[int(item_idx)]
         generated_lengths_cpu[int(item_idx)] = 1
         first_token_eos = ready_first_tokens_cpu[int(item_idx)] == int(eos_token_id)
         first_token_cap = int(max_new_tokens) <= 1
@@ -1535,6 +1520,34 @@ def static_hotswap_decode_loop(
             record["swapped_in_item_ids"] = swapped_in_item_ids
         return event
 
+    def commit_pending_tokens(
+        token_values: list[int],
+        active_before_step_values: list[bool],
+        item_indices: list[int],
+    ) -> list[bool]:
+        finished_flags = [False for _ in range(int(batch_size))]
+        for slot, was_active in enumerate(active_before_step_values):
+            if not was_active:
+                continue
+            item_idx = int(item_indices[slot])
+            if item_idx < 0:
+                continue
+            position = int(generated_lengths_cpu[item_idx])
+            if position >= int(max_new_tokens):
+                item_length_cap_hit_cpu[item_idx] = True
+                finished_flags[slot] = True
+                continue
+            token = int(token_values[slot])
+            generated_rows_cpu[item_idx][position] = token
+            new_length = position + 1
+            generated_lengths_cpu[item_idx] = new_length
+            if new_length >= int(max_new_tokens):
+                item_length_cap_hit_cpu[item_idx] = True
+                finished_flags[slot] = True
+            elif token == int(eos_token_id):
+                finished_flags[slot] = True
+        return finished_flags
+
     for slot in range(int(batch_size)):
         load_item_to_slot(slot, next_ready_idx)
         next_ready_idx += 1
@@ -1553,14 +1566,16 @@ def static_hotswap_decode_loop(
 
     max_decode_calls_per_item = max(0, int(max_new_tokens) - 1)
     max_decode_call_budget = max(1, int(num_items) * max_decode_calls_per_item + max_decode_calls_per_item + int(batch_size))
-    async_cpu_flags = None
+    async_cpu_tokens = None
     copy_stream = None
     if use_npu_overlap:
-        async_cpu_flags = torch.zeros((max_decode_call_budget, int(batch_size)), dtype=torch.bool, pin_memory=True)
+        async_cpu_tokens = torch.empty((max_decode_call_budget, int(batch_size)), dtype=ready.next_token.dtype, pin_memory=True)
         copy_stream = torch_npu.npu.Stream(device=device)
-    pending_flag_event = None
-    pending_flag_row = None
-    pending_finished_flags = None
+    pending_token_event = None
+    pending_token_row = None
+    pending_token_values = None
+    pending_active_before_step_cpu = None
+    pending_item_indices_cpu = None
     pending_completion_decode_call = None
 
     while completed_count < num_items:
@@ -1584,19 +1599,26 @@ def static_hotswap_decode_loop(
         npu_iter_start = timing.npu_event()
 
         if pending_completion_decode_call is not None and (
-            (use_npu_overlap and pending_flag_event is not None and pending_flag_row is not None)
-            or (not use_npu_overlap and pending_finished_flags is not None)
+            (use_npu_overlap and pending_token_event is not None and pending_token_row is not None)
+            or (not use_npu_overlap and pending_token_values is not None)
         ):
             if use_npu_overlap:
-                assert async_cpu_flags is not None
+                assert async_cpu_tokens is not None
                 host_wait_start = timing.cpu_now()
-                pending_flag_event.synchronize()
+                pending_token_event.synchronize()
                 wait_s = timing.cpu_elapsed_s(host_wait_start)
                 if wait_s is not None:
                     record["host_wait_prev_flag_s"] = wait_s
-                finished_flags = [bool(value) for value in async_cpu_flags[int(pending_flag_row)].tolist()]
+                token_values = [int(value) for value in async_cpu_tokens[int(pending_token_row)].tolist()]
             else:
-                finished_flags = list(pending_finished_flags)
+                token_values = list(pending_token_values)
+            assert pending_active_before_step_cpu is not None
+            assert pending_item_indices_cpu is not None
+            finished_flags = commit_pending_tokens(
+                token_values,
+                pending_active_before_step_cpu,
+                pending_item_indices_cpu,
+            )
             host_swap_start = timing.cpu_now()
             npu_swap_start = timing.npu_event()
             consume_event = consume_finished_slots(finished_flags, int(pending_completion_decode_call), record)
@@ -1609,13 +1631,16 @@ def static_hotswap_decode_loop(
                 "after_pending_finished_consume",
                 extra={
                     "pending_completion_decode_call": int(pending_completion_decode_call),
+                    "pending_token_values": [int(value) for value in token_values],
                     "finished_flags": [bool(value) for value in finished_flags],
                     "consume_event": consume_event,
                 },
             )
-            pending_flag_event = None
-            pending_flag_row = None
-            pending_finished_flags = None
+            pending_token_event = None
+            pending_token_row = None
+            pending_token_values = None
+            pending_active_before_step_cpu = None
+            pending_item_indices_cpu = None
             pending_completion_decode_call = None
             if completed_count >= num_items:
                 npu_iter_end = timing.npu_event()
@@ -1650,29 +1675,6 @@ def static_hotswap_decode_loop(
         sampled_token = torch.argmax(last_logits[:, -1, :].float(), dim=-1, keepdim=True)
         eos_fill = torch.full_like(sampled_token, int(eos_token_id))
         active_next_token.copy_(torch.where(active_before_step.view(-1, 1), sampled_token, eos_fill))
-
-        # Keep output history writes host-indexed. NPU boolean advanced
-        # indexing here can accidentally involve inactive -1 slots.
-        length_cap_slots = []
-        for slot, should_write in enumerate(active_before_step_cpu):
-            if not should_write:
-                continue
-            item_idx = int(active_item_indices_cpu[slot])
-            position = int(generated_lengths_cpu[item_idx])
-            if position >= int(max_new_tokens):
-                continue
-            copy_vector_position_(generated_rows[item_idx], position, active_next_token[slot : slot + 1])
-            new_length = position + 1
-            generated_lengths_cpu[item_idx] = new_length
-            if new_length >= int(max_new_tokens):
-                length_cap_slots.append(int(slot))
-                slot_finished_cpu[int(slot)] = True
-                item_length_cap_hit_cpu[item_idx] = True
-        for slot in length_cap_slots:
-            fill_batch_row_(slot_finished, int(slot), True)
-
-        new_eos_by_slot = active_before_step & hits_eos(active_next_token, int(eos_token_id))
-        slot_finished.logical_or_(new_eos_by_slot)
         active.next_cache_position.add_(active_before_step.to(dtype=active.next_cache_position.dtype))
         decode_calls += 1
         snapshot_step(
@@ -1682,13 +1684,11 @@ def static_hotswap_decode_loop(
                 "active_before_step_cpu": [bool(value) for value in active_before_step_cpu],
                 "sampled_token": [int(row[0]) for row in sampled_token.detach().cpu().tolist()],
                 "written_next_token": [int(row[0]) for row in active_next_token.detach().cpu().tolist()],
-                "length_cap_slots": [int(slot) for slot in length_cap_slots],
-                "new_eos_by_slot": [bool(value) for value in new_eos_by_slot.detach().cpu().tolist()],
             },
         )
 
         if use_npu_overlap:
-            assert async_cpu_flags is not None
+            assert async_cpu_tokens is not None
             assert copy_stream is not None
             host_flag_copy_start = timing.cpu_now()
             flag_ready_event = torch_npu.npu.current_stream().record_event()
@@ -1698,17 +1698,19 @@ def static_hotswap_decode_loop(
             with torch_npu.npu.stream(copy_stream):
                 copy_stream.wait_event(flag_ready_event)
                 npu_flag_copy_start = timing.npu_event(copy_stream)
-                async_cpu_flags[int(decode_calls) - 1].copy_(slot_finished, non_blocking=True)
+                async_cpu_tokens[int(decode_calls) - 1].copy_(active_next_token.reshape(-1), non_blocking=True)
                 npu_flag_copy_end = timing.npu_event(copy_stream)
                 copy_done_event.record(copy_stream)
             flag_copy_enqueue_s = timing.cpu_elapsed_s(host_flag_copy_start)
             if flag_copy_enqueue_s is not None:
                 record["host_flag_copy_enqueue_s"] = flag_copy_enqueue_s
             events["npu_flag_copy"] = (npu_flag_copy_start, npu_flag_copy_end)
-            pending_flag_event = copy_done_event
-            pending_flag_row = int(decode_calls) - 1
+            pending_token_event = copy_done_event
+            pending_token_row = int(decode_calls) - 1
         else:
-            pending_finished_flags = [bool(value) for value in slot_finished.detach().cpu().tolist()]
+            pending_token_values = [int(row[0]) for row in active_next_token.detach().cpu().tolist()]
+        pending_active_before_step_cpu = [bool(value) for value in active_before_step_cpu]
+        pending_item_indices_cpu = [int(value) for value in active_item_indices_cpu]
         pending_completion_decode_call = int(decode_calls)
 
         npu_iter_end = timing.npu_event()
@@ -1719,27 +1721,35 @@ def static_hotswap_decode_loop(
         timing.add(record, events)
 
     if completed_count < num_items and pending_completion_decode_call is not None and (
-        (use_npu_overlap and pending_flag_event is not None and pending_flag_row is not None)
-        or (not use_npu_overlap and pending_finished_flags is not None)
+        (use_npu_overlap and pending_token_event is not None and pending_token_row is not None)
+        or (not use_npu_overlap and pending_token_values is not None)
     ):
         if use_npu_overlap:
-            assert async_cpu_flags is not None
-            pending_flag_event.synchronize()
-            finished_flags = [bool(value) for value in async_cpu_flags[int(pending_flag_row)].tolist()]
+            assert async_cpu_tokens is not None
+            pending_token_event.synchronize()
+            token_values = [int(value) for value in async_cpu_tokens[int(pending_token_row)].tolist()]
         else:
-            finished_flags = list(pending_finished_flags)
+            token_values = list(pending_token_values)
+        assert pending_active_before_step_cpu is not None
+        assert pending_item_indices_cpu is not None
+        finished_flags = commit_pending_tokens(
+            token_values,
+            pending_active_before_step_cpu,
+            pending_item_indices_cpu,
+        )
         final_event = consume_finished_slots(finished_flags, int(pending_completion_decode_call))
         snapshot_step(
             "after_final_finished_consume",
             extra={
                 "pending_completion_decode_call": int(pending_completion_decode_call),
+                "pending_token_values": [int(value) for value in token_values],
                 "finished_flags": [bool(value) for value in finished_flags],
                 "consume_event": final_event,
             },
         )
 
-    generated_ids = torch.stack(generated_rows, dim=0)
-    generated_lengths = torch.tensor(generated_lengths_cpu, device=device, dtype=torch.int64)
+    generated_ids = torch.tensor(generated_rows_cpu, dtype=ready.next_token.dtype)
+    generated_lengths = torch.tensor(generated_lengths_cpu, dtype=torch.int64)
     snapshot_step("final")
 
     return HotSwapDecodeResult(
@@ -1760,7 +1770,7 @@ def static_hotswap_decode_loop(
             "swap_copy_mode": diagnostic_swap_copy_mode,
             "verify_swap_copies": bool(diagnostic_verify_swap_copies),
             "sync_finished_flags": bool(diagnostic_sync_finished_flags),
-            "history_storage": "per_item_device_rows",
+            "history_storage": "cpu_rows_from_token_copy",
             "slot_control_write_mode": "index_copy_on_npu_slice_copy_elsewhere",
             "deactivated_slot_state": "eos_token_cache_pos_0_rope_delta_0",
             "step_trace_enabled": bool(diagnostic_step_trace or trace_item_indices),
@@ -2268,7 +2278,7 @@ def main() -> None:
             "compile": compile_meta,
             "cache_update": f"prefill_slice_decode_{decode_cache_update_label(device)}",
             "decode_cache_update": decode_cache_update_label(device),
-            "history_write_mode": "per_item_device_rows",
+            "history_write_mode": "cpu_rows_from_token_copy",
             "slot_control_write_mode": "index_copy_on_npu_slice_copy_elsewhere",
             "prompt_tokens": {
                 "per_item": prompt_tokens,
