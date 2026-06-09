@@ -148,6 +148,13 @@ The decode mask is still built on device from each row's `cache_position`, so a
 slot swap resets the row cache, next token, `cache_position`, and `rope_deltas`;
 no text/image padding is introduced.
 
+Experiment 4 can also run a CUDA debug version of hot-swap with
+`--backend eager --device cuda`. CUDA uses manual PyTorch static-decode
+attention and a synchronous finished-flag path instead of NPU IncreFA,
+TorchAir, and the overlap event stream. Treat CUDA hot-swap as a scheduler and
+`generated_ids` bookkeeping check only; it is not an Ascend throughput result
+and does not validate NPU-specific IncreFA/scatter behavior.
+
 Recommended NPU run order for experiment 4:
 
 ```sh

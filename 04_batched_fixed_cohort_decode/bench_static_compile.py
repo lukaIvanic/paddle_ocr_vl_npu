@@ -595,16 +595,16 @@ def static_flat_decode_loop(
     pending_eos_step = None
     timing = StepTimingRecorder(step_timing, next_token.device)
 
+    use_npu_overlap = eos_mode == "overlap_event_flags" and next_token.device.type == "npu"
     if eos_mode == "overlap_event_flags":
-        if next_token.device.type != "npu":
-            raise ValueError("--eos-mode overlap_event_flags requires NPU tensors.")
-        import torch_npu
-
         finished = hits_eos(next_token, int(eos_token_id))
         eos_steps = torch.full((batch_size,), -1, device=next_token.device, dtype=torch.int64)
         eos_steps = torch.where(finished, torch.zeros_like(eos_steps), eos_steps)
-        async_cpu_flags = torch.zeros((max_decode_calls, batch_size), dtype=torch.bool, pin_memory=True)
-        copy_stream = torch_npu.npu.Stream(device=next_token.device)
+        if use_npu_overlap:
+            import torch_npu
+
+            async_cpu_flags = torch.zeros((max_decode_calls, batch_size), dtype=torch.bool, pin_memory=True)
+            copy_stream = torch_npu.npu.Stream(device=next_token.device)
 
     for step in range(max_decode_calls):
         record: dict[str, Any] = {
@@ -638,7 +638,7 @@ def static_flat_decode_loop(
         cache_position = cache_position + 1
         decode_calls += 1
 
-        if eos_mode == "overlap_event_flags" and async_cpu_flags is not None and copy_stream is not None:
+        if use_npu_overlap and async_cpu_flags is not None and copy_stream is not None:
             host_flag_copy_start = timing.cpu_now()
             eos_ready_event = torch_npu.npu.current_stream().record_event()
             copy_done_event = torch_npu.npu.Event()
@@ -671,6 +671,16 @@ def static_flat_decode_loop(
                     break
             pending_eos_event = copy_done_event
             pending_eos_step = int(step)
+        elif eos_mode == "overlap_event_flags":
+            if bool(finished.detach().cpu().all().item()):
+                stopped_all_eos = True
+                npu_iter_end = timing.npu_event()
+                iter_s = timing.cpu_elapsed_s(host_iter_start)
+                if iter_s is not None:
+                    record["host_iter_s"] = iter_s
+                events["npu_iter"] = (npu_iter_start, npu_iter_end)
+                timing.add(record, events)
+                break
 
         npu_iter_end = timing.npu_event()
         iter_s = timing.cpu_elapsed_s(host_iter_start)
@@ -845,16 +855,16 @@ def static_hotswap_decode_loop(
 ) -> HotSwapDecodeResult:
     if eos_mode != "overlap_event_flags":
         raise ValueError("--schedule hotswap requires --eos-mode overlap_event_flags")
-    if ready.next_token.device.type != "npu":
-        raise ValueError("--schedule hotswap currently requires NPU tensors.")
     if int(batch_size) <= 0:
         raise ValueError(f"--batch-size must be positive, got {batch_size}")
     if int(max_new_tokens) <= 0:
         raise ValueError(f"--max-new-tokens must be positive, got {max_new_tokens}")
 
-    import torch_npu
-
     device = ready.next_token.device
+    use_npu_overlap = device.type == "npu"
+    if use_npu_overlap:
+        import torch_npu
+
     num_items = int(ready.next_token.shape[0])
     if int(batch_size) > num_items:
         raise ValueError(f"hot-swap batch_size={batch_size} exceeds num_items={num_items}")
@@ -1006,10 +1016,14 @@ def static_hotswap_decode_loop(
 
     max_decode_calls_per_item = max(0, int(max_new_tokens) - 1)
     max_decode_call_budget = max(1, int(num_items) * max_decode_calls_per_item + max_decode_calls_per_item + int(batch_size))
-    async_cpu_flags = torch.zeros((max_decode_call_budget, int(batch_size)), dtype=torch.bool, pin_memory=True)
-    copy_stream = torch_npu.npu.Stream(device=device)
+    async_cpu_flags = None
+    copy_stream = None
+    if use_npu_overlap:
+        async_cpu_flags = torch.zeros((max_decode_call_budget, int(batch_size)), dtype=torch.bool, pin_memory=True)
+        copy_stream = torch_npu.npu.Stream(device=device)
     pending_flag_event = None
     pending_flag_row = None
+    pending_finished_flags = None
     pending_completion_decode_call = None
 
     while completed_count < num_items:
@@ -1032,13 +1046,20 @@ def static_hotswap_decode_loop(
         host_iter_start = timing.cpu_now()
         npu_iter_start = timing.npu_event()
 
-        if pending_flag_event is not None and pending_flag_row is not None and pending_completion_decode_call is not None:
-            host_wait_start = timing.cpu_now()
-            pending_flag_event.synchronize()
-            wait_s = timing.cpu_elapsed_s(host_wait_start)
-            if wait_s is not None:
-                record["host_wait_prev_flag_s"] = wait_s
-            finished_flags = [bool(value) for value in async_cpu_flags[int(pending_flag_row)].tolist()]
+        if pending_completion_decode_call is not None and (
+            (use_npu_overlap and pending_flag_event is not None and pending_flag_row is not None)
+            or (not use_npu_overlap and pending_finished_flags is not None)
+        ):
+            if use_npu_overlap:
+                assert async_cpu_flags is not None
+                host_wait_start = timing.cpu_now()
+                pending_flag_event.synchronize()
+                wait_s = timing.cpu_elapsed_s(host_wait_start)
+                if wait_s is not None:
+                    record["host_wait_prev_flag_s"] = wait_s
+                finished_flags = [bool(value) for value in async_cpu_flags[int(pending_flag_row)].tolist()]
+            else:
+                finished_flags = list(pending_finished_flags)
             host_swap_start = timing.cpu_now()
             npu_swap_start = timing.npu_event()
             consume_finished_slots(finished_flags, int(pending_completion_decode_call), record)
@@ -1049,6 +1070,7 @@ def static_hotswap_decode_loop(
             events["npu_swap"] = (npu_swap_start, npu_swap_end)
             pending_flag_event = None
             pending_flag_row = None
+            pending_finished_flags = None
             pending_completion_decode_call = None
             if completed_count >= num_items:
                 npu_iter_end = timing.npu_event()
@@ -1103,23 +1125,28 @@ def static_hotswap_decode_loop(
         active.next_cache_position.add_(active_before_step.to(dtype=active.next_cache_position.dtype))
         decode_calls += 1
 
-        host_flag_copy_start = timing.cpu_now()
-        flag_ready_event = torch_npu.npu.current_stream().record_event()
-        copy_done_event = torch_npu.npu.Event()
-        npu_flag_copy_start = None
-        npu_flag_copy_end = None
-        with torch_npu.npu.stream(copy_stream):
-            copy_stream.wait_event(flag_ready_event)
-            npu_flag_copy_start = timing.npu_event(copy_stream)
-            async_cpu_flags[int(decode_calls) - 1].copy_(slot_finished, non_blocking=True)
-            npu_flag_copy_end = timing.npu_event(copy_stream)
-            copy_done_event.record(copy_stream)
-        flag_copy_enqueue_s = timing.cpu_elapsed_s(host_flag_copy_start)
-        if flag_copy_enqueue_s is not None:
-            record["host_flag_copy_enqueue_s"] = flag_copy_enqueue_s
-        events["npu_flag_copy"] = (npu_flag_copy_start, npu_flag_copy_end)
-        pending_flag_event = copy_done_event
-        pending_flag_row = int(decode_calls) - 1
+        if use_npu_overlap:
+            assert async_cpu_flags is not None
+            assert copy_stream is not None
+            host_flag_copy_start = timing.cpu_now()
+            flag_ready_event = torch_npu.npu.current_stream().record_event()
+            copy_done_event = torch_npu.npu.Event()
+            npu_flag_copy_start = None
+            npu_flag_copy_end = None
+            with torch_npu.npu.stream(copy_stream):
+                copy_stream.wait_event(flag_ready_event)
+                npu_flag_copy_start = timing.npu_event(copy_stream)
+                async_cpu_flags[int(decode_calls) - 1].copy_(slot_finished, non_blocking=True)
+                npu_flag_copy_end = timing.npu_event(copy_stream)
+                copy_done_event.record(copy_stream)
+            flag_copy_enqueue_s = timing.cpu_elapsed_s(host_flag_copy_start)
+            if flag_copy_enqueue_s is not None:
+                record["host_flag_copy_enqueue_s"] = flag_copy_enqueue_s
+            events["npu_flag_copy"] = (npu_flag_copy_start, npu_flag_copy_end)
+            pending_flag_event = copy_done_event
+            pending_flag_row = int(decode_calls) - 1
+        else:
+            pending_finished_flags = [bool(value) for value in slot_finished.detach().cpu().tolist()]
         pending_completion_decode_call = int(decode_calls)
 
         npu_iter_end = timing.npu_event()
@@ -1129,9 +1156,16 @@ def static_hotswap_decode_loop(
         events["npu_iter"] = (npu_iter_start, npu_iter_end)
         timing.add(record, events)
 
-    if completed_count < num_items and pending_flag_event is not None and pending_flag_row is not None and pending_completion_decode_call is not None:
-        pending_flag_event.synchronize()
-        finished_flags = [bool(value) for value in async_cpu_flags[int(pending_flag_row)].tolist()]
+    if completed_count < num_items and pending_completion_decode_call is not None and (
+        (use_npu_overlap and pending_flag_event is not None and pending_flag_row is not None)
+        or (not use_npu_overlap and pending_finished_flags is not None)
+    ):
+        if use_npu_overlap:
+            assert async_cpu_flags is not None
+            pending_flag_event.synchronize()
+            finished_flags = [bool(value) for value in async_cpu_flags[int(pending_flag_row)].tolist()]
+        else:
+            finished_flags = list(pending_finished_flags)
         consume_finished_slots(finished_flags, int(pending_completion_decode_call))
 
     return HotSwapDecodeResult(

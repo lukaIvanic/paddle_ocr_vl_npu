@@ -406,6 +406,21 @@ class PaddleOCRAttention(nn.Module):
         attn_output = attn_output.transpose(1, 2).contiguous().reshape(batch, 1, self.num_heads * self.head_dim)
         return self.o_proj(attn_output)
 
+    def attend_decode_manual(
+        self,
+        query_states: torch.Tensor,
+        key_cache: torch.Tensor,
+        value_cache: torch.Tensor,
+        attention_mask: torch.Tensor | None,
+    ) -> torch.Tensor:
+        additive_mask = attention_mask
+        if additive_mask is not None and additive_mask.dtype == torch.bool:
+            additive_mask = torch.zeros_like(additive_mask, dtype=query_states.dtype).masked_fill(
+                additive_mask,
+                torch.finfo(query_states.dtype).min,
+            )
+        return self.attend(query_states, key_cache, value_cache, additive_mask)
+
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -451,6 +466,8 @@ class PaddleOCRAttention(nn.Module):
             key_states,
             value_states,
         )
+        if query_states.device.type != "npu":
+            return self.attend_decode_manual(query_states, key_cache, value_cache, attention_mask)
         return self.attend_decode_increfa(query_states, key_cache, value_cache, attention_mask)
 
 
