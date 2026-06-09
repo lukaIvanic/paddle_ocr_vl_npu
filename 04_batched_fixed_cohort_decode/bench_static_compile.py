@@ -1010,8 +1010,10 @@ def static_hotswap_decode_loop(
     active_item_indices = torch.full((int(batch_size),), -1, device=device, dtype=torch.int64)
     active_mask = torch.zeros((int(batch_size),), device=device, dtype=torch.bool)
     slot_finished = torch.zeros((int(batch_size),), device=device, dtype=torch.bool)
-    generated_ids = torch.full((num_items, int(max_new_tokens)), int(eos_token_id), device=device, dtype=ready.next_token.dtype)
-    generated_lengths = torch.zeros((num_items,), device=device, dtype=torch.int64)
+    generated_rows = [
+        torch.full((int(max_new_tokens),), int(eos_token_id), device=device, dtype=ready.next_token.dtype)
+        for _ in range(num_items)
+    ]
     ready_first_tokens_cpu = [int(value) for value in ready.next_token.reshape(-1).detach().cpu().tolist()]
     generated_lengths_cpu = [0 for _ in range(num_items)]
     item_eos_hit_cpu = [False for _ in range(num_items)]
@@ -1063,9 +1065,8 @@ def static_hotswap_decode_loop(
                     )
                 )
         active_item_indices_cpu[int(slot)] = int(item_idx)
-        generated_ids[int(item_idx) : int(item_idx) + 1, 0:1].copy_(ready.next_token[int(item_idx) : int(item_idx) + 1])
+        generated_rows[int(item_idx)][0:1].copy_(ready.next_token[int(item_idx) : int(item_idx) + 1].reshape(1))
         generated_lengths_cpu[int(item_idx)] = 1
-        generated_lengths[int(item_idx)].fill_(1)
         first_token_eos = ready_first_tokens_cpu[int(item_idx)] == int(eos_token_id)
         first_token_cap = int(max_new_tokens) <= 1
         initial_finished = bool(first_token_eos or first_token_cap)
@@ -1244,10 +1245,9 @@ def static_hotswap_decode_loop(
             position = int(generated_lengths_cpu[item_idx])
             if position >= int(max_new_tokens):
                 continue
-            generated_ids[item_idx : item_idx + 1, position : position + 1].copy_(active_next_token[slot : slot + 1])
+            generated_rows[item_idx][position : position + 1].copy_(active_next_token[slot : slot + 1].reshape(1))
             new_length = position + 1
             generated_lengths_cpu[item_idx] = new_length
-            generated_lengths[item_idx : item_idx + 1].fill_(new_length)
             if new_length >= int(max_new_tokens):
                 length_cap_slots.append(int(slot))
                 slot_finished_cpu[int(slot)] = True
@@ -1303,6 +1303,9 @@ def static_hotswap_decode_loop(
             finished_flags = list(pending_finished_flags)
         consume_finished_slots(finished_flags, int(pending_completion_decode_call))
 
+    generated_ids = torch.stack(generated_rows, dim=0)
+    generated_lengths = torch.tensor(generated_lengths_cpu, device=device, dtype=torch.int64)
+
     return HotSwapDecodeResult(
         ids=generated_ids,
         lengths=generated_lengths,
@@ -1320,6 +1323,7 @@ def static_hotswap_decode_loop(
             "swap_copy_mode": diagnostic_swap_copy_mode,
             "verify_swap_copies": bool(diagnostic_verify_swap_copies),
             "sync_finished_flags": bool(diagnostic_sync_finished_flags),
+            "history_storage": "per_item_device_rows",
             "copy_verification_checks": int(copy_verification_checks),
             "copy_verification_failure_count": int(len(copy_verification_failures)),
             "copy_verification_failures": copy_verification_failures,
@@ -1754,7 +1758,7 @@ def main() -> None:
             "linear_weight_format": weight_format_meta,
             "compile": compile_meta,
             "cache_update": "prefill_slice_decode_npu_scatter",
-            "history_write_mode": "host_indexed_2d_slice_copy",
+            "history_write_mode": "per_item_device_rows",
             "prompt_tokens": {
                 "per_item": prompt_tokens,
                 "min": int(min(prompt_tokens)),
