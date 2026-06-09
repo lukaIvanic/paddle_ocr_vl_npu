@@ -624,6 +624,7 @@ def benchmark_report(summary: dict[str, Any]) -> dict[str, Any]:
         "decode_attention": summary.get("decode_attention"),
         "decode_cache_update": summary.get("decode_cache_update"),
         "eos_mode": summary.get("eos_mode"),
+        "step_timing_mode": summary.get("step_timing_mode"),
         "cache_length": summary.get("cache_length"),
         "timing_s": summary.get("timing_s"),
     }
@@ -2248,6 +2249,7 @@ def main() -> None:
             "decode_attention": decode_attention_label(device),
             "default_decode_attention": DECODE_ATTENTION,
             "eos_mode": args.eos_mode,
+            "step_timing_mode": args.step_timing,
             "eos_token_id": eos_token_id,
             "batch_size": int(args.batch_size),
             "num_items": int(len(cohort)),
@@ -2481,6 +2483,7 @@ def main() -> None:
         "decode_attention": decode_attention_label(device),
         "default_decode_attention": DECODE_ATTENTION,
         "eos_mode": args.eos_mode,
+        "step_timing_mode": args.step_timing,
         "eos_token_id": eos_token_id,
         "batch_size": int(args.batch_size),
         "cohort": [
