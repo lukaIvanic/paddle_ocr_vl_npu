@@ -188,24 +188,36 @@ def timed_static_decode(
     rope_deltas: torch.Tensor,
     flat_cache: tuple[torch.Tensor, ...],
     max_new_tokens: int,
+    device: torch.device,
+    trace_decode_steps: bool,
 ) -> dict[str, Any]:
     generated = [next_token]
     decode_calls = 0
     last_logits = None
+    decode_step_wall_s: list[float] = []
     for _ in range(max(0, int(max_new_tokens) - 1)):
+        if trace_decode_steps:
+            maybe_sync(device)
+            step_start = time.perf_counter()
         last_logits = decode_fn(next_token, cache_position, rope_deltas, *flat_cache)
         next_token = torch.argmax(last_logits[:, -1, :].float(), dim=-1, keepdim=True)
+        if trace_decode_steps:
+            maybe_sync(device)
+            decode_step_wall_s.append(time.perf_counter() - step_start)
         generated.append(next_token)
         cache_position = cache_position + 1
         decode_calls += 1
     ids = torch.cat(generated, dim=1)
-    return {
+    result = {
         "ids": ids,
         "decode_calls": int(decode_calls),
         "generated_tokens": int(ids.shape[1]),
         "decode_mode": "fixed_steps_no_eos_check",
         "last_logits_shape": None if last_logits is None else [int(v) for v in last_logits.shape],
     }
+    if trace_decode_steps:
+        result["decode_step_wall_s"] = decode_step_wall_s
+    return result
 
 
 def first_mismatch(left: list[int], right: list[int]) -> dict[str, Any] | None:
@@ -272,6 +284,7 @@ def run_item_stage_timing(
     cache_length: int,
     max_new_tokens: int,
     device: torch.device,
+    trace_decode_steps: bool,
 ) -> dict[str, Any]:
     timer = StageTimer(device)
 
@@ -366,6 +379,8 @@ def run_item_stage_timing(
             rope_deltas=rope_deltas,
             flat_cache=cache.flat_tensors(),
             max_new_tokens=int(max_new_tokens),
+            device=device,
+            trace_decode_steps=bool(trace_decode_steps),
         ),
     )
     staged_ids = decode_result["ids"]
@@ -424,6 +439,7 @@ def run_item_stage_timing(
         "generated_tokens": int(decode_result["generated_tokens"]),
         "decode_calls": int(decode_result["decode_calls"]),
         "decode_mode": str(decode_result["decode_mode"]),
+        "decode_step_wall_s": [float(value) for value in decode_result.get("decode_step_wall_s", [])],
         "correctness": {
             "reference": "direct_local_static_fixed_steps",
             "tokens_match": bool(tokens_match),
@@ -451,6 +467,17 @@ def main() -> None:
     parser.add_argument("--decode-backend", default="raw_eager", choices=BACKEND_CHOICES)
     parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
     parser.add_argument("--torchair-cache-dir", type=Path, default=DEFAULT_TORCHAIR_CACHE_DIR)
+    parser.add_argument(
+        "--warmup-items",
+        type=int,
+        default=0,
+        help="Run this many leading cohort items through the full staged path before measured items.",
+    )
+    parser.add_argument(
+        "--decode-step-timing",
+        action="store_true",
+        help="Synchronize and record every fixed-step decode call inside static_decode_total.",
+    )
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
 
@@ -529,6 +556,29 @@ def main() -> None:
     maybe_sync(device)
     compile_first_s = time.perf_counter() - compile_first_start
 
+    warmup_items: list[dict[str, Any]] = []
+    stage_warmup_s = 0.0
+    if int(args.warmup_items) < 0:
+        raise ValueError(f"--warmup-items must be non-negative, got {args.warmup_items}")
+    if int(args.warmup_items) > 0:
+        warmup_count = min(int(args.warmup_items), len(cohort))
+        maybe_sync(device)
+        warmup_start = time.perf_counter()
+        warmup_items = [
+            run_item_stage_timing(
+                model=model,
+                decode_fn=decode_fn,
+                item=item,
+                cache_length=int(cache_length),
+                max_new_tokens=int(args.max_new_tokens),
+                device=device,
+                trace_decode_steps=False,
+            )
+            for item in cohort[:warmup_count]
+        ]
+        maybe_sync(device)
+        stage_warmup_s = time.perf_counter() - warmup_start
+
     items = [
         run_item_stage_timing(
             model=model,
@@ -537,6 +587,7 @@ def main() -> None:
             cache_length=int(cache_length),
             max_new_tokens=int(args.max_new_tokens),
             device=device,
+            trace_decode_steps=bool(args.decode_step_timing),
         )
         for item in cohort
     ]
@@ -549,6 +600,15 @@ def main() -> None:
             "first_mismatch": item["correctness"]["first_mismatch"],
         }
         for idx, item in enumerate(items)
+        if not bool(item["correctness"]["tokens_match"])
+    ]
+    warmup_mismatches = [
+        {
+            "item": int(idx),
+            "id": str(item["id"]),
+            "first_mismatch": item["correctness"]["first_mismatch"],
+        }
+        for idx, item in enumerate(warmup_items)
         if not bool(item["correctness"]["tokens_match"])
     ]
     output = {
@@ -565,6 +625,8 @@ def main() -> None:
         "num_items": int(len(items)),
         "max_new_tokens": int(args.max_new_tokens),
         "cache_length": int(cache_length),
+        "warmup_items": int(len(warmup_items)),
+        "decode_step_timing": bool(args.decode_step_timing),
         "prompt_tokens": {
             "min": int(min(prompt_tokens)),
             "max": int(max(prompt_tokens)),
@@ -576,11 +638,21 @@ def main() -> None:
             "compile_wrapper": float(compile_wrapper_s),
             "compile_first_call": float(compile_first_s),
         },
+        "stage_warmup": {
+            "count": int(len(warmup_items)),
+            "elapsed_s": float(stage_warmup_s),
+            "item_ids": [str(item["id"]) for item in warmup_items],
+            "mismatch_count": int(len(warmup_mismatches)),
+            "first_mismatches": warmup_mismatches[:8],
+            "timing_summary_s": aggregate_item_timings(warmup_items) if warmup_items else {},
+        },
         "correctness": {
             "reference": "direct_local_static_fixed_steps",
-            "all_required_checks_passed": bool(not mismatches),
+            "all_required_checks_passed": bool(not mismatches and not warmup_mismatches),
             "mismatch_count": int(len(mismatches)),
             "first_mismatches": mismatches[:8],
+            "warmup_mismatch_count": int(len(warmup_mismatches)),
+            "warmup_first_mismatches": warmup_mismatches[:8],
         },
         "stage_timing_summary_s": timing_summary,
         "items": items,
@@ -592,6 +664,8 @@ def main() -> None:
             "prefill_total_excluding_device_transfer": "vision + projector + text embeddings/scatter/mRoPE/cache allocation/text prefill/lm_head/argmax.",
             "model_total_excluding_device_transfer": "prefill_total_excluding_device_transfer + static_decode_total.",
             "static_decode_total": "Fixed-step decode with no per-token EOS host sync; use experiment 4 for scheduler/EOS throughput.",
+            "decode_step_timing": "Optional diagnostic mode that synchronizes every decode step and should not be used for clean throughput.",
+            "stage_warmup": "Optional leading full-path item warmup that is recorded separately and excluded from measured item summaries.",
             "correctness": "The staged path is compared against direct local static fixed-step generation outside the timed stage measurements.",
         },
     }

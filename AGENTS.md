@@ -196,6 +196,26 @@ cd /home/lukaiv/paddle_ocr_vl_npu/05_full_recognizer_optimizations
 bash run_npu_stage_timing.sh
 ```
 
+The runner prints `CORRECTNESS`, `SETUP_TIMING_S`, `STAGE_SUMMARY_S`, and
+`ITEM_SUMMARY` after validating the JSON. Paste those printed sections back
+instead of writing a separate parser.
+
+If the first measured item has a huge `static_decode_total` outlier, rerun these
+two diagnostics exactly:
+
+```sh
+# Isolate the first crop and print per-decode-step synchronized timings.
+NUM_ITEMS=1 \
+CROP_IDS=hotswap_001_code_txt_p0001_box_id_3 \
+DECODE_STEP_TIMING=1 \
+bash run_npu_stage_timing.sh
+
+# Move one full staged item through the model before measured timing.
+# If the outlier was first-use compile/cache behavior, the measured item 001
+# should drop to the normal decode range here.
+WARMUP_ITEMS=1 bash run_npu_stage_timing.sh
+```
+
 The runner writes and validates one JSON under
 `outputs/full_recognizer_stage_timing/`, then fails if staged generation does
 not match direct local static fixed-step generation. For the first report, paste
