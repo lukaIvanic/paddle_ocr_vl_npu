@@ -1457,12 +1457,13 @@ def static_hotswap_decode_loop(
         if diagnostic_step_trace_items
         else []
     )
+    trace_enabled = bool(diagnostic_step_trace or trace_item_indices)
     for trace_item in trace_item_indices:
         if trace_item < 0 or trace_item >= num_items:
             raise ValueError(f"--diagnostic-step-trace-items contains out-of-range item index {trace_item}; num_items={num_items}")
 
     def snapshot_step(stage: str, *, extra: dict[str, Any] | None = None) -> None:
-        if not diagnostic_step_trace and not trace_item_indices:
+        if not trace_enabled:
             return
         active_item_indices_tensor = [int(value) for value in active_item_indices.detach().cpu().tolist()]
         active_mask_values = [bool(value) for value in active_mask.detach().cpu().tolist()]
@@ -1769,15 +1770,16 @@ def static_hotswap_decode_loop(
         active_next_token.copy_(torch.where(active_before_step.view(-1, 1), sampled_token, eos_fill))
         active.next_cache_position.add_(active_before_step.to(dtype=active.next_cache_position.dtype))
         decode_calls += 1
-        snapshot_step(
-            "after_decode_write",
-            extra={
-                "decode_call": int(decode_calls),
-                "active_before_step_cpu": [bool(value) for value in active_before_step_cpu],
-                "sampled_token": [int(row[0]) for row in sampled_token.detach().cpu().tolist()],
-                "written_next_token": [int(row[0]) for row in active_next_token.detach().cpu().tolist()],
-            },
-        )
+        if trace_enabled:
+            snapshot_step(
+                "after_decode_write",
+                extra={
+                    "decode_call": int(decode_calls),
+                    "active_before_step_cpu": [bool(value) for value in active_before_step_cpu],
+                    "sampled_token": [int(row[0]) for row in sampled_token.detach().cpu().tolist()],
+                    "written_next_token": [int(row[0]) for row in active_next_token.detach().cpu().tolist()],
+                },
+            )
 
         if use_npu_overlap:
             assert async_cpu_tokens is not None
