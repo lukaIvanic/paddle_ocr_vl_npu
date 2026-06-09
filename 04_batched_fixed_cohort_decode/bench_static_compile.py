@@ -23,15 +23,12 @@ from tokenizers import Tokenizer
 
 from local_modeling_paddleocr_vl import (
     DECODE_ATTENTION,
+    DECODE_CACHE_UPDATE,
     DECODE_LINEAR_WEIGHT_FORMAT,
     LocalPaddleOCRVLForConditionalGeneration,
     LocalPaddleOCRVLStaticCache,
     _resolve_model_dir,
     cast_decode_linear_weights_to_nz,
-    get_decode_cache_update_mode,
-    get_decode_attention_mode,
-    set_decode_cache_update_mode,
-    set_decode_attention_mode,
 )
 from probe_static_compile import DEFAULT_TORCHAIR_CACHE_DIR, compile_decode_module, maybe_sync
 from run_local_recognition import (
@@ -49,10 +46,16 @@ PROFILE_METRIC_CHOICES = ("pipe", "memory", "l2", "memory_access")
 EOS_MODE_CHOICES = ("none", "overlap_event_flags")
 SCHEDULE_CHOICES = ("fixed_cohort", "hotswap")
 STEP_TIMING_CHOICES = ("off", "cpu", "npu", "both")
-DIAGNOSTIC_DECODE_ATTENTION_CHOICES = ("increfa", "manual")
-DIAGNOSTIC_DECODE_CACHE_UPDATE_CHOICES = ("npu_scatter", "per_row_copy")
 DIAGNOSTIC_SWAP_COPY_CHOICES = ("direct", "clone")
 REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def decode_attention_label(device: torch.device) -> str:
+    return DECODE_ATTENTION if device.type == "npu" else "manual"
+
+
+def decode_cache_update_label(device: torch.device) -> str:
+    return DECODE_CACHE_UPDATE if device.type == "npu" else "per_row_copy"
 
 
 @dataclass
@@ -1639,8 +1642,8 @@ def static_hotswap_decode_loop(
         step_timing=timing.records,
         stopped_all_items=bool(completed_count >= num_items),
         diagnostics={
-            "decode_attention_mode": get_decode_attention_mode(),
-            "decode_cache_update_mode": get_decode_cache_update_mode(),
+            "decode_attention_mode": decode_attention_label(device),
+            "decode_cache_update_mode": decode_cache_update_label(device),
             "swap_copy_mode": diagnostic_swap_copy_mode,
             "verify_swap_copies": bool(diagnostic_verify_swap_copies),
             "sync_finished_flags": bool(diagnostic_sync_finished_flags),
@@ -1872,7 +1875,7 @@ def profile_compiled_decode(
         "metric": args.profile_metric,
         "batch_size": int(len(cohort)),
         "linear_weight_format": DECODE_LINEAR_WEIGHT_FORMAT,
-        "decode_attention": DECODE_ATTENTION,
+        "decode_attention": decode_attention_label(device),
         "eos_mode": args.eos_mode,
         "with_stack": True,
         "record_shapes": True,
@@ -1911,18 +1914,6 @@ def main() -> None:
     parser.add_argument("--torchair-cache-dir", type=Path, default=DEFAULT_TORCHAIR_CACHE_DIR)
     parser.add_argument("--eos-mode", default="none", choices=EOS_MODE_CHOICES)
     parser.add_argument("--step-timing", default="off", choices=STEP_TIMING_CHOICES)
-    parser.add_argument(
-        "--diagnostic-decode-attention",
-        default="increfa",
-        choices=DIAGNOSTIC_DECODE_ATTENTION_CHOICES,
-        help="Diagnostic only: force manual decode attention to isolate NPU IncreFA issues. Use with --backend raw_eager.",
-    )
-    parser.add_argument(
-        "--diagnostic-decode-cache-update",
-        default="npu_scatter",
-        choices=DIAGNOSTIC_DECODE_CACHE_UPDATE_CHOICES,
-        help="Diagnostic only: force the CUDA-style per-row decode KV copy on NPU. Use with --backend raw_eager.",
-    )
     parser.add_argument(
         "--diagnostic-swap-copy-mode",
         default="direct",
@@ -1986,17 +1977,11 @@ def main() -> None:
         raise ValueError("--diagnostic-step-trace-print writes live stdout lines; run without --json")
     if args.diagnostic_step_trace_print and not args.diagnostic_step_trace and not args.diagnostic_step_trace_items:
         raise ValueError("--diagnostic-step-trace-print requires --diagnostic-step-trace or --diagnostic-step-trace-items")
-    if args.diagnostic_decode_attention == "manual" and args.backend != "raw_eager":
-        raise ValueError("--diagnostic-decode-attention manual is an uncompiled diagnostic; use --backend raw_eager")
-    if args.diagnostic_decode_cache_update == "per_row_copy" and args.backend != "raw_eager":
-        raise ValueError("--diagnostic-decode-cache-update per_row_copy is an uncompiled diagnostic; use --backend raw_eager")
 
     model_dir = _resolve_model_dir(args.model)
     device = resolve_device(args.device)
     dtype = parse_dtype(args.dtype, device)
     configure_npu_jit_compile(args.npu_jit_compile, device)
-    set_decode_attention_mode(args.diagnostic_decode_attention)
-    set_decode_cache_update_mode(args.diagnostic_decode_cache_update)
 
     pre_cfg = load_preprocessor_config(model_dir)
     tokenizer = Tokenizer.from_file(str(model_dir / "tokenizer.json"))
@@ -2147,7 +2132,7 @@ def main() -> None:
             "device": str(device),
             "dtype": str(dtype),
             "npu_jit_compile": args.npu_jit_compile,
-            "decode_attention": get_decode_attention_mode(),
+            "decode_attention": decode_attention_label(device),
             "default_decode_attention": DECODE_ATTENTION,
             "eos_mode": args.eos_mode,
             "eos_token_id": eos_token_id,
@@ -2166,8 +2151,8 @@ def main() -> None:
             ],
             "linear_weight_format": weight_format_meta,
             "compile": compile_meta,
-            "cache_update": f"prefill_slice_decode_{get_decode_cache_update_mode()}",
-            "decode_cache_update": get_decode_cache_update_mode(),
+            "cache_update": f"prefill_slice_decode_{decode_cache_update_label(device)}",
+            "decode_cache_update": decode_cache_update_label(device),
             "history_write_mode": "per_item_device_rows",
             "slot_control_write_mode": "index_copy_on_npu_slice_copy_elsewhere",
             "prompt_tokens": {
@@ -2373,7 +2358,7 @@ def main() -> None:
         "device": str(device),
         "dtype": str(dtype),
         "npu_jit_compile": args.npu_jit_compile,
-        "decode_attention": get_decode_attention_mode(),
+        "decode_attention": decode_attention_label(device),
         "default_decode_attention": DECODE_ATTENTION,
         "eos_mode": args.eos_mode,
         "eos_token_id": eos_token_id,
@@ -2391,8 +2376,8 @@ def main() -> None:
         ],
         "linear_weight_format": weight_format_meta,
         "compile": compile_meta,
-        "cache_update": f"prefill_slice_decode_{get_decode_cache_update_mode()}",
-        "decode_cache_update": get_decode_cache_update_mode(),
+        "cache_update": f"prefill_slice_decode_{decode_cache_update_label(device)}",
+        "decode_cache_update": decode_cache_update_label(device),
         "prompt_tokens": {
             "per_row": prompt_tokens,
             "min": int(min(prompt_tokens)),

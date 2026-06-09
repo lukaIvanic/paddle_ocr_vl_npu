@@ -14,11 +14,11 @@ from tokenizers import Tokenizer
 
 from local_modeling_paddleocr_vl import (
     DECODE_ATTENTION,
+    DECODE_CACHE_UPDATE,
     DECODE_LINEAR_WEIGHT_FORMAT,
     LocalPaddleOCRVLForConditionalGeneration,
     _resolve_model_dir,
     cast_decode_linear_weights_to_nz,
-    get_decode_attention_mode,
 )
 from run_local_recognition import (
     NPU_JIT_COMPILE_CHOICES,
@@ -32,6 +32,14 @@ from run_local_recognition import (
 
 
 DEFAULT_TORCHAIR_CACHE_DIR = Path("outputs") / "torchair_cache"
+
+
+def decode_attention_label(device: torch.device) -> str:
+    return DECODE_ATTENTION if device.type == "npu" else "manual"
+
+
+def decode_cache_update_label(device: torch.device) -> str:
+    return DECODE_CACHE_UPDATE if device.type == "npu" else "per_row_copy"
 
 
 def import_torchair():
@@ -86,7 +94,7 @@ def compile_decode_module(
             "backend": backend_name,
             "compile_api": "none",
             "linear_weight_format": DECODE_LINEAR_WEIGHT_FORMAT,
-            "decode_attention": get_decode_attention_mode(),
+            "decode_attention": decode_attention_label(device),
         }
 
     if backend_name == "torchair":
@@ -113,7 +121,7 @@ def compile_decode_module(
             "torchair_ge_cache": True,
             "compile_api": "torchair.inference.cache_compile",
             "linear_weight_format": DECODE_LINEAR_WEIGHT_FORMAT,
-            "decode_attention": get_decode_attention_mode(),
+            "decode_attention": decode_attention_label(device),
         }
 
     backend = compile_backend(backend_name)
@@ -124,7 +132,7 @@ def compile_decode_module(
         "backend": backend_name,
         "compile_api": "torch.compile",
         "linear_weight_format": DECODE_LINEAR_WEIGHT_FORMAT,
-        "decode_attention": get_decode_attention_mode(),
+        "decode_attention": decode_attention_label(device),
     }
 
 
@@ -193,7 +201,7 @@ def main() -> None:
         cache_length=cache_length,
     )
     print(f"static_matches_dynamic={bool(torch.equal(static_ids, dynamic_ids))}")
-    print(f"cache_update=prefill_slice_decode_npu_scatter npu_jit_compile={args.npu_jit_compile}")
+    print(f"cache_update=prefill_slice_decode_{decode_cache_update_label(device)} npu_jit_compile={args.npu_jit_compile}")
     print(f"dynamic_text={tokenizer.decode(dynamic_ids[0].detach().cpu().tolist(), skip_special_tokens=True)!r}")
     print(f"static_text={tokenizer.decode(static_ids[0].detach().cpu().tolist(), skip_special_tokens=True)!r}")
 
@@ -237,7 +245,7 @@ def main() -> None:
     diff = (eager_logits.float() - compiled_logits.float()).abs()
     print(f"compile_backend={args.backend} fullgraph=True dynamic=False")
     print("compile_meta=" + repr(compile_meta))
-    print(f"decode_attention={DECODE_ATTENTION}")
+    print(f"decode_attention={decode_attention_label(device)}")
     print("linear_weight_format=" + repr(weight_format_meta))
     print(f"compile_setup_s={compile_setup_s:.6f} eager_decode_s={eager_s:.6f} compiled_first_s={compiled_first_s:.6f}")
     print(f"compiled_matches_eager=max_abs:{float(diff.max())} mean_abs:{float(diff.mean())}")
