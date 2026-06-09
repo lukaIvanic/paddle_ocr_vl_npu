@@ -195,6 +195,15 @@ def configure_npu_jit_compile(mode: str, device: torch.device, *, verbose: bool 
         raise RuntimeError(f"failed to set NPU jit_compile={mode}: {exc.__class__.__name__}: {exc}") from exc
 
 
+def synchronize_device(device: torch.device) -> None:
+    if device.type == "cuda":
+        torch.cuda.synchronize()
+    elif device.type == "npu":
+        import torch_npu
+
+        torch_npu.npu.synchronize()
+
+
 @torch.inference_mode()
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -228,8 +237,7 @@ def main() -> None:
     input_ids = input_ids.to(device)
     attention_mask = attention_mask.to(device)
 
-    if device.type == "cuda":
-        torch.cuda.synchronize()
+    synchronize_device(device)
     start = time.perf_counter()
     if args.static:
         new_ids = model.generate_ids_static(
@@ -248,8 +256,7 @@ def main() -> None:
             image_grid_thw=image_grid_thw,
             max_new_tokens=args.max_new_tokens,
         )
-    if device.type == "cuda":
-        torch.cuda.synchronize()
+    synchronize_device(device)
     elapsed = time.perf_counter() - start
 
     generated = new_ids[0].detach().cpu().tolist()

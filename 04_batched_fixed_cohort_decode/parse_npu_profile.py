@@ -85,12 +85,11 @@ def add_sample(bucket: dict[str, Any], field: str, value: str | None, *, limit: 
         samples.append(value)
 
 
-def operator_duration_us(row: dict[str, str]) -> float:
+def operator_device_duration_us(row: dict[str, str]) -> float:
     return max(
         parse_float(row.get("Device Total Duration(us)")),
         parse_float(row.get("Device Total Duration With AICore(us)")),
         parse_float(row.get("Device Self Duration(us)")),
-        parse_float(row.get("Host Total Duration(us)")),
     )
 
 
@@ -101,7 +100,7 @@ def summarize_operator_details(path: Path, *, topn: int) -> dict[str, Any]:
     total_host_us = 0.0
     for row in rows:
         name = row.get("Name") or row.get("Op Name") or "unknown"
-        device_us = operator_duration_us(row)
+        device_us = operator_device_duration_us(row)
         host_us = parse_float(row.get("Host Total Duration(us)"))
         total_device_us += device_us
         total_host_us += host_us

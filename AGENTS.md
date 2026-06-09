@@ -171,7 +171,8 @@ bash run_npu_hotswap_bottleneck_matrix.sh
 ```
 
 The runner executes the fixed baseline plus hot-swap `num-items=8,9,16,32,100`
-matrix and writes one summary JSON per run. See
+matrix once with `--step-timing off` for clean throughput and once with
+`--step-timing both` for diagnostics. It writes one summary JSON per run. See
 `04_batched_fixed_cohort_decode/NPU_HOTSWAP_BOTTLENECK_MATRIX.md` for what to
 paste back.
 
@@ -234,7 +235,12 @@ Read the timing fields carefully:
   NPU cache bank and can behave differently from a normal single-item cache.
 - Fixed-cohort `tok_per_s.compiled_raw_batch_tokens` is the main decode baseline.
 - Hot-swap `tok_per_s.hotswap_raw_batch_tokens` is the direct scheduler-overhead
-  comparison against the fixed baseline.
+  comparison against the fixed baseline for backwards compatibility, but it is
+  a total-window metric.
+- Hot-swap `tok_per_s.hotswap_steady_raw_batch_tokens` uses only
+  `phase_timing_s.steady_decode_loop_s` and is the preferred steady-state
+  scheduler comparison. `hotswap_total_*` includes active-cache setup, initial
+  slot loads, the steady loop, final drain, and result materialization.
 - Hot-swap `tok_per_s.hotswap_effective_item_tokens` counts only useful item
   tokens and will drop if EOS/length-cap completions create tail bubbles.
 - Before interpreting any throughput, check `matches`. The script sets

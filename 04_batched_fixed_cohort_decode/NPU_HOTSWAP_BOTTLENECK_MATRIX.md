@@ -8,10 +8,14 @@ bash run_npu_hotswap_bottleneck_matrix.sh
 ```
 
 The runner executes the fixed-cohort warmup/reference and the hot-swap
-`num-items=8,9,16,32,100` matrix with the same batch size, cache length,
-TorchAir cache directory, dtype, EOS mode, and step timing settings. It writes
-one JSON file per run under `outputs/hotswap_bottleneck_matrix/` and prints the
-same JSON to stdout.
+`num-items=8,9,16,32,100` matrix twice:
+
+- `off_*.json`: clean throughput with `--step-timing off`.
+- `both_*.json`: diagnostic timing with CPU and NPU per-step records.
+
+Both passes use the same batch size, cache length, TorchAir cache directory,
+dtype, and EOS mode. The runner writes one JSON file per run under
+`outputs/hotswap_bottleneck_matrix/` and prints the same JSON to stdout.
 
 Environment overrides are supported without editing tracked files:
 
@@ -20,6 +24,7 @@ PYTHON_BIN=/root/miniconda3/envs/paddle_ocr_vl_py310/bin/python \
 MODEL=/home/lukaiv/models/paddle_ocr_0_9b_v_1_6 \
 DEVICE=npu:0 \
 CACHE_LENGTH=1269 \
+TIMING_MODES="off both" \
 bash run_npu_hotswap_bottleneck_matrix.sh
 ```
 
@@ -38,6 +43,15 @@ Read the matrix this way:
   scaling.
 - `07_hotswap_full_100` is the real workload.
 
-For each JSON, paste back `correctness`, `tok_per_s`, `speed_debug`,
-`loop.step_timing_summary`, `timing_s`, and `timing_accounting`. Do not write
-inline parsing scripts.
+For clean throughput, read `off_*.json`: paste back `correctness`, `tok_per_s`,
+`phase_timing_s`, and `timing_s`.
+
+For diagnostic timing, read `both_*.json`: paste back `correctness`,
+`tok_per_s`, `phase_timing_s`, `speed_debug`, `loop.step_timing_summary`,
+`timing_s`, and `timing_accounting`.
+
+In hot-swap results, `hotswap_total_*` includes active-cache setup, initial
+slot loads, steady loop, final drain, and result materialization. The
+`hotswap_steady_*` rates use only `phase_timing_s.steady_decode_loop_s` and are
+the better comparison for scheduler steady-state decode. Do not write inline
+parsing scripts.

@@ -111,6 +111,7 @@ class HotSwapDecodeResult:
     step_timing: list[dict[str, Any]] | None
     stopped_all_items: bool
     diagnostics: dict[str, Any] | None = None
+    phase_timing_s: dict[str, float] | None = None
     diagnostic_step_trace: list[dict[str, Any]] | None = None
     timing_recorder: Any | None = None
 
@@ -465,6 +466,7 @@ def summarize_step_timing(records: list[dict[str, Any]] | None) -> dict[str, Any
             "npu_iter_ms",
             "npu_swap_ms",
             "npu_decode_ms",
+            "npu_post_decode_ms",
             "npu_flag_copy_ms",
         ]
         output: dict[str, Any] = {"count": int(len(group))}
@@ -502,6 +504,7 @@ def summarize_step_timing(records: list[dict[str, Any]] | None) -> dict[str, Any
             "npu_iter_ms",
             "npu_swap_ms",
             "npu_decode_ms",
+            "npu_post_decode_ms",
             "npu_flag_copy_ms",
         ]
         return [
@@ -519,6 +522,7 @@ def summarize_step_timing(records: list[dict[str, Any]] | None) -> dict[str, Any
         "by_finished_slot_count": group_by_int("finished_slot_count"),
         "top_host_iter_s": top_records("host_iter_s"),
         "top_npu_iter_ms": top_records("npu_iter_ms"),
+        "top_npu_post_decode_ms": top_records("npu_post_decode_ms"),
         "top_npu_swap_ms": top_records("npu_swap_ms"),
         "top_host_swap_s": top_records("host_swap_s"),
         "top_host_wait_prev_flag_s": top_records("host_wait_prev_flag_s"),
@@ -543,6 +547,7 @@ def step_timing_accounting(
     host_iter_sum_s = sum_key("host_iter_s")
     npu_iter_sum_s = sum_key("npu_iter_ms") / 1000.0
     npu_decode_sum_s = sum_key("npu_decode_ms") / 1000.0
+    npu_post_decode_sum_s = sum_key("npu_post_decode_ms") / 1000.0
     npu_swap_sum_s = sum_key("npu_swap_ms") / 1000.0
     npu_flag_copy_sum_s = sum_key("npu_flag_copy_ms") / 1000.0
     host_swap_sum_s = sum_key("host_swap_s")
@@ -570,6 +575,7 @@ def step_timing_accounting(
         "npu_event_region_sums_s": {
             "iter": npu_iter_sum_s,
             "decode": npu_decode_sum_s,
+            "post_decode": npu_post_decode_sum_s,
             "swap": npu_swap_sum_s,
             "flag_copy": npu_flag_copy_sum_s,
         },
@@ -595,6 +601,7 @@ def slim_step_timing_summary(step_summary: dict[str, Any] | None) -> dict[str, A
         "host_flag_copy_enqueue_s",
         "npu_iter_ms",
         "npu_decode_ms",
+        "npu_post_decode_ms",
         "npu_swap_ms",
         "npu_flag_copy_ms",
     )
@@ -624,6 +631,7 @@ def slim_step_timing_summary(step_summary: dict[str, Any] | None) -> dict[str, A
     for top_key in (
         "top_host_iter_s",
         "top_npu_iter_ms",
+        "top_npu_post_decode_ms",
         "top_npu_swap_ms",
         "top_host_swap_s",
         "top_host_wait_prev_flag_s",
@@ -672,6 +680,7 @@ def speed_debug_summary(
         "host_flag_copy_enqueue": avg_ms_from_seconds(float(host_regions.get("flag_copy_enqueue", 0.0) or 0.0)),
         "npu_iter": avg_ms_from_seconds(float(npu_regions.get("iter", 0.0) or 0.0)),
         "npu_decode": avg_ms_from_seconds(float(npu_regions.get("decode", 0.0) or 0.0)),
+        "npu_post_decode": avg_ms_from_seconds(float(npu_regions.get("post_decode", 0.0) or 0.0)),
         "npu_swap": avg_ms_from_seconds(float(npu_regions.get("swap", 0.0) or 0.0)),
         "npu_flag_copy": avg_ms_from_seconds(float(npu_regions.get("flag_copy", 0.0) or 0.0)),
     }
@@ -680,6 +689,7 @@ def speed_debug_summary(
         "wall_minus_host_iter": float(timing_accounting.get("wall_minus_host_iter_sum_s", 0.0) or 0.0),
         "npu_iter": float(npu_regions.get("iter", 0.0) or 0.0),
         "npu_decode": float(npu_regions.get("decode", 0.0) or 0.0),
+        "npu_post_decode": float(npu_regions.get("post_decode", 0.0) or 0.0),
         "npu_swap": float(npu_regions.get("swap", 0.0) or 0.0),
         "npu_flag_copy": float(npu_regions.get("flag_copy", 0.0) or 0.0),
     }
@@ -702,6 +712,7 @@ def benchmark_report(summary: dict[str, Any]) -> dict[str, Any]:
         "step_timing_mode": summary.get("step_timing_mode"),
         "cache_length": summary.get("cache_length"),
         "timing_s": summary.get("timing_s"),
+        "token_metric_note": "decode/effective token metrics exclude the first post-prefill token per row/item",
     }
     if summary.get("schedule") == "hotswap":
         hotswap_loop = summary.get("loop", {}).get("hotswap", {})
@@ -711,6 +722,7 @@ def benchmark_report(summary: dict[str, Any]) -> dict[str, Any]:
             "history_write_mode": summary.get("history_write_mode"),
             "slot_control_write_mode": summary.get("slot_control_write_mode"),
             "correctness": {
+                "scope": "local hot-swap parity against local single-item static references from the ready bank; not an external Transformers parity check",
                 "all_required_checks_passed": summary.get("matches", {}).get("all_required_checks_passed"),
                 "all_trimmed_match": hotswap_matches.get("all_trimmed_match"),
                 "mismatch_count": hotswap_matches.get("mismatch_count"),
@@ -718,6 +730,7 @@ def benchmark_report(summary: dict[str, Any]) -> dict[str, Any]:
                 "first_mismatches": hotswap_matches.get("first_mismatches", [])[:2],
             },
             "tok_per_s": summary.get("tok_per_s"),
+            "phase_timing_s": summary.get("phase_timing_s"),
             "timing_accounting": summary.get("timing_accounting"),
             "loop": {
                 "decode_calls": hotswap_loop.get("decode_calls"),
@@ -725,6 +738,8 @@ def benchmark_report(summary: dict[str, Any]) -> dict[str, Any]:
                 "effective_decode_token_calls": hotswap_loop.get("effective_decode_token_calls"),
                 "swap_event_count": hotswap_loop.get("swap_event_count"),
                 "total_swapped_in_items": hotswap_loop.get("total_swapped_in_items"),
+                "steady_decode_records": hotswap_loop.get("steady_decode_records"),
+                "final_drain_records": hotswap_loop.get("final_drain_records"),
                 "step_timing_summary": slim_step_timing_summary(hotswap_loop.get("step_timing_summary")),
             },
             "speed_debug": speed_debug_summary(
@@ -738,6 +753,7 @@ def benchmark_report(summary: dict[str, Any]) -> dict[str, Any]:
     return {
         **common,
         "correctness": {
+            "scope": "local static eager, compiled static, and local single-item static parity; not an external Transformers parity check",
             "all_required_checks_passed": summary.get("matches", {}).get("all_required_checks_passed"),
             "static_eager_vs_compiled": summary.get("matches", {}).get("static_eager_vs_compiled"),
             "static_eager_vs_compiled_trimmed": summary.get("matches", {}).get("static_eager_vs_compiled_trimmed"),
@@ -808,6 +824,7 @@ def decode_loop_summary(result: DecodeLoopResult, *, eos_token_id: int) -> dict[
 def hotswap_loop_summary(result: HotSwapDecodeResult, *, batch_size: int) -> dict[str, Any]:
     lengths = [int(value) for value in result.lengths.detach().cpu().tolist()]
     effective_decode_calls_by_item = [max(0, length - 1) for length in lengths]
+    phase_timing_s = result.phase_timing_s or {}
     return {
         "batch_size": int(batch_size),
         "num_items": int(result.ids.shape[0]),
@@ -823,6 +840,9 @@ def hotswap_loop_summary(result: HotSwapDecodeResult, *, batch_size: int) -> dic
         "stopped_all_items": bool(result.stopped_all_items),
         "swap_event_count": int(len(result.swap_events)),
         "total_swapped_in_items": int(sum(len(event.get("swapped_in_item_ids", [])) for event in result.swap_events)),
+        "steady_decode_records": int(phase_timing_s.get("steady_decode_records", result.decode_calls)),
+        "final_drain_records": int(phase_timing_s.get("final_drain_records", 0)),
+        "phase_timing_s": phase_timing_s,
         "step_timing_summary": summarize_step_timing(result.step_timing),
     }
 
@@ -1051,6 +1071,7 @@ def static_flat_decode_loop(
         if decode_enqueue_s is not None:
             record["host_decode_enqueue_s"] = decode_enqueue_s
         events["npu_decode"] = (npu_decode_start, npu_decode_end)
+        npu_post_decode_start = timing.npu_event()
         next_token = torch.argmax(last_logits[:, -1, :].float(), dim=-1, keepdim=True)
         if eos_mode == "overlap_event_flags":
             assert finished is not None
@@ -1065,6 +1086,8 @@ def static_flat_decode_loop(
         generated.append(next_token)
         cache_position = cache_position + 1
         decode_calls += 1
+        npu_post_decode_end = timing.npu_event()
+        events["npu_post_decode"] = (npu_post_decode_start, npu_post_decode_end)
 
         if use_npu_overlap and async_cpu_flags is not None and copy_stream is not None:
             host_flag_copy_start = timing.cpu_now()
@@ -1399,6 +1422,16 @@ def static_hotswap_decode_loop(
     if int(batch_size) > num_items:
         raise ValueError(f"hot-swap batch_size={batch_size} exceeds num_items={num_items}")
 
+    phase_timing_s: dict[str, float] = {}
+
+    def phase_start() -> float:
+        return time.perf_counter()
+
+    def add_phase(name: str, start_s: float) -> None:
+        phase_timing_s[name] = phase_timing_s.get(name, 0.0) + (time.perf_counter() - float(start_s))
+
+    function_start_s = phase_start()
+    active_setup_start_s = phase_start()
     active_cache_shape = (
         int(batch_size),
         int(ready.cache.key_caches[0].shape[1]),
@@ -1424,6 +1457,9 @@ def static_hotswap_decode_loop(
     active_item_indices = torch.full((int(batch_size),), -1, device=device, dtype=torch.int64)
     active_mask = torch.zeros((int(batch_size),), device=device, dtype=torch.bool)
     slot_finished = torch.zeros((int(batch_size),), device=device, dtype=torch.bool)
+    add_phase("active_tensor_setup_s", active_setup_start_s)
+
+    cpu_state_setup_start_s = phase_start()
     generated_rows_cpu = [
         [int(eos_token_id) for _ in range(int(max_new_tokens))]
         for _ in range(num_items)
@@ -1432,6 +1468,7 @@ def static_hotswap_decode_loop(
     generated_lengths_cpu = [0 for _ in range(num_items)]
     item_eos_hit_cpu = [False for _ in range(num_items)]
     item_length_cap_hit_cpu = [False for _ in range(num_items)]
+    add_phase("cpu_state_setup_s", cpu_state_setup_start_s)
     active = BatchedPrefill(
         cache=active_cache,
         rope_deltas=active_rope_deltas,
@@ -1634,29 +1671,35 @@ def static_hotswap_decode_loop(
             generated_rows_cpu[item_idx][position] = token
             new_length = position + 1
             generated_lengths_cpu[item_idx] = new_length
+            if token == int(eos_token_id):
+                item_eos_hit_cpu[item_idx] = True
+                finished_flags[slot] = True
             if new_length >= int(max_new_tokens):
                 item_length_cap_hit_cpu[item_idx] = True
                 finished_flags[slot] = True
-            elif token == int(eos_token_id):
-                finished_flags[slot] = True
         return finished_flags
 
+    initial_load_start_s = phase_start()
     for slot in range(int(batch_size)):
         load_item_to_slot(slot, next_ready_idx)
         next_ready_idx += 1
+    add_phase("initial_slot_load_s", initial_load_start_s)
     snapshot_step("after_initial_loads")
 
     # Handle the rare case where the prefill-selected first token is already EOS
     # or the run intentionally requests only one generated token.
+    initial_finished_start_s = phase_start()
     while True:
-        initial_finished_flags = [bool(value) for value in slot_finished.detach().cpu().tolist()]
+        initial_finished_flags = [bool(value) for value in slot_finished_cpu]
         if not any(initial_finished_flags):
             break
         initial_event = consume_finished_slots(initial_finished_flags, completion_decode_call=0)
         snapshot_step("after_initial_finished_consume", extra={"consume_event": initial_event})
         if completed_count >= num_items:
             break
+    add_phase("initial_finished_consume_s", initial_finished_start_s)
 
+    overlap_setup_start_s = phase_start()
     max_decode_calls_per_item = max(0, int(max_new_tokens) - 1)
     max_decode_call_budget = max(1, int(num_items) * max_decode_calls_per_item + max_decode_calls_per_item + int(batch_size))
     async_cpu_tokens = None
@@ -1664,14 +1707,19 @@ def static_hotswap_decode_loop(
     if use_npu_overlap:
         async_cpu_tokens = torch.empty((max_decode_call_budget, int(batch_size)), dtype=ready.next_token.dtype, pin_memory=True)
         copy_stream = torch_npu.npu.Stream(device=device)
+    add_phase("overlap_buffer_setup_s", overlap_setup_start_s)
     pending_token_event = None
     pending_token_row = None
     pending_token_values = None
     pending_active_before_step_cpu = None
     pending_item_indices_cpu = None
     pending_completion_decode_call = None
+    steady_decode_records = 0
+    final_drain_records = 0
 
     while completed_count < num_items:
+        iter_phase_start_s = phase_start()
+        iter_performed_decode = False
         if decode_calls >= max_decode_call_budget:
             raise RuntimeError(
                 f"hot-swap decode exceeded safety budget {max_decode_call_budget}; "
@@ -1736,12 +1784,15 @@ def static_hotswap_decode_loop(
             pending_item_indices_cpu = None
             pending_completion_decode_call = None
             if completed_count >= num_items:
+                record["phase"] = "final_drain"
                 npu_iter_end = timing.npu_event()
                 iter_s = timing.cpu_elapsed_s(host_iter_start)
                 if iter_s is not None:
                     record["host_iter_s"] = iter_s
                 events["npu_iter"] = (npu_iter_start, npu_iter_end)
                 timing.add(record, events)
+                add_phase("final_drain_s", iter_phase_start_s)
+                final_drain_records += 1
                 break
 
         active_before_step = active_mask & ~slot_finished
@@ -1765,11 +1816,15 @@ def static_hotswap_decode_loop(
             record["host_decode_enqueue_s"] = decode_enqueue_s
         events["npu_decode"] = (npu_decode_start, npu_decode_end)
 
+        npu_post_decode_start = timing.npu_event()
         sampled_token = torch.argmax(last_logits[:, -1, :].float(), dim=-1, keepdim=True)
         eos_fill = torch.full_like(sampled_token, int(eos_token_id))
         active_next_token.copy_(torch.where(active_before_step.view(-1, 1), sampled_token, eos_fill))
         active.next_cache_position.add_(active_before_step.to(dtype=active.next_cache_position.dtype))
         decode_calls += 1
+        iter_performed_decode = True
+        npu_post_decode_end = timing.npu_event()
+        events["npu_post_decode"] = (npu_post_decode_start, npu_post_decode_end)
         if trace_enabled:
             snapshot_step(
                 "after_decode_write",
@@ -1811,13 +1866,18 @@ def static_hotswap_decode_loop(
         iter_s = timing.cpu_elapsed_s(host_iter_start)
         if iter_s is not None:
             record["host_iter_s"] = iter_s
+        record["phase"] = "steady_decode" if iter_performed_decode else "pending_consume"
         events["npu_iter"] = (npu_iter_start, npu_iter_end)
         timing.add(record, events)
+        if iter_performed_decode:
+            add_phase("steady_decode_loop_s", iter_phase_start_s)
+            steady_decode_records += 1
 
     if completed_count < num_items and pending_completion_decode_call is not None and (
         (use_npu_overlap and pending_token_event is not None and pending_token_row is not None)
         or (not use_npu_overlap and pending_token_values is not None)
     ):
+        final_drain_start_s = phase_start()
         if use_npu_overlap:
             assert async_cpu_tokens is not None
             pending_token_event.synchronize()
@@ -1841,9 +1901,16 @@ def static_hotswap_decode_loop(
                 "consume_event": final_event,
             },
         )
+        add_phase("final_drain_s", final_drain_start_s)
+        final_drain_records += 1
 
+    result_materialization_start_s = phase_start()
     generated_ids = torch.tensor(generated_rows_cpu, dtype=ready.next_token.dtype)
     generated_lengths = torch.tensor(generated_lengths_cpu, dtype=torch.int64)
+    add_phase("result_materialization_s", result_materialization_start_s)
+    phase_timing_s["function_wall_s"] = time.perf_counter() - function_start_s
+    phase_timing_s["steady_decode_records"] = float(steady_decode_records)
+    phase_timing_s["final_drain_records"] = float(final_drain_records)
     snapshot_step("final")
 
     return HotSwapDecodeResult(
@@ -1876,6 +1943,7 @@ def static_hotswap_decode_loop(
             "copy_verification_failure_count": int(len(copy_verification_failures)),
             "copy_verification_failures": copy_verification_failures,
         },
+        phase_timing_s=phase_timing_s,
         diagnostic_step_trace=step_trace if (diagnostic_step_trace or trace_item_indices) else None,
         timing_recorder=timing if step_timing != "off" else None,
     )
@@ -2332,6 +2400,11 @@ def main() -> None:
         hotswap_loop = hotswap_loop_summary(hotswap_result, batch_size=int(args.batch_size))
         raw_token_calls = int(hotswap_loop["raw_decode_token_calls"])
         effective_token_calls = int(hotswap_loop["effective_decode_token_calls"])
+        hotswap_phase_timing_s = dict(hotswap_result.phase_timing_s or {})
+        hotswap_phase_timing_s["outer_minus_function_wall_s"] = float(
+            hotswap_decode_s - hotswap_phase_timing_s.get("function_wall_s", 0.0)
+        )
+        hotswap_steady_decode_s = float(hotswap_phase_timing_s.get("steady_decode_loop_s", 0.0) or 0.0)
         hotswap_timing_accounting = step_timing_accounting(
             hotswap_result.step_timing,
             wall_s=hotswap_decode_s,
@@ -2394,14 +2467,23 @@ def main() -> None:
                 "compile_first_call": float(compile_first_s),
                 "ready_bank_prefill": float(ready_bank_prefill_s),
                 "hotswap_decode": float(hotswap_decode_s),
+                "hotswap_total": float(hotswap_decode_s),
+                "hotswap_steady_decode_loop": float(hotswap_steady_decode_s),
                 "hotswap_validation": float(hotswap_validation_s),
                 "diagnostic_item_trace": float(diagnostic_item_trace_s),
             },
+            "phase_timing_s": hotswap_phase_timing_s,
             "timing_accounting": hotswap_timing_accounting,
             "tok_per_s": {
                 "hotswap_decode_steps": tok_per_s(hotswap_result.decode_calls, hotswap_decode_s),
                 "hotswap_raw_batch_tokens": tok_per_s(raw_token_calls, hotswap_decode_s),
                 "hotswap_effective_item_tokens": tok_per_s(effective_token_calls, hotswap_decode_s),
+                "hotswap_total_decode_steps": tok_per_s(hotswap_result.decode_calls, hotswap_decode_s),
+                "hotswap_total_raw_batch_tokens": tok_per_s(raw_token_calls, hotswap_decode_s),
+                "hotswap_total_effective_item_tokens": tok_per_s(effective_token_calls, hotswap_decode_s),
+                "hotswap_steady_decode_steps": tok_per_s(hotswap_result.decode_calls, hotswap_steady_decode_s),
+                "hotswap_steady_raw_batch_tokens": tok_per_s(raw_token_calls, hotswap_steady_decode_s),
+                "hotswap_steady_effective_item_tokens": tok_per_s(effective_token_calls, hotswap_steady_decode_s),
             },
             "swap_events": hotswap_result.swap_events,
             "step_timing": hotswap_result.step_timing,
