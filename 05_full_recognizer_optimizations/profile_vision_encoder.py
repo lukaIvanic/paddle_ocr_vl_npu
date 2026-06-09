@@ -163,7 +163,7 @@ def main() -> None:
     import torch_npu.profiler as npu_prof
 
     configure_npu_jit_compile(args.npu_jit_compile, device)
-    dtype = parse_dtype(args.dtype)
+    dtype = parse_dtype(args.dtype, device)
     model_dir = _resolve_model_dir(args.model)
     pre_cfg = load_preprocessor_config(model_dir)
     tokenizer = Tokenizer.from_file(str(model_dir / "tokenizer.json"))
