@@ -46,6 +46,7 @@ PROFILE_METRIC_CHOICES = ("pipe", "memory", "l2", "memory_access")
 EOS_MODE_CHOICES = ("none", "overlap_event_flags")
 SCHEDULE_CHOICES = ("fixed_cohort", "hotswap")
 STEP_TIMING_CHOICES = ("off", "cpu", "npu", "both")
+REPORT_CHOICES = ("full", "summary")
 DIAGNOSTIC_SWAP_COPY_CHOICES = ("direct", "clone")
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -573,6 +574,117 @@ def step_timing_accounting(
             "flag_copy": npu_flag_copy_sum_s,
         },
         "npu_iter_sum_to_wall_ratio": float(npu_iter_sum_s / wall_s) if wall_s > 0 else float("inf"),
+    }
+
+
+def slim_stats(stats: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not stats:
+        return None
+    keys = ("count", "avg", "p50", "p90", "p95", "max")
+    return {key: stats[key] for key in keys if key in stats}
+
+
+def slim_step_timing_summary(step_summary: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not step_summary:
+        return None
+    metric_keys = (
+        "host_iter_s",
+        "host_wait_prev_flag_s",
+        "host_swap_s",
+        "npu_iter_ms",
+        "npu_decode_ms",
+        "npu_swap_ms",
+        "npu_flag_copy_ms",
+    )
+    groups: dict[str, Any] = {}
+    for group_name in ("all", "no_swap", "swap"):
+        group = step_summary.get(group_name)
+        if not group:
+            continue
+        slim_group: dict[str, Any] = {"count": int(group.get("count", 0))}
+        for metric_key in metric_keys:
+            metric_stats = slim_stats(group.get(metric_key))
+            if metric_stats is not None:
+                slim_group[metric_key] = metric_stats
+        groups[group_name] = slim_group
+    groups["swap_steps_count"] = int(len(step_summary.get("swap_steps", [])))
+    return groups
+
+
+def benchmark_report(summary: dict[str, Any]) -> dict[str, Any]:
+    common = {
+        "experiment": summary.get("experiment"),
+        "schedule": summary.get("schedule", "fixed_cohort"),
+        "backend": summary.get("backend"),
+        "device": summary.get("device"),
+        "dtype": summary.get("dtype"),
+        "batch_size": summary.get("batch_size"),
+        "num_items": summary.get("num_items", summary.get("batch_size")),
+        "npu_jit_compile": summary.get("npu_jit_compile"),
+        "decode_attention": summary.get("decode_attention"),
+        "decode_cache_update": summary.get("decode_cache_update"),
+        "eos_mode": summary.get("eos_mode"),
+        "cache_length": summary.get("cache_length"),
+        "timing_s": summary.get("timing_s"),
+    }
+    if summary.get("schedule") == "hotswap":
+        hotswap_loop = summary.get("loop", {}).get("hotswap", {})
+        hotswap_matches = summary.get("matches", {}).get("hotswap_vs_single_refs", {})
+        return {
+            **common,
+            "history_write_mode": summary.get("history_write_mode"),
+            "slot_control_write_mode": summary.get("slot_control_write_mode"),
+            "correctness": {
+                "all_required_checks_passed": summary.get("matches", {}).get("all_required_checks_passed"),
+                "all_trimmed_match": hotswap_matches.get("all_trimmed_match"),
+                "mismatch_count": hotswap_matches.get("mismatch_count"),
+                "invalid_count": summary.get("token_ids", {}).get("invalid_count"),
+                "first_mismatches": hotswap_matches.get("first_mismatches", [])[:2],
+            },
+            "tok_per_s": summary.get("tok_per_s"),
+            "timing_accounting": summary.get("timing_accounting"),
+            "loop": {
+                "decode_calls": hotswap_loop.get("decode_calls"),
+                "raw_decode_token_calls": hotswap_loop.get("raw_decode_token_calls"),
+                "effective_decode_token_calls": hotswap_loop.get("effective_decode_token_calls"),
+                "swap_event_count": hotswap_loop.get("swap_event_count"),
+                "total_swapped_in_items": hotswap_loop.get("total_swapped_in_items"),
+                "step_timing_summary": slim_step_timing_summary(hotswap_loop.get("step_timing_summary")),
+            },
+        }
+    compiled_loop = summary.get("loop", {}).get("compiled", {})
+    static_loop = summary.get("loop", {}).get("static_eager", {})
+    return {
+        **common,
+        "correctness": {
+            "all_required_checks_passed": summary.get("matches", {}).get("all_required_checks_passed"),
+            "static_eager_vs_compiled": summary.get("matches", {}).get("static_eager_vs_compiled"),
+            "static_eager_vs_compiled_trimmed": summary.get("matches", {}).get("static_eager_vs_compiled_trimmed"),
+            "compare_loop_static_vs_compiled": summary.get("matches", {}).get("compare_loop_static_vs_compiled"),
+            "static_eager_vs_single_refs_all_trimmed_match": summary.get("matches", {})
+            .get("static_eager_vs_single_refs", {})
+            .get("all_trimmed_match"),
+        },
+        "logit_diff_static_eager_vs_compiled_decode": summary.get("logit_diff_static_eager_vs_compiled_decode"),
+        "tok_per_s": summary.get("tok_per_s"),
+        "timing_accounting": {
+            "static_eager": summary.get("timing_accounting", {}).get("static_eager"),
+            "compiled": summary.get("timing_accounting", {}).get("compiled"),
+        },
+        "loop": {
+            "static_eager": {
+                "decode_calls": static_loop.get("decode_calls"),
+                "raw_decode_token_calls": static_loop.get("raw_decode_token_calls"),
+                "effective_decode_token_calls": static_loop.get("effective_decode_token_calls"),
+                "step_timing_summary": slim_step_timing_summary(static_loop.get("step_timing_summary")),
+            },
+            "compiled": {
+                "decode_calls": compiled_loop.get("decode_calls"),
+                "raw_decode_token_calls": compiled_loop.get("raw_decode_token_calls"),
+                "effective_decode_token_calls": compiled_loop.get("effective_decode_token_calls"),
+                "step_timing_summary": slim_step_timing_summary(compiled_loop.get("step_timing_summary")),
+            },
+        },
     }
 
 
@@ -1956,6 +2068,7 @@ def main() -> None:
     )
     parser.add_argument("--profile-dir", type=Path, default=None, help="Fixed-cohort only: write one post-warmup torch_npu profiler capture for compiled batched decode with --max-new-tokens < 16.")
     parser.add_argument("--profile-metric", default="pipe", choices=PROFILE_METRIC_CHOICES)
+    parser.add_argument("--report", default="full", choices=REPORT_CHOICES, help="Use --report summary --json for a pasteable correctness and speed report without post-processing scripts.")
     parser.add_argument("--json", action="store_true", help="Print a compact JSON summary instead of human-readable lines.")
     args = parser.parse_args()
 
@@ -2201,7 +2314,14 @@ def main() -> None:
             },
         }
         if args.json:
-            print(json.dumps(summary, indent=2, sort_keys=True, default=json_default))
+            output = benchmark_report(summary) if args.report == "summary" else summary
+            print(json.dumps(output, indent=2, sort_keys=True, default=json_default))
+            if not hotswap_required_checks_passed:
+                raise SystemExit(1)
+            return
+
+        if args.report == "summary":
+            print("benchmark_report=" + json.dumps(benchmark_report(summary), sort_keys=True, default=json_default))
             if not hotswap_required_checks_passed:
                 raise SystemExit(1)
             return
@@ -2447,7 +2567,14 @@ def main() -> None:
         summary["profile"] = profile_summary
 
     if args.json:
-        print(json.dumps(summary, indent=2, sort_keys=True, default=json_default))
+        output = benchmark_report(summary) if args.report == "summary" else summary
+        print(json.dumps(output, indent=2, sort_keys=True, default=json_default))
+        if not fixed_required_checks_passed:
+            raise SystemExit(1)
+        return
+
+    if args.report == "summary":
+        print("benchmark_report=" + json.dumps(benchmark_report(summary), sort_keys=True, default=json_default))
         if not fixed_required_checks_passed:
             raise SystemExit(1)
         return
