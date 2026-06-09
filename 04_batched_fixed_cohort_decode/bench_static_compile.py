@@ -1082,6 +1082,8 @@ def static_hotswap_decode_loop(
         slot_finished_cpu[int(slot)] = False
         slot_finished[int(slot) : int(slot) + 1].fill_(False)
         active_next_token[int(slot) : int(slot) + 1].fill_(int(eos_token_id))
+        active.next_cache_position[int(slot) : int(slot) + 1].fill_(0)
+        active.rope_deltas[int(slot) : int(slot) + 1].fill_(0)
 
     def consume_finished_slots(finished_flags: list[bool], completion_decode_call: int, record: dict[str, Any] | None = None) -> dict[str, Any]:
         nonlocal completed_count
@@ -1324,6 +1326,7 @@ def static_hotswap_decode_loop(
             "verify_swap_copies": bool(diagnostic_verify_swap_copies),
             "sync_finished_flags": bool(diagnostic_sync_finished_flags),
             "history_storage": "per_item_device_rows",
+            "deactivated_slot_state": "eos_token_cache_pos_0_rope_delta_0",
             "copy_verification_checks": int(copy_verification_checks),
             "copy_verification_failure_count": int(len(copy_verification_failures)),
             "copy_verification_failures": copy_verification_failures,
