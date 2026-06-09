@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -17,6 +18,15 @@ FRACTAL_NZ = 29
 DECODE_LINEAR_WEIGHT_FORMAT = "decode_nz"
 DECODE_ATTENTION = "increfa"
 DECODE_CACHE_UPDATE = "npu_scatter"
+VISION_ATTENTION_ENV = "PADDLE_OCR_VL_VISION_ATTENTION"
+VISION_ATTENTION_CHOICES = ("manual", "prompt_flash_attention")
+
+
+def get_vision_attention_impl() -> str:
+    mode = os.environ.get(VISION_ATTENTION_ENV, "manual").strip() or "manual"
+    if mode not in VISION_ATTENTION_CHOICES:
+        raise ValueError(f"{VISION_ATTENTION_ENV} must be one of {VISION_ATTENTION_CHOICES}, got {mode!r}")
+    return mode
 
 
 def _resolve_model_dir(model_id_or_path: str | Path) -> Path:
@@ -790,10 +800,34 @@ class PaddleOCRVisionAttention(nn.Module):
         lengths = (cu_seqlens[1:] - cu_seqlens[:-1]).tolist()
         q_splits, k_splits, v_splits = [torch.split(tensor, lengths, dim=2) for tensor in (query_states, key_states, value_states)]
         outputs = []
+        attention_impl = get_vision_attention_impl()
         for q, k, v in zip(q_splits, k_splits, v_splits):
-            scores = torch.matmul(q, k.transpose(2, 3)) * self.scaling
-            probs = F.softmax(scores, dim=-1, dtype=torch.float32).to(q.dtype)
-            outputs.append(torch.matmul(probs, v))
+            if attention_impl == "prompt_flash_attention":
+                if q.device.type != "npu":
+                    raise RuntimeError("vision prompt_flash_attention requires NPU tensors plus torch_npu.")
+                import torch_npu
+
+                length = int(q.shape[2])
+                outputs.append(
+                    torch_npu.npu_prompt_flash_attention(
+                        q.contiguous(),
+                        k.contiguous(),
+                        v.contiguous(),
+                        actual_seq_lengths=[length],
+                        actual_seq_lengths_kv=[length],
+                        num_heads=int(self.num_heads),
+                        num_key_value_heads=int(self.num_heads),
+                        input_layout="BNSD",
+                        scale_value=float(self.scaling),
+                        sparse_mode=0,
+                    )
+                )
+            elif attention_impl == "manual":
+                scores = torch.matmul(q, k.transpose(2, 3)) * self.scaling
+                probs = F.softmax(scores, dim=-1, dtype=torch.float32).to(q.dtype)
+                outputs.append(torch.matmul(probs, v))
+            else:
+                raise ValueError(f"unknown vision attention implementation: {attention_impl!r}")
         attn_output = torch.cat(outputs, dim=2)
         attn_output = attn_output.transpose(1, 2).reshape(seq_length, -1).contiguous()
         return self.out_proj(attn_output)

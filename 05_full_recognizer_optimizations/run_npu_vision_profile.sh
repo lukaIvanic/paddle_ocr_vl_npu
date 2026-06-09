@@ -9,15 +9,17 @@ MODEL="${MODEL:-/home/lukaiv/models/paddle_ocr_0_9b_v_1_6}"
 MANIFEST="${MANIFEST:-${REPO_ROOT}/crops/hotswap_100_manifest.json}"
 DEVICE="${DEVICE:-npu:0}"
 CROP_ID="${CROP_ID:-hotswap_002_code_txt_p1474_11}"
+VISION_ATTENTION_IMPL="${VISION_ATTENTION_IMPL:-prompt_flash_attention}"
 PROFILE_METRIC="${PROFILE_METRIC:-pipe}"
 WARMUP_ITERS="${WARMUP_ITERS:-1}"
 PROFILE_ITERS="${PROFILE_ITERS:-1}"
 TOPN="${TOPN:-20}"
 OUTPUT_ROOT="${OUTPUT_ROOT:-${SCRIPT_DIR}/outputs/vision_encoder_profiles}"
 RUN_ID="${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
-PROFILE_RUN_DIR="${PROFILE_RUN_DIR:-${OUTPUT_ROOT}/vision_encoder_${RUN_ID}_${CROP_ID}_${PROFILE_METRIC}}"
+PROFILE_RUN_DIR="${PROFILE_RUN_DIR:-${OUTPUT_ROOT}/vision_encoder_${RUN_ID}_${CROP_ID}_${VISION_ATTENTION_IMPL}_${PROFILE_METRIC}}"
 
 mkdir -p "${OUTPUT_ROOT}"
+export PADDLE_OCR_VL_VISION_ATTENTION="${VISION_ATTENTION_IMPL}"
 
 CMD=(
   "${PYTHON_BIN}" "${SCRIPT_DIR}/profile_vision_encoder.py"
@@ -29,6 +31,7 @@ CMD=(
   --npu-jit-compile off
   --profile-run-dir "${PROFILE_RUN_DIR}"
   --profile-metric "${PROFILE_METRIC}"
+  --vision-attention "${VISION_ATTENTION_IMPL}"
   --warmup-iters "${WARMUP_ITERS}"
   --profile-iters "${PROFILE_ITERS}"
 )
@@ -65,7 +68,9 @@ print("VISION_PROFILE_SUMMARY", json.dumps({
     "profile_wall_s": vision_summary.get("profile_wall_s"),
     "profile_iters": vision_summary.get("profile_iters"),
     "profile_metric": vision_summary.get("profile_metric"),
+    "vision_attention": vision_summary.get("vision_attention"),
 }, sort_keys=True))
+print("VISION_ATTENTION_VALIDATION", json.dumps(vision_summary.get("validation", {}), sort_keys=True))
 
 if "step_trace_time" in run:
     print("STEP_TRACE_TOTALS_US", json.dumps(run["step_trace_time"].get("totals_us", {}), sort_keys=True))

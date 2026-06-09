@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import time
 from datetime import datetime, timezone
@@ -23,7 +24,13 @@ import torch.nn.functional as F
 from tokenizers import Tokenizer
 
 from bench_stage_timing import build_cohort_inputs, load_manifest, select_manifest_entries
-from local_modeling_paddleocr_vl import LocalPaddleOCRVLForConditionalGeneration, _resolve_model_dir
+from local_modeling_paddleocr_vl import (
+    VISION_ATTENTION_CHOICES,
+    VISION_ATTENTION_ENV,
+    LocalPaddleOCRVLForConditionalGeneration,
+    _resolve_model_dir,
+    get_vision_attention_impl,
+)
 from probe_static_compile import maybe_sync
 from run_local_recognition import (
     NPU_JIT_COMPILE_CHOICES,
@@ -37,6 +44,7 @@ from run_local_recognition import (
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PROFILE_METRIC_CHOICES = ("pipe", "memory", "l2", "memory_access")
 DEFAULT_CROP_ID = "hotswap_002_code_txt_p1474_11"
+DEFAULT_VISION_ATTENTION = os.environ.get(VISION_ATTENTION_ENV, "prompt_flash_attention").strip() or "prompt_flash_attention"
 
 
 def npu_profiler_config(metric: str):
@@ -132,6 +140,18 @@ def timed(device: torch.device, fn):
     return result, time.perf_counter() - start
 
 
+def diff_stats(lhs: torch.Tensor, rhs: torch.Tensor) -> dict[str, float | bool]:
+    lhs_cpu = lhs.detach().to(dtype=torch.float32).cpu()
+    rhs_cpu = rhs.detach().to(dtype=torch.float32).cpu()
+    diff = (lhs_cpu - rhs_cpu).abs()
+    return {
+        "max_abs_diff": float(diff.max().item()),
+        "mean_abs_diff": float(diff.mean().item()),
+        "allclose_atol_2e_2_rtol_2e_2": bool(torch.allclose(lhs_cpu, rhs_cpu, atol=2e-2, rtol=2e-2)),
+        "allclose_atol_5e_2_rtol_5e_2": bool(torch.allclose(lhs_cpu, rhs_cpu, atol=5e-2, rtol=5e-2)),
+    }
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default="PaddlePaddle/PaddleOCR-VL-1.6")
@@ -144,6 +164,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--profile-root", type=Path, default=Path("outputs/vision_encoder_profiles"))
     parser.add_argument("--profile-run-dir", type=Path, default=None)
     parser.add_argument("--profile-metric", default="pipe", choices=PROFILE_METRIC_CHOICES)
+    parser.add_argument("--vision-attention", default=DEFAULT_VISION_ATTENTION, choices=VISION_ATTENTION_CHOICES)
     parser.add_argument("--warmup-iters", type=int, default=1)
     parser.add_argument("--profile-iters", type=int, default=1)
     return parser.parse_args()
@@ -162,6 +183,7 @@ def main() -> None:
 
     import torch_npu.profiler as npu_prof
 
+    os.environ[VISION_ATTENTION_ENV] = str(args.vision_attention)
     configure_npu_jit_compile(args.npu_jit_compile, device)
     dtype = parse_dtype(args.dtype, device)
     model_dir = _resolve_model_dir(args.model)
@@ -191,9 +213,49 @@ def main() -> None:
     )
     input_ids, attention_mask, pixel_values, image_grid_thw = moved
 
+    manual_reference = None
+    selected_reference = None
+    validation: dict[str, Any] = {
+        "reference": "manual_vision_encoder",
+        "tested": str(args.vision_attention),
+        "enabled": bool(str(args.vision_attention) != "manual"),
+    }
+    if str(args.vision_attention) != "manual":
+        os.environ[VISION_ATTENTION_ENV] = "manual"
+        ref_inputs = prepare_encoder_inputs(
+            model=model,
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            pixel_values=pixel_values,
+            image_grid_thw=image_grid_thw,
+            device=device,
+        )
+        manual_reference, manual_s = timed(device, lambda: run_vision_encoder(model=model, encoder_inputs=ref_inputs))
+        os.environ[VISION_ATTENTION_ENV] = str(args.vision_attention)
+        selected_inputs = prepare_encoder_inputs(
+            model=model,
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            pixel_values=pixel_values,
+            image_grid_thw=image_grid_thw,
+            device=device,
+        )
+        selected_reference, selected_s = timed(device, lambda: run_vision_encoder(model=model, encoder_inputs=selected_inputs))
+        validation.update(
+            {
+                "manual_time_s": float(manual_s),
+                "selected_time_s": float(selected_s),
+                "manual_shape": [int(value) for value in manual_reference.shape],
+                "selected_shape": [int(value) for value in selected_reference.shape],
+                **diff_stats(selected_reference, manual_reference),
+            }
+        )
+
+    os.environ[VISION_ATTENTION_ENV] = str(args.vision_attention)
     warmup_times_s = []
     warmup_output_shape: list[int] | None = None
     for _ in range(int(args.warmup_iters)):
+        os.environ[VISION_ATTENTION_ENV] = str(args.vision_attention)
         warm_inputs = prepare_encoder_inputs(
             model=model,
             input_ids=input_ids,
@@ -237,6 +299,7 @@ def main() -> None:
     ) as profiler:
         with torch.profiler.record_function("paddle_ocr_vl.vision_encoder_profile"):
             for _ in range(int(args.profile_iters)):
+                os.environ[VISION_ATTENTION_ENV] = str(args.vision_attention)
                 outputs.append(run_vision_encoder(model=model, encoder_inputs=prof_inputs))
         maybe_sync(device)
         profiler.step()
@@ -248,6 +311,8 @@ def main() -> None:
         "profile_kind": "vision_encoder_only",
         "profile_dir": str(profile_run_dir),
         "profile_metric": str(args.profile_metric),
+        "vision_attention": get_vision_attention_impl(),
+        "validation": validation,
         "with_stack": True,
         "record_shapes": True,
         "profile_memory": False,

@@ -12,13 +12,15 @@ NUM_ITEMS="${NUM_ITEMS:-8}"
 MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-32}"
 CACHE_LENGTH="${CACHE_LENGTH:-1269}"
 DECODE_BACKEND="${DECODE_BACKEND:-torchair}"
+VISION_ATTENTION_IMPL="${VISION_ATTENTION_IMPL:-manual}"
 WARMUP_ITEMS="${WARMUP_ITEMS:-1}"
 DECODE_STEP_TIMING="${DECODE_STEP_TIMING:-0}"
 CROP_IDS="${CROP_IDS:-}"
 OUTPUT_DIR="${OUTPUT_DIR:-${SCRIPT_DIR}/outputs/full_recognizer_stage_timing}"
-OUTPUT_PATH="${OUTPUT_PATH:-${OUTPUT_DIR}/stage_timing_num${NUM_ITEMS}_${DECODE_BACKEND}_warm${WARMUP_ITEMS}.json}"
+OUTPUT_PATH="${OUTPUT_PATH:-${OUTPUT_DIR}/stage_timing_num${NUM_ITEMS}_${DECODE_BACKEND}_${VISION_ATTENTION_IMPL}_warm${WARMUP_ITEMS}.json}"
 
 mkdir -p "${OUTPUT_DIR}"
+export PADDLE_OCR_VL_VISION_ATTENTION="${VISION_ATTENTION_IMPL}"
 
 CMD=(
   "${PYTHON_BIN}" "${SCRIPT_DIR}/bench_stage_timing.py"
@@ -61,6 +63,7 @@ if not data.get("correctness", {}).get("all_required_checks_passed", False):
     raise SystemExit(f"correctness failed for {path}")
 print("CORRECTNESS", json.dumps(data.get("correctness", {}), sort_keys=True))
 print("SETUP_TIMING_S", json.dumps(data.get("setup_timing_s", {}), sort_keys=True))
+print("VISION_ATTENTION", data.get("vision_attention"))
 warmup = data.get("stage_warmup", {})
 if warmup.get("count", 0):
     print("STAGE_WARMUP", json.dumps({

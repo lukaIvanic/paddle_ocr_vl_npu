@@ -26,6 +26,7 @@ from local_modeling_paddleocr_vl import (
     LocalPaddleOCRVLForConditionalGeneration,
     _resolve_model_dir,
     cast_decode_linear_weights_to_nz,
+    get_vision_attention_impl,
 )
 from probe_static_compile import DEFAULT_TORCHAIR_CACHE_DIR, compile_decode_module, maybe_sync
 from run_local_recognition import (
@@ -619,6 +620,7 @@ def main() -> None:
         "dtype": str(dtype),
         "decode_backend": str(args.decode_backend),
         "npu_jit_compile": args.npu_jit_compile,
+        "vision_attention": get_vision_attention_impl(),
         "decode_attention": DECODE_ATTENTION if device.type == "npu" else "manual",
         "decode_cache_update": DECODE_CACHE_UPDATE if device.type == "npu" else "per_row_copy",
         "linear_weight_format": weight_format_meta,

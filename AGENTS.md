@@ -196,9 +196,9 @@ cd /home/lukaiv/paddle_ocr_vl_npu/05_full_recognizer_optimizations
 bash run_npu_stage_timing.sh
 ```
 
-The runner prints `CORRECTNESS`, `SETUP_TIMING_S`, `STAGE_SUMMARY_S`, and
-`ITEM_SUMMARY` after validating the JSON. Paste those printed sections back
-instead of writing a separate parser.
+The runner prints `CORRECTNESS`, `SETUP_TIMING_S`, `VISION_ATTENTION`,
+`STAGE_SUMMARY_S`, and `ITEM_SUMMARY` after validating the JSON. Paste those
+printed sections back instead of writing a separate parser.
 
 By default, the runner uses `WARMUP_ITEMS=1`. That warmup item is recorded under
 `STAGE_WARMUP` and excluded from the measured item summary. This is intentional:
@@ -206,6 +206,14 @@ experiment 5 is measuring steady-state recognizer stage latency, while cold
 TorchAir/CANN compile and first-use behavior belong in setup/warmup fields. If
 you intentionally need the cold first-item behavior again, run with
 `WARMUP_ITEMS=0`.
+
+Vision attention defaults to the manual PyTorch path. To stage-time the
+experimental prompt flash attention path after the vision-only validation passes,
+run:
+
+```sh
+VISION_ATTENTION_IMPL=prompt_flash_attention bash run_npu_stage_timing.sh
+```
 
 If the first measured item has a huge `static_decode_total` outlier, rerun these
 two diagnostics exactly:
@@ -258,9 +266,13 @@ bash run_npu_vision_profile.sh
 The default crop is `hotswap_002_code_txt_p1474_11`, the large 3036-vision-token
 crop from the first stage-timing report. The default profiler metric is
 `PROFILE_METRIC=pipe`, with one warmup encoder pass and one profiled encoder
-pass. Paste back the printed sections:
+pass. The default vision implementation is now
+`VISION_ATTENTION_IMPL=prompt_flash_attention`; the profiler first compares it
+against the manual vision encoder in the same process before profiling. Paste
+back the printed sections:
 
 - `VISION_PROFILE_SUMMARY`
+- `VISION_ATTENTION_VALIDATION`
 - `STEP_TRACE_TOTALS_US`
 - `TOP_KERNEL_TYPES`
 - `TOP_MATMUL_SHAPES`
@@ -273,6 +285,11 @@ Do not write a separate parser; the runner already calls `parse_npu_profile.py`
 and prints the important rows. If the pipe profile points at memory bandwidth or
 cache behavior, rerun the same command with `PROFILE_METRIC=memory` or
 `PROFILE_METRIC=l2` and label the result clearly.
+
+If `VISION_ATTENTION_VALIDATION.allclose_atol_5e_2_rtol_5e_2` is false or the
+prompt flash attention call crashes, stop and paste back the error/validation
+block. Do not continue to full stage timing until the vision-only validation is
+acceptable.
 
 Older manual smoke order:
 
