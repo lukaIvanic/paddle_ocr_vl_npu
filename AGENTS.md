@@ -253,6 +253,47 @@ Stage timing uses device synchronization around each measured model stage. This
 adds measurement overhead, so use it to identify bottleneck proportions before
 turning any stage into a throughput benchmark.
 
+For the 100-crop full-recognizer queue benchmark, use the dedicated runner. This
+is the closest current experiment-5 approximation to a serving pass where all
+crops are known up front: CPU preprocessing/prompt construction for real crops,
+sequential NPU vision/projector/text prefill into per-crop static-cache states,
+then a single active compiled decode slot over the ready states.
+
+```sh
+cd /home/lukaiv/paddle_ocr_vl_npu/05_full_recognizer_optimizations
+bash run_npu_recognizer_queue_benchmark.sh
+```
+
+Defaults are `NUM_ITEMS=100`, `ACTIVE_BATCH_SIZE=1`, `CACHE_LENGTH=1024`,
+`MAX_NEW_TOKENS=32`, `DECODE_BACKEND=torchair`, `EOS_MODE=overlap_event_flags`,
+manual vision attention, fp16, NPU JIT compile off, and validation against
+direct local static generation for all items. The runner writes one JSON under
+`outputs/recognizer_queue_benchmark/` and prints:
+
+- `QUEUE_BENCHMARK_SUMMARY`
+- `CACHE_PREFLIGHT`
+- `SETUP_TIMING_S`
+- `PHASE_TIMING_S`
+- `THROUGHPUT`
+- `DECODE_SUMMARY`
+- `CORRECTNESS`
+- `READY_STAGE_SUMMARY_S`
+- `ITEM_SUMMARY`
+- `TEXT_SAMPLE`
+
+If `CACHE_LENGTH=1024` is too small, the script exits early with a valid JSON
+containing `error="cache_length_too_small"`, `CACHE_PREFLIGHT.overflow_count`,
+and the maximum `required_cache_length`. In that case, do not edit code and do
+not write helper scripts; rerun only by increasing `CACHE_LENGTH`, for example:
+
+```sh
+CACHE_LENGTH=1536 bash run_npu_recognizer_queue_benchmark.sh
+```
+
+The measured `decode_queue` phase excludes CPU token materialization and
+tokenizer decode; those are reported as `decode_output_postprocess`.
+Validation is also separate from measured throughput.
+
 For native-resolution vision encoder profiling, use the committed profiler
 runner. It profiles only `vision_model.encoder`; crop preprocessing, device
 transfer, patch/position embeddings, post layernorm, the adaptive MLP projector,
