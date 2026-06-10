@@ -134,11 +134,18 @@ def build_inputs(
     merge_size: int,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     image_token_count = int(image_grid_thw[0].prod().item()) // merge_size // merge_size
-    text = f"{BOS}User: {IMAGE_START}{IMAGE_TOKEN * image_token_count}{IMAGE_END}{prompt}\nAssistant:\n"
+    text = build_paddleocr_vl_prompt(prompt, image_token_count=image_token_count)
     ids = tokenizer.encode(text).ids
     input_ids = torch.tensor([ids], dtype=torch.long)
     attention_mask = torch.ones_like(input_ids)
     return input_ids, attention_mask
+
+
+def build_paddleocr_vl_prompt(prompt: str, *, image_token_count: int) -> str:
+    """Mirror PaddleOCR-VL's chat_template.jinja plus processor image-token expansion."""
+    template = f"{BOS}User: {IMAGE_START}{IMAGE_TOKEN}{IMAGE_END}{prompt}\nAssistant:\n"
+    placeholder = "<|placeholder|>"
+    return template.replace(IMAGE_TOKEN, placeholder * int(image_token_count), 1).replace(placeholder, IMAGE_TOKEN)
 
 
 def parse_dtype(name: str, _device: torch.device) -> torch.dtype:

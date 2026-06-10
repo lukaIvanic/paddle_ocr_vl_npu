@@ -91,7 +91,7 @@ DEFAULT_DATASET_DIR = (
 
 LAYOUT_PROMPT_BY_LABEL = {
     "formula": "Formula Recognition:",
-    "formula_number": "Formula Recognition:",
+    "formula_number": "OCR:",
     "equation": "Formula Recognition:",
     "equation_isolated": "Formula Recognition:",
     "equation_semantic": "Formula Recognition:",
@@ -100,6 +100,7 @@ LAYOUT_PROMPT_BY_LABEL = {
     "table_caption": "OCR:",
     "chart": "Chart Recognition:",
     "chart_title": "OCR:",
+    "spotting": "Spotting:",
     "seal": "Seal Recognition:",
 }
 
@@ -384,6 +385,7 @@ def build_omnidocbench_gt_layout_pages(
                     "gt_text_source": gt_source,
                 }
             )
+        boxes.sort(key=gt_layout_box_sort_key)
         rows.append(
             {
                 "selected_page_idx": int(page.idx),
@@ -399,6 +401,7 @@ def build_omnidocbench_gt_layout_pages(
                     "raw_layout_det_count": int(len(page.gt_layout_dets)),
                     "include_ignored": bool(include_ignored),
                     "include_empty_gt": bool(include_empty_gt),
+                    "sorted_by_gt_order": True,
                 },
             }
         )
@@ -409,6 +412,13 @@ def build_omnidocbench_gt_layout_pages(
         "gt_layout_skipped_ignored_count": int(total_skipped_ignored),
         "gt_layout_skipped_empty_gt_count": int(total_skipped_empty_gt),
     }
+
+
+def gt_layout_box_sort_key(box: dict[str, Any]) -> tuple[int, int, int]:
+    order = safe_int(box.get("gt_order"), default=10**9)
+    has_order = 0 if box.get("gt_order") is not None else 1
+    det_index = safe_int(box.get("gt_det_index"), default=10**9)
+    return has_order, order, det_index
 
 
 def prompt_for_label(label: str) -> str:
@@ -573,7 +583,8 @@ def build_detected_crops(
                     continue
                 prompt = prompt_for_label(label)
                 prompt_counts[prompt] += 1
-                crop_id = f"page{page.idx:04d}_box{box_idx:04d}_{label}"
+                source_box_idx = safe_int(box.get("gt_det_index"), default=box_idx)
+                crop_id = f"page{page.idx:04d}_box{source_box_idx:04d}_{label}"
                 crop_image = image.crop(bbox)
                 gt_match = best_gt_match(page=page, bbox=bbox, width=width, height=height)
                 entry = {
@@ -586,6 +597,8 @@ def build_detected_crops(
                     "page_no": page.page_info.get("page_no"),
                     "page_attribute": clean_json(page.page_info.get("page_attribute", {})),
                     "layout_box_index": int(box_idx),
+                    "layout_box_source_index": int(source_box_idx),
+                    "layout_gt_order": clean_json(box.get("gt_order")),
                     "category_type": label,
                     "layout_label": label,
                     "layout_cls_id": clean_json(box.get("cls_id")),
@@ -1021,6 +1034,27 @@ def normalize_table_html_for_parse(text: str) -> str:
     return text
 
 
+def paddle_pipeline_postprocess_text(label: str, text: str) -> str:
+    result = str(text or "")
+    if ("\\(" in result and "\\)" in result) or ("\\[" in result and "\\]" in result):
+        result = result.replace("$", "")
+        result = (
+            result.replace("\\(", " $ ")
+            .replace("\\)", " $")
+            .replace("\\[\\[", "\\[")
+            .replace("\\]\\]", "\\]")
+            .replace("\\[", " $$ ")
+            .replace("\\]", " $$ ")
+        )
+        if str(label) == "formula_number":
+            result = result.replace("$", "")
+    if str(label) == "table":
+        normalized = normalize_table_html_for_parse(result)
+        if "<table" in normalized.lower():
+            result = normalized
+    return result
+
+
 def fcel_table_to_html(text: str) -> str:
     rows = []
     for raw_row in re.split(r"<nl\s*/?>", str(text or ""), flags=re.IGNORECASE):
@@ -1149,7 +1183,8 @@ def omnidocbench_metrics_without_cdm(decoded_items: list[Any], *, min_iou: float
         if not gt_match.get("matched") or float(gt_match.get("iou", 0.0) or 0.0) < float(min_iou) or not gt_text:
             continue
         label = str(entry.get("layout_label"))
-        pred = str(decoded.generated_text or "")
+        raw_pred = str(decoded.generated_text or "")
+        pred = paddle_pipeline_postprocess_text(label, raw_pred)
         base = {
             "idx": int(idx),
             "id": str(entry.get("id")),
@@ -1159,6 +1194,7 @@ def omnidocbench_metrics_without_cdm(decoded_items: list[Any], *, min_iou: float
             "gt_order": entry.get("gt_layout_match", {}).get("gt_order", gt_match.get("gt_order")),
             "layout_box_index": int(entry.get("layout_box_index", idx)),
             "pred_sample": pred[:240],
+            "raw_pred_sample": raw_pred[:240],
             "gt_sample": gt_text[:240],
         }
         if label in TEXT_DIAGNOSTIC_LABELS:
@@ -1222,13 +1258,16 @@ def omnidocbench_metrics_without_cdm(decoded_items: list[Any], *, min_iou: float
     table_teds = summarize_metric_rows(table_rows, "teds", lower_is_better=False)
     table_teds_s = summarize_metric_rows(table_rows, "teds_structure_only", lower_is_better=False)
 
-    available_non_cdm_scores = []
+    conclusion_scores = []
     if text_edit["score"] is not None:
-        available_non_cdm_scores.append(float(text_edit["score"]))
-    if formula_edit["score"] is not None:
-        available_non_cdm_scores.append(float(formula_edit["score"]))
+        conclusion_scores.append(float(text_edit["score"]))
     if table_teds["score"] is not None:
-        available_non_cdm_scores.append(float(table_teds["score"]))
+        conclusion_scores.append(float(table_teds["score"]))
+    conclusion_mean_percent = (
+        None
+        if not conclusion_scores
+        else float(sum(conclusion_scores) / float(len(conclusion_scores)) * 100.0)
+    )
 
     return {
         "enabled": True,
@@ -1250,11 +1289,17 @@ def omnidocbench_metrics_without_cdm(decoded_items: list[Any], *, min_iou: float
         },
         "leaderboard_overall": None,
         "leaderboard_overall_unavailable_reason": "CDM and official MGAM/TEDS evaluator are intentionally not run.",
-        "available_non_cdm_component_mean_score_percent": (
-            None
-            if not available_non_cdm_scores
-            else float(sum(available_non_cdm_scores) / float(len(available_non_cdm_scores)) * 100.0)
+        "available_non_cdm_component_mean_score_percent": conclusion_mean_percent,
+        "available_non_cdm_component_mean_note": (
+            "Deprecated compatibility field. Formula edit/BLEU are diagnostics only because PaddleOCR-VL "
+            "reports Formula CDM; this mean now includes only text Edit_dist score and table TEDS when available."
         ),
+        "text_table_conclusion_mean_score_percent": conclusion_mean_percent,
+        "text_table_conclusion_components": {
+            "text_block_Edit_dist_score": text_edit["score"],
+            "table_TEDS_score": table_teds["score"],
+            "formula_excluded_reason": "Formula edit/BLEU are not comparable to PaddleOCR-VL's reported Formula CDM.",
+        },
         "text_block_Edit_dist": {
             **text_edit,
             "page_avg": page_average(text_rows, "edit_dist"),
@@ -1390,7 +1435,9 @@ def rough_ground_truth_accuracy(decoded_items: list[Any], *, min_iou: float) -> 
         gt_text = str(entry.get("ground_truth", "") or "")
         if not gt_match.get("matched") or float(gt_match.get("iou", 0.0) or 0.0) < float(min_iou) or not gt_text:
             continue
-        pred = str(decoded.generated_text or "")
+        label = str(entry.get("layout_label"))
+        raw_pred = str(decoded.generated_text or "")
+        pred = paddle_pipeline_postprocess_text(label, raw_pred)
         norm_pred = normalize_text_for_rough_match(pred)
         norm_gt = normalize_text_for_rough_match(gt_text)
         ratio = SequenceMatcher(None, norm_pred, norm_gt).ratio() if norm_pred or norm_gt else 1.0
@@ -1399,12 +1446,13 @@ def rough_ground_truth_accuracy(decoded_items: list[Any], *, min_iou: float) -> 
                 "idx": int(idx),
                 "id": str(entry.get("id")),
                 "page_index": int(entry.get("page_index", 0)),
-                "layout_label": str(entry.get("layout_label")),
+                "layout_label": label,
                 "gt_category_type": gt_match.get("gt_category_type"),
                 "iou": float(gt_match.get("iou", 0.0) or 0.0),
                 "normalized_exact": bool(norm_pred == norm_gt),
                 "sequence_ratio": float(ratio),
                 "pred_sample": pred[:240],
+                "raw_pred_sample": raw_pred[:240],
                 "gt_sample": gt_text[:240],
             }
         )
@@ -1856,6 +1904,10 @@ def main() -> None:
                 "eos_hit": bool(decoded.eos_hit),
                 "length_cap_hit": bool(decoded.length_cap_hit),
                 "generated_text": decoded.generated_text,
+                "paddle_pipeline_postprocessed_text": paddle_pipeline_postprocess_text(
+                    str(decoded.item.input_item.entry.get("layout_label")),
+                    decoded.generated_text,
+                ),
                 "gt_layout_match": decoded.item.input_item.entry.get("gt_layout_match"),
                 "ground_truth_source": decoded.item.input_item.entry.get("ground_truth_source"),
                 "ground_truth_sample": str(decoded.item.input_item.entry.get("ground_truth", ""))[:240],
@@ -1864,6 +1916,10 @@ def main() -> None:
         ],
         "texts": {
             "sample": [item.generated_text for item in decoded_items[: min(8, len(decoded_items))]],
+            "paddle_pipeline_postprocessed_sample": [
+                paddle_pipeline_postprocess_text(str(item.item.input_item.entry.get("layout_label")), item.generated_text)
+                for item in decoded_items[: min(8, len(decoded_items))]
+            ],
         },
         "stage_notes": {
             "layout_detection": (
@@ -1882,8 +1938,10 @@ def main() -> None:
             "validation": "Validation is outside the timing window and checks hot-swap output against the same local static recognizer per crop. It is not an OCR quality metric.",
             "quality_metrics": (
                 "omnidocbench_metrics_without_cdm reports local GT-crop metrics aligned with OmniDocBench metric families "
-                "where practical: text Edit_dist, formula Edit_dist and BLEU, table Edit_dist and lightweight TEDS/TEDS-S, "
-                "and GT-crop reading-order Edit_dist. It intentionally does not compute CDM or official MGAM matching."
+                "where practical: text Edit_dist, table Edit_dist and lightweight TEDS/TEDS-S, and GT-crop reading-order "
+                "Edit_dist. Formula Edit_dist/BLEU are retained as diagnostics only and are excluded from conclusion-style "
+                "means because PaddleOCR-VL reports Formula CDM. This harness intentionally does not compute CDM or "
+                "official MGAM matching. GT-crop metrics use lightweight Paddle-style output postprocessing before scoring."
             ),
         },
     }
