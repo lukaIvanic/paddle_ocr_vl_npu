@@ -256,7 +256,7 @@ turning any stage into a throughput benchmark.
 For the 100-crop full-recognizer queue benchmark, use the dedicated runner. This
 is the closest current experiment-5 approximation to a serving pass where all
 crops are known up front: CPU preprocessing/prompt construction for real crops,
-sequential NPU vision/projector/text prefill into per-crop static-cache states,
+sequential device vision/projector/text prefill into per-crop static-cache states,
 then a single active compiled decode slot over the ready states.
 
 For the data and code flow, read
@@ -287,6 +287,7 @@ direct local static generation for all items. The runner writes one JSON under
 - `READY_STAGE_SUMMARY_S`
 - `ITEM_SUMMARY`
 - `TEXT_SAMPLE`
+- `OUTPUT_JSON`
 
 If `CACHE_LENGTH=1024` is too small, the script exits early with a valid JSON
 containing `error="cache_length_too_small"`, `CACHE_PREFLIGHT.overflow_count`,
@@ -308,6 +309,12 @@ attention/per-row-KV fallback instead of TorchAir, IncreFA, and NPU
 `scatter_update_`.
 
 ```sh
+cd /workspace
+if [ ! -d /workspace/paddle_ocr_vl_npu_queue_cuda/.git ]; then
+  git clone https://github.com/lukaIvanic/paddle_ocr_vl_npu.git /workspace/paddle_ocr_vl_npu_queue_cuda
+fi
+cd /workspace/paddle_ocr_vl_npu_queue_cuda
+git pull --ff-only origin main
 cd /workspace/paddle_ocr_vl_npu_queue_cuda/05_full_recognizer_optimizations
 PYTHON_BIN=/workspace/venvs/paddle_ocr_vl/bin/python \
 bash run_cuda_recognizer_queue_benchmark.sh

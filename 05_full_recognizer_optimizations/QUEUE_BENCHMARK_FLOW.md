@@ -136,8 +136,10 @@ one ready state at a time.
 ## Timing Buckets
 
 `setup_timing_s` is reported but excluded from throughput. It includes model
-load, NPU decode weight format conversion, compile/wrapper creation, and the
-first decode call that may trigger compilation or cache load.
+load, device-specific decode weight format handling, compile/wrapper creation,
+and the first decode call that may trigger compilation or cache load. On NPU,
+weight format handling preconverts decoder linear weights to FRACTAL_NZ. On
+CUDA, the same step is skipped and reported as such.
 
 `phase_timing_s.input_build_wall` is host-side crop processing and prompt
 construction for all selected crops.

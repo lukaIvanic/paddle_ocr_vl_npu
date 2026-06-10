@@ -5,7 +5,7 @@ This script measures the experiment-5 serving shape:
 
 1. Build real crop inputs from a manifest.
 2. Run CPU preprocessing and prompt construction for all crops.
-3. Build all per-crop NPU static-cache prefill states.
+3. Build all per-crop device static-cache prefill states.
 4. Decode the ready states through one compiled static decode slot.
 
 The first implementation intentionally supports active batch size 1 only. That
@@ -906,7 +906,7 @@ def main() -> None:
         },
         "stage_notes": {
             "input_build_wall": "CPU crop image read/decode, resize/normalize/patchify, and prompt token construction for all selected crops.",
-            "ready_bank_build": "Sequential per-crop device transfer plus vision/projector/text prefill into NPU static cache states.",
+            "ready_bank_build": "Sequential per-crop device transfer plus vision/projector/text prefill into device static-cache states.",
             "decode_queue": "Single active compiled decode slot over already-prefilled states; no vision/prefill work occurs inside this phase.",
             "validation": "Direct local static generation is run after measured phases and is not included in throughput.",
             "cache_length": "Static KV cache is preflighted against input_tokens + max_new_tokens - 1; overflow is a hard error.",
