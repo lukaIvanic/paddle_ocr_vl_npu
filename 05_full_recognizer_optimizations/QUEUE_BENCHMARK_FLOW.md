@@ -43,7 +43,7 @@ flowchart LR
     F3 --> F4["CPU per-item token history<br/>EOS/length-cap bookkeeping"]
     F4 --> F5["Swap all finished slots<br/>batched index_copy_ for K/V and slot controls"]
     F5 --> G["Postprocess"]
-    G --> G1["Copy tokens to CPU"]
+    G --> G1["Materialize token rows<br/>hot-swap rows already CPU; fixed cohort copies device tensors"]
     G1 --> G2["Trim at EOS + tokenizer.decode"]
     G2 --> H["Validation"]
     H --> H1["Direct local static generation per item"]
@@ -93,7 +93,7 @@ sequenceDiagram
             Decode->>Decode: swap every finished slot from the ready bank
         end
         Decode-->>CLI: HotSwapDecodeResult
-        CLI->>Output: materialize_decoded_item for each item
+        CLI->>Output: materialize_hotswap_item or materialize_decoded_item
         CLI->>Output: validate_outputs against generate_ids_static
         Output-->>CLI: correctness and text samples
         CLI-->>CLI: print JSON and runner summary
@@ -188,8 +188,10 @@ timers:
   setup, text decoder prefill, first-token LM head, and argmax.
 - `text_decode`: the selected decode queue, hot-swap by default.
 
-`phase_timing_s.decode_output_postprocess` is token tensor materialization,
-EOS trimming, and tokenizer decode.
+`phase_timing_s.decode_output_postprocess` is final token-row materialization,
+EOS trimming, and tokenizer decode. In hot-swap mode, per-step sampled-token
+row copies are part of `decode_queue` because they drive EOS detection and slot
+replacement.
 
 `phase_timing_s.validation` is direct static generation used for correctness.
 It is not included in throughput.

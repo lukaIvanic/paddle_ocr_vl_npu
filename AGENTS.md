@@ -327,9 +327,11 @@ DECODE_SCHEDULE=fixed_cohort ACTIVE_BATCH_SIZE=8 CACHE_LENGTH=1536 \
 bash run_npu_recognizer_queue_benchmark.sh
 ```
 
-The measured `decode_queue` phase excludes CPU token materialization and
-tokenizer decode; those are reported as `decode_output_postprocess`.
-Validation is also separate from measured throughput.
+The measured `decode_queue` phase includes the hot-swap scheduler work over
+already-prefilled states, including sampled-token row copies used for EOS and
+slot replacement. Final token-row materialization, EOS trimming, and tokenizer
+decode are reported as `decode_output_postprocess`. Validation is separate from
+measured throughput.
 
 Use the clearer `PIPELINE_STAGE_TIMING_SUMMARY_S` names when summarizing:
 `vision_prefill`, `text_prefill`, and `text_decode`. The older
