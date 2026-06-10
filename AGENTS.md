@@ -259,6 +259,13 @@ crops are known up front: CPU preprocessing/prompt construction for real crops,
 sequential NPU vision/projector/text prefill into per-crop static-cache states,
 then a single active compiled decode slot over the ready states.
 
+For the data and code flow, read
+`05_full_recognizer_optimizations/QUEUE_BENCHMARK_FLOW.md` before debugging the
+queue benchmark. It documents the object shapes, timing buckets, hard checks,
+and the exact NPU-vs-CUDA decode differences. Do not reverse engineer this
+script by writing helper snippets unless the committed runner fails to print the
+needed field.
+
 ```sh
 cd /home/lukaiv/paddle_ocr_vl_npu/05_full_recognizer_optimizations
 bash run_npu_recognizer_queue_benchmark.sh
@@ -293,6 +300,39 @@ CACHE_LENGTH=1536 bash run_npu_recognizer_queue_benchmark.sh
 The measured `decode_queue` phase excludes CPU token materialization and
 tokenizer decode; those are reported as `decode_output_postprocess`.
 Validation is also separate from measured throughput.
+
+On the Vast/CUDA lane, use the CUDA runner for a smoke/algorithmic benchmark.
+This is not an NPU throughput result. The CUDA runner defaults to `NUM_ITEMS=8`,
+`DEVICE=cuda:0`, and `DECODE_BACKEND=raw_eager` because CUDA uses the manual
+attention/per-row-KV fallback instead of TorchAir, IncreFA, and NPU
+`scatter_update_`.
+
+```sh
+cd /workspace/paddle_ocr_vl_npu_queue_cuda/05_full_recognizer_optimizations
+PYTHON_BIN=/workspace/venvs/paddle_ocr_vl/bin/python \
+bash run_cuda_recognizer_queue_benchmark.sh
+```
+
+For a larger CUDA-only smoke run, override only the item count and cache length
+if needed:
+
+```sh
+NUM_ITEMS=100 CACHE_LENGTH=1536 \
+PYTHON_BIN=/workspace/venvs/paddle_ocr_vl/bin/python \
+bash run_cuda_recognizer_queue_benchmark.sh
+```
+
+On the current Vast box, keep the checkout clean by using a fresh clone such as
+`/workspace/paddle_ocr_vl_npu_queue_cuda` if an older checkout is dirty. The
+runner defaults to `MODEL=PaddlePaddle/PaddleOCR-VL-1.6`, sets
+`HF_HOME=/workspace/.hf_home` when that cache exists, and disables Xet so it can
+reuse the already-downloaded Hugging Face snapshot.
+
+Paste back the printed `QUEUE_BENCHMARK_SUMMARY`, `CACHE_PREFLIGHT`,
+`PHASE_TIMING_S`, `THROUGHPUT`, `DECODE_SUMMARY`, `CORRECTNESS`,
+`READY_STAGE_SUMMARY_S`, `ITEM_SUMMARY`, `TEXT_SAMPLE`, and `OUTPUT_JSON`.
+Do not write a separate parser; the runner already validates the JSON and exits
+nonzero if correctness fails.
 
 For native-resolution vision encoder profiling, use the committed profiler
 runner. It profiles only `vision_model.encoder`; crop preprocessing, device
