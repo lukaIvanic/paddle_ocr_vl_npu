@@ -112,6 +112,7 @@ print("PAGE_PIPELINE_SUMMARY", json.dumps({
 }, sort_keys=True))
 print("PHASE_TIMING_S", json.dumps(phase, sort_keys=True))
 print("THROUGHPUT", json.dumps(throughput, sort_keys=True))
+print("DECODE_WARMUP", json.dumps(data.get("decode_warmup", {}), sort_keys=True))
 print("CROP_SUMMARY", json.dumps({
     "layout_box_count": crop_summary.get("layout_box_count"),
     "recognizer_crop_count": crop_summary.get("recognizer_crop_count"),

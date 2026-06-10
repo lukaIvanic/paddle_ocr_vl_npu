@@ -795,6 +795,43 @@ def compile_decode_for_batch(
     return decode_fn, compile_meta, timings
 
 
+def decode_warmup_summary(compile_meta: dict[str, Any], compile_timing: dict[str, float]) -> dict[str, Any]:
+    first_call_s = float(compile_timing.get("compile_first_call_s", 0.0) or 0.0)
+    backend = str(compile_meta.get("backend", "unknown"))
+    compile_api = str(compile_meta.get("compile_api", "unknown"))
+    persistent_cache = bool(compile_meta.get("torchair_ge_cache", False))
+    cache_dir = compile_meta.get("torchair_cache_dir")
+
+    if compile_api == "none":
+        state = "not_applicable_raw_eager"
+        threshold_note = "No compile/cache warmup is used for raw eager decode."
+    elif persistent_cache:
+        if first_call_s <= 5.0:
+            state = "persistent_cache_hit_or_already_warm"
+        else:
+            state = "persistent_cache_cold_compile_or_cache_miss"
+        threshold_note = "TorchAir cache_compile is treated as warm/cache-hit when first decode call is <=5s."
+    else:
+        if first_call_s <= 2.0:
+            state = "torch_compile_warm_or_disk_cache_hit"
+        else:
+            state = "torch_compile_cold_or_disk_cache_miss"
+        threshold_note = "CUDA torch.compile/Inductor cache is not explicitly managed by this harness; state is inferred from first-call latency."
+
+    return {
+        "measured_decode_starts_after_warmup": True,
+        "warmup_call_before_measured_decode": True,
+        "warmup_input": "dummy static decode tensors with selected active_batch_size/cache_length",
+        "compile_first_call_s": first_call_s,
+        "cache_state": state,
+        "cache_state_threshold_note": threshold_note,
+        "backend": backend,
+        "compile_api": compile_api,
+        "persistent_cache_managed_by_harness": persistent_cache,
+        "persistent_cache_dir": str(cache_dir) if cache_dir is not None else None,
+    }
+
+
 def page_output_summary(decoded_items: list[Any]) -> list[dict[str, Any]]:
     by_page: dict[int, list[Any]] = defaultdict(list)
     for item in decoded_items:
@@ -1822,6 +1859,7 @@ def main() -> None:
         },
         "linear_weight_format": weight_format_meta,
         "compile": compile_meta,
+        "decode_warmup": decode_warmup_summary(compile_meta, compile_timing),
         "cache_preflight": cache_preflight,
         "crop_summary": crop_summary,
         "input_build_summary_s": input_build_summary,
@@ -1935,6 +1973,7 @@ def main() -> None:
             "prefill": "Recognizer CPU preprocessing plus vision/projector/text prefill are per detected crop; prefill batch size is fixed at 1 in experiment 6.",
             "decode": "All detected crop ready states are decoded by the experiment-5 hot-swap scheduler with one active compiled batch; no fake rows are added.",
             "measured_e2e": "Excludes layout/model init, recognizer model load, decode weight format conversion, torch compile/cache warm, and validation. Includes layout inference only when layout_source=official; with layout_source=omnidocbench_gt it measures crop extraction, recognizer input build, prefill, decode, and output postprocess.",
+            "decode_warmup": "The decode callable is invoked once on dummy static-cache inputs before the measured decode queue. measured_e2e_page_pipeline_excluding_setup_and_validation therefore reports the post-warmup decode path; setup_timing_s.compile_first_call_s and decode_warmup.cache_state label whether that warmup looked cold or cache-hot.",
             "validation": "Validation is outside the timing window and checks hot-swap output against the same local static recognizer per crop. It is not an OCR quality metric.",
             "quality_metrics": (
                 "omnidocbench_metrics_without_cdm reports local GT-crop metrics aligned with OmniDocBench metric families "
