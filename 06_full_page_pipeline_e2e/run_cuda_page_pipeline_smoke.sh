@@ -94,6 +94,7 @@ phase = data.get("phase_timing_s", {})
 throughput = data.get("throughput", {})
 crop_summary = data.get("crop_summary", {})
 decode = data.get("decode_summary", {})
+rough_accuracy = data.get("rough_ground_truth_accuracy", {})
 print("PAGE_PIPELINE_SUMMARY", json.dumps({
     "page_count": data.get("page_count"),
     "recognizer_crop_count": data.get("recognizer_crop_count"),
@@ -128,6 +129,16 @@ print("DECODE_SUMMARY", json.dumps({
     "total_swapped_in_items": decode.get("total_swapped_in_items"),
 }, sort_keys=True))
 print("CORRECTNESS", json.dumps(correctness, sort_keys=True))
+print("ROUGH_GT_ACCURACY", json.dumps({
+    "enabled": rough_accuracy.get("enabled"),
+    "is_official_omnidocbench_metric": rough_accuracy.get("is_official_omnidocbench_metric"),
+    "scope": rough_accuracy.get("scope"),
+    "matched_text_items": rough_accuracy.get("matched_text_items"),
+    "normalized_exact_count": rough_accuracy.get("normalized_exact_count"),
+    "normalized_exact_rate": rough_accuracy.get("normalized_exact_rate"),
+    "avg_sequence_ratio": rough_accuracy.get("avg_sequence_ratio"),
+    "by_layout_label": rough_accuracy.get("by_layout_label"),
+}, sort_keys=True))
 print("TEXT_SAMPLE", repr(data.get("texts", {}).get("sample", [])))
 print("OUTPUT_JSON", path)
 
