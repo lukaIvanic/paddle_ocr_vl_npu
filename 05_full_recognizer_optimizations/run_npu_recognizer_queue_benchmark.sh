@@ -9,8 +9,8 @@ MODEL="${MODEL:-/home/lukaiv/models/paddle_ocr_0_9b_v_1_6}"
 MANIFEST="${MANIFEST:-${REPO_ROOT}/crops/hotswap_100_manifest.json}"
 DEVICE="${DEVICE:-npu:0}"
 NUM_ITEMS="${NUM_ITEMS:-100}"
-MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-32}"
-CACHE_LENGTH="${CACHE_LENGTH:-1024}"
+MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-256}"
+CACHE_LENGTH="${CACHE_LENGTH:-1536}"
 ACTIVE_BATCH_SIZE="${ACTIVE_BATCH_SIZE:-1}"
 DECODE_SCHEDULE="${DECODE_SCHEDULE:-hotswap}"
 DECODE_BACKEND="${DECODE_BACKEND:-torchair}"
@@ -77,6 +77,7 @@ print("QUEUE_BENCHMARK_SUMMARY", json.dumps({
     "decode_schedule": data.get("decode_schedule"),
     "scheduler": data.get("scheduler"),
     "ready_bank_build_strategy": data.get("ready_bank_build_strategy"),
+    "ready_bank_cache_write_strategy": data.get("ready_bank_cache_write_strategy"),
     "actual_decode_batch_sizes": data.get("actual_decode_batch_sizes"),
     "decode_cohort_count": data.get("decode_cohort_count"),
     "cache_length": data.get("cache_length"),
@@ -92,6 +93,7 @@ print("QUEUE_BENCHMARK_SUMMARY", json.dumps({
 print("CACHE_PREFLIGHT", json.dumps(data.get("cache_preflight", {}), sort_keys=True))
 print("SETUP_TIMING_S", json.dumps(data.get("setup_timing_s", {}), sort_keys=True))
 print("PHASE_TIMING_S", json.dumps(data.get("phase_timing_s", {}), sort_keys=True))
+print("READY_BANK_BUILD_DETAILS", json.dumps(data.get("ready_bank_build_details", {}), sort_keys=True))
 print("PIPELINE_STAGE_TIMING_SUMMARY_S", json.dumps(data.get("pipeline_stage_timing_summary_s", {}), sort_keys=True))
 print("DECODE_QUEUE_DETAILS", json.dumps(data.get("decode_queue_details", {}), sort_keys=True))
 print("THROUGHPUT", json.dumps(data.get("throughput", {}), sort_keys=True))
@@ -110,6 +112,7 @@ for name in [
     "vision_projector_total",
     "mrope_index_cpu",
     "mrope_index_transfer",
+    "static_cache_alloc",
     "text_prefill",
     "prefill_lm_head",
     "ready_item_total_excluding_device_transfer",
