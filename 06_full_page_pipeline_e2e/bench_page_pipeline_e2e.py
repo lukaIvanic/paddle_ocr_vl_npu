@@ -18,17 +18,21 @@ separate baseline hook for machines where PaddleOCR/PaddleX can run.
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import math
 import os
+import re
 import sys
 import tempfile
 import time
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from difflib import SequenceMatcher
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any, Callable
+import unicodedata
 
 import numpy as np
 import torch
@@ -98,6 +102,12 @@ LAYOUT_PROMPT_BY_LABEL = {
     "chart_title": "OCR:",
     "seal": "Seal Recognition:",
 }
+
+TEXT_EDIT_LABELS = {"text_block"}
+TEXT_DIAGNOSTIC_LABELS = {"text_block", "title", "code_txt"}
+FORMULA_LABELS = {"formula", "formula_number", "equation", "equation_isolated", "equation_semantic"}
+TABLE_LABELS = {"table"}
+READING_ORDER_LABELS = {"text_block", "title", "code_txt"}
 
 
 @dataclass(frozen=True)
@@ -796,6 +806,582 @@ def normalize_text_for_rough_match(text: str) -> str:
     return "".join(str(text).split()).lower()
 
 
+def edit_distance(left: str | list[Any], right: str | list[Any]) -> int:
+    left_seq = list(left)
+    right_seq = list(right)
+    if not left_seq:
+        return len(right_seq)
+    if not right_seq:
+        return len(left_seq)
+    previous = list(range(len(right_seq) + 1))
+    for i, left_value in enumerate(left_seq, start=1):
+        current = [i]
+        for j, right_value in enumerate(right_seq, start=1):
+            cost = 0 if left_value == right_value else 1
+            current.append(
+                min(
+                    previous[j] + 1,
+                    current[j - 1] + 1,
+                    previous[j - 1] + cost,
+                )
+            )
+        previous = current
+    return int(previous[-1])
+
+
+def normalized_edit_distance(left: str | list[Any], right: str | list[Any]) -> float:
+    left_len = len(left)
+    right_len = len(right)
+    if left_len == 0 and right_len == 0:
+        return 0.0
+    if left_len == 0 or right_len == 0:
+        return 1.0
+    return float(edit_distance(left, right)) / float(max(left_len, right_len))
+
+
+def normalize_omnidocbench_text(text: str) -> str:
+    text = unicodedata.normalize("NFKC", str(text or ""))
+    text = text.replace("\\t", "").replace("\\n", "")
+    text = text.replace("\t", "").replace("\n", "")
+    text = text.replace("/t", "").replace("/n", "")
+    return re.sub(r"[^\w\u4e00-\u9fff]", "", text)
+
+
+def strip_formula_delimiters_local(text: str) -> str:
+    text = str(text or "").strip()
+    pairs = [("$$", "$$"), ("\\[", "\\]"), ("\\(", "\\)"), ("$", "$")]
+    changed = True
+    while text and changed:
+        changed = False
+        for left, right in pairs:
+            if text.startswith(left) and text.endswith(right) and len(text) >= len(left) + len(right):
+                text = text[len(left) : len(text) - len(right)].strip()
+                changed = True
+                break
+    return text
+
+
+def normalize_omnidocbench_formula(text: str) -> str:
+    text = strip_formula_delimiters_local(text)
+    text = re.sub(r"\\tag\s*\{[^{}]*\}", "", text)
+    text = re.sub(r"\\(?:notag|nonumber)\b", "", text)
+    filters = [
+        "\\mathbf",
+        "\\mathrm",
+        "\\mathnormal",
+        "\\mathit",
+        "\\mathbb",
+        "\\mathcal",
+        "\\mathscr",
+        "\\mathfrak",
+        "\\mathsf",
+        "\\mathtt",
+        "\\textbf",
+        "\\text",
+        "\\boldmath",
+        "\\boldsymbol",
+        "\\operatorname",
+        "\\bm",
+        "\\left",
+        "\\right",
+        "\\displaystyle",
+        "\\quad",
+        "\\qquad",
+        "\\enspace",
+        "\\space",
+        "\\thinspace",
+        "\\medspace",
+        "\\thickspace",
+        "$$",
+    ]
+    for token in filters:
+        text = text.replace(token, "")
+    text = re.sub(r"\\[!,;:]", "", text)
+    text = re.sub(r"(?<!\\)&", "", text)
+    text = text.replace("\\mid", "|").replace("\\vert", "|")
+    text = text.replace("\\{", "").replace("\\}", "")
+    text = re.sub(r"\\hspace\{.*?\}", "", text)
+    text = re.sub(r"\\begin\{.*?\}", "", text)
+    text = re.sub(r"\\end\{.*?\}", "", text)
+    text = re.sub(r"\{[lcr| ]+\}", "", text)
+    text = text.strip(".")
+    previous = None
+    simple_group = re.compile(r"\{([A-Za-z0-9.+\-]+)\}")
+    while text != previous:
+        previous = text
+        text = simple_group.sub(r"\1", text)
+        text = text.replace("{}", "")
+        text = re.sub(r"\{\{+", "{", text)
+        text = re.sub(r"}}+", "}", text)
+    return re.sub(r"\s+", "", text.lower())
+
+
+def tokenize_formula_for_bleu(text: str) -> list[str]:
+    text = normalize_omnidocbench_formula(text)
+    return re.findall(r"\\[a-zA-Z]+|\\.|\d+(?:\.\d+)?|[A-Za-z]+|.", text)
+
+
+def ngram_counts(tokens: list[str], n: int) -> Counter[tuple[str, ...]]:
+    if n <= 0 or len(tokens) < n:
+        return Counter()
+    return Counter(tuple(tokens[idx : idx + n]) for idx in range(0, len(tokens) - n + 1))
+
+
+def bleu_score(prediction: str, reference: str, *, max_n: int = 4) -> float:
+    pred_tokens = tokenize_formula_for_bleu(prediction)
+    ref_tokens = tokenize_formula_for_bleu(reference)
+    if not pred_tokens and not ref_tokens:
+        return 1.0
+    if not pred_tokens or not ref_tokens:
+        return 0.0
+    precisions = []
+    for n in range(1, max_n + 1):
+        pred_counts = ngram_counts(pred_tokens, n)
+        ref_counts = ngram_counts(ref_tokens, n)
+        total = sum(pred_counts.values())
+        if total == 0:
+            precisions.append(1.0 if len(pred_tokens) < n else 0.0)
+            continue
+        overlap = sum(min(count, ref_counts[gram]) for gram, count in pred_counts.items())
+        precisions.append((overlap + 1.0) / (total + 1.0))
+    log_precision = sum(math.log(max(value, 1e-12)) for value in precisions) / float(max_n)
+    brevity = 1.0 if len(pred_tokens) > len(ref_tokens) else math.exp(1.0 - float(len(ref_tokens)) / float(len(pred_tokens)))
+    return float(brevity * math.exp(log_precision))
+
+
+@dataclass
+class TableNode:
+    tag: str
+    colspan: int = 1
+    rowspan: int = 1
+    text: str = ""
+    children: list["TableNode"] | None = None
+
+
+class SimpleTableParser(HTMLParser):
+    TABLE_TAGS = {"table", "thead", "tbody", "tfoot", "tr", "td", "th"}
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.stack: list[TableNode] = []
+        self.roots: list[TableNode] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        tag = tag.lower()
+        if tag not in self.TABLE_TAGS:
+            return
+        attr_map = {key.lower(): value for key, value in attrs}
+        if tag == "th":
+            tag = "td"
+        node = TableNode(
+            tag=tag,
+            colspan=safe_int(attr_map.get("colspan"), default=1),
+            rowspan=safe_int(attr_map.get("rowspan"), default=1),
+            text="",
+            children=[],
+        )
+        if self.stack:
+            self.stack[-1].children = self.stack[-1].children or []
+            self.stack[-1].children.append(node)
+        else:
+            self.roots.append(node)
+        self.stack.append(node)
+
+    def handle_endtag(self, tag: str) -> None:
+        tag = tag.lower()
+        if tag == "th":
+            tag = "td"
+        if tag not in self.TABLE_TAGS:
+            return
+        for idx in range(len(self.stack) - 1, -1, -1):
+            if self.stack[idx].tag == tag:
+                del self.stack[idx:]
+                return
+
+    def handle_data(self, data: str) -> None:
+        if not self.stack:
+            return
+        self.stack[-1].text += data
+
+
+def safe_int(value: Any, *, default: int) -> int:
+    try:
+        return int(value)
+    except Exception:
+        return int(default)
+
+
+def normalize_table_html_for_parse(text: str) -> str:
+    text = html.unescape(unicodedata.normalize("NFKC", str(text or "")))
+    text = re.sub(r"```(?:html|markdown|latex)?", "", text)
+    text = text.replace("```", "")
+    text = re.sub(r"\s+", " ", text).strip()
+    if "<table" not in text.lower() and "<fcel>" in text:
+        text = fcel_table_to_html(text)
+    return text
+
+
+def fcel_table_to_html(text: str) -> str:
+    rows = []
+    for raw_row in re.split(r"<nl\s*/?>", str(text or ""), flags=re.IGNORECASE):
+        raw_row = raw_row.strip()
+        if not raw_row:
+            continue
+        cells = [cell.strip() for cell in re.split(r"<fcel\s*/?>", raw_row, flags=re.IGNORECASE)]
+        cells = [cell for cell in cells if cell]
+        if cells:
+            rows.append(cells)
+    if not rows:
+        return str(text or "")
+    row_html = []
+    for row in rows:
+        row_html.append("<tr>" + "".join(f"<td>{html.escape(cell)}</td>" for cell in row) + "</tr>")
+    return "<table>" + "".join(row_html) + "</table>"
+
+
+def extract_table_root(text: str) -> TableNode | None:
+    normalized = normalize_table_html_for_parse(text)
+    if "<table" not in normalized.lower():
+        return None
+    parser = SimpleTableParser()
+    try:
+        parser.feed(normalized)
+        parser.close()
+    except Exception:
+        return None
+    for root in parser.roots:
+        if root.tag == "table":
+            return root
+    return parser.roots[0] if parser.roots else None
+
+
+def normalize_table_cell_text_local(text: str) -> str:
+    text = html.unescape(unicodedata.normalize("NFKC", str(text or "")))
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
+
+
+def table_tree_size(node: TableNode | None) -> int:
+    if node is None:
+        return 0
+    return 1 + sum(table_tree_size(child) for child in (node.children or []))
+
+
+def table_rename_cost(left: TableNode, right: TableNode, *, structure_only: bool) -> float:
+    if left.tag != right.tag or left.colspan != right.colspan or left.rowspan != right.rowspan:
+        return 1.0
+    if structure_only or left.tag != "td":
+        return 0.0
+    left_text = normalize_table_cell_text_local(left.text)
+    right_text = normalize_table_cell_text_local(right.text)
+    return normalized_edit_distance(left_text, right_text)
+
+
+def table_tree_distance(left: TableNode | None, right: TableNode | None, *, structure_only: bool) -> float:
+    if left is None:
+        return float(table_tree_size(right))
+    if right is None:
+        return float(table_tree_size(left))
+    left_children = left.children or []
+    right_children = right.children or []
+    previous = [float(sum(table_tree_size(child) for child in right_children[:j])) for j in range(len(right_children) + 1)]
+    for i, left_child in enumerate(left_children, start=1):
+        current = [float(sum(table_tree_size(child) for child in left_children[:i]))]
+        for j, right_child in enumerate(right_children, start=1):
+            current.append(
+                min(
+                    previous[j] + float(table_tree_size(left_child)),
+                    current[j - 1] + float(table_tree_size(right_child)),
+                    previous[j - 1] + table_tree_distance(left_child, right_child, structure_only=structure_only),
+                )
+            )
+        previous = current
+    return table_rename_cost(left, right, structure_only=structure_only) + previous[-1]
+
+
+def lightweight_teds(prediction: str, reference: str, *, structure_only: bool) -> float | None:
+    pred_root = extract_table_root(prediction)
+    ref_root = extract_table_root(reference)
+    if pred_root is None or ref_root is None:
+        return None
+    denom = max(table_tree_size(pred_root), table_tree_size(ref_root))
+    if denom <= 0:
+        return None
+    distance = table_tree_distance(pred_root, ref_root, structure_only=structure_only)
+    return float(max(0.0, 1.0 - distance / float(denom)))
+
+
+def summarize_metric_rows(rows: list[dict[str, Any]], key: str, *, lower_is_better: bool) -> dict[str, Any]:
+    values = [float(row[key]) for row in rows if row.get(key) is not None]
+    if not values:
+        return {
+            "count": 0,
+            "avg": None,
+            "score": None,
+            "lower_is_better": bool(lower_is_better),
+        }
+    avg = float(sum(values) / float(len(values)))
+    return {
+        "count": int(len(values)),
+        "avg": avg,
+        "score": float(1.0 - avg) if lower_is_better else avg,
+        "lower_is_better": bool(lower_is_better),
+    }
+
+
+def page_average(rows: list[dict[str, Any]], key: str) -> float | None:
+    page_values: dict[int, list[float]] = defaultdict(list)
+    for row in rows:
+        if row.get(key) is not None:
+            page_values[int(row.get("page_index", 0))].append(float(row[key]))
+    averages = [sum(values) / float(len(values)) for values in page_values.values() if values]
+    if not averages:
+        return None
+    return float(sum(averages) / float(len(averages)))
+
+
+def omnidocbench_metrics_without_cdm(decoded_items: list[Any], *, min_iou: float) -> dict[str, Any]:
+    rows: list[dict[str, Any]] = []
+    for idx, decoded in enumerate(decoded_items):
+        entry = decoded.item.input_item.entry
+        gt_match = entry.get("gt_layout_match", {}) or {}
+        gt_text = str(entry.get("ground_truth", "") or "")
+        if not gt_match.get("matched") or float(gt_match.get("iou", 0.0) or 0.0) < float(min_iou) or not gt_text:
+            continue
+        label = str(entry.get("layout_label"))
+        pred = str(decoded.generated_text or "")
+        base = {
+            "idx": int(idx),
+            "id": str(entry.get("id")),
+            "page_index": int(entry.get("page_index", 0)),
+            "layout_label": label,
+            "gt_category_type": str(gt_match.get("gt_category_type", label)),
+            "gt_order": entry.get("gt_layout_match", {}).get("gt_order", gt_match.get("gt_order")),
+            "layout_box_index": int(entry.get("layout_box_index", idx)),
+            "pred_sample": pred[:240],
+            "gt_sample": gt_text[:240],
+        }
+        if label in TEXT_DIAGNOSTIC_LABELS:
+            norm_pred = normalize_omnidocbench_text(pred)
+            norm_gt = normalize_omnidocbench_text(gt_text)
+            rows.append(
+                {
+                    **base,
+                    "metric_family": "text",
+                    "official_component": bool(label in TEXT_EDIT_LABELS),
+                    "edit_dist": normalized_edit_distance(norm_gt, norm_pred),
+                    "norm_pred_len": int(len(norm_pred)),
+                    "norm_gt_len": int(len(norm_gt)),
+                }
+            )
+        elif label in FORMULA_LABELS:
+            norm_pred = normalize_omnidocbench_formula(pred)
+            norm_gt = normalize_omnidocbench_formula(gt_text)
+            rows.append(
+                {
+                    **base,
+                    "metric_family": "formula",
+                    "official_component": True,
+                    "edit_dist": normalized_edit_distance(norm_gt, norm_pred),
+                    "bleu_1_4": bleu_score(pred, gt_text),
+                    "cdm": None,
+                    "cdm_unavailable_reason": "skipped_by_request_no_cdm_dependencies",
+                    "norm_pred_len": int(len(norm_pred)),
+                    "norm_gt_len": int(len(norm_gt)),
+                }
+            )
+        elif label in TABLE_LABELS:
+            norm_pred = normalize_table_html_for_parse(pred)
+            norm_gt = normalize_table_html_for_parse(gt_text)
+            teds = lightweight_teds(pred, gt_text, structure_only=False)
+            teds_s = lightweight_teds(pred, gt_text, structure_only=True)
+            rows.append(
+                {
+                    **base,
+                    "metric_family": "table",
+                    "official_component": True,
+                    "edit_dist": normalized_edit_distance(norm_gt, norm_pred),
+                    "teds": teds,
+                    "teds_structure_only": teds_s,
+                    "teds_implementation": "local_lightweight_html_tree_edit_no_apted_lxml",
+                    "norm_pred_len": int(len(norm_pred)),
+                    "norm_gt_len": int(len(norm_gt)),
+                }
+            )
+
+    text_rows = [row for row in rows if row["metric_family"] == "text" and row["official_component"]]
+    text_diag_rows = [row for row in rows if row["metric_family"] == "text"]
+    formula_rows = [row for row in rows if row["metric_family"] == "formula"]
+    table_rows = [row for row in rows if row["metric_family"] == "table"]
+    reading_order = reading_order_edit(decoded_items, min_iou=float(min_iou))
+
+    text_edit = summarize_metric_rows(text_rows, "edit_dist", lower_is_better=True)
+    formula_edit = summarize_metric_rows(formula_rows, "edit_dist", lower_is_better=True)
+    formula_bleu = summarize_metric_rows(formula_rows, "bleu_1_4", lower_is_better=False)
+    table_edit = summarize_metric_rows(table_rows, "edit_dist", lower_is_better=True)
+    table_teds = summarize_metric_rows(table_rows, "teds", lower_is_better=False)
+    table_teds_s = summarize_metric_rows(table_rows, "teds_structure_only", lower_is_better=False)
+
+    available_non_cdm_scores = []
+    if text_edit["score"] is not None:
+        available_non_cdm_scores.append(float(text_edit["score"]))
+    if formula_edit["score"] is not None:
+        available_non_cdm_scores.append(float(formula_edit["score"]))
+    if table_teds["score"] is not None:
+        available_non_cdm_scores.append(float(table_teds["score"]))
+
+    return {
+        "enabled": True,
+        "is_official_omnidocbench_metric": False,
+        "scope": "gt_crop_predictions_vs_omnidocbench_gt_metric_families_without_cdm_or_mgam",
+        "min_iou": float(min_iou),
+        "matched_scored_items": int(len(rows)),
+        "official_comparison_warning": (
+            "Not leaderboard-comparable: this uses GT crops, no layout detector, no MGAM prediction-side segmentation, "
+            "no CDM, and a lightweight local TEDS implementation."
+        ),
+        "reported_paddleocr_vl_1_6_reference": {
+            "overall": 96.33,
+            "text_edit": 0.033,
+            "formula_cdm": 97.49,
+            "table_teds": 94.76,
+            "table_teds_structure_only": 97.11,
+            "reading_order_edit": 0.127,
+        },
+        "leaderboard_overall": None,
+        "leaderboard_overall_unavailable_reason": "CDM and official MGAM/TEDS evaluator are intentionally not run.",
+        "available_non_cdm_component_mean_score_percent": (
+            None
+            if not available_non_cdm_scores
+            else float(sum(available_non_cdm_scores) / float(len(available_non_cdm_scores)) * 100.0)
+        ),
+        "text_block_Edit_dist": {
+            **text_edit,
+            "page_avg": page_average(text_rows, "edit_dist"),
+            "score_percent": None if text_edit["score"] is None else float(text_edit["score"] * 100.0),
+        },
+        "text_diagnostic_Edit_dist_including_title_code": {
+            **summarize_metric_rows(text_diag_rows, "edit_dist", lower_is_better=True),
+            "page_avg": page_average(text_diag_rows, "edit_dist"),
+        },
+        "display_formula_Edit_dist": {
+            **formula_edit,
+            "page_avg": page_average(formula_rows, "edit_dist"),
+            "score_percent": None if formula_edit["score"] is None else float(formula_edit["score"] * 100.0),
+        },
+        "display_formula_BLEU_1_4": {
+            **formula_bleu,
+            "page_avg": page_average(formula_rows, "bleu_1_4"),
+            "score_percent": None if formula_bleu["score"] is None else float(formula_bleu["score"] * 100.0),
+        },
+        "display_formula_CDM": {
+            "count": int(len(formula_rows)),
+            "avg": None,
+            "score": None,
+            "score_percent": None,
+            "available": False,
+            "unavailable_reason": "skipped_by_request_no_cdm_dependencies",
+        },
+        "table_Edit_dist": {
+            **table_edit,
+            "page_avg": page_average(table_rows, "edit_dist"),
+            "score_percent": None if table_edit["score"] is None else float(table_edit["score"] * 100.0),
+        },
+        "table_TEDS": {
+            **table_teds,
+            "page_avg": page_average(table_rows, "teds"),
+            "score_percent": None if table_teds["score"] is None else float(table_teds["score"] * 100.0),
+            "implementation": "local_lightweight_html_tree_edit_no_apted_lxml",
+        },
+        "table_TEDS_structure_only": {
+            **table_teds_s,
+            "page_avg": page_average(table_rows, "teds_structure_only"),
+            "score_percent": None if table_teds_s["score"] is None else float(table_teds_s["score"] * 100.0),
+            "implementation": "local_lightweight_html_tree_edit_no_apted_lxml",
+        },
+        "reading_order_Edit_dist": reading_order,
+        "by_layout_label": summarize_rows_by_label(rows),
+        "samples": rows[:24],
+    }
+
+
+def summarize_rows_by_label(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for label in sorted(set(str(row["layout_label"]) for row in rows)):
+        label_rows = [row for row in rows if str(row["layout_label"]) == label]
+        metric_keys = sorted(
+            {
+                key
+                for row in label_rows
+                for key, value in row.items()
+                if key in {"edit_dist", "bleu_1_4", "teds", "teds_structure_only"} and value is not None
+            }
+        )
+        out[label] = {"count": int(len(label_rows))}
+        for key in metric_keys:
+            vals = [float(row[key]) for row in label_rows if row.get(key) is not None]
+            out[label][f"avg_{key}"] = float(sum(vals) / float(len(vals))) if vals else None
+    return out
+
+
+def reading_order_edit(decoded_items: list[Any], *, min_iou: float) -> dict[str, Any]:
+    page_rows: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    for idx, decoded in enumerate(decoded_items):
+        entry = decoded.item.input_item.entry
+        label = str(entry.get("layout_label"))
+        if label not in READING_ORDER_LABELS:
+            continue
+        gt_match = entry.get("gt_layout_match", {}) or {}
+        if not gt_match.get("matched") or float(gt_match.get("iou", 0.0) or 0.0) < float(min_iou):
+            continue
+        raw_order = gt_match.get("gt_order", entry.get("gt_order"))
+        if raw_order is None:
+            continue
+        page_rows[int(entry.get("page_index", 0))].append(
+            {
+                "decoded_index": int(idx),
+                "layout_box_index": int(entry.get("layout_box_index", idx)),
+                "gt_order": safe_int(raw_order, default=int(entry.get("layout_box_index", idx))),
+                "label": label,
+            }
+        )
+    page_scores = []
+    for page_index, rows in sorted(page_rows.items()):
+        if not rows:
+            continue
+        pred_sequence = [int(row["gt_order"]) for row in sorted(rows, key=lambda row: row["decoded_index"])]
+        gt_sequence = sorted(pred_sequence)
+        edit = normalized_edit_distance(gt_sequence, pred_sequence)
+        page_scores.append(
+            {
+                "page_index": int(page_index),
+                "count": int(len(rows)),
+                "edit_dist": float(edit),
+                "gt_order": gt_sequence,
+                "pred_order": pred_sequence,
+            }
+        )
+    if not page_scores:
+        return {
+            "count": 0,
+            "avg": None,
+            "score": None,
+            "lower_is_better": True,
+            "scope": "gt_crop_text_component_order",
+            "page_scores": [],
+        }
+    avg = float(sum(float(row["edit_dist"]) for row in page_scores) / float(len(page_scores)))
+    return {
+        "count": int(len(page_scores)),
+        "avg": avg,
+        "score": float(1.0 - avg),
+        "lower_is_better": True,
+        "scope": "gt_crop_text_component_order",
+        "official_full_page_reading_order": False,
+        "page_scores": page_scores[:32],
+    }
+
+
 def rough_ground_truth_accuracy(decoded_items: list[Any], *, min_iou: float) -> dict[str, Any]:
     rows = []
     for idx, decoded in enumerate(decoded_items):
@@ -1124,6 +1710,7 @@ def main() -> None:
     token_summary = token_range_summary(trimmed_rows, vocab_size=int(model.config.text_config.vocab_size))
     length_cap_hit_count = int(sum(1 for item in decoded_items if item.length_cap_hit))
     rough_accuracy = rough_ground_truth_accuracy(decoded_items, min_iou=float(args.rough_gt_min_iou))
+    omnidocbench_metrics = omnidocbench_metrics_without_cdm(decoded_items, min_iou=float(args.rough_gt_min_iou))
 
     layout_detection_s = float(layout_timing.get("layout_detection_s", 0.0) or 0.0)
     crop_extract_s = float(crop_timing.get("crop_extract_s", 0.0) or 0.0)
@@ -1247,6 +1834,7 @@ def main() -> None:
                 and int(length_cap_hit_count) == 0
             ),
         },
+        "omnidocbench_metrics_without_cdm": omnidocbench_metrics,
         "rough_ground_truth_accuracy": rough_accuracy,
         "pages": page_output_summary(decoded_items),
         "items_sample": [
@@ -1292,6 +1880,11 @@ def main() -> None:
             "decode": "All detected crop ready states are decoded by the experiment-5 hot-swap scheduler with one active compiled batch; no fake rows are added.",
             "measured_e2e": "Excludes layout/model init, recognizer model load, decode weight format conversion, torch compile/cache warm, and validation. Includes layout inference only when layout_source=official; with layout_source=omnidocbench_gt it measures crop extraction, recognizer input build, prefill, decode, and output postprocess.",
             "validation": "Validation is outside the timing window and checks hot-swap output against the same local static recognizer per crop. It is not an OCR quality metric.",
+            "quality_metrics": (
+                "omnidocbench_metrics_without_cdm reports local GT-crop metrics aligned with OmniDocBench metric families "
+                "where practical: text Edit_dist, formula Edit_dist and BLEU, table Edit_dist and lightweight TEDS/TEDS-S, "
+                "and GT-crop reading-order Edit_dist. It intentionally does not compute CDM or official MGAM matching."
+            ),
         },
     }
 

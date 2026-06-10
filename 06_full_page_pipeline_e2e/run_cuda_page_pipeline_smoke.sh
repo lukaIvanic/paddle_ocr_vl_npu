@@ -95,6 +95,7 @@ throughput = data.get("throughput", {})
 crop_summary = data.get("crop_summary", {})
 decode = data.get("decode_summary", {})
 rough_accuracy = data.get("rough_ground_truth_accuracy", {})
+omnidoc_metrics = data.get("omnidocbench_metrics_without_cdm", {})
 print("PAGE_PIPELINE_SUMMARY", json.dumps({
     "page_count": data.get("page_count"),
     "recognizer_crop_count": data.get("recognizer_crop_count"),
@@ -129,6 +130,23 @@ print("DECODE_SUMMARY", json.dumps({
     "total_swapped_in_items": decode.get("total_swapped_in_items"),
 }, sort_keys=True))
 print("CORRECTNESS", json.dumps(correctness, sort_keys=True))
+print("OMNIDOCBENCH_METRICS_WITHOUT_CDM", json.dumps({
+    "is_official_omnidocbench_metric": omnidoc_metrics.get("is_official_omnidocbench_metric"),
+    "scope": omnidoc_metrics.get("scope"),
+    "matched_scored_items": omnidoc_metrics.get("matched_scored_items"),
+    "leaderboard_overall": omnidoc_metrics.get("leaderboard_overall"),
+    "leaderboard_overall_unavailable_reason": omnidoc_metrics.get("leaderboard_overall_unavailable_reason"),
+    "available_non_cdm_component_mean_score_percent": omnidoc_metrics.get("available_non_cdm_component_mean_score_percent"),
+    "text_block_Edit_dist": omnidoc_metrics.get("text_block_Edit_dist"),
+    "display_formula_Edit_dist": omnidoc_metrics.get("display_formula_Edit_dist"),
+    "display_formula_BLEU_1_4": omnidoc_metrics.get("display_formula_BLEU_1_4"),
+    "display_formula_CDM": omnidoc_metrics.get("display_formula_CDM"),
+    "table_Edit_dist": omnidoc_metrics.get("table_Edit_dist"),
+    "table_TEDS": omnidoc_metrics.get("table_TEDS"),
+    "table_TEDS_structure_only": omnidoc_metrics.get("table_TEDS_structure_only"),
+    "reading_order_Edit_dist": omnidoc_metrics.get("reading_order_Edit_dist"),
+    "reported_paddleocr_vl_1_6_reference": omnidoc_metrics.get("reported_paddleocr_vl_1_6_reference"),
+}, sort_keys=True))
 print("ROUGH_GT_ACCURACY", json.dumps({
     "enabled": rough_accuracy.get("enabled"),
     "is_official_omnidocbench_metric": rough_accuracy.get("is_official_omnidocbench_metric"),
