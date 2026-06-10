@@ -9,10 +9,11 @@ correctness validation.
 
 The queue benchmark defaults to hot-swap decode through `ACTIVE_BATCH_SIZE`.
 It first builds one ready-state bank for real crops, then reuses one active
-compiled decode batch and swaps finished slots from that bank. It stays
-padding-free: hot-swap rejects `ACTIVE_BATCH_SIZE > NUM_ITEMS`, and fixed
-cohorts remain available only through `DECODE_SCHEDULE=fixed_cohort` as an
-explicit baseline.
+compiled decode batch and swaps finished slots from that bank. Hot-swap rejects
+`ACTIVE_BATCH_SIZE > NUM_ITEMS` instead of fabricating initial rows. After the
+ready bank is exhausted, inactive tail slots use EOS/cache-position-zero
+sentinels and still occupy the static compiled batch until the remaining real
+rows finish, so effective-token metrics are the useful-work view.
 
 ## Data Flow
 
@@ -30,16 +31,16 @@ flowchart LR
     D2 --> D3["Compile/wrap decode<br/>NPU: TorchAir cache_compile<br/>CUDA: raw eager or torch.compile"]
     D3 --> E["Ready bank build<br/>one crop at a time"]
     E --> E1["Device transfer"]
-    E1 --> E2["Vision embeddings + 27-layer encoder<br/>hidden: [N, 1152]"]
+    E1 --> E2["Vision embeddings + 27-layer encoder<br/>pixel/hidden tensors on device<br/>grid metadata stays CPU"]
     E2 --> E3["Post LN + adaptive MLP projector<br/>image_embeds: [N/4, 1024]"]
     E3 --> E4["Text token embeddings + image embed scatter<br/>inputs_embeds: [1, T, 1024]"]
-    E4 --> E5["mRoPE indices + static KV cache alloc"]
+    E4 --> E5["CPU mRoPE indices + device transfer<br/>static KV cache alloc"]
     E5 --> E6["Text prefill writes KV cache<br/>per layer K/V: [1, 2, cache_length, 128]"]
     E6 --> E7["LM head argmax<br/>ReadyItem: cache, rope_deltas, cache_position, next_token"]
     E7 --> F["Ready bank<br/>all real crop states on device"]
     F --> F1["Hot-swap decode queue<br/>one active batch of B slots"]
     F1 --> F2["Batched static decode calls<br/>next_token[B,1] -> logits -> argmax"]
-    F2 --> F3["Overlap token-row copy<br/>NPU stream -> pinned CPU row"]
+    F2 --> F3["Async token-row copy<br/>NPU stream -> pinned CPU row"]
     F3 --> F4["CPU per-item token history<br/>EOS/length-cap bookkeeping"]
     F4 --> F5["Swap all finished slots<br/>batched index_copy_ for K/V and slot controls"]
     F5 --> G["Postprocess"]
@@ -79,11 +80,11 @@ sequenceDiagram
             Ready->>Model: vision embeddings, encoder, post LN
             Ready->>Model: adaptive MLP projector
             Ready->>Model: text embedding + image scatter
-            Ready->>Model: mRoPE + static cache allocate
+            Ready->>Model: CPU mRoPE + device transfer + static cache allocate
             Ready->>Model: text prefill + lm_head argmax
-            Ready-->>CLI: ReadyItem
+            Ready-->>Decode: copy into incremental ReadyBank row
+            Decode-->>CLI: ReadyItem rebound to bank row
         end
-        CLI->>Decode: make_ready_bank from all ReadyItem rows
         CLI->>Decode: static_hotswap_decode_loop
         Decode->>Decode: load first B real items into active slots
         loop until all items complete
@@ -118,9 +119,12 @@ projected image tokens are normally `vision_tokens / 4` because the adaptive MLP
 connector performs a 2x2 spatial merge.
 
 `ReadyBank` is the device-side collection of all prefills selected for the run.
-It concatenates real per-crop K/V cache rows, `rope_deltas`,
-`next_cache_position`, and first `next_token` across the item dimension. This
-is the source for hot-swap slot loads.
+It stores real per-crop K/V cache rows, `rope_deltas`, `next_cache_position`,
+and first `next_token` across the item dimension. In hot-swap mode the harness
+fills the bank incrementally as each crop is prefetched and immediately rebinds
+the `ReadyItem` to its bank row. Peak KV memory is therefore the full ready bank
+plus one transient item cache, not all item caches plus a second concatenated
+bank. This bank is the source for hot-swap slot loads.
 
 `HotSwapDecodeResult` is the hot-swap scheduler output. Token history is stored
 as CPU rows copied from sampled token rows, matching the experiment-4 optimized
@@ -151,13 +155,17 @@ shape:
 - `cache_length` must cover `input_tokens + max_new_tokens - 1` for every item.
 - Image-token count and projected-image-embedding count must match exactly.
 - Validation is required by default (`validation_items=-1`) and compares every
-  queued output against direct local static generation.
+  queued output against direct local static generation from the same local model
+  and preprocessing. It is a queue/scheduler correctness check, not an
+  independent OCR quality or ground-truth check.
 - Token IDs are checked for invalid values outside the model vocabulary.
 
-There is no hidden text padding path in this benchmark. Different crop/prompt
-lengths become different ready states. The default hot-swap decode queue loads
-only real ready states into active slots; fixed cohorts group real ready states
-only when `DECODE_SCHEDULE=fixed_cohort` is requested.
+There is no hidden text/image padding path during input build or initial ready
+state loading. Different crop/prompt lengths become different ready states. The
+default hot-swap decode queue loads only real ready states into active slots;
+fixed cohorts group real ready states only when `DECODE_SCHEDULE=fixed_cohort`
+is requested. Inactive tail slots after the ready bank is exhausted are static
+decode sentinels, not real inputs.
 
 ## Timing Buckets
 
@@ -172,7 +180,13 @@ construction for all selected crops.
 
 `phase_timing_s.ready_bank_build` is sequential per-crop device transfer,
 native-resolution vision encoder, adaptive MLP projector, text prefill, and
-first-token LM head.
+first-token LM head. Named ready-item substages synchronize around each stage
+for attribution, so these timings are diagnostic stage timings rather than an
+unsynchronized serving throughput measurement.
+
+The actual vision/projector tensor compute runs on the selected device. The
+small `image_grid_thw` shape metadata intentionally remains on CPU so model
+shape loops do not pull scalar values back from NPU/CUDA.
 
 `phase_timing_s.decode_queue` is only text decode over already-ready states. In
 the default hot-swap schedule this includes active-slot setup, the hot-swap
@@ -184,8 +198,9 @@ timers:
 
 - `vision_prefill`: vision prepare, native-resolution visual encoder, and
   adaptive MLP projector.
-- `text_prefill`: text token embedding, image embed scatter, mRoPE/static-cache
-  setup, text decoder prefill, first-token LM head, and argmax.
+- `text_prefill`: text token embedding, image embed scatter, CPU mRoPE
+  construction plus device transfer, static-cache setup, text decoder prefill,
+  first-token LM head, and argmax.
 - `text_decode`: the selected decode queue, hot-swap by default.
 
 `phase_timing_s.decode_output_postprocess` is final token-row materialization,
@@ -193,14 +208,17 @@ EOS trimming, and tokenizer decode. In hot-swap mode, per-step sampled-token
 row copies are part of `decode_queue` because they drive EOS detection and slot
 replacement.
 
-`phase_timing_s.validation` is direct static generation used for correctness.
-It is not included in throughput.
+`phase_timing_s.validation` is direct static generation used for queue
+correctness. It is not included in throughput and does not compare against
+manifest ground truth.
 
 ## Device Differences
 
 On NPU, the decode path uses TorchAir cache compile, IncreFlashAttention,
-`torch_npu.scatter_update_` for decode KV writes, and overlapped sampled-token
-row copies on a second NPU stream for hot-swap EOS bookkeeping. Decoder linear
+`torch_npu.scatter_update_` for decode KV writes, and async sampled-token row
+copies on a second NPU stream for hot-swap EOS bookkeeping. The current
+hot-swap loop synchronizes that copied token row before the next decode so slot
+replacement is exact; do not treat it as fully hidden overlap. Decoder linear
 weights are preconverted to FRACTAL_NZ before compile. Hot-swap slot loads use
 batched `index_copy_` for K/V rows and slot-control tensors.
 

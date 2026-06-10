@@ -297,8 +297,8 @@ def main() -> None:
     maybe_sync(device)
     tensors = make_first_layer_qkv(
         model=model,
-        pixel_values=item.pixel_values.to(device),
-        image_grid_thw=item.image_grid_thw.to(device),
+        pixel_values=item.pixel_values.to(device=device, dtype=model.visual.dtype),
+        image_grid_thw=item.image_grid_thw,
     )
     q_bnsd = tensors["q_bnsd"]
     k_bnsd = tensors["k_bnsd"]

@@ -233,8 +233,7 @@ def main() -> None:
     input_ids, attention_mask = build_inputs(tokenizer, image_grid_thw, args.prompt, merge_size=int(pre_cfg["merge_size"]))
 
     model = LocalPaddleOCRVLForConditionalGeneration.from_pretrained(model_dir, dtype=dtype, device=device)
-    pixel_values = pixel_values.to(device)
-    image_grid_thw = image_grid_thw.to(device)
+    pixel_values = pixel_values.to(device=device, dtype=model.visual.dtype)
     input_ids = input_ids.to(device)
     attention_mask = attention_mask.to(device)
 

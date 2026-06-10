@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib
+import re
 import time
 from pathlib import Path
 from typing import Any
@@ -75,8 +77,77 @@ def compile_backend(name: str):
     return name
 
 
-def torchair_cache_dir_for_shape(cache_root: Path, *, batch_size: int, cache_length: int) -> Path:
-    shape_key = f"{DECODE_LINEAR_WEIGHT_FORMAT}_{DECODE_ATTENTION}_bs{int(batch_size)}_cache{int(cache_length)}"
+def cache_key_part(value: object) -> str:
+    text = str(value).replace("torch.", "")
+    return re.sub(r"[^A-Za-z0-9_.-]+", "_", text).strip("_") or "unknown"
+
+
+def short_file_hash(path: Path) -> str:
+    if not path.exists():
+        return "nohash"
+    digest = hashlib.sha1()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()[:12]
+
+
+def torch_npu_version_label(device: torch.device) -> str:
+    if device.type != "npu":
+        return "non_npu"
+    try:
+        import torch_npu
+
+        return cache_key_part(getattr(torch_npu, "__version__", "unknown"))
+    except Exception:
+        return "unknown"
+
+
+def torchair_version_label(device: torch.device) -> str:
+    if device.type != "npu":
+        return "non_npu"
+    try:
+        torchair, _ = import_torchair()
+        return cache_key_part(getattr(torchair, "__version__", "unknown"))
+    except Exception:
+        return "unknown"
+
+
+def decode_source_hash() -> str:
+    here = Path(__file__).resolve().parent
+    digest = hashlib.sha1()
+    for name in ("local_modeling_paddleocr_vl.py", "probe_static_compile.py"):
+        path = here / name
+        digest.update(name.encode("utf-8"))
+        digest.update(short_file_hash(path).encode("utf-8"))
+    return digest.hexdigest()[:12]
+
+
+def torchair_cache_dir_for_shape(
+    cache_root: Path,
+    *,
+    batch_size: int,
+    cache_length: int,
+    dtype: torch.dtype | None = None,
+    device: torch.device | None = None,
+    model_dir: Path | None = None,
+) -> Path:
+    model_hash = short_file_hash(model_dir / "config.json") if model_dir is not None else "model_unknown"
+    shape_key = "_".join(
+        [
+            DECODE_LINEAR_WEIGHT_FORMAT,
+            DECODE_ATTENTION,
+            DECODE_CACHE_UPDATE,
+            f"dtype{cache_key_part(dtype or 'unknown')}",
+            f"bs{int(batch_size)}",
+            f"cache{int(cache_length)}",
+            f"model{model_hash}",
+            f"torch{cache_key_part(torch.__version__)}",
+            f"torchnpu{torch_npu_version_label(device or torch.device('cpu'))}",
+            f"torchair{torchair_version_label(device or torch.device('cpu'))}",
+            f"src{decode_source_hash()}",
+        ]
+    )
     return cache_root.expanduser().resolve() / shape_key
 
 
@@ -88,6 +159,8 @@ def compile_decode_module(
     cache_root: Path,
     batch_size: int,
     cache_length: int,
+    dtype: torch.dtype | None = None,
+    model_dir: Path | None = None,
 ) -> tuple[Any, dict[str, Any]]:
     if backend_name == "raw_eager":
         return flat_decode, {
@@ -95,6 +168,7 @@ def compile_decode_module(
             "compile_api": "none",
             "linear_weight_format": DECODE_LINEAR_WEIGHT_FORMAT,
             "decode_attention": decode_attention_label(device),
+            "decode_cache_update": decode_cache_update_label(device),
         }
 
     if backend_name == "torchair":
@@ -106,6 +180,9 @@ def compile_decode_module(
             cache_root,
             batch_size=batch_size,
             cache_length=cache_length,
+            dtype=dtype,
+            device=device,
+            model_dir=model_dir,
         )
         shape_cache_dir.mkdir(parents=True, exist_ok=True)
         compiled_decode = torchair.inference.cache_compile(
@@ -122,6 +199,20 @@ def compile_decode_module(
             "compile_api": "torchair.inference.cache_compile",
             "linear_weight_format": DECODE_LINEAR_WEIGHT_FORMAT,
             "decode_attention": decode_attention_label(device),
+            "decode_cache_update": decode_cache_update_label(device),
+            "cache_key_fields": {
+                "batch_size": int(batch_size),
+                "cache_length": int(cache_length),
+                "dtype": str(dtype),
+                "model_config_hash": short_file_hash(model_dir / "config.json") if model_dir is not None else None,
+                "torch": str(torch.__version__),
+                "torch_npu": torch_npu_version_label(device),
+                "torchair": torchair_version_label(device),
+                "decode_source_hash": decode_source_hash(),
+                "linear_weight_format": DECODE_LINEAR_WEIGHT_FORMAT,
+                "decode_attention": decode_attention_label(device),
+                "decode_cache_update": decode_cache_update_label(device),
+            },
         }
 
     backend = compile_backend(backend_name)
@@ -133,6 +224,7 @@ def compile_decode_module(
         "compile_api": "torch.compile",
         "linear_weight_format": DECODE_LINEAR_WEIGHT_FORMAT,
         "decode_attention": decode_attention_label(device),
+        "decode_cache_update": decode_cache_update_label(device),
     }
 
 
@@ -179,8 +271,7 @@ def main() -> None:
     weight_format_meta = cast_decode_linear_weights_to_nz(model)
     maybe_sync(device)
     weight_format_meta["setup_s"] = time.perf_counter() - weight_format_start
-    pixel_values = pixel_values.to(device)
-    image_grid_thw = image_grid_thw.to(device)
+    pixel_values = pixel_values.to(device=device, dtype=model.visual.dtype)
     input_ids = input_ids.to(device)
     attention_mask = attention_mask.to(device)
     prompt_length = int(input_ids.shape[1])
@@ -236,6 +327,8 @@ def main() -> None:
         cache_root=args.torchair_cache_dir,
         batch_size=int(input_ids.shape[0]),
         cache_length=cache_length,
+        dtype=dtype,
+        model_dir=model_dir,
     )
     maybe_sync(device)
     compile_setup_s = time.perf_counter() - start

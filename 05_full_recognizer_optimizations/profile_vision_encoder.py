@@ -103,8 +103,7 @@ def prepare_encoder_inputs(
     device: torch.device,
 ) -> dict[str, torch.Tensor]:
     del input_ids, attention_mask
-    pixel_values = pixel_values.to(device).type(model.visual.dtype).unsqueeze(0)
-    image_grid_thw = image_grid_thw.to(device)
+    pixel_values = pixel_values.to(device=device, dtype=model.visual.dtype).unsqueeze(0)
     cu_seqlens = F.pad(
         torch.repeat_interleave(
             image_grid_thw[:, 1] * image_grid_thw[:, 2],
@@ -214,8 +213,8 @@ def main() -> None:
     moved = (
         item.input_ids.to(device),
         item.attention_mask.to(device),
-        item.pixel_values.to(device),
-        item.image_grid_thw.to(device),
+        item.pixel_values.to(device=device, dtype=model.visual.dtype),
+        item.image_grid_thw,
     )
     input_ids, attention_mask, pixel_values, image_grid_thw = moved
 

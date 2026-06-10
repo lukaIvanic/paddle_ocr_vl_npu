@@ -177,8 +177,8 @@ def main() -> None:
     model = LocalPaddleOCRVLForConditionalGeneration.from_pretrained(model_dir, dtype=dtype, device=device)
     hidden0, position_embeddings = prepare_initial_hidden_and_positions(
         model,
-        pixel_values=item.pixel_values.to(device),
-        image_grid_thw=item.image_grid_thw.to(device),
+        pixel_values=item.pixel_values.to(device=device, dtype=model.visual.dtype),
+        image_grid_thw=item.image_grid_thw,
     )
     layers = model.visual.vision_model.encoder.layers
     max_layers = min(int(args.max_layers), len(layers))

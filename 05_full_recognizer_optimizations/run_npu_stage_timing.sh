@@ -82,6 +82,8 @@ stage_names = [
     "vision_total",
     "vision_encoder",
     "adaptive_mlp_projector",
+    "mrope_index_cpu",
+    "mrope_index_transfer",
     "text_prefill",
     "prefill_lm_head",
     "static_decode_total",
@@ -100,19 +102,24 @@ for name in stage_names:
     )
 
 print("ITEM_SUMMARY")
-print("idx id input_tokens vision_tokens projected_image_tokens static_decode_total model_total tokens_match")
+print("idx id input_tokens vision_tokens projected_image_tokens decode_calls decode_mode static_decode_total model_total tokens_match")
 for idx, item in enumerate(data.get("items", [])):
     timing = item.get("timing_s", {})
+    correctness = item.get("correctness", {})
     print(
         f"{idx} "
         f"{item.get('id')} "
         f"{item.get('input_tokens')} "
         f"{item.get('vision_tokens')} "
         f"{item.get('projected_image_tokens')} "
+        f"{item.get('decode_calls')} "
+        f"{item.get('decode_mode')} "
         f"{timing.get('static_decode_total')} "
         f"{timing.get('model_total_excluding_device_transfer')} "
-        f"{item.get('correctness', {}).get('tokens_match')}"
+        f"{correctness.get('tokens_match')}"
     )
+    print("ITEM_CORRECTNESS", idx, json.dumps(correctness, sort_keys=True))
+    print("ITEM_TIMING_S", idx, json.dumps(timing, sort_keys=True))
     steps = item.get("decode_step_wall_s") or []
     if steps:
         print(

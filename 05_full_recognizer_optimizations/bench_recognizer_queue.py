@@ -120,6 +120,7 @@ class HotSwapDecodeResult:
     decode_calls: int
     completed_by_item: list[bool]
     completion_decode_calls: list[int | None]
+    completion_reasons: list[str | None]
     eos_hit_by_item: list[bool]
     length_cap_hit_by_item: list[bool]
     swap_events: list[dict[str, Any]]
@@ -316,7 +317,8 @@ def aggregate_pipeline_stage_timings(
     text_prefill_keys = [
         "text_token_embedding",
         "image_embed_scatter",
-        "mrope_index",
+        "mrope_index_cpu",
+        "mrope_index_transfer",
         "static_cache_alloc",
         "text_prefill",
         "prefill_lm_head",
@@ -388,8 +390,8 @@ def build_ready_item(
         lambda: (
             item.input_ids.to(device),
             item.attention_mask.to(device),
-            item.pixel_values.to(device),
-            item.image_grid_thw.to(device),
+            item.pixel_values.to(device=device, dtype=model.visual.dtype),
+            item.image_grid_thw,
         ),
     )
     input_ids, attention_mask, pixel_values, image_grid_thw = moved
@@ -397,7 +399,7 @@ def build_ready_item(
     vision_inputs = timer.measure(
         "vision_prepare",
         lambda: {
-            "pixel_values": pixel_values.type(model.visual.dtype).unsqueeze(0),
+            "pixel_values": pixel_values.unsqueeze(0),
             "cu_seqlens": F.pad(
                 torch.repeat_interleave(
                     image_grid_thw[:, 1] * image_grid_thw[:, 2],
@@ -438,9 +440,16 @@ def build_ready_item(
         return inputs_embeds.masked_scatter(image_mask, projected)
 
     inputs_embeds = timer.measure("image_embed_scatter", scatter_image_embeds)
+    position_ids_cpu, rope_deltas_cpu = timer.measure(
+        "mrope_index_cpu",
+        lambda: model.get_rope_index(item.input_ids, item.image_grid_thw, item.attention_mask),
+    )
     position_ids, rope_deltas = timer.measure(
-        "mrope_index",
-        lambda: model.get_rope_index(input_ids, image_grid_thw, attention_mask),
+        "mrope_index_transfer",
+        lambda: (
+            position_ids_cpu.to(device),
+            rope_deltas_cpu.to(device),
+        ),
     )
     cache = timer.measure(
         "static_cache_alloc",
@@ -477,7 +486,8 @@ def build_ready_item(
         + timings["adaptive_mlp_projector"]
         + timings["text_token_embedding"]
         + timings["image_embed_scatter"]
-        + timings["mrope_index"]
+        + timings["mrope_index_cpu"]
+        + timings["mrope_index_transfer"]
         + timings["static_cache_alloc"]
         + timings["text_prefill"]
         + timings["prefill_lm_head"]
@@ -576,6 +586,111 @@ def copy_batch_rows_(
         *target.shape[1:],
     ).contiguous()
     target.index_copy_(0, slot_indices, rows)
+
+
+@torch.inference_mode()
+def allocate_ready_bank_like(first: ReadyItem, num_items: int) -> ReadyBank:
+    if int(num_items) <= 0:
+        raise ValueError(f"ready bank size must be positive, got {num_items}")
+    key_caches = tuple(
+        torch.empty(
+            (int(num_items), *cache.shape[1:]),
+            device=cache.device,
+            dtype=cache.dtype,
+        )
+        for cache in first.cache.key_caches
+    )
+    value_caches = tuple(
+        torch.empty(
+            (int(num_items), *cache.shape[1:]),
+            device=cache.device,
+            dtype=cache.dtype,
+        )
+        for cache in first.cache.value_caches
+    )
+    return ReadyBank(
+        items=[],
+        cache=LocalPaddleOCRVLStaticCache(key_caches, value_caches, int(first.cache.cache_length)),
+        rope_deltas=torch.empty(
+            (int(num_items), *first.rope_deltas.shape[1:]),
+            device=first.rope_deltas.device,
+            dtype=first.rope_deltas.dtype,
+        ),
+        next_cache_position=torch.empty(
+            (int(num_items),),
+            device=first.next_cache_position.device,
+            dtype=first.next_cache_position.dtype,
+        ),
+        next_token=torch.empty(
+            (int(num_items), *first.next_token.shape[1:]),
+            device=first.next_token.device,
+            dtype=first.next_token.dtype,
+        ),
+    )
+
+
+@torch.inference_mode()
+def rebind_ready_item_to_bank_row_(ready: ReadyBank, item: ReadyItem, item_idx: int) -> None:
+    item_idx = int(item_idx)
+    item.cache = LocalPaddleOCRVLStaticCache(
+        tuple(cache[item_idx : item_idx + 1] for cache in ready.cache.key_caches),
+        tuple(cache[item_idx : item_idx + 1] for cache in ready.cache.value_caches),
+        int(ready.cache.cache_length),
+    )
+    item.rope_deltas = ready.rope_deltas[item_idx : item_idx + 1]
+    item.next_cache_position = ready.next_cache_position[item_idx : item_idx + 1]
+    item.next_token = ready.next_token[item_idx : item_idx + 1]
+
+
+@torch.inference_mode()
+def copy_ready_item_to_bank_(ready: ReadyBank, item: ReadyItem, item_idx: int) -> None:
+    item_idx = int(item_idx)
+    if int(item.cache.cache_length) != int(ready.cache.cache_length):
+        raise ValueError("ready item and ready bank must share cache_length")
+    slot_indices = torch.tensor([item_idx], device=ready.next_token.device, dtype=torch.int64)
+    for layer_idx in range(len(ready.cache.key_caches)):
+        ready.cache.key_caches[layer_idx].index_copy_(
+            0,
+            slot_indices,
+            item.cache.key_caches[layer_idx].contiguous(),
+        )
+        ready.cache.value_caches[layer_idx].index_copy_(
+            0,
+            slot_indices,
+            item.cache.value_caches[layer_idx].contiguous(),
+        )
+    copy_batch_rows_(ready.rope_deltas, [item_idx], item.rope_deltas)
+    copy_batch_rows_(ready.next_cache_position, [item_idx], item.next_cache_position.reshape(1))
+    copy_batch_rows_(ready.next_token, [item_idx], item.next_token)
+    rebind_ready_item_to_bank_row_(ready, item, item_idx)
+
+
+@torch.inference_mode()
+def build_ready_bank_incremental(
+    *,
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    queue_inputs: list[QueueInput],
+    cache_length: int,
+    device: torch.device,
+) -> tuple[list[ReadyItem], ReadyBank]:
+    if not queue_inputs:
+        raise ValueError("ready bank requires at least one input")
+    ready_items: list[ReadyItem] = []
+    ready_bank: ReadyBank | None = None
+    for item_idx, queue_input in enumerate(queue_inputs):
+        ready_item = build_ready_item(
+            model=model,
+            item=queue_input,
+            cache_length=int(cache_length),
+            device=device,
+        )
+        if ready_bank is None:
+            ready_bank = allocate_ready_bank_like(ready_item, len(queue_inputs))
+        copy_ready_item_to_bank_(ready_bank, ready_item, item_idx)
+        ready_bank.items.append(ready_item)
+        ready_items.append(ready_item)
+    assert ready_bank is not None
+    return ready_items, ready_bank
 
 
 @torch.inference_mode()
@@ -908,6 +1023,7 @@ def static_hotswap_decode_loop(
     slot_finished_cpu = [False for _ in range(int(batch_size))]
     completed_by_item = [False for _ in range(num_items)]
     completion_decode_calls: list[int | None] = [None for _ in range(num_items)]
+    completion_reasons: list[str | None] = [None for _ in range(num_items)]
     add_phase("cpu_state_setup_s", cpu_setup_started)
 
     completed_count = 0
@@ -987,51 +1103,74 @@ def static_hotswap_decode_loop(
 
     def consume_finished_slots(finished_flags: list[bool], completion_decode_call: int) -> None:
         nonlocal completed_count, next_ready_idx
-        finished_slots = [
-            int(slot)
-            for slot, flag in enumerate(finished_flags)
-            if bool(flag) and int(active_item_indices_cpu[slot]) >= 0
-        ]
-        if not finished_slots:
-            return
-        completed_item_ids = []
-        swapped_slots = []
-        swapped_in_item_ids = []
-        deactivated_slots = []
-        pending_swap_slots: list[int] = []
-        pending_swap_items: list[int] = []
-        for slot in finished_slots:
-            finished_item = int(active_item_indices_cpu[slot])
-            if not completed_by_item[finished_item]:
-                completed_by_item[finished_item] = True
-                completion_decode_calls[finished_item] = int(completion_decode_call)
-                completed_count += 1
-                completed_item_ids.append(finished_item)
-                if not item_length_cap_hit_cpu[finished_item]:
-                    item_eos_hit_cpu[finished_item] = True
-            if next_ready_idx < num_items:
-                new_item = int(next_ready_idx)
-                next_ready_idx += 1
-                pending_swap_slots.append(slot)
-                pending_swap_items.append(new_item)
-                swapped_slots.append(slot)
-                swapped_in_item_ids.append(new_item)
-            else:
-                deactivated_slots.append(slot)
-        load_items_to_slots(pending_swap_slots, pending_swap_items)
-        deactivate_slots(deactivated_slots)
-        swap_events.append(
-            {
-                "completion_decode_call": int(completion_decode_call),
-                "finished_slots": finished_slots,
-                "completed_item_ids": completed_item_ids,
-                "swapped_slots": swapped_slots,
-                "swapped_in_item_ids": swapped_in_item_ids,
-                "deactivated_slots": deactivated_slots,
-                "completed_count": int(completed_count),
-                "remaining_ready_items": int(num_items - next_ready_idx),
-            }
-        )
+        cascade_depth = 0
+        pending_flags = [bool(flag) for flag in finished_flags]
+        while True:
+            finished_slots = [
+                int(slot)
+                for slot, flag in enumerate(pending_flags)
+                if bool(flag) and int(active_item_indices_cpu[slot]) >= 0
+            ]
+            if not finished_slots:
+                return
+            completed_item_ids = []
+            completed_item_reasons = []
+            swapped_slots = []
+            swapped_in_item_ids = []
+            deactivated_slots = []
+            pending_swap_slots: list[int] = []
+            pending_swap_items: list[int] = []
+            for slot in finished_slots:
+                finished_item = int(active_item_indices_cpu[slot])
+                if not completed_by_item[finished_item]:
+                    completed_by_item[finished_item] = True
+                    completion_decode_calls[finished_item] = int(completion_decode_call)
+                    completed_count += 1
+                    completed_item_ids.append(finished_item)
+                    reason = (
+                        "slot_load_first_token_eos_or_length_cap"
+                        if int(completion_decode_call) == 0 or int(cascade_depth) > 0
+                        else "decoded_token_eos_or_length_cap"
+                    )
+                    completion_reasons[finished_item] = reason
+                    completed_item_reasons.append({"item": int(finished_item), "reason": reason})
+                    if not item_length_cap_hit_cpu[finished_item]:
+                        item_eos_hit_cpu[finished_item] = True
+                if next_ready_idx < num_items:
+                    new_item = int(next_ready_idx)
+                    next_ready_idx += 1
+                    pending_swap_slots.append(slot)
+                    pending_swap_items.append(new_item)
+                    swapped_slots.append(slot)
+                    swapped_in_item_ids.append(new_item)
+                else:
+                    deactivated_slots.append(slot)
+            load_items_to_slots(pending_swap_slots, pending_swap_items)
+            deactivate_slots(deactivated_slots)
+            immediate_finished_slots = [
+                int(slot)
+                for slot in pending_swap_slots
+                if bool(slot_finished_cpu[int(slot)]) and int(active_item_indices_cpu[int(slot)]) >= 0
+            ]
+            swap_events.append(
+                {
+                    "completion_decode_call": int(completion_decode_call),
+                    "cascade_depth": int(cascade_depth),
+                    "finished_slots": finished_slots,
+                    "completed_item_ids": completed_item_ids,
+                    "completed_item_reasons": completed_item_reasons,
+                    "swapped_slots": swapped_slots,
+                    "swapped_in_item_ids": swapped_in_item_ids,
+                    "immediate_finished_slots": immediate_finished_slots,
+                    "deactivated_slots": deactivated_slots,
+                    "completed_count": int(completed_count),
+                    "remaining_ready_items": int(num_items - next_ready_idx),
+                }
+            )
+            pending_flags = [False for _ in range(int(batch_size))]
+            for slot in immediate_finished_slots:
+                pending_flags[int(slot)] = True
+            cascade_depth += 1
 
     def commit_pending_tokens(
         token_values: list[int],
@@ -1208,6 +1347,7 @@ def static_hotswap_decode_loop(
         decode_calls=int(decode_calls),
         completed_by_item=completed_by_item,
         completion_decode_calls=completion_decode_calls,
+        completion_reasons=completion_reasons,
         eos_hit_by_item=item_eos_hit_cpu,
         length_cap_hit_by_item=item_length_cap_hit_cpu,
         swap_events=swap_events,
@@ -1217,7 +1357,14 @@ def static_hotswap_decode_loop(
             "slot_control_write_mode": "batched_index_copy_for_swaps_and_slot_control",
             "overlap_buffer_source": overlap_buffer_source,
             "overlap_buffer_shape": list(async_cpu_tokens.shape) if async_cpu_tokens is not None else None,
+            "sampled_token_copy_strategy": (
+                "npu_async_copy_then_host_sync_before_next_decode"
+                if use_npu_overlap
+                else "synchronous_device_to_host_copy"
+            ),
+            "decode_dependency": "next decode waits for prior sampled-token row so slot swaps are exact",
             "deactivated_slot_state": "eos_token_cache_pos_0_rope_delta_0",
+            "immediate_finished_swaps": "drained_cascading_first_token_eos_or_length_cap_slots",
         },
         phase_timing_s=phase_timing_s,
     )
@@ -1301,6 +1448,7 @@ def validate_outputs(
             "enabled": False,
             "all_required_checks_passed": False,
             "reason": "validation disabled",
+            "scope": "disabled",
         }
     limit = len(decoded) if int(max_items) < 0 else min(len(decoded), int(max_items))
     mismatches = []
@@ -1310,8 +1458,8 @@ def validate_outputs(
         reference = model.generate_ids_static(
             input_ids=source.input_ids.to(device),
             attention_mask=source.attention_mask.to(device),
-            pixel_values=source.pixel_values.to(device),
-            image_grid_thw=source.image_grid_thw.to(device),
+            pixel_values=source.pixel_values.to(device=device, dtype=model.visual.dtype),
+            image_grid_thw=source.image_grid_thw,
             max_new_tokens=int(max_new_tokens),
             cache_length=int(cache_length),
             eos_token_id=int(eos_token_id),
@@ -1342,6 +1490,9 @@ def validate_outputs(
     return {
         "enabled": True,
         "reference": "model.generate_ids_static_trimmed",
+        "scope": "queue_output_vs_same_local_static_model",
+        "is_independent_ocr_quality_check": False,
+        "uses_same_local_model_and_preprocessing": True,
         "validated_items": int(limit),
         "all_required_checks_passed": bool(not mismatches and limit == len(decoded)),
         "mismatch_count": int(len(mismatches)),
@@ -1497,6 +1648,8 @@ def main() -> None:
             cache_root=args.torchair_cache_dir,
             batch_size=int(batch_size),
             cache_length=int(args.cache_length),
+            dtype=dtype,
+            model_dir=model_dir,
         )
         maybe_sync(device)
         compile_wrapper_s_by_batch_size[str(batch_size)] = time.perf_counter() - compile_wrapper_start
@@ -1532,16 +1685,24 @@ def main() -> None:
     }
 
     ready_start = time.perf_counter()
-    ready_items = [
-        build_ready_item(
+    if str(args.decode_schedule) == "hotswap":
+        ready_items, ready_bank = build_ready_bank_incremental(
             model=model,
-            item=item,
+            queue_inputs=queue_inputs,
             cache_length=int(args.cache_length),
             device=device,
         )
-        for item in queue_inputs
-    ]
-    ready_bank = make_ready_bank(ready_items) if str(args.decode_schedule) == "hotswap" else None
+    else:
+        ready_items = [
+            build_ready_item(
+                model=model,
+                item=item,
+                cache_length=int(args.cache_length),
+                device=device,
+            )
+            for item in queue_inputs
+        ]
+        ready_bank = None
     maybe_sync(device)
     ready_bank_build_s = time.perf_counter() - ready_start
 
@@ -1646,6 +1807,8 @@ def main() -> None:
             "stopped_all_items": bool(hotswap_result.stopped_all_items),
             "completed_by_item_count": int(sum(1 for value in hotswap_result.completed_by_item if value)),
             "completion_decode_calls": hotswap_result.completion_decode_calls,
+            "completion_reasons": hotswap_result.completion_reasons,
+            "swap_events": hotswap_result.swap_events,
             "phase_timing_s": hotswap_result.phase_timing_s,
             "external_overlap_buffer_setup_s": float(hotswap_external_overlap_buffer_setup_s),
             "diagnostics": hotswap_result.diagnostics,
@@ -1660,7 +1823,7 @@ def main() -> None:
             "decode_cohort_batch_sizes": decode_cohort_batch_sizes,
         }
     effective_decode_token_calls = sum(max(0, len(item.trimmed_token_ids) - 1) for item in decoded_items)
-    generated_new_tokens = sum(len(item.trimmed_token_ids) for item in decoded_items)
+    generated_tokens_including_prefill_first = sum(len(item.trimmed_token_ids) for item in decoded_items)
     input_build_wall_s = float(input_build_summary.get("input_build_wall_s", 0.0))
     total_excluding_setup_s = input_build_wall_s + ready_bank_build_s + decode_queue_s + decode_output_postprocess_s
     ready_item_timing_summary = aggregate_ready_timings(ready_items)
@@ -1704,6 +1867,11 @@ def main() -> None:
         },
         "linear_weight_format": weight_format_meta,
         "compile": compile_meta,
+        "ready_bank_build_strategy": (
+            "incremental_prefill_into_preallocated_ready_bank"
+            if hotswap_result is not None
+            else "per_item_ready_states_for_fixed_cohorts"
+        ),
         "input_build_summary_s": input_build_summary,
         "ready_item_timing_summary_s": ready_item_timing_summary,
         "pipeline_stage_timing_summary_s": pipeline_stage_timing_summary,
@@ -1718,18 +1886,29 @@ def main() -> None:
             "validation": float(validation.get("elapsed_s", 0.0) or 0.0),
         },
         "throughput": {
-            "items_per_s_excluding_setup": tok_per_s(len(decoded_items), total_excluding_setup_s),
+            "items_per_s_measured_pipeline_excluding_model_compile_load": tok_per_s(len(decoded_items), total_excluding_setup_s),
             "items_per_s_decode_only": tok_per_s(len(decoded_items), decode_queue_s),
             "decode_calls_per_s": tok_per_s(total_decode_calls, decode_queue_s),
             "raw_decode_token_calls_per_s": tok_per_s(raw_decode_token_calls, decode_queue_s),
             "effective_decode_tokens_per_s": tok_per_s(effective_decode_token_calls, decode_queue_s),
-            "generated_new_tokens_per_s_decode_only": tok_per_s(generated_new_tokens, decode_queue_s),
+            "generated_tokens_including_prefill_first_per_s_decode_window": tok_per_s(
+                generated_tokens_including_prefill_first,
+                decode_queue_s,
+            ),
+            "prefill_first_tokens_count": int(len(decoded_items)),
+            "notes": {
+                "measured_pipeline": "CPU input build + instrumented ready build + decode queue + decode output postprocess; excludes model load, weight format setup, compile, and validation.",
+                "ready_build_timing": "Ready-item stages are synchronized around each named substage for attribution, so use stage timings for diagnosis, not as unsynchronized serving throughput.",
+                "effective_decode_tokens": "Counts generated tokens after the prefill first token; this is the clean decode-window token metric.",
+                "generated_tokens_including_prefill_first": "Includes one token per item produced by prefill_argmax, so it is not a pure decode-generated token count.",
+            },
         },
         "decode_summary": {
             "decode_calls": int(total_decode_calls),
             "raw_decode_token_calls": int(raw_decode_token_calls),
             "effective_decode_token_calls": int(effective_decode_token_calls),
-            "generated_new_tokens": int(generated_new_tokens),
+            "generated_tokens_including_prefill_first": int(generated_tokens_including_prefill_first),
+            "prefill_first_tokens": int(len(decoded_items)),
             "decode_schedule": str(args.decode_schedule),
             "decode_cohort_count": int(decode_cohort_count),
             "decode_cohort_batch_sizes": decode_cohort_batch_sizes,
@@ -1743,6 +1922,10 @@ def main() -> None:
         "correctness": {
             **validation,
             "invalid_token_count": int(token_summary["invalid_count"]),
+            "required_checks_scope": "queue_vs_same_local_static_reference_and_token_id_range",
+            "ground_truth_checked": False,
+            "length_cap_hit_count": int(sum(1 for item in decoded_items if item.length_cap_hit)),
+            "length_cap_is_required_failure": False,
             "all_required_checks_passed": bool(
                 validation.get("all_required_checks_passed", False)
                 and int(token_summary["invalid_count"]) == 0
@@ -1781,10 +1964,13 @@ def main() -> None:
         },
         "stage_notes": {
             "input_build_wall": "CPU crop image read/decode, resize/normalize/patchify, and prompt token construction for all selected crops.",
-            "ready_bank_build": "Sequential per-crop device transfer plus vision/projector/text prefill into device static-cache states.",
+            "ready_bank_build": "Sequential per-crop device transfer plus instrumented vision/projector/text prefill into device static-cache states; named substages synchronize for attribution.",
+            "image_grid_thw": "Small shape metadata remains on CPU; pixel/hidden/embedding tensors run on the selected device.",
             "decode_queue": "Text decode over already-prefilled states. Default hotswap schedule reuses one active compiled batch and swaps completed slots from the ready bank; fixed_cohort is an explicit baseline.",
-            "pipeline_stage_timing_summary_s": "Clearer aliases over existing timers: vision_prefill is vision prepare + visual encoder + adaptive MLP; text_prefill is text-side embedding/scatter/mRoPE/static-cache/text prefill/first-token work; text_decode is decode_queue.",
+            "pipeline_stage_timing_summary_s": "Clearer aliases over existing timers: vision_prefill is vision prepare + visual encoder + adaptive MLP; text_prefill is text-side embedding/scatter/CPU mRoPE plus transfer/static-cache/text prefill/first-token work; text_decode is decode_queue.",
             "validation": "Direct local static generation is run after measured phases and is not included in throughput.",
+            "correctness": "Required checks prove queue-vs-same-local-static-reference agreement plus valid token IDs. They are not an independent OCR quality or ground-truth check.",
+            "length_cap": "Length-capped outputs are reported separately and do not fail required queue correctness, because short max_new_tokens values are often deliberate benchmark caps.",
             "cache_length": "Static KV cache is preflighted against input_tokens + max_new_tokens - 1; overflow is a hard error.",
         },
     }

@@ -137,11 +137,14 @@ Experiment 4 hot-swap mode is the first vLLM-style decode scheduler probe. It
 assumes preprocessing and prefill are solved outside the measured decode loop:
 the script prefills all selected crops into an NPU-resident ready bank, then
 keeps only `--batch-size` rows in the active compiled decode cache. When one or
-more active rows finish, the overlap path copies the active next-token vector
-to pinned CPU memory, the host computes per-slot completion from that copied
-token vector, and every finished slot is swapped in one pass. Do not assume
-only one slot can finish at a time; check `swap_events[*].finished_slots` and
-`swapped_in_item_ids`.
+more active rows finish, the token-copy path copies the active next-token
+vector to pinned CPU memory, the host computes per-slot completion from that
+copied token vector, and every finished slot is swapped in one pass. The current
+experiment-5 queue synchronizes that copied token row before the next decode so
+slot replacement is exact; do not describe it as fully hidden under the next
+decode. Do not assume only one slot can finish at a time; check
+`swap_events[*].finished_slots`, `swapped_in_item_ids`, and
+`immediate_finished_slots`.
 
 Hot-swap requires `--eos-mode overlap_event_flags`; `--eos-mode none` is only a
 fixed-step fixed-cohort speed baseline and the script rejects it for hot-swap.
@@ -183,11 +186,13 @@ paste back.
 `05_full_recognizer_optimizations` is derived from the current experiment-4
 local model/compiled-decode baseline, but the experiment-4 hot-swap matrix
 runner is intentionally not copied forward. Experiment 5 moves the optimization
-target from decode scheduling to the full recognition model. Layout detection
-and image preprocessing are still out of scope. The first experiment-5 question
-is stage cost: how expensive are the native-resolution vision transformer,
-adaptive MLP connector, text prefill, LM head, and static decode on the real
-OmniDocBench crops in `crops/`.
+target from decode scheduling to the full recognition model. Layout detection is
+still out of scope. The stage-timing harness focuses on model stages after a
+crop has been selected; the queue benchmark also includes CPU crop image
+read/decode, preprocessing, patchify, and prompt construction. The first
+experiment-5 question is stage cost: how expensive are the native-resolution
+vision transformer, adaptive MLP connector, text prefill, LM head, and static
+decode on the real OmniDocBench crops in `crops/`.
 
 Run the committed NPU stage-timing harness instead of writing ad hoc snippets:
 
@@ -242,6 +247,8 @@ back:
 - `stage_timing_summary_s.vision_total`
 - `stage_timing_summary_s.vision_encoder`
 - `stage_timing_summary_s.adaptive_mlp_projector`
+- `stage_timing_summary_s.mrope_index_cpu`
+- `stage_timing_summary_s.mrope_index_transfer`
 - `stage_timing_summary_s.text_prefill`
 - `stage_timing_summary_s.prefill_lm_head`
 - `stage_timing_summary_s.static_decode_total`
@@ -258,6 +265,9 @@ is the experiment-5 serving-shaped pass where all crops are known up front: CPU
 preprocessing/prompt construction for real crops, sequential device
 vision/projector/text prefill into per-crop static-cache states, then hot-swap
 decode through one active compiled decode batch.
+Pixel/hidden/embedding tensors run on the selected device; the small
+`image_grid_thw` shape metadata intentionally stays on CPU to avoid scalar
+device-to-host syncs inside vision/projector shape loops.
 
 For the data and code flow, read
 `05_full_recognizer_optimizations/QUEUE_BENCHMARK_FLOW.md` before debugging the
@@ -274,8 +284,9 @@ bash run_npu_recognizer_queue_benchmark.sh
 Defaults are `NUM_ITEMS=100`, `ACTIVE_BATCH_SIZE=1`, `DECODE_SCHEDULE=hotswap`,
 `CACHE_LENGTH=1024`, `MAX_NEW_TOKENS=32`, `DECODE_BACKEND=torchair`,
 `EOS_MODE=overlap_event_flags`, manual vision attention, fp16, NPU JIT compile
-off, and validation against direct local static generation for all items. The
-runner writes one JSON under
+off, and queue-vs-same-local-static-model validation for all items. This
+validation is not an independent OCR quality or ground-truth check. The runner
+writes one JSON under
 `outputs/recognizer_queue_benchmark/` and prints:
 
 - `QUEUE_BENCHMARK_SUMMARY`
@@ -302,8 +313,11 @@ CACHE_LENGTH=1536 bash run_npu_recognizer_queue_benchmark.sh
 ```
 
 To test higher hot-swap active batch sizes, use real crops and change only
-`ACTIVE_BATCH_SIZE`. The benchmark remains padding-free. In hot-swap mode it
-rejects `ACTIVE_BATCH_SIZE > NUM_ITEMS` instead of creating fake rows.
+`ACTIVE_BATCH_SIZE`. Hot-swap rejects `ACTIVE_BATCH_SIZE > NUM_ITEMS` instead
+of creating fake initial rows. Once the ready bank is exhausted, inactive tail
+slots are filled with EOS/cache-position-zero sentinels and still occupy the
+static compiled batch until the remaining real rows finish; use effective-token
+metrics for useful work.
 
 Recommended NPU run order:
 
@@ -316,9 +330,13 @@ ACTIVE_BATCH_SIZE=8 CACHE_LENGTH=1536 bash run_npu_recognizer_queue_benchmark.sh
 These commands must print `decode_schedule="hotswap"`,
 `scheduler="hotswap_ready_state_queue"`, and
 `DECODE_QUEUE_DETAILS.diagnostics.slot_control_write_mode="batched_index_copy_for_swaps_and_slot_control"`.
-They must also pass `CORRECTNESS.all_required_checks_passed=true`. Do not write
-inline Python helper scripts to inspect the JSON; the runner prints the fields
-needed for the report.
+They must also print `decode_attention="increfa"`,
+`decode_cache_update="npu_scatter"`, and pass
+`CORRECTNESS.all_required_checks_passed=true`. Also report
+`DECODE_SUMMARY.length_cap_hit_count`; length-capped outputs are allowed for
+short benchmark caps, but they are not full-quality OCR completions. Do not
+write inline Python helper scripts to inspect the JSON; the runner prints the
+fields needed for the report.
 
 For a fixed-cohort baseline only, opt in explicitly:
 
@@ -383,10 +401,12 @@ runner defaults to `MODEL=PaddlePaddle/PaddleOCR-VL-1.6`, sets
 reuse the already-downloaded Hugging Face snapshot.
 
 Paste back the printed `QUEUE_BENCHMARK_SUMMARY`, `CACHE_PREFLIGHT`,
-`PHASE_TIMING_S`, `PIPELINE_STAGE_TIMING_SUMMARY_S`, `THROUGHPUT`,
-`DECODE_SUMMARY`, `CORRECTNESS`, `READY_STAGE_SUMMARY_S`, `ITEM_SUMMARY`,
-`TEXT_SAMPLE`, and `OUTPUT_JSON`. Do not write a separate parser; the runner
-already validates the JSON and exits nonzero if correctness fails.
+`PHASE_TIMING_S`, `PIPELINE_STAGE_TIMING_SUMMARY_S`, `DECODE_QUEUE_DETAILS`,
+`THROUGHPUT`, `DECODE_SUMMARY`, `CORRECTNESS`, `READY_STAGE_SUMMARY_S`,
+`ITEM_SUMMARY`, `TEXT_SAMPLE`, and `OUTPUT_JSON`. Do not write a separate
+parser; the runner already validates the JSON and exits nonzero if correctness
+fails. `READY_STAGE_SUMMARY_S` must include `mrope_index_cpu` and
+`mrope_index_transfer` when using the current experiment-5 runners.
 
 For native-resolution vision encoder profiling, use the committed profiler
 runner. It profiles only `vision_model.encoder`; crop preprocessing, device

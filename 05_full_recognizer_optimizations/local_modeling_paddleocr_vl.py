@@ -860,8 +860,16 @@ class PaddleOCRVisionAttention(nn.Module):
         query_states = query_states.transpose(0, 1).unsqueeze(0)
         key_states = key_states.transpose(0, 1).unsqueeze(0)
         value_states = value_states.transpose(0, 1).unsqueeze(0)
-        lengths = (cu_seqlens[1:] - cu_seqlens[:-1]).tolist()
-        q_splits, k_splits, v_splits = [torch.split(tensor, lengths, dim=2) for tensor in (query_states, key_states, value_states)]
+        if int(cu_seqlens.numel()) == 2:
+            q_splits = (query_states,)
+            k_splits = (key_states,)
+            v_splits = (value_states,)
+        else:
+            lengths = (cu_seqlens[1:] - cu_seqlens[:-1]).detach().cpu().tolist()
+            q_splits, k_splits, v_splits = [
+                torch.split(tensor, lengths, dim=2)
+                for tensor in (query_states, key_states, value_states)
+            ]
         outputs = []
         attention_impl = get_vision_attention_impl()
         for q, k, v in zip(q_splits, k_splits, v_splits):
@@ -932,7 +940,7 @@ class PaddleOCRVisionEncoder(nn.Module):
             split_hids.append(image_pids // int(w))
             split_wids.append(image_pids % int(w))
         pids = torch.stack([torch.cat(split_hids), torch.cat(split_wids)], dim=-1)
-        max_grid_size = pids.max() + 1
+        max_grid_size = max(max(int(h), int(w)) for _, h, w in image_grid_thw)
         rotary_max = self.rotary_pos_emb(max_grid_size)
         rotary_embeddings = rotary_max[pids].flatten(1).repeat(1, 2)
         position_embeddings = (rotary_embeddings.cos(), rotary_embeddings.sin())

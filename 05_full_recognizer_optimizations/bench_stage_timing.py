@@ -295,8 +295,8 @@ def run_item_stage_timing(
         lambda: (
             item.input_ids.to(device),
             item.attention_mask.to(device),
-            item.pixel_values.to(device),
-            item.image_grid_thw.to(device),
+            item.pixel_values.to(device=device, dtype=model.visual.dtype),
+            item.image_grid_thw,
         ),
     )
     input_ids, attention_mask, pixel_values, image_grid_thw = moved
@@ -304,7 +304,7 @@ def run_item_stage_timing(
     vision_inputs = timer.measure(
         "vision_prepare",
         lambda: {
-            "pixel_values": pixel_values.type(model.visual.dtype).unsqueeze(0),
+            "pixel_values": pixel_values.unsqueeze(0),
             "cu_seqlens": F.pad(
                 torch.repeat_interleave(
                     image_grid_thw[:, 1] * image_grid_thw[:, 2],
@@ -345,9 +345,16 @@ def run_item_stage_timing(
         return inputs_embeds.masked_scatter(image_mask, projected)
 
     inputs_embeds = timer.measure("image_embed_scatter", scatter_image_embeds)
+    position_ids_cpu, rope_deltas_cpu = timer.measure(
+        "mrope_index_cpu",
+        lambda: model.get_rope_index(item.input_ids, item.image_grid_thw, item.attention_mask),
+    )
     position_ids, rope_deltas = timer.measure(
-        "mrope_index",
-        lambda: model.get_rope_index(input_ids, image_grid_thw, attention_mask),
+        "mrope_index_transfer",
+        lambda: (
+            position_ids_cpu.to(device),
+            rope_deltas_cpu.to(device),
+        ),
     )
     cache = timer.measure(
         "static_cache_alloc",
@@ -412,7 +419,8 @@ def run_item_stage_timing(
         + timer.timings["adaptive_mlp_projector"]
         + timer.timings["text_token_embedding"]
         + timer.timings["image_embed_scatter"]
-        + timer.timings["mrope_index"]
+        + timer.timings["mrope_index_cpu"]
+        + timer.timings["mrope_index_transfer"]
         + timer.timings["static_cache_alloc"]
         + timer.timings["text_prefill"]
         + timer.timings["prefill_lm_head"]
@@ -538,6 +546,8 @@ def main() -> None:
         cache_root=args.torchair_cache_dir,
         batch_size=1,
         cache_length=int(cache_length),
+        dtype=dtype,
+        model_dir=model_dir,
     )
     maybe_sync(device)
     compile_wrapper_s = time.perf_counter() - compile_start
@@ -561,6 +571,7 @@ def main() -> None:
 
     warmup_items: list[dict[str, Any]] = []
     stage_warmup_s = 0.0
+    warmup_count = 0
     if int(args.warmup_items) < 0:
         raise ValueError(f"--warmup-items must be non-negative, got {args.warmup_items}")
     if int(args.warmup_items) > 0:
@@ -582,6 +593,13 @@ def main() -> None:
         maybe_sync(device)
         stage_warmup_s = time.perf_counter() - warmup_start
 
+    measured_cohort = cohort[warmup_count:]
+    if not measured_cohort:
+        raise ValueError(
+            f"--warmup-items {args.warmup_items} leaves no measured items from selected cohort of {len(cohort)}; "
+            "reduce WARMUP_ITEMS or increase NUM_ITEMS"
+        )
+
     items = [
         run_item_stage_timing(
             model=model,
@@ -592,7 +610,7 @@ def main() -> None:
             device=device,
             trace_decode_steps=bool(args.decode_step_timing),
         )
-        for item in cohort
+        for item in measured_cohort
     ]
 
     timing_summary = aggregate_item_timings(items)
@@ -627,15 +645,22 @@ def main() -> None:
         "decode_cache_update": DECODE_CACHE_UPDATE if device.type == "npu" else "per_row_copy",
         "linear_weight_format": weight_format_meta,
         "compile": compile_meta,
+        "selected_items": int(len(cohort)),
         "num_items": int(len(items)),
         "max_new_tokens": int(args.max_new_tokens),
         "cache_length": int(cache_length),
         "warmup_items": int(len(warmup_items)),
+        "measured_items": int(len(items)),
         "decode_step_timing": bool(args.decode_step_timing),
         "prompt_tokens": {
             "min": int(min(prompt_tokens)),
             "max": int(max(prompt_tokens)),
             "per_item": prompt_tokens,
+        },
+        "measured_prompt_tokens": {
+            "min": int(min(int(item.input_ids.shape[1]) for item in measured_cohort)),
+            "max": int(max(int(item.input_ids.shape[1]) for item in measured_cohort)),
+            "per_item": [int(item.input_ids.shape[1]) for item in measured_cohort],
         },
         "setup_timing_s": {
             "model_load": float(model_load_s),
