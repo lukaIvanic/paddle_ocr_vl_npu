@@ -100,6 +100,16 @@ class ReadyBank:
 
 
 @dataclass
+class PackedVisionBatch:
+    image_embeds_by_item: list[torch.Tensor]
+    vision_tokens_by_item: list[int]
+    projected_image_tokens_by_item: list[int]
+    timing_by_item_s: list[dict[str, float]]
+    batch_timing_s: dict[str, float]
+    batch_summary: dict[str, Any]
+
+
+@dataclass
 class DecodedDeviceItem:
     item: ReadyItem
     token_tensors: list[torch.Tensor]
@@ -297,8 +307,82 @@ def aggregate_ready_timings(items: list[ReadyItem]) -> dict[str, Any]:
     return aggregate_timing_dicts([item.timing_s for item in items])
 
 
+def aggregate_packed_vision_batch_timings(build_details: dict[str, Any]) -> dict[str, Any]:
+    rows = []
+    for batch in build_details.get("packed_vision_batches", []) or []:
+        timing = dict(batch.get("timing_s", {}) or {})
+        timing["wall_s"] = float(batch.get("wall_s", 0.0) or 0.0)
+        rows.append(timing)
+    return aggregate_timing_dicts(rows) if rows else {}
+
+
 def sum_timing(item: ReadyItem, keys: list[str]) -> float:
     return float(sum(float(item.timing_s.get(key, 0.0) or 0.0) for key in keys))
+
+
+def build_vision_cu_seqlens(image_grid_thw: torch.Tensor) -> torch.Tensor:
+    return F.pad(
+        torch.repeat_interleave(
+            image_grid_thw[:, 1] * image_grid_thw[:, 2],
+            image_grid_thw[:, 0],
+        ).cumsum(dim=0, dtype=torch.int32),
+        (1, 0),
+        value=0,
+    )
+
+
+def projected_token_count(image_grid: torch.Tensor, merge_size: int) -> int:
+    t, h, w = [int(value.item()) for value in image_grid]
+    return int(t * (h // int(merge_size)) * (w // int(merge_size)))
+
+
+def device_matches(actual: torch.device, expected: torch.device) -> bool:
+    actual = torch.device(actual)
+    expected = torch.device(expected)
+    if actual.type != expected.type:
+        return False
+    if expected.index is not None and actual.index != expected.index:
+        return False
+    return True
+
+
+def count_buckets(values: list[int]) -> list[dict[str, int]]:
+    counts: dict[int, int] = {}
+    for value in values:
+        counts[int(value)] = counts.get(int(value), 0) + 1
+    return [
+        {"value": int(value), "count": int(count)}
+        for value, count in sorted(counts.items(), key=lambda item: (-item[1], item[0]))
+    ]
+
+
+def vision_token_bucket_summary(items: list[ReadyItem]) -> dict[str, Any]:
+    vision_tokens = [int(item.vision_tokens) for item in items]
+    projected_tokens = [int(item.projected_image_tokens) for item in items]
+    grids = [
+        tuple(int(value) for value in item.input_item.image_grid_thw.reshape(-1).tolist())
+        for item in items
+    ]
+    grid_counts: dict[tuple[int, ...], int] = {}
+    for grid in grids:
+        grid_counts[grid] = grid_counts.get(grid, 0) + 1
+    return {
+        "vision_tokens": {
+            "unique_count": int(len(set(vision_tokens))),
+            "top_buckets": count_buckets(vision_tokens)[:16],
+        },
+        "projected_image_tokens": {
+            "unique_count": int(len(set(projected_tokens))),
+            "top_buckets": count_buckets(projected_tokens)[:16],
+        },
+        "image_grid_thw": {
+            "unique_count": int(len(grid_counts)),
+            "top_buckets": [
+                {"grid": [int(value) for value in grid], "count": int(count)}
+                for grid, count in sorted(grid_counts.items(), key=lambda item: (-item[1], item[0]))[:16]
+            ],
+        },
+    }
 
 
 def aggregate_pipeline_stage_timings(
@@ -354,6 +438,43 @@ def aggregate_pipeline_stage_timings(
     return summary
 
 
+def prefill_measurement_summary(
+    *,
+    ready_items: list[ReadyItem],
+    ready_bank_build_details: dict[str, Any],
+) -> dict[str, Any]:
+    vision_keys = [
+        "vision_prepare",
+        "native_resolution_visual_encoder_total",
+        "adaptive_mlp_projector",
+    ]
+    text_prefill_keys = [
+        "text_token_embedding",
+        "image_embed_scatter",
+        "mrope_index_cpu",
+        "mrope_index_transfer",
+        "static_cache_alloc",
+        "text_prefill",
+        "prefill_lm_head",
+        "prefill_argmax",
+    ]
+    vision_attributed_s = float(sum(sum_timing(item, vision_keys) for item in ready_items))
+    text_attributed_s = float(sum(sum_timing(item, text_prefill_keys) for item in ready_items))
+    packed_vision_s = float(ready_bank_build_details.get("packed_vision_total_s", 0.0) or 0.0)
+    return {
+        "vision_prefill_core_s": float(vision_attributed_s),
+        "vision_prefill_core_source": "sum_of_synchronized_vision_prepare_encoder_projector_timers",
+        "packed_vision_outer_wall_s": float(packed_vision_s),
+        "packed_vision_outer_wall_source": (
+            "sum_of_outer_wall_time_around_packed_vision_batches_including_device_transfer_and_python_overhead"
+        ),
+        "text_prefill_attributed_s": float(text_attributed_s),
+        "total_vision_tokens": int(sum(int(item.vision_tokens) for item in ready_items)),
+        "total_projected_image_tokens": int(sum(int(item.projected_image_tokens) for item in ready_items)),
+        "total_input_tokens": int(sum(int(item.input_item.input_ids.shape[1]) for item in ready_items)),
+    }
+
+
 def prompt_token_summary(inputs: list[QueueInput], *, max_new_tokens: int, cache_length: int) -> dict[str, Any]:
     prompt_lengths = [int(item.input_ids.shape[1]) for item in inputs]
     required = [length + max(0, int(max_new_tokens) - 1) for length in prompt_lengths]
@@ -387,38 +508,28 @@ def prompt_token_summary(inputs: list[QueueInput], *, max_new_tokens: int, cache
 
 
 @torch.inference_mode()
-def build_ready_item(
+def build_packed_vision_batch(
     *,
     model: LocalPaddleOCRVLForConditionalGeneration,
-    item: QueueInput,
-    cache_length: int,
+    items: list[QueueInput],
     device: torch.device,
-    cache: LocalPaddleOCRVLStaticCache | None = None,
-) -> ReadyItem:
+) -> PackedVisionBatch:
+    if not items:
+        raise ValueError("packed vision batch requires at least one item")
+
     timer = PhaseTimer(device)
-    moved = timer.measure(
-        "device_transfer",
+    pixel_values, image_grid_thw = timer.measure(
+        "packed_vision_device_transfer",
         lambda: (
-            item.input_ids.to(device),
-            item.attention_mask.to(device),
-            item.pixel_values.to(device=device, dtype=model.visual.dtype),
-            item.image_grid_thw,
+            torch.cat([item.pixel_values for item in items], dim=0).to(device=device, dtype=model.visual.dtype),
+            torch.cat([item.image_grid_thw for item in items], dim=0),
         ),
     )
-    input_ids, attention_mask, pixel_values, image_grid_thw = moved
-
     vision_inputs = timer.measure(
         "vision_prepare",
         lambda: {
             "pixel_values": pixel_values.unsqueeze(0),
-            "cu_seqlens": F.pad(
-                torch.repeat_interleave(
-                    image_grid_thw[:, 1] * image_grid_thw[:, 2],
-                    image_grid_thw[:, 0],
-                ).cumsum(dim=0, dtype=torch.int32),
-                (1, 0),
-                value=0,
-            ),
+            "cu_seqlens": build_vision_cu_seqlens(image_grid_thw),
         },
     )
     vision_model = model.visual.vision_model
@@ -436,6 +547,124 @@ def build_ready_item(
     )
     image_features = timer.measure("vision_post_layernorm", lambda: vision_model.post_layernorm(vision_hidden))
     image_embeds = timer.measure("adaptive_mlp_projector", lambda: model.mlp_AR(image_features, image_grid_thw))
+
+    merge_size = int(model.config.vision_config.spatial_merge_size)
+    vision_lengths = [int(image_grid.prod().item()) for image_grid in image_grid_thw]
+    projected_lengths = [projected_token_count(image_grid, merge_size) for image_grid in image_grid_thw]
+    if int(sum(vision_lengths)) != int(image_features.shape[0]):
+        raise ValueError(f"packed vision split mismatch: lengths={sum(vision_lengths)} features={image_features.shape[0]}")
+    if int(sum(projected_lengths)) != int(image_embeds.shape[0]):
+        raise ValueError(f"packed projector split mismatch: lengths={sum(projected_lengths)} embeds={image_embeds.shape[0]}")
+
+    total_vision_tokens = max(1, int(sum(vision_lengths)))
+    image_embed_chunks = list(image_embeds.split(projected_lengths, dim=0))
+    timing_by_item: list[dict[str, float]] = []
+    for vision_tokens in vision_lengths:
+        share = float(vision_tokens) / float(total_vision_tokens)
+        row = {
+            "device_transfer": float(timer.timings.get("packed_vision_device_transfer", 0.0) or 0.0) * share,
+            "vision_prepare": float(timer.timings.get("vision_prepare", 0.0) or 0.0) * share,
+            "vision_embeddings": float(timer.timings.get("vision_embeddings", 0.0) or 0.0) * share,
+            "vision_encoder": float(timer.timings.get("vision_encoder", 0.0) or 0.0) * share,
+            "vision_post_layernorm": float(timer.timings.get("vision_post_layernorm", 0.0) or 0.0) * share,
+            "adaptive_mlp_projector": float(timer.timings.get("adaptive_mlp_projector", 0.0) or 0.0) * share,
+        }
+        timing_by_item.append(row)
+
+    batch_timing = {key: float(value) for key, value in timer.timings.items()}
+    return PackedVisionBatch(
+        image_embeds_by_item=image_embed_chunks,
+        vision_tokens_by_item=vision_lengths,
+        projected_image_tokens_by_item=projected_lengths,
+        timing_by_item_s=timing_by_item,
+        batch_timing_s=batch_timing,
+        batch_summary={
+            "batch_size": int(len(items)),
+            "total_vision_tokens": int(sum(vision_lengths)),
+            "total_projected_image_tokens": int(sum(projected_lengths)),
+            "vision_token_lengths": vision_lengths,
+            "projected_image_token_lengths": projected_lengths,
+            "image_grid_thw": [[int(value) for value in grid.tolist()] for grid in image_grid_thw],
+            "crop_ids": [str(item.entry.get("id")) for item in items],
+            "timing_s": batch_timing,
+        },
+    )
+
+
+@torch.inference_mode()
+def build_ready_item(
+    *,
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    item: QueueInput,
+    cache_length: int,
+    device: torch.device,
+    cache: LocalPaddleOCRVLStaticCache | None = None,
+    precomputed_image_embeds: torch.Tensor | None = None,
+    precomputed_vision_tokens: int | None = None,
+    precomputed_projected_image_tokens: int | None = None,
+    precomputed_vision_timing_s: dict[str, float] | None = None,
+) -> ReadyItem:
+    timer = PhaseTimer(device)
+    if precomputed_image_embeds is None:
+        moved = timer.measure(
+            "device_transfer",
+            lambda: (
+                item.input_ids.to(device),
+                item.attention_mask.to(device),
+                item.pixel_values.to(device=device, dtype=model.visual.dtype),
+                item.image_grid_thw,
+            ),
+        )
+        input_ids, attention_mask, pixel_values, image_grid_thw = moved
+
+        vision_inputs = timer.measure(
+            "vision_prepare",
+            lambda: {
+                "pixel_values": pixel_values.unsqueeze(0),
+                "cu_seqlens": build_vision_cu_seqlens(image_grid_thw),
+            },
+        )
+        vision_model = model.visual.vision_model
+        vision_hidden = timer.measure(
+            "vision_embeddings",
+            lambda: vision_model.embeddings(vision_inputs["pixel_values"], image_grid_thw=image_grid_thw),
+        )
+        vision_hidden = timer.measure(
+            "vision_encoder",
+            lambda: vision_model.encoder(
+                vision_hidden,
+                cu_seqlens=vision_inputs["cu_seqlens"],
+                image_grid_thw=image_grid_thw,
+            ),
+        )
+        image_features = timer.measure("vision_post_layernorm", lambda: vision_model.post_layernorm(vision_hidden))
+        image_embeds = timer.measure("adaptive_mlp_projector", lambda: model.mlp_AR(image_features, image_grid_thw))
+        vision_tokens = int(image_features.shape[0])
+        projected_image_tokens = int(image_embeds.shape[0])
+    else:
+        if precomputed_vision_tokens is None or precomputed_projected_image_tokens is None:
+            raise ValueError("precomputed vision path requires token counts")
+        moved = timer.measure(
+            "device_transfer",
+            lambda: (
+                item.input_ids.to(device),
+                item.attention_mask.to(device),
+                item.image_grid_thw,
+            ),
+        )
+        input_ids, attention_mask, image_grid_thw = moved
+        image_embeds = precomputed_image_embeds
+        if not device_matches(image_embeds.device, device):
+            raise ValueError(f"precomputed image embeds are on {image_embeds.device}, expected {device}")
+        if int(image_embeds.shape[0]) != int(precomputed_projected_image_tokens):
+            raise ValueError(
+                "precomputed image embed count mismatch: "
+                f"tensor={int(image_embeds.shape[0])} expected={int(precomputed_projected_image_tokens)}"
+            )
+        for key, value in (precomputed_vision_timing_s or {}).items():
+            timer.timings[key] = timer.timings.get(key, 0.0) + float(value)
+        vision_tokens = int(precomputed_vision_tokens)
+        projected_image_tokens = int(precomputed_projected_image_tokens)
 
     inputs_embeds = timer.measure("text_token_embedding", lambda: model.model.embed_tokens(input_ids))
 
@@ -527,8 +756,8 @@ def build_ready_item(
         next_cache_position=next_cache_position,
         next_token=next_token,
         timing_s=timings,
-        vision_tokens=int(image_features.shape[0]),
-        projected_image_tokens=int(image_embeds.shape[0]),
+        vision_tokens=int(vision_tokens),
+        projected_image_tokens=int(projected_image_tokens),
     )
 
 
@@ -647,9 +876,12 @@ def build_ready_bank_incremental(
     queue_inputs: list[QueueInput],
     cache_length: int,
     device: torch.device,
-) -> tuple[list[ReadyItem], ReadyBank, dict[str, float]]:
+    vision_prefill_batch_size: int = 1,
+) -> tuple[list[ReadyItem], ReadyBank, dict[str, Any]]:
     if not queue_inputs:
         raise ValueError("ready bank requires at least one input")
+    if int(vision_prefill_batch_size) <= 0:
+        raise ValueError(f"vision_prefill_batch_size must be positive, got {vision_prefill_batch_size}")
     ready_items: list[ReadyItem] = []
     maybe_sync(device)
     prealloc_start = time.perf_counter()
@@ -663,23 +895,82 @@ def build_ready_bank_incremental(
     maybe_sync(device)
     build_details = {
         "ready_bank_prealloc_s": float(time.perf_counter() - prealloc_start),
+        "vision_prefill_batch_size": int(vision_prefill_batch_size),
+        "vision_prefill_strategy": (
+            "packed_varlen_cu_seqlens"
+            if int(vision_prefill_batch_size) > 1
+            else "per_item_single_crop"
+        ),
+        "packed_vision_batch_count": 0,
+        "packed_vision_multi_crop_batch_count": 0,
+        "packed_vision_total_s": 0.0,
+        "packed_vision_batches": [],
+        "actual_vision_prefill_batch_sizes": [],
+        "vision_prefill_batching_mode": (
+            "ragged_cu_seqlens_no_padding"
+            if int(vision_prefill_batch_size) > 1
+            else "single_crop_no_padding"
+        ),
+        "prefill_grouping_policy": "manifest_order_chunks",
+        "vision_prefill_attention_execution": "attention_splits_by_cu_seqlens_segments_currently_per_crop_loop",
+        "packed_vision_adds_image_padding": False,
+        "packed_vision_adds_fake_crops": False,
     }
-    for item_idx, queue_input in enumerate(queue_inputs):
-        row_cache = LocalPaddleOCRVLStaticCache(
-            tuple(cache[item_idx : item_idx + 1] for cache in ready_bank.cache.key_caches),
-            tuple(cache[item_idx : item_idx + 1] for cache in ready_bank.cache.value_caches),
-            int(ready_bank.cache.cache_length),
-        )
-        ready_item = build_ready_item(
-            model=model,
-            item=queue_input,
-            cache_length=int(cache_length),
-            device=device,
-            cache=row_cache,
-        )
-        copy_ready_item_metadata_to_bank_(ready_bank, ready_item, item_idx)
-        ready_bank.items.append(ready_item)
-        ready_items.append(ready_item)
+    chunk_size = int(vision_prefill_batch_size)
+    for chunk_start in range(0, len(queue_inputs), chunk_size):
+        chunk = queue_inputs[chunk_start : chunk_start + chunk_size]
+        build_details["actual_vision_prefill_batch_sizes"].append(int(len(chunk)))
+        packed_vision: PackedVisionBatch | None = None
+        if int(vision_prefill_batch_size) > 1:
+            batch_idx = int(build_details["packed_vision_batch_count"])
+            packed_started = time.perf_counter()
+            packed_vision = build_packed_vision_batch(model=model, items=chunk, device=device)
+            maybe_sync(device)
+            packed_wall = float(time.perf_counter() - packed_started)
+            build_details["packed_vision_batch_count"] = int(build_details["packed_vision_batch_count"]) + 1
+            if len(chunk) > 1:
+                build_details["packed_vision_multi_crop_batch_count"] = (
+                    int(build_details["packed_vision_multi_crop_batch_count"]) + 1
+                )
+            build_details["packed_vision_total_s"] = float(build_details["packed_vision_total_s"]) + packed_wall
+            packed_summary = dict(packed_vision.batch_summary)
+            packed_summary["batch_idx"] = batch_idx
+            packed_summary["item_indices"] = list(range(int(chunk_start), int(chunk_start + len(chunk))))
+            packed_summary["input_tokens"] = int(sum(int(item.input_ids.shape[1]) for item in chunk))
+            packed_summary["max_input_tokens"] = int(max(int(item.input_ids.shape[1]) for item in chunk))
+            packed_summary["wall_s"] = packed_wall
+            packed_summary["timing_s"] = dict(packed_summary.get("timing_s", {}) or {})
+            packed_summary["timing_s"]["vision_prefill_wall"] = packed_wall
+            build_details["packed_vision_batches"].append(packed_summary)
+        for local_idx, queue_input in enumerate(chunk):
+            item_idx = int(chunk_start + local_idx)
+            row_cache = LocalPaddleOCRVLStaticCache(
+                tuple(cache[item_idx : item_idx + 1] for cache in ready_bank.cache.key_caches),
+                tuple(cache[item_idx : item_idx + 1] for cache in ready_bank.cache.value_caches),
+                int(ready_bank.cache.cache_length),
+            )
+            ready_item = build_ready_item(
+                model=model,
+                item=queue_input,
+                cache_length=int(cache_length),
+                device=device,
+                cache=row_cache,
+                precomputed_image_embeds=(
+                    None if packed_vision is None else packed_vision.image_embeds_by_item[local_idx]
+                ),
+                precomputed_vision_tokens=(
+                    None if packed_vision is None else packed_vision.vision_tokens_by_item[local_idx]
+                ),
+                precomputed_projected_image_tokens=(
+                    None if packed_vision is None else packed_vision.projected_image_tokens_by_item[local_idx]
+                ),
+                precomputed_vision_timing_s=(
+                    None if packed_vision is None else packed_vision.timing_by_item_s[local_idx]
+                ),
+            )
+            copy_ready_item_metadata_to_bank_(ready_bank, ready_item, item_idx)
+            ready_bank.items.append(ready_item)
+            ready_items.append(ready_item)
     return ready_items, ready_bank, build_details
 
 
@@ -1533,6 +1824,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-new-tokens", type=int, default=256)
     parser.add_argument("--cache-length", type=int, default=1536)
     parser.add_argument("--active-batch-size", type=int, default=1)
+    parser.add_argument(
+        "--vision-prefill-batch-size",
+        type=int,
+        default=1,
+        help=(
+            "Pack this many already-preprocessed crops into one variable-length vision/projector pass "
+            "before per-item text prefill. The packed path concatenates patch tokens and preserves each "
+            "crop's image_grid_thw/cu_seqlens boundaries; it does not resize to a shared bucket or add fake rows."
+        ),
+    )
     parser.add_argument("--decode-schedule", default="hotswap", choices=DECODE_SCHEDULE_CHOICES)
     parser.add_argument("--device", default="npu:0")
     parser.add_argument("--dtype", default="fp16", choices=["fp16", "float16", "bf16", "bfloat16"])
@@ -1561,6 +1862,10 @@ def main() -> None:
         raise ValueError(f"--cache-length must be positive, got {args.cache_length}")
     if int(args.active_batch_size) <= 0:
         raise ValueError(f"--active-batch-size must be positive, got {args.active_batch_size}")
+    if int(args.vision_prefill_batch_size) <= 0:
+        raise ValueError(f"--vision-prefill-batch-size must be positive, got {args.vision_prefill_batch_size}")
+    if str(args.decode_schedule) != "hotswap" and int(args.vision_prefill_batch_size) > 1:
+        raise ValueError("--vision-prefill-batch-size > 1 is currently implemented for hot-swap ready-bank builds only")
     if str(args.decode_schedule) == "hotswap" and str(args.eos_mode) != "overlap_event_flags":
         raise ValueError("--decode-schedule hotswap requires --eos-mode overlap_event_flags")
 
@@ -1675,13 +1980,14 @@ def main() -> None:
     }
 
     ready_start = time.perf_counter()
-    ready_bank_build_details: dict[str, float] = {}
+    ready_bank_build_details: dict[str, Any] = {}
     if str(args.decode_schedule) == "hotswap":
         ready_items, ready_bank, ready_bank_build_details = build_ready_bank_incremental(
             model=model,
             queue_inputs=queue_inputs,
             cache_length=int(args.cache_length),
             device=device,
+            vision_prefill_batch_size=int(args.vision_prefill_batch_size),
         )
     else:
         ready_items = [
@@ -1818,6 +2124,20 @@ def main() -> None:
     input_build_wall_s = float(input_build_summary.get("input_build_wall_s", 0.0))
     total_excluding_setup_s = input_build_wall_s + ready_bank_build_s + decode_queue_s + decode_output_postprocess_s
     ready_item_timing_summary = aggregate_ready_timings(ready_items)
+    prefill_summary = prefill_measurement_summary(
+        ready_items=ready_items,
+        ready_bank_build_details=ready_bank_build_details,
+    )
+    packed_vision_batch_timing_summary = aggregate_packed_vision_batch_timings(ready_bank_build_details)
+    vision_bucket_summary = vision_token_bucket_summary(ready_items)
+    packed_strategy = str(ready_bank_build_details.get("vision_prefill_strategy", "per_item_single_crop"))
+    has_cross_crop_vision_batches = int(ready_bank_build_details.get("packed_vision_multi_crop_batch_count", 0) or 0) > 0
+    if has_cross_crop_vision_batches:
+        prefill_schedule = "batched_vision_prefill"
+    elif packed_strategy == "packed_varlen_cu_seqlens":
+        prefill_schedule = "packed_singleton_vision_prefill"
+    else:
+        prefill_schedule = "sequential_per_item"
     pipeline_stage_timing_summary = aggregate_pipeline_stage_timings(
         inputs=queue_inputs,
         ready_items=ready_items,
@@ -1842,6 +2162,39 @@ def main() -> None:
         "vision_attention": get_vision_attention_impl(),
         "vision_prompt_fa_layout": get_vision_prompt_fa_layout(),
         "active_batch_size": int(args.active_batch_size),
+        "vision_prefill_batch_size": int(args.vision_prefill_batch_size),
+        "actual_vision_prefill_batch_sizes": [
+            int(value)
+            for value in ready_bank_build_details.get(
+                "actual_vision_prefill_batch_sizes",
+                [1 for _ in ready_items],
+            )
+        ],
+        "vision_prefill_strategy": str(
+            ready_bank_build_details.get(
+                "vision_prefill_strategy",
+                "per_item_single_crop",
+            )
+        ),
+        "vision_prefill_batching_mode": str(
+            ready_bank_build_details.get(
+                "vision_prefill_batching_mode",
+                "single_crop_no_padding",
+            )
+        ),
+        "prefill_schedule": (
+            prefill_schedule
+        ),
+        "has_cross_crop_vision_batches": bool(has_cross_crop_vision_batches),
+        "prefill_grouping_policy": str(
+            ready_bank_build_details.get("prefill_grouping_policy", "manifest_order_chunks")
+        ),
+        "vision_prefill_attention_execution": str(
+            ready_bank_build_details.get(
+                "vision_prefill_attention_execution",
+                "single_crop_attention",
+            )
+        ),
         "decode_schedule": str(args.decode_schedule),
         "actual_decode_batch_sizes": [int(value) for value in actual_decode_batch_sizes],
         "decode_cohort_count": int(decode_cohort_count),
@@ -1871,6 +2224,21 @@ def main() -> None:
             else "prefill_writes_transient_item_cache_then_fixed_cohort_concat"
         ),
         "ready_bank_build_details": ready_bank_build_details,
+        "prefill_measurement_summary_s": prefill_summary,
+        "packed_vision_batch_timing_summary_s": packed_vision_batch_timing_summary,
+        "vision_shape_bucket_summary": vision_bucket_summary,
+        "ready_item_timing_attribution": {
+            "vision_timing": (
+                "packed_batch_timers_prorated_by_per_item_vision_tokens"
+                if str(ready_bank_build_details.get("vision_prefill_strategy")) == "packed_varlen_cu_seqlens"
+                else "measured_per_single_crop"
+            ),
+            "text_timing": "measured_per_single_crop",
+            "warning": (
+                "In packed vision mode, ready_item_timing_summary_s vision p50/p90 are attribution artifacts; "
+                "use packed_vision_batch_timing_summary_s and prefill_measurement_summary_s for packed-batch timing."
+            ),
+        },
         "input_build_summary_s": input_build_summary,
         "ready_item_timing_summary_s": ready_item_timing_summary,
         "pipeline_stage_timing_summary_s": pipeline_stage_timing_summary,
@@ -1886,6 +2254,31 @@ def main() -> None:
         },
         "throughput": {
             "items_per_s_measured_pipeline_excluding_model_compile_load": tok_per_s(len(decoded_items), total_excluding_setup_s),
+            "ready_build_items_per_s": tok_per_s(len(decoded_items), ready_bank_build_s),
+            "vision_prefill_core_items_per_s": tok_per_s(
+                len(decoded_items),
+                float(prefill_summary.get("vision_prefill_core_s", 0.0) or 0.0),
+            ),
+            "vision_core_tokens_per_s": tok_per_s(
+                int(prefill_summary.get("total_vision_tokens", 0) or 0),
+                float(prefill_summary.get("vision_prefill_core_s", 0.0) or 0.0),
+            ),
+            "projected_image_core_tokens_per_s": tok_per_s(
+                int(prefill_summary.get("total_projected_image_tokens", 0) or 0),
+                float(prefill_summary.get("vision_prefill_core_s", 0.0) or 0.0),
+            ),
+            "packed_vision_outer_wall_items_per_s": tok_per_s(
+                len(decoded_items),
+                float(prefill_summary.get("packed_vision_outer_wall_s", 0.0) or 0.0),
+            ),
+            "packed_vision_outer_wall_tokens_per_s": tok_per_s(
+                int(prefill_summary.get("total_vision_tokens", 0) or 0),
+                float(prefill_summary.get("packed_vision_outer_wall_s", 0.0) or 0.0),
+            ),
+            "text_prefill_input_tokens_per_s": tok_per_s(
+                int(prefill_summary.get("total_input_tokens", 0) or 0),
+                float(prefill_summary.get("text_prefill_attributed_s", 0.0) or 0.0),
+            ),
             "items_per_s_decode_only": tok_per_s(len(decoded_items), decode_queue_s),
             "decode_calls_per_s": tok_per_s(total_decode_calls, decode_queue_s),
             "raw_decode_token_calls_per_s": tok_per_s(raw_decode_token_calls, decode_queue_s),
@@ -1894,6 +2287,9 @@ def main() -> None:
             "notes": {
                 "measured_pipeline": "CPU input build + instrumented ready build + decode queue + decode output postprocess; excludes model load, weight format setup, compile, and validation.",
                 "ready_build_timing": "Ready-item stages are synchronized around each named substage for attribution, so use stage timings for diagnosis, not as unsynchronized serving throughput.",
+                "vision_prefill_core_items_per_s": "Uses the same core synchronized stage-timer denominator for packed and single-crop runs: vision_prepare + visual encoder + adaptive projector.",
+                "packed_vision_outer_wall_items_per_s": "Packed-mode-only outer wall denominator around each packed vision batch; includes packed device transfer and Python overhead.",
+                "text_prefill_input_tokens_per_s": "Uses attributed text-prefill substage time because text prefill is still intentionally per crop.",
                 "effective_decode_tokens": "Counts generated tokens after the prefill first token; this is the clean decode-window token metric.",
                 "generated_tokens_including_prefill_first": "Raw count is reported in decode_summary only; it includes one token per item produced by prefill_argmax and is not a decode-window throughput metric.",
             },
@@ -1961,9 +2357,10 @@ def main() -> None:
         "stage_notes": {
             "benchmark_scope": "Recognizer-crop queue benchmark only: throughput items are crops, not pages, and layout detection/full OmniDocBench scoring are outside this script.",
             "input_build_wall": "CPU crop image read/decode, resize/normalize/patchify, and prompt token construction for all selected crops.",
-            "ready_bank_build": "Sequential per-crop device transfer plus instrumented vision/projector/text prefill into device static-cache states; named substages synchronize for attribution.",
+            "ready_bank_build": "Builds per-crop device static-cache states. With vision_prefill_batch_size=1, vision/projector/text prefill all run per crop. With vision_prefill_batch_size>1, vision/projector runs as variable-length packed crop chunks, then text prefill remains per crop.",
             "image_grid_thw": "Small shape metadata remains on CPU; pixel/hidden/embedding tensors run on the selected device.",
             "decode_queue": "Text decode over already-prefilled states. Default hotswap schedule reuses one active compiled batch and swaps completed slots from the ready bank; fixed_cohort is an explicit baseline.",
+            "vision_prefill_batch_size": "When >1, preprocessed crop patch streams are concatenated into variable-length vision/projector chunks using per-crop image_grid_thw/cu_seqlens. This is not equal-size shape bucketing and does not add image padding or fake crops. Current attention still splits by cu_seqlens segment inside each layer.",
             "pipeline_stage_timing_summary_s": "Clearer aliases over existing timers: vision_prefill is vision prepare + visual encoder + adaptive MLP; text_prefill is text-side embedding/scatter/CPU mRoPE plus transfer/static-cache/text prefill/first-token work; text_decode is decode_queue.",
             "validation": "Direct local static generation is run after measured phases and is not included in throughput.",
             "correctness": "Required checks prove queue-vs-same-local-static-reference agreement plus valid token IDs. They are not an independent OCR quality or ground-truth check.",

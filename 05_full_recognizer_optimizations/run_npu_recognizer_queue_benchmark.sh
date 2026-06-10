@@ -12,6 +12,7 @@ NUM_ITEMS="${NUM_ITEMS:-100}"
 MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-256}"
 CACHE_LENGTH="${CACHE_LENGTH:-1536}"
 ACTIVE_BATCH_SIZE="${ACTIVE_BATCH_SIZE:-1}"
+VISION_PREFILL_BATCH_SIZE="${VISION_PREFILL_BATCH_SIZE:-1}"
 DECODE_SCHEDULE="${DECODE_SCHEDULE:-hotswap}"
 DECODE_BACKEND="${DECODE_BACKEND:-torchair}"
 EOS_MODE="${EOS_MODE:-overlap_event_flags}"
@@ -21,7 +22,7 @@ VISION_PROMPT_FA_LAYOUT="${VISION_PROMPT_FA_LAYOUT:-bnsd}"
 CROP_IDS="${CROP_IDS:-}"
 OUTPUT_DIR="${OUTPUT_DIR:-${SCRIPT_DIR}/outputs/recognizer_queue_benchmark}"
 RUN_ID="${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
-OUTPUT_PATH="${OUTPUT_PATH:-${OUTPUT_DIR}/recognizer_queue_${RUN_ID}_${DECODE_SCHEDULE}_n${NUM_ITEMS}_b${ACTIVE_BATCH_SIZE}_cache${CACHE_LENGTH}_${DECODE_BACKEND}.json}"
+OUTPUT_PATH="${OUTPUT_PATH:-${OUTPUT_DIR}/recognizer_queue_${RUN_ID}_${DECODE_SCHEDULE}_n${NUM_ITEMS}_b${ACTIVE_BATCH_SIZE}_vp${VISION_PREFILL_BATCH_SIZE}_cache${CACHE_LENGTH}_${DECODE_BACKEND}.json}"
 
 mkdir -p "${OUTPUT_DIR}"
 export PADDLE_OCR_VL_VISION_ATTENTION="${VISION_ATTENTION_IMPL}"
@@ -35,6 +36,7 @@ CMD=(
   --max-new-tokens "${MAX_NEW_TOKENS}"
   --cache-length "${CACHE_LENGTH}"
   --active-batch-size "${ACTIVE_BATCH_SIZE}"
+  --vision-prefill-batch-size "${VISION_PREFILL_BATCH_SIZE}"
   --decode-schedule "${DECODE_SCHEDULE}"
   --device "${DEVICE}"
   --dtype fp16
@@ -74,6 +76,14 @@ correctness = data.get("correctness", {})
 print("QUEUE_BENCHMARK_SUMMARY", json.dumps({
     "num_items": data.get("num_items"),
     "active_batch_size": data.get("active_batch_size"),
+    "vision_prefill_batch_size": data.get("vision_prefill_batch_size"),
+    "actual_vision_prefill_batch_sizes": data.get("actual_vision_prefill_batch_sizes"),
+    "vision_prefill_strategy": data.get("vision_prefill_strategy"),
+    "vision_prefill_batching_mode": data.get("vision_prefill_batching_mode"),
+    "prefill_schedule": data.get("prefill_schedule"),
+    "has_cross_crop_vision_batches": data.get("has_cross_crop_vision_batches"),
+    "prefill_grouping_policy": data.get("prefill_grouping_policy"),
+    "vision_prefill_attention_execution": data.get("vision_prefill_attention_execution"),
     "decode_schedule": data.get("decode_schedule"),
     "scheduler": data.get("scheduler"),
     "ready_bank_build_strategy": data.get("ready_bank_build_strategy"),
@@ -94,6 +104,10 @@ print("CACHE_PREFLIGHT", json.dumps(data.get("cache_preflight", {}), sort_keys=T
 print("SETUP_TIMING_S", json.dumps(data.get("setup_timing_s", {}), sort_keys=True))
 print("PHASE_TIMING_S", json.dumps(data.get("phase_timing_s", {}), sort_keys=True))
 print("READY_BANK_BUILD_DETAILS", json.dumps(data.get("ready_bank_build_details", {}), sort_keys=True))
+print("PREFILL_MEASUREMENT_SUMMARY_S", json.dumps(data.get("prefill_measurement_summary_s", {}), sort_keys=True))
+print("PACKED_VISION_BATCH_TIMING_SUMMARY_S", json.dumps(data.get("packed_vision_batch_timing_summary_s", {}), sort_keys=True))
+print("VISION_SHAPE_BUCKET_SUMMARY", json.dumps(data.get("vision_shape_bucket_summary", {}), sort_keys=True))
+print("READY_ITEM_TIMING_ATTRIBUTION", json.dumps(data.get("ready_item_timing_attribution", {}), sort_keys=True))
 print("PIPELINE_STAGE_TIMING_SUMMARY_S", json.dumps(data.get("pipeline_stage_timing_summary_s", {}), sort_keys=True))
 print("DECODE_QUEUE_DETAILS", json.dumps(data.get("decode_queue_details", {}), sort_keys=True))
 print("THROUGHPUT", json.dumps(data.get("throughput", {}), sort_keys=True))
