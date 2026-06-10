@@ -16,8 +16,10 @@ ACTIVE_BATCH_SIZE="${ACTIVE_BATCH_SIZE:-4}"
 MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-768}"
 CACHE_LENGTH="${CACHE_LENGTH:-2048}"
 DECODE_BACKEND="${DECODE_BACKEND:-raw_eager}"
+NPU_JIT_COMPILE="${NPU_JIT_COMPILE:-off}"
 VALIDATION_ITEMS="${VALIDATION_ITEMS:--1}"
 OUTPUT_DIR="${OUTPUT_DIR:-${SCRIPT_DIR}/outputs/page_pipeline_cuda_smoke}"
+TORCHAIR_CACHE_DIR="${TORCHAIR_CACHE_DIR:-${OUTPUT_DIR}/torchair_cache}"
 RUN_ID="${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
 OUTPUT_PATH="${OUTPUT_PATH:-${OUTPUT_DIR}/page_pipeline_${RUN_ID}_p${NUM_PAGES}_b${ACTIVE_BATCH_SIZE}_${DECODE_BACKEND}.json}"
 LAYOUT_CACHE_JSON="${LAYOUT_CACHE_JSON:-${OUTPUT_DIR}/layout_cache_first${NUM_PAGES}_${RUN_ID}.json}"
@@ -67,6 +69,8 @@ CMD=(
   --active-batch-size "${ACTIVE_BATCH_SIZE}"
   --max-new-tokens "${MAX_NEW_TOKENS}"
   --cache-length "${CACHE_LENGTH}"
+  --npu-jit-compile "${NPU_JIT_COMPILE}"
+  --torchair-cache-dir "${TORCHAIR_CACHE_DIR}"
   --validation-items "${VALIDATION_ITEMS}"
   --json
 )
@@ -94,6 +98,7 @@ phase = data.get("phase_timing_s", {})
 throughput = data.get("throughput", {})
 crop_summary = data.get("crop_summary", {})
 decode = data.get("decode_summary", {})
+ready_timing = data.get("ready_item_timing_summary_s", {})
 rough_accuracy = data.get("rough_ground_truth_accuracy", {})
 omnidoc_metrics = data.get("omnidocbench_metrics_without_cdm", {})
 print("PAGE_PIPELINE_SUMMARY", json.dumps({
@@ -105,14 +110,30 @@ print("PAGE_PIPELINE_SUMMARY", json.dumps({
     "layout_device": data.get("layout", {}).get("device"),
     "recognizer_device": data.get("device"),
     "decode_backend": data.get("decode_backend"),
+    "decode_attention": data.get("decode_attention"),
+    "decode_cache_update": data.get("decode_cache_update"),
+    "npu_jit_compile": data.get("npu_jit_compile"),
     "active_batch_size": data.get("active_batch_size"),
     "prefill_batch_size": data.get("prefill_batch_size"),
     "cache_length": data.get("cache_length"),
     "max_new_tokens": data.get("max_new_tokens"),
 }, sort_keys=True))
+print("SETUP_TIMING_S", json.dumps(data.get("setup_timing_s", {}), sort_keys=True))
 print("PHASE_TIMING_S", json.dumps(phase, sort_keys=True))
 print("THROUGHPUT", json.dumps(throughput, sort_keys=True))
 print("DECODE_WARMUP", json.dumps(data.get("decode_warmup", {}), sort_keys=True))
+print("PREFILL_STAGE_TIMING_S", json.dumps({
+    "native_resolution_visual_encoder_total": ready_timing.get("native_resolution_visual_encoder_total"),
+    "vision_encoder": ready_timing.get("vision_encoder"),
+    "adaptive_mlp_projector": ready_timing.get("adaptive_mlp_projector"),
+    "vision_total": ready_timing.get("vision_total"),
+    "vision_projector_total": ready_timing.get("vision_projector_total"),
+    "text_prefill": ready_timing.get("text_prefill"),
+    "prefill_lm_head": ready_timing.get("prefill_lm_head"),
+    "prefill_argmax": ready_timing.get("prefill_argmax"),
+    "ready_item_total_excluding_device_transfer": ready_timing.get("ready_item_total_excluding_device_transfer"),
+    "ready_item_total_with_device_transfer": ready_timing.get("ready_item_total_with_device_transfer"),
+}, sort_keys=True))
 print("CROP_SUMMARY", json.dumps({
     "layout_box_count": crop_summary.get("layout_box_count"),
     "recognizer_crop_count": crop_summary.get("recognizer_crop_count"),
