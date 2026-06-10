@@ -17,6 +17,7 @@ NUM_ITEMS="${NUM_ITEMS:-8}"
 MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-32}"
 CACHE_LENGTH="${CACHE_LENGTH:-1024}"
 ACTIVE_BATCH_SIZE="${ACTIVE_BATCH_SIZE:-1}"
+DECODE_SCHEDULE="${DECODE_SCHEDULE:-hotswap}"
 DECODE_BACKEND="${DECODE_BACKEND:-raw_eager}"
 EOS_MODE="${EOS_MODE:-overlap_event_flags}"
 VALIDATION_ITEMS="${VALIDATION_ITEMS:--1}"
@@ -25,7 +26,7 @@ VISION_PROMPT_FA_LAYOUT="${VISION_PROMPT_FA_LAYOUT:-bnsd}"
 CROP_IDS="${CROP_IDS:-}"
 OUTPUT_DIR="${OUTPUT_DIR:-${SCRIPT_DIR}/outputs/recognizer_queue_benchmark_cuda}"
 RUN_ID="${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
-OUTPUT_PATH="${OUTPUT_PATH:-${OUTPUT_DIR}/recognizer_queue_cuda_${RUN_ID}_n${NUM_ITEMS}_b${ACTIVE_BATCH_SIZE}_cache${CACHE_LENGTH}_${DECODE_BACKEND}.json}"
+OUTPUT_PATH="${OUTPUT_PATH:-${OUTPUT_DIR}/recognizer_queue_cuda_${RUN_ID}_${DECODE_SCHEDULE}_n${NUM_ITEMS}_b${ACTIVE_BATCH_SIZE}_cache${CACHE_LENGTH}_${DECODE_BACKEND}.json}"
 
 mkdir -p "${OUTPUT_DIR}"
 export PADDLE_OCR_VL_VISION_ATTENTION="${VISION_ATTENTION_IMPL}"
@@ -39,6 +40,7 @@ CMD=(
   --max-new-tokens "${MAX_NEW_TOKENS}"
   --cache-length "${CACHE_LENGTH}"
   --active-batch-size "${ACTIVE_BATCH_SIZE}"
+  --decode-schedule "${DECODE_SCHEDULE}"
   --device "${DEVICE}"
   --dtype fp16
   --decode-backend "${DECODE_BACKEND}"
@@ -77,6 +79,8 @@ correctness = data.get("correctness", {})
 print("QUEUE_BENCHMARK_SUMMARY", json.dumps({
     "num_items": data.get("num_items"),
     "active_batch_size": data.get("active_batch_size"),
+    "decode_schedule": data.get("decode_schedule"),
+    "scheduler": data.get("scheduler"),
     "actual_decode_batch_sizes": data.get("actual_decode_batch_sizes"),
     "decode_cohort_count": data.get("decode_cohort_count"),
     "cache_length": data.get("cache_length"),
@@ -93,6 +97,7 @@ print("CACHE_PREFLIGHT", json.dumps(data.get("cache_preflight", {}), sort_keys=T
 print("SETUP_TIMING_S", json.dumps(data.get("setup_timing_s", {}), sort_keys=True))
 print("PHASE_TIMING_S", json.dumps(data.get("phase_timing_s", {}), sort_keys=True))
 print("PIPELINE_STAGE_TIMING_SUMMARY_S", json.dumps(data.get("pipeline_stage_timing_summary_s", {}), sort_keys=True))
+print("DECODE_QUEUE_DETAILS", json.dumps(data.get("decode_queue_details", {}), sort_keys=True))
 print("THROUGHPUT", json.dumps(data.get("throughput", {}), sort_keys=True))
 print("DECODE_SUMMARY", json.dumps(data.get("decode_summary", {}), sort_keys=True))
 print("CORRECTNESS", json.dumps(correctness, sort_keys=True))

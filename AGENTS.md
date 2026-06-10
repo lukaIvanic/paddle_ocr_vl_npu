@@ -47,7 +47,7 @@ This folder currently contains:
 - `crops/`: eight OmniDocBench region crops, not full pages.
 - `crops/manifest.json`: source image, category, bbox, suggested prompt, and ground truth for each crop.
 - `crops/create_omnidocbench_recognition_crops.py`: reproducible crop generator.
-- `crops/create_omnidocbench_hotswap_crops.py`: reproducible generator for the larger fixed-cohort / future hot-swap crop set.
+- `crops/create_omnidocbench_hotswap_crops.py`: reproducible generator for the larger queue/hot-swap crop set.
 - `crops/hotswap_*.png`, `crops/hotswap_100_manifest.json`, `crops/hotswap_100_summary.json`, and `crops/hotswap_100_contact_sheet.jpg`: 100 additional OmniDocBench region crops for batch sizing and future vLLM-style slot hot-swapping tests. Use the hot-swap manifest explicitly; the default tiny smoke manifest remains `crops/manifest.json`.
 - `01_transformers_recognition_baseline/run_transformers_recognition.py`: minimal Transformers recognizer smoke script. It uses the slow image processor by default so it matches the source-backed local preprocessing path; pass `--use-fast` only when deliberately comparing to the fast HF image processor.
 - `02_local_eager_recognition/config.py`: dependency-free dataclass mirror of the PaddleOCR-VL config fields needed for inference.
@@ -254,10 +254,10 @@ adds measurement overhead, so use it to identify bottleneck proportions before
 turning any stage into a throughput benchmark.
 
 For the 100-crop full-recognizer queue benchmark, use the dedicated runner. This
-is the closest current experiment-5 approximation to a serving pass where all
-crops are known up front: CPU preprocessing/prompt construction for real crops,
-sequential device vision/projector/text prefill into per-crop static-cache states,
-then a single active compiled decode slot over the ready states.
+is the experiment-5 serving-shaped pass where all crops are known up front: CPU
+preprocessing/prompt construction for real crops, sequential device
+vision/projector/text prefill into per-crop static-cache states, then hot-swap
+decode through one active compiled decode batch.
 
 For the data and code flow, read
 `05_full_recognizer_optimizations/QUEUE_BENCHMARK_FLOW.md` before debugging the
@@ -271,10 +271,11 @@ cd /home/lukaiv/paddle_ocr_vl_npu/05_full_recognizer_optimizations
 bash run_npu_recognizer_queue_benchmark.sh
 ```
 
-Defaults are `NUM_ITEMS=100`, `ACTIVE_BATCH_SIZE=1`, `CACHE_LENGTH=1024`,
-`MAX_NEW_TOKENS=32`, `DECODE_BACKEND=torchair`, `EOS_MODE=overlap_event_flags`,
-manual vision attention, fp16, NPU JIT compile off, and validation against
-direct local static generation for all items. The runner writes one JSON under
+Defaults are `NUM_ITEMS=100`, `ACTIVE_BATCH_SIZE=1`, `DECODE_SCHEDULE=hotswap`,
+`CACHE_LENGTH=1024`, `MAX_NEW_TOKENS=32`, `DECODE_BACKEND=torchair`,
+`EOS_MODE=overlap_event_flags`, manual vision attention, fp16, NPU JIT compile
+off, and validation against direct local static generation for all items. The
+runner writes one JSON under
 `outputs/recognizer_queue_benchmark/` and prints:
 
 - `QUEUE_BENCHMARK_SUMMARY`
@@ -282,6 +283,7 @@ direct local static generation for all items. The runner writes one JSON under
 - `SETUP_TIMING_S`
 - `PHASE_TIMING_S`
 - `PIPELINE_STAGE_TIMING_SUMMARY_S`
+- `DECODE_QUEUE_DETAILS`
 - `THROUGHPUT`
 - `DECODE_SUMMARY`
 - `CORRECTNESS`
@@ -299,10 +301,9 @@ not write helper scripts; rerun only by increasing `CACHE_LENGTH`, for example:
 CACHE_LENGTH=1536 bash run_npu_recognizer_queue_benchmark.sh
 ```
 
-To test higher fixed decode cohort sizes, use real crops and change only
-`ACTIVE_BATCH_SIZE`. The benchmark remains padding-free; if the last cohort is
-smaller than the requested batch size, it uses that real smaller shape and
-reports it in `actual_decode_batch_sizes`.
+To test higher hot-swap active batch sizes, use real crops and change only
+`ACTIVE_BATCH_SIZE`. The benchmark remains padding-free. In hot-swap mode it
+rejects `ACTIVE_BATCH_SIZE > NUM_ITEMS` instead of creating fake rows.
 
 Recommended NPU run order:
 
@@ -310,6 +311,20 @@ Recommended NPU run order:
 ACTIVE_BATCH_SIZE=1 CACHE_LENGTH=1536 bash run_npu_recognizer_queue_benchmark.sh
 ACTIVE_BATCH_SIZE=4 CACHE_LENGTH=1536 bash run_npu_recognizer_queue_benchmark.sh
 ACTIVE_BATCH_SIZE=8 CACHE_LENGTH=1536 bash run_npu_recognizer_queue_benchmark.sh
+```
+
+These commands must print `decode_schedule="hotswap"`,
+`scheduler="hotswap_ready_state_queue"`, and
+`DECODE_QUEUE_DETAILS.diagnostics.slot_control_write_mode="batched_index_copy_for_swaps_and_slot_control"`.
+They must also pass `CORRECTNESS.all_required_checks_passed=true`. Do not write
+inline Python helper scripts to inspect the JSON; the runner prints the fields
+needed for the report.
+
+For a fixed-cohort baseline only, opt in explicitly:
+
+```sh
+DECODE_SCHEDULE=fixed_cohort ACTIVE_BATCH_SIZE=8 CACHE_LENGTH=1536 \
+bash run_npu_recognizer_queue_benchmark.sh
 ```
 
 The measured `decode_queue` phase excludes CPU token materialization and
@@ -322,9 +337,9 @@ Use the clearer `PIPELINE_STAGE_TIMING_SUMMARY_S` names when summarizing:
 
 On the Vast/CUDA lane, use the CUDA runner for a smoke/algorithmic benchmark.
 This is not an NPU throughput result. The CUDA runner defaults to `NUM_ITEMS=8`,
-`DEVICE=cuda:0`, and `DECODE_BACKEND=raw_eager` because CUDA uses the manual
-attention/per-row-KV fallback instead of TorchAir, IncreFA, and NPU
-`scatter_update_`.
+`DEVICE=cuda:0`, `DECODE_SCHEDULE=hotswap`, and `DECODE_BACKEND=raw_eager`
+because CUDA uses the manual attention/per-row-KV fallback instead of TorchAir,
+IncreFA, and NPU `scatter_update_`.
 
 ```sh
 cd /workspace
@@ -347,7 +362,7 @@ PYTHON_BIN=/workspace/venvs/paddle_ocr_vl/bin/python \
 bash run_cuda_recognizer_queue_benchmark.sh
 ```
 
-To sanity-check CUDA higher fixed decode cohorts:
+To sanity-check CUDA higher hot-swap active batches:
 
 ```sh
 ACTIVE_BATCH_SIZE=4 NUM_ITEMS=8 CACHE_LENGTH=1024 \

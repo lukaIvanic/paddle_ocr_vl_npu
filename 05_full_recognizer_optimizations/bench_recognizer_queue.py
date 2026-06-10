@@ -6,11 +6,11 @@ This script measures the experiment-5 serving shape:
 1. Build real crop inputs from a manifest.
 2. Run CPU preprocessing and prompt construction for all crops.
 3. Build all per-crop device static-cache prefill states.
-4. Decode the ready states through one compiled static decode slot.
+4. Decode the ready states through one active compiled static decode batch.
 
-Decode uses fixed cohorts of real ready states, controlled by
---active-batch-size. The final cohort can be smaller; the script does not add
-fake padded rows.
+The default decode schedule is hot-swap: finished slots are replaced from the
+ready-state bank with no fake padded rows. Fixed cohorts remain available only
+as an explicit baseline.
 """
 
 from __future__ import annotations
@@ -54,6 +54,7 @@ from run_local_recognition import (
 REPO_ROOT = Path(__file__).resolve().parents[1]
 BACKEND_CHOICES = ("raw_eager", "eager", "aot_eager", "inductor", "default", "torchair")
 EOS_MODE_CHOICES = ("none", "overlap_event_flags")
+DECODE_SCHEDULE_CHOICES = ("hotswap", "fixed_cohort")
 
 
 @dataclass
@@ -90,6 +91,15 @@ class ReadyCohort:
 
 
 @dataclass
+class ReadyBank:
+    items: list[ReadyItem]
+    cache: LocalPaddleOCRVLStaticCache
+    rope_deltas: torch.Tensor
+    next_cache_position: torch.Tensor
+    next_token: torch.Tensor
+
+
+@dataclass
 class DecodedDeviceItem:
     item: ReadyItem
     token_tensors: list[torch.Tensor]
@@ -101,6 +111,21 @@ class DecodedDeviceCohort:
     cohort: ReadyCohort
     token_tensors: list[torch.Tensor]
     decode_calls: int
+
+
+@dataclass
+class HotSwapDecodeResult:
+    ids: torch.Tensor
+    lengths: torch.Tensor
+    decode_calls: int
+    completed_by_item: list[bool]
+    completion_decode_calls: list[int | None]
+    eos_hit_by_item: list[bool]
+    length_cap_hit_by_item: list[bool]
+    swap_events: list[dict[str, Any]]
+    stopped_all_items: bool
+    diagnostics: dict[str, Any]
+    phase_timing_s: dict[str, float]
 
 
 @dataclass
@@ -513,6 +538,100 @@ def make_ready_cohort(items: list[ReadyItem]) -> ReadyCohort:
     )
 
 
+@torch.inference_mode()
+def make_ready_bank(items: list[ReadyItem]) -> ReadyBank:
+    if not items:
+        raise ValueError("ready bank requires at least one item")
+    cohort = make_ready_cohort(items)
+    ready = ReadyBank(
+        items=list(items),
+        cache=cohort.cache,
+        rope_deltas=cohort.rope_deltas,
+        next_cache_position=cohort.next_cache_position,
+        next_token=cohort.next_token,
+    )
+    for item_idx, item in enumerate(ready.items):
+        item.cache = LocalPaddleOCRVLStaticCache(
+            tuple(cache[item_idx : item_idx + 1] for cache in ready.cache.key_caches),
+            tuple(cache[item_idx : item_idx + 1] for cache in ready.cache.value_caches),
+            int(ready.cache.cache_length),
+        )
+        item.rope_deltas = ready.rope_deltas[item_idx : item_idx + 1]
+        item.next_cache_position = ready.next_cache_position[item_idx : item_idx + 1]
+        item.next_token = ready.next_token[item_idx : item_idx + 1]
+    return ready
+
+
+@torch.inference_mode()
+def copy_batch_rows_(
+    target: torch.Tensor,
+    slots: list[int],
+    source_rows: torch.Tensor,
+) -> None:
+    if not slots:
+        return
+    slot_indices = torch.tensor([int(slot) for slot in slots], device=target.device, dtype=torch.int64)
+    rows = source_rows.to(device=target.device, dtype=target.dtype).reshape(
+        len(slots),
+        *target.shape[1:],
+    ).contiguous()
+    target.index_copy_(0, slot_indices, rows)
+
+
+@torch.inference_mode()
+def copy_ready_items_to_active_slots_(
+    *,
+    ready: ReadyBank,
+    active: ReadyCohort,
+    active_item_indices: torch.Tensor,
+    active_mask: torch.Tensor,
+    slots: list[int],
+    item_indices: list[int],
+) -> None:
+    if len(slots) != len(item_indices):
+        raise ValueError(f"slots/item_indices length mismatch: {len(slots)} != {len(item_indices)}")
+    if not slots:
+        return
+
+    slot_indices = torch.tensor([int(slot) for slot in slots], device=active.next_token.device, dtype=torch.int64)
+    normalized_items = [int(item_idx) for item_idx in item_indices]
+    contiguous_items = normalized_items == list(range(normalized_items[0], normalized_items[0] + len(normalized_items)))
+    if contiguous_items:
+        item_slice = slice(normalized_items[0], normalized_items[0] + len(normalized_items))
+        item_index_tensor = None
+    else:
+        item_slice = None
+        item_index_tensor = torch.tensor(normalized_items, device=ready.next_token.device, dtype=torch.int64)
+
+    def select_ready_rows(tensor: torch.Tensor) -> torch.Tensor:
+        if item_slice is not None:
+            return tensor[item_slice]
+        assert item_index_tensor is not None
+        return tensor.index_select(0, item_index_tensor)
+
+    for layer_idx in range(len(active.cache.key_caches)):
+        active.cache.key_caches[layer_idx].index_copy_(
+            0,
+            slot_indices,
+            select_ready_rows(ready.cache.key_caches[layer_idx]).contiguous(),
+        )
+        active.cache.value_caches[layer_idx].index_copy_(
+            0,
+            slot_indices,
+            select_ready_rows(ready.cache.value_caches[layer_idx]).contiguous(),
+        )
+
+    copy_batch_rows_(active.rope_deltas, slots, select_ready_rows(ready.rope_deltas))
+    copy_batch_rows_(active.next_cache_position, slots, select_ready_rows(ready.next_cache_position))
+    copy_batch_rows_(active.next_token, slots, select_ready_rows(ready.next_token))
+    active_item_indices.index_copy_(
+        0,
+        slot_indices,
+        torch.tensor(normalized_items, device=active_item_indices.device, dtype=active_item_indices.dtype),
+    )
+    active_mask.index_copy_(0, slot_indices, torch.ones(len(slots), device=active_mask.device, dtype=active_mask.dtype))
+
+
 def hits_eos(token_ids: torch.Tensor, eos_token_id: int) -> torch.Tensor:
     return token_ids.reshape(-1) == int(eos_token_id)
 
@@ -705,6 +824,405 @@ def decode_ready_cohort(
     )
 
 
+@torch.inference_mode()
+def static_hotswap_decode_loop(
+    *,
+    decode_fn: Callable,
+    ready: ReadyBank,
+    batch_size: int,
+    eos_token_id: int,
+    max_new_tokens: int,
+    eos_mode: str,
+    overlap_cpu_tokens: torch.Tensor | None = None,
+    overlap_copy_stream: Any | None = None,
+) -> HotSwapDecodeResult:
+    if eos_mode != "overlap_event_flags":
+        raise ValueError("hot-swap decode requires --eos-mode overlap_event_flags")
+    if int(batch_size) <= 0:
+        raise ValueError(f"active batch size must be positive, got {batch_size}")
+    if int(max_new_tokens) <= 0:
+        raise ValueError(f"max_new_tokens must be positive, got {max_new_tokens}")
+
+    device = ready.next_token.device
+    num_items = int(ready.next_token.shape[0])
+    if int(batch_size) > num_items:
+        raise ValueError(
+            f"hot-swap active_batch_size={batch_size} exceeds num_items={num_items}; "
+            "reduce ACTIVE_BATCH_SIZE or select more real crops"
+        )
+
+    use_npu_overlap = device.type == "npu"
+    if use_npu_overlap:
+        import torch_npu
+
+    phase_timing_s: dict[str, float] = {}
+
+    def start_phase() -> float:
+        return time.perf_counter()
+
+    def add_phase(name: str, started: float) -> None:
+        phase_timing_s[name] = phase_timing_s.get(name, 0.0) + (time.perf_counter() - float(started))
+
+    function_started = start_phase()
+    active_setup_started = start_phase()
+    active_shape = (
+        int(batch_size),
+        int(ready.cache.key_caches[0].shape[1]),
+        int(ready.cache.cache_length),
+        int(ready.cache.key_caches[0].shape[3]),
+    )
+    active_cache = LocalPaddleOCRVLStaticCache(
+        tuple(
+            torch.zeros(active_shape, device=device, dtype=ready.cache.key_caches[layer_idx].dtype)
+            for layer_idx in range(len(ready.cache.key_caches))
+        ),
+        tuple(
+            torch.zeros(active_shape, device=device, dtype=ready.cache.value_caches[layer_idx].dtype)
+            for layer_idx in range(len(ready.cache.value_caches))
+        ),
+        int(ready.cache.cache_length),
+    )
+    active = ReadyCohort(
+        items=[],
+        cache=active_cache,
+        rope_deltas=torch.empty((int(batch_size), int(ready.rope_deltas.shape[1])), device=device, dtype=ready.rope_deltas.dtype),
+        next_cache_position=torch.empty((int(batch_size),), device=device, dtype=ready.next_cache_position.dtype),
+        next_token=torch.empty((int(batch_size), 1), device=device, dtype=ready.next_token.dtype),
+    )
+    active_item_indices = torch.full((int(batch_size),), -1, device=device, dtype=torch.int64)
+    active_mask = torch.zeros((int(batch_size),), device=device, dtype=torch.bool)
+    slot_finished = torch.zeros((int(batch_size),), device=device, dtype=torch.bool)
+    flat_cache = active.cache.flat_tensors()
+    add_phase("active_tensor_setup_s", active_setup_started)
+
+    cpu_setup_started = start_phase()
+    generated_rows_cpu = [
+        [int(eos_token_id) for _ in range(int(max_new_tokens))]
+        for _ in range(num_items)
+    ]
+    ready_first_tokens_cpu = [int(value) for value in ready.next_token.reshape(-1).detach().cpu().tolist()]
+    generated_lengths_cpu = [0 for _ in range(num_items)]
+    item_eos_hit_cpu = [False for _ in range(num_items)]
+    item_length_cap_hit_cpu = [False for _ in range(num_items)]
+    active_item_indices_cpu = [-1 for _ in range(int(batch_size))]
+    slot_finished_cpu = [False for _ in range(int(batch_size))]
+    completed_by_item = [False for _ in range(num_items)]
+    completion_decode_calls: list[int | None] = [None for _ in range(num_items)]
+    add_phase("cpu_state_setup_s", cpu_setup_started)
+
+    completed_count = 0
+    next_ready_idx = 0
+    decode_calls = 0
+    swap_events: list[dict[str, Any]] = []
+
+    def load_items_to_slots(slots: list[int], item_indices: list[int]) -> None:
+        if len(slots) != len(item_indices):
+            raise ValueError(f"slots/item_indices length mismatch: {len(slots)} != {len(item_indices)}")
+        if not slots:
+            return
+        copy_ready_items_to_active_slots_(
+            ready=ready,
+            active=active,
+            active_item_indices=active_item_indices,
+            active_mask=active_mask,
+            slots=[int(slot) for slot in slots],
+            item_indices=[int(item_idx) for item_idx in item_indices],
+        )
+        initial_finished_values = []
+        for slot, item_idx in zip(slots, item_indices):
+            slot = int(slot)
+            item_idx = int(item_idx)
+            active_item_indices_cpu[slot] = item_idx
+            generated_rows_cpu[item_idx][0] = ready_first_tokens_cpu[item_idx]
+            generated_lengths_cpu[item_idx] = 1
+            first_token_eos = ready_first_tokens_cpu[item_idx] == int(eos_token_id)
+            first_token_cap = int(max_new_tokens) <= 1
+            initial_finished = bool(first_token_eos or first_token_cap)
+            initial_finished_values.append(initial_finished)
+            slot_finished_cpu[slot] = initial_finished
+            item_eos_hit_cpu[item_idx] = bool(first_token_eos)
+            item_length_cap_hit_cpu[item_idx] = bool(first_token_cap)
+        copy_batch_rows_(
+            slot_finished,
+            [int(slot) for slot in slots],
+            torch.tensor(initial_finished_values, device=device, dtype=slot_finished.dtype),
+        )
+
+    def deactivate_slots(slots: list[int]) -> None:
+        if not slots:
+            return
+        for slot in slots:
+            active_item_indices_cpu[int(slot)] = -1
+            slot_finished_cpu[int(slot)] = False
+        copy_batch_rows_(
+            active_item_indices,
+            [int(slot) for slot in slots],
+            torch.full((len(slots),), -1, device=device, dtype=active_item_indices.dtype),
+        )
+        copy_batch_rows_(
+            active_mask,
+            [int(slot) for slot in slots],
+            torch.zeros((len(slots),), device=device, dtype=active_mask.dtype),
+        )
+        copy_batch_rows_(
+            slot_finished,
+            [int(slot) for slot in slots],
+            torch.zeros((len(slots),), device=device, dtype=slot_finished.dtype),
+        )
+        copy_batch_rows_(
+            active.next_token,
+            [int(slot) for slot in slots],
+            torch.full((len(slots), 1), int(eos_token_id), device=device, dtype=active.next_token.dtype),
+        )
+        copy_batch_rows_(
+            active.next_cache_position,
+            [int(slot) for slot in slots],
+            torch.zeros((len(slots),), device=device, dtype=active.next_cache_position.dtype),
+        )
+        copy_batch_rows_(
+            active.rope_deltas,
+            [int(slot) for slot in slots],
+            torch.zeros((len(slots), *active.rope_deltas.shape[1:]), device=device, dtype=active.rope_deltas.dtype),
+        )
+
+    def consume_finished_slots(finished_flags: list[bool], completion_decode_call: int) -> None:
+        nonlocal completed_count, next_ready_idx
+        finished_slots = [
+            int(slot)
+            for slot, flag in enumerate(finished_flags)
+            if bool(flag) and int(active_item_indices_cpu[slot]) >= 0
+        ]
+        if not finished_slots:
+            return
+        completed_item_ids = []
+        swapped_slots = []
+        swapped_in_item_ids = []
+        deactivated_slots = []
+        pending_swap_slots: list[int] = []
+        pending_swap_items: list[int] = []
+        for slot in finished_slots:
+            finished_item = int(active_item_indices_cpu[slot])
+            if not completed_by_item[finished_item]:
+                completed_by_item[finished_item] = True
+                completion_decode_calls[finished_item] = int(completion_decode_call)
+                completed_count += 1
+                completed_item_ids.append(finished_item)
+                if not item_length_cap_hit_cpu[finished_item]:
+                    item_eos_hit_cpu[finished_item] = True
+            if next_ready_idx < num_items:
+                new_item = int(next_ready_idx)
+                next_ready_idx += 1
+                pending_swap_slots.append(slot)
+                pending_swap_items.append(new_item)
+                swapped_slots.append(slot)
+                swapped_in_item_ids.append(new_item)
+            else:
+                deactivated_slots.append(slot)
+        load_items_to_slots(pending_swap_slots, pending_swap_items)
+        deactivate_slots(deactivated_slots)
+        swap_events.append(
+            {
+                "completion_decode_call": int(completion_decode_call),
+                "finished_slots": finished_slots,
+                "completed_item_ids": completed_item_ids,
+                "swapped_slots": swapped_slots,
+                "swapped_in_item_ids": swapped_in_item_ids,
+                "deactivated_slots": deactivated_slots,
+                "completed_count": int(completed_count),
+                "remaining_ready_items": int(num_items - next_ready_idx),
+            }
+        )
+
+    def commit_pending_tokens(
+        token_values: list[int],
+        active_before_step_values: list[bool],
+        item_indices: list[int],
+    ) -> list[bool]:
+        finished_flags = [False for _ in range(int(batch_size))]
+        for slot, was_active in enumerate(active_before_step_values):
+            if not was_active:
+                continue
+            item_idx = int(item_indices[slot])
+            if item_idx < 0:
+                continue
+            position = int(generated_lengths_cpu[item_idx])
+            if position >= int(max_new_tokens):
+                item_length_cap_hit_cpu[item_idx] = True
+                finished_flags[slot] = True
+                continue
+            token = int(token_values[slot])
+            generated_rows_cpu[item_idx][position] = token
+            new_length = position + 1
+            generated_lengths_cpu[item_idx] = new_length
+            if token == int(eos_token_id):
+                item_eos_hit_cpu[item_idx] = True
+                finished_flags[slot] = True
+            if new_length >= int(max_new_tokens):
+                item_length_cap_hit_cpu[item_idx] = True
+                finished_flags[slot] = True
+        return finished_flags
+
+    initial_load_started = start_phase()
+    load_items_to_slots(list(range(int(batch_size))), list(range(int(batch_size))))
+    next_ready_idx = int(batch_size)
+    add_phase("initial_slot_load_s", initial_load_started)
+
+    initial_finished_started = start_phase()
+    while completed_count < num_items and any(bool(value) for value in slot_finished_cpu):
+        consume_finished_slots([bool(value) for value in slot_finished_cpu], completion_decode_call=0)
+    add_phase("initial_finished_consume_s", initial_finished_started)
+
+    overlap_setup_started = start_phase()
+    async_cpu_tokens = None
+    copy_stream = None
+    overlap_buffer_source = "none"
+    if use_npu_overlap:
+        if overlap_cpu_tokens is None:
+            async_cpu_tokens = torch.empty((1, int(batch_size)), dtype=ready.next_token.dtype, pin_memory=True)
+            overlap_buffer_source = "allocated_inside_ring1"
+        else:
+            if overlap_cpu_tokens.device.type != "cpu":
+                raise ValueError("overlap_cpu_tokens must be a CPU tensor")
+            if tuple(overlap_cpu_tokens.shape) != (1, int(batch_size)):
+                raise ValueError(
+                    f"overlap_cpu_tokens shape must be {(1, int(batch_size))}, got {tuple(overlap_cpu_tokens.shape)}"
+                )
+            if overlap_cpu_tokens.dtype != ready.next_token.dtype:
+                raise ValueError(f"overlap_cpu_tokens dtype must be {ready.next_token.dtype}, got {overlap_cpu_tokens.dtype}")
+            async_cpu_tokens = overlap_cpu_tokens
+            overlap_buffer_source = "provided_ring1"
+        copy_stream = overlap_copy_stream if overlap_copy_stream is not None else torch_npu.npu.Stream(device=device)
+    add_phase("overlap_buffer_setup_s", overlap_setup_started)
+
+    max_decode_calls_per_item = max(0, int(max_new_tokens) - 1)
+    max_decode_call_budget = max(1, int(num_items) * max_decode_calls_per_item + max_decode_calls_per_item + int(batch_size))
+    pending_token_event = None
+    pending_token_values = None
+    pending_active_before_step_cpu = None
+    pending_item_indices_cpu = None
+    pending_completion_decode_call = None
+    steady_decode_records = 0
+    final_drain_records = 0
+
+    while completed_count < num_items:
+        iter_started = start_phase()
+        if decode_calls >= max_decode_call_budget:
+            raise RuntimeError(
+                f"hot-swap decode exceeded safety budget {max_decode_call_budget}; "
+                f"completed {completed_count}/{num_items} items"
+            )
+        if not any(int(item_idx) >= 0 for item_idx in active_item_indices_cpu):
+            break
+
+        if pending_completion_decode_call is not None and (
+            (use_npu_overlap and pending_token_event is not None)
+            or (not use_npu_overlap and pending_token_values is not None)
+        ):
+            if use_npu_overlap:
+                assert async_cpu_tokens is not None
+                pending_token_event.synchronize()
+                token_values = [int(value) for value in async_cpu_tokens[0].tolist()]
+            else:
+                token_values = list(pending_token_values)
+            assert pending_active_before_step_cpu is not None
+            assert pending_item_indices_cpu is not None
+            finished_flags = commit_pending_tokens(
+                token_values,
+                pending_active_before_step_cpu,
+                pending_item_indices_cpu,
+            )
+            consume_finished_slots(finished_flags, int(pending_completion_decode_call))
+            pending_token_event = None
+            pending_token_values = None
+            pending_active_before_step_cpu = None
+            pending_item_indices_cpu = None
+            pending_completion_decode_call = None
+            if completed_count >= num_items:
+                final_drain_records += 1
+                add_phase("final_drain_s", iter_started)
+                break
+
+        active_before_step = active_mask & ~slot_finished
+        active_before_step_cpu = [
+            int(item_idx) >= 0 and not bool(slot_finished_cpu[slot])
+            for slot, item_idx in enumerate(active_item_indices_cpu)
+        ]
+        logits = decode_fn(active.next_token, active.next_cache_position, active.rope_deltas, *flat_cache)
+        sampled_token = torch.argmax(logits[:, -1, :].float(), dim=-1, keepdim=True)
+        eos_fill = torch.full_like(sampled_token, int(eos_token_id))
+        active.next_token.copy_(torch.where(active_before_step.view(-1, 1), sampled_token, eos_fill))
+        active.next_cache_position.add_(active_before_step.to(dtype=active.next_cache_position.dtype))
+        decode_calls += 1
+        steady_decode_records += 1
+
+        if use_npu_overlap:
+            assert async_cpu_tokens is not None
+            assert copy_stream is not None
+            ready_event = torch_npu.npu.current_stream().record_event()
+            done_event = torch_npu.npu.Event()
+            with torch_npu.npu.stream(copy_stream):
+                copy_stream.wait_event(ready_event)
+                async_cpu_tokens[0].copy_(active.next_token.reshape(-1), non_blocking=True)
+                done_event.record(copy_stream)
+            pending_token_event = done_event
+        else:
+            pending_token_values = [int(row[0]) for row in active.next_token.detach().cpu().tolist()]
+        pending_active_before_step_cpu = [bool(value) for value in active_before_step_cpu]
+        pending_item_indices_cpu = [int(value) for value in active_item_indices_cpu]
+        pending_completion_decode_call = int(decode_calls)
+        add_phase("steady_decode_loop_s", iter_started)
+
+    if completed_count < num_items and pending_completion_decode_call is not None and (
+        (use_npu_overlap and pending_token_event is not None)
+        or (not use_npu_overlap and pending_token_values is not None)
+    ):
+        drain_started = start_phase()
+        if use_npu_overlap:
+            assert async_cpu_tokens is not None
+            pending_token_event.synchronize()
+            token_values = [int(value) for value in async_cpu_tokens[0].tolist()]
+        else:
+            token_values = list(pending_token_values)
+        assert pending_active_before_step_cpu is not None
+        assert pending_item_indices_cpu is not None
+        finished_flags = commit_pending_tokens(
+            token_values,
+            pending_active_before_step_cpu,
+            pending_item_indices_cpu,
+        )
+        consume_finished_slots(finished_flags, int(pending_completion_decode_call))
+        final_drain_records += 1
+        add_phase("final_drain_s", drain_started)
+
+    result_started = start_phase()
+    generated_ids = torch.tensor(generated_rows_cpu, dtype=ready.next_token.dtype)
+    generated_lengths = torch.tensor(generated_lengths_cpu, dtype=torch.int64)
+    add_phase("result_materialization_s", result_started)
+    phase_timing_s["function_wall_s"] = time.perf_counter() - function_started
+    phase_timing_s["steady_decode_records"] = float(steady_decode_records)
+    phase_timing_s["final_drain_records"] = float(final_drain_records)
+
+    return HotSwapDecodeResult(
+        ids=generated_ids,
+        lengths=generated_lengths,
+        decode_calls=int(decode_calls),
+        completed_by_item=completed_by_item,
+        completion_decode_calls=completion_decode_calls,
+        eos_hit_by_item=item_eos_hit_cpu,
+        length_cap_hit_by_item=item_length_cap_hit_cpu,
+        swap_events=swap_events,
+        stopped_all_items=bool(completed_count >= num_items),
+        diagnostics={
+            "history_storage": "cpu_rows_from_token_copy",
+            "slot_control_write_mode": "batched_index_copy_for_swaps_and_slot_control",
+            "overlap_buffer_source": overlap_buffer_source,
+            "overlap_buffer_shape": list(async_cpu_tokens.shape) if async_cpu_tokens is not None else None,
+            "deactivated_slot_state": "eos_token_cache_pos_0_rope_delta_0",
+        },
+        phase_timing_s=phase_timing_s,
+    )
+
+
 def split_decoded_device_cohort(cohort: DecodedDeviceCohort) -> list[DecodedDeviceItem]:
     output: list[DecodedDeviceItem] = []
     for row_idx, ready in enumerate(cohort.cohort.items):
@@ -735,6 +1253,31 @@ def materialize_decoded_item(
         trimmed_token_ids=trimmed,
         generated_text=safe_decode_tokens(tokenizer, trimmed),
         decode_calls=int(device_item.decode_calls),
+        eos_hit=first_eos is not None,
+        length_cap_hit=first_eos is None and len(row) >= int(max_new_tokens),
+        first_eos_position=first_eos,
+        postprocess_s=float(time.perf_counter() - start),
+    )
+
+
+def materialize_hotswap_item(
+    *,
+    ready_item: ReadyItem,
+    token_ids: list[int],
+    length: int,
+    tokenizer: Tokenizer,
+    eos_token_id: int,
+    max_new_tokens: int,
+) -> DecodedItem:
+    start = time.perf_counter()
+    row = [int(value) for value in token_ids[: int(length)]]
+    trimmed, first_eos = trim_at_eos(row, int(eos_token_id))
+    return DecodedItem(
+        item=ready_item,
+        token_ids=row,
+        trimmed_token_ids=trimmed,
+        generated_text=safe_decode_tokens(tokenizer, trimmed),
+        decode_calls=max(0, int(length) - 1),
         eos_hit=first_eos is not None,
         length_cap_hit=first_eos is None and len(row) >= int(max_new_tokens),
         first_eos_position=first_eos,
@@ -849,6 +1392,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-new-tokens", type=int, default=32)
     parser.add_argument("--cache-length", type=int, default=1024)
     parser.add_argument("--active-batch-size", type=int, default=1)
+    parser.add_argument("--decode-schedule", default="hotswap", choices=DECODE_SCHEDULE_CHOICES)
     parser.add_argument("--device", default="npu:0")
     parser.add_argument("--dtype", default="fp16", choices=["fp16", "float16", "bf16", "bfloat16"])
     parser.add_argument("--decode-backend", default="torchair", choices=BACKEND_CHOICES)
@@ -876,6 +1420,8 @@ def main() -> None:
         raise ValueError(f"--cache-length must be positive, got {args.cache_length}")
     if int(args.active_batch_size) <= 0:
         raise ValueError(f"--active-batch-size must be positive, got {args.active_batch_size}")
+    if str(args.decode_schedule) == "hotswap" and str(args.eos_mode) != "overlap_event_flags":
+        raise ValueError("--decode-schedule hotswap requires --eos-mode overlap_event_flags")
 
     model_dir = _resolve_model_dir(args.model)
     device = resolve_device(args.device)
@@ -908,12 +1454,21 @@ def main() -> None:
             "error": "cache_length_too_small",
             "num_items": int(len(queue_inputs)),
             "active_batch_size": int(args.active_batch_size),
+            "decode_schedule": str(args.decode_schedule),
             "cache_preflight": cache_preflight,
             "input_build_summary_s": input_build_summary,
         }
         print(json.dumps(output, indent=2, sort_keys=True, default=json_default))
         return
-    actual_decode_batch_sizes = list(dict.fromkeys(cohort_batch_sizes(len(queue_inputs), int(args.active_batch_size))))
+    if str(args.decode_schedule) == "hotswap":
+        if int(args.active_batch_size) > len(queue_inputs):
+            raise ValueError(
+                f"--active-batch-size {args.active_batch_size} exceeds selected real crops {len(queue_inputs)}; "
+                "hot-swap mode does not create fake rows"
+            )
+        actual_decode_batch_sizes = [int(args.active_batch_size)]
+    else:
+        actual_decode_batch_sizes = list(dict.fromkeys(cohort_batch_sizes(len(queue_inputs), int(args.active_batch_size))))
 
     maybe_sync(device)
     model_load_start = time.perf_counter()
@@ -986,40 +1541,84 @@ def main() -> None:
         )
         for item in queue_inputs
     ]
+    ready_bank = make_ready_bank(ready_items) if str(args.decode_schedule) == "hotswap" else None
     maybe_sync(device)
     ready_bank_build_s = time.perf_counter() - ready_start
 
     eos_token_id = int(model.config.eos_token_id)
+    hotswap_result: HotSwapDecodeResult | None = None
+    hotswap_external_overlap_buffer_setup_s = 0.0
+    hotswap_overlap_cpu_tokens = None
+    hotswap_overlap_copy_stream = None
+    decoded_device_cohorts: list[DecodedDeviceCohort] = []
+    decode_cohort_batch_sizes: list[int] = []
+    if str(args.decode_schedule) == "hotswap" and device.type == "npu":
+        assert ready_bank is not None
+        import torch_npu
+
+        overlap_setup_start = time.perf_counter()
+        hotswap_overlap_cpu_tokens = torch.empty((1, int(args.active_batch_size)), dtype=ready_bank.next_token.dtype, pin_memory=True)
+        hotswap_overlap_copy_stream = torch_npu.npu.Stream(device=device)
+        hotswap_external_overlap_buffer_setup_s = time.perf_counter() - overlap_setup_start
     decode_start = time.perf_counter()
-    ready_cohorts = [make_ready_cohort(chunk) for chunk in chunk_ready_items(ready_items, int(args.active_batch_size))]
-    decoded_device_cohorts = [
-        decode_ready_cohort(
-            decode_fn=decode_fns[int(cohort.next_token.shape[0])],
-            cohort=cohort,
+    if str(args.decode_schedule) == "hotswap":
+        assert ready_bank is not None
+        hotswap_result = static_hotswap_decode_loop(
+            decode_fn=decode_fns[int(args.active_batch_size)],
+            ready=ready_bank,
+            batch_size=int(args.active_batch_size),
             eos_token_id=eos_token_id,
             max_new_tokens=int(args.max_new_tokens),
             eos_mode=str(args.eos_mode),
+            overlap_cpu_tokens=hotswap_overlap_cpu_tokens,
+            overlap_copy_stream=hotswap_overlap_copy_stream,
         )
-        for cohort in ready_cohorts
-    ]
-    decoded_device_items = [
-        item
-        for cohort in decoded_device_cohorts
-        for item in split_decoded_device_cohort(cohort)
-    ]
+    else:
+        ready_cohorts = [make_ready_cohort(chunk) for chunk in chunk_ready_items(ready_items, int(args.active_batch_size))]
+        decoded_device_cohorts = [
+            decode_ready_cohort(
+                decode_fn=decode_fns[int(cohort.next_token.shape[0])],
+                cohort=cohort,
+                eos_token_id=eos_token_id,
+                max_new_tokens=int(args.max_new_tokens),
+                eos_mode=str(args.eos_mode),
+            )
+            for cohort in ready_cohorts
+        ]
+        decode_cohort_batch_sizes = [int(cohort.cohort.next_token.shape[0]) for cohort in decoded_device_cohorts]
     maybe_sync(device)
     decode_queue_s = time.perf_counter() - decode_start
 
     postprocess_start = time.perf_counter()
-    decoded_items = [
-        materialize_decoded_item(
-            device_item=item,
-            tokenizer=tokenizer,
-            eos_token_id=eos_token_id,
-            max_new_tokens=int(args.max_new_tokens),
-        )
-        for item in decoded_device_items
-    ]
+    if hotswap_result is not None:
+        hotswap_rows = [[int(value) for value in row] for row in hotswap_result.ids.tolist()]
+        hotswap_lengths = [int(value) for value in hotswap_result.lengths.tolist()]
+        decoded_items = [
+            materialize_hotswap_item(
+                ready_item=ready_item,
+                token_ids=hotswap_rows[idx],
+                length=hotswap_lengths[idx],
+                tokenizer=tokenizer,
+                eos_token_id=eos_token_id,
+                max_new_tokens=int(args.max_new_tokens),
+            )
+            for idx, ready_item in enumerate(ready_items)
+        ]
+    else:
+        decoded_device_items = [
+            item
+            for cohort in decoded_device_cohorts
+            for item in split_decoded_device_cohort(cohort)
+        ]
+        decoded_items = [
+            materialize_decoded_item(
+                device_item=item,
+                tokenizer=tokenizer,
+                eos_token_id=eos_token_id,
+                max_new_tokens=int(args.max_new_tokens),
+            )
+            for item in decoded_device_items
+        ]
     decode_output_postprocess_s = time.perf_counter() - postprocess_start
 
     validation = validate_outputs(
@@ -1033,8 +1632,33 @@ def main() -> None:
     )
     trimmed_rows = [item.trimmed_token_ids for item in decoded_items]
     token_summary = token_range_summary(trimmed_rows, vocab_size=int(model.config.text_config.vocab_size))
-    total_decode_calls = sum(int(cohort.decode_calls) for cohort in decoded_device_cohorts)
-    raw_decode_token_calls = sum(int(cohort.decode_calls) * int(cohort.cohort.next_token.shape[0]) for cohort in decoded_device_cohorts)
+    if hotswap_result is not None:
+        total_decode_calls = int(hotswap_result.decode_calls)
+        raw_decode_token_calls = int(hotswap_result.decode_calls) * int(args.active_batch_size)
+        decode_cohort_count = 0
+        decode_queue_details = {
+            "schedule": "hotswap",
+            "active_batch_size": int(args.active_batch_size),
+            "swap_event_count": int(len(hotswap_result.swap_events)),
+            "total_swapped_in_items": int(
+                sum(len(event.get("swapped_in_item_ids", [])) for event in hotswap_result.swap_events)
+            ),
+            "stopped_all_items": bool(hotswap_result.stopped_all_items),
+            "completed_by_item_count": int(sum(1 for value in hotswap_result.completed_by_item if value)),
+            "completion_decode_calls": hotswap_result.completion_decode_calls,
+            "phase_timing_s": hotswap_result.phase_timing_s,
+            "external_overlap_buffer_setup_s": float(hotswap_external_overlap_buffer_setup_s),
+            "diagnostics": hotswap_result.diagnostics,
+        }
+    else:
+        total_decode_calls = sum(int(cohort.decode_calls) for cohort in decoded_device_cohorts)
+        raw_decode_token_calls = sum(int(cohort.decode_calls) * int(cohort.cohort.next_token.shape[0]) for cohort in decoded_device_cohorts)
+        decode_cohort_count = int(len(decoded_device_cohorts))
+        decode_queue_details = {
+            "schedule": "fixed_cohort",
+            "decode_cohort_count": int(len(decoded_device_cohorts)),
+            "decode_cohort_batch_sizes": decode_cohort_batch_sizes,
+        }
     effective_decode_token_calls = sum(max(0, len(item.trimmed_token_ids) - 1) for item in decoded_items)
     generated_new_tokens = sum(len(item.trimmed_token_ids) for item in decoded_items)
     input_build_wall_s = float(input_build_summary.get("input_build_wall_s", 0.0))
@@ -1062,9 +1686,10 @@ def main() -> None:
         "vision_attention": get_vision_attention_impl(),
         "vision_prompt_fa_layout": get_vision_prompt_fa_layout(),
         "active_batch_size": int(args.active_batch_size),
+        "decode_schedule": str(args.decode_schedule),
         "actual_decode_batch_sizes": [int(value) for value in actual_decode_batch_sizes],
-        "decode_cohort_count": int(len(decoded_device_cohorts)),
-        "scheduler": "fixed_cohort_ready_state_queue",
+        "decode_cohort_count": int(decode_cohort_count),
+        "scheduler": "hotswap_ready_state_queue" if hotswap_result is not None else "fixed_cohort_ready_state_queue",
         "num_items": int(len(decoded_items)),
         "max_new_tokens": int(args.max_new_tokens),
         "cache_length": int(args.cache_length),
@@ -1082,9 +1707,11 @@ def main() -> None:
         "input_build_summary_s": input_build_summary,
         "ready_item_timing_summary_s": ready_item_timing_summary,
         "pipeline_stage_timing_summary_s": pipeline_stage_timing_summary,
+        "decode_queue_details": decode_queue_details,
         "phase_timing_s": {
             "input_build_wall": input_build_wall_s,
             "ready_bank_build": float(ready_bank_build_s),
+            "hotswap_external_overlap_buffer_setup": float(hotswap_external_overlap_buffer_setup_s),
             "decode_queue": float(decode_queue_s),
             "decode_output_postprocess": float(decode_output_postprocess_s),
             "total_excluding_setup": float(total_excluding_setup_s),
@@ -1103,8 +1730,10 @@ def main() -> None:
             "raw_decode_token_calls": int(raw_decode_token_calls),
             "effective_decode_token_calls": int(effective_decode_token_calls),
             "generated_new_tokens": int(generated_new_tokens),
-            "decode_cohort_count": int(len(decoded_device_cohorts)),
-            "decode_cohort_batch_sizes": [int(cohort.cohort.next_token.shape[0]) for cohort in decoded_device_cohorts],
+            "decode_schedule": str(args.decode_schedule),
+            "decode_cohort_count": int(decode_cohort_count),
+            "decode_cohort_batch_sizes": decode_cohort_batch_sizes,
+            "hotswap": decode_queue_details if hotswap_result is not None else None,
             "eos_hit_count": int(sum(1 for item in decoded_items if item.eos_hit)),
             "length_cap_hit_count": int(sum(1 for item in decoded_items if item.length_cap_hit)),
             "trimmed_new_tokens": stats([float(len(item.trimmed_token_ids)) for item in decoded_items]),
@@ -1153,7 +1782,7 @@ def main() -> None:
         "stage_notes": {
             "input_build_wall": "CPU crop image read/decode, resize/normalize/patchify, and prompt token construction for all selected crops.",
             "ready_bank_build": "Sequential per-crop device transfer plus vision/projector/text prefill into device static-cache states.",
-            "decode_queue": "Fixed-cohort text decode over already-prefilled states; no vision/prefill work occurs inside this phase.",
+            "decode_queue": "Text decode over already-prefilled states. Default hotswap schedule reuses one active compiled batch and swaps completed slots from the ready bank; fixed_cohort is an explicit baseline.",
             "pipeline_stage_timing_summary_s": "Clearer aliases over existing timers: vision_prefill is vision prepare + visual encoder + adaptive MLP; text_prefill is text-side embedding/scatter/mRoPE/static-cache/text prefill/first-token work; text_decode is decode_queue.",
             "validation": "Direct local static generation is run after measured phases and is not included in throughput.",
             "cache_length": "Static KV cache is preflighted against input_tokens + max_new_tokens - 1; overflow is a hard error.",
@@ -1163,7 +1792,10 @@ def main() -> None:
         print(json.dumps(output, indent=2, sort_keys=True, default=json_default))
         return
 
-    print(f"experiment={output['experiment']} device={output['device']} dtype={output['dtype']} backend={output['decode_backend']}")
+    print(
+        f"experiment={output['experiment']} device={output['device']} dtype={output['dtype']} "
+        f"backend={output['decode_backend']} schedule={output['decode_schedule']}"
+    )
     print(f"num_items={output['num_items']} cache_length={output['cache_length']} max_new_tokens={output['max_new_tokens']}")
     print("cache_preflight=" + json.dumps(output["cache_preflight"], sort_keys=True))
     print("phase_timing_s=" + json.dumps(output["phase_timing_s"], sort_keys=True))

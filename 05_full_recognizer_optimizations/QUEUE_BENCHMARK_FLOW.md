@@ -7,10 +7,12 @@ local PaddleOCR-VL preprocessing, native-resolution vision encoding, adaptive
 MLP projection, text prefill, static-cache decode, output postprocess, and
 correctness validation.
 
-The queue benchmark supports fixed decode cohorts through `ACTIVE_BATCH_SIZE`.
-It stays padding-free: if the final cohort has fewer than `ACTIVE_BATCH_SIZE`
-items, the script compiles/wraps and decodes that smaller real cohort shape
-instead of adding fake rows.
+The queue benchmark defaults to hot-swap decode through `ACTIVE_BATCH_SIZE`.
+It first builds one ready-state bank for real crops, then reuses one active
+compiled decode batch and swaps finished slots from that bank. It stays
+padding-free: hot-swap rejects `ACTIVE_BATCH_SIZE > NUM_ITEMS`, and fixed
+cohorts remain available only through `DECODE_SCHEDULE=fixed_cohort` as an
+explicit baseline.
 
 ## Data Flow
 
@@ -34,11 +36,13 @@ flowchart LR
     E4 --> E5["mRoPE indices + static KV cache alloc"]
     E5 --> E6["Text prefill writes KV cache<br/>per layer K/V: [1, 2, cache_length, 128]"]
     E6 --> E7["LM head argmax<br/>ReadyItem: cache, rope_deltas, cache_position, next_token"]
-    E7 --> F["Decode queue<br/>fixed real cohorts"]
-    F --> F1["Batched static decode calls<br/>next_token[B,1] -> logits -> argmax"]
-    F1 --> F2["EOS policy<br/>none or overlap_event_flags"]
-    F2 --> F3["Device token tensors kept until postprocess"]
-    F3 --> G["Postprocess"]
+    E7 --> F["Ready bank<br/>all real crop states on device"]
+    F --> F1["Hot-swap decode queue<br/>one active batch of B slots"]
+    F1 --> F2["Batched static decode calls<br/>next_token[B,1] -> logits -> argmax"]
+    F2 --> F3["Overlap token-row copy<br/>NPU stream -> pinned CPU row"]
+    F3 --> F4["CPU per-item token history<br/>EOS/length-cap bookkeeping"]
+    F4 --> F5["Swap all finished slots<br/>batched index_copy_ for K/V and slot controls"]
+    F5 --> G["Postprocess"]
     G --> G1["Copy tokens to CPU"]
     G1 --> G2["Trim at EOS + tokenizer.decode"]
     G2 --> H["Validation"]
@@ -55,7 +59,7 @@ sequenceDiagram
     participant Inputs as build_queue_inputs
     participant Model as LocalPaddleOCRVL
     participant Ready as build_ready_item
-    participant Decode as decode_ready_item
+    participant Decode as static_hotswap_decode_loop
     participant Output as materialize/validate
 
     CLI->>Inputs: load manifest and selected crop rows
@@ -79,11 +83,16 @@ sequenceDiagram
             Ready->>Model: text prefill + lm_head argmax
             Ready-->>CLI: ReadyItem
         end
-        loop ReadyItem rows
-            CLI->>Decode: decode_ready_item
-            Decode->>Decode: call compiled/raw static decode by real fixed cohort until EOS or cap
-            Decode-->>CLI: DecodedDeviceItem
+        CLI->>Decode: make_ready_bank from all ReadyItem rows
+        CLI->>Decode: static_hotswap_decode_loop
+        Decode->>Decode: load first B real items into active slots
+        loop until all items complete
+            Decode->>Decode: call compiled/raw static decode for active slots
+            Decode->>Decode: copy sampled token row to CPU
+            Decode->>Decode: append tokens to per-item CPU rows
+            Decode->>Decode: swap every finished slot from the ready bank
         end
+        Decode-->>CLI: HotSwapDecodeResult
         CLI->>Output: materialize_decoded_item for each item
         CLI->>Output: validate_outputs against generate_ids_static
         Output-->>CLI: correctness and text samples
@@ -108,9 +117,19 @@ stage timings, `vision_tokens`, and `projected_image_tokens`. For this model,
 projected image tokens are normally `vision_tokens / 4` because the adaptive MLP
 connector performs a 2x2 spatial merge.
 
-`DecodedDeviceItem` is the device-resident decode result before CPU
-materialization. It keeps a list of one-token tensors so the measured
-`decode_queue` phase does not include tokenizer decode or bulk CPU token copies.
+`ReadyBank` is the device-side collection of all prefills selected for the run.
+It concatenates real per-crop K/V cache rows, `rope_deltas`,
+`next_cache_position`, and first `next_token` across the item dimension. This
+is the source for hot-swap slot loads.
+
+`HotSwapDecodeResult` is the hot-swap scheduler output. Token history is stored
+as CPU rows copied from sampled token rows, matching the experiment-4 optimized
+path. Slot control and K/V swaps use batched `index_copy_`, not slice `fill_` or
+per-slot scalar writes.
+
+`DecodedDeviceItem` is still used by the optional fixed-cohort baseline. It
+keeps a list of one-token tensors so the measured fixed `decode_queue` phase
+does not include tokenizer decode or bulk CPU token copies.
 
 `ReadyCohort` is a padding-free batch of `ReadyItem` rows. It concatenates
 single-item K/V cache rows, `rope_deltas`, `next_cache_position`, and
@@ -136,8 +155,9 @@ shape:
 - Token IDs are checked for invalid values outside the model vocabulary.
 
 There is no hidden text padding path in this benchmark. Different crop/prompt
-lengths become different ready states, and the decode queue groups those ready
-states into fixed real cohorts.
+lengths become different ready states. The default hot-swap decode queue loads
+only real ready states into active slots; fixed cohorts group real ready states
+only when `DECODE_SCHEDULE=fixed_cohort` is requested.
 
 ## Timing Buckets
 
@@ -154,8 +174,10 @@ construction for all selected crops.
 native-resolution vision encoder, adaptive MLP projector, text prefill, and
 first-token LM head.
 
-`phase_timing_s.decode_queue` is only the fixed-cohort text decode loop over
-already-ready states.
+`phase_timing_s.decode_queue` is only text decode over already-ready states. In
+the default hot-swap schedule this includes active-slot setup, the hot-swap
+decode loop, token-row copies for EOS bookkeeping, and batched row swaps. It
+does not include vision/projector/text prefill or tokenizer postprocess.
 
 `pipeline_stage_timing_summary_s` is a clearer set of aliases over the existing
 timers:
@@ -164,7 +186,7 @@ timers:
   adaptive MLP projector.
 - `text_prefill`: text token embedding, image embed scatter, mRoPE/static-cache
   setup, text decoder prefill, first-token LM head, and argmax.
-- `text_decode`: the fixed-cohort decode queue.
+- `text_decode`: the selected decode queue, hot-swap by default.
 
 `phase_timing_s.decode_output_postprocess` is token tensor materialization,
 EOS trimming, and tokenizer decode.
@@ -175,9 +197,10 @@ It is not included in throughput.
 ## Device Differences
 
 On NPU, the decode path uses TorchAir cache compile, IncreFlashAttention,
-`torch_npu.scatter_update_` for decode KV writes, and optional overlapped EOS
-flag copies on a second NPU stream. Decoder linear weights are preconverted to
-FRACTAL_NZ before compile.
+`torch_npu.scatter_update_` for decode KV writes, and overlapped sampled-token
+row copies on a second NPU stream for hot-swap EOS bookkeeping. Decoder linear
+weights are preconverted to FRACTAL_NZ before compile. Hot-swap slot loads use
+batched `index_copy_` for K/V rows and slot-control tensors.
 
 On CUDA, TorchAir and `torch_npu` operators are not used. The same local model
 falls back to manual attention and per-row KV cache writes. Use `raw_eager` for
