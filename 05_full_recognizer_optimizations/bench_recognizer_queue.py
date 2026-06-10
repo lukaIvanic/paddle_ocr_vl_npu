@@ -8,9 +8,9 @@ This script measures the experiment-5 serving shape:
 3. Build all per-crop device static-cache prefill states.
 4. Decode the ready states through one compiled static decode slot.
 
-The first implementation intentionally supports active batch size 1 only. That
-keeps the scheduler simple while still measuring the important experiment-5
-split between preprocessing, vision/projector/prefill, and compiled decode.
+Decode uses fixed cohorts of real ready states, controlled by
+--active-batch-size. The final cohort can be smaller; the script does not add
+fake padded rows.
 """
 
 from __future__ import annotations
@@ -81,8 +81,24 @@ class ReadyItem:
 
 
 @dataclass
+class ReadyCohort:
+    items: list[ReadyItem]
+    cache: LocalPaddleOCRVLStaticCache
+    rope_deltas: torch.Tensor
+    next_cache_position: torch.Tensor
+    next_token: torch.Tensor
+
+
+@dataclass
 class DecodedDeviceItem:
     item: ReadyItem
+    token_tensors: list[torch.Tensor]
+    decode_calls: int
+
+
+@dataclass
+class DecodedDeviceCohort:
+    cohort: ReadyCohort
     token_tensors: list[torch.Tensor]
     decode_calls: int
 
@@ -255,6 +271,52 @@ def aggregate_ready_timings(items: list[ReadyItem]) -> dict[str, Any]:
     return aggregate_timing_dicts([item.timing_s for item in items])
 
 
+def sum_timing(item: ReadyItem, keys: list[str]) -> float:
+    return float(sum(float(item.timing_s.get(key, 0.0) or 0.0) for key in keys))
+
+
+def aggregate_pipeline_stage_timings(
+    *,
+    inputs: list[QueueInput],
+    ready_items: list[ReadyItem],
+    decode_queue_s: float,
+    decode_output_postprocess_s: float,
+    validation_s: float,
+) -> dict[str, Any]:
+    vision_keys = [
+        "vision_prepare",
+        "native_resolution_visual_encoder_total",
+        "adaptive_mlp_projector",
+    ]
+    text_prefill_keys = [
+        "text_token_embedding",
+        "image_embed_scatter",
+        "mrope_index",
+        "static_cache_alloc",
+        "text_prefill",
+        "prefill_lm_head",
+        "prefill_argmax",
+    ]
+    rows = [
+        {
+            "cpu_input_build": float(item.timing_s.get("input_build_s", 0.0) or 0.0),
+        }
+        for item in inputs
+    ]
+    ready_rows = [
+        {
+            "vision_prefill": sum_timing(item, vision_keys),
+            "text_prefill": sum_timing(item, text_prefill_keys),
+        }
+        for item in ready_items
+    ]
+    summary = aggregate_timing_dicts(rows + ready_rows)
+    summary["text_decode"] = {"sum": float(decode_queue_s), "count": 1, "avg": float(decode_queue_s), "min": float(decode_queue_s), "max": float(decode_queue_s), "p50": float(decode_queue_s), "p90": float(decode_queue_s)}
+    summary["decode_output_postprocess"] = {"sum": float(decode_output_postprocess_s), "count": 1, "avg": float(decode_output_postprocess_s), "min": float(decode_output_postprocess_s), "max": float(decode_output_postprocess_s), "p50": float(decode_output_postprocess_s), "p90": float(decode_output_postprocess_s)}
+    summary["validation"] = {"sum": float(validation_s), "count": 1, "avg": float(validation_s), "min": float(validation_s), "max": float(validation_s), "p50": float(validation_s), "p90": float(validation_s)}
+    return summary
+
+
 def prompt_token_summary(inputs: list[QueueInput], *, max_new_tokens: int, cache_length: int) -> dict[str, Any]:
     prompt_lengths = [int(item.input_ids.shape[1]) for item in inputs]
     required = [length + max(0, int(max_new_tokens) - 1) for length in prompt_lengths]
@@ -410,6 +472,47 @@ def build_ready_item(
     )
 
 
+def chunk_ready_items(items: list[ReadyItem], batch_size: int) -> list[list[ReadyItem]]:
+    if int(batch_size) <= 0:
+        raise ValueError(f"active batch size must be positive, got {batch_size}")
+    return [items[start : start + int(batch_size)] for start in range(0, len(items), int(batch_size))]
+
+
+def cohort_batch_sizes(num_items: int, active_batch_size: int) -> list[int]:
+    num_items = int(num_items)
+    active_batch_size = int(active_batch_size)
+    if num_items <= 0:
+        return []
+    if active_batch_size <= 0:
+        raise ValueError(f"active batch size must be positive, got {active_batch_size}")
+    return [min(active_batch_size, num_items - start) for start in range(0, num_items, active_batch_size)]
+
+
+@torch.inference_mode()
+def make_ready_cohort(items: list[ReadyItem]) -> ReadyCohort:
+    if not items:
+        raise ValueError("ready cohort requires at least one item")
+    cache_length = int(items[0].cache.cache_length)
+    if any(int(item.cache.cache_length) != cache_length for item in items):
+        raise ValueError("all ready items in a cohort must share cache_length")
+    num_layers = len(items[0].cache.key_caches)
+    key_caches = tuple(
+        torch.cat([item.cache.key_caches[layer_idx] for item in items], dim=0).contiguous()
+        for layer_idx in range(num_layers)
+    )
+    value_caches = tuple(
+        torch.cat([item.cache.value_caches[layer_idx] for item in items], dim=0).contiguous()
+        for layer_idx in range(num_layers)
+    )
+    return ReadyCohort(
+        items=items,
+        cache=LocalPaddleOCRVLStaticCache(key_caches, value_caches, cache_length),
+        rope_deltas=torch.cat([item.rope_deltas for item in items], dim=0).contiguous(),
+        next_cache_position=torch.cat([item.next_cache_position.reshape(1) for item in items], dim=0).contiguous(),
+        next_token=torch.cat([item.next_token for item in items], dim=0).contiguous(),
+    )
+
+
 def hits_eos(token_ids: torch.Tensor, eos_token_id: int) -> torch.Tensor:
     return token_ids.reshape(-1) == int(eos_token_id)
 
@@ -516,6 +619,104 @@ def decode_ready_item(
         token_tensors=generated,
         decode_calls=int(decode_calls),
     )
+
+
+@torch.inference_mode()
+def decode_ready_cohort(
+    *,
+    decode_fn: Callable,
+    cohort: ReadyCohort,
+    eos_token_id: int,
+    max_new_tokens: int,
+    eos_mode: str,
+) -> DecodedDeviceCohort:
+    if eos_mode not in EOS_MODE_CHOICES:
+        raise ValueError(f"unsupported eos_mode={eos_mode!r}")
+    if int(max_new_tokens) <= 0:
+        raise ValueError(f"max_new_tokens must be positive, got {max_new_tokens}")
+
+    device = cohort.next_token.device
+    next_token = cohort.next_token
+    cache_position = cohort.next_cache_position
+    flat_cache = cohort.cache.flat_tensors()
+    generated = [next_token]
+    decode_calls = 0
+    max_decode_calls = max(0, int(max_new_tokens) - 1)
+    batch_size = int(next_token.shape[0])
+
+    finished = hits_eos(next_token, int(eos_token_id)) if eos_mode == "overlap_event_flags" else None
+    if eos_mode == "overlap_event_flags" and bool(finished.detach().cpu().all().item()):
+        return DecodedDeviceCohort(cohort=cohort, token_tensors=generated, decode_calls=0)
+
+    use_npu_overlap = eos_mode == "overlap_event_flags" and device.type == "npu"
+    async_cpu_flags = None
+    copy_stream = None
+    pending_eos_event = None
+    pending_eos_step = None
+    if use_npu_overlap and max_decode_calls > 0:
+        import torch_npu
+
+        async_cpu_flags = torch.zeros((max_decode_calls, batch_size), dtype=torch.bool, pin_memory=True)
+        copy_stream = torch_npu.npu.Stream(device=device)
+
+    stopped = False
+    for step in range(max_decode_calls):
+        logits = decode_fn(next_token, cache_position, cohort.rope_deltas, *flat_cache)
+        sampled = torch.argmax(logits[:, -1, :].float(), dim=-1, keepdim=True)
+        if eos_mode == "overlap_event_flags":
+            assert finished is not None
+            active_before_step = ~finished
+            eos_fill = torch.full_like(sampled, int(eos_token_id))
+            next_token = torch.where(active_before_step.view(-1, 1), sampled, eos_fill)
+            new_hits = hits_eos(next_token, int(eos_token_id)) & active_before_step
+            finished = finished | new_hits
+        else:
+            next_token = sampled
+        generated.append(next_token)
+        cache_position = cache_position + 1
+        decode_calls += 1
+
+        if use_npu_overlap and async_cpu_flags is not None and copy_stream is not None:
+            eos_ready_event = torch_npu.npu.current_stream().record_event()
+            copy_done_event = torch_npu.npu.Event()
+            with torch_npu.npu.stream(copy_stream):
+                copy_stream.wait_event(eos_ready_event)
+                async_cpu_flags[step].copy_(finished, non_blocking=True)
+                copy_done_event.record(copy_stream)
+            if pending_eos_event is not None and pending_eos_step is not None:
+                pending_eos_event.synchronize()
+                if bool(async_cpu_flags[pending_eos_step].all().item()):
+                    stopped = True
+                    break
+            pending_eos_event = copy_done_event
+            pending_eos_step = int(step)
+        elif eos_mode == "overlap_event_flags":
+            if bool(finished.detach().cpu().all().item()):
+                stopped = True
+                break
+
+    if use_npu_overlap and not stopped and pending_eos_event is not None and pending_eos_step is not None:
+        pending_eos_event.synchronize()
+
+    return DecodedDeviceCohort(
+        cohort=cohort,
+        token_tensors=generated,
+        decode_calls=int(decode_calls),
+    )
+
+
+def split_decoded_device_cohort(cohort: DecodedDeviceCohort) -> list[DecodedDeviceItem]:
+    output: list[DecodedDeviceItem] = []
+    for row_idx, ready in enumerate(cohort.cohort.items):
+        row_tokens = [tokens[row_idx : row_idx + 1] for tokens in cohort.token_tensors]
+        output.append(
+            DecodedDeviceItem(
+                item=ready,
+                token_tensors=row_tokens,
+                decode_calls=int(cohort.decode_calls),
+            )
+        )
+    return output
 
 
 def materialize_decoded_item(
@@ -667,14 +868,14 @@ def parse_args() -> argparse.Namespace:
 @torch.inference_mode()
 def main() -> None:
     args = parse_args()
-    if int(args.active_batch_size) != 1:
-        raise ValueError("bench_recognizer_queue.py currently supports only --active-batch-size 1")
     if int(args.num_items) <= 0:
         raise ValueError(f"--num-items must be positive, got {args.num_items}")
     if int(args.max_new_tokens) <= 0:
         raise ValueError(f"--max-new-tokens must be positive, got {args.max_new_tokens}")
     if int(args.cache_length) <= 0:
         raise ValueError(f"--cache-length must be positive, got {args.cache_length}")
+    if int(args.active_batch_size) <= 0:
+        raise ValueError(f"--active-batch-size must be positive, got {args.active_batch_size}")
 
     model_dir = _resolve_model_dir(args.model)
     device = resolve_device(args.device)
@@ -706,11 +907,13 @@ def main() -> None:
             "experiment": "05_full_recognizer_queue",
             "error": "cache_length_too_small",
             "num_items": int(len(queue_inputs)),
+            "active_batch_size": int(args.active_batch_size),
             "cache_preflight": cache_preflight,
             "input_build_summary_s": input_build_summary,
         }
         print(json.dumps(output, indent=2, sort_keys=True, default=json_default))
         return
+    actual_decode_batch_sizes = list(dict.fromkeys(cohort_batch_sizes(len(queue_inputs), int(args.active_batch_size))))
 
     maybe_sync(device)
     model_load_start = time.perf_counter()
@@ -725,34 +928,53 @@ def main() -> None:
     weight_format_meta["setup_s"] = time.perf_counter() - weight_format_start
 
     flat_decode = model.make_flat_static_decode_module().eval()
-    maybe_sync(device)
-    compile_wrapper_start = time.perf_counter()
-    decode_fn, compile_meta = compile_decode_module(
-        flat_decode,
-        backend_name=str(args.decode_backend),
-        device=device,
-        cache_root=args.torchair_cache_dir,
-        batch_size=1,
-        cache_length=int(args.cache_length),
-    )
-    maybe_sync(device)
-    compile_wrapper_s = time.perf_counter() - compile_wrapper_start
+    decode_fns: dict[int, Callable] = {}
+    compile_meta_by_batch_size: dict[str, Any] = {}
+    compile_wrapper_s_by_batch_size: dict[str, float] = {}
+    compile_first_s_by_batch_size: dict[str, float] = {}
+    for batch_size in actual_decode_batch_sizes:
+        maybe_sync(device)
+        compile_wrapper_start = time.perf_counter()
+        decode_fn, batch_compile_meta = compile_decode_module(
+            flat_decode,
+            backend_name=str(args.decode_backend),
+            device=device,
+            cache_root=args.torchair_cache_dir,
+            batch_size=int(batch_size),
+            cache_length=int(args.cache_length),
+        )
+        maybe_sync(device)
+        compile_wrapper_s_by_batch_size[str(batch_size)] = time.perf_counter() - compile_wrapper_start
+        decode_fns[int(batch_size)] = decode_fn
+        compile_meta_by_batch_size[str(batch_size)] = batch_compile_meta
 
-    warm_cache = model.allocate_static_cache(
-        batch_size=1,
-        cache_length=int(args.cache_length),
-        device=device,
-        dtype=dtype,
-        init_mode="zeros",
-    )
-    warm_input = torch.zeros((1, 1), device=device, dtype=torch.int64)
-    warm_position = torch.full((1,), min(cache_preflight["input_tokens"]["max"], int(args.cache_length) - 1), device=device, dtype=torch.int64)
-    warm_rope = torch.zeros((1, 1), device=device, dtype=torch.int64)
-    maybe_sync(device)
-    compile_first_start = time.perf_counter()
-    decode_fn(warm_input, warm_position, warm_rope, *warm_cache.flat_tensors())
-    maybe_sync(device)
-    compile_first_s = time.perf_counter() - compile_first_start
+        warm_cache = model.allocate_static_cache(
+            batch_size=int(batch_size),
+            cache_length=int(args.cache_length),
+            device=device,
+            dtype=dtype,
+            init_mode="zeros",
+        )
+        warm_input = torch.zeros((int(batch_size), 1), device=device, dtype=torch.int64)
+        warm_position = torch.full(
+            (int(batch_size),),
+            min(cache_preflight["input_tokens"]["max"], int(args.cache_length) - 1),
+            device=device,
+            dtype=torch.int64,
+        )
+        warm_rope = torch.zeros((int(batch_size), 1), device=device, dtype=torch.int64)
+        maybe_sync(device)
+        compile_first_start = time.perf_counter()
+        decode_fn(warm_input, warm_position, warm_rope, *warm_cache.flat_tensors())
+        maybe_sync(device)
+        compile_first_s_by_batch_size[str(batch_size)] = time.perf_counter() - compile_first_start
+    compile_wrapper_s = float(sum(compile_wrapper_s_by_batch_size.values()))
+    compile_first_s = float(sum(compile_first_s_by_batch_size.values()))
+    compile_meta = {
+        "backend": str(args.decode_backend),
+        "batch_sizes": [int(value) for value in actual_decode_batch_sizes],
+        "by_batch_size": compile_meta_by_batch_size,
+    }
 
     ready_start = time.perf_counter()
     ready_items = [
@@ -769,15 +991,21 @@ def main() -> None:
 
     eos_token_id = int(model.config.eos_token_id)
     decode_start = time.perf_counter()
-    decoded_device_items = [
-        decode_ready_item(
-            decode_fn=decode_fn,
-            ready=ready,
+    ready_cohorts = [make_ready_cohort(chunk) for chunk in chunk_ready_items(ready_items, int(args.active_batch_size))]
+    decoded_device_cohorts = [
+        decode_ready_cohort(
+            decode_fn=decode_fns[int(cohort.next_token.shape[0])],
+            cohort=cohort,
             eos_token_id=eos_token_id,
             max_new_tokens=int(args.max_new_tokens),
             eos_mode=str(args.eos_mode),
         )
-        for ready in ready_items
+        for cohort in ready_cohorts
+    ]
+    decoded_device_items = [
+        item
+        for cohort in decoded_device_cohorts
+        for item in split_decoded_device_cohort(cohort)
     ]
     maybe_sync(device)
     decode_queue_s = time.perf_counter() - decode_start
@@ -805,11 +1033,20 @@ def main() -> None:
     )
     trimmed_rows = [item.trimmed_token_ids for item in decoded_items]
     token_summary = token_range_summary(trimmed_rows, vocab_size=int(model.config.text_config.vocab_size))
-    total_decode_calls = sum(int(item.decode_calls) for item in decoded_items)
+    total_decode_calls = sum(int(cohort.decode_calls) for cohort in decoded_device_cohorts)
+    raw_decode_token_calls = sum(int(cohort.decode_calls) * int(cohort.cohort.next_token.shape[0]) for cohort in decoded_device_cohorts)
     effective_decode_token_calls = sum(max(0, len(item.trimmed_token_ids) - 1) for item in decoded_items)
     generated_new_tokens = sum(len(item.trimmed_token_ids) for item in decoded_items)
     input_build_wall_s = float(input_build_summary.get("input_build_wall_s", 0.0))
     total_excluding_setup_s = input_build_wall_s + ready_bank_build_s + decode_queue_s + decode_output_postprocess_s
+    ready_item_timing_summary = aggregate_ready_timings(ready_items)
+    pipeline_stage_timing_summary = aggregate_pipeline_stage_timings(
+        inputs=queue_inputs,
+        ready_items=ready_items,
+        decode_queue_s=float(decode_queue_s),
+        decode_output_postprocess_s=float(decode_output_postprocess_s),
+        validation_s=float(validation.get("elapsed_s", 0.0) or 0.0),
+    )
 
     output = {
         "experiment": "05_full_recognizer_queue",
@@ -825,7 +1062,9 @@ def main() -> None:
         "vision_attention": get_vision_attention_impl(),
         "vision_prompt_fa_layout": get_vision_prompt_fa_layout(),
         "active_batch_size": int(args.active_batch_size),
-        "scheduler": "single_slot_ready_state_queue",
+        "actual_decode_batch_sizes": [int(value) for value in actual_decode_batch_sizes],
+        "decode_cohort_count": int(len(decoded_device_cohorts)),
+        "scheduler": "fixed_cohort_ready_state_queue",
         "num_items": int(len(decoded_items)),
         "max_new_tokens": int(args.max_new_tokens),
         "cache_length": int(args.cache_length),
@@ -835,11 +1074,14 @@ def main() -> None:
             "decode_weight_format": float(weight_format_meta.get("setup_s", 0.0) or 0.0),
             "compile_wrapper": float(compile_wrapper_s),
             "compile_first_call": float(compile_first_s),
+            "compile_wrapper_by_batch_size": compile_wrapper_s_by_batch_size,
+            "compile_first_call_by_batch_size": compile_first_s_by_batch_size,
         },
         "linear_weight_format": weight_format_meta,
         "compile": compile_meta,
         "input_build_summary_s": input_build_summary,
-        "ready_item_timing_summary_s": aggregate_ready_timings(ready_items),
+        "ready_item_timing_summary_s": ready_item_timing_summary,
+        "pipeline_stage_timing_summary_s": pipeline_stage_timing_summary,
         "phase_timing_s": {
             "input_build_wall": input_build_wall_s,
             "ready_bank_build": float(ready_bank_build_s),
@@ -852,13 +1094,17 @@ def main() -> None:
             "items_per_s_excluding_setup": tok_per_s(len(decoded_items), total_excluding_setup_s),
             "items_per_s_decode_only": tok_per_s(len(decoded_items), decode_queue_s),
             "decode_calls_per_s": tok_per_s(total_decode_calls, decode_queue_s),
+            "raw_decode_token_calls_per_s": tok_per_s(raw_decode_token_calls, decode_queue_s),
             "effective_decode_tokens_per_s": tok_per_s(effective_decode_token_calls, decode_queue_s),
             "generated_new_tokens_per_s_decode_only": tok_per_s(generated_new_tokens, decode_queue_s),
         },
         "decode_summary": {
             "decode_calls": int(total_decode_calls),
+            "raw_decode_token_calls": int(raw_decode_token_calls),
             "effective_decode_token_calls": int(effective_decode_token_calls),
             "generated_new_tokens": int(generated_new_tokens),
+            "decode_cohort_count": int(len(decoded_device_cohorts)),
+            "decode_cohort_batch_sizes": [int(cohort.cohort.next_token.shape[0]) for cohort in decoded_device_cohorts],
             "eos_hit_count": int(sum(1 for item in decoded_items if item.eos_hit)),
             "length_cap_hit_count": int(sum(1 for item in decoded_items if item.length_cap_hit)),
             "trimmed_new_tokens": stats([float(len(item.trimmed_token_ids)) for item in decoded_items]),
@@ -907,7 +1153,8 @@ def main() -> None:
         "stage_notes": {
             "input_build_wall": "CPU crop image read/decode, resize/normalize/patchify, and prompt token construction for all selected crops.",
             "ready_bank_build": "Sequential per-crop device transfer plus vision/projector/text prefill into device static-cache states.",
-            "decode_queue": "Single active compiled decode slot over already-prefilled states; no vision/prefill work occurs inside this phase.",
+            "decode_queue": "Fixed-cohort text decode over already-prefilled states; no vision/prefill work occurs inside this phase.",
+            "pipeline_stage_timing_summary_s": "Clearer aliases over existing timers: vision_prefill is vision prepare + visual encoder + adaptive MLP; text_prefill is text-side embedding/scatter/mRoPE/static-cache/text prefill/first-token work; text_decode is decode_queue.",
             "validation": "Direct local static generation is run after measured phases and is not included in throughput.",
             "cache_length": "Static KV cache is preflighted against input_tokens + max_new_tokens - 1; overflow is a hard error.",
         },

@@ -281,6 +281,7 @@ direct local static generation for all items. The runner writes one JSON under
 - `CACHE_PREFLIGHT`
 - `SETUP_TIMING_S`
 - `PHASE_TIMING_S`
+- `PIPELINE_STAGE_TIMING_SUMMARY_S`
 - `THROUGHPUT`
 - `DECODE_SUMMARY`
 - `CORRECTNESS`
@@ -298,9 +299,26 @@ not write helper scripts; rerun only by increasing `CACHE_LENGTH`, for example:
 CACHE_LENGTH=1536 bash run_npu_recognizer_queue_benchmark.sh
 ```
 
+To test higher fixed decode cohort sizes, use real crops and change only
+`ACTIVE_BATCH_SIZE`. The benchmark remains padding-free; if the last cohort is
+smaller than the requested batch size, it uses that real smaller shape and
+reports it in `actual_decode_batch_sizes`.
+
+Recommended NPU run order:
+
+```sh
+ACTIVE_BATCH_SIZE=1 CACHE_LENGTH=1536 bash run_npu_recognizer_queue_benchmark.sh
+ACTIVE_BATCH_SIZE=4 CACHE_LENGTH=1536 bash run_npu_recognizer_queue_benchmark.sh
+ACTIVE_BATCH_SIZE=8 CACHE_LENGTH=1536 bash run_npu_recognizer_queue_benchmark.sh
+```
+
 The measured `decode_queue` phase excludes CPU token materialization and
 tokenizer decode; those are reported as `decode_output_postprocess`.
 Validation is also separate from measured throughput.
+
+Use the clearer `PIPELINE_STAGE_TIMING_SUMMARY_S` names when summarizing:
+`vision_prefill`, `text_prefill`, and `text_decode`. The older
+`READY_STAGE_SUMMARY_S` remains available for detailed substage debugging.
 
 On the Vast/CUDA lane, use the CUDA runner for a smoke/algorithmic benchmark.
 This is not an NPU throughput result. The CUDA runner defaults to `NUM_ITEMS=8`,
@@ -329,6 +347,18 @@ PYTHON_BIN=/workspace/venvs/paddle_ocr_vl/bin/python \
 bash run_cuda_recognizer_queue_benchmark.sh
 ```
 
+To sanity-check CUDA higher fixed decode cohorts:
+
+```sh
+ACTIVE_BATCH_SIZE=4 NUM_ITEMS=8 CACHE_LENGTH=1024 \
+PYTHON_BIN=/workspace/venvs/paddle_ocr_vl/bin/python \
+bash run_cuda_recognizer_queue_benchmark.sh
+
+ACTIVE_BATCH_SIZE=8 NUM_ITEMS=8 CACHE_LENGTH=1024 \
+PYTHON_BIN=/workspace/venvs/paddle_ocr_vl/bin/python \
+bash run_cuda_recognizer_queue_benchmark.sh
+```
+
 On the current Vast box, keep the checkout clean by using a fresh clone such as
 `/workspace/paddle_ocr_vl_npu_queue_cuda` if an older checkout is dirty. The
 runner defaults to `MODEL=PaddlePaddle/PaddleOCR-VL-1.6`, sets
@@ -336,10 +366,10 @@ runner defaults to `MODEL=PaddlePaddle/PaddleOCR-VL-1.6`, sets
 reuse the already-downloaded Hugging Face snapshot.
 
 Paste back the printed `QUEUE_BENCHMARK_SUMMARY`, `CACHE_PREFLIGHT`,
-`PHASE_TIMING_S`, `THROUGHPUT`, `DECODE_SUMMARY`, `CORRECTNESS`,
-`READY_STAGE_SUMMARY_S`, `ITEM_SUMMARY`, `TEXT_SAMPLE`, and `OUTPUT_JSON`.
-Do not write a separate parser; the runner already validates the JSON and exits
-nonzero if correctness fails.
+`PHASE_TIMING_S`, `PIPELINE_STAGE_TIMING_SUMMARY_S`, `THROUGHPUT`,
+`DECODE_SUMMARY`, `CORRECTNESS`, `READY_STAGE_SUMMARY_S`, `ITEM_SUMMARY`,
+`TEXT_SAMPLE`, and `OUTPUT_JSON`. Do not write a separate parser; the runner
+already validates the JSON and exits nonzero if correctness fails.
 
 For native-resolution vision encoder profiling, use the committed profiler
 runner. It profiles only `vision_model.encoder`; crop preprocessing, device

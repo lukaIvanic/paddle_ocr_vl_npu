@@ -72,6 +72,8 @@ correctness = data.get("correctness", {})
 print("QUEUE_BENCHMARK_SUMMARY", json.dumps({
     "num_items": data.get("num_items"),
     "active_batch_size": data.get("active_batch_size"),
+    "actual_decode_batch_sizes": data.get("actual_decode_batch_sizes"),
+    "decode_cohort_count": data.get("decode_cohort_count"),
     "cache_length": data.get("cache_length"),
     "max_new_tokens": data.get("max_new_tokens"),
     "decode_backend": data.get("decode_backend"),
@@ -82,6 +84,7 @@ print("QUEUE_BENCHMARK_SUMMARY", json.dumps({
 print("CACHE_PREFLIGHT", json.dumps(data.get("cache_preflight", {}), sort_keys=True))
 print("SETUP_TIMING_S", json.dumps(data.get("setup_timing_s", {}), sort_keys=True))
 print("PHASE_TIMING_S", json.dumps(data.get("phase_timing_s", {}), sort_keys=True))
+print("PIPELINE_STAGE_TIMING_SUMMARY_S", json.dumps(data.get("pipeline_stage_timing_summary_s", {}), sort_keys=True))
 print("THROUGHPUT", json.dumps(data.get("throughput", {}), sort_keys=True))
 print("DECODE_SUMMARY", json.dumps(data.get("decode_summary", {}), sort_keys=True))
 print("CORRECTNESS", json.dumps(correctness, sort_keys=True))

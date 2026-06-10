@@ -7,9 +7,10 @@ local PaddleOCR-VL preprocessing, native-resolution vision encoding, adaptive
 MLP projection, text prefill, static-cache decode, output postprocess, and
 correctness validation.
 
-The first version intentionally supports `ACTIVE_BATCH_SIZE=1`. That keeps the
-decode scheduler simple while still answering the experiment-5 question: where
-does time go when 100 real crops are processed end to end by the recognition VLM?
+The queue benchmark supports fixed decode cohorts through `ACTIVE_BATCH_SIZE`.
+It stays padding-free: if the final cohort has fewer than `ACTIVE_BATCH_SIZE`
+items, the script compiles/wraps and decodes that smaller real cohort shape
+instead of adding fake rows.
 
 ## Data Flow
 
@@ -33,8 +34,8 @@ flowchart LR
     E4 --> E5["mRoPE indices + static KV cache alloc"]
     E5 --> E6["Text prefill writes KV cache<br/>per layer K/V: [1, 2, cache_length, 128]"]
     E6 --> E7["LM head argmax<br/>ReadyItem: cache, rope_deltas, cache_position, next_token"]
-    E7 --> F["Decode queue<br/>single active slot"]
-    F --> F1["Repeated static decode calls<br/>next_token -> logits -> argmax"]
+    E7 --> F["Decode queue<br/>fixed real cohorts"]
+    F --> F1["Batched static decode calls<br/>next_token[B,1] -> logits -> argmax"]
     F1 --> F2["EOS policy<br/>none or overlap_event_flags"]
     F2 --> F3["Device token tensors kept until postprocess"]
     F3 --> G["Postprocess"]
@@ -80,7 +81,7 @@ sequenceDiagram
         end
         loop ReadyItem rows
             CLI->>Decode: decode_ready_item
-            Decode->>Decode: call compiled/raw static decode until EOS or cap
+            Decode->>Decode: call compiled/raw static decode by real fixed cohort until EOS or cap
             Decode-->>CLI: DecodedDeviceItem
         end
         CLI->>Output: materialize_decoded_item for each item
@@ -111,6 +112,11 @@ connector performs a 2x2 spatial merge.
 materialization. It keeps a list of one-token tensors so the measured
 `decode_queue` phase does not include tokenizer decode or bulk CPU token copies.
 
+`ReadyCohort` is a padding-free batch of `ReadyItem` rows. It concatenates
+single-item K/V cache rows, `rope_deltas`, `next_cache_position`, and
+`next_token` across batch dimension. The last cohort can be smaller than
+`ACTIVE_BATCH_SIZE`.
+
 `DecodedItem` is the CPU-side output after materialization. It contains raw token
 IDs, EOS-trimmed token IDs, generated text, EOS/length-cap flags, and
 postprocess timing.
@@ -120,8 +126,8 @@ postprocess timing.
 The benchmark deliberately fails early instead of silently changing the serving
 shape:
 
-- `active_batch_size` must be `1`.
 - `num_items`, `max_new_tokens`, and `cache_length` must be positive.
+- `active_batch_size` must be positive.
 - Every selected crop file must exist.
 - `cache_length` must cover `input_tokens + max_new_tokens - 1` for every item.
 - Image-token count and projected-image-embedding count must match exactly.
@@ -130,8 +136,8 @@ shape:
 - Token IDs are checked for invalid values outside the model vocabulary.
 
 There is no hidden text padding path in this benchmark. Different crop/prompt
-lengths become different ready states, and the single active decode slot consumes
-one ready state at a time.
+lengths become different ready states, and the decode queue groups those ready
+states into fixed real cohorts.
 
 ## Timing Buckets
 
@@ -148,8 +154,17 @@ construction for all selected crops.
 native-resolution vision encoder, adaptive MLP projector, text prefill, and
 first-token LM head.
 
-`phase_timing_s.decode_queue` is only the active-slot static decode loop over
+`phase_timing_s.decode_queue` is only the fixed-cohort text decode loop over
 already-ready states.
+
+`pipeline_stage_timing_summary_s` is a clearer set of aliases over the existing
+timers:
+
+- `vision_prefill`: vision prepare, native-resolution visual encoder, and
+  adaptive MLP projector.
+- `text_prefill`: text token embedding, image embed scatter, mRoPE/static-cache
+  setup, text decoder prefill, first-token LM head, and argmax.
+- `text_decode`: the fixed-cohort decode queue.
 
 `phase_timing_s.decode_output_postprocess` is token tensor materialization,
 EOS trimming, and tokenizer decode.
