@@ -20,12 +20,21 @@ NPU_JIT_COMPILE="${NPU_JIT_COMPILE:-off}"
 VALIDATION_ITEMS="${VALIDATION_ITEMS:--1}"
 OUTPUT_DIR="${OUTPUT_DIR:-${SCRIPT_DIR}/outputs/page_pipeline_cuda_smoke}"
 TORCHAIR_CACHE_DIR="${TORCHAIR_CACHE_DIR:-${OUTPUT_DIR}/torchair_cache}"
+EXPECT_LAYOUT_SOURCE="${EXPECT_LAYOUT_SOURCE:-}"
+EXPECTED_RECOGNIZER_CROPS="${EXPECTED_RECOGNIZER_CROPS:-}"
+MIN_RECOGNIZER_CROPS="${MIN_RECOGNIZER_CROPS:-}"
 RUN_ID="${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
 OUTPUT_PATH="${OUTPUT_PATH:-${OUTPUT_DIR}/page_pipeline_${RUN_ID}_p${NUM_PAGES}_b${ACTIVE_BATCH_SIZE}_${DECODE_BACKEND}.json}"
 LAYOUT_CACHE_JSON="${LAYOUT_CACHE_JSON:-${OUTPUT_DIR}/layout_cache_first${NUM_PAGES}_${RUN_ID}.json}"
 REUSE_LAYOUT_CACHE="${REUSE_LAYOUT_CACHE:-0}"
 DOWNLOAD_DATASET="${DOWNLOAD_DATASET:-1}"
 CHECK_PADDLE_IMPORT="${CHECK_PADDLE_IMPORT:-1}"
+
+if [[ -z "${EXPECTED_RECOGNIZER_CROPS}" && "${LAYOUT_SOURCE}" == "omnidocbench_gt" && "${PAGE_START}" == "0" && "${NUM_PAGES}" == "64" ]]; then
+  # OmniDocBench v1.6 first-64 full-GT layout_dets, excluding ignored and empty GT boxes.
+  # If this fails, the run is not measuring the same crop set as the first-64 full-GT benchmark.
+  EXPECTED_RECOGNIZER_CROPS="1221"
+fi
 
 mkdir -p "${OUTPUT_DIR}"
 
@@ -78,6 +87,15 @@ CMD=(
 if [[ "${REUSE_LAYOUT_CACHE}" == "1" ]]; then
   CMD+=(--reuse-layout-cache)
 fi
+if [[ -n "${EXPECT_LAYOUT_SOURCE}" ]]; then
+  CMD+=(--expect-layout-source "${EXPECT_LAYOUT_SOURCE}")
+fi
+if [[ -n "${EXPECTED_RECOGNIZER_CROPS}" ]]; then
+  CMD+=(--expected-recognizer-crops "${EXPECTED_RECOGNIZER_CROPS}")
+fi
+if [[ -n "${MIN_RECOGNIZER_CROPS}" ]]; then
+  CMD+=(--min-recognizer-crops "${MIN_RECOGNIZER_CROPS}")
+fi
 
 echo "COMMAND ${CMD[*]}"
 "${CMD[@]}" | tee "${OUTPUT_PATH}"
@@ -104,6 +122,7 @@ omnidoc_metrics = data.get("omnidocbench_metrics_without_cdm", {})
 print("PAGE_PIPELINE_SUMMARY", json.dumps({
     "page_count": data.get("page_count"),
     "recognizer_crop_count": data.get("recognizer_crop_count"),
+    "crop_count_contract": data.get("crop_count_contract"),
     "uses_ground_truth_layout_boxes": data.get("uses_ground_truth_layout_boxes"),
     "doc_layout_model_measured": data.get("doc_layout_model_measured"),
     "layout_source": data.get("layout", {}).get("source"),

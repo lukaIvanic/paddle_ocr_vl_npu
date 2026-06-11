@@ -1589,6 +1589,24 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--torchair-cache-dir", type=Path, default=DEFAULT_TORCHAIR_CACHE_DIR)
     parser.add_argument("--validation-items", type=int, default=-1)
     parser.add_argument("--rough-gt-min-iou", type=float, default=0.5)
+    parser.add_argument(
+        "--expect-layout-source",
+        default="",
+        choices=["", "omnidocbench_gt", "official", "cache"],
+        help="Fail early unless the resolved layout source matches this value.",
+    )
+    parser.add_argument(
+        "--expected-recognizer-crops",
+        type=int,
+        default=-1,
+        help="Fail early unless the final recognizer crop count exactly matches this value.",
+    )
+    parser.add_argument(
+        "--min-recognizer-crops",
+        type=int,
+        default=-1,
+        help="Fail early unless the final recognizer crop count is at least this value.",
+    )
     parser.add_argument("--json", action="store_true")
     return parser.parse_args()
 
@@ -1667,6 +1685,21 @@ def main() -> None:
     crops, crop_summary, crop_timing = build_detected_crops(pages=pages, layout_pages=layout_pages, args=args)
     if not crops:
         raise RuntimeError("layout detection produced zero recognizer crops")
+    if args.expect_layout_source and layout_source != str(args.expect_layout_source):
+        raise RuntimeError(
+            f"layout source contract failed: expected {args.expect_layout_source!r}, got {layout_source!r}. "
+            "This usually means the run is measuring a different crop source than intended."
+        )
+    if int(args.expected_recognizer_crops) >= 0 and len(crops) != int(args.expected_recognizer_crops):
+        raise RuntimeError(
+            f"recognizer crop count contract failed: expected {int(args.expected_recognizer_crops)}, got {len(crops)}. "
+            f"label_counts={crop_summary.get('label_counts')} skipped_count={crop_summary.get('skipped_count')}"
+        )
+    if int(args.min_recognizer_crops) >= 0 and len(crops) < int(args.min_recognizer_crops):
+        raise RuntimeError(
+            f"recognizer crop count contract failed: expected at least {int(args.min_recognizer_crops)}, got {len(crops)}. "
+            f"label_counts={crop_summary.get('label_counts')} skipped_count={crop_summary.get('skipped_count')}"
+        )
     if int(args.active_batch_size) > len(crops):
         raise ValueError(
             f"--active-batch-size {args.active_batch_size} exceeds detected crops {len(crops)}; "
@@ -1830,6 +1863,16 @@ def main() -> None:
         "page_start": int(args.page_start),
         "page_count": int(len(pages)),
         "recognizer_crop_count": int(len(decoded_items)),
+        "crop_count_contract": {
+            "expect_layout_source": str(args.expect_layout_source),
+            "expected_recognizer_crops": (
+                None if int(args.expected_recognizer_crops) < 0 else int(args.expected_recognizer_crops)
+            ),
+            "min_recognizer_crops": None if int(args.min_recognizer_crops) < 0 else int(args.min_recognizer_crops),
+            "actual_layout_source": str(layout_source),
+            "actual_recognizer_crops": int(len(decoded_items)),
+            "passed": True,
+        },
         "active_batch_size": int(args.active_batch_size),
         "prefill_batch_size": 1,
         "decode_schedule": "hotswap",
