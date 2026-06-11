@@ -1946,6 +1946,7 @@ def main() -> None:
             "eos_hit_count": int(sum(1 for item in decoded_items if item.eos_hit)),
             "length_cap_hit_count": int(length_cap_hit_count),
             "trimmed_new_tokens": stats([float(len(item.trimmed_token_ids)) for item in decoded_items]),
+            "trimmed_new_token_counts": [int(len(item.trimmed_token_ids)) for item in decoded_items],
             "hotswap_phase_timing_s": hotswap_result.phase_timing_s,
             "hotswap_diagnostics": hotswap_result.diagnostics,
         },

@@ -18,14 +18,18 @@ CACHE_LENGTH="${CACHE_LENGTH:-2048}"
 DECODE_BACKEND="${DECODE_BACKEND:-raw_eager}"
 NPU_JIT_COMPILE="${NPU_JIT_COMPILE:-off}"
 VALIDATION_ITEMS="${VALIDATION_ITEMS:--1}"
+PAGE_CHUNK_SIZE="${PAGE_CHUNK_SIZE:-0}"
 OUTPUT_DIR="${OUTPUT_DIR:-${SCRIPT_DIR}/outputs/page_pipeline_cuda_smoke}"
 TORCHAIR_CACHE_DIR="${TORCHAIR_CACHE_DIR:-${OUTPUT_DIR}/torchair_cache}"
 EXPECT_LAYOUT_SOURCE="${EXPECT_LAYOUT_SOURCE:-}"
 EXPECTED_RECOGNIZER_CROPS="${EXPECTED_RECOGNIZER_CROPS:-}"
 MIN_RECOGNIZER_CROPS="${MIN_RECOGNIZER_CROPS:-}"
+FAIL_ON_MISMATCH="${FAIL_ON_MISMATCH:-1}"
+FAIL_ON_LENGTH_CAP="${FAIL_ON_LENGTH_CAP:-0}"
 RUN_ID="${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
 OUTPUT_PATH="${OUTPUT_PATH:-${OUTPUT_DIR}/page_pipeline_${RUN_ID}_p${NUM_PAGES}_b${ACTIVE_BATCH_SIZE}_${DECODE_BACKEND}.json}"
 LAYOUT_CACHE_JSON="${LAYOUT_CACHE_JSON:-${OUTPUT_DIR}/layout_cache_first${NUM_PAGES}_${RUN_ID}.json}"
+CHILD_OUTPUT_DIR="${CHILD_OUTPUT_DIR:-${OUTPUT_DIR}/chunks_${RUN_ID}_p${NUM_PAGES}_b${ACTIVE_BATCH_SIZE}_${DECODE_BACKEND}}"
 REUSE_LAYOUT_CACHE="${REUSE_LAYOUT_CACHE:-0}"
 DOWNLOAD_DATASET="${DOWNLOAD_DATASET:-1}"
 CHECK_PADDLE_IMPORT="${CHECK_PADDLE_IMPORT:-1}"
@@ -61,6 +65,55 @@ REUSE_LAYOUT_CACHE=1 against a layout JSON produced elsewhere.
 MSG
     exit 90
   fi
+fi
+
+if (( PAGE_CHUNK_SIZE > 0 )); then
+  CHUNK_CMD=(
+    "${PYTHON_BIN}" "${SCRIPT_DIR}/run_chunked_page_pipeline_e2e.py"
+    --python-bin "${PYTHON_BIN}"
+    --model "${MODEL}"
+    --dataset-dir "${DATASET_DIR}"
+    --page-start "${PAGE_START}"
+    --num-pages "${NUM_PAGES}"
+    --page-chunk-size "${PAGE_CHUNK_SIZE}"
+    --child-output-dir "${CHILD_OUTPUT_DIR}"
+    --output-json "${OUTPUT_PATH}"
+    --layout-source "${LAYOUT_SOURCE}"
+    --layout-device "${LAYOUT_DEVICE}"
+    --device "${DEVICE}"
+    --dtype fp16
+    --decode-backend "${DECODE_BACKEND}"
+    --active-batch-size "${ACTIVE_BATCH_SIZE}"
+    --max-new-tokens "${MAX_NEW_TOKENS}"
+    --cache-length "${CACHE_LENGTH}"
+    --npu-jit-compile "${NPU_JIT_COMPILE}"
+    --torchair-cache-dir "${TORCHAIR_CACHE_DIR}"
+    --validation-items "${VALIDATION_ITEMS}"
+  )
+  if [[ "${REUSE_LAYOUT_CACHE}" == "1" ]]; then
+    CHUNK_CMD+=(--reuse-layout-cache)
+  fi
+  if [[ -n "${EXPECT_LAYOUT_SOURCE}" ]]; then
+    CHUNK_CMD+=(--expect-layout-source "${EXPECT_LAYOUT_SOURCE}")
+  fi
+  if [[ -n "${EXPECTED_RECOGNIZER_CROPS}" ]]; then
+    CHUNK_CMD+=(--expected-recognizer-crops "${EXPECTED_RECOGNIZER_CROPS}")
+  fi
+  if [[ -n "${MIN_RECOGNIZER_CROPS}" ]]; then
+    CHUNK_CMD+=(--min-recognizer-crops "${MIN_RECOGNIZER_CROPS}")
+  fi
+  if [[ "${FAIL_ON_MISMATCH}" == "1" ]]; then
+    CHUNK_CMD+=(--fail-on-mismatch)
+  fi
+  if [[ "${FAIL_ON_LENGTH_CAP}" == "1" ]]; then
+    CHUNK_CMD+=(--fail-on-length-cap)
+  fi
+
+  echo "CHUNKED_COMMAND ${CHUNK_CMD[*]}"
+  "${CHUNK_CMD[@]}"
+  "${PYTHON_BIN}" -m json.tool "${OUTPUT_PATH}" >/dev/null
+  echo "WROTE ${OUTPUT_PATH}"
+  exit 0
 fi
 
 CMD=(
