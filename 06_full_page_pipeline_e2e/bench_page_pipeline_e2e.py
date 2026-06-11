@@ -52,6 +52,7 @@ from bench_recognizer_queue import (  # noqa: E402
     DECODE_SCHEDULE_CHOICES,
     EOS_MODE_CHOICES,
     QueueInput,
+    ReadyItem,
     build_ready_bank_incremental,
     cast_decode_linear_weights_to_nz,
     json_default,
@@ -832,6 +833,62 @@ def decode_warmup_summary(compile_meta: dict[str, Any], compile_timing: dict[str
     }
 
 
+def crop_chunk_ranges(total: int, *, crop_chunk_size: int, batch_size: int) -> list[tuple[int, int]]:
+    total = int(total)
+    chunk_size = int(crop_chunk_size)
+    batch = int(batch_size)
+    if total <= 0:
+        return []
+    if chunk_size <= 0 or chunk_size >= total:
+        return [(0, total)]
+    if chunk_size < batch:
+        raise ValueError(f"--crop-chunk-size {chunk_size} must be 0 or at least --active-batch-size {batch}")
+    ranges: list[tuple[int, int]] = []
+    start = 0
+    while start < total:
+        end = min(total, start + chunk_size)
+        remaining = total - end
+        if ranges and 0 < remaining < batch:
+            end = total
+        ranges.append((start, end))
+        start = end
+    return ranges
+
+
+def empty_device_cache(device: torch.device) -> None:
+    maybe_sync(device)
+    if device.type == "cuda" and torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    elif device.type == "npu" and hasattr(torch, "npu") and hasattr(torch.npu, "empty_cache"):
+        torch.npu.empty_cache()
+    maybe_sync(device)
+
+
+def sum_numeric_dicts(rows: list[dict[str, Any]]) -> dict[str, float]:
+    out: dict[str, float] = {}
+    for row in rows:
+        for key, value in row.items():
+            if isinstance(value, (int, float)):
+                out[key] = out.get(key, 0.0) + float(value)
+    return out
+
+
+def strip_decoded_item_device_state(decoded: Any) -> Any:
+    old = decoded.item
+    empty_long = torch.empty((0,), dtype=torch.long)
+    decoded.item = ReadyItem(
+        input_item=old.input_item,
+        cache=None,
+        rope_deltas=empty_long,
+        next_cache_position=empty_long,
+        next_token=empty_long,
+        timing_s=old.timing_s,
+        vision_tokens=int(old.vision_tokens),
+        projected_image_tokens=int(old.projected_image_tokens),
+    )
+    return decoded
+
+
 def page_output_summary(decoded_items: list[Any]) -> list[dict[str, Any]]:
     by_page: dict[int, list[Any]] = defaultdict(list)
     for item in decoded_items:
@@ -1580,6 +1637,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-new-tokens", type=int, default=768)
     parser.add_argument("--cache-length", type=int, default=2048)
     parser.add_argument("--active-batch-size", type=int, default=8)
+    parser.add_argument(
+        "--crop-chunk-size",
+        type=int,
+        default=0,
+        help=(
+            "If >0, build the full crop/input list once, then process recognizer prefill+decode in contiguous "
+            "crop chunks of this size. This avoids keeping all crop KV caches resident on device."
+        ),
+    )
     parser.add_argument("--device", default="npu:0")
     parser.add_argument("--dtype", default="fp16", choices=["fp16", "float16", "bf16", "bfloat16"])
     parser.add_argument("--decode-backend", default="torchair", choices=BACKEND_CHOICES)
@@ -1705,6 +1771,11 @@ def main() -> None:
             f"--active-batch-size {args.active_batch_size} exceeds detected crops {len(crops)}; "
             "experiment 6 does not create fake decode rows"
         )
+    chunk_ranges = crop_chunk_ranges(
+        len(crops),
+        crop_chunk_size=int(args.crop_chunk_size),
+        batch_size=int(args.active_batch_size),
+    )
 
     pre_cfg = load_preprocessor_config(model_dir)
     tokenizer = Tokenizer.from_file(str(model_dir / "tokenizer.json"))
@@ -1762,58 +1833,105 @@ def main() -> None:
     )
     setup_timing.update(compile_timing)
 
-    ready_start = time.perf_counter()
-    ready_items, ready_bank, ready_details = build_ready_bank_incremental(
-        model=model,
-        queue_inputs=queue_inputs,
-        cache_length=int(args.cache_length),
-        device=device,
-        vision_prefill_batch_size=1,
-    )
-    maybe_sync(device)
-    ready_bank_build_s = time.perf_counter() - ready_start
-
-    hotswap_external_overlap_buffer_setup_s = 0.0
-    overlap_cpu_tokens = None
-    overlap_copy_stream = None
-    if device.type == "npu":
-        import torch_npu
-
-        start = time.perf_counter()
-        overlap_cpu_tokens = torch.empty((1, int(args.active_batch_size)), dtype=ready_bank.next_token.dtype, pin_memory=True)
-        overlap_copy_stream = torch_npu.npu.Stream(device=device)
-        hotswap_external_overlap_buffer_setup_s = time.perf_counter() - start
-
     eos_token_id = int(model.config.eos_token_id)
-    decode_start = time.perf_counter()
-    hotswap_result = static_hotswap_decode_loop(
-        decode_fn=decode_fn,
-        ready=ready_bank,
-        batch_size=int(args.active_batch_size),
-        eos_token_id=eos_token_id,
-        max_new_tokens=int(args.max_new_tokens),
-        eos_mode=str(args.eos_mode),
-        overlap_cpu_tokens=overlap_cpu_tokens,
-        overlap_copy_stream=overlap_copy_stream,
-    )
-    maybe_sync(device)
-    decode_queue_s = time.perf_counter() - decode_start
+    ready_bank_build_s = 0.0
+    decode_queue_s = 0.0
+    decode_output_postprocess_s = 0.0
+    hotswap_external_overlap_buffer_setup_s = 0.0
+    crop_chunk_cleanup_s = 0.0
+    ready_item_timing_rows: list[dict[str, float]] = []
+    ready_details_chunks: list[dict[str, Any]] = []
+    decoded_items = []
+    hotswap_phase_rows: list[dict[str, float]] = []
+    hotswap_diagnostics: dict[str, Any] = {}
+    total_decode_calls = 0
+    swap_event_count = 0
+    total_swapped_in_items = 0
+    stopped_all_items = True
 
-    postprocess_start = time.perf_counter()
-    hotswap_rows = [[int(value) for value in row] for row in hotswap_result.ids.tolist()]
-    hotswap_lengths = [int(value) for value in hotswap_result.lengths.tolist()]
-    decoded_items = [
-        materialize_hotswap_item(
-            ready_item=ready_item,
-            token_ids=hotswap_rows[idx],
-            length=hotswap_lengths[idx],
-            tokenizer=tokenizer,
+    for chunk_index, (crop_start_idx, crop_end_idx) in enumerate(chunk_ranges):
+        chunk_queue_inputs = queue_inputs[crop_start_idx:crop_end_idx]
+        ready_start = time.perf_counter()
+        ready_items, ready_bank, ready_details = build_ready_bank_incremental(
+            model=model,
+            queue_inputs=chunk_queue_inputs,
+            cache_length=int(args.cache_length),
+            device=device,
+            vision_prefill_batch_size=1,
+        )
+        maybe_sync(device)
+        chunk_ready_bank_build_s = time.perf_counter() - ready_start
+        ready_bank_build_s += float(chunk_ready_bank_build_s)
+        ready_item_timing_rows.extend(item.timing_s for item in ready_items)
+        ready_details_chunks.append(
+            {
+                "chunk_index": int(chunk_index),
+                "crop_start": int(crop_start_idx),
+                "crop_end": int(crop_end_idx),
+                "crop_count": int(crop_end_idx - crop_start_idx),
+                "ready_bank_build_s": float(chunk_ready_bank_build_s),
+                "details": ready_details,
+            }
+        )
+
+        overlap_cpu_tokens = None
+        overlap_copy_stream = None
+        if device.type == "npu":
+            import torch_npu
+
+            start = time.perf_counter()
+            overlap_cpu_tokens = torch.empty(
+                (1, int(args.active_batch_size)),
+                dtype=ready_bank.next_token.dtype,
+                pin_memory=True,
+            )
+            overlap_copy_stream = torch_npu.npu.Stream(device=device)
+            hotswap_external_overlap_buffer_setup_s += time.perf_counter() - start
+
+        decode_start = time.perf_counter()
+        hotswap_result = static_hotswap_decode_loop(
+            decode_fn=decode_fn,
+            ready=ready_bank,
+            batch_size=int(args.active_batch_size),
             eos_token_id=eos_token_id,
             max_new_tokens=int(args.max_new_tokens),
+            eos_mode=str(args.eos_mode),
+            overlap_cpu_tokens=overlap_cpu_tokens,
+            overlap_copy_stream=overlap_copy_stream,
         )
-        for idx, ready_item in enumerate(ready_items)
-    ]
-    decode_output_postprocess_s = time.perf_counter() - postprocess_start
+        maybe_sync(device)
+        decode_queue_s += time.perf_counter() - decode_start
+        total_decode_calls += int(hotswap_result.decode_calls)
+        swap_event_count += int(len(hotswap_result.swap_events))
+        total_swapped_in_items += int(
+            sum(len(event.get("swapped_in_item_ids", [])) for event in hotswap_result.swap_events)
+        )
+        stopped_all_items = bool(stopped_all_items and hotswap_result.stopped_all_items)
+        hotswap_phase_rows.append(hotswap_result.phase_timing_s)
+        hotswap_diagnostics = hotswap_result.diagnostics
+
+        postprocess_start = time.perf_counter()
+        hotswap_rows = [[int(value) for value in row] for row in hotswap_result.ids.tolist()]
+        hotswap_lengths = [int(value) for value in hotswap_result.lengths.tolist()]
+        chunk_decoded = [
+            materialize_hotswap_item(
+                ready_item=ready_item,
+                token_ids=hotswap_rows[idx],
+                length=hotswap_lengths[idx],
+                tokenizer=tokenizer,
+                eos_token_id=eos_token_id,
+                max_new_tokens=int(args.max_new_tokens),
+            )
+            for idx, ready_item in enumerate(ready_items)
+        ]
+        decoded_items.extend(strip_decoded_item_device_state(item) for item in chunk_decoded)
+        decode_output_postprocess_s += time.perf_counter() - postprocess_start
+
+        cleanup_start = time.perf_counter()
+        del ready_bank, ready_items, hotswap_result, overlap_cpu_tokens, overlap_copy_stream
+        if len(chunk_ranges) > 1:
+            empty_device_cache(device)
+        crop_chunk_cleanup_s += time.perf_counter() - cleanup_start
 
     validation = validate_outputs(
         model=model,
@@ -1840,11 +1958,13 @@ def main() -> None:
         + float(ready_bank_build_s)
         + float(decode_queue_s)
         + float(decode_output_postprocess_s)
+        + float(crop_chunk_cleanup_s)
     )
-    total_decode_calls = int(hotswap_result.decode_calls)
     raw_decode_token_calls = int(total_decode_calls) * int(args.active_batch_size)
     effective_decode_token_calls = int(sum(max(0, len(item.trimmed_token_ids) - 1) for item in decoded_items))
     generated_tokens_including_prefill_first = int(sum(len(item.trimmed_token_ids) for item in decoded_items))
+    hotswap_phase_timing_s = sum_numeric_dicts(hotswap_phase_rows)
+    ready_items_for_summary = [decoded.item for decoded in decoded_items]
 
     output = {
         "experiment": "06_full_page_pipeline_e2e",
@@ -1875,6 +1995,26 @@ def main() -> None:
         },
         "active_batch_size": int(args.active_batch_size),
         "prefill_batch_size": 1,
+        "crop_chunk_size": int(args.crop_chunk_size),
+        "crop_chunking": {
+            "enabled": bool(int(args.crop_chunk_size) > 0 and len(chunk_ranges) > 1),
+            "requested_crop_chunk_size": int(args.crop_chunk_size),
+            "chunk_count": int(len(chunk_ranges)),
+            "chunks": [
+                {
+                    "chunk_index": int(idx),
+                    "crop_start": int(start),
+                    "crop_end": int(end),
+                    "crop_count": int(end - start),
+                }
+                for idx, (start, end) in enumerate(chunk_ranges)
+            ],
+            "tail_policy": "merge_tail_if_smaller_than_active_batch_size",
+            "notes": (
+                "Crop chunking builds the full CPU crop/input list once, then processes ready-bank prefill and "
+                "hot-swap decode in contiguous crop chunks so all crop KV caches are not resident on device at once."
+            ),
+        },
         "decode_schedule": "hotswap",
         "decode_backend": str(args.decode_backend),
         "decode_attention": DECODE_ATTENTION if device.type == "npu" else "manual",
@@ -1906,9 +2046,13 @@ def main() -> None:
         "cache_preflight": cache_preflight,
         "crop_summary": crop_summary,
         "input_build_summary_s": input_build_summary,
-        "ready_bank_build_details": ready_details,
-        "ready_item_timing_summary_s": aggregate_timing_dicts([item.timing_s for item in ready_items]),
-        "vision_shape_bucket_summary": vision_token_bucket_summary(ready_items),
+        "ready_bank_build_details": {
+            "crop_chunked": bool(len(chunk_ranges) > 1),
+            "crop_chunk_count": int(len(chunk_ranges)),
+            "chunks": ready_details_chunks,
+        },
+        "ready_item_timing_summary_s": aggregate_timing_dicts(ready_item_timing_rows),
+        "vision_shape_bucket_summary": vision_token_bucket_summary(ready_items_for_summary),
         "phase_timing_s": {
             "layout_detection": layout_detection_s,
             "crop_extract": crop_extract_s,
@@ -1917,6 +2061,7 @@ def main() -> None:
             "hotswap_external_overlap_buffer_setup": float(hotswap_external_overlap_buffer_setup_s),
             "text_decode_queue": float(decode_queue_s),
             "decode_output_postprocess": float(decode_output_postprocess_s),
+            "crop_chunk_cleanup": float(crop_chunk_cleanup_s),
             "measured_e2e_page_pipeline_excluding_setup_and_validation": float(measured_e2e_s),
             "validation": float(validation.get("elapsed_s", 0.0) or 0.0),
         },
@@ -1938,17 +2083,19 @@ def main() -> None:
             "raw_decode_token_calls": int(raw_decode_token_calls),
             "effective_decode_token_calls": int(effective_decode_token_calls),
             "generated_tokens_including_prefill_first": int(generated_tokens_including_prefill_first),
-            "swap_event_count": int(len(hotswap_result.swap_events)),
-            "total_swapped_in_items": int(
-                sum(len(event.get("swapped_in_item_ids", [])) for event in hotswap_result.swap_events)
-            ),
-            "stopped_all_items": bool(hotswap_result.stopped_all_items),
+            "swap_event_count": int(swap_event_count),
+            "total_swapped_in_items": int(total_swapped_in_items),
+            "stopped_all_items": bool(stopped_all_items),
             "eos_hit_count": int(sum(1 for item in decoded_items if item.eos_hit)),
             "length_cap_hit_count": int(length_cap_hit_count),
             "trimmed_new_tokens": stats([float(len(item.trimmed_token_ids)) for item in decoded_items]),
             "trimmed_new_token_counts": [int(len(item.trimmed_token_ids)) for item in decoded_items],
-            "hotswap_phase_timing_s": hotswap_result.phase_timing_s,
-            "hotswap_diagnostics": hotswap_result.diagnostics,
+            "hotswap_phase_timing_s": hotswap_phase_timing_s,
+            "hotswap_diagnostics": {
+                **hotswap_diagnostics,
+                "crop_chunked": bool(len(chunk_ranges) > 1),
+                "crop_chunk_count": int(len(chunk_ranges)),
+            },
         },
         "token_id_range": token_summary,
         "correctness": {

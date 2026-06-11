@@ -19,6 +19,7 @@ DECODE_BACKEND="${DECODE_BACKEND:-raw_eager}"
 NPU_JIT_COMPILE="${NPU_JIT_COMPILE:-off}"
 VALIDATION_ITEMS="${VALIDATION_ITEMS:--1}"
 PAGE_CHUNK_SIZE="${PAGE_CHUNK_SIZE:-0}"
+CROP_CHUNK_SIZE="${CROP_CHUNK_SIZE:-0}"
 OUTPUT_DIR="${OUTPUT_DIR:-${SCRIPT_DIR}/outputs/page_pipeline_cuda_smoke}"
 TORCHAIR_CACHE_DIR="${TORCHAIR_CACHE_DIR:-${OUTPUT_DIR}/torchair_cache}"
 EXPECT_LAYOUT_SOURCE="${EXPECT_LAYOUT_SOURCE:-}"
@@ -38,6 +39,11 @@ if [[ -z "${EXPECTED_RECOGNIZER_CROPS}" && "${LAYOUT_SOURCE}" == "omnidocbench_g
   # OmniDocBench v1.6 first-64 full-GT layout_dets, excluding ignored and empty GT boxes.
   # If this fails, the run is not measuring the same crop set as the first-64 full-GT benchmark.
   EXPECTED_RECOGNIZER_CROPS="1221"
+fi
+
+if (( PAGE_CHUNK_SIZE > 0 && CROP_CHUNK_SIZE > 0 )); then
+  echo "PAGE_CHUNK_SIZE and CROP_CHUNK_SIZE are mutually exclusive. Prefer CROP_CHUNK_SIZE for NPU VRAM control." >&2
+  exit 2
 fi
 
 mkdir -p "${OUTPUT_DIR}"
@@ -129,6 +135,7 @@ CMD=(
   --dtype fp16
   --decode-backend "${DECODE_BACKEND}"
   --active-batch-size "${ACTIVE_BATCH_SIZE}"
+  --crop-chunk-size "${CROP_CHUNK_SIZE}"
   --max-new-tokens "${MAX_NEW_TOKENS}"
   --cache-length "${CACHE_LENGTH}"
   --npu-jit-compile "${NPU_JIT_COMPILE}"
@@ -187,6 +194,8 @@ print("PAGE_PIPELINE_SUMMARY", json.dumps({
     "npu_jit_compile": data.get("npu_jit_compile"),
     "active_batch_size": data.get("active_batch_size"),
     "prefill_batch_size": data.get("prefill_batch_size"),
+    "crop_chunk_size": data.get("crop_chunk_size"),
+    "crop_chunking": data.get("crop_chunking"),
     "cache_length": data.get("cache_length"),
     "max_new_tokens": data.get("max_new_tokens"),
 }, sort_keys=True))

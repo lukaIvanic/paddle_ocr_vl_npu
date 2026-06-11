@@ -401,6 +401,7 @@ def build_aggregate(args: argparse.Namespace, chunks: list[dict[str, Any]], chil
             "hotswap_external_overlap_buffer_setup",
             "text_decode_queue",
             "decode_output_postprocess",
+            "crop_chunk_cleanup",
             "measured_e2e_page_pipeline_excluding_setup_and_validation",
             "validation",
         ]
