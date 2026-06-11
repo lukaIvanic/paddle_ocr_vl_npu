@@ -181,6 +181,7 @@ rough_accuracy = data.get("rough_ground_truth_accuracy", {})
 omnidoc_metrics = data.get("omnidocbench_metrics_without_cdm", {})
 print("PAGE_PIPELINE_SUMMARY", json.dumps({
     "page_count": data.get("page_count"),
+    "page_load": data.get("page_load"),
     "recognizer_crop_count": data.get("recognizer_crop_count"),
     "crop_count_contract": data.get("crop_count_contract"),
     "uses_ground_truth_layout_boxes": data.get("uses_ground_truth_layout_boxes"),
@@ -196,6 +197,7 @@ print("PAGE_PIPELINE_SUMMARY", json.dumps({
     "prefill_batch_size": data.get("prefill_batch_size"),
     "crop_chunk_size": data.get("crop_chunk_size"),
     "crop_chunking": data.get("crop_chunking"),
+    "pages_per_s_measured_e2e": throughput.get("pages_per_s_measured_e2e"),
     "cache_length": data.get("cache_length"),
     "max_new_tokens": data.get("max_new_tokens"),
 }, sort_keys=True))
@@ -271,6 +273,8 @@ print("OUTPUT_JSON", path)
 expected_gt = data.get("layout", {}).get("source") == "omnidocbench_gt"
 if bool(data.get("uses_ground_truth_layout_boxes")) != bool(expected_gt):
     raise SystemExit(f"unexpected uses_ground_truth_layout_boxes={data.get('uses_ground_truth_layout_boxes')} expected {expected_gt}")
+if not data.get("crop_count_contract", {}).get("passed", True):
+    raise SystemExit("crop count/layout source contract failed")
 if not correctness.get("all_required_checks_passed", False):
     raise SystemExit("correctness failed")
 PY

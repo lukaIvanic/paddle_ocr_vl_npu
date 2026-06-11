@@ -28,6 +28,53 @@ def copy_file(src: Path, dst: Path) -> None:
     dst.write_bytes(src.read_bytes())
 
 
+def u_escape_path_component(value: str, *, uppercase_hex: bool = False) -> str:
+    escaped = []
+    for char in str(value):
+        code = ord(char)
+        if code < 128:
+            escaped.append(char)
+            continue
+        fmt = "04X" if uppercase_hex else "04x"
+        escaped.append(f"#U{code:{fmt}}")
+    return "".join(escaped)
+
+
+def u_escape_relative_path(rel: str, *, uppercase_hex: bool = False) -> Path:
+    path = Path(str(rel))
+    return Path(*(u_escape_path_component(part, uppercase_hex=uppercase_hex) for part in path.parts))
+
+
+def image_filename_candidates(rel: str) -> list[str]:
+    candidates = [f"images/{rel}"]
+    escaped_lower = Path("images") / u_escape_relative_path(rel, uppercase_hex=False)
+    escaped_upper = Path("images") / u_escape_relative_path(rel, uppercase_hex=True)
+    for candidate in (str(escaped_lower), str(escaped_upper)):
+        if candidate not in candidates:
+            candidates.append(candidate)
+    return candidates
+
+
+def hf_download_first_available(*, repo_id: str, repo_type: str, revision: str, filenames: list[str]) -> tuple[Path, str]:
+    errors: list[str] = []
+    for filename in filenames:
+        try:
+            return (
+                Path(
+                    hf_hub_download(
+                        repo_id=repo_id,
+                        repo_type=repo_type,
+                        revision=revision,
+                        filename=filename,
+                    )
+                ),
+                filename,
+            )
+        except Exception as exc:
+            errors.append(f"{filename}: {type(exc).__name__}: {exc}")
+    raise FileNotFoundError("none of the OmniDocBench image filename candidates downloaded: " + " | ".join(errors))
+
+
 def main() -> None:
     args = parse_args()
     out_dir = args.out_dir.expanduser().resolve()
@@ -44,8 +91,8 @@ def main() -> None:
     )
     dataset: list[dict[str, Any]] = json.loads(json_cache.read_text(encoding="utf-8"))
     start = int(args.page_start)
-    end = min(len(dataset), start + int(args.num_pages))
-    if start < 0 or start >= len(dataset) or end <= start:
+    end = start + int(args.num_pages)
+    if start < 0 or start >= len(dataset) or end <= start or end > len(dataset):
         raise ValueError(f"invalid page slice start={start} num_pages={args.num_pages} dataset_len={len(dataset)}")
 
     selected = dataset[start:end]
@@ -55,17 +102,14 @@ def main() -> None:
         rel = str(row.get("page_info", {}).get("image_path", ""))
         if not rel:
             raise ValueError(f"dataset row {idx} has no page_info.image_path")
-        filename = f"images/{rel}"
-        image_cache = Path(
-            hf_hub_download(
-                repo_id=args.repo_id,
-                repo_type="dataset",
-                revision=args.revision,
-                filename=filename,
-            )
+        image_cache, filename = hf_download_first_available(
+            repo_id=args.repo_id,
+            repo_type="dataset",
+            revision=args.revision,
+            filenames=image_filename_candidates(rel),
         )
         copy_file(image_cache, out_dir / filename)
-        downloaded.append(filename)
+        downloaded.append({"dataset_index": int(idx), "json_image_path": rel, "downloaded_filename": filename})
 
     summary = {
         "repo_id": args.repo_id,
@@ -74,6 +118,7 @@ def main() -> None:
         "page_start": int(start),
         "num_pages": int(len(selected)),
         "downloaded_images": int(len(downloaded)),
+        "missing_image_policy": "fatal",
         "first_images": downloaded[:8],
     }
     (out_dir / "first_pages_download_summary.json").write_text(

@@ -123,6 +123,17 @@ class PageInput:
 
 
 @dataclass(frozen=True)
+class PageLoadResult:
+    pages: list[PageInput]
+    requested_page_start: int
+    requested_num_pages: int
+    selected_dataset_start: int
+    selected_dataset_end: int
+    dataset_len: int
+    escaped_path_fallback_count: int
+
+
+@dataclass(frozen=True)
 class LayoutCrop:
     entry: dict[str, Any]
     image: Image.Image
@@ -159,7 +170,62 @@ def resolve_dataset_dir(path: Path) -> Path:
     return path.resolve()
 
 
-def load_pages(dataset_dir: Path, *, page_start: int, num_pages: int) -> list[PageInput]:
+def u_escape_path_component(value: str, *, uppercase_hex: bool = False) -> str:
+    escaped = []
+    for char in str(value):
+        code = ord(char)
+        if code < 128:
+            escaped.append(char)
+            continue
+        fmt = "04X" if uppercase_hex else "04x"
+        escaped.append(f"#U{code:{fmt}}")
+    return "".join(escaped)
+
+
+def u_escape_relative_path(rel: str, *, uppercase_hex: bool = False) -> Path:
+    path = Path(str(rel))
+    return Path(*(u_escape_path_component(part, uppercase_hex=uppercase_hex) for part in path.parts))
+
+
+def image_path_candidates(images_dir: Path, rel: str) -> list[Path]:
+    candidates = [images_dir / rel]
+    escaped_lower = images_dir / u_escape_relative_path(rel, uppercase_hex=False)
+    escaped_upper = images_dir / u_escape_relative_path(rel, uppercase_hex=True)
+    for candidate in (escaped_lower, escaped_upper):
+        if candidate not in candidates:
+            candidates.append(candidate)
+    return candidates
+
+
+def path_exists_for_page_load(path: Path) -> bool:
+    try:
+        return path.is_file()
+    except OSError:
+        return False
+
+
+def safe_resolve_page_path(path: Path) -> Path:
+    try:
+        return path.resolve()
+    except OSError:
+        return path
+
+
+def resolve_page_image_path(images_dir: Path, rel: str) -> tuple[Path | None, str, list[Path]]:
+    candidates = image_path_candidates(images_dir, rel)
+    for idx, candidate in enumerate(candidates):
+        if path_exists_for_page_load(candidate):
+            mode = "json_path" if idx == 0 else "u_escape_fallback"
+            return safe_resolve_page_path(candidate), mode, candidates
+    return None, "missing", candidates
+
+
+def load_pages_result(
+    dataset_dir: Path,
+    *,
+    page_start: int,
+    num_pages: int,
+) -> PageLoadResult:
     dataset_dir = resolve_dataset_dir(dataset_dir)
     json_path = dataset_dir / "OmniDocBench.json"
     images_dir = dataset_dir / "images"
@@ -172,31 +238,80 @@ def load_pages(dataset_dir: Path, *, page_start: int, num_pages: int) -> list[Pa
     if not isinstance(dataset, list):
         raise ValueError(f"expected OmniDocBench JSON list, got {type(dataset).__name__}")
     start = int(page_start)
-    end = min(len(dataset), start + int(num_pages))
+    end = start + int(num_pages)
     if start < 0 or start >= len(dataset):
         raise ValueError(f"--page-start {start} outside dataset with {len(dataset)} pages")
+    if end > len(dataset):
+        raise ValueError(
+            f"requested page slice start={start} num_pages={num_pages} exceeds dataset with {len(dataset)} pages"
+        )
     if end <= start:
         raise ValueError(f"--num-pages must select at least one page, got {num_pages}")
 
     pages: list[PageInput] = []
-    for selected_idx, dataset_index in enumerate(range(start, end)):
+    escaped_path_fallback_count = 0
+    for dataset_index in range(start, end):
         record = dataset[dataset_index]
         page_info = dict(record.get("page_info", {}) or {})
         rel = str(page_info.get("image_path", ""))
-        image_path = images_dir / rel
-        if not image_path.exists():
-            raise FileNotFoundError(f"page image not found for dataset index {dataset_index}: {image_path}")
+        image_path, path_mode, candidates = resolve_page_image_path(images_dir, rel)
+        if image_path is None:
+            raise FileNotFoundError(
+                "page image not found for dataset index "
+                f"{dataset_index}: {candidates[0]} ; fallback candidates: "
+                + ", ".join(str(path) for path in candidates[1:])
+            )
+        if path_mode == "u_escape_fallback":
+            escaped_path_fallback_count += 1
         pages.append(
             PageInput(
-                idx=int(selected_idx),
+                idx=int(len(pages)),
                 dataset_index=int(dataset_index),
-                image_path=image_path.resolve(),
+                image_path=image_path,
                 image_rel=rel,
                 page_info=page_info,
                 gt_layout_dets=clean_json(record.get("layout_dets", []) or []),
             )
         )
-    return pages
+    if not pages:
+        raise FileNotFoundError(
+            f"selected page slice start={start} end={end} produced zero loadable images"
+        )
+    return PageLoadResult(
+        pages=pages,
+        requested_page_start=int(page_start),
+        requested_num_pages=int(num_pages),
+        selected_dataset_start=int(start),
+        selected_dataset_end=int(end),
+        dataset_len=int(len(dataset)),
+        escaped_path_fallback_count=int(escaped_path_fallback_count),
+    )
+
+
+def load_pages(
+    dataset_dir: Path,
+    *,
+    page_start: int,
+    num_pages: int,
+) -> list[PageInput]:
+    return load_pages_result(
+        dataset_dir,
+        page_start=page_start,
+        num_pages=num_pages,
+    ).pages
+
+
+def page_load_summary(result: PageLoadResult) -> dict[str, Any]:
+    return {
+        "requested_page_start": int(result.requested_page_start),
+        "requested_num_pages": int(result.requested_num_pages),
+        "selected_dataset_start": int(result.selected_dataset_start),
+        "selected_dataset_end": int(result.selected_dataset_end),
+        "dataset_len": int(result.dataset_len),
+        "loaded_page_count": int(len(result.pages)),
+        "escaped_path_fallback_count": int(result.escaped_path_fallback_count),
+        "missing_image_policy": "fatal",
+    }
 
 
 def create_layout_predictor(args: argparse.Namespace) -> Any:
@@ -323,19 +438,113 @@ def run_layout_detection(
     return normalized, timings
 
 
-def load_layout_cache(path: Path, pages: list[PageInput]) -> tuple[list[dict[str, Any]], dict[str, float]]:
+def layout_cache_row_map(rows: list[Any], key: str) -> tuple[dict[Any, int], set[Any]]:
+    mapped: dict[Any, int] = {}
+    duplicates: set[Any] = set()
+    for row_idx, row in enumerate(rows):
+        if not isinstance(row, dict):
+            continue
+        value = row.get(key)
+        if value is None or value == "":
+            continue
+        if key == "dataset_index":
+            try:
+                value = int(value)
+            except (TypeError, ValueError):
+                continue
+        else:
+            value = str(value)
+        if value in mapped:
+            duplicates.add(value)
+        mapped[value] = int(row_idx)
+    for value in duplicates:
+        mapped.pop(value, None)
+    return mapped, duplicates
+
+
+def load_layout_cache(
+    path: Path,
+    pages: list[PageInput],
+    *,
+    expected_metadata: dict[str, Any] | None = None,
+) -> tuple[list[dict[str, Any]], dict[str, Any], dict[str, Any]]:
     start = time.perf_counter()
     data = json.loads(path.expanduser().read_text(encoding="utf-8"))
     if isinstance(data, dict) and isinstance(data.get("pages"), list):
         rows = data["pages"]
+        metadata = data.get("metadata") if isinstance(data.get("metadata"), dict) else {}
     elif isinstance(data, list):
         rows = data
+        metadata = {}
     else:
         raise ValueError(f"unsupported layout cache JSON shape in {path}")
-    if len(rows) < len(pages):
-        raise ValueError(f"layout cache has {len(rows)} pages but benchmark selected {len(pages)}")
-    selected = rows[: len(pages)]
-    return selected, {"layout_cache_load_s": time.perf_counter() - start, "layout_detection_s": 0.0}
+    if any(not isinstance(row, dict) for row in rows):
+        raise ValueError(f"layout cache pages must be objects in {path}")
+
+    row_by_dataset_idx, duplicate_dataset_idx = layout_cache_row_map(rows, "dataset_index")
+    row_by_image_rel, duplicate_image_rel = layout_cache_row_map(rows, "image_rel")
+    selected: list[dict[str, Any]] = []
+    used_rows: set[int] = set()
+    match_counts: Counter[str] = Counter()
+
+    metadata_match_counts: Counter[str] = Counter()
+    metadata_mismatches: list[dict[str, Any]] = []
+    if expected_metadata:
+        if not metadata:
+            raise ValueError(f"layout cache metadata missing in {path}; regenerate the layout cache")
+        missing_keys = [str(key) for key in expected_metadata if key not in metadata]
+        if missing_keys:
+            raise ValueError(f"layout cache metadata missing required keys in {path}: {missing_keys}")
+        for key, expected in expected_metadata.items():
+            actual = metadata.get(key)
+            if actual != expected and str(actual) != str(expected):
+                metadata_mismatches.append({"key": key, "expected": expected, "actual": actual})
+            else:
+                metadata_match_counts[key] += 1
+    if metadata_mismatches:
+        raise ValueError(f"layout cache metadata mismatch for {path}: {metadata_mismatches}")
+
+    for ordinal, page in enumerate(pages):
+        row_idx: int | None = None
+        match_mode = ""
+        if int(page.dataset_index) in duplicate_dataset_idx:
+            raise ValueError(f"layout cache has duplicate dataset_index={page.dataset_index} in {path}")
+        if str(page.image_rel) in duplicate_image_rel:
+            raise ValueError(f"layout cache has duplicate image_rel={page.image_rel!r} in {path}")
+        if int(page.dataset_index) in row_by_dataset_idx:
+            row_idx = int(row_by_dataset_idx[int(page.dataset_index)])
+            match_mode = "dataset_index"
+        elif str(page.image_rel) in row_by_image_rel:
+            row_idx = int(row_by_image_rel[str(page.image_rel)])
+            match_mode = "image_rel"
+        else:
+            raise ValueError(
+                f"layout cache page does not match selected dataset_index={page.dataset_index} "
+                f"image_rel={page.image_rel!r}; cache rows must include matching dataset_index or image_rel"
+            )
+
+        if row_idx in used_rows:
+            raise ValueError(f"layout cache row {row_idx} would be reused for multiple selected pages")
+        used_rows.add(row_idx)
+        row = dict(rows[row_idx])
+        row["selected_page_idx"] = int(page.idx)
+        row["dataset_index"] = int(page.dataset_index)
+        row["image_path"] = str(page.image_path)
+        row["image_rel"] = page.image_rel
+        row["page_info"] = clean_json(page.page_info)
+        selected.append(row)
+        match_counts[match_mode] += 1
+
+    return selected, {
+        "layout_cache_load_s": time.perf_counter() - start,
+        "layout_detection_s": 0.0,
+        "layout_cache_match_counts": dict(sorted(match_counts.items())),
+        "layout_cache_match_policy": "dataset_index_or_image_rel_required",
+        "layout_cache_metadata_keys": sorted(str(key) for key in metadata.keys()),
+        "layout_cache_metadata_match_counts": dict(sorted(metadata_match_counts.items())),
+        "layout_cache_source": metadata.get("layout_source"),
+        "layout_cache_uses_ground_truth_boxes": metadata.get("uses_ground_truth_boxes"),
+    }, dict(metadata)
 
 
 def write_layout_cache(path: Path, rows: list[dict[str, Any]], metadata: dict[str, Any]) -> None:
@@ -343,6 +552,41 @@ def write_layout_cache(path: Path, rows: list[dict[str, Any]], metadata: dict[st
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {"metadata": clean_json(metadata), "pages": clean_json(rows)}
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def expected_layout_cache_metadata(args: argparse.Namespace, layout_source: str | None) -> dict[str, Any]:
+    expected: dict[str, Any] = {
+        "page_start": int(args.page_start),
+        "num_pages": int(args.num_pages),
+        "dataset_dir": str(resolve_dataset_dir(args.dataset_dir)),
+    }
+    if layout_source is not None:
+        expected.update(
+            {
+                "layout_source": str(layout_source),
+                "uses_ground_truth_boxes": bool(str(layout_source) == "omnidocbench_gt"),
+            }
+        )
+    if str(layout_source) == "omnidocbench_gt":
+        expected.update(
+            {
+                "include_ignored_gt": bool(args.include_ignored_gt),
+                "include_empty_gt": bool(args.include_empty_gt),
+            }
+        )
+    elif str(layout_source) == "official":
+        expected.update(
+            {
+                "layout_model_name": args.layout_model_name,
+                "layout_model_dir": str(args.layout_model_dir) if args.layout_model_dir else None,
+                "layout_device": args.layout_device,
+                "layout_threshold": args.layout_threshold,
+                "layout_nms": args.layout_nms,
+                "layout_unclip_ratio": args.layout_unclip_ratio,
+                "layout_merge_bboxes_mode": args.layout_merge_bboxes_mode,
+            }
+        )
+    return expected
 
 
 def build_omnidocbench_gt_layout_pages(
@@ -1268,6 +1512,11 @@ def page_average(rows: list[dict[str, Any]], key: str) -> float | None:
     return float(sum(averages) / float(len(averages)))
 
 
+def page_average_count(rows: list[dict[str, Any]], key: str) -> int:
+    pages = {int(row.get("page_index", 0)) for row in rows if row.get(key) is not None}
+    return int(len(pages))
+
+
 def omnidocbench_metrics_without_cdm(decoded_items: list[Any], *, min_iou: float) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     for idx, decoded in enumerate(decoded_items):
@@ -1397,20 +1646,24 @@ def omnidocbench_metrics_without_cdm(decoded_items: list[Any], *, min_iou: float
         "text_block_Edit_dist": {
             **text_edit,
             "page_avg": page_average(text_rows, "edit_dist"),
+            "page_avg_count": page_average_count(text_rows, "edit_dist"),
             "score_percent": None if text_edit["score"] is None else float(text_edit["score"] * 100.0),
         },
         "text_diagnostic_Edit_dist_including_title_code": {
             **summarize_metric_rows(text_diag_rows, "edit_dist", lower_is_better=True),
             "page_avg": page_average(text_diag_rows, "edit_dist"),
+            "page_avg_count": page_average_count(text_diag_rows, "edit_dist"),
         },
         "display_formula_Edit_dist": {
             **formula_edit,
             "page_avg": page_average(formula_rows, "edit_dist"),
+            "page_avg_count": page_average_count(formula_rows, "edit_dist"),
             "score_percent": None if formula_edit["score"] is None else float(formula_edit["score"] * 100.0),
         },
         "display_formula_BLEU_1_4": {
             **formula_bleu,
             "page_avg": page_average(formula_rows, "bleu_1_4"),
+            "page_avg_count": page_average_count(formula_rows, "bleu_1_4"),
             "score_percent": None if formula_bleu["score"] is None else float(formula_bleu["score"] * 100.0),
         },
         "display_formula_CDM": {
@@ -1424,17 +1677,20 @@ def omnidocbench_metrics_without_cdm(decoded_items: list[Any], *, min_iou: float
         "table_Edit_dist": {
             **table_edit,
             "page_avg": page_average(table_rows, "edit_dist"),
+            "page_avg_count": page_average_count(table_rows, "edit_dist"),
             "score_percent": None if table_edit["score"] is None else float(table_edit["score"] * 100.0),
         },
         "table_TEDS": {
             **table_teds,
             "page_avg": page_average(table_rows, "teds"),
+            "page_avg_count": page_average_count(table_rows, "teds"),
             "score_percent": None if table_teds["score"] is None else float(table_teds["score"] * 100.0),
             "implementation": "local_lightweight_html_tree_edit_no_apted_lxml",
         },
         "table_TEDS_structure_only": {
             **table_teds_s,
             "page_avg": page_average(table_rows, "teds_structure_only"),
+            "page_avg_count": page_average_count(table_rows, "teds_structure_only"),
             "score_percent": None if table_teds_s["score"] is None else float(table_teds_s["score"] * 100.0),
             "implementation": "local_lightweight_html_tree_edit_no_apted_lxml",
         },
@@ -1658,7 +1914,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--expect-layout-source",
         default="",
-        choices=["", "omnidocbench_gt", "official", "cache"],
+        choices=["", "omnidocbench_gt", "official"],
         help="Fail early unless the resolved layout source matches this value.",
     )
     parser.add_argument(
@@ -1696,13 +1952,36 @@ def main() -> None:
     dtype = parse_dtype(args.dtype, device)
     configure_npu_jit_compile(args.npu_jit_compile, device)
 
-    pages = load_pages(args.dataset_dir, page_start=int(args.page_start), num_pages=int(args.num_pages))
+    page_load = load_pages_result(
+        args.dataset_dir,
+        page_start=int(args.page_start),
+        num_pages=int(args.num_pages),
+    )
+    pages = page_load.pages
 
-    layout_source = "cache" if args.reuse_layout_cache else str(args.layout_source)
+    requested_layout_source = str(args.layout_source)
+    layout_source = "cache" if args.reuse_layout_cache else requested_layout_source
+    layout_inference_measured = False
     if layout_source == "cache":
         if args.layout_cache_json is None:
             raise ValueError("--layout-source cache/--reuse-layout-cache requires --layout-cache-json")
-        layout_pages, layout_timing = load_layout_cache(args.layout_cache_json, pages)
+        cache_expected_source: str | None = None
+        if requested_layout_source != "cache":
+            cache_expected_source = requested_layout_source
+        elif args.expect_layout_source and str(args.expect_layout_source) != "cache":
+            cache_expected_source = str(args.expect_layout_source)
+        layout_pages, layout_timing, layout_cache_metadata = load_layout_cache(
+            args.layout_cache_json,
+            pages,
+            expected_metadata=expected_layout_cache_metadata(args, cache_expected_source),
+        )
+        cache_layout_source = str(layout_cache_metadata.get("layout_source") or "")
+        if cache_layout_source not in {"omnidocbench_gt", "official"}:
+            raise ValueError(
+                f"layout cache metadata in {args.layout_cache_json} must declare layout_source "
+                f"'omnidocbench_gt' or 'official', got {cache_layout_source!r}"
+            )
+        layout_source = cache_layout_source
         layout_cache_mode = "read_existing"
     elif layout_source == "omnidocbench_gt":
         layout_pages, layout_timing = build_omnidocbench_gt_layout_pages(
@@ -1719,6 +1998,7 @@ def main() -> None:
                     "layout_source": layout_source,
                     "page_start": int(args.page_start),
                     "num_pages": int(args.num_pages),
+                    "page_load": page_load_summary(page_load),
                     "dataset_dir": str(resolve_dataset_dir(args.dataset_dir)),
                     "uses_ground_truth_boxes": True,
                     "include_ignored_gt": bool(args.include_ignored_gt),
@@ -1728,6 +2008,7 @@ def main() -> None:
     elif layout_source == "official":
         args.layout_source = "official"
         layout_pages, layout_timing = run_layout_detection(pages=pages, args=args)
+        layout_inference_measured = True
         layout_cache_mode = "fresh_official_layout_detection"
         if args.layout_cache_json is not None:
             write_layout_cache(
@@ -1738,8 +2019,13 @@ def main() -> None:
                     "layout_model_name": args.layout_model_name,
                     "layout_model_dir": str(args.layout_model_dir) if args.layout_model_dir else None,
                     "layout_device": args.layout_device,
+                    "layout_threshold": args.layout_threshold,
+                    "layout_nms": args.layout_nms,
+                    "layout_unclip_ratio": args.layout_unclip_ratio,
+                    "layout_merge_bboxes_mode": args.layout_merge_bboxes_mode,
                     "page_start": int(args.page_start),
                     "num_pages": int(args.num_pages),
+                    "page_load": page_load_summary(page_load),
                     "dataset_dir": str(resolve_dataset_dir(args.dataset_dir)),
                     "uses_ground_truth_boxes": False,
                 },
@@ -1796,6 +2082,7 @@ def main() -> None:
             "experiment": "06_full_page_pipeline_e2e",
             "error": "cache_length_too_small",
             "page_count": int(len(pages)),
+            "page_load": page_load_summary(page_load),
             "recognizer_crop_count": int(len(queue_inputs)),
             "active_batch_size": int(args.active_batch_size),
             "cache_preflight": cache_preflight,
@@ -1973,7 +2260,7 @@ def main() -> None:
             "local PaddleOCR-VL recognizer prefill per crop -> hotswap batched text decode"
         ),
         "uses_ground_truth_layout_boxes": bool(layout_source == "omnidocbench_gt"),
-        "doc_layout_model_measured": bool(layout_source == "official"),
+        "doc_layout_model_measured": bool(layout_inference_measured),
         "omnidocbench_scoring": False,
         "model": str(model_dir),
         "dataset_dir": str(resolve_dataset_dir(args.dataset_dir)),
@@ -1982,6 +2269,7 @@ def main() -> None:
         "npu_jit_compile": str(args.npu_jit_compile),
         "page_start": int(args.page_start),
         "page_count": int(len(pages)),
+        "page_load": page_load_summary(page_load),
         "recognizer_crop_count": int(len(decoded_items)),
         "crop_count_contract": {
             "expect_layout_source": str(args.expect_layout_source),
@@ -2025,6 +2313,7 @@ def main() -> None:
         "layout": {
             "source": layout_source,
             "cache_mode": layout_cache_mode,
+            "inference_measured": bool(layout_inference_measured),
             "model_name": str(args.layout_model_name),
             "model_dir": str(args.layout_model_dir) if args.layout_model_dir else None,
             "device": args.layout_device,
@@ -2153,6 +2442,8 @@ def main() -> None:
         "stage_notes": {
             "layout_detection": (
                 "When layout_source=official, this is official PaddleOCR/PaddleX LayoutDetection over full page images. "
+                "If cache_mode=read_existing, official boxes came from a cache and detector inference is not part of "
+                "the measured timing window. "
                 "When layout_source=omnidocbench_gt, no document layout model is run and layout_detection is zero; "
                 "ignored and empty-target GT boxes are skipped unless explicitly included."
             ),
@@ -2163,7 +2454,7 @@ def main() -> None:
             "prompt_mapping": "Because prompt_label is only effective when official layout detection is disabled, this harness maps layout labels to recognizer prompts explicitly and reports the map.",
             "prefill": "Recognizer CPU preprocessing plus vision/projector/text prefill are per detected crop; prefill batch size is fixed at 1 in experiment 6.",
             "decode": "All detected crop ready states are decoded by the experiment-5 hot-swap scheduler with one active compiled batch; no fake rows are added.",
-            "measured_e2e": "Excludes layout/model init, recognizer model load, decode weight format conversion, torch compile/cache warm, and validation. Includes layout inference only when layout_source=official; with layout_source=omnidocbench_gt it measures crop extraction, recognizer input build, prefill, decode, and output postprocess.",
+            "measured_e2e": "Excludes layout/model init, recognizer model load, decode weight format conversion, torch compile/cache warm, and validation. Includes layout inference only when layout.inference_measured=true; with layout_source=omnidocbench_gt or cache_mode=read_existing it measures crop extraction, recognizer input build, prefill, decode, and output postprocess.",
             "decode_warmup": "The decode callable is invoked once on dummy static-cache inputs before the measured decode queue. measured_e2e_page_pipeline_excluding_setup_and_validation therefore reports the post-warmup decode path; setup_timing_s.compile_first_call_s and decode_warmup.cache_state label whether that warmup looked cold or cache-hot.",
             "validation": "Validation is outside the timing window and checks hot-swap output against the same local static recognizer per crop. It is not an OCR quality metric.",
             "quality_metrics": (

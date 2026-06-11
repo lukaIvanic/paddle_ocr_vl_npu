@@ -110,7 +110,7 @@ def weighted_metric(chunks: list[dict[str, Any]], metric_name: str) -> dict[str,
             score_count += metric_count
         page_avg = metric.get("page_avg")
         if page_avg is not None:
-            pages = int(chunk.get("page_count") or 0)
+            pages = int(metric.get("page_avg_count") or chunk.get("page_count") or 0)
             if pages:
                 page_numerator += float(page_avg) * pages
                 page_count += pages
@@ -123,6 +123,7 @@ def weighted_metric(chunks: list[dict[str, Any]], metric_name: str) -> dict[str,
         "count": count,
         "lower_is_better": lower_is_better,
         "page_avg": page_numerator / page_count if page_count else None,
+        "page_avg_count": int(page_count),
         "score": score,
         "score_percent": None if score is None else float(score) * 100.0,
     }
@@ -293,7 +294,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--torchair-cache-dir", type=Path, default=None)
     parser.add_argument("--validation-items", type=int, default=-1)
     parser.add_argument("--rough-gt-min-iou", type=float, default=0.5)
-    parser.add_argument("--expect-layout-source", default="")
+    parser.add_argument("--expect-layout-source", default="", choices=["", "omnidocbench_gt", "official"])
     parser.add_argument("--expected-recognizer-crops", type=int, default=-1)
     parser.add_argument("--min-recognizer-crops", type=int, default=-1)
     parser.add_argument("--fail-on-mismatch", action="store_true")
@@ -391,6 +392,8 @@ def build_aggregate(args: argparse.Namespace, chunks: list[dict[str, Any]], chil
     invalid = int_sum_path(chunks, "correctness", "invalid_token_count")
     length_caps = int_sum_path(chunks, "correctness", "length_cap_hit_count")
     validated = int_sum_path(chunks, "correctness", "validated_items")
+    validation_enabled_chunks = sum(1 for chunk in chunks if bool((chunk.get("correctness") or {}).get("enabled")))
+    validation_complete = bool(crop_count > 0 and validated == crop_count and validation_enabled_chunks == len(chunks))
     phase = {
         key: sum_path(chunks, "phase_timing_s", key)
         for key in [
@@ -412,6 +415,28 @@ def build_aggregate(args: argparse.Namespace, chunks: list[dict[str, Any]], chil
         token_counts.extend(float(value) for value in counts)
     expected_crop = None if int(args.expected_recognizer_crops) < 0 else int(args.expected_recognizer_crops)
     min_crop = None if int(args.min_recognizer_crops) < 0 else int(args.min_recognizer_crops)
+    child_layout_sources = sorted(
+        {
+            str((chunk.get("layout") or {}).get("source"))
+            for chunk in chunks
+            if (chunk.get("layout") or {}).get("source") is not None
+        }
+    )
+    actual_layout_source = child_layout_sources[0] if len(child_layout_sources) == 1 else "mixed"
+    child_cache_modes = sorted(
+        {
+            str((chunk.get("layout") or {}).get("cache_mode"))
+            for chunk in chunks
+            if (chunk.get("layout") or {}).get("cache_mode") is not None
+        }
+    )
+    child_layout_inference_measured = sorted(
+        {
+            str(bool((chunk.get("layout") or {}).get("inference_measured")))
+            for chunk in chunks
+            if (chunk.get("layout") or {}).get("inference_measured") is not None
+        }
+    )
     contract_passed = True
     if args.expect_layout_source:
         contract_passed = contract_passed and all(
@@ -421,11 +446,12 @@ def build_aggregate(args: argparse.Namespace, chunks: list[dict[str, Any]], chil
         contract_passed = contract_passed and crop_count == expected_crop
     if min_crop is not None:
         contract_passed = contract_passed and crop_count >= min_crop
-    required_without_caps = bool(contract_passed and mismatch == 0 and invalid == 0)
+    required_without_caps = bool(contract_passed and validation_complete and mismatch == 0 and invalid == 0)
     required_with_caps = bool(required_without_caps and length_caps == 0)
     measured = phase["measured_e2e_page_pipeline_excluding_setup_and_validation"]
     decode_s = phase["text_decode_queue"]
     ready_s = phase["recognizer_ready_bank_build"]
+    page_load_escaped = int_sum_path(chunks, "page_load", "escaped_path_fallback_count")
     return {
         "experiment": "06_full_page_pipeline_e2e_chunked",
         "page_pipeline_scope": (
@@ -451,17 +477,31 @@ def build_aggregate(args: argparse.Namespace, chunks: list[dict[str, Any]], chil
         "npu_jit_compile": str(args.npu_jit_compile),
         "page_start": int(args.page_start),
         "page_count": page_count,
+        "page_load": {
+            "requested_page_start": int(args.page_start),
+            "requested_num_pages": int(args.num_pages),
+            "loaded_page_count": int(page_count),
+            "missing_image_policy": "fatal",
+            "escaped_path_fallback_count": int(page_load_escaped),
+            "aggregation_note": (
+                "Counts are summed from child page chunks. Missing page images are fatal, not skipped."
+            ),
+        },
         "recognizer_crop_count": crop_count,
         "crop_count_contract": {
             "expect_layout_source": str(args.expect_layout_source),
             "expected_recognizer_crops": expected_crop,
             "min_recognizer_crops": min_crop,
-            "actual_layout_source": str(args.layout_source),
+            "actual_layout_source": str(actual_layout_source),
             "actual_recognizer_crops": crop_count,
             "passed": bool(contract_passed),
         },
-        "uses_ground_truth_layout_boxes": bool(str(args.layout_source) == "omnidocbench_gt"),
-        "doc_layout_model_measured": bool(str(args.layout_source) == "official"),
+        "uses_ground_truth_layout_boxes": bool(
+            chunks and all(bool(chunk.get("uses_ground_truth_layout_boxes")) for chunk in chunks)
+        ),
+        "doc_layout_model_measured": bool(
+            chunks and any(bool((chunk.get("layout") or {}).get("inference_measured")) for chunk in chunks)
+        ),
         "active_batch_size": int(args.active_batch_size),
         "prefill_batch_size": 1,
         "decode_schedule": str(args.decode_schedule),
@@ -470,7 +510,14 @@ def build_aggregate(args: argparse.Namespace, chunks: list[dict[str, Any]], chil
         "max_new_tokens": int(args.max_new_tokens),
         "cache_length": int(args.cache_length),
         "layout": {
-            "source": str(args.layout_source),
+            "source": str(actual_layout_source),
+            "child_sources": child_layout_sources,
+            "child_cache_modes": child_cache_modes,
+            "child_inference_measured": child_layout_inference_measured,
+            "inference_measured": bool(
+                chunks and any(bool((chunk.get("layout") or {}).get("inference_measured")) for chunk in chunks)
+            ),
+            "requested_layout_source": str(args.layout_source),
             "device": args.layout_device,
             "include_ignored_gt": bool(args.include_ignored_gt),
             "include_empty_gt": bool(args.include_empty_gt),
@@ -533,6 +580,9 @@ def build_aggregate(args: argparse.Namespace, chunks: list[dict[str, Any]], chil
             "invalid_token_count": invalid,
             "length_cap_hit_count": length_caps,
             "validated_items": validated,
+            "validation_complete": validation_complete,
+            "validation_enabled_chunks": int(validation_enabled_chunks),
+            "validation_required_for_pass": True,
             "ground_truth_checked": False,
             "scope": "chunked_queue_output_vs_same_local_static_model",
         },
@@ -542,6 +592,7 @@ def build_aggregate(args: argparse.Namespace, chunks: list[dict[str, Any]], chil
             {
                 "page_start": int(chunk.get("page_start", 0)),
                 "page_count": int(chunk.get("page_count", 0)),
+                "page_load": chunk.get("page_load", {}),
                 "recognizer_crop_count": int(chunk.get("recognizer_crop_count", 0)),
                 "json": str(path),
                 "decode_summary": chunk.get("decode_summary", {}),
@@ -584,6 +635,11 @@ def main() -> None:
         if chunk.get("error"):
             print(f"CHUNK_ERROR start={chunk_start} payload={json.dumps(chunk, sort_keys=True)[:8000]}", file=sys.stderr)
             raise SystemExit(2)
+        if int(chunk.get("page_count") or -1) != int(chunk_pages):
+            raise SystemExit(
+                f"chunk loaded {chunk.get('page_count')} pages but requested {chunk_pages}; "
+                "missing page images and out-of-range page slices must be fixed, not skipped"
+            )
         chunks.append(chunk)
         child_paths.append(child_json)
         decode = chunk.get("decode_summary") or {}
@@ -593,7 +649,8 @@ def main() -> None:
             + json.dumps(
                 {
                     "page_start": chunk_start,
-                    "page_count": chunk_pages,
+                    "page_count": chunk.get("page_count"),
+                    "page_load": chunk.get("page_load"),
                     "recognizer_crop_count": chunk.get("recognizer_crop_count"),
                     "effective_decode_token_calls": decode.get("effective_decode_token_calls"),
                     "generated_tokens_including_prefill_first": decode.get(
@@ -617,6 +674,7 @@ def main() -> None:
         + json.dumps(
             {
                 "page_count": aggregate["page_count"],
+                "page_load": aggregate.get("page_load"),
                 "recognizer_crop_count": aggregate["recognizer_crop_count"],
                 "crop_count_contract": aggregate["crop_count_contract"],
                 "effective_decode_token_calls": aggregate["decode_summary"]["effective_decode_token_calls"],
