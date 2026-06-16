@@ -18,6 +18,7 @@ separate baseline hook for machines where PaddleOCR/PaddleX can run.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import html
 import json
 import math
@@ -69,6 +70,8 @@ from local_modeling_paddleocr_vl import (  # noqa: E402
     DECODE_CACHE_UPDATE,
     LocalPaddleOCRVLForConditionalGeneration,
     _resolve_model_dir,
+    get_vision_attention_impl,
+    get_vision_prompt_fa_layout,
 )
 from probe_static_compile import DEFAULT_TORCHAIR_CACHE_DIR, compile_decode_module, maybe_sync  # noqa: E402
 from run_local_recognition import (  # noqa: E402
@@ -158,6 +161,11 @@ def tok_per_s(count: int | float, seconds: float) -> float | None:
     if seconds <= 0:
         return None
     return float(count) / seconds
+
+
+def sha256_json(value: Any) -> str:
+    payload = json.dumps(clean_json(value), ensure_ascii=False, sort_keys=True).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
 
 
 def resolve_dataset_dir(path: Path) -> Path:
@@ -1151,6 +1159,29 @@ def page_output_summary(decoded_items: list[Any]) -> list[dict[str, Any]]:
             }
         )
     return output
+
+
+def decoded_output_fingerprints(decoded_items: list[Any]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for idx, decoded in enumerate(decoded_items):
+        entry = decoded.item.input_item.entry
+        token_ids = [int(token_id) for token_id in decoded.trimmed_token_ids]
+        generated_text = str(decoded.generated_text or "")
+        rows.append(
+            {
+                "decoded_index": int(idx),
+                "id": str(entry.get("id")),
+                "page_index": int(entry.get("page_index", 0)),
+                "layout_box_index": int(entry.get("layout_box_index", 0)),
+                "layout_label": str(entry.get("layout_label")),
+                "trimmed_token_count": int(len(token_ids)),
+                "token_ids_sha256": sha256_json(token_ids),
+                "generated_text_sha256": hashlib.sha256(generated_text.encode("utf-8")).hexdigest(),
+                "eos_hit": bool(decoded.eos_hit),
+                "length_cap_hit": bool(decoded.length_cap_hit),
+            }
+        )
+    return rows
 
 
 def normalize_text_for_rough_match(text: str) -> str:
@@ -2234,6 +2265,7 @@ def main() -> None:
     length_cap_hit_count = int(sum(1 for item in decoded_items if item.length_cap_hit))
     rough_accuracy = rough_ground_truth_accuracy(decoded_items, min_iou=float(args.rough_gt_min_iou))
     omnidocbench_metrics = omnidocbench_metrics_without_cdm(decoded_items, min_iou=float(args.rough_gt_min_iou))
+    output_fingerprints = decoded_output_fingerprints(decoded_items)
 
     layout_detection_s = float(layout_timing.get("layout_detection_s", 0.0) or 0.0)
     crop_extract_s = float(crop_timing.get("crop_extract_s", 0.0) or 0.0)
@@ -2307,6 +2339,8 @@ def main() -> None:
         "decode_backend": str(args.decode_backend),
         "decode_attention": DECODE_ATTENTION if device.type == "npu" else "manual",
         "decode_cache_update": DECODE_CACHE_UPDATE if device.type == "npu" else "per_row_copy",
+        "vision_attention": get_vision_attention_impl(),
+        "vision_prompt_fa_layout": get_vision_prompt_fa_layout(),
         "eos_mode": str(args.eos_mode),
         "max_new_tokens": int(args.max_new_tokens),
         "cache_length": int(args.cache_length),
@@ -2402,6 +2436,17 @@ def main() -> None:
         },
         "omnidocbench_metrics_without_cdm": omnidocbench_metrics,
         "rough_ground_truth_accuracy": rough_accuracy,
+        "output_fingerprint_summary": {
+            "item_count": int(len(output_fingerprints)),
+            "fingerprints_sha256": sha256_json(output_fingerprints),
+            "generated_texts_sha256": sha256_json([row["generated_text_sha256"] for row in output_fingerprints]),
+            "token_ids_sha256": sha256_json([row["token_ids_sha256"] for row in output_fingerprints]),
+            "note": (
+                "Use these hashes to compare full crop outputs across attention implementations "
+                "without storing every generated string twice."
+            ),
+        },
+        "output_fingerprints": output_fingerprints,
         "pages": page_output_summary(decoded_items),
         "items_sample": [
             {

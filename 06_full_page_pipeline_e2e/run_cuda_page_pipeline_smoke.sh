@@ -18,6 +18,8 @@ CACHE_LENGTH="${CACHE_LENGTH:-2048}"
 DECODE_BACKEND="${DECODE_BACKEND:-raw_eager}"
 NPU_JIT_COMPILE="${NPU_JIT_COMPILE:-off}"
 VALIDATION_ITEMS="${VALIDATION_ITEMS:--1}"
+VISION_ATTENTION_IMPL="${VISION_ATTENTION_IMPL:-manual}"
+VISION_PROMPT_FA_LAYOUT="${VISION_PROMPT_FA_LAYOUT:-bnsd}"
 PAGE_CHUNK_SIZE="${PAGE_CHUNK_SIZE:-0}"
 CROP_CHUNK_SIZE="${CROP_CHUNK_SIZE:-0}"
 OUTPUT_DIR="${OUTPUT_DIR:-${SCRIPT_DIR}/outputs/page_pipeline_cuda_smoke}"
@@ -38,6 +40,9 @@ CHILD_OUTPUT_DIR="${CHILD_OUTPUT_DIR:-${OUTPUT_DIR}/chunks_${RUN_ID}_p${NUM_PAGE
 REUSE_LAYOUT_CACHE="${REUSE_LAYOUT_CACHE:-0}"
 DOWNLOAD_DATASET="${DOWNLOAD_DATASET:-1}"
 CHECK_PADDLE_IMPORT="${CHECK_PADDLE_IMPORT:-1}"
+
+export PADDLE_OCR_VL_VISION_ATTENTION="${VISION_ATTENTION_IMPL}"
+export PADDLE_OCR_VL_VISION_PROMPT_FA_LAYOUT="${VISION_PROMPT_FA_LAYOUT}"
 
 if (( PAGE_CHUNK_SIZE > 0 && CROP_CHUNK_SIZE > 0 )); then
   echo "PAGE_CHUNK_SIZE and CROP_CHUNK_SIZE are mutually exclusive. Prefer CROP_CHUNK_SIZE for NPU VRAM control." >&2
@@ -232,6 +237,8 @@ print("PAGE_PIPELINE_SUMMARY", json.dumps({
     "decode_backend": data.get("decode_backend"),
     "decode_attention": data.get("decode_attention"),
     "decode_cache_update": data.get("decode_cache_update"),
+    "vision_attention": data.get("vision_attention"),
+    "vision_prompt_fa_layout": data.get("vision_prompt_fa_layout"),
     "npu_jit_compile": data.get("npu_jit_compile"),
     "active_batch_size": data.get("active_batch_size"),
     "prefill_batch_size": data.get("prefill_batch_size"),
@@ -245,6 +252,7 @@ print("SETUP_TIMING_S", json.dumps(data.get("setup_timing_s", {}), sort_keys=Tru
 print("PHASE_TIMING_S", json.dumps(phase, sort_keys=True))
 print("THROUGHPUT", json.dumps(throughput, sort_keys=True))
 print("DECODE_WARMUP", json.dumps(data.get("decode_warmup", {}), sort_keys=True))
+print("OUTPUT_FINGERPRINT_SUMMARY", json.dumps(data.get("output_fingerprint_summary", {}), sort_keys=True))
 print("PREFILL_STAGE_TIMING_S", json.dumps({
     "native_resolution_visual_encoder_total": ready_timing.get("native_resolution_visual_encoder_total"),
     "vision_encoder": ready_timing.get("vision_encoder"),
