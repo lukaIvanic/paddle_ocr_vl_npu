@@ -39,6 +39,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--include-ignored-gt", action="store_true")
     parser.add_argument("--include-empty-gt", action="store_true")
     parser.add_argument("--expect-count", type=int, default=-1)
+    parser.add_argument(
+        "--expect-manifest",
+        type=Path,
+        default=None,
+        help="JSON manifest with expected page slice, page filenames, and per-page crop counts.",
+    )
     parser.add_argument("--print-count-only", action="store_true")
     parser.add_argument("--json", action="store_true")
     return parser.parse_args()
@@ -73,6 +79,49 @@ def main() -> None:
         )
 
     recognizer_crop_count = int(sum(row["recognizer_crop_count"] for row in per_page_counts))
+    manifest_contract: dict[str, Any] | None = None
+    manifest_mismatches: list[dict[str, Any]] = []
+    if args.expect_manifest is not None:
+        manifest_path = args.expect_manifest.expanduser()
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        expected_pages = list(manifest.get("pages") or [])
+        manifest_contract = {
+            "path": str(manifest_path),
+            "expected_page_count": int(len(expected_pages)),
+            "actual_page_count": int(len(per_page_counts)),
+            "passed": True,
+        }
+        scalar_checks = [
+            ("page_start", int(args.page_start)),
+            ("num_pages", int(args.num_pages)),
+            ("include_ignored_gt", bool(args.include_ignored_gt)),
+            ("include_empty_gt", bool(args.include_empty_gt)),
+            ("json_sha256", sha256_file(json_path)),
+            ("expected_recognizer_crops", recognizer_crop_count),
+            ("raw_layout_det_count", int(layout_timing.get("gt_layout_raw_box_count", 0))),
+            ("skipped_empty_gt_count", int(layout_timing.get("gt_layout_skipped_empty_gt_count", 0))),
+            ("skipped_ignored_count", int(layout_timing.get("gt_layout_skipped_ignored_count", 0))),
+        ]
+        for key, actual in scalar_checks:
+            if key in manifest and manifest.get(key) != actual:
+                manifest_mismatches.append({"key": key, "expected": manifest.get(key), "actual": actual})
+        if len(expected_pages) != len(per_page_counts):
+            manifest_mismatches.append(
+                {"key": "pages.length", "expected": len(expected_pages), "actual": len(per_page_counts)}
+            )
+        for idx, (expected, actual) in enumerate(zip(expected_pages, per_page_counts)):
+            for key in ("selected_page_idx", "dataset_index", "image_rel", "recognizer_crop_count"):
+                if expected.get(key) != actual.get(key):
+                    manifest_mismatches.append(
+                        {
+                            "key": f"pages[{idx}].{key}",
+                            "expected": expected.get(key),
+                            "actual": actual.get(key),
+                        }
+                    )
+        manifest_contract["mismatch_count"] = int(len(manifest_mismatches))
+        manifest_contract["passed"] = bool(not manifest_mismatches)
+
     payload = {
         "dataset_dir": str(dataset_dir),
         "json_path": str(json_path),
@@ -93,6 +142,8 @@ def main() -> None:
             "actual": recognizer_crop_count,
             "passed": bool(int(args.expect_count) < 0 or recognizer_crop_count == int(args.expect_count)),
         },
+        "manifest_contract": manifest_contract,
+        "manifest_mismatches": manifest_mismatches[:32],
     }
     if int(args.expect_count) >= 0 and recognizer_crop_count != int(args.expect_count):
         print(json.dumps(clean_json(payload), ensure_ascii=False, sort_keys=True))
@@ -100,6 +151,9 @@ def main() -> None:
             "GT crop count mismatch: "
             f"expected {int(args.expect_count)} but got {recognizer_crop_count}"
         )
+    if manifest_mismatches:
+        print(json.dumps(clean_json(payload), ensure_ascii=False, sort_keys=True))
+        raise SystemExit(f"GT crop manifest mismatch: {len(manifest_mismatches)} mismatches")
     if args.print_count_only:
         print(recognizer_crop_count)
     else:

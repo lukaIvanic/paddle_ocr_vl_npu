@@ -25,6 +25,7 @@ TORCHAIR_CACHE_DIR="${TORCHAIR_CACHE_DIR:-${OUTPUT_DIR}/torchair_cache}"
 EXPECT_LAYOUT_SOURCE="${EXPECT_LAYOUT_SOURCE:-}"
 EXPECTED_RECOGNIZER_CROPS="${EXPECTED_RECOGNIZER_CROPS:-}"
 MIN_RECOGNIZER_CROPS="${MIN_RECOGNIZER_CROPS:-}"
+EXPECT_GT_CROP_MANIFEST="${EXPECT_GT_CROP_MANIFEST:-}"
 INCLUDE_IGNORED_GT="${INCLUDE_IGNORED_GT:-0}"
 INCLUDE_EMPTY_GT="${INCLUDE_EMPTY_GT:-0}"
 FAIL_ON_MISMATCH="${FAIL_ON_MISMATCH:-1}"
@@ -52,6 +53,9 @@ if [[ "${DOWNLOAD_DATASET}" == "1" ]]; then
 fi
 
 if [[ "${LAYOUT_SOURCE}" == "omnidocbench_gt" ]]; then
+  if [[ -z "${EXPECT_GT_CROP_MANIFEST}" && "${PAGE_START}" == "0" && "${NUM_PAGES}" == "64" && "${INCLUDE_IGNORED_GT}" == "0" && "${INCLUDE_EMPTY_GT}" == "0" ]]; then
+    EXPECT_GT_CROP_MANIFEST="${SCRIPT_DIR}/expected_omnidocbench_first64_gt_crops.json"
+  fi
   GT_AUDIT_CMD=(
     "${PYTHON_BIN}" "${SCRIPT_DIR}/count_omnidocbench_gt_crops.py"
     --dataset-dir "${DATASET_DIR}"
@@ -67,6 +71,9 @@ if [[ "${LAYOUT_SOURCE}" == "omnidocbench_gt" ]]; then
   fi
   if [[ -n "${EXPECTED_RECOGNIZER_CROPS}" ]]; then
     GT_AUDIT_CMD+=(--expect-count "${EXPECTED_RECOGNIZER_CROPS}")
+  fi
+  if [[ -n "${EXPECT_GT_CROP_MANIFEST}" ]]; then
+    GT_AUDIT_CMD+=(--expect-manifest "${EXPECT_GT_CROP_MANIFEST}")
   fi
   GT_CROP_AUDIT="$("${GT_AUDIT_CMD[@]}")"
   echo "GT_CROP_AUDIT ${GT_CROP_AUDIT}"
