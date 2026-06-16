@@ -25,6 +25,8 @@ TORCHAIR_CACHE_DIR="${TORCHAIR_CACHE_DIR:-${OUTPUT_DIR}/torchair_cache}"
 EXPECT_LAYOUT_SOURCE="${EXPECT_LAYOUT_SOURCE:-}"
 EXPECTED_RECOGNIZER_CROPS="${EXPECTED_RECOGNIZER_CROPS:-}"
 MIN_RECOGNIZER_CROPS="${MIN_RECOGNIZER_CROPS:-}"
+INCLUDE_IGNORED_GT="${INCLUDE_IGNORED_GT:-0}"
+INCLUDE_EMPTY_GT="${INCLUDE_EMPTY_GT:-0}"
 FAIL_ON_MISMATCH="${FAIL_ON_MISMATCH:-1}"
 FAIL_ON_LENGTH_CAP="${FAIL_ON_LENGTH_CAP:-0}"
 RUN_ID="${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
@@ -34,12 +36,6 @@ CHILD_OUTPUT_DIR="${CHILD_OUTPUT_DIR:-${OUTPUT_DIR}/chunks_${RUN_ID}_p${NUM_PAGE
 REUSE_LAYOUT_CACHE="${REUSE_LAYOUT_CACHE:-0}"
 DOWNLOAD_DATASET="${DOWNLOAD_DATASET:-1}"
 CHECK_PADDLE_IMPORT="${CHECK_PADDLE_IMPORT:-1}"
-
-if [[ -z "${EXPECTED_RECOGNIZER_CROPS}" && "${LAYOUT_SOURCE}" == "omnidocbench_gt" && "${PAGE_START}" == "0" && "${NUM_PAGES}" == "64" ]]; then
-  # OmniDocBench v1.6 first-64 full-GT layout_dets, excluding ignored and empty GT boxes.
-  # If this fails, the run is not measuring the same crop set as the first-64 full-GT benchmark.
-  EXPECTED_RECOGNIZER_CROPS="1221"
-fi
 
 if (( PAGE_CHUNK_SIZE > 0 && CROP_CHUNK_SIZE > 0 )); then
   echo "PAGE_CHUNK_SIZE and CROP_CHUNK_SIZE are mutually exclusive. Prefer CROP_CHUNK_SIZE for NPU VRAM control." >&2
@@ -53,6 +49,30 @@ if [[ "${DOWNLOAD_DATASET}" == "1" ]]; then
     --out-dir "${DATASET_DIR}" \
     --page-start "${PAGE_START}" \
     --num-pages "${NUM_PAGES}"
+fi
+
+if [[ "${LAYOUT_SOURCE}" == "omnidocbench_gt" ]]; then
+  GT_AUDIT_CMD=(
+    "${PYTHON_BIN}" "${SCRIPT_DIR}/count_omnidocbench_gt_crops.py"
+    --dataset-dir "${DATASET_DIR}"
+    --page-start "${PAGE_START}"
+    --num-pages "${NUM_PAGES}"
+    --json
+  )
+  if [[ "${INCLUDE_IGNORED_GT}" == "1" ]]; then
+    GT_AUDIT_CMD+=(--include-ignored-gt)
+  fi
+  if [[ "${INCLUDE_EMPTY_GT}" == "1" ]]; then
+    GT_AUDIT_CMD+=(--include-empty-gt)
+  fi
+  if [[ -n "${EXPECTED_RECOGNIZER_CROPS}" ]]; then
+    GT_AUDIT_CMD+=(--expect-count "${EXPECTED_RECOGNIZER_CROPS}")
+  fi
+  GT_CROP_AUDIT="$("${GT_AUDIT_CMD[@]}")"
+  echo "GT_CROP_AUDIT ${GT_CROP_AUDIT}"
+  if [[ -z "${EXPECTED_RECOGNIZER_CROPS}" ]]; then
+    EXPECTED_RECOGNIZER_CROPS="$("${PYTHON_BIN}" -c 'import json,sys; print(int(json.loads(sys.argv[1])["recognizer_crop_count"]))' "${GT_CROP_AUDIT}")"
+  fi
 fi
 
 if [[ "${CHECK_PADDLE_IMPORT}" == "1" && "${LAYOUT_SOURCE}" == "official" && "${REUSE_LAYOUT_CACHE}" != "1" ]]; then
@@ -98,6 +118,12 @@ if (( PAGE_CHUNK_SIZE > 0 )); then
   )
   if [[ "${REUSE_LAYOUT_CACHE}" == "1" ]]; then
     CHUNK_CMD+=(--reuse-layout-cache)
+  fi
+  if [[ "${INCLUDE_IGNORED_GT}" == "1" ]]; then
+    CHUNK_CMD+=(--include-ignored-gt)
+  fi
+  if [[ "${INCLUDE_EMPTY_GT}" == "1" ]]; then
+    CHUNK_CMD+=(--include-empty-gt)
   fi
   if [[ -n "${EXPECT_LAYOUT_SOURCE}" ]]; then
     CHUNK_CMD+=(--expect-layout-source "${EXPECT_LAYOUT_SOURCE}")
@@ -146,6 +172,12 @@ CMD=(
 
 if [[ "${REUSE_LAYOUT_CACHE}" == "1" ]]; then
   CMD+=(--reuse-layout-cache)
+fi
+if [[ "${INCLUDE_IGNORED_GT}" == "1" ]]; then
+  CMD+=(--include-ignored-gt)
+fi
+if [[ "${INCLUDE_EMPTY_GT}" == "1" ]]; then
+  CMD+=(--include-empty-gt)
 fi
 if [[ -n "${EXPECT_LAYOUT_SOURCE}" ]]; then
   CMD+=(--expect-layout-source "${EXPECT_LAYOUT_SOURCE}")
