@@ -22,6 +22,9 @@ VISION_ATTENTION_ENV = "PADDLE_OCR_VL_VISION_ATTENTION"
 VISION_ATTENTION_CHOICES = ("manual", "prompt_flash_attention")
 VISION_PROMPT_FA_LAYOUT_ENV = "PADDLE_OCR_VL_VISION_PROMPT_FA_LAYOUT"
 VISION_PROMPT_FA_LAYOUT_CHOICES = ("bnsd", "bsnd", "bsh")
+TEXT_SOFTMAX_DTYPE_ENV = "PADDLE_OCR_VL_TEXT_SOFTMAX_DTYPE"
+VISION_SOFTMAX_DTYPE_ENV = "PADDLE_OCR_VL_VISION_SOFTMAX_DTYPE"
+SOFTMAX_DTYPE_CHOICES = ("fp32", "model")
 
 
 def get_vision_attention_impl() -> str:
@@ -36,6 +39,28 @@ def get_vision_prompt_fa_layout() -> str:
     if layout not in VISION_PROMPT_FA_LAYOUT_CHOICES:
         raise ValueError(f"{VISION_PROMPT_FA_LAYOUT_ENV} must be one of {VISION_PROMPT_FA_LAYOUT_CHOICES}, got {layout!r}")
     return layout
+
+
+def get_text_softmax_dtype_mode() -> str:
+    mode = os.environ.get(TEXT_SOFTMAX_DTYPE_ENV, "fp32").strip().lower() or "fp32"
+    if mode not in SOFTMAX_DTYPE_CHOICES:
+        raise ValueError(f"{TEXT_SOFTMAX_DTYPE_ENV} must be one of {SOFTMAX_DTYPE_CHOICES}, got {mode!r}")
+    return mode
+
+
+def get_vision_softmax_dtype_mode() -> str:
+    mode = os.environ.get(VISION_SOFTMAX_DTYPE_ENV, "fp32").strip().lower() or "fp32"
+    if mode not in SOFTMAX_DTYPE_CHOICES:
+        raise ValueError(f"{VISION_SOFTMAX_DTYPE_ENV} must be one of {SOFTMAX_DTYPE_CHOICES}, got {mode!r}")
+    return mode
+
+
+def attention_softmax(scores: torch.Tensor, *, dim: int, output_dtype: torch.dtype, mode: str) -> torch.Tensor:
+    if mode == "fp32":
+        return F.softmax(scores, dim=dim, dtype=torch.float32).to(output_dtype)
+    if mode == "model":
+        return F.softmax(scores, dim=dim, dtype=output_dtype).to(output_dtype)
+    raise ValueError(f"unsupported attention softmax dtype mode: {mode!r}")
 
 
 def vision_prompt_flash_attention_bnsd(
@@ -452,7 +477,12 @@ class PaddleOCRAttention(nn.Module):
         scores = torch.matmul(query_states, key_for_attn.transpose(2, 3)) * self.scaling
         if attention_mask is not None:
             scores = scores + attention_mask[:, :, :, : key_for_attn.shape[-2]]
-        probs = F.softmax(scores, dim=-1, dtype=torch.float32).to(query_states.dtype)
+        probs = attention_softmax(
+            scores,
+            dim=-1,
+            output_dtype=query_states.dtype,
+            mode=get_text_softmax_dtype_mode(),
+        )
         attn_output = torch.matmul(probs, value_for_attn)
         attn_output = attn_output.transpose(1, 2).contiguous().reshape(batch, query_length, -1)
         return self.o_proj(attn_output)
@@ -885,7 +915,12 @@ class PaddleOCRVisionAttention(nn.Module):
                 )
             elif attention_impl == "manual":
                 scores = torch.matmul(q, k.transpose(2, 3)) * self.scaling
-                probs = F.softmax(scores, dim=-1, dtype=torch.float32).to(q.dtype)
+                probs = attention_softmax(
+                    scores,
+                    dim=-1,
+                    output_dtype=q.dtype,
+                    mode=get_vision_softmax_dtype_mode(),
+                )
                 outputs.append(torch.matmul(probs, v))
             else:
                 raise ValueError(f"unknown vision attention implementation: {attention_impl!r}")

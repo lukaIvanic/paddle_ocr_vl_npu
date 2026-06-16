@@ -98,6 +98,8 @@ print("QUEUE_BENCHMARK_SUMMARY", json.dumps({
     "decode_cache_update": data.get("decode_cache_update"),
     "eos_mode": data.get("eos_mode"),
     "vision_attention": data.get("vision_attention"),
+    "text_softmax_dtype": data.get("text_softmax_dtype"),
+    "vision_softmax_dtype": data.get("vision_softmax_dtype"),
     "vision_prompt_fa_layout": data.get("vision_prompt_fa_layout"),
 }, sort_keys=True))
 print("CACHE_PREFLIGHT", json.dumps(data.get("cache_preflight", {}), sort_keys=True))

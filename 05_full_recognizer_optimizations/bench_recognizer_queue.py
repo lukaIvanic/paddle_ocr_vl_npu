@@ -36,8 +36,10 @@ from local_modeling_paddleocr_vl import (
     LocalPaddleOCRVLStaticCache,
     _resolve_model_dir,
     cast_decode_linear_weights_to_nz,
+    get_text_softmax_dtype_mode,
     get_vision_attention_impl,
     get_vision_prompt_fa_layout,
+    get_vision_softmax_dtype_mode,
 )
 from probe_static_compile import DEFAULT_TORCHAIR_CACHE_DIR, compile_decode_module, maybe_sync
 from run_local_recognition import (
@@ -2161,6 +2163,8 @@ def main() -> None:
         "npu_jit_compile": str(args.npu_jit_compile),
         "vision_attention": get_vision_attention_impl(),
         "vision_prompt_fa_layout": get_vision_prompt_fa_layout(),
+        "text_softmax_dtype": get_text_softmax_dtype_mode(),
+        "vision_softmax_dtype": get_vision_softmax_dtype_mode(),
         "active_batch_size": int(args.active_batch_size),
         "vision_prefill_batch_size": int(args.vision_prefill_batch_size),
         "actual_vision_prefill_batch_sizes": [
