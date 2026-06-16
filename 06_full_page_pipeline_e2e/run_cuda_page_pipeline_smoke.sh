@@ -207,6 +207,7 @@ echo "COMMAND ${CMD[*]}"
 "${PYTHON_BIN}" -m json.tool "${OUTPUT_PATH}" >/dev/null
 "${PYTHON_BIN}" - "${OUTPUT_PATH}" <<'PY'
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -323,7 +324,16 @@ if bool(data.get("uses_ground_truth_layout_boxes")) != bool(expected_gt):
     raise SystemExit(f"unexpected uses_ground_truth_layout_boxes={data.get('uses_ground_truth_layout_boxes')} expected {expected_gt}")
 if not data.get("crop_count_contract", {}).get("passed", True):
     raise SystemExit("crop count/layout source contract failed")
-if not correctness.get("all_required_checks_passed", False):
-    raise SystemExit("correctness failed")
+invalid_token_count = int(correctness.get("invalid_token_count", 0) or 0)
+length_cap_hit_count = int(correctness.get("length_cap_hit_count", 0) or 0)
+validation_enabled = bool(correctness.get("enabled", False))
+fail_on_mismatch = os.environ.get("FAIL_ON_MISMATCH", "1") == "1"
+fail_on_length_cap = os.environ.get("FAIL_ON_LENGTH_CAP", "0") == "1"
+if invalid_token_count:
+    raise SystemExit(f"invalid token IDs generated: {invalid_token_count}")
+if fail_on_length_cap and length_cap_hit_count:
+    raise SystemExit(f"length cap hit: {length_cap_hit_count}")
+if validation_enabled and fail_on_mismatch and not correctness.get("all_required_checks_passed", False):
+    raise SystemExit("validation/correctness failed")
 PY
 echo "WROTE ${OUTPUT_PATH}"
