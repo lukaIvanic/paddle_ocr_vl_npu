@@ -26,6 +26,8 @@ export MODEL="${MODEL:-/home/lukaiv/models/paddle_ocr_0_9b_v_1_6}"
 
 if [[ -z "${DATASET_DIR:-}" ]]; then
   for candidate in \
+    "/home/lukaiv/datasets/OmniDocBench_current" \
+    "/home/lukaiv/data/OmniDocBench_current" \
     "/home/lukaiv/data/OmniDocBench" \
     "/home/lukaiv/datasets/OmniDocBench" \
     "/root/autodl-tmp/glm_ocr_portable_bundle/data/OmniDocBench" \
@@ -37,7 +39,7 @@ if [[ -z "${DATASET_DIR:-}" ]]; then
     fi
   done
 fi
-export DATASET_DIR="${DATASET_DIR:-/home/lukaiv/data/OmniDocBench}"
+export DATASET_DIR="${DATASET_DIR:-/home/lukaiv/datasets/OmniDocBench_current}"
 
 export DEVICE="${DEVICE:-npu:0}"
 export LAYOUT_DEVICE="${LAYOUT_DEVICE:-cpu}"
