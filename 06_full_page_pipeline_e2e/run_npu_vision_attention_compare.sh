@@ -6,13 +6,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PYTHON_BIN="${PYTHON_BIN:-/root/miniconda3/envs/paddle_ocr_vl_py310/bin/python}"
 DATASET_DIR="${DATASET_DIR:-/home/lukaiv/datasets/OmniDocBench_current}"
 PAGE_START="${PAGE_START:-0}"
-NUM_PAGES="${NUM_PAGES:-16}"
+NUM_PAGES="${NUM_PAGES:-8}"
 ACTIVE_BATCH_SIZE="${ACTIVE_BATCH_SIZE:-8}"
 CROP_CHUNK_SIZE="${CROP_CHUNK_SIZE:-120}"
 MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-768}"
 CACHE_LENGTH="${CACHE_LENGTH:-3072}"
 VALIDATION_ITEMS="${VALIDATION_ITEMS:-0}"
 VISION_PROMPT_FA_LAYOUT="${VISION_PROMPT_FA_LAYOUT:-bnsd}"
+FAIL_ON_OUTPUT_MISMATCH="${FAIL_ON_OUTPUT_MISMATCH:-1}"
 RUN_ID="${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
 OUTPUT_DIR="${OUTPUT_DIR:-${SCRIPT_DIR}/outputs/vision_attention_compare_${RUN_ID}_p${NUM_PAGES}_b${ACTIVE_BATCH_SIZE}}"
 
@@ -68,6 +69,7 @@ run_case prompt_flash_attention
 
 "${PYTHON_BIN}" - "${OUTPUT_DIR}/page_pipeline_manual.json" "${OUTPUT_DIR}/page_pipeline_prompt_flash_attention.json" <<'PY'
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -97,6 +99,25 @@ def pick(data, *keys):
     return current
 
 
+def ratio(numerator, denominator):
+    if numerator is None or denominator in (None, 0):
+        return None
+    return float(numerator) / float(denominator)
+
+
+manual_seconds_per_page = pick(manual, "throughput", "seconds_per_page_measured_e2e")
+prompt_seconds_per_page = pick(prompt, "throughput", "seconds_per_page_measured_e2e")
+manual_pages_per_s = pick(manual, "throughput", "pages_per_s_measured_e2e")
+prompt_pages_per_s = pick(prompt, "throughput", "pages_per_s_measured_e2e")
+manual_non_cdm = pick(manual, "omnidocbench_metrics_without_cdm", "available_non_cdm_component_mean_score_percent")
+prompt_non_cdm = pick(prompt, "omnidocbench_metrics_without_cdm", "available_non_cdm_component_mean_score_percent")
+manual_text_table = pick(manual, "omnidocbench_metrics_without_cdm", "text_table_conclusion_mean_score_percent")
+prompt_text_table = pick(prompt, "omnidocbench_metrics_without_cdm", "text_table_conclusion_mean_score_percent")
+fingerprints_equal = (
+    manual.get("output_fingerprint_summary", {}).get("fingerprints_sha256")
+    == prompt.get("output_fingerprint_summary", {}).get("fingerprints_sha256")
+)
+
 summary = {
     "manual_path": str(manual_path),
     "prompt_flash_attention_path": str(prompt_path),
@@ -104,20 +125,27 @@ summary = {
     "prompt_vision_attention": prompt.get("vision_attention"),
     "item_count_manual": len(manual_rows),
     "item_count_prompt_flash_attention": len(prompt_rows),
-    "fingerprints_equal": manual.get("output_fingerprint_summary", {}).get("fingerprints_sha256")
-    == prompt.get("output_fingerprint_summary", {}).get("fingerprints_sha256"),
+    "fingerprints_equal": fingerprints_equal,
+    "manual_fingerprints_sha256": manual.get("output_fingerprint_summary", {}).get("fingerprints_sha256"),
+    "prompt_fingerprints_sha256": prompt.get("output_fingerprint_summary", {}).get("fingerprints_sha256"),
     "mismatch_count": len(mismatches),
     "mismatches_sample": mismatches[:16],
-    "manual_seconds_per_page": pick(manual, "throughput", "seconds_per_page_measured_e2e"),
-    "prompt_seconds_per_page": pick(prompt, "throughput", "seconds_per_page_measured_e2e"),
+    "manual_pages_per_s": manual_pages_per_s,
+    "prompt_pages_per_s": prompt_pages_per_s,
+    "pages_per_s_ratio_prompt_over_manual": ratio(prompt_pages_per_s, manual_pages_per_s),
+    "manual_seconds_per_page": manual_seconds_per_page,
+    "prompt_seconds_per_page": prompt_seconds_per_page,
+    "seconds_per_page_ratio_prompt_over_manual": ratio(prompt_seconds_per_page, manual_seconds_per_page),
     "manual_prefill_s": pick(manual, "phase_timing_s", "recognizer_ready_bank_build"),
     "prompt_prefill_s": pick(prompt, "phase_timing_s", "recognizer_ready_bank_build"),
     "manual_vision_encoder_sum_s": pick(manual, "ready_item_timing_summary_s", "vision_encoder", "sum"),
     "prompt_vision_encoder_sum_s": pick(prompt, "ready_item_timing_summary_s", "vision_encoder", "sum"),
-    "manual_non_cdm": pick(manual, "omnidocbench_metrics_without_cdm", "available_non_cdm_component_mean_score_percent"),
-    "prompt_non_cdm": pick(prompt, "omnidocbench_metrics_without_cdm", "available_non_cdm_component_mean_score_percent"),
-    "manual_text_table_conclusion": pick(manual, "omnidocbench_metrics_without_cdm", "text_table_conclusion_mean_score_percent"),
-    "prompt_text_table_conclusion": pick(prompt, "omnidocbench_metrics_without_cdm", "text_table_conclusion_mean_score_percent"),
+    "manual_non_cdm": manual_non_cdm,
+    "prompt_non_cdm": prompt_non_cdm,
+    "non_cdm_equal": manual_non_cdm == prompt_non_cdm,
+    "manual_text_table_conclusion": manual_text_table,
+    "prompt_text_table_conclusion": prompt_text_table,
+    "text_table_conclusion_equal": manual_text_table == prompt_text_table,
     "manual_length_cap_hit_count": pick(manual, "decode_summary", "length_cap_hit_count"),
     "prompt_length_cap_hit_count": pick(prompt, "decode_summary", "length_cap_hit_count"),
 }
@@ -126,6 +154,8 @@ print("VISION_ATTENTION_COMPARE_SUMMARY", json.dumps(summary, ensure_ascii=False
     json.dumps(summary, ensure_ascii=False, indent=2),
     encoding="utf-8",
 )
+if os.environ.get("FAIL_ON_OUTPUT_MISMATCH", "1") == "1" and not fingerprints_equal:
+    raise SystemExit(f"PromptFA output fingerprints differ from manual baseline: {len(mismatches)} mismatches")
 PY
 
 echo "VISION_ATTENTION_COMPARE_OUTPUT_DIR=${OUTPUT_DIR}"
