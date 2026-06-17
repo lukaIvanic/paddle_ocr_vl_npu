@@ -432,6 +432,7 @@ def compile_single_crop_vision_forward(
     device: torch.device,
     backend_name: str,
     boundary: str,
+    wrapper: SingleCropVisionFeatureModule | None = None,
 ) -> tuple[Callable[[torch.Tensor], torch.Tensor] | None, dict[str, Any]]:
     backend_name = str(backend_name)
     boundary = str(boundary)
@@ -439,7 +440,8 @@ def compile_single_crop_vision_forward(
         raise ValueError(f"unsupported --vision-forward-boundary {boundary!r}; choices={VISION_FORWARD_BOUNDARY_CHOICES}")
     if backend_name == "none":
         if boundary == "static_visual":
-            wrapper = SingleCropVisionFeatureModule(model, item.image_grid_thw, boundary=boundary, device=device).eval()
+            if wrapper is None:
+                wrapper = SingleCropVisionFeatureModule(model, item.image_grid_thw, boundary=boundary, device=device).eval()
             return wrapper, {
                 "enabled": False,
                 "backend": backend_name,
@@ -461,7 +463,8 @@ def compile_single_crop_vision_forward(
             "boundary": boundary,
         }
 
-    wrapper = SingleCropVisionFeatureModule(model, item.image_grid_thw, boundary=boundary, device=device).eval()
+    if wrapper is None:
+        wrapper = SingleCropVisionFeatureModule(model, item.image_grid_thw, boundary=boundary, device=device).eval()
     compile_kwargs: dict[str, Any] = {
         "fullgraph": True,
         "dynamic": False,
@@ -1091,16 +1094,20 @@ def main() -> None:
     if str(args.vision_compile_backend) != "none":
         target_item = queue_inputs[0]
         eager_ref: torch.Tensor | None = None
+        validation_wrapper: SingleCropVisionFeatureModule | None = None
+        validation_pixel_values: torch.Tensor | None = None
         original_visual_ref: torch.Tensor | None = None
         if bool(args.vision_compile_validate):
+            validation_wrapper = SingleCropVisionFeatureModule(
+                model,
+                target_item.image_grid_thw,
+                boundary=vision_forward_boundary,
+                device=device,
+            ).eval()
+            validation_pixel_values = target_item.pixel_values.to(device=device, dtype=model.visual.dtype)
             maybe_sync(device)
             eager_start = time.perf_counter()
-            eager_ref = run_vision_one(
-                model=model,
-                item=target_item,
-                device=device,
-                boundary=vision_forward_boundary,
-            )
+            eager_ref = validation_wrapper(validation_pixel_values)
             maybe_sync(device)
             eager_ref_s = time.perf_counter() - eager_start
             if vision_forward_boundary == "static_visual":
@@ -1126,17 +1133,38 @@ def main() -> None:
             device=device,
             backend_name=str(args.vision_compile_backend),
             boundary=vision_forward_boundary,
+            wrapper=validation_wrapper,
         )
         maybe_sync(device)
         first_call_start = time.perf_counter()
-        compiled_first = run_vision_one(model=model, item=target_item, device=device, vision_forward=vision_forward)
+        if validation_pixel_values is not None:
+            compiled_first = vision_forward(validation_pixel_values)
+        else:
+            compiled_first = run_vision_one(model=model, item=target_item, device=device, vision_forward=vision_forward)
         maybe_sync(device)
         compiled_first_call_s = time.perf_counter() - first_call_start
         vision_compile_summary["compiled_first_call_s"] = float(compiled_first_call_s)
         if eager_ref is not None:
+            maybe_sync(device)
+            second_call_start = time.perf_counter()
+            compiled_second = vision_forward(validation_pixel_values)
+            maybe_sync(device)
+            compiled_second_call_s = time.perf_counter() - second_call_start
+
+            maybe_sync(device)
+            post_compile_eager_start = time.perf_counter()
+            post_compile_eager = validation_wrapper(validation_pixel_values)
+            maybe_sync(device)
+            post_compile_eager_s = time.perf_counter() - post_compile_eager_start
+
             diff = (eager_ref.float() - compiled_first.float()).abs()
+            repeat_diff = (compiled_first.float() - compiled_second.float()).abs()
+            post_compile_eager_diff = (eager_ref.float() - post_compile_eager.float()).abs()
             vision_compile_summary["validation"] = {
                 "enabled": True,
+                "reference_scope": "same_wrapper_same_input_tensor",
+                "input_shape": [int(dim) for dim in validation_pixel_values.shape],
+                "input_dtype": str(validation_pixel_values.dtype),
                 "eager_reference_s": float(eager_ref_s),
                 "max_abs_diff": float(diff.max().detach().cpu().item()),
                 "mean_abs_diff": float(diff.mean().detach().cpu().item()),
@@ -1145,6 +1173,22 @@ def main() -> None:
                 ),
                 "eager_shape": [int(dim) for dim in eager_ref.shape],
                 "compiled_shape": [int(dim) for dim in compiled_first.shape],
+                "compiled_second_call_s": float(compiled_second_call_s),
+                "compiled_first_vs_second": {
+                    "max_abs_diff": float(repeat_diff.max().detach().cpu().item()),
+                    "mean_abs_diff": float(repeat_diff.mean().detach().cpu().item()),
+                    "allclose_atol_5e_2_rtol_5e_2": bool(
+                        torch.allclose(compiled_first.float(), compiled_second.float(), atol=5e-2, rtol=5e-2)
+                    ),
+                },
+                "same_wrapper_eager_before_vs_after_compile": {
+                    "post_compile_eager_s": float(post_compile_eager_s),
+                    "max_abs_diff": float(post_compile_eager_diff.max().detach().cpu().item()),
+                    "mean_abs_diff": float(post_compile_eager_diff.mean().detach().cpu().item()),
+                    "allclose_atol_5e_2_rtol_5e_2": bool(
+                        torch.allclose(eager_ref.float(), post_compile_eager.float(), atol=5e-2, rtol=5e-2)
+                    ),
+                },
             }
             if original_visual_ref is not None:
                 static_diff = (original_visual_ref.float() - eager_ref.float()).abs()
