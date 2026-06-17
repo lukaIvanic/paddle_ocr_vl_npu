@@ -84,18 +84,34 @@ def diff_stats(lhs: torch.Tensor, rhs: torch.Tensor) -> dict[str, Any]:
     lhs_cpu = lhs.detach().to(dtype=torch.float32).cpu()
     rhs_cpu = rhs.detach().to(dtype=torch.float32).cpu()
     diff = (lhs_cpu - rhs_cpu).abs()
-    if diff.numel():
-        flat_idx = int(diff.argmax().item())
-        max_abs = float(diff.max().item())
-        mean_abs = float(diff.mean().item())
-        rms_abs = float(torch.sqrt(torch.mean(diff * diff)).item())
-        p99_abs = float(torch.quantile(diff.flatten(), 0.99).item())
-        p999_abs = float(torch.quantile(diff.flatten(), 0.999).item())
+    lhs_finite = torch.isfinite(lhs_cpu)
+    rhs_finite = torch.isfinite(rhs_cpu)
+    diff_finite = torch.isfinite(diff)
+    finite_diff = diff[diff_finite]
+    if finite_diff.numel():
+        finite_flat = diff.flatten()
+        flat_idx = int(torch.nan_to_num(finite_flat, nan=-1.0, posinf=-1.0, neginf=-1.0).argmax().item())
+        max_abs = float(finite_diff.max().item())
+        mean_abs = float(finite_diff.mean().item())
+        rms_abs = float(torch.sqrt(torch.mean(finite_diff * finite_diff)).item())
+        p99_abs = float(torch.quantile(finite_diff.flatten(), 0.99).item())
+        p999_abs = float(torch.quantile(finite_diff.flatten(), 0.999).item())
     else:
-        flat_idx = 0
-        max_abs = mean_abs = rms_abs = p99_abs = p999_abs = 0.0
+        flat_idx = None
+        max_abs = mean_abs = rms_abs = p99_abs = p999_abs = None
     return {
         "shape": [int(value) for value in lhs.shape],
+        "numel": int(diff.numel()),
+        "lhs_nonfinite_count": int((~lhs_finite).sum().item()),
+        "rhs_nonfinite_count": int((~rhs_finite).sum().item()),
+        "lhs_nan_count": int(torch.isnan(lhs_cpu).sum().item()),
+        "rhs_nan_count": int(torch.isnan(rhs_cpu).sum().item()),
+        "lhs_posinf_count": int(torch.isposinf(lhs_cpu).sum().item()),
+        "rhs_posinf_count": int(torch.isposinf(rhs_cpu).sum().item()),
+        "lhs_neginf_count": int(torch.isneginf(lhs_cpu).sum().item()),
+        "rhs_neginf_count": int(torch.isneginf(rhs_cpu).sum().item()),
+        "diff_nonfinite_count": int((~diff_finite).sum().item()),
+        "finite_diff_count": int(finite_diff.numel()),
         "max_abs_diff": max_abs,
         "mean_abs_diff": mean_abs,
         "rms_abs_diff": rms_abs,
@@ -109,14 +125,51 @@ def diff_stats(lhs: torch.Tensor, rhs: torch.Tensor) -> dict[str, Any]:
 
 
 def number_stats(values: list[float]) -> dict[str, Any]:
-    if not values:
-        return {"count": 0, "min": None, "max": None, "avg": None}
+    clean_values = [float(value) for value in values if value is not None]
+    if not clean_values:
+        return {"count": int(len(values)), "finite_count": 0, "min": None, "max": None, "avg": None}
     return {
         "count": int(len(values)),
-        "min": float(min(values)),
-        "max": float(max(values)),
-        "avg": float(sum(values) / float(len(values))),
+        "finite_count": int(len(clean_values)),
+        "min": float(min(clean_values)),
+        "max": float(max(clean_values)),
+        "avg": float(sum(clean_values) / float(len(clean_values))),
     }
+
+
+def nonfinite_stats(rows: list[dict[str, Any]], boundary: str, side: str) -> dict[str, Any]:
+    key = f"{side}_nonfinite_count"
+    counts = [int(row["diffs"][boundary].get(key, 0) or 0) for row in rows]
+    return {
+        "items_with_nonfinite": int(sum(1 for count in counts if count > 0)),
+        "total_nonfinite": int(sum(counts)),
+    }
+
+
+def shape_mod16_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    groups: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        mod = str(int(row.get("vision_seq_len_mod_16", -1)))
+        group = groups.setdefault(
+            mod,
+            {
+                "count": 0,
+                "compiled_visual_nonfinite_items": 0,
+                "generated_token_mismatch_count": 0,
+                "text_mismatch_count": 0,
+                "sample_ids": [],
+            },
+        )
+        group["count"] += 1
+        if int(row["diffs"]["visual_post_layernorm"].get("lhs_nonfinite_count", 0) or 0) > 0:
+            group["compiled_visual_nonfinite_items"] += 1
+        if not bool(row["tokens"]["generated_trimmed_match"]):
+            group["generated_token_mismatch_count"] += 1
+        if not bool(row["texts"]["match"]):
+            group["text_mismatch_count"] += 1
+        if len(group["sample_ids"]) < 5:
+            group["sample_ids"].append(str(row.get("id")))
+    return dict(sorted(groups.items(), key=lambda item: int(item[0])))
 
 
 def trim_after_eos(tokens: list[int], eos_token_id: int) -> list[int]:
@@ -346,6 +399,8 @@ def compare_one_item(
 
     eager_next = int(eager_prefill["next_token"].detach().cpu().view(-1)[0].item())
     compiled_next = int(compiled_prefill["next_token"].detach().cpu().view(-1)[0].item())
+    grid = tensor_grid(item)
+    vision_seq_len = int(vision_tokens(item))
     row = {
         "id": str(item.entry.get("id")),
         "category_type": item.entry.get("category_type"),
@@ -353,8 +408,10 @@ def compare_one_item(
         "dataset_index": int(item.entry.get("dataset_index", 0)),
         "crop_size": item.entry.get("crop_size"),
         "input_tokens": int(item.input_ids.shape[1]),
-        "image_grid_thw": tensor_grid(item),
-        "vision_tokens": int(vision_tokens(item)),
+        "image_grid_thw": grid,
+        "vision_tokens": vision_seq_len,
+        "vision_seq_len_mod_16": int(vision_seq_len % 16),
+        "grid_hw_mod_16": int((grid[1] * grid[2]) % 16) if len(grid) == 3 else None,
         "projected_image_tokens": int(item.image_grid_thw.prod().item() // 4),
         "vision_compile": clean_json(compile_meta),
         "timing_s": {
@@ -541,9 +598,13 @@ def main() -> None:
             "text_mismatch_count": int(len(text_mismatch_rows)),
             "generated_token_match_rate": float(1.0 - (len(token_mismatch_rows) / max(1, len(rows)))),
             "text_match_rate": float(1.0 - (len(text_mismatch_rows) / max(1, len(rows)))),
-            "visual_max_abs_diff": number_stats([float(row["diffs"]["visual_post_layernorm"]["max_abs_diff"]) for row in rows]),
-            "projected_max_abs_diff": number_stats([float(row["diffs"]["projected_image_embeddings"]["max_abs_diff"]) for row in rows]),
-            "prefill_logits_max_abs_diff": number_stats([float(row["diffs"]["prefill_logits"]["max_abs_diff"]) for row in rows]),
+            "visual_max_abs_diff": number_stats([row["diffs"]["visual_post_layernorm"]["max_abs_diff"] for row in rows]),
+            "projected_max_abs_diff": number_stats([row["diffs"]["projected_image_embeddings"]["max_abs_diff"] for row in rows]),
+            "prefill_logits_max_abs_diff": number_stats([row["diffs"]["prefill_logits"]["max_abs_diff"] for row in rows]),
+            "compiled_visual_nonfinite": nonfinite_stats(rows, "visual_post_layernorm", "lhs"),
+            "compiled_projected_nonfinite": nonfinite_stats(rows, "projected_image_embeddings", "lhs"),
+            "compiled_prefill_logits_nonfinite": nonfinite_stats(rows, "prefill_logits", "lhs"),
+            "by_vision_seq_len_mod_16": shape_mod16_summary(rows),
             "eager_rough_ground_truth_accuracy": rough_eager,
             "compiled_visual_rough_ground_truth_accuracy": rough_compiled,
             "sample_mismatches": clean_json(token_mismatch_rows[:8]),
