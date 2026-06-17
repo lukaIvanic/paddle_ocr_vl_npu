@@ -73,7 +73,7 @@ MODE_CHOICES = ("sync_per_crop", "unsynced_loop")
 PROFILE_METRIC_CHOICES = ("pipe", "memory", "l2", "memory_access")
 CROP_SAMPLE_CHOICES = ("all", "small_medium_large", "small_only")
 VISION_COMPILE_BACKEND_CHOICES = ("none", "default", "aot_eager", "inductor", "torchair")
-VISION_FORWARD_BOUNDARY_CHOICES = ("get_image_features", "visual")
+VISION_FORWARD_BOUNDARY_CHOICES = ("get_image_features", "visual", "static_visual")
 
 
 def parse_vision_dtype(name: str) -> torch.dtype:
@@ -321,6 +321,45 @@ def build_single_crop_vision_cu_seqlens(image_grid_thw: torch.Tensor, *, device:
     return torch.tensor(cu, device=device, dtype=torch.int32)
 
 
+def single_crop_grid_ints(image_grid_thw: torch.Tensor) -> tuple[int, int, int]:
+    grid = image_grid_thw.detach().cpu().reshape(-1, 3)
+    if int(grid.shape[0]) != 1:
+        raise ValueError(f"static single-crop vision expects exactly one image grid, got {tuple(grid.shape)}")
+    t, h, w = grid[0].tolist()
+    return int(t), int(h), int(w)
+
+
+def build_static_abs_pos_embed(
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    image_grid_thw: torch.Tensor,
+    *,
+    device: torch.device,
+) -> torch.Tensor:
+    t, h, w = single_crop_grid_ints(image_grid_thw)
+    embeddings_module = model.visual.vision_model.embeddings
+    dtype = embeddings_module.patch_embedding.weight.dtype
+    dummy = torch.empty((int(t) * int(h) * int(w), embeddings_module.embed_dim), device=device, dtype=dtype)
+    with torch.inference_mode():
+        pos = embeddings_module.interpolate_pos_encoding(dummy, int(h), int(w)).squeeze(0).repeat(int(t), 1)
+    return pos.contiguous()
+
+
+def build_static_vision_rope(
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    image_grid_thw: torch.Tensor,
+    *,
+    device: torch.device,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    t, h, w = single_crop_grid_ints(image_grid_thw)
+    del t
+    encoder = model.visual.vision_model.encoder
+    image_pids = torch.arange(int(image_grid_thw.prod().item()), device=device, dtype=torch.int64) % int(h * w)
+    pids = torch.stack((image_pids // int(w), image_pids % int(w)), dim=-1)
+    rotary_max = encoder.rotary_pos_emb(max(int(h), int(w)))
+    rotary_embeddings = rotary_max[pids].flatten(1).repeat(1, 2)
+    return rotary_embeddings.cos().contiguous(), rotary_embeddings.sin().contiguous()
+
+
 class SingleCropVisionFeatureModule(torch.nn.Module):
     """Shape-specialized wrapper for compiling one real crop's vision path."""
 
@@ -341,8 +380,27 @@ class SingleCropVisionFeatureModule(torch.nn.Module):
             build_single_crop_vision_cu_seqlens(image_grid_thw, device=device),
             persistent=False,
         )
+        if self.boundary == "static_visual":
+            self.register_buffer(
+                "abs_pos_embed_const",
+                build_static_abs_pos_embed(model, image_grid_thw, device=device),
+                persistent=False,
+            )
+            rope_cos, rope_sin = build_static_vision_rope(model, image_grid_thw, device=device)
+            self.register_buffer("vision_rope_cos_const", rope_cos, persistent=False)
+            self.register_buffer("vision_rope_sin_const", rope_sin, persistent=False)
 
     def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
+        if self.boundary == "static_visual":
+            transformer = self.model.visual.vision_model
+            embeddings_module = transformer.embeddings
+            pixel_values = pixel_values.to(dtype=embeddings_module.patch_embedding.weight.dtype)
+            patch_embeds = embeddings_module.patch_embedding(pixel_values)
+            hidden_states = patch_embeds.flatten(-2).squeeze(-1) + self.abs_pos_embed_const
+            position_embeddings = (self.vision_rope_cos_const, self.vision_rope_sin_const)
+            for encoder_layer in transformer.encoder.layers:
+                hidden_states = encoder_layer(hidden_states, self.cu_seqlens_const, position_embeddings)
+            return transformer.post_layernorm(hidden_states)
         if self.boundary == "visual":
             pixel_values = pixel_values.type(self.model.visual.dtype).unsqueeze(0)
             return self.model.visual(
@@ -380,6 +438,22 @@ def compile_single_crop_vision_forward(
     if boundary not in VISION_FORWARD_BOUNDARY_CHOICES:
         raise ValueError(f"unsupported --vision-forward-boundary {boundary!r}; choices={VISION_FORWARD_BOUNDARY_CHOICES}")
     if backend_name == "none":
+        if boundary == "static_visual":
+            wrapper = SingleCropVisionFeatureModule(model, item.image_grid_thw, boundary=boundary, device=device).eval()
+            return wrapper, {
+                "enabled": False,
+                "backend": backend_name,
+                "compile_api": None,
+                "boundary": boundary,
+                "crop_id": str(item.entry.get("id")),
+                "crop_sample_bucket": item.entry.get("crop_sample_bucket"),
+                "vision_tokens": int(vision_tokens(item)),
+                "image_grid_thw": tensor_grid(item),
+                "cu_seqlens": [int(value) for value in wrapper.cu_seqlens_const.detach().cpu().reshape(-1).tolist()],
+                "static_abs_pos_embed_shape": [int(dim) for dim in wrapper.abs_pos_embed_const.shape],
+                "static_vision_rope_shape": [int(dim) for dim in wrapper.vision_rope_cos_const.shape],
+                "note": "Uncompiled static_visual wrapper. Shape metadata is still hoisted out of forward.",
+            }
         return None, {
             "enabled": False,
             "backend": backend_name,
@@ -425,12 +499,19 @@ def compile_single_crop_vision_forward(
         "vision_tokens": int(vision_tokens(item)),
         "image_grid_thw": tensor_grid(item),
         "cu_seqlens": [int(value) for value in wrapper.cu_seqlens_const.detach().cpu().reshape(-1).tolist()],
+        "static_abs_pos_embed_shape": (
+            [int(dim) for dim in wrapper.abs_pos_embed_const.shape] if boundary == "static_visual" else None
+        ),
+        "static_vision_rope_shape": (
+            [int(dim) for dim in wrapper.vision_rope_cos_const.shape] if boundary == "static_visual" else None
+        ),
         "note": (
             "The compiled callable is shape-specialized to exactly one selected crop. "
             "The input tensor is the already CPU-preprocessed crop patch tensor after transfer to the target device; "
             "boundary=get_image_features covers native-resolution visual encoder plus adaptive MLP projector; "
-            "boundary=visual covers self.visual only, i.e. patch embedding, interpolated position embeddings, "
-            "vision RoPE/encoder layers, and post layernorm, with cu_seqlens precomputed outside the graph."
+            "boundary=visual covers self.visual with only cu_seqlens precomputed outside the graph; "
+            "boundary=static_visual covers patch embedding, add precomputed absolute position embeddings, "
+            "encoder layers with precomputed vision RoPE, and post layernorm."
         ),
     }
 
@@ -447,6 +528,9 @@ def run_vision_one(
     pixel_values = item.pixel_values.to(device=device, dtype=model.visual.dtype)
     if vision_forward is not None:
         return vision_forward(pixel_values)
+    if boundary == "static_visual":
+        wrapper = SingleCropVisionFeatureModule(model, item.image_grid_thw, boundary=boundary, device=device).eval()
+        return wrapper(pixel_values)
     if boundary == "visual":
         cu_seqlens = build_single_crop_vision_cu_seqlens(item.image_grid_thw, device=device)
         return model.visual(
@@ -885,8 +969,9 @@ def parse_args() -> argparse.Namespace:
         choices=VISION_FORWARD_BOUNDARY_CHOICES,
         help=(
             "Forward boundary for both eager and compiled vision tests. get_image_features includes self.visual plus "
-            "the adaptive MLP projector. visual compiles/runs only self.visual with cu_seqlens precomputed outside "
-            "the graph."
+            "the adaptive MLP projector. visual compiles/runs self.visual with only cu_seqlens precomputed outside "
+            "the graph. static_visual compiles/runs a single-crop static rewrite of self.visual with crop-grid "
+            "constants, absolute position embeddings, and vision RoPE hoisted out of forward."
         ),
     )
     parser.add_argument(
@@ -1006,6 +1091,7 @@ def main() -> None:
     if str(args.vision_compile_backend) != "none":
         target_item = queue_inputs[0]
         eager_ref: torch.Tensor | None = None
+        original_visual_ref: torch.Tensor | None = None
         if bool(args.vision_compile_validate):
             maybe_sync(device)
             eager_start = time.perf_counter()
@@ -1017,8 +1103,22 @@ def main() -> None:
             )
             maybe_sync(device)
             eager_ref_s = time.perf_counter() - eager_start
+            if vision_forward_boundary == "static_visual":
+                maybe_sync(device)
+                original_visual_start = time.perf_counter()
+                original_visual_ref = run_vision_one(
+                    model=model,
+                    item=target_item,
+                    device=device,
+                    boundary="visual",
+                )
+                maybe_sync(device)
+                original_visual_ref_s = time.perf_counter() - original_visual_start
+            else:
+                original_visual_ref_s = None
         else:
             eager_ref_s = None
+            original_visual_ref_s = None
 
         vision_forward, vision_compile_summary = compile_single_crop_vision_forward(
             model=model,
@@ -1046,6 +1146,18 @@ def main() -> None:
                 "eager_shape": [int(dim) for dim in eager_ref.shape],
                 "compiled_shape": [int(dim) for dim in compiled_first.shape],
             }
+            if original_visual_ref is not None:
+                static_diff = (original_visual_ref.float() - eager_ref.float()).abs()
+                vision_compile_summary["validation"]["static_visual_vs_original_visual"] = {
+                    "original_visual_reference_s": float(original_visual_ref_s),
+                    "max_abs_diff": float(static_diff.max().detach().cpu().item()),
+                    "mean_abs_diff": float(static_diff.mean().detach().cpu().item()),
+                    "allclose_atol_5e_2_rtol_5e_2": bool(
+                        torch.allclose(original_visual_ref.float(), eager_ref.float(), atol=5e-2, rtol=5e-2)
+                    ),
+                    "original_visual_shape": [int(dim) for dim in original_visual_ref.shape],
+                    "static_visual_shape": [int(dim) for dim in eager_ref.shape],
+                }
         else:
             vision_compile_summary["validation"] = {"enabled": False}
         setup_timing["vision_compile_wrapper_s"] = float(vision_compile_summary.get("compile_wrapper_s", 0.0))
