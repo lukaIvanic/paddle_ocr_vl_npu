@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Compare compiled visual output after the projector, prefill, and OCR decode.
 
-This is a correctness diagnostic, not a throughput benchmark. It runs one real
-OmniDocBench crop through the same static_visual wrapper twice:
+This is a correctness diagnostic, not a throughput benchmark. It runs real
+OmniDocBench crops through the same static_visual wrapper twice:
 
 1. eager static_visual
 2. compiled static_visual
@@ -21,6 +21,7 @@ import os
 import sys
 import time
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import torch
@@ -38,6 +39,7 @@ from bench_page_pipeline_e2e import (  # noqa: E402
     build_queue_inputs_from_crops,
     clean_json,
     load_pages_result,
+    rough_ground_truth_accuracy,
 )
 from bench_recognizer_queue import QueueInput  # noqa: E402
 from local_modeling_paddleocr_vl import (  # noqa: E402
@@ -103,6 +105,17 @@ def diff_stats(lhs: torch.Tensor, rhs: torch.Tensor) -> dict[str, Any]:
         "allclose_atol_5e_2_rtol_5e_2": bool(torch.allclose(lhs_cpu, rhs_cpu, atol=5e-2, rtol=5e-2)),
         "allclose_atol_1e_1_rtol_1e_1": bool(torch.allclose(lhs_cpu, rhs_cpu, atol=1e-1, rtol=1e-1)),
         "allclose_atol_1e_0_rtol_1e_0": bool(torch.allclose(lhs_cpu, rhs_cpu, atol=1.0, rtol=1.0)),
+    }
+
+
+def number_stats(values: list[float]) -> dict[str, Any]:
+    if not values:
+        return {"count": 0, "min": None, "max": None, "avg": None}
+    return {
+        "count": int(len(values)),
+        "min": float(min(values)),
+        "max": float(max(values)),
+        "avg": float(sum(values) / float(len(values))),
     }
 
 
@@ -228,6 +241,169 @@ def generate_from_prefill(
     return torch.cat(generated, dim=1)
 
 
+def decoded_proxy(*, item: QueueInput, trimmed_ids: list[int], text: str, eos_token_id: int, max_new_tokens: int) -> Any:
+    return SimpleNamespace(
+        item=SimpleNamespace(input_item=item),
+        trimmed_token_ids=list(trimmed_ids),
+        generated_text=str(text),
+        eos_hit=bool(int(eos_token_id) in trimmed_ids),
+        length_cap_hit=bool(int(eos_token_id) not in trimmed_ids and len(trimmed_ids) >= int(max_new_tokens)),
+    )
+
+
+@torch.inference_mode()
+def compare_one_item(
+    *,
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    tokenizer: Tokenizer,
+    item: QueueInput,
+    device: torch.device,
+    compile_backend: str,
+    cache_length: int,
+    max_new_tokens: int,
+) -> tuple[dict[str, Any], Any, Any]:
+    wrapper = SingleCropVisionFeatureModule(model, item.image_grid_thw, boundary="static_visual", device=device).eval()
+    pixel_values = item.pixel_values.to(device=device, dtype=model.visual.dtype)
+
+    maybe_sync(device)
+    eager_visual_start = time.perf_counter()
+    eager_visual = wrapper(pixel_values)
+    maybe_sync(device)
+    eager_visual_s = time.perf_counter() - eager_visual_start
+
+    compiled_visual_fn, compile_meta = compile_single_crop_vision_forward(
+        model=model,
+        item=item,
+        device=device,
+        backend_name=str(compile_backend),
+        boundary="static_visual",
+        wrapper=wrapper,
+    )
+    if compiled_visual_fn is None:
+        compiled_visual_fn = wrapper
+
+    maybe_sync(device)
+    compiled_visual_start = time.perf_counter()
+    compiled_visual = compiled_visual_fn(pixel_values)
+    maybe_sync(device)
+    compiled_visual_s = time.perf_counter() - compiled_visual_start
+    compile_meta["compiled_first_call_s"] = float(compiled_visual_s)
+
+    maybe_sync(device)
+    eager_prefill_start = time.perf_counter()
+    eager_prefill = prefill_from_visual_features(
+        model=model,
+        item=item,
+        image_features=eager_visual,
+        device=device,
+        cache_length=int(cache_length),
+    )
+    maybe_sync(device)
+    eager_prefill_s = time.perf_counter() - eager_prefill_start
+
+    maybe_sync(device)
+    compiled_prefill_start = time.perf_counter()
+    compiled_prefill = prefill_from_visual_features(
+        model=model,
+        item=item,
+        image_features=compiled_visual,
+        device=device,
+        cache_length=int(cache_length),
+    )
+    maybe_sync(device)
+    compiled_prefill_s = time.perf_counter() - compiled_prefill_start
+
+    eos_token_id = int(model.config.eos_token_id)
+    maybe_sync(device)
+    eager_generate_start = time.perf_counter()
+    eager_ids = generate_from_prefill(
+        model=model,
+        prefill=eager_prefill,
+        max_new_tokens=int(max_new_tokens),
+        eos_token_id=eos_token_id,
+    )
+    maybe_sync(device)
+    eager_generate_s = time.perf_counter() - eager_generate_start
+
+    maybe_sync(device)
+    compiled_generate_start = time.perf_counter()
+    compiled_ids = generate_from_prefill(
+        model=model,
+        prefill=compiled_prefill,
+        max_new_tokens=int(max_new_tokens),
+        eos_token_id=eos_token_id,
+    )
+    maybe_sync(device)
+    compiled_generate_s = time.perf_counter() - compiled_generate_start
+
+    eager_token_list = [int(v) for v in eager_ids[0].detach().cpu().tolist()]
+    compiled_token_list = [int(v) for v in compiled_ids[0].detach().cpu().tolist()]
+    eager_trimmed = trim_after_eos(eager_token_list, eos_token_id)
+    compiled_trimmed = trim_after_eos(compiled_token_list, eos_token_id)
+    eager_text = tokenizer.decode(eager_trimmed, skip_special_tokens=True)
+    compiled_text = tokenizer.decode(compiled_trimmed, skip_special_tokens=True)
+    token_mismatch = first_mismatch(eager_trimmed, compiled_trimmed)
+
+    eager_next = int(eager_prefill["next_token"].detach().cpu().view(-1)[0].item())
+    compiled_next = int(compiled_prefill["next_token"].detach().cpu().view(-1)[0].item())
+    row = {
+        "id": str(item.entry.get("id")),
+        "category_type": item.entry.get("category_type"),
+        "page_index": int(item.entry.get("page_index", 0)),
+        "dataset_index": int(item.entry.get("dataset_index", 0)),
+        "crop_size": item.entry.get("crop_size"),
+        "input_tokens": int(item.input_ids.shape[1]),
+        "image_grid_thw": tensor_grid(item),
+        "vision_tokens": int(vision_tokens(item)),
+        "projected_image_tokens": int(item.image_grid_thw.prod().item() // 4),
+        "vision_compile": clean_json(compile_meta),
+        "timing_s": {
+            "eager_visual": float(eager_visual_s),
+            "compiled_visual_first_call": float(compiled_visual_s),
+            "eager_projector_prefill": float(eager_prefill_s),
+            "compiled_projector_prefill": float(compiled_prefill_s),
+            "eager_decode": float(eager_generate_s),
+            "compiled_visual_decode": float(compiled_generate_s),
+        },
+        "diffs": {
+            "visual_post_layernorm": diff_stats(compiled_visual, eager_visual),
+            "projected_image_embeddings": diff_stats(compiled_prefill["image_embeds"], eager_prefill["image_embeds"]),
+            "text_inputs_embeds_after_scatter": diff_stats(compiled_prefill["inputs_embeds"], eager_prefill["inputs_embeds"]),
+            "prefill_hidden_last": diff_stats(compiled_prefill["hidden_last"], eager_prefill["hidden_last"]),
+            "prefill_logits": diff_stats(compiled_prefill["logits"], eager_prefill["logits"]),
+        },
+        "tokens": {
+            "eager_first_token": eager_next,
+            "compiled_visual_first_token": compiled_next,
+            "first_token_match": bool(eager_next == compiled_next),
+            "eager_generated_trimmed": eager_trimmed,
+            "compiled_visual_generated_trimmed": compiled_trimmed,
+            "generated_trimmed_match": bool(eager_trimmed == compiled_trimmed),
+            "first_mismatch": token_mismatch,
+        },
+        "texts": {
+            "eager": eager_text,
+            "compiled_visual": compiled_text,
+            "match": bool(eager_text == compiled_text),
+        },
+    }
+    eager_decoded = decoded_proxy(
+        item=item,
+        trimmed_ids=eager_trimmed,
+        text=eager_text,
+        eos_token_id=eos_token_id,
+        max_new_tokens=int(max_new_tokens),
+    )
+    compiled_decoded = decoded_proxy(
+        item=item,
+        trimmed_ids=compiled_trimmed,
+        text=compiled_text,
+        eos_token_id=eos_token_id,
+        max_new_tokens=int(max_new_tokens),
+    )
+    return row, eager_decoded, compiled_decoded
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default="PaddlePaddle/PaddleOCR-VL-1.6")
@@ -250,8 +426,15 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--vision-compile-backend", default="torchair", choices=VISION_COMPILE_BACKEND_CHOICES)
     parser.add_argument("--crop-sample", default="small_only", choices=CROP_SAMPLE_CHOICES)
+    parser.add_argument(
+        "--max-compare-crops",
+        type=int,
+        default=1,
+        help="After crop sampling, compare at most this many crops. Use 0 to compare all selected crops.",
+    )
     parser.add_argument("--cache-length", type=int, default=2048)
     parser.add_argument("--max-new-tokens", type=int, default=128)
+    parser.add_argument("--rough-gt-min-iou", type=float, default=0.5)
     parser.add_argument("--fail-on-token-mismatch", action="store_true")
     parser.add_argument("--json", action="store_true")
     return parser.parse_args()
@@ -286,103 +469,50 @@ def main() -> None:
         pre_cfg=pre_cfg,
         prompt_override=args.prompt,
     )
+    raw_queue_input_count_before_crop_sample = int(len(queue_inputs))
     queue_inputs, crop_sample_summary = select_profile_crop_sample(queue_inputs, strategy=str(args.crop_sample))
-    if len(queue_inputs) != 1:
-        raise ValueError(
-            "compiled visual downstream compare is shape-specialized and expects exactly one selected crop; "
-            f"got {len(queue_inputs)} from --crop-sample {args.crop_sample!r}"
-        )
-    item = queue_inputs[0]
+    if int(args.max_compare_crops) > 0:
+        queue_inputs = queue_inputs[: int(args.max_compare_crops)]
+    if not queue_inputs:
+        raise ValueError("zero queue inputs selected for comparison")
 
     model_load_start = time.perf_counter()
     model = LocalPaddleOCRVLForConditionalGeneration.from_pretrained(model_dir, dtype=dtype, device=device)
     maybe_sync(device)
     model_load_s = time.perf_counter() - model_load_start
 
-    wrapper = SingleCropVisionFeatureModule(model, item.image_grid_thw, boundary="static_visual", device=device).eval()
-    pixel_values = item.pixel_values.to(device=device, dtype=model.visual.dtype)
+    rows = []
+    eager_decoded = []
+    compiled_decoded = []
+    compare_start = time.perf_counter()
+    for idx, item in enumerate(queue_inputs):
+        print(
+            f"COMPILED_VISUAL_DOWNSTREAM_PROGRESS {idx + 1}/{len(queue_inputs)} "
+            f"id={item.entry.get('id')} grid={tensor_grid(item)}",
+            file=sys.stderr,
+            flush=True,
+        )
+        row, eager_item, compiled_item = compare_one_item(
+            model=model,
+            tokenizer=tokenizer,
+            item=item,
+            device=device,
+            compile_backend=str(args.vision_compile_backend),
+            cache_length=int(args.cache_length),
+            max_new_tokens=int(args.max_new_tokens),
+        )
+        row["idx"] = int(idx)
+        rows.append(row)
+        eager_decoded.append(eager_item)
+        compiled_decoded.append(compiled_item)
+    maybe_sync(device)
+    compare_total_s = time.perf_counter() - compare_start
 
-    maybe_sync(device)
-    eager_visual_start = time.perf_counter()
-    eager_visual = wrapper(pixel_values)
-    maybe_sync(device)
-    eager_visual_s = time.perf_counter() - eager_visual_start
-
-    compiled_visual_fn, compile_meta = compile_single_crop_vision_forward(
-        model=model,
-        item=item,
-        device=device,
-        backend_name=str(args.vision_compile_backend),
-        boundary="static_visual",
-        wrapper=wrapper,
-    )
-    if compiled_visual_fn is None:
-        compiled_visual_fn = wrapper
-
-    maybe_sync(device)
-    compiled_visual_start = time.perf_counter()
-    compiled_visual = compiled_visual_fn(pixel_values)
-    maybe_sync(device)
-    compiled_visual_s = time.perf_counter() - compiled_visual_start
-    compile_meta["compiled_first_call_s"] = float(compiled_visual_s)
-
-    maybe_sync(device)
-    eager_prefill_start = time.perf_counter()
-    eager_prefill = prefill_from_visual_features(
-        model=model,
-        item=item,
-        image_features=eager_visual,
-        device=device,
-        cache_length=int(args.cache_length),
-    )
-    maybe_sync(device)
-    eager_prefill_s = time.perf_counter() - eager_prefill_start
-
-    maybe_sync(device)
-    compiled_prefill_start = time.perf_counter()
-    compiled_prefill = prefill_from_visual_features(
-        model=model,
-        item=item,
-        image_features=compiled_visual,
-        device=device,
-        cache_length=int(args.cache_length),
-    )
-    maybe_sync(device)
-    compiled_prefill_s = time.perf_counter() - compiled_prefill_start
-
-    eos_token_id = int(model.config.eos_token_id)
-    maybe_sync(device)
-    eager_generate_start = time.perf_counter()
-    eager_ids = generate_from_prefill(
-        model=model,
-        prefill=eager_prefill,
-        max_new_tokens=int(args.max_new_tokens),
-        eos_token_id=eos_token_id,
-    )
-    maybe_sync(device)
-    eager_generate_s = time.perf_counter() - eager_generate_start
-
-    maybe_sync(device)
-    compiled_generate_start = time.perf_counter()
-    compiled_ids = generate_from_prefill(
-        model=model,
-        prefill=compiled_prefill,
-        max_new_tokens=int(args.max_new_tokens),
-        eos_token_id=eos_token_id,
-    )
-    maybe_sync(device)
-    compiled_generate_s = time.perf_counter() - compiled_generate_start
-
-    eager_token_list = [int(v) for v in eager_ids[0].detach().cpu().tolist()]
-    compiled_token_list = [int(v) for v in compiled_ids[0].detach().cpu().tolist()]
-    eager_trimmed = trim_after_eos(eager_token_list, eos_token_id)
-    compiled_trimmed = trim_after_eos(compiled_token_list, eos_token_id)
-    eager_text = tokenizer.decode(eager_trimmed, skip_special_tokens=True)
-    compiled_text = tokenizer.decode(compiled_trimmed, skip_special_tokens=True)
-    token_mismatch = first_mismatch(eager_trimmed, compiled_trimmed)
-
-    eager_next = int(eager_prefill["next_token"].detach().cpu().view(-1)[0].item())
-    compiled_next = int(compiled_prefill["next_token"].detach().cpu().view(-1)[0].item())
+    token_mismatch_rows = [row for row in rows if not row["tokens"]["generated_trimmed_match"]]
+    text_mismatch_rows = [row for row in rows if not row["texts"]["match"]]
+    first_token_mismatch_rows = [row for row in rows if not row["tokens"]["first_token_match"]]
+    rough_eager = rough_ground_truth_accuracy(eager_decoded, min_iou=float(args.rough_gt_min_iou))
+    rough_compiled = rough_ground_truth_accuracy(compiled_decoded, min_iou=float(args.rough_gt_min_iou))
     output = {
         "comparison": "compiled_visual_downstream",
         "model": str(model_dir),
@@ -391,56 +521,38 @@ def main() -> None:
         "npu_jit_compile": str(args.npu_jit_compile),
         "vision_attention": get_vision_attention_impl(),
         "vision_prompt_fa_layout": get_vision_prompt_fa_layout(),
-        "vision_compile": clean_json(compile_meta),
+        "vision_compile_backend": str(args.vision_compile_backend),
         "page_start": int(args.page_start),
         "num_pages": int(args.num_pages),
+        "raw_queue_input_count_before_crop_sample": int(raw_queue_input_count_before_crop_sample),
+        "selected_compare_count": int(len(rows)),
+        "max_compare_crops": int(args.max_compare_crops),
         "crop_sample": str(args.crop_sample),
         "crop_summary": clean_json(crop_summary),
         "crop_sample_summary": clean_json(crop_sample_summary),
         "input_build_summary": clean_json(input_build_summary),
-        "item": {
-            "id": str(item.entry.get("id")),
-            "category_type": item.entry.get("category_type"),
-            "crop_size": item.entry.get("crop_size"),
-            "input_tokens": int(item.input_ids.shape[1]),
-            "image_grid_thw": tensor_grid(item),
-            "vision_tokens": int(vision_tokens(item)),
-            "projected_image_tokens": int(item.image_grid_thw.prod().item() // 4),
-        },
         "timing_s": {
             "model_load": float(model_load_s),
-            "eager_visual": float(eager_visual_s),
-            "compiled_visual_first_call": float(compiled_visual_s),
-            "eager_projector_prefill": float(eager_prefill_s),
-            "compiled_projector_prefill": float(compiled_prefill_s),
-            "eager_decode": float(eager_generate_s),
-            "compiled_visual_decode": float(compiled_generate_s),
+            "compare_total": float(compare_total_s),
         },
-        "diffs": {
-            "visual_post_layernorm": diff_stats(compiled_visual, eager_visual),
-            "projected_image_embeddings": diff_stats(compiled_prefill["image_embeds"], eager_prefill["image_embeds"]),
-            "text_inputs_embeds_after_scatter": diff_stats(compiled_prefill["inputs_embeds"], eager_prefill["inputs_embeds"]),
-            "prefill_hidden_last": diff_stats(compiled_prefill["hidden_last"], eager_prefill["hidden_last"]),
-            "prefill_logits": diff_stats(compiled_prefill["logits"], eager_prefill["logits"]),
+        "summary": {
+            "first_token_mismatch_count": int(len(first_token_mismatch_rows)),
+            "generated_token_mismatch_count": int(len(token_mismatch_rows)),
+            "text_mismatch_count": int(len(text_mismatch_rows)),
+            "generated_token_match_rate": float(1.0 - (len(token_mismatch_rows) / max(1, len(rows)))),
+            "text_match_rate": float(1.0 - (len(text_mismatch_rows) / max(1, len(rows)))),
+            "visual_max_abs_diff": number_stats([float(row["diffs"]["visual_post_layernorm"]["max_abs_diff"]) for row in rows]),
+            "projected_max_abs_diff": number_stats([float(row["diffs"]["projected_image_embeddings"]["max_abs_diff"]) for row in rows]),
+            "prefill_logits_max_abs_diff": number_stats([float(row["diffs"]["prefill_logits"]["max_abs_diff"]) for row in rows]),
+            "eager_rough_ground_truth_accuracy": rough_eager,
+            "compiled_visual_rough_ground_truth_accuracy": rough_compiled,
+            "sample_mismatches": clean_json(token_mismatch_rows[:8]),
         },
-        "tokens": {
-            "eager_first_token": eager_next,
-            "compiled_visual_first_token": compiled_next,
-            "first_token_match": bool(eager_next == compiled_next),
-            "eager_generated_trimmed": eager_trimmed,
-            "compiled_visual_generated_trimmed": compiled_trimmed,
-            "generated_trimmed_match": bool(eager_trimmed == compiled_trimmed),
-            "first_mismatch": token_mismatch,
-        },
-        "texts": {
-            "eager": eager_text,
-            "compiled_visual": compiled_text,
-            "match": bool(eager_text == compiled_text),
-        },
+        "items": rows,
     }
     print(json.dumps(output, indent=2 if args.json else None, sort_keys=True, default=json_default))
-    if bool(args.fail_on_token_mismatch) and eager_trimmed != compiled_trimmed:
-        raise SystemExit(f"compiled visual changed generated tokens: {token_mismatch}")
+    if bool(args.fail_on_token_mismatch) and token_mismatch_rows:
+        raise SystemExit(f"compiled visual changed generated tokens for {len(token_mismatch_rows)} item(s)")
 
 
 if __name__ == "__main__":

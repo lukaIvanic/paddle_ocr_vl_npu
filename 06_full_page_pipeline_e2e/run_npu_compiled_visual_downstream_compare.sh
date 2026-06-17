@@ -3,10 +3,10 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Single-crop downstream correctness test for compiled static_visual.
+# Multi-crop downstream correctness test for compiled static_visual.
 # This does not benchmark the full page pipeline. It asks whether the compiled
 # visual feature drift survives the projector/prefill/decode path and changes OCR
-# generation for one real OmniDocBench crop.
+# generation/rough GT accuracy across real OmniDocBench crops.
 
 if [[ -z "${PYTHON_BIN:-}" ]]; then
   if [[ -x "/root/miniconda3/envs/paddle_ocr_vl_py310/bin/python" ]]; then
@@ -51,16 +51,18 @@ export RUN_ID="${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
 export OUTPUT_PATH="${OUTPUT_PATH:-${OUTPUT_DIR}/compiled_visual_downstream_${RUN_ID}.json}"
 export DEVICE="${DEVICE:-npu:0}"
 export PAGE_START="${PAGE_START:-0}"
-export NUM_PAGES="${NUM_PAGES:-8}"
+export NUM_PAGES="${NUM_PAGES:-32}"
 export MAX_CROPS="${MAX_CROPS:-0}"
 export DTYPE="${DTYPE:-fp16}"
 export NPU_JIT_COMPILE="${NPU_JIT_COMPILE:-off}"
 export VISION_ATTENTION_IMPL="${VISION_ATTENTION_IMPL:-manual}"
 export VISION_PROMPT_FA_LAYOUT="${VISION_PROMPT_FA_LAYOUT:-bnsd}"
 export VISION_COMPILE_BACKEND="${VISION_COMPILE_BACKEND:-torchair}"
-export CROP_SAMPLE="${CROP_SAMPLE:-small_only}"
+export CROP_SAMPLE="${CROP_SAMPLE:-all}"
+export MAX_COMPARE_CROPS="${MAX_COMPARE_CROPS:-32}"
 export CACHE_LENGTH="${CACHE_LENGTH:-2048}"
 export MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-128}"
+export ROUGH_GT_MIN_IOU="${ROUGH_GT_MIN_IOU:-0.5}"
 export FAIL_ON_TOKEN_MISMATCH="${FAIL_ON_TOKEN_MISMATCH:-0}"
 
 mkdir -p "${OUTPUT_DIR}"
@@ -72,7 +74,7 @@ echo "COMPILED_VISUAL_DOWNSTREAM_ENV DEVICE=${DEVICE} ASCEND_RT_VISIBLE_DEVICES=
 echo "COMPILED_VISUAL_DOWNSTREAM_ENV DTYPE=${DTYPE} NPU_JIT_COMPILE=${NPU_JIT_COMPILE}"
 echo "COMPILED_VISUAL_DOWNSTREAM_ENV VISION_ATTENTION_IMPL=${VISION_ATTENTION_IMPL} VISION_PROMPT_FA_LAYOUT=${VISION_PROMPT_FA_LAYOUT}"
 echo "COMPILED_VISUAL_DOWNSTREAM_ENV VISION_COMPILE_BACKEND=${VISION_COMPILE_BACKEND} CROP_SAMPLE=${CROP_SAMPLE}"
-echo "COMPILED_VISUAL_DOWNSTREAM_ENV CACHE_LENGTH=${CACHE_LENGTH} MAX_NEW_TOKENS=${MAX_NEW_TOKENS}"
+echo "COMPILED_VISUAL_DOWNSTREAM_ENV MAX_COMPARE_CROPS=${MAX_COMPARE_CROPS} CACHE_LENGTH=${CACHE_LENGTH} MAX_NEW_TOKENS=${MAX_NEW_TOKENS} ROUGH_GT_MIN_IOU=${ROUGH_GT_MIN_IOU}"
 
 CMD=(
   "${PYTHON_BIN}" "${SCRIPT_DIR}/compare_compiled_visual_downstream.py"
@@ -88,8 +90,10 @@ CMD=(
   --vision-prompt-fa-layout "${VISION_PROMPT_FA_LAYOUT}"
   --vision-compile-backend "${VISION_COMPILE_BACKEND}"
   --crop-sample "${CROP_SAMPLE}"
+  --max-compare-crops "${MAX_COMPARE_CROPS}"
   --cache-length "${CACHE_LENGTH}"
   --max-new-tokens "${MAX_NEW_TOKENS}"
+  --rough-gt-min-iou "${ROUGH_GT_MIN_IOU}"
   --json
 )
 
@@ -108,15 +112,28 @@ from pathlib import Path
 path = Path(sys.argv[1])
 data = json.loads(path.read_text(encoding="utf-8"))
 summary = {
-    "item": data.get("item"),
+    "page_start": data.get("page_start"),
+    "num_pages": data.get("num_pages"),
+    "raw_queue_input_count_before_crop_sample": data.get("raw_queue_input_count_before_crop_sample"),
+    "selected_compare_count": data.get("selected_compare_count"),
+    "max_compare_crops": data.get("max_compare_crops"),
     "vision_attention": data.get("vision_attention"),
-    "vision_compile": data.get("vision_compile"),
+    "vision_compile_backend": data.get("vision_compile_backend"),
     "timing_s": data.get("timing_s"),
-    "visual_diff": data.get("diffs", {}).get("visual_post_layernorm"),
-    "projected_diff": data.get("diffs", {}).get("projected_image_embeddings"),
-    "prefill_logits_diff": data.get("diffs", {}).get("prefill_logits"),
-    "tokens": data.get("tokens"),
-    "texts": data.get("texts"),
+    "summary": data.get("summary"),
+    "sample_items": [
+        {
+            "idx": item.get("idx"),
+            "id": item.get("id"),
+            "category_type": item.get("category_type"),
+            "generated_match": item.get("tokens", {}).get("generated_trimmed_match"),
+            "text_match": item.get("texts", {}).get("match"),
+            "visual_max_abs": item.get("diffs", {}).get("visual_post_layernorm", {}).get("max_abs_diff"),
+            "projected_max_abs": item.get("diffs", {}).get("projected_image_embeddings", {}).get("max_abs_diff"),
+            "prefill_logits_max_abs": item.get("diffs", {}).get("prefill_logits", {}).get("max_abs_diff"),
+        }
+        for item in data.get("items", [])[:8]
+    ],
     "output_path": str(path),
 }
 print("COMPILED_VISUAL_DOWNSTREAM_SUMMARY", json.dumps(summary, ensure_ascii=False, sort_keys=True))
