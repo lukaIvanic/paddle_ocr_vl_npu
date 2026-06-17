@@ -51,6 +51,9 @@ export NPU_JIT_COMPILE="${NPU_JIT_COMPILE:-off}"
 export VISION_ATTENTION_IMPL="${VISION_ATTENTION_IMPL:-manual}"
 export VISION_PROMPT_FA_LAYOUT="${VISION_PROMPT_FA_LAYOUT:-bnsd}"
 export MODES="${MODES:-sync_per_crop,unsynced_loop}"
+export PROFILE_DIR="${PROFILE_DIR:-}"
+export PROFILE_MODE="${PROFILE_MODE:-unsynced_loop}"
+export PROFILE_METRIC="${PROFILE_METRIC:-pipe}"
 export INCLUDE_IGNORED_GT="${INCLUDE_IGNORED_GT:-0}"
 export INCLUDE_EMPTY_GT="${INCLUDE_EMPTY_GT:-0}"
 export OUTPUT_DIR="${OUTPUT_DIR:-${SCRIPT_DIR}/outputs/vision_prefill_only_npu}"
@@ -67,6 +70,7 @@ echo "VISION_PREFILL_ONLY_ENV PAGE_START=${PAGE_START} NUM_PAGES=${NUM_PAGES} MA
 echo "VISION_PREFILL_ONLY_ENV DTYPE=${DTYPE} NPU_JIT_COMPILE=${NPU_JIT_COMPILE} WARMUP_ITEMS=${WARMUP_ITEMS}"
 echo "VISION_PREFILL_ONLY_ENV VISION_ATTENTION_IMPL=${VISION_ATTENTION_IMPL} VISION_PROMPT_FA_LAYOUT=${VISION_PROMPT_FA_LAYOUT}"
 echo "VISION_PREFILL_ONLY_ENV MODES=${MODES}"
+echo "VISION_PREFILL_ONLY_ENV PROFILE_DIR=${PROFILE_DIR:-disabled} PROFILE_MODE=${PROFILE_MODE} PROFILE_METRIC=${PROFILE_METRIC}"
 echo "VISION_PREFILL_ONLY_ENV INCLUDE_IGNORED_GT=${INCLUDE_IGNORED_GT} INCLUDE_EMPTY_GT=${INCLUDE_EMPTY_GT}"
 
 CMD=(
@@ -87,6 +91,9 @@ CMD=(
 
 if (( MAX_CROPS > 0 )); then
   CMD+=(--max-crops "${MAX_CROPS}")
+fi
+if [[ -n "${PROFILE_DIR}" ]]; then
+  CMD+=(--profile-dir "${PROFILE_DIR}" --profile-mode "${PROFILE_MODE}" --profile-metric "${PROFILE_METRIC}")
 fi
 if [[ "${INCLUDE_IGNORED_GT}" == "1" ]]; then
   CMD+=(--include-ignored-gt)
@@ -123,6 +130,16 @@ summary = {
     "unsynced_loop_vision_tokens_per_s": modes.get("unsynced_loop", {}).get("vision_tokens_per_s"),
     "unsynced_speedup_over_sync": comparison.get("speedup"),
     "unsynced_saved_s": comparison.get("saved_s"),
+    "profiler": {
+        "enabled": (data.get("profiler") or {}).get("enabled"),
+        "profile_dir": (data.get("profiler") or {}).get("profile_dir"),
+        "profile_mode": (data.get("profiler") or {}).get("profile_mode"),
+        "profile_metric": (data.get("profiler") or {}).get("profile_metric"),
+        "profile_wall_s": (data.get("profiler") or {}).get("profile_wall_s"),
+    },
+    "profiled_vs_unprofiled": data.get("comparisons", {}).get(
+        f"profiled_vs_unprofiled_{(data.get('profiler') or {}).get('profile_mode', '')}",
+    ),
     "output_path": str(path),
 }
 print("VISION_PREFILL_ONLY_SUMMARY", json.dumps(summary, ensure_ascii=False, sort_keys=True))

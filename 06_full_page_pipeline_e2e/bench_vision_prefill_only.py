@@ -19,9 +19,11 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import sys
 import time
 from collections import Counter
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -68,6 +70,7 @@ from run_local_recognition import (  # noqa: E402
 
 
 MODE_CHOICES = ("sync_per_crop", "unsynced_loop")
+PROFILE_METRIC_CHOICES = ("pipe", "memory", "l2", "memory_access")
 
 
 def parse_vision_dtype(name: str) -> torch.dtype:
@@ -92,6 +95,38 @@ def parse_modes(raw: str) -> list[str]:
         if mode not in deduped:
             deduped.append(mode)
     return deduped
+
+
+def npu_profiler_config(metric: str):
+    import torch_npu.profiler as npu_prof
+
+    metrics = {
+        "pipe": npu_prof.AiCMetrics.PipeUtilization,
+        "memory": npu_prof.AiCMetrics.Memory,
+        "l2": npu_prof.AiCMetrics.L2Cache,
+        "memory_access": npu_prof.AiCMetrics.MemoryAccess,
+    }
+    return npu_prof._ExperimentalConfig(
+        profiler_level=npu_prof.ProfilerLevel.Level1,
+        aic_metrics=metrics[metric],
+        l2_cache=metric == "l2",
+        export_type=npu_prof.ExportType.Text,
+    )
+
+
+def make_profile_run_dir(
+    root: Path,
+    *,
+    mode: str,
+    attention: str,
+    dtype: torch.dtype,
+    crop_count: int,
+    metric: str,
+) -> Path:
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    dtype_name = str(dtype).replace("torch.", "")
+    safe_attention = str(attention).replace("/", "_")
+    return root / f"vision_prefill_{timestamp}_{mode}_{safe_attention}_{dtype_name}_{crop_count}crops_{metric}"
 
 
 def tensor_grid(item: QueueInput) -> list[int]:
@@ -276,6 +311,94 @@ def summarize_mode(mode: str, *, rows: list[dict[str, Any]], total_s: float) -> 
     }
 
 
+@torch.inference_mode()
+def run_mode(
+    mode: str,
+    *,
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    inputs: list[QueueInput],
+    device: torch.device,
+) -> dict[str, Any]:
+    if mode == "sync_per_crop":
+        return run_sync_per_crop(model=model, inputs=inputs, device=device)
+    if mode == "unsynced_loop":
+        return run_unsynced_loop(model=model, inputs=inputs, device=device)
+    raise AssertionError(mode)
+
+
+@torch.inference_mode()
+def profile_vision_mode(
+    *,
+    profile_root: Path,
+    profile_mode: str,
+    profile_metric: str,
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    inputs: list[QueueInput],
+    device: torch.device,
+    dtype: torch.dtype,
+) -> dict[str, Any]:
+    if device.type != "npu":
+        raise ValueError("--profile-dir requires --device npu:0; torch_npu profiler is NPU-only.")
+
+    import torch_npu.profiler as npu_prof
+
+    profile_run_dir = make_profile_run_dir(
+        profile_root.expanduser().resolve(),
+        mode=profile_mode,
+        attention=get_vision_attention_impl(),
+        dtype=dtype,
+        crop_count=len(inputs),
+        metric=profile_metric,
+    )
+    shutil.rmtree(profile_run_dir, ignore_errors=True)
+    profile_run_dir.mkdir(parents=True, exist_ok=True)
+
+    schedule = npu_prof.schedule(wait=0, warmup=0, active=1, repeat=1)
+    maybe_sync(device)
+    start = time.perf_counter()
+    with npu_prof.profile(
+        activities=[npu_prof.ProfilerActivity.CPU, npu_prof.ProfilerActivity.NPU],
+        schedule=schedule,
+        experimental_config=npu_profiler_config(profile_metric),
+        on_trace_ready=npu_prof.tensorboard_trace_handler(str(profile_run_dir), analyse_flag=True),
+        record_shapes=True,
+        profile_memory=False,
+        with_stack=True,
+    ) as profiler:
+        with torch.profiler.record_function("paddle_ocr_vl.vision_prefill_profile"):
+            profiled_mode_result = run_mode(
+                profile_mode,
+                model=model,
+                inputs=inputs,
+                device=device,
+            )
+        maybe_sync(device)
+        profiler.step()
+    maybe_sync(device)
+    profile_wall_s = time.perf_counter() - start
+
+    summary = {
+        "enabled": True,
+        "profile_dir": str(profile_run_dir),
+        "profile_mode": str(profile_mode),
+        "profile_metric": str(profile_metric),
+        "scope": (
+            "same selected real OCR crops as the benchmark mode; CPU preprocessed pixel tensor -> device transfer "
+            "-> native-resolution visual encoder + post layernorm + adaptive MLP projector"
+        ),
+        "post_warmup": True,
+        "with_stack": True,
+        "record_shapes": True,
+        "profile_memory": False,
+        "profile_wall_s": float(profile_wall_s),
+        "profiled_mode_result": profiled_mode_result,
+    }
+    summary_path = profile_run_dir / "vision_prefill_profile_summary.json"
+    summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True, default=json_default), encoding="utf-8")
+    summary["summary_json"] = str(summary_path)
+    return summary
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default="PaddlePaddle/PaddleOCR-VL-1.6")
@@ -305,6 +428,24 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--warmup-items", type=int, default=1)
     parser.add_argument(
+        "--profile-dir",
+        type=Path,
+        default=None,
+        help="Optional NPU profiler output root. Captures one post-warmup run of --profile-mode.",
+    )
+    parser.add_argument(
+        "--profile-mode",
+        default="unsynced_loop",
+        choices=MODE_CHOICES,
+        help="Benchmark mode to rerun under torch_npu.profiler when --profile-dir is set.",
+    )
+    parser.add_argument(
+        "--profile-metric",
+        default="pipe",
+        choices=PROFILE_METRIC_CHOICES,
+        help="torch_npu profiler AiC metric for --profile-dir captures.",
+    )
+    parser.add_argument(
         "--max-crops",
         type=int,
         default=0,
@@ -320,6 +461,8 @@ def main() -> None:
     if int(args.num_pages) <= 0:
         raise ValueError("--num-pages must be positive")
     modes = parse_modes(args.modes)
+    if args.profile_dir is not None and str(args.profile_mode) not in modes:
+        modes.append(str(args.profile_mode))
 
     os.environ[VISION_ATTENTION_ENV] = str(args.vision_attention)
     os.environ[VISION_PROMPT_FA_LAYOUT_ENV] = str(args.vision_prompt_fa_layout)
@@ -377,12 +520,7 @@ def main() -> None:
 
     mode_results: dict[str, Any] = {}
     for mode in modes:
-        if mode == "sync_per_crop":
-            mode_results[mode] = run_sync_per_crop(model=model, inputs=queue_inputs, device=device)
-        elif mode == "unsynced_loop":
-            mode_results[mode] = run_unsynced_loop(model=model, inputs=queue_inputs, device=device)
-        else:
-            raise AssertionError(mode)
+        mode_results[mode] = run_mode(mode, model=model, inputs=queue_inputs, device=device)
 
     comparisons: dict[str, Any] = {}
     if "sync_per_crop" in mode_results and "unsynced_loop" in mode_results:
@@ -396,6 +534,53 @@ def main() -> None:
             "note": (
                 "This isolates per-crop device synchronization overhead for the same crop/preprocess/model path. "
                 "Run order and warmup are reported because first-use kernel behavior can still affect small runs."
+            ),
+        }
+
+    profiler_summary: dict[str, Any] = {"enabled": False}
+    if args.profile_dir is not None:
+        profiler_summary = profile_vision_mode(
+            profile_root=args.profile_dir,
+            profile_mode=str(args.profile_mode),
+            profile_metric=str(args.profile_metric),
+            model=model,
+            inputs=queue_inputs,
+            device=device,
+            dtype=dtype,
+        )
+        baseline = mode_results[str(args.profile_mode)]
+        profiled = profiler_summary["profiled_mode_result"]
+        baseline_total_s = float(baseline["total_s"])
+        profiled_total_s = float(profiled["total_s"])
+        baseline_items_per_s = float(baseline["items_per_s"])
+        profiled_items_per_s = float(profiled["items_per_s"])
+        baseline_vision_tokens_per_s = float(baseline["vision_tokens_per_s"])
+        profiled_vision_tokens_per_s = float(profiled["vision_tokens_per_s"])
+        comparisons[f"profiled_vs_unprofiled_{args.profile_mode}"] = {
+            "mode": str(args.profile_mode),
+            "baseline_total_s": baseline_total_s,
+            "profiled_total_s": profiled_total_s,
+            "profiled_total_s_over_baseline": (
+                profiled_total_s / baseline_total_s if baseline_total_s > 0 else None
+            ),
+            "baseline_items_per_s": baseline_items_per_s,
+            "profiled_items_per_s": profiled_items_per_s,
+            "profiled_items_per_s_over_baseline": (
+                profiled_items_per_s / baseline_items_per_s if baseline_items_per_s > 0 else None
+            ),
+            "baseline_vision_tokens_per_s": baseline_vision_tokens_per_s,
+            "profiled_vision_tokens_per_s": profiled_vision_tokens_per_s,
+            "profiled_vision_tokens_per_s_over_baseline": (
+                profiled_vision_tokens_per_s / baseline_vision_tokens_per_s
+                if baseline_vision_tokens_per_s > 0
+                else None
+            ),
+            "profile_dir": profiler_summary.get("profile_dir"),
+            "profile_metric": str(args.profile_metric),
+            "note": (
+                "This compares the same selected crops in the same process after warmup. The profiled run is executed "
+                "after the normal benchmark mode, so use the ratio as profiler overhead guidance rather than as an "
+                "absolute standalone throughput number."
             ),
         }
 
@@ -449,6 +634,7 @@ def main() -> None:
             "--warmup-items high enough to avoid first-use effects."
         ),
         "modes": mode_results,
+        "profiler": profiler_summary,
         "comparisons": comparisons,
     }
 
