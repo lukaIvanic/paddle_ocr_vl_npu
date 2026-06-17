@@ -51,9 +51,13 @@ export NPU_JIT_COMPILE="${NPU_JIT_COMPILE:-off}"
 export VISION_ATTENTION_IMPL="${VISION_ATTENTION_IMPL:-manual}"
 export VISION_PROMPT_FA_LAYOUT="${VISION_PROMPT_FA_LAYOUT:-bnsd}"
 export MODES="${MODES:-sync_per_crop,unsynced_loop}"
+export CROP_SAMPLE="${CROP_SAMPLE:-all}"
+export BENCHMARK_REPEATS="${BENCHMARK_REPEATS:-1}"
 export PROFILE_DIR="${PROFILE_DIR:-}"
 export PROFILE_MODE="${PROFILE_MODE:-unsynced_loop}"
 export PROFILE_METRIC="${PROFILE_METRIC:-pipe}"
+export PROFILE_WARMUP_REPEATS="${PROFILE_WARMUP_REPEATS:-2}"
+export PROFILE_ACTIVE_REPEATS="${PROFILE_ACTIVE_REPEATS:-3}"
 export INCLUDE_IGNORED_GT="${INCLUDE_IGNORED_GT:-0}"
 export INCLUDE_EMPTY_GT="${INCLUDE_EMPTY_GT:-0}"
 export OUTPUT_DIR="${OUTPUT_DIR:-${SCRIPT_DIR}/outputs/vision_prefill_only_npu}"
@@ -69,8 +73,8 @@ echo "VISION_PREFILL_ONLY_ENV DEVICE=${DEVICE} ASCEND_RT_VISIBLE_DEVICES=${ASCEN
 echo "VISION_PREFILL_ONLY_ENV PAGE_START=${PAGE_START} NUM_PAGES=${NUM_PAGES} MAX_CROPS=${MAX_CROPS}"
 echo "VISION_PREFILL_ONLY_ENV DTYPE=${DTYPE} NPU_JIT_COMPILE=${NPU_JIT_COMPILE} WARMUP_ITEMS=${WARMUP_ITEMS}"
 echo "VISION_PREFILL_ONLY_ENV VISION_ATTENTION_IMPL=${VISION_ATTENTION_IMPL} VISION_PROMPT_FA_LAYOUT=${VISION_PROMPT_FA_LAYOUT}"
-echo "VISION_PREFILL_ONLY_ENV MODES=${MODES}"
-echo "VISION_PREFILL_ONLY_ENV PROFILE_DIR=${PROFILE_DIR:-disabled} PROFILE_MODE=${PROFILE_MODE} PROFILE_METRIC=${PROFILE_METRIC}"
+echo "VISION_PREFILL_ONLY_ENV MODES=${MODES} CROP_SAMPLE=${CROP_SAMPLE} BENCHMARK_REPEATS=${BENCHMARK_REPEATS}"
+echo "VISION_PREFILL_ONLY_ENV PROFILE_DIR=${PROFILE_DIR:-disabled} PROFILE_MODE=${PROFILE_MODE} PROFILE_METRIC=${PROFILE_METRIC} PROFILE_WARMUP_REPEATS=${PROFILE_WARMUP_REPEATS} PROFILE_ACTIVE_REPEATS=${PROFILE_ACTIVE_REPEATS}"
 echo "VISION_PREFILL_ONLY_ENV INCLUDE_IGNORED_GT=${INCLUDE_IGNORED_GT} INCLUDE_EMPTY_GT=${INCLUDE_EMPTY_GT}"
 
 CMD=(
@@ -86,6 +90,8 @@ CMD=(
   --vision-prompt-fa-layout "${VISION_PROMPT_FA_LAYOUT}"
   --modes "${MODES}"
   --warmup-items "${WARMUP_ITEMS}"
+  --crop-sample "${CROP_SAMPLE}"
+  --benchmark-repeats "${BENCHMARK_REPEATS}"
   --json
 )
 
@@ -93,7 +99,13 @@ if (( MAX_CROPS > 0 )); then
   CMD+=(--max-crops "${MAX_CROPS}")
 fi
 if [[ -n "${PROFILE_DIR}" ]]; then
-  CMD+=(--profile-dir "${PROFILE_DIR}" --profile-mode "${PROFILE_MODE}" --profile-metric "${PROFILE_METRIC}")
+  CMD+=(
+    --profile-dir "${PROFILE_DIR}"
+    --profile-mode "${PROFILE_MODE}"
+    --profile-metric "${PROFILE_METRIC}"
+    --profile-warmup-repeats "${PROFILE_WARMUP_REPEATS}"
+    --profile-active-repeats "${PROFILE_ACTIVE_REPEATS}"
+  )
 fi
 if [[ "${INCLUDE_IGNORED_GT}" == "1" ]]; then
   CMD+=(--include-ignored-gt)
@@ -118,6 +130,9 @@ summary = {
     "page_count": data.get("page_count"),
     "recognizer_crop_count": data.get("recognizer_crop_count"),
     "raw_extracted_crop_count_before_max_crops": data.get("raw_extracted_crop_count_before_max_crops"),
+    "raw_queue_input_count_before_crop_sample": data.get("raw_queue_input_count_before_crop_sample"),
+    "crop_sample": data.get("crop_sample"),
+    "benchmark_repeats": data.get("benchmark_repeats"),
     "dtype": data.get("dtype"),
     "vision_attention": data.get("vision_attention"),
     "vision_prompt_fa_layout": data.get("vision_prompt_fa_layout"),
@@ -135,6 +150,10 @@ summary = {
         "profile_dir": (data.get("profiler") or {}).get("profile_dir"),
         "profile_mode": (data.get("profiler") or {}).get("profile_mode"),
         "profile_metric": (data.get("profiler") or {}).get("profile_metric"),
+        "profile_warmup_repeats": (data.get("profiler") or {}).get("profile_warmup_repeats"),
+        "profile_active_repeats": (data.get("profiler") or {}).get("profile_active_repeats"),
+        "profile_active_steps": (data.get("profiler") or {}).get("profile_active_steps"),
+        "profiler_step_contract": (data.get("profiler") or {}).get("profiler_step_contract"),
         "profile_wall_s": (data.get("profiler") or {}).get("profile_wall_s"),
     },
     "profiled_vs_unprofiled": data.get("comparisons", {}).get(

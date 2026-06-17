@@ -71,6 +71,7 @@ from run_local_recognition import (  # noqa: E402
 
 MODE_CHOICES = ("sync_per_crop", "unsynced_loop")
 PROFILE_METRIC_CHOICES = ("pipe", "memory", "l2", "memory_access")
+CROP_SAMPLE_CHOICES = ("all", "small_medium_large")
 
 
 def parse_vision_dtype(name: str) -> torch.dtype:
@@ -183,6 +184,101 @@ def summarize_inputs(inputs: list[QueueInput], *, merge_size: int) -> dict[str, 
     }
 
 
+def clone_input_with_sample_meta(
+    item: QueueInput,
+    *,
+    bucket: str,
+    selected_rank: int,
+    original_idx: int,
+) -> QueueInput:
+    entry = dict(item.entry)
+    entry["crop_sample_bucket"] = bucket
+    entry["crop_sample_selected_rank"] = int(selected_rank)
+    entry["crop_sample_original_idx"] = int(original_idx)
+    return QueueInput(
+        entry=entry,
+        crop_path=item.crop_path,
+        prompt=item.prompt,
+        input_ids=item.input_ids,
+        attention_mask=item.attention_mask,
+        pixel_values=item.pixel_values,
+        image_grid_thw=item.image_grid_thw,
+        timing_s=item.timing_s,
+    )
+
+
+def select_profile_crop_sample(inputs: list[QueueInput], *, strategy: str) -> tuple[list[QueueInput], dict[str, Any]]:
+    if strategy not in CROP_SAMPLE_CHOICES:
+        raise ValueError(f"unsupported crop sample strategy: {strategy}; choices={CROP_SAMPLE_CHOICES}")
+    if strategy == "all":
+        return inputs, {
+            "strategy": "all",
+            "input_count_before_sample": int(len(inputs)),
+            "selected_count": int(len(inputs)),
+            "note": "No crop-size sampling was applied.",
+        }
+    if not inputs:
+        raise ValueError("cannot sample representative crops from an empty input list")
+
+    sorted_pairs = sorted(
+        enumerate(inputs),
+        key=lambda pair: (
+            vision_tokens(pair[1]),
+            int(pair[1].input_ids.shape[1]),
+            str(pair[1].entry.get("id", "")),
+        ),
+    )
+    n = len(sorted_pairs)
+    targets = [
+        ("small", 0),
+        ("medium", (n - 1) // 2),
+        ("large", n - 1),
+    ]
+    used_positions: set[int] = set()
+    selected: list[QueueInput] = []
+    selected_rows: list[dict[str, Any]] = []
+
+    for rank, (bucket, target_pos) in enumerate(targets):
+        if len(used_positions) >= n:
+            break
+        best_pos = min(
+            (pos for pos in range(n) if pos not in used_positions),
+            key=lambda pos: (abs(pos - target_pos), pos),
+        )
+        used_positions.add(best_pos)
+        original_idx, item = sorted_pairs[best_pos]
+        cloned = clone_input_with_sample_meta(
+            item,
+            bucket=bucket,
+            selected_rank=rank,
+            original_idx=original_idx,
+        )
+        selected.append(cloned)
+        selected_rows.append(
+            {
+                "bucket": bucket,
+                "selected_rank": int(rank),
+                "original_idx": int(original_idx),
+                "sorted_position": int(best_pos),
+                "id": str(item.entry.get("id")),
+                "page_index": int(item.entry.get("page_index", 0)),
+                "layout_label": str(item.entry.get("layout_label", "")),
+                "vision_tokens": int(vision_tokens(item)),
+                "input_tokens": int(item.input_ids.shape[1]),
+                "image_grid_thw": tensor_grid(item),
+                "crop_size": clean_json(item.entry.get("crop_size", [0, 0])),
+            }
+        )
+
+    return selected, {
+        "strategy": strategy,
+        "input_count_before_sample": int(len(inputs)),
+        "selected_count": int(len(selected)),
+        "selection_basis": "vision_tokens sorted ascending over real extracted/preprocessed OCR crops",
+        "selected": selected_rows,
+    }
+
+
 @torch.inference_mode()
 def run_vision_one(
     *,
@@ -226,28 +322,19 @@ def run_sync_per_crop(
     model: LocalPaddleOCRVLForConditionalGeneration,
     inputs: list[QueueInput],
     device: torch.device,
+    repeat_count: int = 1,
 ) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     total_start = time.perf_counter()
-    for idx, item in enumerate(inputs):
-        maybe_sync(device)
-        start = time.perf_counter()
-        output = run_vision_one(model=model, item=item, device=device)
-        maybe_sync(device)
-        elapsed = time.perf_counter() - start
-        rows.append(
-            {
-                "idx": int(idx),
-                "id": str(item.entry.get("id")),
-                "page_index": int(item.entry.get("page_index", 0)),
-                "layout_label": str(item.entry.get("layout_label", "")),
-                "vision_tokens": int(vision_tokens(item)),
-                "projected_image_tokens": int(output.shape[0]),
-                "input_tokens": int(item.input_ids.shape[1]),
-                "image_grid_thw": tensor_grid(item),
-                "elapsed_s": float(elapsed),
-            }
-        )
+    for repeat_idx in range(max(1, int(repeat_count))):
+        for original_idx, item in enumerate(inputs):
+            idx = repeat_idx * len(inputs) + original_idx
+            maybe_sync(device)
+            start = time.perf_counter()
+            output = run_vision_one(model=model, item=item, device=device)
+            maybe_sync(device)
+            elapsed = time.perf_counter() - start
+            rows.append(make_forward_row(idx, item, output, repeat_idx=repeat_idx, original_idx=original_idx, elapsed_s=elapsed))
     total_s = time.perf_counter() - total_start
     return summarize_mode("sync_per_crop", rows=rows, total_s=total_s)
 
@@ -258,27 +345,49 @@ def run_unsynced_loop(
     model: LocalPaddleOCRVLForConditionalGeneration,
     inputs: list[QueueInput],
     device: torch.device,
+    repeat_count: int = 1,
 ) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     maybe_sync(device)
     start = time.perf_counter()
-    for idx, item in enumerate(inputs):
-        output = run_vision_one(model=model, item=item, device=device)
-        rows.append(
-            {
-                "idx": int(idx),
-                "id": str(item.entry.get("id")),
-                "page_index": int(item.entry.get("page_index", 0)),
-                "layout_label": str(item.entry.get("layout_label", "")),
-                "vision_tokens": int(vision_tokens(item)),
-                "projected_image_tokens": int(output.shape[0]),
-                "input_tokens": int(item.input_ids.shape[1]),
-                "image_grid_thw": tensor_grid(item),
-            }
-        )
+    for repeat_idx in range(max(1, int(repeat_count))):
+        for original_idx, item in enumerate(inputs):
+            idx = repeat_idx * len(inputs) + original_idx
+            output = run_vision_one(model=model, item=item, device=device)
+            rows.append(make_forward_row(idx, item, output, repeat_idx=repeat_idx, original_idx=original_idx))
     maybe_sync(device)
     total_s = time.perf_counter() - start
     return summarize_mode("unsynced_loop", rows=rows, total_s=total_s)
+
+
+def make_forward_row(
+    idx: int,
+    item: QueueInput,
+    output: torch.Tensor,
+    *,
+    repeat_idx: int,
+    original_idx: int,
+    elapsed_s: float | None = None,
+    profile_step: int | None = None,
+) -> dict[str, Any]:
+    row: dict[str, Any] = {
+        "idx": int(idx),
+        "repeat_idx": int(repeat_idx),
+        "original_idx": int(original_idx),
+        "id": str(item.entry.get("id")),
+        "page_index": int(item.entry.get("page_index", 0)),
+        "layout_label": str(item.entry.get("layout_label", "")),
+        "crop_sample_bucket": item.entry.get("crop_sample_bucket"),
+        "vision_tokens": int(vision_tokens(item)),
+        "projected_image_tokens": int(output.shape[0]),
+        "input_tokens": int(item.input_ids.shape[1]),
+        "image_grid_thw": tensor_grid(item),
+    }
+    if elapsed_s is not None:
+        row["elapsed_s"] = float(elapsed_s)
+    if profile_step is not None:
+        row["profile_step"] = int(profile_step)
+    return row
 
 
 def summarize_mode(mode: str, *, rows: list[dict[str, Any]], total_s: float) -> dict[str, Any]:
@@ -318,11 +427,12 @@ def run_mode(
     model: LocalPaddleOCRVLForConditionalGeneration,
     inputs: list[QueueInput],
     device: torch.device,
+    repeat_count: int = 1,
 ) -> dict[str, Any]:
     if mode == "sync_per_crop":
-        return run_sync_per_crop(model=model, inputs=inputs, device=device)
+        return run_sync_per_crop(model=model, inputs=inputs, device=device, repeat_count=repeat_count)
     if mode == "unsynced_loop":
-        return run_unsynced_loop(model=model, inputs=inputs, device=device)
+        return run_unsynced_loop(model=model, inputs=inputs, device=device, repeat_count=repeat_count)
     raise AssertionError(mode)
 
 
@@ -336,6 +446,8 @@ def profile_vision_mode(
     inputs: list[QueueInput],
     device: torch.device,
     dtype: torch.dtype,
+    warmup_repeats: int,
+    active_repeats: int,
 ) -> dict[str, Any]:
     if device.type != "npu":
         raise ValueError("--profile-dir requires --device npu:0; torch_npu profiler is NPU-only.")
@@ -353,7 +465,22 @@ def profile_vision_mode(
     shutil.rmtree(profile_run_dir, ignore_errors=True)
     profile_run_dir.mkdir(parents=True, exist_ok=True)
 
-    schedule = npu_prof.schedule(wait=0, warmup=0, active=1, repeat=1)
+    warmup_repeats = max(0, int(warmup_repeats))
+    active_repeats = max(1, int(active_repeats))
+    active_steps = active_repeats * len(inputs)
+
+    maybe_sync(device)
+    warmup_start = time.perf_counter()
+    warmup_forward_count = 0
+    for _ in range(warmup_repeats):
+        for item in inputs:
+            run_vision_one(model=model, item=item, device=device)
+            warmup_forward_count += 1
+    maybe_sync(device)
+    profiler_warmup_s = time.perf_counter() - warmup_start
+
+    schedule = npu_prof.schedule(wait=0, warmup=0, active=active_steps, repeat=1)
+    rows: list[dict[str, Any]] = []
     maybe_sync(device)
     start = time.perf_counter()
     with npu_prof.profile(
@@ -365,17 +492,32 @@ def profile_vision_mode(
         profile_memory=False,
         with_stack=True,
     ) as profiler:
-        with torch.profiler.record_function("paddle_ocr_vl.vision_prefill_profile"):
-            profiled_mode_result = run_mode(
-                profile_mode,
-                model=model,
-                inputs=inputs,
-                device=device,
-            )
-        maybe_sync(device)
-        profiler.step()
+        profile_step = 0
+        for repeat_idx in range(active_repeats):
+            for original_idx, item in enumerate(inputs):
+                idx = repeat_idx * len(inputs) + original_idx
+                bucket = str(item.entry.get("crop_sample_bucket") or "crop")
+                with torch.profiler.record_function(f"paddle_ocr_vl.vision_prefill_profile.{bucket}"):
+                    step_start = time.perf_counter()
+                    output = run_vision_one(model=model, item=item, device=device)
+                    maybe_sync(device)
+                    elapsed = time.perf_counter() - step_start
+                rows.append(
+                    make_forward_row(
+                        idx,
+                        item,
+                        output,
+                        repeat_idx=repeat_idx,
+                        original_idx=original_idx,
+                        elapsed_s=elapsed,
+                        profile_step=profile_step,
+                    )
+                )
+                profiler.step()
+                profile_step += 1
     maybe_sync(device)
     profile_wall_s = time.perf_counter() - start
+    profiled_mode_result = summarize_mode("profile_step_per_forward", rows=rows, total_s=profile_wall_s)
 
     summary = {
         "enabled": True,
@@ -390,6 +532,12 @@ def profile_vision_mode(
         "with_stack": True,
         "record_shapes": True,
         "profile_memory": False,
+        "profiler_step_contract": "one profiler.step() is called after exactly one model.get_image_features() crop forward",
+        "profile_warmup_repeats": int(warmup_repeats),
+        "profile_active_repeats": int(active_repeats),
+        "profile_warmup_forward_count": int(warmup_forward_count),
+        "profile_active_steps": int(active_steps),
+        "profile_warmup_s": float(profiler_warmup_s),
         "profile_wall_s": float(profile_wall_s),
         "profiled_mode_result": profiled_mode_result,
     }
@@ -428,6 +576,18 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--warmup-items", type=int, default=1)
     parser.add_argument(
+        "--crop-sample",
+        default="all",
+        choices=CROP_SAMPLE_CHOICES,
+        help="Optionally reduce real OCR crops to representative size buckets before speed/profiler runs.",
+    )
+    parser.add_argument(
+        "--benchmark-repeats",
+        type=int,
+        default=1,
+        help="Repeat the selected crop list this many times for non-profiled benchmark modes.",
+    )
+    parser.add_argument(
         "--profile-dir",
         type=Path,
         default=None,
@@ -444,6 +604,18 @@ def parse_args() -> argparse.Namespace:
         default="pipe",
         choices=PROFILE_METRIC_CHOICES,
         help="torch_npu profiler AiC metric for --profile-dir captures.",
+    )
+    parser.add_argument(
+        "--profile-warmup-repeats",
+        type=int,
+        default=2,
+        help="Profiler-only warmup repeats over selected crops before entering torch_npu.profiler.",
+    )
+    parser.add_argument(
+        "--profile-active-repeats",
+        type=int,
+        default=3,
+        help="Profiler active repeats over selected crops. One profiler step is one crop forward.",
     )
     parser.add_argument(
         "--max-crops",
@@ -503,6 +675,10 @@ def main() -> None:
     )
     if not queue_inputs:
         raise RuntimeError("zero queue inputs after --max-crops")
+    raw_queue_input_count_before_crop_sample = int(len(queue_inputs))
+    queue_inputs, crop_sample_summary = select_profile_crop_sample(queue_inputs, strategy=str(args.crop_sample))
+    if not queue_inputs:
+        raise RuntimeError("zero queue inputs after --crop-sample")
 
     setup_timing: dict[str, float] = {}
     maybe_sync(device)
@@ -520,7 +696,13 @@ def main() -> None:
 
     mode_results: dict[str, Any] = {}
     for mode in modes:
-        mode_results[mode] = run_mode(mode, model=model, inputs=queue_inputs, device=device)
+        mode_results[mode] = run_mode(
+            mode,
+            model=model,
+            inputs=queue_inputs,
+            device=device,
+            repeat_count=max(1, int(args.benchmark_repeats)),
+        )
 
     comparisons: dict[str, Any] = {}
     if "sync_per_crop" in mode_results and "unsynced_loop" in mode_results:
@@ -547,6 +729,8 @@ def main() -> None:
             inputs=queue_inputs,
             device=device,
             dtype=dtype,
+            warmup_repeats=int(args.profile_warmup_repeats),
+            active_repeats=int(args.profile_active_repeats),
         )
         baseline = mode_results[str(args.profile_mode)]
         profiled = profiler_summary["profiled_mode_result"]
@@ -556,8 +740,13 @@ def main() -> None:
         profiled_items_per_s = float(profiled["items_per_s"])
         baseline_vision_tokens_per_s = float(baseline["vision_tokens_per_s"])
         profiled_vision_tokens_per_s = float(profiled["vision_tokens_per_s"])
+        baseline_forward_count = int(baseline["count"])
+        profiled_forward_count = int(profiled["count"])
         comparisons[f"profiled_vs_unprofiled_{args.profile_mode}"] = {
             "mode": str(args.profile_mode),
+            "baseline_forward_count": baseline_forward_count,
+            "profiled_forward_count": profiled_forward_count,
+            "forward_count_match": bool(baseline_forward_count == profiled_forward_count),
             "baseline_total_s": baseline_total_s,
             "profiled_total_s": profiled_total_s,
             "profiled_total_s_over_baseline": (
@@ -577,10 +766,14 @@ def main() -> None:
             ),
             "profile_dir": profiler_summary.get("profile_dir"),
             "profile_metric": str(args.profile_metric),
+            "benchmark_repeats": int(args.benchmark_repeats),
+            "profile_warmup_repeats": int(args.profile_warmup_repeats),
+            "profile_active_repeats": int(args.profile_active_repeats),
+            "profiler_step_contract": profiler_summary.get("profiler_step_contract"),
             "note": (
-                "This compares the same selected crops in the same process after warmup. The profiled run is executed "
-                "after the normal benchmark mode, so use the ratio as profiler overhead guidance rather than as an "
-                "absolute standalone throughput number."
+                "This compares the same selected crops in the same process after warmup. Set --benchmark-repeats "
+                "equal to --profile-active-repeats for the cleanest profiler overhead comparison. The profiler "
+                "captures one crop forward per profiler step."
             ),
         }
 
@@ -617,8 +810,11 @@ def main() -> None:
             "include_empty_gt": bool(args.include_empty_gt),
         },
         "recognizer_crop_count": int(len(queue_inputs)),
+        "raw_queue_input_count_before_crop_sample": int(raw_queue_input_count_before_crop_sample),
         "raw_extracted_crop_count_before_max_crops": int(raw_extracted_crop_count),
         "max_crops": None if int(args.max_crops) <= 0 else int(args.max_crops),
+        "crop_sample": crop_sample_summary,
+        "benchmark_repeats": int(args.benchmark_repeats),
         "prompt_override": args.prompt,
         "crop_summary": crop_summary,
         "input_summary": summarize_inputs(queue_inputs, merge_size=int(pre_cfg["merge_size"])),

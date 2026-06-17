@@ -24,8 +24,12 @@ export NPU_JIT_COMPILE="${NPU_JIT_COMPILE:-off}"
 export VISION_ATTENTION_IMPL="${VISION_ATTENTION_IMPL:-prompt_flash_attention}"
 export VISION_PROMPT_FA_LAYOUT="${VISION_PROMPT_FA_LAYOUT:-bnsd}"
 export MODES="${MODES:-unsynced_loop}"
+export CROP_SAMPLE="${CROP_SAMPLE:-small_medium_large}"
 export PROFILE_MODE="${PROFILE_MODE:-unsynced_loop}"
 export PROFILE_METRIC="${PROFILE_METRIC:-pipe}"
+export PROFILE_WARMUP_REPEATS="${PROFILE_WARMUP_REPEATS:-2}"
+export PROFILE_ACTIVE_REPEATS="${PROFILE_ACTIVE_REPEATS:-5}"
+export BENCHMARK_REPEATS="${BENCHMARK_REPEATS:-${PROFILE_ACTIVE_REPEATS}}"
 export TOPN="${TOPN:-20}"
 export PROFILE_SKIP_TRACE="${PROFILE_SKIP_TRACE:-1}"
 
@@ -39,7 +43,8 @@ echo "VISION_PREFILL_PROFILE_COMPARE_ENV PYTHON_BIN=${PYTHON_BIN}"
 echo "VISION_PREFILL_PROFILE_COMPARE_ENV DEVICE=${DEVICE} ASCEND_RT_VISIBLE_DEVICES=${ASCEND_RT_VISIBLE_DEVICES:-unset}"
 echo "VISION_PREFILL_PROFILE_COMPARE_ENV PAGE_START=${PAGE_START} NUM_PAGES=${NUM_PAGES} MAX_CROPS=${MAX_CROPS}"
 echo "VISION_PREFILL_PROFILE_COMPARE_ENV DTYPE=${DTYPE} VISION_ATTENTION_IMPL=${VISION_ATTENTION_IMPL} VISION_PROMPT_FA_LAYOUT=${VISION_PROMPT_FA_LAYOUT}"
-echo "VISION_PREFILL_PROFILE_COMPARE_ENV MODES=${MODES} PROFILE_MODE=${PROFILE_MODE} PROFILE_METRIC=${PROFILE_METRIC} PROFILE_SKIP_TRACE=${PROFILE_SKIP_TRACE}"
+echo "VISION_PREFILL_PROFILE_COMPARE_ENV MODES=${MODES} CROP_SAMPLE=${CROP_SAMPLE} BENCHMARK_REPEATS=${BENCHMARK_REPEATS}"
+echo "VISION_PREFILL_PROFILE_COMPARE_ENV PROFILE_MODE=${PROFILE_MODE} PROFILE_METRIC=${PROFILE_METRIC} PROFILE_WARMUP_REPEATS=${PROFILE_WARMUP_REPEATS} PROFILE_ACTIVE_REPEATS=${PROFILE_ACTIVE_REPEATS} PROFILE_SKIP_TRACE=${PROFILE_SKIP_TRACE}"
 
 echo "VISION_PREFILL_PROFILE_COMPARE_RUN without_profiler output=${OFF_OUTPUT}"
 PROFILE_DIR="" OUTPUT_PATH="${OFF_OUTPUT}" RUN_ID="${RUN_ID}_off" "${SCRIPT_DIR}/run_npu_vision_prefill_only.sh"
@@ -110,6 +115,13 @@ summary = {
     "vision_attention": on.get("vision_attention"),
     "vision_prompt_fa_layout": on.get("vision_prompt_fa_layout"),
     "recognizer_crop_count": on.get("recognizer_crop_count"),
+    "raw_queue_input_count_before_crop_sample": on.get("raw_queue_input_count_before_crop_sample"),
+    "crop_sample": on.get("crop_sample"),
+    "benchmark_repeats": on.get("benchmark_repeats"),
+    "profile_warmup_repeats": profile.get("profile_warmup_repeats"),
+    "profile_active_repeats": profile.get("profile_active_repeats"),
+    "profile_active_steps": profile.get("profile_active_steps"),
+    "profiler_step_contract": profile.get("profiler_step_contract"),
     "off_items_per_s": off_mode.get("items_per_s"),
     "off_vision_tokens_per_s": off_mode.get("vision_tokens_per_s"),
     "same_process_unprofiled_items_per_s": on_baseline.get("items_per_s"),
