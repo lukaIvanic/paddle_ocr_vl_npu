@@ -57,8 +57,12 @@ from local_modeling_paddleocr_vl import (  # noqa: E402
     VISION_PROMPT_FA_LAYOUT_ENV,
     LocalPaddleOCRVLForConditionalGeneration,
     _resolve_model_dir,
+    apply_rotary_pos_emb_vision,
+    attention_softmax,
     get_vision_attention_impl,
     get_vision_prompt_fa_layout,
+    get_vision_softmax_dtype_mode,
+    vision_prompt_flash_attention_bnsd,
 )
 from probe_static_compile import import_torchair, maybe_sync  # noqa: E402
 from run_local_recognition import (  # noqa: E402
@@ -74,6 +78,7 @@ PROFILE_METRIC_CHOICES = ("pipe", "memory", "l2", "memory_access")
 CROP_SAMPLE_CHOICES = ("all", "small_medium_large", "small_only")
 VISION_COMPILE_BACKEND_CHOICES = ("none", "default", "aot_eager", "inductor", "torchair")
 VISION_FORWARD_BOUNDARY_CHOICES = ("get_image_features", "visual", "static_visual")
+STATIC_VISUAL_PAD_MODE_CHOICES = ("none", "mask_pad_one")
 
 
 def parse_vision_dtype(name: str) -> torch.dtype:
@@ -360,6 +365,17 @@ def build_static_vision_rope(
     return rotary_embeddings.cos().contiguous(), rotary_embeddings.sin().contiguous()
 
 
+def build_static_pad_attention_mask(real_seq_len: int, pad_tokens: int, *, device: torch.device) -> torch.Tensor:
+    if int(pad_tokens) <= 0:
+        return torch.zeros((1, 1, 1, 1), device=device, dtype=torch.bool)
+    physical_seq_len = int(real_seq_len) + int(pad_tokens)
+    mask = torch.zeros((1, 1, physical_seq_len, physical_seq_len), device=device, dtype=torch.bool)
+    real = int(real_seq_len)
+    mask[..., :real, real:physical_seq_len] = True
+    mask[..., real:physical_seq_len, :real] = True
+    return mask.contiguous()
+
+
 class SingleCropVisionFeatureModule(torch.nn.Module):
     """Shape-specialized wrapper for compiling one real crop's vision path."""
 
@@ -370,25 +386,134 @@ class SingleCropVisionFeatureModule(torch.nn.Module):
         *,
         boundary: str,
         device: torch.device,
+        static_visual_pad_mode: str = "none",
     ):
         super().__init__()
         self.model = model
         self.boundary = str(boundary)
+        self.static_visual_pad_mode = str(static_visual_pad_mode)
+        if self.static_visual_pad_mode not in STATIC_VISUAL_PAD_MODE_CHOICES:
+            raise ValueError(
+                f"unsupported static visual pad mode: {self.static_visual_pad_mode!r}; "
+                f"choices={STATIC_VISUAL_PAD_MODE_CHOICES}"
+            )
+        if self.static_visual_pad_mode != "none" and self.boundary != "static_visual":
+            raise ValueError("--static-visual-pad-mode is only valid for boundary=static_visual")
         self.register_buffer("image_grid_thw_const", image_grid_thw.detach().clone(), persistent=False)
         self.register_buffer(
             "cu_seqlens_const",
             build_single_crop_vision_cu_seqlens(image_grid_thw, device=device),
             persistent=False,
         )
+        self.static_real_seq_len = int(image_grid_thw.prod().item())
+        self.static_pad_tokens = 0
+        if self.boundary == "static_visual" and self.static_visual_pad_mode == "mask_pad_one":
+            grid_t, _grid_h, _grid_w = single_crop_grid_ints(image_grid_thw)
+            if int(grid_t) != 1:
+                raise ValueError("static_visual mask_pad_one currently supports single-image crop grids with T=1 only")
+            self.static_pad_tokens = 1 if self.static_real_seq_len % 16 == 0 else 0
+        self.static_physical_seq_len = self.static_real_seq_len + self.static_pad_tokens
         if self.boundary == "static_visual":
+            abs_pos_embed = build_static_abs_pos_embed(model, image_grid_thw, device=device)
+            rope_cos, rope_sin = build_static_vision_rope(model, image_grid_thw, device=device)
+            if self.static_pad_tokens:
+                abs_pos_embed = torch.cat(
+                    [
+                        abs_pos_embed,
+                        torch.zeros(
+                            self.static_pad_tokens,
+                            abs_pos_embed.shape[-1],
+                            device=device,
+                            dtype=abs_pos_embed.dtype,
+                        ),
+                    ],
+                    dim=0,
+                ).contiguous()
+                rope_cos = torch.cat(
+                    [
+                        rope_cos,
+                        torch.ones(self.static_pad_tokens, rope_cos.shape[-1], device=device, dtype=rope_cos.dtype),
+                    ],
+                    dim=0,
+                ).contiguous()
+                rope_sin = torch.cat(
+                    [
+                        rope_sin,
+                        torch.zeros(self.static_pad_tokens, rope_sin.shape[-1], device=device, dtype=rope_sin.dtype),
+                    ],
+                    dim=0,
+                ).contiguous()
             self.register_buffer(
                 "abs_pos_embed_const",
-                build_static_abs_pos_embed(model, image_grid_thw, device=device),
+                abs_pos_embed,
                 persistent=False,
             )
-            rope_cos, rope_sin = build_static_vision_rope(model, image_grid_thw, device=device)
             self.register_buffer("vision_rope_cos_const", rope_cos, persistent=False)
             self.register_buffer("vision_rope_sin_const", rope_sin, persistent=False)
+            self.register_buffer(
+                "static_pad_attention_mask",
+                build_static_pad_attention_mask(self.static_real_seq_len, self.static_pad_tokens, device=device),
+                persistent=False,
+            )
+
+    def _zero_static_pad_rows(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        if self.static_pad_tokens <= 0:
+            return hidden_states
+        return torch.cat(
+            [
+                hidden_states[: self.static_real_seq_len],
+                torch.zeros_like(hidden_states[self.static_real_seq_len : self.static_physical_seq_len]),
+            ],
+            dim=0,
+        )
+
+    def _static_mask_padded_attention(self, attention: torch.nn.Module, hidden_states: torch.Tensor) -> torch.Tensor:
+        seq_length = hidden_states.shape[0]
+        query_states = attention.q_proj(hidden_states).view(seq_length, attention.num_heads, attention.head_dim)
+        key_states = attention.k_proj(hidden_states).view(seq_length, attention.num_heads, attention.head_dim)
+        value_states = attention.v_proj(hidden_states).view(seq_length, attention.num_heads, attention.head_dim)
+        query_states, key_states = apply_rotary_pos_emb_vision(
+            query_states,
+            key_states,
+            self.vision_rope_cos_const,
+            self.vision_rope_sin_const,
+        )
+        query_states = query_states.transpose(0, 1).unsqueeze(0)
+        key_states = key_states.transpose(0, 1).unsqueeze(0)
+        value_states = value_states.transpose(0, 1).unsqueeze(0)
+        attention_impl = get_vision_attention_impl()
+        if attention_impl == "prompt_flash_attention":
+            if get_vision_prompt_fa_layout() != "bnsd":
+                raise ValueError("static_visual mask_pad_one currently supports PromptFA layout bnsd only")
+            attn_output = vision_prompt_flash_attention_bnsd(
+                query_states,
+                key_states,
+                value_states,
+                num_heads=int(attention.num_heads),
+                scale=float(attention.scaling),
+                atten_mask=self.static_pad_attention_mask,
+            )
+        elif attention_impl == "manual":
+            scores = torch.matmul(query_states, key_states.transpose(2, 3)) * attention.scaling
+            scores = scores.masked_fill(self.static_pad_attention_mask, torch.finfo(scores.dtype).min)
+            probs = attention_softmax(
+                scores,
+                dim=-1,
+                output_dtype=query_states.dtype,
+                mode=get_vision_softmax_dtype_mode(),
+            )
+            attn_output = torch.matmul(probs, value_states)
+        else:
+            raise ValueError(f"unknown vision attention implementation: {attention_impl!r}")
+        attn_output = attn_output.transpose(1, 2).contiguous().view(seq_length, -1)
+        return attention.out_proj(attn_output)
+
+    def _static_mask_padded_encoder_layer(self, encoder_layer: torch.nn.Module, hidden_states: torch.Tensor) -> torch.Tensor:
+        attn_input = encoder_layer.layer_norm1(hidden_states)
+        hidden_states = hidden_states + self._static_mask_padded_attention(encoder_layer.self_attn, attn_input)
+        hidden_states = self._zero_static_pad_rows(hidden_states)
+        hidden_states = hidden_states + encoder_layer.mlp(encoder_layer.layer_norm2(hidden_states))
+        return self._zero_static_pad_rows(hidden_states)
 
     def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
         if self.boundary == "static_visual":
@@ -396,11 +521,29 @@ class SingleCropVisionFeatureModule(torch.nn.Module):
             embeddings_module = transformer.embeddings
             pixel_values = pixel_values.to(dtype=embeddings_module.patch_embedding.weight.dtype)
             patch_embeds = embeddings_module.patch_embedding(pixel_values)
-            hidden_states = patch_embeds.flatten(-2).squeeze(-1) + self.abs_pos_embed_const
+            hidden_states = patch_embeds.flatten(-2).squeeze(-1)
+            if self.static_pad_tokens:
+                hidden_states = torch.cat(
+                    [
+                        hidden_states,
+                        torch.zeros(
+                            self.static_pad_tokens,
+                            hidden_states.shape[-1],
+                            device=hidden_states.device,
+                            dtype=hidden_states.dtype,
+                        ),
+                    ],
+                    dim=0,
+                )
+            hidden_states = hidden_states + self.abs_pos_embed_const
             position_embeddings = (self.vision_rope_cos_const, self.vision_rope_sin_const)
             for encoder_layer in transformer.encoder.layers:
-                hidden_states = encoder_layer(hidden_states, self.cu_seqlens_const, position_embeddings)
-            return transformer.post_layernorm(hidden_states)
+                if self.static_pad_tokens:
+                    hidden_states = self._static_mask_padded_encoder_layer(encoder_layer, hidden_states)
+                else:
+                    hidden_states = encoder_layer(hidden_states, self.cu_seqlens_const, position_embeddings)
+            hidden_states = transformer.post_layernorm(hidden_states)
+            return hidden_states[: self.static_real_seq_len]
         if self.boundary == "visual":
             pixel_values = pixel_values.type(self.model.visual.dtype).unsqueeze(0)
             return self.model.visual(
@@ -433,20 +576,33 @@ def compile_single_crop_vision_forward(
     backend_name: str,
     boundary: str,
     wrapper: SingleCropVisionFeatureModule | None = None,
+    static_visual_pad_mode: str = "none",
 ) -> tuple[Callable[[torch.Tensor], torch.Tensor] | None, dict[str, Any]]:
     backend_name = str(backend_name)
     boundary = str(boundary)
+    static_visual_pad_mode = str(static_visual_pad_mode)
+    if static_visual_pad_mode not in STATIC_VISUAL_PAD_MODE_CHOICES:
+        raise ValueError(f"unsupported --static-visual-pad-mode {static_visual_pad_mode!r}; choices={STATIC_VISUAL_PAD_MODE_CHOICES}")
     if boundary not in VISION_FORWARD_BOUNDARY_CHOICES:
         raise ValueError(f"unsupported --vision-forward-boundary {boundary!r}; choices={VISION_FORWARD_BOUNDARY_CHOICES}")
     if backend_name == "none":
         if boundary == "static_visual":
             if wrapper is None:
-                wrapper = SingleCropVisionFeatureModule(model, item.image_grid_thw, boundary=boundary, device=device).eval()
+                wrapper = SingleCropVisionFeatureModule(
+                    model,
+                    item.image_grid_thw,
+                    boundary=boundary,
+                    device=device,
+                    static_visual_pad_mode=static_visual_pad_mode,
+                ).eval()
             return wrapper, {
                 "enabled": False,
                 "backend": backend_name,
                 "compile_api": None,
                 "boundary": boundary,
+                "static_visual_pad_mode": static_visual_pad_mode,
+                "static_visual_pad_tokens": int(wrapper.static_pad_tokens),
+                "static_visual_physical_seq_len": int(wrapper.static_physical_seq_len),
                 "crop_id": str(item.entry.get("id")),
                 "crop_sample_bucket": item.entry.get("crop_sample_bucket"),
                 "vision_tokens": int(vision_tokens(item)),
@@ -464,7 +620,13 @@ def compile_single_crop_vision_forward(
         }
 
     if wrapper is None:
-        wrapper = SingleCropVisionFeatureModule(model, item.image_grid_thw, boundary=boundary, device=device).eval()
+        wrapper = SingleCropVisionFeatureModule(
+            model,
+            item.image_grid_thw,
+            boundary=boundary,
+            device=device,
+            static_visual_pad_mode=static_visual_pad_mode,
+        ).eval()
     compile_kwargs: dict[str, Any] = {
         "fullgraph": True,
         "dynamic": False,
@@ -488,6 +650,9 @@ def compile_single_crop_vision_forward(
         "backend": backend_name,
         "compile_api": "torch.compile",
         "boundary": boundary,
+        "static_visual_pad_mode": static_visual_pad_mode,
+        "static_visual_pad_tokens": int(getattr(wrapper, "static_pad_tokens", 0)),
+        "static_visual_physical_seq_len": int(getattr(wrapper, "static_physical_seq_len", vision_tokens(item))),
         "fullgraph": True,
         "dynamic": False,
         "capture_scalar_outputs": True,
@@ -978,6 +1143,17 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--static-visual-pad-mode",
+        default=os.environ.get("STATIC_VISUAL_PAD_MODE", "none"),
+        choices=STATIC_VISUAL_PAD_MODE_CHOICES,
+        help=(
+            "Diagnostic workaround for boundary=static_visual. none preserves the exact old static wrapper. "
+            "mask_pad_one appends one physical dummy token only when seq_len %% 16 == 0, blocks attention "
+            "between real and dummy tokens with a BOOL mask, zeroes the dummy row between layers, and crops "
+            "back to the original real token count before returning."
+        ),
+    )
+    parser.add_argument(
         "--vision-compile-validate",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -1103,6 +1279,7 @@ def main() -> None:
                 target_item.image_grid_thw,
                 boundary=vision_forward_boundary,
                 device=device,
+                static_visual_pad_mode=str(args.static_visual_pad_mode),
             ).eval()
             validation_pixel_values = target_item.pixel_values.to(device=device, dtype=model.visual.dtype)
             maybe_sync(device)
@@ -1134,6 +1311,7 @@ def main() -> None:
             backend_name=str(args.vision_compile_backend),
             boundary=vision_forward_boundary,
             wrapper=validation_wrapper,
+            static_visual_pad_mode=str(args.static_visual_pad_mode),
         )
         maybe_sync(device)
         first_call_start = time.perf_counter()
@@ -1213,6 +1391,7 @@ def main() -> None:
             device=device,
             backend_name="none",
             boundary=vision_forward_boundary,
+            static_visual_pad_mode=str(args.static_visual_pad_mode),
         )
 
     warmup = warmup_vision(
@@ -1383,6 +1562,7 @@ def main() -> None:
         "queue_input_timing_summary_s": aggregate_timing_dicts([item.timing_s for item in queue_inputs]),
         "setup_timing_s": setup_timing,
         "vision_compile": vision_compile_summary,
+        "static_visual_pad_mode": str(args.static_visual_pad_mode),
         "warmup": warmup,
         "mode_order": modes,
         "mode_order_note": (

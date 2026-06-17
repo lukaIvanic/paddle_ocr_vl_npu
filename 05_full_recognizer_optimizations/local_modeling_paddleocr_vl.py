@@ -71,6 +71,7 @@ def vision_prompt_flash_attention_bnsd(
     num_heads: int,
     scale: float,
     layout: str | None = None,
+    atten_mask: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Run PromptFA with a selectable public layout and return BNSD output."""
     if q_bnsd.device.type != "npu":
@@ -81,6 +82,12 @@ def vision_prompt_flash_attention_bnsd(
     if selected_layout not in VISION_PROMPT_FA_LAYOUT_CHOICES:
         raise ValueError(f"unsupported vision PromptFA layout: {selected_layout!r}")
 
+    mask_kwargs = {}
+    sparse_mode = 0
+    if atten_mask is not None:
+        mask_kwargs["atten_mask"] = atten_mask.to(torch.bool).contiguous()
+        sparse_mode = 1
+
     if selected_layout == "bnsd":
         return torch_npu.npu_prompt_flash_attention(
             q_bnsd.contiguous(),
@@ -89,7 +96,8 @@ def vision_prompt_flash_attention_bnsd(
             num_heads=int(num_heads),
             input_layout="BNSD",
             scale_value=float(scale),
-            sparse_mode=0,
+            sparse_mode=sparse_mode,
+            **mask_kwargs,
         )
 
     if selected_layout == "bsnd":
@@ -100,7 +108,8 @@ def vision_prompt_flash_attention_bnsd(
             num_heads=int(num_heads),
             input_layout="BSND",
             scale_value=float(scale),
-            sparse_mode=0,
+            sparse_mode=sparse_mode,
+            **mask_kwargs,
         )
         return out_bsnd.transpose(1, 2).contiguous()
 
@@ -112,7 +121,8 @@ def vision_prompt_flash_attention_bnsd(
         num_heads=int(num_heads),
         input_layout="BSH",
         scale_value=float(scale),
-        sparse_mode=0,
+        sparse_mode=sparse_mode,
+        **mask_kwargs,
     )
     return out_bsh.view(batch, seq_len, heads, head_dim).transpose(1, 2).contiguous()
 

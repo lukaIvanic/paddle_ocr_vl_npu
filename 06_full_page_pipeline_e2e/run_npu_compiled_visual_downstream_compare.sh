@@ -58,6 +58,7 @@ export NPU_JIT_COMPILE="${NPU_JIT_COMPILE:-off}"
 export VISION_ATTENTION_IMPL="${VISION_ATTENTION_IMPL:-manual}"
 export VISION_PROMPT_FA_LAYOUT="${VISION_PROMPT_FA_LAYOUT:-bnsd}"
 export VISION_COMPILE_BACKEND="${VISION_COMPILE_BACKEND:-torchair}"
+export STATIC_VISUAL_PAD_MODE="${STATIC_VISUAL_PAD_MODE:-none}"
 export CROP_SAMPLE="${CROP_SAMPLE:-all}"
 export MAX_COMPARE_CROPS="${MAX_COMPARE_CROPS:-32}"
 export CACHE_LENGTH="${CACHE_LENGTH:-2048}"
@@ -73,7 +74,7 @@ echo "COMPILED_VISUAL_DOWNSTREAM_ENV DATASET_DIR=${DATASET_DIR}"
 echo "COMPILED_VISUAL_DOWNSTREAM_ENV DEVICE=${DEVICE} ASCEND_RT_VISIBLE_DEVICES=${ASCEND_RT_VISIBLE_DEVICES:-unset}"
 echo "COMPILED_VISUAL_DOWNSTREAM_ENV DTYPE=${DTYPE} NPU_JIT_COMPILE=${NPU_JIT_COMPILE}"
 echo "COMPILED_VISUAL_DOWNSTREAM_ENV VISION_ATTENTION_IMPL=${VISION_ATTENTION_IMPL} VISION_PROMPT_FA_LAYOUT=${VISION_PROMPT_FA_LAYOUT}"
-echo "COMPILED_VISUAL_DOWNSTREAM_ENV VISION_COMPILE_BACKEND=${VISION_COMPILE_BACKEND} CROP_SAMPLE=${CROP_SAMPLE}"
+echo "COMPILED_VISUAL_DOWNSTREAM_ENV VISION_COMPILE_BACKEND=${VISION_COMPILE_BACKEND} STATIC_VISUAL_PAD_MODE=${STATIC_VISUAL_PAD_MODE} CROP_SAMPLE=${CROP_SAMPLE}"
 echo "COMPILED_VISUAL_DOWNSTREAM_ENV MAX_COMPARE_CROPS=${MAX_COMPARE_CROPS} CACHE_LENGTH=${CACHE_LENGTH} MAX_NEW_TOKENS=${MAX_NEW_TOKENS} ROUGH_GT_MIN_IOU=${ROUGH_GT_MIN_IOU}"
 
 CMD=(
@@ -89,6 +90,7 @@ CMD=(
   --vision-attention "${VISION_ATTENTION_IMPL}"
   --vision-prompt-fa-layout "${VISION_PROMPT_FA_LAYOUT}"
   --vision-compile-backend "${VISION_COMPILE_BACKEND}"
+  --static-visual-pad-mode "${STATIC_VISUAL_PAD_MODE}"
   --crop-sample "${CROP_SAMPLE}"
   --max-compare-crops "${MAX_COMPARE_CROPS}"
   --cache-length "${CACHE_LENGTH}"
@@ -119,6 +121,7 @@ summary = {
     "max_compare_crops": data.get("max_compare_crops"),
     "vision_attention": data.get("vision_attention"),
     "vision_compile_backend": data.get("vision_compile_backend"),
+    "static_visual_pad_mode": data.get("static_visual_pad_mode"),
     "timing_s": data.get("timing_s"),
     "summary": data.get("summary"),
     "sample_items": [

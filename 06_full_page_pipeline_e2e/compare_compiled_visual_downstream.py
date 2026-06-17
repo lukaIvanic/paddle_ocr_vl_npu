@@ -62,6 +62,7 @@ from run_local_recognition import (  # noqa: E402
 
 from bench_vision_prefill_only import (  # noqa: E402
     CROP_SAMPLE_CHOICES,
+    STATIC_VISUAL_PAD_MODE_CHOICES,
     VISION_COMPILE_BACKEND_CHOICES,
     SingleCropVisionFeatureModule,
     compile_single_crop_vision_forward,
@@ -314,8 +315,15 @@ def compare_one_item(
     compile_backend: str,
     cache_length: int,
     max_new_tokens: int,
+    static_visual_pad_mode: str,
 ) -> tuple[dict[str, Any], Any, Any]:
-    wrapper = SingleCropVisionFeatureModule(model, item.image_grid_thw, boundary="static_visual", device=device).eval()
+    wrapper = SingleCropVisionFeatureModule(
+        model,
+        item.image_grid_thw,
+        boundary="static_visual",
+        device=device,
+        static_visual_pad_mode=str(static_visual_pad_mode),
+    ).eval()
     pixel_values = item.pixel_values.to(device=device, dtype=model.visual.dtype)
 
     maybe_sync(device)
@@ -331,6 +339,7 @@ def compare_one_item(
         backend_name=str(compile_backend),
         boundary="static_visual",
         wrapper=wrapper,
+        static_visual_pad_mode=str(static_visual_pad_mode),
     )
     if compiled_visual_fn is None:
         compiled_visual_fn = wrapper
@@ -414,6 +423,7 @@ def compare_one_item(
         "grid_hw_mod_16": int((grid[1] * grid[2]) % 16) if len(grid) == 3 else None,
         "projected_image_tokens": int(item.image_grid_thw.prod().item() // 4),
         "vision_compile": clean_json(compile_meta),
+        "static_visual_pad_mode": str(static_visual_pad_mode),
         "timing_s": {
             "eager_visual": float(eager_visual_s),
             "compiled_visual_first_call": float(compiled_visual_s),
@@ -482,6 +492,15 @@ def parse_args() -> argparse.Namespace:
         choices=VISION_PROMPT_FA_LAYOUT_CHOICES,
     )
     parser.add_argument("--vision-compile-backend", default="torchair", choices=VISION_COMPILE_BACKEND_CHOICES)
+    parser.add_argument(
+        "--static-visual-pad-mode",
+        default=os.environ.get("STATIC_VISUAL_PAD_MODE", "none"),
+        choices=STATIC_VISUAL_PAD_MODE_CHOICES,
+        help=(
+            "Diagnostic static_visual padding mode. Use mask_pad_one to test the 310P-compatible "
+            "BOOL-mask dummy-token workaround for seq_len %% 16 == 0 compiled visual NaNs."
+        ),
+    )
     parser.add_argument("--crop-sample", default="small_only", choices=CROP_SAMPLE_CHOICES)
     parser.add_argument(
         "--max-compare-crops",
@@ -557,6 +576,7 @@ def main() -> None:
             compile_backend=str(args.vision_compile_backend),
             cache_length=int(args.cache_length),
             max_new_tokens=int(args.max_new_tokens),
+            static_visual_pad_mode=str(args.static_visual_pad_mode),
         )
         row["idx"] = int(idx)
         rows.append(row)
@@ -579,6 +599,7 @@ def main() -> None:
         "vision_attention": get_vision_attention_impl(),
         "vision_prompt_fa_layout": get_vision_prompt_fa_layout(),
         "vision_compile_backend": str(args.vision_compile_backend),
+        "static_visual_pad_mode": str(args.static_visual_pad_mode),
         "page_start": int(args.page_start),
         "num_pages": int(args.num_pages),
         "raw_queue_input_count_before_crop_sample": int(raw_queue_input_count_before_crop_sample),
