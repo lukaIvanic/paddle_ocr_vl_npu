@@ -50,6 +50,8 @@ export DTYPE="${DTYPE:-fp16}"
 export NPU_JIT_COMPILE="${NPU_JIT_COMPILE:-off}"
 export VISION_ATTENTION_IMPL="${VISION_ATTENTION_IMPL:-manual}"
 export VISION_PROMPT_FA_LAYOUT="${VISION_PROMPT_FA_LAYOUT:-bnsd}"
+export VISION_COMPILE_BACKEND="${VISION_COMPILE_BACKEND:-none}"
+export VISION_COMPILE_VALIDATE="${VISION_COMPILE_VALIDATE:-1}"
 export MODES="${MODES:-sync_per_crop,unsynced_loop}"
 export CROP_SAMPLE="${CROP_SAMPLE:-all}"
 export BENCHMARK_REPEATS="${BENCHMARK_REPEATS:-1}"
@@ -73,6 +75,7 @@ echo "VISION_PREFILL_ONLY_ENV DEVICE=${DEVICE} ASCEND_RT_VISIBLE_DEVICES=${ASCEN
 echo "VISION_PREFILL_ONLY_ENV PAGE_START=${PAGE_START} NUM_PAGES=${NUM_PAGES} MAX_CROPS=${MAX_CROPS}"
 echo "VISION_PREFILL_ONLY_ENV DTYPE=${DTYPE} NPU_JIT_COMPILE=${NPU_JIT_COMPILE} WARMUP_ITEMS=${WARMUP_ITEMS}"
 echo "VISION_PREFILL_ONLY_ENV VISION_ATTENTION_IMPL=${VISION_ATTENTION_IMPL} VISION_PROMPT_FA_LAYOUT=${VISION_PROMPT_FA_LAYOUT}"
+echo "VISION_PREFILL_ONLY_ENV VISION_COMPILE_BACKEND=${VISION_COMPILE_BACKEND} VISION_COMPILE_VALIDATE=${VISION_COMPILE_VALIDATE}"
 echo "VISION_PREFILL_ONLY_ENV MODES=${MODES} CROP_SAMPLE=${CROP_SAMPLE} BENCHMARK_REPEATS=${BENCHMARK_REPEATS}"
 echo "VISION_PREFILL_ONLY_ENV PROFILE_DIR=${PROFILE_DIR:-disabled} PROFILE_MODE=${PROFILE_MODE} PROFILE_METRIC=${PROFILE_METRIC} PROFILE_WARMUP_REPEATS=${PROFILE_WARMUP_REPEATS} PROFILE_ACTIVE_REPEATS=${PROFILE_ACTIVE_REPEATS}"
 echo "VISION_PREFILL_ONLY_ENV INCLUDE_IGNORED_GT=${INCLUDE_IGNORED_GT} INCLUDE_EMPTY_GT=${INCLUDE_EMPTY_GT}"
@@ -88,6 +91,7 @@ CMD=(
   --npu-jit-compile "${NPU_JIT_COMPILE}"
   --vision-attention "${VISION_ATTENTION_IMPL}"
   --vision-prompt-fa-layout "${VISION_PROMPT_FA_LAYOUT}"
+  --vision-compile-backend "${VISION_COMPILE_BACKEND}"
   --modes "${MODES}"
   --warmup-items "${WARMUP_ITEMS}"
   --crop-sample "${CROP_SAMPLE}"
@@ -95,6 +99,9 @@ CMD=(
   --json
 )
 
+if [[ "${VISION_COMPILE_VALIDATE}" == "0" ]]; then
+  CMD+=(--no-vision-compile-validate)
+fi
 if (( MAX_CROPS > 0 )); then
   CMD+=(--max-crops "${MAX_CROPS}")
 fi
@@ -136,6 +143,7 @@ summary = {
     "dtype": data.get("dtype"),
     "vision_attention": data.get("vision_attention"),
     "vision_prompt_fa_layout": data.get("vision_prompt_fa_layout"),
+    "vision_compile": data.get("vision_compile"),
     "warmup": data.get("warmup"),
     "sync_per_crop_total_s": modes.get("sync_per_crop", {}).get("total_s"),
     "sync_per_crop_items_per_s": modes.get("sync_per_crop", {}).get("items_per_s"),

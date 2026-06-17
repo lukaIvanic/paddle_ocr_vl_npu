@@ -25,7 +25,7 @@ import time
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import torch
 from tokenizers import Tokenizer
@@ -60,7 +60,7 @@ from local_modeling_paddleocr_vl import (  # noqa: E402
     get_vision_attention_impl,
     get_vision_prompt_fa_layout,
 )
-from probe_static_compile import maybe_sync  # noqa: E402
+from probe_static_compile import import_torchair, maybe_sync  # noqa: E402
 from run_local_recognition import (  # noqa: E402
     NPU_JIT_COMPILE_CHOICES,
     configure_npu_jit_compile,
@@ -71,7 +71,8 @@ from run_local_recognition import (  # noqa: E402
 
 MODE_CHOICES = ("sync_per_crop", "unsynced_loop")
 PROFILE_METRIC_CHOICES = ("pipe", "memory", "l2", "memory_access")
-CROP_SAMPLE_CHOICES = ("all", "small_medium_large")
+CROP_SAMPLE_CHOICES = ("all", "small_medium_large", "small_only")
+VISION_COMPILE_BACKEND_CHOICES = ("none", "default", "aot_eager", "inductor", "torchair")
 
 
 def parse_vision_dtype(name: str) -> torch.dtype:
@@ -228,6 +229,35 @@ def select_profile_crop_sample(inputs: list[QueueInput], *, strategy: str) -> tu
             str(pair[1].entry.get("id", "")),
         ),
     )
+    if strategy == "small_only":
+        original_idx, item = sorted_pairs[0]
+        cloned = clone_input_with_sample_meta(
+            item,
+            bucket="small",
+            selected_rank=0,
+            original_idx=original_idx,
+        )
+        return [cloned], {
+            "strategy": strategy,
+            "input_count_before_sample": int(len(inputs)),
+            "selected_count": 1,
+            "selection_basis": "lowest post-preprocessing vision token count over real extracted/preprocessed OCR crops",
+            "selected": [
+                {
+                    "bucket": "small",
+                    "selected_rank": 0,
+                    "original_idx": int(original_idx),
+                    "sorted_position": 0,
+                    "id": str(item.entry.get("id")),
+                    "page_index": int(item.entry.get("page_index", 0)),
+                    "layout_label": str(item.entry.get("layout_label", "")),
+                    "vision_tokens": int(vision_tokens(item)),
+                    "input_tokens": int(item.input_ids.shape[1]),
+                    "image_grid_thw": tensor_grid(item),
+                    "crop_size": clean_json(item.entry.get("crop_size", [0, 0])),
+                }
+            ],
+        }
     n = len(sorted_pairs)
     targets = [
         ("small", 0),
@@ -279,14 +309,100 @@ def select_profile_crop_sample(inputs: list[QueueInput], *, strategy: str) -> tu
     }
 
 
+class SingleCropVisionFeatureModule(torch.nn.Module):
+    """Shape-specialized wrapper for compiling one real crop's vision path."""
+
+    def __init__(self, model: LocalPaddleOCRVLForConditionalGeneration, image_grid_thw: torch.Tensor):
+        super().__init__()
+        self.model = model
+        self.register_buffer("image_grid_thw_const", image_grid_thw.detach().clone(), persistent=False)
+
+    def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
+        return self.model.get_image_features(pixel_values, self.image_grid_thw_const)
+
+
+def vision_compile_backend(name: str, device: torch.device):
+    if name == "default":
+        return None
+    if name == "torchair":
+        if device.type != "npu":
+            raise ValueError("--vision-compile-backend torchair requires --device npu:0")
+        torchair, CompilerConfig = import_torchair()
+        config = CompilerConfig()
+        return torchair.get_npu_backend(compiler_config=config)
+    return name
+
+
+def compile_single_crop_vision_forward(
+    *,
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    item: QueueInput,
+    device: torch.device,
+    backend_name: str,
+) -> tuple[Callable[[torch.Tensor], torch.Tensor] | None, dict[str, Any]]:
+    backend_name = str(backend_name)
+    if backend_name == "none":
+        return None, {
+            "enabled": False,
+            "backend": backend_name,
+            "compile_api": None,
+        }
+
+    wrapper = SingleCropVisionFeatureModule(model, item.image_grid_thw).eval()
+    compile_kwargs: dict[str, Any] = {
+        "fullgraph": True,
+        "dynamic": False,
+    }
+    backend = vision_compile_backend(backend_name, device)
+    if backend is not None:
+        compile_kwargs["backend"] = backend
+
+    import torch._dynamo
+
+    old_capture_scalar_outputs = bool(torch._dynamo.config.capture_scalar_outputs)
+    torch._dynamo.config.capture_scalar_outputs = True
+    maybe_sync(device)
+    compile_start = time.perf_counter()
+    compiled = torch.compile(wrapper, **compile_kwargs)
+    maybe_sync(device)
+    compile_wrapper_s = time.perf_counter() - compile_start
+
+    return compiled, {
+        "enabled": True,
+        "backend": backend_name,
+        "compile_api": "torch.compile",
+        "fullgraph": True,
+        "dynamic": False,
+        "capture_scalar_outputs": True,
+        "capture_scalar_outputs_previous": old_capture_scalar_outputs,
+        "capture_scalar_outputs_scope": (
+            "set globally for this process before constructing the compiled callable and kept enabled "
+            "through first-call tracing because the vision path reads image_grid_thw with Tensor.item()."
+        ),
+        "compile_wrapper_s": float(compile_wrapper_s),
+        "crop_id": str(item.entry.get("id")),
+        "crop_sample_bucket": item.entry.get("crop_sample_bucket"),
+        "vision_tokens": int(vision_tokens(item)),
+        "image_grid_thw": tensor_grid(item),
+        "note": (
+            "The compiled callable is shape-specialized to exactly one selected crop. "
+            "The input tensor is the already CPU-preprocessed crop patch tensor after transfer to the target device; "
+            "the compiled graph covers model.get_image_features(), i.e. native-resolution visual encoder plus adaptive MLP projector."
+        ),
+    }
+
+
 @torch.inference_mode()
 def run_vision_one(
     *,
     model: LocalPaddleOCRVLForConditionalGeneration,
     item: QueueInput,
     device: torch.device,
+    vision_forward: Callable[[torch.Tensor], torch.Tensor] | None = None,
 ) -> torch.Tensor:
     pixel_values = item.pixel_values.to(device=device, dtype=model.visual.dtype)
+    if vision_forward is not None:
+        return vision_forward(pixel_values)
     return model.get_image_features(pixel_values, item.image_grid_thw)
 
 
@@ -297,6 +413,7 @@ def warmup_vision(
     inputs: list[QueueInput],
     device: torch.device,
     warmup_items: int,
+    vision_forward: Callable[[torch.Tensor], torch.Tensor] | None = None,
 ) -> dict[str, Any]:
     count = min(max(0, int(warmup_items)), len(inputs))
     if count <= 0:
@@ -305,7 +422,7 @@ def warmup_vision(
     start = time.perf_counter()
     outputs = []
     for item in inputs[:count]:
-        outputs.append(run_vision_one(model=model, item=item, device=device))
+        outputs.append(run_vision_one(model=model, item=item, device=device, vision_forward=vision_forward))
     maybe_sync(device)
     elapsed = time.perf_counter() - start
     return {
@@ -323,6 +440,7 @@ def run_sync_per_crop(
     inputs: list[QueueInput],
     device: torch.device,
     repeat_count: int = 1,
+    vision_forward: Callable[[torch.Tensor], torch.Tensor] | None = None,
 ) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     total_start = time.perf_counter()
@@ -331,7 +449,7 @@ def run_sync_per_crop(
             idx = repeat_idx * len(inputs) + original_idx
             maybe_sync(device)
             start = time.perf_counter()
-            output = run_vision_one(model=model, item=item, device=device)
+            output = run_vision_one(model=model, item=item, device=device, vision_forward=vision_forward)
             maybe_sync(device)
             elapsed = time.perf_counter() - start
             rows.append(make_forward_row(idx, item, output, repeat_idx=repeat_idx, original_idx=original_idx, elapsed_s=elapsed))
@@ -346,6 +464,7 @@ def run_unsynced_loop(
     inputs: list[QueueInput],
     device: torch.device,
     repeat_count: int = 1,
+    vision_forward: Callable[[torch.Tensor], torch.Tensor] | None = None,
 ) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     maybe_sync(device)
@@ -353,7 +472,7 @@ def run_unsynced_loop(
     for repeat_idx in range(max(1, int(repeat_count))):
         for original_idx, item in enumerate(inputs):
             idx = repeat_idx * len(inputs) + original_idx
-            output = run_vision_one(model=model, item=item, device=device)
+            output = run_vision_one(model=model, item=item, device=device, vision_forward=vision_forward)
             rows.append(make_forward_row(idx, item, output, repeat_idx=repeat_idx, original_idx=original_idx))
     maybe_sync(device)
     total_s = time.perf_counter() - start
@@ -428,11 +547,24 @@ def run_mode(
     inputs: list[QueueInput],
     device: torch.device,
     repeat_count: int = 1,
+    vision_forward: Callable[[torch.Tensor], torch.Tensor] | None = None,
 ) -> dict[str, Any]:
     if mode == "sync_per_crop":
-        return run_sync_per_crop(model=model, inputs=inputs, device=device, repeat_count=repeat_count)
+        return run_sync_per_crop(
+            model=model,
+            inputs=inputs,
+            device=device,
+            repeat_count=repeat_count,
+            vision_forward=vision_forward,
+        )
     if mode == "unsynced_loop":
-        return run_unsynced_loop(model=model, inputs=inputs, device=device, repeat_count=repeat_count)
+        return run_unsynced_loop(
+            model=model,
+            inputs=inputs,
+            device=device,
+            repeat_count=repeat_count,
+            vision_forward=vision_forward,
+        )
     raise AssertionError(mode)
 
 
@@ -448,6 +580,7 @@ def profile_vision_mode(
     dtype: torch.dtype,
     warmup_repeats: int,
     active_repeats: int,
+    vision_forward: Callable[[torch.Tensor], torch.Tensor] | None = None,
 ) -> dict[str, Any]:
     if device.type != "npu":
         raise ValueError("--profile-dir requires --device npu:0; torch_npu profiler is NPU-only.")
@@ -474,7 +607,7 @@ def profile_vision_mode(
     warmup_forward_count = 0
     for _ in range(warmup_repeats):
         for item in inputs:
-            run_vision_one(model=model, item=item, device=device)
+            run_vision_one(model=model, item=item, device=device, vision_forward=vision_forward)
             warmup_forward_count += 1
     maybe_sync(device)
     profiler_warmup_s = time.perf_counter() - warmup_start
@@ -503,7 +636,7 @@ def profile_vision_mode(
                 bucket = str(item.entry.get("crop_sample_bucket") or "crop")
                 with torch.profiler.record_function(f"paddle_ocr_vl.vision_prefill_profile.{bucket}"):
                     step_start = time.perf_counter()
-                    output = run_vision_one(model=model, item=item, device=device)
+                    output = run_vision_one(model=model, item=item, device=device, vision_forward=vision_forward)
                     maybe_sync(device)
                     elapsed = time.perf_counter() - step_start
                 rows.append(
@@ -615,6 +748,21 @@ def parse_args() -> argparse.Namespace:
         help="Repeat the selected crop list this many times for non-profiled benchmark modes.",
     )
     parser.add_argument(
+        "--vision-compile-backend",
+        default="none",
+        choices=VISION_COMPILE_BACKEND_CHOICES,
+        help=(
+            "Compile the whole single-crop model.get_image_features path before benchmark/profiler runs. "
+            "Requires --crop-sample small_only because the graph is shape-specialized to one crop."
+        ),
+    )
+    parser.add_argument(
+        "--vision-compile-validate",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Compare the first compiled vision output against eager for the selected crop before timed runs.",
+    )
+    parser.add_argument(
         "--profile-dir",
         type=Path,
         default=None,
@@ -714,11 +862,68 @@ def main() -> None:
     maybe_sync(device)
     setup_timing["recognizer_model_load_s"] = time.perf_counter() - start
 
+    vision_forward: Callable[[torch.Tensor], torch.Tensor] | None = None
+    vision_compile_summary: dict[str, Any]
+    if str(args.vision_compile_backend) != "none" and len(queue_inputs) != 1:
+        raise ValueError(
+            "--vision-compile-backend is shape-specialized and currently requires exactly one selected crop. "
+            "Use --crop-sample small_only for the requested small-crop compile/profiler experiment."
+        )
+    if str(args.vision_compile_backend) != "none":
+        target_item = queue_inputs[0]
+        eager_ref: torch.Tensor | None = None
+        if bool(args.vision_compile_validate):
+            maybe_sync(device)
+            eager_start = time.perf_counter()
+            eager_ref = run_vision_one(model=model, item=target_item, device=device)
+            maybe_sync(device)
+            eager_ref_s = time.perf_counter() - eager_start
+        else:
+            eager_ref_s = None
+
+        vision_forward, vision_compile_summary = compile_single_crop_vision_forward(
+            model=model,
+            item=target_item,
+            device=device,
+            backend_name=str(args.vision_compile_backend),
+        )
+        maybe_sync(device)
+        first_call_start = time.perf_counter()
+        compiled_first = run_vision_one(model=model, item=target_item, device=device, vision_forward=vision_forward)
+        maybe_sync(device)
+        compiled_first_call_s = time.perf_counter() - first_call_start
+        vision_compile_summary["compiled_first_call_s"] = float(compiled_first_call_s)
+        if eager_ref is not None:
+            diff = (eager_ref.float() - compiled_first.float()).abs()
+            vision_compile_summary["validation"] = {
+                "enabled": True,
+                "eager_reference_s": float(eager_ref_s),
+                "max_abs_diff": float(diff.max().detach().cpu().item()),
+                "mean_abs_diff": float(diff.mean().detach().cpu().item()),
+                "allclose_atol_5e_2_rtol_5e_2": bool(
+                    torch.allclose(eager_ref.float(), compiled_first.float(), atol=5e-2, rtol=5e-2)
+                ),
+                "eager_shape": [int(dim) for dim in eager_ref.shape],
+                "compiled_shape": [int(dim) for dim in compiled_first.shape],
+            }
+        else:
+            vision_compile_summary["validation"] = {"enabled": False}
+        setup_timing["vision_compile_wrapper_s"] = float(vision_compile_summary.get("compile_wrapper_s", 0.0))
+        setup_timing["vision_compile_first_call_s"] = float(compiled_first_call_s)
+    else:
+        vision_forward, vision_compile_summary = compile_single_crop_vision_forward(
+            model=model,
+            item=queue_inputs[0],
+            device=device,
+            backend_name="none",
+        )
+
     warmup = warmup_vision(
         model=model,
         inputs=queue_inputs,
         device=device,
         warmup_items=int(args.warmup_items),
+        vision_forward=vision_forward,
     )
 
     mode_results: dict[str, Any] = {}
@@ -729,6 +934,7 @@ def main() -> None:
             inputs=queue_inputs,
             device=device,
             repeat_count=max(1, int(args.benchmark_repeats)),
+            vision_forward=vision_forward,
         )
 
     comparisons: dict[str, Any] = {}
@@ -758,6 +964,7 @@ def main() -> None:
             dtype=dtype,
             warmup_repeats=int(args.profile_warmup_repeats),
             active_repeats=int(args.profile_active_repeats),
+            vision_forward=vision_forward,
         )
         baseline = mode_results[str(args.profile_mode)]
         profiled_context = profiler_summary["profiled_context_wall_result"]
@@ -874,6 +1081,7 @@ def main() -> None:
         "input_build_summary_s": input_build_summary,
         "queue_input_timing_summary_s": aggregate_timing_dicts([item.timing_s for item in queue_inputs]),
         "setup_timing_s": setup_timing,
+        "vision_compile": vision_compile_summary,
         "warmup": warmup,
         "mode_order": modes,
         "mode_order_note": (
