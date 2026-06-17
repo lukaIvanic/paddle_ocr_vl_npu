@@ -63,12 +63,21 @@ from run_local_recognition import (  # noqa: E402
     NPU_JIT_COMPILE_CHOICES,
     configure_npu_jit_compile,
     load_preprocessor_config,
-    parse_dtype,
     resolve_device,
 )
 
 
 MODE_CHOICES = ("sync_per_crop", "unsynced_loop")
+
+
+def parse_vision_dtype(name: str) -> torch.dtype:
+    if name in {"fp16", "float16"}:
+        return torch.float16
+    if name in {"fp32", "float32"}:
+        return torch.float32
+    if name in {"bf16", "bfloat16"}:
+        return torch.bfloat16
+    raise ValueError(f"unsupported dtype: {name}")
 
 
 def parse_modes(raw: str) -> list[str]:
@@ -281,7 +290,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--include-empty-gt", action="store_true")
     parser.add_argument("--prompt", default=None)
     parser.add_argument("--device", default="npu:0")
-    parser.add_argument("--dtype", default="fp16", choices=["fp16", "float16", "bf16", "bfloat16"])
+    parser.add_argument("--dtype", default="fp16", choices=["fp16", "float16", "fp32", "float32", "bf16", "bfloat16"])
     parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
     parser.add_argument("--vision-attention", default=os.environ.get(VISION_ATTENTION_ENV, "manual"), choices=VISION_ATTENTION_CHOICES)
     parser.add_argument(
@@ -317,7 +326,7 @@ def main() -> None:
 
     model_dir = _resolve_model_dir(args.model)
     device = resolve_device(args.device)
-    dtype = parse_dtype(args.dtype, device)
+    dtype = parse_vision_dtype(args.dtype)
     configure_npu_jit_compile(args.npu_jit_compile, device)
 
     page_load = load_pages_result(

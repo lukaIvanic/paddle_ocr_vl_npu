@@ -46,6 +46,7 @@ export PAGE_START="${PAGE_START:-0}"
 export NUM_PAGES="${NUM_PAGES:-8}"
 export MAX_CROPS="${MAX_CROPS:-0}"
 export WARMUP_ITEMS="${WARMUP_ITEMS:-1}"
+export DTYPE="${DTYPE:-fp16}"
 export NPU_JIT_COMPILE="${NPU_JIT_COMPILE:-off}"
 export VISION_ATTENTION_IMPL="${VISION_ATTENTION_IMPL:-manual}"
 export VISION_PROMPT_FA_LAYOUT="${VISION_PROMPT_FA_LAYOUT:-bnsd}"
@@ -54,7 +55,7 @@ export INCLUDE_IGNORED_GT="${INCLUDE_IGNORED_GT:-0}"
 export INCLUDE_EMPTY_GT="${INCLUDE_EMPTY_GT:-0}"
 export OUTPUT_DIR="${OUTPUT_DIR:-${SCRIPT_DIR}/outputs/vision_prefill_only_npu}"
 export RUN_ID="${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
-export OUTPUT_PATH="${OUTPUT_PATH:-${OUTPUT_DIR}/vision_prefill_only_${RUN_ID}_p${NUM_PAGES}_${VISION_ATTENTION_IMPL}.json}"
+export OUTPUT_PATH="${OUTPUT_PATH:-${OUTPUT_DIR}/vision_prefill_only_${RUN_ID}_p${NUM_PAGES}_${DTYPE}_${VISION_ATTENTION_IMPL}.json}"
 
 mkdir -p "${OUTPUT_DIR}"
 
@@ -63,7 +64,7 @@ echo "VISION_PREFILL_ONLY_ENV MODEL=${MODEL}"
 echo "VISION_PREFILL_ONLY_ENV DATASET_DIR=${DATASET_DIR}"
 echo "VISION_PREFILL_ONLY_ENV DEVICE=${DEVICE} ASCEND_RT_VISIBLE_DEVICES=${ASCEND_RT_VISIBLE_DEVICES:-unset}"
 echo "VISION_PREFILL_ONLY_ENV PAGE_START=${PAGE_START} NUM_PAGES=${NUM_PAGES} MAX_CROPS=${MAX_CROPS}"
-echo "VISION_PREFILL_ONLY_ENV NPU_JIT_COMPILE=${NPU_JIT_COMPILE} WARMUP_ITEMS=${WARMUP_ITEMS}"
+echo "VISION_PREFILL_ONLY_ENV DTYPE=${DTYPE} NPU_JIT_COMPILE=${NPU_JIT_COMPILE} WARMUP_ITEMS=${WARMUP_ITEMS}"
 echo "VISION_PREFILL_ONLY_ENV VISION_ATTENTION_IMPL=${VISION_ATTENTION_IMPL} VISION_PROMPT_FA_LAYOUT=${VISION_PROMPT_FA_LAYOUT}"
 echo "VISION_PREFILL_ONLY_ENV MODES=${MODES}"
 echo "VISION_PREFILL_ONLY_ENV INCLUDE_IGNORED_GT=${INCLUDE_IGNORED_GT} INCLUDE_EMPTY_GT=${INCLUDE_EMPTY_GT}"
@@ -75,7 +76,7 @@ CMD=(
   --page-start "${PAGE_START}"
   --num-pages "${NUM_PAGES}"
   --device "${DEVICE}"
-  --dtype fp16
+  --dtype "${DTYPE}"
   --npu-jit-compile "${NPU_JIT_COMPILE}"
   --vision-attention "${VISION_ATTENTION_IMPL}"
   --vision-prompt-fa-layout "${VISION_PROMPT_FA_LAYOUT}"
@@ -110,6 +111,7 @@ summary = {
     "page_count": data.get("page_count"),
     "recognizer_crop_count": data.get("recognizer_crop_count"),
     "raw_extracted_crop_count_before_max_crops": data.get("raw_extracted_crop_count_before_max_crops"),
+    "dtype": data.get("dtype"),
     "vision_attention": data.get("vision_attention"),
     "vision_prompt_fa_layout": data.get("vision_prompt_fa_layout"),
     "warmup": data.get("warmup"),
