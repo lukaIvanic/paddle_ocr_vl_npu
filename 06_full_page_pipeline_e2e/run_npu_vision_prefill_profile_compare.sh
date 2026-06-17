@@ -101,6 +101,8 @@ profile_mode = profile.get("profile_mode") or "unsynced_loop"
 off_mode = off.get("modes", {}).get(profile_mode, {})
 on_baseline = on.get("modes", {}).get(profile_mode, {})
 profiled = profile.get("profiled_mode_result") or {}
+profiled_context = profile.get("profiled_context_wall_result") or profiled
+profiled_forward_sync = profile.get("profiled_forward_sync_result") or {}
 effect = on.get("comparisons", {}).get(f"profiled_vs_unprofiled_{profile_mode}", {})
 
 summary = {
@@ -126,10 +128,28 @@ summary = {
     "off_vision_tokens_per_s": off_mode.get("vision_tokens_per_s"),
     "same_process_unprofiled_items_per_s": on_baseline.get("items_per_s"),
     "same_process_unprofiled_vision_tokens_per_s": on_baseline.get("vision_tokens_per_s"),
-    "profiled_items_per_s": profiled.get("items_per_s"),
-    "profiled_vision_tokens_per_s": profiled.get("vision_tokens_per_s"),
-    "profiled_total_s_over_same_process_unprofiled": effect.get("profiled_total_s_over_baseline"),
-    "profiled_vision_tokens_per_s_over_same_process_unprofiled": effect.get("profiled_vision_tokens_per_s_over_baseline"),
+    "profile_context_wall_s": profile.get("profile_context_wall_s"),
+    "profile_active_loop_wall_s": profile.get("profile_active_loop_wall_s"),
+    "profile_forward_sync_sum_s": profile.get("profile_forward_sync_sum_s"),
+    "profile_profiler_step_sum_s": profile.get("profile_profiler_step_sum_s"),
+    "profile_context_non_active_s": profile.get("profile_context_non_active_s"),
+    "profile_active_loop_unattributed_s": profile.get("profile_active_loop_unattributed_s"),
+    "profiled_context_wall_items_per_s": profiled_context.get("items_per_s"),
+    "profiled_context_wall_vision_tokens_per_s": profiled_context.get("vision_tokens_per_s"),
+    "profiled_forward_sync_items_per_s": profiled_forward_sync.get("items_per_s"),
+    "profiled_forward_sync_vision_tokens_per_s": profiled_forward_sync.get("vision_tokens_per_s"),
+    "profiled_context_wall_s_over_same_process_unprofiled": effect.get("profiled_context_total_s_over_baseline"),
+    "profiled_forward_sync_s_over_same_process_unprofiled": effect.get("profiled_forward_sync_total_s_over_baseline"),
+    "profiled_context_wall_vision_tokens_per_s_over_same_process_unprofiled": effect.get("profiled_context_vision_tokens_per_s_over_baseline"),
+    "profiled_forward_sync_vision_tokens_per_s_over_same_process_unprofiled": effect.get("profiled_forward_sync_vision_tokens_per_s_over_baseline"),
+    "profiled_context_wall_note": (
+        "Includes profiler.step(), trace handling, and possible profiler export/finalization overhead. "
+        "Do not treat this as pure model throughput."
+    ),
+    "profiled_forward_sync_note": (
+        "Sums only crop forward + device sync windows inside the profiler; excludes measured profiler.step() time "
+        "and context finalization, but still includes profiler instrumentation and per-step sync."
+    ),
 }
 print("VISION_PREFILL_PROFILE_COMPARE_SUMMARY", json.dumps(summary, ensure_ascii=False, sort_keys=True))
 

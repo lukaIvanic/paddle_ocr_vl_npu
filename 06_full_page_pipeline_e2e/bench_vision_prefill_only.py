@@ -482,7 +482,10 @@ def profile_vision_mode(
     schedule = npu_prof.schedule(wait=0, warmup=0, active=active_steps, repeat=1)
     rows: list[dict[str, Any]] = []
     maybe_sync(device)
-    start = time.perf_counter()
+    profile_context_start = time.perf_counter()
+    active_loop_start: float | None = None
+    active_loop_end: float | None = None
+    profiler_step_times_s: list[float] = []
     with npu_prof.profile(
         activities=[npu_prof.ProfilerActivity.CPU, npu_prof.ProfilerActivity.NPU],
         schedule=schedule,
@@ -493,6 +496,7 @@ def profile_vision_mode(
         with_stack=True,
     ) as profiler:
         profile_step = 0
+        active_loop_start = time.perf_counter()
         for repeat_idx in range(active_repeats):
             for original_idx, item in enumerate(inputs):
                 idx = repeat_idx * len(inputs) + original_idx
@@ -513,11 +517,21 @@ def profile_vision_mode(
                         profile_step=profile_step,
                     )
                 )
+                profiler_step_start = time.perf_counter()
                 profiler.step()
+                profiler_step_times_s.append(float(time.perf_counter() - profiler_step_start))
                 profile_step += 1
+        active_loop_end = time.perf_counter()
     maybe_sync(device)
-    profile_wall_s = time.perf_counter() - start
-    profiled_mode_result = summarize_mode("profile_step_per_forward", rows=rows, total_s=profile_wall_s)
+    profile_context_wall_s = time.perf_counter() - profile_context_start
+
+    forward_sync_s = float(sum(float(row.get("elapsed_s", 0.0)) for row in rows))
+    profiler_step_s = float(sum(profiler_step_times_s))
+    active_loop_wall_s = float((active_loop_end or profile_context_start) - (active_loop_start or profile_context_start))
+    context_non_active_s = float(max(0.0, profile_context_wall_s - active_loop_wall_s))
+    active_loop_unattributed_s = float(max(0.0, active_loop_wall_s - forward_sync_s - profiler_step_s))
+    profiled_mode_context_result = summarize_mode("profile_context_wall", rows=rows, total_s=profile_context_wall_s)
+    profiled_mode_forward_sync_result = summarize_mode("profile_forward_sync_only", rows=rows, total_s=forward_sync_s)
 
     summary = {
         "enabled": True,
@@ -538,8 +552,21 @@ def profile_vision_mode(
         "profile_warmup_forward_count": int(warmup_forward_count),
         "profile_active_steps": int(active_steps),
         "profile_warmup_s": float(profiler_warmup_s),
-        "profile_wall_s": float(profile_wall_s),
-        "profiled_mode_result": profiled_mode_result,
+        "profile_context_wall_s": float(profile_context_wall_s),
+        "profile_active_loop_wall_s": float(active_loop_wall_s),
+        "profile_forward_sync_sum_s": float(forward_sync_s),
+        "profile_profiler_step_sum_s": float(profiler_step_s),
+        "profile_context_non_active_s": float(context_non_active_s),
+        "profile_active_loop_unattributed_s": float(active_loop_unattributed_s),
+        "profile_profiler_step_s": stats(profiler_step_times_s),
+        "profiled_context_wall_result": profiled_mode_context_result,
+        "profiled_forward_sync_result": profiled_mode_forward_sync_result,
+        "profiled_mode_result": profiled_mode_context_result,
+        "profiled_mode_result_note": (
+            "Deprecated compatibility field. This uses full profiler context wall time and may include "
+            "profiler.step(), trace handling, and export/finalization overhead. Prefer profiled_forward_sync_result "
+            "for forward+sync timing and profile_profiler_step_sum_s / profile_context_non_active_s for overhead."
+        ),
     }
     summary_path = profile_run_dir / "vision_prefill_profile_summary.json"
     summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True, default=json_default), encoding="utf-8")
@@ -733,37 +760,61 @@ def main() -> None:
             active_repeats=int(args.profile_active_repeats),
         )
         baseline = mode_results[str(args.profile_mode)]
-        profiled = profiler_summary["profiled_mode_result"]
+        profiled_context = profiler_summary["profiled_context_wall_result"]
+        profiled_forward_sync = profiler_summary["profiled_forward_sync_result"]
         baseline_total_s = float(baseline["total_s"])
-        profiled_total_s = float(profiled["total_s"])
+        profiled_context_total_s = float(profiled_context["total_s"])
+        profiled_forward_sync_total_s = float(profiled_forward_sync["total_s"])
         baseline_items_per_s = float(baseline["items_per_s"])
-        profiled_items_per_s = float(profiled["items_per_s"])
+        profiled_context_items_per_s = float(profiled_context["items_per_s"])
+        profiled_forward_sync_items_per_s = float(profiled_forward_sync["items_per_s"])
         baseline_vision_tokens_per_s = float(baseline["vision_tokens_per_s"])
-        profiled_vision_tokens_per_s = float(profiled["vision_tokens_per_s"])
+        profiled_context_vision_tokens_per_s = float(profiled_context["vision_tokens_per_s"])
+        profiled_forward_sync_vision_tokens_per_s = float(profiled_forward_sync["vision_tokens_per_s"])
         baseline_forward_count = int(baseline["count"])
-        profiled_forward_count = int(profiled["count"])
+        profiled_forward_count = int(profiled_context["count"])
         comparisons[f"profiled_vs_unprofiled_{args.profile_mode}"] = {
             "mode": str(args.profile_mode),
             "baseline_forward_count": baseline_forward_count,
             "profiled_forward_count": profiled_forward_count,
             "forward_count_match": bool(baseline_forward_count == profiled_forward_count),
             "baseline_total_s": baseline_total_s,
-            "profiled_total_s": profiled_total_s,
-            "profiled_total_s_over_baseline": (
-                profiled_total_s / baseline_total_s if baseline_total_s > 0 else None
+            "profiled_context_total_s": profiled_context_total_s,
+            "profiled_forward_sync_total_s": profiled_forward_sync_total_s,
+            "profiled_context_total_s_over_baseline": (
+                profiled_context_total_s / baseline_total_s if baseline_total_s > 0 else None
+            ),
+            "profiled_forward_sync_total_s_over_baseline": (
+                profiled_forward_sync_total_s / baseline_total_s if baseline_total_s > 0 else None
             ),
             "baseline_items_per_s": baseline_items_per_s,
-            "profiled_items_per_s": profiled_items_per_s,
-            "profiled_items_per_s_over_baseline": (
-                profiled_items_per_s / baseline_items_per_s if baseline_items_per_s > 0 else None
+            "profiled_context_items_per_s": profiled_context_items_per_s,
+            "profiled_forward_sync_items_per_s": profiled_forward_sync_items_per_s,
+            "profiled_context_items_per_s_over_baseline": (
+                profiled_context_items_per_s / baseline_items_per_s if baseline_items_per_s > 0 else None
+            ),
+            "profiled_forward_sync_items_per_s_over_baseline": (
+                profiled_forward_sync_items_per_s / baseline_items_per_s if baseline_items_per_s > 0 else None
             ),
             "baseline_vision_tokens_per_s": baseline_vision_tokens_per_s,
-            "profiled_vision_tokens_per_s": profiled_vision_tokens_per_s,
-            "profiled_vision_tokens_per_s_over_baseline": (
-                profiled_vision_tokens_per_s / baseline_vision_tokens_per_s
+            "profiled_context_vision_tokens_per_s": profiled_context_vision_tokens_per_s,
+            "profiled_forward_sync_vision_tokens_per_s": profiled_forward_sync_vision_tokens_per_s,
+            "profiled_context_vision_tokens_per_s_over_baseline": (
+                profiled_context_vision_tokens_per_s / baseline_vision_tokens_per_s
                 if baseline_vision_tokens_per_s > 0
                 else None
             ),
+            "profiled_forward_sync_vision_tokens_per_s_over_baseline": (
+                profiled_forward_sync_vision_tokens_per_s / baseline_vision_tokens_per_s
+                if baseline_vision_tokens_per_s > 0
+                else None
+            ),
+            "profile_context_wall_s": profiler_summary.get("profile_context_wall_s"),
+            "profile_active_loop_wall_s": profiler_summary.get("profile_active_loop_wall_s"),
+            "profile_forward_sync_sum_s": profiler_summary.get("profile_forward_sync_sum_s"),
+            "profile_profiler_step_sum_s": profiler_summary.get("profile_profiler_step_sum_s"),
+            "profile_context_non_active_s": profiler_summary.get("profile_context_non_active_s"),
+            "profile_active_loop_unattributed_s": profiler_summary.get("profile_active_loop_unattributed_s"),
             "profile_dir": profiler_summary.get("profile_dir"),
             "profile_metric": str(args.profile_metric),
             "benchmark_repeats": int(args.benchmark_repeats),
@@ -771,9 +822,9 @@ def main() -> None:
             "profile_active_repeats": int(args.profile_active_repeats),
             "profiler_step_contract": profiler_summary.get("profiler_step_contract"),
             "note": (
-                "This compares the same selected crops in the same process after warmup. Set --benchmark-repeats "
-                "equal to --profile-active-repeats for the cleanest profiler overhead comparison. The profiler "
-                "captures one crop forward per profiler step."
+                "Context timings include profiler.step(), trace handling, and possible export/finalization overhead. "
+                "Forward-sync timings sum only the measured crop forward + device sync windows inside the profiler. "
+                "Set --benchmark-repeats equal to --profile-active-repeats for the cleanest forward-count comparison."
             ),
         }
 
