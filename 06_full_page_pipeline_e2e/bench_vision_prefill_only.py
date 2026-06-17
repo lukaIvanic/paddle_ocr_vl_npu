@@ -73,6 +73,7 @@ MODE_CHOICES = ("sync_per_crop", "unsynced_loop")
 PROFILE_METRIC_CHOICES = ("pipe", "memory", "l2", "memory_access")
 CROP_SAMPLE_CHOICES = ("all", "small_medium_large", "small_only")
 VISION_COMPILE_BACKEND_CHOICES = ("none", "default", "aot_eager", "inductor", "torchair")
+VISION_FORWARD_BOUNDARY_CHOICES = ("get_image_features", "visual")
 
 
 def parse_vision_dtype(name: str) -> torch.dtype:
@@ -309,15 +310,48 @@ def select_profile_crop_sample(inputs: list[QueueInput], *, strategy: str) -> tu
     }
 
 
+def build_single_crop_vision_cu_seqlens(image_grid_thw: torch.Tensor, *, device: torch.device) -> torch.Tensor:
+    grid = image_grid_thw.detach().cpu().reshape(-1, 3)
+    lengths: list[int] = []
+    for t, h, w in grid.tolist():
+        lengths.extend([int(h) * int(w)] * int(t))
+    cu = [0]
+    for length in lengths:
+        cu.append(cu[-1] + int(length))
+    return torch.tensor(cu, device=device, dtype=torch.int32)
+
+
 class SingleCropVisionFeatureModule(torch.nn.Module):
     """Shape-specialized wrapper for compiling one real crop's vision path."""
 
-    def __init__(self, model: LocalPaddleOCRVLForConditionalGeneration, image_grid_thw: torch.Tensor):
+    def __init__(
+        self,
+        model: LocalPaddleOCRVLForConditionalGeneration,
+        image_grid_thw: torch.Tensor,
+        *,
+        boundary: str,
+        device: torch.device,
+    ):
         super().__init__()
         self.model = model
+        self.boundary = str(boundary)
         self.register_buffer("image_grid_thw_const", image_grid_thw.detach().clone(), persistent=False)
+        self.register_buffer(
+            "cu_seqlens_const",
+            build_single_crop_vision_cu_seqlens(image_grid_thw, device=device),
+            persistent=False,
+        )
 
     def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
+        if self.boundary == "visual":
+            pixel_values = pixel_values.type(self.model.visual.dtype).unsqueeze(0)
+            return self.model.visual(
+                pixel_values=pixel_values,
+                image_grid_thw=self.image_grid_thw_const,
+                cu_seqlens=self.cu_seqlens_const,
+            )
+        if self.boundary != "get_image_features":
+            raise RuntimeError(f"unsupported vision compile boundary: {self.boundary!r}")
         return self.model.get_image_features(pixel_values, self.image_grid_thw_const)
 
 
@@ -339,16 +373,21 @@ def compile_single_crop_vision_forward(
     item: QueueInput,
     device: torch.device,
     backend_name: str,
+    boundary: str,
 ) -> tuple[Callable[[torch.Tensor], torch.Tensor] | None, dict[str, Any]]:
     backend_name = str(backend_name)
+    boundary = str(boundary)
+    if boundary not in VISION_FORWARD_BOUNDARY_CHOICES:
+        raise ValueError(f"unsupported --vision-forward-boundary {boundary!r}; choices={VISION_FORWARD_BOUNDARY_CHOICES}")
     if backend_name == "none":
         return None, {
             "enabled": False,
             "backend": backend_name,
             "compile_api": None,
+            "boundary": boundary,
         }
 
-    wrapper = SingleCropVisionFeatureModule(model, item.image_grid_thw).eval()
+    wrapper = SingleCropVisionFeatureModule(model, item.image_grid_thw, boundary=boundary, device=device).eval()
     compile_kwargs: dict[str, Any] = {
         "fullgraph": True,
         "dynamic": False,
@@ -371,6 +410,7 @@ def compile_single_crop_vision_forward(
         "enabled": True,
         "backend": backend_name,
         "compile_api": "torch.compile",
+        "boundary": boundary,
         "fullgraph": True,
         "dynamic": False,
         "capture_scalar_outputs": True,
@@ -384,10 +424,13 @@ def compile_single_crop_vision_forward(
         "crop_sample_bucket": item.entry.get("crop_sample_bucket"),
         "vision_tokens": int(vision_tokens(item)),
         "image_grid_thw": tensor_grid(item),
+        "cu_seqlens": [int(value) for value in wrapper.cu_seqlens_const.detach().cpu().reshape(-1).tolist()],
         "note": (
             "The compiled callable is shape-specialized to exactly one selected crop. "
             "The input tensor is the already CPU-preprocessed crop patch tensor after transfer to the target device; "
-            "the compiled graph covers model.get_image_features(), i.e. native-resolution visual encoder plus adaptive MLP projector."
+            "boundary=get_image_features covers native-resolution visual encoder plus adaptive MLP projector; "
+            "boundary=visual covers self.visual only, i.e. patch embedding, interpolated position embeddings, "
+            "vision RoPE/encoder layers, and post layernorm, with cu_seqlens precomputed outside the graph."
         ),
     }
 
@@ -399,10 +442,20 @@ def run_vision_one(
     item: QueueInput,
     device: torch.device,
     vision_forward: Callable[[torch.Tensor], torch.Tensor] | None = None,
+    boundary: str = "get_image_features",
 ) -> torch.Tensor:
     pixel_values = item.pixel_values.to(device=device, dtype=model.visual.dtype)
     if vision_forward is not None:
         return vision_forward(pixel_values)
+    if boundary == "visual":
+        cu_seqlens = build_single_crop_vision_cu_seqlens(item.image_grid_thw, device=device)
+        return model.visual(
+            pixel_values=pixel_values.type(model.visual.dtype).unsqueeze(0),
+            image_grid_thw=item.image_grid_thw,
+            cu_seqlens=cu_seqlens,
+        )
+    if boundary != "get_image_features":
+        raise ValueError(f"unsupported vision forward boundary: {boundary!r}; choices={VISION_FORWARD_BOUNDARY_CHOICES}")
     return model.get_image_features(pixel_values, item.image_grid_thw)
 
 
@@ -414,6 +467,7 @@ def warmup_vision(
     device: torch.device,
     warmup_items: int,
     vision_forward: Callable[[torch.Tensor], torch.Tensor] | None = None,
+    boundary: str = "get_image_features",
 ) -> dict[str, Any]:
     count = min(max(0, int(warmup_items)), len(inputs))
     if count <= 0:
@@ -422,7 +476,15 @@ def warmup_vision(
     start = time.perf_counter()
     outputs = []
     for item in inputs[:count]:
-        outputs.append(run_vision_one(model=model, item=item, device=device, vision_forward=vision_forward))
+        outputs.append(
+            run_vision_one(
+                model=model,
+                item=item,
+                device=device,
+                vision_forward=vision_forward,
+                boundary=boundary,
+            )
+        )
     maybe_sync(device)
     elapsed = time.perf_counter() - start
     return {
@@ -441,6 +503,7 @@ def run_sync_per_crop(
     device: torch.device,
     repeat_count: int = 1,
     vision_forward: Callable[[torch.Tensor], torch.Tensor] | None = None,
+    boundary: str = "get_image_features",
 ) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     total_start = time.perf_counter()
@@ -449,10 +512,26 @@ def run_sync_per_crop(
             idx = repeat_idx * len(inputs) + original_idx
             maybe_sync(device)
             start = time.perf_counter()
-            output = run_vision_one(model=model, item=item, device=device, vision_forward=vision_forward)
+            output = run_vision_one(
+                model=model,
+                item=item,
+                device=device,
+                vision_forward=vision_forward,
+                boundary=boundary,
+            )
             maybe_sync(device)
             elapsed = time.perf_counter() - start
-            rows.append(make_forward_row(idx, item, output, repeat_idx=repeat_idx, original_idx=original_idx, elapsed_s=elapsed))
+            rows.append(
+                make_forward_row(
+                    idx,
+                    item,
+                    output,
+                    repeat_idx=repeat_idx,
+                    original_idx=original_idx,
+                    boundary=boundary,
+                    elapsed_s=elapsed,
+                )
+            )
     total_s = time.perf_counter() - total_start
     return summarize_mode("sync_per_crop", rows=rows, total_s=total_s)
 
@@ -465,6 +544,7 @@ def run_unsynced_loop(
     device: torch.device,
     repeat_count: int = 1,
     vision_forward: Callable[[torch.Tensor], torch.Tensor] | None = None,
+    boundary: str = "get_image_features",
 ) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     maybe_sync(device)
@@ -472,8 +552,23 @@ def run_unsynced_loop(
     for repeat_idx in range(max(1, int(repeat_count))):
         for original_idx, item in enumerate(inputs):
             idx = repeat_idx * len(inputs) + original_idx
-            output = run_vision_one(model=model, item=item, device=device, vision_forward=vision_forward)
-            rows.append(make_forward_row(idx, item, output, repeat_idx=repeat_idx, original_idx=original_idx))
+            output = run_vision_one(
+                model=model,
+                item=item,
+                device=device,
+                vision_forward=vision_forward,
+                boundary=boundary,
+            )
+            rows.append(
+                make_forward_row(
+                    idx,
+                    item,
+                    output,
+                    repeat_idx=repeat_idx,
+                    original_idx=original_idx,
+                    boundary=boundary,
+                )
+            )
     maybe_sync(device)
     total_s = time.perf_counter() - start
     return summarize_mode("unsynced_loop", rows=rows, total_s=total_s)
@@ -486,9 +581,12 @@ def make_forward_row(
     *,
     repeat_idx: int,
     original_idx: int,
+    boundary: str,
     elapsed_s: float | None = None,
     profile_step: int | None = None,
 ) -> dict[str, Any]:
+    output_token_count = int(output.shape[0])
+    expected_projected_tokens = int(projected_tokens(item, merge_size=2))
     row: dict[str, Any] = {
         "idx": int(idx),
         "repeat_idx": int(repeat_idx),
@@ -497,8 +595,12 @@ def make_forward_row(
         "page_index": int(item.entry.get("page_index", 0)),
         "layout_label": str(item.entry.get("layout_label", "")),
         "crop_sample_bucket": item.entry.get("crop_sample_bucket"),
+        "forward_boundary": str(boundary),
         "vision_tokens": int(vision_tokens(item)),
-        "projected_image_tokens": int(output.shape[0]),
+        "output_tokens": output_token_count,
+        "output_token_type": "projected_image_tokens" if boundary == "get_image_features" else "visual_tokens",
+        "projected_image_tokens": output_token_count if boundary == "get_image_features" else expected_projected_tokens,
+        "visual_output_tokens": output_token_count if boundary == "visual" else int(vision_tokens(item)),
         "input_tokens": int(item.input_ids.shape[1]),
         "image_grid_thw": tensor_grid(item),
     }
@@ -516,9 +618,11 @@ def summarize_mode(mode: str, *, rows: list[dict[str, Any]], total_s: float) -> 
     elapsed_rows = [float(row["elapsed_s"]) for row in rows if "elapsed_s" in row]
     return {
         "mode": mode,
+        "forward_boundary": rows[0].get("forward_boundary") if rows else None,
         "measurement_scope": (
-            "per crop: CPU preprocessed pixel tensor -> device transfer -> native-resolution visual encoder "
-            "+ post layernorm + adaptive MLP projector"
+            "per crop: CPU preprocessed pixel tensor -> device transfer -> selected forward boundary. "
+            "get_image_features = native-resolution visual encoder + post layernorm + adaptive MLP projector; "
+            "visual = self.visual only, i.e. patch embedding + interpolated position embedding + encoder + post layernorm."
         ),
         "sync_policy": (
             "device synchronize before and after every crop"
@@ -548,6 +652,7 @@ def run_mode(
     device: torch.device,
     repeat_count: int = 1,
     vision_forward: Callable[[torch.Tensor], torch.Tensor] | None = None,
+    boundary: str = "get_image_features",
 ) -> dict[str, Any]:
     if mode == "sync_per_crop":
         return run_sync_per_crop(
@@ -556,6 +661,7 @@ def run_mode(
             device=device,
             repeat_count=repeat_count,
             vision_forward=vision_forward,
+            boundary=boundary,
         )
     if mode == "unsynced_loop":
         return run_unsynced_loop(
@@ -564,6 +670,7 @@ def run_mode(
             device=device,
             repeat_count=repeat_count,
             vision_forward=vision_forward,
+            boundary=boundary,
         )
     raise AssertionError(mode)
 
@@ -581,6 +688,7 @@ def profile_vision_mode(
     warmup_repeats: int,
     active_repeats: int,
     vision_forward: Callable[[torch.Tensor], torch.Tensor] | None = None,
+    boundary: str = "get_image_features",
 ) -> dict[str, Any]:
     if device.type != "npu":
         raise ValueError("--profile-dir requires --device npu:0; torch_npu profiler is NPU-only.")
@@ -607,7 +715,13 @@ def profile_vision_mode(
     warmup_forward_count = 0
     for _ in range(warmup_repeats):
         for item in inputs:
-            run_vision_one(model=model, item=item, device=device, vision_forward=vision_forward)
+            run_vision_one(
+                model=model,
+                item=item,
+                device=device,
+                vision_forward=vision_forward,
+                boundary=boundary,
+            )
             warmup_forward_count += 1
     maybe_sync(device)
     profiler_warmup_s = time.perf_counter() - warmup_start
@@ -636,7 +750,13 @@ def profile_vision_mode(
                 bucket = str(item.entry.get("crop_sample_bucket") or "crop")
                 with torch.profiler.record_function(f"paddle_ocr_vl.vision_prefill_profile.{bucket}"):
                     step_start = time.perf_counter()
-                    output = run_vision_one(model=model, item=item, device=device, vision_forward=vision_forward)
+                    output = run_vision_one(
+                        model=model,
+                        item=item,
+                        device=device,
+                        vision_forward=vision_forward,
+                        boundary=boundary,
+                    )
                     maybe_sync(device)
                     elapsed = time.perf_counter() - step_start
                 rows.append(
@@ -646,6 +766,7 @@ def profile_vision_mode(
                         output,
                         repeat_idx=repeat_idx,
                         original_idx=original_idx,
+                        boundary=boundary,
                         elapsed_s=elapsed,
                         profile_step=profile_step,
                     )
@@ -671,9 +792,11 @@ def profile_vision_mode(
         "profile_dir": str(profile_run_dir),
         "profile_mode": str(profile_mode),
         "profile_metric": str(profile_metric),
+        "forward_boundary": str(boundary),
         "scope": (
             "same selected real OCR crops as the benchmark mode; CPU preprocessed pixel tensor -> device transfer "
-            "-> native-resolution visual encoder + post layernorm + adaptive MLP projector"
+            "-> selected forward boundary. get_image_features includes the adaptive MLP projector; visual stops after "
+            "self.visual post layernorm."
         ),
         "post_warmup": True,
         "with_stack": True,
@@ -752,8 +875,18 @@ def parse_args() -> argparse.Namespace:
         default="none",
         choices=VISION_COMPILE_BACKEND_CHOICES,
         help=(
-            "Compile the whole single-crop model.get_image_features path before benchmark/profiler runs. "
+            "Compile the selected single-crop --vision-forward-boundary before benchmark/profiler runs. "
             "Requires --crop-sample small_only because the graph is shape-specialized to one crop."
+        ),
+    )
+    parser.add_argument(
+        "--vision-forward-boundary",
+        default="get_image_features",
+        choices=VISION_FORWARD_BOUNDARY_CHOICES,
+        help=(
+            "Forward boundary for both eager and compiled vision tests. get_image_features includes self.visual plus "
+            "the adaptive MLP projector. visual compiles/runs only self.visual with cu_seqlens precomputed outside "
+            "the graph."
         ),
     )
     parser.add_argument(
@@ -817,6 +950,7 @@ def main() -> None:
     model_dir = _resolve_model_dir(args.model)
     device = resolve_device(args.device)
     dtype = parse_vision_dtype(args.dtype)
+    vision_forward_boundary = str(args.vision_forward_boundary)
     configure_npu_jit_compile(args.npu_jit_compile, device)
 
     page_load = load_pages_result(
@@ -875,7 +1009,12 @@ def main() -> None:
         if bool(args.vision_compile_validate):
             maybe_sync(device)
             eager_start = time.perf_counter()
-            eager_ref = run_vision_one(model=model, item=target_item, device=device)
+            eager_ref = run_vision_one(
+                model=model,
+                item=target_item,
+                device=device,
+                boundary=vision_forward_boundary,
+            )
             maybe_sync(device)
             eager_ref_s = time.perf_counter() - eager_start
         else:
@@ -886,6 +1025,7 @@ def main() -> None:
             item=target_item,
             device=device,
             backend_name=str(args.vision_compile_backend),
+            boundary=vision_forward_boundary,
         )
         maybe_sync(device)
         first_call_start = time.perf_counter()
@@ -916,6 +1056,7 @@ def main() -> None:
             item=queue_inputs[0],
             device=device,
             backend_name="none",
+            boundary=vision_forward_boundary,
         )
 
     warmup = warmup_vision(
@@ -924,6 +1065,7 @@ def main() -> None:
         device=device,
         warmup_items=int(args.warmup_items),
         vision_forward=vision_forward,
+        boundary=vision_forward_boundary,
     )
 
     mode_results: dict[str, Any] = {}
@@ -935,6 +1077,7 @@ def main() -> None:
             device=device,
             repeat_count=max(1, int(args.benchmark_repeats)),
             vision_forward=vision_forward,
+            boundary=vision_forward_boundary,
         )
 
     comparisons: dict[str, Any] = {}
@@ -965,6 +1108,7 @@ def main() -> None:
             warmup_repeats=int(args.profile_warmup_repeats),
             active_repeats=int(args.profile_active_repeats),
             vision_forward=vision_forward,
+            boundary=vision_forward_boundary,
         )
         baseline = mode_results[str(args.profile_mode)]
         profiled_context = profiler_summary["profiled_context_wall_result"]
@@ -1058,6 +1202,7 @@ def main() -> None:
         "npu_jit_compile": str(args.npu_jit_compile),
         "vision_attention": get_vision_attention_impl(),
         "vision_prompt_fa_layout": get_vision_prompt_fa_layout(),
+        "vision_forward_boundary": vision_forward_boundary,
         "page_start": int(args.page_start),
         "page_count": int(len(pages)),
         "page_load": page_load_summary(page_load),
