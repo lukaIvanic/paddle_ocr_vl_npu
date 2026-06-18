@@ -119,7 +119,11 @@ import sys
 from pathlib import Path
 
 path = Path(sys.argv[1])
-data = json.loads(path.read_text(encoding="utf-8"))
+raw = path.read_text(encoding="utf-8")
+start = raw.find("{")
+if start < 0:
+    raise SystemExit(f"No JSON object found in benchmark output: {path}")
+data, _ = json.JSONDecoder().raw_decode(raw[start:])
 rows = []
 for bucket in data.get("buckets", []):
     if bucket.get("skipped"):
