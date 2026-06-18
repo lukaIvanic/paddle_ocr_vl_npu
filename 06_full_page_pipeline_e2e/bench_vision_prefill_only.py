@@ -78,7 +78,7 @@ PROFILE_METRIC_CHOICES = ("pipe", "memory", "l2", "memory_access")
 CROP_SAMPLE_CHOICES = ("all", "small_medium_large", "small_only")
 VISION_COMPILE_BACKEND_CHOICES = ("none", "default", "aot_eager", "inductor", "torchair")
 VISION_FORWARD_BOUNDARY_CHOICES = ("get_image_features", "visual", "static_visual")
-STATIC_VISUAL_PAD_MODE_CHOICES = ("none", "mask_pad_to_128")
+STATIC_VISUAL_PAD_MODE_CHOICES = ("none", "mask_pad_one", "mask_pad_to_128")
 
 
 def parse_vision_dtype(name: str) -> torch.dtype:
@@ -440,6 +440,8 @@ def build_static_pad_attention_mask(real_seq_len: int, pad_tokens: int, *, devic
 def static_visual_pad_tokens(real_seq_len: int, mode: str) -> int:
     if mode == "none":
         return 0
+    if mode == "mask_pad_one":
+        return 1 if int(real_seq_len) % 16 == 0 else 0
     if mode != "mask_pad_to_128":
         raise ValueError(f"unsupported static visual pad mode: {mode!r}; choices={STATIC_VISUAL_PAD_MODE_CHOICES}")
     real_seq_len = int(real_seq_len)
@@ -483,10 +485,13 @@ class SingleCropVisionFeatureModule(torch.nn.Module):
         )
         self.static_real_seq_len = int(image_grid_thw.prod().item())
         self.static_pad_tokens = 0
-        if self.boundary == "static_visual" and self.static_visual_pad_mode == "mask_pad_to_128":
+        if self.boundary == "static_visual" and self.static_visual_pad_mode != "none":
             grid_t, _grid_h, _grid_w = single_crop_grid_ints(image_grid_thw)
             if int(grid_t) != 1:
-                raise ValueError("static_visual mask_pad_to_128 currently supports single-image crop grids with T=1 only")
+                raise ValueError(
+                    f"static_visual {self.static_visual_pad_mode} currently supports single-image crop grids "
+                    "with T=1 only"
+                )
             self.static_pad_tokens = static_visual_pad_tokens(self.static_real_seq_len, self.static_visual_pad_mode)
         self.static_physical_seq_len = self.static_real_seq_len + self.static_pad_tokens
         if self.boundary == "static_visual":
@@ -560,7 +565,9 @@ class SingleCropVisionFeatureModule(torch.nn.Module):
         attention_impl = get_vision_attention_impl()
         if attention_impl == "prompt_flash_attention":
             if get_vision_prompt_fa_layout() != "bnsd":
-                raise ValueError("static_visual mask_pad_to_128 currently supports PromptFA layout bnsd only")
+                raise ValueError(
+                    f"static_visual {self.static_visual_pad_mode} currently supports PromptFA layout bnsd only"
+                )
             attn_output = vision_prompt_flash_attention_bnsd(
                 query_states,
                 key_states,
@@ -1248,9 +1255,11 @@ def parse_args() -> argparse.Namespace:
         choices=STATIC_VISUAL_PAD_MODE_CHOICES,
         help=(
             "Diagnostic workaround for boundary=static_visual. none preserves the exact old static wrapper. "
-            "mask_pad_to_128 pads only seq_len %% 16 == 0 cases to the next CANN-friendly physical length "
-            "(for S > 128, 128-aligned), blocks attention between real and dummy tokens with a BOOL mask, "
-            "zeroes dummy rows between layers, and crops back to the original real token count before returning."
+            "mask_pad_one appends one physical dummy token only when seq_len %% 16 == 0, matching the first "
+            "successful compiled-visual downstream probe. mask_pad_to_128 pads seq_len %% 16 == 0 cases to "
+            "the next CANN-friendly physical length (for S > 128, 128-aligned). Both masked modes block "
+            "attention between real and dummy tokens with a BOOL mask, zero dummy rows between layers, and "
+            "crop back to the original real token count before returning."
         ),
     )
     parser.add_argument(

@@ -77,6 +77,7 @@ from run_local_recognition import (  # noqa: E402
 
 from bench_vision_prefill_only import (  # noqa: E402
     SingleCropVisionFeatureModule,
+    STATIC_VISUAL_PAD_MODE_CHOICES,
     VISION_COMPILE_BACKEND_CHOICES,
     build_single_crop_vision_cu_seqlens,
     build_static_abs_pos_embed,
@@ -424,15 +425,17 @@ def run_single_crop_reference_contract(
     original_visual: torch.Tensor,
     device: torch.device,
     backend_name: str,
+    static_visual_pad_mode: str,
 ) -> dict[str, Any]:
     """Run the already-validated per-crop static_visual contract on one item."""
+    static_visual_pad_mode = str(static_visual_pad_mode)
     pixel_values = item.pixel_values.to(device=device, dtype=model.visual.dtype)
     wrapper = SingleCropVisionFeatureModule(
         model,
         item.image_grid_thw,
         boundary="static_visual",
         device=device,
-        static_visual_pad_mode="mask_pad_to_128",
+        static_visual_pad_mode=static_visual_pad_mode,
     ).eval()
 
     maybe_sync(device)
@@ -448,7 +451,7 @@ def run_single_crop_reference_contract(
         backend_name=str(backend_name),
         boundary="static_visual",
         wrapper=wrapper,
-        static_visual_pad_mode="mask_pad_to_128",
+        static_visual_pad_mode=static_visual_pad_mode,
     )
     if reference_fn is None:
         raise RuntimeError("compile_single_crop_vision_forward returned no callable for static_visual")
@@ -461,9 +464,12 @@ def run_single_crop_reference_contract(
 
     return {
         "enabled": True,
-        "contract": "SingleCropVisionFeatureModule(boundary=static_visual, static_visual_pad_mode=mask_pad_to_128)",
+        "contract": (
+            "SingleCropVisionFeatureModule("
+            f"boundary=static_visual, static_visual_pad_mode={static_visual_pad_mode})"
+        ),
         "backend": str(backend_name),
-        "static_visual_pad_mode": "mask_pad_to_128",
+        "static_visual_pad_mode": str(static_visual_pad_mode),
         "static_visual_real_seq_len": int(wrapper.static_real_seq_len),
         "static_visual_pad_tokens": int(wrapper.static_pad_tokens),
         "static_visual_physical_seq_len": int(wrapper.static_physical_seq_len),
@@ -516,6 +522,7 @@ def run_correctness_checks(
     rough_gt_min_iou: float,
     reference_static_visual_items: int,
     reference_static_visual_backend: str,
+    reference_static_visual_pad_mode: str,
 ) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     eager_decoded = []
@@ -613,6 +620,7 @@ def run_correctness_checks(
                 original_visual=original_visual,
                 device=device,
                 backend_name=str(reference_static_visual_backend),
+                static_visual_pad_mode=str(reference_static_visual_pad_mode),
             )
         rows.append(row)
 
@@ -650,6 +658,7 @@ def run_correctness_checks(
         "run_downstream": bool(run_downstream),
         "single_crop_reference_contract_checked_count": int(len(reference_rows)),
         "single_crop_reference_backend": str(reference_static_visual_backend),
+        "single_crop_reference_pad_mode": str(reference_static_visual_pad_mode),
         "single_crop_reference_compiled_vs_eager_fail_count": int(len(reference_compiled_bad)),
         "bucket_compiled_vs_single_crop_reference_fail_count": int(len(bucket_vs_reference_bad)),
         "fixed_eager_vs_original_allclose_fail_count": int(len(fixed_eager_bad)),
@@ -699,6 +708,7 @@ def run_bucket(
     rough_gt_min_iou: float,
     reference_static_visual_items: int,
     reference_static_visual_backend: str,
+    reference_static_visual_pad_mode: str,
     max_benchmark_items: int,
 ) -> dict[str, Any]:
     eligible = [item for item in queue_inputs if int(vision_tokens(item)) <= int(config.cap_tokens)]
@@ -798,6 +808,7 @@ def run_bucket(
         rough_gt_min_iou=float(rough_gt_min_iou),
         reference_static_visual_items=int(reference_static_visual_items),
         reference_static_visual_backend=str(reference_static_visual_backend),
+        reference_static_visual_pad_mode=str(reference_static_visual_pad_mode),
     )
 
     eligible_real_seqs = [int(vision_tokens(item)) for item in eligible]
@@ -892,6 +903,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--rough-gt-min-iou", type=float, default=0.5)
     parser.add_argument("--reference-static-visual-items", type=int, default=0)
     parser.add_argument("--reference-static-visual-backend", default=None, choices=VISION_COMPILE_BACKEND_CHOICES)
+    parser.add_argument("--reference-static-visual-pad-mode", default="mask_pad_one", choices=STATIC_VISUAL_PAD_MODE_CHOICES)
     parser.add_argument("--max-crops", type=int, default=0)
     parser.add_argument("--max-benchmark-items", type=int, default=0)
     parser.add_argument("--run-downstream-check", action=argparse.BooleanOptionalAction, default=True)
@@ -967,6 +979,7 @@ def main() -> None:
             rough_gt_min_iou=float(args.rough_gt_min_iou),
             reference_static_visual_items=int(args.reference_static_visual_items),
             reference_static_visual_backend=str(args.reference_static_visual_backend or args.vision_compile_backend),
+            reference_static_visual_pad_mode=str(args.reference_static_visual_pad_mode),
             max_benchmark_items=int(args.max_benchmark_items),
         )
         bucket_rows.append(row)
@@ -1032,6 +1045,7 @@ def main() -> None:
             "rough_gt_min_iou": float(args.rough_gt_min_iou),
             "reference_static_visual_items": int(args.reference_static_visual_items),
             "reference_static_visual_backend": str(args.reference_static_visual_backend or args.vision_compile_backend),
+            "reference_static_visual_pad_mode": str(args.reference_static_visual_pad_mode),
             "max_benchmark_items": int(args.max_benchmark_items),
         },
         "buckets": bucket_rows,
