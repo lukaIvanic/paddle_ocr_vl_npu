@@ -63,6 +63,9 @@ export PROFILE_WARMUP_REPEATS="${PROFILE_WARMUP_REPEATS:-2}"
 export PROFILE_ACTIVE_REPEATS="${PROFILE_ACTIVE_REPEATS:-3}"
 export INCLUDE_IGNORED_GT="${INCLUDE_IGNORED_GT:-0}"
 export INCLUDE_EMPTY_GT="${INCLUDE_EMPTY_GT:-0}"
+export PREPROCESSOR_MIN_PIXELS="${PREPROCESSOR_MIN_PIXELS:--1}"
+export PREPROCESSOR_MAX_PIXELS="${PREPROCESSOR_MAX_PIXELS:--1}"
+export CROP_IDS="${CROP_IDS:-}"
 export OUTPUT_DIR="${OUTPUT_DIR:-${SCRIPT_DIR}/outputs/vision_prefill_only_npu}"
 export RUN_ID="${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
 export OUTPUT_PATH="${OUTPUT_PATH:-${OUTPUT_DIR}/vision_prefill_only_${RUN_ID}_p${NUM_PAGES}_${DTYPE}_${VISION_ATTENTION_IMPL}.json}"
@@ -80,6 +83,7 @@ echo "VISION_PREFILL_ONLY_ENV VISION_COMPILE_BACKEND=${VISION_COMPILE_BACKEND} V
 echo "VISION_PREFILL_ONLY_ENV MODES=${MODES} CROP_SAMPLE=${CROP_SAMPLE} BENCHMARK_REPEATS=${BENCHMARK_REPEATS}"
 echo "VISION_PREFILL_ONLY_ENV PROFILE_DIR=${PROFILE_DIR:-disabled} PROFILE_MODE=${PROFILE_MODE} PROFILE_METRIC=${PROFILE_METRIC} PROFILE_WARMUP_REPEATS=${PROFILE_WARMUP_REPEATS} PROFILE_ACTIVE_REPEATS=${PROFILE_ACTIVE_REPEATS}"
 echo "VISION_PREFILL_ONLY_ENV INCLUDE_IGNORED_GT=${INCLUDE_IGNORED_GT} INCLUDE_EMPTY_GT=${INCLUDE_EMPTY_GT}"
+echo "VISION_PREFILL_ONLY_ENV PREPROCESSOR_MIN_PIXELS=${PREPROCESSOR_MIN_PIXELS} PREPROCESSOR_MAX_PIXELS=${PREPROCESSOR_MAX_PIXELS} CROP_IDS=${CROP_IDS:-unset}"
 
 CMD=(
   "${PYTHON_BIN}" "${SCRIPT_DIR}/bench_vision_prefill_only.py"
@@ -94,6 +98,8 @@ CMD=(
   --vision-prompt-fa-layout "${VISION_PROMPT_FA_LAYOUT}"
   --vision-compile-backend "${VISION_COMPILE_BACKEND}"
   --vision-forward-boundary "${VISION_FORWARD_BOUNDARY}"
+  --preprocessor-min-pixels "${PREPROCESSOR_MIN_PIXELS}"
+  --preprocessor-max-pixels "${PREPROCESSOR_MAX_PIXELS}"
   --modes "${MODES}"
   --warmup-items "${WARMUP_ITEMS}"
   --crop-sample "${CROP_SAMPLE}"
@@ -106,6 +112,9 @@ if [[ "${VISION_COMPILE_VALIDATE}" == "0" ]]; then
 fi
 if (( MAX_CROPS > 0 )); then
   CMD+=(--max-crops "${MAX_CROPS}")
+fi
+if [[ -n "${CROP_IDS}" ]]; then
+  CMD+=(--crop-ids "${CROP_IDS}")
 fi
 if [[ -n "${PROFILE_DIR}" ]]; then
   CMD+=(
@@ -140,7 +149,9 @@ summary = {
     "recognizer_crop_count": data.get("recognizer_crop_count"),
     "raw_extracted_crop_count_before_max_crops": data.get("raw_extracted_crop_count_before_max_crops"),
     "raw_queue_input_count_before_crop_sample": data.get("raw_queue_input_count_before_crop_sample"),
+    "crop_id_filter": data.get("crop_id_filter"),
     "crop_sample": data.get("crop_sample"),
+    "preprocessor": data.get("preprocessor"),
     "benchmark_repeats": data.get("benchmark_repeats"),
     "dtype": data.get("dtype"),
     "vision_attention": data.get("vision_attention"),

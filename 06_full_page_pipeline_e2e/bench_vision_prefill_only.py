@@ -214,6 +214,67 @@ def clone_input_with_sample_meta(
     )
 
 
+def parse_crop_ids(raw: str) -> list[str]:
+    return [item.strip() for item in str(raw or "").replace(",", " ").split() if item.strip()]
+
+
+def filter_crops_by_crop_ids(crops: list[Any], crop_ids: list[str]) -> tuple[list[Any], dict[str, Any]]:
+    if not crop_ids:
+        return crops, {
+            "enabled": False,
+            "requested_ids": [],
+            "crop_count_before_filter": int(len(crops)),
+            "selected_count": int(len(crops)),
+            "missing_ids": [],
+            "selected": [],
+        }
+    by_id = {str(item.entry.get("id")): item for item in crops}
+    missing = [crop_id for crop_id in crop_ids if crop_id not in by_id]
+    if missing:
+        raise ValueError(f"--crop-ids requested missing crop ids: {missing[:16]}")
+    selected = [by_id[crop_id] for crop_id in crop_ids]
+    return selected, {
+        "enabled": True,
+        "requested_ids": list(crop_ids),
+        "crop_count_before_filter": int(len(crops)),
+        "selected_count": int(len(selected)),
+        "missing_ids": [],
+        "selected": [
+            {
+                "id": str(item.entry.get("id")),
+                "page_index": int(item.entry.get("page_index", 0)),
+                "layout_label": str(item.entry.get("layout_label", "")),
+                "crop_size": clean_json(item.entry.get("crop_size", [0, 0])),
+            }
+            for item in selected
+        ],
+    }
+
+
+def add_queue_input_details_to_crop_id_filter(summary: dict[str, Any], inputs: list[QueueInput]) -> dict[str, Any]:
+    if not bool(summary.get("enabled")):
+        return summary
+    by_id = {str(item.entry.get("id")): item for item in inputs}
+    enriched = []
+    for row in list(summary.get("selected") or []):
+        item = by_id.get(str(row.get("id")))
+        if item is None:
+            enriched.append(row)
+            continue
+        enriched.append(
+            {
+                **row,
+                "vision_tokens": int(vision_tokens(item)),
+                "projected_image_tokens": int(projected_tokens(item, merge_size=2)),
+                "input_tokens": int(item.input_ids.shape[1]),
+                "image_grid_thw": tensor_grid(item),
+            }
+        )
+    summary = dict(summary)
+    summary["selected"] = enriched
+    return summary
+
+
 def select_profile_crop_sample(inputs: list[QueueInput], *, strategy: str) -> tuple[list[QueueInput], dict[str, Any]]:
     if strategy not in CROP_SAMPLE_CHOICES:
         raise ValueError(f"unsupported crop sample strategy: {strategy}; choices={CROP_SAMPLE_CHOICES}")
@@ -1095,6 +1156,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--include-ignored-gt", action="store_true")
     parser.add_argument("--include-empty-gt", action="store_true")
     parser.add_argument("--prompt", default=None)
+    parser.add_argument(
+        "--preprocessor-min-pixels",
+        type=int,
+        default=-1,
+        help="Override preprocessor_config min_pixels for controlled crop-resolution vision benchmarks. -1 uses model config.",
+    )
+    parser.add_argument(
+        "--preprocessor-max-pixels",
+        type=int,
+        default=-1,
+        help="Override preprocessor_config max_pixels for controlled crop-resolution vision benchmarks. -1 uses model config.",
+    )
     parser.add_argument("--device", default="npu:0")
     parser.add_argument("--dtype", default="fp16", choices=["fp16", "float16", "fp32", "float32", "bf16", "bfloat16"])
     parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
@@ -1195,6 +1268,14 @@ def parse_args() -> argparse.Namespace:
         default=0,
         help="Optional development cap after crop extraction/input preprocessing. 0 means all selected crops.",
     )
+    parser.add_argument(
+        "--crop-ids",
+        default="",
+        help=(
+            "Comma/space separated crop ids to keep after preprocessing. Useful for shape-specialized compiled "
+            "static_visual tests that must compare the same real crop across preprocessor settings."
+        ),
+    )
     parser.add_argument("--json", action="store_true")
     return parser.parse_args()
 
@@ -1237,8 +1318,21 @@ def main() -> None:
         crops = crops[: int(args.max_crops)]
     if not crops:
         raise RuntimeError("zero crops after --max-crops")
+    crop_ids = parse_crop_ids(str(args.crop_ids))
+    crops, crop_id_filter_summary = filter_crops_by_crop_ids(crops, crop_ids)
+    if not crops:
+        raise RuntimeError("zero crops after --crop-ids")
 
-    pre_cfg = load_preprocessor_config(model_dir)
+    original_pre_cfg = load_preprocessor_config(model_dir)
+    pre_cfg = dict(original_pre_cfg)
+    if int(args.preprocessor_min_pixels) >= 0:
+        pre_cfg["min_pixels"] = int(args.preprocessor_min_pixels)
+    if int(args.preprocessor_max_pixels) >= 0:
+        pre_cfg["max_pixels"] = int(args.preprocessor_max_pixels)
+    if int(pre_cfg["min_pixels"]) > int(pre_cfg["max_pixels"]):
+        raise ValueError(
+            f"preprocessor min_pixels {pre_cfg['min_pixels']} exceeds max_pixels {pre_cfg['max_pixels']}"
+        )
     tokenizer = Tokenizer.from_file(str(model_dir / "tokenizer.json"))
     queue_inputs, input_build_summary = build_queue_inputs_from_crops(
         crops=crops,
@@ -1249,6 +1343,7 @@ def main() -> None:
     if not queue_inputs:
         raise RuntimeError("zero queue inputs after --max-crops")
     raw_queue_input_count_before_crop_sample = int(len(queue_inputs))
+    crop_id_filter_summary = add_queue_input_details_to_crop_id_filter(crop_id_filter_summary, queue_inputs)
     queue_inputs, crop_sample_summary = select_profile_crop_sample(queue_inputs, strategy=str(args.crop_sample))
     if not queue_inputs:
         raise RuntimeError("zero queue inputs after --crop-sample")
@@ -1551,10 +1646,24 @@ def main() -> None:
         "raw_queue_input_count_before_crop_sample": int(raw_queue_input_count_before_crop_sample),
         "raw_extracted_crop_count_before_max_crops": int(raw_extracted_crop_count),
         "max_crops": None if int(args.max_crops) <= 0 else int(args.max_crops),
+        "crop_id_filter": crop_id_filter_summary,
         "crop_sample": crop_sample_summary,
         "benchmark_repeats": int(args.benchmark_repeats),
         "prompt_override": args.prompt,
         "crop_summary": crop_summary,
+        "preprocessor": {
+            "min_pixels": int(pre_cfg["min_pixels"]),
+            "max_pixels": int(pre_cfg["max_pixels"]),
+            "patch_size": int(pre_cfg["patch_size"]),
+            "merge_size": int(pre_cfg["merge_size"]),
+            "temporal_patch_size": int(pre_cfg["temporal_patch_size"]),
+            "original_min_pixels": int(original_pre_cfg["min_pixels"]),
+            "original_max_pixels": int(original_pre_cfg["max_pixels"]),
+            "override_min_pixels": None if int(args.preprocessor_min_pixels) < 0 else int(args.preprocessor_min_pixels),
+            "override_max_pixels": None if int(args.preprocessor_max_pixels) < 0 else int(args.preprocessor_max_pixels),
+            "min_projected_image_tokens": int(pre_cfg["min_pixels"])
+            // int(pre_cfg["patch_size"] * pre_cfg["merge_size"]) ** 2,
+        },
         "input_summary": summarize_inputs(queue_inputs, merge_size=int(pre_cfg["merge_size"])),
         "layout_timing_s": layout_timing,
         "crop_timing_s": crop_timing,
