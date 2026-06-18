@@ -497,7 +497,7 @@ def parse_args() -> argparse.Namespace:
         default=os.environ.get("STATIC_VISUAL_PAD_MODE", "none"),
         choices=STATIC_VISUAL_PAD_MODE_CHOICES,
         help=(
-            "Diagnostic static_visual padding mode. Use mask_pad_one to test the 310P-compatible "
+            "Diagnostic static_visual padding mode. Use mask_pad_to_128 to test the 310P-compatible "
             "BOOL-mask dummy-token workaround for seq_len %% 16 == 0 compiled visual NaNs."
         ),
     )

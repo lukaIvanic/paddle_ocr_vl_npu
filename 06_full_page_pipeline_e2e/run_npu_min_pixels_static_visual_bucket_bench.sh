@@ -62,7 +62,7 @@ export VISION_ATTENTION_IMPL="${VISION_ATTENTION_IMPL:-prompt_flash_attention}"
 export VISION_PROMPT_FA_LAYOUT="${VISION_PROMPT_FA_LAYOUT:-bnsd}"
 export VISION_COMPILE_BACKEND="${VISION_COMPILE_BACKEND:-torchair}"
 export VISION_FORWARD_BOUNDARY="${VISION_FORWARD_BOUNDARY:-static_visual}"
-export STATIC_VISUAL_PAD_MODE="${STATIC_VISUAL_PAD_MODE:-mask_pad_one}"
+export STATIC_VISUAL_PAD_MODE="${STATIC_VISUAL_PAD_MODE:-mask_pad_to_128}"
 export VISION_COMPILE_VALIDATE="${VISION_COMPILE_VALIDATE:-0}"
 export OUTPUT_DIR="${OUTPUT_DIR:-${SCRIPT_DIR}/outputs/min_pixels_static_visual_bucket_bench_$(date -u +%Y%m%dT%H%M%SZ)}"
 
@@ -284,7 +284,11 @@ for path in sorted(output_dir.glob("bucket_*_min*.json")):
         "image_grid_thw": sample.get("image_grid_thw") or compile_info.get("image_grid_thw"),
         "vision_tokens": sample.get("vision_tokens") or compile_info.get("vision_tokens"),
         "projected_image_tokens": sample.get("projected_image_tokens"),
+        "static_visual_real_seq_len": compile_info.get("static_visual_real_seq_len"),
+        "static_visual_real_seq_mod16": compile_info.get("static_visual_real_seq_mod16"),
         "static_visual_physical_seq_len": compile_info.get("static_visual_physical_seq_len"),
+        "static_visual_physical_seq_mod16": compile_info.get("static_visual_physical_seq_mod16"),
+        "static_visual_physical_seq_mod128": compile_info.get("static_visual_physical_seq_mod128"),
         "static_visual_pad_tokens": compile_info.get("static_visual_pad_tokens"),
         "compile_first_call_s": compile_info.get("compiled_first_call_s"),
         "compile_wrapper_s": compile_info.get("compile_wrapper_s"),
