@@ -56,12 +56,14 @@ from local_modeling_paddleocr_vl import (  # noqa: E402
     VISION_ATTENTION_ENV,
     VISION_PROMPT_FA_LAYOUT_CHOICES,
     VISION_PROMPT_FA_LAYOUT_ENV,
+    VISION_PROMPT_FA_MASK_SPARSE_MODE_ENV,
     LocalPaddleOCRVLForConditionalGeneration,
     _resolve_model_dir,
     apply_rotary_pos_emb_vision,
     attention_softmax,
     get_vision_attention_impl,
     get_vision_prompt_fa_layout,
+    get_vision_prompt_fa_mask_sparse_mode,
     get_vision_softmax_dtype_mode,
     vision_prompt_flash_attention_bnsd,
 )
@@ -389,6 +391,14 @@ def call_fixed_bucket_forward(
     )
 
 
+def call_fixed_bucket_real_rows(
+    fn: Callable[..., torch.Tensor],
+    prepared: FixedBucketPreparedItem,
+) -> torch.Tensor:
+    """Run a fixed physical bucket and immediately discard padded visual rows."""
+    return call_fixed_bucket_forward(fn, prepared)[: prepared.real_seq_len]
+
+
 def original_visual_forward(
     *,
     model: LocalPaddleOCRVLForConditionalGeneration,
@@ -439,9 +449,9 @@ def run_correctness_checks(
         maybe_sync(device)
         original_visual = original_visual_forward(model=model, item=item, device=device)
         maybe_sync(device)
-        fixed_eager = call_fixed_bucket_forward(eager_wrapper, prepared)[: prepared.real_seq_len]
+        fixed_eager = call_fixed_bucket_real_rows(eager_wrapper, prepared)
         maybe_sync(device)
-        fixed_compiled = call_fixed_bucket_forward(compiled_forward, prepared)[: prepared.real_seq_len]
+        fixed_compiled = call_fixed_bucket_real_rows(compiled_forward, prepared)
         maybe_sync(device)
         row: dict[str, Any] = {
             "idx": int(idx),
@@ -640,6 +650,7 @@ def run_bucket(
             maybe_sync(device)
             start = time.perf_counter()
             out = call_fixed_bucket_forward(compiled_forward, prepared)
+            real_out = out[: prepared.real_seq_len]
             maybe_sync(device)
             elapsed = time.perf_counter() - start
             forward_rows.append(
@@ -653,6 +664,8 @@ def run_bucket(
                     "pad_tokens": int(config.cap_tokens - prepared.real_seq_len),
                     "elapsed_s": float(elapsed),
                     "output_shape": [int(dim) for dim in out.shape],
+                    "real_output_shape": [int(dim) for dim in real_out.shape],
+                    "padded_rows_discarded_after_encoder": True,
                 }
             )
     total_s = time.perf_counter() - total_start
@@ -754,6 +767,12 @@ def parse_args() -> argparse.Namespace:
         default=os.environ.get(VISION_PROMPT_FA_LAYOUT_ENV, "bnsd"),
         choices=VISION_PROMPT_FA_LAYOUT_CHOICES,
     )
+    parser.add_argument(
+        "--vision-prompt-fa-mask-sparse-mode",
+        type=int,
+        default=int(os.environ.get(VISION_PROMPT_FA_MASK_SPARSE_MODE_ENV, "0")),
+        choices=[0, 1],
+    )
     parser.add_argument("--vision-compile-backend", default="torchair", choices=VISION_COMPILE_BACKEND_CHOICES)
     parser.add_argument("--bucket-configs", default=DEFAULT_BUCKET_CONFIGS)
     parser.add_argument("--benchmark-repeats", type=int, default=1)
@@ -775,6 +794,7 @@ def main() -> None:
     configs = parse_bucket_configs(args.bucket_configs)
     os.environ[VISION_ATTENTION_ENV] = str(args.vision_attention)
     os.environ[VISION_PROMPT_FA_LAYOUT_ENV] = str(args.vision_prompt_fa_layout)
+    os.environ[VISION_PROMPT_FA_MASK_SPARSE_MODE_ENV] = str(args.vision_prompt_fa_mask_sparse_mode)
 
     device = resolve_device(args.device)
     dtype = parse_vision_dtype(args.dtype)
@@ -852,6 +872,7 @@ def main() -> None:
         "npu_jit_compile": str(args.npu_jit_compile),
         "vision_attention": get_vision_attention_impl(),
         "vision_prompt_fa_layout": get_vision_prompt_fa_layout(),
+        "vision_prompt_fa_mask_sparse_mode": int(get_vision_prompt_fa_mask_sparse_mode()),
         "vision_compile_backend": str(args.vision_compile_backend),
         "bucket_configs": [{"min_pixels": c.min_pixels, "cap_tokens": c.cap_tokens, "name": c.name} for c in configs],
         "measurement_contract": {
@@ -859,6 +880,11 @@ def main() -> None:
             "fixed_shape_contract": (
                 "Compiled callable shape is fixed by cap_tokens. Per-crop pixel_values, abs_pos_embed, RoPE, "
                 "BOOL attention mask, and row_keep tensors have the same physical shape and are inputs."
+            ),
+            "padding_discard_contract": (
+                "The compiled static_visual callable computes cap_tokens physical rows, but callers slice "
+                "[:real_seq_len] immediately after the encoder output. Padded rows are never fed into the "
+                "adaptive MLP projector, text prefill, or decode correctness path."
             ),
             "timing": "Each measured forward has one device sync before and one after the call.",
             "tokens": {

@@ -22,6 +22,7 @@ VISION_ATTENTION_ENV = "PADDLE_OCR_VL_VISION_ATTENTION"
 VISION_ATTENTION_CHOICES = ("manual", "prompt_flash_attention")
 VISION_PROMPT_FA_LAYOUT_ENV = "PADDLE_OCR_VL_VISION_PROMPT_FA_LAYOUT"
 VISION_PROMPT_FA_LAYOUT_CHOICES = ("bnsd", "bsnd", "bsh")
+VISION_PROMPT_FA_MASK_SPARSE_MODE_ENV = "PADDLE_OCR_VL_VISION_PROMPT_FA_MASK_SPARSE_MODE"
 TEXT_SOFTMAX_DTYPE_ENV = "PADDLE_OCR_VL_TEXT_SOFTMAX_DTYPE"
 VISION_SOFTMAX_DTYPE_ENV = "PADDLE_OCR_VL_VISION_SOFTMAX_DTYPE"
 SOFTMAX_DTYPE_CHOICES = ("fp32", "model")
@@ -39,6 +40,17 @@ def get_vision_prompt_fa_layout() -> str:
     if layout not in VISION_PROMPT_FA_LAYOUT_CHOICES:
         raise ValueError(f"{VISION_PROMPT_FA_LAYOUT_ENV} must be one of {VISION_PROMPT_FA_LAYOUT_CHOICES}, got {layout!r}")
     return layout
+
+
+def get_vision_prompt_fa_mask_sparse_mode() -> int:
+    raw = os.environ.get(VISION_PROMPT_FA_MASK_SPARSE_MODE_ENV, "0").strip() or "0"
+    try:
+        mode = int(raw)
+    except ValueError as exc:
+        raise ValueError(f"{VISION_PROMPT_FA_MASK_SPARSE_MODE_ENV} must be an integer, got {raw!r}") from exc
+    if mode not in (0, 1):
+        raise ValueError(f"{VISION_PROMPT_FA_MASK_SPARSE_MODE_ENV} must be 0 or 1 for vision padding masks, got {mode}")
+    return mode
 
 
 def get_text_softmax_dtype_mode() -> str:
@@ -86,7 +98,7 @@ def vision_prompt_flash_attention_bnsd(
     sparse_mode = 0
     if atten_mask is not None:
         mask_kwargs["atten_mask"] = atten_mask.to(torch.bool).contiguous()
-        sparse_mode = 1
+        sparse_mode = get_vision_prompt_fa_mask_sparse_mode()
 
     if selected_layout == "bnsd":
         return torch_npu.npu_prompt_flash_attention(

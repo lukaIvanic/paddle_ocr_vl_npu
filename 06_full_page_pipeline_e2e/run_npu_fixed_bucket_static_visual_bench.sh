@@ -54,6 +54,7 @@ export DTYPE="${DTYPE:-fp16}"
 export NPU_JIT_COMPILE="${NPU_JIT_COMPILE:-off}"
 export VISION_ATTENTION_IMPL="${VISION_ATTENTION_IMPL:-prompt_flash_attention}"
 export VISION_PROMPT_FA_LAYOUT="${VISION_PROMPT_FA_LAYOUT:-bnsd}"
+export VISION_PROMPT_FA_MASK_SPARSE_MODE="${VISION_PROMPT_FA_MASK_SPARSE_MODE:-0}"
 export VISION_COMPILE_BACKEND="${VISION_COMPILE_BACKEND:-torchair}"
 export BUCKET_CONFIGS="${BUCKET_CONFIGS:-28224:256,28224:384,50176:512,112896:768}"
 export BENCHMARK_REPEATS="${BENCHMARK_REPEATS:-1}"
@@ -77,6 +78,7 @@ echo "FIXED_BUCKET_STATIC_VISUAL_ENV DEVICE=${DEVICE} ASCEND_RT_VISIBLE_DEVICES=
 echo "FIXED_BUCKET_STATIC_VISUAL_ENV PAGE_START=${PAGE_START} NUM_PAGES=${NUM_PAGES}"
 echo "FIXED_BUCKET_STATIC_VISUAL_ENV DTYPE=${DTYPE} NPU_JIT_COMPILE=${NPU_JIT_COMPILE}"
 echo "FIXED_BUCKET_STATIC_VISUAL_ENV VISION_ATTENTION_IMPL=${VISION_ATTENTION_IMPL} VISION_PROMPT_FA_LAYOUT=${VISION_PROMPT_FA_LAYOUT}"
+echo "FIXED_BUCKET_STATIC_VISUAL_ENV VISION_PROMPT_FA_MASK_SPARSE_MODE=${VISION_PROMPT_FA_MASK_SPARSE_MODE}"
 echo "FIXED_BUCKET_STATIC_VISUAL_ENV VISION_COMPILE_BACKEND=${VISION_COMPILE_BACKEND}"
 echo "FIXED_BUCKET_STATIC_VISUAL_ENV BUCKET_CONFIGS=${BUCKET_CONFIGS}"
 echo "FIXED_BUCKET_STATIC_VISUAL_ENV BENCHMARK_REPEATS=${BENCHMARK_REPEATS} WARMUP_FORWARDS=${WARMUP_FORWARDS} CORRECTNESS_ITEMS=${CORRECTNESS_ITEMS}"
@@ -93,6 +95,7 @@ CMD=(
   --npu-jit-compile "${NPU_JIT_COMPILE}"
   --vision-attention "${VISION_ATTENTION_IMPL}"
   --vision-prompt-fa-layout "${VISION_PROMPT_FA_LAYOUT}"
+  --vision-prompt-fa-mask-sparse-mode "${VISION_PROMPT_FA_MASK_SPARSE_MODE}"
   --vision-compile-backend "${VISION_COMPILE_BACKEND}"
   --bucket-configs "${BUCKET_CONFIGS}"
   --benchmark-repeats "${BENCHMARK_REPEATS}"
@@ -125,6 +128,7 @@ if start < 0:
     raise SystemExit(f"No JSON object found in benchmark output: {path}")
 data, _ = json.JSONDecoder().raw_decode(raw[start:])
 rows = []
+mask_sparse_mode = data.get("vision_prompt_fa_mask_sparse_mode")
 for bucket in data.get("buckets", []):
     if bucket.get("skipped"):
         rows.append({
@@ -148,6 +152,7 @@ for bucket in data.get("buckets", []):
         "latency_ms_p90": None if timing.get("p90") is None else 1000.0 * float(timing["p90"]),
         "physical_tok_s": throughput.get("physical_vision_tokens_per_s"),
         "effective_tok_s": throughput.get("effective_vision_tokens_per_s"),
+        "vision_prompt_fa_mask_sparse_mode": mask_sparse_mode,
         "correctness_passed": correctness.get("all_required_checks_passed"),
         "downstream_text_mismatch_count": correctness.get("downstream_text_mismatch_count"),
         "compiled_vs_eager_allclose_fail_count": correctness.get("compiled_vs_fixed_eager_allclose_fail_count"),
