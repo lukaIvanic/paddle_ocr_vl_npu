@@ -284,6 +284,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--prompt", default=None)
     parser.add_argument("--max-new-tokens", type=int, default=768)
     parser.add_argument("--cache-length", type=int, default=2048)
+    parser.add_argument("--preprocessor-min-pixels", type=int, default=-1)
+    parser.add_argument("--preprocessor-max-pixels", type=int, default=-1)
     parser.add_argument("--active-batch-size", type=int, default=8)
     parser.add_argument("--device", default="npu:0")
     parser.add_argument("--dtype", default="fp16", choices=["fp16", "float16", "bf16", "bfloat16"])
@@ -331,6 +333,10 @@ def child_command(args: argparse.Namespace, *, chunk_start: int, chunk_pages: in
         str(args.max_new_tokens),
         "--cache-length",
         str(args.cache_length),
+        "--preprocessor-min-pixels",
+        str(args.preprocessor_min_pixels),
+        "--preprocessor-max-pixels",
+        str(args.preprocessor_max_pixels),
         "--npu-jit-compile",
         str(args.npu_jit_compile),
         "--validation-items",
@@ -388,6 +394,9 @@ def build_aggregate(args: argparse.Namespace, chunks: list[dict[str, Any]], chil
     raw_decode = int_sum_path(chunks, "decode_summary", "raw_decode_token_calls")
     effective_decode = int_sum_path(chunks, "decode_summary", "effective_decode_token_calls")
     generated = int_sum_path(chunks, "decode_summary", "generated_tokens_including_prefill_first")
+    output_fingerprints: list[dict[str, Any]] = []
+    for chunk in chunks:
+        output_fingerprints.extend(chunk.get("output_fingerprints") or [])
     mismatch = int_sum_path(chunks, "correctness", "mismatch_count")
     invalid = int_sum_path(chunks, "correctness", "invalid_token_count")
     length_caps = int_sum_path(chunks, "correctness", "length_cap_hit_count")
@@ -509,6 +518,15 @@ def build_aggregate(args: argparse.Namespace, chunks: list[dict[str, Any]], chil
         "eos_mode": str(args.eos_mode),
         "max_new_tokens": int(args.max_new_tokens),
         "cache_length": int(args.cache_length),
+        "preprocessor": {
+            "min_pixels": int(args.preprocessor_min_pixels) if int(args.preprocessor_min_pixels) >= 0 else (
+                (chunks[0].get("preprocessor") or {}).get("min_pixels") if chunks else None
+            ),
+            "max_pixels": int(args.preprocessor_max_pixels) if int(args.preprocessor_max_pixels) >= 0 else (
+                (chunks[0].get("preprocessor") or {}).get("max_pixels") if chunks else None
+            ),
+            "children": [chunk.get("preprocessor") for chunk in chunks],
+        },
         "layout": {
             "source": str(actual_layout_source),
             "child_sources": child_layout_sources,
@@ -588,6 +606,14 @@ def build_aggregate(args: argparse.Namespace, chunks: list[dict[str, Any]], chil
         },
         "omnidocbench_metrics_without_cdm": aggregate_metrics(chunks),
         "rough_ground_truth_accuracy": aggregate_rough_accuracy(chunks),
+        "output_fingerprint_summary": {
+            "item_count": int(len(output_fingerprints)),
+            "fingerprints_sha256": None,
+            "generated_texts_sha256": None,
+            "token_ids_sha256": None,
+            "note": "Chunk aggregate concatenates child output_fingerprints in page/chunk order.",
+        },
+        "output_fingerprints": output_fingerprints,
         "chunks": [
             {
                 "page_start": int(chunk.get("page_start", 0)),

@@ -1174,6 +1174,10 @@ def decoded_output_fingerprints(decoded_items: list[Any]) -> list[dict[str, Any]
                 "page_index": int(entry.get("page_index", 0)),
                 "layout_box_index": int(entry.get("layout_box_index", 0)),
                 "layout_label": str(entry.get("layout_label")),
+                "crop_size": entry.get("crop_size"),
+                "input_tokens": int(decoded.item.input_item.input_ids.shape[1]),
+                "vision_tokens": int(decoded.item.vision_tokens),
+                "projected_image_tokens": int(decoded.item.projected_image_tokens),
                 "trimmed_token_count": int(len(token_ids)),
                 "token_ids_sha256": sha256_json(token_ids),
                 "generated_text_sha256": hashlib.sha256(generated_text.encode("utf-8")).hexdigest(),
@@ -1921,6 +1925,18 @@ def parse_args() -> argparse.Namespace:
         help="With --layout-source omnidocbench_gt, include layout_dets that have no text/latex/html target.",
     )
     parser.add_argument("--prompt", default=None)
+    parser.add_argument(
+        "--preprocessor-min-pixels",
+        type=int,
+        default=-1,
+        help="Override preprocessor_config min_pixels for controlled crop-resolution experiments. -1 uses model config.",
+    )
+    parser.add_argument(
+        "--preprocessor-max-pixels",
+        type=int,
+        default=-1,
+        help="Override preprocessor_config max_pixels for controlled crop-resolution experiments. -1 uses model config.",
+    )
     parser.add_argument("--max-new-tokens", type=int, default=768)
     parser.add_argument("--cache-length", type=int, default=2048)
     parser.add_argument("--active-batch-size", type=int, default=8)
@@ -2095,6 +2111,15 @@ def main() -> None:
     )
 
     pre_cfg = load_preprocessor_config(model_dir)
+    original_pre_cfg = dict(pre_cfg)
+    if int(args.preprocessor_min_pixels) >= 0:
+        pre_cfg["min_pixels"] = int(args.preprocessor_min_pixels)
+    if int(args.preprocessor_max_pixels) >= 0:
+        pre_cfg["max_pixels"] = int(args.preprocessor_max_pixels)
+    if int(pre_cfg["min_pixels"]) > int(pre_cfg["max_pixels"]):
+        raise ValueError(
+            f"preprocessor min_pixels {pre_cfg['min_pixels']} exceeds max_pixels {pre_cfg['max_pixels']}"
+        )
     tokenizer = Tokenizer.from_file(str(model_dir / "tokenizer.json"))
     queue_inputs, input_build_summary = build_queue_inputs_from_crops(
         crops=crops,
@@ -2344,6 +2369,18 @@ def main() -> None:
         "eos_mode": str(args.eos_mode),
         "max_new_tokens": int(args.max_new_tokens),
         "cache_length": int(args.cache_length),
+        "preprocessor": {
+            "min_pixels": int(pre_cfg["min_pixels"]),
+            "max_pixels": int(pre_cfg["max_pixels"]),
+            "patch_size": int(pre_cfg["patch_size"]),
+            "merge_size": int(pre_cfg["merge_size"]),
+            "temporal_patch_size": int(pre_cfg["temporal_patch_size"]),
+            "original_min_pixels": int(original_pre_cfg["min_pixels"]),
+            "original_max_pixels": int(original_pre_cfg["max_pixels"]),
+            "override_min_pixels": None if int(args.preprocessor_min_pixels) < 0 else int(args.preprocessor_min_pixels),
+            "override_max_pixels": None if int(args.preprocessor_max_pixels) < 0 else int(args.preprocessor_max_pixels),
+            "min_projected_image_tokens": int(pre_cfg["min_pixels"]) // int(pre_cfg["patch_size"] * pre_cfg["merge_size"]) ** 2,
+        },
         "layout": {
             "source": layout_source,
             "cache_mode": layout_cache_mode,

@@ -15,6 +15,8 @@ LAYOUT_SOURCE="${LAYOUT_SOURCE:-omnidocbench_gt}"
 ACTIVE_BATCH_SIZE="${ACTIVE_BATCH_SIZE:-4}"
 MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-768}"
 CACHE_LENGTH="${CACHE_LENGTH:-2048}"
+PREPROCESSOR_MIN_PIXELS="${PREPROCESSOR_MIN_PIXELS:--1}"
+PREPROCESSOR_MAX_PIXELS="${PREPROCESSOR_MAX_PIXELS:--1}"
 DECODE_BACKEND="${DECODE_BACKEND:-raw_eager}"
 NPU_JIT_COMPILE="${NPU_JIT_COMPILE:-off}"
 VALIDATION_ITEMS="${VALIDATION_ITEMS:--1}"
@@ -125,6 +127,8 @@ if (( PAGE_CHUNK_SIZE > 0 )); then
     --active-batch-size "${ACTIVE_BATCH_SIZE}"
     --max-new-tokens "${MAX_NEW_TOKENS}"
     --cache-length "${CACHE_LENGTH}"
+    --preprocessor-min-pixels "${PREPROCESSOR_MIN_PIXELS}"
+    --preprocessor-max-pixels "${PREPROCESSOR_MAX_PIXELS}"
     --npu-jit-compile "${NPU_JIT_COMPILE}"
     --torchair-cache-dir "${TORCHAIR_CACHE_DIR}"
     --validation-items "${VALIDATION_ITEMS}"
@@ -177,6 +181,8 @@ CMD=(
   --crop-chunk-size "${CROP_CHUNK_SIZE}"
   --max-new-tokens "${MAX_NEW_TOKENS}"
   --cache-length "${CACHE_LENGTH}"
+  --preprocessor-min-pixels "${PREPROCESSOR_MIN_PIXELS}"
+  --preprocessor-max-pixels "${PREPROCESSOR_MAX_PIXELS}"
   --npu-jit-compile "${NPU_JIT_COMPILE}"
   --torchair-cache-dir "${TORCHAIR_CACHE_DIR}"
   --validation-items "${VALIDATION_ITEMS}"
@@ -248,6 +254,7 @@ print("PAGE_PIPELINE_SUMMARY", json.dumps({
     "pages_per_s_measured_e2e": throughput.get("pages_per_s_measured_e2e"),
     "cache_length": data.get("cache_length"),
     "max_new_tokens": data.get("max_new_tokens"),
+    "preprocessor": data.get("preprocessor"),
 }, sort_keys=True))
 print("SETUP_TIMING_S", json.dumps(data.get("setup_timing_s", {}), sort_keys=True))
 print("PHASE_TIMING_S", json.dumps(phase, sort_keys=True))
