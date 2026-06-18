@@ -76,10 +76,12 @@ from run_local_recognition import (  # noqa: E402
 )
 
 from bench_vision_prefill_only import (  # noqa: E402
+    SingleCropVisionFeatureModule,
     VISION_COMPILE_BACKEND_CHOICES,
     build_single_crop_vision_cu_seqlens,
     build_static_abs_pos_embed,
     build_static_vision_rope,
+    compile_single_crop_vision_forward,
     parse_vision_dtype,
     tensor_grid,
     vision_compile_backend,
@@ -413,6 +415,79 @@ def original_visual_forward(
     )
 
 
+@torch.inference_mode()
+def run_single_crop_reference_contract(
+    *,
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    item: QueueInput,
+    bucket_compiled_visual: torch.Tensor,
+    original_visual: torch.Tensor,
+    device: torch.device,
+    backend_name: str,
+) -> dict[str, Any]:
+    """Run the already-validated per-crop static_visual contract on one item."""
+    pixel_values = item.pixel_values.to(device=device, dtype=model.visual.dtype)
+    wrapper = SingleCropVisionFeatureModule(
+        model,
+        item.image_grid_thw,
+        boundary="static_visual",
+        device=device,
+        static_visual_pad_mode="mask_pad_to_128",
+    ).eval()
+
+    maybe_sync(device)
+    eager_start = time.perf_counter()
+    reference_eager = wrapper(pixel_values)
+    maybe_sync(device)
+    eager_s = time.perf_counter() - eager_start
+
+    reference_fn, compile_meta = compile_single_crop_vision_forward(
+        model=model,
+        item=item,
+        device=device,
+        backend_name=str(backend_name),
+        boundary="static_visual",
+        wrapper=wrapper,
+        static_visual_pad_mode="mask_pad_to_128",
+    )
+    if reference_fn is None:
+        raise RuntimeError("compile_single_crop_vision_forward returned no callable for static_visual")
+
+    maybe_sync(device)
+    compiled_start = time.perf_counter()
+    reference_compiled = reference_fn(pixel_values)
+    maybe_sync(device)
+    compiled_first_call_s = time.perf_counter() - compiled_start
+
+    return {
+        "enabled": True,
+        "contract": "SingleCropVisionFeatureModule(boundary=static_visual, static_visual_pad_mode=mask_pad_to_128)",
+        "backend": str(backend_name),
+        "static_visual_pad_mode": "mask_pad_to_128",
+        "static_visual_real_seq_len": int(wrapper.static_real_seq_len),
+        "static_visual_pad_tokens": int(wrapper.static_pad_tokens),
+        "static_visual_physical_seq_len": int(wrapper.static_physical_seq_len),
+        "static_visual_physical_seq_mod16": int(wrapper.static_physical_seq_len % 16),
+        "static_visual_physical_seq_mod128": int(wrapper.static_physical_seq_len % 128),
+        "timing_s": {
+            "reference_eager_s": float(eager_s),
+            "reference_compiled_first_call_s": float(compiled_first_call_s),
+        },
+        "compile": clean_json(compile_meta),
+        "shapes": {
+            "original_visual": [int(dim) for dim in original_visual.shape],
+            "reference_eager": [int(dim) for dim in reference_eager.shape],
+            "reference_compiled": [int(dim) for dim in reference_compiled.shape],
+            "bucket_compiled_real_rows": [int(dim) for dim in bucket_compiled_visual.shape],
+        },
+        "diffs": {
+            "reference_eager_vs_original_visual": diff_stats(reference_eager, original_visual),
+            "reference_compiled_vs_reference_eager": diff_stats(reference_compiled, reference_eager),
+            "bucket_compiled_vs_reference_compiled": diff_stats(bucket_compiled_visual, reference_compiled),
+        },
+    }
+
+
 def item_row(item: QueueInput) -> dict[str, Any]:
     return {
         "id": str(item.entry.get("id")),
@@ -439,6 +514,8 @@ def run_correctness_checks(
     max_new_tokens: int,
     run_downstream: bool,
     rough_gt_min_iou: float,
+    reference_static_visual_items: int,
+    reference_static_visual_backend: str,
 ) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     eager_decoded = []
@@ -528,6 +605,15 @@ def run_correctness_checks(
                     max_new_tokens=int(max_new_tokens),
                 )
             )
+        if idx < int(reference_static_visual_items):
+            row["single_crop_reference_contract"] = run_single_crop_reference_contract(
+                model=model,
+                item=item,
+                bucket_compiled_visual=fixed_compiled,
+                original_visual=original_visual,
+                device=device,
+                backend_name=str(reference_static_visual_backend),
+            )
         rows.append(row)
 
     fixed_eager_bad = [
@@ -544,9 +630,28 @@ def run_correctness_checks(
     downstream_rows = [row for row in rows if "downstream" in row]
     token_mismatches = [row for row in downstream_rows if not row["downstream"]["token_match"]]
     text_mismatches = [row for row in downstream_rows if not row["downstream"]["text_match"]]
+    reference_rows = [row for row in rows if "single_crop_reference_contract" in row]
+    reference_compiled_bad = [
+        row
+        for row in reference_rows
+        if not row["single_crop_reference_contract"]["diffs"]["reference_compiled_vs_reference_eager"][
+            "allclose_atol_5e_2_rtol_5e_2"
+        ]
+    ]
+    bucket_vs_reference_bad = [
+        row
+        for row in reference_rows
+        if not row["single_crop_reference_contract"]["diffs"]["bucket_compiled_vs_reference_compiled"][
+            "allclose_atol_5e_2_rtol_5e_2"
+        ]
+    ]
     summary = {
         "checked_count": int(len(rows)),
         "run_downstream": bool(run_downstream),
+        "single_crop_reference_contract_checked_count": int(len(reference_rows)),
+        "single_crop_reference_backend": str(reference_static_visual_backend),
+        "single_crop_reference_compiled_vs_eager_fail_count": int(len(reference_compiled_bad)),
+        "bucket_compiled_vs_single_crop_reference_fail_count": int(len(bucket_vs_reference_bad)),
         "fixed_eager_vs_original_allclose_fail_count": int(len(fixed_eager_bad)),
         "compiled_vs_fixed_eager_allclose_fail_count": int(len(compiled_bad)),
         "compiled_real_output_nonfinite_item_count": int(len(compiled_nonfinite)),
@@ -592,6 +697,8 @@ def run_bucket(
     max_new_tokens: int,
     run_downstream_check: bool,
     rough_gt_min_iou: float,
+    reference_static_visual_items: int,
+    reference_static_visual_backend: str,
     max_benchmark_items: int,
 ) -> dict[str, Any]:
     eligible = [item for item in queue_inputs if int(vision_tokens(item)) <= int(config.cap_tokens)]
@@ -689,6 +796,8 @@ def run_bucket(
         max_new_tokens=int(max_new_tokens),
         run_downstream=bool(run_downstream_check),
         rough_gt_min_iou=float(rough_gt_min_iou),
+        reference_static_visual_items=int(reference_static_visual_items),
+        reference_static_visual_backend=str(reference_static_visual_backend),
     )
 
     eligible_real_seqs = [int(vision_tokens(item)) for item in eligible]
@@ -781,6 +890,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--cache-length", type=int, default=2048)
     parser.add_argument("--max-new-tokens", type=int, default=128)
     parser.add_argument("--rough-gt-min-iou", type=float, default=0.5)
+    parser.add_argument("--reference-static-visual-items", type=int, default=0)
+    parser.add_argument("--reference-static-visual-backend", default=None, choices=VISION_COMPILE_BACKEND_CHOICES)
     parser.add_argument("--max-crops", type=int, default=0)
     parser.add_argument("--max-benchmark-items", type=int, default=0)
     parser.add_argument("--run-downstream-check", action=argparse.BooleanOptionalAction, default=True)
@@ -854,6 +965,8 @@ def main() -> None:
             max_new_tokens=int(args.max_new_tokens),
             run_downstream_check=bool(args.run_downstream_check),
             rough_gt_min_iou=float(args.rough_gt_min_iou),
+            reference_static_visual_items=int(args.reference_static_visual_items),
+            reference_static_visual_backend=str(args.reference_static_visual_backend or args.vision_compile_backend),
             max_benchmark_items=int(args.max_benchmark_items),
         )
         bucket_rows.append(row)
@@ -917,6 +1030,8 @@ def main() -> None:
             "cache_length": int(args.cache_length),
             "max_new_tokens": int(args.max_new_tokens),
             "rough_gt_min_iou": float(args.rough_gt_min_iou),
+            "reference_static_visual_items": int(args.reference_static_visual_items),
+            "reference_static_visual_backend": str(args.reference_static_visual_backend or args.vision_compile_backend),
             "max_benchmark_items": int(args.max_benchmark_items),
         },
         "buckets": bucket_rows,

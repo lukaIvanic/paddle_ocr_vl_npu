@@ -63,6 +63,8 @@ export CORRECTNESS_ITEMS="${CORRECTNESS_ITEMS:-8}"
 export CACHE_LENGTH="${CACHE_LENGTH:-2048}"
 export MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-128}"
 export ROUGH_GT_MIN_IOU="${ROUGH_GT_MIN_IOU:-0.5}"
+export REFERENCE_STATIC_VISUAL_ITEMS="${REFERENCE_STATIC_VISUAL_ITEMS:-0}"
+export REFERENCE_STATIC_VISUAL_BACKEND="${REFERENCE_STATIC_VISUAL_BACKEND:-${VISION_COMPILE_BACKEND}}"
 export MAX_CROPS="${MAX_CROPS:-0}"
 export MAX_BENCHMARK_ITEMS="${MAX_BENCHMARK_ITEMS:-0}"
 export RUN_DOWNSTREAM_CHECK="${RUN_DOWNSTREAM_CHECK:-1}"
@@ -82,6 +84,7 @@ echo "FIXED_BUCKET_STATIC_VISUAL_ENV VISION_PROMPT_FA_MASK_SPARSE_MODE=${VISION_
 echo "FIXED_BUCKET_STATIC_VISUAL_ENV VISION_COMPILE_BACKEND=${VISION_COMPILE_BACKEND}"
 echo "FIXED_BUCKET_STATIC_VISUAL_ENV BUCKET_CONFIGS=${BUCKET_CONFIGS}"
 echo "FIXED_BUCKET_STATIC_VISUAL_ENV BENCHMARK_REPEATS=${BENCHMARK_REPEATS} WARMUP_FORWARDS=${WARMUP_FORWARDS} CORRECTNESS_ITEMS=${CORRECTNESS_ITEMS}"
+echo "FIXED_BUCKET_STATIC_VISUAL_ENV REFERENCE_STATIC_VISUAL_ITEMS=${REFERENCE_STATIC_VISUAL_ITEMS} REFERENCE_STATIC_VISUAL_BACKEND=${REFERENCE_STATIC_VISUAL_BACKEND}"
 echo "FIXED_BUCKET_STATIC_VISUAL_ENV RUN_DOWNSTREAM_CHECK=${RUN_DOWNSTREAM_CHECK} MAX_BENCHMARK_ITEMS=${MAX_BENCHMARK_ITEMS}"
 
 CMD=(
@@ -104,6 +107,8 @@ CMD=(
   --cache-length "${CACHE_LENGTH}"
   --max-new-tokens "${MAX_NEW_TOKENS}"
   --rough-gt-min-iou "${ROUGH_GT_MIN_IOU}"
+  --reference-static-visual-items "${REFERENCE_STATIC_VISUAL_ITEMS}"
+  --reference-static-visual-backend "${REFERENCE_STATIC_VISUAL_BACKEND}"
   --max-crops "${MAX_CROPS}"
   --max-benchmark-items "${MAX_BENCHMARK_ITEMS}"
   --json
@@ -157,6 +162,9 @@ for bucket in data.get("buckets", []):
         "downstream_text_mismatch_count": correctness.get("downstream_text_mismatch_count"),
         "compiled_vs_eager_allclose_fail_count": correctness.get("compiled_vs_fixed_eager_allclose_fail_count"),
         "compiled_real_output_nonfinite_item_count": correctness.get("compiled_real_output_nonfinite_item_count"),
+        "single_crop_reference_checked_count": correctness.get("single_crop_reference_contract_checked_count"),
+        "single_crop_reference_compiled_vs_eager_fail_count": correctness.get("single_crop_reference_compiled_vs_eager_fail_count"),
+        "bucket_compiled_vs_single_crop_reference_fail_count": correctness.get("bucket_compiled_vs_single_crop_reference_fail_count"),
         "compile_first_call_s": bucket.get("compile", {}).get("compiled_first_call_s"),
     })
 
