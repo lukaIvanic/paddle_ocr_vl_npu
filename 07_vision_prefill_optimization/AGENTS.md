@@ -25,8 +25,6 @@ CUDA results are not NPU speed or correctness evidence.
 
 Add short notes here whenever we catch a mistake that could make future results misleading.
 
-- Do not call a fixed-bucket or padded visual wrapper an exact copy of a previous working path
-  unless the physical sequence length, pad mode, attention mask, and returned rows are identical.
 - Do not compare against regenerated "truth" during candidate benchmarks. Generate the reference
   bundle once, store it on disk, and compare candidates to that stored bundle.
 - Do not use CUDA/manual smoke results as proof that NPU PromptFA is correct or fast. They only
