@@ -142,8 +142,13 @@ pass; inspect the generated JSON summaries and the MSIT compare output directory
 benchmark prefers the official `msit_llm.dump.torchair_dump` helper when available, but it has a
 local compatibility fallback that sets the same `CompilerConfig` dump fields directly. Missing
 `msit_llm` should no longer block GE/FX dump collection. The official comparison report still needs
-the `msit` CLI; install it in the active NPU env with `pip install msit && msit install llm`, then
-check with `msit check llm`.
+the `msit` CLI; install it in the active NPU env with
+`python -m pip install msit && msit install llm`, then check with `msit check llm`. The runner now
+also looks for `msit` next to `PYTHON_BIN`, so a non-activated conda environment can still work.
+If valid dumps already exist and only the official compare failed, use
+`OUT_ROOT=outputs/msit_ge_fx_... bash run_npu_msit_compare_existing.sh` instead of regenerating GE
+and FX dumps. The compare scripts set `PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python` by default; if
+protobuf descriptor errors persist, pin protobuf with `python -m pip install 'protobuf==3.20.2'`.
 
 Padding exists to make static fullgraph compilation and later batching possible while preserving
 real-token math. Treat padded rows as implementation detail, not as a second model. The invariant is:

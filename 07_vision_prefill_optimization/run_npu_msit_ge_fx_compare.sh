@@ -14,6 +14,7 @@ export MAX_ITEMS="${MAX_ITEMS:-1}"
 export REPEATS="${REPEATS:-1}"
 export WARMUP_REPEATS="${WARMUP_REPEATS:-0}"
 export MSIT_DUMP_MODE="${MSIT_DUMP_MODE:-output}"
+export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION="${PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION:-python}"
 
 mkdir -p "${OUT_ROOT}"
 
@@ -25,6 +26,7 @@ echo "EXP07_MSIT_GE_FX DEVICE=${DEVICE} ASCEND_RT_VISIBLE_DEVICES=${ASCEND_RT_VI
 echo "EXP07_MSIT_GE_FX OUT_ROOT=${OUT_ROOT}"
 echo "EXP07_MSIT_GE_FX MAX_ITEMS=${MAX_ITEMS} REPEATS=${REPEATS} WARMUP_REPEATS=${WARMUP_REPEATS}"
 echo "EXP07_MSIT_GE_FX MSIT_DUMP_MODE=${MSIT_DUMP_MODE}"
+echo "EXP07_MSIT_GE_FX PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=${PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION}"
 
 run_dump() {
   local kind="$1"
@@ -81,15 +83,44 @@ if [[ ! -d "${FX_COMPARE_PATH}" ]]; then
   exit 2
 fi
 
-if command -v msit >/dev/null 2>&1; then
+MSIT_CMD=()
+if [[ -n "${MSIT_BIN:-}" ]]; then
+  MSIT_CMD=("${MSIT_BIN}")
+elif command -v msit >/dev/null 2>&1; then
+  MSIT_CMD=("$(command -v msit)")
+else
+  PYTHON_DIR="$(cd "$(dirname "${PYTHON_BIN}")" && pwd)"
+  if [[ -x "${PYTHON_DIR}/msit" ]]; then
+    MSIT_CMD=("${PYTHON_DIR}/msit")
+  elif "${PYTHON_BIN}" -c "import components.__main__" >/dev/null 2>&1; then
+    MSIT_CMD=("${PYTHON_BIN}" -m components.__main__)
+  fi
+fi
+
+if [[ "${#MSIT_CMD[@]}" -gt 0 ]]; then
+  echo "EXP07_MSIT_GE_FX MSIT_CMD=${MSIT_CMD[*]}"
+  "${PYTHON_BIN}" - <<'PY' || true
+try:
+    import google.protobuf
+    print("EXP07_MSIT_GE_FX PROTOBUF_VERSION=" + str(google.protobuf.__version__))
+except Exception as exc:
+    print("EXP07_MSIT_GE_FX PROTOBUF_VERSION_ERROR=" + exc.__class__.__name__ + ": " + str(exc))
+PY
   echo "EXP07_MSIT_GE_FX RUN_COMPARE"
-  msit llm compare \
+  if ! "${MSIT_CMD[@]}" llm compare \
     --my-path "${GE_PATH}" \
     --golden-path "${FX_COMPARE_PATH}" \
-    --output "${OUT_ROOT}/msit_compare"
+    --output "${OUT_ROOT}/msit_compare"; then
+    echo "EXP07_MSIT_GE_FX ERROR msit llm compare failed" >&2
+    echo "EXP07_MSIT_GE_FX HINT protobuf pb2 errors often need one of:" >&2
+    echo "EXP07_MSIT_GE_FX HINT   export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python" >&2
+    echo "EXP07_MSIT_GE_FX HINT   ${PYTHON_BIN} -m pip install 'protobuf==3.20.2'" >&2
+    exit 3
+  fi
 else
   echo "EXP07_MSIT_GE_FX MSIT_COMPARE_SKIPPED command_not_found=msit"
   echo "EXP07_MSIT_GE_FX MANUAL_COMPARE_COMMAND=msit llm compare --my-path '${GE_PATH}' --golden-path '${FX_COMPARE_PATH}' --output '${OUT_ROOT}/msit_compare'"
+  echo "EXP07_MSIT_GE_FX INSTALL_HINT=${PYTHON_BIN} -m pip install msit && ${PYTHON_BIN%/python}/msit install llm && ${PYTHON_BIN%/python}/msit check llm"
 fi
 
 echo "EXP07_MSIT_GE_FX OUTPUT_TREE"

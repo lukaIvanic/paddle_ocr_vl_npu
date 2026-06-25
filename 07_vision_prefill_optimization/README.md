@@ -173,9 +173,25 @@ directly. The final official comparison still needs the `msit` CLI. If the CLI
 is missing, install MSIT LLM in the active NPU Python environment:
 
 ```sh
-pip install msit
+python -m pip install msit
 msit install llm
 msit check llm
+```
+
+If dumps were already generated and only the official compare failed, do not
+rerun the dump step. Retry compare on the existing output directory:
+
+```sh
+OUT_ROOT=outputs/msit_ge_fx_YYYYMMDDTHHMMSSZ bash run_npu_msit_compare_existing.sh
+```
+
+The compare scripts set `PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python` by
+default, which avoids the common generated-`pb2` versus protobuf-runtime crash.
+If that still fails with a protobuf descriptor error, pin protobuf in the active
+NPU environment:
+
+```sh
+python -m pip install 'protobuf==3.20.2'
 ```
 
 Then it runs:
