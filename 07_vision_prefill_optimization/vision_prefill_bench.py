@@ -1244,8 +1244,8 @@ class VisionQKVLinearProbeModule(torch.nn.Module):
         import torch_npu
 
         group_list = torch.full((1,), hidden_states.shape[0], dtype=torch.int64, device=hidden_states.device)
-        bias_arg = None if bias is None else [bias]
         weight_3d = weight.transpose(0, 1).contiguous().unsqueeze(0)
+        bias_arg = None if bias is None else [bias.contiguous().unsqueeze(0)]
         return torch_npu.npu_grouped_matmul(
             [hidden_states],
             [weight_3d],

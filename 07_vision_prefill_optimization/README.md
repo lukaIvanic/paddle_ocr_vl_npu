@@ -221,7 +221,9 @@ Interpretation:
   grouped/expert-style matmuls, not a normal single Linear, so an eager or
   compile error is useful evidence rather than a benchmark failure. The probe
   uses a one-expert 3D weight tensor `[1, K, O]`, matching the op's grouped
-  weight-rank contract instead of passing a plain 2D Linear weight.
+  weight-rank contract instead of passing a plain 2D Linear weight. With that
+  one-expert form, the bias is passed as `[1, O]` rather than a plain 1D
+  Linear bias.
 
 ## MSIT GE-vs-FX Dump Compare
 
