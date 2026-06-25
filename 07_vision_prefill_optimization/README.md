@@ -41,14 +41,16 @@ The compare command re-extracts the exact manifest crops, verifies tensor file
 SHA256s, computes the same three intermediate targets, and reports per-item plus
 aggregate diffs.
 
-Candidate timing defaults to `--timing-mode vision_tower`. This is the headline
-vision-prefill speed metric: the crop's pixel tensor is already on the target
-device, static inputs such as `cu_seqlens` are prepared, the script synchronizes,
-calls the visual tower, and synchronizes again. The JSON reports both
-`visual_tower_effective_tokens_per_s` and
+Candidate timing defaults to `--timing-mode standard`. This records the visual
+tower metric and the full-prefill wrapper metric separately in the same run.
+
+The headline visual-prefill speed metric is `visual_tower_e2e_s`: the crop's
+pixel tensor is already on the target device, static inputs such as `cu_seqlens`
+are prepared, the script synchronizes, calls the visual tower, and synchronizes
+again. The JSON reports both `visual_tower_effective_tokens_per_s` and
 `visual_tower_physical_tokens_per_s`.
 
-Use `--timing-mode full_prefill_e2e` only when intentionally measuring visual
+The secondary wrapper metric is `full_prefill_e2e_s`, which measures visual
 tower plus adaptive MLP projector plus text prefill. Use `--timing-mode
 phase_sync` only for diagnostic phase breakdowns because it synchronizes around
 every named phase.
@@ -70,7 +72,8 @@ python vision_prefill_bench.py compare \
 
 The static visual path hoists `cu_seqlens`, absolute position embeddings, and
 vision RoPE out of the forward graph and compiles with `fullgraph=True,
-dynamic=False`.
+dynamic=False`. This path currently uses plain `torch.compile`; it does not yet
+load or write a TorchAir GE compile cache.
 
 ## CUDA Smoke
 

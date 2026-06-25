@@ -61,7 +61,7 @@ BOS = "<|begin_of_sentence|>"
 NPU_JIT_COMPILE_CHOICES = ("default", "off", "on")
 DTYPE_CHOICES = ("fp16", "float16", "fp32", "float32", "bf16", "bfloat16")
 VISION_ATTENTION_CHOICES = ("manual", "prompt_flash_attention")
-TIMING_MODE_CHOICES = ("phase_sync", "vision_tower", "full_prefill_e2e", "e2e", "both")
+TIMING_MODE_CHOICES = ("standard", "phase_sync")
 VISION_COMPILE_BACKEND_CHOICES = ("none", "default", "aot_eager", "inductor", "torchair")
 CANDIDATE_VISION_PATH_CHOICES = ("eager_visual", "static_visual")
 STATIC_VISUAL_PAD_MODE_CHOICES = ("none", "mask_pad_one", "mask_pad_to_128")
@@ -1273,8 +1273,6 @@ def run_prefill_measurement(
 ) -> tuple[dict[str, torch.Tensor], dict[str, float]]:
     if timing_mode not in TIMING_MODE_CHOICES:
         raise ValueError(f"unsupported timing_mode={timing_mode!r}; choices={TIMING_MODE_CHOICES}")
-    if timing_mode == "e2e":
-        timing_mode = "full_prefill_e2e"
     if timing_mode == "phase_sync":
         return compute_vision_prefill(
             model=model,
@@ -1285,63 +1283,39 @@ def run_prefill_measurement(
             record_phase_timings=True,
             vision_forward=vision_forward,
         )
-    if timing_mode == "vision_tower":
-        visual_features, timing = compute_visual_tower_only(
-            model=model,
-            item=item,
-            device=device,
-            vision_forward=vision_forward,
-        )
-        tensors = compute_prefill_tail_from_visual_features(
-            model=model,
-            item=item,
-            device=device,
-            cache_length=cache_length,
-            visual_features=visual_features,
-        )
-        return tensors, timing
-    if timing_mode == "full_prefill_e2e":
-        maybe_sync(device)
-        start = time.perf_counter()
-        tensors, _timing = compute_vision_prefill(
-            model=model,
-            item=item,
-            device=device,
-            cache_length=cache_length,
-            sync=False,
-            record_phase_timings=False,
-            vision_forward=vision_forward,
-        )
-        maybe_sync(device)
-        return tensors, {"full_prefill_e2e_s": float(time.perf_counter() - start)}
-
-    phase_tensors, phase_timing = compute_vision_prefill(
-        model=model,
-        item=item,
-        device=device,
-        cache_length=cache_length,
-        sync=True,
-        record_phase_timings=True,
-        vision_forward=vision_forward,
-    )
-    visual_features, visual_timing = compute_visual_tower_only(
+    visual_features, timing = compute_visual_tower_only(
         model=model,
         item=item,
         device=device,
         vision_forward=vision_forward,
     )
-    vision_tensors = compute_prefill_tail_from_visual_features(
+    tensors = compute_prefill_tail_from_visual_features(
         model=model,
         item=item,
         device=device,
         cache_length=cache_length,
         visual_features=visual_features,
     )
-    phase_timing.update(visual_timing)
-    phase_timing["phase_vs_vision_tower_prefill_logits_max_abs_diff"] = float(
-        torch.max(torch.abs(phase_tensors["prefill_logits"].float() - vision_tensors["prefill_logits"].float())).item()
+    maybe_sync(device)
+    full_start = time.perf_counter()
+    full_tensors, _timing = compute_vision_prefill(
+        model=model,
+        item=item,
+        device=device,
+        cache_length=cache_length,
+        sync=False,
+        record_phase_timings=False,
+        vision_forward=vision_forward,
     )
-    return vision_tensors, phase_timing
+    maybe_sync(device)
+    timing["full_prefill_e2e_s"] = float(time.perf_counter() - full_start)
+    timing["vision_tower_vs_full_prefill_visual_features_max_abs_diff"] = float(
+        torch.max(torch.abs(tensors["visual_features"].float() - full_tensors["visual_features"].float())).item()
+    )
+    timing["vision_tower_vs_full_prefill_prefill_logits_max_abs_diff"] = float(
+        torch.max(torch.abs(tensors["prefill_logits"].float() - full_tensors["prefill_logits"].float())).item()
+    )
+    return tensors, timing
 
 
 def select_stratified_inputs(inputs: list[PrefillInput], *, count: int, bucket_count: int) -> tuple[list[PrefillInput], dict[str, Any]]:
@@ -1688,9 +1662,8 @@ def make_baseline(args: argparse.Namespace) -> None:
             "decode_in_scope": False,
             "timing_mode": str(args.timing_mode),
             "timing_mode_note": (
-                "phase_sync uses one device synchronize before and after every named phase; vision_tower "
-                "measures only the device-resident visual tower call; full_prefill_e2e/e2e synchronize around "
-                "the whole prefill call; both runs phase_sync plus vision_tower and returns vision_tower tensors."
+                "standard records visual_tower_e2e_s plus full_prefill_e2e_s as separate measurements; "
+                "phase_sync synchronizes around every named phase and is diagnostic only."
             ),
         },
         "model": str(model_dir),
@@ -1892,9 +1865,9 @@ def compare_candidate(args: argparse.Namespace) -> None:
             "vision_compile_backend": str(args.vision_compile_backend),
             "static_visual_pad_mode": str(args.static_visual_pad_mode),
             "timing_mode_note": (
-                "vision_tower is the headline vision-prefill speed metric: pixel tensor already on device, "
-                "one synchronize before and after the visual tower call. full_prefill_e2e includes adapter "
-                "and text prefill; phase_sync is diagnostic and intentionally syncs around every named phase."
+                "standard records visual_tower_e2e_s plus full_prefill_e2e_s as separate measurements. "
+                "The visual tower metric is the headline speed metric for experiment 07; full prefill e2e "
+                "is secondary context; phase_sync is diagnostic only."
             ),
         },
         "baseline": {
@@ -1969,7 +1942,7 @@ def parse_args() -> argparse.Namespace:
     make_parser.add_argument("--force", action="store_true")
 
     compare_parser = subparsers.add_parser("compare", help="Compare a candidate path against a stored baseline.")
-    add_common_args(compare_parser, timing_default="vision_tower")
+    add_common_args(compare_parser, timing_default="standard")
     compare_parser.add_argument("--baseline", default=str(SCRIPT_DIR / "baselines" / "promptfa_fp16_eager_64"))
     compare_parser.add_argument("--candidate-name", default="candidate")
     compare_parser.add_argument("--output", default=str(SCRIPT_DIR / "outputs" / "candidate_compare.json"))

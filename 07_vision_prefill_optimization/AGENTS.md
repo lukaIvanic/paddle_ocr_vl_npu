@@ -23,16 +23,17 @@ CUDA results are not NPU speed or correctness evidence.
 
 ## Timing Rule
 
-Use `--timing-mode vision_tower` for candidate visual-encoder speed claims. It moves the crop's
-pixel tensor to the target device, prepares static inputs such as `cu_seqlens` outside the timed
-region, synchronizes, calls the visual tower, and synchronizes again. Report both
-`visual_tower_effective_tokens_per_s` and `visual_tower_physical_tokens_per_s`.
+Use the default `--timing-mode standard` for candidate comparisons. It records two separate
+measurements in the same run:
 
-Use `--timing-mode full_prefill_e2e` only when intentionally measuring visual tower plus adaptive
-MLP projector plus text prefill. Use `--timing-mode phase_sync` only when debugging phase
-breakdowns, because it synchronizes around every named phase and is not representative pipeline
-latency. Legacy `--timing-mode e2e` is an alias for full-prefill timing and should not be used for
-vision-tower speed claims.
+- `visual_tower_e2e_s`: pixel tensor already on the target device, static inputs such as
+  `cu_seqlens` prepared outside the timed region, synchronize, call the visual tower, synchronize.
+  This is the headline speed metric for visual-encoder optimization.
+- `full_prefill_e2e_s`: a separate wrapper around visual tower plus adaptive MLP projector plus text
+  prefill. This is secondary context, not the visual-tower throughput denominator.
+
+Use `--timing-mode phase_sync` only when debugging phase breakdowns, because it synchronizes around
+every named phase and is not representative pipeline latency.
 
 ## Compile Boundary
 
@@ -40,22 +41,26 @@ Vision candidates that need TorchAir should use `--candidate-vision-path static_
 `--vision-compile-backend torchair`. The normal `eager_visual` path is the reference-style runtime
 path and is not a static fullgraph vision boundary.
 
+As of this experiment version, `static_visual` uses `torch.compile(fullgraph=True, dynamic=False)`.
+It does not use TorchAir `cache_compile` / GE cache loading yet. If compile caching is added later,
+record the cache directory, cache hit/miss state, and cold versus warm first-call timing explicitly.
+
 ## Anti-Cheat Ledger
 
-Add short notes here whenever we catch a mistake that could make future results misleading.
+Add short notes here whenever we catch a mistake that could make future results misleading. Phrase
+new notes as general research rules first, with project-specific examples only when they help.
 
 - Do not compare against regenerated "truth" during candidate benchmarks. Generate the reference
   bundle once, store it on disk, and compare candidates to that stored bundle.
-- Do not report `phase_sync` timings as serving throughput. They are diagnostic sync-heavy phase
-  timings.
-- Do not call full-prefill timing "vision prefill" speed. The headline experiment 07 speed metric is
-  the device-resident visual tower call only; adapter and text prefill are correctness checks here,
-  not the main optimization target.
-- Do not claim TorchAir vision readiness from a normal eager visual path. A candidate must use
-  `--candidate-vision-path static_visual` with an actual compile backend and must record
-  `compiled=true` plus per-item `vision_compile` metadata.
-- Do not hide visual padding cost. Report effective real-token throughput and physical padded-token
-  throughput together.
+- Do not let instrumentation define the conclusion. If a synchronized diagnostic path exists, label
+  it as diagnostic and keep the claim metric separate.
+- Do not blur benchmark boundaries. Name exactly what was timed and keep larger wrapper timings as
+  secondary context unless the larger wrapper is the optimization target.
+- Do not claim compile compatibility from an uncompiled or differently shaped path. A compile claim
+  must include the actual compiled boundary, backend, fullgraph/dynamic settings, and first-call or
+  cache behavior.
+- Do not hide padding, bucketing, filtering, or synthetic-token work. Report effective useful work
+  and physical work together whenever they differ.
 - Do not use CUDA/manual smoke results as proof that NPU PromptFA is correct or fast. They only
   prove script wiring.
 - Do not silently resize, crop, clip, or filter for speed beyond the normal PaddleOCR-VL
