@@ -190,6 +190,11 @@ NPU_MM_BMM_FORMAT_ND=enable \
 BRIDGES=none,format_cast_nd \
 RUN_TORCHAIR_EAGERLY=0 \
 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_qkv_linear_compile_probe.sh
+
+BRIDGES=none \
+IMPLS=functional_q,addmm_q,mm_q,bmm_q,matmul_3d_q,einsum_q,conv1d_q,npu_linear_q \
+RUN_TORCHAIR_EAGERLY=0 \
+ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_qkv_linear_compile_probe.sh
 ```
 
 Interpretation:
@@ -202,6 +207,11 @@ Interpretation:
   GE layout propagation into MatMul.
 - If `NPU_MM_BMM_FORMAT_ND=enable` fixes `bridge=none`, the consumer-side MatMul
   format policy is enough and may be cleaner than inserting per-layer bridges.
+- If any `BRIDGES=none` alternate consumer such as `bmm_q`, `conv1d_q`, or
+  `npu_linear_q` matches eager, then the failure is not simply "LN output into
+  any cube op"; it is specific to the failing QKV consumer lowering. If all
+  alternate consumers fail, the post-LN format boundary is still the cleanest
+  direction.
 
 ## MSIT GE-vs-FX Dump Compare
 

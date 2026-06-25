@@ -98,6 +98,15 @@ QKV_LINEAR_PROBE_IMPL_CHOICES = (
     "matmul_single",
     "functional_q_no_bias",
     "matmul_q_no_bias",
+    "addmm_q",
+    "mm_q",
+    "bmm_q",
+    "matmul_3d_q",
+    "einsum_q",
+    "conv1d_q",
+    "npu_linear_q",
+    "npu_linear_three",
+    "npu_linear_single",
 )
 QKV_LINEAR_PROBE_SOURCE_CHOICES = ("ln1", "patch_pos")
 QKV_LINEAR_PROBE_LN_IMPL_CHOICES = ("module", "functional", "manual_fp32", "manual_fp16")
@@ -1173,6 +1182,44 @@ class VisionQKVLinearProbeModule(torch.nn.Module):
             output = output + bias
         return output
 
+    @staticmethod
+    def _linear_addmm(hidden_states: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor | None) -> torch.Tensor:
+        if bias is None:
+            return torch.mm(hidden_states, weight.transpose(0, 1))
+        return torch.addmm(bias, hidden_states, weight.transpose(0, 1))
+
+    @staticmethod
+    def _linear_bmm(hidden_states: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor | None) -> torch.Tensor:
+        output = torch.bmm(hidden_states.unsqueeze(0), weight.transpose(0, 1).unsqueeze(0)).squeeze(0)
+        if bias is not None:
+            output = output + bias
+        return output
+
+    @staticmethod
+    def _linear_matmul_3d(hidden_states: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor | None) -> torch.Tensor:
+        output = torch.matmul(hidden_states.unsqueeze(0), weight.transpose(0, 1).unsqueeze(0)).squeeze(0)
+        if bias is not None:
+            output = output + bias
+        return output
+
+    @staticmethod
+    def _linear_einsum(hidden_states: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor | None) -> torch.Tensor:
+        output = torch.einsum("sh,oh->so", hidden_states, weight)
+        if bias is not None:
+            output = output + bias
+        return output
+
+    @staticmethod
+    def _linear_conv1d(hidden_states: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor | None) -> torch.Tensor:
+        output = F.conv1d(hidden_states.transpose(0, 1).unsqueeze(0), weight.unsqueeze(-1), bias)
+        return output.squeeze(0).transpose(0, 1)
+
+    @staticmethod
+    def _linear_npu(hidden_states: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor | None) -> torch.Tensor:
+        import torch_npu
+
+        return torch_npu.npu_linear(hidden_states, weight, bias)
+
     def _bridge_hidden_states(self, hidden_states: torch.Tensor) -> torch.Tensor:
         if self.bridge == "none":
             return hidden_states
@@ -1241,6 +1288,33 @@ class VisionQKVLinearProbeModule(torch.nn.Module):
             return F.linear(hidden_states, self.q_weight, None)
         if self.impl == "matmul_q_no_bias":
             return self._linear_matmul(hidden_states, self.q_weight, None)
+        if self.impl == "addmm_q":
+            return self._linear_addmm(hidden_states, self.q_weight, self.q_bias)
+        if self.impl == "mm_q":
+            return self._linear_addmm(hidden_states, self.q_weight, None) if self.q_bias is None else (
+                torch.mm(hidden_states, self.q_weight.transpose(0, 1)) + self.q_bias
+            )
+        if self.impl == "bmm_q":
+            return self._linear_bmm(hidden_states, self.q_weight, self.q_bias)
+        if self.impl == "matmul_3d_q":
+            return self._linear_matmul_3d(hidden_states, self.q_weight, self.q_bias)
+        if self.impl == "einsum_q":
+            return self._linear_einsum(hidden_states, self.q_weight, self.q_bias)
+        if self.impl == "conv1d_q":
+            return self._linear_conv1d(hidden_states, self.q_weight, self.q_bias)
+        if self.impl == "npu_linear_q":
+            return self._linear_npu(hidden_states, self.q_weight, self.q_bias)
+        if self.impl == "npu_linear_three":
+            return torch.cat(
+                [
+                    self._linear_npu(hidden_states, self.q_weight, self.q_bias),
+                    self._linear_npu(hidden_states, self.k_weight, self.k_bias),
+                    self._linear_npu(hidden_states, self.v_weight, self.v_bias),
+                ],
+                dim=-1,
+            )
+        if self.impl == "npu_linear_single":
+            return self._linear_npu(hidden_states, self.qkv_weight, self.qkv_bias)
         raise RuntimeError(f"unreachable QKV linear probe impl={self.impl!r}")
 
 
