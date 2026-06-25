@@ -74,10 +74,15 @@ When checking whether compilation changed numerics, compare `--vision-compile-ba
 the same static visual path with the real compile backend. Those two should differ only by the
 compile wrapper and backend lowering. The candidate path always uses the same padding-capable static
 visual encoder. The automatic padding policy is recorded as `static_visual_pad_policy`; if no dummy
-rows are needed, `static_visual_pad_tokens` is `0` but the encoder still uses the same masked static
-attention path. The compiled visual tower returns the physical padded output; the benchmark
+rows are needed, `static_visual_pad_tokens` is `0` and no padding mask is passed because there are
+no dummy rows to isolate. That is still the same static wrapper path, not a separate non-padded
+encoder path. The compiled visual tower returns the physical padded output; the benchmark
 synchronizes and stops `visual_tower_e2e_s` before slicing back to real rows for projector/logit
 correctness.
+
+The `--debug-static-visual-min-pad-tokens` and `--debug-static-visual-pad-to-multiple` flags are
+diagnostic only. Use them to separate padding/mask numerics from TorchAir compile numerics, then
+return to the automatic policy for normal claims.
 
 Padding exists to make static fullgraph compilation and later batching possible while preserving
 real-token math. Treat padded rows as implementation detail, not as a second model. The invariant is:
