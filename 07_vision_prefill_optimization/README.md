@@ -144,6 +144,14 @@ After changes to the static visual path, rerun backend `none` first and only
 interpret TorchAir results if the noncompiled static path still matches the
 stored baseline.
 
+For TorchAir correctness investigations, add
+`--validate-compiled-against-static-eager`. This runs the same static visual
+candidate wrapper eagerly once during compiled setup and records
+`compiled_vs_static_eager_validation.physical` plus
+`compiled_vs_static_eager_validation.real_rows` inside each item's
+`vision_compile` object. The `real_rows` diff is the key check for whether
+compilation changed the rows that are actually compared to the stored baseline.
+
 ## CUDA Smoke
 
 CUDA smoke uses manual attention only and is not authoritative NPU evidence:

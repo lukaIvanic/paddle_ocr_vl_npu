@@ -106,6 +106,12 @@ plain `torch.compile`, not `torchair.inference.cache_compile` / GE cache loading
 GE cache is not the default explanation. Pass `--output outputs/promptfa_compile_probe.json` so the
 full JSON is saved without writing an inline parser.
 
+When a compiled static visual compare diverges, add `--validate-compiled-against-static-eager` to
+the compare command before changing model code. This records a direct compiled-first-call versus
+static-eager diff for the same candidate wrapper, both on the physical padded output and the sliced
+real rows. If `real_rows` already diverges, the error is inside compilation/lowering of the candidate
+path, not in the disk-baseline comparison or padded-row slicing.
+
 Padding exists to make static fullgraph compilation and later batching possible while preserving
 real-token math. Treat padded rows as implementation detail, not as a second model. The invariant is:
 real tokens must not attend to padded tokens, padded tokens must not attend to real tokens, padded

@@ -1073,6 +1073,21 @@ def prepare_candidate_vision_forward(
         raise RuntimeError("static_visual candidate did not produce a callable vision_forward")
     if str(args.vision_compile_backend) != "none":
         pixel_values = item.pixel_values.to(device=device, dtype=model.visual.dtype)
+        static_eager_output = None
+        if bool(args.validate_compiled_against_static_eager):
+            static_eager = SingleCropStaticVisualModule(
+                model,
+                item.image_grid_thw,
+                device=device,
+                debug_no_padding=bool(args.debug_static_visual_no_padding),
+                debug_min_pad_tokens=int(args.debug_static_visual_min_pad_tokens),
+                debug_pad_to_multiple=int(args.debug_static_visual_pad_to_multiple),
+            ).eval()
+            maybe_sync(device)
+            eager_start = time.perf_counter()
+            static_eager_output = static_eager(pixel_values)
+            maybe_sync(device)
+            meta["static_eager_validation_s"] = float(time.perf_counter() - eager_start)
         maybe_sync(device)
         start = time.perf_counter()
         first_output = vision_forward(pixel_values)
@@ -1083,6 +1098,23 @@ def prepare_candidate_vision_forward(
         meta["first_output_nonfinite_count"] = int((~torch.isfinite(first_output.float())).sum().item())
         meta["first_real_output_shape"] = [int(dim) for dim in first_real_output.shape]
         meta["first_real_output_nonfinite_count"] = int((~torch.isfinite(first_real_output.float())).sum().item())
+        if static_eager_output is not None:
+            static_eager_real_output = slice_visual_features_to_real(static_eager_output, item.image_grid_thw)
+            meta["compiled_vs_static_eager_validation"] = {
+                "enabled": True,
+                "same_wrapper_class": True,
+                "separate_wrapper_instance": True,
+                "physical": diff_stats(first_output.cpu(), static_eager_output.cpu()),
+                "real_rows": diff_stats(first_real_output.cpu(), static_eager_real_output.cpu()),
+                "static_eager_output_shape": [int(dim) for dim in static_eager_output.shape],
+                "static_eager_real_output_shape": [int(dim) for dim in static_eager_real_output.shape],
+                "static_eager_output_nonfinite_count": int((~torch.isfinite(static_eager_output.float())).sum().item()),
+                "static_eager_real_output_nonfinite_count": int(
+                    (~torch.isfinite(static_eager_real_output.float())).sum().item()
+                ),
+            }
+        else:
+            meta["compiled_vs_static_eager_validation"] = {"enabled": False}
     return vision_forward, meta
 
 
@@ -2417,6 +2449,14 @@ def parse_args() -> argparse.Namespace:
         help=(
             "Diagnostic only: after normal/forced padding, round physical visual sequence length up "
             "to this multiple. Keep 0 for normal runs."
+        ),
+    )
+    compare_parser.add_argument(
+        "--validate-compiled-against-static-eager",
+        action="store_true",
+        help=(
+            "Diagnostic only: for compiled candidates, run the same static visual wrapper eagerly once "
+            "and record compiled-first-call vs static-eager physical and real-row diffs."
         ),
     )
 
