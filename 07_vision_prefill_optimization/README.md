@@ -98,6 +98,20 @@ not use them for normal throughput claims.
 For padded PromptFA, sparse mode `0` is the normal setting because the padding
 mask is a full custom block mask. Sparse mode `1` is only for diagnostics.
 
+Check PromptFA mask semantics directly before interpreting OCR-level padded
+drift:
+
+```sh
+python vision_prefill_bench.py probe-promptfa-mask \
+  --device npu:0 \
+  --dtype fp16 \
+  --npu-jit-compile off
+```
+
+The key summary field is `mode0_full_mask_semantics_passed`. It should be
+`true`: sparse mode `0` with a non-null block mask should match the masked
+manual reference and differ from the unmasked reference.
+
 The NPU equivalence gate has already passed: backend `none` matched the stored
 eager PromptFA truth bundle with 0.0 diffs before the padding path was unified.
 After changes to the static visual path, rerun backend `none` first and only

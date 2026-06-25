@@ -87,6 +87,9 @@ diagnostic only. Use no-padding only as a no-mask control, not as the normal pat
 For masked PromptFA, use `--vision-prompt-fa-mask-sparse-mode 0` unless a specific diagnostic is
 testing sparse-mode behavior. The padding mask is a full custom block mask, not a causal/default
 mask. Running padded eager with sparse mode 1 can invalidate the padding-vs-compile split.
+Before debating OCR-level padded drift, run `probe-promptfa-mask` on NPU. It uses synthetic Q/K/V
+where the mask must visibly change the output, and checks whether sparse mode 0 with a non-null
+mask matches the full-mask manual reference instead of the unmasked reference.
 
 Padding exists to make static fullgraph compilation and later batching possible while preserving
 real-token math. Treat padded rows as implementation detail, not as a second model. The invariant is:

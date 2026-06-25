@@ -13,6 +13,9 @@ Subcommands:
   compare
     Re-run the same crops with a candidate path and compare visual features,
     projected image embeddings, and prefill logits against the stored baseline.
+
+  probe-promptfa-mask
+    Synthetic NPU-only check for PromptFA atten_mask semantics.
 """
 
 from __future__ import annotations
@@ -1563,6 +1566,148 @@ def apply_runtime_env(args: argparse.Namespace) -> None:
     os.environ["PADDLE_OCR_VL_VISION_PROMPT_FA_MASK_SPARSE_MODE"] = str(args.vision_prompt_fa_mask_sparse_mode)
 
 
+def manual_attention_bnsd(
+    q: torch.Tensor,
+    k: torch.Tensor,
+    v: torch.Tensor,
+    *,
+    scale: float,
+    mask: torch.Tensor | None,
+) -> torch.Tensor:
+    scores = torch.matmul(q, k.transpose(-2, -1)) * float(scale)
+    if mask is not None:
+        scores = scores.masked_fill(mask.to(torch.bool), torch.finfo(scores.dtype).min)
+    probs = attention_softmax(scores, dim=-1, output_dtype=q.dtype, mode="fp32")
+    return torch.matmul(probs, v)
+
+
+@torch.inference_mode()
+def probe_promptfa_mask(args: argparse.Namespace) -> None:
+    device = resolve_device(args.device)
+    if device.type != "npu":
+        raise RuntimeError("probe-promptfa-mask is NPU-only because it tests torch_npu.npu_prompt_flash_attention")
+    dtype = parse_dtype(args.dtype)
+    configure_npu_jit_compile(args.npu_jit_compile, device)
+    os.environ["PADDLE_OCR_VL_VISION_PROMPT_FA_LAYOUT"] = "bnsd"
+
+    batch = 1
+    heads = int(args.heads)
+    seq_len = int(args.seq_len)
+    head_dim = int(args.head_dim)
+    if seq_len <= 1 or heads <= 0 or head_dim <= 0:
+        raise ValueError("--seq-len, --heads, and --head-dim must be positive, with seq-len > 1")
+    generator = torch.Generator(device="cpu")
+    generator.manual_seed(int(args.seed))
+    q = torch.randn((batch, heads, seq_len, head_dim), generator=generator, dtype=dtype).to(device)
+    k = torch.randn((batch, heads, seq_len, head_dim), generator=generator, dtype=dtype).to(device)
+    v = torch.randn((batch, heads, seq_len, head_dim), generator=generator, dtype=dtype).to(device)
+    scale = float(head_dim) ** -0.5
+
+    block_mask = torch.zeros((1, 1, seq_len, seq_len), device=device, dtype=torch.bool)
+    block_start = max(1, int(seq_len * 3 // 4))
+    block_mask[..., :, block_start:seq_len] = True
+    causal_mask = torch.triu(torch.ones((1, 1, seq_len, seq_len), device=device, dtype=torch.bool), diagonal=1)
+
+    ref_unmasked = manual_attention_bnsd(q, k, v, scale=scale, mask=None)
+    ref_block = manual_attention_bnsd(q, k, v, scale=scale, mask=block_mask)
+    ref_causal = manual_attention_bnsd(q, k, v, scale=scale, mask=causal_mask)
+
+    results: list[dict[str, Any]] = []
+    for sparse_mode in [0, 1]:
+        os.environ["PADDLE_OCR_VL_VISION_PROMPT_FA_MASK_SPARSE_MODE"] = str(sparse_mode)
+        row: dict[str, Any] = {"sparse_mode": int(sparse_mode)}
+        try:
+            maybe_sync(device)
+            start = time.perf_counter()
+            out_no_mask = vision_prompt_flash_attention_bnsd(
+                q,
+                k,
+                v,
+                num_heads=heads,
+                scale=scale,
+                atten_mask=None,
+            )
+            maybe_sync(device)
+            no_mask_s = float(time.perf_counter() - start)
+
+            maybe_sync(device)
+            start = time.perf_counter()
+            out_block = vision_prompt_flash_attention_bnsd(
+                q,
+                k,
+                v,
+                num_heads=heads,
+                scale=scale,
+                atten_mask=block_mask,
+            )
+            maybe_sync(device)
+            block_s = float(time.perf_counter() - start)
+
+            row.update(
+                {
+                    "ok": True,
+                    "no_mask_elapsed_s": no_mask_s,
+                    "block_mask_elapsed_s": block_s,
+                    "no_mask_vs_ref_unmasked": diff_stats(out_no_mask.cpu(), ref_unmasked.cpu()),
+                    "block_mask_vs_ref_block": diff_stats(out_block.cpu(), ref_block.cpu()),
+                    "block_mask_vs_ref_unmasked": diff_stats(out_block.cpu(), ref_unmasked.cpu()),
+                    "block_mask_vs_ref_causal": diff_stats(out_block.cpu(), ref_causal.cpu()),
+                    "block_output_vs_no_mask_output": diff_stats(out_block.cpu(), out_no_mask.cpu()),
+                }
+            )
+        except Exception as exc:
+            row.update({"ok": False, "error": f"{exc.__class__.__name__}: {exc}"})
+        results.append(row)
+
+    by_mode = {int(row["sparse_mode"]): row for row in results}
+    mode0 = by_mode.get(0, {})
+    mode1 = by_mode.get(1, {})
+    summary = {
+        "mode0_mask_matches_block": bool(
+            mode0.get("block_mask_vs_ref_block", {}).get("allclose_atol_5e_2_rtol_5e_2")
+        ),
+        "mode0_mask_differs_from_unmasked": bool(
+            mode0.get("ok") and not mode0.get("block_mask_vs_ref_unmasked", {}).get("allclose_atol_5e_2_rtol_5e_2")
+        ),
+        "mode1_mask_matches_block": bool(
+            mode1.get("block_mask_vs_ref_block", {}).get("allclose_atol_5e_2_rtol_5e_2")
+        ),
+        "mode1_mask_differs_from_unmasked": bool(
+            mode1.get("ok") and not mode1.get("block_mask_vs_ref_unmasked", {}).get("allclose_atol_5e_2_rtol_5e_2")
+        ),
+        "mode0_error": mode0.get("error"),
+        "mode1_error": mode1.get("error"),
+    }
+    summary["mode0_full_mask_semantics_passed"] = bool(
+        summary["mode0_mask_matches_block"] and summary["mode0_mask_differs_from_unmasked"]
+    )
+
+    output = {
+        "schema_version": 1,
+        "experiment": "07_vision_prefill_optimization",
+        "kind": "promptfa_mask_semantics_probe",
+        "created_utc": datetime.now(timezone.utc).isoformat(),
+        "device": str(device),
+        "dtype": str(dtype),
+        "shape": {
+            "batch": int(batch),
+            "heads": int(heads),
+            "seq_len": int(seq_len),
+            "head_dim": int(head_dim),
+            "layout": "BNSD",
+        },
+        "mask": {
+            "block_mask_shape": [int(dim) for dim in block_mask.shape],
+            "blocked_key_start": int(block_start),
+            "blocked_key_count": int(seq_len - block_start),
+            "true_means_masked": True,
+        },
+        "summary": summary,
+        "results": results,
+    }
+    print(json.dumps(output, indent=2, default=json_default), flush=True)
+
+
 def load_model_for_args(args: argparse.Namespace) -> tuple[LocalPaddleOCRVLForConditionalGeneration, Path, torch.device, torch.dtype]:
     device = resolve_device(args.device)
     dtype = parse_dtype(args.dtype)
@@ -2015,6 +2160,18 @@ def parse_args() -> argparse.Namespace:
         ),
     )
 
+    probe_parser = subparsers.add_parser(
+        "probe-promptfa-mask",
+        help="Synthetic NPU-only check that PromptFA sparse_mode 0 honors a non-null custom atten_mask.",
+    )
+    probe_parser.add_argument("--device", default="npu:0")
+    probe_parser.add_argument("--dtype", default="fp16", choices=DTYPE_CHOICES)
+    probe_parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
+    probe_parser.add_argument("--seq-len", type=int, default=64)
+    probe_parser.add_argument("--heads", type=int, default=16)
+    probe_parser.add_argument("--head-dim", type=int, default=72)
+    probe_parser.add_argument("--seed", type=int, default=1234)
+
     return parser.parse_args()
 
 
@@ -2024,6 +2181,8 @@ def main() -> None:
         make_baseline(args)
     elif args.command == "compare":
         compare_candidate(args)
+    elif args.command == "probe-promptfa-mask":
+        probe_promptfa_mask(args)
     else:
         raise RuntimeError(f"unsupported command: {args.command}")
 
