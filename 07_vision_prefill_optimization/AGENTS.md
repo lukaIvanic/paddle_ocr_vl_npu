@@ -74,10 +74,10 @@ When checking whether compilation changed numerics, compare `--vision-compile-ba
 the same static visual path with the real compile backend. Those two should differ only by the
 compile wrapper and backend lowering. The candidate path always uses the same padding-capable static
 visual encoder. The normal policy is recorded as `static_visual_pad_policy` and always adds masked
-dummy rows, rounding the physical visual sequence length to a multiple of 16 so masked PromptFA has
-a viable shape. The compiled visual tower returns the physical padded output; the benchmark
-synchronizes and stops `visual_tower_e2e_s` before slicing back to real rows for projector/logit
-correctness.
+dummy rows. On Atlas inference cards, masked PromptFA has a physical sequence alignment contract:
+tiny shapes use 16 alignment, while normal crop shapes with `S > 128` use 128 alignment. The compiled
+visual tower returns the physical padded output; the benchmark synchronizes and stops
+`visual_tower_e2e_s` before slicing back to real rows for projector/logit correctness.
 
 The first correctness split is padded eager versus the stored baseline, then padded compiled versus
 padded eager/baseline. The `--debug-static-visual-no-padding`,
@@ -86,7 +86,10 @@ diagnostic only. Use no-padding only as a no-mask control, not as the normal pat
 
 For masked PromptFA, use `--vision-prompt-fa-mask-sparse-mode 0` unless a specific diagnostic is
 testing sparse-mode behavior. The padding mask is a full custom block mask, not a causal/default
-mask. Running padded eager with sparse mode 1 can invalidate the padding-vs-compile split.
+mask. Sparse modes are not padding-at-start/end controls: modes 2/3/4 are causal/band patterns with
+stricter mask constraints, and `actual_seq_lengths` is not supported for the 310P/Atlas-inference
+PromptFA path this experiment targets. Running padded eager with sparse mode 1 can invalidate the
+padding-vs-compile split.
 Before debating OCR-level padded drift, run `probe-promptfa-mask` on NPU. It uses synthetic Q/K/V
 where the mask must visibly change the output, and checks whether sparse mode 0 with a non-null
 mask matches the full-mask manual reference instead of the unmasked reference.

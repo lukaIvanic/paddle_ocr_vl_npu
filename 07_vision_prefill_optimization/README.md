@@ -84,8 +84,9 @@ load or write a TorchAir GE compile cache.
 
 The static visual candidate has one padding-capable encoder path. The automatic
 padding policy is reported as `static_visual_pad_policy`. Normal candidate runs
-always add masked dummy rows and round the physical visual sequence length to a
-multiple of 16 so masked PromptFA has a viable shape. The visual tower timing
+always add masked dummy rows. On Atlas inference cards, masked PromptFA needs
+the physical sequence length to be aligned: tiny shapes use 16 alignment, and
+normal crop shapes with `S > 128` use 128 alignment. The visual tower timing
 stops after the synchronized physical padded output; real rows are sliced only
 afterward for projector/logit correctness checks.
 
@@ -96,7 +97,10 @@ Use these to separate padding/mask numerics from TorchAir compile numerics; do
 not use them for normal throughput claims.
 
 For padded PromptFA, sparse mode `0` is the normal setting because the padding
-mask is a full custom block mask. Sparse mode `1` is only for diagnostics.
+mask is a full custom block mask. Sparse modes are not padding-placement
+settings: modes 2/3/4 are causal/band patterns with stricter mask constraints,
+and `actual_seq_lengths` is not a viable 310P/Atlas-inference path for this
+experiment. Sparse mode `1` is only for diagnostics.
 
 Check PromptFA mask semantics directly before interpreting OCR-level padded
 drift:

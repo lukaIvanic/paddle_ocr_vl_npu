@@ -66,7 +66,7 @@ DTYPE_CHOICES = ("fp16", "float16", "fp32", "float32", "bf16", "bfloat16")
 VISION_ATTENTION_CHOICES = ("manual", "prompt_flash_attention")
 TIMING_MODE_CHOICES = ("standard", "phase_sync")
 VISION_COMPILE_BACKEND_CHOICES = ("none", "default", "aot_eager", "inductor", "torchair")
-STATIC_VISUAL_PAD_POLICY = "always_mask_pad_to_multiple16"
+STATIC_VISUAL_PAD_POLICY = "always_mask_pad_to_atlas_inference_alignment"
 
 LAYOUT_PROMPT_BY_LABEL = {
     "formula": "Formula Recognition:",
@@ -763,11 +763,10 @@ def static_visual_pad_tokens(
 ) -> int:
     """Return static visual padding for the masked padded candidate path.
 
-    Normal experiment-07 candidates always add at least one masked dummy row and round the physical
-    sequence length to a multiple of 16. That keeps eager padded and compiled padded runs on the same
-    padding/mask contract, and it avoids treating pad=0 as the normal path while we are debugging
-    masked PromptFA and TorchAir numerics. The no-padding case is available only through the explicit
-    diagnostic flag.
+    Normal experiment-07 candidates always add at least one masked dummy row. For Atlas inference
+    cards, PromptFA requires S > 128 to be 128-aligned when using an attention mask, so larger crops
+    round to the next 128 boundary. Shorter shapes round to a 16 boundary. The no-padding case is
+    available only through the explicit diagnostic flag.
     """
     real_seq_len = int(real_seq_len)
     if bool(debug_no_padding):
@@ -775,8 +774,15 @@ def static_visual_pad_tokens(
     debug_min_pad_tokens = max(0, int(debug_min_pad_tokens))
     debug_pad_to_multiple = max(0, int(debug_pad_to_multiple))
 
-    remainder = real_seq_len % 16
-    pad_tokens = 16 if remainder == 0 else 16 - remainder
+    minimum_physical_seq_len = real_seq_len + 1
+    alignment = 128 if minimum_physical_seq_len > 128 else 16
+    remainder = minimum_physical_seq_len % alignment
+    physical_seq_len = (
+        minimum_physical_seq_len
+        if remainder == 0
+        else minimum_physical_seq_len + (alignment - remainder)
+    )
+    pad_tokens = int(physical_seq_len - real_seq_len)
 
     if debug_min_pad_tokens:
         pad_tokens = max(int(pad_tokens), int(debug_min_pad_tokens))
@@ -2167,7 +2173,7 @@ def parse_args() -> argparse.Namespace:
     probe_parser.add_argument("--device", default="npu:0")
     probe_parser.add_argument("--dtype", default="fp16", choices=DTYPE_CHOICES)
     probe_parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
-    probe_parser.add_argument("--seq-len", type=int, default=64)
+    probe_parser.add_argument("--seq-len", type=int, default=640)
     probe_parser.add_argument("--heads", type=int, default=16)
     probe_parser.add_argument("--head-dim", type=int, default=72)
     probe_parser.add_argument("--seed", type=int, default=1234)
