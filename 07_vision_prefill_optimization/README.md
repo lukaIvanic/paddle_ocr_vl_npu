@@ -69,7 +69,6 @@ python vision_prefill_bench.py compare \
   --dtype fp16 \
   --vision-attention prompt_flash_attention \
   --vision-compile-backend torchair \
-  --static-visual-pad-mode none \
   --output outputs/static_visual_torchair.json
 ```
 
@@ -78,10 +77,17 @@ vision RoPE out of the forward graph and compiles with `fullgraph=True,
 dynamic=False`. This path currently uses plain `torch.compile`; it does not yet
 load or write a TorchAir GE compile cache.
 
+The static visual candidate has one padding-capable encoder path. The automatic
+padding policy is reported as `static_visual_pad_policy`, and zero padding is
+the no-padding case inside the same path rather than a separate mode. The visual
+tower timing stops after the synchronized physical padded output; real rows are
+sliced only afterward for projector/logit correctness checks.
+
 The NPU equivalence gate has already passed: backend `none` matched the stored
-eager PromptFA truth bundle with 0.0 diffs. The current TorchAir PromptFA path is
-faster but numerically broken on NPU, so treat compiled speed as diagnostic until
-the NaN/Inf and argmax mismatches are fixed.
+eager PromptFA truth bundle with 0.0 diffs before the padding path was unified.
+After changes to the static visual path, rerun backend `none` first and only
+interpret TorchAir results if the noncompiled static path still matches the
+stored baseline.
 
 ## CUDA Smoke
 

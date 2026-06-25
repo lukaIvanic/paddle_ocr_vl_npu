@@ -63,7 +63,7 @@ DTYPE_CHOICES = ("fp16", "float16", "fp32", "float32", "bf16", "bfloat16")
 VISION_ATTENTION_CHOICES = ("manual", "prompt_flash_attention")
 TIMING_MODE_CHOICES = ("standard", "phase_sync")
 VISION_COMPILE_BACKEND_CHOICES = ("none", "default", "aot_eager", "inductor", "torchair")
-STATIC_VISUAL_PAD_MODE_CHOICES = ("none", "mask_pad_one", "mask_pad_to_128")
+STATIC_VISUAL_PAD_POLICY = "auto_mask_avoid_mod16_align128"
 
 LAYOUT_PROMPT_BY_LABEL = {
     "formula": "Formula Recognition:",
@@ -741,23 +741,24 @@ def build_static_vision_rope(
 
 
 def build_static_pad_attention_mask(real_seq_len: int, pad_tokens: int, *, device: torch.device) -> torch.Tensor:
-    if int(pad_tokens) <= 0:
-        return torch.zeros((1, 1, 1, 1), device=device, dtype=torch.bool)
     physical_seq_len = int(real_seq_len) + int(pad_tokens)
     mask = torch.zeros((1, 1, physical_seq_len, physical_seq_len), device=device, dtype=torch.bool)
     real = int(real_seq_len)
-    mask[..., :real, real:physical_seq_len] = True
-    mask[..., real:physical_seq_len, :real] = True
+    if int(pad_tokens) > 0:
+        mask[..., :real, real:physical_seq_len] = True
+        mask[..., real:physical_seq_len, :real] = True
     return mask.contiguous()
 
 
-def static_visual_pad_tokens(real_seq_len: int, mode: str) -> int:
-    if mode == "none":
-        return 0
-    if mode == "mask_pad_one":
-        return 1 if int(real_seq_len) % 16 == 0 else 0
-    if mode != "mask_pad_to_128":
-        raise ValueError(f"unsupported static visual pad mode: {mode!r}; choices={STATIC_VISUAL_PAD_MODE_CHOICES}")
+def static_visual_pad_tokens(real_seq_len: int) -> int:
+    """Return automatic safety padding for the unified static visual path.
+
+    The current 310P TorchAir/CANN PromptFA issue is shape-specific: real sequence lengths that are
+    already divisible by 16 can produce NaN/Inf after compilation. The single static path therefore
+    pads those shapes to a nearby safe physical length and masks dummy rows out of real-token math.
+    Shapes that do not hit the known bad pattern use zero padding as the degenerate case of the same
+    masked path.
+    """
     real_seq_len = int(real_seq_len)
     if real_seq_len % 16 != 0:
         return 0
@@ -782,16 +783,10 @@ class SingleCropStaticVisualModule(torch.nn.Module):
         image_grid_thw: torch.Tensor,
         *,
         device: torch.device,
-        static_visual_pad_mode: str,
     ):
         super().__init__()
         self.model = model
-        self.static_visual_pad_mode = str(static_visual_pad_mode)
-        if self.static_visual_pad_mode not in STATIC_VISUAL_PAD_MODE_CHOICES:
-            raise ValueError(
-                f"unsupported static_visual_pad_mode={self.static_visual_pad_mode!r}; "
-                f"choices={STATIC_VISUAL_PAD_MODE_CHOICES}"
-            )
+        self.static_visual_pad_policy = STATIC_VISUAL_PAD_POLICY
         self.register_buffer("image_grid_thw_const", image_grid_thw.detach().clone(), persistent=False)
         self.register_buffer(
             "cu_seqlens_const",
@@ -799,15 +794,10 @@ class SingleCropStaticVisualModule(torch.nn.Module):
             persistent=False,
         )
         self.static_real_seq_len = int(image_grid_thw.prod().item())
-        self.static_pad_tokens = 0
-        if self.static_visual_pad_mode != "none":
-            grid_t, _grid_h, _grid_w = single_crop_grid_ints(image_grid_thw)
-            if int(grid_t) != 1:
-                raise ValueError(
-                    f"static_visual {self.static_visual_pad_mode} currently supports single-image crop grids "
-                    "with T=1 only"
-                )
-            self.static_pad_tokens = static_visual_pad_tokens(self.static_real_seq_len, self.static_visual_pad_mode)
+        grid_t, _grid_h, _grid_w = single_crop_grid_ints(image_grid_thw)
+        if int(grid_t) != 1:
+            raise ValueError("static_visual padding currently supports single-image crop grids with T=1 only")
+        self.static_pad_tokens = static_visual_pad_tokens(self.static_real_seq_len)
         self.static_physical_seq_len = self.static_real_seq_len + self.static_pad_tokens
 
         abs_pos_embed = build_static_abs_pos_embed(model, image_grid_thw, device=device)
@@ -865,9 +855,7 @@ class SingleCropStaticVisualModule(torch.nn.Module):
         attention_impl = get_vision_attention_impl()
         if attention_impl == "prompt_flash_attention":
             if get_vision_prompt_fa_layout() != "bnsd":
-                raise ValueError(
-                    f"static_visual {self.static_visual_pad_mode} currently supports PromptFA layout bnsd only"
-                )
+                raise ValueError("static_visual currently supports PromptFA layout bnsd only")
             attn_output = vision_prompt_flash_attention_bnsd(
                 query_states,
                 key_states,
@@ -916,12 +904,8 @@ class SingleCropStaticVisualModule(torch.nn.Module):
                 dim=0,
             )
         hidden_states = hidden_states + self.abs_pos_embed_const
-        position_embeddings = (self.vision_rope_cos_const, self.vision_rope_sin_const)
         for encoder_layer in transformer.encoder.layers:
-            if self.static_pad_tokens:
-                hidden_states = self._static_mask_padded_encoder_layer(encoder_layer, hidden_states)
-            else:
-                hidden_states = encoder_layer(hidden_states, self.cu_seqlens_const, position_embeddings)
+            hidden_states = self._static_mask_padded_encoder_layer(encoder_layer, hidden_states)
         hidden_states = transformer.post_layernorm(hidden_states)
         return hidden_states
 
@@ -957,7 +941,6 @@ def maybe_compile_static_visual(
     item: PrefillInput,
     device: torch.device,
     backend_name: str,
-    static_visual_pad_mode: str,
 ) -> tuple[Callable[[torch.Tensor], torch.Tensor] | None, dict[str, Any]]:
     if backend_name not in VISION_COMPILE_BACKEND_CHOICES:
         raise ValueError(f"unsupported vision compile backend={backend_name!r}; choices={VISION_COMPILE_BACKEND_CHOICES}")
@@ -965,12 +948,11 @@ def maybe_compile_static_visual(
         model,
         item.image_grid_thw,
         device=device,
-        static_visual_pad_mode=static_visual_pad_mode,
     ).eval()
     meta: dict[str, Any] = {
         "candidate_vision_path": "static_visual",
         "backend": str(backend_name),
-        "static_visual_pad_mode": str(static_visual_pad_mode),
+        "static_visual_pad_policy": str(wrapper.static_visual_pad_policy),
         "static_visual_pad_tokens": int(wrapper.static_pad_tokens),
         "static_visual_real_seq_len": int(wrapper.static_real_seq_len),
         "static_visual_real_seq_mod16": int(wrapper.static_real_seq_len % 16),
@@ -983,6 +965,8 @@ def maybe_compile_static_visual(
         "cu_seqlens": [int(value) for value in wrapper.cu_seqlens_const.detach().cpu().reshape(-1).tolist()],
         "static_abs_pos_embed_shape": [int(dim) for dim in wrapper.abs_pos_embed_const.shape],
         "static_vision_rope_shape": [int(dim) for dim in wrapper.vision_rope_cos_const.shape],
+        "static_pad_attention_mask_shape": [int(dim) for dim in wrapper.static_pad_attention_mask.shape],
+        "static_visual_encoder_path": "single_masked_static_path_for_pad_and_pad0",
     }
     if backend_name == "none":
         meta.update({"enabled": False, "compile_api": None})
@@ -1025,7 +1009,6 @@ def prepare_candidate_vision_forward(
         item=item,
         device=device,
         backend_name=str(args.vision_compile_backend),
-        static_visual_pad_mode=str(args.static_visual_pad_mode),
     )
     if vision_forward is None:
         raise RuntimeError("static_visual candidate did not produce a callable vision_forward")
@@ -1848,7 +1831,8 @@ def compare_candidate(args: argparse.Namespace) -> None:
             "timing_mode": str(args.timing_mode),
             "candidate_vision_path": "static_visual",
             "vision_compile_backend": str(args.vision_compile_backend),
-            "static_visual_pad_mode": str(args.static_visual_pad_mode),
+            "static_visual_pad_policy": STATIC_VISUAL_PAD_POLICY,
+            "static_visual_encoder_path": "single_masked_static_path_for_pad_and_pad0",
             "timing_mode_note": (
                 "standard records visual_tower_e2e_s plus full_prefill_e2e_s as separate measurements. "
                 "The visual tower metric is the headline speed metric for experiment 07; full prefill e2e "
@@ -1935,7 +1919,6 @@ def parse_args() -> argparse.Namespace:
     compare_parser.add_argument("--warmup-repeats", type=int, default=0)
     compare_parser.add_argument("--max-items", type=int, default=0)
     compare_parser.add_argument("--vision-compile-backend", default="none", choices=VISION_COMPILE_BACKEND_CHOICES)
-    compare_parser.add_argument("--static-visual-pad-mode", default="none", choices=STATIC_VISUAL_PAD_MODE_CHOICES)
 
     return parser.parse_args()
 

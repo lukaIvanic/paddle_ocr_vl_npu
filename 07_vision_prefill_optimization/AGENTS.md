@@ -23,10 +23,23 @@ CUDA results are not NPU speed or correctness evidence.
 
 ## Development Rule
 
-Do not preserve parallel implementation paths just because one path existed first. During active
-development, code is provisional unless it is explicitly identified as the reference contract or has
-passed the relevant correctness, timing, and anti-cheat review. If two paths are introduced for
-diagnosis, write the equivalence test and remove the losing or redundant path after the test passes.
+Work methodically from the system goal backward. Before adding a workaround, mode, or benchmark,
+ask what future task it enables, what invariant it is supposed to preserve, and whether it moves the
+project toward the real target: fast, accurate, static/compiled PaddleOCR-VL vision prefill on real
+OCR crops. Local fixes that make one run look better but make batching, padding, compilation, or
+accuracy review harder are not progress.
+
+Prefer one general implementation path whose degenerate cases are represented inside the same
+contract. For example, the static visual path must support padding as part of the normal path, with
+`pad_tokens=0` being the no-padding case. Do not keep separate padded and non-padded model paths
+just because the non-padded path worked first. During active development, code is provisional unless
+it is explicitly identified as the reference contract or has passed the relevant correctness, timing,
+and anti-cheat review.
+
+Use tests as the safety mechanism instead of preserving stale fallback paths. If a cleaner path is
+the one needed for the future system, implement it, run the equivalence and timing checks, and fix or
+revert if it fails. If two paths are introduced for diagnosis, write the equivalence test and remove
+the losing or redundant path after the test answers the question.
 
 ## Timing Rule
 
@@ -59,15 +72,17 @@ is a new diagnostic reason and a planned removal gate.
 
 When checking whether compilation changed numerics, compare `--vision-compile-backend none` against
 the same static visual path with the real compile backend. Those two should differ only by the
-compile wrapper and backend lowering. If `--static-visual-pad-mode` is not `none`, the candidate path
-also adds masked dummy visual tokens. The compiled visual tower returns the physical padded output;
-the benchmark synchronizes and stops `visual_tower_e2e_s` before slicing back to real rows for
-projector/logit correctness.
+compile wrapper and backend lowering. The candidate path always uses the same padding-capable static
+visual encoder. The automatic padding policy is recorded as `static_visual_pad_policy`; if no dummy
+rows are needed, `static_visual_pad_tokens` is `0` but the encoder still uses the same masked static
+attention path. The compiled visual tower returns the physical padded output; the benchmark
+synchronizes and stops `visual_tower_e2e_s` before slicing back to real rows for projector/logit
+correctness.
 
 Padding exists to make static fullgraph compilation and later batching possible while preserving
-real-token math. Do not invent extra contracts for padded rows unless a kernel requires them. The
-invariant is: real tokens must not attend to padded tokens, padded tokens must not attend to real
-tokens, padded rows must be excluded before downstream real-token consumers, and real-row
+real-token math. Treat padded rows as implementation detail, not as a second model. The invariant is:
+real tokens must not attend to padded tokens, padded tokens must not attend to real tokens, padded
+rows must be excluded before downstream real-token consumers, and real-row
 `visual_features`/`image_embeds`/`prefill_logits` must match the reference.
 
 Current NPU finding: TorchAir-compiled PromptFA is not numerically usable yet. On the 4-crop smoke,
@@ -93,6 +108,12 @@ new notes as general research rules first, with project-specific examples only w
   preserving real-token outputs. Avoid adding ad-hoc cleanup of padded tokens merely because their
   values look odd; padded rows are implementation detail unless they can influence real rows or leak
   into downstream consumers.
+- Avoid mode multiplication. If a future deployment needs a capability, make it part of the main
+  contract and treat the old behavior as a degenerate case inside that contract. Extra modes are
+  acceptable only for a bounded diagnostic question and should come with a removal gate.
+- Think through downstream consequences before coding: how this affects later batching, fixed-shape
+  compilation, cache reuse, truth-bundle comparisons, NPU-only operators, and the metrics we will
+  use to decide whether the optimization is real.
 - Replicate the realistic data path for the metric being claimed. Use real crops, real preprocessing
   outputs, real grid/token shapes, and the same dtype/attention implementation expected in the
   deployment path.
