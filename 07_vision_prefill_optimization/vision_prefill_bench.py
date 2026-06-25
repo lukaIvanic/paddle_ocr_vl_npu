@@ -87,6 +87,19 @@ VISUAL_PREFIX_STAGE_CHOICES = (
     "attn_out",
     "layer0_out",
 )
+QKV_LINEAR_PROBE_IMPL_CHOICES = (
+    "module_three",
+    "module_q",
+    "functional_three",
+    "functional_q",
+    "matmul_three",
+    "matmul_q",
+    "functional_single",
+    "matmul_single",
+    "functional_q_no_bias",
+    "matmul_q_no_bias",
+)
+QKV_LINEAR_PROBE_SOURCE_CHOICES = ("ln1", "patch_pos")
 STATIC_VISUAL_PAD_POLICY = "always_mask_pad_to_atlas_inference_alignment"
 
 LAYOUT_PROMPT_BY_LABEL = {
@@ -1108,6 +1121,100 @@ class SingleCropStaticVisualPrefixModule(torch.nn.Module):
         raise RuntimeError(f"unreachable static visual prefix stage={self.stage!r}")
 
 
+class VisionQKVLinearProbeModule(torch.nn.Module):
+    """Small QKV projection variants for isolating TorchAir linear lowering."""
+
+    def __init__(self, attention: torch.nn.Module, *, impl: str):
+        super().__init__()
+        if impl not in QKV_LINEAR_PROBE_IMPL_CHOICES:
+            raise ValueError(f"unsupported QKV linear probe impl={impl!r}")
+        self.impl = str(impl)
+        self.q_proj = attention.q_proj
+        self.k_proj = attention.k_proj
+        self.v_proj = attention.v_proj
+        q_weight = attention.q_proj.weight.detach().clone().contiguous()
+        k_weight = attention.k_proj.weight.detach().clone().contiguous()
+        v_weight = attention.v_proj.weight.detach().clone().contiguous()
+        q_bias = None if attention.q_proj.bias is None else attention.q_proj.bias.detach().clone().contiguous()
+        k_bias = None if attention.k_proj.bias is None else attention.k_proj.bias.detach().clone().contiguous()
+        v_bias = None if attention.v_proj.bias is None else attention.v_proj.bias.detach().clone().contiguous()
+        self.register_buffer("q_weight", q_weight, persistent=False)
+        self.register_buffer("k_weight", k_weight, persistent=False)
+        self.register_buffer("v_weight", v_weight, persistent=False)
+        self.register_buffer("q_bias", q_bias, persistent=False)
+        self.register_buffer("k_bias", k_bias, persistent=False)
+        self.register_buffer("v_bias", v_bias, persistent=False)
+        self.register_buffer("qkv_weight", torch.cat([q_weight, k_weight, v_weight], dim=0).contiguous(), persistent=False)
+        if q_bias is None or k_bias is None or v_bias is None:
+            qkv_bias = None
+        else:
+            qkv_bias = torch.cat([q_bias, k_bias, v_bias], dim=0).contiguous()
+        self.register_buffer("qkv_bias", qkv_bias, persistent=False)
+
+    @staticmethod
+    def _linear_matmul(hidden_states: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor | None) -> torch.Tensor:
+        output = torch.matmul(hidden_states, weight.transpose(0, 1))
+        if bias is not None:
+            output = output + bias
+        return output
+
+    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        if self.impl == "module_three":
+            return torch.cat(
+                [
+                    self.q_proj(hidden_states),
+                    self.k_proj(hidden_states),
+                    self.v_proj(hidden_states),
+                ],
+                dim=-1,
+            )
+        if self.impl == "module_q":
+            return self.q_proj(hidden_states)
+        if self.impl == "functional_three":
+            return torch.cat(
+                [
+                    F.linear(hidden_states, self.q_weight, self.q_bias),
+                    F.linear(hidden_states, self.k_weight, self.k_bias),
+                    F.linear(hidden_states, self.v_weight, self.v_bias),
+                ],
+                dim=-1,
+            )
+        if self.impl == "functional_q":
+            return F.linear(hidden_states, self.q_weight, self.q_bias)
+        if self.impl == "matmul_three":
+            return torch.cat(
+                [
+                    self._linear_matmul(hidden_states, self.q_weight, self.q_bias),
+                    self._linear_matmul(hidden_states, self.k_weight, self.k_bias),
+                    self._linear_matmul(hidden_states, self.v_weight, self.v_bias),
+                ],
+                dim=-1,
+            )
+        if self.impl == "matmul_q":
+            return self._linear_matmul(hidden_states, self.q_weight, self.q_bias)
+        if self.impl == "functional_single":
+            return F.linear(hidden_states, self.qkv_weight, self.qkv_bias)
+        if self.impl == "matmul_single":
+            return self._linear_matmul(hidden_states, self.qkv_weight, self.qkv_bias)
+        if self.impl == "functional_q_no_bias":
+            return F.linear(hidden_states, self.q_weight, None)
+        if self.impl == "matmul_q_no_bias":
+            return self._linear_matmul(hidden_states, self.q_weight, None)
+        raise RuntimeError(f"unreachable QKV linear probe impl={self.impl!r}")
+
+
+class VisionLayerNormQKVLinearProbeModule(torch.nn.Module):
+    """LayerNorm plus QKV projection as the smallest producer-consumer graph."""
+
+    def __init__(self, layer_norm: torch.nn.Module, attention: torch.nn.Module, *, impl: str):
+        super().__init__()
+        self.layer_norm = layer_norm
+        self.qkv = VisionQKVLinearProbeModule(attention, impl=impl)
+
+    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        return self.qkv(self.layer_norm(hidden_states))
+
+
 def import_torchair():
     try:
         import torchair
@@ -1890,6 +1997,29 @@ def tensor_summary(tensor: torch.Tensor) -> dict[str, Any]:
     }
 
 
+def tensor_probe_summary(tensor: torch.Tensor) -> dict[str, Any]:
+    detached = tensor.detach()
+    finite = torch.isfinite(detached.float())
+    finite_values = detached.float()[finite]
+    summary = tensor_summary(detached)
+    summary.update(
+        {
+            "stride": [int(dim) for dim in detached.stride()],
+            "is_contiguous": bool(detached.is_contiguous()),
+            "device": str(detached.device),
+        }
+    )
+    if finite_values.numel() > 0:
+        summary.update(
+            {
+                "finite_min": float(finite_values.min().item()),
+                "finite_max": float(finite_values.max().item()),
+                "finite_mean_abs": float(finite_values.abs().mean().item()),
+            }
+        )
+    return summary
+
+
 def topk_summary(logits: torch.Tensor, *, k: int = 8) -> dict[str, Any]:
     values, indices = torch.topk(logits[:, -1, :].float(), k=min(int(k), int(logits.shape[-1])), dim=-1)
     return {
@@ -2489,6 +2619,36 @@ def parse_visual_prefix_stages(raw: str) -> list[str]:
     return stages
 
 
+def parse_qkv_linear_probe_impls(raw: str) -> list[str]:
+    impls = [impl.strip() for impl in str(raw).replace(";", ",").split(",") if impl.strip()]
+    if not impls:
+        raise ValueError("--impls must contain at least one implementation")
+    bad = [impl for impl in impls if impl not in QKV_LINEAR_PROBE_IMPL_CHOICES]
+    if bad:
+        raise ValueError(f"unsupported --impls entries {bad}; choices={QKV_LINEAR_PROBE_IMPL_CHOICES}")
+    return impls
+
+
+def parse_qkv_linear_probe_sources(raw: str) -> list[str]:
+    sources = [source.strip() for source in str(raw).replace(";", ",").split(",") if source.strip()]
+    if not sources:
+        raise ValueError("--sources must contain at least one source")
+    bad = [source for source in sources if source not in QKV_LINEAR_PROBE_SOURCE_CHOICES]
+    if bad:
+        raise ValueError(f"unsupported --sources entries {bad}; choices={QKV_LINEAR_PROBE_SOURCE_CHOICES}")
+    return sources
+
+
+def qkv_linear_compiled_matches_eager(row: dict[str, Any]) -> bool:
+    diff = row.get("compiled_second_vs_eager_before", {})
+    return bool(
+        diff.get("shape_match")
+        and diff.get("allclose_atol_5e_2_rtol_5e_2")
+        and diff.get("lhs_nonfinite_count") == 0
+        and diff.get("rhs_nonfinite_count") == 0
+    )
+
+
 @torch.inference_mode()
 def probe_visual_prefix_compile(args: argparse.Namespace) -> None:
     apply_runtime_env(args)
@@ -2733,6 +2893,295 @@ def probe_visual_prefix_compile(args: argparse.Namespace) -> None:
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(output_json, encoding="utf-8")
         print(json.dumps({"visual_prefix_probe_output": str(output_path), "summary": summary}, indent=2, default=json_default), flush=True)
+    else:
+        print(output_json, flush=True)
+
+
+@torch.inference_mode()
+def probe_qkv_linear_compile(args: argparse.Namespace) -> None:
+    apply_runtime_env(args)
+    model, model_dir, device, dtype = load_model_for_args(args)
+    tokenizer = Tokenizer.from_file(str(model_dir / "tokenizer.json"))
+    baseline_path = Path(args.baseline).expanduser().resolve()
+    manifest = load_baseline_manifest(baseline_path)
+    dataset_dir = resolve_dataset_dir(args.dataset_dir or manifest["build_summary"]["page"]["dataset_dir"])
+    inputs = build_inputs_from_manifest(manifest=manifest, model_dir=model_dir, tokenizer=tokenizer, dataset_dir=dataset_dir)
+    item_index = int(args.item_index)
+    if item_index < 0 or item_index >= len(inputs):
+        raise ValueError(f"--item-index {item_index} is out of range for {len(inputs)} baseline inputs")
+    item = inputs[item_index]
+    impls = parse_qkv_linear_probe_impls(args.impls)
+    sources = parse_qkv_linear_probe_sources(args.sources)
+
+    backend_name = str(args.vision_compile_backend)
+    backend = None
+    backend_meta: dict[str, Any] = {"backend_kind": "none"}
+    compile_kwargs: dict[str, Any] = {"fullgraph": True, "dynamic": False}
+    old_capture_scalar_outputs: bool | None = None
+    if backend_name != "none":
+        import torch._dynamo
+
+        old_capture_scalar_outputs = bool(torch._dynamo.config.capture_scalar_outputs)
+        torch._dynamo.config.capture_scalar_outputs = True
+        torch._dynamo.reset()
+        backend, backend_meta = vision_compile_backend(
+            backend_name,
+            device,
+            torchair_mode=str(getattr(args, "torchair_mode", "default")),
+            torchair_run_eagerly=bool(getattr(args, "torchair_run_eagerly", False)),
+            torchair_graph_dump_type=str(getattr(args, "torchair_graph_dump_type", "none")),
+            torchair_graph_dump_dir=getattr(args, "torchair_graph_dump_dir", None),
+            torchair_msit_dump_kind=str(getattr(args, "torchair_msit_dump_kind", "none")),
+            torchair_msit_dump_dir=getattr(args, "torchair_msit_dump_dir", None),
+            torchair_msit_dump_mode=str(getattr(args, "torchair_msit_dump_mode", "output")),
+            torchair_msit_dump_token=str(getattr(args, "torchair_msit_dump_token", "")),
+            torchair_msit_dump_layer=str(getattr(args, "torchair_msit_dump_layer", "")),
+            torchair_msit_fusion_switch_file=getattr(args, "torchair_msit_fusion_switch_file", None),
+        )
+        if backend is not None:
+            compile_kwargs["backend"] = backend
+
+    pixel_values = item.pixel_values.to(device=device, dtype=model.visual.dtype)
+    patch_pos_module = SingleCropStaticVisualPrefixModule(
+        model,
+        item.image_grid_thw,
+        device=device,
+        stage="patch_pos",
+        debug_no_padding=bool(args.debug_static_visual_no_padding),
+        debug_min_pad_tokens=int(args.debug_static_visual_min_pad_tokens),
+        debug_pad_to_multiple=int(args.debug_static_visual_pad_to_multiple),
+    ).eval()
+    ln1_module = SingleCropStaticVisualPrefixModule(
+        model,
+        item.image_grid_thw,
+        device=device,
+        stage="ln1",
+        debug_no_padding=bool(args.debug_static_visual_no_padding),
+        debug_min_pad_tokens=int(args.debug_static_visual_min_pad_tokens),
+        debug_pad_to_multiple=int(args.debug_static_visual_pad_to_multiple),
+    ).eval()
+    maybe_sync(device)
+    patch_pos_hidden = patch_pos_module(pixel_values).detach()
+    ln1_hidden = ln1_module(pixel_values).detach()
+    maybe_sync(device)
+
+    transformer = model.visual.vision_model
+    encoder_layer = transformer.encoder.layers[0]
+    attention = encoder_layer.self_attn
+
+    rows: list[dict[str, Any]] = []
+    try:
+        for source in sources:
+            if source == "ln1":
+                input_tensor = ln1_hidden
+            elif source == "patch_pos":
+                input_tensor = patch_pos_hidden
+            else:
+                raise RuntimeError(f"unreachable QKV source={source!r}")
+            for impl in impls:
+                row: dict[str, Any] = {
+                    "item_index": int(item_index),
+                    "id": str(item.entry.get("id")),
+                    "layout_label": str(item.entry.get("layout_label")),
+                    "source": str(source),
+                    "impl": str(impl),
+                    "backend": str(backend_name),
+                    "device": str(device),
+                    "dtype": str(dtype),
+                    "image_grid_thw": [int(value) for value in item.image_grid_thw.flatten().tolist()],
+                    "static_real_seq_len": int(ln1_module.static_real_seq_len),
+                    "static_pad_tokens": int(ln1_module.static_pad_tokens),
+                    "static_physical_seq_len": int(ln1_module.static_physical_seq_len),
+                    "static_physical_seq_mod16": int(ln1_module.static_physical_seq_len % 16),
+                    "static_physical_seq_mod128": int(ln1_module.static_physical_seq_len % 128),
+                    "input_summary": tensor_probe_summary(input_tensor),
+                    "q_weight_summary": tensor_probe_summary(attention.q_proj.weight),
+                    "q_bias_summary": None
+                    if attention.q_proj.bias is None
+                    else tensor_probe_summary(attention.q_proj.bias),
+                }
+                try:
+                    if source == "ln1":
+                        module = VisionQKVLinearProbeModule(attention, impl=str(impl)).eval()
+                    else:
+                        module = VisionLayerNormQKVLinearProbeModule(
+                            encoder_layer.layer_norm1,
+                            attention,
+                            impl=str(impl),
+                        ).eval()
+
+                    maybe_sync(device)
+                    start = time.perf_counter()
+                    eager_before = module(input_tensor)
+                    maybe_sync(device)
+                    eager_before_s = float(time.perf_counter() - start)
+                    row["eager_before_s"] = eager_before_s
+                    row["eager_before_summary"] = tensor_probe_summary(eager_before)
+
+                    if backend_name == "none":
+                        row.update(
+                            {
+                                "ok": True,
+                                "compiled": False,
+                                "compiled_second_matches_eager": None,
+                                "eager_after_vs_eager_before": diff_stats(eager_before.cpu(), eager_before.cpu()),
+                            }
+                        )
+                    else:
+                        import torch._dynamo
+
+                        torch._dynamo.reset()
+                        maybe_sync(device)
+                        start = time.perf_counter()
+                        compiled = torch.compile(module, **compile_kwargs)
+                        maybe_sync(device)
+                        compile_wrapper_s = float(time.perf_counter() - start)
+
+                        maybe_sync(device)
+                        start = time.perf_counter()
+                        compiled_first = compiled(input_tensor)
+                        maybe_sync(device)
+                        compiled_first_s = float(time.perf_counter() - start)
+
+                        maybe_sync(device)
+                        start = time.perf_counter()
+                        compiled_second = compiled(input_tensor)
+                        maybe_sync(device)
+                        compiled_second_s = float(time.perf_counter() - start)
+
+                        maybe_sync(device)
+                        start = time.perf_counter()
+                        eager_after = module(input_tensor)
+                        maybe_sync(device)
+                        eager_after_s = float(time.perf_counter() - start)
+                        row.update(
+                            {
+                                "ok": True,
+                                "compiled": True,
+                                "compile_wrapper_s": compile_wrapper_s,
+                                "compiled_first_s": compiled_first_s,
+                                "compiled_second_s": compiled_second_s,
+                                "eager_after_s": eager_after_s,
+                                "compiled_first_summary": tensor_probe_summary(compiled_first),
+                                "compiled_second_summary": tensor_probe_summary(compiled_second),
+                                "compiled_first_vs_eager_before": diff_stats(compiled_first.cpu(), eager_before.cpu()),
+                                "compiled_second_vs_eager_before": diff_stats(compiled_second.cpu(), eager_before.cpu()),
+                                "compiled_first_vs_second": diff_stats(compiled_first.cpu(), compiled_second.cpu()),
+                                "eager_after_vs_eager_before": diff_stats(eager_after.cpu(), eager_before.cpu()),
+                            }
+                        )
+                        row["compiled_second_matches_eager"] = qkv_linear_compiled_matches_eager(row)
+                except Exception as exc:
+                    row.update({"ok": False, "error": f"{exc.__class__.__name__}: {exc}"})
+                rows.append(row)
+                print(
+                    f"QKV_LINEAR source={source} impl={impl} ok={row.get('ok')} "
+                    f"match={row.get('compiled_second_matches_eager')} "
+                    f"max_abs={row.get('compiled_second_vs_eager_before', {}).get('max_abs_diff')} "
+                    f"compiled_max={row.get('compiled_second_summary', {}).get('finite_max')}",
+                    file=sys.stderr,
+                    flush=True,
+                )
+    finally:
+        if old_capture_scalar_outputs is not None:
+            import torch._dynamo
+
+            torch._dynamo.config.capture_scalar_outputs = old_capture_scalar_outputs
+
+    ok_rows = [row for row in rows if row.get("ok")]
+    compiled_rows = [row for row in ok_rows if row.get("compiled")]
+    mismatch_rows = [row for row in compiled_rows if not bool(row.get("compiled_second_matches_eager"))]
+    error_rows = [row for row in rows if not row.get("ok")]
+    first_mismatch = mismatch_rows[0] if mismatch_rows else None
+    by_source_impl = [
+        {
+            "source": row.get("source"),
+            "impl": row.get("impl"),
+            "ok": row.get("ok"),
+            "compiled_second_matches_eager": row.get("compiled_second_matches_eager"),
+            "max_abs_diff": row.get("compiled_second_vs_eager_before", {}).get("max_abs_diff"),
+            "mean_abs_diff": row.get("compiled_second_vs_eager_before", {}).get("mean_abs_diff"),
+            "compiled_nonfinite_count": row.get("compiled_second_vs_eager_before", {}).get("lhs_nonfinite_count"),
+            "compiled_finite_min": row.get("compiled_second_summary", {}).get("finite_min"),
+            "compiled_finite_max": row.get("compiled_second_summary", {}).get("finite_max"),
+        }
+        for row in rows
+    ]
+    summary = {
+        "total_cases": int(len(rows)),
+        "ok_cases": int(len(ok_rows)),
+        "error_cases": int(len(error_rows)),
+        "compiled_cases": int(len(compiled_rows)),
+        "compiled_second_matches_eager_count": int(
+            sum(bool(row.get("compiled_second_matches_eager")) for row in compiled_rows)
+        ),
+        "compiled_second_matches_eager_all": bool(
+            len(compiled_rows) > 0
+            and all(bool(row.get("compiled_second_matches_eager")) for row in compiled_rows)
+        ),
+        "compiled_nonfinite_case_count": int(
+            sum(
+                int(row.get("compiled_second_vs_eager_before", {}).get("lhs_nonfinite_count", 0) or 0) > 0
+                for row in compiled_rows
+            )
+        ),
+        "first_mismatch": None
+        if first_mismatch is None
+        else {
+            "source": first_mismatch.get("source"),
+            "impl": first_mismatch.get("impl"),
+            "shape": first_mismatch.get("compiled_second_vs_eager_before", {}).get("shape"),
+            "max_abs_diff": first_mismatch.get("compiled_second_vs_eager_before", {}).get("max_abs_diff"),
+            "mean_abs_diff": first_mismatch.get("compiled_second_vs_eager_before", {}).get("mean_abs_diff"),
+            "compiled_nonfinite_count": first_mismatch.get("compiled_second_vs_eager_before", {}).get(
+                "lhs_nonfinite_count"
+            ),
+            "compiled_finite_min": first_mismatch.get("compiled_second_summary", {}).get("finite_min"),
+            "compiled_finite_max": first_mismatch.get("compiled_second_summary", {}).get("finite_max"),
+        },
+        "by_source_impl": by_source_impl,
+        "failed_case_keys": [
+            {
+                "source": row.get("source"),
+                "impl": row.get("impl"),
+                "error": row.get("error"),
+            }
+            for row in error_rows
+        ],
+    }
+    output = {
+        "schema_version": 1,
+        "experiment": "07_vision_prefill_optimization",
+        "kind": "qkv_linear_compile_probe",
+        "created_utc": datetime.now(timezone.utc).isoformat(),
+        "device": str(device),
+        "dtype": str(dtype),
+        "model": str(model_dir),
+        "baseline": str(baseline_path),
+        "backend": str(backend_name),
+        "compile_api": None if backend_name == "none" else "torch.compile",
+        "fullgraph": bool(backend_name != "none"),
+        "dynamic": False,
+        "capture_scalar_outputs": old_capture_scalar_outputs is not None,
+        "capture_scalar_outputs_previous": old_capture_scalar_outputs,
+        "dynamo_reset_before_compile": bool(backend_name != "none"),
+        "compile_backend_meta": backend_meta,
+        "sources": sources,
+        "impls": impls,
+        "source_meaning": {
+            "ln1": "QKV-only graph fed by the materialized eager layer0 layer_norm1 output.",
+            "patch_pos": "LayerNorm->QKV graph fed by the materialized eager patch+position output.",
+        },
+        "summary": summary,
+        "results": rows,
+    }
+    output_json = json.dumps(output, indent=2, default=json_default)
+    output_path_raw = str(getattr(args, "output", "") or "").strip()
+    if output_path_raw:
+        output_path = Path(output_path_raw).expanduser().resolve()
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(output_json, encoding="utf-8")
+        print(json.dumps({"qkv_linear_probe_output": str(output_path), "summary": summary}, indent=2, default=json_default), flush=True)
     else:
         print(output_json, flush=True)
 
@@ -3768,6 +4217,41 @@ def parse_args() -> argparse.Namespace:
     prefix_probe_parser.add_argument("--debug-static-visual-pad-to-multiple", type=int, default=0)
     prefix_probe_parser.add_argument("--output", default="")
 
+    qkv_probe_parser = subparsers.add_parser(
+        "probe-qkv-linear-compile",
+        help="Real-crop isolated QKV linear/LN->QKV compile probe for the first vision layer.",
+    )
+    qkv_probe_parser.add_argument("--model", default=DEFAULT_MODEL, help="Local model directory.")
+    qkv_probe_parser.add_argument("--dataset-dir", default=None)
+    qkv_probe_parser.add_argument("--baseline", default=str(SCRIPT_DIR / "baselines" / "promptfa_fp16_eager_64"))
+    qkv_probe_parser.add_argument("--device", default="npu:0")
+    qkv_probe_parser.add_argument("--dtype", default="fp16", choices=DTYPE_CHOICES)
+    qkv_probe_parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
+    qkv_probe_parser.add_argument("--vision-attention", default="prompt_flash_attention", choices=VISION_ATTENTION_CHOICES)
+    qkv_probe_parser.add_argument("--vision-prompt-fa-layout", default="bnsd", choices=("bnsd", "bsnd", "bsh"))
+    qkv_probe_parser.add_argument("--vision-prompt-fa-mask-sparse-mode", type=int, default=1, choices=(0, 1))
+    qkv_probe_parser.add_argument("--vision-compile-backend", default="torchair", choices=VISION_COMPILE_BACKEND_CHOICES)
+    add_torchair_diagnostic_args(qkv_probe_parser)
+    qkv_probe_parser.add_argument("--item-index", type=int, default=0)
+    qkv_probe_parser.add_argument(
+        "--sources",
+        default="ln1,patch_pos",
+        help=f"Comma-separated source tensors. Choices: {','.join(QKV_LINEAR_PROBE_SOURCE_CHOICES)}",
+    )
+    qkv_probe_parser.add_argument(
+        "--impls",
+        default="module_three,functional_three,matmul_three,functional_single,matmul_single,module_q,functional_q,matmul_q,functional_q_no_bias,matmul_q_no_bias",
+        help=f"Comma-separated implementations. Choices: {','.join(QKV_LINEAR_PROBE_IMPL_CHOICES)}",
+    )
+    qkv_probe_parser.add_argument(
+        "--debug-static-visual-no-padding",
+        action="store_true",
+        help="Diagnostic only: build source tensors with static visual padding disabled.",
+    )
+    qkv_probe_parser.add_argument("--debug-static-visual-min-pad-tokens", type=int, default=0)
+    qkv_probe_parser.add_argument("--debug-static-visual-pad-to-multiple", type=int, default=0)
+    qkv_probe_parser.add_argument("--output", default="")
+
     return parser.parse_args()
 
 
@@ -3785,6 +4269,8 @@ def main() -> None:
         probe_layernorm_compile(args)
     elif args.command == "probe-visual-prefix-compile":
         probe_visual_prefix_compile(args)
+    elif args.command == "probe-qkv-linear-compile":
+        probe_qkv_linear_compile(args)
     else:
         raise RuntimeError(f"unsupported command: {args.command}")
 

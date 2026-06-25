@@ -290,6 +290,31 @@ Read the summary this way:
 - `compiled_nonfinite_count > 0` is the small-prefix version of the MSIT
   `my_data includes NAN or inf` symptom.
 
+## QKV Linear Compile Probe
+
+If the visual prefix probe first fails at `qkv`, isolate that projection:
+
+```sh
+ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_qkv_linear_compile_probe.sh
+```
+
+The runner uses the same first baseline crop and writes `torchair_default.json`
+plus `torchair_run_eagerly.json`. It tests two input sources:
+
+- `ln1`: compile only the QKV projection, fed by the materialized eager
+  `layer_norm1` output. If this fails, the QKV linear/addmm/MatMul lowering is
+  enough to reproduce the bug.
+- `patch_pos`: compile `layer_norm1 -> QKV`, fed by the materialized
+  patch-plus-position tensor. If this fails while `ln1` passes, the culprit is
+  the internal GE handoff from LayerNorm output to linear/MatMul, not standalone
+  LayerNorm or standalone QKV.
+
+The implementation variants are intentionally mechanical controls:
+`nn.Linear`, `F.linear`, explicit `matmul + bias`, single concatenated QKV
+weight, Q-only, and no-bias Q-only. The summary prints every
+`source`/`impl` case with max diff and compiled finite min/max so fp16-range
+garbage is visible without opening the full JSON.
+
 ## CUDA Smoke
 
 CUDA smoke uses manual attention only and is not authoritative NPU evidence:
