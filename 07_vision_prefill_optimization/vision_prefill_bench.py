@@ -39,6 +39,7 @@ from typing import Any, Callable
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 from PIL import Image
 from tokenizers import Tokenizer
 
@@ -74,6 +75,7 @@ TORCHAIR_MODE_CHOICES = ("default", "max-autotune")
 TORCHAIR_GRAPH_DUMP_TYPE_CHOICES = ("none", "txt", "pbtxt")
 TORCHAIR_MSIT_DUMP_KIND_CHOICES = ("none", "ge", "fx")
 TORCHAIR_MSIT_DUMP_MODE_CHOICES = ("input", "output", "all")
+LAYERNORM_PROBE_IMPL_CHOICES = ("nn", "functional", "manual", "npu_eval")
 STATIC_VISUAL_PAD_POLICY = "always_mask_pad_to_atlas_inference_alignment"
 
 LAYOUT_PROMPT_BY_LABEL = {
@@ -1905,6 +1907,415 @@ def parse_int_list(raw: str) -> list[int]:
     return values
 
 
+class LayerNormOnlyModule(torch.nn.Module):
+    """Small module for isolating LayerNorm eager-vs-compiled behavior."""
+
+    def __init__(
+        self,
+        *,
+        hidden_size: int,
+        eps: float,
+        impl: str,
+        weight: torch.Tensor,
+        bias: torch.Tensor,
+    ):
+        super().__init__()
+        if impl not in LAYERNORM_PROBE_IMPL_CHOICES:
+            raise ValueError(f"unsupported layernorm impl={impl!r}")
+        self.hidden_size = int(hidden_size)
+        self.eps = float(eps)
+        self.impl = str(impl)
+        if self.impl == "nn":
+            self.layer_norm = torch.nn.LayerNorm(self.hidden_size, eps=self.eps, elementwise_affine=True).to(
+                device=weight.device,
+                dtype=weight.dtype,
+            )
+            with torch.no_grad():
+                self.layer_norm.weight.copy_(weight)
+                self.layer_norm.bias.copy_(bias)
+        else:
+            self.register_buffer("weight", weight.detach().clone().contiguous(), persistent=False)
+            self.register_buffer("bias", bias.detach().clone().contiguous(), persistent=False)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if self.impl == "nn":
+            return self.layer_norm(x)
+        if self.impl == "functional":
+            return F.layer_norm(x, (self.hidden_size,), self.weight, self.bias, self.eps)
+        if self.impl == "manual":
+            x_f = x.float()
+            mean = x_f.mean(dim=-1, keepdim=True)
+            centered = x_f - mean
+            variance = (centered * centered).mean(dim=-1, keepdim=True)
+            normalized = centered * torch.rsqrt(variance + self.eps)
+            return normalized.to(dtype=x.dtype) * self.weight + self.bias
+        if self.impl == "npu_eval":
+            import torch_npu
+
+            return torch_npu.npu_layer_norm_eval(x, [self.hidden_size], self.weight, self.bias, self.eps)
+        raise RuntimeError(f"unreachable layernorm impl={self.impl!r}")
+
+
+def build_synthetic_layernorm_case(
+    *,
+    seq_len: int,
+    hidden_size: int,
+    dtype: torch.dtype,
+    device: torch.device,
+    seed: int,
+    input_scale: float,
+    affine: str,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, dict[str, Any]]:
+    generator = torch.Generator(device="cpu")
+    generator.manual_seed(int(seed) + int(seq_len) * 17 + int(hidden_size))
+    x = torch.randn((int(seq_len), int(hidden_size)), generator=generator, dtype=dtype) * float(input_scale)
+    if affine == "identity":
+        weight = torch.ones((int(hidden_size),), dtype=dtype)
+        bias = torch.zeros((int(hidden_size),), dtype=dtype)
+    elif affine == "random":
+        weight = torch.randn((int(hidden_size),), generator=generator, dtype=dtype) * 0.05 + 1.0
+        bias = torch.randn((int(hidden_size),), generator=generator, dtype=dtype) * 0.02
+    else:
+        raise ValueError(f"unsupported --synthetic-affine {affine!r}")
+    return (
+        x.to(device=device),
+        weight.to(device=device),
+        bias.to(device=device),
+        {
+            "source": "synthetic",
+            "seq_len": int(seq_len),
+            "hidden_size": int(hidden_size),
+            "input_scale": float(input_scale),
+            "affine": str(affine),
+        },
+    )
+
+
+@torch.inference_mode()
+def build_real_first_layernorm_case(
+    *,
+    args: argparse.Namespace,
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    model_dir: Path,
+    device: torch.device,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, float, dict[str, Any]]:
+    manifest_path = Path(args.baseline).expanduser().resolve()
+    manifest = load_baseline_manifest(manifest_path)
+    tokenizer = Tokenizer.from_file(str(model_dir / "tokenizer.json"))
+    dataset_dir = resolve_dataset_dir(args.dataset_dir or manifest["build_summary"]["page"]["dataset_dir"])
+    inputs = build_inputs_from_manifest(manifest=manifest, model_dir=model_dir, tokenizer=tokenizer, dataset_dir=dataset_dir)
+    if not inputs:
+        raise ValueError(f"baseline manifest has no inputs: {manifest_path}")
+    item_index = int(args.real_item_index)
+    if item_index < 0 or item_index >= len(inputs):
+        raise IndexError(f"--real-item-index {item_index} out of range for {len(inputs)} baseline items")
+    item = inputs[item_index]
+    wrapper = SingleCropStaticVisualModule(
+        model,
+        item.image_grid_thw,
+        device=device,
+        debug_no_padding=bool(args.debug_static_visual_no_padding),
+        debug_min_pad_tokens=int(args.debug_static_visual_min_pad_tokens),
+        debug_pad_to_multiple=int(args.debug_static_visual_pad_to_multiple),
+    ).eval()
+    transformer = model.visual.vision_model
+    embeddings_module = transformer.embeddings
+    pixel_values = item.pixel_values.to(device=device, dtype=embeddings_module.patch_embedding.weight.dtype)
+    hidden_states = embeddings_module.patch_embedding(pixel_values).flatten(-2).squeeze(-1)
+    if wrapper.static_pad_tokens:
+        hidden_states = torch.cat(
+            [
+                hidden_states,
+                torch.zeros(
+                    wrapper.static_pad_tokens,
+                    hidden_states.shape[-1],
+                    device=hidden_states.device,
+                    dtype=hidden_states.dtype,
+                ),
+            ],
+            dim=0,
+        )
+    hidden_states = (hidden_states + wrapper.abs_pos_embed_const).contiguous()
+    layer_norm = transformer.encoder.layers[0].layer_norm1
+    return (
+        hidden_states.detach(),
+        layer_norm.weight.detach().to(device=device, dtype=hidden_states.dtype),
+        layer_norm.bias.detach().to(device=device, dtype=hidden_states.dtype),
+        float(layer_norm.eps),
+        {
+            "source": "real_static_visual_layer0_layer_norm1_input",
+            "item_index": int(item_index),
+            "id": str(item.entry.get("id")),
+            "layout_label": str(item.entry.get("layout_label")),
+            "image_grid_thw": [int(value) for value in item.image_grid_thw.flatten().tolist()],
+            "real_seq_len": int(wrapper.static_real_seq_len),
+            "pad_tokens": int(wrapper.static_pad_tokens),
+            "physical_seq_len": int(wrapper.static_physical_seq_len),
+            "physical_seq_mod16": int(wrapper.static_physical_seq_len % 16),
+            "physical_seq_mod128": int(wrapper.static_physical_seq_len % 128),
+            "static_visual_pad_policy": str(wrapper.static_visual_pad_policy),
+            "debug_static_visual_no_padding": bool(wrapper.debug_no_padding),
+            "debug_static_visual_min_pad_tokens": int(wrapper.debug_min_pad_tokens),
+            "debug_static_visual_pad_to_multiple": int(wrapper.debug_pad_to_multiple),
+        },
+    )
+
+
+def layernorm_compiled_matches_eager(row: dict[str, Any]) -> bool:
+    diff = row.get("compiled_second_vs_eager_before", {})
+    return bool(
+        diff.get("shape_match")
+        and diff.get("allclose_atol_5e_2_rtol_5e_2")
+        and diff.get("lhs_nonfinite_count") == 0
+        and diff.get("rhs_nonfinite_count") == 0
+    )
+
+
+@torch.inference_mode()
+def probe_layernorm_compile(args: argparse.Namespace) -> None:
+    device = resolve_device(args.device)
+    dtype = parse_dtype(args.dtype)
+    configure_npu_jit_compile(args.npu_jit_compile, device)
+    backend_name = str(args.vision_compile_backend)
+    impls = [impl.strip() for impl in str(args.impls).split(",") if impl.strip()]
+    if not impls:
+        raise ValueError("--impls must include at least one implementation")
+    for impl in impls:
+        if impl not in LAYERNORM_PROBE_IMPL_CHOICES:
+            raise ValueError(f"unsupported --impls entry {impl!r}; choices={LAYERNORM_PROBE_IMPL_CHOICES}")
+        if impl == "npu_eval" and device.type != "npu":
+            raise ValueError("--impls npu_eval requires --device npu:0")
+
+    backend = None
+    backend_meta: dict[str, Any] = {"backend_kind": "none"}
+    compile_kwargs: dict[str, Any] = {"fullgraph": True, "dynamic": False}
+    old_capture_scalar_outputs: bool | None = None
+    if backend_name != "none":
+        if backend_name == "torchair" and device.type != "npu":
+            raise ValueError("--vision-compile-backend torchair requires --device npu:0")
+        import torch._dynamo
+
+        old_capture_scalar_outputs = bool(torch._dynamo.config.capture_scalar_outputs)
+        torch._dynamo.config.capture_scalar_outputs = True
+        torch._dynamo.reset()
+        backend, backend_meta = vision_compile_backend(
+            backend_name,
+            device,
+            torchair_mode=str(getattr(args, "torchair_mode", "default")),
+            torchair_run_eagerly=bool(getattr(args, "torchair_run_eagerly", False)),
+            torchair_graph_dump_type=str(getattr(args, "torchair_graph_dump_type", "none")),
+            torchair_graph_dump_dir=getattr(args, "torchair_graph_dump_dir", None),
+            torchair_msit_dump_kind=str(getattr(args, "torchair_msit_dump_kind", "none")),
+            torchair_msit_dump_dir=getattr(args, "torchair_msit_dump_dir", None),
+            torchair_msit_dump_mode=str(getattr(args, "torchair_msit_dump_mode", "output")),
+            torchair_msit_dump_token=str(getattr(args, "torchair_msit_dump_token", "")),
+            torchair_msit_dump_layer=str(getattr(args, "torchair_msit_dump_layer", "")),
+            torchair_msit_fusion_switch_file=getattr(args, "torchair_msit_fusion_switch_file", None),
+        )
+        if backend is not None:
+            compile_kwargs["backend"] = backend
+
+    cases: list[tuple[torch.Tensor, torch.Tensor, torch.Tensor, float, dict[str, Any]]] = []
+    for seq_len in parse_int_list(args.seq_lens):
+        x, weight, bias, case_meta = build_synthetic_layernorm_case(
+            seq_len=int(seq_len),
+            hidden_size=int(args.hidden_size),
+            dtype=dtype,
+            device=device,
+            seed=int(args.seed),
+            input_scale=float(args.synthetic_input_scale),
+            affine=str(args.synthetic_affine),
+        )
+        cases.append((x, weight, bias, float(args.eps), case_meta))
+
+    model_dir: Path | None = None
+    if bool(args.include_real_first_crop):
+        model, model_dir, loaded_device, loaded_dtype = load_model_for_args(args)
+        if loaded_device != device or loaded_dtype != dtype:
+            raise RuntimeError("internal device/dtype mismatch while loading real LayerNorm probe model")
+        cases.append(
+            build_real_first_layernorm_case(
+                args=args,
+                model=model,
+                model_dir=model_dir,
+                device=device,
+            )
+        )
+
+    rows: list[dict[str, Any]] = []
+    try:
+        for case_idx, (x, weight, bias, eps, case_meta) in enumerate(cases):
+            input_summary = tensor_summary(x.detach().cpu())
+            for impl in impls:
+                row: dict[str, Any] = {
+                    "case_index": int(case_idx),
+                    "impl": str(impl),
+                    "backend": str(backend_name),
+                    "device": str(device),
+                    "dtype": str(dtype),
+                    "eps": float(eps),
+                    "input_shape": [int(dim) for dim in x.shape],
+                    "input_numel": int(x.numel()),
+                    "input_summary": input_summary,
+                    "case": case_meta,
+                }
+                try:
+                    module = LayerNormOnlyModule(
+                        hidden_size=int(x.shape[-1]),
+                        eps=float(eps),
+                        impl=str(impl),
+                        weight=weight,
+                        bias=bias,
+                    ).eval()
+                    maybe_sync(device)
+                    start = time.perf_counter()
+                    eager_before = module(x)
+                    maybe_sync(device)
+                    eager_before_s = float(time.perf_counter() - start)
+                    row["eager_before_s"] = eager_before_s
+                    row["eager_before_summary"] = tensor_summary(eager_before.detach().cpu())
+
+                    if backend_name == "none":
+                        row.update(
+                            {
+                                "ok": True,
+                                "compiled": False,
+                                "compiled_second_matches_eager": None,
+                                "eager_after_vs_eager_before": diff_stats(eager_before.cpu(), eager_before.cpu()),
+                            }
+                        )
+                    else:
+                        import torch._dynamo
+
+                        torch._dynamo.reset()
+                        maybe_sync(device)
+                        start = time.perf_counter()
+                        compiled = torch.compile(module, **compile_kwargs)
+                        maybe_sync(device)
+                        compile_wrapper_s = float(time.perf_counter() - start)
+
+                        maybe_sync(device)
+                        start = time.perf_counter()
+                        compiled_first = compiled(x)
+                        maybe_sync(device)
+                        compiled_first_s = float(time.perf_counter() - start)
+
+                        maybe_sync(device)
+                        start = time.perf_counter()
+                        compiled_second = compiled(x)
+                        maybe_sync(device)
+                        compiled_second_s = float(time.perf_counter() - start)
+
+                        maybe_sync(device)
+                        start = time.perf_counter()
+                        eager_after = module(x)
+                        maybe_sync(device)
+                        eager_after_s = float(time.perf_counter() - start)
+
+                        row.update(
+                            {
+                                "ok": True,
+                                "compiled": True,
+                                "compile_wrapper_s": compile_wrapper_s,
+                                "compiled_first_s": compiled_first_s,
+                                "compiled_second_s": compiled_second_s,
+                                "eager_after_s": eager_after_s,
+                                "compiled_first_summary": tensor_summary(compiled_first.detach().cpu()),
+                                "compiled_second_summary": tensor_summary(compiled_second.detach().cpu()),
+                                "compiled_first_vs_eager_before": diff_stats(compiled_first.cpu(), eager_before.cpu()),
+                                "compiled_second_vs_eager_before": diff_stats(compiled_second.cpu(), eager_before.cpu()),
+                                "compiled_first_vs_second": diff_stats(compiled_first.cpu(), compiled_second.cpu()),
+                                "eager_after_vs_eager_before": diff_stats(eager_after.cpu(), eager_before.cpu()),
+                            }
+                        )
+                        row["compiled_second_matches_eager"] = layernorm_compiled_matches_eager(row)
+                except Exception as exc:
+                    row.update({"ok": False, "error": f"{exc.__class__.__name__}: {exc}"})
+                rows.append(row)
+    finally:
+        if old_capture_scalar_outputs is not None:
+            import torch._dynamo
+
+            torch._dynamo.config.capture_scalar_outputs = old_capture_scalar_outputs
+
+    ok_rows = [row for row in rows if row.get("ok")]
+    compiled_rows = [row for row in ok_rows if row.get("compiled")]
+    mismatch_rows = [row for row in compiled_rows if not bool(row.get("compiled_second_matches_eager"))]
+    error_rows = [row for row in rows if not row.get("ok")]
+    summary = {
+        "total_cases": int(len(rows)),
+        "ok_cases": int(len(ok_rows)),
+        "error_cases": int(len(error_rows)),
+        "compiled_cases": int(len(compiled_rows)),
+        "compiled_second_matches_eager_count": int(
+            sum(bool(row.get("compiled_second_matches_eager")) for row in compiled_rows)
+        ),
+        "compiled_second_matches_eager_all": bool(
+            len(compiled_rows) > 0
+            and all(bool(row.get("compiled_second_matches_eager")) for row in compiled_rows)
+        ),
+        "compiled_nonfinite_case_count": int(
+            sum(
+                int(row.get("compiled_second_vs_eager_before", {}).get("lhs_nonfinite_count", 0) or 0) > 0
+                for row in compiled_rows
+            )
+        ),
+        "failed_case_keys": [
+            {
+                "case_index": row.get("case_index"),
+                "impl": row.get("impl"),
+                "source": row.get("case", {}).get("source"),
+                "error": row.get("error"),
+            }
+            for row in error_rows
+        ],
+        "mismatch_case_keys": [
+            {
+                "case_index": row.get("case_index"),
+                "impl": row.get("impl"),
+                "source": row.get("case", {}).get("source"),
+                "shape": row.get("input_shape"),
+                "max_abs_diff": row.get("compiled_second_vs_eager_before", {}).get("max_abs_diff"),
+                "mean_abs_diff": row.get("compiled_second_vs_eager_before", {}).get("mean_abs_diff"),
+                "compiled_nonfinite_count": row.get("compiled_second_vs_eager_before", {}).get("lhs_nonfinite_count"),
+                "eager_nonfinite_count": row.get("compiled_second_vs_eager_before", {}).get("rhs_nonfinite_count"),
+            }
+            for row in mismatch_rows
+        ],
+    }
+    output = {
+        "schema_version": 1,
+        "experiment": "07_vision_prefill_optimization",
+        "kind": "layernorm_compile_probe",
+        "created_utc": datetime.now(timezone.utc).isoformat(),
+        "device": str(device),
+        "dtype": str(dtype),
+        "backend": str(backend_name),
+        "compile_api": None if backend_name == "none" else "torch.compile",
+        "fullgraph": bool(backend_name != "none"),
+        "dynamic": False,
+        "capture_scalar_outputs": old_capture_scalar_outputs is not None,
+        "capture_scalar_outputs_previous": old_capture_scalar_outputs,
+        "dynamo_reset_before_compile": bool(backend_name != "none"),
+        "compile_backend_meta": backend_meta,
+        "uses_torchair_cache_compile": False,
+        "explicit_cache_dir": None,
+        "model": None if model_dir is None else str(model_dir),
+        "baseline": str(Path(args.baseline).expanduser().resolve()) if bool(args.include_real_first_crop) else None,
+        "summary": summary,
+        "results": rows,
+    }
+    output_json = json.dumps(output, indent=2, default=json_default)
+    output_path_raw = str(getattr(args, "output", "") or "").strip()
+    if output_path_raw:
+        output_path = Path(output_path_raw).expanduser().resolve()
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(output_json, encoding="utf-8")
+        print(json.dumps({"layernorm_probe_output": str(output_path), "summary": summary}, indent=2, default=json_default), flush=True)
+    else:
+        print(output_json, flush=True)
+
+
 class PromptFAOnlyModule(torch.nn.Module):
     """Tiny PromptFA module for isolating eager-vs-compile behavior."""
 
@@ -2859,6 +3270,46 @@ def parse_args() -> argparse.Namespace:
     compile_probe_parser.add_argument("--seed", type=int, default=1234)
     compile_probe_parser.add_argument("--output", default="")
 
+    layernorm_probe_parser = subparsers.add_parser(
+        "probe-layernorm-compile",
+        help="Synthetic plus real-crop eager-vs-compiled LayerNorm check for TorchAir GE lowering.",
+    )
+    layernorm_probe_parser.add_argument("--model", default=DEFAULT_MODEL, help="Local model directory; required for --include-real-first-crop.")
+    layernorm_probe_parser.add_argument("--dataset-dir", default=None)
+    layernorm_probe_parser.add_argument("--baseline", default=str(SCRIPT_DIR / "baselines" / "promptfa_fp16_eager_64"))
+    layernorm_probe_parser.add_argument("--device", default="npu:0")
+    layernorm_probe_parser.add_argument("--dtype", default="fp16", choices=DTYPE_CHOICES)
+    layernorm_probe_parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
+    layernorm_probe_parser.add_argument("--vision-compile-backend", default="torchair", choices=VISION_COMPILE_BACKEND_CHOICES)
+    add_torchair_diagnostic_args(layernorm_probe_parser)
+    layernorm_probe_parser.add_argument("--impls", default="nn,functional,manual,npu_eval")
+    layernorm_probe_parser.add_argument("--seq-lens", default="580,640,768")
+    layernorm_probe_parser.add_argument("--hidden-size", type=int, default=1152)
+    layernorm_probe_parser.add_argument("--eps", type=float, default=1e-6)
+    layernorm_probe_parser.add_argument("--seed", type=int, default=1234)
+    layernorm_probe_parser.add_argument("--synthetic-input-scale", type=float, default=1.0)
+    layernorm_probe_parser.add_argument("--synthetic-affine", default="random", choices=("identity", "random"))
+    layernorm_probe_parser.add_argument("--include-real-first-crop", action="store_true")
+    layernorm_probe_parser.add_argument("--real-item-index", type=int, default=0)
+    layernorm_probe_parser.add_argument(
+        "--debug-static-visual-no-padding",
+        action="store_true",
+        help="Diagnostic only: build the real-crop LayerNorm input with the no-padding static visual control.",
+    )
+    layernorm_probe_parser.add_argument(
+        "--debug-static-visual-min-pad-tokens",
+        type=int,
+        default=0,
+        help="Diagnostic only: force additional real-crop static visual dummy rows.",
+    )
+    layernorm_probe_parser.add_argument(
+        "--debug-static-visual-pad-to-multiple",
+        type=int,
+        default=0,
+        help="Diagnostic only: round real-crop static visual physical rows to this multiple.",
+    )
+    layernorm_probe_parser.add_argument("--output", default="")
+
     return parser.parse_args()
 
 
@@ -2872,6 +3323,8 @@ def main() -> None:
         probe_promptfa_mask(args)
     elif args.command == "probe-promptfa-compile":
         probe_promptfa_compile(args)
+    elif args.command == "probe-layernorm-compile":
+        probe_layernorm_compile(args)
     else:
         raise RuntimeError(f"unsupported command: {args.command}")
 

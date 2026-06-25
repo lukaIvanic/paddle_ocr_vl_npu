@@ -205,6 +205,36 @@ compare output needs inputs too, rerun with `MSIT_DUMP_MODE=all`. Keep GE and
 FX dump directories separate; MSIT warns that reusing a dump path can mix data
 and invalidate the comparison.
 
+## LayerNorm Compile Probe
+
+If MSIT compare points at an early `LayerNormV3` row, isolate LayerNorm before
+changing the vision tower:
+
+```sh
+ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_layernorm_compile_probe.sh
+```
+
+The runner creates `outputs/layernorm_compile_probe_*/torchair_default.json` and
+`torchair_run_eagerly.json`. It tests synthetic `[S, 1152]` inputs for
+`S=580,640,768` plus the real first baseline crop tensor immediately before
+vision layer-0 `layer_norm1`. It compares:
+
+- `nn.LayerNorm`
+- `torch.nn.functional.layer_norm`
+- manual mean/variance normalization
+- `torch_npu.npu_layer_norm_eval` when available
+
+Read the summary this way:
+
+- `torchair_run_eagerly` matching eager means the FX graph semantics are correct.
+- `torchair_default` mismatching while `run_eagerly` matches means GE/CANN graph
+  execution lowered the LayerNorm path incorrectly.
+- Synthetic pass plus real-crop fail means LayerNorm itself is probably not
+  enough; the tensor produced by preceding compiled visual ops is the likely
+  trigger.
+- Real-crop fail with `compiled_nonfinite_count > 0` reproduces the MSIT
+  `my_data includes NAN or inf` symptom in a smaller, LayerNorm-only boundary.
+
 ## CUDA Smoke
 
 CUDA smoke uses manual attention only and is not authoritative NPU evidence:
