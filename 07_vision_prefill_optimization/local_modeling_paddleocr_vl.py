@@ -84,6 +84,7 @@ def vision_prompt_flash_attention_bnsd(
     scale: float,
     layout: str | None = None,
     atten_mask: torch.Tensor | None = None,
+    sparse_mode_override: int | None = None,
 ) -> torch.Tensor:
     """Run PromptFA with a selectable public layout and return BNSD output."""
     if q_bnsd.device.type != "npu":
@@ -98,7 +99,13 @@ def vision_prompt_flash_attention_bnsd(
     sparse_mode = 0
     if atten_mask is not None:
         mask_kwargs["atten_mask"] = atten_mask.to(torch.bool).contiguous()
-        sparse_mode = get_vision_prompt_fa_mask_sparse_mode()
+        sparse_mode = (
+            get_vision_prompt_fa_mask_sparse_mode()
+            if sparse_mode_override is None
+            else int(sparse_mode_override)
+        )
+        if sparse_mode not in (0, 1):
+            raise ValueError(f"vision PromptFA mask sparse_mode must be 0 or 1, got {sparse_mode}")
 
     if selected_layout == "bnsd":
         return torch_npu.npu_prompt_flash_attention(

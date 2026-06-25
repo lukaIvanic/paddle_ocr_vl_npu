@@ -118,6 +118,26 @@ The key summary field is `recommended_full_mask_semantics_passed`. It should be
 work box. Mode `1` with a non-null block mask should match the masked manual
 reference and differ from the unmasked reference.
 
+If padded eager matches but padded TorchAir diverges, isolate the compiled
+PromptFA operator before blaming the visual tower:
+
+```sh
+python vision_prefill_bench.py probe-promptfa-compile \
+  --device npu:0 \
+  --dtype fp16 \
+  --npu-jit-compile off \
+  --vision-compile-backend torchair \
+  --seq-lens 640,768 \
+  --cases no_mask,all_false_mask,block_mask \
+  --output outputs/promptfa_compile_probe.json
+```
+
+This probe does not load PaddleOCR-VL. It compiles a tiny PromptFA-only module
+with `fullgraph=True, dynamic=False`, reports that it does not use
+`cache_compile` / a GE cache directory, and compares eager vs compiled for:
+unmasked PromptFA, sparse-mode-1 all-false mask, and sparse-mode-1 block mask.
+The headline field is `compiled_second_matches_eager_all`.
+
 The NPU equivalence gate has already passed: backend `none` matched the stored
 eager PromptFA truth bundle with 0.0 diffs before the padding path was unified.
 After changes to the static visual path, rerun backend `none` first and only

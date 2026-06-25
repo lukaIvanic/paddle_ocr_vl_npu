@@ -97,6 +97,15 @@ where the mask must visibly change the output, and checks whether the recommende
 non-null mask matches the full-mask manual reference instead of the unmasked reference. The key
 summary fields are `recommended_mask_sparse_mode` and `recommended_full_mask_semantics_passed`.
 
+If padded eager matches the stored baseline but padded TorchAir diverges, run
+`probe-promptfa-compile` before making model-level claims. This probe does not load the OCR model:
+it compiles a tiny PromptFA-only module with `fullgraph=True, dynamic=False` and checks eager versus
+compiled for `no_mask`, `all_false_mask`, and `block_mask` at 640/768 tokens. Its key summary field
+is `compiled_second_matches_eager_all`. The probe output explicitly records that Experiment 07 uses
+plain `torch.compile`, not `torchair.inference.cache_compile` / GE cache loading, so stale explicit
+GE cache is not the default explanation. Pass `--output outputs/promptfa_compile_probe.json` so the
+full JSON is saved without writing an inline parser.
+
 Padding exists to make static fullgraph compilation and later batching possible while preserving
 real-token math. Treat padded rows as implementation detail, not as a second model. The invariant is:
 real tokens must not attend to padded tokens, padded tokens must not attend to real tokens, padded

@@ -16,6 +16,10 @@ Subcommands:
 
   probe-promptfa-mask
     Synthetic NPU-only check for PromptFA atten_mask semantics.
+
+  probe-promptfa-compile
+    Synthetic NPU-only eager-vs-compiled check for PromptFA masking and TorchAir
+    lowering, without loading the OCR model.
 """
 
 from __future__ import annotations
@@ -1587,6 +1591,245 @@ def manual_attention_bnsd(
     return torch.matmul(probs, v)
 
 
+def parse_int_list(raw: str) -> list[int]:
+    values: list[int] = []
+    for chunk in str(raw).replace(";", ",").split(","):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        values.append(int(chunk))
+    if not values:
+        raise ValueError(f"expected at least one integer, got {raw!r}")
+    return values
+
+
+class PromptFAOnlyModule(torch.nn.Module):
+    """Tiny PromptFA module for isolating eager-vs-compile behavior."""
+
+    def __init__(
+        self,
+        *,
+        num_heads: int,
+        scale: float,
+        sparse_mode: int,
+        atten_mask: torch.Tensor | None,
+    ):
+        super().__init__()
+        self.num_heads = int(num_heads)
+        self.scale = float(scale)
+        self.sparse_mode = int(sparse_mode)
+        self.register_buffer(
+            "atten_mask",
+            None if atten_mask is None else atten_mask.detach().clone().to(torch.bool).contiguous(),
+            persistent=False,
+        )
+
+    def forward(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor) -> torch.Tensor:
+        return vision_prompt_flash_attention_bnsd(
+            q,
+            k,
+            v,
+            num_heads=self.num_heads,
+            scale=self.scale,
+            atten_mask=self.atten_mask,
+            sparse_mode_override=self.sparse_mode,
+        )
+
+
+def build_promptfa_probe_mask(case: str, seq_len: int, *, device: torch.device) -> tuple[torch.Tensor | None, int, str]:
+    if case == "no_mask":
+        return None, 0, "none"
+    if case == "all_false_mask":
+        return torch.zeros((1, 1, seq_len, seq_len), device=device, dtype=torch.bool), 1, "all_false"
+    if case == "block_mask":
+        mask = torch.zeros((1, 1, seq_len, seq_len), device=device, dtype=torch.bool)
+        block_start = max(1, int(seq_len * 3 // 4))
+        mask[..., :, block_start:seq_len] = True
+        return mask, 1, f"block_last_{seq_len - block_start}_keys"
+    if case == "block_mask_mode0":
+        mask = torch.zeros((1, 1, seq_len, seq_len), device=device, dtype=torch.bool)
+        block_start = max(1, int(seq_len * 3 // 4))
+        mask[..., :, block_start:seq_len] = True
+        return mask, 0, f"diagnostic_mode0_block_last_{seq_len - block_start}_keys"
+    raise ValueError(f"unsupported --cases entry {case!r}")
+
+
+@torch.inference_mode()
+def probe_promptfa_compile(args: argparse.Namespace) -> None:
+    device = resolve_device(args.device)
+    if device.type != "npu":
+        raise RuntimeError("probe-promptfa-compile is NPU-only because it tests TorchAir lowering of PromptFA")
+    dtype = parse_dtype(args.dtype)
+    configure_npu_jit_compile(args.npu_jit_compile, device)
+    os.environ["PADDLE_OCR_VL_VISION_PROMPT_FA_LAYOUT"] = "bnsd"
+
+    seq_lens = parse_int_list(args.seq_lens)
+    cases = [case.strip() for case in str(args.cases).split(",") if case.strip()]
+    if not cases:
+        raise ValueError("--cases must include at least one case")
+    heads = int(args.heads)
+    head_dim = int(args.head_dim)
+    if heads <= 0 or head_dim <= 0:
+        raise ValueError("--heads and --head-dim must be positive")
+    backend_name = str(args.vision_compile_backend)
+    if backend_name == "none":
+        raise ValueError("probe-promptfa-compile requires a real compile backend, not --vision-compile-backend none")
+    backend = vision_compile_backend(backend_name, device)
+
+    import torch._dynamo
+
+    old_capture_scalar_outputs = bool(torch._dynamo.config.capture_scalar_outputs)
+    torch._dynamo.config.capture_scalar_outputs = True
+    compile_kwargs: dict[str, Any] = {"fullgraph": True, "dynamic": False}
+    if backend is not None:
+        compile_kwargs["backend"] = backend
+
+    rows: list[dict[str, Any]] = []
+    try:
+        for seq_len in seq_lens:
+            if int(seq_len) <= 1:
+                raise ValueError(f"seq_len must be >1, got {seq_len}")
+            generator = torch.Generator(device="cpu")
+            generator.manual_seed(int(args.seed) + int(seq_len))
+            q = torch.randn((1, heads, int(seq_len), head_dim), generator=generator, dtype=dtype).to(device)
+            k = torch.randn((1, heads, int(seq_len), head_dim), generator=generator, dtype=dtype).to(device)
+            v = torch.randn((1, heads, int(seq_len), head_dim), generator=generator, dtype=dtype).to(device)
+            scale = float(head_dim) ** -0.5
+
+            for case in cases:
+                atten_mask, sparse_mode, mask_description = build_promptfa_probe_mask(case, int(seq_len), device=device)
+                module = PromptFAOnlyModule(
+                    num_heads=heads,
+                    scale=scale,
+                    sparse_mode=sparse_mode,
+                    atten_mask=atten_mask,
+                ).eval()
+                ref_mask = atten_mask if atten_mask is not None else None
+                row: dict[str, Any] = {
+                    "seq_len": int(seq_len),
+                    "case": str(case),
+                    "mask_description": str(mask_description),
+                    "sparse_mode": int(sparse_mode),
+                    "mask_shape": None if atten_mask is None else [int(dim) for dim in atten_mask.shape],
+                    "physical_seq_mod16": int(seq_len % 16),
+                    "physical_seq_mod128": int(seq_len % 128),
+                    "backend": backend_name,
+                }
+                try:
+                    maybe_sync(device)
+                    start = time.perf_counter()
+                    eager_out = module(q, k, v)
+                    maybe_sync(device)
+                    eager_s = float(time.perf_counter() - start)
+
+                    maybe_sync(device)
+                    start = time.perf_counter()
+                    compiled = torch.compile(module, **compile_kwargs)
+                    maybe_sync(device)
+                    compile_wrapper_s = float(time.perf_counter() - start)
+
+                    maybe_sync(device)
+                    start = time.perf_counter()
+                    compiled_first = compiled(q, k, v)
+                    maybe_sync(device)
+                    compiled_first_s = float(time.perf_counter() - start)
+
+                    maybe_sync(device)
+                    start = time.perf_counter()
+                    compiled_second = compiled(q, k, v)
+                    maybe_sync(device)
+                    compiled_second_s = float(time.perf_counter() - start)
+
+                    manual_ref = manual_attention_bnsd(q, k, v, scale=scale, mask=ref_mask)
+                    row.update(
+                        {
+                            "ok": True,
+                            "eager_s": eager_s,
+                            "compile_wrapper_s": compile_wrapper_s,
+                            "compiled_first_s": compiled_first_s,
+                            "compiled_second_s": compiled_second_s,
+                            "eager_vs_manual": diff_stats(eager_out.cpu(), manual_ref.cpu()),
+                            "compiled_first_vs_eager": diff_stats(compiled_first.cpu(), eager_out.cpu()),
+                            "compiled_second_vs_eager": diff_stats(compiled_second.cpu(), eager_out.cpu()),
+                            "compiled_first_vs_second": diff_stats(compiled_first.cpu(), compiled_second.cpu()),
+                        }
+                    )
+                except Exception as exc:
+                    row.update({"ok": False, "error": f"{exc.__class__.__name__}: {exc}"})
+                rows.append(row)
+    finally:
+        torch._dynamo.config.capture_scalar_outputs = old_capture_scalar_outputs
+
+    ok_rows = [row for row in rows if row.get("ok")]
+    failed_rows = [row for row in rows if not row.get("ok")]
+    def compiled_matches_eager(row: dict[str, Any]) -> bool:
+        diff = row.get("compiled_second_vs_eager", {})
+        return bool(
+            diff.get("allclose_atol_5e_2_rtol_5e_2")
+            and diff.get("lhs_nonfinite_count") == 0
+            and diff.get("rhs_nonfinite_count") == 0
+        )
+
+    compiled_match_count = int(sum(compiled_matches_eager(row) for row in ok_rows))
+    summary = {
+        "total_cases": int(len(rows)),
+        "ok_cases": int(len(ok_rows)),
+        "error_cases": int(len(failed_rows)),
+        "compiled_second_matches_eager_count": int(compiled_match_count),
+        "compiled_second_matches_eager_all": bool(len(rows) > 0 and compiled_match_count == len(rows)),
+        "failed_case_keys": [
+            {"seq_len": row.get("seq_len"), "case": row.get("case"), "error": row.get("error")}
+            for row in failed_rows
+        ],
+        "mismatch_case_keys": [
+            {
+                "seq_len": row.get("seq_len"),
+                "case": row.get("case"),
+                "max_abs_diff": row.get("compiled_second_vs_eager", {}).get("max_abs_diff"),
+                "mean_abs_diff": row.get("compiled_second_vs_eager", {}).get("mean_abs_diff"),
+                "lhs_nonfinite_count": row.get("compiled_second_vs_eager", {}).get("lhs_nonfinite_count"),
+            }
+            for row in ok_rows
+            if not compiled_matches_eager(row)
+        ],
+    }
+
+    output = {
+        "schema_version": 1,
+        "experiment": "07_vision_prefill_optimization",
+        "kind": "promptfa_compile_probe",
+        "created_utc": datetime.now(timezone.utc).isoformat(),
+        "device": str(device),
+        "dtype": str(dtype),
+        "backend": backend_name,
+        "compile_api": "torch.compile",
+        "fullgraph": True,
+        "dynamic": False,
+        "uses_torchair_cache_compile": False,
+        "explicit_cache_dir": None,
+        "capture_scalar_outputs": True,
+        "capture_scalar_outputs_previous": old_capture_scalar_outputs,
+        "shape": {
+            "batch": 1,
+            "heads": int(heads),
+            "seq_lens": [int(value) for value in seq_lens],
+            "head_dim": int(head_dim),
+            "layout": "BNSD",
+        },
+        "summary": summary,
+        "results": rows,
+    }
+    output_json = json.dumps(output, indent=2, default=json_default)
+    output_path_raw = str(getattr(args, "output", "") or "").strip()
+    if output_path_raw:
+        output_path = Path(output_path_raw).expanduser().resolve()
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(output_json, encoding="utf-8")
+        print(json.dumps({"probe_output": str(output_path), "summary": summary}, indent=2, default=json_default), flush=True)
+    else:
+        print(output_json, flush=True)
+
+
 @torch.inference_mode()
 def probe_promptfa_mask(args: argparse.Namespace) -> None:
     device = resolve_device(args.device)
@@ -2189,6 +2432,21 @@ def parse_args() -> argparse.Namespace:
     probe_parser.add_argument("--head-dim", type=int, default=72)
     probe_parser.add_argument("--seed", type=int, default=1234)
 
+    compile_probe_parser = subparsers.add_parser(
+        "probe-promptfa-compile",
+        help="Synthetic NPU-only eager-vs-compiled PromptFA check for no-mask and masked cases.",
+    )
+    compile_probe_parser.add_argument("--device", default="npu:0")
+    compile_probe_parser.add_argument("--dtype", default="fp16", choices=DTYPE_CHOICES)
+    compile_probe_parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
+    compile_probe_parser.add_argument("--vision-compile-backend", default="torchair", choices=VISION_COMPILE_BACKEND_CHOICES)
+    compile_probe_parser.add_argument("--seq-lens", default="640,768")
+    compile_probe_parser.add_argument("--cases", default="no_mask,all_false_mask,block_mask")
+    compile_probe_parser.add_argument("--heads", type=int, default=16)
+    compile_probe_parser.add_argument("--head-dim", type=int, default=72)
+    compile_probe_parser.add_argument("--seed", type=int, default=1234)
+    compile_probe_parser.add_argument("--output", default="")
+
     return parser.parse_args()
 
 
@@ -2200,6 +2458,8 @@ def main() -> None:
         compare_candidate(args)
     elif args.command == "probe-promptfa-mask":
         probe_promptfa_mask(args)
+    elif args.command == "probe-promptfa-compile":
+        probe_promptfa_compile(args)
     else:
         raise RuntimeError(f"unsupported command: {args.command}")
 
