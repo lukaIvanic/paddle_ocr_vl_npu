@@ -29,12 +29,12 @@ project toward the real target: fast, accurate, static/compiled PaddleOCR-VL vis
 OCR crops. Local fixes that make one run look better but make batching, padding, compilation, or
 accuracy review harder are not progress.
 
-Prefer one general implementation path whose degenerate cases are represented inside the same
-contract. For example, the static visual path must support padding as part of the normal path, with
-`pad_tokens=0` being the no-padding case. Do not keep separate padded and non-padded model paths
-just because the non-padded path worked first. During active development, code is provisional unless
-it is explicitly identified as the reference contract or has passed the relevant correctness, timing,
-and anti-cheat review.
+Prefer one general implementation path that handles both the full feature and the simplest case.
+For example, the static visual path must support padding as part of the normal path, and
+`pad_tokens=0` should simply mean that the same path has no dummy rows to add or mask. Do not keep
+separate padded and non-padded model paths just because the non-padded path worked first. During
+active development, code is provisional unless it is explicitly identified as the reference contract
+or has passed the relevant correctness, timing, and anti-cheat review.
 
 Use tests as the safety mechanism instead of preserving stale fallback paths. If a cleaner path is
 the one needed for the future system, implement it, run the equivalence and timing checks, and fix or
@@ -109,7 +109,7 @@ new notes as general research rules first, with project-specific examples only w
   values look odd; padded rows are implementation detail unless they can influence real rows or leak
   into downstream consumers.
 - Avoid mode multiplication. If a future deployment needs a capability, make it part of the main
-  contract and treat the old behavior as a degenerate case inside that contract. Extra modes are
+  contract and make the simplest no-op case flow through that same contract. Extra modes are
   acceptable only for a bounded diagnostic question and should come with a removal gate.
 - Think through downstream consequences before coding: how this affects later batching, fixed-shape
   compilation, cache reuse, truth-bundle comparisons, NPU-only operators, and the metrics we will
