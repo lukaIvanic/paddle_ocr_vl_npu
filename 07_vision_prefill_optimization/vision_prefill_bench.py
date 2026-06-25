@@ -1177,13 +1177,13 @@ def prepare_candidate_vision_forward(
         start = time.perf_counter()
         first_output = vision_forward(pixel_values)
         maybe_sync(device)
-        if bool(vision_compile.get("capture_scalar_outputs", False)):
+        if bool(meta.get("capture_scalar_outputs", False)):
             import torch._dynamo
 
             torch._dynamo.config.capture_scalar_outputs = bool(
-                vision_compile.get("capture_scalar_outputs_previous", False)
+                meta.get("capture_scalar_outputs_previous", False)
             )
-            vision_compile["capture_scalar_outputs_restored_after_first_call"] = True
+            meta["capture_scalar_outputs_restored_after_first_call"] = True
         first_real_output = slice_visual_features_to_real(first_output, item.image_grid_thw)
         meta["compiled_first_call_s"] = float(time.perf_counter() - start)
         meta["first_output_shape"] = [int(dim) for dim in first_output.shape]
@@ -1207,9 +1207,9 @@ def prepare_candidate_vision_forward(
             }
         else:
             meta["compiled_vs_static_eager_validation"] = {"enabled": False}
-        backend_meta = vision_compile.get("compile_backend_meta", {})
+        backend_meta = meta.get("compile_backend_meta", {})
         if isinstance(backend_meta, dict) and backend_meta.get("torchair_graph_dump_dir"):
-            vision_compile["torchair_graph_dump_summary_after_first_call"] = summarize_tree(
+            meta["torchair_graph_dump_summary_after_first_call"] = summarize_tree(
                 str(backend_meta["torchair_graph_dump_dir"])
             )
     return vision_forward, meta
