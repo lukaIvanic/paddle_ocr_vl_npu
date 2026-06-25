@@ -44,46 +44,29 @@ every named phase and is not representative pipeline latency.
 
 ## Compile Boundary
 
-Vision candidates that need TorchAir should use `--candidate-vision-path static_visual` plus
-`--vision-compile-backend torchair`. The normal `eager_visual` path is the reference-style runtime
-path and is not a static fullgraph vision boundary.
+All candidate comparisons use the compile-shaped static visual boundary. Use
+`--vision-compile-backend none` for the single noncompiled candidate path, and use
+`--vision-compile-backend torchair` for the TorchAir candidate.
 
 As of this experiment version, `static_visual` uses `torch.compile(fullgraph=True, dynamic=False)`.
 It does not use TorchAir `cache_compile` / GE cache loading yet. If compile caching is added later,
 record the cache directory, cache hit/miss state, and cold versus warm first-call timing explicitly.
 
-When checking whether compilation changed numerics, compare `static_visual` with
-`--vision-compile-backend none` against the same `static_visual` path with the real compile backend.
-Those two should differ only by the compile wrapper and backend lowering. The default `eager_visual`
-path is intentionally more dynamic: it builds `cu_seqlens`, absolute position embeddings, and visual
-RoPE at runtime. `static_visual` hoists those shape-specific tensors outside the forward graph so the
-visual tower can be compiled. If `--static-visual-pad-mode` is not `none`, the candidate path also
-adds masked dummy visual tokens and slices them away before returning `visual_features`.
+The NPU equivalence gate has passed: `static_visual` with `--vision-compile-backend none` matched
+the stored eager PromptFA baseline with 0.0 diffs across the 64-crop truth bundle and the eager
+self-check also had 0.0 diffs. Do not reintroduce a second noncompiled candidate path unless there
+is a new diagnostic reason and a planned removal gate.
 
-Before removing `eager_visual`, test whether the compile-shaped noncompiled path matches the stored
-eager NPU baseline:
+When checking whether compilation changed numerics, compare `--vision-compile-backend none` against
+the same static visual path with the real compile backend. Those two should differ only by the
+compile wrapper and backend lowering. If `--static-visual-pad-mode` is not `none`, the candidate path
+also adds masked dummy visual tokens and slices them away before returning `visual_features`.
 
-```sh
-/root/miniconda3/envs/paddle_ocr_vl_py310/bin/python vision_prefill_bench.py compare \
-  --model /home/lukaiv/models/paddle_ocr_0_9b_v_1_6 \
-  --dataset-dir /home/lukaiv/datasets/OmniDocBench_current \
-  --baseline baselines/promptfa_fp16_eager_64 \
-  --candidate-name static_visual_backend_none_equivalence \
-  --device npu:0 \
-  --dtype fp16 \
-  --vision-attention prompt_flash_attention \
-  --candidate-vision-path static_visual \
-  --vision-compile-backend none \
-  --static-visual-pad-mode none \
-  --output outputs/static_visual_backend_none_equivalence.json \
-  --repeats 1 \
-  --warmup-repeats 0
-```
-
-Report `summary.argmax_match_count`, `summary.visual_features`, `summary.image_embeds`,
-`summary.prefill_logits`, `phase_timing_s.vision_tower_vs_full_prefill_visual_features_max_abs_diff`,
-and `phase_timing_s.vision_tower_vs_full_prefill_prefill_logits_max_abs_diff`. If this matches the
-baseline on NPU, remove the redundant noncompiled path and keep one noncompiled implementation.
+Current NPU finding: TorchAir-compiled PromptFA is not numerically usable yet. On the 4-crop smoke,
+physical throughput rose to about 11.7k tok/s versus about 7.5k tok/s for backend none, but
+`argmax_match_count` was only 2/4, visual max-abs drift reached fp16-max scale, and compiled outputs
+contained NaN/Inf. Do not report compiled PromptFA speed as a valid optimization until correctness is
+fixed.
 
 ## Anti-Cheat Ledger
 

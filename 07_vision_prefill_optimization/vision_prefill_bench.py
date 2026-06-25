@@ -63,7 +63,6 @@ DTYPE_CHOICES = ("fp16", "float16", "fp32", "float32", "bf16", "bfloat16")
 VISION_ATTENTION_CHOICES = ("manual", "prompt_flash_attention")
 TIMING_MODE_CHOICES = ("standard", "phase_sync")
 VISION_COMPILE_BACKEND_CHOICES = ("none", "default", "aot_eager", "inductor", "torchair")
-CANDIDATE_VISION_PATH_CHOICES = ("eager_visual", "static_visual")
 STATIC_VISUAL_PAD_MODE_CHOICES = ("none", "mask_pad_one", "mask_pad_to_128")
 
 LAYOUT_PROMPT_BY_LABEL = {
@@ -1029,19 +1028,6 @@ def prepare_candidate_vision_forward(
     item: PrefillInput,
     device: torch.device,
 ) -> tuple[Callable[[torch.Tensor], torch.Tensor] | None, dict[str, Any]]:
-    if args.candidate_vision_path == "eager_visual":
-        return None, {
-            "candidate_vision_path": "eager_visual",
-            "enabled": False,
-            "backend": "none",
-            "compile_api": None,
-            "note": "Normal model.visual path with runtime cu_seqlens; not a compile-compatible static boundary.",
-        }
-    if args.candidate_vision_path != "static_visual":
-        raise ValueError(
-            f"unsupported candidate_vision_path={args.candidate_vision_path!r}; "
-            f"choices={CANDIDATE_VISION_PATH_CHOICES}"
-        )
     vision_forward, meta = maybe_compile_static_visual(
         model=model,
         item=item,
@@ -1845,14 +1831,10 @@ def compare_candidate(args: argparse.Namespace) -> None:
             "name": str(args.candidate_name),
             "dtype": str(dtype),
             "device": str(device),
-            "compiled": bool(
-                str(args.candidate_vision_path) == "static_visual"
-                and str(args.vision_compile_backend) != "none"
-            ),
+            "compiled": bool(str(args.vision_compile_backend) != "none"),
             "compile_api": (
                 "torch.compile"
-                if str(args.candidate_vision_path) == "static_visual"
-                and str(args.vision_compile_backend) != "none"
+                if str(args.vision_compile_backend) != "none"
                 else None
             ),
             "vision_attention": get_vision_attention_impl(),
@@ -1861,7 +1843,7 @@ def compare_candidate(args: argparse.Namespace) -> None:
             "repeats": int(args.repeats),
             "warmup_repeats": int(args.warmup_repeats),
             "timing_mode": str(args.timing_mode),
-            "candidate_vision_path": str(args.candidate_vision_path),
+            "candidate_vision_path": "static_visual",
             "vision_compile_backend": str(args.vision_compile_backend),
             "static_visual_pad_mode": str(args.static_visual_pad_mode),
             "timing_mode_note": (
@@ -1949,7 +1931,6 @@ def parse_args() -> argparse.Namespace:
     compare_parser.add_argument("--repeats", type=int, default=1)
     compare_parser.add_argument("--warmup-repeats", type=int, default=0)
     compare_parser.add_argument("--max-items", type=int, default=0)
-    compare_parser.add_argument("--candidate-vision-path", default="eager_visual", choices=CANDIDATE_VISION_PATH_CHOICES)
     compare_parser.add_argument("--vision-compile-backend", default="none", choices=VISION_COMPILE_BACKEND_CHOICES)
     compare_parser.add_argument("--static-visual-pad-mode", default="none", choices=STATIC_VISUAL_PAD_MODE_CHOICES)
 

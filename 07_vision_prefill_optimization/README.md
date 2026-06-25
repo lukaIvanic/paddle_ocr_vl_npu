@@ -55,25 +55,9 @@ tower plus adaptive MLP projector plus text prefill. Use `--timing-mode
 phase_sync` only for diagnostic phase breakdowns because it synchronizes around
 every named phase.
 
-Before using the compiled variant, verify that the compile-shaped noncompiled
-path matches the stored eager NPU baseline:
-
-```sh
-python vision_prefill_bench.py compare \
-  --baseline baselines/promptfa_fp16_eager_64 \
-  --candidate-name static_visual_backend_none_equivalence \
-  --device npu:0 \
-  --dtype fp16 \
-  --vision-attention prompt_flash_attention \
-  --candidate-vision-path static_visual \
-  --vision-compile-backend none \
-  --static-visual-pad-mode none \
-  --output outputs/static_visual_backend_none_equivalence.json
-```
-
-If that passes on NPU, `static_visual` can become the only noncompiled path.
-To test the compiled visual boundary, use the same static visual candidate with
-the TorchAir backend:
+Candidate compare always uses the compile-shaped static visual boundary. Use
+`--vision-compile-backend none` for the noncompiled path, and use the TorchAir
+backend to test compilation:
 
 ```sh
 python vision_prefill_bench.py compare \
@@ -82,7 +66,6 @@ python vision_prefill_bench.py compare \
   --device npu:0 \
   --dtype fp16 \
   --vision-attention prompt_flash_attention \
-  --candidate-vision-path static_visual \
   --vision-compile-backend torchair \
   --static-visual-pad-mode none \
   --output outputs/static_visual_torchair.json
@@ -92,6 +75,11 @@ The static visual path hoists `cu_seqlens`, absolute position embeddings, and
 vision RoPE out of the forward graph and compiles with `fullgraph=True,
 dynamic=False`. This path currently uses plain `torch.compile`; it does not yet
 load or write a TorchAir GE compile cache.
+
+The NPU equivalence gate has already passed: backend `none` matched the stored
+eager PromptFA truth bundle with 0.0 diffs. The current TorchAir PromptFA path is
+faster but numerically broken on NPU, so treat compiled speed as diagnostic until
+the NaN/Inf and argmax mismatches are fixed.
 
 ## CUDA Smoke
 
