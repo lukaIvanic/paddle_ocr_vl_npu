@@ -21,6 +21,13 @@ Experiment 07 must not import code from earlier experiment folders. Keep needed 
 code inside this folder. CUDA is acceptable for script development and orchestration checks, but
 CUDA results are not NPU speed or correctness evidence.
 
+## Development Rule
+
+Do not preserve parallel implementation paths just because one path existed first. During active
+development, code is provisional unless it is explicitly identified as the reference contract or has
+passed the relevant correctness, timing, and anti-cheat review. If two paths are introduced for
+diagnosis, write the equivalence test and remove the losing or redundant path after the test passes.
+
 ## Timing Rule
 
 Use the default `--timing-mode standard` for candidate comparisons. It records two separate
@@ -52,6 +59,31 @@ path is intentionally more dynamic: it builds `cu_seqlens`, absolute position em
 RoPE at runtime. `static_visual` hoists those shape-specific tensors outside the forward graph so the
 visual tower can be compiled. If `--static-visual-pad-mode` is not `none`, the candidate path also
 adds masked dummy visual tokens and slices them away before returning `visual_features`.
+
+Before removing `eager_visual`, test whether the compile-shaped noncompiled path matches the stored
+eager NPU baseline:
+
+```sh
+/root/miniconda3/envs/paddle_ocr_vl_py310/bin/python vision_prefill_bench.py compare \
+  --model /home/lukaiv/models/paddle_ocr_0_9b_v_1_6 \
+  --dataset-dir /home/lukaiv/datasets/OmniDocBench_current \
+  --baseline baselines/promptfa_fp16_eager_64 \
+  --candidate-name static_visual_backend_none_equivalence \
+  --device npu:0 \
+  --dtype fp16 \
+  --vision-attention prompt_flash_attention \
+  --candidate-vision-path static_visual \
+  --vision-compile-backend none \
+  --static-visual-pad-mode none \
+  --output outputs/static_visual_backend_none_equivalence.json \
+  --repeats 1 \
+  --warmup-repeats 0
+```
+
+Report `summary.argmax_match_count`, `summary.visual_features`, `summary.image_embeds`,
+`summary.prefill_logits`, `phase_timing_s.vision_tower_vs_full_prefill_visual_features_max_abs_diff`,
+and `phase_timing_s.vision_tower_vs_full_prefill_prefill_logits_max_abs_diff`. If this matches the
+baseline on NPU, remove the redundant noncompiled path and keep one noncompiled implementation.
 
 ## Anti-Cheat Ledger
 

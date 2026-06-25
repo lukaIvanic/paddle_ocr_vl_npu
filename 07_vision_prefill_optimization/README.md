@@ -55,7 +55,25 @@ tower plus adaptive MLP projector plus text prefill. Use `--timing-mode
 phase_sync` only for diagnostic phase breakdowns because it synchronizes around
 every named phase.
 
-To test a compile-compatible visual boundary, use the static visual candidate:
+Before using the compiled variant, verify that the compile-shaped noncompiled
+path matches the stored eager NPU baseline:
+
+```sh
+python vision_prefill_bench.py compare \
+  --baseline baselines/promptfa_fp16_eager_64 \
+  --candidate-name static_visual_backend_none_equivalence \
+  --device npu:0 \
+  --dtype fp16 \
+  --vision-attention prompt_flash_attention \
+  --candidate-vision-path static_visual \
+  --vision-compile-backend none \
+  --static-visual-pad-mode none \
+  --output outputs/static_visual_backend_none_equivalence.json
+```
+
+If that passes on NPU, `static_visual` can become the only noncompiled path.
+To test the compiled visual boundary, use the same static visual candidate with
+the TorchAir backend:
 
 ```sh
 python vision_prefill_bench.py compare \
