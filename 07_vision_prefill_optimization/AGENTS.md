@@ -45,6 +45,14 @@ As of this experiment version, `static_visual` uses `torch.compile(fullgraph=Tru
 It does not use TorchAir `cache_compile` / GE cache loading yet. If compile caching is added later,
 record the cache directory, cache hit/miss state, and cold versus warm first-call timing explicitly.
 
+When checking whether compilation changed numerics, compare `static_visual` with
+`--vision-compile-backend none` against the same `static_visual` path with the real compile backend.
+Those two should differ only by the compile wrapper and backend lowering. The default `eager_visual`
+path is intentionally more dynamic: it builds `cu_seqlens`, absolute position embeddings, and visual
+RoPE at runtime. `static_visual` hoists those shape-specific tensors outside the forward graph so the
+visual tower can be compiled. If `--static-visual-pad-mode` is not `none`, the candidate path also
+adds masked dummy visual tokens and slices them away before returning `visual_features`.
+
 ## Anti-Cheat Ledger
 
 Add short notes here whenever we catch a mistake that could make future results misleading. Phrase
@@ -52,15 +60,22 @@ new notes as general research rules first, with project-specific examples only w
 
 - Do not compare against regenerated "truth" during candidate benchmarks. Generate the reference
   bundle once, store it on disk, and compare candidates to that stored bundle.
-- Do not let instrumentation define the conclusion. If a synchronized diagnostic path exists, label
-  it as diagnostic and keep the claim metric separate.
-- Do not blur benchmark boundaries. Name exactly what was timed and keep larger wrapper timings as
-  secondary context unless the larger wrapper is the optimization target.
+- For real-world speed metrics such as tokens/sec, define the timed boundary before running. State
+  whether inputs are already on device, where synchronization starts and ends, and whether output is
+  synchronized before stopping the timer.
+- Keep critical compiled-section metrics focused on the compiled section. For the vision encoder,
+  report the device-loaded visual-tower timing as the primary metric, and keep broader wrapper
+  timings such as adapter/text-prefill timing as secondary context unless that wrapper is the target.
+- Replicate the realistic data path for the metric being claimed. Use real crops, real preprocessing
+  outputs, real grid/token shapes, and the same dtype/attention implementation expected in the
+  deployment path.
+- Always report the conditions that change throughput interpretation: batch size, real token counts,
+  physical padded token counts, max/context token length, padding or bucketing policy, filtered
+  labels/items, warmup/repeat counts, compile cold/warm state, and cache hit/miss state if caching is
+  involved.
 - Do not claim compile compatibility from an uncompiled or differently shaped path. A compile claim
   must include the actual compiled boundary, backend, fullgraph/dynamic settings, and first-call or
   cache behavior.
-- Do not hide padding, bucketing, filtering, or synthetic-token work. Report effective useful work
-  and physical work together whenever they differ.
 - Do not use CUDA/manual smoke results as proof that NPU PromptFA is correct or fast. They only
   prove script wiring.
 - Do not silently resize, crop, clip, or filter for speed beyond the normal PaddleOCR-VL
