@@ -315,6 +315,27 @@ weight, Q-only, and no-bias Q-only. The summary prints every
 `source`/`impl` case with max diff and compiled finite min/max so fp16-range
 garbage is visible without opening the full JSON.
 
+After `source=ln1` passes and `source=patch_pos` fails, the runner defaults to
+a small handoff-barrier matrix: `source=patch_pos`, `functional_q`, and bridges
+inserted after LayerNorm but before QKV (`contiguous`, `clone`, `add_zero`,
+reshape-contiguous, and transpose round-trip). This asks whether an explicit
+materialization barrier can break the bad GE layout handoff. If one bridge
+works, expand the projection implementations for that bridge:
+
+```sh
+BRIDGES=the_working_bridge \
+  IMPLS=module_q,functional_q,matmul_q,functional_q_no_bias,matmul_q_no_bias \
+  ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_qkv_linear_compile_probe.sh
+```
+
+To rerun the original broad matrix:
+
+```sh
+SOURCES=ln1,patch_pos BRIDGES=none \
+  IMPLS=module_three,functional_three,matmul_three,functional_single,matmul_single,module_q,functional_q,matmul_q,functional_q_no_bias,matmul_q_no_bias \
+  ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_qkv_linear_compile_probe.sh
+```
+
 ## CUDA Smoke
 
 CUDA smoke uses manual attention only and is not authoritative NPU evidence:
