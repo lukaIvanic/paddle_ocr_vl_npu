@@ -84,6 +84,10 @@ padded eager/baseline. The `--debug-static-visual-no-padding`,
 `--debug-static-visual-min-pad-tokens`, and `--debug-static-visual-pad-to-multiple` flags are
 diagnostic only. Use no-padding only as a no-mask control, not as the normal path.
 
+For masked PromptFA, use `--vision-prompt-fa-mask-sparse-mode 0` unless a specific diagnostic is
+testing sparse-mode behavior. The padding mask is a full custom block mask, not a causal/default
+mask. Running padded eager with sparse mode 1 can invalidate the padding-vs-compile split.
+
 Padding exists to make static fullgraph compilation and later batching possible while preserving
 real-token math. Treat padded rows as implementation detail, not as a second model. The invariant is:
 real tokens must not attend to padded tokens, padded tokens must not attend to real tokens, padded
@@ -135,3 +139,5 @@ new notes as general research rules first, with project-specific examples only w
   preprocessor and the explicit crop-selection policy written into the manifest.
 - Do not report padded-token throughput as effective throughput unless the output also reports
   real/effective token accounting.
+- Do not let a missing model path trigger network setup. Experiment 07 requires a local model
+  directory with `config.json`, `model.safetensors`, and `tokenizer.json`; HF download is disabled.

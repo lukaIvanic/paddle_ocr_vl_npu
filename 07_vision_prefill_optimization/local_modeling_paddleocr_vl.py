@@ -140,30 +140,26 @@ def vision_prompt_flash_attention_bnsd(
 
 
 def _resolve_model_dir(model_id_or_path: str | Path) -> Path:
-    path = Path(model_id_or_path).expanduser()
-    if path.exists():
-        return path
-    try:
-        from huggingface_hub import snapshot_download
-    except Exception as exc:  # pragma: no cover - dependency/environment guard
-        raise RuntimeError("Pass a local model directory or install huggingface_hub.") from exc
-    return Path(
-        snapshot_download(
-            str(model_id_or_path),
-            allow_patterns=[
-                "config.json",
-                "model.safetensors",
-                "tokenizer.json",
-                "tokenizer.model",
-                "tokenizer_config.json",
-                "special_tokens_map.json",
-                "added_tokens.json",
-                "preprocessor_config.json",
-                "processor_config.json",
-                "chat_template.jinja",
-                "generation_config.json",
-            ],
+    raw = str(model_id_or_path).strip()
+    if not raw:
+        raise FileNotFoundError(
+            "Experiment 07 requires --model to point to a local PaddleOCR-VL model directory; "
+            "Hugging Face download is disabled."
         )
+    path = Path(raw).expanduser()
+    if path.exists():
+        path = path.resolve()
+        required = ("config.json", "model.safetensors", "tokenizer.json")
+        missing = [name for name in required if not (path / name).is_file()]
+        if missing:
+            raise FileNotFoundError(
+                f"--model {str(path)!r} exists but is missing required PaddleOCR-VL files: {missing}"
+            )
+        return path
+    raise FileNotFoundError(
+        "Experiment 07 requires a local PaddleOCR-VL model directory; Hugging Face download is "
+        f"disabled for this benchmark. Got --model {str(model_id_or_path)!r}. On the NPU work box, "
+        "use --model /home/lukaiv/models/paddle_ocr_0_9b_v_1_6 or set MODEL to that path."
     )
 
 
@@ -1046,7 +1042,7 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
     @classmethod
     def from_pretrained(
         cls,
-        model_id_or_path: str | Path = "PaddlePaddle/PaddleOCR-VL-1.6",
+        model_id_or_path: str | Path,
         *,
         dtype: torch.dtype | None = torch.float16,
         device: str | torch.device | None = None,

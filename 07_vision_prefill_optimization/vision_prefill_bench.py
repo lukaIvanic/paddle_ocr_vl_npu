@@ -88,6 +88,7 @@ DEFAULT_DATASET_CANDIDATES = (
     Path("/home/lukaiv/data/OmniDocBench"),
     Path("/workspace/data/OmniDocBench"),
 )
+DEFAULT_MODEL = os.environ.get("MODEL", "/home/lukaiv/models/paddle_ocr_0_9b_v_1_6")
 
 
 @dataclass(frozen=True)
@@ -1947,14 +1948,14 @@ def compare_candidate(args: argparse.Namespace) -> None:
 
 
 def add_common_args(parser: argparse.ArgumentParser, *, timing_default: str) -> None:
-    parser.add_argument("--model", default="PaddlePaddle/PaddleOCR-VL-1.6")
+    parser.add_argument("--model", default=DEFAULT_MODEL, help="Local PaddleOCR-VL model directory. HF download is disabled.")
     parser.add_argument("--dataset-dir", default=None)
     parser.add_argument("--device", default="auto")
     parser.add_argument("--dtype", default="fp16", choices=DTYPE_CHOICES)
     parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
     parser.add_argument("--vision-attention", default="prompt_flash_attention", choices=VISION_ATTENTION_CHOICES)
     parser.add_argument("--vision-prompt-fa-layout", default="bnsd", choices=("bnsd", "bsnd", "bsh"))
-    parser.add_argument("--vision-prompt-fa-mask-sparse-mode", type=int, default=1, choices=(0, 1))
+    parser.add_argument("--vision-prompt-fa-mask-sparse-mode", type=int, default=0, choices=(0, 1))
     parser.add_argument("--cache-length", type=int, default=2048)
     parser.add_argument("--timing-mode", default=str(timing_default), choices=TIMING_MODE_CHOICES)
 

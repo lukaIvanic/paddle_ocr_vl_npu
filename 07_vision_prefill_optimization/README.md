@@ -17,6 +17,9 @@ The reference contract is eager/non-compiled fp16 PromptFA. It stores one `.pt`
 file per selected crop under `baselines/promptfa_fp16_eager_64/tensors/` plus a
 `reference_manifest.json`.
 
+Pass a local model directory with `--model` or set `MODEL`. Hugging Face download
+is disabled in this experiment so missing model paths fail fast.
+
 Each tensor file stores:
 
 - `visual_features`: native-resolution visual encoder output
@@ -34,6 +37,7 @@ python vision_prefill_bench.py compare \
   --device npu:0 \
   --dtype fp16 \
   --vision-attention prompt_flash_attention \
+  --vision-prompt-fa-mask-sparse-mode 0 \
   --output outputs/candidate_name.json
 ```
 
@@ -68,6 +72,7 @@ python vision_prefill_bench.py compare \
   --device npu:0 \
   --dtype fp16 \
   --vision-attention prompt_flash_attention \
+  --vision-prompt-fa-mask-sparse-mode 0 \
   --vision-compile-backend torchair \
   --output outputs/static_visual_torchair.json
 ```
@@ -89,6 +94,9 @@ and `--debug-static-visual-min-pad-tokens` /
 `--debug-static-visual-pad-to-multiple` can adjust the padded physical shape.
 Use these to separate padding/mask numerics from TorchAir compile numerics; do
 not use them for normal throughput claims.
+
+For padded PromptFA, sparse mode `0` is the normal setting because the padding
+mask is a full custom block mask. Sparse mode `1` is only for diagnostics.
 
 The NPU equivalence gate has already passed: backend `none` matched the stored
 eager PromptFA truth bundle with 0.0 diffs before the padding path was unified.
