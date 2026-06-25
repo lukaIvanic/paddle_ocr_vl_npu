@@ -61,7 +61,7 @@ BOS = "<|begin_of_sentence|>"
 NPU_JIT_COMPILE_CHOICES = ("default", "off", "on")
 DTYPE_CHOICES = ("fp16", "float16", "fp32", "float32", "bf16", "bfloat16")
 VISION_ATTENTION_CHOICES = ("manual", "prompt_flash_attention")
-TIMING_MODE_CHOICES = ("phase_sync", "e2e", "both")
+TIMING_MODE_CHOICES = ("phase_sync", "vision_tower", "full_prefill_e2e", "e2e", "both")
 VISION_COMPILE_BACKEND_CHOICES = ("none", "default", "aot_eager", "inductor", "torchair")
 CANDIDATE_VISION_PATH_CHOICES = ("eager_visual", "static_visual")
 STATIC_VISUAL_PAD_MODE_CHOICES = ("none", "mask_pad_one", "mask_pad_to_128")
@@ -1083,6 +1083,86 @@ def scatter_projected_image_embeds(
 
 
 @torch.inference_mode()
+def compute_visual_tower_only(
+    *,
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    item: PrefillInput,
+    device: torch.device,
+    vision_forward: Callable[[torch.Tensor], torch.Tensor] | None = None,
+) -> tuple[torch.Tensor, dict[str, float]]:
+    pixel_values = item.pixel_values.to(device=device, dtype=model.visual.dtype)
+    image_grid_thw = item.image_grid_thw
+    cu_seqlens = None
+    if vision_forward is None:
+        cu_seqlens = build_vision_cu_seqlens(image_grid_thw, device=device)
+
+    maybe_sync(device)
+    start = time.perf_counter()
+    if vision_forward is None:
+        visual_features = model.visual(
+            pixel_values=pixel_values.unsqueeze(0),
+            image_grid_thw=image_grid_thw,
+            cu_seqlens=cu_seqlens,
+        )
+    else:
+        visual_features = vision_forward(pixel_values)
+    maybe_sync(device)
+    return visual_features.detach(), {"visual_tower_e2e_s": float(time.perf_counter() - start)}
+
+
+@torch.inference_mode()
+def compute_prefill_tail_from_visual_features(
+    *,
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    item: PrefillInput,
+    device: torch.device,
+    cache_length: int,
+    visual_features: torch.Tensor,
+) -> dict[str, torch.Tensor]:
+    input_ids = item.input_ids.to(device)
+    attention_mask = item.attention_mask.to(device)
+    image_grid_thw = item.image_grid_thw
+    if int(input_ids.shape[1]) > int(cache_length):
+        raise ValueError(
+            f"input length {int(input_ids.shape[1])} exceeds cache_length={int(cache_length)} for item {item.entry.get('id')}"
+        )
+    image_embeds = model.mlp_AR(visual_features, image_grid_thw)
+    inputs_embeds = model.model.embed_tokens(input_ids)
+    inputs_embeds = scatter_projected_image_embeds(
+        model=model,
+        input_ids=input_ids,
+        inputs_embeds=inputs_embeds,
+        image_embeds=image_embeds,
+    )
+    position_ids_cpu, _rope_deltas_cpu = model.get_rope_index(item.input_ids, item.image_grid_thw, item.attention_mask)
+    position_ids = position_ids_cpu.to(device)
+    cache = model.allocate_static_cache(
+        batch_size=int(inputs_embeds.shape[0]),
+        cache_length=int(cache_length),
+        device=inputs_embeds.device,
+        dtype=inputs_embeds.dtype,
+        init_mode="zeros",
+    )
+    hidden_states = model.model.forward_prefill_static(
+        inputs_embeds=inputs_embeds,
+        attention_mask=attention_mask,
+        position_ids=position_ids,
+        cache=cache,
+    )
+    prefill_logits = model.lm_head(hidden_states[:, -1:, :])
+    return {
+        "visual_features": visual_features.detach(),
+        "image_embeds": image_embeds.detach(),
+        "prefill_logits": prefill_logits.detach(),
+        "prefill_hidden_last": hidden_states[:, -1:, :].detach(),
+        "input_ids": input_ids.detach(),
+        "attention_mask": attention_mask.detach(),
+        "image_grid_thw": image_grid_thw.detach(),
+        "prefill_argmax": torch.argmax(prefill_logits[:, -1, :].float(), dim=-1).detach(),
+    }
+
+
+@torch.inference_mode()
 def compute_vision_prefill(
     *,
     model: LocalPaddleOCRVLForConditionalGeneration,
@@ -1193,6 +1273,8 @@ def run_prefill_measurement(
 ) -> tuple[dict[str, torch.Tensor], dict[str, float]]:
     if timing_mode not in TIMING_MODE_CHOICES:
         raise ValueError(f"unsupported timing_mode={timing_mode!r}; choices={TIMING_MODE_CHOICES}")
+    if timing_mode == "e2e":
+        timing_mode = "full_prefill_e2e"
     if timing_mode == "phase_sync":
         return compute_vision_prefill(
             model=model,
@@ -1203,7 +1285,22 @@ def run_prefill_measurement(
             record_phase_timings=True,
             vision_forward=vision_forward,
         )
-    if timing_mode == "e2e":
+    if timing_mode == "vision_tower":
+        visual_features, timing = compute_visual_tower_only(
+            model=model,
+            item=item,
+            device=device,
+            vision_forward=vision_forward,
+        )
+        tensors = compute_prefill_tail_from_visual_features(
+            model=model,
+            item=item,
+            device=device,
+            cache_length=cache_length,
+            visual_features=visual_features,
+        )
+        return tensors, timing
+    if timing_mode == "full_prefill_e2e":
         maybe_sync(device)
         start = time.perf_counter()
         tensors, _timing = compute_vision_prefill(
@@ -1216,7 +1313,7 @@ def run_prefill_measurement(
             vision_forward=vision_forward,
         )
         maybe_sync(device)
-        return tensors, {"e2e_wall_s": float(time.perf_counter() - start)}
+        return tensors, {"full_prefill_e2e_s": float(time.perf_counter() - start)}
 
     phase_tensors, phase_timing = compute_vision_prefill(
         model=model,
@@ -1227,23 +1324,24 @@ def run_prefill_measurement(
         record_phase_timings=True,
         vision_forward=vision_forward,
     )
-    maybe_sync(device)
-    start = time.perf_counter()
-    e2e_tensors, _timing = compute_vision_prefill(
+    visual_features, visual_timing = compute_visual_tower_only(
+        model=model,
+        item=item,
+        device=device,
+        vision_forward=vision_forward,
+    )
+    vision_tensors = compute_prefill_tail_from_visual_features(
         model=model,
         item=item,
         device=device,
         cache_length=cache_length,
-        sync=False,
-        record_phase_timings=False,
-        vision_forward=vision_forward,
+        visual_features=visual_features,
     )
-    maybe_sync(device)
-    phase_timing["e2e_wall_s"] = float(time.perf_counter() - start)
-    phase_timing["phase_vs_e2e_prefill_logits_max_abs_diff"] = float(
-        torch.max(torch.abs(phase_tensors["prefill_logits"].float() - e2e_tensors["prefill_logits"].float())).item()
+    phase_timing.update(visual_timing)
+    phase_timing["phase_vs_vision_tower_prefill_logits_max_abs_diff"] = float(
+        torch.max(torch.abs(phase_tensors["prefill_logits"].float() - vision_tensors["prefill_logits"].float())).item()
     )
-    return e2e_tensors, phase_timing
+    return vision_tensors, phase_timing
 
 
 def select_stratified_inputs(inputs: list[PrefillInput], *, count: int, bucket_count: int) -> tuple[list[PrefillInput], dict[str, Any]]:
@@ -1413,6 +1511,30 @@ def aggregate_diff(rows: list[dict[str, Any]], key: str) -> dict[str, Any]:
     }
 
 
+def aggregate_timed_token_rate(rows: list[dict[str, Any]], *, token_key: str, time_key: str) -> dict[str, Any]:
+    token_total = 0.0
+    time_total = 0.0
+    repeat_count = 0
+    item_count = 0
+    for row in rows:
+        timing_stats = row.get("timing_s", {}).get(time_key, {})
+        count = int(timing_stats.get("count", 0) or 0)
+        time_sum = float(timing_stats.get("sum", 0.0) or 0.0)
+        if count <= 0 or time_sum <= 0.0:
+            continue
+        token_total += float(row[token_key]) * float(count)
+        time_total += time_sum
+        repeat_count += count
+        item_count += 1
+    return {
+        "item_count": int(item_count),
+        "repeat_count": int(repeat_count),
+        "tokens": float(token_total),
+        "time_s": float(time_total),
+        "tokens_per_s": (float(token_total) / float(time_total)) if time_total > 0.0 else None,
+    }
+
+
 def build_inputs_for_args(args: argparse.Namespace, *, model_dir: Path, tokenizer: Tokenizer) -> tuple[list[PrefillInput], dict[str, Any]]:
     pages, page_summary = load_pages(resolve_dataset_dir(args.dataset_dir), page_start=int(args.page_start), num_pages=int(args.num_pages))
     layout_pages, layout_summary = build_gt_layout_pages(
@@ -1566,8 +1688,9 @@ def make_baseline(args: argparse.Namespace) -> None:
             "decode_in_scope": False,
             "timing_mode": str(args.timing_mode),
             "timing_mode_note": (
-                "phase_sync uses one device synchronize before and after every named phase; e2e uses one "
-                "device synchronize around the whole prefill call; both runs both contracts and returns e2e tensors."
+                "phase_sync uses one device synchronize before and after every named phase; vision_tower "
+                "measures only the device-resident visual tower call; full_prefill_e2e/e2e synchronize around "
+                "the whole prefill call; both runs phase_sync plus vision_tower and returns vision_tower tensors."
             ),
         },
         "model": str(model_dir),
@@ -1688,6 +1811,12 @@ def compare_candidate(args: argparse.Namespace) -> None:
             )
         repeat_timings: list[dict[str, float]] = []
         candidate_tensors: dict[str, torch.Tensor] | None = None
+        real_vision_tokens = int(vision_tokens(item))
+        candidate_physical_vision_tokens = int(
+            vision_compile.get("static_visual_physical_seq_len", real_vision_tokens)
+            if isinstance(vision_compile, dict)
+            else real_vision_tokens
+        )
         for _ in range(int(args.repeats)):
             candidate_tensors, timing = run_prefill_measurement(
                 model=model,
@@ -1697,6 +1826,10 @@ def compare_candidate(args: argparse.Namespace) -> None:
                 timing_mode=str(args.timing_mode),
                 vision_forward=vision_forward,
             )
+            visual_tower_s = float(timing.get("visual_tower_e2e_s", 0.0) or 0.0)
+            if visual_tower_s > 0.0:
+                timing["visual_tower_effective_tokens_per_s"] = float(real_vision_tokens) / visual_tower_s
+                timing["visual_tower_physical_tokens_per_s"] = float(candidate_physical_vision_tokens) / visual_tower_s
             repeat_timings.append(timing)
             timing_rows.append(timing)
         assert candidate_tensors is not None
@@ -1713,6 +1846,7 @@ def compare_candidate(args: argparse.Namespace) -> None:
             {
                 "index": int(idx),
                 **input_row(item, merge_size=merge_size),
+                "candidate_physical_vision_tokens": int(candidate_physical_vision_tokens),
                 "diffs": diffs,
                 "baseline_topk": baseline_topk,
                 "candidate_topk": candidate_topk,
@@ -1758,8 +1892,9 @@ def compare_candidate(args: argparse.Namespace) -> None:
             "vision_compile_backend": str(args.vision_compile_backend),
             "static_visual_pad_mode": str(args.static_visual_pad_mode),
             "timing_mode_note": (
-                "e2e is the real candidate latency metric: one synchronize before and after the whole prefill. "
-                "phase_sync is diagnostic and intentionally syncs around every named phase."
+                "vision_tower is the headline vision-prefill speed metric: pixel tensor already on device, "
+                "one synchronize before and after the visual tower call. full_prefill_e2e includes adapter "
+                "and text prefill; phase_sync is diagnostic and intentionally syncs around every named phase."
             ),
         },
         "baseline": {
@@ -1779,7 +1914,18 @@ def compare_candidate(args: argparse.Namespace) -> None:
                 key: stats([float(row[key]) for row in timing_rows if key in row])
                 for key in sorted({key for row in timing_rows for key in row})
             },
+            "visual_tower_effective_tokens_per_s": aggregate_timed_token_rate(
+                rows,
+                token_key="vision_tokens",
+                time_key="visual_tower_e2e_s",
+            ),
+            "visual_tower_physical_tokens_per_s": aggregate_timed_token_rate(
+                rows,
+                token_key="candidate_physical_vision_tokens",
+                time_key="visual_tower_e2e_s",
+            ),
             "vision_tokens": stats([float(row["vision_tokens"]) for row in rows]),
+            "candidate_physical_vision_tokens": stats([float(row["candidate_physical_vision_tokens"]) for row in rows]),
             "projected_image_tokens": stats([float(row["projected_image_tokens"]) for row in rows]),
         },
         "items": rows,
@@ -1823,7 +1969,7 @@ def parse_args() -> argparse.Namespace:
     make_parser.add_argument("--force", action="store_true")
 
     compare_parser = subparsers.add_parser("compare", help="Compare a candidate path against a stored baseline.")
-    add_common_args(compare_parser, timing_default="e2e")
+    add_common_args(compare_parser, timing_default="vision_tower")
     compare_parser.add_argument("--baseline", default=str(SCRIPT_DIR / "baselines" / "promptfa_fp16_eager_64"))
     compare_parser.add_argument("--candidate-name", default="candidate")
     compare_parser.add_argument("--output", default=str(SCRIPT_DIR / "outputs" / "candidate_compare.json"))

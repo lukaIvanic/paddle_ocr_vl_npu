@@ -41,8 +41,15 @@ The compare command re-extracts the exact manifest crops, verifies tensor file
 SHA256s, computes the same three intermediate targets, and reports per-item plus
 aggregate diffs.
 
-Candidate timing defaults to `--timing-mode e2e`, which uses one device
-synchronize before and after the whole prefill call. Use `--timing-mode
+Candidate timing defaults to `--timing-mode vision_tower`. This is the headline
+vision-prefill speed metric: the crop's pixel tensor is already on the target
+device, static inputs such as `cu_seqlens` are prepared, the script synchronizes,
+calls the visual tower, and synchronizes again. The JSON reports both
+`visual_tower_effective_tokens_per_s` and
+`visual_tower_physical_tokens_per_s`.
+
+Use `--timing-mode full_prefill_e2e` only when intentionally measuring visual
+tower plus adaptive MLP projector plus text prefill. Use `--timing-mode
 phase_sync` only for diagnostic phase breakdowns because it synchronizes around
 every named phase.
 
