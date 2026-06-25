@@ -100,6 +100,7 @@ QKV_LINEAR_PROBE_IMPL_CHOICES = (
     "matmul_q_no_bias",
 )
 QKV_LINEAR_PROBE_SOURCE_CHOICES = ("ln1", "patch_pos")
+QKV_LINEAR_PROBE_LN_IMPL_CHOICES = ("module", "functional", "manual_fp32", "manual_fp16")
 QKV_LINEAR_PROBE_BRIDGE_CHOICES = (
     "none",
     "contiguous",
@@ -107,6 +108,8 @@ QKV_LINEAR_PROBE_BRIDGE_CHOICES = (
     "add_zero",
     "mul_one",
     "reshape_contiguous",
+    "format_cast_nd",
+    "format_cast_nz_then_nd",
     "transpose_roundtrip",
 )
 STATIC_VISUAL_PAD_POLICY = "always_mask_pad_to_atlas_inference_alignment"
@@ -1183,6 +1186,14 @@ class VisionQKVLinearProbeModule(torch.nn.Module):
             return hidden_states * torch.ones((), device=hidden_states.device, dtype=hidden_states.dtype)
         if self.bridge == "reshape_contiguous":
             return hidden_states.reshape(hidden_states.shape[0], hidden_states.shape[-1]).contiguous()
+        if self.bridge == "format_cast_nd":
+            import torch_npu
+
+            return torch_npu.npu_format_cast(hidden_states, 2)
+        if self.bridge == "format_cast_nz_then_nd":
+            import torch_npu
+
+            return torch_npu.npu_format_cast(torch_npu.npu_format_cast(hidden_states, 29), 2)
         if self.bridge == "transpose_roundtrip":
             return hidden_states.transpose(0, 1).contiguous().transpose(0, 1).contiguous()
         raise RuntimeError(f"unreachable QKV linear bridge={self.bridge!r}")
@@ -1236,13 +1247,52 @@ class VisionQKVLinearProbeModule(torch.nn.Module):
 class VisionLayerNormQKVLinearProbeModule(torch.nn.Module):
     """LayerNorm plus QKV projection as the smallest producer-consumer graph."""
 
-    def __init__(self, layer_norm: torch.nn.Module, attention: torch.nn.Module, *, impl: str, bridge: str = "none"):
+    def __init__(
+        self,
+        layer_norm: torch.nn.Module,
+        attention: torch.nn.Module,
+        *,
+        impl: str,
+        bridge: str = "none",
+        ln_impl: str = "module",
+    ):
         super().__init__()
         self.layer_norm = layer_norm
+        self.ln_impl = str(ln_impl)
         self.qkv = VisionQKVLinearProbeModule(attention, impl=impl, bridge=bridge)
 
+    def _layer_norm(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        if self.ln_impl == "module":
+            return self.layer_norm(hidden_states)
+        weight = self.layer_norm.weight
+        bias = self.layer_norm.bias
+        eps = float(self.layer_norm.eps)
+        if self.ln_impl == "functional":
+            return F.layer_norm(hidden_states, (hidden_states.shape[-1],), weight, bias, eps)
+        if self.ln_impl == "manual_fp32":
+            x = hidden_states.float()
+            mean = x.mean(dim=-1, keepdim=True)
+            var = (x - mean).pow(2).mean(dim=-1, keepdim=True)
+            y = (x - mean) * torch.rsqrt(var + eps)
+            y = y.to(dtype=hidden_states.dtype)
+            if weight is not None:
+                y = y * weight
+            if bias is not None:
+                y = y + bias
+            return y
+        if self.ln_impl == "manual_fp16":
+            mean = hidden_states.mean(dim=-1, keepdim=True)
+            var = (hidden_states - mean).pow(2).mean(dim=-1, keepdim=True)
+            y = (hidden_states - mean) * torch.rsqrt(var + eps)
+            if weight is not None:
+                y = y * weight
+            if bias is not None:
+                y = y + bias
+            return y
+        raise RuntimeError(f"unreachable QKV LayerNorm impl={self.ln_impl!r}")
+
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
-        return self.qkv(self.layer_norm(hidden_states))
+        return self.qkv(self._layer_norm(hidden_states))
 
 
 def import_torchair():
@@ -2669,6 +2719,16 @@ def parse_qkv_linear_probe_sources(raw: str) -> list[str]:
     return sources
 
 
+def parse_qkv_linear_probe_ln_impls(raw: str) -> list[str]:
+    impls = [impl.strip() for impl in str(raw).replace(";", ",").split(",") if impl.strip()]
+    if not impls:
+        raise ValueError("--ln-impls must contain at least one implementation")
+    bad = [impl for impl in impls if impl not in QKV_LINEAR_PROBE_LN_IMPL_CHOICES]
+    if bad:
+        raise ValueError(f"unsupported --ln-impls entries {bad}; choices={QKV_LINEAR_PROBE_LN_IMPL_CHOICES}")
+    return impls
+
+
 def parse_qkv_linear_probe_bridges(raw: str) -> list[str]:
     bridges = [bridge.strip() for bridge in str(raw).replace(";", ",").split(",") if bridge.strip()]
     if not bridges:
@@ -2687,6 +2747,37 @@ def qkv_linear_compiled_matches_eager(row: dict[str, Any]) -> bool:
         and diff.get("lhs_nonfinite_count") == 0
         and diff.get("rhs_nonfinite_count") == 0
     )
+
+
+def configure_npu_mm_bmm_format_nd(mode: str, device: torch.device) -> dict[str, Any]:
+    info: dict[str, Any] = {"mode": str(mode), "applied": False}
+    if str(mode) == "default":
+        return info
+    if device.type != "npu":
+        return {**info, "error": "NPU-only option"}
+    import torch_npu
+
+    requested = str(mode) == "enable"
+    option = {"MM_BMM_ND_ENABLE": "enable" if requested else "disable"}
+    setter = getattr(torch_npu.npu, "set_option", None)
+    if setter is None:
+        raise RuntimeError("torch_npu.npu.set_option is not available; cannot set MM_BMM_ND_ENABLE")
+    before = None
+    getter = getattr(torch_npu.npu, "get_mm_bmm_format_nd", None)
+    if getter is not None:
+        try:
+            before = bool(getter())
+        except Exception:
+            before = None
+    setter(option)
+    after = None
+    if getter is not None:
+        try:
+            after = bool(getter())
+        except Exception:
+            after = None
+    info.update({"applied": True, "requested": requested, "option": option, "before": before, "after": after})
+    return info
 
 
 @torch.inference_mode()
@@ -2941,6 +3032,7 @@ def probe_visual_prefix_compile(args: argparse.Namespace) -> None:
 def probe_qkv_linear_compile(args: argparse.Namespace) -> None:
     apply_runtime_env(args)
     model, model_dir, device, dtype = load_model_for_args(args)
+    mm_bmm_format_nd_info = configure_npu_mm_bmm_format_nd(str(args.npu_mm_bmm_format_nd), device)
     tokenizer = Tokenizer.from_file(str(model_dir / "tokenizer.json"))
     baseline_path = Path(args.baseline).expanduser().resolve()
     manifest = load_baseline_manifest(baseline_path)
@@ -2953,6 +3045,7 @@ def probe_qkv_linear_compile(args: argparse.Namespace) -> None:
     impls = parse_qkv_linear_probe_impls(args.impls)
     sources = parse_qkv_linear_probe_sources(args.sources)
     bridges = parse_qkv_linear_probe_bridges(args.bridges)
+    ln_impls = parse_qkv_linear_probe_ln_impls(args.ln_impls)
 
     backend_name = str(args.vision_compile_backend)
     backend = None
@@ -3015,121 +3108,141 @@ def probe_qkv_linear_compile(args: argparse.Namespace) -> None:
         for source in sources:
             if source == "ln1":
                 input_tensor = ln1_hidden
+                source_ln_impls = ("precomputed",)
             elif source == "patch_pos":
                 input_tensor = patch_pos_hidden
+                source_ln_impls = tuple(ln_impls)
             else:
                 raise RuntimeError(f"unreachable QKV source={source!r}")
-            for bridge in bridges:
-                for impl in impls:
-                    row: dict[str, Any] = {
-                        "item_index": int(item_index),
-                        "id": str(item.entry.get("id")),
-                        "layout_label": str(item.entry.get("layout_label")),
-                        "source": str(source),
-                        "bridge": str(bridge),
-                        "impl": str(impl),
-                        "backend": str(backend_name),
-                        "device": str(device),
-                        "dtype": str(dtype),
-                        "image_grid_thw": [int(value) for value in item.image_grid_thw.flatten().tolist()],
-                        "static_real_seq_len": int(ln1_module.static_real_seq_len),
-                        "static_pad_tokens": int(ln1_module.static_pad_tokens),
-                        "static_physical_seq_len": int(ln1_module.static_physical_seq_len),
-                        "static_physical_seq_mod16": int(ln1_module.static_physical_seq_len % 16),
-                        "static_physical_seq_mod128": int(ln1_module.static_physical_seq_len % 128),
-                        "input_summary": tensor_probe_summary(input_tensor),
-                        "q_weight_summary": tensor_probe_summary(attention.q_proj.weight),
-                        "q_bias_summary": None
-                        if attention.q_proj.bias is None
-                        else tensor_probe_summary(attention.q_proj.bias),
-                    }
-                    try:
-                        if source == "ln1":
-                            module = VisionQKVLinearProbeModule(attention, impl=str(impl), bridge=str(bridge)).eval()
-                        else:
-                            module = VisionLayerNormQKVLinearProbeModule(
-                                encoder_layer.layer_norm1,
-                                attention,
-                                impl=str(impl),
-                                bridge=str(bridge),
-                            ).eval()
-
-                        maybe_sync(device)
-                        start = time.perf_counter()
-                        eager_before = module(input_tensor)
-                        maybe_sync(device)
-                        eager_before_s = float(time.perf_counter() - start)
-                        row["eager_before_s"] = eager_before_s
-                        row["eager_before_summary"] = tensor_probe_summary(eager_before)
-
-                        if backend_name == "none":
-                            row.update(
-                                {
-                                    "ok": True,
-                                    "compiled": False,
-                                    "compiled_second_matches_eager": None,
-                                    "eager_after_vs_eager_before": diff_stats(eager_before.cpu(), eager_before.cpu()),
-                                }
-                            )
-                        else:
-                            import torch._dynamo
-
-                            torch._dynamo.reset()
-                            maybe_sync(device)
-                            start = time.perf_counter()
-                            compiled = torch.compile(module, **compile_kwargs)
-                            maybe_sync(device)
-                            compile_wrapper_s = float(time.perf_counter() - start)
+            for ln_impl in source_ln_impls:
+                for bridge in bridges:
+                    for impl in impls:
+                        row: dict[str, Any] = {
+                            "item_index": int(item_index),
+                            "id": str(item.entry.get("id")),
+                            "layout_label": str(item.entry.get("layout_label")),
+                            "source": str(source),
+                            "ln_impl": str(ln_impl),
+                            "bridge": str(bridge),
+                            "impl": str(impl),
+                            "backend": str(backend_name),
+                            "device": str(device),
+                            "dtype": str(dtype),
+                            "image_grid_thw": [int(value) for value in item.image_grid_thw.flatten().tolist()],
+                            "static_real_seq_len": int(ln1_module.static_real_seq_len),
+                            "static_pad_tokens": int(ln1_module.static_pad_tokens),
+                            "static_physical_seq_len": int(ln1_module.static_physical_seq_len),
+                            "static_physical_seq_mod16": int(ln1_module.static_physical_seq_len % 16),
+                            "static_physical_seq_mod128": int(ln1_module.static_physical_seq_len % 128),
+                            "input_summary": tensor_probe_summary(input_tensor),
+                            "q_weight_summary": tensor_probe_summary(attention.q_proj.weight),
+                            "q_bias_summary": None
+                            if attention.q_proj.bias is None
+                            else tensor_probe_summary(attention.q_proj.bias),
+                        }
+                        try:
+                            if source == "ln1":
+                                module = VisionQKVLinearProbeModule(
+                                    attention,
+                                    impl=str(impl),
+                                    bridge=str(bridge),
+                                ).eval()
+                            else:
+                                module = VisionLayerNormQKVLinearProbeModule(
+                                    encoder_layer.layer_norm1,
+                                    attention,
+                                    impl=str(impl),
+                                    bridge=str(bridge),
+                                    ln_impl=str(ln_impl),
+                                ).eval()
 
                             maybe_sync(device)
                             start = time.perf_counter()
-                            compiled_first = compiled(input_tensor)
+                            eager_before = module(input_tensor)
                             maybe_sync(device)
-                            compiled_first_s = float(time.perf_counter() - start)
+                            eager_before_s = float(time.perf_counter() - start)
+                            row["eager_before_s"] = eager_before_s
+                            row["eager_before_summary"] = tensor_probe_summary(eager_before)
 
-                            maybe_sync(device)
-                            start = time.perf_counter()
-                            compiled_second = compiled(input_tensor)
-                            maybe_sync(device)
-                            compiled_second_s = float(time.perf_counter() - start)
+                            if backend_name == "none":
+                                row.update(
+                                    {
+                                        "ok": True,
+                                        "compiled": False,
+                                        "compiled_second_matches_eager": None,
+                                        "eager_after_vs_eager_before": diff_stats(
+                                            eager_before.cpu(),
+                                            eager_before.cpu(),
+                                        ),
+                                    }
+                                )
+                            else:
+                                import torch._dynamo
 
-                            maybe_sync(device)
-                            start = time.perf_counter()
-                            eager_after = module(input_tensor)
-                            maybe_sync(device)
-                            eager_after_s = float(time.perf_counter() - start)
-                            row.update(
-                                {
-                                    "ok": True,
-                                    "compiled": True,
-                                    "compile_wrapper_s": compile_wrapper_s,
-                                    "compiled_first_s": compiled_first_s,
-                                    "compiled_second_s": compiled_second_s,
-                                    "eager_after_s": eager_after_s,
-                                    "compiled_first_summary": tensor_probe_summary(compiled_first),
-                                    "compiled_second_summary": tensor_probe_summary(compiled_second),
-                                    "compiled_first_vs_eager_before": diff_stats(
-                                        compiled_first.cpu(), eager_before.cpu()
-                                    ),
-                                    "compiled_second_vs_eager_before": diff_stats(
-                                        compiled_second.cpu(), eager_before.cpu()
-                                    ),
-                                    "compiled_first_vs_second": diff_stats(compiled_first.cpu(), compiled_second.cpu()),
-                                    "eager_after_vs_eager_before": diff_stats(eager_after.cpu(), eager_before.cpu()),
-                                }
-                            )
-                            row["compiled_second_matches_eager"] = qkv_linear_compiled_matches_eager(row)
-                    except Exception as exc:
-                        row.update({"ok": False, "error": f"{exc.__class__.__name__}: {exc}"})
-                    rows.append(row)
-                    print(
-                        f"QKV_LINEAR source={source} bridge={bridge} impl={impl} ok={row.get('ok')} "
-                        f"match={row.get('compiled_second_matches_eager')} "
-                        f"max_abs={row.get('compiled_second_vs_eager_before', {}).get('max_abs_diff')} "
-                        f"compiled_max={row.get('compiled_second_summary', {}).get('finite_max')}",
-                        file=sys.stderr,
-                        flush=True,
-                    )
+                                torch._dynamo.reset()
+                                maybe_sync(device)
+                                start = time.perf_counter()
+                                compiled = torch.compile(module, **compile_kwargs)
+                                maybe_sync(device)
+                                compile_wrapper_s = float(time.perf_counter() - start)
+
+                                maybe_sync(device)
+                                start = time.perf_counter()
+                                compiled_first = compiled(input_tensor)
+                                maybe_sync(device)
+                                compiled_first_s = float(time.perf_counter() - start)
+
+                                maybe_sync(device)
+                                start = time.perf_counter()
+                                compiled_second = compiled(input_tensor)
+                                maybe_sync(device)
+                                compiled_second_s = float(time.perf_counter() - start)
+
+                                maybe_sync(device)
+                                start = time.perf_counter()
+                                eager_after = module(input_tensor)
+                                maybe_sync(device)
+                                eager_after_s = float(time.perf_counter() - start)
+                                row.update(
+                                    {
+                                        "ok": True,
+                                        "compiled": True,
+                                        "compile_wrapper_s": compile_wrapper_s,
+                                        "compiled_first_s": compiled_first_s,
+                                        "compiled_second_s": compiled_second_s,
+                                        "eager_after_s": eager_after_s,
+                                        "compiled_first_summary": tensor_probe_summary(compiled_first),
+                                        "compiled_second_summary": tensor_probe_summary(compiled_second),
+                                        "compiled_first_vs_eager_before": diff_stats(
+                                            compiled_first.cpu(),
+                                            eager_before.cpu(),
+                                        ),
+                                        "compiled_second_vs_eager_before": diff_stats(
+                                            compiled_second.cpu(),
+                                            eager_before.cpu(),
+                                        ),
+                                        "compiled_first_vs_second": diff_stats(
+                                            compiled_first.cpu(),
+                                            compiled_second.cpu(),
+                                        ),
+                                        "eager_after_vs_eager_before": diff_stats(
+                                            eager_after.cpu(),
+                                            eager_before.cpu(),
+                                        ),
+                                    }
+                                )
+                                row["compiled_second_matches_eager"] = qkv_linear_compiled_matches_eager(row)
+                        except Exception as exc:
+                            row.update({"ok": False, "error": f"{exc.__class__.__name__}: {exc}"})
+                        rows.append(row)
+                        print(
+                            f"QKV_LINEAR source={source} ln_impl={ln_impl} bridge={bridge} impl={impl} "
+                            f"ok={row.get('ok')} match={row.get('compiled_second_matches_eager')} "
+                            f"max_abs={row.get('compiled_second_vs_eager_before', {}).get('max_abs_diff')} "
+                            f"compiled_max={row.get('compiled_second_summary', {}).get('finite_max')}",
+                            file=sys.stderr,
+                            flush=True,
+                        )
     finally:
         if old_capture_scalar_outputs is not None:
             import torch._dynamo
@@ -3144,6 +3257,7 @@ def probe_qkv_linear_compile(args: argparse.Namespace) -> None:
     by_source_impl = [
         {
             "source": row.get("source"),
+            "ln_impl": row.get("ln_impl"),
             "bridge": row.get("bridge"),
             "impl": row.get("impl"),
             "ok": row.get("ok"),
@@ -3178,6 +3292,7 @@ def probe_qkv_linear_compile(args: argparse.Namespace) -> None:
         if first_mismatch is None
         else {
             "source": first_mismatch.get("source"),
+            "ln_impl": first_mismatch.get("ln_impl"),
             "bridge": first_mismatch.get("bridge"),
             "impl": first_mismatch.get("impl"),
             "shape": first_mismatch.get("compiled_second_vs_eager_before", {}).get("shape"),
@@ -3193,6 +3308,7 @@ def probe_qkv_linear_compile(args: argparse.Namespace) -> None:
         "failed_case_keys": [
             {
                 "source": row.get("source"),
+                "ln_impl": row.get("ln_impl"),
                 "bridge": row.get("bridge"),
                 "impl": row.get("impl"),
                 "error": row.get("error"),
@@ -3217,12 +3333,19 @@ def probe_qkv_linear_compile(args: argparse.Namespace) -> None:
         "capture_scalar_outputs_previous": old_capture_scalar_outputs,
         "dynamo_reset_before_compile": bool(backend_name != "none"),
         "compile_backend_meta": backend_meta,
+        "npu_mm_bmm_format_nd": mm_bmm_format_nd_info,
         "sources": sources,
+        "ln_impls": ln_impls,
         "bridges": bridges,
         "impls": impls,
         "source_meaning": {
             "ln1": "QKV-only graph fed by the materialized eager layer0 layer_norm1 output.",
             "patch_pos": "LayerNorm->QKV graph fed by the materialized eager patch+position output.",
+        },
+        "bridge_meaning": {
+            "format_cast_nd": "Explicit torch_npu.npu_format_cast(tensor, 2) after LayerNorm and before QKV.",
+            "format_cast_nz_then_nd": "Explicit tensor -> FRACTAL_NZ(29) -> ND(2) format transition after LayerNorm.",
+            "transpose_roundtrip": "Known-good diagnostic barrier that forces materialization through transpose/contiguous.",
         },
         "summary": summary,
         "results": rows,
@@ -4284,6 +4407,12 @@ def parse_args() -> argparse.Namespace:
     qkv_probe_parser.add_argument("--vision-prompt-fa-mask-sparse-mode", type=int, default=1, choices=(0, 1))
     qkv_probe_parser.add_argument("--vision-compile-backend", default="torchair", choices=VISION_COMPILE_BACKEND_CHOICES)
     add_torchair_diagnostic_args(qkv_probe_parser)
+    qkv_probe_parser.add_argument(
+        "--npu-mm-bmm-format-nd",
+        default="default",
+        choices=("default", "enable", "disable"),
+        help="Diagnostic only: set torch_npu MM_BMM_ND_ENABLE before compiling the QKV probe.",
+    )
     qkv_probe_parser.add_argument("--item-index", type=int, default=0)
     qkv_probe_parser.add_argument(
         "--sources",
@@ -4294,6 +4423,14 @@ def parse_args() -> argparse.Namespace:
         "--bridges",
         default="none",
         help=f"Comma-separated post-LayerNorm/pre-QKV bridge ops. Choices: {','.join(QKV_LINEAR_PROBE_BRIDGE_CHOICES)}",
+    )
+    qkv_probe_parser.add_argument(
+        "--ln-impls",
+        default="module",
+        help=(
+            "Comma-separated LayerNorm implementations for source=patch_pos. "
+            f"Choices: {','.join(QKV_LINEAR_PROBE_LN_IMPL_CHOICES)}"
+        ),
     )
     qkv_probe_parser.add_argument(
         "--impls",

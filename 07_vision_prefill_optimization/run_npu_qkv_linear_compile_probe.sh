@@ -12,8 +12,10 @@ export BASELINE_DIR="${BASELINE_DIR:-${SCRIPT_DIR}/baselines/promptfa_fp16_eager
 export OUT_ROOT="${OUT_ROOT:-${SCRIPT_DIR}/outputs/qkv_linear_compile_probe_$(date -u +%Y%m%dT%H%M%SZ)}"
 export ITEM_INDEX="${ITEM_INDEX:-0}"
 export SOURCES="${SOURCES:-patch_pos}"
-export BRIDGES="${BRIDGES:-none,contiguous,clone,add_zero,reshape_contiguous,transpose_roundtrip}"
+export BRIDGES="${BRIDGES:-none,format_cast_nd,format_cast_nz_then_nd,transpose_roundtrip}"
+export LN_IMPLS="${LN_IMPLS:-module}"
 export IMPLS="${IMPLS:-functional_q}"
+export NPU_MM_BMM_FORMAT_ND="${NPU_MM_BMM_FORMAT_ND:-default}"
 export RUN_TORCHAIR_EAGERLY="${RUN_TORCHAIR_EAGERLY:-1}"
 
 mkdir -p "${OUT_ROOT}"
@@ -27,7 +29,9 @@ echo "EXP07_QKV_LINEAR_PROBE OUT_ROOT=${OUT_ROOT}"
 echo "EXP07_QKV_LINEAR_PROBE ITEM_INDEX=${ITEM_INDEX}"
 echo "EXP07_QKV_LINEAR_PROBE SOURCES=${SOURCES}"
 echo "EXP07_QKV_LINEAR_PROBE BRIDGES=${BRIDGES}"
+echo "EXP07_QKV_LINEAR_PROBE LN_IMPLS=${LN_IMPLS}"
 echo "EXP07_QKV_LINEAR_PROBE IMPLS=${IMPLS}"
+echo "EXP07_QKV_LINEAR_PROBE NPU_MM_BMM_FORMAT_ND=${NPU_MM_BMM_FORMAT_ND}"
 echo "EXP07_QKV_LINEAR_PROBE RUN_TORCHAIR_EAGERLY=${RUN_TORCHAIR_EAGERLY}"
 
 run_probe() {
@@ -47,9 +51,11 @@ run_probe() {
     --vision-prompt-fa-mask-sparse-mode 1 \
     --vision-compile-backend torchair \
     --torchair-mode default \
+    --npu-mm-bmm-format-nd "${NPU_MM_BMM_FORMAT_ND}" \
     --item-index "${ITEM_INDEX}" \
     --sources "${SOURCES}" \
     --bridges "${BRIDGES}" \
+    --ln-impls "${LN_IMPLS}" \
     --impls "${IMPLS}" \
     --output "${output_json}" \
     "$@"
@@ -82,7 +88,8 @@ for path in sorted(root.glob("*.json")):
     if first:
         print(
             "  FIRST_MISMATCH "
-            f"source={first.get('source')} bridge={first.get('bridge')} impl={first.get('impl')} "
+            f"source={first.get('source')} ln_impl={first.get('ln_impl')} "
+            f"bridge={first.get('bridge')} impl={first.get('impl')} "
             f"shape={first.get('shape')} max_abs={first.get('max_abs_diff')} "
             f"mean_abs={first.get('mean_abs_diff')} "
             f"compiled_nonfinite={first.get('compiled_nonfinite_count')} "
@@ -92,7 +99,8 @@ for path in sorted(root.glob("*.json")):
     for item in summary.get("by_source_impl", []):
         print(
             "  CASE "
-            f"source={item.get('source')} bridge={item.get('bridge')} impl={item.get('impl')} "
+            f"source={item.get('source')} ln_impl={item.get('ln_impl')} "
+            f"bridge={item.get('bridge')} impl={item.get('impl')} "
             f"ok={item.get('ok')} match={item.get('compiled_second_matches_eager')} "
             f"max_abs={item.get('max_abs_diff')} "
             f"compiled_min={item.get('compiled_finite_min')} "
@@ -101,7 +109,8 @@ for path in sorted(root.glob("*.json")):
     for item in summary.get("failed_case_keys", [])[:8]:
         print(
             "  ERROR "
-            f"source={item.get('source')} bridge={item.get('bridge')} impl={item.get('impl')} "
+            f"source={item.get('source')} ln_impl={item.get('ln_impl')} "
+            f"bridge={item.get('bridge')} impl={item.get('impl')} "
             f"error={item.get('error')}"
         )
 PY

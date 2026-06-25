@@ -152,6 +152,57 @@ candidate wrapper eagerly once during compiled setup and records
 `vision_compile` object. The `real_rows` diff is the key check for whether
 compilation changed the rows that are actually compared to the stored baseline.
 
+## LayerNorm -> QKV Compile Probe
+
+The current first-bad-edge investigation points at the first visual encoder
+block's `LayerNorm -> QKV Linear` producer-consumer edge, not PromptFA itself.
+The prefix probe showed that patch embedding, position embedding, and
+`layer_norm1` match eager, while QKV projection is the first compiled GE/CANN
+divergence. The QKV probe then showed that materialized eager LN output fed to
+QKV is clean, but `patch_pos -> LayerNorm -> QKV` inside one compiled graph can
+produce fp16-saturated garbage.
+
+Use the dedicated runner for the smallest real-crop check:
+
+```sh
+ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_qkv_linear_compile_probe.sh
+```
+
+By default it tests one real crop, one Q projection, and the most important
+handoff barriers:
+
+- `none`: reproduce the bad GE handoff.
+- `format_cast_nd`: explicit `torch_npu.npu_format_cast(tensor, 2)` between LN
+  and QKV, based on older Ascend transformer patches that use format `2` as an
+  ND/base-format materialization boundary.
+- `format_cast_nz_then_nd`: diagnostic format transition control.
+- `transpose_roundtrip`: known-good but potentially heavier materialization
+  barrier.
+
+Optional diagnostic axes:
+
+```sh
+LN_IMPLS=module,functional,manual_fp32 \
+BRIDGES=none,format_cast_nd,transpose_roundtrip \
+ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_qkv_linear_compile_probe.sh
+
+NPU_MM_BMM_FORMAT_ND=enable \
+BRIDGES=none,format_cast_nd \
+RUN_TORCHAIR_EAGERLY=0 \
+ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_qkv_linear_compile_probe.sh
+```
+
+Interpretation:
+
+- If `format_cast_nd` matches eager, prefer it over `transpose_roundtrip` for
+  the next full-vision candidate because it directly tests the suspected
+  internal-format contract.
+- If a manual LN implementation fixes `bridge=none`, the problem depends on the
+  fused `LayerNormV3` producer. If manual LN still fails, the problem is broader
+  GE layout propagation into MatMul.
+- If `NPU_MM_BMM_FORMAT_ND=enable` fixes `bridge=none`, the consumer-side MatMul
+  format policy is enough and may be cleaner than inserting per-layer bridges.
+
 ## MSIT GE-vs-FX Dump Compare
 
 After `--torchair-run-eagerly` proves the FX graph semantics are clean, use the
