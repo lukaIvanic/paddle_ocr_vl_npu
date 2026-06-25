@@ -28,7 +28,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import numpy as np
 import torch
@@ -38,8 +38,12 @@ from tokenizers import Tokenizer
 from local_modeling_paddleocr_vl import (
     LocalPaddleOCRVLForConditionalGeneration,
     _resolve_model_dir,
+    apply_rotary_pos_emb_vision,
+    attention_softmax,
     get_vision_attention_impl,
     get_vision_prompt_fa_layout,
+    get_vision_softmax_dtype_mode,
+    vision_prompt_flash_attention_bnsd,
 )
 
 
@@ -57,6 +61,10 @@ BOS = "<|begin_of_sentence|>"
 NPU_JIT_COMPILE_CHOICES = ("default", "off", "on")
 DTYPE_CHOICES = ("fp16", "float16", "fp32", "float32", "bf16", "bfloat16")
 VISION_ATTENTION_CHOICES = ("manual", "prompt_flash_attention")
+TIMING_MODE_CHOICES = ("phase_sync", "e2e", "both")
+VISION_COMPILE_BACKEND_CHOICES = ("none", "default", "aot_eager", "inductor", "torchair")
+CANDIDATE_VISION_PATH_CHOICES = ("eager_visual", "static_visual")
+STATIC_VISUAL_PAD_MODE_CHOICES = ("none", "mask_pad_one", "mask_pad_to_128")
 
 LAYOUT_PROMPT_BY_LABEL = {
     "formula": "Formula Recognition:",
@@ -684,6 +692,377 @@ def build_vision_cu_seqlens(image_grid_thw: torch.Tensor, *, device: torch.devic
     return torch.nn.functional.pad(cu_seqlens, (1, 0), value=0)
 
 
+def build_single_crop_vision_cu_seqlens(image_grid_thw: torch.Tensor, *, device: torch.device) -> torch.Tensor:
+    grid = image_grid_thw.detach().cpu().reshape(-1, 3)
+    lengths: list[int] = []
+    for t, h, w in grid.tolist():
+        lengths.extend([int(h) * int(w)] * int(t))
+    cu = [0]
+    for length in lengths:
+        cu.append(cu[-1] + int(length))
+    return torch.tensor(cu, device=device, dtype=torch.int32)
+
+
+def single_crop_grid_ints(image_grid_thw: torch.Tensor) -> tuple[int, int, int]:
+    grid = image_grid_thw.detach().cpu().reshape(-1, 3)
+    if int(grid.shape[0]) != 1:
+        raise ValueError(f"static single-crop vision expects exactly one image grid, got {tuple(grid.shape)}")
+    t, h, w = grid[0].tolist()
+    return int(t), int(h), int(w)
+
+
+def build_static_abs_pos_embed(
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    image_grid_thw: torch.Tensor,
+    *,
+    device: torch.device,
+) -> torch.Tensor:
+    t, h, w = single_crop_grid_ints(image_grid_thw)
+    embeddings_module = model.visual.vision_model.embeddings
+    dtype = embeddings_module.patch_embedding.weight.dtype
+    dummy = torch.empty((int(t) * int(h) * int(w), embeddings_module.embed_dim), device=device, dtype=dtype)
+    with torch.inference_mode():
+        pos = embeddings_module.interpolate_pos_encoding(dummy, int(h), int(w)).squeeze(0).repeat(int(t), 1)
+    return pos.contiguous()
+
+
+def build_static_vision_rope(
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    image_grid_thw: torch.Tensor,
+    *,
+    device: torch.device,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    _t, h, w = single_crop_grid_ints(image_grid_thw)
+    encoder = model.visual.vision_model.encoder
+    image_pids = torch.arange(int(image_grid_thw.prod().item()), device=device, dtype=torch.int64) % int(h * w)
+    pids = torch.stack((image_pids // int(w), image_pids % int(w)), dim=-1)
+    rotary_max = encoder.rotary_pos_emb(max(int(h), int(w)))
+    rotary_embeddings = rotary_max[pids].flatten(1).repeat(1, 2)
+    return rotary_embeddings.cos().contiguous(), rotary_embeddings.sin().contiguous()
+
+
+def build_static_pad_attention_mask(real_seq_len: int, pad_tokens: int, *, device: torch.device) -> torch.Tensor:
+    if int(pad_tokens) <= 0:
+        return torch.zeros((1, 1, 1, 1), device=device, dtype=torch.bool)
+    physical_seq_len = int(real_seq_len) + int(pad_tokens)
+    mask = torch.zeros((1, 1, physical_seq_len, physical_seq_len), device=device, dtype=torch.bool)
+    real = int(real_seq_len)
+    mask[..., :real, real:physical_seq_len] = True
+    mask[..., real:physical_seq_len, :real] = True
+    return mask.contiguous()
+
+
+def static_visual_pad_tokens(real_seq_len: int, mode: str) -> int:
+    if mode == "none":
+        return 0
+    if mode == "mask_pad_one":
+        return 1 if int(real_seq_len) % 16 == 0 else 0
+    if mode != "mask_pad_to_128":
+        raise ValueError(f"unsupported static visual pad mode: {mode!r}; choices={STATIC_VISUAL_PAD_MODE_CHOICES}")
+    real_seq_len = int(real_seq_len)
+    if real_seq_len % 16 != 0:
+        return 0
+    min_physical_seq_len = real_seq_len + 1
+    if min_physical_seq_len <= 128:
+        return 1
+    physical_seq_len = ((min_physical_seq_len + 127) // 128) * 128
+    return int(physical_seq_len - real_seq_len)
+
+
+class SingleCropStaticVisualModule(torch.nn.Module):
+    """Shape-specialized visual encoder wrapper for fullgraph static compilation."""
+
+    def __init__(
+        self,
+        model: LocalPaddleOCRVLForConditionalGeneration,
+        image_grid_thw: torch.Tensor,
+        *,
+        device: torch.device,
+        static_visual_pad_mode: str,
+    ):
+        super().__init__()
+        self.model = model
+        self.static_visual_pad_mode = str(static_visual_pad_mode)
+        if self.static_visual_pad_mode not in STATIC_VISUAL_PAD_MODE_CHOICES:
+            raise ValueError(
+                f"unsupported static_visual_pad_mode={self.static_visual_pad_mode!r}; "
+                f"choices={STATIC_VISUAL_PAD_MODE_CHOICES}"
+            )
+        self.register_buffer("image_grid_thw_const", image_grid_thw.detach().clone(), persistent=False)
+        self.register_buffer(
+            "cu_seqlens_const",
+            build_single_crop_vision_cu_seqlens(image_grid_thw, device=device),
+            persistent=False,
+        )
+        self.static_real_seq_len = int(image_grid_thw.prod().item())
+        self.static_pad_tokens = 0
+        if self.static_visual_pad_mode != "none":
+            grid_t, _grid_h, _grid_w = single_crop_grid_ints(image_grid_thw)
+            if int(grid_t) != 1:
+                raise ValueError(
+                    f"static_visual {self.static_visual_pad_mode} currently supports single-image crop grids "
+                    "with T=1 only"
+                )
+            self.static_pad_tokens = static_visual_pad_tokens(self.static_real_seq_len, self.static_visual_pad_mode)
+        self.static_physical_seq_len = self.static_real_seq_len + self.static_pad_tokens
+
+        abs_pos_embed = build_static_abs_pos_embed(model, image_grid_thw, device=device)
+        rope_cos, rope_sin = build_static_vision_rope(model, image_grid_thw, device=device)
+        if self.static_pad_tokens:
+            abs_pos_embed = torch.cat(
+                [
+                    abs_pos_embed,
+                    torch.zeros(
+                        self.static_pad_tokens,
+                        abs_pos_embed.shape[-1],
+                        device=device,
+                        dtype=abs_pos_embed.dtype,
+                    ),
+                ],
+                dim=0,
+            ).contiguous()
+            rope_cos = torch.cat(
+                [
+                    rope_cos,
+                    torch.ones(self.static_pad_tokens, rope_cos.shape[-1], device=device, dtype=rope_cos.dtype),
+                ],
+                dim=0,
+            ).contiguous()
+            rope_sin = torch.cat(
+                [
+                    rope_sin,
+                    torch.zeros(self.static_pad_tokens, rope_sin.shape[-1], device=device, dtype=rope_sin.dtype),
+                ],
+                dim=0,
+            ).contiguous()
+        self.register_buffer("abs_pos_embed_const", abs_pos_embed, persistent=False)
+        self.register_buffer("vision_rope_cos_const", rope_cos, persistent=False)
+        self.register_buffer("vision_rope_sin_const", rope_sin, persistent=False)
+        self.register_buffer(
+            "static_pad_attention_mask",
+            build_static_pad_attention_mask(self.static_real_seq_len, self.static_pad_tokens, device=device),
+            persistent=False,
+        )
+
+    def _zero_static_pad_rows(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        if self.static_pad_tokens <= 0:
+            return hidden_states
+        return torch.cat(
+            [
+                hidden_states[: self.static_real_seq_len],
+                torch.zeros_like(hidden_states[self.static_real_seq_len : self.static_physical_seq_len]),
+            ],
+            dim=0,
+        )
+
+    def _static_mask_padded_attention(self, attention: torch.nn.Module, hidden_states: torch.Tensor) -> torch.Tensor:
+        seq_length = hidden_states.shape[0]
+        query_states = attention.q_proj(hidden_states).view(seq_length, attention.num_heads, attention.head_dim)
+        key_states = attention.k_proj(hidden_states).view(seq_length, attention.num_heads, attention.head_dim)
+        value_states = attention.v_proj(hidden_states).view(seq_length, attention.num_heads, attention.head_dim)
+        query_states, key_states = apply_rotary_pos_emb_vision(
+            query_states,
+            key_states,
+            self.vision_rope_cos_const,
+            self.vision_rope_sin_const,
+        )
+        query_states = query_states.transpose(0, 1).unsqueeze(0)
+        key_states = key_states.transpose(0, 1).unsqueeze(0)
+        value_states = value_states.transpose(0, 1).unsqueeze(0)
+        attention_impl = get_vision_attention_impl()
+        if attention_impl == "prompt_flash_attention":
+            if get_vision_prompt_fa_layout() != "bnsd":
+                raise ValueError(
+                    f"static_visual {self.static_visual_pad_mode} currently supports PromptFA layout bnsd only"
+                )
+            attn_output = vision_prompt_flash_attention_bnsd(
+                query_states,
+                key_states,
+                value_states,
+                num_heads=int(attention.num_heads),
+                scale=float(attention.scaling),
+                atten_mask=self.static_pad_attention_mask,
+            )
+        elif attention_impl == "manual":
+            scores = torch.matmul(query_states, key_states.transpose(2, 3)) * attention.scaling
+            scores = scores.masked_fill(self.static_pad_attention_mask, torch.finfo(scores.dtype).min)
+            probs = attention_softmax(
+                scores,
+                dim=-1,
+                output_dtype=query_states.dtype,
+                mode=get_vision_softmax_dtype_mode(),
+            )
+            attn_output = torch.matmul(probs, value_states)
+        else:
+            raise ValueError(f"unknown vision attention implementation: {attention_impl!r}")
+        attn_output = attn_output.transpose(1, 2).contiguous().view(seq_length, -1)
+        return attention.out_proj(attn_output)
+
+    def _static_mask_padded_encoder_layer(self, encoder_layer: torch.nn.Module, hidden_states: torch.Tensor) -> torch.Tensor:
+        attn_input = encoder_layer.layer_norm1(hidden_states)
+        hidden_states = hidden_states + self._static_mask_padded_attention(encoder_layer.self_attn, attn_input)
+        hidden_states = self._zero_static_pad_rows(hidden_states)
+        hidden_states = hidden_states + encoder_layer.mlp(encoder_layer.layer_norm2(hidden_states))
+        return self._zero_static_pad_rows(hidden_states)
+
+    def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
+        transformer = self.model.visual.vision_model
+        embeddings_module = transformer.embeddings
+        pixel_values = pixel_values.to(dtype=embeddings_module.patch_embedding.weight.dtype)
+        patch_embeds = embeddings_module.patch_embedding(pixel_values)
+        hidden_states = patch_embeds.flatten(-2).squeeze(-1)
+        if self.static_pad_tokens:
+            hidden_states = torch.cat(
+                [
+                    hidden_states,
+                    torch.zeros(
+                        self.static_pad_tokens,
+                        hidden_states.shape[-1],
+                        device=hidden_states.device,
+                        dtype=hidden_states.dtype,
+                    ),
+                ],
+                dim=0,
+            )
+        hidden_states = hidden_states + self.abs_pos_embed_const
+        position_embeddings = (self.vision_rope_cos_const, self.vision_rope_sin_const)
+        for encoder_layer in transformer.encoder.layers:
+            if self.static_pad_tokens:
+                hidden_states = self._static_mask_padded_encoder_layer(encoder_layer, hidden_states)
+            else:
+                hidden_states = encoder_layer(hidden_states, self.cu_seqlens_const, position_embeddings)
+        hidden_states = transformer.post_layernorm(hidden_states)
+        return hidden_states[: self.static_real_seq_len]
+
+
+def import_torchair():
+    try:
+        from torch_npu.dynamo import torchair
+        from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
+
+        return torchair, CompilerConfig
+    except Exception:
+        import torchair
+        from torchair.configs.compiler_config import CompilerConfig
+
+        return torchair, CompilerConfig
+
+
+def vision_compile_backend(name: str, device: torch.device):
+    if name == "default":
+        return None
+    if name == "torchair":
+        if device.type != "npu":
+            raise ValueError("--vision-compile-backend torchair requires --device npu:0")
+        torchair, CompilerConfig = import_torchair()
+        config = CompilerConfig()
+        return torchair.get_npu_backend(compiler_config=config)
+    return name
+
+
+def maybe_compile_static_visual(
+    *,
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    item: PrefillInput,
+    device: torch.device,
+    backend_name: str,
+    static_visual_pad_mode: str,
+) -> tuple[Callable[[torch.Tensor], torch.Tensor] | None, dict[str, Any]]:
+    if backend_name not in VISION_COMPILE_BACKEND_CHOICES:
+        raise ValueError(f"unsupported vision compile backend={backend_name!r}; choices={VISION_COMPILE_BACKEND_CHOICES}")
+    wrapper = SingleCropStaticVisualModule(
+        model,
+        item.image_grid_thw,
+        device=device,
+        static_visual_pad_mode=static_visual_pad_mode,
+    ).eval()
+    meta: dict[str, Any] = {
+        "candidate_vision_path": "static_visual",
+        "backend": str(backend_name),
+        "static_visual_pad_mode": str(static_visual_pad_mode),
+        "static_visual_pad_tokens": int(wrapper.static_pad_tokens),
+        "static_visual_real_seq_len": int(wrapper.static_real_seq_len),
+        "static_visual_real_seq_mod16": int(wrapper.static_real_seq_len % 16),
+        "static_visual_physical_seq_len": int(wrapper.static_physical_seq_len),
+        "static_visual_physical_seq_mod16": int(wrapper.static_physical_seq_len % 16),
+        "static_visual_physical_seq_mod128": int(wrapper.static_physical_seq_len % 128),
+        "fullgraph": bool(backend_name != "none"),
+        "dynamic": False,
+        "image_grid_thw": [int(value) for value in item.image_grid_thw.flatten().tolist()],
+        "cu_seqlens": [int(value) for value in wrapper.cu_seqlens_const.detach().cpu().reshape(-1).tolist()],
+        "static_abs_pos_embed_shape": [int(dim) for dim in wrapper.abs_pos_embed_const.shape],
+        "static_vision_rope_shape": [int(dim) for dim in wrapper.vision_rope_cos_const.shape],
+    }
+    if backend_name == "none":
+        meta.update({"enabled": False, "compile_api": None})
+        return wrapper, meta
+
+    import torch._dynamo
+
+    old_capture_scalar_outputs = bool(torch._dynamo.config.capture_scalar_outputs)
+    torch._dynamo.config.capture_scalar_outputs = True
+    compile_kwargs: dict[str, Any] = {"fullgraph": True, "dynamic": False}
+    backend = vision_compile_backend(backend_name, device)
+    if backend is not None:
+        compile_kwargs["backend"] = backend
+    maybe_sync(device)
+    start = time.perf_counter()
+    compiled = torch.compile(wrapper, **compile_kwargs)
+    maybe_sync(device)
+    meta.update(
+        {
+            "enabled": True,
+            "compile_api": "torch.compile",
+            "compile_wrapper_s": float(time.perf_counter() - start),
+            "capture_scalar_outputs": True,
+            "capture_scalar_outputs_previous": old_capture_scalar_outputs,
+        }
+    )
+    return compiled, meta
+
+
+@torch.inference_mode()
+def prepare_candidate_vision_forward(
+    *,
+    args: argparse.Namespace,
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    item: PrefillInput,
+    device: torch.device,
+) -> tuple[Callable[[torch.Tensor], torch.Tensor] | None, dict[str, Any]]:
+    if args.candidate_vision_path == "eager_visual":
+        return None, {
+            "candidate_vision_path": "eager_visual",
+            "enabled": False,
+            "backend": "none",
+            "compile_api": None,
+            "note": "Normal model.visual path with runtime cu_seqlens; not a compile-compatible static boundary.",
+        }
+    if args.candidate_vision_path != "static_visual":
+        raise ValueError(
+            f"unsupported candidate_vision_path={args.candidate_vision_path!r}; "
+            f"choices={CANDIDATE_VISION_PATH_CHOICES}"
+        )
+    vision_forward, meta = maybe_compile_static_visual(
+        model=model,
+        item=item,
+        device=device,
+        backend_name=str(args.vision_compile_backend),
+        static_visual_pad_mode=str(args.static_visual_pad_mode),
+    )
+    if vision_forward is None:
+        raise RuntimeError("static_visual candidate did not produce a callable vision_forward")
+    if str(args.vision_compile_backend) != "none":
+        pixel_values = item.pixel_values.to(device=device, dtype=model.visual.dtype)
+        maybe_sync(device)
+        start = time.perf_counter()
+        first_output = vision_forward(pixel_values)
+        maybe_sync(device)
+        meta["compiled_first_call_s"] = float(time.perf_counter() - start)
+        meta["first_output_shape"] = [int(dim) for dim in first_output.shape]
+        meta["first_output_nonfinite_count"] = int((~torch.isfinite(first_output.float())).sum().item())
+    return vision_forward, meta
+
+
 def scatter_projected_image_embeds(
     *,
     model: LocalPaddleOCRVLForConditionalGeneration,
@@ -711,6 +1090,8 @@ def compute_vision_prefill(
     device: torch.device,
     cache_length: int,
     sync: bool,
+    record_phase_timings: bool = True,
+    vision_forward: Callable[[torch.Tensor], torch.Tensor] | None = None,
 ) -> tuple[dict[str, torch.Tensor], dict[str, float]]:
     timing: dict[str, float] = {}
 
@@ -721,7 +1102,8 @@ def compute_vision_prefill(
         value = fn()
         if sync:
             maybe_sync(device)
-        timing[name] = timing.get(name, 0.0) + float(time.perf_counter() - start)
+        if record_phase_timings:
+            timing[name] = timing.get(name, 0.0) + float(time.perf_counter() - start)
         return value
 
     input_ids, attention_mask, pixel_values = measure(
@@ -737,15 +1119,18 @@ def compute_vision_prefill(
         raise ValueError(
             f"input length {int(input_ids.shape[1])} exceeds cache_length={int(cache_length)} for item {item.entry.get('id')}"
         )
-    cu_seqlens = measure("vision_cu_seqlens", lambda: build_vision_cu_seqlens(image_grid_thw, device=device))
-    visual_features = measure(
-        "visual_features",
-        lambda: model.visual(
-            pixel_values=pixel_values.unsqueeze(0),
-            image_grid_thw=image_grid_thw,
-            cu_seqlens=cu_seqlens,
-        ),
-    )
+    if vision_forward is None:
+        cu_seqlens = measure("vision_cu_seqlens", lambda: build_vision_cu_seqlens(image_grid_thw, device=device))
+        visual_features = measure(
+            "visual_features",
+            lambda: model.visual(
+                pixel_values=pixel_values.unsqueeze(0),
+                image_grid_thw=image_grid_thw,
+                cu_seqlens=cu_seqlens,
+            ),
+        )
+    else:
+        visual_features = measure("visual_features", lambda: vision_forward(pixel_values))
     image_embeds = measure("adaptive_mlp_projector", lambda: model.mlp_AR(visual_features, image_grid_thw))
     inputs_embeds = measure("text_token_embedding", lambda: model.model.embed_tokens(input_ids))
     inputs_embeds = measure(
@@ -782,7 +1167,8 @@ def compute_vision_prefill(
         ),
     )
     prefill_logits = measure("prefill_lm_head", lambda: model.lm_head(hidden_states[:, -1:, :]))
-    timing["total_measured_device_s"] = float(sum(timing.values()))
+    if record_phase_timings:
+        timing["phase_sync_sum_s"] = float(sum(timing.values()))
     return {
         "visual_features": visual_features.detach(),
         "image_embeds": image_embeds.detach(),
@@ -793,6 +1179,71 @@ def compute_vision_prefill(
         "image_grid_thw": image_grid_thw.detach(),
         "prefill_argmax": torch.argmax(prefill_logits[:, -1, :].float(), dim=-1).detach(),
     }, timing
+
+
+@torch.inference_mode()
+def run_prefill_measurement(
+    *,
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    item: PrefillInput,
+    device: torch.device,
+    cache_length: int,
+    timing_mode: str,
+    vision_forward: Callable[[torch.Tensor], torch.Tensor] | None = None,
+) -> tuple[dict[str, torch.Tensor], dict[str, float]]:
+    if timing_mode not in TIMING_MODE_CHOICES:
+        raise ValueError(f"unsupported timing_mode={timing_mode!r}; choices={TIMING_MODE_CHOICES}")
+    if timing_mode == "phase_sync":
+        return compute_vision_prefill(
+            model=model,
+            item=item,
+            device=device,
+            cache_length=cache_length,
+            sync=True,
+            record_phase_timings=True,
+            vision_forward=vision_forward,
+        )
+    if timing_mode == "e2e":
+        maybe_sync(device)
+        start = time.perf_counter()
+        tensors, _timing = compute_vision_prefill(
+            model=model,
+            item=item,
+            device=device,
+            cache_length=cache_length,
+            sync=False,
+            record_phase_timings=False,
+            vision_forward=vision_forward,
+        )
+        maybe_sync(device)
+        return tensors, {"e2e_wall_s": float(time.perf_counter() - start)}
+
+    phase_tensors, phase_timing = compute_vision_prefill(
+        model=model,
+        item=item,
+        device=device,
+        cache_length=cache_length,
+        sync=True,
+        record_phase_timings=True,
+        vision_forward=vision_forward,
+    )
+    maybe_sync(device)
+    start = time.perf_counter()
+    e2e_tensors, _timing = compute_vision_prefill(
+        model=model,
+        item=item,
+        device=device,
+        cache_length=cache_length,
+        sync=False,
+        record_phase_timings=False,
+        vision_forward=vision_forward,
+    )
+    maybe_sync(device)
+    phase_timing["e2e_wall_s"] = float(time.perf_counter() - start)
+    phase_timing["phase_vs_e2e_prefill_logits_max_abs_diff"] = float(
+        torch.max(torch.abs(phase_tensors["prefill_logits"].float() - e2e_tensors["prefill_logits"].float())).item()
+    )
+    return e2e_tensors, phase_timing
 
 
 def select_stratified_inputs(inputs: list[PrefillInput], *, count: int, bucket_count: int) -> tuple[list[PrefillInput], dict[str, Any]]:
@@ -1074,12 +1525,12 @@ def make_baseline(args: argparse.Namespace) -> None:
             file=sys.stderr,
             flush=True,
         )
-        tensors, timing = compute_vision_prefill(
+        tensors, timing = run_prefill_measurement(
             model=model,
             item=item,
             device=device,
             cache_length=int(args.cache_length),
-            sync=True,
+            timing_mode=str(args.timing_mode),
         )
         timing_rows.append(timing)
         tensor_name = f"{idx:04d}_{item.entry.get('id')}.pt"
@@ -1106,9 +1557,18 @@ def make_baseline(args: argparse.Namespace) -> None:
             "vision_attention": get_vision_attention_impl(),
             "vision_prompt_fa_layout": get_vision_prompt_fa_layout(),
             "vision_prompt_fa_mask_sparse_mode": int(args.vision_prompt_fa_mask_sparse_mode),
-            "authoritative_npu_reference": bool(device.type == "npu" and get_vision_attention_impl() == "prompt_flash_attention"),
+            "authoritative_npu_reference": bool(
+                device.type == "npu"
+                and dtype == torch.float16
+                and get_vision_attention_impl() == "prompt_flash_attention"
+            ),
             "stored_tensors": ["visual_features", "image_embeds", "prefill_logits"],
             "decode_in_scope": False,
+            "timing_mode": str(args.timing_mode),
+            "timing_mode_note": (
+                "phase_sync uses one device synchronize before and after every named phase; e2e uses one "
+                "device synchronize around the whole prefill call; both runs both contracts and returns e2e tensors."
+            ),
         },
         "model": str(model_dir),
         "baseline_dir": str(baseline_dir),
@@ -1211,23 +1671,31 @@ def compare_candidate(args: argparse.Namespace) -> None:
         if sha256_file(tensor_path) != str(baseline_item["tensor_sha256"]):
             raise RuntimeError(f"baseline tensor sha256 mismatch: {tensor_path}")
         baseline_payload = torch.load(tensor_path, map_location="cpu")
+        vision_forward, vision_compile = prepare_candidate_vision_forward(
+            args=args,
+            model=model,
+            item=item,
+            device=device,
+        )
         for _ in range(int(args.warmup_repeats)):
-            compute_vision_prefill(
+            run_prefill_measurement(
                 model=model,
                 item=item,
                 device=device,
                 cache_length=int(args.cache_length),
-                sync=True,
+                timing_mode=str(args.timing_mode),
+                vision_forward=vision_forward,
             )
         repeat_timings: list[dict[str, float]] = []
         candidate_tensors: dict[str, torch.Tensor] | None = None
         for _ in range(int(args.repeats)):
-            candidate_tensors, timing = compute_vision_prefill(
+            candidate_tensors, timing = run_prefill_measurement(
                 model=model,
                 item=item,
                 device=device,
                 cache_length=int(args.cache_length),
-                sync=True,
+                timing_mode=str(args.timing_mode),
+                vision_forward=vision_forward,
             )
             repeat_timings.append(timing)
             timing_rows.append(timing)
@@ -1250,6 +1718,7 @@ def compare_candidate(args: argparse.Namespace) -> None:
                 "candidate_topk": candidate_topk,
                 "argmax_match": bool(int(candidate_topk["argmax"]) == baseline_argmax),
                 "candidate_top8_contains_baseline_argmax": bool(baseline_argmax in set(candidate_topk["topk_indices"])),
+                "vision_compile": clean_json(vision_compile),
                 "timing_s": {key: stats([float(row[key]) for row in repeat_timings if key in row]) for key in sorted({key for row in repeat_timings for key in row})},
             }
         )
@@ -1269,12 +1738,29 @@ def compare_candidate(args: argparse.Namespace) -> None:
             "name": str(args.candidate_name),
             "dtype": str(dtype),
             "device": str(device),
-            "compiled": False,
+            "compiled": bool(
+                str(args.candidate_vision_path) == "static_visual"
+                and str(args.vision_compile_backend) != "none"
+            ),
+            "compile_api": (
+                "torch.compile"
+                if str(args.candidate_vision_path) == "static_visual"
+                and str(args.vision_compile_backend) != "none"
+                else None
+            ),
             "vision_attention": get_vision_attention_impl(),
             "vision_prompt_fa_layout": get_vision_prompt_fa_layout(),
             "vision_prompt_fa_mask_sparse_mode": int(args.vision_prompt_fa_mask_sparse_mode),
             "repeats": int(args.repeats),
             "warmup_repeats": int(args.warmup_repeats),
+            "timing_mode": str(args.timing_mode),
+            "candidate_vision_path": str(args.candidate_vision_path),
+            "vision_compile_backend": str(args.vision_compile_backend),
+            "static_visual_pad_mode": str(args.static_visual_pad_mode),
+            "timing_mode_note": (
+                "e2e is the real candidate latency metric: one synchronize before and after the whole prefill. "
+                "phase_sync is diagnostic and intentionally syncs around every named phase."
+            ),
         },
         "baseline": {
             "path": str(baseline_path),
@@ -1304,7 +1790,7 @@ def compare_candidate(args: argparse.Namespace) -> None:
     print(json.dumps({"compare_output": str(output_path), "summary": output["summary"]}, indent=2, default=json_default), flush=True)
 
 
-def add_common_args(parser: argparse.ArgumentParser) -> None:
+def add_common_args(parser: argparse.ArgumentParser, *, timing_default: str) -> None:
     parser.add_argument("--model", default="PaddlePaddle/PaddleOCR-VL-1.6")
     parser.add_argument("--dataset-dir", default=None)
     parser.add_argument("--device", default="auto")
@@ -1314,6 +1800,7 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--vision-prompt-fa-layout", default="bnsd", choices=("bnsd", "bsnd", "bsh"))
     parser.add_argument("--vision-prompt-fa-mask-sparse-mode", type=int, default=1, choices=(0, 1))
     parser.add_argument("--cache-length", type=int, default=2048)
+    parser.add_argument("--timing-mode", default=str(timing_default), choices=TIMING_MODE_CHOICES)
 
 
 def parse_args() -> argparse.Namespace:
@@ -1321,7 +1808,7 @@ def parse_args() -> argparse.Namespace:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     make_parser = subparsers.add_parser("make-baseline", help="Create the stored reference baseline bundle.")
-    add_common_args(make_parser)
+    add_common_args(make_parser, timing_default="phase_sync")
     make_parser.add_argument("--baseline-dir", default=str(SCRIPT_DIR / "baselines" / "promptfa_fp16_eager_64"))
     make_parser.add_argument("--page-start", type=int, default=0)
     make_parser.add_argument("--num-pages", type=int, default=64)
@@ -1336,13 +1823,16 @@ def parse_args() -> argparse.Namespace:
     make_parser.add_argument("--force", action="store_true")
 
     compare_parser = subparsers.add_parser("compare", help="Compare a candidate path against a stored baseline.")
-    add_common_args(compare_parser)
+    add_common_args(compare_parser, timing_default="e2e")
     compare_parser.add_argument("--baseline", default=str(SCRIPT_DIR / "baselines" / "promptfa_fp16_eager_64"))
     compare_parser.add_argument("--candidate-name", default="candidate")
     compare_parser.add_argument("--output", default=str(SCRIPT_DIR / "outputs" / "candidate_compare.json"))
     compare_parser.add_argument("--repeats", type=int, default=1)
     compare_parser.add_argument("--warmup-repeats", type=int, default=0)
     compare_parser.add_argument("--max-items", type=int, default=0)
+    compare_parser.add_argument("--candidate-vision-path", default="eager_visual", choices=CANDIDATE_VISION_PATH_CHOICES)
+    compare_parser.add_argument("--vision-compile-backend", default="none", choices=VISION_COMPILE_BACKEND_CHOICES)
+    compare_parser.add_argument("--static-visual-pad-mode", default="none", choices=STATIC_VISUAL_PAD_MODE_CHOICES)
 
     return parser.parse_args()
 
