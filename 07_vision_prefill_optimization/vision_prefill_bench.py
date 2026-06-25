@@ -75,7 +75,7 @@ TORCHAIR_MODE_CHOICES = ("default", "max-autotune")
 TORCHAIR_GRAPH_DUMP_TYPE_CHOICES = ("none", "txt", "pbtxt")
 TORCHAIR_MSIT_DUMP_KIND_CHOICES = ("none", "ge", "fx")
 TORCHAIR_MSIT_DUMP_MODE_CHOICES = ("input", "output", "all")
-LAYERNORM_PROBE_IMPL_CHOICES = ("nn", "functional", "manual", "npu_eval")
+LAYERNORM_PROBE_IMPL_CHOICES = ("nn", "functional", "manual", "manual_fp16_reduce", "npu_eval")
 STATIC_VISUAL_PAD_POLICY = "always_mask_pad_to_atlas_inference_alignment"
 
 LAYOUT_PROMPT_BY_LABEL = {
@@ -1907,6 +1907,18 @@ def parse_int_list(raw: str) -> list[int]:
     return values
 
 
+def parse_float_list(raw: str) -> list[float]:
+    values: list[float] = []
+    for chunk in str(raw).replace(";", ",").split(","):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        values.append(float(chunk))
+    if not values:
+        raise ValueError(f"expected at least one float, got {raw!r}")
+    return values
+
+
 class LayerNormOnlyModule(torch.nn.Module):
     """Small module for isolating LayerNorm eager-vs-compiled behavior."""
 
@@ -1949,6 +1961,17 @@ class LayerNormOnlyModule(torch.nn.Module):
             variance = (centered * centered).mean(dim=-1, keepdim=True)
             normalized = centered * torch.rsqrt(variance + self.eps)
             return normalized.to(dtype=x.dtype) * self.weight + self.bias
+        if self.impl == "manual_fp16_reduce":
+            # Deliberately keep the reduction in input dtype. This is a diagnostic
+            # lower-precision path for the fp16 accumulation/overflow hypothesis.
+            reduce_dtype = x.dtype
+            count = x.shape[-1]
+            mean = x.sum(dim=-1, keepdim=True, dtype=reduce_dtype) / count
+            centered = x - mean
+            variance = (centered * centered).sum(dim=-1, keepdim=True, dtype=reduce_dtype) / count
+            eps = torch.tensor(self.eps, device=x.device, dtype=reduce_dtype)
+            normalized = centered * torch.rsqrt(variance + eps)
+            return normalized * self.weight + self.bias
         if self.impl == "npu_eval":
             import torch_npu
 
@@ -2117,16 +2140,17 @@ def probe_layernorm_compile(args: argparse.Namespace) -> None:
 
     cases: list[tuple[torch.Tensor, torch.Tensor, torch.Tensor, float, dict[str, Any]]] = []
     for seq_len in parse_int_list(args.seq_lens):
-        x, weight, bias, case_meta = build_synthetic_layernorm_case(
-            seq_len=int(seq_len),
-            hidden_size=int(args.hidden_size),
-            dtype=dtype,
-            device=device,
-            seed=int(args.seed),
-            input_scale=float(args.synthetic_input_scale),
-            affine=str(args.synthetic_affine),
-        )
-        cases.append((x, weight, bias, float(args.eps), case_meta))
+        for input_scale in parse_float_list(args.synthetic_input_scales):
+            x, weight, bias, case_meta = build_synthetic_layernorm_case(
+                seq_len=int(seq_len),
+                hidden_size=int(args.hidden_size),
+                dtype=dtype,
+                device=device,
+                seed=int(args.seed),
+                input_scale=float(input_scale),
+                affine=str(args.synthetic_affine),
+            )
+            cases.append((x, weight, bias, float(args.eps), case_meta))
 
     model_dir: Path | None = None
     if bool(args.include_real_first_crop):
@@ -3282,12 +3306,19 @@ def parse_args() -> argparse.Namespace:
     layernorm_probe_parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
     layernorm_probe_parser.add_argument("--vision-compile-backend", default="torchair", choices=VISION_COMPILE_BACKEND_CHOICES)
     add_torchair_diagnostic_args(layernorm_probe_parser)
-    layernorm_probe_parser.add_argument("--impls", default="nn,functional,manual,npu_eval")
+    layernorm_probe_parser.add_argument("--impls", default="nn,functional,manual,manual_fp16_reduce,npu_eval")
     layernorm_probe_parser.add_argument("--seq-lens", default="580,640,768")
     layernorm_probe_parser.add_argument("--hidden-size", type=int, default=1152)
     layernorm_probe_parser.add_argument("--eps", type=float, default=1e-6)
     layernorm_probe_parser.add_argument("--seed", type=int, default=1234)
-    layernorm_probe_parser.add_argument("--synthetic-input-scale", type=float, default=1.0)
+    layernorm_probe_parser.add_argument(
+        "--synthetic-input-scales",
+        default="1.0",
+        help=(
+            "Comma-separated synthetic input scales. Use values like 1,64,128 to stress fp16 "
+            "LayerNorm reduction overflow separately from real-crop inputs."
+        ),
+    )
     layernorm_probe_parser.add_argument("--synthetic-affine", default="random", choices=("identity", "random"))
     layernorm_probe_parser.add_argument("--include-real-first-crop", action="store_true")
     layernorm_probe_parser.add_argument("--real-item-index", type=int, default=0)

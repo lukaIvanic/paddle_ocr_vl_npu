@@ -221,7 +221,9 @@ vision layer-0 `layer_norm1`. It compares:
 
 - `nn.LayerNorm`
 - `torch.nn.functional.layer_norm`
-- manual mean/variance normalization
+- manual mean/variance normalization with explicit fp32 reduction
+- manual mean/variance normalization with input-dtype reduction, exposed as
+  `manual_fp16_reduce` for fp16 overflow diagnostics
 - `torch_npu.npu_layer_norm_eval` when available
 
 Read the summary this way:
@@ -232,8 +234,20 @@ Read the summary this way:
 - Synthetic pass plus real-crop fail means LayerNorm itself is probably not
   enough; the tensor produced by preceding compiled visual ops is the likely
   trigger.
+- `manual` passing while `nn`/`functional` fail is consistent with a
+  LayerNormV3 accumulation/lowering problem. `manual_fp16_reduce` is expected to
+  be less stable on large synthetic scales and exists to make the fp16-reduction
+  hypothesis explicit.
 - Real-crop fail with `compiled_nonfinite_count > 0` reproduces the MSIT
   `my_data includes NAN or inf` symptom in a smaller, LayerNorm-only boundary.
+
+For an explicit fp16 overflow stress test, rerun with a smaller matrix set and
+larger synthetic values:
+
+```sh
+SEQ_LENS=640 SYNTHETIC_INPUT_SCALES=1,64,128 \
+  ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_layernorm_compile_probe.sh
+```
 
 ## CUDA Smoke
 

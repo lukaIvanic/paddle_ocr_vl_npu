@@ -11,7 +11,8 @@ export ASCEND_RT_VISIBLE_DEVICES="${ASCEND_RT_VISIBLE_DEVICES:-1}"
 export BASELINE_DIR="${BASELINE_DIR:-${SCRIPT_DIR}/baselines/promptfa_fp16_eager_64}"
 export OUT_ROOT="${OUT_ROOT:-${SCRIPT_DIR}/outputs/layernorm_compile_probe_$(date -u +%Y%m%dT%H%M%SZ)}"
 export SEQ_LENS="${SEQ_LENS:-580,640,768}"
-export IMPLS="${IMPLS:-nn,functional,manual,npu_eval}"
+export SYNTHETIC_INPUT_SCALES="${SYNTHETIC_INPUT_SCALES:-1.0}"
+export IMPLS="${IMPLS:-nn,functional,manual,manual_fp16_reduce,npu_eval}"
 export REAL_ITEM_INDEX="${REAL_ITEM_INDEX:-0}"
 
 mkdir -p "${OUT_ROOT}"
@@ -22,7 +23,8 @@ echo "EXP07_LAYERNORM_PROBE BASELINE_DIR=${BASELINE_DIR}"
 echo "EXP07_LAYERNORM_PROBE DATASET_DIR=${DATASET_DIR:-<manifest default>}"
 echo "EXP07_LAYERNORM_PROBE DEVICE=${DEVICE} ASCEND_RT_VISIBLE_DEVICES=${ASCEND_RT_VISIBLE_DEVICES}"
 echo "EXP07_LAYERNORM_PROBE OUT_ROOT=${OUT_ROOT}"
-echo "EXP07_LAYERNORM_PROBE SEQ_LENS=${SEQ_LENS} IMPLS=${IMPLS} REAL_ITEM_INDEX=${REAL_ITEM_INDEX}"
+echo "EXP07_LAYERNORM_PROBE SEQ_LENS=${SEQ_LENS} SYNTHETIC_INPUT_SCALES=${SYNTHETIC_INPUT_SCALES}"
+echo "EXP07_LAYERNORM_PROBE IMPLS=${IMPLS} REAL_ITEM_INDEX=${REAL_ITEM_INDEX}"
 
 run_probe() {
   local name="$1"
@@ -39,6 +41,7 @@ run_probe() {
     --vision-compile-backend torchair \
     --torchair-mode default \
     --seq-lens "${SEQ_LENS}" \
+    --synthetic-input-scales "${SYNTHETIC_INPUT_SCALES}" \
     --impls "${IMPLS}" \
     --include-real-first-crop \
     --real-item-index "${REAL_ITEM_INDEX}" \
