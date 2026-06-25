@@ -1687,6 +1687,11 @@ def probe_promptfa_mask(args: argparse.Namespace) -> None:
     summary["mode0_full_mask_semantics_passed"] = bool(
         summary["mode0_mask_matches_block"] and summary["mode0_mask_differs_from_unmasked"]
     )
+    summary["mode1_full_mask_semantics_passed"] = bool(
+        summary["mode1_mask_matches_block"] and summary["mode1_mask_differs_from_unmasked"]
+    )
+    summary["recommended_mask_sparse_mode"] = 1
+    summary["recommended_full_mask_semantics_passed"] = bool(summary["mode1_full_mask_semantics_passed"])
 
     output = {
         "schema_version": 1,
@@ -2106,7 +2111,13 @@ def add_common_args(parser: argparse.ArgumentParser, *, timing_default: str) -> 
     parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
     parser.add_argument("--vision-attention", default="prompt_flash_attention", choices=VISION_ATTENTION_CHOICES)
     parser.add_argument("--vision-prompt-fa-layout", default="bnsd", choices=("bnsd", "bsnd", "bsh"))
-    parser.add_argument("--vision-prompt-fa-mask-sparse-mode", type=int, default=0, choices=(0, 1))
+    parser.add_argument(
+        "--vision-prompt-fa-mask-sparse-mode",
+        type=int,
+        default=1,
+        choices=(0, 1),
+        help="Sparse mode used only when passing a PromptFA atten_mask. Default: 1, validated on 310P3/CANN 8.2.RC1.",
+    )
     parser.add_argument("--cache-length", type=int, default=2048)
     parser.add_argument("--timing-mode", default=str(timing_default), choices=TIMING_MODE_CHOICES)
 
@@ -2168,7 +2179,7 @@ def parse_args() -> argparse.Namespace:
 
     probe_parser = subparsers.add_parser(
         "probe-promptfa-mask",
-        help="Synthetic NPU-only check that PromptFA sparse_mode 0 honors a non-null custom atten_mask.",
+        help="Synthetic NPU-only check of PromptFA custom atten_mask behavior for sparse modes 0 and 1.",
     )
     probe_parser.add_argument("--device", default="npu:0")
     probe_parser.add_argument("--dtype", default="fp16", choices=DTYPE_CHOICES)

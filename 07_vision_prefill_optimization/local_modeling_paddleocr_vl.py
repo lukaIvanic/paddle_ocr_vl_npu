@@ -43,7 +43,7 @@ def get_vision_prompt_fa_layout() -> str:
 
 
 def get_vision_prompt_fa_mask_sparse_mode() -> int:
-    raw = os.environ.get(VISION_PROMPT_FA_MASK_SPARSE_MODE_ENV, "0").strip() or "0"
+    raw = os.environ.get(VISION_PROMPT_FA_MASK_SPARSE_MODE_ENV, "1").strip() or "1"
     try:
         mode = int(raw)
     except ValueError as exc:

@@ -37,7 +37,7 @@ python vision_prefill_bench.py compare \
   --device npu:0 \
   --dtype fp16 \
   --vision-attention prompt_flash_attention \
-  --vision-prompt-fa-mask-sparse-mode 0 \
+  --vision-prompt-fa-mask-sparse-mode 1 \
   --output outputs/candidate_name.json
 ```
 
@@ -72,7 +72,7 @@ python vision_prefill_bench.py compare \
   --device npu:0 \
   --dtype fp16 \
   --vision-attention prompt_flash_attention \
-  --vision-prompt-fa-mask-sparse-mode 0 \
+  --vision-prompt-fa-mask-sparse-mode 1 \
   --vision-compile-backend torchair \
   --output outputs/static_visual_torchair.json
 ```
@@ -96,11 +96,12 @@ and `--debug-static-visual-min-pad-tokens` /
 Use these to separate padding/mask numerics from TorchAir compile numerics; do
 not use them for normal throughput claims.
 
-For padded PromptFA, sparse mode `0` is the normal setting because the padding
-mask is a full custom block mask. Sparse modes are not padding-placement
-settings: modes 2/3/4 are causal/band patterns with stricter mask constraints,
-and `actual_seq_lengths` is not a viable 310P/Atlas-inference path for this
-experiment. Sparse mode `1` is only for diagnostics.
+For padded PromptFA on the 310P3/CANN 8.2.RC1 work box, sparse mode `1` is the
+normal setting because the synthetic probe showed that mode `1` honors the full
+custom padding mask while mode `0` ignored it. Sparse modes are not
+padding-placement settings: modes 2/3/4 are causal/band patterns with stricter
+mask constraints, and `actual_seq_lengths` is not a viable 310P/Atlas-inference
+path for this experiment. Keep mode `0` as a diagnostic only.
 
 Check PromptFA mask semantics directly before interpreting OCR-level padded
 drift:
@@ -112,9 +113,10 @@ python vision_prefill_bench.py probe-promptfa-mask \
   --npu-jit-compile off
 ```
 
-The key summary field is `mode0_full_mask_semantics_passed`. It should be
-`true`: sparse mode `0` with a non-null block mask should match the masked
-manual reference and differ from the unmasked reference.
+The key summary field is `recommended_full_mask_semantics_passed`. It should be
+`true`, with `recommended_mask_sparse_mode` equal to `1` on the current 310P3
+work box. Mode `1` with a non-null block mask should match the masked manual
+reference and differ from the unmasked reference.
 
 The NPU equivalence gate has already passed: backend `none` matched the stored
 eager PromptFA truth bundle with 0.0 diffs before the padding path was unified.

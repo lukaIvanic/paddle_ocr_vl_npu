@@ -24,7 +24,7 @@ echo "EXP07_NPU_REFERENCE BASELINE_DIR=${BASELINE_DIR}"
   --npu-jit-compile off \
   --vision-attention prompt_flash_attention \
   --vision-prompt-fa-layout bnsd \
-  --vision-prompt-fa-mask-sparse-mode 0 \
+  --vision-prompt-fa-mask-sparse-mode 1 \
   --cache-length "${CACHE_LENGTH:-2048}" \
   --page-start "${PAGE_START:-0}" \
   --num-pages "${NUM_PAGES:-64}" \

@@ -84,15 +84,18 @@ padded eager/baseline. The `--debug-static-visual-no-padding`,
 `--debug-static-visual-min-pad-tokens`, and `--debug-static-visual-pad-to-multiple` flags are
 diagnostic only. Use no-padding only as a no-mask control, not as the normal path.
 
-For masked PromptFA, use `--vision-prompt-fa-mask-sparse-mode 0` unless a specific diagnostic is
-testing sparse-mode behavior. The padding mask is a full custom block mask, not a causal/default
+For masked PromptFA on the current 310P3/CANN 8.2.RC1 work box, use
+`--vision-prompt-fa-mask-sparse-mode 1` unless a specific diagnostic is testing sparse-mode behavior.
+The synthetic probe found that mode 1 honors the full custom padding mask while mode 0 ignores it on
+this hardware/software stack. The padding mask is a full custom block mask, not a causal/default
 mask. Sparse modes are not padding-at-start/end controls: modes 2/3/4 are causal/band patterns with
 stricter mask constraints, and `actual_seq_lengths` is not supported for the 310P/Atlas-inference
-PromptFA path this experiment targets. Running padded eager with sparse mode 1 can invalidate the
+PromptFA path this experiment targets. Running padded eager with mode 0 can invalidate the
 padding-vs-compile split.
 Before debating OCR-level padded drift, run `probe-promptfa-mask` on NPU. It uses synthetic Q/K/V
-where the mask must visibly change the output, and checks whether sparse mode 0 with a non-null
-mask matches the full-mask manual reference instead of the unmasked reference.
+where the mask must visibly change the output, and checks whether the recommended mode with a
+non-null mask matches the full-mask manual reference instead of the unmasked reference. The key
+summary fields are `recommended_mask_sparse_mode` and `recommended_full_mask_semantics_passed`.
 
 Padding exists to make static fullgraph compilation and later batching possible while preserving
 real-token math. Treat padded rows as implementation detail, not as a second model. The invariant is:
@@ -126,6 +129,9 @@ new notes as general research rules first, with project-specific examples only w
 - Avoid mode multiplication. If a future deployment needs a capability, make it part of the main
   contract and make the simplest no-op case flow through that same contract. Extra modes are
   acceptable only for a bounded diagnostic question and should come with a removal gate.
+- Treat hardware semantics as empirical contracts. Vendor docs and examples are starting points,
+  but for NPU-only operators the decisive check is a small probe that proves the exact behavior on
+  the target card, CANN version, torch-npu version, dtype, layout, mask shape, and compile/eager mode.
 - Think through downstream consequences before coding: how this affects later batching, fixed-shape
   compilation, cache reuse, truth-bundle comparisons, NPU-only operators, and the metrics we will
   use to decide whether the optimization is real.
