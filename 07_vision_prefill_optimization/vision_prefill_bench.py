@@ -86,7 +86,14 @@ VISUAL_PREFIX_STAGE_CHOICES = (
     "ln1",
     "qkv",
     "qk_rope_v",
+    "attn_kernel_out",
     "attn_out",
+    "attn_out_proj",
+    "attn_residual",
+    "ln2",
+    "mlp_fc1",
+    "mlp_act",
+    "mlp_fc2",
     "layer0_out",
 )
 QKV_LINEAR_PROBE_IMPL_CHOICES = (
@@ -1108,6 +1115,7 @@ class SingleCropStaticVisualPrefixModule(torch.nn.Module):
         debug_no_padding: bool = False,
         debug_min_pad_tokens: int = 0,
         debug_pad_to_multiple: int = 0,
+        ln_linear_mode: str = "normal",
     ):
         super().__init__()
         if stage not in VISUAL_PREFIX_STAGE_CHOICES:
@@ -1120,6 +1128,7 @@ class SingleCropStaticVisualPrefixModule(torch.nn.Module):
             debug_no_padding=debug_no_padding,
             debug_min_pad_tokens=debug_min_pad_tokens,
             debug_pad_to_multiple=debug_pad_to_multiple,
+            ln_linear_mode=ln_linear_mode,
         ).eval()
 
     @property
@@ -1173,18 +1182,13 @@ class SingleCropStaticVisualPrefixModule(torch.nn.Module):
 
         attention = encoder_layer.self_attn
         seq_length = ln1_hidden.shape[0]
-        query_states = attention.q_proj(ln1_hidden).view(seq_length, attention.num_heads, attention.head_dim)
-        key_states = attention.k_proj(ln1_hidden).view(seq_length, attention.num_heads, attention.head_dim)
-        value_states = attention.v_proj(ln1_hidden).view(seq_length, attention.num_heads, attention.head_dim)
+        qkv_states = self.static_visual._static_qkv_projection(attention, ln1_hidden)
+        query_states, key_states, value_states = qkv_states.chunk(3, dim=-1)
+        query_states = query_states.view(seq_length, attention.num_heads, attention.head_dim)
+        key_states = key_states.view(seq_length, attention.num_heads, attention.head_dim)
+        value_states = value_states.view(seq_length, attention.num_heads, attention.head_dim)
         if self.stage == "qkv":
-            return torch.cat(
-                [
-                    query_states.reshape(seq_length, -1),
-                    key_states.reshape(seq_length, -1),
-                    value_states.reshape(seq_length, -1),
-                ],
-                dim=-1,
-            )
+            return qkv_states
 
         query_states, key_states = apply_rotary_pos_emb_vision(
             query_states,
@@ -1202,12 +1206,67 @@ class SingleCropStaticVisualPrefixModule(torch.nn.Module):
                 dim=-1,
             )
 
-        attn_output = self.static_visual._static_mask_padded_attention(attention, ln1_hidden)
-        if self.stage == "attn_out":
+        query_bnsd = query_states.transpose(0, 1).unsqueeze(0)
+        key_bnsd = key_states.transpose(0, 1).unsqueeze(0)
+        value_bnsd = value_states.transpose(0, 1).unsqueeze(0)
+        attention_impl = get_vision_attention_impl()
+        if attention_impl == "prompt_flash_attention":
+            if get_vision_prompt_fa_layout() != "bnsd":
+                raise ValueError("static_visual prefix probe currently supports PromptFA layout bnsd only")
+            attn_kernel_output = vision_prompt_flash_attention_bnsd(
+                query_bnsd,
+                key_bnsd,
+                value_bnsd,
+                num_heads=int(attention.num_heads),
+                scale=float(attention.scaling),
+                atten_mask=self.static_visual.static_pad_attention_mask,
+            )
+        elif attention_impl == "manual":
+            scores = torch.matmul(query_bnsd, key_bnsd.transpose(2, 3)) * attention.scaling
+            if self.static_visual.static_pad_attention_mask is not None:
+                scores = scores.masked_fill(self.static_visual.static_pad_attention_mask, torch.finfo(scores.dtype).min)
+            probs = attention_softmax(
+                scores,
+                dim=-1,
+                output_dtype=query_bnsd.dtype,
+                mode=get_vision_softmax_dtype_mode(),
+            )
+            attn_kernel_output = torch.matmul(probs, value_bnsd)
+        else:
+            raise ValueError(f"unknown vision attention implementation: {attention_impl!r}")
+        attn_kernel_output = attn_kernel_output.transpose(1, 2).contiguous().view(seq_length, -1)
+        if self.stage == "attn_kernel_out":
+            return attn_kernel_output
+
+        attn_output = attention.out_proj(attn_kernel_output)
+        if self.stage in ("attn_out", "attn_out_proj"):
             return attn_output
 
         hidden_states = hidden_states + attn_output
-        hidden_states = hidden_states + encoder_layer.mlp(encoder_layer.layer_norm2(hidden_states))
+        if self.stage == "attn_residual":
+            return hidden_states
+
+        ln2_hidden = encoder_layer.layer_norm2(hidden_states)
+        if self.stage == "ln2":
+            return ln2_hidden
+
+        mlp = encoder_layer.mlp
+        if self.static_visual.ln_linear_mode == "grouped_qkv_mlp_fc1":
+            mlp_fc1 = self.static_visual._grouped_linear(ln2_hidden, mlp.fc1.weight, mlp.fc1.bias)
+        else:
+            mlp_fc1 = mlp.fc1(ln2_hidden)
+        if self.stage == "mlp_fc1":
+            return mlp_fc1
+
+        mlp_act = _activation(mlp.hidden_act, mlp_fc1)
+        if self.stage == "mlp_act":
+            return mlp_act
+
+        mlp_fc2 = mlp.fc2(mlp_act)
+        if self.stage == "mlp_fc2":
+            return mlp_fc2
+
+        hidden_states = hidden_states + mlp_fc2
         if self.stage == "layer0_out":
             return hidden_states
         raise RuntimeError(f"unreachable static visual prefix stage={self.stage!r}")
@@ -2984,6 +3043,12 @@ def probe_visual_prefix_compile(args: argparse.Namespace) -> None:
         raise ValueError(f"no inputs available from baseline {baseline_path}")
 
     stages = parse_visual_prefix_stages(args.stages)
+    ln_linear_mode = str(getattr(args, "static_visual_ln_linear_mode", "normal"))
+    if ln_linear_mode not in STATIC_VISUAL_LN_LINEAR_MODE_CHOICES:
+        raise ValueError(
+            f"unsupported --static-visual-ln-linear-mode {ln_linear_mode!r}; "
+            f"choices={STATIC_VISUAL_LN_LINEAR_MODE_CHOICES}"
+        )
     backend_name = str(args.vision_compile_backend)
     backend = None
     backend_meta: dict[str, Any] = {"backend_kind": "none"}
@@ -3022,6 +3087,7 @@ def probe_visual_prefix_compile(args: argparse.Namespace) -> None:
                     "id": str(item.entry.get("id")),
                     "layout_label": str(item.entry.get("layout_label")),
                     "stage": str(stage),
+                    "static_visual_ln_linear_mode": str(ln_linear_mode),
                     "backend": str(backend_name),
                     "device": str(device),
                     "dtype": str(dtype),
@@ -3037,6 +3103,7 @@ def probe_visual_prefix_compile(args: argparse.Namespace) -> None:
                         debug_no_padding=bool(args.debug_static_visual_no_padding),
                         debug_min_pad_tokens=int(args.debug_static_visual_min_pad_tokens),
                         debug_pad_to_multiple=int(args.debug_static_visual_pad_to_multiple),
+                        ln_linear_mode=ln_linear_mode,
                     ).eval()
                     row.update(
                         {
@@ -3194,6 +3261,7 @@ def probe_visual_prefix_compile(args: argparse.Namespace) -> None:
         "model": str(model_dir),
         "baseline": str(baseline_path),
         "backend": str(backend_name),
+        "static_visual_ln_linear_mode": str(ln_linear_mode),
         "compile_api": None if backend_name == "none" else "torch.compile",
         "fullgraph": bool(backend_name != "none"),
         "dynamic": False,
@@ -4575,6 +4643,15 @@ def parse_args() -> argparse.Namespace:
     prefix_probe_parser.add_argument("--vision-prompt-fa-layout", default="bnsd", choices=("bnsd", "bsnd", "bsh"))
     prefix_probe_parser.add_argument("--vision-prompt-fa-mask-sparse-mode", type=int, default=1, choices=(0, 1))
     prefix_probe_parser.add_argument("--vision-compile-backend", default="torchair", choices=VISION_COMPILE_BACKEND_CHOICES)
+    prefix_probe_parser.add_argument(
+        "--static-visual-ln-linear-mode",
+        default="normal",
+        choices=STATIC_VISUAL_LN_LINEAR_MODE_CHOICES,
+        help=(
+            "Use the same candidate Linear replacements as compare: normal, grouped_qkv, "
+            "or grouped_qkv_mlp_fc1."
+        ),
+    )
     add_torchair_diagnostic_args(prefix_probe_parser)
     prefix_probe_parser.add_argument(
         "--stages",

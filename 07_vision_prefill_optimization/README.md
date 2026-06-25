@@ -431,6 +431,49 @@ SOURCES=ln1,patch_pos BRIDGES=none \
   ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_qkv_linear_compile_probe.sh
 ```
 
+## Visual Layer Edge Probe
+
+If grouped QKV or grouped QKV+MLP-fc1 still diverges in the full static visual
+compare, use the layer-edge probe before changing the candidate path again:
+
+```sh
+ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_visual_layer_edge_probe.sh
+```
+
+Default settings compile one item with
+`LN_LINEAR_MODE=grouped_qkv_mlp_fc1` and check the first visual layer at:
+
+- `qkv`
+- `qk_rope_v`
+- `attn_kernel_out`
+- `attn_out_proj`
+- `attn_residual`
+- `ln2`
+- `mlp_fc1`
+- `mlp_act`
+- `mlp_fc2`
+- `layer0_out`
+
+The critical output is `first_mismatch` plus the printed `STAGE_TABLE`. This is
+not a throughput benchmark: it compiles one graph per stage so that the first
+bad producer-consumer edge is visible. Start with `MAX_ITEMS=1`. If every stage
+matches for the first item, rerun with `MAX_ITEMS=2`; if the first mismatch is
+already clear, stop and report it.
+
+Interpretation:
+
+- If `qkv` passes but `attn_kernel_out` fails, the problem is inside the
+  attention kernel or the Q/K/V layout handed into it.
+- If `attn_kernel_out` passes but `attn_out_proj` fails, the next normal Linear
+  consumer (`out_proj`) is misreading the attention output.
+- If `attn_residual` and `ln2` pass but `mlp_fc1` fails, grouped `fc1` did not
+  solve the second LayerNorm-to-Linear edge in the full graph.
+- If `mlp_fc1` and `mlp_act` pass but `mlp_fc2` fails, the activation output is
+  being handed to the normal `fc2` Linear in a bad format.
+- If all single-layer stages pass but full static visual still fails, the bug is
+  likely a later-layer or cross-layer format propagation issue; add a deeper
+  edge probe before broad rewrites.
+
 ## CUDA Smoke
 
 CUDA smoke uses manual attention only and is not authoritative NPU evidence:
