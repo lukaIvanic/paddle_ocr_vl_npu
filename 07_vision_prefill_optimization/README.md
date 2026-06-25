@@ -219,7 +219,9 @@ Interpretation:
   direction.
 - `npu_grouped_matmul_q` is a diagnostic only. Grouped MatMul is built for
   grouped/expert-style matmuls, not a normal single Linear, so an eager or
-  compile error is useful evidence rather than a benchmark failure.
+  compile error is useful evidence rather than a benchmark failure. The probe
+  uses a one-expert 3D weight tensor `[1, K, O]`, matching the op's grouped
+  weight-rank contract instead of passing a plain 2D Linear weight.
 
 ## MSIT GE-vs-FX Dump Compare
 
