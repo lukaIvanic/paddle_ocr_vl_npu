@@ -72,6 +72,8 @@ TIMING_MODE_CHOICES = ("standard", "phase_sync")
 VISION_COMPILE_BACKEND_CHOICES = ("none", "default", "aot_eager", "inductor", "torchair")
 TORCHAIR_MODE_CHOICES = ("default", "max-autotune")
 TORCHAIR_GRAPH_DUMP_TYPE_CHOICES = ("none", "txt", "pbtxt")
+TORCHAIR_MSIT_DUMP_KIND_CHOICES = ("none", "ge", "fx")
+TORCHAIR_MSIT_DUMP_MODE_CHOICES = ("input", "output", "all")
 STATIC_VISUAL_PAD_POLICY = "always_mask_pad_to_atlas_inference_alignment"
 
 LAYOUT_PROMPT_BY_LABEL = {
@@ -977,13 +979,13 @@ class SingleCropStaticVisualModule(torch.nn.Module):
 
 def import_torchair():
     try:
-        from torch_npu.dynamo import torchair
-        from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
+        import torchair
+        from torchair.configs.compiler_config import CompilerConfig
 
         return torchair, CompilerConfig
     except Exception:
-        import torchair
-        from torchair.configs.compiler_config import CompilerConfig
+        from torch_npu.dynamo import torchair
+        from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
 
         return torchair, CompilerConfig
 
@@ -998,6 +1000,106 @@ def set_torchair_graph_dump_path(graph_dump: Any, dump_dir: Path) -> list[str]:
     return configured_attrs
 
 
+def parse_csv_string_list(raw: str) -> list[str]:
+    values: list[str] = []
+    for chunk in str(raw).replace(";", ",").split(","):
+        chunk = chunk.strip()
+        if chunk:
+            values.append(chunk)
+    if not values:
+        raise ValueError(f"expected at least one comma-separated value, got {raw!r}")
+    return values
+
+
+def ensure_top_level_torchair_importable() -> None:
+    try:
+        import torchair  # noqa: F401
+
+        return
+    except Exception:
+        pass
+    try:
+        from torch_npu.dynamo import torchair as torchair_module
+        from torch_npu.dynamo.torchair import configs as configs_module
+        from torch_npu.dynamo.torchair.configs import compiler_config as compiler_config_module
+    except Exception as exc:
+        raise RuntimeError(
+            "TorchAir is not importable as either top-level `torchair` or `torch_npu.dynamo.torchair`."
+        ) from exc
+
+    sys.modules.setdefault("torchair", torchair_module)
+    sys.modules.setdefault("torchair.configs", configs_module)
+    sys.modules.setdefault("torchair.configs.compiler_config", compiler_config_module)
+
+
+def apply_msit_torchair_dump_config(
+    config: Any,
+    *,
+    kind: str,
+    dump_dir: str | Path | None,
+    dump_mode: str,
+    dump_token: str,
+    dump_layer: str,
+    fusion_switch_file: str | Path | None,
+) -> dict[str, Any]:
+    if kind not in TORCHAIR_MSIT_DUMP_KIND_CHOICES:
+        raise ValueError(f"--torchair-msit-dump-kind must be one of {TORCHAIR_MSIT_DUMP_KIND_CHOICES}, got {kind!r}")
+    if kind == "none":
+        return {"enabled": False, "kind": "none"}
+    if dump_mode not in TORCHAIR_MSIT_DUMP_MODE_CHOICES:
+        raise ValueError(f"--torchair-msit-dump-mode must be one of {TORCHAIR_MSIT_DUMP_MODE_CHOICES}, got {dump_mode!r}")
+    if dump_dir is None or not str(dump_dir).strip():
+        raise ValueError("--torchair-msit-dump-dir is required when --torchair-msit-dump-kind is ge or fx")
+
+    base_dir = Path(dump_dir).expanduser().resolve()
+    base_dir.mkdir(parents=True, exist_ok=True)
+    fusion_path = None
+    if fusion_switch_file is not None and str(fusion_switch_file).strip():
+        fusion_path = Path(fusion_switch_file).expanduser().resolve()
+        if not fusion_path.is_file():
+            raise FileNotFoundError(f"--torchair-msit-fusion-switch-file does not exist: {fusion_path}")
+    dump_token_values = parse_int_list(dump_token) if str(dump_token).strip() else None
+    dump_layer_values = parse_csv_string_list(dump_layer) if str(dump_layer).strip() else None
+
+    ensure_top_level_torchair_importable()
+    try:
+        from msit_llm.dump import torchair_dump
+    except Exception as exc:
+        raise RuntimeError(
+            "MSIT TorchAir dump was requested, but `from msit_llm.dump import torchair_dump` failed. "
+            "Run this in the NPU/MSIT environment or install the MSIT LLM package before using "
+            "--torchair-msit-dump-kind."
+        ) from exc
+
+    if kind == "ge":
+        torchair_dump.get_ge_dump_config(
+            dump_path=str(base_dir),
+            dump_mode=str(dump_mode),
+            fusion_switch_file=str(fusion_path) if fusion_path is not None else None,
+            dump_token=dump_token_values,
+            dump_layer=dump_layer_values,
+            compiler_config=config,
+        )
+        expected_dir = base_dir / "msit_ge_dump"
+    else:
+        if fusion_path is not None or dump_token_values is not None or dump_layer_values is not None:
+            raise ValueError("MSIT FX dump does not accept fusion-switch, dump-token, or dump-layer filters")
+        torchair_dump.get_fx_dump_config(dump_path=str(base_dir), compiler_config=config)
+        expected_dir = base_dir / "msit_fx_dump"
+
+    return {
+        "enabled": True,
+        "kind": str(kind),
+        "dump_base_dir": str(base_dir),
+        "expected_dump_dir": str(expected_dir),
+        "dump_mode": str(dump_mode) if kind == "ge" else None,
+        "dump_token": dump_token_values,
+        "dump_layer": dump_layer_values,
+        "fusion_switch_file": str(fusion_path) if fusion_path is not None else None,
+        "doc_expected_compare_role": "my_path_ge_target" if kind == "ge" else "golden_path_fx_reference",
+    }
+
+
 def vision_compile_backend(
     name: str,
     device: torch.device,
@@ -1006,6 +1108,12 @@ def vision_compile_backend(
     torchair_run_eagerly: bool = False,
     torchair_graph_dump_type: str = "none",
     torchair_graph_dump_dir: str | Path | None = None,
+    torchair_msit_dump_kind: str = "none",
+    torchair_msit_dump_dir: str | Path | None = None,
+    torchair_msit_dump_mode: str = "output",
+    torchair_msit_dump_token: str = "",
+    torchair_msit_dump_layer: str = "",
+    torchair_msit_fusion_switch_file: str | Path | None = None,
 ) -> tuple[Any, dict[str, Any]]:
     if name == "default":
         return None, {"backend_kind": "torch_default"}
@@ -1019,6 +1127,13 @@ def vision_compile_backend(
                 f"--torchair-graph-dump-type must be one of {TORCHAIR_GRAPH_DUMP_TYPE_CHOICES}, "
                 f"got {torchair_graph_dump_type!r}"
             )
+        if torchair_msit_dump_kind not in TORCHAIR_MSIT_DUMP_KIND_CHOICES:
+            raise ValueError(
+                f"--torchair-msit-dump-kind must be one of {TORCHAIR_MSIT_DUMP_KIND_CHOICES}, "
+                f"got {torchair_msit_dump_kind!r}"
+            )
+        if torchair_run_eagerly and torchair_msit_dump_kind != "none":
+            raise ValueError("--torchair-run-eagerly cannot be combined with MSIT GE/FX dump collection")
         torchair, CompilerConfig = import_torchair()
         config = CompilerConfig()
         meta: dict[str, Any] = {
@@ -1028,6 +1143,7 @@ def vision_compile_backend(
             "torchair_graph_dump_type": str(torchair_graph_dump_type),
             "torchair_graph_dump_dir": None,
             "torchair_graph_dump_path_attrs": [],
+            "torchair_msit_dump": {"enabled": False, "kind": "none"},
         }
         if torchair_mode == "max-autotune":
             config.mode = str(torchair_mode)
@@ -1039,6 +1155,16 @@ def vision_compile_backend(
                 dump_dir = Path(torchair_graph_dump_dir).expanduser().resolve()
                 meta["torchair_graph_dump_dir"] = str(dump_dir)
                 meta["torchair_graph_dump_path_attrs"] = set_torchair_graph_dump_path(config.debug.graph_dump, dump_dir)
+        if torchair_msit_dump_kind != "none":
+            meta["torchair_msit_dump"] = apply_msit_torchair_dump_config(
+                config,
+                kind=str(torchair_msit_dump_kind),
+                dump_dir=torchair_msit_dump_dir,
+                dump_mode=str(torchair_msit_dump_mode),
+                dump_token=str(torchair_msit_dump_token),
+                dump_layer=str(torchair_msit_dump_layer),
+                fusion_switch_file=torchair_msit_fusion_switch_file,
+            )
         return torchair.get_npu_backend(compiler_config=config), meta
     return name, {"backend_kind": str(name)}
 
@@ -1056,6 +1182,12 @@ def maybe_compile_static_visual(
     torchair_run_eagerly: bool = False,
     torchair_graph_dump_type: str = "none",
     torchair_graph_dump_dir: str | Path | None = None,
+    torchair_msit_dump_kind: str = "none",
+    torchair_msit_dump_dir: str | Path | None = None,
+    torchair_msit_dump_mode: str = "output",
+    torchair_msit_dump_token: str = "",
+    torchair_msit_dump_layer: str = "",
+    torchair_msit_fusion_switch_file: str | Path | None = None,
 ) -> tuple[Callable[[torch.Tensor], torch.Tensor] | None, dict[str, Any]]:
     if backend_name not in VISION_COMPILE_BACKEND_CHOICES:
         raise ValueError(f"unsupported vision compile backend={backend_name!r}; choices={VISION_COMPILE_BACKEND_CHOICES}")
@@ -1112,6 +1244,12 @@ def maybe_compile_static_visual(
         torchair_run_eagerly=torchair_run_eagerly,
         torchair_graph_dump_type=torchair_graph_dump_type,
         torchair_graph_dump_dir=torchair_graph_dump_dir,
+        torchair_msit_dump_kind=torchair_msit_dump_kind,
+        torchair_msit_dump_dir=torchair_msit_dump_dir,
+        torchair_msit_dump_mode=torchair_msit_dump_mode,
+        torchair_msit_dump_token=torchair_msit_dump_token,
+        torchair_msit_dump_layer=torchair_msit_dump_layer,
+        torchair_msit_fusion_switch_file=torchair_msit_fusion_switch_file,
     )
     if backend is not None:
         compile_kwargs["backend"] = backend
@@ -1153,6 +1291,12 @@ def prepare_candidate_vision_forward(
         torchair_run_eagerly=bool(getattr(args, "torchair_run_eagerly", False)),
         torchair_graph_dump_type=str(getattr(args, "torchair_graph_dump_type", "none")),
         torchair_graph_dump_dir=getattr(args, "torchair_graph_dump_dir", None),
+        torchair_msit_dump_kind=str(getattr(args, "torchair_msit_dump_kind", "none")),
+        torchair_msit_dump_dir=getattr(args, "torchair_msit_dump_dir", None),
+        torchair_msit_dump_mode=str(getattr(args, "torchair_msit_dump_mode", "output")),
+        torchair_msit_dump_token=str(getattr(args, "torchair_msit_dump_token", "")),
+        torchair_msit_dump_layer=str(getattr(args, "torchair_msit_dump_layer", "")),
+        torchair_msit_fusion_switch_file=getattr(args, "torchair_msit_fusion_switch_file", None),
     )
     if vision_forward is None:
         raise RuntimeError("static_visual candidate did not produce a callable vision_forward")
@@ -1211,6 +1355,11 @@ def prepare_candidate_vision_forward(
         if isinstance(backend_meta, dict) and backend_meta.get("torchair_graph_dump_dir"):
             meta["torchair_graph_dump_summary_after_first_call"] = summarize_tree(
                 str(backend_meta["torchair_graph_dump_dir"])
+            )
+        msit_dump_meta = backend_meta.get("torchair_msit_dump", {}) if isinstance(backend_meta, dict) else {}
+        if isinstance(msit_dump_meta, dict) and msit_dump_meta.get("enabled"):
+            meta["torchair_msit_dump_summary_after_first_call"] = summarize_tree(
+                str(msit_dump_meta.get("expected_dump_dir", ""))
             )
     return vision_forward, meta
 
@@ -1813,6 +1962,12 @@ def probe_promptfa_compile(args: argparse.Namespace) -> None:
         torchair_run_eagerly=bool(getattr(args, "torchair_run_eagerly", False)),
         torchair_graph_dump_type=str(getattr(args, "torchair_graph_dump_type", "none")),
         torchair_graph_dump_dir=getattr(args, "torchair_graph_dump_dir", None),
+        torchair_msit_dump_kind=str(getattr(args, "torchair_msit_dump_kind", "none")),
+        torchair_msit_dump_dir=getattr(args, "torchair_msit_dump_dir", None),
+        torchair_msit_dump_mode=str(getattr(args, "torchair_msit_dump_mode", "output")),
+        torchair_msit_dump_token=str(getattr(args, "torchair_msit_dump_token", "")),
+        torchair_msit_dump_layer=str(getattr(args, "torchair_msit_dump_layer", "")),
+        torchair_msit_fusion_switch_file=getattr(args, "torchair_msit_fusion_switch_file", None),
     )
 
     old_capture_scalar_outputs = bool(torch._dynamo.config.capture_scalar_outputs)
@@ -1950,6 +2105,11 @@ def probe_promptfa_compile(args: argparse.Namespace) -> None:
         "compile_backend_meta": backend_meta,
         "torchair_graph_dump_summary": summarize_tree(backend_meta.get("torchair_graph_dump_dir"))
         if isinstance(backend_meta, dict)
+        else {"path": None, "exists": False, "file_count": 0, "sample_files": []},
+        "torchair_msit_dump_summary": summarize_tree(
+            backend_meta.get("torchair_msit_dump", {}).get("expected_dump_dir")
+        )
+        if isinstance(backend_meta, dict) and isinstance(backend_meta.get("torchair_msit_dump"), dict)
         else {"path": None, "exists": False, "file_count": 0, "sample_files": []},
         "shape": {
             "batch": 1,
@@ -2422,6 +2582,12 @@ def compare_candidate(args: argparse.Namespace) -> None:
             "torchair_run_eagerly": bool(getattr(args, "torchair_run_eagerly", False)),
             "torchair_graph_dump_type": str(getattr(args, "torchair_graph_dump_type", "none")),
             "torchair_graph_dump_dir": str(getattr(args, "torchair_graph_dump_dir", "") or ""),
+            "torchair_msit_dump_kind": str(getattr(args, "torchair_msit_dump_kind", "none")),
+            "torchair_msit_dump_dir": str(getattr(args, "torchair_msit_dump_dir", "") or ""),
+            "torchair_msit_dump_mode": str(getattr(args, "torchair_msit_dump_mode", "output")),
+            "torchair_msit_dump_token": str(getattr(args, "torchair_msit_dump_token", "") or ""),
+            "torchair_msit_dump_layer": str(getattr(args, "torchair_msit_dump_layer", "") or ""),
+            "torchair_msit_fusion_switch_file": str(getattr(args, "torchair_msit_fusion_switch_file", "") or ""),
             "static_visual_pad_policy": STATIC_VISUAL_PAD_POLICY,
             "debug_static_visual_no_padding": bool(args.debug_static_visual_no_padding),
             "debug_static_visual_min_pad_tokens": int(args.debug_static_visual_min_pad_tokens),
@@ -2539,6 +2705,41 @@ def add_torchair_diagnostic_args(parser: argparse.ArgumentParser) -> None:
         "--torchair-graph-dump-dir",
         default="",
         help="Diagnostic only: optional graph-dump directory. If omitted, TorchAir chooses its default dump location.",
+    )
+    parser.add_argument(
+        "--torchair-msit-dump-kind",
+        default="none",
+        choices=TORCHAIR_MSIT_DUMP_KIND_CHOICES,
+        help=(
+            "Diagnostic only: attach MSIT TorchAir GE or FX dump config to the TorchAir CompilerConfig. "
+            "Use separate dump dirs for ge and fx runs."
+        ),
+    )
+    parser.add_argument(
+        "--torchair-msit-dump-dir",
+        default="",
+        help="Diagnostic only: base directory passed to MSIT get_ge_dump_config/get_fx_dump_config.",
+    )
+    parser.add_argument(
+        "--torchair-msit-dump-mode",
+        default="output",
+        choices=TORCHAIR_MSIT_DUMP_MODE_CHOICES,
+        help="Diagnostic only: GE dump mode. Start with output to limit dump size; rerun with all if compare needs inputs.",
+    )
+    parser.add_argument(
+        "--torchair-msit-dump-token",
+        default="",
+        help="Diagnostic only: optional comma-separated GE dump token filter, for example 0 or 0,1.",
+    )
+    parser.add_argument(
+        "--torchair-msit-dump-layer",
+        default="",
+        help="Diagnostic only: optional comma-separated GE dump layer/op filter.",
+    )
+    parser.add_argument(
+        "--torchair-msit-fusion-switch-file",
+        default="",
+        help="Diagnostic only: optional fusion switch JSON for GE dump, usually for GE-vs-GE fusion-off compare.",
     )
 
 

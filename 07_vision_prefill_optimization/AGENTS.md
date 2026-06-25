@@ -120,6 +120,24 @@ the traced graph or compiled boundary is already wrong. Use `--torchair-graph-du
 an explicit `--torchair-graph-dump-dir` when we need to inspect whether masks, constants, and
 operator attributes were captured as expected.
 
+If run-eagerly matches but normal TorchAir diverges, use the native MSIT TorchAir dump path before
+inventing custom tensor dumps. The MSIT docs describe `get_ge_dump_config()` for GE execution dumps,
+`get_fx_dump_config()` for FX reference dumps, and `msit llm compare --my-path GE --golden-path FX`
+for localization. Experiment 07 exposes this through
+`--torchair-msit-dump-kind {ge,fx}` and `--torchair-msit-dump-dir`. Always use different base
+directories for GE and FX; mixed dump directories invalidate the comparison. Start with one crop and
+GE `--torchair-msit-dump-mode output` to limit dump size. If compare says inputs are needed, rerun
+with `--torchair-msit-dump-mode all`. The committed runner is:
+
+```sh
+ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_msit_ge_fx_compare.sh
+```
+
+The runner executes the same static visual compare twice, once with GE dump and once with FX dump,
+then runs `msit llm compare` if the `msit` CLI is on PATH. It is a diagnostic path, not a speed
+benchmark. Do not ask the work agent to write inline dump parsers or extra scripts for this first
+pass; inspect the generated JSON summaries and the MSIT compare output directory.
+
 Padding exists to make static fullgraph compilation and later batching possible while preserving
 real-token math. Treat padded rows as implementation detail, not as a second model. The invariant is:
 real tokens must not attend to padded tokens, padded tokens must not attend to real tokens, padded

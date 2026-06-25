@@ -152,6 +152,31 @@ candidate wrapper eagerly once during compiled setup and records
 `vision_compile` object. The `real_rows` diff is the key check for whether
 compilation changed the rows that are actually compared to the stored baseline.
 
+## MSIT GE-vs-FX Dump Compare
+
+After `--torchair-run-eagerly` proves the FX graph semantics are clean, use the
+native MSIT TorchAir dump path to localize GE/CANN lowering drift:
+
+```sh
+ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_msit_ge_fx_compare.sh
+```
+
+The runner executes one-crop static visual compare twice:
+
+- GE target dump: `--torchair-msit-dump-kind ge`
+- FX golden dump: `--torchair-msit-dump-kind fx`
+
+Then it runs:
+
+```sh
+msit llm compare --my-path GE_DUMP --golden-path FX_DUMP --output OUT/msit_compare
+```
+
+The script defaults to GE `dump_mode=output` to avoid huge dumps. If the MSIT
+compare output needs inputs too, rerun with `MSIT_DUMP_MODE=all`. Keep GE and
+FX dump directories separate; MSIT warns that reusing a dump path can mix data
+and invalidate the comparison.
+
 ## CUDA Smoke
 
 CUDA smoke uses manual attention only and is not authoritative NPU evidence:

@@ -19,3 +19,5 @@ fusion_result.json
 # Experiment 07 reference bundles are generated artifacts.
 07_vision_prefill_optimization/baselines/*
 !07_vision_prefill_optimization/baselines/.gitkeep
+07_vision_prefill_optimization/outputs/*
+!07_vision_prefill_optimization/outputs/.gitkeep
