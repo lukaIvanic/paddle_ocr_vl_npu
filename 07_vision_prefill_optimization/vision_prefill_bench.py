@@ -70,6 +70,8 @@ DTYPE_CHOICES = ("fp16", "float16", "fp32", "float32", "bf16", "bfloat16")
 VISION_ATTENTION_CHOICES = ("manual", "prompt_flash_attention")
 TIMING_MODE_CHOICES = ("standard", "phase_sync")
 VISION_COMPILE_BACKEND_CHOICES = ("none", "default", "aot_eager", "inductor", "torchair")
+TORCHAIR_MODE_CHOICES = ("default", "max-autotune")
+TORCHAIR_GRAPH_DUMP_TYPE_CHOICES = ("none", "txt", "pbtxt")
 STATIC_VISUAL_PAD_POLICY = "always_mask_pad_to_atlas_inference_alignment"
 
 LAYOUT_PROMPT_BY_LABEL = {
@@ -181,6 +183,28 @@ def sha256_file(path: Path) -> str:
 def sha256_json(value: Any) -> str:
     payload = json.dumps(clean_json(value), ensure_ascii=False, sort_keys=True).encode("utf-8")
     return hashlib.sha256(payload).hexdigest()
+
+
+def summarize_tree(path: str | Path | None, *, max_files: int = 24) -> dict[str, Any]:
+    if path is None or not str(path).strip():
+        return {"path": None, "exists": False, "file_count": 0, "sample_files": []}
+    root = Path(path).expanduser().resolve()
+    if not root.exists():
+        return {"path": str(root), "exists": False, "file_count": 0, "sample_files": []}
+    files = [item for item in root.rglob("*") if item.is_file()]
+    sample_files = []
+    for item in sorted(files)[: int(max_files)]:
+        try:
+            rel_path = str(item.relative_to(root))
+        except ValueError:
+            rel_path = str(item)
+        sample_files.append({"path": rel_path, "size": int(item.stat().st_size)})
+    return {
+        "path": str(root),
+        "exists": True,
+        "file_count": int(len(files)),
+        "sample_files": sample_files,
+    }
 
 
 def resolve_dataset_dir(path: str | Path | None) -> Path:
@@ -964,16 +988,59 @@ def import_torchair():
         return torchair, CompilerConfig
 
 
-def vision_compile_backend(name: str, device: torch.device):
+def set_torchair_graph_dump_path(graph_dump: Any, dump_dir: Path) -> list[str]:
+    configured_attrs: list[str] = []
+    dump_dir.mkdir(parents=True, exist_ok=True)
+    for attr in ("path", "_path"):
+        if hasattr(graph_dump, attr):
+            setattr(graph_dump, attr, str(dump_dir))
+            configured_attrs.append(attr)
+    return configured_attrs
+
+
+def vision_compile_backend(
+    name: str,
+    device: torch.device,
+    *,
+    torchair_mode: str = "default",
+    torchair_run_eagerly: bool = False,
+    torchair_graph_dump_type: str = "none",
+    torchair_graph_dump_dir: str | Path | None = None,
+) -> tuple[Any, dict[str, Any]]:
     if name == "default":
-        return None
+        return None, {"backend_kind": "torch_default"}
     if name == "torchair":
         if device.type != "npu":
             raise ValueError("--vision-compile-backend torchair requires --device npu:0")
+        if torchair_mode not in TORCHAIR_MODE_CHOICES:
+            raise ValueError(f"--torchair-mode must be one of {TORCHAIR_MODE_CHOICES}, got {torchair_mode!r}")
+        if torchair_graph_dump_type not in TORCHAIR_GRAPH_DUMP_TYPE_CHOICES:
+            raise ValueError(
+                f"--torchair-graph-dump-type must be one of {TORCHAIR_GRAPH_DUMP_TYPE_CHOICES}, "
+                f"got {torchair_graph_dump_type!r}"
+            )
         torchair, CompilerConfig = import_torchair()
         config = CompilerConfig()
-        return torchair.get_npu_backend(compiler_config=config)
-    return name
+        meta: dict[str, Any] = {
+            "backend_kind": "torchair",
+            "torchair_mode": str(torchair_mode),
+            "torchair_run_eagerly": bool(torchair_run_eagerly),
+            "torchair_graph_dump_type": str(torchair_graph_dump_type),
+            "torchair_graph_dump_dir": None,
+            "torchair_graph_dump_path_attrs": [],
+        }
+        if torchair_mode == "max-autotune":
+            config.mode = str(torchair_mode)
+        if torchair_run_eagerly:
+            config.debug.run_eagerly = True
+        if torchair_graph_dump_type != "none":
+            config.debug.graph_dump.type = str(torchair_graph_dump_type)
+            if torchair_graph_dump_dir is not None and str(torchair_graph_dump_dir).strip():
+                dump_dir = Path(torchair_graph_dump_dir).expanduser().resolve()
+                meta["torchair_graph_dump_dir"] = str(dump_dir)
+                meta["torchair_graph_dump_path_attrs"] = set_torchair_graph_dump_path(config.debug.graph_dump, dump_dir)
+        return torchair.get_npu_backend(compiler_config=config), meta
+    return name, {"backend_kind": str(name)}
 
 
 def maybe_compile_static_visual(
@@ -985,6 +1052,10 @@ def maybe_compile_static_visual(
     debug_no_padding: bool = False,
     debug_min_pad_tokens: int = 0,
     debug_pad_to_multiple: int = 0,
+    torchair_mode: str = "default",
+    torchair_run_eagerly: bool = False,
+    torchair_graph_dump_type: str = "none",
+    torchair_graph_dump_dir: str | Path | None = None,
 ) -> tuple[Callable[[torch.Tensor], torch.Tensor] | None, dict[str, Any]]:
     if backend_name not in VISION_COMPILE_BACKEND_CHOICES:
         raise ValueError(f"unsupported vision compile backend={backend_name!r}; choices={VISION_COMPILE_BACKEND_CHOICES}")
@@ -1033,7 +1104,15 @@ def maybe_compile_static_visual(
     old_capture_scalar_outputs = bool(torch._dynamo.config.capture_scalar_outputs)
     torch._dynamo.config.capture_scalar_outputs = True
     compile_kwargs: dict[str, Any] = {"fullgraph": True, "dynamic": False}
-    backend = vision_compile_backend(backend_name, device)
+    torch._dynamo.reset()
+    backend, backend_meta = vision_compile_backend(
+        backend_name,
+        device,
+        torchair_mode=torchair_mode,
+        torchair_run_eagerly=torchair_run_eagerly,
+        torchair_graph_dump_type=torchair_graph_dump_type,
+        torchair_graph_dump_dir=torchair_graph_dump_dir,
+    )
     if backend is not None:
         compile_kwargs["backend"] = backend
     maybe_sync(device)
@@ -1047,6 +1126,8 @@ def maybe_compile_static_visual(
             "compile_wrapper_s": float(time.perf_counter() - start),
             "capture_scalar_outputs": True,
             "capture_scalar_outputs_previous": old_capture_scalar_outputs,
+            "dynamo_reset_before_compile": True,
+            "compile_backend_meta": backend_meta,
         }
     )
     return compiled, meta
@@ -1068,6 +1149,10 @@ def prepare_candidate_vision_forward(
         debug_no_padding=bool(args.debug_static_visual_no_padding),
         debug_min_pad_tokens=int(args.debug_static_visual_min_pad_tokens),
         debug_pad_to_multiple=int(args.debug_static_visual_pad_to_multiple),
+        torchair_mode=str(getattr(args, "torchair_mode", "default")),
+        torchair_run_eagerly=bool(getattr(args, "torchair_run_eagerly", False)),
+        torchair_graph_dump_type=str(getattr(args, "torchair_graph_dump_type", "none")),
+        torchair_graph_dump_dir=getattr(args, "torchair_graph_dump_dir", None),
     )
     if vision_forward is None:
         raise RuntimeError("static_visual candidate did not produce a callable vision_forward")
@@ -1092,6 +1177,13 @@ def prepare_candidate_vision_forward(
         start = time.perf_counter()
         first_output = vision_forward(pixel_values)
         maybe_sync(device)
+        if bool(vision_compile.get("capture_scalar_outputs", False)):
+            import torch._dynamo
+
+            torch._dynamo.config.capture_scalar_outputs = bool(
+                vision_compile.get("capture_scalar_outputs_previous", False)
+            )
+            vision_compile["capture_scalar_outputs_restored_after_first_call"] = True
         first_real_output = slice_visual_features_to_real(first_output, item.image_grid_thw)
         meta["compiled_first_call_s"] = float(time.perf_counter() - start)
         meta["first_output_shape"] = [int(dim) for dim in first_output.shape]
@@ -1115,6 +1207,11 @@ def prepare_candidate_vision_forward(
             }
         else:
             meta["compiled_vs_static_eager_validation"] = {"enabled": False}
+        backend_meta = vision_compile.get("compile_backend_meta", {})
+        if isinstance(backend_meta, dict) and backend_meta.get("torchair_graph_dump_dir"):
+            vision_compile["torchair_graph_dump_summary_after_first_call"] = summarize_tree(
+                str(backend_meta["torchair_graph_dump_dir"])
+            )
     return vision_forward, meta
 
 
@@ -1706,9 +1803,17 @@ def probe_promptfa_compile(args: argparse.Namespace) -> None:
     backend_name = str(args.vision_compile_backend)
     if backend_name == "none":
         raise ValueError("probe-promptfa-compile requires a real compile backend, not --vision-compile-backend none")
-    backend = vision_compile_backend(backend_name, device)
-
     import torch._dynamo
+
+    torch._dynamo.reset()
+    backend, backend_meta = vision_compile_backend(
+        backend_name,
+        device,
+        torchair_mode=str(getattr(args, "torchair_mode", "default")),
+        torchair_run_eagerly=bool(getattr(args, "torchair_run_eagerly", False)),
+        torchair_graph_dump_type=str(getattr(args, "torchair_graph_dump_type", "none")),
+        torchair_graph_dump_dir=getattr(args, "torchair_graph_dump_dir", None),
+    )
 
     old_capture_scalar_outputs = bool(torch._dynamo.config.capture_scalar_outputs)
     torch._dynamo.config.capture_scalar_outputs = True
@@ -1841,6 +1946,11 @@ def probe_promptfa_compile(args: argparse.Namespace) -> None:
         "explicit_cache_dir": None,
         "capture_scalar_outputs": True,
         "capture_scalar_outputs_previous": old_capture_scalar_outputs,
+        "dynamo_reset_before_compile": True,
+        "compile_backend_meta": backend_meta,
+        "torchair_graph_dump_summary": summarize_tree(backend_meta.get("torchair_graph_dump_dir"))
+        if isinstance(backend_meta, dict)
+        else {"path": None, "exists": False, "file_count": 0, "sample_files": []},
         "shape": {
             "batch": 1,
             "heads": int(heads),
@@ -2308,6 +2418,10 @@ def compare_candidate(args: argparse.Namespace) -> None:
             "timing_mode": str(args.timing_mode),
             "candidate_vision_path": "static_visual",
             "vision_compile_backend": str(args.vision_compile_backend),
+            "torchair_mode": str(getattr(args, "torchair_mode", "default")),
+            "torchair_run_eagerly": bool(getattr(args, "torchair_run_eagerly", False)),
+            "torchair_graph_dump_type": str(getattr(args, "torchair_graph_dump_type", "none")),
+            "torchair_graph_dump_dir": str(getattr(args, "torchair_graph_dump_dir", "") or ""),
             "static_visual_pad_policy": STATIC_VISUAL_PAD_POLICY,
             "debug_static_visual_no_padding": bool(args.debug_static_visual_no_padding),
             "debug_static_visual_min_pad_tokens": int(args.debug_static_visual_min_pad_tokens),
@@ -2397,6 +2511,37 @@ def add_common_args(parser: argparse.ArgumentParser, *, timing_default: str) -> 
     parser.add_argument("--timing-mode", default=str(timing_default), choices=TIMING_MODE_CHOICES)
 
 
+def add_torchair_diagnostic_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--torchair-mode",
+        default="default",
+        choices=TORCHAIR_MODE_CHOICES,
+        help=(
+            "TorchAir compiler mode. Keep default on 310P; it is the max-autotune/Ascend-IR path used "
+            "for this investigation."
+        ),
+    )
+    parser.add_argument(
+        "--torchair-run-eagerly",
+        action="store_true",
+        help=(
+            "Diagnostic only: set compiler_config.debug.run_eagerly=True to execute the FX graph eagerly "
+            "before graph execution, which helps separate FX semantics from GE/CANN graph execution."
+        ),
+    )
+    parser.add_argument(
+        "--torchair-graph-dump-type",
+        default="none",
+        choices=TORCHAIR_GRAPH_DUMP_TYPE_CHOICES,
+        help="Diagnostic only: request TorchAir graph dumps, usually pbtxt for grep-friendly inspection.",
+    )
+    parser.add_argument(
+        "--torchair-graph-dump-dir",
+        default="",
+        help="Diagnostic only: optional graph-dump directory. If omitted, TorchAir chooses its default dump location.",
+    )
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -2425,6 +2570,7 @@ def parse_args() -> argparse.Namespace:
     compare_parser.add_argument("--warmup-repeats", type=int, default=0)
     compare_parser.add_argument("--max-items", type=int, default=0)
     compare_parser.add_argument("--vision-compile-backend", default="none", choices=VISION_COMPILE_BACKEND_CHOICES)
+    add_torchair_diagnostic_args(compare_parser)
     compare_parser.add_argument(
         "--debug-static-visual-no-padding",
         action="store_true",
@@ -2480,6 +2626,7 @@ def parse_args() -> argparse.Namespace:
     compile_probe_parser.add_argument("--dtype", default="fp16", choices=DTYPE_CHOICES)
     compile_probe_parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
     compile_probe_parser.add_argument("--vision-compile-backend", default="torchair", choices=VISION_COMPILE_BACKEND_CHOICES)
+    add_torchair_diagnostic_args(compile_probe_parser)
     compile_probe_parser.add_argument("--seq-lens", default="640,768")
     compile_probe_parser.add_argument("--cases", default="no_mask,all_false_mask,block_mask")
     compile_probe_parser.add_argument("--heads", type=int, default=16)

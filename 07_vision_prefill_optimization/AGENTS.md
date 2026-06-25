@@ -112,6 +112,14 @@ static-eager diff for the same candidate wrapper, both on the physical padded ou
 real rows. If `real_rows` already diverges, the error is inside compilation/lowering of the candidate
 path, not in the disk-baseline comparison or padded-row slicing.
 
+For TorchAir visual diagnostics on the current 310P work box, stay on the default/max-autotune
+executor. Do not add or request `reduce-overhead` runs for this hardware. To localize compiled
+numeric failures, use `--torchair-run-eagerly` first: if run-eagerly matches static eager, the traced
+FX graph is semantically fine and the failure is in GE/CANN graph execution; if it still diverges,
+the traced graph or compiled boundary is already wrong. Use `--torchair-graph-dump-type pbtxt` with
+an explicit `--torchair-graph-dump-dir` when we need to inspect whether masks, constants, and
+operator attributes were captured as expected.
+
 Padding exists to make static fullgraph compilation and later batching possible while preserving
 real-token math. Treat padded rows as implementation detail, not as a second model. The invariant is:
 real tokens must not attend to padded tokens, padded tokens must not attend to real tokens, padded
