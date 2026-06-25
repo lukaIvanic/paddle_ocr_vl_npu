@@ -30,11 +30,11 @@ OCR crops. Local fixes that make one run look better but make batching, padding,
 accuracy review harder are not progress.
 
 Prefer one general implementation path that handles both the full feature and the simplest case.
-For example, the static visual path must support padding as part of the normal path, and
-`pad_tokens=0` should simply mean that the same path has no dummy rows to add or mask. Do not keep
-separate padded and non-padded model paths just because the non-padded path worked first. During
-active development, code is provisional unless it is explicitly identified as the reference contract
-or has passed the relevant correctness, timing, and anti-cheat review.
+For example, the static visual path must support masked padding as the normal path, while any
+no-padding/no-mask run is only a diagnostic control for isolating effects. Do not keep separate
+padded and non-padded model paths just because the non-padded path worked first. During active
+development, code is provisional unless it is explicitly identified as the reference contract or has
+passed the relevant correctness, timing, and anti-cheat review.
 
 Use tests as the safety mechanism instead of preserving stale fallback paths. If a cleaner path is
 the one needed for the future system, implement it, run the equivalence and timing checks, and fix or
@@ -73,16 +73,16 @@ is a new diagnostic reason and a planned removal gate.
 When checking whether compilation changed numerics, compare `--vision-compile-backend none` against
 the same static visual path with the real compile backend. Those two should differ only by the
 compile wrapper and backend lowering. The candidate path always uses the same padding-capable static
-visual encoder. The automatic padding policy is recorded as `static_visual_pad_policy`; if no dummy
-rows are needed, `static_visual_pad_tokens` is `0` and no padding mask is passed because there are
-no dummy rows to isolate. That is still the same static wrapper path, not a separate non-padded
-encoder path. The compiled visual tower returns the physical padded output; the benchmark
+visual encoder. The normal policy is recorded as `static_visual_pad_policy` and always adds masked
+dummy rows, rounding the physical visual sequence length to a multiple of 16 so masked PromptFA has
+a viable shape. The compiled visual tower returns the physical padded output; the benchmark
 synchronizes and stops `visual_tower_e2e_s` before slicing back to real rows for projector/logit
 correctness.
 
-The `--debug-static-visual-min-pad-tokens` and `--debug-static-visual-pad-to-multiple` flags are
-diagnostic only. Use them to separate padding/mask numerics from TorchAir compile numerics, then
-return to the automatic policy for normal claims.
+The first correctness split is padded eager versus the stored baseline, then padded compiled versus
+padded eager/baseline. The `--debug-static-visual-no-padding`,
+`--debug-static-visual-min-pad-tokens`, and `--debug-static-visual-pad-to-multiple` flags are
+diagnostic only. Use no-padding only as a no-mask control, not as the normal path.
 
 Padding exists to make static fullgraph compilation and later batching possible while preserving
 real-token math. Treat padded rows as implementation detail, not as a second model. The invariant is:

@@ -78,17 +78,17 @@ dynamic=False`. This path currently uses plain `torch.compile`; it does not yet
 load or write a TorchAir GE compile cache.
 
 The static visual candidate has one padding-capable encoder path. The automatic
-padding policy is reported as `static_visual_pad_policy`, and zero padding is
-the no-padding case inside the same static wrapper rather than a separate model
-path. A padding mask is passed only when dummy rows exist. The visual tower
-timing stops after the synchronized physical padded output; real rows are sliced
-only afterward for projector/logit correctness checks.
+padding policy is reported as `static_visual_pad_policy`. Normal candidate runs
+always add masked dummy rows and round the physical visual sequence length to a
+multiple of 16 so masked PromptFA has a viable shape. The visual tower timing
+stops after the synchronized physical padded output; real rows are sliced only
+afterward for projector/logit correctness checks.
 
-For debugging only, `--debug-static-visual-min-pad-tokens` and
-`--debug-static-visual-pad-to-multiple` can force padded eager and padded
-compiled runs on the same crop shapes. Use these to separate padding/mask
-numerics from TorchAir compile numerics; do not use them for normal throughput
-claims.
+For debugging only, `--debug-static-visual-no-padding` runs the no-mask control,
+and `--debug-static-visual-min-pad-tokens` /
+`--debug-static-visual-pad-to-multiple` can adjust the padded physical shape.
+Use these to separate padding/mask numerics from TorchAir compile numerics; do
+not use them for normal throughput claims.
 
 The NPU equivalence gate has already passed: backend `none` matched the stored
 eager PromptFA truth bundle with 0.0 diffs before the padding path was unified.

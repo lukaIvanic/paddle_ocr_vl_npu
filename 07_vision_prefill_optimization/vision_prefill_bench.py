@@ -63,7 +63,7 @@ DTYPE_CHOICES = ("fp16", "float16", "fp32", "float32", "bf16", "bfloat16")
 VISION_ATTENTION_CHOICES = ("manual", "prompt_flash_attention")
 TIMING_MODE_CHOICES = ("standard", "phase_sync")
 VISION_COMPILE_BACKEND_CHOICES = ("none", "default", "aot_eager", "inductor", "torchair")
-STATIC_VISUAL_PAD_POLICY = "auto_mask_avoid_mod16_align128"
+STATIC_VISUAL_PAD_POLICY = "always_mask_pad_to_multiple16"
 
 LAYOUT_PROMPT_BY_LABEL = {
     "formula": "Formula Recognition:",
@@ -753,30 +753,26 @@ def build_static_pad_attention_mask(real_seq_len: int, pad_tokens: int, *, devic
 def static_visual_pad_tokens(
     real_seq_len: int,
     *,
+    debug_no_padding: bool = False,
     debug_min_pad_tokens: int = 0,
     debug_pad_to_multiple: int = 0,
 ) -> int:
-    """Return automatic safety padding for the unified static visual path.
+    """Return static visual padding for the masked padded candidate path.
 
-    The current 310P TorchAir/CANN PromptFA issue is shape-specific: real sequence lengths that are
-    already divisible by 16 can produce NaN/Inf after compilation. The single static path therefore
-    pads those shapes to a nearby safe physical length and masks dummy rows out of real-token math.
-    Shapes that do not hit the known bad pattern use zero padding as the degenerate case of the same
-    masked path.
+    Normal experiment-07 candidates always add at least one masked dummy row and round the physical
+    sequence length to a multiple of 16. That keeps eager padded and compiled padded runs on the same
+    padding/mask contract, and it avoids treating pad=0 as the normal path while we are debugging
+    masked PromptFA and TorchAir numerics. The no-padding case is available only through the explicit
+    diagnostic flag.
     """
     real_seq_len = int(real_seq_len)
+    if bool(debug_no_padding):
+        return 0
     debug_min_pad_tokens = max(0, int(debug_min_pad_tokens))
     debug_pad_to_multiple = max(0, int(debug_pad_to_multiple))
 
-    if real_seq_len % 16 != 0:
-        pad_tokens = 0
-    else:
-        min_physical_seq_len = real_seq_len + 1
-        if min_physical_seq_len <= 128:
-            pad_tokens = 1
-        else:
-            physical_seq_len = ((min_physical_seq_len + 127) // 128) * 128
-            pad_tokens = int(physical_seq_len - real_seq_len)
+    remainder = real_seq_len % 16
+    pad_tokens = 16 if remainder == 0 else 16 - remainder
 
     if debug_min_pad_tokens:
         pad_tokens = max(int(pad_tokens), int(debug_min_pad_tokens))
@@ -802,6 +798,7 @@ class SingleCropStaticVisualModule(torch.nn.Module):
         image_grid_thw: torch.Tensor,
         *,
         device: torch.device,
+        debug_no_padding: bool = False,
         debug_min_pad_tokens: int = 0,
         debug_pad_to_multiple: int = 0,
     ):
@@ -818,10 +815,12 @@ class SingleCropStaticVisualModule(torch.nn.Module):
         grid_t, _grid_h, _grid_w = single_crop_grid_ints(image_grid_thw)
         if int(grid_t) != 1:
             raise ValueError("static_visual padding currently supports single-image crop grids with T=1 only")
+        self.debug_no_padding = bool(debug_no_padding)
         self.debug_min_pad_tokens = max(0, int(debug_min_pad_tokens))
         self.debug_pad_to_multiple = max(0, int(debug_pad_to_multiple))
         self.static_pad_tokens = static_visual_pad_tokens(
             self.static_real_seq_len,
+            debug_no_padding=self.debug_no_padding,
             debug_min_pad_tokens=self.debug_min_pad_tokens,
             debug_pad_to_multiple=self.debug_pad_to_multiple,
         )
@@ -969,6 +968,7 @@ def maybe_compile_static_visual(
     item: PrefillInput,
     device: torch.device,
     backend_name: str,
+    debug_no_padding: bool = False,
     debug_min_pad_tokens: int = 0,
     debug_pad_to_multiple: int = 0,
 ) -> tuple[Callable[[torch.Tensor], torch.Tensor] | None, dict[str, Any]]:
@@ -978,6 +978,7 @@ def maybe_compile_static_visual(
         model,
         item.image_grid_thw,
         device=device,
+        debug_no_padding=debug_no_padding,
         debug_min_pad_tokens=debug_min_pad_tokens,
         debug_pad_to_multiple=debug_pad_to_multiple,
     ).eval()
@@ -990,6 +991,7 @@ def maybe_compile_static_visual(
         "candidate_vision_path": "static_visual",
         "backend": str(backend_name),
         "static_visual_pad_policy": str(wrapper.static_visual_pad_policy),
+        "debug_static_visual_no_padding": bool(wrapper.debug_no_padding),
         "debug_static_visual_min_pad_tokens": int(wrapper.debug_min_pad_tokens),
         "debug_static_visual_pad_to_multiple": int(wrapper.debug_pad_to_multiple),
         "static_visual_pad_tokens": int(wrapper.static_pad_tokens),
@@ -1006,7 +1008,7 @@ def maybe_compile_static_visual(
         "static_vision_rope_shape": [int(dim) for dim in wrapper.vision_rope_cos_const.shape],
         "static_pad_attention_mask_shape": mask_shape,
         "static_pad_attention_mask_enabled": bool(wrapper.static_pad_attention_mask is not None),
-        "static_visual_encoder_path": "single_static_path_mask_only_when_padding",
+        "static_visual_encoder_path": "single_static_path_masked_padding_default",
     }
     if backend_name == "none":
         meta.update({"enabled": False, "compile_api": None})
@@ -1049,6 +1051,7 @@ def prepare_candidate_vision_forward(
         item=item,
         device=device,
         backend_name=str(args.vision_compile_backend),
+        debug_no_padding=bool(args.debug_static_visual_no_padding),
         debug_min_pad_tokens=int(args.debug_static_visual_min_pad_tokens),
         debug_pad_to_multiple=int(args.debug_static_visual_pad_to_multiple),
     )
@@ -1874,9 +1877,10 @@ def compare_candidate(args: argparse.Namespace) -> None:
             "candidate_vision_path": "static_visual",
             "vision_compile_backend": str(args.vision_compile_backend),
             "static_visual_pad_policy": STATIC_VISUAL_PAD_POLICY,
+            "debug_static_visual_no_padding": bool(args.debug_static_visual_no_padding),
             "debug_static_visual_min_pad_tokens": int(args.debug_static_visual_min_pad_tokens),
             "debug_static_visual_pad_to_multiple": int(args.debug_static_visual_pad_to_multiple),
-            "static_visual_encoder_path": "single_static_path_mask_only_when_padding",
+            "static_visual_encoder_path": "single_static_path_masked_padding_default",
             "timing_mode_note": (
                 "standard records visual_tower_e2e_s plus full_prefill_e2e_s as separate measurements. "
                 "The visual tower metric is the headline speed metric for experiment 07; full prefill e2e "
@@ -1984,12 +1988,20 @@ def parse_args() -> argparse.Namespace:
     compare_parser.add_argument("--max-items", type=int, default=0)
     compare_parser.add_argument("--vision-compile-backend", default="none", choices=VISION_COMPILE_BACKEND_CHOICES)
     compare_parser.add_argument(
+        "--debug-static-visual-no-padding",
+        action="store_true",
+        help=(
+            "Diagnostic only: disable static visual dummy rows and padding masks. "
+            "Use only as a no-mask control; normal experiment-07 candidates are padded."
+        ),
+    )
+    compare_parser.add_argument(
         "--debug-static-visual-min-pad-tokens",
         type=int,
         default=0,
         help=(
-            "Diagnostic only: force at least this many dummy visual rows in the static visual path. "
-            "Use to separate padding/mask numerics from compile numerics; keep 0 for normal runs."
+            "Diagnostic only: require at least this many dummy visual rows in addition to the normal "
+            "masked padded policy. Keep 0 for normal runs."
         ),
     )
     compare_parser.add_argument(
@@ -1998,7 +2010,7 @@ def parse_args() -> argparse.Namespace:
         default=0,
         help=(
             "Diagnostic only: after normal/forced padding, round physical visual sequence length up "
-            "to this multiple. Useful for masked PromptFA shape probes; keep 0 for normal runs."
+            "to this multiple. Keep 0 for normal runs."
         ),
     )
 
