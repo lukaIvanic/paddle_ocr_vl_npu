@@ -76,6 +76,17 @@ TORCHAIR_GRAPH_DUMP_TYPE_CHOICES = ("none", "txt", "pbtxt")
 TORCHAIR_MSIT_DUMP_KIND_CHOICES = ("none", "ge", "fx")
 TORCHAIR_MSIT_DUMP_MODE_CHOICES = ("input", "output", "all")
 LAYERNORM_PROBE_IMPL_CHOICES = ("nn", "functional", "manual", "manual_fp16_reduce", "npu_eval")
+VISUAL_PREFIX_STAGE_CHOICES = (
+    "patch_conv",
+    "patch_flat",
+    "patch_pad",
+    "patch_pos",
+    "ln1",
+    "qkv",
+    "qk_rope_v",
+    "attn_out",
+    "layer0_out",
+)
 STATIC_VISUAL_PAD_POLICY = "always_mask_pad_to_atlas_inference_alignment"
 
 LAYOUT_PROMPT_BY_LABEL = {
@@ -977,6 +988,124 @@ class SingleCropStaticVisualModule(torch.nn.Module):
             hidden_states = self._static_mask_padded_encoder_layer(encoder_layer, hidden_states)
         hidden_states = transformer.post_layernorm(hidden_states)
         return hidden_states
+
+
+class SingleCropStaticVisualPrefixModule(torch.nn.Module):
+    """Shape-specialized prefix boundary for localizing static visual GE drift."""
+
+    def __init__(
+        self,
+        model: LocalPaddleOCRVLForConditionalGeneration,
+        image_grid_thw: torch.Tensor,
+        *,
+        device: torch.device,
+        stage: str,
+        debug_no_padding: bool = False,
+        debug_min_pad_tokens: int = 0,
+        debug_pad_to_multiple: int = 0,
+    ):
+        super().__init__()
+        if stage not in VISUAL_PREFIX_STAGE_CHOICES:
+            raise ValueError(f"unsupported static visual prefix stage={stage!r}")
+        self.stage = str(stage)
+        self.static_visual = SingleCropStaticVisualModule(
+            model,
+            image_grid_thw,
+            device=device,
+            debug_no_padding=debug_no_padding,
+            debug_min_pad_tokens=debug_min_pad_tokens,
+            debug_pad_to_multiple=debug_pad_to_multiple,
+        ).eval()
+
+    @property
+    def static_real_seq_len(self) -> int:
+        return int(self.static_visual.static_real_seq_len)
+
+    @property
+    def static_pad_tokens(self) -> int:
+        return int(self.static_visual.static_pad_tokens)
+
+    @property
+    def static_physical_seq_len(self) -> int:
+        return int(self.static_visual.static_physical_seq_len)
+
+    def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
+        transformer = self.static_visual.model.visual.vision_model
+        embeddings_module = transformer.embeddings
+        pixel_values = pixel_values.to(dtype=embeddings_module.patch_embedding.weight.dtype)
+        patch_embeds = embeddings_module.patch_embedding(pixel_values)
+        if self.stage == "patch_conv":
+            return patch_embeds
+
+        hidden_states = patch_embeds.flatten(-2).squeeze(-1)
+        if self.stage == "patch_flat":
+            return hidden_states
+
+        if self.static_visual.static_pad_tokens:
+            hidden_states = torch.cat(
+                [
+                    hidden_states,
+                    torch.zeros(
+                        self.static_visual.static_pad_tokens,
+                        hidden_states.shape[-1],
+                        device=hidden_states.device,
+                        dtype=hidden_states.dtype,
+                    ),
+                ],
+                dim=0,
+            )
+        if self.stage == "patch_pad":
+            return hidden_states
+
+        hidden_states = hidden_states + self.static_visual.abs_pos_embed_const
+        if self.stage == "patch_pos":
+            return hidden_states
+
+        encoder_layer = transformer.encoder.layers[0]
+        ln1_hidden = encoder_layer.layer_norm1(hidden_states)
+        if self.stage == "ln1":
+            return ln1_hidden
+
+        attention = encoder_layer.self_attn
+        seq_length = ln1_hidden.shape[0]
+        query_states = attention.q_proj(ln1_hidden).view(seq_length, attention.num_heads, attention.head_dim)
+        key_states = attention.k_proj(ln1_hidden).view(seq_length, attention.num_heads, attention.head_dim)
+        value_states = attention.v_proj(ln1_hidden).view(seq_length, attention.num_heads, attention.head_dim)
+        if self.stage == "qkv":
+            return torch.cat(
+                [
+                    query_states.reshape(seq_length, -1),
+                    key_states.reshape(seq_length, -1),
+                    value_states.reshape(seq_length, -1),
+                ],
+                dim=-1,
+            )
+
+        query_states, key_states = apply_rotary_pos_emb_vision(
+            query_states,
+            key_states,
+            self.static_visual.vision_rope_cos_const,
+            self.static_visual.vision_rope_sin_const,
+        )
+        if self.stage == "qk_rope_v":
+            return torch.cat(
+                [
+                    query_states.reshape(seq_length, -1),
+                    key_states.reshape(seq_length, -1),
+                    value_states.reshape(seq_length, -1),
+                ],
+                dim=-1,
+            )
+
+        attn_output = self.static_visual._static_mask_padded_attention(attention, ln1_hidden)
+        if self.stage == "attn_out":
+            return attn_output
+
+        hidden_states = hidden_states + attn_output
+        hidden_states = hidden_states + encoder_layer.mlp(encoder_layer.layer_norm2(hidden_states))
+        if self.stage == "layer0_out":
+            return hidden_states
+        raise RuntimeError(f"unreachable static visual prefix stage={self.stage!r}")
 
 
 def import_torchair():
@@ -2340,6 +2469,274 @@ def probe_layernorm_compile(args: argparse.Namespace) -> None:
         print(output_json, flush=True)
 
 
+def visual_prefix_compiled_matches_eager(row: dict[str, Any]) -> bool:
+    diff = row.get("compiled_second_vs_eager_before", {})
+    return bool(
+        diff.get("shape_match")
+        and diff.get("allclose_atol_5e_2_rtol_5e_2")
+        and diff.get("lhs_nonfinite_count") == 0
+        and diff.get("rhs_nonfinite_count") == 0
+    )
+
+
+def parse_visual_prefix_stages(raw: str) -> list[str]:
+    stages = [stage.strip() for stage in str(raw).replace(";", ",").split(",") if stage.strip()]
+    if not stages:
+        raise ValueError("--stages must contain at least one stage")
+    bad = [stage for stage in stages if stage not in VISUAL_PREFIX_STAGE_CHOICES]
+    if bad:
+        raise ValueError(f"unsupported --stages entries {bad}; choices={VISUAL_PREFIX_STAGE_CHOICES}")
+    return stages
+
+
+@torch.inference_mode()
+def probe_visual_prefix_compile(args: argparse.Namespace) -> None:
+    apply_runtime_env(args)
+    model, model_dir, device, dtype = load_model_for_args(args)
+    tokenizer = Tokenizer.from_file(str(model_dir / "tokenizer.json"))
+    baseline_path = Path(args.baseline).expanduser().resolve()
+    manifest = load_baseline_manifest(baseline_path)
+    dataset_dir = resolve_dataset_dir(args.dataset_dir or manifest["build_summary"]["page"]["dataset_dir"])
+    inputs = build_inputs_from_manifest(manifest=manifest, model_dir=model_dir, tokenizer=tokenizer, dataset_dir=dataset_dir)
+    max_items = int(args.max_items)
+    if max_items > 0:
+        inputs = inputs[:max_items]
+    if not inputs:
+        raise ValueError(f"no inputs available from baseline {baseline_path}")
+
+    stages = parse_visual_prefix_stages(args.stages)
+    backend_name = str(args.vision_compile_backend)
+    backend = None
+    backend_meta: dict[str, Any] = {"backend_kind": "none"}
+    compile_kwargs: dict[str, Any] = {"fullgraph": True, "dynamic": False}
+    old_capture_scalar_outputs: bool | None = None
+    if backend_name != "none":
+        import torch._dynamo
+
+        old_capture_scalar_outputs = bool(torch._dynamo.config.capture_scalar_outputs)
+        torch._dynamo.config.capture_scalar_outputs = True
+        torch._dynamo.reset()
+        backend, backend_meta = vision_compile_backend(
+            backend_name,
+            device,
+            torchair_mode=str(getattr(args, "torchair_mode", "default")),
+            torchair_run_eagerly=bool(getattr(args, "torchair_run_eagerly", False)),
+            torchair_graph_dump_type=str(getattr(args, "torchair_graph_dump_type", "none")),
+            torchair_graph_dump_dir=getattr(args, "torchair_graph_dump_dir", None),
+            torchair_msit_dump_kind=str(getattr(args, "torchair_msit_dump_kind", "none")),
+            torchair_msit_dump_dir=getattr(args, "torchair_msit_dump_dir", None),
+            torchair_msit_dump_mode=str(getattr(args, "torchair_msit_dump_mode", "output")),
+            torchair_msit_dump_token=str(getattr(args, "torchair_msit_dump_token", "")),
+            torchair_msit_dump_layer=str(getattr(args, "torchair_msit_dump_layer", "")),
+            torchair_msit_fusion_switch_file=getattr(args, "torchair_msit_fusion_switch_file", None),
+        )
+        if backend is not None:
+            compile_kwargs["backend"] = backend
+
+    rows: list[dict[str, Any]] = []
+    try:
+        for item_index, item in enumerate(inputs):
+            pixel_values = item.pixel_values.to(device=device, dtype=model.visual.dtype)
+            for stage in stages:
+                row: dict[str, Any] = {
+                    "item_index": int(item_index),
+                    "id": str(item.entry.get("id")),
+                    "layout_label": str(item.entry.get("layout_label")),
+                    "stage": str(stage),
+                    "backend": str(backend_name),
+                    "device": str(device),
+                    "dtype": str(dtype),
+                    "input_pixel_values_shape": [int(dim) for dim in pixel_values.shape],
+                    "image_grid_thw": [int(value) for value in item.image_grid_thw.flatten().tolist()],
+                }
+                try:
+                    module = SingleCropStaticVisualPrefixModule(
+                        model,
+                        item.image_grid_thw,
+                        device=device,
+                        stage=str(stage),
+                        debug_no_padding=bool(args.debug_static_visual_no_padding),
+                        debug_min_pad_tokens=int(args.debug_static_visual_min_pad_tokens),
+                        debug_pad_to_multiple=int(args.debug_static_visual_pad_to_multiple),
+                    ).eval()
+                    row.update(
+                        {
+                            "static_real_seq_len": int(module.static_real_seq_len),
+                            "static_pad_tokens": int(module.static_pad_tokens),
+                            "static_physical_seq_len": int(module.static_physical_seq_len),
+                            "static_physical_seq_mod16": int(module.static_physical_seq_len % 16),
+                            "static_physical_seq_mod128": int(module.static_physical_seq_len % 128),
+                        }
+                    )
+                    maybe_sync(device)
+                    start = time.perf_counter()
+                    eager_before = module(pixel_values)
+                    maybe_sync(device)
+                    eager_before_s = float(time.perf_counter() - start)
+                    row["eager_before_s"] = eager_before_s
+                    row["eager_before_summary"] = tensor_summary(eager_before.detach().cpu())
+
+                    if backend_name == "none":
+                        row.update(
+                            {
+                                "ok": True,
+                                "compiled": False,
+                                "compiled_second_matches_eager": None,
+                                "eager_after_vs_eager_before": diff_stats(eager_before.cpu(), eager_before.cpu()),
+                            }
+                        )
+                    else:
+                        import torch._dynamo
+
+                        torch._dynamo.reset()
+                        maybe_sync(device)
+                        start = time.perf_counter()
+                        compiled = torch.compile(module, **compile_kwargs)
+                        maybe_sync(device)
+                        compile_wrapper_s = float(time.perf_counter() - start)
+
+                        maybe_sync(device)
+                        start = time.perf_counter()
+                        compiled_first = compiled(pixel_values)
+                        maybe_sync(device)
+                        compiled_first_s = float(time.perf_counter() - start)
+
+                        maybe_sync(device)
+                        start = time.perf_counter()
+                        compiled_second = compiled(pixel_values)
+                        maybe_sync(device)
+                        compiled_second_s = float(time.perf_counter() - start)
+
+                        maybe_sync(device)
+                        start = time.perf_counter()
+                        eager_after = module(pixel_values)
+                        maybe_sync(device)
+                        eager_after_s = float(time.perf_counter() - start)
+                        row.update(
+                            {
+                                "ok": True,
+                                "compiled": True,
+                                "compile_wrapper_s": compile_wrapper_s,
+                                "compiled_first_s": compiled_first_s,
+                                "compiled_second_s": compiled_second_s,
+                                "eager_after_s": eager_after_s,
+                                "compiled_first_summary": tensor_summary(compiled_first.detach().cpu()),
+                                "compiled_second_summary": tensor_summary(compiled_second.detach().cpu()),
+                                "compiled_first_vs_eager_before": diff_stats(compiled_first.cpu(), eager_before.cpu()),
+                                "compiled_second_vs_eager_before": diff_stats(compiled_second.cpu(), eager_before.cpu()),
+                                "compiled_first_vs_second": diff_stats(compiled_first.cpu(), compiled_second.cpu()),
+                                "eager_after_vs_eager_before": diff_stats(eager_after.cpu(), eager_before.cpu()),
+                            }
+                        )
+                        row["compiled_second_matches_eager"] = visual_prefix_compiled_matches_eager(row)
+                except Exception as exc:
+                    row.update({"ok": False, "error": f"{exc.__class__.__name__}: {exc}"})
+                rows.append(row)
+                print(
+                    f"VISUAL_PREFIX item={item_index} stage={stage} ok={row.get('ok')} "
+                    f"match={row.get('compiled_second_matches_eager')} "
+                    f"max_abs={row.get('compiled_second_vs_eager_before', {}).get('max_abs_diff')}",
+                    file=sys.stderr,
+                    flush=True,
+                )
+    finally:
+        if old_capture_scalar_outputs is not None:
+            import torch._dynamo
+
+            torch._dynamo.config.capture_scalar_outputs = old_capture_scalar_outputs
+
+    ok_rows = [row for row in rows if row.get("ok")]
+    compiled_rows = [row for row in ok_rows if row.get("compiled")]
+    mismatch_rows = [row for row in compiled_rows if not bool(row.get("compiled_second_matches_eager"))]
+    error_rows = [row for row in rows if not row.get("ok")]
+    first_mismatch = mismatch_rows[0] if mismatch_rows else None
+    summary = {
+        "total_cases": int(len(rows)),
+        "ok_cases": int(len(ok_rows)),
+        "error_cases": int(len(error_rows)),
+        "compiled_cases": int(len(compiled_rows)),
+        "compiled_second_matches_eager_count": int(
+            sum(bool(row.get("compiled_second_matches_eager")) for row in compiled_rows)
+        ),
+        "compiled_second_matches_eager_all": bool(
+            len(compiled_rows) > 0
+            and all(bool(row.get("compiled_second_matches_eager")) for row in compiled_rows)
+        ),
+        "compiled_nonfinite_case_count": int(
+            sum(
+                int(row.get("compiled_second_vs_eager_before", {}).get("lhs_nonfinite_count", 0) or 0) > 0
+                for row in compiled_rows
+            )
+        ),
+        "first_mismatch": None
+        if first_mismatch is None
+        else {
+            "item_index": first_mismatch.get("item_index"),
+            "id": first_mismatch.get("id"),
+            "stage": first_mismatch.get("stage"),
+            "shape": first_mismatch.get("compiled_second_vs_eager_before", {}).get("shape"),
+            "max_abs_diff": first_mismatch.get("compiled_second_vs_eager_before", {}).get("max_abs_diff"),
+            "mean_abs_diff": first_mismatch.get("compiled_second_vs_eager_before", {}).get("mean_abs_diff"),
+            "compiled_nonfinite_count": first_mismatch.get("compiled_second_vs_eager_before", {}).get(
+                "lhs_nonfinite_count"
+            ),
+            "eager_nonfinite_count": first_mismatch.get("compiled_second_vs_eager_before", {}).get(
+                "rhs_nonfinite_count"
+            ),
+        },
+        "mismatch_case_keys": [
+            {
+                "item_index": row.get("item_index"),
+                "id": row.get("id"),
+                "stage": row.get("stage"),
+                "max_abs_diff": row.get("compiled_second_vs_eager_before", {}).get("max_abs_diff"),
+                "mean_abs_diff": row.get("compiled_second_vs_eager_before", {}).get("mean_abs_diff"),
+                "compiled_nonfinite_count": row.get("compiled_second_vs_eager_before", {}).get("lhs_nonfinite_count"),
+            }
+            for row in mismatch_rows
+        ],
+        "failed_case_keys": [
+            {
+                "item_index": row.get("item_index"),
+                "id": row.get("id"),
+                "stage": row.get("stage"),
+                "error": row.get("error"),
+            }
+            for row in error_rows
+        ],
+    }
+    output = {
+        "schema_version": 1,
+        "experiment": "07_vision_prefill_optimization",
+        "kind": "visual_prefix_compile_probe",
+        "created_utc": datetime.now(timezone.utc).isoformat(),
+        "device": str(device),
+        "dtype": str(dtype),
+        "model": str(model_dir),
+        "baseline": str(baseline_path),
+        "backend": str(backend_name),
+        "compile_api": None if backend_name == "none" else "torch.compile",
+        "fullgraph": bool(backend_name != "none"),
+        "dynamic": False,
+        "capture_scalar_outputs": old_capture_scalar_outputs is not None,
+        "capture_scalar_outputs_previous": old_capture_scalar_outputs,
+        "dynamo_reset_before_compile": bool(backend_name != "none"),
+        "compile_backend_meta": backend_meta,
+        "stages": stages,
+        "summary": summary,
+        "results": rows,
+    }
+    output_json = json.dumps(output, indent=2, default=json_default)
+    output_path_raw = str(getattr(args, "output", "") or "").strip()
+    if output_path_raw:
+        output_path = Path(output_path_raw).expanduser().resolve()
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(output_json, encoding="utf-8")
+        print(json.dumps({"visual_prefix_probe_output": str(output_path), "summary": summary}, indent=2, default=json_default), flush=True)
+    else:
+        print(output_json, flush=True)
+
+
 class PromptFAOnlyModule(torch.nn.Module):
     """Tiny PromptFA module for isolating eager-vs-compile behavior."""
 
@@ -3341,6 +3738,36 @@ def parse_args() -> argparse.Namespace:
     )
     layernorm_probe_parser.add_argument("--output", default="")
 
+    prefix_probe_parser = subparsers.add_parser(
+        "probe-visual-prefix-compile",
+        help="Real-crop compiled-prefix bisection for static visual GE drift.",
+    )
+    prefix_probe_parser.add_argument("--model", default=DEFAULT_MODEL, help="Local model directory.")
+    prefix_probe_parser.add_argument("--dataset-dir", default=None)
+    prefix_probe_parser.add_argument("--baseline", default=str(SCRIPT_DIR / "baselines" / "promptfa_fp16_eager_64"))
+    prefix_probe_parser.add_argument("--device", default="npu:0")
+    prefix_probe_parser.add_argument("--dtype", default="fp16", choices=DTYPE_CHOICES)
+    prefix_probe_parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
+    prefix_probe_parser.add_argument("--vision-attention", default="prompt_flash_attention", choices=VISION_ATTENTION_CHOICES)
+    prefix_probe_parser.add_argument("--vision-prompt-fa-layout", default="bnsd", choices=("bnsd", "bsnd", "bsh"))
+    prefix_probe_parser.add_argument("--vision-prompt-fa-mask-sparse-mode", type=int, default=1, choices=(0, 1))
+    prefix_probe_parser.add_argument("--vision-compile-backend", default="torchair", choices=VISION_COMPILE_BACKEND_CHOICES)
+    add_torchair_diagnostic_args(prefix_probe_parser)
+    prefix_probe_parser.add_argument(
+        "--stages",
+        default="patch_conv,patch_flat,patch_pad,patch_pos,ln1",
+        help=f"Comma-separated prefix stages. Choices: {','.join(VISUAL_PREFIX_STAGE_CHOICES)}",
+    )
+    prefix_probe_parser.add_argument("--max-items", type=int, default=1)
+    prefix_probe_parser.add_argument(
+        "--debug-static-visual-no-padding",
+        action="store_true",
+        help="Diagnostic only: disable static visual padding/mask in the prefix module.",
+    )
+    prefix_probe_parser.add_argument("--debug-static-visual-min-pad-tokens", type=int, default=0)
+    prefix_probe_parser.add_argument("--debug-static-visual-pad-to-multiple", type=int, default=0)
+    prefix_probe_parser.add_argument("--output", default="")
+
     return parser.parse_args()
 
 
@@ -3356,6 +3783,8 @@ def main() -> None:
         probe_promptfa_compile(args)
     elif args.command == "probe-layernorm-compile":
         probe_layernorm_compile(args)
+    elif args.command == "probe-visual-prefix-compile":
+        probe_visual_prefix_compile(args)
     else:
         raise RuntimeError(f"unsupported command: {args.command}")
 

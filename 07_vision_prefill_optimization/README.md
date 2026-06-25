@@ -249,6 +249,47 @@ SEQ_LENS=640 SYNTHETIC_INPUT_SCALES=1,64,128 \
   ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_layernorm_compile_probe.sh
 ```
 
+## Visual Prefix Compile Probe
+
+If isolated LayerNorm matches eager but the full static visual graph still
+diverges, bisect the real-crop compiled prefix:
+
+```sh
+ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_visual_prefix_compile_probe.sh
+```
+
+By default the runner writes two JSON files: `torchair_default.json` for the
+normal GE/CANN execution path, and `torchair_run_eagerly.json` for the traced FX
+graph executed eagerly. If run-eagerly matches but default diverges, the Python
+graph semantics are clean and the bug is in GE/CANN lowering or execution.
+
+This uses the same first baseline crop and compiles progressively larger
+prefixes of the current static visual path:
+
+- `patch_conv`: patch embedding Conv2D over the pre-extracted patch tensors
+- `patch_flat`: Conv2D output flattened to token rows
+- `patch_pad`: optional static dummy rows appended
+- `patch_pos`: absolute position embeddings added
+- `ln1`: first vision encoder layer `layer_norm1`
+
+The default stops at `ln1` because that is where the MSIT CSV symptom was
+reported. If these all pass, go deeper with:
+
+```sh
+STAGES=qkv,qk_rope_v,attn_out,layer0_out \
+  ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_visual_prefix_compile_probe.sh
+```
+
+Read the summary this way:
+
+- First mismatch at `patch_conv` points at Conv2D/TorchAir/format lowering.
+- First mismatch at `patch_pos` points at padding or absolute-position add
+  layout/format behavior.
+- `ln1` mismatch with prior stages clean means LayerNorm is only problematic
+  inside the larger compiled prefix, not in isolation.
+- `compiled_nonfinite_count > 0` is the small-prefix version of the MSIT
+  `my_data includes NAN or inf` symptom.
+
 ## CUDA Smoke
 
 CUDA smoke uses manual attention only and is not authoritative NPU evidence:
