@@ -60,7 +60,15 @@ is a new diagnostic reason and a planned removal gate.
 When checking whether compilation changed numerics, compare `--vision-compile-backend none` against
 the same static visual path with the real compile backend. Those two should differ only by the
 compile wrapper and backend lowering. If `--static-visual-pad-mode` is not `none`, the candidate path
-also adds masked dummy visual tokens and slices them away before returning `visual_features`.
+also adds masked dummy visual tokens. The compiled visual tower returns the physical padded output;
+the benchmark synchronizes and stops `visual_tower_e2e_s` before slicing back to real rows for
+projector/logit correctness.
+
+Padding exists to make static fullgraph compilation and later batching possible while preserving
+real-token math. Do not invent extra contracts for padded rows unless a kernel requires them. The
+invariant is: real tokens must not attend to padded tokens, padded tokens must not attend to real
+tokens, padded rows must be excluded before downstream real-token consumers, and real-row
+`visual_features`/`image_embeds`/`prefill_logits` must match the reference.
 
 Current NPU finding: TorchAir-compiled PromptFA is not numerically usable yet. On the 4-crop smoke,
 physical throughput rose to about 11.7k tok/s versus about 7.5k tok/s for backend none, but
@@ -81,6 +89,10 @@ new notes as general research rules first, with project-specific examples only w
 - Keep critical compiled-section metrics focused on the compiled section. For the vision encoder,
   report the device-loaded visual-tower timing as the primary metric, and keep broader wrapper
   timings such as adapter/text-prefill timing as secondary context unless that wrapper is the target.
+- For padding/batching work, judge the path by whether it enables the concrete system goal while
+  preserving real-token outputs. Avoid adding ad-hoc cleanup of padded tokens merely because their
+  values look odd; padded rows are implementation detail unless they can influence real rows or leak
+  into downstream consumers.
 - Replicate the realistic data path for the metric being claimed. Use real crops, real preprocessing
   outputs, real grid/token shapes, and the same dtype/attention implementation expected in the
   deployment path.

@@ -47,8 +47,10 @@ tower metric and the full-prefill wrapper metric separately in the same run.
 The headline visual-prefill speed metric is `visual_tower_e2e_s`: the crop's
 pixel tensor is already on the target device, static inputs such as `cu_seqlens`
 are prepared, the script synchronizes, calls the visual tower, and synchronizes
-again. The JSON reports both `visual_tower_effective_tokens_per_s` and
-`visual_tower_physical_tokens_per_s`.
+again. When static padding is enabled, this timed visual tower returns physical
+padded rows; the script slices back to real rows only after the sync/timer stop,
+before projector/logit correctness checks. The JSON reports both
+`visual_tower_effective_tokens_per_s` and `visual_tower_physical_tokens_per_s`.
 
 The secondary wrapper metric is `full_prefill_e2e_s`, which measures visual
 tower plus adaptive MLP projector plus text prefill. Use `--timing-mode

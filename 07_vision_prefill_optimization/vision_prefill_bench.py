@@ -768,6 +768,11 @@ def static_visual_pad_tokens(real_seq_len: int, mode: str) -> int:
     return int(physical_seq_len - real_seq_len)
 
 
+def slice_visual_features_to_real(visual_features: torch.Tensor, image_grid_thw: torch.Tensor) -> torch.Tensor:
+    real_seq_len = int(image_grid_thw.prod().item())
+    return visual_features[:real_seq_len]
+
+
 class SingleCropStaticVisualModule(torch.nn.Module):
     """Shape-specialized visual encoder wrapper for fullgraph static compilation."""
 
@@ -843,17 +848,6 @@ class SingleCropStaticVisualModule(torch.nn.Module):
             persistent=False,
         )
 
-    def _zero_static_pad_rows(self, hidden_states: torch.Tensor) -> torch.Tensor:
-        if self.static_pad_tokens <= 0:
-            return hidden_states
-        return torch.cat(
-            [
-                hidden_states[: self.static_real_seq_len],
-                torch.zeros_like(hidden_states[self.static_real_seq_len : self.static_physical_seq_len]),
-            ],
-            dim=0,
-        )
-
     def _static_mask_padded_attention(self, attention: torch.nn.Module, hidden_states: torch.Tensor) -> torch.Tensor:
         seq_length = hidden_states.shape[0]
         query_states = attention.q_proj(hidden_states).view(seq_length, attention.num_heads, attention.head_dim)
@@ -900,9 +894,7 @@ class SingleCropStaticVisualModule(torch.nn.Module):
     def _static_mask_padded_encoder_layer(self, encoder_layer: torch.nn.Module, hidden_states: torch.Tensor) -> torch.Tensor:
         attn_input = encoder_layer.layer_norm1(hidden_states)
         hidden_states = hidden_states + self._static_mask_padded_attention(encoder_layer.self_attn, attn_input)
-        hidden_states = self._zero_static_pad_rows(hidden_states)
-        hidden_states = hidden_states + encoder_layer.mlp(encoder_layer.layer_norm2(hidden_states))
-        return self._zero_static_pad_rows(hidden_states)
+        return hidden_states + encoder_layer.mlp(encoder_layer.layer_norm2(hidden_states))
 
     def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
         transformer = self.model.visual.vision_model
@@ -931,7 +923,7 @@ class SingleCropStaticVisualModule(torch.nn.Module):
             else:
                 hidden_states = encoder_layer(hidden_states, self.cu_seqlens_const, position_embeddings)
         hidden_states = transformer.post_layernorm(hidden_states)
-        return hidden_states[: self.static_real_seq_len]
+        return hidden_states
 
 
 def import_torchair():
@@ -1043,9 +1035,12 @@ def prepare_candidate_vision_forward(
         start = time.perf_counter()
         first_output = vision_forward(pixel_values)
         maybe_sync(device)
+        first_real_output = slice_visual_features_to_real(first_output, item.image_grid_thw)
         meta["compiled_first_call_s"] = float(time.perf_counter() - start)
         meta["first_output_shape"] = [int(dim) for dim in first_output.shape]
         meta["first_output_nonfinite_count"] = int((~torch.isfinite(first_output.float())).sum().item())
+        meta["first_real_output_shape"] = [int(dim) for dim in first_real_output.shape]
+        meta["first_real_output_nonfinite_count"] = int((~torch.isfinite(first_real_output.float())).sum().item())
     return vision_forward, meta
 
 
@@ -1093,7 +1088,12 @@ def compute_visual_tower_only(
     else:
         visual_features = vision_forward(pixel_values)
     maybe_sync(device)
-    return visual_features.detach(), {"visual_tower_e2e_s": float(time.perf_counter() - start)}
+    timing = {
+        "visual_tower_e2e_s": float(time.perf_counter() - start),
+        "visual_tower_physical_output_seq_len": float(int(visual_features.shape[0])),
+        "visual_tower_real_output_seq_len": float(int(image_grid_thw.prod().item())),
+    }
+    return slice_visual_features_to_real(visual_features, image_grid_thw).detach(), timing
 
 
 @torch.inference_mode()
@@ -1196,7 +1196,10 @@ def compute_vision_prefill(
             ),
         )
     else:
-        visual_features = measure("visual_features", lambda: vision_forward(pixel_values))
+        visual_features = measure(
+            "visual_features",
+            lambda: slice_visual_features_to_real(vision_forward(pixel_values), image_grid_thw),
+        )
     image_embeds = measure("adaptive_mlp_projector", lambda: model.mlp_AR(visual_features, image_grid_thw))
     inputs_embeds = measure("text_token_embedding", lambda: model.model.embed_tokens(input_ids))
     inputs_embeds = measure(
