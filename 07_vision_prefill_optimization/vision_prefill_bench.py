@@ -1061,17 +1061,15 @@ def apply_msit_torchair_dump_config(
     dump_token_values = parse_int_list(dump_token) if str(dump_token).strip() else None
     dump_layer_values = parse_csv_string_list(dump_layer) if str(dump_layer).strip() else None
 
+    config_source = "msit_llm.dump.torchair_dump"
     ensure_top_level_torchair_importable()
     try:
         from msit_llm.dump import torchair_dump
     except Exception as exc:
-        raise RuntimeError(
-            "MSIT TorchAir dump was requested, but `from msit_llm.dump import torchair_dump` failed. "
-            "Run this in the NPU/MSIT environment or install the MSIT LLM package before using "
-            "--torchair-msit-dump-kind."
-        ) from exc
+        torchair_dump = None
+        config_source = f"local_compat_fallback_after_{exc.__class__.__name__}"
 
-    if kind == "ge":
+    if kind == "ge" and torchair_dump is not None:
         torchair_dump.get_ge_dump_config(
             dump_path=str(base_dir),
             dump_mode=str(dump_mode),
@@ -1081,15 +1079,41 @@ def apply_msit_torchair_dump_config(
             compiler_config=config,
         )
         expected_dir = base_dir / "msit_ge_dump"
-    else:
+    elif kind == "fx" and torchair_dump is not None:
         if fusion_path is not None or dump_token_values is not None or dump_layer_values is not None:
             raise ValueError("MSIT FX dump does not accept fusion-switch, dump-token, or dump-layer filters")
         torchair_dump.get_fx_dump_config(dump_path=str(base_dir), compiler_config=config)
         expected_dir = base_dir / "msit_fx_dump"
+    elif kind == "ge":
+        expected_dir = base_dir / "msit_ge_dump"
+        expected_dir.mkdir(parents=True, exist_ok=True)
+        config.debug.graph_dump.type = "txt"
+        if hasattr(config.debug.graph_dump, "_path"):
+            setattr(config.debug.graph_dump, "_path", str(expected_dir))
+        elif hasattr(config.debug.graph_dump, "path"):
+            config.debug.graph_dump.path = str(expected_dir)
+        if fusion_path is not None:
+            config.fusion_config.fusion_switch_file = str(fusion_path)
+        config.dump_config.enable_dump = True
+        config.dump_config.dump_mode = str(dump_mode)
+        config.dump_config.dump_path = str(expected_dir)
+        if dump_token_values is not None:
+            config.dump_config.dump_step = "|".join(str(value) for value in dump_token_values)
+        if dump_layer_values is not None:
+            config.dump_config.dump_layer = " ".join(dump_layer_values)
+    else:
+        if fusion_path is not None or dump_token_values is not None or dump_layer_values is not None:
+            raise ValueError("MSIT FX dump does not accept fusion-switch, dump-token, or dump-layer filters")
+        expected_dir = base_dir / "msit_fx_dump"
+        expected_dir.mkdir(parents=True, exist_ok=True)
+        config.debug.data_dump.type = "npy"
+        if hasattr(config.debug.data_dump, "path"):
+            config.debug.data_dump.path = str(expected_dir)
 
     return {
         "enabled": True,
         "kind": str(kind),
+        "config_source": str(config_source),
         "dump_base_dir": str(base_dir),
         "expected_dump_dir": str(expected_dir),
         "dump_mode": str(dump_mode) if kind == "ge" else None,

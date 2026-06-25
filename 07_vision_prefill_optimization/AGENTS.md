@@ -138,6 +138,13 @@ then runs `msit llm compare` if the `msit` CLI is on PATH. It is a diagnostic pa
 benchmark. Do not ask the work agent to write inline dump parsers or extra scripts for this first
 pass; inspect the generated JSON summaries and the MSIT compare output directory.
 
+`msit_llm` is the optional MSIT LLM Python component, not part of TorchAir or torch-npu. The
+benchmark prefers the official `msit_llm.dump.torchair_dump` helper when available, but it has a
+local compatibility fallback that sets the same `CompilerConfig` dump fields directly. Missing
+`msit_llm` should no longer block GE/FX dump collection. The official comparison report still needs
+the `msit` CLI; install it in the active NPU env with `pip install msit && msit install llm`, then
+check with `msit check llm`.
+
 Padding exists to make static fullgraph compilation and later batching possible while preserving
 real-token math. Treat padded rows as implementation detail, not as a second model. The invariant is:
 real tokens must not attend to padded tokens, padded tokens must not attend to real tokens, padded

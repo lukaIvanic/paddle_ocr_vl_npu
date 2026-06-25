@@ -166,6 +166,18 @@ The runner executes one-crop static visual compare twice:
 - GE target dump: `--torchair-msit-dump-kind ge`
 - FX golden dump: `--torchair-msit-dump-kind fx`
 
+`msit_llm` comes from the optional MSIT LLM component. The benchmark prefers
+`from msit_llm.dump import torchair_dump` when it is installed, but it also has a
+local compatibility fallback that applies the same TorchAir dump config fields
+directly. The final official comparison still needs the `msit` CLI. If the CLI
+is missing, install MSIT LLM in the active NPU Python environment:
+
+```sh
+pip install msit
+msit install llm
+msit check llm
+```
+
 Then it runs:
 
 ```sh
