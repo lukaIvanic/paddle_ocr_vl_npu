@@ -104,9 +104,11 @@ QKV_LINEAR_PROBE_IMPL_CHOICES = (
     "matmul_3d_q",
     "einsum_q",
     "conv1d_q",
+    "npu_bmm_v2_q",
     "npu_linear_q",
     "npu_linear_three",
     "npu_linear_single",
+    "npu_grouped_matmul_q",
 )
 QKV_LINEAR_PROBE_SOURCE_CHOICES = ("ln1", "patch_pos")
 QKV_LINEAR_PROBE_LN_IMPL_CHOICES = ("module", "functional", "manual_fp32", "manual_fp16")
@@ -1196,6 +1198,19 @@ class VisionQKVLinearProbeModule(torch.nn.Module):
         return output
 
     @staticmethod
+    def _linear_npu_bmm_v2(hidden_states: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor | None) -> torch.Tensor:
+        import torch_npu
+
+        output = torch_npu.npu_bmmV2(
+            hidden_states.unsqueeze(0),
+            weight.transpose(0, 1).unsqueeze(0),
+            [],
+        ).squeeze(0)
+        if bias is not None:
+            output = output + bias
+        return output
+
+    @staticmethod
     def _linear_matmul_3d(hidden_states: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor | None) -> torch.Tensor:
         output = torch.matmul(hidden_states.unsqueeze(0), weight.transpose(0, 1).unsqueeze(0)).squeeze(0)
         if bias is not None:
@@ -1219,6 +1234,26 @@ class VisionQKVLinearProbeModule(torch.nn.Module):
         import torch_npu
 
         return torch_npu.npu_linear(hidden_states, weight, bias)
+
+    @staticmethod
+    def _linear_grouped_matmul(
+        hidden_states: torch.Tensor,
+        weight: torch.Tensor,
+        bias: torch.Tensor | None,
+    ) -> torch.Tensor:
+        import torch_npu
+
+        group_list = torch.full((1,), hidden_states.shape[0], dtype=torch.int64, device=hidden_states.device)
+        bias_arg = None if bias is None else [bias]
+        return torch_npu.npu_grouped_matmul(
+            [hidden_states],
+            [weight.transpose(0, 1).contiguous()],
+            bias=bias_arg,
+            group_list=group_list,
+            split_item=2,
+            group_type=0,
+            group_list_type=1,
+        )[0]
 
     def _bridge_hidden_states(self, hidden_states: torch.Tensor) -> torch.Tensor:
         if self.bridge == "none":
@@ -1302,6 +1337,8 @@ class VisionQKVLinearProbeModule(torch.nn.Module):
             return self._linear_einsum(hidden_states, self.q_weight, self.q_bias)
         if self.impl == "conv1d_q":
             return self._linear_conv1d(hidden_states, self.q_weight, self.q_bias)
+        if self.impl == "npu_bmm_v2_q":
+            return self._linear_npu_bmm_v2(hidden_states, self.q_weight, self.q_bias)
         if self.impl == "npu_linear_q":
             return self._linear_npu(hidden_states, self.q_weight, self.q_bias)
         if self.impl == "npu_linear_three":
@@ -1315,6 +1352,8 @@ class VisionQKVLinearProbeModule(torch.nn.Module):
             )
         if self.impl == "npu_linear_single":
             return self._linear_npu(hidden_states, self.qkv_weight, self.qkv_bias)
+        if self.impl == "npu_grouped_matmul_q":
+            return self._linear_grouped_matmul(hidden_states, self.q_weight, self.q_bias)
         raise RuntimeError(f"unreachable QKV linear probe impl={self.impl!r}")
 
 

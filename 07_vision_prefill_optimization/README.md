@@ -195,6 +195,11 @@ BRIDGES=none \
 IMPLS=functional_q,addmm_q,mm_q,bmm_q,matmul_3d_q,einsum_q,conv1d_q,npu_linear_q \
 RUN_TORCHAIR_EAGERLY=0 \
 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_qkv_linear_compile_probe.sh
+
+BRIDGES=none \
+IMPLS=npu_bmm_v2_q,npu_grouped_matmul_q \
+RUN_TORCHAIR_EAGERLY=0 \
+ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_qkv_linear_compile_probe.sh
 ```
 
 Interpretation:
@@ -212,6 +217,9 @@ Interpretation:
   any cube op"; it is specific to the failing QKV consumer lowering. If all
   alternate consumers fail, the post-LN format boundary is still the cleanest
   direction.
+- `npu_grouped_matmul_q` is a diagnostic only. Grouped MatMul is built for
+  grouped/expert-style matmuls, not a normal single Linear, so an eager or
+  compile error is useful evidence rather than a benchmark failure.
 
 ## MSIT GE-vs-FX Dump Compare
 
