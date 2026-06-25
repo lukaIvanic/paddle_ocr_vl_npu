@@ -225,6 +225,28 @@ Interpretation:
   one-expert form, the bias is passed as `[1, O]` rather than a plain 1D
   Linear bias.
 
+Once the grouped Q probe passes, test the real static visual path, not another
+synthetic probe:
+
+```sh
+ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_static_visual_grouped_compare.sh
+```
+
+This runner compares real baseline crops in three modes:
+
+- `eager_grouped_qkv_mlp_fc1`: backend `none`, grouped matmul for both direct
+  LayerNorm consumers. This must match the stored baseline before compiled
+  results are meaningful.
+- `torchair_grouped_qkv`: compiled grouped QKV only. If this still shows large
+  visual/logit drift, the remaining likely direct producer-consumer edge is
+  `layer_norm2 -> mlp.fc1`.
+- `torchair_grouped_qkv_mlp_fc1`: compiled grouped QKV plus grouped `mlp.fc1`.
+  This is the first full static-visual candidate that replaces all Linear ops
+  directly fed by vision LayerNorm.
+
+The default `MAX_ITEMS=4` keeps compile cost low. Increase to `MAX_ITEMS=8` only
+after the 4-crop signal is clean.
+
 ## MSIT GE-vs-FX Dump Compare
 
 After `--torchair-run-eagerly` proves the FX graph semantics are clean, use the

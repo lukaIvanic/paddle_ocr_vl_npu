@@ -45,6 +45,7 @@ from tokenizers import Tokenizer
 
 from local_modeling_paddleocr_vl import (
     LocalPaddleOCRVLForConditionalGeneration,
+    _activation,
     _resolve_model_dir,
     apply_rotary_pos_emb_vision,
     attention_softmax,
@@ -71,6 +72,7 @@ DTYPE_CHOICES = ("fp16", "float16", "fp32", "float32", "bf16", "bfloat16")
 VISION_ATTENTION_CHOICES = ("manual", "prompt_flash_attention")
 TIMING_MODE_CHOICES = ("standard", "phase_sync")
 VISION_COMPILE_BACKEND_CHOICES = ("none", "default", "aot_eager", "inductor", "torchair")
+STATIC_VISUAL_LN_LINEAR_MODE_CHOICES = ("normal", "grouped_qkv", "grouped_qkv_mlp_fc1")
 TORCHAIR_MODE_CHOICES = ("default", "max-autotune")
 TORCHAIR_GRAPH_DUMP_TYPE_CHOICES = ("none", "txt", "pbtxt")
 TORCHAIR_MSIT_DUMP_KIND_CHOICES = ("none", "ge", "fx")
@@ -890,9 +892,16 @@ class SingleCropStaticVisualModule(torch.nn.Module):
         debug_no_padding: bool = False,
         debug_min_pad_tokens: int = 0,
         debug_pad_to_multiple: int = 0,
+        ln_linear_mode: str = "normal",
     ):
         super().__init__()
+        if ln_linear_mode not in STATIC_VISUAL_LN_LINEAR_MODE_CHOICES:
+            raise ValueError(
+                f"unsupported static visual LayerNorm-linear mode={ln_linear_mode!r}; "
+                f"choices={STATIC_VISUAL_LN_LINEAR_MODE_CHOICES}"
+            )
         self.model = model
+        self.ln_linear_mode = str(ln_linear_mode)
         self.static_visual_pad_policy = STATIC_VISUAL_PAD_POLICY
         self.register_buffer("image_grid_thw_const", image_grid_thw.detach().clone(), persistent=False)
         self.register_buffer(
@@ -953,11 +962,71 @@ class SingleCropStaticVisualModule(torch.nn.Module):
             pad_mask = None
         self.register_buffer("static_pad_attention_mask", pad_mask, persistent=False)
 
+    @staticmethod
+    def _grouped_linear(
+        hidden_states: torch.Tensor,
+        weight: torch.Tensor,
+        bias: torch.Tensor | None,
+    ) -> torch.Tensor:
+        import torch_npu
+
+        group_list = torch.full((1,), hidden_states.shape[0], dtype=torch.int64, device=hidden_states.device)
+        weight_3d = weight.transpose(0, 1).contiguous().unsqueeze(0)
+        bias_arg = None if bias is None else [bias.contiguous().unsqueeze(0)]
+        return torch_npu.npu_grouped_matmul(
+            [hidden_states],
+            [weight_3d],
+            bias=bias_arg,
+            group_list=group_list,
+            split_item=2,
+            group_type=0,
+            group_list_type=1,
+        )[0]
+
+    def _static_qkv_projection(self, attention: torch.nn.Module, hidden_states: torch.Tensor) -> torch.Tensor:
+        if self.ln_linear_mode in ("grouped_qkv", "grouped_qkv_mlp_fc1"):
+            qkv_weight = torch.cat(
+                [
+                    attention.q_proj.weight,
+                    attention.k_proj.weight,
+                    attention.v_proj.weight,
+                ],
+                dim=0,
+            ).contiguous()
+            if attention.q_proj.bias is None or attention.k_proj.bias is None or attention.v_proj.bias is None:
+                qkv_bias = None
+            else:
+                qkv_bias = torch.cat(
+                    [
+                        attention.q_proj.bias,
+                        attention.k_proj.bias,
+                        attention.v_proj.bias,
+                    ],
+                    dim=0,
+                ).contiguous()
+            return self._grouped_linear(hidden_states, qkv_weight, qkv_bias)
+        return torch.cat(
+            [
+                attention.q_proj(hidden_states),
+                attention.k_proj(hidden_states),
+                attention.v_proj(hidden_states),
+            ],
+            dim=-1,
+        )
+
+    def _static_mlp(self, mlp: torch.nn.Module, hidden_states: torch.Tensor) -> torch.Tensor:
+        if self.ln_linear_mode == "grouped_qkv_mlp_fc1":
+            fc1_out = self._grouped_linear(hidden_states, mlp.fc1.weight, mlp.fc1.bias)
+        else:
+            fc1_out = mlp.fc1(hidden_states)
+        return mlp.fc2(_activation(mlp.hidden_act, fc1_out))
+
     def _static_mask_padded_attention(self, attention: torch.nn.Module, hidden_states: torch.Tensor) -> torch.Tensor:
         seq_length = hidden_states.shape[0]
-        query_states = attention.q_proj(hidden_states).view(seq_length, attention.num_heads, attention.head_dim)
-        key_states = attention.k_proj(hidden_states).view(seq_length, attention.num_heads, attention.head_dim)
-        value_states = attention.v_proj(hidden_states).view(seq_length, attention.num_heads, attention.head_dim)
+        query_states, key_states, value_states = self._static_qkv_projection(attention, hidden_states).chunk(3, dim=-1)
+        query_states = query_states.view(seq_length, attention.num_heads, attention.head_dim)
+        key_states = key_states.view(seq_length, attention.num_heads, attention.head_dim)
+        value_states = value_states.view(seq_length, attention.num_heads, attention.head_dim)
         query_states, key_states = apply_rotary_pos_emb_vision(
             query_states,
             key_states,
@@ -998,7 +1067,7 @@ class SingleCropStaticVisualModule(torch.nn.Module):
     def _static_mask_padded_encoder_layer(self, encoder_layer: torch.nn.Module, hidden_states: torch.Tensor) -> torch.Tensor:
         attn_input = encoder_layer.layer_norm1(hidden_states)
         hidden_states = hidden_states + self._static_mask_padded_attention(encoder_layer.self_attn, attn_input)
-        return hidden_states + encoder_layer.mlp(encoder_layer.layer_norm2(hidden_states))
+        return hidden_states + self._static_mlp(encoder_layer.mlp, encoder_layer.layer_norm2(hidden_states))
 
     def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
         transformer = self.model.visual.vision_model
@@ -1634,6 +1703,7 @@ def maybe_compile_static_visual(
     debug_no_padding: bool = False,
     debug_min_pad_tokens: int = 0,
     debug_pad_to_multiple: int = 0,
+    ln_linear_mode: str = "normal",
     torchair_mode: str = "default",
     torchair_run_eagerly: bool = False,
     torchair_graph_dump_type: str = "none",
@@ -1654,6 +1724,7 @@ def maybe_compile_static_visual(
         debug_no_padding=debug_no_padding,
         debug_min_pad_tokens=debug_min_pad_tokens,
         debug_pad_to_multiple=debug_pad_to_multiple,
+        ln_linear_mode=ln_linear_mode,
     ).eval()
     mask_shape = (
         None
@@ -1667,6 +1738,7 @@ def maybe_compile_static_visual(
         "debug_static_visual_no_padding": bool(wrapper.debug_no_padding),
         "debug_static_visual_min_pad_tokens": int(wrapper.debug_min_pad_tokens),
         "debug_static_visual_pad_to_multiple": int(wrapper.debug_pad_to_multiple),
+        "static_visual_ln_linear_mode": str(wrapper.ln_linear_mode),
         "static_visual_pad_tokens": int(wrapper.static_pad_tokens),
         "static_visual_real_seq_len": int(wrapper.static_real_seq_len),
         "static_visual_real_seq_mod16": int(wrapper.static_real_seq_len % 16),
@@ -1743,6 +1815,7 @@ def prepare_candidate_vision_forward(
         debug_no_padding=bool(args.debug_static_visual_no_padding),
         debug_min_pad_tokens=int(args.debug_static_visual_min_pad_tokens),
         debug_pad_to_multiple=int(args.debug_static_visual_pad_to_multiple),
+        ln_linear_mode=str(args.static_visual_ln_linear_mode),
         torchair_mode=str(getattr(args, "torchair_mode", "default")),
         torchair_run_eagerly=bool(getattr(args, "torchair_run_eagerly", False)),
         torchair_graph_dump_type=str(getattr(args, "torchair_graph_dump_type", "none")),
@@ -1767,6 +1840,7 @@ def prepare_candidate_vision_forward(
                 debug_no_padding=bool(args.debug_static_visual_no_padding),
                 debug_min_pad_tokens=int(args.debug_static_visual_min_pad_tokens),
                 debug_pad_to_multiple=int(args.debug_static_visual_pad_to_multiple),
+                ln_linear_mode=str(args.static_visual_ln_linear_mode),
             ).eval()
             maybe_sync(device)
             eager_start = time.perf_counter()
@@ -4186,6 +4260,7 @@ def compare_candidate(args: argparse.Namespace) -> None:
             "debug_static_visual_no_padding": bool(args.debug_static_visual_no_padding),
             "debug_static_visual_min_pad_tokens": int(args.debug_static_visual_min_pad_tokens),
             "debug_static_visual_pad_to_multiple": int(args.debug_static_visual_pad_to_multiple),
+            "static_visual_ln_linear_mode": str(args.static_visual_ln_linear_mode),
             "static_visual_encoder_path": "single_static_path_masked_padding_default",
             "timing_mode_note": (
                 "standard records visual_tower_e2e_s plus full_prefill_e2e_s as separate measurements. "
@@ -4365,6 +4440,16 @@ def parse_args() -> argparse.Namespace:
     compare_parser.add_argument("--warmup-repeats", type=int, default=0)
     compare_parser.add_argument("--max-items", type=int, default=0)
     compare_parser.add_argument("--vision-compile-backend", default="none", choices=VISION_COMPILE_BACKEND_CHOICES)
+    compare_parser.add_argument(
+        "--static-visual-ln-linear-mode",
+        default="normal",
+        choices=STATIC_VISUAL_LN_LINEAR_MODE_CHOICES,
+        help=(
+            "Candidate static-visual implementation for Linear ops directly fed by LayerNorm. "
+            "normal keeps nn.Linear; grouped_qkv uses npu_grouped_matmul for layer_norm1 -> QKV; "
+            "grouped_qkv_mlp_fc1 also uses grouped matmul for layer_norm2 -> MLP fc1."
+        ),
+    )
     add_torchair_diagnostic_args(compare_parser)
     compare_parser.add_argument(
         "--debug-static-visual-no-padding",
