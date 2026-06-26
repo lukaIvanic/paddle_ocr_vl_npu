@@ -553,6 +553,54 @@ The summary also includes `first_bad_stage_real_rows` and
 compiled visual features would survive slicing padded rows away before
 downstream consumers.
 
+## Attention-Only Repro
+
+Use `repro_attention_only_compile.py` when the full inline layer has already
+localized the failure to attention. It materializes real-crop Q/K/V tensors
+eagerly with manual LayerNorm and vision RoPE, then compiles only this graph:
+
+```python
+attention(q_bnsd, k_bnsd, v_bnsd) -> attn_kernel_bnsd
+```
+
+The compiled graph does not include patch embedding, position embeddings,
+LayerNorm, QKV projection, residuals, MLP, or output projection. This is the
+cleanest place to compare manual attention against `npu_prompt_flash_attention`
+with and without masks.
+
+Runner:
+
+```sh
+ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
+```
+
+Useful controls:
+
+```sh
+# Known-good manual attention control over the same materialized Q/K/V.
+ATTENTION=manual ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
+
+# PromptFA eager, no TorchAir GE lowering.
+ATTENTION=prompt_flash_attention COMPILE_BACKEND=none ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
+
+# PromptFA compiled, no padding/mask.
+ATTENTION=prompt_flash_attention NO_PADDING=1 MASK_KIND=none ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
+
+# PromptFA compiled, padded but no mask.
+ATTENTION=prompt_flash_attention MASK_KIND=none ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
+
+# PromptFA compiled with the current real<->pad block mask.
+ATTENTION=prompt_flash_attention MASK_KIND=current MASK_RANK=4 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
+
+# Mask-rank contract checks.
+ATTENTION=prompt_flash_attention MASK_KIND=current MASK_RANK=2 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
+ATTENTION=prompt_flash_attention MASK_KIND=current MASK_RANK=3 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
+```
+
+The reference is always manual attention over the same materialized Q/K/V and
+mask. The JSON reports overall and real/pad split diffs for the attention
+output only.
+
 ## CUDA Smoke
 
 CUDA smoke uses manual attention only and is not authoritative NPU evidence:
