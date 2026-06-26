@@ -628,6 +628,21 @@ Do not replace this with same-pixel-shape bucketing. The point is not to batch
 raw crop prefix work; the point is to batch the expensive fixed-S transformer
 layers.
 
+For the batch-size speed sweep, run:
+
+```sh
+SWEEP_BATCH_SIZES="1 2 4 8" MAX_ITEMS=32 STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=1024 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_static_visual_batched_encoder_sweep.sh
+```
+
+The sweep defaults to `SKIP_GENERATION=1` so it measures vision-transformer
+prefill speed without decode work. `MAX_ITEMS=32` is intentional: it is
+divisible by 8, so every batch size uses the same crop set. The main field is
+`summary.encoder_physical_tokens_per_s`; then compare
+`summary.encoder_effective_tokens_per_s` and
+`summary.prefix_plus_encoder_physical_tokens_per_s`. The printed
+`TORCHAIR_PHYSICAL_SPEEDUP` section reports each TorchAir batch size relative
+to B=1.
+
 ## Attention-Only Repro
 
 Use `repro_attention_only_compile.py` when the full inline layer has already

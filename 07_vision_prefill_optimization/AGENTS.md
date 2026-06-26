@@ -207,6 +207,19 @@ fields are `encoder_effective_tokens_per_s` and `encoder_physical_tokens_per_s`.
 `prefix_plus_encoder_*` fields are context, not the batched-transformer headline. If this fails,
 report the first mismatching item and batch JSON; do not go back to same-pixel-shape bucket audits.
 
+After that smoke passes, run the real batch-size speed sweep:
+
+```sh
+SWEEP_BATCH_SIZES="1 2 4 8" MAX_ITEMS=32 STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=1024 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_static_visual_batched_encoder_sweep.sh
+```
+
+This defaults to `SKIP_GENERATION=1` because the target metric is vision-transformer prefill speed,
+not decode. `MAX_ITEMS=32` keeps the selected crop set identical for B=1,2,4,8. Report
+`encoder_physical_tokens_per_s` first, then `encoder_effective_tokens_per_s`,
+`prefix_plus_encoder_physical_tokens_per_s`, selected count, correctness counts, and the
+`TORCHAIR_PHYSICAL_SPEEDUP` table. If `MAX_ITEMS` is changed, keep it divisible by the largest batch
+size or explicitly report that different batch sizes used different selected item counts.
+
 ## Anti-Cheat Ledger
 
 Add short notes here whenever we catch a mistake that could make future results misleading. Phrase
