@@ -1157,7 +1157,7 @@ class SingleCropStaticVisualModule(torch.nn.Module):
             self._static_layer_norm(encoder_layer.layer_norm2, hidden_states),
         )
 
-    def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
+    def forward_prefix(self, pixel_values: torch.Tensor) -> torch.Tensor:
         transformer = self.model.visual.vision_model
         embeddings_module = transformer.embeddings
         pixel_values = pixel_values.to(dtype=embeddings_module.patch_embedding.weight.dtype)
@@ -1177,10 +1177,17 @@ class SingleCropStaticVisualModule(torch.nn.Module):
                 dim=0,
             )
         hidden_states = hidden_states + self.abs_pos_embed_const
+        return hidden_states
+
+    def forward_encoder_from_prefix(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        transformer = self.model.visual.vision_model
         for encoder_layer in transformer.encoder.layers:
             hidden_states = self._static_mask_padded_encoder_layer(encoder_layer, hidden_states)
         hidden_states = self._static_layer_norm(transformer.post_layernorm, hidden_states)
         return hidden_states
+
+    def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
+        return self.forward_encoder_from_prefix(self.forward_prefix(pixel_values))
 
 
 class SingleCropStaticVisualPrefixModule(torch.nn.Module):

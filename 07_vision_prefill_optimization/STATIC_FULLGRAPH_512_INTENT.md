@@ -22,8 +22,14 @@ The current validation ladder must include three distinct checks:
 
 1. Static-visual tensor/logit compare against the stored eager PromptFA truth bundle.
 2. Actual OCR generation compare where stored baseline `visual_features` and candidate static visual `visual_features` both flow through the same projector, text prefill, and static decode loop.
-3. A no-resize batching audit that reports true same-grid/same-pixel-shape groups before anyone claims batched vision throughput.
+3. A transformer-layer batching check that batches only fixed-S encoder inputs. Patch embedding,
+   absolute position, and per-item prefix tensor construction stay outside the compiled batch.
 
 Cache compilation is a cold-start optimization, not a math change. When enabled, it must be the same static visual callable and must report the GE cache directory/key, first-call timing, effective visual tok/s, and physical padded tok/s.
+
+For batching, do not batch raw crops and do not bucket by crop image size as if that solved the
+problem. The target compiled batch boundary is `[B, S_fixed, hidden] -> encoder layers + post
+LayerNorm -> [B, S_fixed, hidden]`. Prefix construction is allowed to be per-crop because it is not
+the bottleneck and because raw crop shapes are not the thing we are trying to make static.
 
 I understand this intention and will not fuck it up by changing the target into an easier benchmark.

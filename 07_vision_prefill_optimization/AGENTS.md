@@ -194,14 +194,18 @@ It compares actual generated token sequences and decoded text from two paths: st
 `visual_features` versus candidate static-visual `visual_features`, both flowing through the same
 projector, text prefill, and static decode loop. Passing first-token argmax is not enough.
 
-The no-resize batching prospect check is:
+The batched transformer-layer check is:
 
 ```sh
-STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=1024 bash run_static_visual_batching_audit.sh
+BATCH_SIZE=4 MAX_ITEMS=8 STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=1024 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_static_visual_batched_encoder.sh
 ```
 
-It does not claim speed. It reports how many true same-grid/same-pixel-shape groups exist in the
-truth bundle before anyone builds or benchmarks a batched static visual tower.
+This is the real batching direction. It does not batch raw crops, patch embedding, or absolute
+position interpolation. It builds each crop prefix sequentially, stacks the fixed-S prefix tensors,
+and batches only `encoder layers + post LayerNorm` over `[B, S_fixed, hidden]`. The headline speed
+fields are `encoder_effective_tokens_per_s` and `encoder_physical_tokens_per_s`. The
+`prefix_plus_encoder_*` fields are context, not the batched-transformer headline. If this fails,
+report the first mismatching item and batch JSON; do not go back to same-pixel-shape bucket audits.
 
 ## Anti-Cheat Ledger
 

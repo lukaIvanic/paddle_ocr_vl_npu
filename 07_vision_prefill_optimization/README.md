@@ -605,15 +605,28 @@ This compares generated token sequences and decoded text from stored baseline
 same projector, text prefill, and static decode loop. Passing first-token argmax
 alone is not enough.
 
-Before implementing true batched static visual, audit how much same-shape
-batching exists without resizing:
+Then test the actual batched transformer-layer boundary:
 
 ```sh
-STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=1024 bash run_static_visual_batching_audit.sh
+BATCH_SIZE=4 MAX_ITEMS=8 STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=1024 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_static_visual_batched_encoder.sh
 ```
 
-The audit reports same `image_grid_thw` and same `pixel_values` shape groups.
-It is not a speed benchmark.
+This runner keeps patch embedding and absolute-position/prefix construction
+outside the batch. It stacks fixed-S prefix tensors and compiles only
+`encoder layers + post LayerNorm` over `[B, S_fixed, hidden]`. Read these fields
+first:
+
+- `summary.encoder_effective_tokens_per_s`
+- `summary.encoder_physical_tokens_per_s`
+- `summary.prefix_plus_encoder_effective_tokens_per_s`
+- `summary.argmax_match_count` versus `compared_count`
+- `summary.generated_trimmed_match_count` and `summary.text_match_count`
+- `summary.visual_nonfinite_item_count`
+- per-batch `batched_encoder_s` and `prefix_build_s`
+
+Do not replace this with same-pixel-shape bucketing. The point is not to batch
+raw crop prefix work; the point is to batch the expensive fixed-S transformer
+layers.
 
 ## Attention-Only Repro
 
