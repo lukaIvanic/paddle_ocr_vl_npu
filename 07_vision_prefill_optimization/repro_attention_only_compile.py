@@ -145,6 +145,7 @@ class AttentionOnly(torch.nn.Module):
         mask: torch.Tensor | None,
         rope_cos: torch.Tensor | None,
         rope_sin: torch.Tensor | None,
+        promptfa_pad_head_dim_to: int,
     ):
         super().__init__()
         if attention not in ("manual", "prompt_flash_attention"):
@@ -160,6 +161,12 @@ class AttentionOnly(torch.nn.Module):
         self.head_dim = int(head_dim)
         self.scaling = float(scaling)
         self.sparse_mode = int(sparse_mode)
+        self.promptfa_pad_head_dim_to = int(promptfa_pad_head_dim_to)
+        if self.promptfa_pad_head_dim_to and self.promptfa_pad_head_dim_to < self.head_dim:
+            raise ValueError(
+                "--promptfa-pad-head-dim-to must be 0 or >= the real head_dim "
+                f"({self.head_dim}), got {self.promptfa_pad_head_dim_to}"
+            )
         self.register_buffer("atten_mask", mask, persistent=False)
         self.register_buffer(
             "rope_cos",
@@ -208,6 +215,14 @@ class AttentionOnly(torch.nn.Module):
             return self._from_snhd_to_call_layout(query, key, value)
         raise RuntimeError(f"unreachable input_boundary={self.input_boundary!r}")
 
+    def _pad_promptfa_head_dim(self, tensor: torch.Tensor) -> torch.Tensor:
+        target = int(self.promptfa_pad_head_dim_to)
+        if target <= 0 or target == int(tensor.shape[-1]):
+            return tensor
+        if target < int(tensor.shape[-1]):
+            raise RuntimeError(f"cannot pad PromptFA head dim from {tensor.shape[-1]} down to {target}")
+        return F.pad(tensor, (0, target - int(tensor.shape[-1])))
+
     def forward(self, q_source: torch.Tensor, k_source: torch.Tensor, v_source: torch.Tensor) -> torch.Tensor:
         q_states, k_states, v_states = self._prepare_call_inputs(q_source, k_source, v_source)
         if self.attention == "manual":
@@ -227,16 +242,21 @@ class AttentionOnly(torch.nn.Module):
         if self.atten_mask is not None:
             mask_kwargs["atten_mask"] = self.atten_mask.to(torch.bool).contiguous()
             sparse_mode = int(self.sparse_mode)
+        q_call = self._pad_promptfa_head_dim(q_states).contiguous()
+        k_call = self._pad_promptfa_head_dim(k_states).contiguous()
+        v_call = self._pad_promptfa_head_dim(v_states).contiguous()
         output = torch_npu.npu_prompt_flash_attention(
-            q_states.contiguous(),
-            k_states.contiguous(),
-            v_states.contiguous(),
+            q_call,
+            k_call,
+            v_call,
             num_heads=int(self.num_heads),
             input_layout=self.input_layout,
             scale_value=float(self.scaling),
             sparse_mode=sparse_mode,
             **mask_kwargs,
         )
+        if int(output.shape[-1]) != int(self.head_dim):
+            output = output[..., : int(self.head_dim)].contiguous()
         if self.input_layout == "BSND":
             return output.transpose(1, 2).contiguous()
         return output
@@ -604,6 +624,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--attention", default="prompt_flash_attention", choices=("manual", "prompt_flash_attention"))
     parser.add_argument("--promptfa-layout", default="bnsd", choices=("bnsd", "bsnd"))
     parser.add_argument(
+        "--promptfa-pad-head-dim-to",
+        type=int,
+        default=0,
+        help=(
+            "PromptFA-only zero-padding target for the last/head_dim axis. "
+            "0 keeps the real head_dim. If set above the real head_dim, Q/K/V "
+            "are padded only for the PromptFA call, scale stays based on the "
+            "real head_dim, and the output is sliced back before comparison."
+        ),
+    )
+    parser.add_argument(
         "--input-boundary",
         default="bnsd",
         choices=("bnsd", "snhd_rope_done", "snhd_pre_rope", "qkv_flat_pre_rope"),
@@ -645,6 +676,15 @@ def main() -> None:
         device=device,
     )
     promptfa_layout = str(args.promptfa_layout).upper()
+    promptfa_pad_head_dim_to = int(args.promptfa_pad_head_dim_to)
+    if promptfa_pad_head_dim_to and promptfa_pad_head_dim_to < int(qkv_meta["head_dim"]):
+        raise ValueError(
+            "--promptfa-pad-head-dim-to must be 0 or >= the real head_dim "
+            f"({qkv_meta['head_dim']}), got {promptfa_pad_head_dim_to}"
+        )
+    promptfa_call_head_dim = int(qkv_meta["head_dim"])
+    if promptfa_pad_head_dim_to > promptfa_call_head_dim:
+        promptfa_call_head_dim = promptfa_pad_head_dim_to
     if boundary == "bnsd" and promptfa_layout == "BSND":
         q_input = q_boundary.transpose(1, 2).contiguous()
         k_input = k_boundary.transpose(1, 2).contiguous()
@@ -665,6 +705,7 @@ def main() -> None:
         mask=mask,
         rope_cos=rope_cos,
         rope_sin=rope_sin,
+        promptfa_pad_head_dim_to=0,
     ).eval()
     candidate_module = AttentionOnly(
         attention=str(args.attention),
@@ -677,6 +718,7 @@ def main() -> None:
         mask=mask,
         rope_cos=rope_cos,
         rope_sin=rope_sin,
+        promptfa_pad_head_dim_to=promptfa_pad_head_dim_to,
     ).eval()
     eager_promptfa_module = AttentionOnly(
         attention="prompt_flash_attention",
@@ -689,6 +731,7 @@ def main() -> None:
         mask=mask,
         rope_cos=rope_cos,
         rope_sin=rope_sin,
+        promptfa_pad_head_dim_to=promptfa_pad_head_dim_to,
     ).eval()
 
     maybe_sync(device)
@@ -779,6 +822,12 @@ def main() -> None:
         "config": {
             "attention": str(args.attention),
             "promptfa_layout": str(args.promptfa_layout),
+            "promptfa_pad_head_dim_to": int(promptfa_pad_head_dim_to),
+            "promptfa_real_head_dim": int(qkv_meta["head_dim"]),
+            "promptfa_call_head_dim": int(promptfa_call_head_dim),
+            "promptfa_head_dim_pad_extra": int(promptfa_call_head_dim - int(qkv_meta["head_dim"])),
+            "promptfa_call_head_dim_fp16_bytes": int(promptfa_call_head_dim * 2),
+            "promptfa_call_head_dim_fp16_32b_aligned": bool((promptfa_call_head_dim * 2) % 32 == 0),
             "input_boundary": boundary,
             "attention_output_layout": "BNSD_normalized",
             "compile_backend": str(args.compile_backend),
@@ -802,6 +851,10 @@ def main() -> None:
             "q_is_contiguous": bool(q_input.is_contiguous()),
             "k_is_contiguous": bool(k_input.is_contiguous()),
             "v_is_contiguous": bool(v_input.is_contiguous()),
+            "promptfa_call_q_shape": [*([int(dim) for dim in q_input.shape[:-1]]), int(promptfa_call_head_dim)],
+            "promptfa_call_k_shape": [*([int(dim) for dim in k_input.shape[:-1]]), int(promptfa_call_head_dim)],
+            "promptfa_call_v_shape": [*([int(dim) for dim in v_input.shape[:-1]]), int(promptfa_call_head_dim)],
+            "promptfa_output_sliced_back_to_head_dim": bool(promptfa_call_head_dim != int(qkv_meta["head_dim"])),
         },
         "timing_s": {
             "setup_materialize_qkv": setup_s,
