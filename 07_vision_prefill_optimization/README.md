@@ -522,6 +522,10 @@ TORCHAIR_RUN_EAGERLY=1 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_inline_single_la
 # Preserve LayerNorm semantics but avoid fused LayerNormV3.
 LN_IMPL=manual_fp32 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_inline_single_layer_repro.sh
 
+# Padding/mask influence control. This removes the static pad rows and therefore
+# removes the PromptFA pad mask for this one-crop diagnostic.
+LN_IMPL=manual_fp32 NO_PADDING=1 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_inline_single_layer_repro.sh
+
 # Check whether functional LayerNorm lowers differently from module LayerNorm.
 LN_IMPL=functional ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_inline_single_layer_repro.sh
 
@@ -537,6 +541,11 @@ a clue that fused `LayerNormV3` may be the bad GE producer; do not treat RMSNorm
 as a valid PaddleOCR-VL replacement. `LN_IMPL=manual_fp32` is the relevant test
 because it keeps LayerNorm mean/variance/bias semantics while avoiding the fused
 LayerNorm operator.
+
+The JSON and printed summary include `promptfa_contract`, which records the
+physical sequence length, mod-16/mod-128 alignment, Q/K/V call shape, sparse
+mode, mask shape/counts, and the current pad-mask policy. Use it before drawing
+conclusions about whether PromptFA was called on a 128-aligned padded sequence.
 
 ## CUDA Smoke
 

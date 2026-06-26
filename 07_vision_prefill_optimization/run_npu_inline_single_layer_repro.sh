@@ -16,12 +16,17 @@ export LN_IMPL="${LN_IMPL:-module}"
 export LN_LINEAR_MODE="${LN_LINEAR_MODE:-grouped_qkv_mlp_fc1}"
 export PRE_PROMPTFA_BRIDGE="${PRE_PROMPTFA_BRIDGE:-none}"
 export TORCHAIR_RUN_EAGERLY="${TORCHAIR_RUN_EAGERLY:-0}"
+export NO_PADDING="${NO_PADDING:-0}"
 
 mkdir -p "${OUT_ROOT}"
 
 RUN_EAGERLY_ARGS=()
 if [[ "${TORCHAIR_RUN_EAGERLY}" == "1" ]]; then
   RUN_EAGERLY_ARGS+=(--torchair-run-eagerly)
+fi
+NO_PADDING_ARGS=()
+if [[ "${NO_PADDING}" == "1" ]]; then
+  NO_PADDING_ARGS+=(--no-padding)
 fi
 
 OUTPUT_JSON="${OUT_ROOT}/inline_single_layer_repro.json"
@@ -37,6 +42,7 @@ echo "EXP07_INLINE_SINGLE_LAYER LN_IMPL=${LN_IMPL}"
 echo "EXP07_INLINE_SINGLE_LAYER LN_LINEAR_MODE=${LN_LINEAR_MODE}"
 echo "EXP07_INLINE_SINGLE_LAYER PRE_PROMPTFA_BRIDGE=${PRE_PROMPTFA_BRIDGE}"
 echo "EXP07_INLINE_SINGLE_LAYER TORCHAIR_RUN_EAGERLY=${TORCHAIR_RUN_EAGERLY}"
+echo "EXP07_INLINE_SINGLE_LAYER NO_PADDING=${NO_PADDING}"
 echo "EXP07_INLINE_SINGLE_LAYER OUT_ROOT=${OUT_ROOT}"
 
 "${PYTHON_BIN}" "${SCRIPT_DIR}/repro_inline_single_layer_compile.py" \
@@ -55,6 +61,7 @@ echo "EXP07_INLINE_SINGLE_LAYER OUT_ROOT=${OUT_ROOT}"
   --compile-backend torchair \
   --torchair-mode default \
   "${RUN_EAGERLY_ARGS[@]}" \
+  "${NO_PADDING_ARGS[@]}" \
   --output "${OUTPUT_JSON}"
 
 echo "EXP07_INLINE_SINGLE_LAYER OUTPUT_TREE"

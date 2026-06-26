@@ -493,6 +493,32 @@ class InlineSingleVisionLayer(torch.nn.Module):
             y = y + bias
         return y
 
+    def promptfa_contract(self, attention: torch.nn.Module) -> dict[str, Any]:
+        mask = self.pad_attention_mask
+        mask_shape = None if mask is None else [int(dim) for dim in mask.shape]
+        mask_true_count = 0 if mask is None else int(mask.sum().item())
+        mask_numel = 0 if mask is None else int(mask.numel())
+        return {
+            "input_layout": "BNSD",
+            "num_heads": int(attention.num_heads),
+            "head_dim": int(attention.head_dim),
+            "qkv_shape": [1, int(attention.num_heads), int(self.physical_seq_len), int(attention.head_dim)],
+            "qkv_contiguous_at_call": True,
+            "sparse_mode_when_masked": int(self.promptfa_sparse_mode),
+            "real_seq_len": int(self.real_seq_len),
+            "pad_tokens": int(self.pad_tokens),
+            "physical_seq_len": int(self.physical_seq_len),
+            "physical_seq_len_mod16": int(self.physical_seq_len % 16),
+            "physical_seq_len_mod128": int(self.physical_seq_len % 128),
+            "mask_present": bool(mask is not None),
+            "mask_shape": mask_shape,
+            "mask_dtype": None if mask is None else str(mask.dtype),
+            "mask_true_count": mask_true_count,
+            "mask_numel": mask_numel,
+            "mask_true_fraction": None if mask_numel == 0 else float(mask_true_count / mask_numel),
+            "mask_policy": "block real<->pad cross-attention; pad<->pad remains unmasked",
+        }
+
     @staticmethod
     def grouped_linear(hidden_states: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor | None) -> torch.Tensor:
         import torch_npu
@@ -782,6 +808,7 @@ def main() -> None:
     eager_stability_rows = compare_outputs(eager_after, eager_before)
     compiled_stability_rows = compare_outputs(compiled_first, compiled_second)
     first_bad = first_bad_stage(rows)
+    attention_module = model.visual.vision_model.encoder.layers[int(args.layer_index)].self_attn
     output = {
         "schema_version": 1,
         "experiment": "07_vision_prefill_optimization",
@@ -808,6 +835,7 @@ def main() -> None:
             "dynamic": False,
             "backend_meta": backend_meta,
         },
+        "promptfa_contract": module.promptfa_contract(attention_module),
         "timing_s": {
             "eager_before": eager_before_s,
             "compile_wrapper": compile_wrapper_s,
@@ -850,6 +878,7 @@ def main() -> None:
         f"pre_promptfa_bridge={args.pre_promptfa_bridge} "
         f"physical_seq_len={module.physical_seq_len} real_seq_len={module.real_seq_len}"
     )
+    print(f"promptfa_contract={output['promptfa_contract']}")
     print(f"first_bad_stage={output['summary']['first_bad_stage']}")
     print("EXP07_INLINE_SINGLE_LAYER_REPRO STAGE_TABLE")
     for row in rows:
