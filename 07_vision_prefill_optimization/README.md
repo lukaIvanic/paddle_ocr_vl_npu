@@ -474,6 +474,57 @@ Interpretation:
   likely a later-layer or cross-layer format propagation issue; add a deeper
   edge probe before broad rewrites.
 
+## Inline Single-Layer Repro
+
+For the most compact reproduction, use the self-contained inline script:
+
+```sh
+ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_inline_single_layer_repro.sh
+```
+
+This script does not import `vision_prefill_bench.py`. It rebuilds one real
+baseline crop, loads layer 0 weights, defines one inline transformer block in a
+single `nn.Module`, runs that module eagerly and with `torch.compile(...,
+fullgraph=True, dynamic=False)`, and compares all returned intermediate tensors
+from the same compiled graph.
+
+Default settings match the current suspected path:
+
+- real baseline crop `ITEM_INDEX=0`
+- `ATTENTION=prompt_flash_attention`
+- `LN_LINEAR_MODE=grouped_qkv_mlp_fc1`
+- `PRE_PROMPTFA_BRIDGE=none`
+
+The printed `STAGE_TABLE` includes:
+
+- `q_bnsd`, `k_bnsd`, `v_bnsd`: exact tensors handed to PromptFA
+- `attn_kernel_bnsd`: raw PromptFA result before transpose/view
+- `attn_kernel_out`: PromptFA result after returning to `[S, hidden]`
+- downstream `out_proj`, residual, `ln2`, `fc1`, activation, `fc2`, and
+  `layer0_out`
+
+Interpretation:
+
+- If `q_bnsd`, `k_bnsd`, and `v_bnsd` match but `attn_kernel_bnsd` is the first
+  bad stage, the script is a direct compiled-PromptFA repro.
+- If `attn_kernel_bnsd` matches but `attn_kernel_out` fails, the transpose/view
+  after PromptFA is the bad handoff.
+- If PromptFA stages match and `attn_out_proj` fails, the normal Linear
+  consumer after attention is the bad handoff.
+
+Useful controls, in order:
+
+```sh
+# FX/Python semantics control. Should match eager if the GE/CANN graph is the bug.
+TORCHAIR_RUN_EAGERLY=1 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_inline_single_layer_repro.sh
+
+# Manual attention control. If this passes while PromptFA fails, compiled PromptFA is isolated.
+ATTENTION=manual ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_inline_single_layer_repro.sh
+
+# Real activation barrier before PromptFA. If this fixes PromptFA, the issue is likely input layout.
+PRE_PROMPTFA_BRIDGE=transpose_roundtrip ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_inline_single_layer_repro.sh
+```
+
 ## CUDA Smoke
 
 CUDA smoke uses manual attention only and is not authoritative NPU evidence:
