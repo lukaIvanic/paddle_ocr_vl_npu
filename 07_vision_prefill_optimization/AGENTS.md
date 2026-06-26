@@ -165,6 +165,16 @@ as a promising operator-contract workaround, not as a completed optimization, un
 single-layer repro and the full static visual compare also pass real-row feature/logit checks.
 Report both the real head dimension and the PromptFA call head dimension in every candidate output.
 
+The next representative fullgraph bucket test is fixed physical visual length 512:
+
+```sh
+MAX_ITEMS=4 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_static_visual_512_fullgraph.sh
+```
+
+This is the actual static prefill direction, not a control. It must report effective and physical
+vision tok/s plus `summary.bucket_filter`. Crops over 512 real visual tokens are excluded from this
+bucket, never resized, clipped, or truncated.
+
 ## Anti-Cheat Ledger
 
 Add short notes here whenever we catch a mistake that could make future results misleading. Phrase

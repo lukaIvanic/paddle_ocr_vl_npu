@@ -846,6 +846,7 @@ def build_static_pad_attention_mask(real_seq_len: int, pad_tokens: int, *, devic
 def static_visual_pad_tokens(
     real_seq_len: int,
     *,
+    fixed_physical_seq_len: int = 0,
     debug_no_padding: bool = False,
     debug_min_pad_tokens: int = 0,
     debug_pad_to_multiple: int = 0,
@@ -858,6 +859,18 @@ def static_visual_pad_tokens(
     available only through the explicit diagnostic flag.
     """
     real_seq_len = int(real_seq_len)
+    fixed_physical_seq_len = max(0, int(fixed_physical_seq_len))
+    if fixed_physical_seq_len:
+        if bool(debug_no_padding) or int(debug_min_pad_tokens) or int(debug_pad_to_multiple):
+            raise ValueError(
+                "fixed static visual sequence length cannot be combined with no-padding/min-pad/pad-multiple diagnostics"
+            )
+        if real_seq_len > fixed_physical_seq_len:
+            raise ValueError(
+                f"real visual token count {real_seq_len} exceeds fixed static visual physical length "
+                f"{fixed_physical_seq_len}; route this crop to a larger bucket instead"
+            )
+        return int(fixed_physical_seq_len - real_seq_len)
     if bool(debug_no_padding):
         return 0
     debug_min_pad_tokens = max(0, int(debug_min_pad_tokens))
@@ -897,6 +910,7 @@ class SingleCropStaticVisualModule(torch.nn.Module):
         image_grid_thw: torch.Tensor,
         *,
         device: torch.device,
+        fixed_physical_seq_len: int = 0,
         debug_no_padding: bool = False,
         debug_min_pad_tokens: int = 0,
         debug_pad_to_multiple: int = 0,
@@ -930,8 +944,10 @@ class SingleCropStaticVisualModule(torch.nn.Module):
         self.debug_no_padding = bool(debug_no_padding)
         self.debug_min_pad_tokens = max(0, int(debug_min_pad_tokens))
         self.debug_pad_to_multiple = max(0, int(debug_pad_to_multiple))
+        self.fixed_physical_seq_len = max(0, int(fixed_physical_seq_len))
         self.static_pad_tokens = static_visual_pad_tokens(
             self.static_real_seq_len,
+            fixed_physical_seq_len=self.fixed_physical_seq_len,
             debug_no_padding=self.debug_no_padding,
             debug_min_pad_tokens=self.debug_min_pad_tokens,
             debug_pad_to_multiple=self.debug_pad_to_multiple,
@@ -1822,6 +1838,7 @@ def maybe_compile_static_visual(
     item: PrefillInput,
     device: torch.device,
     backend_name: str,
+    fixed_physical_seq_len: int = 0,
     debug_no_padding: bool = False,
     debug_min_pad_tokens: int = 0,
     debug_pad_to_multiple: int = 0,
@@ -1845,6 +1862,7 @@ def maybe_compile_static_visual(
         model,
         item.image_grid_thw,
         device=device,
+        fixed_physical_seq_len=fixed_physical_seq_len,
         debug_no_padding=debug_no_padding,
         debug_min_pad_tokens=debug_min_pad_tokens,
         debug_pad_to_multiple=debug_pad_to_multiple,
@@ -1865,6 +1883,7 @@ def maybe_compile_static_visual(
         "candidate_vision_path": "static_visual",
         "backend": str(backend_name),
         "static_visual_pad_policy": str(wrapper.static_visual_pad_policy),
+        "static_visual_fixed_physical_seq_len": int(wrapper.fixed_physical_seq_len),
         "debug_static_visual_no_padding": bool(wrapper.debug_no_padding),
         "debug_static_visual_min_pad_tokens": int(wrapper.debug_min_pad_tokens),
         "debug_static_visual_pad_to_multiple": int(wrapper.debug_pad_to_multiple),
@@ -1950,6 +1969,7 @@ def prepare_candidate_vision_forward(
         item=item,
         device=device,
         backend_name=str(args.vision_compile_backend),
+        fixed_physical_seq_len=int(args.static_visual_fixed_physical_seq_len),
         debug_no_padding=bool(args.debug_static_visual_no_padding),
         debug_min_pad_tokens=int(args.debug_static_visual_min_pad_tokens),
         debug_pad_to_multiple=int(args.debug_static_visual_pad_to_multiple),
@@ -1977,6 +1997,7 @@ def prepare_candidate_vision_forward(
                 model,
                 item.image_grid_thw,
                 device=device,
+                fixed_physical_seq_len=int(args.static_visual_fixed_physical_seq_len),
                 debug_no_padding=bool(args.debug_static_visual_no_padding),
                 debug_min_pad_tokens=int(args.debug_static_visual_min_pad_tokens),
                 debug_pad_to_multiple=int(args.debug_static_visual_pad_to_multiple),
@@ -4295,13 +4316,35 @@ def compare_candidate(args: argparse.Namespace) -> None:
     inputs = build_inputs_from_manifest(manifest=manifest, model_dir=model_dir, tokenizer=tokenizer, dataset_dir=dataset_dir)
     merge_size = int(load_preprocessor_config(model_dir)["merge_size"])
 
+    fixed_physical_seq_len = max(0, int(args.static_visual_fixed_physical_seq_len))
+    input_pairs = list(enumerate(inputs))
+    excluded_bucket_rows: list[dict[str, Any]] = []
+    if fixed_physical_seq_len:
+        eligible_pairs: list[tuple[int, PrefillInput]] = []
+        for manifest_index, item in input_pairs:
+            real_tokens = int(vision_tokens(item))
+            if real_tokens > fixed_physical_seq_len:
+                excluded_bucket_rows.append(
+                    {
+                        "manifest_index": int(manifest_index),
+                        "id": str(item.entry.get("id")),
+                        "layout_label": str(item.entry.get("layout_label", "")),
+                        "image_grid_thw": [int(value) for value in item.image_grid_thw.flatten().tolist()],
+                        "vision_tokens": real_tokens,
+                        "reason": "real_visual_tokens_exceed_fixed_physical_seq_len",
+                    }
+                )
+                continue
+            eligible_pairs.append((manifest_index, item))
+        input_pairs = eligible_pairs
+
     max_items = int(args.max_items)
     if max_items > 0:
-        inputs = inputs[:max_items]
+        input_pairs = input_pairs[:max_items]
     rows: list[dict[str, Any]] = []
     timing_rows: list[dict[str, float]] = []
-    for idx, item in enumerate(inputs):
-        baseline_item = manifest["items"][idx]
+    for compare_idx, (manifest_index, item) in enumerate(input_pairs):
+        baseline_item = manifest["items"][manifest_index]
         tensor_path = tensor_dir / str(baseline_item["tensor_file"])
         if sha256_file(tensor_path) != str(baseline_item["tensor_sha256"]):
             raise RuntimeError(f"baseline tensor sha256 mismatch: {tensor_path}")
@@ -4356,7 +4399,8 @@ def compare_candidate(args: argparse.Namespace) -> None:
         baseline_argmax = int(baseline_topk["argmax"])
         rows.append(
             {
-                "index": int(idx),
+                "index": int(manifest_index),
+                "compare_index": int(compare_idx),
                 **input_row(item, merge_size=merge_size),
                 "candidate_physical_vision_tokens": int(candidate_physical_vision_tokens),
                 "diffs": diffs,
@@ -4369,7 +4413,7 @@ def compare_candidate(args: argparse.Namespace) -> None:
             }
         )
         print(
-            f"COMPARE_ITEM {idx + 1}/{len(inputs)} id={item.entry.get('id')} "
+            f"COMPARE_ITEM {compare_idx + 1}/{len(input_pairs)} manifest_index={manifest_index} id={item.entry.get('id')} "
             f"logit_max_abs={diffs['prefill_logits'].get('max_abs_diff')} argmax_match={rows[-1]['argmax_match']}",
             file=sys.stderr,
             flush=True,
@@ -4409,6 +4453,7 @@ def compare_candidate(args: argparse.Namespace) -> None:
             "torchair_msit_dump_layer": str(getattr(args, "torchair_msit_dump_layer", "") or ""),
             "torchair_msit_fusion_switch_file": str(getattr(args, "torchair_msit_fusion_switch_file", "") or ""),
             "static_visual_pad_policy": STATIC_VISUAL_PAD_POLICY,
+            "static_visual_fixed_physical_seq_len": int(args.static_visual_fixed_physical_seq_len),
             "debug_static_visual_no_padding": bool(args.debug_static_visual_no_padding),
             "debug_static_visual_min_pad_tokens": int(args.debug_static_visual_min_pad_tokens),
             "debug_static_visual_pad_to_multiple": int(args.debug_static_visual_pad_to_multiple),
@@ -4432,6 +4477,15 @@ def compare_candidate(args: argparse.Namespace) -> None:
         "summary": {
             "argmax_match_count": int(sum(bool(row["argmax_match"]) for row in rows)),
             "top8_contains_baseline_argmax_count": int(sum(bool(row["candidate_top8_contains_baseline_argmax"]) for row in rows)),
+            "bucket_filter": {
+                "fixed_physical_seq_len": int(fixed_physical_seq_len),
+                "manifest_item_count": int(len(inputs)),
+                "eligible_count_before_max_items": int(len(inputs) - len(excluded_bucket_rows)),
+                "excluded_count": int(len(excluded_bucket_rows)),
+                "selected_count": int(len(rows)),
+                "excluded_reason_counts": dict(sorted(Counter(row["reason"] for row in excluded_bucket_rows).items())),
+                "first_excluded": clean_json(excluded_bucket_rows[:16]),
+            },
             "visual_features": aggregate_diff(rows, "visual_features"),
             "image_embeds": aggregate_diff(rows, "image_embeds"),
             "prefill_logits": aggregate_diff(rows, "prefill_logits"),
@@ -4458,6 +4512,9 @@ def compare_candidate(args: argparse.Namespace) -> None:
                     "id": str(row["id"]),
                     "image_grid_thw": list(row["image_grid_thw"]),
                     "vision_tokens": int(row["vision_tokens"]),
+                    "static_visual_fixed_physical_seq_len": int(
+                        row["vision_compile"].get("static_visual_fixed_physical_seq_len", 0)
+                    ),
                     "static_visual_pad_tokens": int(row["vision_compile"].get("static_visual_pad_tokens", 0)),
                     "static_visual_promptfa_real_head_dim": int(
                         row["vision_compile"].get("static_visual_promptfa_real_head_dim", 0)
@@ -4606,6 +4663,16 @@ def parse_args() -> argparse.Namespace:
     compare_parser.add_argument("--warmup-repeats", type=int, default=0)
     compare_parser.add_argument("--max-items", type=int, default=0)
     compare_parser.add_argument("--vision-compile-backend", default="none", choices=VISION_COMPILE_BACKEND_CHOICES)
+    compare_parser.add_argument(
+        "--static-visual-fixed-physical-seq-len",
+        type=int,
+        default=0,
+        help=(
+            "If >0, force the static visual graph to this physical visual-token length by appending "
+            "dummy rows. Crops with more real visual tokens are excluded from this compare bucket, "
+            "not resized or truncated. Use 512 for the fixed-512 fullgraph bucket."
+        ),
+    )
     compare_parser.add_argument(
         "--static-visual-ln-impl",
         default="module",

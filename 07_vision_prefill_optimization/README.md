@@ -567,17 +567,19 @@ If the inline D=80 run has no nonfinites and the first bad stage is acceptably
 small, move to the full static visual candidate:
 
 ```sh
-STATIC_VISUAL_LN_IMPL=manual_fp32 PROMPTFA_PAD_HEAD_DIM_TO=80 MAX_ITEMS=4 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_static_visual_grouped_compare.sh
+MAX_ITEMS=4 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_static_visual_512_fullgraph.sh
 ```
 
-Read `torchair_grouped_qkv_mlp_fc1.json` first. The important fields are:
+Read `torchair_fullgraph_fixed512.json` first. The important fields are:
 
+- `summary.bucket_filter` for eligible/excluded/selected crop counts
 - `summary.argmax_match_count` versus `compared_count`
 - `summary.visual_features`, `summary.image_embeds`, and `summary.prefill_logits`
 - per-item `vision_compile.compiled_vs_static_eager_validation.real_rows`
 - per-item `vision_compile.first_real_output_nonfinite_count`
 - `vision_compile.static_visual_promptfa_call_head_dim` and
   `vision_compile.static_visual_promptfa_call_head_dim_fp16_32b_aligned`
+  plus `vision_compile.static_visual_fixed_physical_seq_len=512`
 
 Do not scale to 32/64 crops unless the 4-crop run has no real-row nonfinites and
 the prefill logits/argmax checks are acceptable. If it fails, report the first

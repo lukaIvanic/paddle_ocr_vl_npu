@@ -9,31 +9,36 @@ export DATASET_DIR="${DATASET_DIR:-}"
 export DEVICE="${DEVICE:-npu:0}"
 export ASCEND_RT_VISIBLE_DEVICES="${ASCEND_RT_VISIBLE_DEVICES:-1}"
 export BASELINE_DIR="${BASELINE_DIR:-${SCRIPT_DIR}/baselines/promptfa_fp16_eager_64}"
-export OUT_ROOT="${OUT_ROOT:-${SCRIPT_DIR}/outputs/static_visual_grouped_compare_$(date -u +%Y%m%dT%H%M%SZ)}"
+export OUT_ROOT="${OUT_ROOT:-${SCRIPT_DIR}/outputs/static_visual_512_fullgraph_$(date -u +%Y%m%dT%H%M%SZ)}"
 export MAX_ITEMS="${MAX_ITEMS:-4}"
-export STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN="${STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN:-0}"
-export STATIC_VISUAL_LN_IMPL="${STATIC_VISUAL_LN_IMPL:-module}"
-export PROMPTFA_PAD_HEAD_DIM_TO="${PROMPTFA_PAD_HEAD_DIM_TO:-0}"
+export REPEATS="${REPEATS:-1}"
+export WARMUP_REPEATS="${WARMUP_REPEATS:-0}"
+export STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN="${STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN:-512}"
+export STATIC_VISUAL_LN_IMPL="${STATIC_VISUAL_LN_IMPL:-manual_fp32}"
+export STATIC_VISUAL_LN_LINEAR_MODE="${STATIC_VISUAL_LN_LINEAR_MODE:-grouped_qkv_mlp_fc1}"
+export PROMPTFA_PAD_HEAD_DIM_TO="${PROMPTFA_PAD_HEAD_DIM_TO:-80}"
+export TORCHAIR_MODE="${TORCHAIR_MODE:-default}"
 
 mkdir -p "${OUT_ROOT}"
 
-echo "EXP07_STATIC_VISUAL_GROUPED PYTHON_BIN=${PYTHON_BIN}"
-echo "EXP07_STATIC_VISUAL_GROUPED MODEL=${MODEL}"
-echo "EXP07_STATIC_VISUAL_GROUPED BASELINE_DIR=${BASELINE_DIR}"
-echo "EXP07_STATIC_VISUAL_GROUPED DATASET_DIR=${DATASET_DIR:-<manifest default>}"
-echo "EXP07_STATIC_VISUAL_GROUPED DEVICE=${DEVICE} ASCEND_RT_VISIBLE_DEVICES=${ASCEND_RT_VISIBLE_DEVICES}"
-echo "EXP07_STATIC_VISUAL_GROUPED MAX_ITEMS=${MAX_ITEMS}"
-echo "EXP07_STATIC_VISUAL_GROUPED STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=${STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN}"
-echo "EXP07_STATIC_VISUAL_GROUPED STATIC_VISUAL_LN_IMPL=${STATIC_VISUAL_LN_IMPL}"
-echo "EXP07_STATIC_VISUAL_GROUPED PROMPTFA_PAD_HEAD_DIM_TO=${PROMPTFA_PAD_HEAD_DIM_TO}"
-echo "EXP07_STATIC_VISUAL_GROUPED OUT_ROOT=${OUT_ROOT}"
+echo "EXP07_STATIC_VISUAL_512 PYTHON_BIN=${PYTHON_BIN}"
+echo "EXP07_STATIC_VISUAL_512 MODEL=${MODEL}"
+echo "EXP07_STATIC_VISUAL_512 BASELINE_DIR=${BASELINE_DIR}"
+echo "EXP07_STATIC_VISUAL_512 DATASET_DIR=${DATASET_DIR:-<manifest default>}"
+echo "EXP07_STATIC_VISUAL_512 DEVICE=${DEVICE} ASCEND_RT_VISIBLE_DEVICES=${ASCEND_RT_VISIBLE_DEVICES}"
+echo "EXP07_STATIC_VISUAL_512 MAX_ITEMS=${MAX_ITEMS} REPEATS=${REPEATS} WARMUP_REPEATS=${WARMUP_REPEATS}"
+echo "EXP07_STATIC_VISUAL_512 STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=${STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN}"
+echo "EXP07_STATIC_VISUAL_512 STATIC_VISUAL_LN_IMPL=${STATIC_VISUAL_LN_IMPL}"
+echo "EXP07_STATIC_VISUAL_512 STATIC_VISUAL_LN_LINEAR_MODE=${STATIC_VISUAL_LN_LINEAR_MODE}"
+echo "EXP07_STATIC_VISUAL_512 PROMPTFA_PAD_HEAD_DIM_TO=${PROMPTFA_PAD_HEAD_DIM_TO}"
+echo "EXP07_STATIC_VISUAL_512 TORCHAIR_MODE=${TORCHAIR_MODE}"
+echo "EXP07_STATIC_VISUAL_512 OUT_ROOT=${OUT_ROOT}"
 
 run_compare() {
   local name="$1"
   local backend="$2"
-  local ln_linear_mode="$3"
   local output_json="${OUT_ROOT}/${name}.json"
-  echo "EXP07_STATIC_VISUAL_GROUPED RUN name=${name} backend=${backend} mode=${ln_linear_mode} output=${output_json}"
+  echo "EXP07_STATIC_VISUAL_512 RUN name=${name} backend=${backend} output=${output_json}"
   "${PYTHON_BIN}" "${SCRIPT_DIR}/vision_prefill_bench.py" compare \
     --model "${MODEL}" \
     --dataset-dir "${DATASET_DIR}" \
@@ -47,20 +52,19 @@ run_compare() {
     --vision-compile-backend "${backend}" \
     --static-visual-fixed-physical-seq-len "${STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN}" \
     --static-visual-ln-impl "${STATIC_VISUAL_LN_IMPL}" \
-    --static-visual-ln-linear-mode "${ln_linear_mode}" \
+    --static-visual-ln-linear-mode "${STATIC_VISUAL_LN_LINEAR_MODE}" \
     --static-visual-promptfa-pad-head-dim-to "${PROMPTFA_PAD_HEAD_DIM_TO}" \
-    --torchair-mode default \
+    --torchair-mode "${TORCHAIR_MODE}" \
     --validate-compiled-against-static-eager \
     --candidate-name "${name}" \
     --max-items "${MAX_ITEMS}" \
-    --repeats 1 \
-    --warmup-repeats 0 \
+    --repeats "${REPEATS}" \
+    --warmup-repeats "${WARMUP_REPEATS}" \
     --output "${output_json}"
 }
 
-run_compare eager_grouped_qkv_mlp_fc1 none grouped_qkv_mlp_fc1
-run_compare torchair_grouped_qkv torchair grouped_qkv
-run_compare torchair_grouped_qkv_mlp_fc1 torchair grouped_qkv_mlp_fc1
+run_compare static_eager_fixed512 none
+run_compare torchair_fullgraph_fixed512 torchair
 
 "${PYTHON_BIN}" - "${OUT_ROOT}" <<'PY'
 import json
@@ -68,48 +72,54 @@ import sys
 from pathlib import Path
 
 root = Path(sys.argv[1])
-print("EXP07_STATIC_VISUAL_GROUPED SUMMARY")
+print("EXP07_STATIC_VISUAL_512 SUMMARY")
 for path in sorted(root.glob("*.json")):
     data = json.loads(path.read_text())
     candidate = data.get("candidate", {})
     summary = data.get("summary", {})
+    bucket = summary.get("bucket_filter", {})
+    eff = summary.get("visual_tower_effective_tokens_per_s", {})
+    phys = summary.get("visual_tower_physical_tokens_per_s", {})
     print(
         f"{path.name}: "
         f"backend={candidate.get('vision_compile_backend')} "
         f"fixedS={candidate.get('static_visual_fixed_physical_seq_len')} "
         f"ln_impl={candidate.get('static_visual_ln_impl')} "
-        f"mode={candidate.get('static_visual_ln_linear_mode')} "
+        f"linear_mode={candidate.get('static_visual_ln_linear_mode')} "
         f"promptfa_padD={candidate.get('static_visual_promptfa_pad_head_dim_to')} "
         f"argmax={summary.get('argmax_match_count')}/{data.get('compared_count')} "
         f"visual_max={summary.get('visual_features', {}).get('max_abs_diff', {}).get('max')} "
         f"image_max={summary.get('image_embeds', {}).get('max_abs_diff', {}).get('max')} "
         f"logits_max={summary.get('prefill_logits', {}).get('max_abs_diff', {}).get('max')} "
-        f"visual_tok_s={summary.get('visual_tower_effective_tokens_per_s')}"
+        f"effective_tok_s={eff.get('tokens_per_s')} "
+        f"physical_tok_s={phys.get('tokens_per_s')}"
     )
-    bucket = summary.get("bucket_filter", {})
     print(
         "  BUCKET "
-        f"fixedS={bucket.get('fixed_physical_seq_len')} "
         f"manifest={bucket.get('manifest_item_count')} "
         f"eligible={bucket.get('eligible_count_before_max_items')} "
         f"excluded={bucket.get('excluded_count')} "
-        f"selected={bucket.get('selected_count')}"
+        f"selected={bucket.get('selected_count')} "
+        f"reasons={bucket.get('excluded_reason_counts')}"
     )
-    for row in data.get("items", [])[:4]:
+    for row in data.get("items", [])[:8]:
         validation = row.get("vision_compile", {}).get("compiled_vs_static_eager_validation", {})
         real_rows = validation.get("real_rows", {})
+        timing = row.get("timing_s", {})
         print(
             "  ITEM "
             f"manifest_idx={row.get('index')} compare_idx={row.get('compare_index')} id={row.get('id')} "
+            f"real_tok={row.get('vision_tokens')} physical_tok={row.get('candidate_physical_vision_tokens')} "
             f"argmax={row.get('argmax_match')} "
             f"visual_max={row.get('diffs', {}).get('visual_features', {}).get('max_abs_diff')} "
             f"logits_max={row.get('diffs', {}).get('prefill_logits', {}).get('max_abs_diff')} "
             f"compiled_vs_static_eager_real_max={real_rows.get('max_abs_diff')} "
             f"compiled_nonfinite={row.get('vision_compile', {}).get('first_real_output_nonfinite_count')} "
             f"callD={row.get('vision_compile', {}).get('static_visual_promptfa_call_head_dim')} "
-            f"callD_aligned={row.get('vision_compile', {}).get('static_visual_promptfa_call_head_dim_fp16_32b_aligned')}"
+            f"aligned={row.get('vision_compile', {}).get('static_visual_promptfa_call_head_dim_fp16_32b_aligned')} "
+            f"visual_tower_s={timing.get('visual_tower_e2e_s', {}).get('avg')}"
         )
 PY
 
-echo "EXP07_STATIC_VISUAL_GROUPED OUTPUT_TREE"
+echo "EXP07_STATIC_VISUAL_512 OUTPUT_TREE"
 find "${OUT_ROOT}" -maxdepth 2 -type f | sort
