@@ -492,6 +492,7 @@ Default settings match the current suspected path:
 
 - real baseline crop `ITEM_INDEX=0`
 - `ATTENTION=prompt_flash_attention`
+- `LN_IMPL=module`
 - `LN_LINEAR_MODE=grouped_qkv_mlp_fc1`
 - `PRE_PROMPTFA_BRIDGE=none`
 
@@ -518,12 +519,24 @@ Useful controls, in order:
 # FX/Python semantics control. Should match eager if the GE/CANN graph is the bug.
 TORCHAIR_RUN_EAGERLY=1 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_inline_single_layer_repro.sh
 
+# Preserve LayerNorm semantics but avoid fused LayerNormV3.
+LN_IMPL=manual_fp32 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_inline_single_layer_repro.sh
+
+# Check whether functional LayerNorm lowers differently from module LayerNorm.
+LN_IMPL=functional ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_inline_single_layer_repro.sh
+
 # Manual attention control. If this passes while PromptFA fails, compiled PromptFA is isolated.
 ATTENTION=manual ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_inline_single_layer_repro.sh
 
 # Real activation barrier before PromptFA. If this fixes PromptFA, the issue is likely input layout.
 PRE_PROMPTFA_BRIDGE=transpose_roundtrip ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_inline_single_layer_repro.sh
 ```
+
+The Qwen3-Embedding reference project uses RMSNorm, not LayerNorm. Treat that as
+a clue that fused `LayerNormV3` may be the bad GE producer; do not treat RMSNorm
+as a valid PaddleOCR-VL replacement. `LN_IMPL=manual_fp32` is the relevant test
+because it keeps LayerNorm mean/variance/bias semantics while avoiding the fused
+LayerNorm operator.
 
 ## CUDA Smoke
 

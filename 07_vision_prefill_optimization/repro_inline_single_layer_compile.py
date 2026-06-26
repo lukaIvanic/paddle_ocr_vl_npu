@@ -416,6 +416,7 @@ class InlineSingleVisionLayer(torch.nn.Module):
         layer_idx: int,
         attention_impl: str,
         promptfa_sparse_mode: int,
+        ln_impl: str,
         ln_linear_mode: str,
         pre_promptfa_bridge: str,
         no_padding: bool,
@@ -423,6 +424,8 @@ class InlineSingleVisionLayer(torch.nn.Module):
         super().__init__()
         if attention_impl not in ("prompt_flash_attention", "manual"):
             raise ValueError(f"unsupported attention_impl={attention_impl!r}")
+        if ln_impl not in ("module", "functional", "manual_fp32", "manual_fp16"):
+            raise ValueError(f"unsupported ln_impl={ln_impl!r}")
         if ln_linear_mode not in ("normal", "grouped_qkv", "grouped_qkv_mlp_fc1"):
             raise ValueError(f"unsupported ln_linear_mode={ln_linear_mode!r}")
         if pre_promptfa_bridge not in ("none", "contiguous", "clone", "transpose_roundtrip"):
@@ -431,6 +434,7 @@ class InlineSingleVisionLayer(torch.nn.Module):
         self.layer_idx = int(layer_idx)
         self.attention_impl = str(attention_impl)
         self.promptfa_sparse_mode = int(promptfa_sparse_mode)
+        self.ln_impl = str(ln_impl)
         self.ln_linear_mode = str(ln_linear_mode)
         self.pre_promptfa_bridge = str(pre_promptfa_bridge)
         self.real_seq_len = int(image_grid_thw.prod().item())
@@ -460,6 +464,34 @@ class InlineSingleVisionLayer(torch.nn.Module):
             build_static_pad_attention_mask(self.real_seq_len, self.pad_tokens, device),
             persistent=False,
         )
+
+    def layer_norm(self, layer_norm: torch.nn.LayerNorm, hidden_states: torch.Tensor) -> torch.Tensor:
+        if self.ln_impl == "module":
+            return layer_norm(hidden_states)
+        weight = layer_norm.weight
+        bias = layer_norm.bias
+        eps = float(layer_norm.eps)
+        if self.ln_impl == "functional":
+            return F.layer_norm(hidden_states, (hidden_states.shape[-1],), weight, bias, eps)
+        if self.ln_impl == "manual_fp32":
+            x = hidden_states.float()
+            mean = x.mean(dim=-1, keepdim=True)
+            centered = x - mean
+            var = centered.pow(2).mean(dim=-1, keepdim=True)
+            y = centered * torch.rsqrt(var + eps)
+            y = y.to(dtype=hidden_states.dtype)
+        elif self.ln_impl == "manual_fp16":
+            mean = hidden_states.mean(dim=-1, keepdim=True)
+            centered = hidden_states - mean
+            var = centered.pow(2).mean(dim=-1, keepdim=True)
+            y = centered * torch.rsqrt(var + eps)
+        else:
+            raise RuntimeError(f"unreachable ln_impl={self.ln_impl!r}")
+        if weight is not None:
+            y = y * weight
+        if bias is not None:
+            y = y + bias
+        return y
 
     @staticmethod
     def grouped_linear(hidden_states: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor | None) -> torch.Tensor:
@@ -563,7 +595,7 @@ class InlineSingleVisionLayer(torch.nn.Module):
         else:
             patch_pad = patch_flat
         patch_pos = patch_pad + self.abs_pos_embed_const
-        ln1 = layer.layer_norm1(patch_pos)
+        ln1 = self.layer_norm(layer.layer_norm1, patch_pos)
 
         seq_len = ln1.shape[0]
         qkv = self.qkv_projection(attention, ln1)
@@ -583,7 +615,7 @@ class InlineSingleVisionLayer(torch.nn.Module):
         attn_kernel_out = attn_kernel_bnsd.transpose(1, 2).contiguous().view(seq_len, -1)
         attn_out_proj = attention.out_proj(attn_kernel_out)
         attn_residual = patch_pos + attn_out_proj
-        ln2 = layer.layer_norm2(attn_residual)
+        ln2 = self.layer_norm(layer.layer_norm2, attn_residual)
         if self.ln_linear_mode == "grouped_qkv_mlp_fc1":
             mlp_fc1 = self.grouped_linear(ln2, mlp.fc1.weight, mlp.fc1.bias)
         else:
@@ -649,6 +681,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--layer-index", type=int, default=0)
     parser.add_argument("--attention", default="prompt_flash_attention", choices=("prompt_flash_attention", "manual"))
     parser.add_argument("--promptfa-sparse-mode", type=int, default=1, choices=(0, 1))
+    parser.add_argument("--ln-impl", default="module", choices=("module", "functional", "manual_fp32", "manual_fp16"))
     parser.add_argument("--ln-linear-mode", default="grouped_qkv_mlp_fc1", choices=("normal", "grouped_qkv", "grouped_qkv_mlp_fc1"))
     parser.add_argument("--pre-promptfa-bridge", default="none", choices=("none", "contiguous", "clone", "transpose_roundtrip"))
     parser.add_argument("--no-padding", action="store_true")
@@ -683,6 +716,7 @@ def main() -> None:
         layer_idx=int(args.layer_index),
         attention_impl=str(args.attention),
         promptfa_sparse_mode=int(args.promptfa_sparse_mode),
+        ln_impl=str(args.ln_impl),
         ln_linear_mode=str(args.ln_linear_mode),
         pre_promptfa_bridge=str(args.pre_promptfa_bridge),
         no_padding=bool(args.no_padding),
@@ -762,6 +796,7 @@ def main() -> None:
             "layer_index": int(args.layer_index),
             "attention": str(args.attention),
             "promptfa_sparse_mode": int(args.promptfa_sparse_mode),
+            "ln_impl": str(args.ln_impl),
             "ln_linear_mode": str(args.ln_linear_mode),
             "pre_promptfa_bridge": str(args.pre_promptfa_bridge),
             "no_padding": bool(args.no_padding),
@@ -811,7 +846,7 @@ def main() -> None:
     print(f"output={output_path}")
     print(
         "config="
-        f"attention={args.attention} ln_linear_mode={args.ln_linear_mode} "
+        f"attention={args.attention} ln_impl={args.ln_impl} ln_linear_mode={args.ln_linear_mode} "
         f"pre_promptfa_bridge={args.pre_promptfa_bridge} "
         f"physical_seq_len={module.physical_seq_len} real_seq_len={module.real_seq_len}"
     )
