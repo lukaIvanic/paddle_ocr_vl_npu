@@ -441,6 +441,7 @@ class InlineSingleVisionLayer(torch.nn.Module):
             ).contiguous()
         self.register_buffer("abs_pos_embed_const", abs_pos, persistent=False)
         self.register_buffer("rope_cos_const", rope_cos, persistent=False)
+        self.register_buffer("rope_sin_const", rope_sin, persistent=False)
         self.register_buffer(
             "pad_attention_mask",
             build_static_pad_attention_mask(self.real_seq_len, self.pad_tokens, device),
