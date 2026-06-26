@@ -415,6 +415,110 @@ def nonfinite_locations(tensor: torch.Tensor, *, limit: int = 8) -> list[dict[st
     return out
 
 
+def nonfinite_mask_compare(lhs: torch.Tensor, rhs: torch.Tensor) -> dict[str, Any]:
+    lhs_f = lhs.detach().float().cpu()
+    rhs_f = rhs.detach().float().cpu()
+    if tuple(lhs_f.shape) != tuple(rhs_f.shape):
+        return {
+            "shape_match": False,
+            "lhs_shape": [int(dim) for dim in lhs_f.shape],
+            "rhs_shape": [int(dim) for dim in rhs_f.shape],
+        }
+    lhs_nonfinite = ~torch.isfinite(lhs_f)
+    rhs_nonfinite = ~torch.isfinite(rhs_f)
+    mismatch = lhs_nonfinite ^ rhs_nonfinite
+    both_nonfinite = lhs_nonfinite & rhs_nonfinite
+    lhs_nan = torch.isnan(lhs_f)
+    rhs_nan = torch.isnan(rhs_f)
+    nan_mismatch = lhs_nan ^ rhs_nan
+    return {
+        "shape_match": True,
+        "shape": [int(dim) for dim in lhs_f.shape],
+        "lhs_nonfinite_count": int(lhs_nonfinite.sum().item()),
+        "rhs_nonfinite_count": int(rhs_nonfinite.sum().item()),
+        "both_nonfinite_count": int(both_nonfinite.sum().item()),
+        "nonfinite_mask_match": bool(not mismatch.any().item()),
+        "nonfinite_mask_mismatch_count": int(mismatch.sum().item()),
+        "nan_mask_match": bool(not nan_mismatch.any().item()),
+        "nan_mask_mismatch_count": int(nan_mismatch.sum().item()),
+        "lhs_nan_count": int(lhs_nan.sum().item()),
+        "rhs_nan_count": int(rhs_nan.sum().item()),
+    }
+
+
+def _ranges_from_bool_mask(mask_1d: torch.Tensor, *, limit: int = 12) -> list[list[int]]:
+    indices = mask_1d.nonzero(as_tuple=False).flatten().tolist()
+    if not indices:
+        return []
+    ranges: list[list[int]] = []
+    start = prev = int(indices[0])
+    for raw_idx in indices[1:]:
+        idx = int(raw_idx)
+        if idx == prev + 1:
+            prev = idx
+            continue
+        ranges.append([start, prev])
+        if len(ranges) >= int(limit):
+            return ranges
+        start = prev = idx
+    ranges.append([start, prev])
+    return ranges[: int(limit)]
+
+
+def nonfinite_pattern_summary(
+    tensor: torch.Tensor,
+    *,
+    real_seq_len: int,
+    physical_seq_len: int,
+    limit_locations: int = 8,
+) -> dict[str, Any]:
+    tensor_f = tensor.detach().float().cpu()
+    nonfinite = ~torch.isfinite(tensor_f)
+    out: dict[str, Any] = {
+        "shape": [int(dim) for dim in tensor_f.shape],
+        "total_nonfinite_count": int(nonfinite.sum().item()),
+        "nan_count": int(torch.isnan(tensor_f).sum().item()),
+        "posinf_count": int(torch.isposinf(tensor_f).sum().item()),
+        "neginf_count": int(torch.isneginf(tensor_f).sum().item()),
+        "layout_assumption": "BNSD" if tensor_f.ndim == 4 else "unknown",
+    }
+    if tensor_f.ndim != 4:
+        out["locations"] = nonfinite_locations(tensor_f, limit=int(limit_locations))
+        return out
+
+    _batch, num_heads, seq_len, _head_dim = tensor_f.shape
+    real = min(int(real_seq_len), int(seq_len))
+    out["real_nonfinite_count"] = int(nonfinite[:, :, :real, :].sum().item())
+    out["pad_nonfinite_count"] = int(nonfinite[:, :, real:, :].sum().item())
+
+    per_head: list[dict[str, Any]] = []
+    for head_idx in range(int(num_heads)):
+        head_mask = nonfinite[:, head_idx, :, :]
+        count = int(head_mask.sum().item())
+        if count == 0:
+            continue
+        nz = head_mask.nonzero(as_tuple=False)
+        seq_mask = head_mask.any(dim=(0, 2))
+        dim_mask = head_mask.any(dim=(0, 1))
+        per_head.append(
+            {
+                "head": int(head_idx),
+                "count": count,
+                "real_count": int(head_mask[:, :real, :].sum().item()),
+                "pad_count": int(head_mask[:, real:, :].sum().item()),
+                "seq_min": int(nz[:, 1].min().item()),
+                "seq_max": int(nz[:, 1].max().item()),
+                "dim_min": int(nz[:, 2].min().item()),
+                "dim_max": int(nz[:, 2].max().item()),
+                "seq_ranges_first": _ranges_from_bool_mask(seq_mask),
+                "dim_ranges_first": _ranges_from_bool_mask(dim_mask),
+            }
+        )
+    out["per_head"] = sorted(per_head, key=lambda row: -int(row["count"]))
+    out["locations"] = nonfinite_locations(tensor_f, limit=int(limit_locations))
+    return out
+
+
 def per_head_diff_summary(lhs: torch.Tensor, rhs: torch.Tensor) -> list[dict[str, Any]]:
     lhs_f = lhs.detach().float().cpu()
     rhs_f = rhs.detach().float().cpu()
@@ -610,6 +714,7 @@ def main() -> None:
     }
     candidate_vs_manual = compare_attention_output(candidate_second, manual_ref, **compare_kwargs)
     candidate_stability = compare_attention_output(candidate_first, candidate_second, **compare_kwargs)
+    candidate_stability_nonfinite_mask = nonfinite_mask_compare(candidate_first, candidate_second)
     if eager_promptfa_ref is not None:
         candidate_vs_eager_promptfa = compare_attention_output(candidate_second, eager_promptfa_ref, **compare_kwargs)
         eager_promptfa_vs_manual = compare_attention_output(eager_promptfa_ref, manual_ref, **compare_kwargs)
@@ -670,6 +775,10 @@ def main() -> None:
             "candidate_vs_manual_pad_nonfinite": (candidate_vs_manual.get("row_split") or {}).get("pad_rows", {}).get("lhs_nonfinite_count"),
             "candidate_first_vs_second_allclose_5e_2": bool(candidate_stability["overall"].get("allclose_atol_5e_2_rtol_5e_2")),
             "candidate_first_vs_second_max_abs": candidate_stability["overall"].get("max_abs_diff"),
+            "candidate_first_vs_second_nonfinite_mask_match": candidate_stability_nonfinite_mask.get("nonfinite_mask_match"),
+            "candidate_first_vs_second_nonfinite_mask_mismatch_count": candidate_stability_nonfinite_mask.get("nonfinite_mask_mismatch_count"),
+            "candidate_first_vs_second_nan_mask_match": candidate_stability_nonfinite_mask.get("nan_mask_match"),
+            "candidate_first_vs_second_nan_mask_mismatch_count": candidate_stability_nonfinite_mask.get("nan_mask_mismatch_count"),
             "candidate_vs_eager_promptfa_max_abs": None
             if candidate_vs_eager_promptfa is None
             else candidate_vs_eager_promptfa["overall"].get("max_abs_diff"),
@@ -690,9 +799,12 @@ def main() -> None:
         "candidate_vs_eager_promptfa": candidate_vs_eager_promptfa,
         "eager_promptfa_vs_manual": eager_promptfa_vs_manual,
         "candidate_first_vs_second": candidate_stability,
+        "candidate_first_vs_second_nonfinite_mask": candidate_stability_nonfinite_mask,
         "top_diff_locations_candidate_vs_manual": top_diff_locations(candidate_second, manual_ref),
         "nonfinite_locations_candidate": nonfinite_locations(candidate_second),
         "nonfinite_locations_manual_reference": nonfinite_locations(manual_ref),
+        "nonfinite_pattern_candidate_first": nonfinite_pattern_summary(candidate_first, **compare_kwargs),
+        "nonfinite_pattern_candidate_second": nonfinite_pattern_summary(candidate_second, **compare_kwargs),
         "per_head_candidate_vs_manual": per_head_diff_summary(candidate_second, manual_ref),
     }
 
@@ -725,6 +837,8 @@ def main() -> None:
         print(f"eager_promptfa_vs_manual_real_rows={promptfa_row_split.get('real_rows')}")
     print(f"top_diff_locations_candidate_vs_manual={output['top_diff_locations_candidate_vs_manual']}")
     print(f"nonfinite_locations_candidate={output['nonfinite_locations_candidate']}")
+    print(f"candidate_first_vs_second_nonfinite_mask={output['candidate_first_vs_second_nonfinite_mask']}")
+    print(f"nonfinite_pattern_candidate_second={output['nonfinite_pattern_candidate_second']}")
     print(f"per_head_candidate_vs_manual_top4={output['per_head_candidate_vs_manual'][:4]}")
 
 

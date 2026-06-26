@@ -612,6 +612,10 @@ ATTENTION=prompt_flash_attention INPUT_BOUNDARY=snhd_rope_done MASK_KIND=current
 ATTENTION=prompt_flash_attention INPUT_BOUNDARY=snhd_pre_rope MASK_KIND=current MASK_RANK=4 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
 ATTENTION=prompt_flash_attention INPUT_BOUNDARY=qkv_flat_pre_rope MASK_KIND=current MASK_RANK=4 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
 
+# If a boundary produces NaN, rerun that exact case with the 310P-supported
+# TorchAir mode. Compare the nonfinite mask, not ordinary allclose.
+ATTENTION=prompt_flash_attention INPUT_BOUNDARY=snhd_pre_rope NO_PADDING=1 MASK_KIND=none TORCHAIR_MODE=max-autotune ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
+
 # Mask-rank contract checks.
 ATTENTION=prompt_flash_attention MASK_KIND=current MASK_RANK=2 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
 ATTENTION=prompt_flash_attention MASK_KIND=current MASK_RANK=3 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
@@ -626,6 +630,14 @@ the same process and reports `candidate_vs_eager_promptfa` and
 `eager_promptfa_vs_manual`, so GE/CANN drift can be separated from ordinary
 PromptFA-vs-manual numerical differences. It also reports top diff locations and
 per-head diff summaries, plus explicit nonfinite locations.
+
+When NaNs are present, `candidate_first_vs_second_allclose_5e_2` is expected to
+be false because `NaN != NaN`. Use
+`candidate_first_vs_second_nonfinite_mask.nonfinite_mask_match` and
+`candidate_first_vs_second_nonfinite_mask.nan_mask_match` to decide whether the
+compiled graph is structurally deterministic. Use
+`nonfinite_pattern_candidate_second.per_head` to check whether NaNs are isolated
+to a head, row region, sequence range, or head-dimension range.
 
 ## CUDA Smoke
 
