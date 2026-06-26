@@ -220,6 +220,19 @@ not decode. `MAX_ITEMS=32` keeps the selected crop set identical for B=1,2,4,8. 
 `TORCHAIR_PHYSICAL_SPEEDUP` table. If `MAX_ITEMS` is changed, keep it divisible by the largest batch
 size or explicitly report that different batch sizes used different selected item counts.
 
+For NPU profiler bottleneck analysis of the compiled transformer-layer boundary, run:
+
+```sh
+PROFILE_BATCH_SIZES="1 2" PROFILE_METRICS="pipe memory" PROFILE_ACTIVE_STEPS=5 STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=1024 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_static_visual_batched_encoder_profile.sh
+```
+
+The profiler scope is only `encoder_forward(prefix_hidden_states, rope_cos, rope_sin,
+attention_mask)`. Prefix construction, TorchAir cache compile/first call, projector, text prefill,
+and decode are outside the profiler window. One `profiler.step()` equals one compiled encoder batch
+forward. Inspect the printed `TOP_KERNEL_TYPES`, `TOP_SHAPE_FORMATS`, and `TOP_SUSPECTS`, plus the
+per-run `parsed_profile_summary.md` files. Start with `pipe` and `memory`; try `l2` or
+`memory_access` only as follow-up because those metrics can be unsupported or noisy on this stack.
+
 ## Anti-Cheat Ledger
 
 Add short notes here whenever we catch a mistake that could make future results misleading. Phrase

@@ -643,6 +643,26 @@ divisible by 8, so every batch size uses the same crop set. The main field is
 `TORCHAIR_PHYSICAL_SPEEDUP` section reports each TorchAir batch size relative
 to B=1.
 
+To profile the compiled transformer-layer boundary, run:
+
+```sh
+PROFILE_BATCH_SIZES="1 2" PROFILE_METRICS="pipe memory" PROFILE_ACTIVE_STEPS=5 STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=1024 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_static_visual_batched_encoder_profile.sh
+```
+
+This captures only repeated calls to the already-compiled encoder graph:
+
+```text
+encoder_forward(prefix_hidden_states, rope_cos, rope_sin, attention_mask)
+```
+
+Prefix construction, TorchAir cache compile/first-call behavior, projector,
+text prefill, and decode are outside the profiler window. Each
+`profiler.step()` corresponds to one encoder batch forward. The runner writes
+raw `ASCEND_PROFILER_OUTPUT` directories plus `parsed_profile_summary.json` and
+`parsed_profile_summary.md`. Read `TOP_KERNEL_TYPES`, `TOP_SHAPE_FORMATS`,
+`TOP_SUSPECTS`, step trace totals, and
+`encoder_physical_tokens_per_s_forward_sync`.
+
 ## Attention-Only Repro
 
 Use `repro_attention_only_compile.py` when the full inline layer has already
