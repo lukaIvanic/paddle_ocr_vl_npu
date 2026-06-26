@@ -406,6 +406,55 @@ def diff_stats(lhs: torch.Tensor, rhs: torch.Tensor) -> dict[str, Any]:
     return out
 
 
+def _slice_dim(tensor: torch.Tensor, dim: int, start: int, end: int) -> torch.Tensor:
+    slices: list[slice] = [slice(None)] * tensor.ndim
+    slices[int(dim)] = slice(int(start), int(end))
+    return tensor[tuple(slices)]
+
+
+def _sequence_axis(tensor: torch.Tensor, *, real_seq_len: int, physical_seq_len: int) -> tuple[int, int] | None:
+    shape = tuple(int(dim) for dim in tensor.shape)
+    candidates = {int(real_seq_len), int(physical_seq_len)}
+    if tensor.ndim >= 3 and shape[2] in candidates:
+        return 2, shape[2]
+    if tensor.ndim >= 1 and shape[0] in candidates:
+        return 0, shape[0]
+    return None
+
+
+def row_split_diff_stats(
+    lhs: torch.Tensor,
+    rhs: torch.Tensor,
+    *,
+    real_seq_len: int,
+    physical_seq_len: int,
+) -> dict[str, Any] | None:
+    if tuple(lhs.shape) != tuple(rhs.shape):
+        return None
+    axis_and_len = _sequence_axis(lhs, real_seq_len=int(real_seq_len), physical_seq_len=int(physical_seq_len))
+    if axis_and_len is None:
+        return None
+    axis, sequence_len = axis_and_len
+    real_count = min(int(real_seq_len), int(sequence_len))
+    pad_count = max(0, int(sequence_len) - real_count)
+    out: dict[str, Any] = {
+        "sequence_axis": int(axis),
+        "sequence_len": int(sequence_len),
+        "real_row_count": int(real_count),
+        "pad_row_count": int(pad_count),
+        "real_rows": diff_stats(
+            _slice_dim(lhs, axis, 0, real_count),
+            _slice_dim(rhs, axis, 0, real_count),
+        ),
+    }
+    if pad_count > 0:
+        out["pad_rows"] = diff_stats(
+            _slice_dim(lhs, axis, real_count, sequence_len),
+            _slice_dim(rhs, axis, real_count, sequence_len),
+        )
+    return out
+
+
 class InlineSingleVisionLayer(torch.nn.Module):
     def __init__(
         self,
@@ -671,16 +720,29 @@ class InlineSingleVisionLayer(torch.nn.Module):
         )
 
 
-def compare_outputs(lhs: tuple[torch.Tensor, ...], rhs: tuple[torch.Tensor, ...]) -> list[dict[str, Any]]:
+def compare_outputs(
+    lhs: tuple[torch.Tensor, ...],
+    rhs: tuple[torch.Tensor, ...],
+    *,
+    real_seq_len: int,
+    physical_seq_len: int,
+) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for name, lhs_tensor, rhs_tensor in zip(STAGE_NAMES, lhs, rhs):
         diff = diff_stats(lhs_tensor.detach().cpu(), rhs_tensor.detach().cpu())
+        row_split = row_split_diff_stats(
+            lhs_tensor.detach().cpu(),
+            rhs_tensor.detach().cpu(),
+            real_seq_len=int(real_seq_len),
+            physical_seq_len=int(physical_seq_len),
+        )
         rows.append(
             {
                 "stage": name,
                 "matches_5e_2": bool(diff.get("allclose_atol_5e_2_rtol_5e_2")),
                 "matches_1e_0": bool(diff.get("allclose_atol_1e_0_rtol_1e_0")),
                 "diff": diff,
+                "row_split": row_split,
                 "lhs_summary": tensor_summary(lhs_tensor.detach().cpu()),
                 "rhs_summary": tensor_summary(rhs_tensor.detach().cpu()),
             }
@@ -693,6 +755,54 @@ def first_bad_stage(rows: list[dict[str, Any]]) -> dict[str, Any] | None:
         if not row["matches_5e_2"]:
             return row
     return None
+
+
+def first_bad_stage_for_row_scope(rows: list[dict[str, Any]], scope: str) -> dict[str, Any] | None:
+    for row in rows:
+        row_split = row.get("row_split")
+        if not isinstance(row_split, dict):
+            continue
+        split_diff = row_split.get(scope)
+        if not isinstance(split_diff, dict):
+            continue
+        if not bool(split_diff.get("allclose_atol_5e_2_rtol_5e_2")):
+            return {
+                "stage": row["stage"],
+                "sequence_axis": row_split.get("sequence_axis"),
+                "sequence_len": row_split.get("sequence_len"),
+                "row_count": row_split.get("real_row_count" if scope == "real_rows" else "pad_row_count"),
+                "diff": split_diff,
+            }
+    return None
+
+
+def summarize_bad_stage(row: dict[str, Any] | None) -> dict[str, Any] | None:
+    if row is None:
+        return None
+    diff = row.get("diff", {})
+    return {
+        "stage": row.get("stage"),
+        "max_abs_diff": diff.get("max_abs_diff"),
+        "mean_abs_diff": diff.get("mean_abs_diff"),
+        "compiled_nonfinite_count": diff.get("lhs_nonfinite_count"),
+        "eager_nonfinite_count": diff.get("rhs_nonfinite_count"),
+    }
+
+
+def summarize_bad_row_scope(row: dict[str, Any] | None) -> dict[str, Any] | None:
+    if row is None:
+        return None
+    diff = row.get("diff", {})
+    return {
+        "stage": row.get("stage"),
+        "sequence_axis": row.get("sequence_axis"),
+        "sequence_len": row.get("sequence_len"),
+        "row_count": row.get("row_count"),
+        "max_abs_diff": diff.get("max_abs_diff"),
+        "mean_abs_diff": diff.get("mean_abs_diff"),
+        "compiled_nonfinite_count": diff.get("lhs_nonfinite_count"),
+        "eager_nonfinite_count": diff.get("rhs_nonfinite_count"),
+    }
 
 
 def parse_args() -> argparse.Namespace:
@@ -804,10 +914,16 @@ def main() -> None:
     finally:
         torch._dynamo.config.capture_scalar_outputs = old_capture_scalar_outputs
 
-    rows = compare_outputs(compiled_second, eager_before)
-    eager_stability_rows = compare_outputs(eager_after, eager_before)
-    compiled_stability_rows = compare_outputs(compiled_first, compiled_second)
+    compare_kwargs = {
+        "real_seq_len": int(module.real_seq_len),
+        "physical_seq_len": int(module.physical_seq_len),
+    }
+    rows = compare_outputs(compiled_second, eager_before, **compare_kwargs)
+    eager_stability_rows = compare_outputs(eager_after, eager_before, **compare_kwargs)
+    compiled_stability_rows = compare_outputs(compiled_first, compiled_second, **compare_kwargs)
     first_bad = first_bad_stage(rows)
+    first_bad_real = first_bad_stage_for_row_scope(rows, "real_rows")
+    first_bad_pad = first_bad_stage_for_row_scope(rows, "pad_rows")
     attention_module = model.visual.vision_model.encoder.layers[int(args.layer_index)].self_attn
     output = {
         "schema_version": 1,
@@ -846,15 +962,9 @@ def main() -> None:
         "summary": {
             "compiled_second_matches_eager_count": int(sum(bool(row["matches_5e_2"]) for row in rows)),
             "compiled_second_matches_eager_all": bool(all(bool(row["matches_5e_2"]) for row in rows)),
-            "first_bad_stage": None
-            if first_bad is None
-            else {
-                "stage": first_bad["stage"],
-                "max_abs_diff": first_bad["diff"].get("max_abs_diff"),
-                "mean_abs_diff": first_bad["diff"].get("mean_abs_diff"),
-                "compiled_nonfinite_count": first_bad["diff"].get("lhs_nonfinite_count"),
-                "eager_nonfinite_count": first_bad["diff"].get("rhs_nonfinite_count"),
-            },
+            "first_bad_stage": summarize_bad_stage(first_bad),
+            "first_bad_stage_real_rows": summarize_bad_row_scope(first_bad_real),
+            "first_bad_stage_pad_rows": summarize_bad_row_scope(first_bad_pad),
         },
         "compiled_second_vs_eager_before": rows,
         "eager_after_vs_eager_before": eager_stability_rows,
@@ -880,9 +990,14 @@ def main() -> None:
     )
     print(f"promptfa_contract={output['promptfa_contract']}")
     print(f"first_bad_stage={output['summary']['first_bad_stage']}")
+    print(f"first_bad_stage_real_rows={output['summary']['first_bad_stage_real_rows']}")
+    print(f"first_bad_stage_pad_rows={output['summary']['first_bad_stage_pad_rows']}")
     print("EXP07_INLINE_SINGLE_LAYER_REPRO STAGE_TABLE")
     for row in rows:
         diff = row["diff"]
+        row_split = row.get("row_split") or {}
+        real_diff = row_split.get("real_rows") or {}
+        pad_diff = row_split.get("pad_rows") or {}
         print(
             f"stage={row['stage']} "
             f"match={row['matches_5e_2']} "
@@ -893,7 +1008,13 @@ def main() -> None:
             f"p90={diff.get('abs_diff_quantiles', {}).get('p90')} "
             f"p99={diff.get('abs_diff_quantiles', {}).get('p99')} "
             f"compiled_nonfinite={diff.get('lhs_nonfinite_count')} "
-            f"eager_nonfinite={diff.get('rhs_nonfinite_count')}"
+            f"eager_nonfinite={diff.get('rhs_nonfinite_count')} "
+            f"real_max_abs={real_diff.get('max_abs_diff')} "
+            f"real_p99={real_diff.get('abs_diff_quantiles', {}).get('p99')} "
+            f"real_compiled_nonfinite={real_diff.get('lhs_nonfinite_count')} "
+            f"pad_max_abs={pad_diff.get('max_abs_diff')} "
+            f"pad_p99={pad_diff.get('abs_diff_quantiles', {}).get('p99')} "
+            f"pad_compiled_nonfinite={pad_diff.get('lhs_nonfinite_count')}"
         )
 
 

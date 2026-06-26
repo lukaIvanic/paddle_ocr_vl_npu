@@ -503,6 +503,8 @@ The printed `STAGE_TABLE` includes:
 - `attn_kernel_out`: PromptFA result after returning to `[S, hidden]`
 - downstream `out_proj`, residual, `ln2`, `fc1`, activation, `fc2`, and
   `layer0_out`
+- overall diffs plus `real_*` and `pad_*` split diffs. BNSD tensors are split
+  on sequence axis 2; `[S, hidden]` tensors are split on axis 0.
 
 Interpretation:
 
@@ -546,6 +548,10 @@ The JSON and printed summary include `promptfa_contract`, which records the
 physical sequence length, mod-16/mod-128 alignment, Q/K/V call shape, sparse
 mode, mask shape/counts, and the current pad-mask policy. Use it before drawing
 conclusions about whether PromptFA was called on a 128-aligned padded sequence.
+The summary also includes `first_bad_stage_real_rows` and
+`first_bad_stage_pad_rows`; prefer the real-row summary when judging whether
+compiled visual features would survive slicing padded rows away before
+downstream consumers.
 
 ## CUDA Smoke
 
