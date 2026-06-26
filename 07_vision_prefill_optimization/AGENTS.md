@@ -156,11 +156,14 @@ real tokens must not attend to padded tokens, padded tokens must not attend to r
 rows must be excluded before downstream real-token consumers, and real-row
 `visual_features`/`image_embeds`/`prefill_logits` must match the reference.
 
-Current NPU finding: TorchAir-compiled PromptFA is not numerically usable yet. On the 4-crop smoke,
-physical throughput rose to about 11.7k tok/s versus about 7.5k tok/s for backend none, but
-`argmax_match_count` was only 2/4, visual max-abs drift reached fp16-max scale, and compiled outputs
-contained NaN/Inf. Do not report compiled PromptFA speed as a valid optimization until correctness is
-fixed.
+Current NPU finding: TorchAir-compiled PromptFA at PaddleOCR-VL's native vision head dimension
+`D=72` is numerically unsafe. Attention-only repros showed deterministic dense drift and, when RoPE
+is inside the compiled graph, deterministic NaNs in head 15. Padding only the PromptFA Q/K/V call
+dimension to `D=80` or `D=96`, keeping `scale_value=1/sqrt(72)`, and slicing the output back to
+`D=72` made the attention-only compiled path match eager PromptFA and removed the NaNs. Treat this
+as a promising operator-contract workaround, not as a completed optimization, until the inline
+single-layer repro and the full static visual compare also pass real-row feature/logit checks.
+Report both the real head dimension and the PromptFA call head dimension in every candidate output.
 
 ## Anti-Cheat Ledger
 

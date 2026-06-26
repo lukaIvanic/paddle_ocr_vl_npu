@@ -11,6 +11,8 @@ export ASCEND_RT_VISIBLE_DEVICES="${ASCEND_RT_VISIBLE_DEVICES:-1}"
 export BASELINE_DIR="${BASELINE_DIR:-${SCRIPT_DIR}/baselines/promptfa_fp16_eager_64}"
 export OUT_ROOT="${OUT_ROOT:-${SCRIPT_DIR}/outputs/static_visual_grouped_compare_$(date -u +%Y%m%dT%H%M%SZ)}"
 export MAX_ITEMS="${MAX_ITEMS:-4}"
+export STATIC_VISUAL_LN_IMPL="${STATIC_VISUAL_LN_IMPL:-module}"
+export PROMPTFA_PAD_HEAD_DIM_TO="${PROMPTFA_PAD_HEAD_DIM_TO:-0}"
 
 mkdir -p "${OUT_ROOT}"
 
@@ -20,6 +22,8 @@ echo "EXP07_STATIC_VISUAL_GROUPED BASELINE_DIR=${BASELINE_DIR}"
 echo "EXP07_STATIC_VISUAL_GROUPED DATASET_DIR=${DATASET_DIR:-<manifest default>}"
 echo "EXP07_STATIC_VISUAL_GROUPED DEVICE=${DEVICE} ASCEND_RT_VISIBLE_DEVICES=${ASCEND_RT_VISIBLE_DEVICES}"
 echo "EXP07_STATIC_VISUAL_GROUPED MAX_ITEMS=${MAX_ITEMS}"
+echo "EXP07_STATIC_VISUAL_GROUPED STATIC_VISUAL_LN_IMPL=${STATIC_VISUAL_LN_IMPL}"
+echo "EXP07_STATIC_VISUAL_GROUPED PROMPTFA_PAD_HEAD_DIM_TO=${PROMPTFA_PAD_HEAD_DIM_TO}"
 echo "EXP07_STATIC_VISUAL_GROUPED OUT_ROOT=${OUT_ROOT}"
 
 run_compare() {
@@ -39,7 +43,9 @@ run_compare() {
     --vision-prompt-fa-layout bnsd \
     --vision-prompt-fa-mask-sparse-mode 1 \
     --vision-compile-backend "${backend}" \
+    --static-visual-ln-impl "${STATIC_VISUAL_LN_IMPL}" \
     --static-visual-ln-linear-mode "${ln_linear_mode}" \
+    --static-visual-promptfa-pad-head-dim-to "${PROMPTFA_PAD_HEAD_DIM_TO}" \
     --torchair-mode default \
     --validate-compiled-against-static-eager \
     --candidate-name "${name}" \
@@ -67,7 +73,9 @@ for path in sorted(root.glob("*.json")):
     print(
         f"{path.name}: "
         f"backend={candidate.get('vision_compile_backend')} "
+        f"ln_impl={candidate.get('static_visual_ln_impl')} "
         f"mode={candidate.get('static_visual_ln_linear_mode')} "
+        f"promptfa_padD={candidate.get('static_visual_promptfa_pad_head_dim_to')} "
         f"argmax={summary.get('argmax_match_count')}/{data.get('compared_count')} "
         f"visual_max={summary.get('visual_features', {}).get('max_abs_diff', {}).get('max')} "
         f"image_max={summary.get('image_embeds', {}).get('max_abs_diff', {}).get('max')} "
@@ -84,7 +92,9 @@ for path in sorted(root.glob("*.json")):
             f"visual_max={row.get('diffs', {}).get('visual_features', {}).get('max_abs_diff')} "
             f"logits_max={row.get('diffs', {}).get('prefill_logits', {}).get('max_abs_diff')} "
             f"compiled_vs_static_eager_real_max={real_rows.get('max_abs_diff')} "
-            f"compiled_nonfinite={row.get('vision_compile', {}).get('first_real_output_nonfinite_count')}"
+            f"compiled_nonfinite={row.get('vision_compile', {}).get('first_real_output_nonfinite_count')} "
+            f"callD={row.get('vision_compile', {}).get('static_visual_promptfa_call_head_dim')} "
+            f"callD_aligned={row.get('vision_compile', {}).get('static_visual_promptfa_call_head_dim_fp16_32b_aligned')}"
         )
 PY
 

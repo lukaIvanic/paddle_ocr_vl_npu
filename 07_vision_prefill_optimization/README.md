@@ -536,6 +536,12 @@ ATTENTION=manual ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_inline_single_layer_re
 
 # Real activation barrier before PromptFA. If this fixes PromptFA, the issue is likely input layout.
 PRE_PROMPTFA_BRIDGE=transpose_roundtrip ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_inline_single_layer_repro.sh
+
+# Current D-alignment workaround candidate. This keeps RoPE inside the compiled
+# graph, pads only the PromptFA Q/K/V call dimension from D=72 to D=80, keeps
+# scale_value=1/sqrt(72), and slices the PromptFA output back to D=72 before
+# out_proj. Use manual LayerNorm to avoid the fused LayerNormV3 GE bug.
+LN_IMPL=manual_fp32 LN_LINEAR_MODE=grouped_qkv_mlp_fc1 PROMPTFA_PAD_HEAD_DIM_TO=80 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_inline_single_layer_repro.sh
 ```
 
 The Qwen3-Embedding reference project uses RMSNorm, not LayerNorm. Treat that as
@@ -548,10 +554,35 @@ The JSON and printed summary include `promptfa_contract`, which records the
 physical sequence length, mod-16/mod-128 alignment, Q/K/V call shape, sparse
 mode, mask shape/counts, and the current pad-mask policy. Use it before drawing
 conclusions about whether PromptFA was called on a 128-aligned padded sequence.
+For `PROMPTFA_PAD_HEAD_DIM_TO=80`, check that `promptfa_call_head_dim=80`,
+`promptfa_head_dim_pad_extra=8`,
+`promptfa_call_head_dim_fp16_32b_aligned=true`, and
+`promptfa_output_sliced_back_to_real_head_dim=true`.
 The summary also includes `first_bad_stage_real_rows` and
 `first_bad_stage_pad_rows`; prefer the real-row summary when judging whether
 compiled visual features would survive slicing padded rows away before
 downstream consumers.
+
+If the inline D=80 run has no nonfinites and the first bad stage is acceptably
+small, move to the full static visual candidate:
+
+```sh
+STATIC_VISUAL_LN_IMPL=manual_fp32 PROMPTFA_PAD_HEAD_DIM_TO=80 MAX_ITEMS=4 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_static_visual_grouped_compare.sh
+```
+
+Read `torchair_grouped_qkv_mlp_fc1.json` first. The important fields are:
+
+- `summary.argmax_match_count` versus `compared_count`
+- `summary.visual_features`, `summary.image_embeds`, and `summary.prefill_logits`
+- per-item `vision_compile.compiled_vs_static_eager_validation.real_rows`
+- per-item `vision_compile.first_real_output_nonfinite_count`
+- `vision_compile.static_visual_promptfa_call_head_dim` and
+  `vision_compile.static_visual_promptfa_call_head_dim_fp16_32b_aligned`
+
+Do not scale to 32/64 crops unless the 4-crop run has no real-row nonfinites and
+the prefill logits/argmax checks are acceptable. If it fails, report the first
+bad item and the compiled-vs-static-eager real-row diff instead of creating a new
+script.
 
 ## Attention-Only Repro
 

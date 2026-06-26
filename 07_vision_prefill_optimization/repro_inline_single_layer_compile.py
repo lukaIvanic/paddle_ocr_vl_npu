@@ -465,6 +465,7 @@ class InlineSingleVisionLayer(torch.nn.Module):
         layer_idx: int,
         attention_impl: str,
         promptfa_sparse_mode: int,
+        promptfa_pad_head_dim_to: int,
         ln_impl: str,
         ln_linear_mode: str,
         pre_promptfa_bridge: str,
@@ -483,6 +484,7 @@ class InlineSingleVisionLayer(torch.nn.Module):
         self.layer_idx = int(layer_idx)
         self.attention_impl = str(attention_impl)
         self.promptfa_sparse_mode = int(promptfa_sparse_mode)
+        self.promptfa_pad_head_dim_to = int(promptfa_pad_head_dim_to)
         self.ln_impl = str(ln_impl)
         self.ln_linear_mode = str(ln_linear_mode)
         self.pre_promptfa_bridge = str(pre_promptfa_bridge)
@@ -513,6 +515,17 @@ class InlineSingleVisionLayer(torch.nn.Module):
             build_static_pad_attention_mask(self.real_seq_len, self.pad_tokens, device),
             persistent=False,
         )
+
+    def promptfa_call_head_dim(self, attention: torch.nn.Module) -> int:
+        real_head_dim = int(attention.head_dim)
+        target = int(self.promptfa_pad_head_dim_to)
+        if target <= 0:
+            return real_head_dim
+        if target < real_head_dim:
+            raise ValueError(
+                f"PROMPTFA_PAD_HEAD_DIM_TO must be >= real head_dim ({real_head_dim}), got {target}"
+            )
+        return target
 
     def layer_norm(self, layer_norm: torch.nn.LayerNorm, hidden_states: torch.Tensor) -> torch.Tensor:
         if self.ln_impl == "module":
@@ -547,11 +560,20 @@ class InlineSingleVisionLayer(torch.nn.Module):
         mask_shape = None if mask is None else [int(dim) for dim in mask.shape]
         mask_true_count = 0 if mask is None else int(mask.sum().item())
         mask_numel = 0 if mask is None else int(mask.numel())
+        real_head_dim = int(attention.head_dim)
+        call_head_dim = int(self.promptfa_call_head_dim(attention))
+        pad_extra = int(call_head_dim - real_head_dim)
         return {
             "input_layout": "BNSD",
             "num_heads": int(attention.num_heads),
-            "head_dim": int(attention.head_dim),
-            "qkv_shape": [1, int(attention.num_heads), int(self.physical_seq_len), int(attention.head_dim)],
+            "real_head_dim": real_head_dim,
+            "promptfa_call_head_dim": call_head_dim,
+            "promptfa_head_dim_pad_extra": pad_extra,
+            "promptfa_call_head_dim_fp16_bytes": int(call_head_dim * 2),
+            "promptfa_call_head_dim_fp16_32b_aligned": bool((call_head_dim * 2) % 32 == 0),
+            "promptfa_output_sliced_back_to_real_head_dim": bool(pad_extra > 0),
+            "qkv_real_shape": [1, int(attention.num_heads), int(self.physical_seq_len), real_head_dim],
+            "qkv_call_shape": [1, int(attention.num_heads), int(self.physical_seq_len), call_head_dim],
             "qkv_contiguous_at_call": True,
             "sparse_mode_when_masked": int(self.promptfa_sparse_mode),
             "real_seq_len": int(self.real_seq_len),
@@ -619,6 +641,15 @@ class InlineSingleVisionLayer(torch.nn.Module):
             return tensor.transpose(-1, -2).contiguous().transpose(-1, -2).contiguous()
         raise RuntimeError(f"unreachable pre_promptfa_bridge={self.pre_promptfa_bridge!r}")
 
+    def pad_promptfa_head_dim(self, tensor: torch.Tensor, attention: torch.nn.Module) -> torch.Tensor:
+        call_head_dim = int(self.promptfa_call_head_dim(attention))
+        real_head_dim = int(tensor.shape[-1])
+        if call_head_dim == real_head_dim:
+            return tensor
+        if call_head_dim < real_head_dim:
+            raise RuntimeError(f"cannot pad PromptFA head dim from {real_head_dim} down to {call_head_dim}")
+        return F.pad(tensor, (0, call_head_dim - real_head_dim))
+
     def promptfa_or_manual(self, q_bnsd: torch.Tensor, k_bnsd: torch.Tensor, v_bnsd: torch.Tensor, attention: torch.nn.Module) -> torch.Tensor:
         if self.attention_impl == "manual":
             scores = torch.matmul(q_bnsd, k_bnsd.transpose(2, 3)) * attention.scaling
@@ -634,16 +665,22 @@ class InlineSingleVisionLayer(torch.nn.Module):
         if self.pad_attention_mask is not None:
             mask_kwargs["atten_mask"] = self.pad_attention_mask.to(torch.bool).contiguous()
             sparse_mode = int(self.promptfa_sparse_mode)
-        return torch_npu.npu_prompt_flash_attention(
-            q_bnsd.contiguous(),
-            k_bnsd.contiguous(),
-            v_bnsd.contiguous(),
+        q_call = self.pad_promptfa_head_dim(q_bnsd, attention).contiguous()
+        k_call = self.pad_promptfa_head_dim(k_bnsd, attention).contiguous()
+        v_call = self.pad_promptfa_head_dim(v_bnsd, attention).contiguous()
+        output = torch_npu.npu_prompt_flash_attention(
+            q_call,
+            k_call,
+            v_call,
             num_heads=int(attention.num_heads),
             input_layout="BNSD",
             scale_value=float(attention.scaling),
             sparse_mode=sparse_mode,
             **mask_kwargs,
         )
+        if int(output.shape[-1]) != int(attention.head_dim):
+            output = output[..., : int(attention.head_dim)].contiguous()
+        return output
 
     def forward(self, pixel_values: torch.Tensor) -> tuple[torch.Tensor, ...]:
         transformer = self.model.visual.vision_model
@@ -817,6 +854,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--layer-index", type=int, default=0)
     parser.add_argument("--attention", default="prompt_flash_attention", choices=("prompt_flash_attention", "manual"))
     parser.add_argument("--promptfa-sparse-mode", type=int, default=1, choices=(0, 1))
+    parser.add_argument("--promptfa-pad-head-dim-to", type=int, default=0)
     parser.add_argument("--ln-impl", default="module", choices=("module", "functional", "manual_fp32", "manual_fp16"))
     parser.add_argument("--ln-linear-mode", default="grouped_qkv_mlp_fc1", choices=("normal", "grouped_qkv", "grouped_qkv_mlp_fc1"))
     parser.add_argument("--pre-promptfa-bridge", default="none", choices=("none", "contiguous", "clone", "transpose_roundtrip"))
@@ -852,6 +890,7 @@ def main() -> None:
         layer_idx=int(args.layer_index),
         attention_impl=str(args.attention),
         promptfa_sparse_mode=int(args.promptfa_sparse_mode),
+        promptfa_pad_head_dim_to=int(args.promptfa_pad_head_dim_to),
         ln_impl=str(args.ln_impl),
         ln_linear_mode=str(args.ln_linear_mode),
         pre_promptfa_bridge=str(args.pre_promptfa_bridge),
@@ -939,6 +978,7 @@ def main() -> None:
             "layer_index": int(args.layer_index),
             "attention": str(args.attention),
             "promptfa_sparse_mode": int(args.promptfa_sparse_mode),
+            "promptfa_pad_head_dim_to": int(args.promptfa_pad_head_dim_to),
             "ln_impl": str(args.ln_impl),
             "ln_linear_mode": str(args.ln_linear_mode),
             "pre_promptfa_bridge": str(args.pre_promptfa_bridge),
@@ -985,6 +1025,7 @@ def main() -> None:
     print(
         "config="
         f"attention={args.attention} ln_impl={args.ln_impl} ln_linear_mode={args.ln_linear_mode} "
+        f"promptfa_pad_head_dim_to={args.promptfa_pad_head_dim_to} "
         f"pre_promptfa_bridge={args.pre_promptfa_bridge} "
         f"physical_seq_len={module.physical_seq_len} real_seq_len={module.real_seq_len}"
     )

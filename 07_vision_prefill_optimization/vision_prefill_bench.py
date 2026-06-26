@@ -72,6 +72,7 @@ DTYPE_CHOICES = ("fp16", "float16", "fp32", "float32", "bf16", "bfloat16")
 VISION_ATTENTION_CHOICES = ("manual", "prompt_flash_attention")
 TIMING_MODE_CHOICES = ("standard", "phase_sync")
 VISION_COMPILE_BACKEND_CHOICES = ("none", "default", "aot_eager", "inductor", "torchair")
+STATIC_VISUAL_LN_IMPL_CHOICES = ("module", "functional", "manual_fp32", "manual_fp16")
 STATIC_VISUAL_LN_LINEAR_MODE_CHOICES = ("normal", "grouped_qkv", "grouped_qkv_mlp_fc1")
 TORCHAIR_MODE_CHOICES = ("default", "max-autotune")
 TORCHAIR_GRAPH_DUMP_TYPE_CHOICES = ("none", "txt", "pbtxt")
@@ -899,16 +900,22 @@ class SingleCropStaticVisualModule(torch.nn.Module):
         debug_no_padding: bool = False,
         debug_min_pad_tokens: int = 0,
         debug_pad_to_multiple: int = 0,
+        ln_impl: str = "module",
         ln_linear_mode: str = "normal",
+        promptfa_pad_head_dim_to: int = 0,
     ):
         super().__init__()
+        if ln_impl not in STATIC_VISUAL_LN_IMPL_CHOICES:
+            raise ValueError(f"unsupported static visual LayerNorm impl={ln_impl!r}; choices={STATIC_VISUAL_LN_IMPL_CHOICES}")
         if ln_linear_mode not in STATIC_VISUAL_LN_LINEAR_MODE_CHOICES:
             raise ValueError(
                 f"unsupported static visual LayerNorm-linear mode={ln_linear_mode!r}; "
                 f"choices={STATIC_VISUAL_LN_LINEAR_MODE_CHOICES}"
             )
         self.model = model
+        self.ln_impl = str(ln_impl)
         self.ln_linear_mode = str(ln_linear_mode)
+        self.promptfa_pad_head_dim_to = int(promptfa_pad_head_dim_to)
         self.static_visual_pad_policy = STATIC_VISUAL_PAD_POLICY
         self.register_buffer("image_grid_thw_const", image_grid_thw.detach().clone(), persistent=False)
         self.register_buffer(
@@ -969,6 +976,34 @@ class SingleCropStaticVisualModule(torch.nn.Module):
             pad_mask = None
         self.register_buffer("static_pad_attention_mask", pad_mask, persistent=False)
 
+    def _static_layer_norm(self, layer_norm: torch.nn.LayerNorm, hidden_states: torch.Tensor) -> torch.Tensor:
+        if self.ln_impl == "module":
+            return layer_norm(hidden_states)
+        weight = layer_norm.weight
+        bias = layer_norm.bias
+        eps = float(layer_norm.eps)
+        if self.ln_impl == "functional":
+            return F.layer_norm(hidden_states, (hidden_states.shape[-1],), weight, bias, eps)
+        if self.ln_impl == "manual_fp32":
+            x = hidden_states.float()
+            mean = x.mean(dim=-1, keepdim=True)
+            centered = x - mean
+            var = centered.pow(2).mean(dim=-1, keepdim=True)
+            y = centered * torch.rsqrt(var + eps)
+            y = y.to(dtype=hidden_states.dtype)
+        elif self.ln_impl == "manual_fp16":
+            mean = hidden_states.mean(dim=-1, keepdim=True)
+            centered = hidden_states - mean
+            var = centered.pow(2).mean(dim=-1, keepdim=True)
+            y = centered * torch.rsqrt(var + eps)
+        else:
+            raise RuntimeError(f"unreachable static visual ln_impl={self.ln_impl!r}")
+        if weight is not None:
+            y = y * weight
+        if bias is not None:
+            y = y + bias
+        return y
+
     @staticmethod
     def _grouped_linear(
         hidden_states: torch.Tensor,
@@ -1028,6 +1063,26 @@ class SingleCropStaticVisualModule(torch.nn.Module):
             fc1_out = mlp.fc1(hidden_states)
         return mlp.fc2(_activation(mlp.hidden_act, fc1_out))
 
+    def _promptfa_call_head_dim(self, attention: torch.nn.Module) -> int:
+        real_head_dim = int(attention.head_dim)
+        target = int(self.promptfa_pad_head_dim_to)
+        if target <= 0:
+            return real_head_dim
+        if target < real_head_dim:
+            raise ValueError(
+                f"static PromptFA head-dim padding target must be >= real head_dim ({real_head_dim}), got {target}"
+            )
+        return target
+
+    def _pad_promptfa_head_dim(self, tensor: torch.Tensor, attention: torch.nn.Module) -> torch.Tensor:
+        call_head_dim = int(self._promptfa_call_head_dim(attention))
+        real_head_dim = int(tensor.shape[-1])
+        if call_head_dim == real_head_dim:
+            return tensor
+        if call_head_dim < real_head_dim:
+            raise RuntimeError(f"cannot pad PromptFA head dim from {real_head_dim} down to {call_head_dim}")
+        return F.pad(tensor, (0, call_head_dim - real_head_dim))
+
     def _static_mask_padded_attention(self, attention: torch.nn.Module, hidden_states: torch.Tensor) -> torch.Tensor:
         seq_length = hidden_states.shape[0]
         query_states, key_states, value_states = self._static_qkv_projection(attention, hidden_states).chunk(3, dim=-1)
@@ -1047,6 +1102,9 @@ class SingleCropStaticVisualModule(torch.nn.Module):
         if attention_impl == "prompt_flash_attention":
             if get_vision_prompt_fa_layout() != "bnsd":
                 raise ValueError("static_visual currently supports PromptFA layout bnsd only")
+            query_states = self._pad_promptfa_head_dim(query_states, attention).contiguous()
+            key_states = self._pad_promptfa_head_dim(key_states, attention).contiguous()
+            value_states = self._pad_promptfa_head_dim(value_states, attention).contiguous()
             attn_output = vision_prompt_flash_attention_bnsd(
                 query_states,
                 key_states,
@@ -1055,6 +1113,8 @@ class SingleCropStaticVisualModule(torch.nn.Module):
                 scale=float(attention.scaling),
                 atten_mask=self.static_pad_attention_mask,
             )
+            if int(attn_output.shape[-1]) != int(attention.head_dim):
+                attn_output = attn_output[..., : int(attention.head_dim)].contiguous()
         elif attention_impl == "manual":
             scores = torch.matmul(query_states, key_states.transpose(2, 3)) * attention.scaling
             if self.static_pad_attention_mask is not None:
@@ -1072,9 +1132,12 @@ class SingleCropStaticVisualModule(torch.nn.Module):
         return attention.out_proj(attn_output)
 
     def _static_mask_padded_encoder_layer(self, encoder_layer: torch.nn.Module, hidden_states: torch.Tensor) -> torch.Tensor:
-        attn_input = encoder_layer.layer_norm1(hidden_states)
+        attn_input = self._static_layer_norm(encoder_layer.layer_norm1, hidden_states)
         hidden_states = hidden_states + self._static_mask_padded_attention(encoder_layer.self_attn, attn_input)
-        return hidden_states + self._static_mlp(encoder_layer.mlp, encoder_layer.layer_norm2(hidden_states))
+        return hidden_states + self._static_mlp(
+            encoder_layer.mlp,
+            self._static_layer_norm(encoder_layer.layer_norm2, hidden_states),
+        )
 
     def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
         transformer = self.model.visual.vision_model
@@ -1098,7 +1161,7 @@ class SingleCropStaticVisualModule(torch.nn.Module):
         hidden_states = hidden_states + self.abs_pos_embed_const
         for encoder_layer in transformer.encoder.layers:
             hidden_states = self._static_mask_padded_encoder_layer(encoder_layer, hidden_states)
-        hidden_states = transformer.post_layernorm(hidden_states)
+        hidden_states = self._static_layer_norm(transformer.post_layernorm, hidden_states)
         return hidden_states
 
 
@@ -1762,7 +1825,9 @@ def maybe_compile_static_visual(
     debug_no_padding: bool = False,
     debug_min_pad_tokens: int = 0,
     debug_pad_to_multiple: int = 0,
+    ln_impl: str = "module",
     ln_linear_mode: str = "normal",
+    promptfa_pad_head_dim_to: int = 0,
     torchair_mode: str = "default",
     torchair_run_eagerly: bool = False,
     torchair_graph_dump_type: str = "none",
@@ -1783,8 +1848,14 @@ def maybe_compile_static_visual(
         debug_no_padding=debug_no_padding,
         debug_min_pad_tokens=debug_min_pad_tokens,
         debug_pad_to_multiple=debug_pad_to_multiple,
+        ln_impl=ln_impl,
         ln_linear_mode=ln_linear_mode,
+        promptfa_pad_head_dim_to=promptfa_pad_head_dim_to,
     ).eval()
+    first_attention = model.visual.vision_model.encoder.layers[0].self_attn
+    real_head_dim = int(first_attention.head_dim)
+    promptfa_call_head_dim = int(wrapper._promptfa_call_head_dim(first_attention))
+    promptfa_pad_extra = int(promptfa_call_head_dim - real_head_dim)
     mask_shape = (
         None
         if wrapper.static_pad_attention_mask is None
@@ -1797,7 +1868,15 @@ def maybe_compile_static_visual(
         "debug_static_visual_no_padding": bool(wrapper.debug_no_padding),
         "debug_static_visual_min_pad_tokens": int(wrapper.debug_min_pad_tokens),
         "debug_static_visual_pad_to_multiple": int(wrapper.debug_pad_to_multiple),
+        "static_visual_ln_impl": str(wrapper.ln_impl),
         "static_visual_ln_linear_mode": str(wrapper.ln_linear_mode),
+        "static_visual_promptfa_pad_head_dim_to": int(wrapper.promptfa_pad_head_dim_to),
+        "static_visual_promptfa_real_head_dim": real_head_dim,
+        "static_visual_promptfa_call_head_dim": promptfa_call_head_dim,
+        "static_visual_promptfa_head_dim_pad_extra": promptfa_pad_extra,
+        "static_visual_promptfa_call_head_dim_fp16_bytes": int(promptfa_call_head_dim * 2),
+        "static_visual_promptfa_call_head_dim_fp16_32b_aligned": bool((promptfa_call_head_dim * 2) % 32 == 0),
+        "static_visual_promptfa_output_sliced_back_to_real_head_dim": bool(promptfa_pad_extra > 0),
         "static_visual_pad_tokens": int(wrapper.static_pad_tokens),
         "static_visual_real_seq_len": int(wrapper.static_real_seq_len),
         "static_visual_real_seq_mod16": int(wrapper.static_real_seq_len % 16),
@@ -1874,7 +1953,9 @@ def prepare_candidate_vision_forward(
         debug_no_padding=bool(args.debug_static_visual_no_padding),
         debug_min_pad_tokens=int(args.debug_static_visual_min_pad_tokens),
         debug_pad_to_multiple=int(args.debug_static_visual_pad_to_multiple),
+        ln_impl=str(args.static_visual_ln_impl),
         ln_linear_mode=str(args.static_visual_ln_linear_mode),
+        promptfa_pad_head_dim_to=int(args.static_visual_promptfa_pad_head_dim_to),
         torchair_mode=str(getattr(args, "torchair_mode", "default")),
         torchair_run_eagerly=bool(getattr(args, "torchair_run_eagerly", False)),
         torchair_graph_dump_type=str(getattr(args, "torchair_graph_dump_type", "none")),
@@ -1899,7 +1980,9 @@ def prepare_candidate_vision_forward(
                 debug_no_padding=bool(args.debug_static_visual_no_padding),
                 debug_min_pad_tokens=int(args.debug_static_visual_min_pad_tokens),
                 debug_pad_to_multiple=int(args.debug_static_visual_pad_to_multiple),
+                ln_impl=str(args.static_visual_ln_impl),
                 ln_linear_mode=str(args.static_visual_ln_linear_mode),
+                promptfa_pad_head_dim_to=int(args.static_visual_promptfa_pad_head_dim_to),
             ).eval()
             maybe_sync(device)
             eager_start = time.perf_counter()
@@ -2105,10 +2188,11 @@ def compute_vision_prefill(
             ),
         )
     else:
-        visual_features = measure(
+        physical_visual_features = measure(
             "visual_features",
-            lambda: slice_visual_features_to_real(vision_forward(pixel_values), image_grid_thw),
+            lambda: vision_forward(pixel_values),
         )
+        visual_features = slice_visual_features_to_real(physical_visual_features, image_grid_thw)
     image_embeds = measure("adaptive_mlp_projector", lambda: model.mlp_AR(visual_features, image_grid_thw))
     inputs_embeds = measure("text_token_embedding", lambda: model.model.embed_tokens(input_ids))
     inputs_embeds = measure(
@@ -4328,7 +4412,9 @@ def compare_candidate(args: argparse.Namespace) -> None:
             "debug_static_visual_no_padding": bool(args.debug_static_visual_no_padding),
             "debug_static_visual_min_pad_tokens": int(args.debug_static_visual_min_pad_tokens),
             "debug_static_visual_pad_to_multiple": int(args.debug_static_visual_pad_to_multiple),
+            "static_visual_ln_impl": str(args.static_visual_ln_impl),
             "static_visual_ln_linear_mode": str(args.static_visual_ln_linear_mode),
+            "static_visual_promptfa_pad_head_dim_to": int(args.static_visual_promptfa_pad_head_dim_to),
             "static_visual_encoder_path": "single_static_path_masked_padding_default",
             "timing_mode_note": (
                 "standard records visual_tower_e2e_s plus full_prefill_e2e_s as separate measurements. "
@@ -4373,6 +4459,18 @@ def compare_candidate(args: argparse.Namespace) -> None:
                     "image_grid_thw": list(row["image_grid_thw"]),
                     "vision_tokens": int(row["vision_tokens"]),
                     "static_visual_pad_tokens": int(row["vision_compile"].get("static_visual_pad_tokens", 0)),
+                    "static_visual_promptfa_real_head_dim": int(
+                        row["vision_compile"].get("static_visual_promptfa_real_head_dim", 0)
+                    ),
+                    "static_visual_promptfa_call_head_dim": int(
+                        row["vision_compile"].get("static_visual_promptfa_call_head_dim", 0)
+                    ),
+                    "static_visual_promptfa_head_dim_pad_extra": int(
+                        row["vision_compile"].get("static_visual_promptfa_head_dim_pad_extra", 0)
+                    ),
+                    "static_visual_promptfa_call_head_dim_fp16_32b_aligned": bool(
+                        row["vision_compile"].get("static_visual_promptfa_call_head_dim_fp16_32b_aligned", False)
+                    ),
                     "static_visual_physical_seq_len": int(
                         row["vision_compile"].get("static_visual_physical_seq_len", row["vision_tokens"])
                     ),
@@ -4509,6 +4607,15 @@ def parse_args() -> argparse.Namespace:
     compare_parser.add_argument("--max-items", type=int, default=0)
     compare_parser.add_argument("--vision-compile-backend", default="none", choices=VISION_COMPILE_BACKEND_CHOICES)
     compare_parser.add_argument(
+        "--static-visual-ln-impl",
+        default="module",
+        choices=STATIC_VISUAL_LN_IMPL_CHOICES,
+        help=(
+            "Static-visual LayerNorm implementation. module/functional use fused LayerNormV3 on NPU; "
+            "manual_fp32/manual_fp16 keep LayerNorm math in the graph without the fused op."
+        ),
+    )
+    compare_parser.add_argument(
         "--static-visual-ln-linear-mode",
         default="normal",
         choices=STATIC_VISUAL_LN_LINEAR_MODE_CHOICES,
@@ -4516,6 +4623,16 @@ def parse_args() -> argparse.Namespace:
             "Candidate static-visual implementation for Linear ops directly fed by LayerNorm. "
             "normal keeps nn.Linear; grouped_qkv uses npu_grouped_matmul for layer_norm1 -> QKV; "
             "grouped_qkv_mlp_fc1 also uses grouped matmul for layer_norm2 -> MLP fc1."
+        ),
+    )
+    compare_parser.add_argument(
+        "--static-visual-promptfa-pad-head-dim-to",
+        type=int,
+        default=0,
+        help=(
+            "Static-visual PromptFA call workaround: pad Q/K/V head_dim to this target immediately before "
+            "npu_prompt_flash_attention, keep the original attention scale, then slice the output back to "
+            "the real head_dim before out_proj. Use 80 for PaddleOCR-VL's real head_dim=72 on 310P tests."
         ),
     )
     add_torchair_diagnostic_args(compare_parser)

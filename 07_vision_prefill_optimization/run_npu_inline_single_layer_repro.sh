@@ -12,6 +12,7 @@ export BASELINE_DIR="${BASELINE_DIR:-${SCRIPT_DIR}/baselines/promptfa_fp16_eager
 export OUT_ROOT="${OUT_ROOT:-${SCRIPT_DIR}/outputs/inline_single_layer_repro_$(date -u +%Y%m%dT%H%M%SZ)}"
 export ITEM_INDEX="${ITEM_INDEX:-0}"
 export ATTENTION="${ATTENTION:-prompt_flash_attention}"
+export PROMPTFA_PAD_HEAD_DIM_TO="${PROMPTFA_PAD_HEAD_DIM_TO:-0}"
 export LN_IMPL="${LN_IMPL:-module}"
 export LN_LINEAR_MODE="${LN_LINEAR_MODE:-grouped_qkv_mlp_fc1}"
 export PRE_PROMPTFA_BRIDGE="${PRE_PROMPTFA_BRIDGE:-none}"
@@ -38,6 +39,7 @@ echo "EXP07_INLINE_SINGLE_LAYER DATASET_DIR=${DATASET_DIR:-<manifest default>}"
 echo "EXP07_INLINE_SINGLE_LAYER DEVICE=${DEVICE} ASCEND_RT_VISIBLE_DEVICES=${ASCEND_RT_VISIBLE_DEVICES}"
 echo "EXP07_INLINE_SINGLE_LAYER ITEM_INDEX=${ITEM_INDEX}"
 echo "EXP07_INLINE_SINGLE_LAYER ATTENTION=${ATTENTION}"
+echo "EXP07_INLINE_SINGLE_LAYER PROMPTFA_PAD_HEAD_DIM_TO=${PROMPTFA_PAD_HEAD_DIM_TO}"
 echo "EXP07_INLINE_SINGLE_LAYER LN_IMPL=${LN_IMPL}"
 echo "EXP07_INLINE_SINGLE_LAYER LN_LINEAR_MODE=${LN_LINEAR_MODE}"
 echo "EXP07_INLINE_SINGLE_LAYER PRE_PROMPTFA_BRIDGE=${PRE_PROMPTFA_BRIDGE}"
@@ -55,6 +57,7 @@ echo "EXP07_INLINE_SINGLE_LAYER OUT_ROOT=${OUT_ROOT}"
   --npu-jit-compile off \
   --attention "${ATTENTION}" \
   --promptfa-sparse-mode 1 \
+  --promptfa-pad-head-dim-to "${PROMPTFA_PAD_HEAD_DIM_TO}" \
   --ln-impl "${LN_IMPL}" \
   --ln-linear-mode "${LN_LINEAR_MODE}" \
   --pre-promptfa-bridge "${PRE_PROMPTFA_BRIDGE}" \
