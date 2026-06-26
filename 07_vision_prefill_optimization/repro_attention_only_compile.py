@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 
@@ -465,6 +466,25 @@ def _ranges_from_bool_mask(mask_1d: torch.Tensor, *, limit: int = 12) -> list[li
     return ranges[: int(limit)]
 
 
+def _index_count_samples(counts_1d: torch.Tensor, *, limit: int = 12) -> dict[str, list[dict[str, int]]]:
+    active = counts_1d > 0
+    indices = active.nonzero(as_tuple=False).flatten().tolist()
+    if not indices:
+        return {"first": [], "last": []}
+
+    def _rows(raw_indices: list[int]) -> list[dict[str, int]]:
+        return [
+            {"index": int(idx), "count": int(counts_1d[int(idx)].item())}
+            for idx in raw_indices
+        ]
+
+    limit = int(limit)
+    return {
+        "first": _rows(indices[:limit]),
+        "last": _rows(indices[-limit:]),
+    }
+
+
 def nonfinite_pattern_summary(
     tensor: torch.Tensor,
     *,
@@ -500,6 +520,16 @@ def nonfinite_pattern_summary(
         nz = head_mask.nonzero(as_tuple=False)
         seq_mask = head_mask.any(dim=(0, 2))
         dim_mask = head_mask.any(dim=(0, 1))
+        seq_counts = head_mask.sum(dim=(0, 2))
+        dim_counts = head_mask.sum(dim=(0, 1))
+        max_per_seq = int(head_mask.shape[0] * head_mask.shape[2])
+        max_per_dim = int(head_mask.shape[0] * head_mask.shape[1])
+        partial_seq_mask = (seq_counts > 0) & (seq_counts < max_per_seq)
+        full_seq_mask = seq_counts == max_per_seq
+        partial_dim_mask = (dim_counts > 0) & (dim_counts < max_per_dim)
+        full_dim_mask = dim_counts == max_per_dim
+        active_seq_counts = seq_counts[seq_counts > 0]
+        active_dim_counts = dim_counts[dim_counts > 0]
         per_head.append(
             {
                 "head": int(head_idx),
@@ -510,8 +540,24 @@ def nonfinite_pattern_summary(
                 "seq_max": int(nz[:, 1].max().item()),
                 "dim_min": int(nz[:, 2].min().item()),
                 "dim_max": int(nz[:, 2].max().item()),
+                "active_seq_count": int((seq_counts > 0).sum().item()),
+                "full_seq_count": int(full_seq_mask.sum().item()),
+                "partial_seq_count": int(partial_seq_mask.sum().item()),
+                "active_seq_min_count": int(active_seq_counts.min().item()) if active_seq_counts.numel() else 0,
+                "active_seq_max_count": int(active_seq_counts.max().item()) if active_seq_counts.numel() else 0,
                 "seq_ranges_first": _ranges_from_bool_mask(seq_mask),
+                "full_seq_ranges_first": _ranges_from_bool_mask(full_seq_mask),
+                "partial_seq_ranges_first": _ranges_from_bool_mask(partial_seq_mask),
+                "seq_count_samples": _index_count_samples(seq_counts),
+                "active_dim_count": int((dim_counts > 0).sum().item()),
+                "full_dim_count": int(full_dim_mask.sum().item()),
+                "partial_dim_count": int(partial_dim_mask.sum().item()),
+                "active_dim_min_count": int(active_dim_counts.min().item()) if active_dim_counts.numel() else 0,
+                "active_dim_max_count": int(active_dim_counts.max().item()) if active_dim_counts.numel() else 0,
                 "dim_ranges_first": _ranges_from_bool_mask(dim_mask),
+                "full_dim_ranges_first": _ranges_from_bool_mask(full_dim_mask),
+                "partial_dim_ranges_first": _ranges_from_bool_mask(partial_dim_mask),
+                "dim_count_samples": _index_count_samples(dim_counts),
             }
         )
     out["per_head"] = sorted(per_head, key=lambda row: -int(row["count"]))
