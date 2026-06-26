@@ -41,7 +41,6 @@ from vision_prefill_bench import (
     resolve_dataset_dir,
     sha256_file,
     stats,
-    topk_summary,
     vision_tokens,
 )
 from validate_static_visual_batched_encoder import (
@@ -69,6 +68,36 @@ def npu_profiler_config(metric: str):
         l2_cache=metric == "l2",
         export_type=npu_prof.ExportType.Text,
     )
+
+
+def visual_tensor_summary(tensor: torch.Tensor) -> dict[str, Any]:
+    """Small shape/finite summary for visual features, not a logits top-k."""
+    data = tensor.detach().float().cpu()
+    finite = torch.isfinite(data)
+    finite_count = int(finite.sum().item())
+    nonfinite_count = int(data.numel() - finite_count)
+    summary: dict[str, Any] = {
+        "shape": [int(dim) for dim in data.shape],
+        "dtype": str(tensor.dtype),
+        "numel": int(data.numel()),
+        "finite_count": finite_count,
+        "nonfinite_count": nonfinite_count,
+    }
+    if finite_count == 0:
+        return summary
+    finite_values = data[finite]
+    summary.update(
+        {
+            "min": float(finite_values.min().item()),
+            "max": float(finite_values.max().item()),
+            "abs_max": float(finite_values.abs().max().item()),
+            "mean": float(finite_values.mean().item()),
+            "mean_abs": float(finite_values.abs().mean().item()),
+            "std": float(finite_values.std(unbiased=False).item()),
+            "l2_norm": float(torch.linalg.vector_norm(finite_values).item()),
+        }
+    )
+    return summary
 
 
 def parse_args() -> argparse.Namespace:
@@ -320,8 +349,8 @@ def main() -> None:
                 "vision_tokens": int(real_tokens),
                 "visual_features": diff_stats(candidate_visual.cpu(), baseline_tensors["visual_features"]),
                 "candidate_visual_nonfinite_count": int((~torch.isfinite(candidate_visual.float())).sum().item()),
-                "reference_topk": topk_summary(reference_visual.mean(dim=0)),
-                "candidate_topk": topk_summary(candidate_visual.mean(dim=0)),
+                "reference_visual_summary": visual_tensor_summary(reference_visual),
+                "candidate_visual_summary": visual_tensor_summary(candidate_visual),
             }
         )
 
