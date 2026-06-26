@@ -379,10 +379,11 @@ def diff_stats(lhs: torch.Tensor, rhs: torch.Tensor) -> dict[str, Any]:
     finite = torch.isfinite(lhs_f) & torch.isfinite(rhs_f)
     diff = torch.abs(lhs_f - rhs_f)
     finite_diff = diff[finite]
-    return {
+    out: dict[str, Any] = {
         "shape_match": True,
         "shape": [int(dim) for dim in lhs.shape],
         "numel": int(lhs.numel()),
+        "finite_pair_count": int(finite_diff.numel()),
         "lhs_nonfinite_count": int((~torch.isfinite(lhs_f)).sum().item()),
         "rhs_nonfinite_count": int((~torch.isfinite(rhs_f)).sum().item()),
         "diff_nonfinite_count": int((~torch.isfinite(diff)).sum().item()),
@@ -391,6 +392,18 @@ def diff_stats(lhs: torch.Tensor, rhs: torch.Tensor) -> dict[str, Any]:
         "allclose_atol_5e_2_rtol_5e_2": bool(torch.allclose(lhs_f, rhs_f, atol=5e-2, rtol=5e-2)),
         "allclose_atol_1e_0_rtol_1e_0": bool(torch.allclose(lhs_f, rhs_f, atol=1.0, rtol=1.0)),
     }
+    if finite_diff.numel() > 0:
+        quantile_points = torch.tensor([0.25, 0.50, 0.75, 0.90, 0.95, 0.99], dtype=torch.float32)
+        quantiles = torch.quantile(finite_diff.float(), quantile_points)
+        out["abs_diff_quantiles"] = {
+            "p25": float(quantiles[0].item()),
+            "p50": float(quantiles[1].item()),
+            "p75": float(quantiles[2].item()),
+            "p90": float(quantiles[3].item()),
+            "p95": float(quantiles[4].item()),
+            "p99": float(quantiles[5].item()),
+        }
+    return out
 
 
 class InlineSingleVisionLayer(torch.nn.Module):
@@ -812,6 +825,9 @@ def main() -> None:
             f"shape={diff.get('shape')} "
             f"max_abs={diff.get('max_abs_diff')} "
             f"mean_abs={diff.get('mean_abs_diff')} "
+            f"p50={diff.get('abs_diff_quantiles', {}).get('p50')} "
+            f"p90={diff.get('abs_diff_quantiles', {}).get('p90')} "
+            f"p99={diff.get('abs_diff_quantiles', {}).get('p99')} "
             f"compiled_nonfinite={diff.get('lhs_nonfinite_count')} "
             f"eager_nonfinite={diff.get('rhs_nonfinite_count')}"
         )
