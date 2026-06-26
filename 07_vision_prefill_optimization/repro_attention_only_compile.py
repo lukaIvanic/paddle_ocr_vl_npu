@@ -131,6 +131,20 @@ def mask_summary(mask: torch.Tensor | None, *, kind: str, rank: int) -> dict[str
     }
 
 
+def infer_promptfa_call_shape(
+    *,
+    input_layout: str,
+    num_heads: int,
+    physical_seq_len: int,
+    call_head_dim: int,
+) -> list[int]:
+    if input_layout == "BNSD":
+        return [1, int(num_heads), int(physical_seq_len), int(call_head_dim)]
+    if input_layout == "BSND":
+        return [1, int(physical_seq_len), int(num_heads), int(call_head_dim)]
+    raise ValueError(f"unsupported PromptFA input_layout={input_layout!r}")
+
+
 class AttentionOnly(torch.nn.Module):
     def __init__(
         self,
@@ -851,9 +865,26 @@ def main() -> None:
             "q_is_contiguous": bool(q_input.is_contiguous()),
             "k_is_contiguous": bool(k_input.is_contiguous()),
             "v_is_contiguous": bool(v_input.is_contiguous()),
-            "promptfa_call_q_shape": [*([int(dim) for dim in q_input.shape[:-1]]), int(promptfa_call_head_dim)],
-            "promptfa_call_k_shape": [*([int(dim) for dim in k_input.shape[:-1]]), int(promptfa_call_head_dim)],
-            "promptfa_call_v_shape": [*([int(dim) for dim in v_input.shape[:-1]]), int(promptfa_call_head_dim)],
+            "promptfa_call_shape_is_static_inferred": True,
+            "promptfa_call_shape_note": "Shape after boundary prep/RoPE/layout conversion, before PromptFA. The final axis includes PromptFA-only D padding if enabled.",
+            "promptfa_call_q_shape": infer_promptfa_call_shape(
+                input_layout=promptfa_layout,
+                num_heads=int(qkv_meta["num_heads"]),
+                physical_seq_len=int(qkv_meta["physical_seq_len"]),
+                call_head_dim=int(promptfa_call_head_dim),
+            ),
+            "promptfa_call_k_shape": infer_promptfa_call_shape(
+                input_layout=promptfa_layout,
+                num_heads=int(qkv_meta["num_heads"]),
+                physical_seq_len=int(qkv_meta["physical_seq_len"]),
+                call_head_dim=int(promptfa_call_head_dim),
+            ),
+            "promptfa_call_v_shape": infer_promptfa_call_shape(
+                input_layout=promptfa_layout,
+                num_heads=int(qkv_meta["num_heads"]),
+                physical_seq_len=int(qkv_meta["physical_seq_len"]),
+                call_head_dim=int(promptfa_call_head_dim),
+            ),
             "promptfa_output_sliced_back_to_head_dim": bool(promptfa_call_head_dim != int(qkv_meta["head_dim"])),
         },
         "timing_s": {

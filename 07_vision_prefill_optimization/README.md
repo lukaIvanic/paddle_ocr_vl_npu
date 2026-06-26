@@ -616,12 +616,14 @@ ATTENTION=prompt_flash_attention INPUT_BOUNDARY=qkv_flat_pre_rope MASK_KIND=curr
 # TorchAir mode. Compare the nonfinite mask, not ordinary allclose.
 ATTENTION=prompt_flash_attention INPUT_BOUNDARY=snhd_pre_rope NO_PADDING=1 MASK_KIND=none TORCHAIR_MODE=max-autotune ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
 
-# PromptFA head-dim alignment probe. PaddleOCR-VL vision uses D=72, which is not
-# fp16 32-byte aligned. This pads Q/K/V only inside PromptFA to D=80, keeps
-# scale_value based on real D=72, and slices PromptFA output back to D=72 before
-# comparison.
+# PromptFA head-dim pad/barrier probe. PaddleOCR-VL vision uses D=72, which is
+# not fp16 32-byte aligned. Padding to D=80/96 tests aligned call widths, while
+# D=73/88 tests whether merely inserting Pad/Slice breaks a bad GE handoff.
 ATTENTION=prompt_flash_attention INPUT_BOUNDARY=bnsd NO_PADDING=1 MASK_KIND=none PROMPTFA_PAD_HEAD_DIM_TO=80 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
+ATTENTION=prompt_flash_attention INPUT_BOUNDARY=snhd_pre_rope NO_PADDING=1 MASK_KIND=none PROMPTFA_PAD_HEAD_DIM_TO=73 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
 ATTENTION=prompt_flash_attention INPUT_BOUNDARY=snhd_pre_rope NO_PADDING=1 MASK_KIND=none PROMPTFA_PAD_HEAD_DIM_TO=80 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
+ATTENTION=prompt_flash_attention INPUT_BOUNDARY=snhd_pre_rope NO_PADDING=1 MASK_KIND=none PROMPTFA_PAD_HEAD_DIM_TO=88 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
+ATTENTION=prompt_flash_attention INPUT_BOUNDARY=snhd_pre_rope NO_PADDING=1 MASK_KIND=none PROMPTFA_PAD_HEAD_DIM_TO=96 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
 ATTENTION=prompt_flash_attention INPUT_BOUNDARY=snhd_pre_rope MASK_KIND=current MASK_RANK=4 PROMPTFA_PAD_HEAD_DIM_TO=80 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
 
 # Mask-rank contract checks.
@@ -639,11 +641,16 @@ the same process and reports `candidate_vs_eager_promptfa` and
 PromptFA-vs-manual numerical differences. It also reports top diff locations and
 per-head diff summaries, plus explicit nonfinite locations.
 
-`PROMPTFA_PAD_HEAD_DIM_TO` is a PromptFA-only alignment probe. It must not change
-the manual reference. If set to `80`, the script pads Q/K/V from D=72 to D=80
-only for PromptFA, preserves `scale_value=1/sqrt(72)`, then slices the PromptFA
-output back to D=72 before diffing. Check `config.promptfa_call_head_dim`,
-`config.promptfa_head_dim_pad_extra`, and
+`PROMPTFA_PAD_HEAD_DIM_TO` is a PromptFA-only D-pad/barrier probe. It must not
+change the manual reference. If set above `72`, the script pads Q/K/V only for
+PromptFA, preserves `scale_value=1/sqrt(72)`, then slices the PromptFA output
+back to D=72 before diffing. Do not conclude that D-alignment fixed anything
+unless misaligned padded targets such as `73` and `88` fail while aligned targets
+such as `80` and `96` pass. If all padded targets pass, the likely effect is a
+Pad/Slice graph barrier rather than D-axis alignment. Check
+`config.promptfa_call_head_dim`, `config.promptfa_head_dim_pad_extra`,
+`config.promptfa_call_head_dim_fp16_32b_aligned`,
+`attention_input_meta.promptfa_call_q_shape`, and
 `attention_input_meta.promptfa_output_sliced_back_to_head_dim` in the JSON.
 
 When NaNs are present, `candidate_first_vs_second_allclose_5e_2` is expected to
