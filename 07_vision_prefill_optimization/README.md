@@ -134,7 +134,7 @@ python vision_prefill_bench.py probe-promptfa-compile \
 
 This probe does not load PaddleOCR-VL. It compiles a tiny PromptFA-only module
 with `fullgraph=True, dynamic=False`, reports that it does not use
-`cache_compile` / a GE cache directory, and compares eager vs compiled for:
+the cache-compile production path, and compares eager vs compiled for:
 unmasked PromptFA, sparse-mode-1 all-false mask, and sparse-mode-1 block mask.
 The headline field is `compiled_second_matches_eager_all`.
 
@@ -567,24 +567,53 @@ If the inline D=80 run has no nonfinites and the first bad stage is acceptably
 small, move to the full static visual candidate:
 
 ```sh
-MAX_ITEMS=4 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_static_visual_512_fullgraph.sh
+MAX_ITEMS=4 STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=1024 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_static_visual_512_fullgraph.sh
 ```
 
-Read `torchair_fullgraph_fixed512.json` first. The important fields are:
+The TorchAir case uses `torchair.inference.cache_compile` by default. Set
+`VISION_USE_TORCHAIR_CACHE_COMPILE=0` only for diagnostics that need plain
+`torch.compile`, run-eagerly, graph dumps, or MSIT dumps. Read the TorchAir JSON
+first. The important fields are:
 
 - `summary.bucket_filter` for eligible/excluded/selected crop counts
 - `summary.argmax_match_count` versus `compared_count`
 - `summary.visual_features`, `summary.image_embeds`, and `summary.prefill_logits`
+- `summary.visual_tower_effective_tokens_per_s` and
+  `summary.visual_tower_physical_tokens_per_s`
 - per-item `vision_compile.compiled_vs_static_eager_validation.real_rows`
 - per-item `vision_compile.first_real_output_nonfinite_count`
+- per-item `vision_compile.compile_api`, `uses_torchair_cache_compile`, and
+  `torchair_cache_dir`
 - `vision_compile.static_visual_promptfa_call_head_dim` and
   `vision_compile.static_visual_promptfa_call_head_dim_fp16_32b_aligned`
-  plus `vision_compile.static_visual_fixed_physical_seq_len=512`
+  plus `vision_compile.static_visual_fixed_physical_seq_len`
 
 Do not scale to 32/64 crops unless the 4-crop run has no real-row nonfinites and
 the prefill logits/argmax checks are acceptable. If it fails, report the first
 bad item and the compiled-vs-static-eager real-row diff instead of creating a new
 script.
+
+After the tensor/logit compare, run actual OCR generation through the candidate
+visual tower:
+
+```sh
+MAX_ITEMS=4 MAX_NEW_TOKENS=128 STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=1024 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_static_visual_generation.sh
+```
+
+This compares generated token sequences and decoded text from stored baseline
+`visual_features` versus candidate static visual `visual_features`, using the
+same projector, text prefill, and static decode loop. Passing first-token argmax
+alone is not enough.
+
+Before implementing true batched static visual, audit how much same-shape
+batching exists without resizing:
+
+```sh
+STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=1024 bash run_static_visual_batching_audit.sh
+```
+
+The audit reports same `image_grid_thw` and same `pixel_values` shape groups.
+It is not a speed benchmark.
 
 ## Attention-Only Repro
 

@@ -18,6 +18,8 @@ export STATIC_VISUAL_LN_IMPL="${STATIC_VISUAL_LN_IMPL:-manual_fp32}"
 export STATIC_VISUAL_LN_LINEAR_MODE="${STATIC_VISUAL_LN_LINEAR_MODE:-grouped_qkv_mlp_fc1}"
 export PROMPTFA_PAD_HEAD_DIM_TO="${PROMPTFA_PAD_HEAD_DIM_TO:-80}"
 export TORCHAIR_MODE="${TORCHAIR_MODE:-default}"
+export VISION_USE_TORCHAIR_CACHE_COMPILE="${VISION_USE_TORCHAIR_CACHE_COMPILE:-1}"
+export VISION_TORCHAIR_CACHE_DIR="${VISION_TORCHAIR_CACHE_DIR:-${SCRIPT_DIR}/outputs/torchair_cache_static_visual}"
 
 mkdir -p "${OUT_ROOT}"
 
@@ -32,12 +34,19 @@ echo "EXP07_STATIC_VISUAL_512 STATIC_VISUAL_LN_IMPL=${STATIC_VISUAL_LN_IMPL}"
 echo "EXP07_STATIC_VISUAL_512 STATIC_VISUAL_LN_LINEAR_MODE=${STATIC_VISUAL_LN_LINEAR_MODE}"
 echo "EXP07_STATIC_VISUAL_512 PROMPTFA_PAD_HEAD_DIM_TO=${PROMPTFA_PAD_HEAD_DIM_TO}"
 echo "EXP07_STATIC_VISUAL_512 TORCHAIR_MODE=${TORCHAIR_MODE}"
+echo "EXP07_STATIC_VISUAL_512 VISION_USE_TORCHAIR_CACHE_COMPILE=${VISION_USE_TORCHAIR_CACHE_COMPILE}"
+echo "EXP07_STATIC_VISUAL_512 VISION_TORCHAIR_CACHE_DIR=${VISION_TORCHAIR_CACHE_DIR}"
 echo "EXP07_STATIC_VISUAL_512 OUT_ROOT=${OUT_ROOT}"
 
 run_compare() {
   local name="$1"
   local backend="$2"
   local output_json="${OUT_ROOT}/${name}.json"
+  local cache_args=()
+  if [[ "${backend}" == "torchair" && "${VISION_USE_TORCHAIR_CACHE_COMPILE}" == "1" ]]; then
+    cache_args+=(--vision-use-torchair-cache-compile)
+    cache_args+=(--vision-torchair-cache-dir "${VISION_TORCHAIR_CACHE_DIR}")
+  fi
   echo "EXP07_STATIC_VISUAL_512 RUN name=${name} backend=${backend} output=${output_json}"
   "${PYTHON_BIN}" "${SCRIPT_DIR}/vision_prefill_bench.py" compare \
     --model "${MODEL}" \
@@ -55,6 +64,7 @@ run_compare() {
     --static-visual-ln-linear-mode "${STATIC_VISUAL_LN_LINEAR_MODE}" \
     --static-visual-promptfa-pad-head-dim-to "${PROMPTFA_PAD_HEAD_DIM_TO}" \
     --torchair-mode "${TORCHAIR_MODE}" \
+    "${cache_args[@]}" \
     --validate-compiled-against-static-eager \
     --candidate-name "${name}" \
     --max-items "${MAX_ITEMS}" \
@@ -83,6 +93,8 @@ for path in sorted(root.glob("*.json")):
     print(
         f"{path.name}: "
         f"backend={candidate.get('vision_compile_backend')} "
+        f"compile_api={candidate.get('compile_api')} "
+        f"cache_compile={candidate.get('uses_torchair_cache_compile')} "
         f"fixedS={candidate.get('static_visual_fixed_physical_seq_len')} "
         f"ln_impl={candidate.get('static_visual_ln_impl')} "
         f"linear_mode={candidate.get('static_visual_ln_linear_mode')} "
@@ -115,6 +127,7 @@ for path in sorted(root.glob("*.json")):
             f"logits_max={row.get('diffs', {}).get('prefill_logits', {}).get('max_abs_diff')} "
             f"compiled_vs_static_eager_real_max={real_rows.get('max_abs_diff')} "
             f"compiled_nonfinite={row.get('vision_compile', {}).get('first_real_output_nonfinite_count')} "
+            f"cache_dir={row.get('vision_compile', {}).get('torchair_cache_dir')} "
             f"callD={row.get('vision_compile', {}).get('static_visual_promptfa_call_head_dim')} "
             f"aligned={row.get('vision_compile', {}).get('static_visual_promptfa_call_head_dim_fp16_32b_aligned')} "
             f"visual_tower_s={timing.get('visual_tower_e2e_s', {}).get('avg')}"

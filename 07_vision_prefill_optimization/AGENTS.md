@@ -61,9 +61,16 @@ All candidate comparisons use the compile-shaped static visual boundary. Use
 `--vision-compile-backend none` for the single noncompiled candidate path, and use
 `--vision-compile-backend torchair` for the TorchAir candidate.
 
-As of this experiment version, `static_visual` uses `torch.compile(fullgraph=True, dynamic=False)`.
-It does not use TorchAir `cache_compile` / GE cache loading yet. If compile caching is added later,
-record the cache directory, cache hit/miss state, and cold versus warm first-call timing explicitly.
+`static_visual` has two compile APIs over the same callable:
+
+- plain `torch.compile(fullgraph=True, dynamic=False)` for diagnostics such as run-eagerly, graph
+  dumps, and MSIT GE-vs-FX localization;
+- `torchair.inference.cache_compile(..., dynamic=False, ge_cache=True)` for the warm production
+  path, enabled with `--vision-use-torchair-cache-compile`.
+
+Do not mix these up. Cache compile is a cold-start optimization, not a different model path. When it
+is enabled, record `compile_api`, `uses_torchair_cache_compile`, `torchair_ge_cache`,
+`torchair_cache_dir`, first-call timing, effective visual tok/s, and physical padded tok/s.
 
 The NPU equivalence gate has passed: `static_visual` with `--vision-compile-backend none` matched
 the stored eager PromptFA baseline with 0.0 diffs across the 64-crop truth bundle and the eager
@@ -102,9 +109,10 @@ If padded eager matches the stored baseline but padded TorchAir diverges, run
 it compiles a tiny PromptFA-only module with `fullgraph=True, dynamic=False` and checks eager versus
 compiled for `no_mask`, `all_false_mask`, and `block_mask` at 640/768 tokens. Its key summary field
 is `compiled_second_matches_eager_all`. The probe output explicitly records that Experiment 07 uses
-plain `torch.compile`, not `torchair.inference.cache_compile` / GE cache loading, so stale explicit
-GE cache is not the default explanation. Pass `--output outputs/promptfa_compile_probe.json` so the
-full JSON is saved without writing an inline parser.
+the diagnostic plain `torch.compile` API, not `torchair.inference.cache_compile`, so stale explicit
+GE cache is not the default explanation for this probe. Pass
+`--output outputs/promptfa_compile_probe.json` so the full JSON is saved without writing an inline
+parser.
 
 When a compiled static visual compare diverges, add `--validate-compiled-against-static-eager` to
 the compare command before changing model code. This records a direct compiled-first-call versus
@@ -165,15 +173,35 @@ as a promising operator-contract workaround, not as a completed optimization, un
 single-layer repro and the full static visual compare also pass real-row feature/logit checks.
 Report both the real head dimension and the PromptFA call head dimension in every candidate output.
 
-The next representative fullgraph bucket test is fixed physical visual length 512:
+The representative fixed-S fullgraph bucket compare is:
 
 ```sh
-MAX_ITEMS=4 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_static_visual_512_fullgraph.sh
+MAX_ITEMS=4 STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=1024 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_static_visual_512_fullgraph.sh
 ```
 
 This is the actual static prefill direction, not a control. It must report effective and physical
-vision tok/s plus `summary.bucket_filter`. Crops over 512 real visual tokens are excluded from this
-bucket, never resized, clipped, or truncated.
+vision tok/s plus `summary.bucket_filter`. Crops over the fixed physical visual length are excluded
+from that bucket, never resized, clipped, or truncated. The runner uses cache compile by default for
+the TorchAir case; set `VISION_USE_TORCHAIR_CACHE_COMPILE=0` only when doing diagnostics.
+
+The corresponding OCR generation check is:
+
+```sh
+MAX_ITEMS=4 MAX_NEW_TOKENS=128 STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=1024 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_static_visual_generation.sh
+```
+
+It compares actual generated token sequences and decoded text from two paths: stored eager baseline
+`visual_features` versus candidate static-visual `visual_features`, both flowing through the same
+projector, text prefill, and static decode loop. Passing first-token argmax is not enough.
+
+The no-resize batching prospect check is:
+
+```sh
+STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=1024 bash run_static_visual_batching_audit.sh
+```
+
+It does not claim speed. It reports how many true same-grid/same-pixel-shape groups exist in the
+truth bundle before anyone builds or benchmarks a batched static visual tower.
 
 ## Anti-Cheat Ledger
 

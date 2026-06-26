@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib
 import json
 import math
 import os
@@ -159,6 +160,7 @@ DEFAULT_DATASET_CANDIDATES = (
     Path("/workspace/data/OmniDocBench"),
 )
 DEFAULT_MODEL = os.environ.get("MODEL", "/home/lukaiv/models/paddle_ocr_0_9b_v_1_6")
+DEFAULT_VISION_TORCHAIR_CACHE_DIR = SCRIPT_DIR / "outputs" / "torchair_cache_static_visual"
 
 
 @dataclass(frozen=True)
@@ -1620,13 +1622,106 @@ def import_torchair():
     try:
         import torchair
         from torchair.configs.compiler_config import CompilerConfig
+    except Exception as direct_error:
+        try:
+            from torch_npu.dynamo import torchair
+            from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
+        except Exception as fallback_error:
+            raise RuntimeError(
+                "TorchAir is unavailable: direct `import torchair` failed with "
+                f"{direct_error!r}, and `from torch_npu.dynamo import torchair` "
+                f"failed with {fallback_error!r}."
+            ) from fallback_error
 
-        return torchair, CompilerConfig
-    except Exception:
-        from torch_npu.dynamo import torchair
-        from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
+    if not hasattr(torchair, "inference"):
+        torchair.inference = importlib.import_module(f"{torchair.__name__}.inference")
+    return torchair, CompilerConfig
 
-        return torchair, CompilerConfig
+
+def torchair_compiler_config(
+    *,
+    torchair_mode: str = "default",
+    torchair_run_eagerly: bool = False,
+    torchair_graph_dump_type: str = "none",
+    torchair_graph_dump_dir: str | Path | None = None,
+    torchair_msit_dump_kind: str = "none",
+    torchair_msit_dump_dir: str | Path | None = None,
+    torchair_msit_dump_mode: str = "output",
+    torchair_msit_dump_token: str = "",
+    torchair_msit_dump_layer: str = "",
+    torchair_msit_fusion_switch_file: str | Path | None = None,
+) -> tuple[Any, dict[str, Any]]:
+    if torchair_mode not in TORCHAIR_MODE_CHOICES:
+        raise ValueError(f"--torchair-mode must be one of {TORCHAIR_MODE_CHOICES}, got {torchair_mode!r}")
+    if torchair_graph_dump_type not in TORCHAIR_GRAPH_DUMP_TYPE_CHOICES:
+        raise ValueError(
+            f"--torchair-graph-dump-type must be one of {TORCHAIR_GRAPH_DUMP_TYPE_CHOICES}, "
+            f"got {torchair_graph_dump_type!r}"
+        )
+    if torchair_msit_dump_kind not in TORCHAIR_MSIT_DUMP_KIND_CHOICES:
+        raise ValueError(
+            f"--torchair-msit-dump-kind must be one of {TORCHAIR_MSIT_DUMP_KIND_CHOICES}, "
+            f"got {torchair_msit_dump_kind!r}"
+        )
+    if torchair_run_eagerly and torchair_msit_dump_kind != "none":
+        raise ValueError("--torchair-run-eagerly cannot be combined with MSIT GE/FX dump collection")
+    torchair, CompilerConfig = import_torchair()
+    config = CompilerConfig()
+    meta: dict[str, Any] = {
+        "backend_kind": "torchair",
+        "torchair_mode": str(torchair_mode),
+        "torchair_run_eagerly": bool(torchair_run_eagerly),
+        "torchair_graph_dump_type": str(torchair_graph_dump_type),
+        "torchair_graph_dump_dir": None,
+        "torchair_graph_dump_path_attrs": [],
+        "torchair_msit_dump": {"enabled": False, "kind": "none"},
+    }
+    if torchair_mode == "max-autotune":
+        config.mode = str(torchair_mode)
+    if torchair_run_eagerly:
+        config.debug.run_eagerly = True
+    if torchair_graph_dump_type != "none":
+        config.debug.graph_dump.type = str(torchair_graph_dump_type)
+        if torchair_graph_dump_dir is not None and str(torchair_graph_dump_dir).strip():
+            dump_dir = Path(torchair_graph_dump_dir).expanduser().resolve()
+            meta["torchair_graph_dump_dir"] = str(dump_dir)
+            meta["torchair_graph_dump_path_attrs"] = set_torchair_graph_dump_path(config.debug.graph_dump, dump_dir)
+    if torchair_msit_dump_kind != "none":
+        meta["torchair_msit_dump"] = apply_msit_torchair_dump_config(
+            config,
+            kind=str(torchair_msit_dump_kind),
+            dump_dir=torchair_msit_dump_dir,
+            dump_mode=str(torchair_msit_dump_mode),
+            dump_token=str(torchair_msit_dump_token),
+            dump_layer=str(torchair_msit_dump_layer),
+            fusion_switch_file=torchair_msit_fusion_switch_file,
+        )
+    return config, meta
+
+
+def torchair_cache_dir_for_static_visual(
+    cache_root: Path,
+    *,
+    fixed_physical_seq_len: int,
+    real_seq_len: int,
+    image_grid_thw: torch.Tensor,
+    dtype: torch.dtype,
+    ln_impl: str,
+    ln_linear_mode: str,
+    promptfa_call_head_dim: int,
+    promptfa_layout: str,
+    promptfa_mask_sparse_mode: int,
+    torchair_mode: str,
+) -> Path:
+    grid = "x".join(str(int(value)) for value in image_grid_thw.detach().cpu().reshape(-1).tolist())
+    dtype_name = str(dtype).replace("torch.", "")
+    key = (
+        f"S{int(fixed_physical_seq_len)}_real{int(real_seq_len)}_grid{grid}_"
+        f"dtype{dtype_name}_ln{ln_impl}_linear{ln_linear_mode}_"
+        f"callD{int(promptfa_call_head_dim)}_layout{promptfa_layout}_"
+        f"sparse{int(promptfa_mask_sparse_mode)}_mode{torchair_mode}"
+    )
+    return cache_root.expanduser().resolve() / key
 
 
 def set_torchair_graph_dump_path(graph_dump: Any, dump_dir: Path) -> list[str]:
@@ -1783,51 +1878,19 @@ def vision_compile_backend(
     if name == "torchair":
         if device.type != "npu":
             raise ValueError("--vision-compile-backend torchair requires --device npu:0")
-        if torchair_mode not in TORCHAIR_MODE_CHOICES:
-            raise ValueError(f"--torchair-mode must be one of {TORCHAIR_MODE_CHOICES}, got {torchair_mode!r}")
-        if torchair_graph_dump_type not in TORCHAIR_GRAPH_DUMP_TYPE_CHOICES:
-            raise ValueError(
-                f"--torchair-graph-dump-type must be one of {TORCHAIR_GRAPH_DUMP_TYPE_CHOICES}, "
-                f"got {torchair_graph_dump_type!r}"
-            )
-        if torchair_msit_dump_kind not in TORCHAIR_MSIT_DUMP_KIND_CHOICES:
-            raise ValueError(
-                f"--torchair-msit-dump-kind must be one of {TORCHAIR_MSIT_DUMP_KIND_CHOICES}, "
-                f"got {torchair_msit_dump_kind!r}"
-            )
-        if torchair_run_eagerly and torchair_msit_dump_kind != "none":
-            raise ValueError("--torchair-run-eagerly cannot be combined with MSIT GE/FX dump collection")
-        torchair, CompilerConfig = import_torchair()
-        config = CompilerConfig()
-        meta: dict[str, Any] = {
-            "backend_kind": "torchair",
-            "torchair_mode": str(torchair_mode),
-            "torchair_run_eagerly": bool(torchair_run_eagerly),
-            "torchair_graph_dump_type": str(torchair_graph_dump_type),
-            "torchair_graph_dump_dir": None,
-            "torchair_graph_dump_path_attrs": [],
-            "torchair_msit_dump": {"enabled": False, "kind": "none"},
-        }
-        if torchair_mode == "max-autotune":
-            config.mode = str(torchair_mode)
-        if torchair_run_eagerly:
-            config.debug.run_eagerly = True
-        if torchair_graph_dump_type != "none":
-            config.debug.graph_dump.type = str(torchair_graph_dump_type)
-            if torchair_graph_dump_dir is not None and str(torchair_graph_dump_dir).strip():
-                dump_dir = Path(torchair_graph_dump_dir).expanduser().resolve()
-                meta["torchair_graph_dump_dir"] = str(dump_dir)
-                meta["torchair_graph_dump_path_attrs"] = set_torchair_graph_dump_path(config.debug.graph_dump, dump_dir)
-        if torchair_msit_dump_kind != "none":
-            meta["torchair_msit_dump"] = apply_msit_torchair_dump_config(
-                config,
-                kind=str(torchair_msit_dump_kind),
-                dump_dir=torchair_msit_dump_dir,
-                dump_mode=str(torchair_msit_dump_mode),
-                dump_token=str(torchair_msit_dump_token),
-                dump_layer=str(torchair_msit_dump_layer),
-                fusion_switch_file=torchair_msit_fusion_switch_file,
-            )
+        config, meta = torchair_compiler_config(
+            torchair_mode=torchair_mode,
+            torchair_run_eagerly=torchair_run_eagerly,
+            torchair_graph_dump_type=torchair_graph_dump_type,
+            torchair_graph_dump_dir=torchair_graph_dump_dir,
+            torchair_msit_dump_kind=torchair_msit_dump_kind,
+            torchair_msit_dump_dir=torchair_msit_dump_dir,
+            torchair_msit_dump_mode=torchair_msit_dump_mode,
+            torchair_msit_dump_token=torchair_msit_dump_token,
+            torchair_msit_dump_layer=torchair_msit_dump_layer,
+            torchair_msit_fusion_switch_file=torchair_msit_fusion_switch_file,
+        )
+        torchair, _CompilerConfig = import_torchair()
         return torchair.get_npu_backend(compiler_config=config), meta
     return name, {"backend_kind": str(name)}
 
@@ -1855,6 +1918,8 @@ def maybe_compile_static_visual(
     torchair_msit_dump_token: str = "",
     torchair_msit_dump_layer: str = "",
     torchair_msit_fusion_switch_file: str | Path | None = None,
+    use_torchair_cache_compile: bool = False,
+    torchair_cache_dir: str | Path | None = None,
 ) -> tuple[Callable[[torch.Tensor], torch.Tensor] | None, dict[str, Any]]:
     if backend_name not in VISION_COMPILE_BACKEND_CHOICES:
         raise ValueError(f"unsupported vision compile backend={backend_name!r}; choices={VISION_COMPILE_BACKEND_CHOICES}")
@@ -1911,6 +1976,10 @@ def maybe_compile_static_visual(
         "static_pad_attention_mask_shape": mask_shape,
         "static_pad_attention_mask_enabled": bool(wrapper.static_pad_attention_mask is not None),
         "static_visual_encoder_path": "single_static_path_masked_padding_default",
+        "uses_torchair_cache_compile": False,
+        "torchair_ge_cache": False,
+        "torchair_cache_dir": None,
+        "torchair_cache_root": None,
     }
     if backend_name == "none":
         meta.update({"enabled": False, "compile_api": None})
@@ -1922,6 +1991,74 @@ def maybe_compile_static_visual(
     torch._dynamo.config.capture_scalar_outputs = True
     compile_kwargs: dict[str, Any] = {"fullgraph": True, "dynamic": False}
     torch._dynamo.reset()
+    use_cache_compile = bool(use_torchair_cache_compile and backend_name == "torchair")
+    if use_cache_compile:
+        if device.type != "npu":
+            raise ValueError("--vision-use-torchair-cache-compile requires --device npu:0")
+        if bool(torchair_run_eagerly):
+            raise ValueError("--vision-use-torchair-cache-compile cannot be combined with --torchair-run-eagerly")
+        if str(torchair_graph_dump_type) != "none" or str(torchair_msit_dump_kind) != "none":
+            raise ValueError(
+                "--vision-use-torchair-cache-compile is the warm production path; "
+                "use plain torch.compile for graph/MSIT diagnostics."
+            )
+        torchair, _CompilerConfig = import_torchair()
+        config, backend_meta = torchair_compiler_config(
+            torchair_mode=torchair_mode,
+            torchair_run_eagerly=False,
+            torchair_graph_dump_type="none",
+            torchair_graph_dump_dir=None,
+            torchair_msit_dump_kind="none",
+            torchair_msit_dump_dir=None,
+            torchair_msit_dump_mode=torchair_msit_dump_mode,
+            torchair_msit_dump_token="",
+            torchair_msit_dump_layer="",
+            torchair_msit_fusion_switch_file=None,
+        )
+        cache_root = Path(torchair_cache_dir or DEFAULT_VISION_TORCHAIR_CACHE_DIR).expanduser().resolve()
+        visual_dtype = getattr(model.visual, "dtype", next(model.parameters()).dtype)
+        shape_cache_dir = torchair_cache_dir_for_static_visual(
+            cache_root,
+            fixed_physical_seq_len=int(wrapper.static_physical_seq_len),
+            real_seq_len=int(wrapper.static_real_seq_len),
+            image_grid_thw=item.image_grid_thw,
+            dtype=visual_dtype,
+            ln_impl=str(wrapper.ln_impl),
+            ln_linear_mode=str(wrapper.ln_linear_mode),
+            promptfa_call_head_dim=int(promptfa_call_head_dim),
+            promptfa_layout=str(get_vision_prompt_fa_layout()),
+            promptfa_mask_sparse_mode=int(os.environ.get("PADDLE_OCR_VL_VISION_PROMPT_FA_MASK_SPARSE_MODE", "1")),
+            torchair_mode=str(torchair_mode),
+        )
+        shape_cache_dir.mkdir(parents=True, exist_ok=True)
+        maybe_sync(device)
+        start = time.perf_counter()
+        compiled = torchair.inference.cache_compile(
+            wrapper.forward,
+            config=config,
+            dynamic=False,
+            cache_dir=str(shape_cache_dir),
+            ge_cache=True,
+        )
+        maybe_sync(device)
+        meta.update(
+            {
+                "enabled": True,
+                "compile_api": "torchair.inference.cache_compile",
+                "compile_wrapper_s": float(time.perf_counter() - start),
+                "capture_scalar_outputs": True,
+                "capture_scalar_outputs_previous": old_capture_scalar_outputs,
+                "dynamo_reset_before_compile": True,
+                "compile_backend_meta": backend_meta,
+                "uses_torchair_cache_compile": True,
+                "torchair_ge_cache": True,
+                "torchair_cache_root": str(cache_root),
+                "torchair_cache_dir": str(shape_cache_dir),
+                "torchair_cache_key_shape": str(shape_cache_dir.name),
+            }
+        )
+        return compiled, meta
+
     backend, backend_meta = vision_compile_backend(
         backend_name,
         device,
@@ -1951,6 +2088,7 @@ def maybe_compile_static_visual(
             "capture_scalar_outputs_previous": old_capture_scalar_outputs,
             "dynamo_reset_before_compile": True,
             "compile_backend_meta": backend_meta,
+            "uses_torchair_cache_compile": False,
         }
     )
     return compiled, meta
@@ -1986,6 +2124,8 @@ def prepare_candidate_vision_forward(
         torchair_msit_dump_token=str(getattr(args, "torchair_msit_dump_token", "")),
         torchair_msit_dump_layer=str(getattr(args, "torchair_msit_dump_layer", "")),
         torchair_msit_fusion_switch_file=getattr(args, "torchair_msit_fusion_switch_file", None),
+        use_torchair_cache_compile=bool(getattr(args, "vision_use_torchair_cache_compile", False)),
+        torchair_cache_dir=getattr(args, "vision_torchair_cache_dir", None),
     )
     if vision_forward is None:
         raise RuntimeError("static_visual candidate did not produce a callable vision_forward")
@@ -2159,6 +2299,118 @@ def compute_prefill_tail_from_visual_features(
         "image_grid_thw": image_grid_thw.detach(),
         "prefill_argmax": torch.argmax(prefill_logits[:, -1, :].float(), dim=-1).detach(),
     }
+
+
+def trim_after_eos(tokens: list[int], eos_token_id: int) -> list[int]:
+    if int(eos_token_id) in tokens:
+        return tokens[: tokens.index(int(eos_token_id)) + 1]
+    return tokens
+
+
+def first_mismatch(lhs: list[int], rhs: list[int]) -> dict[str, Any] | None:
+    limit = min(len(lhs), len(rhs))
+    for idx in range(limit):
+        if int(lhs[idx]) != int(rhs[idx]):
+            return {"position": int(idx), "lhs": int(lhs[idx]), "rhs": int(rhs[idx])}
+    if len(lhs) != len(rhs):
+        return {
+            "position": int(limit),
+            "lhs": lhs[limit:] if len(lhs) > limit else None,
+            "rhs": rhs[limit:] if len(rhs) > limit else None,
+        }
+    return None
+
+
+@torch.inference_mode()
+def compute_prefill_state_from_visual_features(
+    *,
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    item: PrefillInput,
+    device: torch.device,
+    cache_length: int,
+    visual_features: torch.Tensor,
+) -> dict[str, Any]:
+    input_ids = item.input_ids.to(device)
+    attention_mask = item.attention_mask.to(device)
+    image_grid_thw = item.image_grid_thw
+    if int(input_ids.shape[1]) > int(cache_length):
+        raise ValueError(
+            f"input length {int(input_ids.shape[1])} exceeds cache_length={int(cache_length)} for item {item.entry.get('id')}"
+        )
+    image_embeds = model.mlp_AR(visual_features, image_grid_thw)
+    inputs_embeds = model.model.embed_tokens(input_ids)
+    inputs_embeds = scatter_projected_image_embeds(
+        model=model,
+        input_ids=input_ids,
+        inputs_embeds=inputs_embeds,
+        image_embeds=image_embeds,
+    )
+    position_ids_cpu, rope_deltas_cpu = model.get_rope_index(item.input_ids, item.image_grid_thw, item.attention_mask)
+    position_ids = position_ids_cpu.to(device)
+    rope_deltas = rope_deltas_cpu.to(device)
+    cache = model.allocate_static_cache(
+        batch_size=int(inputs_embeds.shape[0]),
+        cache_length=int(cache_length),
+        device=inputs_embeds.device,
+        dtype=inputs_embeds.dtype,
+        init_mode="zeros",
+    )
+    hidden_states = model.model.forward_prefill_static(
+        inputs_embeds=inputs_embeds,
+        attention_mask=attention_mask,
+        position_ids=position_ids,
+        cache=cache,
+    )
+    prefill_logits = model.lm_head(hidden_states[:, -1:, :])
+    next_token = torch.argmax(prefill_logits[:, -1, :].float(), dim=-1, keepdim=True)
+    cache_position = torch.full((int(input_ids.shape[0]),), int(input_ids.shape[1]), device=device, dtype=torch.int64)
+    return {
+        "visual_features": visual_features.detach(),
+        "image_embeds": image_embeds.detach(),
+        "inputs_embeds": inputs_embeds.detach(),
+        "prefill_logits": prefill_logits.detach(),
+        "prefill_hidden_last": hidden_states[:, -1:, :].detach(),
+        "input_ids": input_ids.detach(),
+        "attention_mask": attention_mask.detach(),
+        "image_grid_thw": image_grid_thw.detach(),
+        "prefill_argmax": next_token.squeeze(1).detach(),
+        "next_token": next_token.detach(),
+        "cache": cache,
+        "rope_deltas": rope_deltas,
+        "cache_position": cache_position,
+    }
+
+
+@torch.inference_mode()
+def generate_from_prefill_state(
+    *,
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    prefill: dict[str, Any],
+    max_new_tokens: int,
+    eos_token_id: int,
+) -> torch.Tensor:
+    next_token = prefill["next_token"]
+    cache = prefill["cache"]
+    rope_deltas = prefill["rope_deltas"]
+    cache_position = prefill["cache_position"]
+    generated = [next_token]
+    finished = next_token.squeeze(1) == int(eos_token_id)
+    for _ in range(max(0, int(max_new_tokens) - 1)):
+        if bool(finished.all().item()):
+            break
+        outputs_decode = model.forward_static_decode(
+            input_ids=next_token,
+            cache=cache,
+            cache_position=cache_position,
+            rope_deltas=rope_deltas,
+            logits_to_keep=1,
+        )
+        next_token = torch.argmax(outputs_decode.logits[:, -1, :].float(), dim=-1, keepdim=True)
+        next_token = torch.where(finished.view(-1, 1), torch.full_like(next_token, int(eos_token_id)), next_token)
+        generated.append(next_token)
+        finished |= next_token.squeeze(1) == int(eos_token_id)
+        cache_position = cache_position + 1
+    return torch.cat(generated, dim=1)
 
 
 @torch.inference_mode()
@@ -4430,10 +4682,22 @@ def compare_candidate(args: argparse.Namespace) -> None:
             "device": str(device),
             "compiled": bool(str(args.vision_compile_backend) != "none"),
             "compile_api": (
-                "torch.compile"
+                "torchair.inference.cache_compile"
+                if bool(getattr(args, "vision_use_torchair_cache_compile", False))
+                and str(args.vision_compile_backend) == "torchair"
+                else "torch.compile"
                 if str(args.vision_compile_backend) != "none"
                 else None
             ),
+            "uses_torchair_cache_compile": bool(
+                getattr(args, "vision_use_torchair_cache_compile", False)
+                and str(args.vision_compile_backend) == "torchair"
+            ),
+            "torchair_ge_cache": bool(
+                getattr(args, "vision_use_torchair_cache_compile", False)
+                and str(args.vision_compile_backend) == "torchair"
+            ),
+            "vision_torchair_cache_dir": str(getattr(args, "vision_torchair_cache_dir", "") or ""),
             "vision_attention": get_vision_attention_impl(),
             "vision_prompt_fa_layout": get_vision_prompt_fa_layout(),
             "vision_prompt_fa_mask_sparse_mode": int(args.vision_prompt_fa_mask_sparse_mode),
@@ -4663,6 +4927,19 @@ def parse_args() -> argparse.Namespace:
     compare_parser.add_argument("--warmup-repeats", type=int, default=0)
     compare_parser.add_argument("--max-items", type=int, default=0)
     compare_parser.add_argument("--vision-compile-backend", default="none", choices=VISION_COMPILE_BACKEND_CHOICES)
+    compare_parser.add_argument(
+        "--vision-use-torchair-cache-compile",
+        action="store_true",
+        help=(
+            "Use torchair.inference.cache_compile with GE cache for --vision-compile-backend torchair. "
+            "This is the warm production path; keep disabled for run-eagerly/MSIT/graph-dump diagnostics."
+        ),
+    )
+    compare_parser.add_argument(
+        "--vision-torchair-cache-dir",
+        default=str(DEFAULT_VISION_TORCHAIR_CACHE_DIR),
+        help="Root directory for static-visual TorchAir GE cache entries.",
+    )
     compare_parser.add_argument(
         "--static-visual-fixed-physical-seq-len",
         type=int,
