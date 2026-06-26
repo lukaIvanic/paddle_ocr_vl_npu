@@ -586,20 +586,46 @@ ATTENTION=prompt_flash_attention COMPILE_BACKEND=none ASCEND_RT_VISIBLE_DEVICES=
 # PromptFA compiled, no padding/mask.
 ATTENTION=prompt_flash_attention NO_PADDING=1 MASK_KIND=none ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
 
+# Same no-padding/no-mask case with BSND call layout. Output is normalized back
+# to BNSD before comparison.
+ATTENTION=prompt_flash_attention PROMPTFA_LAYOUT=bsnd NO_PADDING=1 MASK_KIND=none ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
+
+# Boundary ladder, no padding/mask. This progressively moves more producer
+# operations into the compiled graph before PromptFA:
+# - bnsd: PromptFA receives already-materialized BNSD Q/K/V.
+# - snhd_rope_done: graph includes SNHD -> PromptFA layout conversion.
+# - snhd_pre_rope: graph includes RoPE plus layout conversion.
+# - qkv_flat_pre_rope: graph includes QKV chunk/view plus RoPE plus layout conversion.
+ATTENTION=prompt_flash_attention INPUT_BOUNDARY=bnsd NO_PADDING=1 MASK_KIND=none ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
+ATTENTION=prompt_flash_attention INPUT_BOUNDARY=snhd_rope_done NO_PADDING=1 MASK_KIND=none ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
+ATTENTION=prompt_flash_attention INPUT_BOUNDARY=snhd_pre_rope NO_PADDING=1 MASK_KIND=none ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
+ATTENTION=prompt_flash_attention INPUT_BOUNDARY=qkv_flat_pre_rope NO_PADDING=1 MASK_KIND=none ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
+
 # PromptFA compiled, padded but no mask.
 ATTENTION=prompt_flash_attention MASK_KIND=none ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
 
 # PromptFA compiled with the current real<->pad block mask.
 ATTENTION=prompt_flash_attention MASK_KIND=current MASK_RANK=4 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
 
+# Padded/masked boundary checks once the no-padding ladder is understood.
+ATTENTION=prompt_flash_attention INPUT_BOUNDARY=snhd_rope_done MASK_KIND=current MASK_RANK=4 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
+ATTENTION=prompt_flash_attention INPUT_BOUNDARY=snhd_pre_rope MASK_KIND=current MASK_RANK=4 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
+ATTENTION=prompt_flash_attention INPUT_BOUNDARY=qkv_flat_pre_rope MASK_KIND=current MASK_RANK=4 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
+
 # Mask-rank contract checks.
 ATTENTION=prompt_flash_attention MASK_KIND=current MASK_RANK=2 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
 ATTENTION=prompt_flash_attention MASK_KIND=current MASK_RANK=3 ASCEND_RT_VISIBLE_DEVICES=1 bash run_npu_attention_only_repro.sh
 ```
 
-The reference is always manual attention over the same materialized Q/K/V and
-mask. The JSON reports overall and real/pad split diffs for the attention
-output only.
+The reference is always manual attention over the same boundary inputs and mask.
+For non-`bnsd` boundaries, the manual reference replays the same producer ops
+before attention, so this is a producer-boundary test rather than a different
+math reference. The JSON reports overall and real/pad split diffs for the attention
+output only. For PromptFA candidates, the script also computes eager PromptFA in
+the same process and reports `candidate_vs_eager_promptfa` and
+`eager_promptfa_vs_manual`, so GE/CANN drift can be separated from ordinary
+PromptFA-vs-manual numerical differences. It also reports top diff locations and
+per-head diff summaries, plus explicit nonfinite locations.
 
 ## CUDA Smoke
 

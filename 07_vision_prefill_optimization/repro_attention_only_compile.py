@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Real-QKV attention-only TorchAir repro for PaddleOCR-VL vision attention.
+"""Small-boundary TorchAir repro for PaddleOCR-VL vision attention.
 
-This intentionally compiles only the attention operation. Q/K/V tensors are
-materialized eagerly from one real crop using the same layer-0 preprocessing,
-manual LayerNorm, QKV projection, and vision RoPE used in the inline layer repro.
-The compiled graph therefore cannot include patch embedding, LayerNorm, QKV,
-MLP, residuals, or output projection.
+This intentionally keeps patch embedding, LayerNorm, the QKV linear projection,
+MLP, residuals, and output projection out of the compiled graph. The default
+boundary compiles only attention over already-materialized BNSD Q/K/V tensors.
+Optional boundaries progressively move SNHD layout conversion, RoPE, and QKV
+chunk/view into the compiled graph so PromptFA GE drift and padded nonfinites
+can be isolated without returning to a whole vision layer.
 """
 
 from __future__ import annotations
@@ -134,22 +135,84 @@ class AttentionOnly(torch.nn.Module):
         self,
         *,
         attention: str,
+        input_layout: str,
+        input_boundary: str,
         num_heads: int,
+        head_dim: int,
         scaling: float,
         sparse_mode: int,
         mask: torch.Tensor | None,
+        rope_cos: torch.Tensor | None,
+        rope_sin: torch.Tensor | None,
     ):
         super().__init__()
         if attention not in ("manual", "prompt_flash_attention"):
             raise ValueError(f"unsupported attention={attention!r}")
+        if input_layout not in ("BNSD", "BSND"):
+            raise ValueError(f"unsupported input_layout={input_layout!r}")
+        if input_boundary not in ("bnsd", "snhd_rope_done", "snhd_pre_rope", "qkv_flat_pre_rope"):
+            raise ValueError(f"unsupported input_boundary={input_boundary!r}")
         self.attention = str(attention)
+        self.input_layout = str(input_layout)
+        self.input_boundary = str(input_boundary)
         self.num_heads = int(num_heads)
+        self.head_dim = int(head_dim)
         self.scaling = float(scaling)
         self.sparse_mode = int(sparse_mode)
         self.register_buffer("atten_mask", mask, persistent=False)
+        self.register_buffer(
+            "rope_cos",
+            torch.empty(0) if rope_cos is None else rope_cos.detach().clone(),
+            persistent=False,
+        )
+        self.register_buffer(
+            "rope_sin",
+            torch.empty(0) if rope_sin is None else rope_sin.detach().clone(),
+            persistent=False,
+        )
 
-    def forward(self, q_bnsd: torch.Tensor, k_bnsd: torch.Tensor, v_bnsd: torch.Tensor) -> torch.Tensor:
+    def _to_bnsd(self, tensor: torch.Tensor) -> torch.Tensor:
+        if self.input_layout == "BNSD":
+            return tensor
+        return tensor.transpose(1, 2).contiguous()
+
+    def _from_snhd_to_call_layout(self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        if self.input_layout == "BNSD":
+            return (
+                query.transpose(0, 1).unsqueeze(0).contiguous(),
+                key.transpose(0, 1).unsqueeze(0).contiguous(),
+                value.transpose(0, 1).unsqueeze(0).contiguous(),
+            )
+        return (
+            query.unsqueeze(0).contiguous(),
+            key.unsqueeze(0).contiguous(),
+            value.unsqueeze(0).contiguous(),
+        )
+
+    def _prepare_call_inputs(self, q_source: torch.Tensor, k_source: torch.Tensor, v_source: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        if self.input_boundary == "bnsd":
+            return q_source, k_source, v_source
+        if self.input_boundary == "snhd_rope_done":
+            return self._from_snhd_to_call_layout(q_source, k_source, v_source)
+        if self.input_boundary == "snhd_pre_rope":
+            query, key = apply_rotary_pos_emb_vision(q_source, k_source, self.rope_cos, self.rope_sin)
+            return self._from_snhd_to_call_layout(query, key, v_source)
+        if self.input_boundary == "qkv_flat_pre_rope":
+            seq_len = q_source.shape[0]
+            query, key, value = q_source.chunk(3, dim=-1)
+            query = query.view(seq_len, self.num_heads, self.head_dim)
+            key = key.view(seq_len, self.num_heads, self.head_dim)
+            value = value.view(seq_len, self.num_heads, self.head_dim)
+            query, key = apply_rotary_pos_emb_vision(query, key, self.rope_cos, self.rope_sin)
+            return self._from_snhd_to_call_layout(query, key, value)
+        raise RuntimeError(f"unreachable input_boundary={self.input_boundary!r}")
+
+    def forward(self, q_source: torch.Tensor, k_source: torch.Tensor, v_source: torch.Tensor) -> torch.Tensor:
+        q_states, k_states, v_states = self._prepare_call_inputs(q_source, k_source, v_source)
         if self.attention == "manual":
+            q_bnsd = self._to_bnsd(q_states)
+            k_bnsd = self._to_bnsd(k_states)
+            v_bnsd = self._to_bnsd(v_states)
             scores = torch.matmul(q_bnsd, k_bnsd.transpose(2, 3)) * self.scaling
             if self.atten_mask is not None:
                 scores = scores.masked_fill(self.atten_mask, torch.finfo(scores.dtype).min)
@@ -163,24 +226,25 @@ class AttentionOnly(torch.nn.Module):
         if self.atten_mask is not None:
             mask_kwargs["atten_mask"] = self.atten_mask.to(torch.bool).contiguous()
             sparse_mode = int(self.sparse_mode)
-        return torch_npu.npu_prompt_flash_attention(
-            q_bnsd.contiguous(),
-            k_bnsd.contiguous(),
-            v_bnsd.contiguous(),
+        output = torch_npu.npu_prompt_flash_attention(
+            q_states.contiguous(),
+            k_states.contiguous(),
+            v_states.contiguous(),
             num_heads=int(self.num_heads),
-            input_layout="BNSD",
+            input_layout=self.input_layout,
             scale_value=float(self.scaling),
             sparse_mode=sparse_mode,
             **mask_kwargs,
         )
+        if self.input_layout == "BSND":
+            return output.transpose(1, 2).contiguous()
+        return output
 
 
 @torch.inference_mode()
 def build_real_qkv_inputs(args: argparse.Namespace, model_dir: Path, device: torch.device, dtype: torch.dtype) -> tuple[
     LocalPaddleOCRVLForConditionalGeneration,
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
+    dict[str, tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
     dict[str, Any],
 ]:
     model = LocalPaddleOCRVLForConditionalGeneration.from_pretrained(model_dir, dtype=dtype, device=device).eval()
@@ -235,14 +299,21 @@ def build_real_qkv_inputs(args: argparse.Namespace, model_dir: Path, device: tor
         ],
         dim=-1,
     )
-    query, key, value = qkv.chunk(3, dim=-1)
-    query = query.view(physical_seq_len, attention.num_heads, attention.head_dim)
-    key = key.view(physical_seq_len, attention.num_heads, attention.head_dim)
-    value = value.view(physical_seq_len, attention.num_heads, attention.head_dim)
-    query, key = apply_rotary_pos_emb_vision(query, key, rope_cos, rope_sin)
-    q_bnsd = query.transpose(0, 1).unsqueeze(0).contiguous()
-    k_bnsd = key.transpose(0, 1).unsqueeze(0).contiguous()
-    v_bnsd = value.transpose(0, 1).unsqueeze(0).contiguous()
+    query_pre, key_pre, value_snhd = qkv.chunk(3, dim=-1)
+    query_pre = query_pre.view(physical_seq_len, attention.num_heads, attention.head_dim)
+    key_pre = key_pre.view(physical_seq_len, attention.num_heads, attention.head_dim)
+    value_snhd = value_snhd.view(physical_seq_len, attention.num_heads, attention.head_dim)
+    query_rope, key_rope = apply_rotary_pos_emb_vision(query_pre, key_pre, rope_cos, rope_sin)
+    q_bnsd = query_rope.transpose(0, 1).unsqueeze(0).contiguous()
+    k_bnsd = key_rope.transpose(0, 1).unsqueeze(0).contiguous()
+    v_bnsd = value_snhd.transpose(0, 1).unsqueeze(0).contiguous()
+
+    boundary_inputs = {
+        "bnsd": (q_bnsd, k_bnsd, v_bnsd),
+        "snhd_rope_done": (query_rope.contiguous(), key_rope.contiguous(), value_snhd.contiguous()),
+        "snhd_pre_rope": (query_pre.contiguous(), key_pre.contiguous(), value_snhd.contiguous()),
+        "qkv_flat_pre_rope": (qkv.contiguous(), qkv.contiguous(), qkv.contiguous()),
+    }
 
     meta = {
         "item": item_meta,
@@ -256,11 +327,21 @@ def build_real_qkv_inputs(args: argparse.Namespace, model_dir: Path, device: tor
         "num_heads": int(attention.num_heads),
         "head_dim": int(attention.head_dim),
         "scaling": float(attention.scaling),
+        "rope_cos_shape": [int(dim) for dim in rope_cos.shape],
+        "rope_sin_shape": [int(dim) for dim in rope_sin.shape],
+        "boundary_input_shapes": {
+            name: [[int(dim) for dim in tensor.shape] for tensor in tensors]
+            for name, tensors in boundary_inputs.items()
+        },
         "q_summary": tensor_summary(q_bnsd.detach().cpu()),
         "k_summary": tensor_summary(k_bnsd.detach().cpu()),
         "v_summary": tensor_summary(v_bnsd.detach().cpu()),
     }
-    return model, q_bnsd, k_bnsd, v_bnsd, meta
+    meta_tensors = {
+        **boundary_inputs,
+        "_rope": (rope_cos.contiguous(), rope_sin.contiguous(), rope_sin.contiguous()),
+    }
+    return model, meta_tensors, meta
 
 
 def compare_attention_output(
@@ -283,6 +364,83 @@ def compare_attention_output(
     }
 
 
+def top_diff_locations(lhs: torch.Tensor, rhs: torch.Tensor, *, limit: int = 8) -> list[dict[str, Any]]:
+    lhs_f = lhs.detach().float().cpu()
+    rhs_f = rhs.detach().float().cpu()
+    if tuple(lhs_f.shape) != tuple(rhs_f.shape):
+        return []
+    diff = torch.abs(lhs_f - rhs_f)
+    finite = torch.isfinite(lhs_f) & torch.isfinite(rhs_f)
+    finite_diff = diff.masked_fill(~finite, -1.0).reshape(-1)
+    positive = finite_diff > 0
+    if not bool(positive.any().item()):
+        return []
+    k = min(int(limit), int(positive.sum().item()))
+    values, flat_indices = torch.topk(finite_diff, k=k)
+    out: list[dict[str, Any]] = []
+    shape = tuple(int(dim) for dim in lhs_f.shape)
+    for value, flat_idx in zip(values.tolist(), flat_indices.tolist()):
+        idx = np.unravel_index(int(flat_idx), shape)
+        out.append(
+            {
+                "index": [int(part) for part in idx],
+                "abs_diff": float(value),
+                "candidate": float(lhs_f[idx].item()),
+                "reference": float(rhs_f[idx].item()),
+            }
+        )
+    return out
+
+
+def nonfinite_locations(tensor: torch.Tensor, *, limit: int = 8) -> list[dict[str, Any]]:
+    tensor_f = tensor.detach().float().cpu()
+    nonfinite = ~torch.isfinite(tensor_f)
+    if not bool(nonfinite.any().item()):
+        return []
+    flat_indices = nonfinite.reshape(-1).nonzero(as_tuple=False).flatten()[: int(limit)]
+    shape = tuple(int(dim) for dim in tensor_f.shape)
+    out: list[dict[str, Any]] = []
+    for flat_idx in flat_indices.tolist():
+        idx = np.unravel_index(int(flat_idx), shape)
+        value = tensor_f[idx]
+        out.append(
+            {
+                "index": [int(part) for part in idx],
+                "value": str(float(value.item())),
+                "is_nan": bool(torch.isnan(value).item()),
+                "is_posinf": bool(torch.isposinf(value).item()),
+                "is_neginf": bool(torch.isneginf(value).item()),
+            }
+        )
+    return out
+
+
+def per_head_diff_summary(lhs: torch.Tensor, rhs: torch.Tensor) -> list[dict[str, Any]]:
+    lhs_f = lhs.detach().float().cpu()
+    rhs_f = rhs.detach().float().cpu()
+    if tuple(lhs_f.shape) != tuple(rhs_f.shape) or lhs_f.ndim != 4:
+        return []
+    rows: list[dict[str, Any]] = []
+    for head_idx in range(int(lhs_f.shape[1])):
+        diff = diff_stats(lhs_f[:, head_idx], rhs_f[:, head_idx])
+        rows.append(
+            {
+                "head": int(head_idx),
+                "max_abs_diff": diff.get("max_abs_diff"),
+                "mean_abs_diff": diff.get("mean_abs_diff"),
+                "p99": diff.get("abs_diff_quantiles", {}).get("p99"),
+                "candidate_nonfinite_count": diff.get("lhs_nonfinite_count"),
+            }
+        )
+    return sorted(
+        rows,
+        key=lambda row: (
+            -int(row["candidate_nonfinite_count"] or 0),
+            -1.0 if row["max_abs_diff"] is None else -float(row["max_abs_diff"]),
+        ),
+    )
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default=DEFAULT_MODEL)
@@ -294,6 +452,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--npu-jit-compile", default="off", choices=("default", "off", "on"))
     parser.add_argument("--layer-index", type=int, default=0)
     parser.add_argument("--attention", default="prompt_flash_attention", choices=("manual", "prompt_flash_attention"))
+    parser.add_argument("--promptfa-layout", default="bnsd", choices=("bnsd", "bsnd"))
+    parser.add_argument(
+        "--input-boundary",
+        default="bnsd",
+        choices=("bnsd", "snhd_rope_done", "snhd_pre_rope", "qkv_flat_pre_rope"),
+    )
     parser.add_argument("--compile-backend", default="torchair", choices=("none", "torchair", "aot_eager", "inductor"))
     parser.add_argument("--torchair-mode", default="default", choices=("default", "max-autotune"))
     parser.add_argument("--torchair-run-eagerly", action="store_true")
@@ -316,9 +480,12 @@ def main() -> None:
 
     maybe_sync(device)
     start = time.perf_counter()
-    model, q_bnsd, k_bnsd, v_bnsd, qkv_meta = build_real_qkv_inputs(args, model_dir, device, dtype)
+    model, qkv_tensors, qkv_meta = build_real_qkv_inputs(args, model_dir, device, dtype)
     maybe_sync(device)
     setup_s = float(time.perf_counter() - start)
+    boundary = str(args.input_boundary)
+    q_boundary, k_boundary, v_boundary = qkv_tensors[boundary]
+    rope_cos, rope_sin, _unused_rope = qkv_tensors["_rope"]
 
     mask = make_mask(
         kind=str(args.mask_kind),
@@ -327,26 +494,67 @@ def main() -> None:
         rank=int(args.mask_rank),
         device=device,
     )
+    promptfa_layout = str(args.promptfa_layout).upper()
+    if boundary == "bnsd" and promptfa_layout == "BSND":
+        q_input = q_boundary.transpose(1, 2).contiguous()
+        k_input = k_boundary.transpose(1, 2).contiguous()
+        v_input = v_boundary.transpose(1, 2).contiguous()
+    else:
+        q_input = q_boundary
+        k_input = k_boundary
+        v_input = v_boundary
+
     manual_ref_module = AttentionOnly(
         attention="manual",
+        input_layout=promptfa_layout,
+        input_boundary=boundary,
         num_heads=int(qkv_meta["num_heads"]),
+        head_dim=int(qkv_meta["head_dim"]),
         scaling=float(qkv_meta["scaling"]),
         sparse_mode=int(args.promptfa_sparse_mode),
         mask=mask,
+        rope_cos=rope_cos,
+        rope_sin=rope_sin,
     ).eval()
     candidate_module = AttentionOnly(
         attention=str(args.attention),
+        input_layout=promptfa_layout,
+        input_boundary=boundary,
         num_heads=int(qkv_meta["num_heads"]),
+        head_dim=int(qkv_meta["head_dim"]),
         scaling=float(qkv_meta["scaling"]),
         sparse_mode=int(args.promptfa_sparse_mode),
         mask=mask,
+        rope_cos=rope_cos,
+        rope_sin=rope_sin,
+    ).eval()
+    eager_promptfa_module = AttentionOnly(
+        attention="prompt_flash_attention",
+        input_layout=promptfa_layout,
+        input_boundary=boundary,
+        num_heads=int(qkv_meta["num_heads"]),
+        head_dim=int(qkv_meta["head_dim"]),
+        scaling=float(qkv_meta["scaling"]),
+        sparse_mode=int(args.promptfa_sparse_mode),
+        mask=mask,
+        rope_cos=rope_cos,
+        rope_sin=rope_sin,
     ).eval()
 
     maybe_sync(device)
     start = time.perf_counter()
-    manual_ref = manual_ref_module(q_bnsd, k_bnsd, v_bnsd)
+    manual_ref = manual_ref_module(q_input, k_input, v_input)
     maybe_sync(device)
     manual_ref_s = float(time.perf_counter() - start)
+
+    eager_promptfa_ref = None
+    eager_promptfa_s = None
+    if str(args.attention) == "prompt_flash_attention":
+        maybe_sync(device)
+        start = time.perf_counter()
+        eager_promptfa_ref = eager_promptfa_module(q_input, k_input, v_input)
+        maybe_sync(device)
+        eager_promptfa_s = float(time.perf_counter() - start)
 
     backend_meta: dict[str, Any] = {"backend_kind": "none"}
     compile_wrapper_s = 0.0
@@ -381,13 +589,13 @@ def main() -> None:
     try:
         maybe_sync(device)
         start = time.perf_counter()
-        candidate_first = candidate_callable(q_bnsd, k_bnsd, v_bnsd)
+        candidate_first = candidate_callable(q_input, k_input, v_input)
         maybe_sync(device)
         candidate_first_s = float(time.perf_counter() - start)
 
         maybe_sync(device)
         start = time.perf_counter()
-        candidate_second = candidate_callable(q_bnsd, k_bnsd, v_bnsd)
+        candidate_second = candidate_callable(q_input, k_input, v_input)
         maybe_sync(device)
         candidate_second_s = float(time.perf_counter() - start)
     finally:
@@ -402,6 +610,12 @@ def main() -> None:
     }
     candidate_vs_manual = compare_attention_output(candidate_second, manual_ref, **compare_kwargs)
     candidate_stability = compare_attention_output(candidate_first, candidate_second, **compare_kwargs)
+    if eager_promptfa_ref is not None:
+        candidate_vs_eager_promptfa = compare_attention_output(candidate_second, eager_promptfa_ref, **compare_kwargs)
+        eager_promptfa_vs_manual = compare_attention_output(eager_promptfa_ref, manual_ref, **compare_kwargs)
+    else:
+        candidate_vs_eager_promptfa = None
+        eager_promptfa_vs_manual = None
 
     output = {
         "schema_version": 1,
@@ -413,6 +627,9 @@ def main() -> None:
         "dtype": str(dtype),
         "config": {
             "attention": str(args.attention),
+            "promptfa_layout": str(args.promptfa_layout),
+            "input_boundary": boundary,
+            "attention_output_layout": "BNSD_normalized",
             "compile_backend": str(args.compile_backend),
             "fullgraph": bool(args.compile_backend != "none"),
             "dynamic": False if args.compile_backend != "none" else None,
@@ -422,9 +639,23 @@ def main() -> None:
             "no_padding": bool(args.no_padding),
         },
         "qkv_meta": qkv_meta,
+        "attention_input_meta": {
+            "layout": promptfa_layout,
+            "input_boundary": boundary,
+            "q_shape": [int(dim) for dim in q_input.shape],
+            "k_shape": [int(dim) for dim in k_input.shape],
+            "v_shape": [int(dim) for dim in v_input.shape],
+            "q_stride": [int(dim) for dim in q_input.stride()],
+            "k_stride": [int(dim) for dim in k_input.stride()],
+            "v_stride": [int(dim) for dim in v_input.stride()],
+            "q_is_contiguous": bool(q_input.is_contiguous()),
+            "k_is_contiguous": bool(k_input.is_contiguous()),
+            "v_is_contiguous": bool(v_input.is_contiguous()),
+        },
         "timing_s": {
             "setup_materialize_qkv": setup_s,
             "manual_reference": manual_ref_s,
+            "eager_promptfa_reference": eager_promptfa_s,
             "compile_wrapper": compile_wrapper_s,
             "candidate_first": candidate_first_s,
             "candidate_second": candidate_second_s,
@@ -432,15 +663,37 @@ def main() -> None:
         "summary": {
             "candidate_vs_manual_allclose_5e_2": bool(candidate_vs_manual["overall"].get("allclose_atol_5e_2_rtol_5e_2")),
             "candidate_vs_manual_max_abs": candidate_vs_manual["overall"].get("max_abs_diff"),
+            "candidate_vs_manual_nonfinite": candidate_vs_manual["overall"].get("lhs_nonfinite_count"),
             "candidate_vs_manual_real_max_abs": (candidate_vs_manual.get("row_split") or {}).get("real_rows", {}).get("max_abs_diff"),
             "candidate_vs_manual_real_nonfinite": (candidate_vs_manual.get("row_split") or {}).get("real_rows", {}).get("lhs_nonfinite_count"),
             "candidate_vs_manual_pad_max_abs": (candidate_vs_manual.get("row_split") or {}).get("pad_rows", {}).get("max_abs_diff"),
             "candidate_vs_manual_pad_nonfinite": (candidate_vs_manual.get("row_split") or {}).get("pad_rows", {}).get("lhs_nonfinite_count"),
             "candidate_first_vs_second_allclose_5e_2": bool(candidate_stability["overall"].get("allclose_atol_5e_2_rtol_5e_2")),
             "candidate_first_vs_second_max_abs": candidate_stability["overall"].get("max_abs_diff"),
+            "candidate_vs_eager_promptfa_max_abs": None
+            if candidate_vs_eager_promptfa is None
+            else candidate_vs_eager_promptfa["overall"].get("max_abs_diff"),
+            "candidate_vs_eager_promptfa_nonfinite": None
+            if candidate_vs_eager_promptfa is None
+            else candidate_vs_eager_promptfa["overall"].get("lhs_nonfinite_count"),
+            "candidate_vs_eager_promptfa_real_max_abs": None
+            if candidate_vs_eager_promptfa is None
+            else (candidate_vs_eager_promptfa.get("row_split") or {}).get("real_rows", {}).get("max_abs_diff"),
+            "candidate_vs_eager_promptfa_real_nonfinite": None
+            if candidate_vs_eager_promptfa is None
+            else (candidate_vs_eager_promptfa.get("row_split") or {}).get("real_rows", {}).get("lhs_nonfinite_count"),
+            "eager_promptfa_vs_manual_max_abs": None
+            if eager_promptfa_vs_manual is None
+            else eager_promptfa_vs_manual["overall"].get("max_abs_diff"),
         },
         "candidate_vs_manual": candidate_vs_manual,
+        "candidate_vs_eager_promptfa": candidate_vs_eager_promptfa,
+        "eager_promptfa_vs_manual": eager_promptfa_vs_manual,
         "candidate_first_vs_second": candidate_stability,
+        "top_diff_locations_candidate_vs_manual": top_diff_locations(candidate_second, manual_ref),
+        "nonfinite_locations_candidate": nonfinite_locations(candidate_second),
+        "nonfinite_locations_manual_reference": nonfinite_locations(manual_ref),
+        "per_head_candidate_vs_manual": per_head_diff_summary(candidate_second, manual_ref),
     }
 
     output_path_raw = str(args.output or "").strip()
@@ -456,11 +709,23 @@ def main() -> None:
     print(f"output={output_path}")
     print(f"config={output['config']}")
     print(f"qkv_meta={qkv_meta}")
+    print(f"attention_input_meta={output['attention_input_meta']}")
     print(f"summary={output['summary']}")
     row_split = candidate_vs_manual.get("row_split") or {}
     print(f"candidate_vs_manual_overall={candidate_vs_manual['overall']}")
     print(f"candidate_vs_manual_real_rows={row_split.get('real_rows')}")
     print(f"candidate_vs_manual_pad_rows={row_split.get('pad_rows')}")
+    if candidate_vs_eager_promptfa is not None:
+        eager_row_split = candidate_vs_eager_promptfa.get("row_split") or {}
+        print(f"candidate_vs_eager_promptfa_overall={candidate_vs_eager_promptfa['overall']}")
+        print(f"candidate_vs_eager_promptfa_real_rows={eager_row_split.get('real_rows')}")
+    if eager_promptfa_vs_manual is not None:
+        promptfa_row_split = eager_promptfa_vs_manual.get("row_split") or {}
+        print(f"eager_promptfa_vs_manual_overall={eager_promptfa_vs_manual['overall']}")
+        print(f"eager_promptfa_vs_manual_real_rows={promptfa_row_split.get('real_rows')}")
+    print(f"top_diff_locations_candidate_vs_manual={output['top_diff_locations_candidate_vs_manual']}")
+    print(f"nonfinite_locations_candidate={output['nonfinite_locations_candidate']}")
+    print(f"per_head_candidate_vs_manual_top4={output['per_head_candidate_vs_manual'][:4]}")
 
 
 if __name__ == "__main__":
