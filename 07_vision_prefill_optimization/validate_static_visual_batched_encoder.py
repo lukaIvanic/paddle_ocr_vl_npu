@@ -394,11 +394,11 @@ def compile_encoder_forward(
             "fullgraph": True,
             "dynamic": False,
         }
-    import torch._dynamo
+    import torch._dynamo as torch_dynamo
 
-    old_capture_scalar_outputs = bool(torch._dynamo.config.capture_scalar_outputs)
-    torch._dynamo.config.capture_scalar_outputs = True
-    torch._dynamo.reset()
+    old_capture_scalar_outputs = bool(torch_dynamo.config.capture_scalar_outputs)
+    torch_dynamo.config.capture_scalar_outputs = True
+    torch_dynamo.reset()
     backend, backend_meta = vision_compile_backend(
         backend_name,
         device,
@@ -644,9 +644,9 @@ def main() -> None:
             "first_output_nonfinite_count": int((~torch.isfinite(first_out.float())).sum().item()),
         }
         if "capture_scalar_outputs_previous" in compile_meta:
-            import torch._dynamo
+            import torch._dynamo as torch_dynamo
 
-            torch._dynamo.config.capture_scalar_outputs = bool(compile_meta["capture_scalar_outputs_previous"])
+            torch_dynamo.config.capture_scalar_outputs = bool(compile_meta["capture_scalar_outputs_previous"])
             first_call_meta["capture_scalar_outputs_restored_after_first_call"] = True
 
     total_effective_tokens = 0
