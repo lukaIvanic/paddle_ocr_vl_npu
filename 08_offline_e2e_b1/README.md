@@ -111,6 +111,12 @@ source npu-setup
   --max-new-tokens 768
 ```
 
+Recognition uses the model's `min_pixels` and `max_pixels` by default. Pass
+`--preprocessor-min-pixels N` to override only the recognition-crop minimum;
+the model's maximum remains unchanged. The model default, requested override,
+effective bounds, resize factor, and nominal minimum image-token count are
+recorded under `configuration.preprocessor` in `run.json`.
+
 The default artifact directory is timestamped under
 `tmp/08_offline_e2e_b1/`. It contains `run.json`, per-page reading-order text,
 and an annotated layout image. Pass `--save-crops` only when the actual crop
@@ -131,3 +137,7 @@ remain historical comparison points.
 The persistent-slot implementation and its exact parity/performance comparison
 are recorded in
 [`NPU_CONTINUOUS_DECODE_RESULT.md`](NPU_CONTINUOUS_DECODE_RESULT.md).
+
+The five-page B=4 comparison of the model-default `112896` floor against the
+half-area `56448` override is recorded in
+[`NPU_MIN_PIXELS_RESULT.md`](NPU_MIN_PIXELS_RESULT.md).
