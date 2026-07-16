@@ -15,12 +15,14 @@ from layout import PPDocLayoutV3Runtime
 from pipeline import OfflinePagePipeline, aggregate_pages
 from run_local_recognition import NPU_JIT_COMPILE_CHOICES, resolve_device
 from schema import RunResult
+from vision_compile import DEFAULT_VISION_BUCKETS, VISION_BACKEND_CHOICES, parse_vision_buckets
 
 
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parent
 DEFAULT_OUTPUT_ROOT = REPO_ROOT / "tmp" / "08_offline_e2e_b1"
 DEFAULT_CACHE_ROOT = REPO_ROOT / ".runtime_cache" / "08_offline_e2e_b1_torchair"
+DEFAULT_VISION_CACHE_ROOT = REPO_ROOT / ".runtime_cache" / "08_offline_e2e_b1_vision_torchair"
 DEFAULT_LOCAL_RECOGNIZER = Path("/workspace/models/PaddleOCR-VL-1.6")
 DEFAULT_RECOGNIZER = str(DEFAULT_LOCAL_RECOGNIZER) if DEFAULT_LOCAL_RECOGNIZER.is_dir() else "PaddlePaddle/PaddleOCR-VL-1.6"
 
@@ -50,6 +52,22 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
     parser.add_argument("--torchair-cache-dir", type=Path, default=DEFAULT_CACHE_ROOT)
+    parser.add_argument(
+        "--vision-backend",
+        default="raw_eager",
+        choices=VISION_BACKEND_CHOICES,
+        help="Use eager vision, or one static TorchAir encoder graph per configured token bucket.",
+    )
+    parser.add_argument(
+        "--vision-compile-buckets",
+        default=",".join(str(bucket) for bucket in DEFAULT_VISION_BUCKETS),
+        help="Strictly increasing comma-separated powers of two used by compiled B=1 vision.",
+    )
+    parser.add_argument(
+        "--vision-torchair-cache-dir",
+        type=Path,
+        default=DEFAULT_VISION_CACHE_ROOT,
+    )
     parser.add_argument("--recognize-chart", action="store_true")
     parser.add_argument("--recognize-seal", action="store_true")
     parser.add_argument("--recognize-image", action="store_true")
@@ -71,6 +89,7 @@ def main() -> None:
         raise ValueError("--max-regions must be positive when supplied")
     if args.batch_size <= 0 or args.batch_size & (args.batch_size - 1):
         raise ValueError("--batch-size must be a positive power of two")
+    vision_buckets = parse_vision_buckets(args.vision_compile_buckets)
 
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     output_dir = (
@@ -94,6 +113,9 @@ def main() -> None:
         cache_length=args.cache_length,
         max_new_tokens=args.max_new_tokens,
         torchair_cache_dir=args.torchair_cache_dir.expanduser().resolve(),
+        vision_backend=args.vision_backend,
+        vision_buckets=vision_buckets,
+        vision_torchair_cache_dir=args.vision_torchair_cache_dir.expanduser().resolve(),
         npu_jit_compile=args.npu_jit_compile,
         preprocessor_min_pixels=args.preprocessor_min_pixels,
     )
@@ -156,6 +178,8 @@ def main() -> None:
             "page_total_including_artifacts": "page_total plus page text and optional annotated-image/crop writes.",
             "request_total": "In-memory crop preprocessing through eager prefill, compiled decode, D2H token transfer, and detokenization.",
             "device_stage_s": "Accelerator event time for eager vision/text-prefill sub-stages; it is not host wall time.",
+            "vision_encoder_post_layernorm_compiled": "NPU event time for the selected static padded vision-encoder graph plus its final LayerNorm; input preparation is reported separately.",
+            "vision_useful_token_fraction": "Sum of real vision tokens divided by sum of physical bucket tokens; eager and overflow requests have no padding.",
             "continuous_decode_wall": "Decode throughput denominator: the larger of exclusive host-control wall time and serialized decode-plus-admission device time, preventing overlapped producer synchronization from understating decode cost.",
             "run_scoped_scheduler_wall": "Full recognition scheduler wall including lazy page production, eager prefill, decode, detokenization, and page-completion callbacks.",
             "raw_decode_tok_per_s": "Every persistent-arena token slot executed by the compiled graph divided by continuous-decode wall time, including idle slots and one-step completion look-ahead.",

@@ -58,6 +58,7 @@ class RecognitionResult:
     timing_s: dict[str, float]
     device_stage_s: dict[str, float]
     rates: dict[str, float | None]
+    vision: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass

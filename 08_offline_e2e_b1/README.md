@@ -9,9 +9,11 @@ stream of full PIL pages
   -> lazy real PP-DocLayoutV3 inference on NPU
   -> reading-ordered layout regions and page collectors
   -> crop and prompt routing into one run-scoped request source
-  -> one eager PaddleOCR-VL prefill at a time
+  -> one PaddleOCR-VL prefill at a time
        CPU image/prompt preprocessing
-       eager native-resolution vision prefill
+       eager native-resolution patch + position embedding
+       optional bucketed compiled vision encoder + post-LayerNorm
+       eager projector
        eager text prefill into a static KV cache
        ready B=1 KV state
   -> bounded cross-page ready reservoir
@@ -28,9 +30,16 @@ stream of full PIL pages
   -> emit each page immediately when all of its regions finish
 ```
 
-Vision and text prefill deliberately remain sequential B=1, but they are now
-produced lazily for one run-scoped decode scheduler instead of draining decode
-at every page boundary. Decode owns one persistent fixed-shape arena. Slot
+Vision and text prefill remain sequential B=1, but the vision encoder can now
+use static TorchAir graphs at token buckets `16, 32, 64, 128, 256, 512, 1024,
+2048`. Only the encoder layers and final LayerNorm are padded and compiled;
+patch embedding, position interpolation, the projector, and text prefill keep
+their existing behavior. Real and dummy rows are isolated by an attention
+mask, and real rows are sliced before the projector. Crops above the largest
+bucket use the faithful eager path without padding.
+
+Prefills are produced lazily for one run-scoped decode scheduler instead of
+draining decode at every page boundary. Decode owns one persistent fixed-shape arena. Slot
 indices stay stable; a finished request is replaced in place without moving
 other active requests or rebuilding the batch. Admission copies only the valid
 prompt KV prefix, while stale cache tails remain safely hidden by each row's
@@ -53,9 +62,10 @@ remains in input order even when completion callbacks arrive out of order.
   prompts; other labels receive `OCR:`.
 - Official v1.6 defaults are retained for image/chart/seal blocks: image blocks
   are not recognized, and chart/seal recognition is opt-in.
-- The recognizer is the corrected local PyTorch model from Experiment 05. Vision
-  and text prefill are eager and unpadded; only the flat fixed-batch static
-  decode module is compiled.
+- The recognizer is the corrected local PyTorch model from Experiment 05. Text
+  prefill remains eager and unpadded. Vision defaults to eager; the explicit
+  TorchAir mode uses the same compiler-safe manual-attention calculation that
+  Experiment 07 validated by greedy OCR token parity.
 - Sampled-token D2H uses a second NPU stream, pinned two-row host ring, and
   queue-depth-one control. A request can execute one look-ahead graph call;
   slot epochs discard that old result after the slot is reused.
@@ -106,6 +116,8 @@ source npu-setup
   --recognizer-model /workspace/models/PaddleOCR-VL-1.6 \
   --device npu:0 \
   --decode-backend torchair \
+  --vision-backend torchair \
+  --vision-compile-buckets 16,32,64,128,256,512,1024,2048 \
   --batch-size 4 \
   --cache-length 2048 \
   --max-new-tokens 768
@@ -116,6 +128,20 @@ Recognition uses the model's `min_pixels` and `max_pixels` by default. Pass
 the model's maximum remains unchanged. The model default, requested override,
 effective bounds, resize factor, and nominal minimum image-token count are
 recorded under `configuration.preprocessor` in `run.json`.
+
+`--vision-backend torchair` builds or loads one B=1 static graph for every
+configured bucket during recognizer setup. The first uncached run is therefore
+compilation-heavy; per-bucket cache paths and first-call times are recorded in
+`configuration.vision_compile` and `setup_timing_s.vision_runtime_setup`.
+Subsequent runs reuse the GE caches under
+`.runtime_cache/08_offline_e2e_b1_vision_torchair/`. The compiled boundary is
+currently the manual-attention path; unset
+`PADDLE_OCR_VL_VISION_ATTENTION` or set it to `manual`.
+
+Each recognition result records its real token count, selected physical bucket,
+padding, and execution route. Aggregate JSON reports bucket counts and the
+overall useful-token fraction so padding cost is visible rather than folded
+into a single throughput number.
 
 The default artifact directory is timestamped under
 `tmp/08_offline_e2e_b1/`. It contains `run.json`, per-page reading-order text,

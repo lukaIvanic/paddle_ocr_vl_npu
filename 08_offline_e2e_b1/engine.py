@@ -40,6 +40,7 @@ from run_local_recognition import (
 )
 from schema import Box, ContinuousDecodeResult, RecognitionResult, per_second
 from timing import DeviceTimeline, synchronize, timed_wall
+from vision_compile import BucketedVisionEncoderRuntime, parse_vision_buckets
 
 
 @dataclass(frozen=True)
@@ -62,6 +63,7 @@ class ReadyRecognition:
     first_token: int
     input_tokens: int
     projected_image_tokens: int
+    vision: dict[str, Any]
     timing_s: dict[str, float]
     device_stage_s: dict[str, float]
     request_started: float
@@ -69,11 +71,13 @@ class ReadyRecognition:
 
 
 class ContinuousRecognizer:
-    """One persistent model with sequential eager prefill and continuous decode.
+    """One persistent model with sequential prefill and continuous decode.
 
-    Every real crop is prefilled independently without image or prompt padding.
-    A fixed compiled decode arena keeps its tensor shapes stable while ready KV
-    prefixes replace finished requests between autoregressive iterations.
+    Every real crop is prefilled independently. The optional compiled vision
+    boundary pads only the encoder rows to a static bucket, then slices them
+    before projection; text prefill remains unpadded. A fixed compiled decode
+    arena keeps its tensor shapes stable while ready KV prefixes replace
+    finished requests between autoregressive iterations.
     """
 
     def __init__(
@@ -87,6 +91,9 @@ class ContinuousRecognizer:
         cache_length: int,
         max_new_tokens: int,
         torchair_cache_dir: Path,
+        vision_backend: str = "raw_eager",
+        vision_buckets: str | Iterable[int] = "16,32,64,128,256,512,1024,2048",
+        vision_torchair_cache_dir: Path | None = None,
         npu_jit_compile: str = "off",
         preprocessor_min_pixels: int | None = None,
     ):
@@ -98,6 +105,8 @@ class ContinuousRecognizer:
         self.batch_size = int(batch_size)
         self.cache_length = int(cache_length)
         self.max_new_tokens = int(max_new_tokens)
+        self.vision_backend = str(vision_backend)
+        self.vision_buckets = parse_vision_buckets(vision_buckets)
         if self.batch_size <= 0 or self.batch_size & (self.batch_size - 1):
             raise ValueError("batch_size must be a positive power of two")
         if self.max_new_tokens <= 0:
@@ -133,6 +142,24 @@ class ContinuousRecognizer:
         self.weight_format = cast_decode_linear_weights_to_nz(self.model)
         synchronize(self.device)
         weight_format_s = time.perf_counter() - started
+
+        synchronize(self.device)
+        started = time.perf_counter()
+        self.vision_runtime = BucketedVisionEncoderRuntime(
+            self.model,
+            backend=self.vision_backend,
+            buckets=self.vision_buckets,
+            cache_root=(
+                vision_torchair_cache_dir
+                if vision_torchair_cache_dir is not None
+                else torchair_cache_dir.parent / f"{torchair_cache_dir.name}_vision"
+            ),
+            device=self.device,
+            dtype=self.dtype,
+            model_dir=self.model_dir,
+        )
+        synchronize(self.device)
+        vision_runtime_setup_s = time.perf_counter() - started
 
         flat_decode = self.model.make_flat_static_decode_module().eval()
         synchronize(self.device)
@@ -186,6 +213,7 @@ class ContinuousRecognizer:
             "recognizer_frontend_setup": float(frontend_setup_s),
             "recognizer_model_load": float(model_load_s),
             "decode_weight_format": float(weight_format_s),
+            "vision_runtime_setup": float(vision_runtime_setup_s),
             "compile_wrapper": float(compile_wrapper_s),
             "compile_first_call": float(compile_first_call_s),
             "decode_control_setup": float(decode_control_setup_s),
@@ -309,6 +337,7 @@ class ContinuousRecognizer:
                     decoded.timing_s["run_scoped_scheduler_wall"],
                 ),
             },
+            vision=dict(state.vision),
         )
         return results, schedule_result
 
@@ -421,14 +450,6 @@ class ContinuousRecognizer:
 
         timeline = DeviceTimeline(self.device)
         prefill_started = time.perf_counter()
-        cu_seqlens = F.pad(
-            torch.repeat_interleave(
-                image_grid_thw[:, 1] * image_grid_thw[:, 2],
-                image_grid_thw[:, 0],
-            ).cumsum(dim=0, dtype=torch.int32),
-            (1, 0),
-            value=0,
-        )
         vision_model = self.model.visual.vision_model
         vision_hidden = timeline.measure(
             "vision_embeddings",
@@ -437,18 +458,41 @@ class ContinuousRecognizer:
                 image_grid_thw=image_grid_thw,
             ),
         )
-        vision_hidden = timeline.measure(
-            "vision_encoder",
-            lambda: vision_model.encoder(
-                vision_hidden,
-                cu_seqlens=cu_seqlens,
-                image_grid_thw=image_grid_thw,
-            ),
-        )
-        image_features = timeline.measure(
-            "vision_post_layernorm",
-            lambda: vision_model.post_layernorm(vision_hidden),
-        )
+        vision_route = self.vision_runtime.route(int(vision_hidden.shape[0]))
+        if vision_route["execution"] == "compiled":
+            prepared_vision = timeline.measure(
+                "vision_compiled_input_prep",
+                lambda: self.vision_runtime.prepare(
+                    vision_hidden,
+                    image_grid_thw,
+                    bucket=int(vision_route["bucket"]),
+                ),
+            )
+            image_features = timeline.measure(
+                "vision_encoder_post_layernorm_compiled",
+                lambda: self.vision_runtime.run_prepared(prepared_vision),
+            )
+        else:
+            cu_seqlens = F.pad(
+                torch.repeat_interleave(
+                    image_grid_thw[:, 1] * image_grid_thw[:, 2],
+                    image_grid_thw[:, 0],
+                ).cumsum(dim=0, dtype=torch.int32),
+                (1, 0),
+                value=0,
+            )
+            vision_hidden = timeline.measure(
+                "vision_encoder",
+                lambda: vision_model.encoder(
+                    vision_hidden,
+                    cu_seqlens=cu_seqlens,
+                    image_grid_thw=image_grid_thw,
+                ),
+            )
+            image_features = timeline.measure(
+                "vision_post_layernorm",
+                lambda: vision_model.post_layernorm(vision_hidden),
+            )
         image_embeds = timeline.measure(
             "adaptive_mlp_projector",
             lambda: self.model.mlp_AR(image_features, image_grid_thw),
@@ -509,7 +553,7 @@ class ContinuousRecognizer:
             ),
         )
         device_stage_s = timeline.resolve()
-        timing["eager_vision_and_text_prefill_wall"] = time.perf_counter() - prefill_started
+        timing["vision_and_text_prefill_wall"] = time.perf_counter() - prefill_started
 
         started = time.perf_counter()
         first_token = int(next_token.detach().cpu().item())
@@ -531,6 +575,7 @@ class ContinuousRecognizer:
             first_token=first_token,
             input_tokens=int(input_ids.shape[1]),
             projected_image_tokens=int(image_embeds.shape[0]),
+            vision=vision_route,
             timing_s=timing,
             device_stage_s=device_stage_s,
             request_started=request_started,
@@ -557,7 +602,13 @@ class ContinuousRecognizer:
             "cache_length": self.cache_length,
             "max_new_tokens": self.max_new_tokens,
             "batch_size": self.batch_size,
-            "vision_prefill": "eager_sequential_no_padding",
+            "vision_prefill": (
+                "bucketed_static_compiled_encoder_post_layernorm_b1"
+                if self.vision_backend == "torchair"
+                else "eager_sequential_no_padding"
+            ),
+            "vision_backend": self.vision_backend,
+            "vision_compile": self.vision_runtime.compile_metadata,
             "vision_attention": vision_attention,
             "vision_prompt_fa_layout": (
                 get_vision_prompt_fa_layout()

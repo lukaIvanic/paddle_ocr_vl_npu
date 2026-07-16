@@ -417,6 +417,12 @@ def aggregate_pages(
     output_tokens = sum(
         region.generated_tokens_including_eos for region in recognized
     )
+    real_vision_tokens = sum(
+        int(region.vision.get("real_vision_tokens", 0)) for region in recognized
+    )
+    physical_vision_tokens = sum(
+        int(region.vision.get("physical_vision_tokens", 0)) for region in recognized
+    )
     page_latencies = [page.timing_s["page_total"] for page in pages]
     return {
         "pages": len(pages),
@@ -441,6 +447,26 @@ def aggregate_pages(
             sorted(Counter(region.stop_reason for region in recognized).items())
         ),
         "generated_tokens_including_eos": output_tokens,
+        "vision_execution_counts": dict(
+            sorted(Counter(str(region.vision.get("execution", "unknown")) for region in recognized).items())
+        ),
+        "vision_bucket_counts": dict(
+            sorted(
+                Counter(
+                    str(region.vision["bucket"])
+                    for region in recognized
+                    if region.vision.get("bucket") is not None
+                ).items(),
+                key=lambda item: int(item[0]),
+            )
+        ),
+        "real_vision_tokens": int(real_vision_tokens),
+        "physical_vision_tokens": int(physical_vision_tokens),
+        "vision_useful_token_fraction": (
+            float(real_vision_tokens) / float(physical_vision_tokens)
+            if physical_vision_tokens > 0
+            else None
+        ),
         "raw_decode_token_slots": decode_schedule.raw_decode_token_slots,
         "active_decode_token_slots": decode_schedule.active_decode_token_slots,
         "effective_decode_tokens": decode_schedule.effective_decode_tokens,
