@@ -22,7 +22,12 @@ import torch.nn.functional as F
 from local_modeling_paddleocr_vl import (
     LocalPaddleOCRVLForConditionalGeneration,
     LocalPaddleOCRVLStaticCache,
+    _linear_tokenwise,
+    attention_softmax,
+    build_causal_mask,
     get_text_softmax_dtype_mode,
+    repeat_kv,
+    update_prefill_kv_cache_,
 )
 from probe_static_compile import (
     cache_key_part,
@@ -75,6 +80,62 @@ class StaticTextPrefill(torch.nn.Module):
         super().__init__()
         self.text_model = model.model
         self.num_layers = int(model.config.text_config.num_hidden_layers)
+        self.softmax_dtype_mode = get_text_softmax_dtype_mode()
+
+    def _attention(
+        self,
+        attention: torch.nn.Module,
+        hidden_states: torch.Tensor,
+        causal_mask: torch.Tensor,
+        position_embeddings: tuple[torch.Tensor, torch.Tensor],
+        key_cache: torch.Tensor,
+        value_cache: torch.Tensor,
+    ) -> torch.Tensor:
+        query_states, key_states, value_states = attention.project_qkv(hidden_states)
+        query_states, key_states = attention.apply_rotary(
+            query_states,
+            key_states,
+            position_embeddings,
+        )
+        update_prefill_kv_cache_(
+            key_cache,
+            value_cache,
+            key_states,
+            value_states,
+        )
+        key_for_attn = repeat_kv(key_states, int(attention.num_key_value_groups))
+        value_for_attn = repeat_kv(value_states, int(attention.num_key_value_groups))
+        batch, num_heads, seq_length, head_dim = query_states.shape
+
+        # GE mis-infers the broadcast axes of the stock 4-D matmul. Flattening
+        # B and H produces the same arithmetic while presenting two ordinary
+        # 3-D batched matrix multiplications to the compiler.
+        query_bh = query_states.reshape(batch * num_heads, seq_length, head_dim)
+        key_bh = key_for_attn.reshape(batch * num_heads, seq_length, head_dim)
+        value_bh = value_for_attn.reshape(batch * num_heads, seq_length, head_dim)
+        scores = torch.bmm(query_bh, key_bh.transpose(1, 2)).view(
+            batch,
+            num_heads,
+            seq_length,
+            seq_length,
+        ) * attention.scaling
+        scores = scores + causal_mask
+        probabilities = attention_softmax(
+            scores,
+            dim=-1,
+            output_dtype=query_states.dtype,
+            mode=self.softmax_dtype_mode,
+        )
+        attention_output = torch.bmm(
+            probabilities.reshape(batch * num_heads, seq_length, seq_length),
+            value_bh,
+        ).view(batch, num_heads, seq_length, head_dim)
+        attention_output = attention_output.transpose(1, 2).contiguous().view(
+            batch,
+            seq_length,
+            num_heads * head_dim,
+        )
+        return _linear_tokenwise(attention.o_proj, attention_output)
 
     def forward(
         self,
@@ -86,17 +147,31 @@ class StaticTextPrefill(torch.nn.Module):
     ) -> torch.Tensor:
         key_caches = tuple(flat_cache_tensors[: self.num_layers])
         value_caches = tuple(flat_cache_tensors[self.num_layers :])
-        cache = LocalPaddleOCRVLStaticCache(
-            key_caches=key_caches,
-            value_caches=value_caches,
-            cache_length=int(key_caches[0].shape[2]),
+        cache_position = torch.arange(
+            inputs_embeds.shape[1],
+            device=inputs_embeds.device,
+            dtype=torch.int64,
         )
-        hidden_states = self.text_model.forward_prefill_static(
-            inputs_embeds=inputs_embeds,
-            attention_mask=attention_mask,
-            position_ids=position_ids,
-            cache=cache,
+        causal_mask = build_causal_mask(
+            inputs_embeds,
+            attention_mask,
+            cache_position,
         )
+        position_embeddings = self.text_model.rotary_emb(inputs_embeds, position_ids)
+        hidden_states = inputs_embeds
+        for layer_idx, layer in enumerate(self.text_model.layers):
+            residual = hidden_states
+            attention_input = layer.input_layernorm(hidden_states)
+            attention_output = self._attention(
+                layer.self_attn,
+                attention_input,
+                causal_mask,
+                position_embeddings,
+                key_caches[layer_idx],
+                value_caches[layer_idx],
+            )
+            hidden_states = layer.apply_blocks(residual, attention_output)
+        hidden_states = self.text_model.norm(hidden_states)
         return torch.index_select(hidden_states, 1, last_token_index)
 
 
