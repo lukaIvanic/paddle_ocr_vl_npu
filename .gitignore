@@ -12,6 +12,8 @@ models/
 outputs/
 artifacts/
 logs/
+.runtime_cache/
+tmp/
 kernel_meta/
 ge_check_op.json
 fusion_result.json
