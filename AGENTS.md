@@ -18,7 +18,13 @@ The authoring lane may edit tracked files, prepare scripts, manage crops/docs, c
 
 This folder is a standalone research workspace for PaddleOCR-VL on Ascend/NPU, with a near-term focus on the `PaddleOCR-VL-1.6-0.9B` recognition VLM.
 
-The immediate target is the core recognition model, not the full document parser. The recognition model is available as a Transformers/PyTorch model at:
+The current target is an offline full-page path built incrementally from the
+local recognizer: real PP-DocLayoutV3 inference, explicit page/crop/request
+boundaries, and a persistent PaddleOCR-VL engine. Experiment 08 deliberately
+starts with strict sequential B=1 recognition before adding batching or
+overlap. It is not yet a complete reimplementation of PaddleX page preparation
+or structured Markdown postprocessing. The recognition model is available as a
+Transformers/PyTorch model at:
 
 ```text
 PaddlePaddle/PaddleOCR-VL-1.6
@@ -55,6 +61,11 @@ This folder currently contains:
 - `02_local_eager_recognition/run_local_recognition.py`: local recognizer runner using `tokenizers`, local image preprocessing, and the local model.
 - `03_compiled_single_batch_decode/`: single-batch decode optimization lane, copied from the local eager implementation and extended with static KV cache decode, TorchAir cache compile, profiler hooks, and flat `torch.compile(fullgraph=True, dynamic=False)` probes.
 - `04_batched_fixed_cohort_decode/`: batch-decode scheduler lane. It keeps prefill sequential and padding-free for real crops, benchmarks true fixed-cohort batched static decode, and can also prefill an NPU-resident ready KV bank then hot-swap finished items into fixed compiled decode slots.
+- `08_offline_e2e_b1/`: first persistent offline system. It runs real
+  PP-DocLayoutV3 on a full PIL page, then sends every selected crop through
+  eager vision/text prefill and compiled static B=1 decode, strictly
+  sequentially. It records setup, page, request, and accelerator-stage timing
+  separately. Read its README before interpreting throughput or output parity.
 - `refs/`: small architecture reference artifacts.
 - `refs/PaddleOCR`: ignored sparse reference checkout of the official PaddleOCR repo.
 

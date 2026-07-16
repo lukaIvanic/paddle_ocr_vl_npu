@@ -67,7 +67,9 @@ def main() -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     setup_started = time.perf_counter()
+    device_started = time.perf_counter()
     device = resolve_device(args.device)
+    device_runtime_init_s = time.perf_counter() - device_started
     layout = PPDocLayoutV3Runtime(args.layout_model, device, threshold=args.layout_threshold)
     recognizer = SequentialRecognizer(
         model=args.recognizer_model,
@@ -109,6 +111,7 @@ def main() -> None:
         experiment="08_offline_e2e_b1",
         configuration=configuration,
         setup_timing_s={
+            "device_runtime_init": float(device_runtime_init_s),
             **layout.setup_timing_s,
             **recognizer.setup_timing_s,
             "total": float(setup_total_s),
