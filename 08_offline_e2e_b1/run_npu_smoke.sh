@@ -34,7 +34,9 @@ from pathlib import Path
 path = Path(sys.argv[1])
 data = json.loads(path.read_text(encoding="utf-8"))
 assert data["configuration"]["layout_source"] == "real_pp_doclayout_v3_inference"
-assert data["configuration"]["region_execution"] == "sequential_prefill_continuous_decode"
+assert data["configuration"]["region_execution"] == "lazy_sequential_prefill_run_scoped_continuous_decode"
+assert data["configuration"]["cross_page_decode"] is True
+assert data["decode_schedule"]["requests"] == data["aggregate"]["recognized_regions"]
 assert data["aggregate"]["pages"] == 1
 assert data["aggregate"]["layout_regions"] > 1
 assert data["aggregate"]["recognized_regions"] > 0

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run real layout, sequential prefill, and continuous PaddleOCR-VL decode."""
+"""Run real layout and run-scoped cross-page PaddleOCR-VL recognition."""
 
 from __future__ import annotations
 
@@ -103,14 +103,24 @@ def main() -> None:
         save_crops=args.save_crops,
         save_annotated=not args.no_save_annotated,
     )
-    pages = [pipeline.run_page(path, index) for index, path in enumerate(images)]
+    pipeline_run = pipeline.run_pages(
+        images,
+        on_page_completed=lambda page: print(
+            f"page_completed={page.page_id} "
+            f"recognized_regions={len(page.recognized_regions)} "
+            f"latency_s={page.timing_s['page_total']:.6f}"
+        ),
+    )
+    pages = pipeline_run.pages
     configuration = {
         **recognizer.configuration(),
         "layout_model": str(args.layout_model.expanduser().resolve()),
         "layout_threshold": float(args.layout_threshold),
         "layout_runtime": "transformers.AutoModelForObjectDetection",
         "layout_source": "real_pp_doclayout_v3_inference",
-        "region_execution": "sequential_prefill_continuous_decode",
+        "region_execution": "lazy_sequential_prefill_run_scoped_continuous_decode",
+        "cross_page_decode": True,
+        "page_completion": "emit_when_all_page_regions_complete",
         "recognize_chart": bool(args.recognize_chart),
         "recognize_seal": bool(args.recognize_seal),
         "recognize_image": bool(args.recognize_image),
@@ -126,19 +136,28 @@ def main() -> None:
             "total": float(setup_total_s),
         },
         pages=pages,
-        aggregate=aggregate_pages(pages),
+        decode_schedule=pipeline_run.decode_schedule,
+        aggregate=aggregate_pages(
+            pages,
+            pipeline_run.decode_schedule,
+            run_wall_s=pipeline_run.run_wall_s,
+        ),
         metric_definitions={
             "layout_inference": "Synchronized wall time for the real PP-DocLayoutV3 model call only.",
-            "page_total": "Image open through real layout, all sequential recognitions, and reading-order text assembly; setup and diagnostic artifact writes are excluded.",
+            "page_total": "Per-page latency from beginning that page's image load through its immediate completion emission; pages can overlap in the run-scoped scheduler.",
+            "run_wall_s": "Wall time from starting the first page until every page has emitted; this is the E2E throughput denominator.",
             "page_total_including_artifacts": "page_total plus page text and optional annotated-image/crop writes.",
             "request_total": "In-memory crop preprocessing through eager prefill, compiled decode, D2H token transfer, and detokenization.",
             "device_stage_s": "Accelerator event time for eager vision/text-prefill sub-stages; it is not host wall time.",
+            "continuous_decode_wall": "Run-scoped scheduler wall time excluding lazy request production/prefill and page-completion callbacks; it covers decode control, slot admission, and D2H completion handling.",
+            "run_scoped_scheduler_wall": "Full recognition scheduler wall including lazy page production, eager prefill, decode, detokenization, and page-completion callbacks.",
             "raw_decode_tok_per_s": "Every persistent-arena token slot executed by the compiled graph divided by continuous-decode wall time, including idle slots and one-step completion look-ahead.",
-            "effective_decode_tok_per_s": "Real generated tokens after each prefill-produced first token, including EOS but excluding idle and look-ahead slots, divided by the same continuous-decode wall time.",
+            "effective_decode_tok_per_s": "Real generated tokens after each prefill-produced first token, including EOS but excluding idle and look-ahead slots, divided by the same decode-control wall time.",
             "active_slot_fraction": "Slots assigned to a real request when an iteration launched divided by all fixed-arena slots. It includes the one delayed look-ahead iteration.",
-            "e2e_output_tok_per_s": "All generated tokens including each first token and EOS divided by summed page wall time.",
+            "e2e_output_tok_per_s": "All generated tokens including each first token and EOS divided by run wall time.",
         },
     )
+    result.aggregate["page_completion_order"] = pipeline_run.completion_order
     output_path = output_dir / "run.json"
     output_path.write_text(json.dumps(result.to_dict(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
@@ -149,8 +168,8 @@ def main() -> None:
         f"recognized_regions={aggregate['recognized_regions']} partial_pages={aggregate['partial_pages']}"
     )
     print(
-        f"page_wall_s={aggregate['sum_page_wall_s']:.6f} "
-        f"decode_wall_s={aggregate['sum_continuous_decode_wall_s']:.6f} "
+        f"run_wall_s={aggregate['run_wall_s']:.6f} "
+        f"decode_wall_s={aggregate['continuous_decode_wall_s']:.6f} "
         f"raw_decode_tok_per_s={aggregate['rates']['raw_decode_tok_per_s']} "
         f"effective_decode_tok_per_s={aggregate['rates']['effective_decode_tok_per_s']} "
         f"e2e_output_tok_per_s={aggregate['rates']['e2e_output_tok_per_s']}"

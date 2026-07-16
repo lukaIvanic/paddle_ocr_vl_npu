@@ -5,7 +5,7 @@ from __future__ import annotations
 import time
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any, Callable, Iterable
 
 import torch
 
@@ -70,6 +70,9 @@ class DecodeStep:
 @dataclass
 class ContinuousDecodeRun:
     completions: list[DecodeCompletion]
+    submitted_requests: int
+    ready_buffer_capacity: int
+    max_ready_queue_depth: int
     graph_calls: int
     initial_admissions: int
     hot_swap_admissions: int
@@ -378,8 +381,37 @@ class ContinuousDecodeScheduler:
         return tokens, time.perf_counter() - started
 
     def run(self, ready_requests: list[ReadyDecodeRequest]) -> ContinuousDecodeRun:
+        return self.run_stream(ready_requests)
+
+    def run_stream(
+        self,
+        ready_requests: Iterable[ReadyDecodeRequest],
+        *,
+        on_completion: Callable[[DecodeCompletion], None] | None = None,
+        ready_buffer_capacity: int | None = None,
+    ) -> ContinuousDecodeRun:
+        """Decode a bounded, lazily produced request stream.
+
+        The producer may perform eager prefill before yielding each request.  A
+        private ready reservoir keeps at most ``ready_buffer_capacity`` NPU KV
+        prefixes waiting behind the fixed decode arena.  This makes page
+        boundaries irrelevant without materializing an unbounded document.
+        """
+
         self.arena.begin_run()
-        ready_queue = deque(ready_requests)
+        ready_source = iter(ready_requests)
+        buffer_capacity = (
+            self.batch_size
+            if ready_buffer_capacity is None
+            else int(ready_buffer_capacity)
+        )
+        if buffer_capacity <= 0:
+            raise ValueError("ready_buffer_capacity must be positive")
+        ready_queue: deque[ReadyDecodeRequest] = deque()
+        source_exhausted = False
+        submitted_order: list[str] = []
+        submitted_ids: set[str] = set()
+        max_ready_queue_depth = 0
         completions: list[DecodeCompletion] = []
         graph_calls = 0
         initial_admissions = 0
@@ -390,15 +422,48 @@ class ContinuousDecodeScheduler:
         hot_swap_kv_bytes = 0
         d2h_wait_wall_s = 0.0
         retire_and_refill_wall_s = 0.0
+        ready_source_wall_s = 0.0
+        completion_callback_wall_s = 0.0
+
+        def record_completion(completion: DecodeCompletion) -> None:
+            nonlocal completion_callback_wall_s
+            completions.append(completion)
+            if on_completion is not None:
+                started = time.perf_counter()
+                on_completion(completion)
+                completion_callback_wall_s += time.perf_counter() - started
+
+        def refill_ready_queue() -> None:
+            nonlocal source_exhausted, ready_source_wall_s
+            nonlocal max_ready_queue_depth
+            while not source_exhausted and len(ready_queue) < buffer_capacity:
+                started = time.perf_counter()
+                try:
+                    ready = next(ready_source)
+                except StopIteration:
+                    source_exhausted = True
+                    ready_source_wall_s += time.perf_counter() - started
+                    break
+                ready_source_wall_s += time.perf_counter() - started
+                if ready.request_id in submitted_ids:
+                    raise ValueError(f"duplicate decode request id: {ready.request_id}")
+                submitted_ids.add(ready.request_id)
+                submitted_order.append(ready.request_id)
+                ready_queue.append(ready)
+                max_ready_queue_depth = max(max_ready_queue_depth, len(ready_queue))
 
         def fill_free_slots(*, hot_swap: bool) -> None:
             nonlocal initial_admissions, hot_swap_admissions
             nonlocal prefill_only_completions, initial_kv_bytes, hot_swap_kv_bytes
             for slot_index in self.arena.free_slot_indices():
-                while ready_queue:
+                while True:
+                    if not ready_queue and not source_exhausted:
+                        refill_ready_queue()
+                    if not ready_queue:
+                        break
                     ready = ready_queue.popleft()
                     if ready.first_token == self.eos_token_id or self.max_new_tokens == 1:
-                        completions.append(
+                        record_completion(
                             DecodeCompletion(
                                 ready=ready,
                                 token_ids=[int(ready.first_token)],
@@ -427,8 +492,10 @@ class ContinuousDecodeScheduler:
                     break
 
         synchronize(self.device)
-        decode_started = time.perf_counter()
+        scheduler_started = time.perf_counter()
+        refill_ready_queue()
         fill_free_slots(hot_swap=False)
+        refill_ready_queue()
         pending: PendingTokenCopy | None = None
         iteration = 0
 
@@ -453,7 +520,7 @@ class ContinuousDecodeScheduler:
                     state.token_ids.append(token_id)
                     if token_id == self.eos_token_id or len(state.token_ids) >= self.max_new_tokens:
                         released = self.arena.release(slot_index)
-                        completions.append(
+                        record_completion(
                             DecodeCompletion(
                                 ready=released.ready,
                                 token_ids=list(released.token_ids),
@@ -469,6 +536,7 @@ class ContinuousDecodeScheduler:
                             )
                         )
                 fill_free_slots(hot_swap=True)
+                refill_ready_queue()
                 retire_and_refill_wall_s += time.perf_counter() - started
 
             pending = current
@@ -480,14 +548,20 @@ class ContinuousDecodeScheduler:
                 break
 
         synchronize(self.device)
-        continuous_decode_wall_s = time.perf_counter() - decode_started
+        scheduler_wall_s = time.perf_counter() - scheduler_started
+        continuous_decode_wall_s = max(
+            0.0,
+            scheduler_wall_s
+            - ready_source_wall_s
+            - completion_callback_wall_s,
+        )
         decode_device_s, admission_device_s = self.arena.resolve_device_timing()
 
-        if ready_queue:
+        if ready_queue or not source_exhausted:
             raise AssertionError(f"continuous decode stopped with {len(ready_queue)} ready requests")
-        if len(completions) != len(ready_requests):
+        if len(completions) != len(submitted_order):
             raise AssertionError(
-                f"continuous decode completed {len(completions)} of {len(ready_requests)} requests"
+                f"continuous decode completed {len(completions)} of {len(submitted_order)} requests"
             )
 
         effective_tokens = sum(max(0, len(item.token_ids) - 1) for item in completions)
@@ -503,9 +577,12 @@ class ContinuousDecodeScheduler:
             raise AssertionError("continuous decode slot accounting does not balance")
 
         completion_by_id = {item.ready.request_id: item for item in completions}
-        ordered_completions = [completion_by_id[item.request_id] for item in ready_requests]
+        ordered_completions = [completion_by_id[request_id] for request_id in submitted_order]
         return ContinuousDecodeRun(
             completions=ordered_completions,
+            submitted_requests=len(submitted_order),
+            ready_buffer_capacity=buffer_capacity,
+            max_ready_queue_depth=max_ready_queue_depth,
             graph_calls=graph_calls,
             initial_admissions=initial_admissions,
             hot_swap_admissions=hot_swap_admissions,
@@ -520,6 +597,9 @@ class ContinuousDecodeScheduler:
             hot_swap_kv_prefix_bytes_copied=hot_swap_kv_bytes,
             timing_s={
                 "continuous_decode_wall": float(continuous_decode_wall_s),
+                "run_scoped_scheduler_wall": float(scheduler_wall_s),
+                "ready_source_wall": float(ready_source_wall_s),
+                "completion_callback_wall": float(completion_callback_wall_s),
                 "decode_model_and_argmax_device": float(decode_device_s),
                 "slot_admission_device": float(admission_device_s),
                 "slot_admission_enqueue_wall": float(self.arena.admission_enqueue_wall_s),

@@ -114,6 +114,77 @@ class ContinuousDecodeSchedulerTest(unittest.TestCase):
         )
         self.assertEqual(result.raw_decode_token_slots, 0)
 
+    def test_stream_keeps_slots_filled_across_page_ids(self) -> None:
+        transitions = {
+            10: 11,
+            11: 12,
+            12: 13,
+            13: 14,
+            14: 15,
+            15: 2,
+            20: 2,
+            30: 2,
+            40: 2,
+            50: 2,
+            2: 99,
+        }
+
+        def decode_fn(input_ids, _positions, _rope, *_cache):
+            batch_size = int(input_ids.shape[0])
+            logits = torch.full((batch_size, 1, 128), -1.0)
+            for row, token_id in enumerate(input_ids.reshape(-1).tolist()):
+                logits[row, 0, transitions[int(token_id)]] = 1.0
+            return logits
+
+        arena = DecodeArena(
+            cache=make_cache(2, 0.0),
+            device=torch.device("cpu"),
+            batch_size=2,
+            eos_token_id=2,
+        )
+        scheduler = ContinuousDecodeScheduler(
+            arena=arena,
+            decode_fn=decode_fn,
+            max_new_tokens=8,
+        )
+        completed: list[str] = []
+        source = (
+            make_ready(request_id, first_token, float(index + 1))
+            for index, (request_id, first_token) in enumerate(
+                [
+                    ("page0-long", 10),
+                    ("page0-short", 20),
+                    ("page1-a", 30),
+                    ("page1-b", 40),
+                    ("page1-c", 50),
+                ]
+            )
+        )
+        result = scheduler.run_stream(
+            source,
+            on_completion=lambda completion: completed.append(
+                completion.ready.request_id
+            ),
+            ready_buffer_capacity=2,
+        )
+
+        self.assertEqual(result.submitted_requests, 5)
+        self.assertEqual(result.ready_buffer_capacity, 2)
+        self.assertLessEqual(result.max_ready_queue_depth, 2)
+        self.assertEqual(
+            [completion.ready.request_id for completion in result.completions],
+            ["page0-long", "page0-short", "page1-a", "page1-b", "page1-c"],
+        )
+        self.assertEqual(completed[0], "page0-short")
+        self.assertIn("page1-a", completed[:-1])
+        self.assertGreaterEqual(result.active_decode_token_slots / result.raw_decode_token_slots, 0.9)
+        self.assertEqual(
+            result.raw_decode_token_slots,
+            result.effective_decode_tokens
+            + result.lookahead_decode_token_slots
+            + result.idle_decode_token_slots,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

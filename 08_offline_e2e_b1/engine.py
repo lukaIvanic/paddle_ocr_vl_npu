@@ -5,7 +5,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, Iterable
 
 import torch
 import torch.nn.functional as F
@@ -14,6 +14,7 @@ from tokenizers import Tokenizer
 
 from continuous_decode import (
     ContinuousDecodeScheduler,
+    DecodeCompletion,
     DecodeArena,
     ReadyDecodeRequest,
 )
@@ -188,92 +189,68 @@ class ContinuousRecognizer:
     ) -> tuple[list[RecognitionResult], ContinuousDecodeResult]:
         if not requests:
             raise ValueError("recognize_many requires at least one request")
+        return self.recognize_stream(requests, schedule_id=schedule_id)
 
-        ready_states = [self._prefill(request) for request in requests]
-        decode_ready = [
-            ReadyDecodeRequest(
-                request_id=state.request.request_id,
-                payload=state,
-                cache=state.cache,
-                rope_deltas=state.rope_deltas,
-                cache_position=state.next_cache_position,
-                first_token_tensor=state.next_token,
-                first_token=state.first_token,
-                prompt_length=state.input_tokens,
+    @torch.inference_mode()
+    def recognize_stream(
+        self,
+        requests: Iterable[RecognitionInput],
+        *,
+        schedule_id: str,
+        on_result: Callable[[RecognitionResult], None] | None = None,
+    ) -> tuple[list[RecognitionResult], ContinuousDecodeResult]:
+        """Prefill and decode a bounded request stream across page boundaries."""
+
+        def ready_stream() -> Iterable[ReadyDecodeRequest]:
+            for request in requests:
+                state = self._prefill(request)
+                yield ReadyDecodeRequest(
+                    request_id=state.request.request_id,
+                    payload=state,
+                    cache=state.cache,
+                    rope_deltas=state.rope_deltas,
+                    cache_position=state.next_cache_position,
+                    first_token_tensor=state.next_token,
+                    first_token=state.first_token,
+                    prompt_length=state.input_tokens,
+                )
+
+        completion_results: list[RecognitionResult] = []
+
+        def handle_completion(completion: DecodeCompletion) -> None:
+            result = self._result_from_completion(
+                completion,
+                schedule_id=schedule_id,
             )
-            for state in ready_states
-        ]
-        decoded = self.decode_scheduler.run(decode_ready)
+            completion_results.append(result)
+            if on_result is not None:
+                on_result(result)
+
+        decoded = self.decode_scheduler.run_stream(
+            ready_stream(),
+            on_completion=handle_completion,
+            ready_buffer_capacity=self.batch_size,
+        )
         decode_wall_s = decoded.timing_s["continuous_decode_wall"]
 
-        results: list[RecognitionResult] = []
-        for completion in decoded.completions:
-            state: ReadyRecognition = completion.ready.payload
-            token_ids = completion.token_ids
-            started = time.perf_counter()
-            text = self.tokenizer.decode(token_ids, skip_special_tokens=True)
-            detokenize_s = time.perf_counter() - started
-            generated_tokens = len(token_ids)
-            effective_decode_tokens = max(0, generated_tokens - 1)
-            timing = dict(state.timing_s)
-            timing.update(
-                {
-                    "decode_ready_queue_wait": (
-                        max(0.0, completion.admitted_at - state.prefill_finished)
-                        if completion.admitted_at is not None
-                        else 0.0
-                    ),
-                    "decode_slot_residency": (
-                        max(0.0, completion.completed_at - completion.admitted_at)
-                        if completion.admitted_at is not None
-                        else 0.0
-                    ),
-                    "continuous_decode_wall_shared": float(decode_wall_s),
-                    "detokenize": float(detokenize_s),
-                    "request_total": float(
-                        completion.completed_at - state.request_started + detokenize_s
-                    ),
-                }
-            )
-            results.append(
-                RecognitionResult(
-                    request_id=state.request.request_id,
-                    decode_schedule_id=schedule_id,
-                    decode_slot_index=completion.slot_index,
-                    decode_slot_epoch=completion.slot_epoch,
-                    layout_order=int(state.request.layout_order),
-                    label=state.request.label,
-                    prompt=state.request.prompt,
-                    box=state.request.box,
-                    crop_size=tuple(int(value) for value in state.request.crop.size),
-                    text=text,
-                    token_ids=token_ids,
-                    stop_reason=completion.stop_reason,
-                    input_tokens=state.input_tokens,
-                    projected_image_tokens=state.projected_image_tokens,
-                    generated_tokens_including_eos=generated_tokens,
-                    decode_tokens_after_prefill_including_eos=effective_decode_tokens,
-                    decode_calls_executed=completion.iterations_launched,
-                    timing_s=timing,
-                    device_stage_s=dict(state.device_stage_s),
-                    rates={
-                        "decode_effective_token_contribution_per_s": per_second(
-                            effective_decode_tokens,
-                            decode_wall_s,
-                        ),
-                        "request_output_tok_per_s": per_second(
-                            generated_tokens,
-                            timing["request_total"],
-                        ),
-                    },
-                )
+        result_by_id = {result.request_id: result for result in completion_results}
+        results = [
+            result_by_id[completion.ready.request_id]
+            for completion in decoded.completions
+        ]
+        for result in results:
+            result.timing_s["continuous_decode_wall_shared"] = float(decode_wall_s)
+            result.rates["decode_effective_token_contribution_per_s"] = per_second(
+                result.decode_tokens_after_prefill_including_eos,
+                decode_wall_s,
             )
 
-        results.sort(key=lambda result: result.layout_order)
         schedule_result = ContinuousDecodeResult(
             schedule_id=schedule_id,
             batch_size=self.batch_size,
-            requests=len(requests),
+            requests=decoded.submitted_requests,
+            ready_buffer_capacity=decoded.ready_buffer_capacity,
+            max_ready_queue_depth=decoded.max_ready_queue_depth,
             graph_calls=decoded.graph_calls,
             initial_admissions=decoded.initial_admissions,
             hot_swap_admissions=decoded.hot_swap_admissions,
@@ -312,9 +289,74 @@ class ContinuousRecognizer:
                     decoded.effective_decode_tokens,
                     decoded.timing_s["decode_model_and_argmax_device"],
                 ),
+                "scheduler_effective_tok_per_s": per_second(
+                    decoded.effective_decode_tokens,
+                    decoded.timing_s["run_scoped_scheduler_wall"],
+                ),
             },
         )
         return results, schedule_result
+
+    def _result_from_completion(
+        self,
+        completion: DecodeCompletion,
+        *,
+        schedule_id: str,
+    ) -> RecognitionResult:
+        state: ReadyRecognition = completion.ready.payload
+        token_ids = completion.token_ids
+        started = time.perf_counter()
+        text = self.tokenizer.decode(token_ids, skip_special_tokens=True)
+        detokenize_s = time.perf_counter() - started
+        generated_tokens = len(token_ids)
+        effective_decode_tokens = max(0, generated_tokens - 1)
+        timing = dict(state.timing_s)
+        timing.update(
+            {
+                "decode_ready_queue_wait": (
+                    max(0.0, completion.admitted_at - state.prefill_finished)
+                    if completion.admitted_at is not None
+                    else 0.0
+                ),
+                "decode_slot_residency": (
+                    max(0.0, completion.completed_at - completion.admitted_at)
+                    if completion.admitted_at is not None
+                    else 0.0
+                ),
+                "detokenize": float(detokenize_s),
+                "request_total": float(
+                    completion.completed_at - state.request_started + detokenize_s
+                ),
+            }
+        )
+        return RecognitionResult(
+            request_id=state.request.request_id,
+            decode_schedule_id=schedule_id,
+            decode_slot_index=completion.slot_index,
+            decode_slot_epoch=completion.slot_epoch,
+            layout_order=int(state.request.layout_order),
+            label=state.request.label,
+            prompt=state.request.prompt,
+            box=state.request.box,
+            crop_size=tuple(int(value) for value in state.request.crop.size),
+            text=text,
+            token_ids=token_ids,
+            stop_reason=completion.stop_reason,
+            input_tokens=state.input_tokens,
+            projected_image_tokens=state.projected_image_tokens,
+            generated_tokens_including_eos=generated_tokens,
+            decode_tokens_after_prefill_including_eos=effective_decode_tokens,
+            decode_calls_executed=completion.iterations_launched,
+            timing_s=timing,
+            device_stage_s=dict(state.device_stage_s),
+            rates={
+                "decode_effective_token_contribution_per_s": None,
+                "request_output_tok_per_s": per_second(
+                    generated_tokens,
+                    timing["request_total"],
+                ),
+            },
+        )
 
     @torch.inference_mode()
     def _prefill(self, request: RecognitionInput) -> ReadyRecognition:
@@ -499,7 +541,8 @@ class ContinuousRecognizer:
             "vision_prefill": "eager_sequential_no_padding",
             "text_prefill": "eager_sequential_no_padding",
             "decode": decode_label,
-            "decode_schedule": "persistent_slots_iteration_hot_swap",
+            "decode_schedule": "run_scoped_cross_page_persistent_slots_iteration_hot_swap",
+            "ready_buffer_capacity": self.batch_size,
             "decode_completion_detection": "queue_depth_one_async_token_copy",
             "kv_admission": "copy_valid_prefill_prefix_into_fixed_slot",
             "compile": self.compile_metadata,

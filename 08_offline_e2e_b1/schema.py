@@ -65,6 +65,8 @@ class ContinuousDecodeResult:
     schedule_id: str
     batch_size: int
     requests: int
+    ready_buffer_capacity: int
+    max_ready_queue_depth: int
     graph_calls: int
     initial_admissions: int
     hot_swap_admissions: int
@@ -96,7 +98,7 @@ class PageResult:
     image_size: tuple[int, int]
     layout_regions: list[LayoutRegion]
     recognized_regions: list[RecognitionResult]
-    decode_schedule: ContinuousDecodeResult
+    decode_schedule_id: str
     skipped_regions: list[SkippedRegion]
     reading_order_text: str
     timing_s: dict[str, float]
@@ -110,6 +112,7 @@ class RunResult:
     configuration: dict[str, Any]
     setup_timing_s: dict[str, Any]
     pages: list[PageResult]
+    decode_schedule: ContinuousDecodeResult
     aggregate: dict[str, Any] = field(default_factory=dict)
     metric_definitions: dict[str, str] = field(default_factory=dict)
 
