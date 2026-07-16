@@ -1,0 +1,103 @@
+iff
+
+\[\begin{bmatrix}R_{11}&\cdots&R_{1k}&\cdots&R_{1t_j}\\ \vdots&\ddots&\vdots&\vdots&\vdots\\ R_{k1}&\cdots&R_{kk}&\cdots&R_{kt_j}\\ \vdots&\vdots&\vdots&\ddots&\vdots\\ R_{t_j1}&\cdots&R_{t_jk}&\cdots&R_{t_jt_j}\end{bmatrix}\begin{bmatrix}O&\cdots&O&\cdots&O\\ \vdots&\ddots&\vdots&\vdots&\vdots\\ O&\cdots&I_{r_{kj}}&\cdots&O\\ \vdots&\vdots&\vdots&\ddots&\vdots\\ O&\cdots&O&\cdots&O\end{bmatrix}=\begin{bmatrix}O&\cdots&R_{1k}&\cdots&O\\ \vdots&\ddots&\vdots&\vdots&\vdots\\ O&\cdots&R_{kk}&\cdots&O\\ \vdots&\vdots&\vdots&\ddots&\vdots\\ O&\cdots&R_{tjk}&\cdots&O\end{bmatrix}=\]
+
+\[\begin{bmatrix}O&\cdots&O&\cdots&O\\ \vdots&\ddots&\vdots&\vdots&\vdots\\ O&\cdots&I_{r_{kj}}&\cdots&O\\ \vdots&\vdots&\vdots&\ddots&\vdots\\ O&\cdots&O&\cdots&O\end{bmatrix}\begin{bmatrix}R_{11}&\cdots&R_{1k}&\cdots&R_{1t_{j}}\\ \vdots&\ddots&\vdots&\vdots&\vdots\\ R_{k1}&\cdots&R_{kk}&\cdots&R_{kt_{j}}\\ \vdots&\vdots&\vdots&\ddots&\vdots\\ R_{t_{j}1}&\cdots&R_{t_{j}k}&\cdots&R_{t_{j}t_{j}}\end{bmatrix}=\begin{bmatrix}O&\cdots&O&\cdots&O\\ \vdots&\ddots&\vdots&\vdots&\vdots\\ R_{k1}&\cdots&R_{kk}&\cdots&R_{kt_{j}}\\ \vdots&\vdots&\vdots&\ddots&\vdots\\ O&\cdots&O&\cdots&O\end{bmatrix}\]
+
+iff $R_{\alpha k} = O$ and $R_{k\alpha} = O$ for all $\alpha \neq k$, $1 \leq k \leq t_j$ and $1 \leq \alpha \leq t_j$. Hence, $D_j = \mathrm{diag}(R_{11}, R_{22}, \cdots, R_{t_j t_j})$. Since $D_j = D_j^2$ then $R_{kk} = R_{kk}^2$ and by Remark 5 we have that $R_{kk} \in \{O, I_{r_{k_i}}\}$.
+
+\[R_{\alpha k}=O\]
+
+\[R_{k\alpha}=O\]
+
+\[\alpha\neq k,~1\leq k\leq t_{j}\]
+
+\[1~\leq~\alpha~\leq~t_{j}.\]
+
+\[D_{j}=\]
+
+\[D_{j}=D_{i}^{2}\]
+
+\[(R_{11},R_{22},\cdots,R_{t_{j} t_{j}})\]
+
+\[R_{k k}=R_{k k}^{2}\]
+
+\[R_{k k}\in\{O,I_{r_{k i}}\}\]
+
+If the Jordan canonical form $J$ has only one Jordan block associated with the eigenvalue $\lambda_j$, that is if $t_j = 1$, then $D_j = R_{11}$ and, in consequence $D_j \in \{O, I_{r_j}\}$. Hence, our claim has been proved in this particular case.
+
+\[t_{j}=1\]
+
+\[D_{j}=R_{11}\]
+
+\[\lambda_{j}\]
+
+\[D_{j}\in\{O,I_{r_{j}}\}\]
+
+Now, let us consider that $t_j > 1$. Then $D_j = \mathrm{diag}(R_{11}, R_{22}, \cdots, R_{t_jt_j})$. Without loss of generality we can assume that the sizes of the submatrices $R_{kk}, 1 \leq k \leq t_j$, satisfy that $r_{1j} \geq r_{2j} \geq \cdots \geq r_{tj_j}$. To prove our claim, we consider the $j$ projectors in $\delta$ defined as follows
+
+\[t_{j}>1\]
+
+\[D_{j}=\mathrm{diag}(R_{11},R_{22},\cdots,R_{t i t_{j}})\]
+
+\[R_{k k},~1\leq k\leq t_j,\]
+
+\[r_{1j}\geq\]
+
+\[r_{2j}\geq\cdots\geq r_{t_{j}j}\]
+
+\[\delta\]
+
+\[j\]
+
+\[T_{j}=\mathrm{d i a g}(O,\cdots,\widetilde{D}_{j},\cdots,O)\mathrm{~w h e r e~}\widetilde{D}_{j}=\left[\begin{array}{c|cccc}{I_{r_{1j}}}&{O}&{\cdots}&{O}\\ {O}&{I_{r_{2j}}}&{O}&{\cdots}&{O}\\ {}&{\vdots}&{\vdots}&{\vdots}&{\vdots}\\ {O}&{I_{r_{t_{j}j}}}&{O}&{\cdots}&{O}\\ \end{array}\right].\mathrm{~T h e n,~}T T_{j}=T_{j}T\mathrm{~i f~a n d}\]
+
+$$T_j = \mathrm{diag}(O, \cdots, \widetilde{D}_j, \cdots, O) \text{where } \widetilde{D}_j = \begin{bmatrix} I_{r_{1j}} & O & \cdots & O \\ O & I_{r_{2j}} & O & \cdots & O \\ \vdots & \vdots & \vdots & \vdots \\ O & I_{r_{t_j}} & O & \cdots & O \end{bmatrix}.$$ Then, $TT_j = T_jT$ if and
+
+\[T_{j}=\mathrm{d i a g}(O,\cdots,\widetilde{D}_{j},\cdots,O)\]
+
+\[T T_{j}=T_{j}T\]
+
+\[\mathrm{e}\;\widetilde{D}_{j}=\left[\begin{array}{c|ccc}I_{r_{1j}}&O&\cdots&O\\O&I_{r_{2j}}&O&\cdots&O\\&\vdots&\vdots&\vdots&\vdots\\O&I_{r_{t,j}}&O&\cdots&O\end{array}\right].\;\mathrm{T h}\]
+
+only if \(D_{j}\widetilde{D}_{j}=\widetilde{D}_{j}D_{j}\) if and only if
+
+\[D_{j}\widetilde{D}_{j}=\widetilde{D}_{j}D_{j}\]
+
+\[\begin{bmatrix}R_{11}&O&\cdots&O\\O&R_{22}&\cdots&O\\\vdots&\vdots&\ddots&\vdots\\O&O&\cdots&R_{t_{j}t_{j}}\end{bmatrix}\begin{bmatrix}I_{r_{1j}}&O&\cdots&O\\O&I_{r_{2j}}&O&\cdots&O\\\vdots&\vdots&\vdots&\vdots&\vdots\\O&I_{r_{t_{j}j}}&O&\cdots&O\end{bmatrix}=\]
+
+\[\begin{bmatrix}I_{r_{1j}}&O&\cdots&O\\O&I_{r_{2j}}&O&\cdots&O\\\vdots&\vdots&\vdots&\vdots&\\O&I_{r_{t_{j}j}}&O&\cdots&O\end{bmatrix}\begin{bmatrix}R_{11}&O&\cdots&O\\O&R_{22}&\cdots&O\\\vdots&\vdots&\ddots&\vdots\\O&O&\cdots&R_{t_{j}t_{j}}\end{bmatrix}\]
+
+if and only if \(R_{kk}\left[O\quad I_{r_{kj}}\right]=\left[O\quad I_{r_{kj}}\right]R_{11}\) for each \(k,2\leq k\leq t_{j}\). From this and taking into account that \(R_{kk}\in\{O,I_{r_{kj}}\},R_{11}=O\) implies that \(R_{kk}=O\) for each k, and \(R_{11}=I_{r_{1j}}\) implies that \(R_{kk}=I_{r_{kj}}\) for each k. Therefore \(D_{j}=O\) or \(D_{j}=I_{r_{j}}\), and this completes the proof.
+
+\[R_{k k}\left[O\quad I_{r_{k j}}\right]=\left[O\quad I_{r_{k j}}\right]R_{11}\]
+
+\[k,2\leq k\leq t_{j}\]
+
+\[R_{k k}\in\{O,I_{r_{k i}}\},R_{11}=O\]
+
+\[R_{k k}=O\]
+
+\[k,\]
+
+\[R_{11}=I_{r_{1j}}\]
+
+\[R_{k k}=I_{r_{k j}}\]
+
+\[D_{j}=O\]
+
+\[D_{j}=I_{r_{j}}\]
+
+As an example, if we consider the down-set of $B$ given in Example 22, then the Boolean subalgebra $\mathcal{C}$ has the elements $\{O, \phi(A_2), \phi(A_3), I_r\}$ depicted in Figure 3.
+
+\[\{O,\phi(A_2),\phi(A_3),I_r\}\]
+
+6 The poset \(\mathbb{C}_1^n\)
+
+\[\mathbb{C}_{1}^{n}\]
+
+In this section we prove that \(\left(\mathbb{C}_1^n, \overset{*}{\leq}\right)\) is a lower semillattice if and only if \(n \leq 2\). In order to do that, we establish a characterization of the matrices that are above a given matrix \(A\) in terms of its Jordan canonical form.
+
+\[\left(\mathbb{C}_{1}^{n},\leq\right)\]
+
+\[n\leq2\]
