@@ -29,7 +29,7 @@ from local_modeling_paddleocr_vl import (
     repeat_kv,
     update_prefill_kv_cache_,
 )
-from probe_static_compile import (
+from compile_utils import (
     cache_key_part,
     import_torchair,
     short_file_hash,

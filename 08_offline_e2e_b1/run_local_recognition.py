@@ -4,236 +4,29 @@
 from __future__ import annotations
 
 import argparse
-import json
-import math
-import sys
 import time
 from pathlib import Path
 
-import numpy as np
 import torch
-from PIL import Image
 from tokenizers import Tokenizer
 
+from device_runtime import (
+    NPU_JIT_COMPILE_CHOICES,
+    configure_npu_jit_compile,
+    parse_dtype,
+    resolve_device,
+    synchronize_device,
+)
 from local_modeling_paddleocr_vl import (
     DECODE_ATTENTION,
     LocalPaddleOCRVLForConditionalGeneration,
     _resolve_model_dir,
 )
-
-
-IMAGE_TOKEN = "<|IMAGE_PLACEHOLDER|>"
-IMAGE_START = "<|IMAGE_START|>"
-IMAGE_END = "<|IMAGE_END|>"
-BOS = "<|begin_of_sentence|>"
-NPU_JIT_COMPILE_CHOICES = ("default", "off", "on")
-
-
-def smart_resize(
-    height: int,
-    width: int,
-    factor: int,
-    min_pixels: int,
-    max_pixels: int,
-) -> tuple[int, int]:
-    if height < factor:
-        width = round((width * factor) / height)
-        height = factor
-    if width < factor:
-        height = round((height * factor) / width)
-        width = factor
-    if max(height, width) / min(height, width) > 200:
-        raise ValueError(f"absolute aspect ratio must be smaller than 200, got {max(height, width) / min(height, width)}")
-    h_bar = round(height / factor) * factor
-    w_bar = round(width / factor) * factor
-    if h_bar * w_bar > max_pixels:
-        beta = math.sqrt((height * width) / max_pixels)
-        h_bar = math.floor(height / beta / factor) * factor
-        w_bar = math.floor(width / beta / factor) * factor
-    elif h_bar * w_bar < min_pixels:
-        beta = math.sqrt(min_pixels / (height * width))
-        h_bar = math.ceil(height * beta / factor) * factor
-        w_bar = math.ceil(width * beta / factor) * factor
-    return h_bar, w_bar
-
-
-def load_preprocessor_config(model_dir: Path) -> dict:
-    defaults = {
-        "do_convert_rgb": True,
-        "do_normalize": True,
-        "do_rescale": True,
-        "do_resize": True,
-        "image_mean": [0.5, 0.5, 0.5],
-        "image_std": [0.5, 0.5, 0.5],
-        "max_pixels": 1003520,
-        "merge_size": 2,
-        "min_pixels": 112896,
-        "patch_size": 14,
-        "resample": 3,
-        "rescale_factor": 1.0 / 255.0,
-        "temporal_patch_size": 1,
-    }
-    path = model_dir / "preprocessor_config.json"
-    if path.exists():
-        defaults.update(json.loads(path.read_text(encoding="utf-8")))
-    return defaults
-
-
-def apply_min_pixels_override(cfg: dict, min_pixels: int | None) -> dict:
-    """Return a copied preprocessor config with only ``min_pixels`` changed."""
-    effective = dict(cfg)
-    if min_pixels is None:
-        return effective
-
-    min_pixels = int(min_pixels)
-    if min_pixels <= 0:
-        raise ValueError("preprocessor min_pixels override must be positive")
-    max_pixels = int(effective["max_pixels"])
-    if min_pixels > max_pixels:
-        raise ValueError(
-            "preprocessor min_pixels override must not exceed max_pixels: "
-            f"min_pixels={min_pixels}, max_pixels={max_pixels}"
-        )
-    effective["min_pixels"] = min_pixels
-    return effective
-
-
-def preprocess_pil_image(image: Image.Image, cfg: dict) -> tuple[torch.Tensor, torch.Tensor]:
-    """Preprocess one in-memory crop with the local PaddleOCR-VL recipe."""
-    if cfg["do_convert_rgb"]:
-        image = image.convert("RGB")
-    width, height = image.size
-    patch_size = int(cfg["patch_size"])
-    merge_size = int(cfg["merge_size"])
-    temporal_patch_size = int(cfg["temporal_patch_size"])
-    if temporal_patch_size != 1:
-        raise ValueError(f"temporal_patch_size must be 1 for this recognizer path, got {temporal_patch_size}")
-
-    resized_height, resized_width = height, width
-    if cfg["do_resize"]:
-        resized_height, resized_width = smart_resize(
-            height,
-            width,
-            factor=patch_size * merge_size,
-            min_pixels=int(cfg["min_pixels"]),
-            max_pixels=int(cfg["max_pixels"]),
-        )
-        resample = Image.Resampling(int(cfg["resample"]))
-        image = image.resize((resized_width, resized_height), resample=resample)
-
-    array = np.asarray(image)
-    if cfg["do_rescale"]:
-        array = array.astype(np.float32) * float(cfg["rescale_factor"])
-    else:
-        array = array.astype(np.float32)
-    if cfg["do_normalize"]:
-        mean = np.array(cfg["image_mean"], dtype=np.float32)
-        std = np.array(cfg["image_std"], dtype=np.float32)
-        array = (array - mean) / std
-
-    patches = array.transpose(2, 0, 1)[None, ...]
-    channel = patches.shape[1]
-    grid_t = patches.shape[0] // temporal_patch_size
-    grid_h = resized_height // patch_size
-    grid_w = resized_width // patch_size
-    patches = patches.reshape(
-        grid_t,
-        temporal_patch_size,
-        channel,
-        grid_h,
-        patch_size,
-        grid_w,
-        patch_size,
-    )
-    patches = patches.transpose(0, 3, 5, 2, 1, 4, 6)
-    flatten_patches = patches.reshape(grid_t * grid_h * grid_w, channel, patch_size, patch_size)
-    return torch.from_numpy(flatten_patches), torch.tensor([[grid_t, grid_h, grid_w]], dtype=torch.long)
-
-
-def preprocess_image(image_path: Path, cfg: dict) -> tuple[torch.Tensor, torch.Tensor]:
-    with Image.open(image_path) as image:
-        return preprocess_pil_image(image, cfg)
-
-
-def build_inputs(
-    tokenizer: Tokenizer,
-    image_grid_thw: torch.Tensor,
-    prompt: str,
-    merge_size: int,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    image_token_count = int(image_grid_thw[0].prod().item()) // merge_size // merge_size
-    text = build_paddleocr_vl_prompt(prompt, image_token_count=image_token_count)
-    ids = tokenizer.encode(text).ids
-    input_ids = torch.tensor([ids], dtype=torch.long)
-    attention_mask = torch.ones_like(input_ids)
-    return input_ids, attention_mask
-
-
-def build_paddleocr_vl_prompt(prompt: str, *, image_token_count: int) -> str:
-    """Mirror PaddleOCR-VL's chat_template.jinja plus processor image-token expansion."""
-    template = f"{BOS}User: {IMAGE_START}{IMAGE_TOKEN}{IMAGE_END}{prompt}\nAssistant:\n"
-    placeholder = "<|placeholder|>"
-    return template.replace(IMAGE_TOKEN, placeholder * int(image_token_count), 1).replace(placeholder, IMAGE_TOKEN)
-
-
-def parse_dtype(name: str, _device: torch.device) -> torch.dtype:
-    if name in {"fp16", "float16"}:
-        return torch.float16
-    if name in {"bf16", "bfloat16"}:
-        return torch.bfloat16
-    raise ValueError(f"unsupported dtype: {name}")
-
-
-def npu_is_available() -> bool:
-    try:
-        import torch_npu  # noqa: F401
-    except ModuleNotFoundError:
-        return False
-    except Exception as exc:
-        raise RuntimeError(f"torch_npu is installed but failed to initialize: {exc.__class__.__name__}: {exc}") from exc
-    return hasattr(torch, "npu") and torch.npu.is_available()
-
-
-def resolve_device(name: str) -> torch.device:
-    if name == "auto":
-        if torch.cuda.is_available():
-            return torch.device("cuda")
-        if npu_is_available():
-            return torch.device("npu:0")
-        if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
-            return torch.device("mps")
-        return torch.device("cpu")
-    if name.startswith("npu"):
-        try:
-            import torch_npu  # noqa: F401
-        except ImportError as exc:
-            raise RuntimeError("NPU device requested, but torch_npu is not importable in this environment.") from exc
-    return torch.device(name)
-
-
-def configure_npu_jit_compile(mode: str, device: torch.device, *, verbose: bool = True) -> None:
-    if mode not in NPU_JIT_COMPILE_CHOICES:
-        raise ValueError(f"unsupported npu_jit_compile={mode!r}")
-    if mode == "default" or device.type != "npu":
-        return
-    try:
-        import torch_npu  # noqa: F401
-
-        requested = mode == "on"
-        torch.npu.set_compile_mode(jit_compile=requested)
-        if verbose:
-            print(f"[npu] set torch.npu compile mode: jit_compile={requested}", file=sys.stderr, flush=True)
-    except Exception as exc:
-        raise RuntimeError(f"failed to set NPU jit_compile={mode}: {exc.__class__.__name__}: {exc}") from exc
-
-
-def synchronize_device(device: torch.device) -> None:
-    if device.type == "cuda":
-        torch.cuda.synchronize()
-    elif device.type == "npu":
-        import torch_npu
-
-        torch_npu.npu.synchronize()
+from preprocessing import (
+    build_inputs,
+    load_preprocessor_config,
+    preprocess_image,
+)
 
 
 @torch.inference_mode()

@@ -17,13 +17,15 @@ from local_modeling_paddleocr_vl import (
     LocalPaddleOCRVLStaticCache,
     _resolve_model_dir,
 )
-from run_local_recognition import (
-    build_inputs,
+from device_runtime import (
     configure_npu_jit_compile,
-    load_preprocessor_config,
     parse_dtype,
-    preprocess_pil_image,
     resolve_device,
+)
+from preprocessing import (
+    build_inputs,
+    load_preprocessor_config,
+    preprocess_pil_image,
 )
 from text_compile import BucketedTextPrefillRuntime
 from timing import synchronize

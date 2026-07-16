@@ -18,6 +18,12 @@ from continuous_decode import (
     DecodeArena,
     ReadyDecodeRequest,
 )
+from decode_compile import compile_decode_module
+from device_runtime import (
+    configure_npu_jit_compile,
+    parse_dtype,
+    resolve_device,
+)
 from local_modeling_paddleocr_vl import (
     DECODE_ATTENTION,
     DECODE_CACHE_UPDATE,
@@ -28,15 +34,11 @@ from local_modeling_paddleocr_vl import (
     get_vision_attention_impl,
     get_vision_prompt_fa_layout,
 )
-from probe_static_compile import compile_decode_module
-from run_local_recognition import (
+from preprocessing import (
     apply_min_pixels_override,
     build_inputs,
-    configure_npu_jit_compile,
     load_preprocessor_config,
-    parse_dtype,
     preprocess_pil_image,
-    resolve_device,
 )
 from runtime_defaults import (
     DECODE_BACKEND_CHOICES,

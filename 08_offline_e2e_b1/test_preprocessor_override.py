@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import unittest
 
-from run_local_recognition import apply_min_pixels_override
+from preprocessing import apply_min_pixels_override
 
 
 class MinPixelsOverrideTest(unittest.TestCase):

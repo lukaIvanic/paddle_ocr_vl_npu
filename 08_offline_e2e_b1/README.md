@@ -189,11 +189,22 @@ finish; the engine does not wait for the whole image list before emitting it.
   prefilled state, and result materialization.
 - `continuous_decode.py`: bounded ready reservoir and persistent B=4 slot
   scheduler.
+- `preprocessing.py`: crop resize/patchify and multimodal prompt construction.
+- `device_runtime.py`: device selection, dtype policy, NPU compile mode, and
+  synchronization.
+- `compile_utils.py`: shared TorchAir import and cache-key helpers.
+- `decode_compile.py`: production decode graph compilation and shape-specific
+  cache identity.
 - `vision_compile.py`: dense static routing and the compiled encoder boundary.
 - `text_compile.py`: static text-transformer routing with real-prefix KV writes.
 - `local_modeling_paddleocr_vl.py`: faithful model and NPU operation path.
 - `runtime_defaults.py`: the measured default profile, kept separate from
   historical benchmark controls.
+
+The production runtime modules do not import `run_*` entrypoints or `probe_*`
+experiments. Those scripts consume the same preprocessing, device, and compile
+modules as the E2E engine, so diagnostic code cannot silently become a runtime
+dependency or invalidate a decode cache merely because a probe changed.
 
 Measured 910B validations are recorded in
 [`NPU_FULL_PAGE_RESULT.md`](NPU_FULL_PAGE_RESULT.md) for the original B=1 path

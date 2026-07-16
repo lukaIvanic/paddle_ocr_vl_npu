@@ -11,10 +11,10 @@ from pathlib import Path
 
 import torch
 
+from device_runtime import NPU_JIT_COMPILE_CHOICES, resolve_device
 from engine import ContinuousRecognizer
 from layout import PPDocLayoutV3Runtime
 from pipeline import OfflinePagePipeline, aggregate_pages
-from run_local_recognition import NPU_JIT_COMPILE_CHOICES, resolve_device
 from runtime_defaults import (
     DECODE_BACKEND_CHOICES,
     DEFAULT_CACHE_LENGTH,

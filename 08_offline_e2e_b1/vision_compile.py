@@ -26,7 +26,7 @@ from local_modeling_paddleocr_vl import (
     get_vision_attention_impl,
     get_vision_softmax_dtype_mode,
 )
-from probe_static_compile import (
+from compile_utils import (
     cache_key_part,
     import_torchair,
     short_file_hash,
