@@ -307,7 +307,11 @@ class PaddleOCRRotaryEmbedding(nn.Module):
     def forward(self, x: torch.Tensor, position_ids: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         inv_freq = self.inv_freq[None, None, :, None].float().expand(3, position_ids.shape[1], -1, 1)
         position_ids = position_ids[:, :, None, :].float()
-        freqs = (inv_freq @ position_ids).transpose(2, 3)
+        # The trailing dimensions are [rotary_dim / 2, 1] and [1, 1], so
+        # this batched matmul is exactly scalar multiplication.  Expressing
+        # it elementwise also avoids a GE MatMul shape-inference failure in
+        # torch-npu 2.10 on Ascend 910B.
+        freqs = (inv_freq * position_ids).transpose(2, 3)
         emb = torch.cat((freqs, freqs), dim=-1)
         cos = emb.cos() * self.attention_scaling
         sin = emb.sin() * self.attention_scaling
