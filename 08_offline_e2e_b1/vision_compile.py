@@ -53,8 +53,8 @@ def parse_vision_buckets(value: str | Iterable[int]) -> tuple[int, ...]:
         buckets = tuple(int(item) for item in value)
     if not buckets:
         raise ValueError("vision compile buckets cannot be empty")
-    if any(bucket <= 0 or bucket & (bucket - 1) for bucket in buckets):
-        raise ValueError("every vision compile bucket must be a positive power of two")
+    if any(bucket <= 0 for bucket in buckets):
+        raise ValueError("every vision compile bucket must be positive")
     if tuple(sorted(set(buckets))) != buckets:
         raise ValueError("vision compile buckets must be unique and strictly increasing")
     return buckets

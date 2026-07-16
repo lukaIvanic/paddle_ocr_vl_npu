@@ -31,9 +31,10 @@ class CompiledVisionTest(unittest.TestCase):
         self.assertEqual(select_vision_bucket(2048, DEFAULT_VISION_BUCKETS), 2048)
         self.assertIsNone(select_vision_bucket(2049, DEFAULT_VISION_BUCKETS))
 
-    def test_bucket_parser_rejects_ambiguous_or_dynamic_shapes(self) -> None:
-        self.assertEqual(parse_vision_buckets("16,32,64"), (16, 32, 64))
-        for invalid in ("", "16,16", "32,16", "16,24", "0,16"):
+    def test_bucket_parser_accepts_arbitrary_static_shapes(self) -> None:
+        self.assertEqual(parse_vision_buckets("16,24,64"), (16, 24, 64))
+        self.assertEqual(select_vision_bucket(17, (16, 24, 64)), 24)
+        for invalid in ("", "16,16", "32,16", "0,16", "-16,16"):
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                 parse_vision_buckets(invalid)
 
