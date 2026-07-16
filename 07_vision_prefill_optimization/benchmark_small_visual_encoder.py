@@ -47,6 +47,8 @@ from vision_prefill_bench import (
     clean_json,
     compute_prefill_state_from_visual_features,
     diff_stats,
+    first_mismatch,
+    generate_from_prefill_state,
     input_row,
     json_default,
     load_model_for_args,
@@ -54,6 +56,7 @@ from vision_prefill_bench import (
     maybe_sync,
     sha256_file,
     stats,
+    trim_after_eos,
     vision_tokens,
 )
 
@@ -87,6 +90,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--warmup-forwards", type=int, default=5)
     parser.add_argument("--measurement-blocks", type=int, default=3)
     parser.add_argument("--forwards-per-block", type=int, default=20)
+    parser.add_argument(
+        "--generation-max-new-tokens",
+        type=int,
+        default=1024,
+        help="Untimed greedy-generation cap used by the authoritative OCR token-parity gate.",
+    )
     parser.add_argument("--vision-compile-backend", default="none", choices=VISION_COMPILE_BACKEND_CHOICES)
     parser.add_argument("--vision-use-torchair-cache-compile", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--vision-torchair-cache-dir", default=str(DEFAULT_VISION_TORCHAIR_CACHE_DIR))
@@ -292,12 +301,15 @@ def downstream_prefill_checks(
     selected: list[Any],
     candidate_output: torch.Tensor,
     reference_output: torch.Tensor,
+    native_reference_output: torch.Tensor | None,
     real_lengths: list[int],
     device: torch.device,
+    max_new_tokens: int,
+    eos_token_id: int,
 ) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     for row_idx, (item, real_len) in enumerate(zip(selected, real_lengths, strict=True)):
-        cache_length = int(item.input_ids.shape[1])
+        cache_length = int(item.input_ids.shape[1]) + int(max_new_tokens)
         reference = compute_prefill_state_from_visual_features(
             model=model,
             item=item,
@@ -308,7 +320,6 @@ def downstream_prefill_checks(
         reference_image_embeds = reference["image_embeds"].cpu()
         reference_logits = reference["prefill_logits"].cpu()
         reference_argmax = int(reference["prefill_argmax"].item())
-        del reference
 
         candidate = compute_prefill_state_from_visual_features(
             model=model,
@@ -320,7 +331,62 @@ def downstream_prefill_checks(
         candidate_image_embeds = candidate["image_embeds"].cpu()
         candidate_logits = candidate["prefill_logits"].cpu()
         candidate_argmax = int(candidate["prefill_argmax"].item())
-        del candidate
+
+        reference_ids = generate_from_prefill_state(
+            model=model,
+            prefill=reference,
+            max_new_tokens=int(max_new_tokens),
+            eos_token_id=int(eos_token_id),
+        )
+        candidate_ids = generate_from_prefill_state(
+            model=model,
+            prefill=candidate,
+            max_new_tokens=int(max_new_tokens),
+            eos_token_id=int(eos_token_id),
+        )
+        reference_tokens = trim_after_eos(
+            [int(value) for value in reference_ids[0].detach().cpu().tolist()],
+            int(eos_token_id),
+        )
+        candidate_tokens = trim_after_eos(
+            [int(value) for value in candidate_ids[0].detach().cpu().tolist()],
+            int(eos_token_id),
+        )
+        native_tokens: list[int] | None = None
+        if native_reference_output is not None:
+            native = compute_prefill_state_from_visual_features(
+                model=model,
+                item=item,
+                device=device,
+                cache_length=cache_length,
+                visual_features=native_reference_output[row_idx, :real_len],
+            )
+            native_ids = generate_from_prefill_state(
+                model=model,
+                prefill=native,
+                max_new_tokens=int(max_new_tokens),
+                eos_token_id=int(eos_token_id),
+            )
+            native_tokens = trim_after_eos(
+                [int(value) for value in native_ids[0].detach().cpu().tolist()],
+                int(eos_token_id),
+            )
+            del native, native_ids
+        del reference, candidate, reference_ids, candidate_ids
+
+        same_path_match = bool(candidate_tokens == reference_tokens)
+        native_match = bool(native_tokens is None or candidate_tokens == native_tokens)
+        reference_cap_hit = bool(
+            int(eos_token_id) not in reference_tokens and len(reference_tokens) >= int(max_new_tokens)
+        )
+        candidate_cap_hit = bool(
+            int(eos_token_id) not in candidate_tokens and len(candidate_tokens) >= int(max_new_tokens)
+        )
+        native_cap_hit = bool(
+            native_tokens is not None
+            and int(eos_token_id) not in native_tokens
+            and len(native_tokens) >= int(max_new_tokens)
+        )
         rows.append(
             {
                 "id": str(item.entry.get("id") or ""),
@@ -329,6 +395,25 @@ def downstream_prefill_checks(
                 "reference_argmax": int(reference_argmax),
                 "candidate_argmax": int(candidate_argmax),
                 "argmax_match": bool(reference_argmax == candidate_argmax),
+                "generation": {
+                    "reference_trimmed_token_count": int(len(reference_tokens)),
+                    "candidate_trimmed_token_count": int(len(candidate_tokens)),
+                    "native_reference_trimmed_token_count": (
+                        None if native_tokens is None else int(len(native_tokens))
+                    ),
+                    "candidate_vs_same_path_eager_match": same_path_match,
+                    "candidate_vs_same_path_eager_first_mismatch": first_mismatch(
+                        reference_tokens,
+                        candidate_tokens,
+                    ),
+                    "candidate_vs_native_promptfa_match": native_match,
+                    "candidate_vs_native_promptfa_first_mismatch": (
+                        None if native_tokens is None else first_mismatch(native_tokens, candidate_tokens)
+                    ),
+                    "reference_length_cap_hit": reference_cap_hit,
+                    "candidate_length_cap_hit": candidate_cap_hit,
+                    "native_reference_length_cap_hit": native_cap_hit,
+                },
             }
         )
     image_embed_pass_count = int(
@@ -338,16 +423,39 @@ def downstream_prefill_checks(
         sum(bool(row["prefill_logits"].get("allclose_atol_1e_1_rtol_1e_1")) for row in rows)
     )
     argmax_match_count = int(sum(bool(row["argmax_match"]) for row in rows))
+    generation_match_count = int(
+        sum(
+            bool(row["generation"]["candidate_vs_same_path_eager_match"])
+            and bool(row["generation"]["candidate_vs_native_promptfa_match"])
+            for row in rows
+        )
+    )
+    generation_length_cap_hit_count = int(
+        sum(
+            bool(row["generation"]["reference_length_cap_hit"])
+            or bool(row["generation"]["candidate_length_cap_hit"])
+            or bool(row["generation"]["native_reference_length_cap_hit"])
+            for row in rows
+        )
+    )
     return {
         "row_count": int(len(rows)),
         "image_embeds_allclose_1e_1_count": image_embed_pass_count,
         "prefill_logits_allclose_1e_1_count": prefill_logits_pass_count,
         "argmax_match_count": argmax_match_count,
-        "passed": bool(
+        "tensor_diagnostics_passed": bool(
             image_embed_pass_count == len(rows)
             and prefill_logits_pass_count == len(rows)
             and argmax_match_count == len(rows)
         ),
+        "generation": {
+            "max_new_tokens": int(max_new_tokens),
+            "match_count": generation_match_count,
+            "length_cap_hit_count": generation_length_cap_hit_count,
+            "passed": bool(
+                generation_match_count == len(rows) and generation_length_cap_hit_count == 0
+            ),
+        },
         "rows": clean_json(rows),
     }
 
@@ -586,8 +694,11 @@ def main() -> None:
         selected=selected,
         candidate_output=final_output,
         reference_output=same_path_eager,
+        native_reference_output=native_promptfa_eager,
         real_lengths=real_lengths,
         device=device,
+        max_new_tokens=int(args.generation_max_new_tokens),
+        eos_token_id=int(model.config.eos_token_id),
     )
 
     final_nonfinite = tensor_nonfinite_count(final_output)
@@ -599,12 +710,10 @@ def main() -> None:
         or native_head_correctness["same_path_eager_vs_native_head_real_rows"]["allclose_1e_1_count"]
         == int(args.batch_size)
     )
-    correctness_passed = bool(
-        same_path_real_pass
-        and native_head_real_pass
-        and final_nonfinite == 0
-        and bool(downstream["passed"])
+    diagnostic_allclose_passed = bool(
+        same_path_real_pass and native_head_real_pass and bool(downstream["tensor_diagnostics_passed"])
     )
+    correctness_passed = bool(final_nonfinite == 0 and bool(downstream["generation"]["passed"]))
 
     output = {
         "schema_version": 1,
@@ -653,9 +762,10 @@ def main() -> None:
         "correctness": {
             "passed": correctness_passed,
             "gate": (
-                "real visual rows, downstream image embeddings, and prefill logits allclose at atol=rtol=0.1; "
-                "prefill argmax matches; final physical output has no nonfinite values"
+                "full deterministic greedy OCR generation token parity through EOS against same-path eager "
+                "and, when applicable, native-head PromptFA eager; final physical output has no nonfinite values"
             ),
+            "diagnostic_allclose_passed": diagnostic_allclose_passed,
             "same_path_real_passed": same_path_real_pass,
             "native_promptfa_head_real_passed": native_head_real_pass,
             "final_output_nonfinite_count": final_nonfinite,

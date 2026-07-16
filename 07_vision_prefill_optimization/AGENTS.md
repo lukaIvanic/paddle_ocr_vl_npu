@@ -108,10 +108,11 @@ as a PromptFA graph or vice versa.
 ## Correctness Diagnostics And Acceptance Gate
 
 The benchmark compares compiled output against the same static wrapper run
-eagerly. Every real row must pass `atol=rtol=0.1`, and the final physical output
-must contain no nonfinite values. After timing, both outputs also pass through
-the real adaptive projector and text prefill; image embeddings and prefill
-logits are compared at the same tolerance and the next-token argmax is checked.
+eagerly. It records whether every real row passes `atol=rtol=0.1`, and the final
+physical output must contain no nonfinite values. After timing, both outputs
+also pass through the real adaptive projector and text prefill; image embeddings
+and prefill logits are compared at the same tolerance and the next-token argmax
+is checked.
 Treat those intermediate comparisons as numerical diagnostics: they locate and
 quantify compiler drift, but they are not the final OCR acceptance criterion.
 
