@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import time
+import types
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Iterable
@@ -166,6 +167,34 @@ class StaticManualVisionEncoder(torch.nn.Module):
         return self.transformer.post_layernorm(hidden_states)
 
 
+def unique_bucket_forward(
+    module: StaticManualVisionEncoder,
+    bucket: int,
+) -> Callable[..., torch.Tensor]:
+    """Clone ``forward``'s code object so Dynamo caches shapes independently.
+
+    TorchDynamo keys recompilation state by Python code object. Passing the same
+    class method to eight ``cache_compile`` wrappers therefore makes later
+    static shapes look like recompilations and TorchAir skips their persistent
+    caches. Each bucket needs a semantically identical but distinct entry code
+    object.
+    """
+
+    original = module.forward.__func__
+    name = f"vision_encoder_bucket_{int(bucket)}"
+    code = original.__code__.replace(co_name=name)
+    function = types.FunctionType(
+        code,
+        original.__globals__,
+        name,
+        original.__defaults__,
+        original.__closure__,
+    )
+    function.__annotations__ = dict(original.__annotations__)
+    function.__kwdefaults__ = original.__kwdefaults__
+    return types.MethodType(function, module)
+
+
 @dataclass(frozen=True)
 class PreparedVisionBucket:
     prefix_hidden_states: torch.Tensor
@@ -320,6 +349,7 @@ class BucketedVisionEncoderRuntime:
         self.dtype = dtype
         self.cache_root = cache_root.expanduser().resolve()
         self.compiled: dict[int, Callable[..., torch.Tensor]] = {}
+        self.entrypoints: dict[int, Callable[..., torch.Tensor]] = {}
         self.modules: dict[int, StaticManualVisionEncoder] = {}
         self.compile_metadata: dict[str, Any] = {
             "backend": self.backend,
@@ -357,10 +387,11 @@ class BucketedVisionEncoderRuntime:
             )
             cache_dir.mkdir(parents=True, exist_ok=True)
             config = CompilerConfig()
+            entrypoint = unique_bucket_forward(module, bucket)
             synchronize(self.device)
             started = time.perf_counter()
             compiled = torchair.inference.cache_compile(
-                module.forward,
+                entrypoint,
                 config=config,
                 dynamic=False,
                 cache_dir=str(cache_dir),
@@ -395,6 +426,7 @@ class BucketedVisionEncoderRuntime:
             del warm_output, warm_prefix, warm_cos, warm_sin, warm_mask
 
             self.modules[bucket] = module
+            self.entrypoints[bucket] = entrypoint
             self.compiled[bucket] = compiled
             wrapper_total_s += wrapper_s
             first_call_total_s += first_call_s

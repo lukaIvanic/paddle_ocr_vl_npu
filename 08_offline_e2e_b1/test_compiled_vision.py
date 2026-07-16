@@ -15,6 +15,7 @@ from vision_compile import (
     parse_vision_buckets,
     prepare_vision_bucket,
     select_vision_bucket,
+    unique_bucket_forward,
 )
 
 
@@ -35,6 +36,22 @@ class CompiledVisionTest(unittest.TestCase):
         for invalid in ("", "16,16", "32,16", "16,24", "0,16"):
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                 parse_vision_buckets(invalid)
+
+    def test_each_bucket_gets_a_distinct_compiler_code_object(self) -> None:
+        config = PaddleOCRVisionConfig(
+            hidden_size=16,
+            intermediate_size=32,
+            num_hidden_layers=1,
+            num_attention_heads=4,
+        )
+        transformer = PaddleOCRVisionTransformer(config).eval()
+        model = SimpleNamespace(visual=SimpleNamespace(vision_model=transformer))
+        module = StaticManualVisionEncoder(model).eval()
+        first = unique_bucket_forward(module, 16)
+        second = unique_bucket_forward(module, 32)
+        self.assertIsNot(first.__func__.__code__, second.__func__.__code__)
+        self.assertEqual(first.__func__.__code__.co_name, "vision_encoder_bucket_16")
+        self.assertEqual(second.__func__.__code__.co_name, "vision_encoder_bucket_32")
 
     def test_masked_padding_matches_unpadded_stock_encoder(self) -> None:
         torch.manual_seed(7)
