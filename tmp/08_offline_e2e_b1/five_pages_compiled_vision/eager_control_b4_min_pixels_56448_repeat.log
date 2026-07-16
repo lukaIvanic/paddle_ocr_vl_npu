@@ -1,0 +1,11 @@
+Loading weights:   0%|          | 0/858 [00:00<?, ?it/s]Loading weights:  59%|█████▊    | 503/858 [00:00<00:00, 5028.18it/s]Loading weights: 100%|██████████| 858/858 [00:00<00:00, 5224.00it/s]
+[npu] set torch.npu compile mode: jit_compile=False
+[W716 17:58:25.727789256 TensorFactories.cpp:340] Warning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (function operator())
+page_completed=page_0000_PPT_1001115_eng_page_003 recognized_regions=6 latency_s=2.997750
+page_completed=page_0001_eastmoney_8e0ecdad6ea6edd7014a328fa79e4b69230c1b4f82cc031dd247c3c1c39744cf.pdf_11 recognized_regions=18 latency_s=10.578307
+page_completed=page_0002_newspaper_4b4ad1f6cba28a4844d7ffa9306223a4_1 recognized_regions=74 latency_s=11.974982
+page_completed=page_0003_page-a976a26e-4dbb-492a-a380-b923b87ed496 recognized_regions=53 latency_s=9.425117
+page_completed=page_0004_yanbaor2_yanbaoPPT_916 recognized_regions=9 latency_s=2.732114
+output=/workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/five_pages_compiled_vision/eager_control_b4_min_pixels_56448_repeat/run.json
+pages=5 layout_regions=179 recognized_regions=160 partial_pages=0
+run_wall_s=23.404984 decode_wall_s=5.813888 raw_decode_tok_per_s=1291.3906444906445 effective_decode_tok_per_s=1209.5177160439814 e2e_output_tok_per_s=307.28497843661034
