@@ -7,6 +7,7 @@ DECODE_BACKEND_CHOICES = ("raw_eager", "torchair")
 DEFAULT_DECODE_BACKEND = "torchair"
 DEFAULT_DECODE_BATCH_SIZE = 4
 DEFAULT_VISION_BACKEND = "torchair"
+DEFAULT_TEXT_BACKEND = "torchair"
 READY_BUFFER_BATCH_MULTIPLIER = 4
 
 # Measured dense policy: <=512 by 32, <=1024 by 64, <=2048 by 128.
@@ -15,4 +16,33 @@ OPTIMIZED_VISION_BUCKETS = (
     *range(32, 512 + 1, 32),
     *range(512 + 64, 1024 + 1, 64),
     *range(1024 + 128, 2048 + 1, 128),
+)
+
+# Text prompts are projected-image tokens plus a short task prompt.  The
+# measured five-page distributions cluster tightly at 32-224 tokens, while a
+# small table tail reaches 1,273 tokens.  These buckets retain 95.2% useful
+# tokens at default min_pixels and 83.8% at min_pixels/8 on that corpus while
+# avoiding the setup cost of compiling every dense vision bucket.
+OPTIMIZED_TEXT_BUCKETS = (
+    32,
+    64,
+    96,
+    128,
+    160,
+    176,
+    192,
+    208,
+    224,
+    256,
+    320,
+    384,
+    448,
+    576,
+    640,
+    768,
+    896,
+    1024,
+    1152,
+    1280,
+    1312,
 )

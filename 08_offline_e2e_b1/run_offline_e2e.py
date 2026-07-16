@@ -19,10 +19,13 @@ from runtime_defaults import (
     DECODE_BACKEND_CHOICES,
     DEFAULT_DECODE_BACKEND,
     DEFAULT_DECODE_BATCH_SIZE,
+    DEFAULT_TEXT_BACKEND,
     DEFAULT_VISION_BACKEND,
+    OPTIMIZED_TEXT_BUCKETS,
     OPTIMIZED_VISION_BUCKETS,
 )
 from schema import RunResult
+from text_compile import TEXT_BACKEND_CHOICES, parse_text_buckets
 from vision_compile import VISION_BACKEND_CHOICES, parse_vision_buckets
 
 
@@ -31,6 +34,7 @@ REPO_ROOT = HERE.parent
 DEFAULT_OUTPUT_ROOT = REPO_ROOT / "tmp" / "08_offline_e2e_b1"
 DEFAULT_CACHE_ROOT = REPO_ROOT / ".runtime_cache" / "08_offline_e2e_b1_torchair"
 DEFAULT_VISION_CACHE_ROOT = REPO_ROOT / ".runtime_cache" / "08_offline_e2e_b1_vision_torchair"
+DEFAULT_TEXT_CACHE_ROOT = REPO_ROOT / ".runtime_cache" / "08_offline_e2e_b1_text_torchair"
 DEFAULT_LOCAL_RECOGNIZER = Path("/workspace/models/PaddleOCR-VL-1.6")
 DEFAULT_RECOGNIZER = str(DEFAULT_LOCAL_RECOGNIZER) if DEFAULT_LOCAL_RECOGNIZER.is_dir() else "PaddlePaddle/PaddleOCR-VL-1.6"
 
@@ -80,6 +84,22 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         type=Path,
         default=DEFAULT_VISION_CACHE_ROOT,
     )
+    parser.add_argument(
+        "--text-backend",
+        default=DEFAULT_TEXT_BACKEND,
+        choices=TEXT_BACKEND_CHOICES,
+        help="Use eager text prefill, or one static TorchAir transformer graph per token bucket.",
+    )
+    parser.add_argument(
+        "--text-compile-buckets",
+        default=",".join(str(bucket) for bucket in OPTIMIZED_TEXT_BUCKETS),
+        help="Strictly increasing comma-separated positive sequence lengths used by compiled B=1 text prefill.",
+    )
+    parser.add_argument(
+        "--text-torchair-cache-dir",
+        type=Path,
+        default=DEFAULT_TEXT_CACHE_ROOT,
+    )
     parser.add_argument("--recognize-chart", action="store_true")
     parser.add_argument("--recognize-seal", action="store_true")
     parser.add_argument("--recognize-image", action="store_true")
@@ -102,6 +122,7 @@ def main() -> None:
     if args.batch_size <= 0 or args.batch_size & (args.batch_size - 1):
         raise ValueError("--batch-size must be a positive power of two")
     vision_buckets = parse_vision_buckets(args.vision_compile_buckets)
+    text_buckets = parse_text_buckets(args.text_compile_buckets)
 
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     output_dir = (
@@ -128,6 +149,9 @@ def main() -> None:
         vision_backend=args.vision_backend,
         vision_buckets=vision_buckets,
         vision_torchair_cache_dir=args.vision_torchair_cache_dir.expanduser().resolve(),
+        text_backend=args.text_backend,
+        text_buckets=text_buckets,
+        text_torchair_cache_dir=args.text_torchair_cache_dir.expanduser().resolve(),
         npu_jit_compile=args.npu_jit_compile,
         preprocessor_min_pixels=args.preprocessor_min_pixels,
     )
@@ -188,10 +212,12 @@ def main() -> None:
             "page_total": "Per-page latency from beginning that page's image load through its immediate completion emission; pages can overlap in the run-scoped scheduler.",
             "run_wall_s": "Wall time from starting the first page until every page has emitted; this is the E2E throughput denominator.",
             "page_total_including_artifacts": "page_total plus page text and optional annotated-image/crop writes.",
-            "request_total": "In-memory crop preprocessing through eager prefill, compiled decode, D2H token transfer, and detokenization.",
-            "device_stage_s": "Accelerator event time for eager vision/text-prefill sub-stages; it is not host wall time.",
+            "request_total": "In-memory crop preprocessing through prefill, compiled decode, D2H token transfer, and detokenization.",
+            "device_stage_s": "Accelerator event time for vision/text-prefill sub-stages; it is not host wall time.",
             "vision_encoder_post_layernorm_compiled": "NPU event time for the selected static padded vision-encoder graph plus its final LayerNorm; input preparation is reported separately.",
             "vision_useful_token_fraction": "Sum of real vision tokens divided by sum of physical bucket tokens; eager and overflow requests have no padding.",
+            "text_prefill_compiled": "NPU event time for the selected static padded text-transformer graph, including in-place KV cache population.",
+            "text_useful_token_fraction": "Sum of real text-prefill tokens divided by sum of physical bucket tokens; eager and overflow requests have no padding.",
             "continuous_decode_wall": "Decode throughput denominator: the larger of exclusive host-control wall time and serialized decode-plus-admission device time, preventing overlapped producer synchronization from understating decode cost.",
             "run_scoped_scheduler_wall": "Full recognition scheduler wall including lazy page production, eager prefill, decode, detokenization, and page-completion callbacks.",
             "raw_decode_tok_per_s": "Every persistent-arena token slot executed by the compiled graph divided by continuous-decode wall time, including idle slots and one-step completion look-ahead.",

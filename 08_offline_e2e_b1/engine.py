@@ -40,11 +40,14 @@ from run_local_recognition import (
 )
 from runtime_defaults import (
     DECODE_BACKEND_CHOICES,
+    DEFAULT_TEXT_BACKEND,
     DEFAULT_VISION_BACKEND,
+    OPTIMIZED_TEXT_BUCKETS,
     OPTIMIZED_VISION_BUCKETS,
     READY_BUFFER_BATCH_MULTIPLIER,
 )
 from schema import Box, ContinuousDecodeResult, RecognitionResult, per_second
+from text_compile import BucketedTextPrefillRuntime, parse_text_buckets
 from timing import DeviceTimeline, synchronize, timed_wall
 from vision_compile import BucketedVisionEncoderRuntime, parse_vision_buckets
 
@@ -75,6 +78,7 @@ class PrefilledRecognition:
     input_tokens: int
     projected_image_tokens: int
     vision: dict[str, Any]
+    text_prefill: dict[str, Any]
     timing_s: dict[str, float]
     device_stage_s: dict[str, float]
     request_started: float
@@ -86,9 +90,10 @@ class ContinuousRecognizer:
 
     Every real crop is prefilled independently. The optional compiled vision
     boundary pads only the encoder rows to a static bucket, then slices them
-    before projection; text prefill remains unpadded. A fixed compiled decode
-    arena keeps its tensor shapes stable while ready KV prefixes replace
-    finished requests between autoregressive iterations.
+    before projection. The optional text boundary similarly pads the already
+    scattered multimodal prefix while preserving the real cache position. A
+    fixed compiled decode arena keeps its tensor shapes stable while ready KV
+    prefixes replace finished requests between autoregressive iterations.
     """
 
     def __init__(
@@ -105,6 +110,9 @@ class ContinuousRecognizer:
         vision_backend: str = DEFAULT_VISION_BACKEND,
         vision_buckets: str | Iterable[int] = OPTIMIZED_VISION_BUCKETS,
         vision_torchair_cache_dir: Path | None = None,
+        text_backend: str = DEFAULT_TEXT_BACKEND,
+        text_buckets: str | Iterable[int] = OPTIMIZED_TEXT_BUCKETS,
+        text_torchair_cache_dir: Path | None = None,
         npu_jit_compile: str = "off",
         preprocessor_min_pixels: int | None = None,
     ):
@@ -118,6 +126,8 @@ class ContinuousRecognizer:
         self.max_new_tokens = int(max_new_tokens)
         self.vision_backend = str(vision_backend)
         self.vision_buckets = parse_vision_buckets(vision_buckets)
+        self.text_backend = str(text_backend)
+        self.text_buckets = parse_text_buckets(text_buckets)
         if self.decode_backend not in DECODE_BACKEND_CHOICES:
             raise ValueError(
                 f"decode_backend must be one of {DECODE_BACKEND_CHOICES}, "
@@ -177,6 +187,26 @@ class ContinuousRecognizer:
         synchronize(self.device)
         vision_runtime_setup_s = time.perf_counter() - started
 
+        synchronize(self.device)
+        started = time.perf_counter()
+        self.text_runtime = BucketedTextPrefillRuntime(
+            self.model,
+            backend=self.text_backend,
+            buckets=self.text_buckets,
+            cache_root=(
+                text_torchair_cache_dir
+                if text_torchair_cache_dir is not None
+                else torchair_cache_dir.parent / f"{torchair_cache_dir.name}_text"
+            ),
+            cache_length=self.cache_length,
+            device=self.device,
+            dtype=self.dtype,
+            model_dir=self.model_dir,
+            linear_weight_format=str(self.weight_format["effective_mode"]),
+        )
+        synchronize(self.device)
+        text_runtime_setup_s = time.perf_counter() - started
+
         flat_decode = self.model.make_flat_static_decode_module().eval()
         synchronize(self.device)
         started = time.perf_counter()
@@ -230,6 +260,7 @@ class ContinuousRecognizer:
             "recognizer_model_load": float(model_load_s),
             "decode_weight_format": float(weight_format_s),
             "vision_runtime_setup": float(vision_runtime_setup_s),
+            "text_runtime_setup": float(text_runtime_setup_s),
             "compile_wrapper": float(compile_wrapper_s),
             "compile_first_call": float(compile_first_call_s),
             "decode_control_setup": float(decode_control_setup_s),
@@ -407,6 +438,7 @@ class ContinuousRecognizer:
                 ),
             },
             vision=dict(state.vision),
+            text_prefill=dict(state.text_prefill),
         )
 
     @torch.inference_mode()
@@ -539,18 +571,35 @@ class ContinuousRecognizer:
                 init_mode="zeros",
             ),
         )
-        hidden_states = timeline.measure(
-            "text_prefill",
-            lambda: self.model.model.forward_prefill_static(
-                inputs_embeds=inputs_embeds,
-                attention_mask=attention_mask_device,
-                position_ids=position_ids,
-                cache=cache,
-            ),
-        )
+        text_route = self.text_runtime.route(int(inputs_embeds.shape[1]))
+        if text_route["execution"] == "compiled":
+            prepared_text = timeline.measure(
+                "text_compiled_input_prep",
+                lambda: self.text_runtime.prepare(
+                    inputs_embeds,
+                    attention_mask_device,
+                    position_ids,
+                    bucket=int(text_route["bucket"]),
+                ),
+            )
+            last_hidden_state = timeline.measure(
+                "text_prefill_compiled",
+                lambda: self.text_runtime.run_prepared(prepared_text, cache),
+            )
+        else:
+            hidden_states = timeline.measure(
+                "text_prefill_eager",
+                lambda: self.model.model.forward_prefill_static(
+                    inputs_embeds=inputs_embeds,
+                    attention_mask=attention_mask_device,
+                    position_ids=position_ids,
+                    cache=cache,
+                ),
+            )
+            last_hidden_state = hidden_states[:, -1:, :]
         logits = timeline.measure(
             "prefill_lm_head",
-            lambda: self.model.lm_head(hidden_states[:, -1:, :]),
+            lambda: self.model.lm_head(last_hidden_state),
         )
         next_token = timeline.measure(
             "prefill_argmax",
@@ -589,6 +638,7 @@ class ContinuousRecognizer:
             input_tokens=int(input_ids.shape[1]),
             projected_image_tokens=int(image_embeds.shape[0]),
             vision=vision_route,
+            text_prefill=text_route,
             timing_s=timing,
             device_stage_s=device_stage_s,
             request_started=request_started,
@@ -628,7 +678,13 @@ class ContinuousRecognizer:
                 if vision_attention == "prompt_flash_attention"
                 else None
             ),
-            "text_prefill": "eager_sequential_no_padding",
+            "text_prefill": (
+                "bucketed_static_compiled_transformer_b1"
+                if self.text_backend == "torchair"
+                else "eager_sequential_no_padding"
+            ),
+            "text_backend": self.text_backend,
+            "text_compile": self.text_runtime.compile_metadata,
             "preprocessor": {
                 "model_default_min_pixels": self.model_preprocessor_min_pixels,
                 "min_pixels_override": self.preprocessor_min_pixels_override,
