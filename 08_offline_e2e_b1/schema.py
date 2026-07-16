@@ -39,6 +39,7 @@ class LayoutRegion:
 @dataclass
 class RecognitionResult:
     request_id: str
+    decode_batch_id: str
     layout_order: int
     label: str
     prompt: str
@@ -58,6 +59,22 @@ class RecognitionResult:
 
 
 @dataclass
+class DecodeBatchResult:
+    batch_id: str
+    batch_size: int
+    real_items: int
+    padded_items: int
+    decode_calls: int
+    raw_decode_token_slots: int
+    effective_decode_tokens: int
+    padded_decode_token_slots: int
+    final_cohort_padding_token_slots: int
+    finished_sequence_padding_token_slots: int
+    timing_s: dict[str, float]
+    rates: dict[str, float | None]
+
+
+@dataclass
 class SkippedRegion:
     layout_order: int
     label: str
@@ -72,6 +89,7 @@ class PageResult:
     image_size: tuple[int, int]
     layout_regions: list[LayoutRegion]
     recognized_regions: list[RecognitionResult]
+    decode_batches: list[DecodeBatchResult]
     skipped_regions: list[SkippedRegion]
     reading_order_text: str
     timing_s: dict[str, float]

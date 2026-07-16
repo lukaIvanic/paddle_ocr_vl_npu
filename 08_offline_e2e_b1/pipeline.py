@@ -1,4 +1,4 @@
-"""Sequential full-page orchestration for Experiment 08."""
+"""Full-page orchestration with sequential prefill and fixed decode cohorts."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from typing import Any
 
 from PIL import Image, ImageDraw
 
-from engine import SequentialRecognizer
+from engine import RecognitionInput, SequentialRecognizer
 from layout import PPDocLayoutV3Runtime
 from schema import PageResult, SkippedRegion, per_second
 
@@ -85,7 +85,9 @@ class OfflinePagePipeline:
         page_id = f"page_{page_index:04d}_{image_path.stem}"
         layout_regions, layout_timing = self.layout.predict(image)
         recognized = []
+        decode_batches = []
         skipped = []
+        requests: list[RecognitionInput] = []
         crop_total_s = 0.0
         recognition_started = time.perf_counter()
         recognized_count = 0
@@ -130,16 +132,28 @@ class OfflinePagePipeline:
             if crop_dir is not None:
                 crop.save(crop_dir / f"{region.order:03d}_{region.label}.png")
 
-            result = self.recognizer.recognize(
-                request_id=f"{page_id}_region_{region.order:03d}",
-                layout_order=region.order,
-                label=region.label,
-                prompt=recognition_prompt(region.label),
-                box=region.box,
-                crop=crop,
+            requests.append(
+                RecognitionInput(
+                    request_id=f"{page_id}_region_{region.order:03d}",
+                    layout_order=region.order,
+                    label=region.label,
+                    prompt=recognition_prompt(region.label),
+                    box=region.box,
+                    crop=crop,
+                )
             )
-            recognized.append(result)
             recognized_count += 1
+
+        for batch_index, start in enumerate(
+            range(0, len(requests), self.recognizer.batch_size)
+        ):
+            batch_requests = requests[start : start + self.recognizer.batch_size]
+            batch_results, batch_metrics = self.recognizer.recognize_batch(
+                batch_requests,
+                batch_id=f"{page_id}_decode_batch_{batch_index:03d}",
+            )
+            recognized.extend(batch_results)
+            decode_batches.append(batch_metrics)
 
         recognition_wall_s = time.perf_counter() - recognition_started
         started = time.perf_counter()
@@ -172,14 +186,20 @@ class OfflinePagePipeline:
         artifact_write_s = time.perf_counter() - artifact_started
 
         generated_tokens = sum(item.generated_tokens_including_eos for item in recognized)
-        decode_tokens = sum(item.decode_tokens_after_prefill_including_eos for item in recognized)
-        decode_wall = sum(item.timing_s["compiled_decode_wall"] for item in recognized)
+        raw_decode_slots = sum(item.raw_decode_token_slots for item in decode_batches)
+        effective_decode_tokens = sum(item.effective_decode_tokens for item in decode_batches)
+        decode_wall = sum(item.timing_s["compiled_decode_wall"] for item in decode_batches)
+        prefill_wall = sum(item.timing_s["prefill_request_total"] for item in recognized)
+        cohort_assembly_wall = sum(item.timing_s["cohort_assembly_wall"] for item in decode_batches)
         page_total_including_artifacts_s = time.perf_counter() - page_started
         timing = {
             "image_load": float(image_load_s),
             **layout_timing,
             "crop_extraction": float(crop_total_s),
-            "sequential_recognition_wall": float(recognition_wall_s),
+            "recognition_wall": float(recognition_wall_s),
+            "sequential_prefill_wall_sum": float(prefill_wall),
+            "decode_cohort_assembly_wall_sum": float(cohort_assembly_wall),
+            "batched_decode_wall_sum": float(decode_wall),
             "reading_order_text_postprocess": float(postprocess_s),
             "page_total": float(page_pipeline_s),
             "artifact_write": float(artifact_write_s),
@@ -192,13 +212,15 @@ class OfflinePagePipeline:
             image_size=image.size,
             layout_regions=layout_regions,
             recognized_regions=recognized,
+            decode_batches=decode_batches,
             skipped_regions=skipped,
             reading_order_text=reading_order_text,
             timing_s=timing,
             rates={
                 "layout_regions_per_s": per_second(len(layout_regions), layout_timing["layout_inference"]),
                 "recognition_regions_per_s": per_second(len(recognized), recognition_wall_s),
-                "decode_effective_tok_per_s": per_second(decode_tokens, decode_wall),
+                "raw_decode_tok_per_s": per_second(raw_decode_slots, decode_wall),
+                "effective_decode_tok_per_s": per_second(effective_decode_tokens, decode_wall),
                 "page_output_tok_per_s": per_second(generated_tokens, page_pipeline_s),
             },
             partial=partial,
@@ -209,9 +231,14 @@ def aggregate_pages(pages: list[PageResult]) -> dict[str, Any]:
     recognized = [region for page in pages for region in page.recognized_regions]
     layout_regions = [region for page in pages for region in page.layout_regions]
     skipped = [region for page in pages for region in page.skipped_regions]
+    decode_batches = [batch for page in pages for batch in page.decode_batches]
     page_wall = sum(page.timing_s["page_total"] for page in pages)
-    decode_wall = sum(region.timing_s["compiled_decode_wall"] for region in recognized)
-    decode_tokens = sum(region.decode_tokens_after_prefill_including_eos for region in recognized)
+    decode_wall = sum(batch.timing_s["compiled_decode_wall"] for batch in decode_batches)
+    raw_decode_slots = sum(batch.raw_decode_token_slots for batch in decode_batches)
+    effective_decode_tokens = sum(batch.effective_decode_tokens for batch in decode_batches)
+    padded_decode_slots = sum(batch.padded_decode_token_slots for batch in decode_batches)
+    final_padding_slots = sum(batch.final_cohort_padding_token_slots for batch in decode_batches)
+    finished_padding_slots = sum(batch.finished_sequence_padding_token_slots for batch in decode_batches)
     output_tokens = sum(region.generated_tokens_including_eos for region in recognized)
     return {
         "pages": len(pages),
@@ -219,16 +246,27 @@ def aggregate_pages(pages: list[PageResult]) -> dict[str, Any]:
         "layout_regions": len(layout_regions),
         "recognized_regions": len(recognized),
         "skipped_regions": len(skipped),
+        "decode_batches": len(decode_batches),
         "layout_label_counts": dict(sorted(Counter(region.label for region in layout_regions).items())),
         "stop_reason_counts": dict(sorted(Counter(region.stop_reason for region in recognized).items())),
         "generated_tokens_including_eos": output_tokens,
-        "decode_tokens_after_prefill_including_eos": decode_tokens,
+        "raw_decode_token_slots": raw_decode_slots,
+        "effective_decode_tokens": effective_decode_tokens,
+        "padded_decode_token_slots": padded_decode_slots,
+        "final_cohort_padding_token_slots": final_padding_slots,
+        "finished_sequence_padding_token_slots": finished_padding_slots,
         "sum_page_wall_s": float(page_wall),
         "sum_compiled_decode_wall_s": float(decode_wall),
         "rates": {
             "pages_per_s": per_second(len(pages), page_wall),
             "regions_per_s": per_second(len(recognized), page_wall),
-            "decode_effective_tok_per_s": per_second(decode_tokens, decode_wall),
+            "raw_decode_tok_per_s": per_second(raw_decode_slots, decode_wall),
+            "effective_decode_tok_per_s": per_second(effective_decode_tokens, decode_wall),
+            "effective_fraction": (
+                float(effective_decode_tokens) / float(raw_decode_slots)
+                if raw_decode_slots > 0
+                else None
+            ),
             "e2e_output_tok_per_s": per_second(output_tokens, page_wall),
         },
     }

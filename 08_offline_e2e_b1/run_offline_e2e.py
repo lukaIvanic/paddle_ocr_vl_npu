@@ -34,6 +34,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dtype", default="fp16", choices=("fp16", "float16", "bf16", "bfloat16"))
     parser.add_argument("--layout-threshold", type=float, default=0.3)
     parser.add_argument("--decode-backend", default="torchair", choices=("raw_eager", "eager", "default", "torchair"))
+    parser.add_argument("--batch-size", type=int, default=1, help="Fixed decode batch size; must be a power of two.")
     parser.add_argument("--cache-length", type=int, default=2048)
     parser.add_argument("--max-new-tokens", type=int, default=768)
     parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
@@ -57,6 +58,8 @@ def main() -> None:
         raise FileNotFoundError(f"input images not found: {missing}")
     if args.max_regions is not None and args.max_regions <= 0:
         raise ValueError("--max-regions must be positive when supplied")
+    if args.batch_size <= 0 or args.batch_size & (args.batch_size - 1):
+        raise ValueError("--batch-size must be a positive power of two")
 
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     output_dir = (
@@ -76,6 +79,7 @@ def main() -> None:
         device=args.device,
         dtype=args.dtype,
         decode_backend=args.decode_backend,
+        batch_size=args.batch_size,
         cache_length=args.cache_length,
         max_new_tokens=args.max_new_tokens,
         torchair_cache_dir=args.torchair_cache_dir.expanduser().resolve(),
@@ -101,7 +105,7 @@ def main() -> None:
         "layout_threshold": float(args.layout_threshold),
         "layout_runtime": "transformers.AutoModelForObjectDetection",
         "layout_source": "real_pp_doclayout_v3_inference",
-        "region_execution": "strict_sequential_b1",
+        "region_execution": "sequential_prefill_fixed_cohort_decode",
         "recognize_chart": bool(args.recognize_chart),
         "recognize_seal": bool(args.recognize_seal),
         "recognize_image": bool(args.recognize_image),
@@ -124,8 +128,8 @@ def main() -> None:
             "page_total_including_artifacts": "page_total plus page text and optional annotated-image/crop writes.",
             "request_total": "In-memory crop preprocessing through eager prefill, compiled decode, D2H token transfer, and detokenization.",
             "device_stage_s": "Accelerator event time for eager vision/text-prefill sub-stages; it is not host wall time.",
-            "decode_effective_tok_per_s": "Generated tokens after the prefill-produced first token, including EOS, divided by compiled decode wall time.",
-            "decode_executed_calls_per_s": "All executed compiled graph calls divided by decode wall time; one look-ahead call can occur while asynchronously detecting EOS.",
+            "raw_decode_tok_per_s": "Every fixed-batch token slot executed by the compiled graph divided by decode wall time, including final dummy rows, post-EOS fills, and look-ahead calls.",
+            "effective_decode_tok_per_s": "Real generated tokens after each prefill-produced first token, including EOS but excluding every padded slot, divided by the same decode wall time.",
             "e2e_output_tok_per_s": "All generated tokens including each first token and EOS divided by summed page wall time.",
         },
     )
@@ -141,7 +145,8 @@ def main() -> None:
     print(
         f"page_wall_s={aggregate['sum_page_wall_s']:.6f} "
         f"decode_wall_s={aggregate['sum_compiled_decode_wall_s']:.6f} "
-        f"decode_tok_per_s={aggregate['rates']['decode_effective_tok_per_s']} "
+        f"raw_decode_tok_per_s={aggregate['rates']['raw_decode_tok_per_s']} "
+        f"effective_decode_tok_per_s={aggregate['rates']['effective_decode_tok_per_s']} "
         f"e2e_output_tok_per_s={aggregate['rates']['e2e_output_tok_per_s']}"
     )
 

@@ -1,4 +1,4 @@
-# Experiment 08: offline real-layout E2E, B=1
+# Experiment 08: offline real-layout E2E with fixed decode batches
 
 This experiment is the first small offline inference system in the repository,
 rather than another isolated kernel benchmark. It keeps both models resident in
@@ -13,14 +13,16 @@ full PIL page
        CPU image/prompt preprocessing
        eager native-resolution vision prefill
        eager text prefill into a static KV cache
-       compiled B=1 single-token decode until EOS/length limit
+       ready B=1 KV state
+  -> fixed power-of-two compiled decode cohorts until EOS/length limit
        D2H tokens and detokenization
   -> reading-order text
 ```
 
-There is deliberately no batching, overlap, ready queue, or hot-swap scheduler.
-The process owns one synchronous `SequentialRecognizer`, and the page pipeline
-does not begin region N+1 until region N is complete.
+Vision and text prefill deliberately remain sequential B=1. Decode groups the
+ready states into fixed power-of-two cohorts. Finished rows are filled with EOS;
+the final incomplete cohort is padded with dummy EOS rows. There is no overlap,
+continuous batching, ready queue, or hot-swap scheduler yet.
 
 ## What is faithful in this first cut
 
@@ -34,7 +36,8 @@ does not begin region N+1 until region N is complete.
 - Official v1.6 defaults are retained for image/chart/seal blocks: image blocks
   are not recognized, and chart/seal recognition is opt-in.
 - The recognizer is the corrected local PyTorch model from Experiment 05. Vision
-  and text prefill are eager; only the flat static B=1 decode module is compiled.
+  and text prefill are eager and unpadded; only the flat fixed-batch static
+  decode module is compiled.
 - EOS detection uses the existing NPU event plus pinned-host-flag technique. It
   can execute one look-ahead graph call, then trims exactly at the first EOS.
 
@@ -59,11 +62,13 @@ postprocess boundaries, so adding them does not require replacing the engine.
   These values diagnose accelerator work and are not interchangeable with host
   wall latency.
 
-The primary decode rate is generated tokens after the prefill-produced first
-token, including EOS, divided by compiled decode wall time. Executed graph calls
-per second is separate because asynchronous EOS checking can add one look-ahead
-call. E2E output tok/s includes each request's first token and EOS and divides by
-full page wall time.
+Raw decode tok/s counts every `batch_size * decode_calls` graph slot, including
+dummy final-cohort rows, EOS-filled finished rows, and look-ahead calls.
+Effective decode tok/s counts only real generated tokens after the
+prefill-produced first token, including EOS. Both divide by the same compiled
+decode wall time. The JSON also reports the padding split and effective fraction.
+E2E output tok/s includes each request's first token and EOS and divides by full
+page wall time.
 
 ## Blue Zone run
 
@@ -79,6 +84,7 @@ source npu-setup
   --recognizer-model /workspace/models/PaddleOCR-VL-1.6 \
   --device npu:0 \
   --decode-backend torchair \
+  --batch-size 2 \
   --cache-length 2048 \
   --max-new-tokens 768
 ```
@@ -89,5 +95,5 @@ and an annotated layout image. Pass `--save-crops` only when the actual crop
 images are useful. `--max-regions N` is a debug-only partial-page mode and is
 recorded as such in the JSON.
 
-Use additional `--image` arguments to process multiple pages. They remain fully
-sequential in this experiment.
+`--batch-size` accepts 1, 2, 4, 8, and other powers of two. Use additional
+`--image` arguments to process multiple pages; pages remain sequential.

@@ -15,6 +15,7 @@ args=(
   --device "${DEVICE:-npu:0}"
   --dtype "${DTYPE:-fp16}"
   --decode-backend "${DECODE_BACKEND:-torchair}"
+  --batch-size "${BATCH_SIZE:-1}"
   --cache-length "${CACHE_LENGTH:-2048}"
   --max-new-tokens "${MAX_NEW_TOKENS:-768}"
   --output-dir "$OUTPUT_DIR"
@@ -33,7 +34,7 @@ from pathlib import Path
 path = Path(sys.argv[1])
 data = json.loads(path.read_text(encoding="utf-8"))
 assert data["configuration"]["layout_source"] == "real_pp_doclayout_v3_inference"
-assert data["configuration"]["region_execution"] == "strict_sequential_b1"
+assert data["configuration"]["region_execution"] == "sequential_prefill_fixed_cohort_decode"
 assert data["aggregate"]["pages"] == 1
 assert data["aggregate"]["layout_regions"] > 1
 assert data["aggregate"]["recognized_regions"] > 0
