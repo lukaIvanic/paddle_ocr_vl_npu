@@ -25,6 +25,8 @@ from local_modeling_paddleocr_vl import (
     LocalPaddleOCRVLStaticCache,
     _resolve_model_dir,
     cast_decode_linear_weights_to_nz,
+    get_vision_attention_impl,
+    get_vision_prompt_fa_layout,
 )
 from probe_static_compile import compile_decode_module
 from run_local_recognition import (
@@ -544,6 +546,7 @@ class ContinuousRecognizer:
         patch_size = int(self.preprocessor_config["patch_size"])
         merge_size = int(self.preprocessor_config["merge_size"])
         min_pixels = int(self.preprocessor_config["min_pixels"])
+        vision_attention = get_vision_attention_impl()
         return {
             "recognizer_model": str(self.model_dir),
             "device": str(self.device),
@@ -555,6 +558,12 @@ class ContinuousRecognizer:
             "max_new_tokens": self.max_new_tokens,
             "batch_size": self.batch_size,
             "vision_prefill": "eager_sequential_no_padding",
+            "vision_attention": vision_attention,
+            "vision_prompt_fa_layout": (
+                get_vision_prompt_fa_layout()
+                if vision_attention == "prompt_flash_attention"
+                else None
+            ),
             "text_prefill": "eager_sequential_no_padding",
             "preprocessor": {
                 "model_default_min_pixels": self.model_preprocessor_min_pixels,
