@@ -117,14 +117,15 @@ Treat those intermediate comparisons as numerical diagnostics: they locate and
 quantify compiler drift, but they are not the final OCR acceptance criterion.
 
 The authoritative model-level acceptance gate is deterministic greedy OCR
-generation token parity against the eager reference, after trimming at EOS.
-Use `validate_static_visual_batched_encoder.py` without `--skip-generation` at
-the relevant real inputs and sequence buckets. A compiled candidate is usable
-only when every compared item has `generated_trimmed_match=true`, has no invalid
-or nonfinite output, and is not hidden by a generation-length cap. Report
-intermediate allclose failures even when token parity passes, but do not reject
-an otherwise token-identical OCR path solely because an intermediate tensor or
-non-winning logit exceeds the diagnostic tolerance.
+generation token parity against the eager reference, after trimming at EOS. The
+primary benchmark performs this untimed generation check after each timing case;
+use `validate_static_visual_batched_encoder.py` without `--skip-generation` for
+broader multi-item validation at the relevant sequence buckets. A compiled
+candidate is usable only when every compared item matches through EOS, has no
+invalid or nonfinite output, and is not hidden by a generation-length cap.
+Report intermediate allclose failures even when token parity passes, but do not
+reject an otherwise token-identical OCR path solely because an intermediate
+tensor or non-winning logit exceeds the diagnostic tolerance.
 
 When PromptFA uses a padded call head dimension, also compare its eager output
 against native-head-dimension eager PromptFA. A D=80 workaround is not valid
