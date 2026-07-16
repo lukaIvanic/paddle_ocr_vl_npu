@@ -200,7 +200,16 @@ def main() -> None:
         device=args.device,
         engine="transformers",
     )
-    paddlex_pipeline = official_pipeline.paddlex_pipeline
+    auto_parallel_pipeline = official_pipeline.paddlex_pipeline
+    if auto_parallel_pipeline.multi_device_inference:
+        raise ValueError(
+            "the custom adapter requires one selected NPU; multi-device PaddleX "
+            "dispatch would create multiple independent recognition runtimes"
+        )
+    # AutoParallelImageSimpleInferencePipeline forwards attribute reads through
+    # __getattr__, but assigning on the wrapper would shadow rather than replace
+    # the model used by predict(). Replace the actual internal pipeline field.
+    paddlex_pipeline = auto_parallel_pipeline._pipeline
     original_vl_rec_model = paddlex_pipeline.vl_rec_model
     original_vl_rec_model.close()
 
