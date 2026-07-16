@@ -92,6 +92,7 @@ class FakeRecognizer:
             hot_swap_kv_prefix_bytes_copied=0,
             timing_s={
                 "continuous_decode_wall": 0.01,
+                "decode_host_exclusive_wall": 0.01,
                 "run_scoped_scheduler_wall": 0.02,
                 "ready_source_wall": 0.01,
                 "completion_callback_wall": 0.0,

@@ -549,13 +549,17 @@ class ContinuousDecodeScheduler:
 
         synchronize(self.device)
         scheduler_wall_s = time.perf_counter() - scheduler_started
-        continuous_decode_wall_s = max(
+        decode_host_exclusive_wall_s = max(
             0.0,
             scheduler_wall_s
             - ready_source_wall_s
             - completion_callback_wall_s,
         )
         decode_device_s, admission_device_s = self.arena.resolve_device_timing()
+        continuous_decode_wall_s = max(
+            decode_host_exclusive_wall_s,
+            decode_device_s + admission_device_s,
+        )
 
         if ready_queue or not source_exhausted:
             raise AssertionError(f"continuous decode stopped with {len(ready_queue)} ready requests")
@@ -597,6 +601,9 @@ class ContinuousDecodeScheduler:
             hot_swap_kv_prefix_bytes_copied=hot_swap_kv_bytes,
             timing_s={
                 "continuous_decode_wall": float(continuous_decode_wall_s),
+                "decode_host_exclusive_wall": float(
+                    decode_host_exclusive_wall_s
+                ),
                 "run_scoped_scheduler_wall": float(scheduler_wall_s),
                 "ready_source_wall": float(ready_source_wall_s),
                 "completion_callback_wall": float(completion_callback_wall_s),
