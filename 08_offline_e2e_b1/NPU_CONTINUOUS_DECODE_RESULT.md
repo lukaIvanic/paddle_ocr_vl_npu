@@ -72,13 +72,51 @@ refill. B=4 reported 0.129444 s, 0.009828 s, and 0.003715 s respectively. These
 event and phase measurements overlap, so they must not be summed into wall time.
 
 Full page time varied between runs because layout and eager prefill are still
-sequential and dominate more of the page. The continuous scheduler currently
-operates within one prepared page; it does not yet overlap layout, prefill, and
-decode or batch requests across page boundaries.
+sequential and dominate more of the page. These original results used one
+decode schedule per page and are retained as the historical page-local
+baseline. Cross-page scheduling is now the default and is validated below.
 
 The complete results remain in the Blue Zone checkout:
 
 ```text
 /workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/full_page_continuous_b2/run.json
 /workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/full_page_continuous_b4/run.json
+```
+
+## Run-scoped cross-page validation
+
+The bounded run-scoped implementation was validated from source commit
+`298c7da`; complete result JSONs were added in `d81440e`. Five uniformly spaced
+OmniDocBench images produced 179 layout regions, 160 recognized crops, and
+7,201 generated tokens including each prefill-produced first token. One real
+table request reached the configured 768-token output limit.
+
+The page-local B=4 scheduler had only 69.219% useful slots because that long
+table drained its page queue and left three rows idle. The run-scoped scheduler
+kept that request resident while crops from following pages filled the other
+slots. The ready reservoir is capped at `4B` and refilled in bursts below a `B`
+low watermark; it held at most 8 requests for B=2 and 16 for B=4.
+
+| Mode | B | Graph calls | Raw slots | Effective | Idle | Useful fraction | Decode wall | Effective tok/s | Run wall | E2E tok/s |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Page-local | 2 | 4,089 | 8,178 | 7,041 | 977 | 86.097% | 13.0120 s | 541.115 | 29.2248 s | 246.401 |
+| Cross-page | 2 | 3,653 | 7,306 | 7,041 | 105 | **96.373%** | 11.1410 s | **631.988** | 28.3588 s | **253.925** |
+| Page-local | 4 | 2,543 | 10,172 | 7,041 | 2,971 | 69.219% | 8.5794 s | 820.690 | 25.6151 s | 281.123 |
+| Cross-page | 4 | 1,878 | 7,512 | 7,041 | 311 | **93.730%** | 5.8449 s | **1,204.639** | 22.8657 s | **314.926** |
+
+Compared with page-local scheduling, cross-page B=2 reduced decode wall by
+14.4%, raised effective decode throughput by 16.8%, and raised observed E2E
+throughput by 3.1%. At B=4 it reduced decode wall by 31.9%, raised effective
+decode throughput by 46.8%, and raised observed E2E throughput by 12.0%.
+
+All four five-page runs produced the same SHA-256 digest over ordered request
+IDs, token IDs, decoded text, and stop reasons. The run-scoped B=2 and B=4
+outputs are therefore exactly equal to both page-local baselines, including the
+single length-limited table.
+
+The complete cross-page results are stored at:
+
+```text
+/workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/five_pages_uniform/cross_page_b2/run.json
+/workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/five_pages_uniform/cross_page_b4/run.json
 ```

@@ -5,32 +5,42 @@ rather than another isolated kernel benchmark. It keeps both models resident in
 one Python process and executes this path:
 
 ```text
-full PIL page
-  -> real PP-DocLayoutV3 inference on NPU
-  -> reading-ordered layout regions
-  -> crop and prompt routing
-  -> one PaddleOCR-VL request at a time
+stream of full PIL pages
+  -> lazy real PP-DocLayoutV3 inference on NPU
+  -> reading-ordered layout regions and page collectors
+  -> crop and prompt routing into one run-scoped request source
+  -> one eager PaddleOCR-VL prefill at a time
        CPU image/prompt preprocessing
        eager native-resolution vision prefill
        eager text prefill into a static KV cache
        ready B=1 KV state
-  -> all page requests enter a ready queue
+  -> bounded cross-page ready reservoir
+       high watermark = 4B prepared requests
+       low watermark = B prepared requests
+       refill in bursts rather than after every completion
   -> persistent power-of-two compiled decode arena
        fill free slots from ready B=1 KV states
        run one autoregressive iteration
        retire EOS/length-complete requests
        hot-swap the next ready KV prefix into each freed slot
        D2H tokens and detokenization
-  -> reading-order text
+  -> route completions to their page collectors
+  -> emit each page immediately when all of its regions finish
 ```
 
-Vision and text prefill deliberately remain sequential B=1 and finish before
-decode starts. Decode owns one persistent fixed-shape arena. Slot indices stay
-stable; a finished request is replaced in place without moving other active
-requests or rebuilding the batch. Admission copies only the valid prompt KV
-prefix, while stale cache tails remain safely hidden by each row's cache
-position. Pages remain sequential, so this is decode-iteration continuous
-batching rather than concurrent layout/prefill/decode scheduling.
+Vision and text prefill deliberately remain sequential B=1, but they are now
+produced lazily for one run-scoped decode scheduler instead of draining decode
+at every page boundary. Decode owns one persistent fixed-shape arena. Slot
+indices stay stable; a finished request is replaced in place without moving
+other active requests or rebuilding the batch. Admission copies only the valid
+prompt KV prefix, while stale cache tails remain safely hidden by each row's
+cache position. The ready reservoir is internal and bounded, so the pipeline
+does not materialize every page's NPU KV caches before decode.
+
+A page is an input/output aggregation boundary, not a scheduling boundary.
+Each request carries its page identity through the engine; per-page collectors
+restore reading order and can emit independently. The returned `pages` list
+remains in input order even when completion callbacks arrive out of order.
 
 ## What is faithful in this first cut
 
@@ -60,25 +70,27 @@ postprocess boundaries, so adding them does not require replacing the engine.
 
 ## Timing model
 
-`run.json` reports three different scopes explicitly:
+`run.json` reports four different scopes explicitly:
 
 - Setup: layout-model load, recognizer-model load, optional weight-format probe,
   compile-wrapper creation, and the first compiled call. Setup is excluded from
   page throughput.
-- Coarse synchronized wall time: real layout inference, recognizer H2D, eager
-  prefill, compiled decode, each complete request, and each complete page.
+- Run wall: first page start through the last page emission. This is the E2E
+  throughput denominator; overlapping page latencies are never summed for
+  throughput.
+- Per-page latency: that page's image load through its completion emission.
 - `device_stage_s`: NPU-event execution time for vision/text-prefill substages.
   These values diagnose accelerator work and are not interchangeable with host
   wall latency.
 
 Raw decode tok/s counts every `batch_size * graph_calls` arena slot, including
 idle rows and completion look-ahead. Effective decode tok/s counts only real
-generated tokens after the prefill-produced first token, including EOS. Both
-divide by the same continuous-decode wall time, which includes slot admission,
-D2H waits, and host retirement. The JSON separately reports model/argmax device
-time, admission device time, idle slots, look-ahead slots, active-slot fraction,
-and copied KV-prefix bytes. E2E output tok/s includes each request's first token
-and EOS and divides by full page wall time.
+generated tokens after the prefill-produced first token, including EOS. Their
+denominator is conservatively the larger of exclusive decode-control host wall
+and serialized decode-plus-admission device time. The JSON also exposes full
+run-scoped scheduler wall, lazy ready-source wall, refill count, reservoir
+bounds, device timing, idle/look-ahead slots, and copied KV-prefix bytes. E2E
+output tok/s includes each request's first token and EOS and divides by run wall.
 
 ## Blue Zone run
 
@@ -105,8 +117,10 @@ and an annotated layout image. Pass `--save-crops` only when the actual crop
 images are useful. `--max-regions N` is a debug-only partial-page mode and is
 recorded as such in the JSON.
 
-`--batch-size` accepts 1, 2, 4, 8, and other powers of two. Use additional
-`--image` arguments to process multiple pages; pages remain sequential.
+`--batch-size` accepts 1, 2, 4, 8, and other powers of two. Additional
+`--image` arguments enter the same cross-page scheduling domain by default.
+Each page is printed and made available to callbacks as soon as its own regions
+finish; the engine does not wait for the whole image list before emitting it.
 
 Measured 910B validations are recorded in
 [`NPU_FULL_PAGE_RESULT.md`](NPU_FULL_PAGE_RESULT.md) for the original B=1 path
