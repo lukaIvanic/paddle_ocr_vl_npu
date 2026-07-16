@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import numpy as np
 
 from layout_mask_guard import find_empty_mask_crops, install_layout_mask_guard
-from run_with_layout_mask_guard import parse_args
+from run_with_layout_mask_guard import parse_args, run_python_script
 
 
 class FakeProcessor:
@@ -76,6 +78,20 @@ class LayoutMaskGuardTest(unittest.TestCase):
             ]
         )
         self.assertEqual(args.runner_args, ["--offset", "12", "--limit", "34"])
+
+    def test_stock_wrapper_imports_sibling_modules_like_python_script(self) -> None:
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "sibling.py").write_text("VALUE = 17\n", encoding="utf-8")
+            runner = root / "runner.py"
+            runner.write_text(
+                "from sibling import VALUE\nRESULT = VALUE + 1\n",
+                encoding="utf-8",
+            )
+
+            namespace = run_python_script(runner, ["--unused"])
+
+        self.assertEqual(namespace["RESULT"], 18)
 
 
 if __name__ == "__main__":

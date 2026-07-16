@@ -21,6 +21,19 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def run_python_script(runner: Path, runner_args: Sequence[str]) -> dict[str, object]:
+    """Execute ``runner`` with the import behavior of ``python runner.py``."""
+
+    previous_argv = sys.argv
+    sys.argv = [str(runner), *runner_args]
+    sys.path.insert(0, str(runner.parent))
+    try:
+        return runpy.run_path(str(runner), run_name="__main__")
+    finally:
+        sys.path.pop(0)
+        sys.argv = previous_argv
+
+
 def main() -> None:
     args = parse_args()
     runner = args.runner.expanduser().resolve()
@@ -29,8 +42,7 @@ def main() -> None:
     report = args.guard_report.expanduser().resolve()
     state = install_layout_mask_guard()
     atexit.register(state.write_snapshot, report)
-    sys.argv = [str(runner), *args.runner_args]
-    runpy.run_path(str(runner), run_name="__main__")
+    run_python_script(runner, args.runner_args)
 
 
 if __name__ == "__main__":
