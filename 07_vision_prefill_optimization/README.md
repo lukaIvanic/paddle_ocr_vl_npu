@@ -52,7 +52,9 @@ callable is only:
 Patch embedding, absolute positions, RoPE, mask construction, projector, text
 prefill, and decode are excluded. Results include physical padded tokens/s,
 effective real tokens/s, useful-token fraction, first-call/compile time,
-per-block dispersion, and eager-versus-compiled numerical checks.
+per-block dispersion, and eager-versus-compiled numerical checks. Correctness
+continues outside the timed region through the real adaptive projector and text
+prefill, including next-token argmax agreement.
 
 Outputs are written under:
 

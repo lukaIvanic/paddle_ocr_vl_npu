@@ -109,7 +109,10 @@ as a PromptFA graph or vice versa.
 
 The benchmark compares compiled output against the same static wrapper run
 eagerly. Every real row must pass `atol=rtol=0.1`, and the final physical output
-must contain no nonfinite values before its throughput is treated as valid.
+must contain no nonfinite values. After timing, both outputs also pass through
+the real adaptive projector and text prefill; image embeddings and prefill
+logits must pass the same tolerance and the next-token argmax must match before
+throughput is treated as valid.
 
 When PromptFA uses a padded call head dimension, also compare its eager output
 against native-head-dimension eager PromptFA. A D=80 workaround is not valid

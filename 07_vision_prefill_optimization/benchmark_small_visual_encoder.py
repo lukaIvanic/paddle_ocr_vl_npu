@@ -45,6 +45,7 @@ from vision_prefill_bench import (
     apply_runtime_env,
     build_prefill_inputs,
     clean_json,
+    compute_prefill_state_from_visual_features,
     diff_stats,
     input_row,
     json_default,
@@ -285,6 +286,72 @@ def aggregate_real_diff(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def downstream_prefill_checks(
+    *,
+    model: Any,
+    selected: list[Any],
+    candidate_output: torch.Tensor,
+    reference_output: torch.Tensor,
+    real_lengths: list[int],
+    device: torch.device,
+) -> dict[str, Any]:
+    rows: list[dict[str, Any]] = []
+    for row_idx, (item, real_len) in enumerate(zip(selected, real_lengths, strict=True)):
+        cache_length = int(item.input_ids.shape[1])
+        reference = compute_prefill_state_from_visual_features(
+            model=model,
+            item=item,
+            device=device,
+            cache_length=cache_length,
+            visual_features=reference_output[row_idx, :real_len],
+        )
+        reference_image_embeds = reference["image_embeds"].cpu()
+        reference_logits = reference["prefill_logits"].cpu()
+        reference_argmax = int(reference["prefill_argmax"].item())
+        del reference
+
+        candidate = compute_prefill_state_from_visual_features(
+            model=model,
+            item=item,
+            device=device,
+            cache_length=cache_length,
+            visual_features=candidate_output[row_idx, :real_len],
+        )
+        candidate_image_embeds = candidate["image_embeds"].cpu()
+        candidate_logits = candidate["prefill_logits"].cpu()
+        candidate_argmax = int(candidate["prefill_argmax"].item())
+        del candidate
+        rows.append(
+            {
+                "id": str(item.entry.get("id") or ""),
+                "image_embeds": diff_stats(candidate_image_embeds, reference_image_embeds),
+                "prefill_logits": diff_stats(candidate_logits, reference_logits),
+                "reference_argmax": int(reference_argmax),
+                "candidate_argmax": int(candidate_argmax),
+                "argmax_match": bool(reference_argmax == candidate_argmax),
+            }
+        )
+    image_embed_pass_count = int(
+        sum(bool(row["image_embeds"].get("allclose_atol_1e_1_rtol_1e_1")) for row in rows)
+    )
+    prefill_logits_pass_count = int(
+        sum(bool(row["prefill_logits"].get("allclose_atol_1e_1_rtol_1e_1")) for row in rows)
+    )
+    argmax_match_count = int(sum(bool(row["argmax_match"]) for row in rows))
+    return {
+        "row_count": int(len(rows)),
+        "image_embeds_allclose_1e_1_count": image_embed_pass_count,
+        "prefill_logits_allclose_1e_1_count": prefill_logits_pass_count,
+        "argmax_match_count": argmax_match_count,
+        "passed": bool(
+            image_embed_pass_count == len(rows)
+            and prefill_logits_pass_count == len(rows)
+            and argmax_match_count == len(rows)
+        ),
+        "rows": clean_json(rows),
+    }
+
+
 def timed_forward_blocks(
     forward: Callable[..., torch.Tensor],
     forward_args: tuple[torch.Tensor, ...],
@@ -514,6 +581,15 @@ def main() -> None:
             ),
         }
 
+    downstream = downstream_prefill_checks(
+        model=model,
+        selected=selected,
+        candidate_output=final_output,
+        reference_output=same_path_eager,
+        real_lengths=real_lengths,
+        device=device,
+    )
+
     final_nonfinite = tensor_nonfinite_count(final_output)
     same_path_real_pass = bool(
         same_path_correctness["final_call_real_rows"]["allclose_1e_1_count"] == int(args.batch_size)
@@ -523,7 +599,12 @@ def main() -> None:
         or native_head_correctness["same_path_eager_vs_native_head_real_rows"]["allclose_1e_1_count"]
         == int(args.batch_size)
     )
-    correctness_passed = bool(same_path_real_pass and native_head_real_pass and final_nonfinite == 0)
+    correctness_passed = bool(
+        same_path_real_pass
+        and native_head_real_pass
+        and final_nonfinite == 0
+        and bool(downstream["passed"])
+    )
 
     output = {
         "schema_version": 1,
@@ -571,12 +652,16 @@ def main() -> None:
         "timing": timing,
         "correctness": {
             "passed": correctness_passed,
-            "gate": "all real rows allclose at atol=rtol=0.1 and final physical output has no nonfinite values",
+            "gate": (
+                "real visual rows, downstream image embeddings, and prefill logits allclose at atol=rtol=0.1; "
+                "prefill argmax matches; final physical output has no nonfinite values"
+            ),
             "same_path_real_passed": same_path_real_pass,
             "native_promptfa_head_real_passed": native_head_real_pass,
             "final_output_nonfinite_count": final_nonfinite,
             "candidate_vs_same_path_eager": same_path_correctness,
             "padded_promptfa_eager_vs_native_head": native_head_correctness,
+            "downstream_prefill": downstream,
         },
     }
     output_path = args.output.expanduser().resolve()
