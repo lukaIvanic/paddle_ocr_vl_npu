@@ -30,13 +30,15 @@ stream of full PIL pages
   -> emit each page immediately when all of its regions finish
 ```
 
-Vision and text prefill remain sequential B=1, but the vision encoder can now
-use static TorchAir graphs at token buckets `16, 32, 64, 128, 256, 512, 1024,
-2048`. Only the encoder layers and final LayerNorm are padded and compiled;
-patch embedding, position interpolation, the projector, and text prefill keep
-their existing behavior. Real and dummy rows are isolated by an attention
-mask, and real rows are sliced before the projector. Crops above the largest
-bucket use the faithful eager path without padding.
+Vision and text prefill remain sequential B=1, but the vision encoder can use
+static TorchAir graphs at arbitrary positive, strictly increasing token
+buckets. The default remains `16, 32, 64, 128, 256, 512, 1024, 2048`; denser
+sets can be supplied explicitly. Only the encoder layers and final LayerNorm
+are padded and compiled; patch embedding, position interpolation, the
+projector, and text prefill keep their existing behavior. Real and dummy rows
+are isolated by an attention mask, and real rows are sliced before the
+projector. Crops above the largest bucket use the faithful eager path without
+padding.
 
 Prefills are produced lazily for one run-scoped decode scheduler instead of
 draining decode at every page boundary. Decode owns one persistent fixed-shape arena. Slot

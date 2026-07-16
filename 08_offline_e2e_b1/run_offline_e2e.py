@@ -61,7 +61,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--vision-compile-buckets",
         default=",".join(str(bucket) for bucket in DEFAULT_VISION_BUCKETS),
-        help="Strictly increasing comma-separated powers of two used by compiled B=1 vision.",
+        help="Strictly increasing comma-separated positive sequence lengths used by compiled B=1 vision.",
     )
     parser.add_argument(
         "--vision-torchair-cache-dir",

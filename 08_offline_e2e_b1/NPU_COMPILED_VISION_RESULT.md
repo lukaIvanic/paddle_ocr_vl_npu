@@ -123,12 +123,13 @@ producing 131 tokens instead of 147. The other 159 requests were token-exact.
 This deterministic 159/160 result is not sufficient for the project's strict
 token-parity gate.
 
-Keeping all eight graphs resident also reduced interleaved decode throughput by
-about 9--10%. Restricting residency to the three buckets used by this workload
-restored decode to 1226.45 effective tok/s and reduced run wall to 21.488
-seconds. Therefore all bucket *paths* should remain available, but eagerly
-loading every graph is not free. A production design should lazily load/warm
-the reachable buckets or otherwise release unused graph state.
+The three-used-bucket run had about 9--10% higher interleaved decode throughput
+than the paired all-eight-bucket runs. That result showed correlation, not that
+resident vision graphs caused the difference. The denser 32-graph experiment
+below does not reproduce a graph-count-dependent decode slowdown. Eagerly
+loading every graph is still not free because warm startup time and graph
+memory scale with the bucket count; lazy loading remains worth considering for
+those reasons.
 
 Warm-cache setup also matters for short offline jobs. All eight vision graphs
 added about 6.5 seconds to setup (35.15 seconds total versus 28.58 eager), while
@@ -138,3 +139,57 @@ gain is intended to amortize in a persistent process.
 
 The raw evidence is under
 `tmp/08_offline_e2e_b1/five_pages_compiled_vision/`.
+
+## Dense arbitrary-bucket experiment
+
+The follow-up used this 32-shape policy:
+
+```text
+32..512 by 32, 576..1024 by 64, 1152..2048 by 128; larger crops eager
+```
+
+It repeated the same five pages with model-default `min_pixels` and divisors
+2, 4, and 8. All runs used fp16, compiled B=4 continuous decode, cache length
+2048, and a 768-token generation cap. The complete-vision time below sums patch
+and position embedding, compiled-input preparation where applicable, the
+encoder plus post-LayerNorm, and the projector. Setup is excluded.
+
+| Minimum pixels | Real / physical vision rows | Useful | Complete vision | Useful vision rows/s | Text-prefill core | Text-prefill tok/s | Effective decode tok/s | Run wall |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| default / 1 | 120736 / 125856 | 95.93% | 4.300 s | 28075 | 5.892 s | 5476 | 1121.02 | 20.817 s |
+| default / 2 | 84732 / 87648 | **96.67%** | 3.620 s | 23406 | 5.900 s | 3943 | **1125.85** | 22.256 s |
+| default / 4 | 69624 / 72352 | 96.23% | 3.425 s | 20329 | 6.577 s | 2963 | 1079.25 | 20.603 s |
+| default / 8 | 62432 / 65440 | 95.40% | **3.219 s** | 19397 | 6.071 s | 2913 | 1112.54 | **19.640 s** |
+
+Compared with matching eager controls, dense bucketing reduced complete vision
+time by 29.97%, 43.82%, 49.36%, and 49.68% for divisors 1, 2, 4, and 8. Against
+the old power-of-two graphs, the reductions were 19.48%, 15.79%, 10.67%, and
+14.21%. Run wall improved by 4.91--13.58% versus eager and by 0.68--8.29%
+against the old graphs. The smallest observed wall was 19.640 seconds at
+default / 8.
+
+The dense policy reduced padding from the old 66.34--72.39% useful range to
+95.40--96.67%. Its effective decode throughput was 1079--1126 tok/s versus
+1027--1121 tok/s for the old eight graphs: sometimes higher and sometimes
+lower, with no monotonic penalty from keeping 32 vision graphs resident. A
+second default / 4 run had the same generated outputs but a 24.056-second wall,
+which reinforces that small E2E differences are noisier than the isolated
+vision-stage totals.
+
+Warm caches avoid recompilation but not graph initialization. Loading and
+first-running all 32 cached shapes took 23.6--27.1 seconds of vision setup,
+versus roughly 6.3--7.1 seconds for the old eight-shape set. The first run after
+the source hash changed rebuilt the set and spent 1496.4 seconds in vision
+setup. Dense buckets therefore make sense in a persistent process, but not as
+free startup for short-lived jobs.
+
+Strict greedy parity passed on all 160 requests at default / 1, default / 2,
+and default / 8. At default / 4, 159/160 requests matched eager. The sole
+compiled difference was deterministic across two runs and occurred at an exact
+192-row bucket with no padding: compiled produced `R_{kk}` while eager produced
+`R_{k k}`. Dense routing fixes the earlier 1628-to-2048 failure and greatly
+improves the gate, but the default / 4 result proves that zero padding alone
+does not guarantee token-exact compiled/eager output.
+
+The raw evidence is under
+`tmp/08_offline_e2e_b1/five_pages_dense_vision_buckets/`.
