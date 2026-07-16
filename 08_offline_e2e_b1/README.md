@@ -12,7 +12,7 @@ stream of full PIL pages
   -> one PaddleOCR-VL prefill at a time
        CPU image/prompt preprocessing
        eager native-resolution patch + position embedding
-       optional bucketed compiled vision encoder + post-LayerNorm
+       dense-bucket compiled vision encoder + post-LayerNorm by default
        eager projector
        eager text prefill into a static KV cache
        ready B=1 KV state
@@ -30,15 +30,19 @@ stream of full PIL pages
   -> emit each page immediately when all of its regions finish
 ```
 
-Vision and text prefill remain sequential B=1, but the vision encoder can use
-static TorchAir graphs at arbitrary positive, strictly increasing token
-buckets. The default remains `16, 32, 64, 128, 256, 512, 1024, 2048`; denser
-sets can be supplied explicitly. Only the encoder layers and final LayerNorm
-are padded and compiled; patch embedding, position interpolation, the
-projector, and text prefill keep their existing behavior. Real and dummy rows
-are isolated by an attention mask, and real rows are sliced before the
-projector. Crops above the largest bucket use the faithful eager path without
+Vision and text prefill remain sequential B=1. The validated default uses 32
+static TorchAir vision shapes: 32-token steps through 512, 64-token steps
+through 1024, and 128-token steps through 2048. Only the encoder layers and
+final LayerNorm are padded and compiled; patch embedding, position
+interpolation, the projector, and text prefill keep their existing behavior.
+Real and dummy rows are isolated by an attention mask, and real rows are sliced
+before the projector. Crops above 2048 rows use the faithful eager path without
 padding.
+
+The default decode profile is TorchAir B=4 with cache length 2048 and a
+768-token generation cap. `raw_eager` decode and vision remain explicit
+correctness/debug controls; generic TorchDynamo backends are not part of this
+E2E runtime surface.
 
 Prefills are produced lazily for one run-scoped decode scheduler instead of
 draining decode at every page boundary. Decode owns one persistent fixed-shape arena. Slot
@@ -65,9 +69,8 @@ remains in input order even when completion callbacks arrive out of order.
 - Official v1.6 defaults are retained for image/chart/seal blocks: image blocks
   are not recognized, and chart/seal recognition is opt-in.
 - The recognizer is the corrected local PyTorch model from Experiment 05. Text
-  prefill remains eager and unpadded. Vision defaults to eager; the explicit
-  TorchAir mode uses the same compiler-safe manual-attention calculation that
-  Experiment 07 validated by greedy OCR token parity.
+  prefill remains eager and unpadded. Vision defaults to the compiler-safe
+  manual-attention TorchAir path measured in the dense-bucket experiment.
 - Sampled-token D2H uses a second NPU stream, pinned two-row host ring, and
   queue-depth-one control. A request can execute one look-ahead graph call;
   slot epochs discard that old result after the slot is reused.
@@ -106,6 +109,9 @@ output tok/s includes each request's first token and EOS and divides by run wall
 
 ## Blue Zone run
 
+The normal command only needs its page and model locations because the
+optimized decode and vision profile is now the CLI default:
+
 ```sh
 ssh blue_zone_npu_container
 cd /workspace/repos/paddle_ocr_vl_npu
@@ -116,14 +122,12 @@ source npu-setup
   --image "/workspace/datasets/OmniDocBench/images/PPT_The Right Moves_page_024.png" \
   --layout-model /workspace/models/PP-DocLayoutV3_safetensors \
   --recognizer-model /workspace/models/PaddleOCR-VL-1.6 \
-  --device npu:0 \
-  --decode-backend torchair \
-  --vision-backend torchair \
-  --vision-compile-buckets 16,32,64,128,256,512,1024,2048 \
-  --batch-size 4 \
-  --cache-length 2048 \
-  --max-new-tokens 768
+  --device npu:0
 ```
+
+For a repeatable one-page validation, use `run_npu_smoke.sh`. Environment
+overrides remain available for deliberate controls, including `BATCH_SIZE`,
+`DECODE_BACKEND`, `VISION_BACKEND`, and `VISION_BUCKETS`.
 
 Recognition uses the model's `min_pixels` and `max_pixels` by default. Pass
 `--preprocessor-min-pixels N` to override only the recognition-crop minimum;
@@ -131,8 +135,8 @@ the model's maximum remains unchanged. The model default, requested override,
 effective bounds, resize factor, and nominal minimum image-token count are
 recorded under `configuration.preprocessor` in `run.json`.
 
-`--vision-backend torchair` builds or loads one B=1 static graph for every
-configured bucket during recognizer setup. The first uncached run is therefore
+The default `--vision-backend torchair` builds or loads one B=1 static graph for
+every configured bucket during recognizer setup. The first uncached run is therefore
 compilation-heavy; per-bucket cache paths and first-call times are recorded in
 `configuration.vision_compile` and `setup_timing_s.vision_runtime_setup`.
 Subsequent runs reuse the GE caches under
@@ -155,6 +159,20 @@ recorded as such in the JSON.
 `--image` arguments enter the same cross-page scheduling domain by default.
 Each page is printed and made available to callbacks as soon as its own regions
 finish; the engine does not wait for the whole image list before emitting it.
+
+## Runtime code map
+
+- `run_offline_e2e.py`: CLI, runtime construction, result assembly, and JSON.
+- `pipeline.py`: lazy page/layout/crop routing and page-completion collectors.
+  Crops are created one at a time as the recognizer asks for work.
+- `engine.py`: one model instance, sequential multimodal prefill, compact
+  prefilled state, and result materialization.
+- `continuous_decode.py`: bounded ready reservoir and persistent B=4 slot
+  scheduler.
+- `vision_compile.py`: dense static routing and the compiled encoder boundary.
+- `local_modeling_paddleocr_vl.py`: faithful model and NPU operation path.
+- `runtime_defaults.py`: the measured default profile, kept separate from
+  historical benchmark controls.
 
 Measured 910B validations are recorded in
 [`NPU_FULL_PAGE_RESULT.md`](NPU_FULL_PAGE_RESULT.md) for the original B=1 path

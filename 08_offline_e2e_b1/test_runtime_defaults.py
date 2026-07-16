@@ -1,0 +1,39 @@
+"""Contract tests for the cleaned Experiment 08 runtime profile."""
+
+from __future__ import annotations
+
+import unittest
+from dataclasses import fields
+
+from engine import PrefilledRecognition
+from run_offline_e2e import parse_args
+from runtime_defaults import (
+    DEFAULT_DECODE_BATCH_SIZE,
+    DEFAULT_VISION_BACKEND,
+    OPTIMIZED_VISION_BUCKETS,
+)
+from vision_compile import parse_vision_buckets
+
+
+class RuntimeDefaultsTest(unittest.TestCase):
+    def test_cli_defaults_to_the_validated_optimized_profile(self) -> None:
+        args = parse_args(["--image", "unused-test-page.png"])
+
+        self.assertEqual(args.batch_size, DEFAULT_DECODE_BATCH_SIZE)
+        self.assertEqual(args.vision_backend, DEFAULT_VISION_BACKEND)
+        self.assertEqual(
+            parse_vision_buckets(args.vision_compile_buckets),
+            OPTIMIZED_VISION_BUCKETS,
+        )
+
+    def test_dense_bucket_ranges_match_the_measured_policy(self) -> None:
+        self.assertEqual(OPTIMIZED_VISION_BUCKETS[:3], (32, 64, 96))
+        self.assertEqual(OPTIMIZED_VISION_BUCKETS[-3:], (1792, 1920, 2048))
+        self.assertEqual(len(OPTIMIZED_VISION_BUCKETS), 32)
+
+    def test_prefilled_state_does_not_retain_the_pil_request(self) -> None:
+        self.assertNotIn("request", {field.name for field in fields(PrefilledRecognition)})
+
+
+if __name__ == "__main__":
+    unittest.main()

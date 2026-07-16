@@ -15,6 +15,7 @@ from engine import ContinuousRecognizer, RecognitionInput
 from layout import PPDocLayoutV3Runtime
 from schema import (
     ContinuousDecodeResult,
+    LayoutRegion,
     PageResult,
     RecognitionResult,
     SkippedRegion,
@@ -48,6 +49,12 @@ def recognition_prompt(label: str) -> str:
     return "OCR:"
 
 
+@dataclass(frozen=True)
+class _PreparedRegion:
+    region: LayoutRegion
+    crop_box: tuple[int, int, int, int]
+
+
 @dataclass
 class _PageWork:
     page_index: int
@@ -55,9 +62,9 @@ class _PageWork:
     image_path: Path
     image_size: tuple[int, int]
     image: Image.Image | None
-    layout_regions: list[Any]
+    layout_regions: list[LayoutRegion]
     skipped_regions: list[SkippedRegion]
-    requests: list[RecognitionInput]
+    prepared_regions: list[_PreparedRegion]
     request_count: int
     page_started: float
     recognition_started: float
@@ -130,14 +137,9 @@ class OfflinePagePipeline:
         layout_regions, layout_timing = self.layout.predict(image)
         recognition_started = time.perf_counter()
         skipped: list[SkippedRegion] = []
-        requests: list[RecognitionInput] = []
+        prepared_regions: list[_PreparedRegion] = []
         crop_total_s = 0.0
         recognized_count = 0
-
-        crop_dir = None
-        if self.artifact_dir is not None and self.save_crops:
-            crop_dir = self.artifact_dir / "crops" / page_id
-            crop_dir.mkdir(parents=True, exist_ok=True)
 
         for region in layout_regions:
             skip_reason = self._skip_reason(region.label)
@@ -173,19 +175,11 @@ class OfflinePagePipeline:
                     )
                 )
                 continue
-            crop = image.crop((left, top, right, bottom))
             crop_total_s += time.perf_counter() - started
-            if crop_dir is not None:
-                crop.save(crop_dir / f"{region.order:03d}_{region.label}.png")
-
-            requests.append(
-                RecognitionInput(
-                    request_id=f"{page_id}_region_{region.order:03d}",
-                    layout_order=region.order,
-                    label=region.label,
-                    prompt=recognition_prompt(region.label),
-                    box=region.box,
-                    crop=crop,
+            prepared_regions.append(
+                _PreparedRegion(
+                    region=region,
+                    crop_box=(left, top, right, bottom),
                 )
             )
             recognized_count += 1
@@ -198,8 +192,8 @@ class OfflinePagePipeline:
             image=image,
             layout_regions=layout_regions,
             skipped_regions=skipped,
-            requests=requests,
-            request_count=len(requests),
+            prepared_regions=prepared_regions,
+            request_count=len(prepared_regions),
             page_started=page_started,
             recognition_started=recognition_started,
             run_started=run_started,
@@ -207,6 +201,36 @@ class OfflinePagePipeline:
             layout_timing_s=layout_timing,
             crop_extraction_s=float(crop_total_s),
         )
+
+    def _iter_page_requests(self, work: _PageWork) -> Iterable[RecognitionInput]:
+        image = work.image
+        if image is None:
+            raise RuntimeError(f"page {work.page_id} released its image before cropping")
+        crop_dir = None
+        if self.artifact_dir is not None and self.save_crops:
+            crop_dir = self.artifact_dir / "crops" / work.page_id
+            crop_dir.mkdir(parents=True, exist_ok=True)
+
+        try:
+            for prepared in work.prepared_regions:
+                started = time.perf_counter()
+                crop = image.crop(prepared.crop_box)
+                work.crop_extraction_s += time.perf_counter() - started
+                region = prepared.region
+                if crop_dir is not None:
+                    crop.save(crop_dir / f"{region.order:03d}_{region.label}.png")
+                yield RecognitionInput(
+                    request_id=f"{work.page_id}_region_{region.order:03d}",
+                    layout_order=region.order,
+                    label=region.label,
+                    prompt=recognition_prompt(region.label),
+                    box=region.box,
+                    crop=crop,
+                )
+        finally:
+            work.prepared_regions.clear()
+            if not self.save_annotated:
+                work.image = None
 
     def _finalize_page(
         self,
@@ -319,7 +343,7 @@ class OfflinePagePipeline:
         )
         work.result = result
         work.image = None
-        work.requests.clear()
+        work.prepared_regions.clear()
         return result
 
     def run_pages(
@@ -355,10 +379,9 @@ class OfflinePagePipeline:
                 if work.request_count == 0:
                     emit_completed_page(work)
                     continue
-                for request in work.requests:
+                for request in self._iter_page_requests(work):
                     request_to_page[request.request_id] = work
                     yield request
-                work.requests.clear()
 
         def accept_result(result: RecognitionResult) -> None:
             try:
@@ -371,7 +394,7 @@ class OfflinePagePipeline:
             if len(work.recognized_regions) == work.request_count:
                 emit_completed_page(work)
 
-        _results, decode_schedule = self.recognizer.recognize_stream(
+        _, decode_schedule = self.recognizer.recognize_stream(
             request_source(),
             schedule_id=schedule_id,
             on_result=accept_result,
@@ -396,14 +419,6 @@ class OfflinePagePipeline:
             run_wall_s=float(run_wall_s),
             completion_order=completion_order,
         )
-
-    def run_page(self, image_path: Path, page_index: int = 0) -> PageResult:
-        """Compatibility wrapper; scheduling remains run-scoped by default."""
-
-        if page_index != 0:
-            raise ValueError("run_page only supports page_index=0; use run_pages")
-        return self.run_pages([image_path]).pages[0]
-
 
 def aggregate_pages(
     pages: list[PageResult],

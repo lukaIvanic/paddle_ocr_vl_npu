@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 from collections import deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable, Iterable
 
 import torch
@@ -56,7 +56,6 @@ class PendingTokenCopy:
     slot_epochs: tuple[int | None, ...]
     ring_index: int | None
     done_event: Any | None
-    sampled: torch.Tensor | None
     host_tokens: list[int] | None
 
 
@@ -354,7 +353,6 @@ class ContinuousDecodeScheduler:
                 slot_epochs=step.slot_epochs,
                 ring_index=ring_index,
                 done_event=done_event,
-                sampled=step.sampled,
                 host_tokens=None,
             )
         return PendingTokenCopy(
@@ -363,7 +361,6 @@ class ContinuousDecodeScheduler:
             slot_epochs=step.slot_epochs,
             ring_index=None,
             done_event=None,
-            sampled=None,
             host_tokens=[int(value) for value in step.sampled.detach().cpu().reshape(-1).tolist()],
         )
 

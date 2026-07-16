@@ -21,10 +21,11 @@ This folder is a standalone research workspace for PaddleOCR-VL on Ascend/NPU, w
 The current target is an offline full-page path built incrementally from the
 local recognizer: real PP-DocLayoutV3 inference, explicit page/crop/request
 boundaries, and a persistent PaddleOCR-VL engine. Experiment 08 uses sequential
-unpadded B=1 vision/text prefill followed by a persistent fixed power-of-two
-decode arena. Finished requests are hot-swapped between decode iterations by
-copying the next ready request's valid KV prefix into the freed slot. It does
-not yet overlap prefill with decode. It is not yet a complete reimplementation of PaddleX page preparation
+B=1 vision/text prefill with dense static TorchAir vision buckets, followed by
+a persistent B=4 compiled decode arena. Finished requests are hot-swapped
+between decode iterations by copying the next ready request's valid KV prefix
+into the freed slot. It does not yet overlap prefill with decode. It is not yet
+a complete reimplementation of PaddleX page preparation
 or structured Markdown postprocessing. The recognition model is available as a
 Transformers/PyTorch model at:
 

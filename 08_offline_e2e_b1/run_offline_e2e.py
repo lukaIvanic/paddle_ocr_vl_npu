@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import time
+from collections.abc import Sequence
 from pathlib import Path
 
 import torch
@@ -14,8 +15,15 @@ from engine import ContinuousRecognizer
 from layout import PPDocLayoutV3Runtime
 from pipeline import OfflinePagePipeline, aggregate_pages
 from run_local_recognition import NPU_JIT_COMPILE_CHOICES, resolve_device
+from runtime_defaults import (
+    DECODE_BACKEND_CHOICES,
+    DEFAULT_DECODE_BACKEND,
+    DEFAULT_DECODE_BATCH_SIZE,
+    DEFAULT_VISION_BACKEND,
+    OPTIMIZED_VISION_BUCKETS,
+)
 from schema import RunResult
-from vision_compile import DEFAULT_VISION_BUCKETS, VISION_BACKEND_CHOICES, parse_vision_buckets
+from vision_compile import VISION_BACKEND_CHOICES, parse_vision_buckets
 
 
 HERE = Path(__file__).resolve().parent
@@ -27,7 +35,7 @@ DEFAULT_LOCAL_RECOGNIZER = Path("/workspace/models/PaddleOCR-VL-1.6")
 DEFAULT_RECOGNIZER = str(DEFAULT_LOCAL_RECOGNIZER) if DEFAULT_LOCAL_RECOGNIZER.is_dir() else "PaddlePaddle/PaddleOCR-VL-1.6"
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--image", type=Path, action="append", required=True)
     parser.add_argument("--layout-model", type=Path, default=Path("/workspace/models/PP-DocLayoutV3_safetensors"))
@@ -35,11 +43,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="npu:0")
     parser.add_argument("--dtype", default="fp16", choices=("fp16", "float16", "bf16", "bfloat16"))
     parser.add_argument("--layout-threshold", type=float, default=0.3)
-    parser.add_argument("--decode-backend", default="torchair", choices=("raw_eager", "eager", "default", "torchair"))
+    parser.add_argument(
+        "--decode-backend",
+        default=DEFAULT_DECODE_BACKEND,
+        choices=DECODE_BACKEND_CHOICES,
+    )
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=1,
+        default=DEFAULT_DECODE_BATCH_SIZE,
         help="Persistent decode-arena capacity; must be a power of two.",
     )
     parser.add_argument("--cache-length", type=int, default=2048)
@@ -54,13 +66,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--torchair-cache-dir", type=Path, default=DEFAULT_CACHE_ROOT)
     parser.add_argument(
         "--vision-backend",
-        default="raw_eager",
+        default=DEFAULT_VISION_BACKEND,
         choices=VISION_BACKEND_CHOICES,
         help="Use eager vision, or one static TorchAir encoder graph per configured token bucket.",
     )
     parser.add_argument(
         "--vision-compile-buckets",
-        default=",".join(str(bucket) for bucket in DEFAULT_VISION_BUCKETS),
+        default=",".join(str(bucket) for bucket in OPTIMIZED_VISION_BUCKETS),
         help="Strictly increasing comma-separated positive sequence lengths used by compiled B=1 vision.",
     )
     parser.add_argument(
@@ -75,7 +87,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--save-crops", action="store_true")
     parser.add_argument("--no-save-annotated", action="store_true")
     parser.add_argument("--output-dir", type=Path, default=None)
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 @torch.inference_mode()

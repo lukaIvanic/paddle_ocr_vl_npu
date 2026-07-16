@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -117,6 +118,29 @@ class FakeRecognizer:
 
 
 class CrossPagePipelineTest(unittest.TestCase):
+    def test_page_crops_are_created_lazily_and_page_image_is_released(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            image_path = Path(directory) / "page.png"
+            Image.new("RGB", (20, 10), "white").save(image_path)
+            pipeline = OfflinePagePipeline(
+                layout=FakeLayout(),
+                recognizer=FakeRecognizer(),
+                save_annotated=False,
+            )
+
+            work = pipeline._prepare_page(
+                image_path,
+                0,
+                run_started=time.perf_counter(),
+            )
+            self.assertEqual(len(work.prepared_regions), 2)
+            requests = list(pipeline._iter_page_requests(work))
+
+        self.assertEqual(len(requests), 2)
+        self.assertEqual([request.crop.size for request in requests], [(20, 10)] * 2)
+        self.assertEqual(work.prepared_regions, [])
+        self.assertIsNone(work.image)
+
     def test_emits_completed_page_without_changing_return_order(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

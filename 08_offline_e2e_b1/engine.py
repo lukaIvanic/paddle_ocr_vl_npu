@@ -38,6 +38,12 @@ from run_local_recognition import (
     preprocess_pil_image,
     resolve_device,
 )
+from runtime_defaults import (
+    DECODE_BACKEND_CHOICES,
+    DEFAULT_VISION_BACKEND,
+    OPTIMIZED_VISION_BUCKETS,
+    READY_BUFFER_BATCH_MULTIPLIER,
+)
 from schema import Box, ContinuousDecodeResult, RecognitionResult, per_second
 from timing import DeviceTimeline, synchronize, timed_wall
 from vision_compile import BucketedVisionEncoderRuntime, parse_vision_buckets
@@ -54,8 +60,13 @@ class RecognitionInput:
 
 
 @dataclass
-class ReadyRecognition:
-    request: RecognitionInput
+class PrefilledRecognition:
+    request_id: str
+    layout_order: int
+    label: str
+    prompt: str
+    box: Box
+    crop_size: tuple[int, int]
     cache: LocalPaddleOCRVLStaticCache
     rope_deltas: torch.Tensor
     next_cache_position: torch.Tensor
@@ -91,8 +102,8 @@ class ContinuousRecognizer:
         cache_length: int,
         max_new_tokens: int,
         torchair_cache_dir: Path,
-        vision_backend: str = "raw_eager",
-        vision_buckets: str | Iterable[int] = "16,32,64,128,256,512,1024,2048",
+        vision_backend: str = DEFAULT_VISION_BACKEND,
+        vision_buckets: str | Iterable[int] = OPTIMIZED_VISION_BUCKETS,
         vision_torchair_cache_dir: Path | None = None,
         npu_jit_compile: str = "off",
         preprocessor_min_pixels: int | None = None,
@@ -107,6 +118,11 @@ class ContinuousRecognizer:
         self.max_new_tokens = int(max_new_tokens)
         self.vision_backend = str(vision_backend)
         self.vision_buckets = parse_vision_buckets(vision_buckets)
+        if self.decode_backend not in DECODE_BACKEND_CHOICES:
+            raise ValueError(
+                f"decode_backend must be one of {DECODE_BACKEND_CHOICES}, "
+                f"got {self.decode_backend!r}"
+            )
         if self.batch_size <= 0 or self.batch_size & (self.batch_size - 1):
             raise ValueError("batch_size must be a positive power of two")
         if self.max_new_tokens <= 0:
@@ -221,17 +237,6 @@ class ContinuousRecognizer:
         }
 
     @torch.inference_mode()
-    def recognize_many(
-        self,
-        requests: list[RecognitionInput],
-        *,
-        schedule_id: str,
-    ) -> tuple[list[RecognitionResult], ContinuousDecodeResult]:
-        if not requests:
-            raise ValueError("recognize_many requires at least one request")
-        return self.recognize_stream(requests, schedule_id=schedule_id)
-
-    @torch.inference_mode()
     def recognize_stream(
         self,
         requests: Iterable[RecognitionInput],
@@ -244,8 +249,8 @@ class ContinuousRecognizer:
         def ready_stream() -> Iterable[ReadyDecodeRequest]:
             for request in requests:
                 state = self._prefill(request)
-                yield ReadyDecodeRequest(
-                    request_id=state.request.request_id,
+                ready = ReadyDecodeRequest(
+                    request_id=state.request_id,
                     payload=state,
                     cache=state.cache,
                     rope_deltas=state.rope_deltas,
@@ -254,6 +259,8 @@ class ContinuousRecognizer:
                     first_token=state.first_token,
                     prompt_length=state.input_tokens,
                 )
+                del request
+                yield ready
 
         completion_results: list[RecognitionResult] = []
 
@@ -269,7 +276,7 @@ class ContinuousRecognizer:
         decoded = self.decode_scheduler.run_stream(
             ready_stream(),
             on_completion=handle_completion,
-            ready_buffer_capacity=4 * self.batch_size,
+            ready_buffer_capacity=READY_BUFFER_BATCH_MULTIPLIER * self.batch_size,
             ready_buffer_low_watermark=self.batch_size,
         )
         decode_wall_s = decoded.timing_s["continuous_decode_wall"]
@@ -346,7 +353,7 @@ class ContinuousRecognizer:
         *,
         schedule_id: str,
     ) -> RecognitionResult:
-        state: ReadyRecognition = completion.ready.payload
+        state: PrefilledRecognition = completion.ready.payload
         token_ids = completion.token_ids
         started = time.perf_counter()
         text = self.tokenizer.decode(token_ids, skip_special_tokens=True)
@@ -373,15 +380,15 @@ class ContinuousRecognizer:
             }
         )
         return RecognitionResult(
-            request_id=state.request.request_id,
+            request_id=state.request_id,
             decode_schedule_id=schedule_id,
             decode_slot_index=completion.slot_index,
             decode_slot_epoch=completion.slot_epoch,
-            layout_order=int(state.request.layout_order),
-            label=state.request.label,
-            prompt=state.request.prompt,
-            box=state.request.box,
-            crop_size=tuple(int(value) for value in state.request.crop.size),
+            layout_order=state.layout_order,
+            label=state.label,
+            prompt=state.prompt,
+            box=state.box,
+            crop_size=state.crop_size,
             text=text,
             token_ids=token_ids,
             stop_reason=completion.stop_reason,
@@ -403,9 +410,10 @@ class ContinuousRecognizer:
         )
 
     @torch.inference_mode()
-    def _prefill(self, request: RecognitionInput) -> ReadyRecognition:
+    def _prefill(self, request: RecognitionInput) -> PrefilledRecognition:
         request_started = time.perf_counter()
         timing: dict[str, float] = {}
+        crop_size = tuple(int(value) for value in request.crop.size)
 
         started = time.perf_counter()
         pixel_values, image_grid_thw = preprocess_pil_image(
@@ -561,8 +569,13 @@ class ContinuousRecognizer:
         prefill_finished = time.perf_counter()
         timing["time_to_first_token"] = prefill_finished - request_started
         timing["prefill_request_total"] = prefill_finished - request_started
-        return ReadyRecognition(
-            request=request,
+        return PrefilledRecognition(
+            request_id=request.request_id,
+            layout_order=int(request.layout_order),
+            label=request.label,
+            prompt=request.prompt,
+            box=request.box,
+            crop_size=crop_size,
             cache=cache,
             rope_deltas=rope_deltas,
             next_cache_position=torch.full(
@@ -630,7 +643,7 @@ class ContinuousRecognizer:
             },
             "decode": decode_label,
             "decode_schedule": "run_scoped_cross_page_persistent_slots_iteration_hot_swap",
-            "ready_buffer_capacity": 4 * self.batch_size,
+            "ready_buffer_capacity": READY_BUFFER_BATCH_MULTIPLIER * self.batch_size,
             "ready_buffer_low_watermark": self.batch_size,
             "decode_completion_detection": "queue_depth_one_async_token_copy",
             "kv_admission": "copy_valid_prefill_prefix_into_fixed_slot",
