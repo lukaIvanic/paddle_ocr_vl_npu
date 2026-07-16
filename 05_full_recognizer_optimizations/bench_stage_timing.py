@@ -463,6 +463,7 @@ def run_item_stage_timing(
     }
 
 
+@torch.inference_mode()
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default="PaddlePaddle/PaddleOCR-VL-1.6")
