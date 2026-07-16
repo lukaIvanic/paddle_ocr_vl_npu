@@ -54,6 +54,19 @@ fi
 
 echo "COMMAND ${CMD[*]}"
 "${CMD[@]}" | tee "${OUTPUT_PATH}"
+"${PYTHON_BIN}" - "${OUTPUT_PATH}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+raw = path.read_text(encoding="utf-8")
+start = raw.find("{")
+if start < 0:
+    raise SystemExit(f"no JSON object found in {path}")
+data = json.loads(raw[start:])
+path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+PY
 "${PYTHON_BIN}" -m json.tool "${OUTPUT_PATH}" >/dev/null
 "${PYTHON_BIN}" - "${OUTPUT_PATH}" <<'PY'
 import json
