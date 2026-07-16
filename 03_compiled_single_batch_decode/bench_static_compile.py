@@ -310,6 +310,7 @@ def profile_compiled_decode(
     cache_length: int,
     tokenizer: Tokenizer,
     device: torch.device,
+    linear_weight_format: str,
 ) -> dict[str, Any]:
     if device.type != "npu":
         raise ValueError("--profile-dir requires --device npu:0; torch_npu profiler is NPU-only.")
@@ -386,7 +387,7 @@ def profile_compiled_decode(
     profile_summary = {
         "profile_dir": str(profile_dir),
         "metric": args.profile_metric,
-        "linear_weight_format": DECODE_LINEAR_WEIGHT_FORMAT,
+        "linear_weight_format": linear_weight_format,
         "decode_attention": DECODE_ATTENTION,
         "eos_mode": args.eos_mode,
         "with_stack": True,
@@ -460,6 +461,7 @@ def main() -> None:
         cache_root=args.torchair_cache_dir,
         batch_size=int(input_ids.shape[0]),
         cache_length=cache_length,
+        linear_weight_format=str(weight_format_meta["effective_mode"]),
     )
     maybe_sync(device)
     compile_wrapper_s = time.perf_counter() - compile_start
@@ -570,6 +572,7 @@ def main() -> None:
             cache_length=cache_length,
             tokenizer=tokenizer,
             device=device,
+            linear_weight_format=str(weight_format_meta["effective_mode"]),
         )
 
     dynamic_trimmed_ids = trim_after_first_eos(dynamic_ids, eos_token_id)

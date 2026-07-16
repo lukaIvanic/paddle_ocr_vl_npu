@@ -15,6 +15,7 @@ from config import PaddleOCRTextConfig, PaddleOCRVLConfig, PaddleOCRVisionConfig
 
 FRACTAL_NZ = 29
 DECODE_LINEAR_WEIGHT_FORMAT = "decode_nz"
+DECODE_LINEAR_WEIGHT_FALLBACK = "decode_native_fallback"
 DECODE_ATTENTION = "increfa"
 
 
@@ -178,7 +179,9 @@ def cast_decode_linear_weights_to_nz(
     non_npu_modules = [(name, str(module.weight.device)) for name, module in modules if module.weight.device.type != "npu"]
     if non_npu_modules:
         return {
-            "mode": DECODE_LINEAR_WEIGHT_FORMAT,
+            "requested_mode": DECODE_LINEAR_WEIGHT_FORMAT,
+            "mode": DECODE_LINEAR_WEIGHT_FALLBACK,
+            "effective_mode": DECODE_LINEAR_WEIGHT_FALLBACK,
             "target_format": "FRACTAL_NZ",
             "target_format_code": FRACTAL_NZ,
             "target_count": len(modules),
@@ -187,6 +190,7 @@ def cast_decode_linear_weights_to_nz(
             "already_nz_count": 0,
             "skipped": True,
             "skip_reason": "requires_npu_resident_weights",
+            "fallback_reason": "requires_npu_resident_weights",
             "non_npu_modules_sample": non_npu_modules[:16],
             "all_after_are_nz": False,
         }
@@ -197,28 +201,63 @@ def cast_decode_linear_weights_to_nz(
     after_formats: dict[str, int] = {}
     converted: list[str] = []
     already_nz: list[str] = []
+    failures: list[dict[str, object]] = []
+    cast_count = 0
     for name, module in modules:
         before = int(torch_npu.get_npu_format(module.weight))
         before_formats[name] = before
         if before == FRACTAL_NZ:
             already_nz.append(name)
-        module.weight.data = torch_npu.npu_format_cast(module.weight.data, FRACTAL_NZ)
+            after_formats[name] = before
+            continue
+        cast_count += 1
+        try:
+            module.weight.data = torch_npu.npu_format_cast(module.weight.data, FRACTAL_NZ)
+        except Exception as exc:
+            failures.append({"module": name, "before_format": before, "error": repr(exc)})
+            break
         after = int(torch_npu.get_npu_format(module.weight))
         after_formats[name] = after
         if before != FRACTAL_NZ and after == FRACTAL_NZ:
             converted.append(name)
+        else:
+            failures.append(
+                {
+                    "module": name,
+                    "before_format": before,
+                    "after_format": after,
+                    "error": "npu_format_cast_did_not_produce_fractal_nz",
+                }
+            )
+            # torch-npu 2.10 can disable internal formats globally. In that
+            # environment every cast emits the same warning and leaves the
+            # weight unchanged, so one probe is sufficient.
+            break
+    all_after_are_nz = len(after_formats) == len(modules) and all(
+        value == FRACTAL_NZ for value in after_formats.values()
+    )
+    if all_after_are_nz:
+        effective_mode = DECODE_LINEAR_WEIGHT_FORMAT
+    elif converted:
+        effective_mode = "decode_mixed_format"
+    else:
+        effective_mode = DECODE_LINEAR_WEIGHT_FALLBACK
     return {
-        "mode": DECODE_LINEAR_WEIGHT_FORMAT,
+        "requested_mode": DECODE_LINEAR_WEIGHT_FORMAT,
+        "mode": effective_mode,
+        "effective_mode": effective_mode,
         "target_format": "FRACTAL_NZ",
         "target_format_code": FRACTAL_NZ,
         "target_count": len(modules),
-        "cast_count": len(modules),
+        "cast_count": cast_count,
         "converted_count": len(converted),
         "already_nz_count": len(already_nz),
         "converted_modules_sample": converted[:16],
         "before_formats_sample": dict(list(before_formats.items())[:16]),
         "after_formats_sample": dict(list(after_formats.items())[:16]),
-        "all_after_are_nz": bool(after_formats) and all(value == FRACTAL_NZ for value in after_formats.values()),
+        "all_after_are_nz": all_after_are_nz,
+        "fallback_reason": failures[0]["error"] if failures else None,
+        "failures_sample": failures[:16],
     }
 
 
