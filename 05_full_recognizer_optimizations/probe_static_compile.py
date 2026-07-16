@@ -131,11 +131,12 @@ def torchair_cache_dir_for_shape(
     dtype: torch.dtype | None = None,
     device: torch.device | None = None,
     model_dir: Path | None = None,
+    linear_weight_format: str = DECODE_LINEAR_WEIGHT_FORMAT,
 ) -> Path:
     model_hash = short_file_hash(model_dir / "config.json") if model_dir is not None else "model_unknown"
     shape_key = "_".join(
         [
-            DECODE_LINEAR_WEIGHT_FORMAT,
+            linear_weight_format,
             DECODE_ATTENTION,
             DECODE_CACHE_UPDATE,
             f"dtype{cache_key_part(dtype or 'unknown')}",
@@ -161,12 +162,13 @@ def compile_decode_module(
     cache_length: int,
     dtype: torch.dtype | None = None,
     model_dir: Path | None = None,
+    linear_weight_format: str = DECODE_LINEAR_WEIGHT_FORMAT,
 ) -> tuple[Any, dict[str, Any]]:
     if backend_name == "raw_eager":
         return flat_decode, {
             "backend": backend_name,
             "compile_api": "none",
-            "linear_weight_format": DECODE_LINEAR_WEIGHT_FORMAT,
+            "linear_weight_format": linear_weight_format,
             "decode_attention": decode_attention_label(device),
             "decode_cache_update": decode_cache_update_label(device),
         }
@@ -183,6 +185,7 @@ def compile_decode_module(
             dtype=dtype,
             device=device,
             model_dir=model_dir,
+            linear_weight_format=linear_weight_format,
         )
         shape_cache_dir.mkdir(parents=True, exist_ok=True)
         compiled_decode = torchair.inference.cache_compile(
@@ -197,7 +200,7 @@ def compile_decode_module(
             "torchair_cache_dir": str(shape_cache_dir),
             "torchair_ge_cache": True,
             "compile_api": "torchair.inference.cache_compile",
-            "linear_weight_format": DECODE_LINEAR_WEIGHT_FORMAT,
+            "linear_weight_format": linear_weight_format,
             "decode_attention": decode_attention_label(device),
             "decode_cache_update": decode_cache_update_label(device),
             "cache_key_fields": {
@@ -209,7 +212,7 @@ def compile_decode_module(
                 "torch_npu": torch_npu_version_label(device),
                 "torchair": torchair_version_label(device),
                 "decode_source_hash": decode_source_hash(),
-                "linear_weight_format": DECODE_LINEAR_WEIGHT_FORMAT,
+                "linear_weight_format": linear_weight_format,
                 "decode_attention": decode_attention_label(device),
                 "decode_cache_update": decode_cache_update_label(device),
             },
@@ -222,7 +225,7 @@ def compile_decode_module(
     return torch.compile(flat_decode, **compile_kwargs), {
         "backend": backend_name,
         "compile_api": "torch.compile",
-        "linear_weight_format": DECODE_LINEAR_WEIGHT_FORMAT,
+        "linear_weight_format": linear_weight_format,
         "decode_attention": decode_attention_label(device),
         "decode_cache_update": decode_cache_update_label(device),
     }
@@ -329,6 +332,7 @@ def main() -> None:
         cache_length=cache_length,
         dtype=dtype,
         model_dir=model_dir,
+        linear_weight_format=str(weight_format_meta["effective_mode"]),
     )
     maybe_sync(device)
     compile_setup_s = time.perf_counter() - start

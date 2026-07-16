@@ -548,6 +548,7 @@ def main() -> None:
         cache_length=int(cache_length),
         dtype=dtype,
         model_dir=model_dir,
+        linear_weight_format=str(weight_format_meta["effective_mode"]),
     )
     maybe_sync(device)
     compile_wrapper_s = time.perf_counter() - compile_start

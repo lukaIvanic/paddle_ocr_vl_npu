@@ -95,9 +95,11 @@ All experiment CLIs default to `--dtype fp16`. `bf16` remains an explicit
 override for CUDA parity checks, but `fp32` is intentionally not a supported
 run mode.
 
-In `03_compiled_single_batch_decode`, the bench/probe scripts always
-preconvert the text-decoder and `lm_head` Linear weights to FRACTAL_NZ on NPU
-before compile. There is intentionally no ND/linear-format option now.
+In the compiled-decode experiments, the bench/probe scripts request
+FRACTAL_NZ text-decoder and `lm_head` weights before compile. Runtimes such as
+torch-npu 2.10 that disable internal formats keep the native weight format;
+the scripts report `decode_native_fallback` and use a separate compile-cache
+key. There is intentionally no user-selectable linear-format option.
 
 `03_compiled_single_batch_decode` static decode is IncreFA-only. It uses masked
 `torch_npu.npu_incre_flash_attention` with a bool future-slot mask and does not

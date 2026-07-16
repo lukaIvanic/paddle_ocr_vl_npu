@@ -1007,6 +1007,7 @@ def compile_decode_for_batch(
     batch_size: int,
     cache_length: int,
     warm_position: int,
+    linear_weight_format: str,
 ) -> tuple[Callable, dict[str, Any], dict[str, float]]:
     flat_decode = model.make_flat_static_decode_module().eval()
     timings: dict[str, float] = {}
@@ -1021,6 +1022,7 @@ def compile_decode_for_batch(
         cache_length=int(cache_length),
         dtype=dtype,
         model_dir=model_dir,
+        linear_weight_format=linear_weight_format,
     )
     maybe_sync(device)
     timings["compile_wrapper_s"] = time.perf_counter() - start
@@ -2173,6 +2175,7 @@ def main() -> None:
         batch_size=int(args.active_batch_size),
         cache_length=int(args.cache_length),
         warm_position=int(cache_preflight["input_tokens"]["max"]),
+        linear_weight_format=str(weight_format_meta["effective_mode"]),
     )
     setup_timing.update(compile_timing)
 

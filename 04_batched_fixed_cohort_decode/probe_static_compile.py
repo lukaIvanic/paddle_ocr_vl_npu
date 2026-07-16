@@ -75,8 +75,14 @@ def compile_backend(name: str):
     return name
 
 
-def torchair_cache_dir_for_shape(cache_root: Path, *, batch_size: int, cache_length: int) -> Path:
-    shape_key = f"{DECODE_LINEAR_WEIGHT_FORMAT}_{DECODE_ATTENTION}_bs{int(batch_size)}_cache{int(cache_length)}"
+def torchair_cache_dir_for_shape(
+    cache_root: Path,
+    *,
+    batch_size: int,
+    cache_length: int,
+    linear_weight_format: str = DECODE_LINEAR_WEIGHT_FORMAT,
+) -> Path:
+    shape_key = f"{linear_weight_format}_{DECODE_ATTENTION}_bs{int(batch_size)}_cache{int(cache_length)}"
     return cache_root.expanduser().resolve() / shape_key
 
 
@@ -88,12 +94,13 @@ def compile_decode_module(
     cache_root: Path,
     batch_size: int,
     cache_length: int,
+    linear_weight_format: str = DECODE_LINEAR_WEIGHT_FORMAT,
 ) -> tuple[Any, dict[str, Any]]:
     if backend_name == "raw_eager":
         return flat_decode, {
             "backend": backend_name,
             "compile_api": "none",
-            "linear_weight_format": DECODE_LINEAR_WEIGHT_FORMAT,
+            "linear_weight_format": linear_weight_format,
             "decode_attention": decode_attention_label(device),
         }
 
@@ -106,6 +113,7 @@ def compile_decode_module(
             cache_root,
             batch_size=batch_size,
             cache_length=cache_length,
+            linear_weight_format=linear_weight_format,
         )
         shape_cache_dir.mkdir(parents=True, exist_ok=True)
         compiled_decode = torchair.inference.cache_compile(
@@ -120,7 +128,7 @@ def compile_decode_module(
             "torchair_cache_dir": str(shape_cache_dir),
             "torchair_ge_cache": True,
             "compile_api": "torchair.inference.cache_compile",
-            "linear_weight_format": DECODE_LINEAR_WEIGHT_FORMAT,
+            "linear_weight_format": linear_weight_format,
             "decode_attention": decode_attention_label(device),
         }
 
@@ -131,7 +139,7 @@ def compile_decode_module(
     return torch.compile(flat_decode, **compile_kwargs), {
         "backend": backend_name,
         "compile_api": "torch.compile",
-        "linear_weight_format": DECODE_LINEAR_WEIGHT_FORMAT,
+        "linear_weight_format": linear_weight_format,
         "decode_attention": decode_attention_label(device),
     }
 
@@ -236,6 +244,7 @@ def main() -> None:
         cache_root=args.torchair_cache_dir,
         batch_size=int(input_ids.shape[0]),
         cache_length=cache_length,
+        linear_weight_format=str(weight_format_meta["effective_mode"]),
     )
     maybe_sync(device)
     compile_setup_s = time.perf_counter() - start

@@ -1947,6 +1947,7 @@ def main() -> None:
             cache_length=int(args.cache_length),
             dtype=dtype,
             model_dir=model_dir,
+            linear_weight_format=str(weight_format_meta["effective_mode"]),
         )
         maybe_sync(device)
         compile_wrapper_s_by_batch_size[str(batch_size)] = time.perf_counter() - compile_wrapper_start

@@ -15,6 +15,7 @@ from config import PaddleOCRTextConfig, PaddleOCRVLConfig, PaddleOCRVisionConfig
 
 FRACTAL_NZ = 29
 DECODE_LINEAR_WEIGHT_FORMAT = "decode_nz"
+DECODE_LINEAR_WEIGHT_FALLBACK = "decode_native_fallback"
 DECODE_ATTENTION = "increfa"
 DECODE_CACHE_UPDATE = "npu_scatter"
 
@@ -55,6 +56,13 @@ def _activation(name: str, x: torch.Tensor) -> torch.Tensor:
     if name == "gelu":
         return F.gelu(x)
     raise ValueError(f"unsupported activation: {name!r}")
+
+
+def _linear_tokenwise(linear: nn.Linear, x: torch.Tensor) -> torch.Tensor:
+    """Apply a Linear through an equivalent compiler-safe 2D token matrix."""
+    leading_shape = x.shape[:-1]
+    output = linear(x.reshape(-1, x.shape[-1]))
+    return output.reshape(*leading_shape, output.shape[-1])
 
 
 def rotate_half(x: torch.Tensor) -> torch.Tensor:
@@ -175,7 +183,9 @@ def cast_decode_linear_weights_to_nz(
     non_npu_modules = [(name, str(module.weight.device)) for name, module in modules if module.weight.device.type != "npu"]
     if non_npu_modules:
         return {
-            "mode": DECODE_LINEAR_WEIGHT_FORMAT,
+            "requested_mode": DECODE_LINEAR_WEIGHT_FORMAT,
+            "mode": DECODE_LINEAR_WEIGHT_FALLBACK,
+            "effective_mode": DECODE_LINEAR_WEIGHT_FALLBACK,
             "target_format": "FRACTAL_NZ",
             "target_format_code": FRACTAL_NZ,
             "target_count": len(modules),
@@ -184,6 +194,7 @@ def cast_decode_linear_weights_to_nz(
             "already_nz_count": 0,
             "skipped": True,
             "skip_reason": "requires_npu_resident_weights",
+            "fallback_reason": "requires_npu_resident_weights",
             "non_npu_modules_sample": non_npu_modules[:16],
             "all_after_are_nz": False,
         }
@@ -194,28 +205,60 @@ def cast_decode_linear_weights_to_nz(
     after_formats: dict[str, int] = {}
     converted: list[str] = []
     already_nz: list[str] = []
+    failures: list[dict[str, object]] = []
+    cast_count = 0
     for name, module in modules:
         before = int(torch_npu.get_npu_format(module.weight))
         before_formats[name] = before
         if before == FRACTAL_NZ:
             already_nz.append(name)
-        module.weight.data = torch_npu.npu_format_cast(module.weight.data, FRACTAL_NZ)
+            after_formats[name] = before
+            continue
+        cast_count += 1
+        try:
+            module.weight.data = torch_npu.npu_format_cast(module.weight.data, FRACTAL_NZ)
+        except Exception as exc:
+            failures.append({"module": name, "before_format": before, "error": repr(exc)})
+            break
         after = int(torch_npu.get_npu_format(module.weight))
         after_formats[name] = after
         if before != FRACTAL_NZ and after == FRACTAL_NZ:
             converted.append(name)
+        else:
+            failures.append(
+                {
+                    "module": name,
+                    "before_format": before,
+                    "after_format": after,
+                    "error": "npu_format_cast_did_not_produce_fractal_nz",
+                }
+            )
+            break
+    all_after_are_nz = len(after_formats) == len(modules) and all(
+        value == FRACTAL_NZ for value in after_formats.values()
+    )
+    if all_after_are_nz:
+        effective_mode = DECODE_LINEAR_WEIGHT_FORMAT
+    elif converted:
+        effective_mode = "decode_mixed_format"
+    else:
+        effective_mode = DECODE_LINEAR_WEIGHT_FALLBACK
     return {
-        "mode": DECODE_LINEAR_WEIGHT_FORMAT,
+        "requested_mode": DECODE_LINEAR_WEIGHT_FORMAT,
+        "mode": effective_mode,
+        "effective_mode": effective_mode,
         "target_format": "FRACTAL_NZ",
         "target_format_code": FRACTAL_NZ,
         "target_count": len(modules),
-        "cast_count": len(modules),
+        "cast_count": cast_count,
         "converted_count": len(converted),
         "already_nz_count": len(already_nz),
         "converted_modules_sample": converted[:16],
         "before_formats_sample": dict(list(before_formats.items())[:16]),
         "after_formats_sample": dict(list(after_formats.items())[:16]),
-        "all_after_are_nz": bool(after_formats) and all(value == FRACTAL_NZ for value in after_formats.values()),
+        "all_after_are_nz": all_after_are_nz,
+        "fallback_reason": failures[0]["error"] if failures else None,
+        "failures_sample": failures[:16],
     }
 
 
@@ -311,7 +354,9 @@ class PaddleOCRRotaryEmbedding(nn.Module):
     def forward(self, x: torch.Tensor, position_ids: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         inv_freq = self.inv_freq[None, None, :, None].float().expand(3, position_ids.shape[1], -1, 1)
         position_ids = position_ids[:, :, None, :].float()
-        freqs = (inv_freq @ position_ids).transpose(2, 3)
+        # This batched matmul is scalar multiplication. The elementwise form
+        # avoids a GE MatMul shape-inference failure in torch-npu 2.10.
+        freqs = (inv_freq * position_ids).transpose(2, 3)
         emb = torch.cat((freqs, freqs), dim=-1)
         cos = emb.cos() * self.attention_scaling
         sin = emb.sin() * self.attention_scaling
@@ -327,7 +372,9 @@ class PaddleOCRMLP(nn.Module):
         self.down_proj = nn.Linear(config.intermediate_size, config.hidden_size, bias=config.use_bias)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.down_proj(_activation(self.hidden_act, self.gate_proj(x)) * self.up_proj(x))
+        gate = _linear_tokenwise(self.gate_proj, x)
+        up = _linear_tokenwise(self.up_proj, x)
+        return _linear_tokenwise(self.down_proj, _activation(self.hidden_act, gate) * up)
 
 
 class PaddleOCRAttention(nn.Module):
@@ -347,9 +394,9 @@ class PaddleOCRAttention(nn.Module):
 
     def project_qkv(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         batch, query_length, _hidden = hidden_states.shape
-        query_states = self.q_proj(hidden_states).view(batch, query_length, self.num_heads, self.head_dim).transpose(1, 2)
-        key_states = self.k_proj(hidden_states).view(batch, query_length, self.num_key_value_heads, self.head_dim).transpose(1, 2)
-        value_states = self.v_proj(hidden_states).view(batch, query_length, self.num_key_value_heads, self.head_dim).transpose(1, 2)
+        query_states = _linear_tokenwise(self.q_proj, hidden_states).view(batch, query_length, self.num_heads, self.head_dim).transpose(1, 2)
+        key_states = _linear_tokenwise(self.k_proj, hidden_states).view(batch, query_length, self.num_key_value_heads, self.head_dim).transpose(1, 2)
+        value_states = _linear_tokenwise(self.v_proj, hidden_states).view(batch, query_length, self.num_key_value_heads, self.head_dim).transpose(1, 2)
         return query_states, key_states, value_states
 
     def apply_rotary(
@@ -382,7 +429,7 @@ class PaddleOCRAttention(nn.Module):
         probs = F.softmax(scores, dim=-1, dtype=torch.float32).to(query_states.dtype)
         attn_output = torch.matmul(probs, value_for_attn)
         attn_output = attn_output.transpose(1, 2).contiguous().reshape(batch, query_length, -1)
-        return self.o_proj(attn_output)
+        return _linear_tokenwise(self.o_proj, attn_output)
 
     def attend_decode_increfa(
         self,
@@ -408,7 +455,7 @@ class PaddleOCRAttention(nn.Module):
             scale_value=float(self.scaling),
         )
         attn_output = attn_output.transpose(1, 2).contiguous().reshape(batch, 1, self.num_heads * self.head_dim)
-        return self.o_proj(attn_output)
+        return _linear_tokenwise(self.o_proj, attn_output)
 
     def attend_decode_manual(
         self,
@@ -1270,4 +1317,4 @@ class PaddleOCRFlatStaticDecodeModule(nn.Module):
             cache_length=int(key_caches[0].shape[2]),
             attention_mask=None,
         )
-        return self.model.lm_head(hidden_states[:, -1:, :])
+        return _linear_tokenwise(self.model.lm_head, hidden_states[:, -1:, :])
