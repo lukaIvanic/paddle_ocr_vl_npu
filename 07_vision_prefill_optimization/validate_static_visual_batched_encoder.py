@@ -307,7 +307,8 @@ def encoder_cache_dir(
         promptfa_mask_sparse_mode=int(promptfa_mask_sparse_mode),
         torchair_mode=torchair_mode,
     )
-    return base.parent / f"encoder_only_B{int(batch_size)}_{base.name}"
+    attention = get_vision_attention_impl().replace("/", "_").replace(" ", "_")
+    return base.parent / f"encoder_only_{attention}_B{int(batch_size)}_{base.name}"
 
 
 def compile_encoder_forward(
