@@ -14,7 +14,8 @@ stream of full PIL pages
        eager native-resolution patch + position embedding
        dense-bucket compiled vision encoder + post-LayerNorm by default
        eager projector
-       eager text prefill into a static KV cache
+       dense-bucket compiled text transformer into a static KV cache
+       eager LM head and first-token argmax
        ready B=1 KV state
   -> bounded cross-page ready reservoir
        high watermark = 4B prepared requests
@@ -34,15 +35,21 @@ Vision and text prefill remain sequential B=1. The validated default uses 32
 static TorchAir vision shapes: 32-token steps through 512, 64-token steps
 through 1024, and 128-token steps through 2048. Only the encoder layers and
 final LayerNorm are padded and compiled; patch embedding, position
-interpolation, the projector, and text prefill keep their existing behavior.
+interpolation, and the projector stay eager.
 Real and dummy rows are isolated by an attention mask, and real rows are sliced
 before the projector. Crops above 2048 rows use the faithful eager path without
 padding.
 
-The default decode profile is TorchAir B=4 with cache length 2048 and a
-768-token generation cap. `raw_eager` decode and vision remain explicit
-correctness/debug controls; generic TorchDynamo backends are not part of this
-E2E runtime surface.
+Text token embedding and image scatter stay eager. The text transformer uses a
+measured static-bucket profile, writes only the real prefix into the KV cache,
+and keeps the real next-cache position rather than the padded bucket length.
+Inputs above the largest text bucket use the faithful eager path.
+
+There are two named operating profiles. The small standalone full-page CLI uses
+TorchAir B=4, cache length 2048, and a 768-token cap. The official full
+OmniDocBench runner uses B=16, cache length 8192, and PaddleX's 4096-token cap.
+`raw_eager` remains an explicit correctness control for the core compiled
+boundaries; it is not a competing production path.
 
 Prefills are produced lazily for one run-scoped decode scheduler instead of
 draining decode at every page boundary. Decode owns one persistent fixed-shape arena. Slot
@@ -68,20 +75,19 @@ remains in input order even when completion callbacks arrive out of order.
   prompts; other labels receive `OCR:`.
 - Official v1.6 defaults are retained for image/chart/seal blocks: image blocks
   are not recognized, and chart/seal recognition is opt-in.
-- The recognizer is the corrected local PyTorch model from Experiment 05. Text
-  prefill remains eager and unpadded. Vision defaults to the compiler-safe
-  manual-attention TorchAir path measured in the dense-bucket experiment.
+- The recognizer is the corrected local PyTorch model from Experiment 05.
+  Vision and text-transformer prefill default to compiler-safe static TorchAir
+  buckets; eager overflow preserves unpadded behavior outside those profiles.
 - Sampled-token D2H uses a second NPU stream, pinned two-row host ring, and
   queue-depth-one control. A request can execute one look-ahead graph call;
   slot epochs discard that old result after the slot is reused.
 
-The current page preparation is intentionally smaller than the complete
-PaddleX pipeline. It does not yet port PaddleX overlap filtering, bbox unclip and
-merge policy, adjacent-block merging, formula margin crop, table figure-token
-substitution, or final structured Markdown assembly. The output text is a
-reading-order diagnostic artifact, not an OmniDocBench-comparable prediction.
-Those missing steps sit between the explicit layout, crop-routing, and page
-postprocess boundaries, so adding them does not require replacing the engine.
+`run_offline_e2e.py` intentionally keeps a smaller diagnostic page-preparation
+path and its reading-order text is not an OmniDocBench prediction. For faithful
+page assembly, `run_omnidocbench_paddlex.py` keeps the official PaddleX v1.6
+layout filtering, crop/merge policy, table and formula handling, result objects,
+and Markdown conversion, replacing only PaddleX's inner recognition model with
+this optimized engine.
 
 ## Timing model
 
@@ -127,7 +133,9 @@ source npu-setup
 
 For a repeatable one-page validation, use `run_npu_smoke.sh`. Environment
 overrides remain available for deliberate controls, including `BATCH_SIZE`,
-`DECODE_BACKEND`, `VISION_BACKEND`, and `VISION_BUCKETS`.
+`DECODE_BACKEND`, `VISION_BACKEND`, `TEXT_BACKEND`, `VISION_BUCKETS`, and
+`TEXT_BUCKETS`. Omitted bucket overrides use the single source of truth in
+`runtime_defaults.py`.
 
 Recognition uses the model's `min_pixels` and `max_pixels` by default. Pass
 `--preprocessor-min-pixels N` to override only the recognition-crop minimum;
@@ -163,6 +171,8 @@ finish; the engine does not wait for the whole image list before emitting it.
 ## Runtime code map
 
 - `run_offline_e2e.py`: CLI, runtime construction, result assembly, and JSON.
+- `run_omnidocbench_paddlex.py`: official PaddleX v1.6/OmniDocBench frontend.
+- `paddlex_adapter.py`: narrow PaddleX recognition-model contract adapter.
 - `pipeline.py`: lazy page/layout/crop routing and page-completion collectors.
   Crops are created one at a time as the recognizer asks for work.
 - `engine.py`: one model instance, sequential multimodal prefill, compact
@@ -170,6 +180,7 @@ finish; the engine does not wait for the whole image list before emitting it.
 - `continuous_decode.py`: bounded ready reservoir and persistent B=4 slot
   scheduler.
 - `vision_compile.py`: dense static routing and the compiled encoder boundary.
+- `text_compile.py`: static text-transformer routing with real-prefix KV writes.
 - `local_modeling_paddleocr_vl.py`: faithful model and NPU operation path.
 - `runtime_defaults.py`: the measured default profile, kept separate from
   historical benchmark controls.

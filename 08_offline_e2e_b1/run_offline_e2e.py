@@ -17,8 +17,10 @@ from pipeline import OfflinePagePipeline, aggregate_pages
 from run_local_recognition import NPU_JIT_COMPILE_CHOICES, resolve_device
 from runtime_defaults import (
     DECODE_BACKEND_CHOICES,
+    DEFAULT_CACHE_LENGTH,
     DEFAULT_DECODE_BACKEND,
     DEFAULT_DECODE_BATCH_SIZE,
+    DEFAULT_MAX_NEW_TOKENS,
     DEFAULT_TEXT_BACKEND,
     DEFAULT_VISION_BACKEND,
     OPTIMIZED_TEXT_BUCKETS,
@@ -58,8 +60,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default=DEFAULT_DECODE_BATCH_SIZE,
         help="Persistent decode-arena capacity; must be a power of two.",
     )
-    parser.add_argument("--cache-length", type=int, default=2048)
-    parser.add_argument("--max-new-tokens", type=int, default=768)
+    parser.add_argument("--cache-length", type=int, default=DEFAULT_CACHE_LENGTH)
+    parser.add_argument(
+        "--max-new-tokens",
+        type=int,
+        default=DEFAULT_MAX_NEW_TOKENS,
+    )
     parser.add_argument(
         "--preprocessor-min-pixels",
         type=int,

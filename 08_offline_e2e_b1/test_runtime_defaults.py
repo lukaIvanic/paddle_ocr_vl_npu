@@ -8,9 +8,14 @@ from dataclasses import fields
 from engine import PrefilledRecognition
 from run_offline_e2e import parse_args
 from runtime_defaults import (
+    DEFAULT_CACHE_LENGTH,
     DEFAULT_DECODE_BATCH_SIZE,
+    DEFAULT_MAX_NEW_TOKENS,
     DEFAULT_TEXT_BACKEND,
     DEFAULT_VISION_BACKEND,
+    OMNIDOCBENCH_CACHE_LENGTH,
+    OMNIDOCBENCH_DECODE_BATCH_SIZE,
+    OMNIDOCBENCH_MAX_NEW_TOKENS,
     OPTIMIZED_TEXT_BUCKETS,
     OPTIMIZED_VISION_BUCKETS,
 )
@@ -23,6 +28,8 @@ class RuntimeDefaultsTest(unittest.TestCase):
         args = parse_args(["--image", "unused-test-page.png"])
 
         self.assertEqual(args.batch_size, DEFAULT_DECODE_BATCH_SIZE)
+        self.assertEqual(args.cache_length, DEFAULT_CACHE_LENGTH)
+        self.assertEqual(args.max_new_tokens, DEFAULT_MAX_NEW_TOKENS)
         self.assertEqual(args.vision_backend, DEFAULT_VISION_BACKEND)
         self.assertEqual(args.text_backend, DEFAULT_TEXT_BACKEND)
         self.assertEqual(
@@ -33,6 +40,11 @@ class RuntimeDefaultsTest(unittest.TestCase):
             parse_text_buckets(args.text_compile_buckets),
             OPTIMIZED_TEXT_BUCKETS,
         )
+
+    def test_full_benchmark_profile_is_explicit(self) -> None:
+        self.assertEqual(OMNIDOCBENCH_DECODE_BATCH_SIZE, 16)
+        self.assertEqual(OMNIDOCBENCH_CACHE_LENGTH, 8192)
+        self.assertEqual(OMNIDOCBENCH_MAX_NEW_TOKENS, 4096)
 
     def test_dense_bucket_ranges_match_the_measured_policy(self) -> None:
         self.assertEqual(OPTIMIZED_VISION_BUCKETS[:3], (32, 64, 96))

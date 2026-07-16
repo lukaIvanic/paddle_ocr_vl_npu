@@ -7,14 +7,20 @@ import argparse
 import json
 import sys
 import time
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
 from engine import ContinuousRecognizer
 from paddlex_adapter import PaddleXContinuousRecognizerAdapter
 from runtime_defaults import (
+    OMNIDOCBENCH_CACHE_LENGTH,
+    OMNIDOCBENCH_DECODE_BATCH_SIZE,
+    OMNIDOCBENCH_MAX_NEW_TOKENS,
+    OMNIDOCBENCH_PAGE_COUNT,
     OPTIMIZED_TEXT_BUCKETS,
     OPTIMIZED_VISION_BUCKETS,
+    PADDLEOCR_DEFAULT_MIN_PIXELS,
 )
 from text_compile import parse_text_buckets
 from vision_compile import parse_vision_buckets
@@ -28,10 +34,7 @@ DEFAULT_PADDLEOCR_SOURCE = Path("/workspace/repos/vllm_paddle_ocr/PaddleOCR")
 DEFAULT_CACHE_ROOT = Path(".runtime_cache/08_offline_e2e_b1_torchair")
 DEFAULT_VISION_CACHE_ROOT = Path(".runtime_cache/08_offline_e2e_b1_vision_torchair")
 DEFAULT_TEXT_CACHE_ROOT = Path(".runtime_cache/08_offline_e2e_b1_text_torchair")
-DEFAULT_MIN_PIXELS = 112896
-
-
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset-json", type=Path, default=DEFAULT_DATASET_JSON)
     parser.add_argument("--images-dir", type=Path, default=DEFAULT_IMAGES_DIR)
@@ -41,10 +44,22 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="npu:0")
     parser.add_argument("--dtype", default="fp16")
     parser.add_argument("--offset", type=int, default=0)
-    parser.add_argument("--limit", type=int, default=1651)
-    parser.add_argument("--batch-size", type=int, default=16)
-    parser.add_argument("--cache-length", type=int, default=8192)
-    parser.add_argument("--max-new-tokens", type=int, default=4096)
+    parser.add_argument("--limit", type=int, default=OMNIDOCBENCH_PAGE_COUNT)
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=OMNIDOCBENCH_DECODE_BATCH_SIZE,
+    )
+    parser.add_argument(
+        "--cache-length",
+        type=int,
+        default=OMNIDOCBENCH_CACHE_LENGTH,
+    )
+    parser.add_argument(
+        "--max-new-tokens",
+        type=int,
+        default=OMNIDOCBENCH_MAX_NEW_TOKENS,
+    )
     parser.add_argument(
         "--preprocessor-min-pixels",
         type=int,
@@ -75,7 +90,7 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_TEXT_CACHE_ROOT,
     )
     parser.add_argument("--output-dir", type=Path, required=True)
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def selected_text_buckets(args: argparse.Namespace) -> tuple[int, ...]:
@@ -83,7 +98,7 @@ def selected_text_buckets(args: argparse.Namespace) -> tuple[int, ...]:
         return parse_text_buckets(args.text_compile_buckets)
     if (
         args.preprocessor_min_pixels is None
-        or int(args.preprocessor_min_pixels) >= DEFAULT_MIN_PIXELS
+        or int(args.preprocessor_min_pixels) >= PADDLEOCR_DEFAULT_MIN_PIXELS
     ):
         return tuple(bucket for bucket in OPTIMIZED_TEXT_BUCKETS if bucket >= 160)
     return OPTIMIZED_TEXT_BUCKETS
@@ -97,9 +112,10 @@ def load_page_paths(
     limit: int,
 ) -> tuple[list[dict], list[Path]]:
     annotations = json.loads(dataset_json.read_text(encoding="utf-8"))
-    if len(annotations) != 1651:
+    if len(annotations) != OMNIDOCBENCH_PAGE_COUNT:
         raise ValueError(
-            f"expected OmniDocBench v1.6 to contain 1651 pages, got {len(annotations)}"
+            "expected OmniDocBench v1.6 to contain "
+            f"{OMNIDOCBENCH_PAGE_COUNT} pages, got {len(annotations)}"
         )
     subset = annotations[offset : offset + limit]
     if len(subset) != limit:
@@ -135,8 +151,7 @@ def append_compact_page_result(handle: Any, result: Any) -> None:
     handle.flush()
 
 
-def main() -> None:
-    args = parse_args()
+def validate_args(args: argparse.Namespace) -> None:
     if args.offset < 0 or args.limit <= 0:
         raise ValueError("--offset must be non-negative and --limit must be positive")
     if args.batch_size <= 0 or args.batch_size & (args.batch_size - 1):
@@ -145,6 +160,57 @@ def main() -> None:
         raise ValueError("--cache-length must leave room for the input prompt")
     if args.preprocessor_min_pixels is not None and args.preprocessor_min_pixels <= 0:
         raise ValueError("--preprocessor-min-pixels must be positive")
+
+
+def run_predictions(
+    official_pipeline: Any,
+    image_paths: list[Path],
+    *,
+    predictions_dir: Path,
+    compact_path: Path,
+    min_pixels: int | None,
+    max_new_tokens: int,
+) -> tuple[int, list[float], float]:
+    completion_s: list[float] = []
+    result_count = 0
+    predict_started = time.perf_counter()
+    try:
+        with compact_path.open("w", encoding="utf-8") as compact_handle:
+            for result in official_pipeline.predict_iter(
+                [str(path) for path in image_paths],
+                use_queues=True,
+                min_pixels=min_pixels,
+                max_new_tokens=max_new_tokens,
+            ):
+                result.save_to_markdown(save_path=str(predictions_dir))
+                append_compact_page_result(compact_handle, result)
+                result_count += 1
+                completion_s.append(time.perf_counter() - predict_started)
+                print(
+                    f"completed={result_count}/{len(image_paths)} "
+                    f"elapsed_s={completion_s[-1]:.3f}",
+                    flush=True,
+                )
+    finally:
+        official_pipeline.close()
+    return result_count, completion_s, time.perf_counter() - predict_started
+
+
+def validate_predictions(predictions_dir: Path, image_paths: list[Path]) -> list[str]:
+    prediction_files = sorted(path.name for path in predictions_dir.glob("*.md"))
+    expected_files = sorted(f"{path.stem}.md" for path in image_paths)
+    if prediction_files != expected_files:
+        missing = sorted(set(expected_files) - set(prediction_files))
+        extra = sorted(set(prediction_files) - set(expected_files))
+        raise RuntimeError(
+            f"prediction filename mismatch: missing={missing[:5]} extra={extra[:5]}"
+        )
+    return prediction_files
+
+
+def main() -> None:
+    args = parse_args()
+    validate_args(args)
 
     dataset_json = args.dataset_json.expanduser().resolve()
     images_dir = args.images_dir.expanduser().resolve()
@@ -242,38 +308,16 @@ def main() -> None:
     setup_s = time.perf_counter() - setup_started
 
     compact_path = output_dir / "page_regions.jsonl"
-    completion_s = []
-    result_count = 0
-    predict_started = time.perf_counter()
-    try:
-        with compact_path.open("w", encoding="utf-8") as compact_handle:
-            for result in official_pipeline.predict_iter(
-                [str(path) for path in image_paths],
-                use_queues=True,
-                min_pixels=args.preprocessor_min_pixels,
-                max_new_tokens=args.max_new_tokens,
-            ):
-                result.save_to_markdown(save_path=str(predictions_dir))
-                append_compact_page_result(compact_handle, result)
-                result_count += 1
-                completion_s.append(time.perf_counter() - predict_started)
-                print(
-                    f"completed={result_count}/{len(image_paths)} "
-                    f"elapsed_s={completion_s[-1]:.3f}",
-                    flush=True,
-                )
-    finally:
-        official_pipeline.close()
-    pipeline_e2e_s = time.perf_counter() - predict_started
+    result_count, completion_s, pipeline_e2e_s = run_predictions(
+        official_pipeline,
+        image_paths,
+        predictions_dir=predictions_dir,
+        compact_path=compact_path,
+        min_pixels=args.preprocessor_min_pixels,
+        max_new_tokens=args.max_new_tokens,
+    )
 
-    prediction_files = sorted(path.name for path in predictions_dir.glob("*.md"))
-    expected_files = sorted(f"{path.stem}.md" for path in image_paths)
-    if prediction_files != expected_files:
-        missing = sorted(set(expected_files) - set(prediction_files))
-        extra = sorted(set(prediction_files) - set(expected_files))
-        raise RuntimeError(
-            f"prediction filename mismatch: missing={missing[:5]} extra={extra[:5]}"
-        )
+    prediction_files = validate_predictions(predictions_dir, image_paths)
     if result_count != len(image_paths):
         raise RuntimeError(
             f"expected {len(image_paths)} page results, got {result_count}"
@@ -293,7 +337,7 @@ def main() -> None:
             "effective_global_min_pixels": (
                 args.preprocessor_min_pixels
                 if args.preprocessor_min_pixels is not None
-                else DEFAULT_MIN_PIXELS
+                else PADDLEOCR_DEFAULT_MIN_PIXELS
             ),
             "vision_buckets": list(vision_buckets),
             "text_buckets": list(text_buckets),

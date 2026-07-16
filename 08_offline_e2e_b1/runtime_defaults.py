@@ -6,9 +6,20 @@ from __future__ import annotations
 DECODE_BACKEND_CHOICES = ("raw_eager", "torchair")
 DEFAULT_DECODE_BACKEND = "torchair"
 DEFAULT_DECODE_BATCH_SIZE = 4
+DEFAULT_CACHE_LENGTH = 2048
+DEFAULT_MAX_NEW_TOKENS = 768
 DEFAULT_VISION_BACKEND = "torchair"
 DEFAULT_TEXT_BACKEND = "torchair"
 READY_BUFFER_BATCH_MULTIPLIER = 4
+
+# The official OmniDocBench lane is a throughput/quality run rather than the
+# smaller interactive full-page profile above.  Keep its larger static shapes
+# named here so the CLI, tests, and documentation cannot drift independently.
+OMNIDOCBENCH_PAGE_COUNT = 1651
+OMNIDOCBENCH_DECODE_BATCH_SIZE = 16
+OMNIDOCBENCH_CACHE_LENGTH = 8192
+OMNIDOCBENCH_MAX_NEW_TOKENS = 4096
+PADDLEOCR_DEFAULT_MIN_PIXELS = 112896
 
 # Measured dense policy: <=512 by 32, <=1024 by 64, <=2048 by 128.
 # Larger vision sequences use the faithful eager overflow path.

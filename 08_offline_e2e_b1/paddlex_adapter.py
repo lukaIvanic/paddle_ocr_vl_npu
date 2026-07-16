@@ -21,7 +21,7 @@ import numpy as np
 from PIL import Image
 
 from engine import ContinuousRecognizer, RecognitionInput
-from schema import Box
+from schema import Box, ContinuousDecodeResult, RecognitionResult
 
 
 PROMPT_LABELS = {
@@ -94,20 +94,7 @@ class PaddleXContinuousRecognizerAdapter:
                 "PaddleX max_new_tokens must match the recognizer runtime: "
                 f"request={int(max_new_tokens)} runtime={self.recognizer.max_new_tokens}"
             )
-        min_pixels = int(
-            kwargs.get("min_pixels")
-            if kwargs.get("min_pixels") is not None
-            else self.recognizer.model_preprocessor_min_pixels
-        )
-        max_pixels = int(
-            kwargs.get("max_pixels")
-            if kwargs.get("max_pixels") is not None
-            else self.recognizer.preprocessor_config["max_pixels"]
-        )
-        if min_pixels <= 0 or max_pixels < min_pixels:
-            raise ValueError(
-                f"invalid PaddleX pixel profile min={min_pixels} max={max_pixels}"
-            )
+        min_pixels, max_pixels = self._resolve_pixel_profile(kwargs)
 
         with self._lock:
             if self._closed:
@@ -121,35 +108,11 @@ class PaddleXContinuousRecognizerAdapter:
             preprocessor_config["max_pixels"] = max_pixels
             self.recognizer.preprocessor_config = preprocessor_config
 
-            requests = []
-            for item_index, item in enumerate(items):
-                image = item.get("image")
-                query = str(item.get("query", ""))
-                if not isinstance(image, np.ndarray) or image.ndim != 3:
-                    raise TypeError(
-                        "PaddleX VL inputs must contain a BGR numpy image, got "
-                        f"{type(image).__name__}"
-                    )
-                if query not in PROMPT_LABELS:
-                    raise ValueError(f"unsupported PaddleX recognition query: {query!r}")
-                height, width = image.shape[:2]
-                crop = Image.fromarray(
-                    np.ascontiguousarray(image[:, :, ::-1]),
-                    mode="RGB",
-                )
-                requests.append(
-                    RecognitionInput(
-                        request_id=(
-                            f"paddlex_batch_{batch_index:06d}_item_{item_index:06d}"
-                        ),
-                        layout_order=item_index,
-                        label=PROMPT_LABELS[query],
-                        prompt=query,
-                        box=Box(0.0, 0.0, float(width), float(height)),
-                        crop=crop,
-                        skip_special_tokens=bool(skip_special_tokens),
-                    )
-                )
+            requests = self._build_requests(
+                items,
+                batch_index=batch_index,
+                skip_special_tokens=skip_special_tokens,
+            )
 
             started = time.perf_counter()
             results, schedule = self.recognizer.recognize_stream(
@@ -172,6 +135,59 @@ class PaddleXContinuousRecognizerAdapter:
             )
             return iter({"result": result.text} for result in ordered_results)
 
+    def _resolve_pixel_profile(self, kwargs: dict[str, Any]) -> tuple[int, int]:
+        min_pixels = int(
+            kwargs["min_pixels"]
+            if kwargs.get("min_pixels") is not None
+            else self.recognizer.model_preprocessor_min_pixels
+        )
+        max_pixels = int(
+            kwargs["max_pixels"]
+            if kwargs.get("max_pixels") is not None
+            else self.recognizer.preprocessor_config["max_pixels"]
+        )
+        if min_pixels <= 0 or max_pixels < min_pixels:
+            raise ValueError(
+                f"invalid PaddleX pixel profile min={min_pixels} max={max_pixels}"
+            )
+        return min_pixels, max_pixels
+
+    @staticmethod
+    def _build_requests(
+        items: list[dict[str, Any]],
+        *,
+        batch_index: int,
+        skip_special_tokens: bool,
+    ) -> list[RecognitionInput]:
+        requests: list[RecognitionInput] = []
+        for item_index, item in enumerate(items):
+            image = item.get("image")
+            query = str(item.get("query", ""))
+            if not isinstance(image, np.ndarray) or image.ndim != 3:
+                raise TypeError(
+                    "PaddleX VL inputs must contain a BGR numpy image, got "
+                    f"{type(image).__name__}"
+                )
+            if query not in PROMPT_LABELS:
+                raise ValueError(f"unsupported PaddleX recognition query: {query!r}")
+            height, width = image.shape[:2]
+            requests.append(
+                RecognitionInput(
+                    request_id=(
+                        f"paddlex_batch_{batch_index:06d}_item_{item_index:06d}"
+                    ),
+                    layout_order=item_index,
+                    label=PROMPT_LABELS[query],
+                    prompt=query,
+                    box=Box(0.0, 0.0, float(width), float(height)),
+                    crop=Image.fromarray(
+                        np.ascontiguousarray(image[:, :, ::-1]),
+                    ),
+                    skip_special_tokens=bool(skip_special_tokens),
+                )
+            )
+        return requests
+
     def _record_batch(
         self,
         *,
@@ -180,8 +196,8 @@ class PaddleXContinuousRecognizerAdapter:
         min_pixels: int,
         max_pixels: int,
         batch_wall_s: float,
-        results: list[Any],
-        schedule: Any,
+        results: list[RecognitionResult],
+        schedule: ContinuousDecodeResult,
     ) -> None:
         self._summary["batches"] += 1
         self._summary["requests"] += len(results)
@@ -199,64 +215,88 @@ class PaddleXContinuousRecognizerAdapter:
         self._pixel_profiles[f"{min_pixels}:{max_pixels}"] += len(results)
 
         for item_index, result in enumerate(results):
-            self._summary["generated_tokens_including_eos"] += int(
-                result.generated_tokens_including_eos
+            self._accumulate_result(result)
+            trace_record = self._trace_record(
+                result,
+                global_request_index=first_request_index + item_index,
+                batch_index=batch_index,
+                batch_item_index=item_index,
+                min_pixels=min_pixels,
+                max_pixels=max_pixels,
             )
-            self._summary["decode_tokens_after_prefill_including_eos"] += int(
-                result.decode_tokens_after_prefill_including_eos
-            )
-            self._summary["input_tokens"] += int(result.input_tokens)
-            self._summary["projected_image_tokens"] += int(
-                result.projected_image_tokens
-            )
-            self._summary["real_vision_tokens"] += int(
-                result.vision.get("real_vision_tokens", 0)
-            )
-            self._summary["physical_vision_tokens"] += int(
-                result.vision.get("physical_vision_tokens", 0)
-            )
-            self._summary["real_text_tokens"] += int(
-                result.text_prefill.get("real_text_tokens", 0)
-            )
-            self._summary["physical_text_tokens"] += int(
-                result.text_prefill.get("physical_text_tokens", 0)
-            )
-            self._stop_reasons[result.stop_reason] += 1
-            self._vision_routes[str(result.vision.get("execution", "unknown"))] += 1
-            self._text_routes[str(result.text_prefill.get("execution", "unknown"))] += 1
-            for name, seconds in result.device_stage_s.items():
-                self._device_stage_s[name] += float(seconds)
-            trace_record = {
-                "global_request_index": first_request_index + item_index,
-                "batch_index": batch_index,
-                "batch_item_index": item_index,
-                "request_id": result.request_id,
-                "label": result.label,
-                "prompt": result.prompt,
-                "crop_size": list(result.crop_size),
-                "min_pixels": min_pixels,
-                "max_pixels": max_pixels,
-                "input_tokens": result.input_tokens,
-                "projected_image_tokens": result.projected_image_tokens,
-                "token_ids": result.token_ids,
-                "text": result.text,
-                "stop_reason": result.stop_reason,
-                "generated_tokens_including_eos": (
-                    result.generated_tokens_including_eos
-                ),
-                "decode_tokens_after_prefill_including_eos": (
-                    result.decode_tokens_after_prefill_including_eos
-                ),
-                "vision": result.vision,
-                "text_prefill": result.text_prefill,
-                "timing_s": result.timing_s,
-                "device_stage_s": result.device_stage_s,
-            }
             self._trace.write(
                 json.dumps(trace_record, ensure_ascii=False, separators=(",", ":"))
                 + "\n"
             )
         self._trace.flush()
+
+    def _accumulate_result(self, result: RecognitionResult) -> None:
+        self._summary["generated_tokens_including_eos"] += int(
+            result.generated_tokens_including_eos
+        )
+        self._summary["decode_tokens_after_prefill_including_eos"] += int(
+            result.decode_tokens_after_prefill_including_eos
+        )
+        self._summary["input_tokens"] += int(result.input_tokens)
+        self._summary["projected_image_tokens"] += int(
+            result.projected_image_tokens
+        )
+        self._summary["real_vision_tokens"] += int(
+            result.vision.get("real_vision_tokens", 0)
+        )
+        self._summary["physical_vision_tokens"] += int(
+            result.vision.get("physical_vision_tokens", 0)
+        )
+        self._summary["real_text_tokens"] += int(
+            result.text_prefill.get("real_text_tokens", 0)
+        )
+        self._summary["physical_text_tokens"] += int(
+            result.text_prefill.get("physical_text_tokens", 0)
+        )
+        self._stop_reasons[result.stop_reason] += 1
+        self._vision_routes[str(result.vision.get("execution", "unknown"))] += 1
+        self._text_routes[
+            str(result.text_prefill.get("execution", "unknown"))
+        ] += 1
+        for name, seconds in result.device_stage_s.items():
+            self._device_stage_s[name] += float(seconds)
+
+    @staticmethod
+    def _trace_record(
+        result: RecognitionResult,
+        *,
+        global_request_index: int,
+        batch_index: int,
+        batch_item_index: int,
+        min_pixels: int,
+        max_pixels: int,
+    ) -> dict[str, Any]:
+        return {
+            "global_request_index": global_request_index,
+            "batch_index": batch_index,
+            "batch_item_index": batch_item_index,
+            "request_id": result.request_id,
+            "label": result.label,
+            "prompt": result.prompt,
+            "crop_size": list(result.crop_size),
+            "min_pixels": min_pixels,
+            "max_pixels": max_pixels,
+            "input_tokens": result.input_tokens,
+            "projected_image_tokens": result.projected_image_tokens,
+            "token_ids": result.token_ids,
+            "text": result.text,
+            "stop_reason": result.stop_reason,
+            "generated_tokens_including_eos": (
+                result.generated_tokens_including_eos
+            ),
+            "decode_tokens_after_prefill_including_eos": (
+                result.decode_tokens_after_prefill_including_eos
+            ),
+            "vision": result.vision,
+            "text_prefill": result.text_prefill,
+            "timing_s": result.timing_s,
+            "device_stage_s": result.device_stage_s,
+        }
 
     def summary(self) -> dict[str, Any]:
         data = dict(self._summary)

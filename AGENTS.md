@@ -21,12 +21,13 @@ This folder is a standalone research workspace for PaddleOCR-VL on Ascend/NPU, w
 The current target is an offline full-page path built incrementally from the
 local recognizer: real PP-DocLayoutV3 inference, explicit page/crop/request
 boundaries, and a persistent PaddleOCR-VL engine. Experiment 08 uses sequential
-B=1 vision/text prefill with dense static TorchAir vision buckets, followed by
-a persistent B=4 compiled decode arena. Finished requests are hot-swapped
-between decode iterations by copying the next ready request's valid KV prefix
-into the freed slot. It does not yet overlap prefill with decode. It is not yet
-a complete reimplementation of PaddleX page preparation
-or structured Markdown postprocessing. The recognition model is available as a
+B=1 vision and text prefill with static TorchAir buckets, followed by a
+persistent compiled decode arena. Finished requests are hot-swapped between
+decode iterations by copying the next ready request's valid KV prefix into the
+freed slot. It does not yet overlap prefill with decode. The standalone
+`run_offline_e2e.py` page assembler remains diagnostic; the faithful full-page
+path uses official PaddleX v1.6 assembly and replaces only its inner recognition
+model through `run_omnidocbench_paddlex.py`. The recognition model is available as a
 Transformers/PyTorch model at:
 
 ```text
@@ -64,10 +65,11 @@ This folder currently contains:
 - `02_local_eager_recognition/run_local_recognition.py`: local recognizer runner using `tokenizers`, local image preprocessing, and the local model.
 - `03_compiled_single_batch_decode/`: single-batch decode optimization lane, copied from the local eager implementation and extended with static KV cache decode, TorchAir cache compile, profiler hooks, and flat `torch.compile(fullgraph=True, dynamic=False)` probes.
 - `04_batched_fixed_cohort_decode/`: batch-decode scheduler lane. It keeps prefill sequential and padding-free for real crops, benchmarks true fixed-cohort batched static decode, and can also prefill an NPU-resident ready KV bank then hot-swap finished items into fixed compiled decode slots.
-- `08_offline_e2e_b1/`: first persistent offline system. It runs real
-  PP-DocLayoutV3 on a full PIL page, then sends every selected crop through
-  sequential eager vision/text prefill and one continuous compiled decode
-  schedule. Stable slots are refilled in place without compacting active rows.
+- `08_offline_e2e_b1/`: first persistent offline system. It can use either its
+  compact diagnostic page frontend or official PaddleX v1.6 page assembly. It
+  sends prepared crops through sequential bucketed compiled vision/text prefill
+  and one continuous compiled decode schedule. Stable slots are refilled in
+  place without compacting active rows.
   It reports raw slots, effective tokens, idle slots, completion look-ahead,
   active-slot utilization, KV-copy traffic, and setup/page/request/device timing.
   Read its README before interpreting throughput or output parity.

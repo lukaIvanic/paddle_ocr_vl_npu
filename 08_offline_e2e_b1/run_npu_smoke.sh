@@ -14,17 +14,35 @@ args=(
   --recognizer-model "${RECOGNIZER_MODEL:-/workspace/models/PaddleOCR-VL-1.6}"
   --device "${DEVICE:-npu:0}"
   --dtype "${DTYPE:-fp16}"
-  --decode-backend "${DECODE_BACKEND:-torchair}"
-  --vision-backend "${VISION_BACKEND:-torchair}"
-  --vision-compile-buckets "${VISION_BUCKETS:-32,64,96,128,160,192,224,256,288,320,352,384,416,448,480,512,576,640,704,768,832,896,960,1024,1152,1280,1408,1536,1664,1792,1920,2048}"
-  --batch-size "${BATCH_SIZE:-4}"
-  --cache-length "${CACHE_LENGTH:-2048}"
-  --max-new-tokens "${MAX_NEW_TOKENS:-768}"
   --output-dir "$OUTPUT_DIR"
 )
 
+if [[ -n "${DECODE_BACKEND:-}" ]]; then
+  args+=(--decode-backend "$DECODE_BACKEND")
+fi
+if [[ -n "${VISION_BACKEND:-}" ]]; then
+  args+=(--vision-backend "$VISION_BACKEND")
+fi
+if [[ -n "${TEXT_BACKEND:-}" ]]; then
+  args+=(--text-backend "$TEXT_BACKEND")
+fi
+if [[ -n "${BATCH_SIZE:-}" ]]; then
+  args+=(--batch-size "$BATCH_SIZE")
+fi
+if [[ -n "${CACHE_LENGTH:-}" ]]; then
+  args+=(--cache-length "$CACHE_LENGTH")
+fi
+if [[ -n "${MAX_NEW_TOKENS:-}" ]]; then
+  args+=(--max-new-tokens "$MAX_NEW_TOKENS")
+fi
 if [[ -n "${MAX_REGIONS:-}" ]]; then
   args+=(--max-regions "$MAX_REGIONS")
+fi
+if [[ -n "${VISION_BUCKETS:-}" ]]; then
+  args+=(--vision-compile-buckets "$VISION_BUCKETS")
+fi
+if [[ -n "${TEXT_BUCKETS:-}" ]]; then
+  args+=(--text-compile-buckets "$TEXT_BUCKETS")
 fi
 
 "$PYTHON_BIN" "${args[@]}"
