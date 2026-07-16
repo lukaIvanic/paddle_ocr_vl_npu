@@ -113,3 +113,7 @@ Measured 910B validations are recorded in
 and [`NPU_BATCHED_DECODE_RESULT.md`](NPU_BATCHED_DECODE_RESULT.md) for padded
 fixed B=2 and B=4 decode. Those documents predate the continuous scheduler and
 remain historical comparison points.
+
+The persistent-slot implementation and its exact parity/performance comparison
+are recorded in
+[`NPU_CONTINUOUS_DECODE_RESULT.md`](NPU_CONTINUOUS_DECODE_RESULT.md).

@@ -34,7 +34,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dtype", default="fp16", choices=("fp16", "float16", "bf16", "bfloat16"))
     parser.add_argument("--layout-threshold", type=float, default=0.3)
     parser.add_argument("--decode-backend", default="torchair", choices=("raw_eager", "eager", "default", "torchair"))
-    parser.add_argument("--batch-size", type=int, default=1, help="Fixed decode batch size; must be a power of two.")
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=1,
+        help="Persistent decode-arena capacity; must be a power of two.",
+    )
     parser.add_argument("--cache-length", type=int, default=2048)
     parser.add_argument("--max-new-tokens", type=int, default=768)
     parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
