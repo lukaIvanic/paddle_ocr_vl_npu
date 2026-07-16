@@ -59,6 +59,12 @@ class PaddleXContinuousRecognizerAdapter:
             "wall_s": 0.0,
             "generated_tokens_including_eos": 0,
             "decode_tokens_after_prefill_including_eos": 0,
+            "input_tokens": 0,
+            "projected_image_tokens": 0,
+            "real_vision_tokens": 0,
+            "physical_vision_tokens": 0,
+            "real_text_tokens": 0,
+            "physical_text_tokens": 0,
             "decode_graph_calls": 0,
             "decode_wall_s": 0.0,
             "run_scoped_scheduler_wall_s": 0.0,
@@ -199,6 +205,22 @@ class PaddleXContinuousRecognizerAdapter:
             self._summary["decode_tokens_after_prefill_including_eos"] += int(
                 result.decode_tokens_after_prefill_including_eos
             )
+            self._summary["input_tokens"] += int(result.input_tokens)
+            self._summary["projected_image_tokens"] += int(
+                result.projected_image_tokens
+            )
+            self._summary["real_vision_tokens"] += int(
+                result.vision.get("real_vision_tokens", 0)
+            )
+            self._summary["physical_vision_tokens"] += int(
+                result.vision.get("physical_vision_tokens", 0)
+            )
+            self._summary["real_text_tokens"] += int(
+                result.text_prefill.get("real_text_tokens", 0)
+            )
+            self._summary["physical_text_tokens"] += int(
+                result.text_prefill.get("physical_text_tokens", 0)
+            )
             self._stop_reasons[result.stop_reason] += 1
             self._vision_routes[str(result.vision.get("execution", "unknown"))] += 1
             self._text_routes[str(result.text_prefill.get("execution", "unknown"))] += 1
@@ -240,6 +262,8 @@ class PaddleXContinuousRecognizerAdapter:
         data = dict(self._summary)
         wall_s = float(data["wall_s"])
         output_tokens = int(data["generated_tokens_including_eos"])
+        physical_vision_tokens = int(data["physical_vision_tokens"])
+        physical_text_tokens = int(data["physical_text_tokens"])
         data.update(
             {
                 "stop_reason_counts": dict(sorted(self._stop_reasons.items())),
@@ -251,6 +275,16 @@ class PaddleXContinuousRecognizerAdapter:
                 "device_stage_s": dict(sorted(self._device_stage_s.items())),
                 "output_tok_per_s": (
                     output_tokens / wall_s if wall_s > 0 else None
+                ),
+                "vision_useful_token_fraction": (
+                    int(data["real_vision_tokens"]) / physical_vision_tokens
+                    if physical_vision_tokens > 0
+                    else None
+                ),
+                "text_useful_token_fraction": (
+                    int(data["real_text_tokens"]) / physical_text_tokens
+                    if physical_text_tokens > 0
+                    else None
                 ),
                 "trace_path": str(self.trace_path),
             }
