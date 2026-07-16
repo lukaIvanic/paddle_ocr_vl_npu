@@ -60,6 +60,7 @@ class RecognitionInput:
     prompt: str
     box: Box
     crop: Image.Image
+    skip_special_tokens: bool = True
 
 
 @dataclass
@@ -70,6 +71,7 @@ class PrefilledRecognition:
     prompt: str
     box: Box
     crop_size: tuple[int, int]
+    skip_special_tokens: bool
     cache: LocalPaddleOCRVLStaticCache
     rope_deltas: torch.Tensor
     next_cache_position: torch.Tensor
@@ -387,7 +389,10 @@ class ContinuousRecognizer:
         state: PrefilledRecognition = completion.ready.payload
         token_ids = completion.token_ids
         started = time.perf_counter()
-        text = self.tokenizer.decode(token_ids, skip_special_tokens=True)
+        text = self.tokenizer.decode(
+            token_ids,
+            skip_special_tokens=state.skip_special_tokens,
+        )
         detokenize_s = time.perf_counter() - started
         generated_tokens = len(token_ids)
         effective_decode_tokens = max(0, generated_tokens - 1)
@@ -568,7 +573,11 @@ class ContinuousRecognizer:
                 cache_length=self.cache_length,
                 device=self.device,
                 dtype=inputs_embeds.dtype,
-                init_mode="zeros",
+                # Prefill overwrites every real prompt row. Decode admission
+                # copies only that valid prefix, so clearing the much larger
+                # unused generation tail (notably at cache_length=8192) would
+                # be pure memory-bandwidth overhead.
+                init_mode="empty",
             ),
         )
         text_route = self.text_runtime.route(int(inputs_embeds.shape[1]))
@@ -625,6 +634,7 @@ class ContinuousRecognizer:
             prompt=request.prompt,
             box=request.box,
             crop_size=crop_size,
+            skip_special_tokens=bool(request.skip_special_tokens),
             cache=cache,
             rope_deltas=rope_deltas,
             next_cache_position=torch.full(
