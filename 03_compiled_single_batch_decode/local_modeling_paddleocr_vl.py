@@ -56,6 +56,13 @@ def _activation(name: str, x: torch.Tensor) -> torch.Tensor:
     raise ValueError(f"unsupported activation: {name!r}")
 
 
+def _linear_tokenwise(linear: nn.Linear, x: torch.Tensor) -> torch.Tensor:
+    """Apply a Linear through an equivalent compiler-safe 2D token matrix."""
+    leading_shape = x.shape[:-1]
+    output = linear(x.reshape(-1, x.shape[-1]))
+    return output.reshape(*leading_shape, output.shape[-1])
+
+
 def rotate_half(x: torch.Tensor) -> torch.Tensor:
     x1 = x[..., : x.shape[-1] // 2]
     x2 = x[..., x.shape[-1] // 2 :]
@@ -327,7 +334,9 @@ class PaddleOCRMLP(nn.Module):
         self.down_proj = nn.Linear(config.intermediate_size, config.hidden_size, bias=config.use_bias)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.down_proj(_activation(self.hidden_act, self.gate_proj(x)) * self.up_proj(x))
+        gate = _linear_tokenwise(self.gate_proj, x)
+        up = _linear_tokenwise(self.up_proj, x)
+        return _linear_tokenwise(self.down_proj, _activation(self.hidden_act, gate) * up)
 
 
 class PaddleOCRAttention(nn.Module):
@@ -347,9 +356,15 @@ class PaddleOCRAttention(nn.Module):
 
     def project_qkv(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         batch, query_length, _hidden = hidden_states.shape
-        query_states = self.q_proj(hidden_states).view(batch, query_length, self.num_heads, self.head_dim).transpose(1, 2)
-        key_states = self.k_proj(hidden_states).view(batch, query_length, self.num_key_value_heads, self.head_dim).transpose(1, 2)
-        value_states = self.v_proj(hidden_states).view(batch, query_length, self.num_key_value_heads, self.head_dim).transpose(1, 2)
+        query_states = _linear_tokenwise(self.q_proj, hidden_states).view(
+            batch, query_length, self.num_heads, self.head_dim
+        ).transpose(1, 2)
+        key_states = _linear_tokenwise(self.k_proj, hidden_states).view(
+            batch, query_length, self.num_key_value_heads, self.head_dim
+        ).transpose(1, 2)
+        value_states = _linear_tokenwise(self.v_proj, hidden_states).view(
+            batch, query_length, self.num_key_value_heads, self.head_dim
+        ).transpose(1, 2)
         return query_states, key_states, value_states
 
     def apply_rotary(
@@ -382,7 +397,7 @@ class PaddleOCRAttention(nn.Module):
         probs = F.softmax(scores, dim=-1, dtype=torch.float32).to(query_states.dtype)
         attn_output = torch.matmul(probs, value_for_attn)
         attn_output = attn_output.transpose(1, 2).contiguous().reshape(batch, query_length, -1)
-        return self.o_proj(attn_output)
+        return _linear_tokenwise(self.o_proj, attn_output)
 
     def attend_decode_increfa(
         self,
@@ -408,7 +423,7 @@ class PaddleOCRAttention(nn.Module):
             scale_value=float(self.scaling),
         )
         attn_output = attn_output.transpose(1, 2).contiguous().reshape(batch, 1, self.num_heads * self.head_dim)
-        return self.o_proj(attn_output)
+        return _linear_tokenwise(self.o_proj, attn_output)
 
     def forward(
         self,
@@ -1242,4 +1257,4 @@ class PaddleOCRFlatStaticDecodeModule(nn.Module):
             cache_length=int(key_caches[0].shape[2]),
             attention_mask=None,
         )
-        return self.model.lm_head(hidden_states[:, -1:, :])
+        return _linear_tokenwise(self.model.lm_head, hidden_states[:, -1:, :])
