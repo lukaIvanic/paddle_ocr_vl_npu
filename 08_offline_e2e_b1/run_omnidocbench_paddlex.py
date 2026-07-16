@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from engine import ContinuousRecognizer
+from layout_mask_guard import install_layout_mask_guard
 from paddlex_adapter import PaddleXContinuousRecognizerAdapter
 from runtime_defaults import (
     OMNIDOCBENCH_CACHE_LENGTH,
@@ -249,6 +250,9 @@ def main() -> None:
         encoding="utf-8",
     )
 
+    layout_mask_guard = install_layout_mask_guard()
+    layout_mask_guard_path = output_dir / "layout_mask_guard.json"
+
     sys.path.insert(0, str(paddleocr_source))
     from paddleocr import PaddleOCRVL
 
@@ -308,14 +312,17 @@ def main() -> None:
     setup_s = time.perf_counter() - setup_started
 
     compact_path = output_dir / "page_regions.jsonl"
-    result_count, completion_s, pipeline_e2e_s = run_predictions(
-        official_pipeline,
-        image_paths,
-        predictions_dir=predictions_dir,
-        compact_path=compact_path,
-        min_pixels=args.preprocessor_min_pixels,
-        max_new_tokens=args.max_new_tokens,
-    )
+    try:
+        result_count, completion_s, pipeline_e2e_s = run_predictions(
+            official_pipeline,
+            image_paths,
+            predictions_dir=predictions_dir,
+            compact_path=compact_path,
+            min_pixels=args.preprocessor_min_pixels,
+            max_new_tokens=args.max_new_tokens,
+        )
+    finally:
+        layout_mask_guard.write_snapshot(layout_mask_guard_path)
 
     prediction_files = validate_predictions(predictions_dir, image_paths)
     if result_count != len(image_paths):
@@ -351,6 +358,8 @@ def main() -> None:
         "prediction_count": len(prediction_files),
         "completion_s": completion_s,
         "adapter": adapter.summary(),
+        "layout_mask_guard": layout_mask_guard.snapshot(),
+        "layout_mask_guard_path": str(layout_mask_guard_path),
         "predictions_dir": str(predictions_dir),
         "page_regions_jsonl": str(compact_path),
     }

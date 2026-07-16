@@ -27,8 +27,11 @@ decode iterations by copying the next ready request's valid KV prefix into the
 freed slot. It does not yet overlap prefill with decode. The standalone
 `run_offline_e2e.py` page assembler remains diagnostic; the faithful full-page
 path uses official PaddleX v1.6 assembly and replaces only its inner recognition
-model through `run_omnidocbench_paddlex.py`. The recognition model is available as a
-Transformers/PyTorch model at:
+model through `run_omnidocbench_paddlex.py`. The full benchmark also installs
+the narrow `layout_mask_guard.py` compatibility guard; apply that same helper to
+stock PaddleX runs through `run_with_layout_mask_guard.py` so both lanes treat
+collapsed PP-DocLayout mask slices identically. The recognition model is
+available as a Transformers/PyTorch model at:
 
 ```text
 PaddlePaddle/PaddleOCR-VL-1.6

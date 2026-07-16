@@ -89,6 +89,14 @@ layout filtering, crop/merge policy, table and formula handling, result objects,
 and Markdown conversion, replacing only PaddleX's inner recognition model with
 this optimized engine.
 
+Both full-benchmark lanes install the same narrow PP-DocLayoutV3 mask guard.
+Transformers can otherwise call OpenCV with a zero-width mask crop when a thin,
+positive-size detection collapses after scaling and rounding. Valid detections
+still use the installed Transformers method unchanged; only a collapsed slice
+uses that detection's integer bounding rectangle. Every fallback is recorded in
+`layout_mask_guard.json`. `run_with_layout_mask_guard.py` applies the identical
+guard when launching the stock PaddleX/vLLM runner.
+
 ## Timing model
 
 `run.json` reports four different scopes explicitly:
@@ -173,6 +181,8 @@ finish; the engine does not wait for the whole image list before emitting it.
 - `run_offline_e2e.py`: CLI, runtime construction, result assembly, and JSON.
 - `run_omnidocbench_paddlex.py`: official PaddleX v1.6/OmniDocBench frontend.
 - `paddlex_adapter.py`: narrow PaddleX recognition-model contract adapter.
+- `layout_mask_guard.py`: shared empty-mask fallback and telemetry.
+- `run_with_layout_mask_guard.py`: stock-runner launcher for the same guard.
 - `pipeline.py`: lazy page/layout/crop routing and page-completion collectors.
   Crops are created one at a time as the recognizer asks for work.
 - `engine.py`: one model instance, sequential multimodal prefill, compact
