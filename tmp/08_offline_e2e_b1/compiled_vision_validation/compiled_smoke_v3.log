@@ -1,0 +1,7 @@
+Loading weights:   0%|          | 0/858 [00:00<?, ?it/s]Loading weights:  58%|█████▊    | 498/858 [00:00<00:00, 4977.03it/s]Loading weights: 100%|██████████| 858/858 [00:00<00:00, 5020.64it/s]
+[npu] set torch.npu compile mode: jit_compile=False
+[W716 17:36:50.158789183 TensorFactories.cpp:340] Warning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (function operator())
+page_completed=page_0000_PPT_The Right Moves_page_024 recognized_regions=1 latency_s=0.933534
+output=/workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/compiled_vision_validation/compiled_smoke_v3/run.json
+pages=1 layout_regions=5 recognized_regions=1 partial_pages=1
+run_wall_s=0.935604 decode_wall_s=0.213416 raw_decode_tok_per_s=32.79983232192201 effective_decode_tok_per_s=28.114141990218865 e2e_output_tok_per_s=7.481794726686505
