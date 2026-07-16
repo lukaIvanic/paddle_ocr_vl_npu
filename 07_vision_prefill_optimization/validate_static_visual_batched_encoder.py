@@ -225,7 +225,22 @@ class BatchedStaticVisualEncoderModule(torch.nn.Module):
             if int(attn_output.shape[-1]) != int(attention.head_dim):
                 attn_output = attn_output[..., : int(attention.head_dim)].contiguous()
         elif attention_impl == "manual":
-            scores = torch.matmul(query_states, key_states.transpose(2, 3)) * attention.scaling
+            # Express the head-wise batched products explicitly. TorchAir/GE can
+            # lower 4-D torch.matmul through a plain MatMul and confuse the head
+            # dimension with a broadcast dimension (for this model, k-axis 16
+            # versus 1). Flattening B and H makes BatchMatMul semantics explicit
+            # while preserving the exact eager attention calculation.
+            num_heads = int(attention.num_heads)
+            head_dim = int(attention.head_dim)
+            query_bh = query_states.reshape(batch_size * num_heads, seq_length, head_dim)
+            key_bh = key_states.reshape(batch_size * num_heads, seq_length, head_dim)
+            value_bh = value_states.reshape(batch_size * num_heads, seq_length, head_dim)
+            scores = torch.bmm(query_bh, key_bh.transpose(1, 2)).view(
+                batch_size,
+                num_heads,
+                seq_length,
+                seq_length,
+            ) * attention.scaling
             scores = scores.masked_fill(attention_mask, torch.finfo(scores.dtype).min)
             probs = attention_softmax(
                 scores,
@@ -233,7 +248,10 @@ class BatchedStaticVisualEncoderModule(torch.nn.Module):
                 output_dtype=query_states.dtype,
                 mode=get_vision_softmax_dtype_mode(),
             )
-            attn_output = torch.matmul(probs, value_states)
+            attn_output = torch.bmm(
+                probs.reshape(batch_size * num_heads, seq_length, seq_length),
+                value_bh,
+            ).view(batch_size, num_heads, seq_length, head_dim)
         else:
             raise ValueError(f"unknown vision attention implementation: {attention_impl!r}")
         attn_output = attn_output.transpose(1, 2).contiguous().view(batch_size, seq_length, -1)

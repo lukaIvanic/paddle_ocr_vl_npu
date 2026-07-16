@@ -105,14 +105,25 @@ batch size, physical sequence length, dtype, LayerNorm/Linear mode, PromptFA
 call dimension, layout, mask mode, and TorchAir mode. Never reuse a manual graph
 as a PromptFA graph or vice versa.
 
-## Correctness Gate
+## Correctness Diagnostics And Acceptance Gate
 
 The benchmark compares compiled output against the same static wrapper run
 eagerly. Every real row must pass `atol=rtol=0.1`, and the final physical output
 must contain no nonfinite values. After timing, both outputs also pass through
 the real adaptive projector and text prefill; image embeddings and prefill
-logits must pass the same tolerance and the next-token argmax must match before
-throughput is treated as valid.
+logits are compared at the same tolerance and the next-token argmax is checked.
+Treat those intermediate comparisons as numerical diagnostics: they locate and
+quantify compiler drift, but they are not the final OCR acceptance criterion.
+
+The authoritative model-level acceptance gate is deterministic greedy OCR
+generation token parity against the eager reference, after trimming at EOS.
+Use `validate_static_visual_batched_encoder.py` without `--skip-generation` at
+the relevant real inputs and sequence buckets. A compiled candidate is usable
+only when every compared item has `generated_trimmed_match=true`, has no invalid
+or nonfinite output, and is not hidden by a generation-length cap. Report
+intermediate allclose failures even when token parity passes, but do not reject
+an otherwise token-identical OCR path solely because an intermediate tensor or
+non-winning logit exceeds the diagnostic tolerance.
 
 When PromptFA uses a padded call head dimension, also compare its eager output
 against native-head-dimension eager PromptFA. A D=80 workaround is not valid
