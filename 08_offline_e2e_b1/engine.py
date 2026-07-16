@@ -337,7 +337,6 @@ class ContinuousRecognizer:
                     decoded.timing_s["run_scoped_scheduler_wall"],
                 ),
             },
-            vision=dict(state.vision),
         )
         return results, schedule_result
 
@@ -400,6 +399,7 @@ class ContinuousRecognizer:
                     timing["request_total"],
                 ),
             },
+            vision=dict(state.vision),
         )
 
     @torch.inference_mode()
