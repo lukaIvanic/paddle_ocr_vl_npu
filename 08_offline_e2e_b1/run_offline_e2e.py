@@ -42,6 +42,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--cache-length", type=int, default=2048)
     parser.add_argument("--max-new-tokens", type=int, default=768)
+    parser.add_argument(
+        "--preprocessor-min-pixels",
+        type=int,
+        default=None,
+        help="Override only the recognition-crop min_pixels resize floor; preserve the model's max_pixels.",
+    )
     parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
     parser.add_argument("--torchair-cache-dir", type=Path, default=DEFAULT_CACHE_ROOT)
     parser.add_argument("--recognize-chart", action="store_true")
@@ -89,6 +95,7 @@ def main() -> None:
         max_new_tokens=args.max_new_tokens,
         torchair_cache_dir=args.torchair_cache_dir.expanduser().resolve(),
         npu_jit_compile=args.npu_jit_compile,
+        preprocessor_min_pixels=args.preprocessor_min_pixels,
     )
     setup_total_s = time.perf_counter() - setup_started
 

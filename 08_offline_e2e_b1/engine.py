@@ -28,6 +28,7 @@ from local_modeling_paddleocr_vl import (
 )
 from probe_static_compile import compile_decode_module
 from run_local_recognition import (
+    apply_min_pixels_override,
     build_inputs,
     configure_npu_jit_compile,
     load_preprocessor_config,
@@ -85,6 +86,7 @@ class ContinuousRecognizer:
         max_new_tokens: int,
         torchair_cache_dir: Path,
         npu_jit_compile: str = "off",
+        preprocessor_min_pixels: int | None = None,
     ):
         runtime_started = time.perf_counter()
         self.model_dir = _resolve_model_dir(model)
@@ -102,7 +104,15 @@ class ContinuousRecognizer:
             raise ValueError("cache_length must leave room for both prompt and generated tokens")
 
         configure_npu_jit_compile(npu_jit_compile, self.device)
-        self.preprocessor_config = load_preprocessor_config(self.model_dir)
+        model_preprocessor_config = load_preprocessor_config(self.model_dir)
+        self.model_preprocessor_min_pixels = int(model_preprocessor_config["min_pixels"])
+        self.preprocessor_min_pixels_override = (
+            None if preprocessor_min_pixels is None else int(preprocessor_min_pixels)
+        )
+        self.preprocessor_config = apply_min_pixels_override(
+            model_preprocessor_config,
+            self.preprocessor_min_pixels_override,
+        )
         self.tokenizer = Tokenizer.from_file(str(self.model_dir / "tokenizer.json"))
         frontend_setup_s = time.perf_counter() - runtime_started
 
@@ -531,6 +541,9 @@ class ContinuousRecognizer:
             if self.decode_backend != "raw_eager"
             else f"eager_static_b{self.batch_size}"
         )
+        patch_size = int(self.preprocessor_config["patch_size"])
+        merge_size = int(self.preprocessor_config["merge_size"])
+        min_pixels = int(self.preprocessor_config["min_pixels"])
         return {
             "recognizer_model": str(self.model_dir),
             "device": str(self.device),
@@ -543,6 +556,18 @@ class ContinuousRecognizer:
             "batch_size": self.batch_size,
             "vision_prefill": "eager_sequential_no_padding",
             "text_prefill": "eager_sequential_no_padding",
+            "preprocessor": {
+                "model_default_min_pixels": self.model_preprocessor_min_pixels,
+                "min_pixels_override": self.preprocessor_min_pixels_override,
+                "effective_min_pixels": min_pixels,
+                "effective_max_pixels": int(self.preprocessor_config["max_pixels"]),
+                "patch_size": patch_size,
+                "merge_size": merge_size,
+                "resize_factor": patch_size * merge_size,
+                "nominal_minimum_projected_image_tokens": (
+                    min_pixels // ((patch_size * merge_size) ** 2)
+                ),
+            },
             "decode": decode_label,
             "decode_schedule": "run_scoped_cross_page_persistent_slots_iteration_hot_swap",
             "ready_buffer_capacity": 4 * self.batch_size,

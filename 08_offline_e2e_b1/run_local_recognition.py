@@ -79,6 +79,25 @@ def load_preprocessor_config(model_dir: Path) -> dict:
     return defaults
 
 
+def apply_min_pixels_override(cfg: dict, min_pixels: int | None) -> dict:
+    """Return a copied preprocessor config with only ``min_pixels`` changed."""
+    effective = dict(cfg)
+    if min_pixels is None:
+        return effective
+
+    min_pixels = int(min_pixels)
+    if min_pixels <= 0:
+        raise ValueError("preprocessor min_pixels override must be positive")
+    max_pixels = int(effective["max_pixels"])
+    if min_pixels > max_pixels:
+        raise ValueError(
+            "preprocessor min_pixels override must not exceed max_pixels: "
+            f"min_pixels={min_pixels}, max_pixels={max_pixels}"
+        )
+    effective["min_pixels"] = min_pixels
+    return effective
+
+
 def preprocess_pil_image(image: Image.Image, cfg: dict) -> tuple[torch.Tensor, torch.Tensor]:
     """Preprocess one in-memory crop with the local PaddleOCR-VL recipe."""
     if cfg["do_convert_rgb"]:
