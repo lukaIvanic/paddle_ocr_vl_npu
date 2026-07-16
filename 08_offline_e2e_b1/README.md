@@ -1,4 +1,4 @@
-# Experiment 08: offline real-layout E2E with fixed decode batches
+# Experiment 08: offline real-layout E2E with continuous decode
 
 This experiment is the first small offline inference system in the repository,
 rather than another isolated kernel benchmark. It keeps both models resident in
@@ -14,15 +14,23 @@ full PIL page
        eager native-resolution vision prefill
        eager text prefill into a static KV cache
        ready B=1 KV state
-  -> fixed power-of-two compiled decode cohorts until EOS/length limit
+  -> all page requests enter a ready queue
+  -> persistent power-of-two compiled decode arena
+       fill free slots from ready B=1 KV states
+       run one autoregressive iteration
+       retire EOS/length-complete requests
+       hot-swap the next ready KV prefix into each freed slot
        D2H tokens and detokenization
   -> reading-order text
 ```
 
-Vision and text prefill deliberately remain sequential B=1. Decode groups the
-ready states into fixed power-of-two cohorts. Finished rows are filled with EOS;
-the final incomplete cohort is padded with dummy EOS rows. There is no overlap,
-continuous batching, ready queue, or hot-swap scheduler yet.
+Vision and text prefill deliberately remain sequential B=1 and finish before
+decode starts. Decode owns one persistent fixed-shape arena. Slot indices stay
+stable; a finished request is replaced in place without moving other active
+requests or rebuilding the batch. Admission copies only the valid prompt KV
+prefix, while stale cache tails remain safely hidden by each row's cache
+position. Pages remain sequential, so this is decode-iteration continuous
+batching rather than concurrent layout/prefill/decode scheduling.
 
 ## What is faithful in this first cut
 
@@ -38,8 +46,9 @@ continuous batching, ready queue, or hot-swap scheduler yet.
 - The recognizer is the corrected local PyTorch model from Experiment 05. Vision
   and text prefill are eager and unpadded; only the flat fixed-batch static
   decode module is compiled.
-- EOS detection uses the existing NPU event plus pinned-host-flag technique. It
-  can execute one look-ahead graph call, then trims exactly at the first EOS.
+- Sampled-token D2H uses a second NPU stream, pinned two-row host ring, and
+  queue-depth-one control. A request can execute one look-ahead graph call;
+  slot epochs discard that old result after the slot is reused.
 
 The current page preparation is intentionally smaller than the complete
 PaddleX pipeline. It does not yet port PaddleX overlap filtering, bbox unclip and
@@ -62,13 +71,14 @@ postprocess boundaries, so adding them does not require replacing the engine.
   These values diagnose accelerator work and are not interchangeable with host
   wall latency.
 
-Raw decode tok/s counts every `batch_size * decode_calls` graph slot, including
-dummy final-cohort rows, EOS-filled finished rows, and look-ahead calls.
-Effective decode tok/s counts only real generated tokens after the
-prefill-produced first token, including EOS. Both divide by the same compiled
-decode wall time. The JSON also reports the padding split and effective fraction.
-E2E output tok/s includes each request's first token and EOS and divides by full
-page wall time.
+Raw decode tok/s counts every `batch_size * graph_calls` arena slot, including
+idle rows and completion look-ahead. Effective decode tok/s counts only real
+generated tokens after the prefill-produced first token, including EOS. Both
+divide by the same continuous-decode wall time, which includes slot admission,
+D2H waits, and host retirement. The JSON separately reports model/argmax device
+time, admission device time, idle slots, look-ahead slots, active-slot fraction,
+and copied KV-prefix bytes. E2E output tok/s includes each request's first token
+and EOS and divides by full page wall time.
 
 ## Blue Zone run
 
@@ -84,7 +94,7 @@ source npu-setup
   --recognizer-model /workspace/models/PaddleOCR-VL-1.6 \
   --device npu:0 \
   --decode-backend torchair \
-  --batch-size 2 \
+  --batch-size 4 \
   --cache-length 2048 \
   --max-new-tokens 768
 ```
@@ -101,4 +111,5 @@ recorded as such in the JSON.
 Measured 910B validations are recorded in
 [`NPU_FULL_PAGE_RESULT.md`](NPU_FULL_PAGE_RESULT.md) for the original B=1 path
 and [`NPU_BATCHED_DECODE_RESULT.md`](NPU_BATCHED_DECODE_RESULT.md) for padded
-fixed B=2 and B=4 decode.
+fixed B=2 and B=4 decode. Those documents predate the continuous scheduler and
+remain historical comparison points.

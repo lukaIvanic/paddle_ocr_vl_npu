@@ -12,6 +12,11 @@ import torch.nn.functional as F
 from PIL import Image
 from tokenizers import Tokenizer
 
+from continuous_decode import (
+    ContinuousDecodeScheduler,
+    DecodeArena,
+    ReadyDecodeRequest,
+)
 from local_modeling_paddleocr_vl import (
     DECODE_ATTENTION,
     DECODE_CACHE_UPDATE,
@@ -29,7 +34,7 @@ from run_local_recognition import (
     preprocess_pil_image,
     resolve_device,
 )
-from schema import Box, DecodeBatchResult, RecognitionResult, per_second
+from schema import Box, ContinuousDecodeResult, RecognitionResult, per_second
 from timing import DeviceTimeline, synchronize, timed_wall
 
 
@@ -59,31 +64,12 @@ class ReadyRecognition:
     prefill_finished: float
 
 
-@dataclass
-class PaddedDecodeCohort:
-    ready: list[ReadyRecognition]
-    cache: LocalPaddleOCRVLStaticCache
-    rope_deltas: torch.Tensor
-    next_cache_position: torch.Tensor
-    next_token: torch.Tensor
-    initial_finished: torch.Tensor
-    padded_items: int
-
-
-@dataclass
-class BatchDecodeOutput:
-    token_ids_by_real_item: list[list[int]]
-    decode_calls: int
-    decode_wall_s: float
-    d2h_and_trim_s: float
-
-
-class SequentialRecognizer:
-    """One persistent model with sequential eager prefill and fixed-size decode.
+class ContinuousRecognizer:
+    """One persistent model with sequential eager prefill and continuous decode.
 
     Every real crop is prefilled independently without image or prompt padding.
-    Ready KV states are concatenated into fixed decode cohorts. Short sequences
-    are EOS-filled, and the final incomplete cohort receives dummy EOS rows.
+    A fixed compiled decode arena keeps its tensor shapes stable while ready KV
+    prefixes replace finished requests between autoregressive iterations.
     """
 
     def __init__(
@@ -167,20 +153,20 @@ class SequentialRecognizer:
         self.decode_fn(warm_input, warm_position, warm_rope, *warm_cache.flat_tensors())
         synchronize(self.device)
         compile_first_call_s = time.perf_counter() - started
-        del warm_cache, warm_input, warm_position, warm_rope
+        del warm_input, warm_position, warm_rope
 
         started = time.perf_counter()
-        self.decode_copy_stream = None
-        self.decode_finished_flags = None
-        if self.device.type == "npu" and self.max_new_tokens > 1:
-            import torch_npu
-
-            self.decode_copy_stream = torch_npu.npu.Stream(device=self.device)
-            self.decode_finished_flags = torch.zeros(
-                (self.max_new_tokens - 1, self.batch_size),
-                dtype=torch.bool,
-                pin_memory=True,
-            )
+        self.decode_arena = DecodeArena(
+            cache=warm_cache,
+            device=self.device,
+            batch_size=self.batch_size,
+            eos_token_id=int(self.model.config.eos_token_id),
+        )
+        self.decode_scheduler = ContinuousDecodeScheduler(
+            arena=self.decode_arena,
+            decode_fn=self.decode_fn,
+            max_new_tokens=self.max_new_tokens,
+        )
         decode_control_setup_s = time.perf_counter() - started
 
         self.setup_timing_s = {
@@ -194,31 +180,36 @@ class SequentialRecognizer:
         }
 
     @torch.inference_mode()
-    def recognize_batch(
+    def recognize_many(
         self,
         requests: list[RecognitionInput],
         *,
-        batch_id: str,
-    ) -> tuple[list[RecognitionResult], DecodeBatchResult]:
+        schedule_id: str,
+    ) -> tuple[list[RecognitionResult], ContinuousDecodeResult]:
         if not requests:
-            raise ValueError("recognize_batch requires at least one request")
-        if len(requests) > self.batch_size:
-            raise ValueError(
-                f"batch {batch_id} has {len(requests)} requests, configured batch_size={self.batch_size}"
-            )
+            raise ValueError("recognize_many requires at least one request")
 
-        ready = [self._prefill(request) for request in requests]
-        cohort, cohort_assembly_s = timed_wall(
-            self.device,
-            lambda: self._make_padded_cohort(ready),
-        )
-        decode_started = time.perf_counter()
-        decoded = self._decode_batch(cohort)
-        decode_finished = time.perf_counter()
+        ready_states = [self._prefill(request) for request in requests]
+        decode_ready = [
+            ReadyDecodeRequest(
+                request_id=state.request.request_id,
+                payload=state,
+                cache=state.cache,
+                rope_deltas=state.rope_deltas,
+                cache_position=state.next_cache_position,
+                first_token_tensor=state.next_token,
+                first_token=state.first_token,
+                prompt_length=state.input_tokens,
+            )
+            for state in ready_states
+        ]
+        decoded = self.decode_scheduler.run(decode_ready)
+        decode_wall_s = decoded.timing_s["continuous_decode_wall"]
 
         results: list[RecognitionResult] = []
-        for row_idx, state in enumerate(ready):
-            token_ids = decoded.token_ids_by_real_item[row_idx]
+        for completion in decoded.completions:
+            state: ReadyRecognition = completion.ready.payload
+            token_ids = completion.token_ids
             started = time.perf_counter()
             text = self.tokenizer.decode(token_ids, skip_special_tokens=True)
             detokenize_s = time.perf_counter() - started
@@ -227,18 +218,29 @@ class SequentialRecognizer:
             timing = dict(state.timing_s)
             timing.update(
                 {
-                    "decode_batch_queue_wait": max(0.0, decode_started - state.prefill_finished),
-                    "decode_cohort_assembly_wall_shared": float(cohort_assembly_s),
-                    "compiled_decode_batch_wall_shared": float(decoded.decode_wall_s),
-                    "decode_batch_d2h_and_trim_shared": float(decoded.d2h_and_trim_s),
+                    "decode_ready_queue_wait": (
+                        max(0.0, completion.admitted_at - state.prefill_finished)
+                        if completion.admitted_at is not None
+                        else 0.0
+                    ),
+                    "decode_slot_residency": (
+                        max(0.0, completion.completed_at - completion.admitted_at)
+                        if completion.admitted_at is not None
+                        else 0.0
+                    ),
+                    "continuous_decode_wall_shared": float(decode_wall_s),
                     "detokenize": float(detokenize_s),
-                    "request_total": float(decode_finished - state.request_started + detokenize_s),
+                    "request_total": float(
+                        completion.completed_at - state.request_started + detokenize_s
+                    ),
                 }
             )
             results.append(
                 RecognitionResult(
                     request_id=state.request.request_id,
-                    decode_batch_id=batch_id,
+                    decode_schedule_id=schedule_id,
+                    decode_slot_index=completion.slot_index,
+                    decode_slot_epoch=completion.slot_epoch,
                     layout_order=int(state.request.layout_order),
                     label=state.request.label,
                     prompt=state.request.prompt,
@@ -246,22 +248,18 @@ class SequentialRecognizer:
                     crop_size=tuple(int(value) for value in state.request.crop.size),
                     text=text,
                     token_ids=token_ids,
-                    stop_reason=(
-                        "eos"
-                        if int(self.model.config.eos_token_id) in token_ids
-                        else "length"
-                    ),
+                    stop_reason=completion.stop_reason,
                     input_tokens=state.input_tokens,
                     projected_image_tokens=state.projected_image_tokens,
                     generated_tokens_including_eos=generated_tokens,
                     decode_tokens_after_prefill_including_eos=effective_decode_tokens,
-                    decode_calls_executed=decoded.decode_calls,
+                    decode_calls_executed=completion.iterations_launched,
                     timing_s=timing,
                     device_stage_s=dict(state.device_stage_s),
                     rates={
                         "decode_effective_token_contribution_per_s": per_second(
                             effective_decode_tokens,
-                            decoded.decode_wall_s,
+                            decode_wall_s,
                         ),
                         "request_output_tok_per_s": per_second(
                             generated_tokens,
@@ -271,46 +269,52 @@ class SequentialRecognizer:
                 )
             )
 
-        effective_tokens = sum(
-            result.decode_tokens_after_prefill_including_eos
-            for result in results
-        )
-        raw_slots = int(decoded.decode_calls) * self.batch_size
-        padded_slots = raw_slots - effective_tokens
-        final_padding_slots = cohort.padded_items * int(decoded.decode_calls)
-        finished_padding_slots = padded_slots - final_padding_slots
-        if finished_padding_slots < 0:
-            raise AssertionError(
-                "decode padding accounting went negative: "
-                f"raw={raw_slots} effective={effective_tokens} final={final_padding_slots}"
-            )
-        batch_result = DecodeBatchResult(
-            batch_id=batch_id,
+        results.sort(key=lambda result: result.layout_order)
+        schedule_result = ContinuousDecodeResult(
+            schedule_id=schedule_id,
             batch_size=self.batch_size,
-            real_items=len(ready),
-            padded_items=cohort.padded_items,
-            decode_calls=int(decoded.decode_calls),
-            raw_decode_token_slots=raw_slots,
-            effective_decode_tokens=effective_tokens,
-            padded_decode_token_slots=padded_slots,
-            final_cohort_padding_token_slots=final_padding_slots,
-            finished_sequence_padding_token_slots=finished_padding_slots,
-            timing_s={
-                "cohort_assembly_wall": float(cohort_assembly_s),
-                "compiled_decode_wall": float(decoded.decode_wall_s),
-                "d2h_and_trim": float(decoded.d2h_and_trim_s),
-            },
+            requests=len(requests),
+            graph_calls=decoded.graph_calls,
+            initial_admissions=decoded.initial_admissions,
+            hot_swap_admissions=decoded.hot_swap_admissions,
+            prefill_only_completions=decoded.prefill_only_completions,
+            raw_decode_token_slots=decoded.raw_decode_token_slots,
+            active_decode_token_slots=decoded.active_decode_token_slots,
+            effective_decode_tokens=decoded.effective_decode_tokens,
+            idle_decode_token_slots=decoded.idle_decode_token_slots,
+            lookahead_decode_token_slots=decoded.lookahead_decode_token_slots,
+            kv_prefix_bytes_copied=decoded.kv_prefix_bytes_copied,
+            initial_kv_prefix_bytes_copied=decoded.initial_kv_prefix_bytes_copied,
+            hot_swap_kv_prefix_bytes_copied=decoded.hot_swap_kv_prefix_bytes_copied,
+            timing_s=dict(decoded.timing_s),
             rates={
-                "raw_decode_tok_per_s": per_second(raw_slots, decoded.decode_wall_s),
-                "effective_decode_tok_per_s": per_second(effective_tokens, decoded.decode_wall_s),
+                "raw_decode_tok_per_s": per_second(
+                    decoded.raw_decode_token_slots,
+                    decode_wall_s,
+                ),
+                "effective_decode_tok_per_s": per_second(
+                    decoded.effective_decode_tokens,
+                    decode_wall_s,
+                ),
                 "effective_fraction": (
-                    float(effective_tokens) / float(raw_slots)
-                    if raw_slots > 0
+                    float(decoded.effective_decode_tokens)
+                    / float(decoded.raw_decode_token_slots)
+                    if decoded.raw_decode_token_slots > 0
                     else None
+                ),
+                "active_slot_fraction": (
+                    float(decoded.active_decode_token_slots)
+                    / float(decoded.raw_decode_token_slots)
+                    if decoded.raw_decode_token_slots > 0
+                    else None
+                ),
+                "effective_device_tok_per_s": per_second(
+                    decoded.effective_decode_tokens,
+                    decoded.timing_s["decode_model_and_argmax_device"],
                 ),
             },
         )
-        return results, batch_result
+        return results, schedule_result
 
     @torch.inference_mode()
     def _prefill(self, request: RecognitionInput) -> ReadyRecognition:
@@ -476,167 +480,6 @@ class SequentialRecognizer:
             prefill_finished=prefill_finished,
         )
 
-    def _make_padded_cohort(
-        self,
-        ready: list[ReadyRecognition],
-    ) -> PaddedDecodeCohort:
-        padded_items = self.batch_size - len(ready)
-        num_layers = len(ready[0].cache.key_caches)
-        dummy_cache = None
-        if padded_items:
-            dummy_cache = self.model.allocate_static_cache(
-                batch_size=padded_items,
-                cache_length=self.cache_length,
-                device=self.device,
-                dtype=self.dtype,
-                init_mode="zeros",
-            )
-
-        def rows_for(layer_idx: int, *, key: bool) -> list[torch.Tensor]:
-            rows = [
-                (item.cache.key_caches if key else item.cache.value_caches)[layer_idx]
-                for item in ready
-            ]
-            if dummy_cache is not None:
-                rows.append(
-                    (dummy_cache.key_caches if key else dummy_cache.value_caches)[layer_idx]
-                )
-            return rows
-
-        key_caches = tuple(
-            torch.cat(rows_for(layer_idx, key=True), dim=0).contiguous()
-            for layer_idx in range(num_layers)
-        )
-        value_caches = tuple(
-            torch.cat(rows_for(layer_idx, key=False), dim=0).contiguous()
-            for layer_idx in range(num_layers)
-        )
-        rope_rows = [item.rope_deltas for item in ready]
-        position_rows = [item.next_cache_position.reshape(1) for item in ready]
-        token_rows = [item.next_token for item in ready]
-        if padded_items:
-            rope_rows.append(
-                torch.zeros(
-                    (padded_items, *ready[0].rope_deltas.shape[1:]),
-                    device=self.device,
-                    dtype=ready[0].rope_deltas.dtype,
-                )
-            )
-            position_rows.append(
-                torch.zeros((padded_items,), device=self.device, dtype=torch.int64)
-            )
-            token_rows.append(
-                torch.full(
-                    (padded_items, 1),
-                    int(self.model.config.eos_token_id),
-                    device=self.device,
-                    dtype=ready[0].next_token.dtype,
-                )
-            )
-        initial_finished = torch.tensor(
-            [
-                item.first_token == int(self.model.config.eos_token_id)
-                for item in ready
-            ]
-            + [True] * padded_items,
-            device=self.device,
-            dtype=torch.bool,
-        )
-        return PaddedDecodeCohort(
-            ready=ready,
-            cache=LocalPaddleOCRVLStaticCache(
-                key_caches,
-                value_caches,
-                self.cache_length,
-            ),
-            rope_deltas=torch.cat(rope_rows, dim=0).contiguous(),
-            next_cache_position=torch.cat(position_rows, dim=0).contiguous(),
-            next_token=torch.cat(token_rows, dim=0).contiguous(),
-            initial_finished=initial_finished,
-            padded_items=padded_items,
-        )
-
-    def _decode_batch(self, cohort: PaddedDecodeCohort) -> BatchDecodeOutput:
-        eos_token_id = int(self.model.config.eos_token_id)
-        next_token = cohort.next_token
-        cache_position = cohort.next_cache_position
-        generated = [next_token]
-        finished = cohort.initial_finished.clone()
-        decode_calls = 0
-        flat_cache = cohort.cache.flat_tensors()
-
-        synchronize(self.device)
-        started = time.perf_counter()
-        if not bool(finished.detach().cpu().all().item()):
-            pending_event = None
-            pending_step = None
-            for step in range(max(0, self.max_new_tokens - 1)):
-                logits = self.decode_fn(
-                    next_token,
-                    cache_position,
-                    cohort.rope_deltas,
-                    *flat_cache,
-                )
-                sampled = torch.argmax(
-                    logits[:, -1, :].float(),
-                    dim=-1,
-                    keepdim=True,
-                )
-                active_before = ~finished
-                next_token = torch.where(
-                    active_before.view(-1, 1),
-                    sampled,
-                    torch.full_like(sampled, eos_token_id),
-                )
-                new_hits = (next_token.reshape(-1) == eos_token_id) & active_before
-                finished = finished | new_hits
-                generated.append(next_token)
-                cache_position = cache_position + 1
-                decode_calls += 1
-
-                if self.device.type == "npu":
-                    import torch_npu
-
-                    assert self.decode_finished_flags is not None
-                    assert self.decode_copy_stream is not None
-                    ready_event = torch_npu.npu.current_stream().record_event()
-                    done_event = torch_npu.npu.Event()
-                    with torch_npu.npu.stream(self.decode_copy_stream):
-                        self.decode_copy_stream.wait_event(ready_event)
-                        self.decode_finished_flags[step].copy_(
-                            finished,
-                            non_blocking=True,
-                        )
-                        done_event.record(self.decode_copy_stream)
-                    if pending_event is not None and pending_step is not None:
-                        pending_event.synchronize()
-                        if bool(self.decode_finished_flags[pending_step].all().item()):
-                            break
-                    pending_event = done_event
-                    pending_step = step
-                elif bool(finished.detach().cpu().all().item()):
-                    break
-            if pending_event is not None:
-                pending_event.synchronize()
-        synchronize(self.device)
-        decode_wall_s = time.perf_counter() - started
-
-        started = time.perf_counter()
-        rows = torch.cat(generated, dim=1).detach().cpu().tolist()
-        token_ids_by_real_item: list[list[int]] = []
-        for row in rows[: len(cohort.ready)]:
-            token_ids = [int(value) for value in row]
-            if eos_token_id in token_ids:
-                token_ids = token_ids[: token_ids.index(eos_token_id) + 1]
-            token_ids_by_real_item.append(token_ids)
-        d2h_and_trim_s = time.perf_counter() - started
-        return BatchDecodeOutput(
-            token_ids_by_real_item=token_ids_by_real_item,
-            decode_calls=decode_calls,
-            decode_wall_s=float(decode_wall_s),
-            d2h_and_trim_s=float(d2h_and_trim_s),
-        )
-
     def configuration(self) -> dict[str, Any]:
         decode_label = (
             f"compiled_static_b{self.batch_size}"
@@ -656,8 +499,9 @@ class SequentialRecognizer:
             "vision_prefill": "eager_sequential_no_padding",
             "text_prefill": "eager_sequential_no_padding",
             "decode": decode_label,
-            "decode_schedule": "fixed_cohort_eos_padding",
-            "final_cohort_padding": "dummy_eos_rows",
+            "decode_schedule": "persistent_slots_iteration_hot_swap",
+            "decode_completion_detection": "queue_depth_one_async_token_copy",
+            "kv_admission": "copy_valid_prefill_prefix_into_fixed_slot",
             "compile": self.compile_metadata,
             "linear_weight_format": self.weight_format,
         }

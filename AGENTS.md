@@ -21,9 +21,10 @@ This folder is a standalone research workspace for PaddleOCR-VL on Ascend/NPU, w
 The current target is an offline full-page path built incrementally from the
 local recognizer: real PP-DocLayoutV3 inference, explicit page/crop/request
 boundaries, and a persistent PaddleOCR-VL engine. Experiment 08 uses sequential
-unpadded B=1 vision/text prefill followed by fixed power-of-two decode cohorts
-with simple EOS/dummy-row padding. It does not yet overlap prefill/decode or use
-continuous batching. It is not yet a complete reimplementation of PaddleX page preparation
+unpadded B=1 vision/text prefill followed by a persistent fixed power-of-two
+decode arena. Finished requests are hot-swapped between decode iterations by
+copying the next ready request's valid KV prefix into the freed slot. It does
+not yet overlap prefill with decode. It is not yet a complete reimplementation of PaddleX page preparation
 or structured Markdown postprocessing. The recognition model is available as a
 Transformers/PyTorch model at:
 
@@ -64,10 +65,11 @@ This folder currently contains:
 - `04_batched_fixed_cohort_decode/`: batch-decode scheduler lane. It keeps prefill sequential and padding-free for real crops, benchmarks true fixed-cohort batched static decode, and can also prefill an NPU-resident ready KV bank then hot-swap finished items into fixed compiled decode slots.
 - `08_offline_e2e_b1/`: first persistent offline system. It runs real
   PP-DocLayoutV3 on a full PIL page, then sends every selected crop through
-  sequential eager vision/text prefill and fixed compiled decode cohorts. It
-  reports raw token slots with padding and effective real tokens separately,
-  along with setup, page, request, and accelerator-stage timing. Read its README
-  before interpreting throughput or output parity.
+  sequential eager vision/text prefill and one continuous compiled decode
+  schedule. Stable slots are refilled in place without compacting active rows.
+  It reports raw slots, effective tokens, idle slots, completion look-ahead,
+  active-slot utilization, KV-copy traffic, and setup/page/request/device timing.
+  Read its README before interpreting throughput or output parity.
 - `refs/`: small architecture reference artifacts.
 - `refs/PaddleOCR`: ignored sparse reference checkout of the official PaddleOCR repo.
 

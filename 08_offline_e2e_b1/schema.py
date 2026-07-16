@@ -39,7 +39,9 @@ class LayoutRegion:
 @dataclass
 class RecognitionResult:
     request_id: str
-    decode_batch_id: str
+    decode_schedule_id: str
+    decode_slot_index: int | None
+    decode_slot_epoch: int | None
     layout_order: int
     label: str
     prompt: str
@@ -59,17 +61,22 @@ class RecognitionResult:
 
 
 @dataclass
-class DecodeBatchResult:
-    batch_id: str
+class ContinuousDecodeResult:
+    schedule_id: str
     batch_size: int
-    real_items: int
-    padded_items: int
-    decode_calls: int
+    requests: int
+    graph_calls: int
+    initial_admissions: int
+    hot_swap_admissions: int
+    prefill_only_completions: int
     raw_decode_token_slots: int
+    active_decode_token_slots: int
     effective_decode_tokens: int
-    padded_decode_token_slots: int
-    final_cohort_padding_token_slots: int
-    finished_sequence_padding_token_slots: int
+    idle_decode_token_slots: int
+    lookahead_decode_token_slots: int
+    kv_prefix_bytes_copied: int
+    initial_kv_prefix_bytes_copied: int
+    hot_swap_kv_prefix_bytes_copied: int
     timing_s: dict[str, float]
     rates: dict[str, float | None]
 
@@ -89,7 +96,7 @@ class PageResult:
     image_size: tuple[int, int]
     layout_regions: list[LayoutRegion]
     recognized_regions: list[RecognitionResult]
-    decode_batches: list[DecodeBatchResult]
+    decode_schedule: ContinuousDecodeResult
     skipped_regions: list[SkippedRegion]
     reading_order_text: str
     timing_s: dict[str, float]

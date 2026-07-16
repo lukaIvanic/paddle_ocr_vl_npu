@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run real PP-DocLayoutV3 plus sequential B=1 PaddleOCR-VL recognition."""
+"""Run real layout, sequential prefill, and continuous PaddleOCR-VL decode."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from pathlib import Path
 
 import torch
 
-from engine import SequentialRecognizer
+from engine import ContinuousRecognizer
 from layout import PPDocLayoutV3Runtime
 from pipeline import OfflinePagePipeline, aggregate_pages
 from run_local_recognition import NPU_JIT_COMPILE_CHOICES, resolve_device
@@ -74,7 +74,7 @@ def main() -> None:
     device = resolve_device(args.device)
     device_runtime_init_s = time.perf_counter() - device_started
     layout = PPDocLayoutV3Runtime(args.layout_model, device, threshold=args.layout_threshold)
-    recognizer = SequentialRecognizer(
+    recognizer = ContinuousRecognizer(
         model=args.recognizer_model,
         device=args.device,
         dtype=args.dtype,
@@ -105,7 +105,7 @@ def main() -> None:
         "layout_threshold": float(args.layout_threshold),
         "layout_runtime": "transformers.AutoModelForObjectDetection",
         "layout_source": "real_pp_doclayout_v3_inference",
-        "region_execution": "sequential_prefill_fixed_cohort_decode",
+        "region_execution": "sequential_prefill_continuous_decode",
         "recognize_chart": bool(args.recognize_chart),
         "recognize_seal": bool(args.recognize_seal),
         "recognize_image": bool(args.recognize_image),
@@ -128,8 +128,9 @@ def main() -> None:
             "page_total_including_artifacts": "page_total plus page text and optional annotated-image/crop writes.",
             "request_total": "In-memory crop preprocessing through eager prefill, compiled decode, D2H token transfer, and detokenization.",
             "device_stage_s": "Accelerator event time for eager vision/text-prefill sub-stages; it is not host wall time.",
-            "raw_decode_tok_per_s": "Every fixed-batch token slot executed by the compiled graph divided by decode wall time, including final dummy rows, post-EOS fills, and look-ahead calls.",
-            "effective_decode_tok_per_s": "Real generated tokens after each prefill-produced first token, including EOS but excluding every padded slot, divided by the same decode wall time.",
+            "raw_decode_tok_per_s": "Every persistent-arena token slot executed by the compiled graph divided by continuous-decode wall time, including idle slots and one-step completion look-ahead.",
+            "effective_decode_tok_per_s": "Real generated tokens after each prefill-produced first token, including EOS but excluding idle and look-ahead slots, divided by the same continuous-decode wall time.",
+            "active_slot_fraction": "Slots assigned to a real request when an iteration launched divided by all fixed-arena slots. It includes the one delayed look-ahead iteration.",
             "e2e_output_tok_per_s": "All generated tokens including each first token and EOS divided by summed page wall time.",
         },
     )
@@ -144,7 +145,7 @@ def main() -> None:
     )
     print(
         f"page_wall_s={aggregate['sum_page_wall_s']:.6f} "
-        f"decode_wall_s={aggregate['sum_compiled_decode_wall_s']:.6f} "
+        f"decode_wall_s={aggregate['sum_continuous_decode_wall_s']:.6f} "
         f"raw_decode_tok_per_s={aggregate['rates']['raw_decode_tok_per_s']} "
         f"effective_decode_tok_per_s={aggregate['rates']['effective_decode_tok_per_s']} "
         f"e2e_output_tok_per_s={aggregate['rates']['e2e_output_tok_per_s']}"

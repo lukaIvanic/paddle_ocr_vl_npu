@@ -1,4 +1,4 @@
-"""Full-page orchestration with sequential prefill and fixed decode cohorts."""
+"""Full-page orchestration with sequential prefill and continuous decode."""
 
 from __future__ import annotations
 
@@ -10,9 +10,9 @@ from typing import Any
 
 from PIL import Image, ImageDraw
 
-from engine import RecognitionInput, SequentialRecognizer
+from engine import ContinuousRecognizer, RecognitionInput
 from layout import PPDocLayoutV3Runtime
-from schema import PageResult, SkippedRegion, per_second
+from schema import ContinuousDecodeResult, PageResult, SkippedRegion, per_second
 
 
 IMAGE_LABELS = {"image", "header_image", "footer_image"}
@@ -46,7 +46,7 @@ class OfflinePagePipeline:
         self,
         *,
         layout: PPDocLayoutV3Runtime,
-        recognizer: SequentialRecognizer,
+        recognizer: ContinuousRecognizer,
         recognize_chart: bool = False,
         recognize_seal: bool = False,
         recognize_image: bool = False,
@@ -85,7 +85,6 @@ class OfflinePagePipeline:
         page_id = f"page_{page_index:04d}_{image_path.stem}"
         layout_regions, layout_timing = self.layout.predict(image)
         recognized = []
-        decode_batches = []
         skipped = []
         requests: list[RecognitionInput] = []
         crop_total_s = 0.0
@@ -144,16 +143,44 @@ class OfflinePagePipeline:
             )
             recognized_count += 1
 
-        for batch_index, start in enumerate(
-            range(0, len(requests), self.recognizer.batch_size)
-        ):
-            batch_requests = requests[start : start + self.recognizer.batch_size]
-            batch_results, batch_metrics = self.recognizer.recognize_batch(
-                batch_requests,
-                batch_id=f"{page_id}_decode_batch_{batch_index:03d}",
+        if requests:
+            recognized, decode_schedule = self.recognizer.recognize_many(
+                requests,
+                schedule_id=f"{page_id}_continuous_decode",
             )
-            recognized.extend(batch_results)
-            decode_batches.append(batch_metrics)
+        else:
+            decode_schedule = ContinuousDecodeResult(
+                schedule_id=f"{page_id}_continuous_decode",
+                batch_size=self.recognizer.batch_size,
+                requests=0,
+                graph_calls=0,
+                initial_admissions=0,
+                hot_swap_admissions=0,
+                prefill_only_completions=0,
+                raw_decode_token_slots=0,
+                active_decode_token_slots=0,
+                effective_decode_tokens=0,
+                idle_decode_token_slots=0,
+                lookahead_decode_token_slots=0,
+                kv_prefix_bytes_copied=0,
+                initial_kv_prefix_bytes_copied=0,
+                hot_swap_kv_prefix_bytes_copied=0,
+                timing_s={
+                    "continuous_decode_wall": 0.0,
+                    "decode_model_and_argmax_device": 0.0,
+                    "slot_admission_device": 0.0,
+                    "slot_admission_enqueue_wall": 0.0,
+                    "d2h_wait_wall": 0.0,
+                    "retire_and_refill_host_wall": 0.0,
+                },
+                rates={
+                    "raw_decode_tok_per_s": None,
+                    "effective_decode_tok_per_s": None,
+                    "effective_fraction": None,
+                    "active_slot_fraction": None,
+                    "effective_device_tok_per_s": None,
+                },
+            )
 
         recognition_wall_s = time.perf_counter() - recognition_started
         started = time.perf_counter()
@@ -186,11 +213,10 @@ class OfflinePagePipeline:
         artifact_write_s = time.perf_counter() - artifact_started
 
         generated_tokens = sum(item.generated_tokens_including_eos for item in recognized)
-        raw_decode_slots = sum(item.raw_decode_token_slots for item in decode_batches)
-        effective_decode_tokens = sum(item.effective_decode_tokens for item in decode_batches)
-        decode_wall = sum(item.timing_s["compiled_decode_wall"] for item in decode_batches)
+        raw_decode_slots = decode_schedule.raw_decode_token_slots
+        effective_decode_tokens = decode_schedule.effective_decode_tokens
+        decode_wall = decode_schedule.timing_s["continuous_decode_wall"]
         prefill_wall = sum(item.timing_s["prefill_request_total"] for item in recognized)
-        cohort_assembly_wall = sum(item.timing_s["cohort_assembly_wall"] for item in decode_batches)
         page_total_including_artifacts_s = time.perf_counter() - page_started
         timing = {
             "image_load": float(image_load_s),
@@ -198,8 +224,7 @@ class OfflinePagePipeline:
             "crop_extraction": float(crop_total_s),
             "recognition_wall": float(recognition_wall_s),
             "sequential_prefill_wall_sum": float(prefill_wall),
-            "decode_cohort_assembly_wall_sum": float(cohort_assembly_wall),
-            "batched_decode_wall_sum": float(decode_wall),
+            "continuous_decode_wall": float(decode_wall),
             "reading_order_text_postprocess": float(postprocess_s),
             "page_total": float(page_pipeline_s),
             "artifact_write": float(artifact_write_s),
@@ -212,7 +237,7 @@ class OfflinePagePipeline:
             image_size=image.size,
             layout_regions=layout_regions,
             recognized_regions=recognized,
-            decode_batches=decode_batches,
+            decode_schedule=decode_schedule,
             skipped_regions=skipped,
             reading_order_text=reading_order_text,
             timing_s=timing,
@@ -231,14 +256,22 @@ def aggregate_pages(pages: list[PageResult]) -> dict[str, Any]:
     recognized = [region for page in pages for region in page.recognized_regions]
     layout_regions = [region for page in pages for region in page.layout_regions]
     skipped = [region for page in pages for region in page.skipped_regions]
-    decode_batches = [batch for page in pages for batch in page.decode_batches]
+    decode_schedules = [page.decode_schedule for page in pages]
     page_wall = sum(page.timing_s["page_total"] for page in pages)
-    decode_wall = sum(batch.timing_s["compiled_decode_wall"] for batch in decode_batches)
-    raw_decode_slots = sum(batch.raw_decode_token_slots for batch in decode_batches)
-    effective_decode_tokens = sum(batch.effective_decode_tokens for batch in decode_batches)
-    padded_decode_slots = sum(batch.padded_decode_token_slots for batch in decode_batches)
-    final_padding_slots = sum(batch.final_cohort_padding_token_slots for batch in decode_batches)
-    finished_padding_slots = sum(batch.finished_sequence_padding_token_slots for batch in decode_batches)
+    decode_wall = sum(
+        schedule.timing_s["continuous_decode_wall"]
+        for schedule in decode_schedules
+    )
+    raw_decode_slots = sum(schedule.raw_decode_token_slots for schedule in decode_schedules)
+    active_decode_slots = sum(schedule.active_decode_token_slots for schedule in decode_schedules)
+    effective_decode_tokens = sum(schedule.effective_decode_tokens for schedule in decode_schedules)
+    idle_decode_slots = sum(schedule.idle_decode_token_slots for schedule in decode_schedules)
+    lookahead_decode_slots = sum(
+        schedule.lookahead_decode_token_slots for schedule in decode_schedules
+    )
+    initial_admissions = sum(schedule.initial_admissions for schedule in decode_schedules)
+    hot_swap_admissions = sum(schedule.hot_swap_admissions for schedule in decode_schedules)
+    kv_prefix_bytes = sum(schedule.kv_prefix_bytes_copied for schedule in decode_schedules)
     output_tokens = sum(region.generated_tokens_including_eos for region in recognized)
     return {
         "pages": len(pages),
@@ -246,17 +279,21 @@ def aggregate_pages(pages: list[PageResult]) -> dict[str, Any]:
         "layout_regions": len(layout_regions),
         "recognized_regions": len(recognized),
         "skipped_regions": len(skipped),
-        "decode_batches": len(decode_batches),
+        "decode_schedules": len(decode_schedules),
+        "decode_graph_calls": sum(schedule.graph_calls for schedule in decode_schedules),
+        "initial_decode_admissions": initial_admissions,
+        "hot_swap_decode_admissions": hot_swap_admissions,
         "layout_label_counts": dict(sorted(Counter(region.label for region in layout_regions).items())),
         "stop_reason_counts": dict(sorted(Counter(region.stop_reason for region in recognized).items())),
         "generated_tokens_including_eos": output_tokens,
         "raw_decode_token_slots": raw_decode_slots,
+        "active_decode_token_slots": active_decode_slots,
         "effective_decode_tokens": effective_decode_tokens,
-        "padded_decode_token_slots": padded_decode_slots,
-        "final_cohort_padding_token_slots": final_padding_slots,
-        "finished_sequence_padding_token_slots": finished_padding_slots,
+        "idle_decode_token_slots": idle_decode_slots,
+        "lookahead_decode_token_slots": lookahead_decode_slots,
+        "kv_prefix_bytes_copied": kv_prefix_bytes,
         "sum_page_wall_s": float(page_wall),
-        "sum_compiled_decode_wall_s": float(decode_wall),
+        "sum_continuous_decode_wall_s": float(decode_wall),
         "rates": {
             "pages_per_s": per_second(len(pages), page_wall),
             "regions_per_s": per_second(len(recognized), page_wall),
@@ -264,6 +301,11 @@ def aggregate_pages(pages: list[PageResult]) -> dict[str, Any]:
             "effective_decode_tok_per_s": per_second(effective_decode_tokens, decode_wall),
             "effective_fraction": (
                 float(effective_decode_tokens) / float(raw_decode_slots)
+                if raw_decode_slots > 0
+                else None
+            ),
+            "active_slot_fraction": (
+                float(active_decode_slots) / float(raw_decode_slots)
                 if raw_decode_slots > 0
                 else None
             ),

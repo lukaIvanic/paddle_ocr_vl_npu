@@ -34,9 +34,17 @@ from pathlib import Path
 path = Path(sys.argv[1])
 data = json.loads(path.read_text(encoding="utf-8"))
 assert data["configuration"]["layout_source"] == "real_pp_doclayout_v3_inference"
-assert data["configuration"]["region_execution"] == "sequential_prefill_fixed_cohort_decode"
+assert data["configuration"]["region_execution"] == "sequential_prefill_continuous_decode"
 assert data["aggregate"]["pages"] == 1
 assert data["aggregate"]["layout_regions"] > 1
 assert data["aggregate"]["recognized_regions"] > 0
+aggregate = data["aggregate"]
+assert aggregate["raw_decode_token_slots"] == (
+    aggregate["effective_decode_tokens"]
+    + aggregate["idle_decode_token_slots"]
+    + aggregate["lookahead_decode_token_slots"]
+)
+if aggregate["recognized_regions"] > data["configuration"]["batch_size"]:
+    assert aggregate["hot_swap_decode_admissions"] > 0
 print(f"validated={path}")
 PY
