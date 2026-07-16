@@ -17,6 +17,7 @@ import threading
 from pathlib import Path
 from typing import Any
 
+import cv2
 import numpy as np
 
 
@@ -113,40 +114,77 @@ class LayoutMaskGuardState:
         masks: Any,
         scale_ratio: Any,
     ) -> list[Any]:
-        invalid = find_empty_mask_crops(boxes, masks, scale_ratio)
-        if not invalid:
+        try:
             return self.original(processor, boxes, masks, scale_ratio)
+        except cv2.error as error:
+            if "!ssize.empty()" not in str(error):
+                raise
 
         boxes_np = _as_numpy(boxes)
         masks_np = _as_numpy(masks)
-        invalid_by_index = {
-            int(record["region_index"]): record for record in invalid
-        }
-        valid_indices = [
-            index for index in range(len(boxes_np)) if index not in invalid_by_index
-        ]
-        valid_polygons = iter(
-            self.original(
-                processor,
-                boxes_np[valid_indices],
-                masks_np[valid_indices],
-                scale_ratio,
+        polygons: list[Any] = []
+        fallback_regions: list[dict[str, Any]] = []
+        for index in range(len(boxes_np)):
+            try:
+                single = self.original(
+                    processor,
+                    boxes_np[index : index + 1],
+                    masks_np[index : index + 1],
+                    scale_ratio,
+                )
+            except cv2.error as error:
+                if "!ssize.empty()" not in str(error):
+                    raise
+                diagnostics = find_empty_mask_crops(
+                    boxes_np[index : index + 1],
+                    masks_np[index : index + 1],
+                    scale_ratio,
+                )
+                record = (
+                    dict(diagnostics[0])
+                    if diagnostics
+                    else {
+                        "box_float": boxes_np[index]
+                        .astype(np.float64)
+                        .tolist(),
+                        "box_int": boxes_np[index]
+                        .astype(np.int32)
+                        .tolist(),
+                        "mask_shape": list(masks_np[index].shape),
+                        "scale_ratio": [
+                            _scalar(scale_ratio[0]),
+                            _scalar(scale_ratio[1]),
+                        ],
+                    }
+                )
+                record.update(
+                    {
+                        "region_index": int(index),
+                        "precheck_detected": bool(diagnostics),
+                        "upstream_error": str(error),
+                    }
+                )
+                fallback_regions.append(record)
+                polygons.append(_rectangle(boxes_np[index]))
+            else:
+                if len(single) != 1:
+                    raise RuntimeError(
+                        "PP-DocLayout mask extraction returned "
+                        f"{len(single)} polygons for one detection"
+                    )
+                polygons.append(single[0])
+
+        if not fallback_regions:
+            raise RuntimeError(
+                "PP-DocLayout batch mask extraction raised an empty-resize error, "
+                "but every individual detection succeeded"
             )
-            if valid_indices
-            else []
-        )
-        polygons = [
-            _rectangle(boxes_np[index])
-            if index in invalid_by_index
-            else next(valid_polygons)
-            for index in range(len(boxes_np))
-        ]
         with self._lock:
             self._events.append(
                 {
                     "call_index": len(self._events),
                     "detections": int(len(boxes_np)),
-                    "fallback_regions": invalid,
+                    "fallback_regions": fallback_regions,
                 }
             )
         return polygons

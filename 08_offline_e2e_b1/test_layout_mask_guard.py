@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import cv2
 import numpy as np
 
 from layout_mask_guard import find_empty_mask_crops, install_layout_mask_guard
@@ -16,7 +17,12 @@ class FakeProcessor:
     calls: list[list[list[float]]] = []
 
     def _extract_polygon_points_by_masks(self, boxes, masks, scale_ratio):
-        type(self).calls.append(np.asarray(boxes).tolist())
+        boxes = np.asarray(boxes)
+        type(self).calls.append(boxes.tolist())
+        scale_width = scale_ratio[0] / 4
+        for box in boxes.astype(np.int32):
+            if round(box[0] * scale_width) == round(box[2] * scale_width):
+                raise cv2.error("!ssize.empty()")
         return [
             np.array([[100 + index, 200 + index]], dtype=np.float32)
             for index in range(len(boxes))
@@ -57,8 +63,31 @@ class LayoutMaskGuardTest(unittest.TestCase):
             polygons[1],
             np.array([[100, 200]], dtype=np.float32),
         )
-        self.assertEqual(FakeProcessor.calls, [[[10.0, 10.0, 20.0, 20.0]]])
+        self.assertEqual(
+            FakeProcessor.calls,
+            [
+                [[1.0, 1.0, 2.0, 10.0], [10.0, 10.0, 20.0, 20.0]],
+                [[1.0, 1.0, 2.0, 10.0]],
+                [[10.0, 10.0, 20.0, 20.0]],
+            ],
+        )
         self.assertEqual(state.snapshot()["fallback_regions"], 1)
+
+    def test_guard_reraises_unrelated_opencv_errors(self) -> None:
+        class OtherOpenCVFailure:
+            def _extract_polygon_points_by_masks(
+                self, boxes, masks, scale_ratio
+            ):
+                raise cv2.error("unrelated OpenCV failure")
+
+        state = install_layout_mask_guard(OtherOpenCVFailure)
+        with self.assertRaisesRegex(cv2.error, "unrelated OpenCV failure"):
+            state.guarded_extract(
+                OtherOpenCVFailure(),
+                np.array([[10, 10, 20, 20]], dtype=np.float32),
+                np.ones((1, 20, 20), dtype=np.float32),
+                (0.4, 0.4),
+            )
 
     def test_install_is_idempotent(self) -> None:
         first = install_layout_mask_guard(FakeProcessor)
