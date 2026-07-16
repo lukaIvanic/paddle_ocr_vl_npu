@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 from pathlib import Path
 from typing import Any
@@ -73,6 +74,14 @@ def load_records(root: Path) -> list[dict[str, Any]]:
             }
         )
     return records
+
+
+def load_failures(root: Path) -> list[dict[str, Any]]:
+    path = root / "failed_cases.tsv"
+    if not path.is_file():
+        return []
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        return [dict(row) for row in csv.DictReader(handle, delimiter="\t")]
 
 
 def make_backend_pairs(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -203,12 +212,18 @@ def main() -> None:
         raise ValueError(f"no small visual encoder case JSON files found under {root}")
     backend_pairs = make_backend_pairs(records)
     attention_pairs = make_attention_pairs(records)
+    failures = load_failures(root)
     output = {
         "schema_version": 1,
         "kind": "small_visual_encoder_matrix_summary",
         "root": str(root),
         "case_count": int(len(records)),
-        "all_correctness_passed": bool(all(record["correctness_passed"] for record in records)),
+        "failed_case_count": int(len(failures)),
+        "failed_cases": failures,
+        "all_cases_completed": bool(not failures),
+        "all_correctness_passed": bool(
+            not failures and all(record["correctness_passed"] for record in records)
+        ),
         "records": records,
         "compiled_vs_eager": backend_pairs,
         "promptfa_vs_manual": attention_pairs,

@@ -46,6 +46,8 @@ if [[ "${DEVICE}" == npu:* && -z "${ASCEND_RT_VISIBLE_DEVICES:-}" ]]; then
 fi
 
 mkdir -p "${OUT_ROOT}" "${CACHE_ROOT}"
+FAILED_CASES_FILE="${OUT_ROOT}/failed_cases.tsv"
+printf 'case\texit_status\tlog\n' >"${FAILED_CASES_FILE}"
 
 echo "EXP07_SMALL_ENCODER_MATRIX python=${PYTHON_BIN}"
 echo "EXP07_SMALL_ENCODER_MATRIX model=${MODEL} device=${DEVICE} physical_npu=${ASCEND_RT_VISIBLE_DEVICES:-unset}"
@@ -72,6 +74,7 @@ for bucket_case in ${BUCKET_CASES}; do
         cache_args=(--no-vision-use-torchair-cache-compile)
       fi
       echo "EXP07_SMALL_ENCODER_CASE start name=${case_name} output=${output_json}"
+      set +e
       "${PYTHON_BIN}" "${SCRIPT_DIR}/benchmark_small_visual_encoder.py" \
         --model "${MODEL}" \
         --dataset-dir "${DATASET_DIR}" \
@@ -98,6 +101,13 @@ for bucket_case in ${BUCKET_CASES}; do
         --torchair-mode "${TORCHAIR_MODE}" \
         --output "${output_json}" \
         2>&1 | tee "${log_path}"
+      case_status="${PIPESTATUS[0]}"
+      set -e
+      if [[ "${case_status}" != "0" ]]; then
+        printf '%s\t%s\t%s\n' "${case_name}" "${case_status}" "${log_path}" >>"${FAILED_CASES_FILE}"
+        echo "EXP07_SMALL_ENCODER_CASE failed name=${case_name} status=${case_status} log=${log_path}" >&2
+        continue
+      fi
       echo "EXP07_SMALL_ENCODER_CASE done name=${case_name}"
     done
   done
@@ -107,3 +117,8 @@ done
   | tee "${OUT_ROOT}/summary.log"
 
 echo "EXP07_SMALL_ENCODER_MATRIX_DONE out=${OUT_ROOT}"
+
+if [[ "$(wc -l <"${FAILED_CASES_FILE}")" -gt 1 ]]; then
+  echo "EXP07_SMALL_ENCODER_MATRIX completed with failed cases; see ${FAILED_CASES_FILE}" >&2
+  exit 1
+fi

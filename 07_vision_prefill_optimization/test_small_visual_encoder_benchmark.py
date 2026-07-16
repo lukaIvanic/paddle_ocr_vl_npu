@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import unittest
+import tempfile
+from pathlib import Path
 from types import SimpleNamespace
 
 import torch
 
 from benchmark_small_visual_encoder import select_bucket_batch
-from summarize_small_visual_encoder_matrix import make_attention_pairs, make_backend_pairs
+from summarize_small_visual_encoder_matrix import load_failures, make_attention_pairs, make_backend_pairs
 
 
 def fake_input(item_id: str, tokens: int) -> SimpleNamespace:
@@ -80,6 +82,18 @@ class MatrixSummaryTest(unittest.TestCase):
         self.assertEqual(len(pairs), 1)
         self.assertAlmostEqual(pairs[0]["physical_throughput_speedup_promptfa_over_manual"], 1.6)
         self.assertAlmostEqual(pairs[0]["latency_speedup_promptfa_over_manual"], 1.6)
+
+    def test_failed_case_table(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "failed_cases.tsv").write_text(
+                "case\texit_status\tlog\ncompiled_case\t1\tcase.log\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                load_failures(root),
+                [{"case": "compiled_case", "exit_status": "1", "log": "case.log"}],
+            )
 
 
 if __name__ == "__main__":
