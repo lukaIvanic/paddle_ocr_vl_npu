@@ -97,3 +97,8 @@ recorded as such in the JSON.
 
 `--batch-size` accepts 1, 2, 4, 8, and other powers of two. Use additional
 `--image` arguments to process multiple pages; pages remain sequential.
+
+Measured 910B validations are recorded in
+[`NPU_FULL_PAGE_RESULT.md`](NPU_FULL_PAGE_RESULT.md) for the original B=1 path
+and [`NPU_BATCHED_DECODE_RESULT.md`](NPU_BATCHED_DECODE_RESULT.md) for padded
+fixed B=2 and B=4 decode.
