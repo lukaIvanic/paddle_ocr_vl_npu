@@ -141,3 +141,7 @@ are recorded in
 The five-page B=4 comparison of the model-default `112896` floor against the
 half-area `56448` override is recorded in
 [`NPU_MIN_PIXELS_RESULT.md`](NPU_MIN_PIXELS_RESULT.md).
+
+The same-NPU comparison of manual vision attention against eager BNSD
+PromptFlashAttention is recorded in
+[`NPU_PROMPTFA_RESULT.md`](NPU_PROMPTFA_RESULT.md).
