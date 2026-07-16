@@ -171,3 +171,7 @@ half-area `56448` override is recorded in
 The same-NPU comparison of manual vision attention against eager BNSD
 PromptFlashAttention is recorded in
 [`NPU_PROMPTFA_RESULT.md`](NPU_PROMPTFA_RESULT.md).
+
+The bucketed TorchAir vision-encoder integration, exact eager/compiled token
+parity control, and full-page B=4 result are recorded in
+[`NPU_COMPILED_VISION_RESULT.md`](NPU_COMPILED_VISION_RESULT.md).
