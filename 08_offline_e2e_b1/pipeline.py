@@ -429,7 +429,11 @@ def aggregate_pages(
         "initial_decode_admissions": decode_schedule.initial_admissions,
         "hot_swap_decode_admissions": decode_schedule.hot_swap_admissions,
         "ready_buffer_capacity": decode_schedule.ready_buffer_capacity,
+        "ready_buffer_low_watermark": (
+            decode_schedule.ready_buffer_low_watermark
+        ),
         "max_ready_queue_depth": decode_schedule.max_ready_queue_depth,
+        "ready_source_refill_count": decode_schedule.ready_source_refill_count,
         "layout_label_counts": dict(
             sorted(Counter(region.label for region in layout_regions).items())
         ),

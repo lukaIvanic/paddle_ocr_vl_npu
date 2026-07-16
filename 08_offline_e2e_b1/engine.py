@@ -229,7 +229,8 @@ class ContinuousRecognizer:
         decoded = self.decode_scheduler.run_stream(
             ready_stream(),
             on_completion=handle_completion,
-            ready_buffer_capacity=self.batch_size,
+            ready_buffer_capacity=4 * self.batch_size,
+            ready_buffer_low_watermark=self.batch_size,
         )
         decode_wall_s = decoded.timing_s["continuous_decode_wall"]
 
@@ -250,7 +251,9 @@ class ContinuousRecognizer:
             batch_size=self.batch_size,
             requests=decoded.submitted_requests,
             ready_buffer_capacity=decoded.ready_buffer_capacity,
+            ready_buffer_low_watermark=decoded.ready_buffer_low_watermark,
             max_ready_queue_depth=decoded.max_ready_queue_depth,
+            ready_source_refill_count=decoded.ready_source_refill_count,
             graph_calls=decoded.graph_calls,
             initial_admissions=decoded.initial_admissions,
             hot_swap_admissions=decoded.hot_swap_admissions,
@@ -542,7 +545,8 @@ class ContinuousRecognizer:
             "text_prefill": "eager_sequential_no_padding",
             "decode": decode_label,
             "decode_schedule": "run_scoped_cross_page_persistent_slots_iteration_hot_swap",
-            "ready_buffer_capacity": self.batch_size,
+            "ready_buffer_capacity": 4 * self.batch_size,
+            "ready_buffer_low_watermark": self.batch_size,
             "decode_completion_detection": "queue_depth_one_async_token_copy",
             "kv_admission": "copy_valid_prefill_prefix_into_fixed_slot",
             "compile": self.compile_metadata,

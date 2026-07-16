@@ -66,7 +66,9 @@ class ContinuousDecodeResult:
     batch_size: int
     requests: int
     ready_buffer_capacity: int
+    ready_buffer_low_watermark: int
     max_ready_queue_depth: int
+    ready_source_refill_count: int
     graph_calls: int
     initial_admissions: int
     hot_swap_admissions: int

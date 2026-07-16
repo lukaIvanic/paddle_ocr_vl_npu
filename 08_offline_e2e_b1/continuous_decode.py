@@ -72,7 +72,9 @@ class ContinuousDecodeRun:
     completions: list[DecodeCompletion]
     submitted_requests: int
     ready_buffer_capacity: int
+    ready_buffer_low_watermark: int
     max_ready_queue_depth: int
+    ready_source_refill_count: int
     graph_calls: int
     initial_admissions: int
     hot_swap_admissions: int
@@ -389,6 +391,7 @@ class ContinuousDecodeScheduler:
         *,
         on_completion: Callable[[DecodeCompletion], None] | None = None,
         ready_buffer_capacity: int | None = None,
+        ready_buffer_low_watermark: int | None = None,
     ) -> ContinuousDecodeRun:
         """Decode a bounded, lazily produced request stream.
 
@@ -407,11 +410,21 @@ class ContinuousDecodeScheduler:
         )
         if buffer_capacity <= 0:
             raise ValueError("ready_buffer_capacity must be positive")
+        low_watermark = (
+            min(self.batch_size, buffer_capacity)
+            if ready_buffer_low_watermark is None
+            else int(ready_buffer_low_watermark)
+        )
+        if low_watermark <= 0 or low_watermark > buffer_capacity:
+            raise ValueError(
+                "ready_buffer_low_watermark must be in [1, ready_buffer_capacity]"
+            )
         ready_queue: deque[ReadyDecodeRequest] = deque()
         source_exhausted = False
         submitted_order: list[str] = []
         submitted_ids: set[str] = set()
         max_ready_queue_depth = 0
+        ready_source_refill_count = 0
         completions: list[DecodeCompletion] = []
         graph_calls = 0
         initial_admissions = 0
@@ -435,7 +448,8 @@ class ContinuousDecodeScheduler:
 
         def refill_ready_queue() -> None:
             nonlocal source_exhausted, ready_source_wall_s
-            nonlocal max_ready_queue_depth
+            nonlocal max_ready_queue_depth, ready_source_refill_count
+            pulled = 0
             while not source_exhausted and len(ready_queue) < buffer_capacity:
                 started = time.perf_counter()
                 try:
@@ -450,7 +464,10 @@ class ContinuousDecodeScheduler:
                 submitted_ids.add(ready.request_id)
                 submitted_order.append(ready.request_id)
                 ready_queue.append(ready)
+                pulled += 1
                 max_ready_queue_depth = max(max_ready_queue_depth, len(ready_queue))
+            if pulled:
+                ready_source_refill_count += 1
 
         def fill_free_slots(*, hot_swap: bool) -> None:
             nonlocal initial_admissions, hot_swap_admissions
@@ -493,7 +510,8 @@ class ContinuousDecodeScheduler:
 
         synchronize(self.device)
         scheduler_started = time.perf_counter()
-        refill_ready_queue()
+        if len(ready_queue) < low_watermark:
+            refill_ready_queue()
         fill_free_slots(hot_swap=False)
         refill_ready_queue()
         pending: PendingTokenCopy | None = None
@@ -536,7 +554,8 @@ class ContinuousDecodeScheduler:
                             )
                         )
                 fill_free_slots(hot_swap=True)
-                refill_ready_queue()
+                if len(ready_queue) < low_watermark:
+                    refill_ready_queue()
                 retire_and_refill_wall_s += time.perf_counter() - started
 
             pending = current
@@ -586,7 +605,9 @@ class ContinuousDecodeScheduler:
             completions=ordered_completions,
             submitted_requests=len(submitted_order),
             ready_buffer_capacity=buffer_capacity,
+            ready_buffer_low_watermark=low_watermark,
             max_ready_queue_depth=max_ready_queue_depth,
+            ready_source_refill_count=ready_source_refill_count,
             graph_calls=graph_calls,
             initial_admissions=initial_admissions,
             hot_swap_admissions=hot_swap_admissions,
