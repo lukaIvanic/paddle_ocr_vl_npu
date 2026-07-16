@@ -37,6 +37,11 @@ available as a Transformers/PyTorch model at:
 PaddlePaddle/PaddleOCR-VL-1.6
 ```
 
+Concurrent Experiment 08 processes must use distinct values for
+`--torchair-cache-dir`, `--vision-torchair-cache-dir`, and
+`--text-torchair-cache-dir`. Sequential runs may reuse a completed cache, but
+simultaneous TorchAir writers can invalidate each other's cache directories.
+
 It loads through `AutoProcessor` and `AutoModelForImageTextToText` / `PaddleOCRVLForConditionalGeneration`. Architecturally, it is a native-resolution vision encoder plus adaptive MLP projector plus ERNIE-4.5-0.3B decoder-only multimodal LM. Visual embeddings replace `<image>` token embeddings before decoder inference; there is no encoder-decoder cross-attention block.
 
 Keep the distinction clear:
