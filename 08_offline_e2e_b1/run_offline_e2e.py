@@ -21,13 +21,15 @@ HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parent
 DEFAULT_OUTPUT_ROOT = REPO_ROOT / "tmp" / "08_offline_e2e_b1"
 DEFAULT_CACHE_ROOT = REPO_ROOT / ".runtime_cache" / "08_offline_e2e_b1_torchair"
+DEFAULT_LOCAL_RECOGNIZER = Path("/workspace/models/PaddleOCR-VL-1.6")
+DEFAULT_RECOGNIZER = str(DEFAULT_LOCAL_RECOGNIZER) if DEFAULT_LOCAL_RECOGNIZER.is_dir() else "PaddlePaddle/PaddleOCR-VL-1.6"
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--image", type=Path, action="append", required=True)
     parser.add_argument("--layout-model", type=Path, default=Path("/workspace/models/PP-DocLayoutV3_safetensors"))
-    parser.add_argument("--recognizer-model", default="PaddlePaddle/PaddleOCR-VL-1.6")
+    parser.add_argument("--recognizer-model", default=DEFAULT_RECOGNIZER)
     parser.add_argument("--device", default="npu:0")
     parser.add_argument("--dtype", default="fp16", choices=("fp16", "float16", "bf16", "bfloat16"))
     parser.add_argument("--layout-threshold", type=float, default=0.3)
@@ -115,7 +117,8 @@ def main() -> None:
         aggregate=aggregate_pages(pages),
         metric_definitions={
             "layout_inference": "Synchronized wall time for the real PP-DocLayoutV3 model call only.",
-            "page_total": "Image open through real layout, all sequential recognitions, and reading-order text assembly; setup is excluded.",
+            "page_total": "Image open through real layout, all sequential recognitions, and reading-order text assembly; setup and diagnostic artifact writes are excluded.",
+            "page_total_including_artifacts": "page_total plus page text and optional annotated-image/crop writes.",
             "request_total": "In-memory crop preprocessing through eager prefill, compiled decode, D2H token transfer, and detokenization.",
             "device_stage_s": "Accelerator event time for eager vision/text-prefill sub-stages; it is not host wall time.",
             "decode_effective_tok_per_s": "Generated tokens after the prefill-produced first token, including EOS, divided by compiled decode wall time.",

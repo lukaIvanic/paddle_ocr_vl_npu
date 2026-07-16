@@ -11,7 +11,7 @@ args=(
   "$HERE/run_offline_e2e.py"
   --image "$IMAGE"
   --layout-model "${LAYOUT_MODEL:-/workspace/models/PP-DocLayoutV3_safetensors}"
-  --recognizer-model "${RECOGNIZER_MODEL:-PaddlePaddle/PaddleOCR-VL-1.6}"
+  --recognizer-model "${RECOGNIZER_MODEL:-/workspace/models/PaddleOCR-VL-1.6}"
   --device "${DEVICE:-npu:0}"
   --dtype "${DTYPE:-fp16}"
   --decode-backend "${DECODE_BACKEND:-torchair}"

@@ -76,6 +76,7 @@ source npu-setup
   08_offline_e2e_b1/run_offline_e2e.py \
   --image "/workspace/datasets/OmniDocBench/images/PPT_The Right Moves_page_024.png" \
   --layout-model /workspace/models/PP-DocLayoutV3_safetensors \
+  --recognizer-model /workspace/models/PaddleOCR-VL-1.6 \
   --device npu:0 \
   --decode-backend torchair \
   --cache-length 2048 \

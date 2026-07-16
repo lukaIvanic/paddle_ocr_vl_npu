@@ -149,7 +149,9 @@ class OfflinePagePipeline:
             if result.label not in MARKDOWN_IGNORE_LABELS and result.text.strip()
         )
         postprocess_s = time.perf_counter() - started
+        page_pipeline_s = time.perf_counter() - page_started
 
+        artifact_started = time.perf_counter()
         if self.artifact_dir is not None:
             page_dir = self.artifact_dir / "pages"
             page_dir.mkdir(parents=True, exist_ok=True)
@@ -167,18 +169,21 @@ class OfflinePagePipeline:
                         stroke_fill="white",
                     )
                 annotated.save(page_dir / f"{page_id}_layout.png")
+        artifact_write_s = time.perf_counter() - artifact_started
 
         generated_tokens = sum(item.generated_tokens_including_eos for item in recognized)
         decode_tokens = sum(item.decode_tokens_after_prefill_including_eos for item in recognized)
         decode_wall = sum(item.timing_s["compiled_decode_wall"] for item in recognized)
-        page_total_s = time.perf_counter() - page_started
+        page_total_including_artifacts_s = time.perf_counter() - page_started
         timing = {
             "image_load": float(image_load_s),
             **layout_timing,
             "crop_extraction": float(crop_total_s),
             "sequential_recognition_wall": float(recognition_wall_s),
             "reading_order_text_postprocess": float(postprocess_s),
-            "page_total": float(page_total_s),
+            "page_total": float(page_pipeline_s),
+            "artifact_write": float(artifact_write_s),
+            "page_total_including_artifacts": float(page_total_including_artifacts_s),
         }
         partial = any(item.reason == "max_regions_debug_limit" for item in skipped)
         return PageResult(
@@ -194,7 +199,7 @@ class OfflinePagePipeline:
                 "layout_regions_per_s": per_second(len(layout_regions), layout_timing["layout_inference"]),
                 "recognition_regions_per_s": per_second(len(recognized), recognition_wall_s),
                 "decode_effective_tok_per_s": per_second(decode_tokens, decode_wall),
-                "page_output_tok_per_s": per_second(generated_tokens, page_total_s),
+                "page_output_tok_per_s": per_second(generated_tokens, page_pipeline_s),
             },
             partial=partial,
         )

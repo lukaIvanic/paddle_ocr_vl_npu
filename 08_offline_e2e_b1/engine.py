@@ -50,6 +50,7 @@ class SequentialRecognizer:
         torchair_cache_dir: Path,
         npu_jit_compile: str = "off",
     ):
+        runtime_started = time.perf_counter()
         self.model_dir = _resolve_model_dir(model)
         self.device = resolve_device(device)
         self.dtype = parse_dtype(dtype, self.device)
@@ -64,6 +65,7 @@ class SequentialRecognizer:
         configure_npu_jit_compile(npu_jit_compile, self.device)
         self.preprocessor_config = load_preprocessor_config(self.model_dir)
         self.tokenizer = Tokenizer.from_file(str(self.model_dir / "tokenizer.json"))
+        frontend_setup_s = time.perf_counter() - runtime_started
 
         synchronize(self.device)
         started = time.perf_counter()
@@ -116,10 +118,12 @@ class SequentialRecognizer:
         del warm_cache, warm_input, warm_position, warm_rope
 
         self.setup_timing_s = {
+            "recognizer_frontend_setup": float(frontend_setup_s),
             "recognizer_model_load": float(model_load_s),
             "decode_weight_format": float(weight_format_s),
             "compile_wrapper": float(compile_wrapper_s),
             "compile_first_call": float(compile_first_call_s),
+            "recognizer_runtime_total": float(time.perf_counter() - runtime_started),
         }
 
     @torch.inference_mode()

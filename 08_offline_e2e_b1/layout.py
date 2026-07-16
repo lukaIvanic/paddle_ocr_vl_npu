@@ -15,6 +15,7 @@ from timing import synchronize, timed_wall
 
 class PPDocLayoutV3Runtime:
     def __init__(self, model_dir: Path, device: torch.device, threshold: float = 0.3):
+        runtime_started = time.perf_counter()
         from transformers import AutoImageProcessor, AutoModelForObjectDetection
 
         self.model_dir = model_dir.expanduser().resolve()
@@ -28,6 +29,7 @@ class PPDocLayoutV3Runtime:
         synchronize(self.device)
         self.setup_timing_s = {
             "layout_model_load": time.perf_counter() - started,
+            "layout_runtime_total": time.perf_counter() - runtime_started,
         }
 
     @torch.inference_mode()
