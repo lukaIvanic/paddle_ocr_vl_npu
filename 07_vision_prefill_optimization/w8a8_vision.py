@@ -99,8 +99,8 @@ class PackedW8A8Linear(torch.nn.Module):
                 persistent=False,
             )
             self.register_buffer(
-                "input_zero_point",
-                torch.zeros(self.in_features, device=weight.device, dtype=torch.int8),
+                "input_offset",
+                torch.zeros(self.in_features, device=weight.device, dtype=torch.float32),
                 persistent=False,
             )
             dequant_scale = input_scale_scalar * self.weight_scale
@@ -134,7 +134,7 @@ class PackedW8A8Linear(torch.nn.Module):
             quantized_x = torch_npu.npu_quantize(
                 flat,
                 self.input_scale_reciprocal,
-                self.input_zero_point,
+                self.input_offset,
                 torch.qint8,
                 axis=-1,
                 div_mode=False,
