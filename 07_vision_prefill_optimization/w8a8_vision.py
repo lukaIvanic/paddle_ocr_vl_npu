@@ -90,17 +90,17 @@ class PackedW8A8Linear(torch.nn.Module):
             )
             self.register_buffer(
                 "input_scale",
-                input_scale_scalar.repeat(self.in_features),
+                input_scale_scalar.to(dtype=weight.dtype).repeat(self.in_features),
                 persistent=False,
             )
             self.register_buffer(
                 "input_scale_reciprocal",
-                (1.0 / input_scale_scalar).repeat(self.in_features),
+                (1.0 / input_scale_scalar).to(dtype=weight.dtype).repeat(self.in_features),
                 persistent=False,
             )
             self.register_buffer(
                 "input_offset",
-                torch.zeros(self.in_features, device=weight.device, dtype=torch.float32),
+                torch.zeros(self.in_features, device=weight.device, dtype=weight.dtype),
                 persistent=False,
             )
             dequant_scale = input_scale_scalar * self.weight_scale
