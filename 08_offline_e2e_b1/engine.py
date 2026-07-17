@@ -100,6 +100,7 @@ class ContinuousRecognizer:
     prefixes replace finished requests between autoregressive iterations.
     """
 
+    @torch.inference_mode()
     def __init__(
         self,
         *,
@@ -120,6 +121,10 @@ class ContinuousRecognizer:
         npu_jit_compile: str = "off",
         preprocessor_min_pixels: int | None = None,
     ):
+        # TorchAir guards tensor dispatch-key sets. Build and warm every graph
+        # under the same inference-mode contract used by recognize_stream(),
+        # otherwise the first real request invalidates the persistent cache
+        # and recompiles the vision, text-prefill, and decode boundaries.
         runtime_started = time.perf_counter()
         self.model_dir = _resolve_model_dir(model)
         self.device = resolve_device(device)

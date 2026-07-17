@@ -205,6 +205,9 @@ The production runtime modules do not import `run_*` entrypoints or `probe_*`
 experiments. Those scripts consume the same preprocessing, device, and compile
 modules as the E2E engine, so diagnostic code cannot silently become a runtime
 dependency or invalidate a decode cache merely because a probe changed.
+The recognizer also constructs and warms all three compiled boundaries under
+`torch.inference_mode()`, matching real request execution and keeping TorchAir's
+dispatch-key guards stable across warmup and serving.
 
 Measured 910B validations are recorded in
 [`NPU_FULL_PAGE_RESULT.md`](NPU_FULL_PAGE_RESULT.md) for the original B=1 path

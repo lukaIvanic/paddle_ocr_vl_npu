@@ -9,6 +9,7 @@ from typing import Any
 import torch
 
 from compile_utils import (
+    TORCHAIR_EXECUTION_MODE,
     cache_key_part,
     compile_backend,
     import_torchair,
@@ -61,6 +62,7 @@ def torchair_cache_dir_for_shape(
             linear_weight_format,
             DECODE_ATTENTION,
             DECODE_CACHE_UPDATE,
+            f"mode{cache_key_part(TORCHAIR_EXECUTION_MODE)}",
             f"dtype{cache_key_part(dtype or 'unknown')}",
             f"bs{int(batch_size)}",
             f"cache{int(cache_length)}",
@@ -137,6 +139,7 @@ def compile_decode_module(
                 "linear_weight_format": linear_weight_format,
                 "decode_attention": decode_attention_label(device),
                 "decode_cache_update": decode_cache_update_label(device),
+                "execution_mode": TORCHAIR_EXECUTION_MODE,
             },
         }
 

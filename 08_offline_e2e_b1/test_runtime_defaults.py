@@ -4,8 +4,13 @@ from __future__ import annotations
 
 import unittest
 from dataclasses import fields
+from pathlib import Path
+from unittest.mock import patch
 
-from engine import PrefilledRecognition
+import torch
+
+from compile_utils import TORCHAIR_EXECUTION_MODE
+from engine import ContinuousRecognizer, PrefilledRecognition
 from run_offline_e2e import parse_args
 from runtime_defaults import (
     DEFAULT_CACHE_LENGTH,
@@ -58,6 +63,29 @@ class RuntimeDefaultsTest(unittest.TestCase):
 
     def test_prefilled_state_does_not_retain_the_pil_request(self) -> None:
         self.assertNotIn("request", {field.name for field in fields(PrefilledRecognition)})
+
+    def test_recognizer_initialization_uses_inference_mode(self) -> None:
+        observed_modes: list[bool] = []
+
+        def stop_after_observation(_model: str) -> Path:
+            observed_modes.append(torch.is_inference_mode_enabled())
+            raise RuntimeError("observed constructor mode")
+
+        with patch("engine._resolve_model_dir", side_effect=stop_after_observation):
+            with self.assertRaisesRegex(RuntimeError, "observed constructor mode"):
+                ContinuousRecognizer(
+                    model="unused-test-model",
+                    device="cpu",
+                    dtype="fp16",
+                    decode_backend="raw_eager",
+                    batch_size=1,
+                    cache_length=2,
+                    max_new_tokens=1,
+                    torchair_cache_dir=Path("unused-test-cache"),
+                )
+
+        self.assertEqual(observed_modes, [True])
+        self.assertEqual(TORCHAIR_EXECUTION_MODE, "inference")
 
 
 if __name__ == "__main__":

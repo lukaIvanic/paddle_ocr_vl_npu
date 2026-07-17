@@ -10,6 +10,9 @@ from pathlib import Path
 import torch
 
 
+TORCHAIR_EXECUTION_MODE = "inference"
+
+
 def import_torchair():
     try:
         import torchair

@@ -27,6 +27,7 @@ from local_modeling_paddleocr_vl import (
     get_vision_softmax_dtype_mode,
 )
 from compile_utils import (
+    TORCHAIR_EXECUTION_MODE,
     cache_key_part,
     import_torchair,
     short_file_hash,
@@ -314,6 +315,7 @@ def vision_cache_dir_for_bucket(
     key = "_".join(
         [
             "encoder_postln_manual_bmm",
+            f"mode{cache_key_part(TORCHAIR_EXECUTION_MODE)}",
             f"softmax{cache_key_part(get_vision_softmax_dtype_mode())}",
             "bs1",
             f"seq{int(bucket)}",
@@ -453,6 +455,7 @@ class BucketedVisionEncoderRuntime:
                     "vision_source_hash": vision_source_hash(),
                     "attention": "manual_bmm",
                     "softmax_dtype": get_vision_softmax_dtype_mode(),
+                    "execution_mode": TORCHAIR_EXECUTION_MODE,
                 },
             }
         )
