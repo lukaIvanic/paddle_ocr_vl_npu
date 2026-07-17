@@ -57,6 +57,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--rows", type=int, default=4096)
     parser.add_argument("--backend", default="npu")
     parser.add_argument("--weight-layout", default="nd_kn")
+    parser.add_argument(
+        "--quantization",
+        default="w8a8_static",
+        choices=("w8a8_static", "w8a8_static_pad64"),
+    )
     parser.add_argument("--warmup", type=int, default=10)
     parser.add_argument("--iterations", type=int, default=100)
     parser.add_argument("--output", type=Path, required=True)
@@ -86,7 +91,7 @@ def main() -> None:
     w8a8 = PackedW8A8Linear(
         weight,
         bias,
-        mode="w8a8_static",
+        mode=str(args.quantization),
         weight_layout=str(args.weight_layout),
         static_input_scale=input_scale,
     ).eval()
@@ -139,6 +144,7 @@ def main() -> None:
         "out_features": 4304,
         "backend": str(args.backend),
         "weight_layout": str(args.weight_layout),
+        "quantization": str(args.quantization),
         "warmup": int(args.warmup),
         "iterations": int(args.iterations),
         "fp16_first_call_s": fp16_first_call_s,
