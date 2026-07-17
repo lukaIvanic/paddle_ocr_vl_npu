@@ -10,6 +10,7 @@ import torch
 
 FRACTAL_NZ = 29
 VISION_LINEAR_QUANTIZATION_CHOICES = ("none", "w8a8_dynamic", "w8a8_static")
+VISION_LINEAR_SITES = ("qkv", "out_proj", "fc1", "fc2")
 W8A8_WEIGHT_LAYOUT_CHOICES = ("auto", "nd_kn", "nz_kn", "nz_nk_transposed")
 
 
@@ -93,6 +94,11 @@ class PackedW8A8Linear(torch.nn.Module):
                 persistent=False,
             )
             self.register_buffer(
+                "input_scale_reciprocal",
+                (1.0 / input_scale_scalar).repeat(self.in_features),
+                persistent=False,
+            )
+            self.register_buffer(
                 "input_zero_point",
                 torch.zeros(self.in_features, device=weight.device, dtype=torch.int8),
                 persistent=False,
@@ -127,11 +133,11 @@ class PackedW8A8Linear(torch.nn.Module):
         else:
             quantized_x = torch_npu.npu_quantize(
                 flat,
-                self.input_scale,
+                self.input_scale_reciprocal,
                 self.input_zero_point,
                 torch.qint8,
                 axis=-1,
-                div_mode=True,
+                div_mode=False,
             )
             output = torch_npu.npu_quant_matmul(
                 quantized_x,
@@ -152,6 +158,7 @@ class PackedW8A8Linear(torch.nn.Module):
             "weight_layout": self.weight_layout,
             "packed_weight_format": int(torch_npu.get_npu_format(self.weight_int8)),
             "static_input_scale": self.static_input_scale_value,
+            "static_quantize_div_mode": False if self.mode == "w8a8_static" else None,
         }
 
 

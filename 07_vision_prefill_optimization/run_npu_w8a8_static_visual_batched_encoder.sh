@@ -14,6 +14,7 @@ export MAX_ITEMS="${MAX_ITEMS:-8}"
 export STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN="${STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN:-1024}"
 export VISION_COMPILE_BACKEND="${VISION_COMPILE_BACKEND:-none}"
 export W8A8_WEIGHT_LAYOUT="${W8A8_WEIGHT_LAYOUT:-auto}"
+export W8A8_SITES="${W8A8_SITES:-qkv,out_proj,fc1,fc2}"
 export W8A8_STATIC_CALIBRATION_BATCHES="${W8A8_STATIC_CALIBRATION_BATCHES:-2}"
 export W8A8_STATIC_SCALE_HEADROOM="${W8A8_STATIC_SCALE_HEADROOM:-1.05}"
 export QUANTIZATION_CASES="${QUANTIZATION_CASES:-none w8a8_dynamic w8a8_static}"
@@ -28,6 +29,7 @@ echo "W8A8_ENCODER BATCH_SIZE=${BATCH_SIZE} MAX_ITEMS=${MAX_ITEMS}"
 echo "W8A8_ENCODER FIXED_S=${STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN}"
 echo "W8A8_ENCODER VISION_COMPILE_BACKEND=${VISION_COMPILE_BACKEND}"
 echo "W8A8_ENCODER W8A8_WEIGHT_LAYOUT=${W8A8_WEIGHT_LAYOUT}"
+echo "W8A8_ENCODER W8A8_SITES=${W8A8_SITES}"
 echo "W8A8_ENCODER QUANTIZATION_CASES=${QUANTIZATION_CASES}"
 echo "W8A8_ENCODER OUT_ROOT=${OUT_ROOT}"
 
@@ -51,13 +53,14 @@ for quantization in ${QUANTIZATION_CASES}; do
     --vision-compile-backend "${VISION_COMPILE_BACKEND}" \
     --vision-linear-quantization "${quantization}" \
     --w8a8-weight-layout "${W8A8_WEIGHT_LAYOUT}" \
+    --w8a8-sites "${W8A8_SITES}" \
     --w8a8-static-calibration-batches "${W8A8_STATIC_CALIBRATION_BATCHES}" \
     --w8a8-static-scale-headroom "${W8A8_STATIC_SCALE_HEADROOM}" \
     --warmup-encoder-first-batch \
     --batch-size "${BATCH_SIZE}" \
     --max-items "${MAX_ITEMS}" \
     --skip-generation \
-    --candidate-name "${quantization}" \
+    --candidate-name "${quantization}_${W8A8_SITES//,/-}" \
     --output "${output_json}"
 done
 

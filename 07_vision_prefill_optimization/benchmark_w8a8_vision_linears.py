@@ -148,6 +148,9 @@ def benchmark_one(
     weight_int8_kn = pack_weight(weight_int8_nk, device=device, layout=weight_layout)
     weight_scale = weight_scale.to(device=device, dtype=torch.float32)
     input_scale = input_scale_cpu.repeat(spec.in_features).to(device=device, dtype=torch.float32)
+    input_scale_reciprocal = (1.0 / input_scale_cpu).repeat(spec.in_features).to(
+        device=device, dtype=torch.float32
+    )
     input_zero_point = torch.zeros(spec.in_features, device=device, dtype=torch.int8)
     dequant_scale = torch_npu.npu_trans_quant_param(dequant_scale_cpu.to(device=device, dtype=torch.float32))
     quant_bias = quant_bias_cpu.to(device=device)
@@ -182,6 +185,16 @@ def benchmark_one(
         )
 
     def static_quantize() -> torch.Tensor:
+        return torch_npu.npu_quantize(
+            x,
+            input_scale_reciprocal,
+            input_zero_point,
+            torch.qint8,
+            axis=-1,
+            div_mode=False,
+        )
+
+    def static_quantize_divide() -> torch.Tensor:
         return torch_npu.npu_quantize(
             x,
             input_scale,
@@ -249,6 +262,9 @@ def benchmark_one(
     static_quant_s, _ = elapsed_per_call(
         static_quantize, device=device, warmup=warmup, iterations=iterations
     )
+    static_quant_divide_s, static_quant_divide_output = elapsed_per_call(
+        static_quantize_divide, device=device, warmup=warmup, iterations=iterations
+    )
     static_qmm_s, _ = elapsed_per_call(
         static_prequantized_matmul, device=device, warmup=warmup, iterations=iterations
     )
@@ -277,6 +293,8 @@ def benchmark_one(
         "static_input_scale": float(input_scale_cpu.item()),
         "static_w8a8_s": static_w8a8_s,
         "static_quant_only_s": static_quant_s,
+        "static_quant_divide_only_s": static_quant_divide_s,
+        "static_quant_modes_equal": bool(torch.equal(quantized_static_x, static_quant_divide_output)),
         "static_prequantized_matmul_s": static_qmm_s,
         "static_speedup": float(optimized_fp16_baseline_s / static_w8a8_s),
         "static_w8a8_time_fraction": float(static_w8a8_s / optimized_fp16_baseline_s),
@@ -402,6 +420,7 @@ def main() -> None:
             "output_dtype": "float16",
             "dynamic_activation": "symmetric_per_token_int8",
             "static_activation": "calibrated_symmetric_per_tensor_int8",
+            "static_quantize": "multiply_by_reciprocal_scale_div_mode_false_matching_vllm_ascend_310p",
             "static_bias": "folded_int32",
             "timed_region": "activation_quantization_plus_npu_quant_matmul",
         },
