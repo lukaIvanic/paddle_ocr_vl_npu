@@ -67,6 +67,12 @@ from vision_prefill_bench import (
     vision_compile_backend,
     vision_tokens,
 )
+from w8a8_vision import (
+    VISION_LINEAR_QUANTIZATION_CHOICES,
+    W8A8_WEIGHT_LAYOUT_CHOICES,
+    packed_from_linears,
+    resolve_weight_layout,
+)
 
 
 class BatchedStaticVisualEncoderModule(torch.nn.Module):
@@ -80,17 +86,37 @@ class BatchedStaticVisualEncoderModule(torch.nn.Module):
         ln_impl: str,
         ln_linear_mode: str,
         promptfa_pad_head_dim_to: int,
+        linear_quantization: str = "none",
+        w8a8_weight_layout: str = "auto",
+        w8a8_static_scale_headroom: float = 1.05,
     ):
         super().__init__()
         if ln_impl not in STATIC_VISUAL_LN_IMPL_CHOICES:
             raise ValueError(f"unsupported LayerNorm impl={ln_impl!r}")
         if ln_linear_mode not in STATIC_VISUAL_LN_LINEAR_MODE_CHOICES:
             raise ValueError(f"unsupported LN-linear mode={ln_linear_mode!r}")
+        if linear_quantization not in VISION_LINEAR_QUANTIZATION_CHOICES:
+            raise ValueError(f"unsupported vision Linear quantization={linear_quantization!r}")
+        if w8a8_weight_layout not in W8A8_WEIGHT_LAYOUT_CHOICES:
+            raise ValueError(f"unsupported W8A8 weight layout={w8a8_weight_layout!r}")
+        if float(w8a8_static_scale_headroom) < 1.0:
+            raise ValueError("W8A8 static scale headroom must be >= 1.0")
         self.model = model
         self.fixed_physical_seq_len = int(fixed_physical_seq_len)
         self.ln_impl = str(ln_impl)
         self.ln_linear_mode = str(ln_linear_mode)
         self.promptfa_pad_head_dim_to = int(promptfa_pad_head_dim_to)
+        self.linear_quantization = str(linear_quantization)
+        self.w8a8_weight_layout_requested = str(w8a8_weight_layout)
+        self.w8a8_weight_layout = resolve_weight_layout(
+            next(model.parameters()).device,
+            self.w8a8_weight_layout_requested,
+        )
+        self.w8a8_static_scale_headroom = float(w8a8_static_scale_headroom)
+        self.w8a8_layers = torch.nn.ModuleList()
+        self._w8a8_prepared = False
+        self._calibration_enabled = False
+        self._calibration_maxima: dict[str, torch.Tensor] = {}
 
     def _static_layer_norm(self, layer_norm: torch.nn.LayerNorm, hidden_states: torch.Tensor) -> torch.Tensor:
         if self.ln_impl == "module":
@@ -121,6 +147,107 @@ class BatchedStaticVisualEncoderModule(torch.nn.Module):
         return y
 
     @staticmethod
+    def _site_key(layer_index: int, site: str) -> str:
+        return f"layer_{int(layer_index):02d}.{site}"
+
+    def set_calibration_enabled(self, enabled: bool) -> None:
+        if bool(enabled) and self.linear_quantization != "w8a8_static":
+            raise ValueError("activation calibration is only used for static W8A8")
+        if bool(enabled) and self._w8a8_prepared:
+            raise RuntimeError("cannot calibrate after W8A8 weights have been prepared")
+        self._calibration_enabled = bool(enabled)
+
+    def _observe_activation(self, layer_index: int, site: str, hidden_states: torch.Tensor) -> None:
+        if not self._calibration_enabled:
+            return
+        key = self._site_key(layer_index, site)
+        maximum = hidden_states.detach().float().abs().max()
+        previous = self._calibration_maxima.get(key)
+        self._calibration_maxima[key] = maximum if previous is None else torch.maximum(previous, maximum)
+
+    def _static_input_scale(self, layer_index: int, site: str) -> float | None:
+        if self.linear_quantization != "w8a8_static":
+            return None
+        key = self._site_key(layer_index, site)
+        maximum = self._calibration_maxima.get(key)
+        if maximum is None:
+            raise RuntimeError(f"missing static W8A8 calibration maximum for {key}")
+        value = float(maximum.item())
+        return max(value * self.w8a8_static_scale_headroom / 127.0, torch.finfo(torch.float32).eps)
+
+    def prepare_w8a8(self) -> dict[str, Any]:
+        if self.linear_quantization == "none":
+            return {"enabled": False, "mode": "none"}
+        if self._w8a8_prepared:
+            raise RuntimeError("W8A8 weights are already prepared")
+        self._calibration_enabled = False
+        layers = []
+        for layer_index, encoder_layer in enumerate(self.model.visual.vision_model.encoder.layers):
+            attention = encoder_layer.self_attn
+            mlp = encoder_layer.mlp
+            packed = torch.nn.ModuleDict(
+                {
+                    "qkv": packed_from_linears(
+                        [attention.q_proj, attention.k_proj, attention.v_proj],
+                        mode=self.linear_quantization,
+                        weight_layout=self.w8a8_weight_layout,
+                        static_input_scale=self._static_input_scale(layer_index, "qkv"),
+                    ),
+                    "out_proj": packed_from_linears(
+                        [attention.out_proj],
+                        mode=self.linear_quantization,
+                        weight_layout=self.w8a8_weight_layout,
+                        static_input_scale=self._static_input_scale(layer_index, "out_proj"),
+                    ),
+                    "fc1": packed_from_linears(
+                        [mlp.fc1],
+                        mode=self.linear_quantization,
+                        weight_layout=self.w8a8_weight_layout,
+                        static_input_scale=self._static_input_scale(layer_index, "fc1"),
+                    ),
+                    "fc2": packed_from_linears(
+                        [mlp.fc2],
+                        mode=self.linear_quantization,
+                        weight_layout=self.w8a8_weight_layout,
+                        static_input_scale=self._static_input_scale(layer_index, "fc2"),
+                    ),
+                }
+            )
+            layers.append(packed)
+        self.w8a8_layers.extend(layers)
+        self._w8a8_prepared = True
+        first = self.w8a8_layers[0]
+        return {
+            "enabled": True,
+            "mode": self.linear_quantization,
+            "weight_layout_requested": self.w8a8_weight_layout_requested,
+            "weight_layout_resolved": self.w8a8_weight_layout,
+            "static_scale_headroom": self.w8a8_static_scale_headroom,
+            "calibrated_site_count": int(len(self._calibration_maxima)),
+            "packed_linear_count": int(len(self.w8a8_layers) * 4),
+            "first_layer": {name: module.metadata() for name, module in first.items()},
+        }
+
+    def calibration_summary(self) -> dict[str, Any]:
+        maxima = {key: float(value.item()) for key, value in sorted(self._calibration_maxima.items())}
+        scales = {
+            key: max(value * self.w8a8_static_scale_headroom / 127.0, torch.finfo(torch.float32).eps)
+            for key, value in maxima.items()
+        }
+        return {
+            "enabled": bool(self.linear_quantization == "w8a8_static"),
+            "site_count": int(len(maxima)),
+            "headroom": float(self.w8a8_static_scale_headroom),
+            "maxima": maxima,
+            "input_scales": scales,
+        }
+
+    def _quantized_linear(self, layer_index: int, site: str, hidden_states: torch.Tensor) -> torch.Tensor:
+        if not self._w8a8_prepared:
+            raise RuntimeError("W8A8 Linear requested before prepare_w8a8()")
+        return self.w8a8_layers[layer_index][site](hidden_states)
+
+    @staticmethod
     def _linear_maybe_grouped(hidden_states: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor | None) -> torch.Tensor:
         leading_shape = tuple(hidden_states.shape[:-1])
         flat = hidden_states.reshape(-1, hidden_states.shape[-1])
@@ -143,7 +270,15 @@ class BatchedStaticVisualEncoderModule(torch.nn.Module):
             )[0]
         return out.reshape(*leading_shape, out.shape[-1])
 
-    def _qkv_projection(self, attention: torch.nn.Module, hidden_states: torch.Tensor) -> torch.Tensor:
+    def _qkv_projection(
+        self,
+        attention: torch.nn.Module,
+        hidden_states: torch.Tensor,
+        layer_index: int,
+    ) -> torch.Tensor:
+        self._observe_activation(layer_index, "qkv", hidden_states)
+        if self._w8a8_prepared:
+            return self._quantized_linear(layer_index, "qkv", hidden_states)
         if self.ln_linear_mode in ("grouped_qkv", "grouped_qkv_mlp_fc1"):
             qkv_weight = torch.cat(
                 [attention.q_proj.weight, attention.k_proj.weight, attention.v_proj.weight],
@@ -166,12 +301,19 @@ class BatchedStaticVisualEncoderModule(torch.nn.Module):
             dim=-1,
         )
 
-    def _mlp(self, mlp: torch.nn.Module, hidden_states: torch.Tensor) -> torch.Tensor:
-        if self.ln_linear_mode == "grouped_qkv_mlp_fc1":
+    def _mlp(self, mlp: torch.nn.Module, hidden_states: torch.Tensor, layer_index: int) -> torch.Tensor:
+        self._observe_activation(layer_index, "fc1", hidden_states)
+        if self._w8a8_prepared:
+            fc1_out = self._quantized_linear(layer_index, "fc1", hidden_states)
+        elif self.ln_linear_mode == "grouped_qkv_mlp_fc1":
             fc1_out = self._linear_maybe_grouped(hidden_states, mlp.fc1.weight, mlp.fc1.bias)
         else:
             fc1_out = mlp.fc1(hidden_states)
-        return mlp.fc2(_activation(mlp.hidden_act, fc1_out))
+        activated = _activation(mlp.hidden_act, fc1_out)
+        self._observe_activation(layer_index, "fc2", activated)
+        if self._w8a8_prepared:
+            return self._quantized_linear(layer_index, "fc2", activated)
+        return mlp.fc2(activated)
 
     def _promptfa_call_head_dim(self, attention: torch.nn.Module) -> int:
         real_head_dim = int(attention.head_dim)
@@ -196,9 +338,10 @@ class BatchedStaticVisualEncoderModule(torch.nn.Module):
         rope_cos: torch.Tensor,
         rope_sin: torch.Tensor,
         attention_mask: torch.Tensor,
+        layer_index: int,
     ) -> torch.Tensor:
         batch_size, seq_length, _hidden = hidden_states.shape
-        qkv = self._qkv_projection(attention, hidden_states)
+        qkv = self._qkv_projection(attention, hidden_states, layer_index)
         query_states, key_states, value_states = qkv.chunk(3, dim=-1)
         query_states = query_states.view(batch_size, seq_length, attention.num_heads, attention.head_dim)
         key_states = key_states.view(batch_size, seq_length, attention.num_heads, attention.head_dim)
@@ -255,6 +398,9 @@ class BatchedStaticVisualEncoderModule(torch.nn.Module):
         else:
             raise ValueError(f"unknown vision attention implementation: {attention_impl!r}")
         attn_output = attn_output.transpose(1, 2).contiguous().view(batch_size, seq_length, -1)
+        self._observe_activation(layer_index, "out_proj", attn_output)
+        if self._w8a8_prepared:
+            return self._quantized_linear(layer_index, "out_proj", attn_output)
         return attention.out_proj(attn_output)
 
     def _encoder_layer(
@@ -264,6 +410,7 @@ class BatchedStaticVisualEncoderModule(torch.nn.Module):
         rope_cos: torch.Tensor,
         rope_sin: torch.Tensor,
         attention_mask: torch.Tensor,
+        layer_index: int,
     ) -> torch.Tensor:
         attn_input = self._static_layer_norm(encoder_layer.layer_norm1, hidden_states)
         hidden_states = hidden_states + self._attention(
@@ -272,9 +419,10 @@ class BatchedStaticVisualEncoderModule(torch.nn.Module):
             rope_cos,
             rope_sin,
             attention_mask,
+            layer_index,
         )
         mlp_input = self._static_layer_norm(encoder_layer.layer_norm2, hidden_states)
-        return hidden_states + self._mlp(encoder_layer.mlp, mlp_input)
+        return hidden_states + self._mlp(encoder_layer.mlp, mlp_input, layer_index)
 
     def forward(
         self,
@@ -285,8 +433,15 @@ class BatchedStaticVisualEncoderModule(torch.nn.Module):
     ) -> torch.Tensor:
         hidden_states = prefix_hidden_states
         transformer = self.model.visual.vision_model
-        for encoder_layer in transformer.encoder.layers:
-            hidden_states = self._encoder_layer(encoder_layer, hidden_states, rope_cos, rope_sin, attention_mask)
+        for layer_index, encoder_layer in enumerate(transformer.encoder.layers):
+            hidden_states = self._encoder_layer(
+                encoder_layer,
+                hidden_states,
+                rope_cos,
+                rope_sin,
+                attention_mask,
+                layer_index,
+            )
         return self._static_layer_norm(transformer.post_layernorm, hidden_states)
 
 
@@ -310,6 +465,9 @@ def encoder_cache_dir(
     promptfa_layout: str,
     promptfa_mask_sparse_mode: int,
     torchair_mode: str,
+    linear_quantization: str,
+    w8a8_weight_layout: str,
+    w8a8_static_scale_headroom: float,
 ) -> Path:
     dummy_grid = torch.tensor([[int(batch_size), 1, int(fixed_physical_seq_len)]], dtype=torch.long)
     base = torchair_cache_dir_for_static_visual(
@@ -326,7 +484,11 @@ def encoder_cache_dir(
         torchair_mode=torchair_mode,
     )
     attention = get_vision_attention_impl().replace("/", "_").replace(" ", "_")
-    return base.parent / f"encoder_only_{attention}_B{int(batch_size)}_{base.name}"
+    quant_suffix = (
+        f"quant-{linear_quantization}_layout-{w8a8_weight_layout}_"
+        f"headroom-{float(w8a8_static_scale_headroom):g}"
+    )
+    return base.parent / f"encoder_only_{attention}_B{int(batch_size)}_{quant_suffix}_{base.name}"
 
 
 def compile_encoder_forward(
@@ -389,6 +551,9 @@ def compile_encoder_forward(
             promptfa_layout=get_vision_prompt_fa_layout(),
             promptfa_mask_sparse_mode=promptfa_mask_sparse_mode,
             torchair_mode=torchair_mode,
+            linear_quantization=module.linear_quantization,
+            w8a8_weight_layout=module.w8a8_weight_layout,
+            w8a8_static_scale_headroom=module.w8a8_static_scale_headroom,
         )
         cache_dir.mkdir(parents=True, exist_ok=True)
         maybe_sync(device)
@@ -539,6 +704,18 @@ def parse_args() -> argparse.Namespace:
         choices=STATIC_VISUAL_LN_LINEAR_MODE_CHOICES,
     )
     parser.add_argument("--static-visual-promptfa-pad-head-dim-to", type=int, default=80)
+    parser.add_argument(
+        "--vision-linear-quantization",
+        default="none",
+        choices=VISION_LINEAR_QUANTIZATION_CHOICES,
+    )
+    parser.add_argument(
+        "--w8a8-weight-layout",
+        default="auto",
+        choices=W8A8_WEIGHT_LAYOUT_CHOICES,
+    )
+    parser.add_argument("--w8a8-static-calibration-batches", type=int, default=2)
+    parser.add_argument("--w8a8-static-scale-headroom", type=float, default=1.05)
     parser.add_argument("--skip-generation", action="store_true")
     add_torchair_diagnostic_args(parser)
     parser.add_argument("--debug-static-visual-no-padding", action="store_true")
@@ -555,6 +732,8 @@ def main() -> None:
         raise ValueError("--static-visual-fixed-physical-seq-len must be >0 for batched encoder validation")
     if int(args.batch_size) <= 0:
         raise ValueError("--batch-size must be >0")
+    if str(args.vision_linear_quantization) == "w8a8_static" and int(args.w8a8_static_calibration_batches) <= 0:
+        raise ValueError("static W8A8 requires --w8a8-static-calibration-batches >0")
 
     baseline_path = Path(args.baseline).expanduser().resolve()
     manifest = load_baseline_manifest(baseline_path)
@@ -604,6 +783,7 @@ def main() -> None:
         raise ValueError(
             f"no full batches available after filtering: eligible_after_max_items={len(eligible_pairs)} batch_size={batch_size}"
         )
+    batches = [selected_pairs[idx : idx + batch_size] for idx in range(0, len(selected_pairs), batch_size)]
 
     encoder_module = BatchedStaticVisualEncoderModule(
         model,
@@ -611,7 +791,51 @@ def main() -> None:
         ln_impl=str(args.static_visual_ln_impl),
         ln_linear_mode=str(args.static_visual_ln_linear_mode),
         promptfa_pad_head_dim_to=int(args.static_visual_promptfa_pad_head_dim_to),
+        linear_quantization=str(args.vision_linear_quantization),
+        w8a8_weight_layout=str(args.w8a8_weight_layout),
+        w8a8_static_scale_headroom=float(args.w8a8_static_scale_headroom),
     ).eval()
+    calibration_meta: dict[str, Any] = {
+        "enabled": False,
+        "requested_batches": int(args.w8a8_static_calibration_batches),
+        "completed_batches": 0,
+        "elapsed_s": 0.0,
+    }
+    if str(args.vision_linear_quantization) == "w8a8_static":
+        encoder_module.set_calibration_enabled(True)
+        calibration_batches = batches[: int(args.w8a8_static_calibration_batches)]
+        maybe_sync(device)
+        calibration_start = time.perf_counter()
+        for calibration_pairs in calibration_batches:
+            calibration_items = [item for _manifest_index, item in calibration_pairs]
+            prefix, rope_cos, rope_sin, mask, _prefix_meta = build_prefix_batch(
+                model=model,
+                batch_items=calibration_items,
+                device=device,
+                fixed_physical_seq_len=fixed_s,
+                ln_impl=str(args.static_visual_ln_impl),
+                ln_linear_mode=str(args.static_visual_ln_linear_mode),
+                promptfa_pad_head_dim_to=int(args.static_visual_promptfa_pad_head_dim_to),
+                debug_no_padding=bool(args.debug_static_visual_no_padding),
+                debug_min_pad_tokens=int(args.debug_static_visual_min_pad_tokens),
+                debug_pad_to_multiple=int(args.debug_static_visual_pad_to_multiple),
+            )
+            encoder_module(prefix, rope_cos, rope_sin, mask)
+        maybe_sync(device)
+        encoder_module.set_calibration_enabled(False)
+        calibration_meta = {
+            "enabled": True,
+            "requested_batches": int(args.w8a8_static_calibration_batches),
+            "completed_batches": int(len(calibration_batches)),
+            "elapsed_s": float(time.perf_counter() - calibration_start),
+            **encoder_module.calibration_summary(),
+        }
+    maybe_sync(device)
+    quant_prepare_start = time.perf_counter()
+    quantization_meta = encoder_module.prepare_w8a8()
+    maybe_sync(device)
+    quantization_meta["prepare_s"] = float(time.perf_counter() - quant_prepare_start)
+    quantization_meta["calibration"] = calibration_meta
     encoder_forward, compile_meta = compile_encoder_forward(
         encoder_module,
         backend_name=str(args.vision_compile_backend),
@@ -634,7 +858,6 @@ def main() -> None:
         promptfa_mask_sparse_mode=int(args.vision_prompt_fa_mask_sparse_mode),
     )
 
-    batches = [selected_pairs[idx : idx + batch_size] for idx in range(0, len(selected_pairs), batch_size)]
     rows: list[dict[str, Any]] = []
     batch_rows: list[dict[str, Any]] = []
     first_call_meta: dict[str, Any] = {}
@@ -836,12 +1059,18 @@ def main() -> None:
             "static_visual_ln_impl": str(args.static_visual_ln_impl),
             "static_visual_ln_linear_mode": str(args.static_visual_ln_linear_mode),
             "static_visual_promptfa_pad_head_dim_to": int(args.static_visual_promptfa_pad_head_dim_to),
+            "vision_linear_quantization": str(args.vision_linear_quantization),
+            "w8a8_weight_layout_requested": str(args.w8a8_weight_layout),
+            "w8a8_weight_layout_resolved": str(encoder_module.w8a8_weight_layout),
+            "w8a8_static_calibration_batches": int(args.w8a8_static_calibration_batches),
+            "w8a8_static_scale_headroom": float(args.w8a8_static_scale_headroom),
             "batched_boundary": "encoder_layers_plus_post_layernorm_only",
             "prefix_boundary": "per_crop_patch_embedding_plus_abs_pos_plus_padding_outside_compile",
             "max_new_tokens": int(args.max_new_tokens),
             "skip_generation": bool(args.skip_generation),
         },
         "compile": clean_json(compile_meta),
+        "quantization": clean_json(quantization_meta),
         "baseline": {
             "path": str(baseline_path),
             "item_count": int(manifest.get("item_count", len(manifest.get("items", [])))),
