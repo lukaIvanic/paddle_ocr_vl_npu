@@ -155,6 +155,21 @@ def benchmark_one(
     def fp16_linear() -> torch.Tensor:
         return F.linear(x, weight_fp, bias)
 
+    group_list = torch.full((1,), rows, dtype=torch.int64, device=device)
+    grouped_weight = weight_fp.transpose(0, 1).contiguous().unsqueeze(0)
+    grouped_bias = [bias.contiguous().unsqueeze(0)]
+
+    def fp16_grouped() -> torch.Tensor:
+        return torch_npu.npu_grouped_matmul(
+            [x],
+            [grouped_weight],
+            bias=grouped_bias,
+            group_list=group_list,
+            split_item=2,
+            group_type=0,
+            group_list_type=1,
+        )[0]
+
     def dynamic_w8a8() -> torch.Tensor:
         quantized_x, pertoken_scale = torch_npu.npu_dynamic_quant(x)
         return torch_npu.npu_quant_matmul(
@@ -214,6 +229,11 @@ def benchmark_one(
     fp16_s, reference = elapsed_per_call(
         fp16_linear, device=device, warmup=warmup, iterations=iterations
     )
+    fp16_grouped_s, grouped_reference = elapsed_per_call(
+        fp16_grouped, device=device, warmup=warmup, iterations=iterations
+    )
+    use_grouped_baseline = spec.name in {"qkv", "fc1"}
+    optimized_fp16_baseline_s = fp16_grouped_s if use_grouped_baseline else fp16_s
     w8a8_s, candidate = elapsed_per_call(
         dynamic_w8a8, device=device, warmup=warmup, iterations=iterations
     )
@@ -242,11 +262,15 @@ def benchmark_one(
         "weight_layout": str(weight_layout),
         "packed_weight_format": int(torch_npu.get_npu_format(weight_int8_kn)),
         "fp16_linear_s": fp16_s,
+        "fp16_grouped_s": fp16_grouped_s,
+        "optimized_fp16_baseline": "grouped_matmul" if use_grouped_baseline else "linear",
+        "optimized_fp16_baseline_s": optimized_fp16_baseline_s,
+        "grouped_vs_linear_diff": diff_stats(reference, grouped_reference),
         "dynamic_w8a8_s": w8a8_s,
         "dynamic_quant_only_s": quant_s,
         "prequantized_matmul_s": qmm_s,
-        "dynamic_speedup": float(fp16_s / w8a8_s),
-        "dynamic_w8a8_time_fraction": float(w8a8_s / fp16_s),
+        "dynamic_speedup": float(optimized_fp16_baseline_s / w8a8_s),
+        "dynamic_w8a8_time_fraction": float(w8a8_s / optimized_fp16_baseline_s),
         "dynamic_quant_fraction_of_w8a8": float(quant_s / w8a8_s),
         "dynamic_diff": diff_stats(reference, candidate),
         "dynamic_output_nonfinite_count": int((~torch.isfinite(candidate.float())).sum().item()),
@@ -254,8 +278,8 @@ def benchmark_one(
         "static_w8a8_s": static_w8a8_s,
         "static_quant_only_s": static_quant_s,
         "static_prequantized_matmul_s": static_qmm_s,
-        "static_speedup": float(fp16_s / static_w8a8_s),
-        "static_w8a8_time_fraction": float(static_w8a8_s / fp16_s),
+        "static_speedup": float(optimized_fp16_baseline_s / static_w8a8_s),
+        "static_w8a8_time_fraction": float(static_w8a8_s / optimized_fp16_baseline_s),
         "static_quant_fraction_of_w8a8": float(static_quant_s / static_w8a8_s),
         "static_diff": diff_stats(reference, static_candidate),
         "static_output_nonfinite_count": int((~torch.isfinite(static_candidate.float())).sum().item()),
@@ -264,15 +288,18 @@ def benchmark_one(
 
 def aggregate_layer(rows: list[dict[str, Any]]) -> dict[str, Any]:
     fp16_s = float(sum(float(row["fp16_linear_s"]) for row in rows))
+    optimized_fp16_s = float(sum(float(row["optimized_fp16_baseline_s"]) for row in rows))
     dynamic_w8a8_s = float(sum(float(row["dynamic_w8a8_s"]) for row in rows))
     static_w8a8_s = float(sum(float(row["static_w8a8_s"]) for row in rows))
     return {
         "fp16_four_projection_s": fp16_s,
+        "optimized_fp16_four_projection_s": optimized_fp16_s,
         "dynamic_w8a8_four_projection_s": dynamic_w8a8_s,
-        "dynamic_four_projection_speedup": float(fp16_s / dynamic_w8a8_s),
+        "dynamic_four_projection_speedup": float(optimized_fp16_s / dynamic_w8a8_s),
         "static_w8a8_four_projection_s": static_w8a8_s,
-        "static_four_projection_speedup": float(fp16_s / static_w8a8_s),
+        "static_four_projection_speedup": float(optimized_fp16_s / static_w8a8_s),
         "estimated_fp16_27_layer_projection_s": float(27 * fp16_s),
+        "estimated_optimized_fp16_27_layer_projection_s": float(27 * optimized_fp16_s),
         "estimated_dynamic_w8a8_27_layer_projection_s": float(27 * dynamic_w8a8_s),
         "estimated_static_w8a8_27_layer_projection_s": float(27 * static_w8a8_s),
     }
@@ -331,6 +358,8 @@ def main() -> None:
                 print(
                     f"W8A8_LINEAR layout={layout} rows={rows} name={spec.name} "
                     f"fp16_ms={1000.0 * row['fp16_linear_s']:.4f} "
+                    f"fp16_grouped_ms={1000.0 * row['fp16_grouped_s']:.4f} "
+                    f"baseline={row['optimized_fp16_baseline']} "
                     f"dynamic_ms={1000.0 * row['dynamic_w8a8_s']:.4f} "
                     f"dynamic_speedup={row['dynamic_speedup']:.3f} "
                     f"static_ms={1000.0 * row['static_w8a8_s']:.4f} "
