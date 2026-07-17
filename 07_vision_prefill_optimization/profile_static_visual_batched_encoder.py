@@ -287,7 +287,7 @@ def main() -> None:
         w8a8_static_scale_headroom=float(args.w8a8_static_scale_headroom),
     ).eval()
     calibration_meta: dict[str, Any] = {"enabled": False, "completed_batches": 0, "elapsed_s": 0.0}
-    if str(args.vision_linear_quantization) == "w8a8_static":
+    if str(args.vision_linear_quantization) in {"w8a8_static", "w8a8_static_pad64"}:
         encoder_module.set_calibration_enabled(True)
         maybe_sync(device)
         calibration_start = time.perf_counter()

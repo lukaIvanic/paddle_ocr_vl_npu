@@ -759,7 +759,10 @@ def main() -> None:
         raise ValueError("--batch-size must be >0")
     if int(args.encoder_timing_repeats) <= 0:
         raise ValueError("--encoder-timing-repeats must be >0")
-    if str(args.vision_linear_quantization) == "w8a8_static" and int(args.w8a8_static_calibration_batches) <= 0:
+    if (
+        str(args.vision_linear_quantization) in {"w8a8_static", "w8a8_static_pad64"}
+        and int(args.w8a8_static_calibration_batches) <= 0
+    ):
         raise ValueError("static W8A8 requires --w8a8-static-calibration-batches >0")
     w8a8_sites = tuple(site.strip() for site in str(args.w8a8_sites).split(",") if site.strip())
     unknown_w8a8_sites = set(w8a8_sites) - set(VISION_LINEAR_SITES)
@@ -833,7 +836,7 @@ def main() -> None:
         "completed_batches": 0,
         "elapsed_s": 0.0,
     }
-    if str(args.vision_linear_quantization) == "w8a8_static":
+    if str(args.vision_linear_quantization) in {"w8a8_static", "w8a8_static_pad64"}:
         encoder_module.set_calibration_enabled(True)
         calibration_batches = batches[: int(args.w8a8_static_calibration_batches)]
         maybe_sync(device)
