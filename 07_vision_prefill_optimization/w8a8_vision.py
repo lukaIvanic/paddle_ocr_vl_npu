@@ -94,7 +94,7 @@ class PackedW8A8Linear(torch.nn.Module):
             )
             self.register_buffer(
                 "input_zero_point",
-                torch.zeros(self.in_features, device=weight.device, dtype=torch.float32),
+                torch.zeros(self.in_features, device=weight.device, dtype=torch.int8),
                 persistent=False,
             )
             dequant_scale = input_scale_scalar * self.weight_scale
