@@ -53,6 +53,7 @@ for quantization in ${QUANTIZATION_CASES}; do
     --w8a8-weight-layout "${W8A8_WEIGHT_LAYOUT}" \
     --w8a8-static-calibration-batches "${W8A8_STATIC_CALIBRATION_BATCHES}" \
     --w8a8-static-scale-headroom "${W8A8_STATIC_SCALE_HEADROOM}" \
+    --warmup-encoder-first-batch \
     --batch-size "${BATCH_SIZE}" \
     --max-items "${MAX_ITEMS}" \
     --skip-generation \

@@ -716,6 +716,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--w8a8-static-calibration-batches", type=int, default=2)
     parser.add_argument("--w8a8-static-scale-headroom", type=float, default=1.05)
+    parser.add_argument("--warmup-encoder-first-batch", action="store_true")
     parser.add_argument("--skip-generation", action="store_true")
     add_torchair_diagnostic_args(parser)
     parser.add_argument("--debug-static-visual-no-padding", action="store_true")
@@ -861,7 +862,7 @@ def main() -> None:
     rows: list[dict[str, Any]] = []
     batch_rows: list[dict[str, Any]] = []
     first_call_meta: dict[str, Any] = {}
-    if str(args.vision_compile_backend) != "none":
+    if str(args.vision_compile_backend) != "none" or bool(args.warmup_encoder_first_batch):
         first_pairs = batches[0]
         first_items = [item for _manifest_index, item in first_pairs]
         prefix, rope_cos, rope_sin, mask, _prefix_meta = build_prefix_batch(
@@ -881,7 +882,13 @@ def main() -> None:
         first_out = encoder_forward(prefix, rope_cos, rope_sin, mask)
         maybe_sync(device)
         first_call_meta = {
-            "compiled_first_call_s": float(time.perf_counter() - first_start),
+            "compiled_first_call_s": float(time.perf_counter() - first_start)
+            if str(args.vision_compile_backend) != "none"
+            else None,
+            "eager_warmup_first_call_s": float(time.perf_counter() - first_start)
+            if str(args.vision_compile_backend) == "none"
+            else None,
+            "first_call_kind": "compiled" if str(args.vision_compile_backend) != "none" else "eager_warmup",
             "first_output_shape": [int(dim) for dim in first_out.shape],
             "first_output_nonfinite_count": int((~torch.isfinite(first_out.float())).sum().item()),
         }
@@ -1064,6 +1071,7 @@ def main() -> None:
             "w8a8_weight_layout_resolved": str(encoder_module.w8a8_weight_layout),
             "w8a8_static_calibration_batches": int(args.w8a8_static_calibration_batches),
             "w8a8_static_scale_headroom": float(args.w8a8_static_scale_headroom),
+            "warmup_encoder_first_batch": bool(args.warmup_encoder_first_batch),
             "batched_boundary": "encoder_layers_plus_post_layernorm_only",
             "prefix_boundary": "per_crop_patch_embedding_plus_abs_pos_plus_padding_outside_compile",
             "max_new_tokens": int(args.max_new_tokens),

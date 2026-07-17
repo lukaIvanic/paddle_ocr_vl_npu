@@ -388,7 +388,9 @@ def main() -> None:
         "torch_version": str(torch.__version__),
         "torch_npu_version": str(torch_npu.__version__),
         "device": str(device),
-        "device_name": str(torch.npu.get_device_name(device)),
+        "device_name": str(
+            torch.npu.get_device_name(torch.npu.current_device() if device.index is None else int(device.index))
+        ),
         "dtype": str(dtype),
         "warmup": int(args.warmup),
         "iterations": int(args.iterations),
