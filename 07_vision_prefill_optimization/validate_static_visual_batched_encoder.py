@@ -716,6 +716,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--w8a8-static-calibration-batches", type=int, default=2)
     parser.add_argument("--w8a8-static-scale-headroom", type=float, default=1.05)
+    parser.add_argument("--encoder-timing-repeats", type=int, default=1)
     parser.add_argument("--warmup-encoder-first-batch", action="store_true")
     parser.add_argument("--skip-generation", action="store_true")
     add_torchair_diagnostic_args(parser)
@@ -733,6 +734,8 @@ def main() -> None:
         raise ValueError("--static-visual-fixed-physical-seq-len must be >0 for batched encoder validation")
     if int(args.batch_size) <= 0:
         raise ValueError("--batch-size must be >0")
+    if int(args.encoder_timing_repeats) <= 0:
+        raise ValueError("--encoder-timing-repeats must be >0")
     if str(args.vision_linear_quantization) == "w8a8_static" and int(args.w8a8_static_calibration_batches) <= 0:
         raise ValueError("static W8A8 requires --w8a8-static-calibration-batches >0")
     w8a8_sites = tuple(site.strip() for site in str(args.w8a8_sites).split(",") if site.strip())
@@ -929,9 +932,11 @@ def main() -> None:
         prefix_s = float(time.perf_counter() - prefix_start)
         maybe_sync(device)
         encoder_start = time.perf_counter()
-        physical_outputs = encoder_forward(prefix, rope_cos, rope_sin, mask)
+        for _repeat_index in range(int(args.encoder_timing_repeats)):
+            physical_outputs = encoder_forward(prefix, rope_cos, rope_sin, mask)
         maybe_sync(device)
-        encoder_s = float(time.perf_counter() - encoder_start)
+        encoder_repeated_s = float(time.perf_counter() - encoder_start)
+        encoder_s = float(encoder_repeated_s / int(args.encoder_timing_repeats))
         effective_tokens = int(sum(vision_tokens(item) for item in batch_items))
         physical_tokens = int(batch_size * fixed_s)
         total_effective_tokens += effective_tokens
@@ -948,6 +953,8 @@ def main() -> None:
                 "physical_tokens": int(physical_tokens),
                 "prefix_build_s": float(prefix_s),
                 "batched_encoder_s": float(encoder_s),
+                "batched_encoder_repeated_s": float(encoder_repeated_s),
+                "encoder_timing_repeats": int(args.encoder_timing_repeats),
                 "prefix_plus_encoder_s": float(prefix_s + encoder_s),
                 "encoder_effective_tokens_per_s": float(effective_tokens / encoder_s) if encoder_s > 0 else None,
                 "encoder_physical_tokens_per_s": float(physical_tokens / encoder_s) if encoder_s > 0 else None,
@@ -1078,6 +1085,7 @@ def main() -> None:
             "w8a8_static_calibration_batches": int(args.w8a8_static_calibration_batches),
             "w8a8_static_scale_headroom": float(args.w8a8_static_scale_headroom),
             "warmup_encoder_first_batch": bool(args.warmup_encoder_first_batch),
+            "encoder_timing_repeats": int(args.encoder_timing_repeats),
             "batched_boundary": "encoder_layers_plus_post_layernorm_only",
             "prefix_boundary": "per_crop_patch_embedding_plus_abs_pos_plus_padding_outside_compile",
             "max_new_tokens": int(args.max_new_tokens),
