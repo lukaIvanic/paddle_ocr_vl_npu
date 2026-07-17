@@ -12,6 +12,7 @@ export OUT_ROOT="${OUT_ROOT:-${SCRIPT_DIR}/outputs/w8a8_static_visual_batched_en
 export BATCH_SIZE="${BATCH_SIZE:-4}"
 export MAX_ITEMS="${MAX_ITEMS:-8}"
 export STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN="${STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN:-1024}"
+export STATIC_VISUAL_LN_LINEAR_MODE="${STATIC_VISUAL_LN_LINEAR_MODE:-grouped_qkv_mlp_fc1}"
 export VISION_COMPILE_BACKEND="${VISION_COMPILE_BACKEND:-none}"
 export W8A8_WEIGHT_LAYOUT="${W8A8_WEIGHT_LAYOUT:-auto}"
 export W8A8_SITES="${W8A8_SITES:-qkv,out_proj,fc1,fc2}"
@@ -28,6 +29,7 @@ echo "W8A8_ENCODER DATASET_DIR=${DATASET_DIR:-<manifest default>}"
 echo "W8A8_ENCODER DEVICE=${DEVICE}"
 echo "W8A8_ENCODER BATCH_SIZE=${BATCH_SIZE} MAX_ITEMS=${MAX_ITEMS}"
 echo "W8A8_ENCODER FIXED_S=${STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN}"
+echo "W8A8_ENCODER LN_LINEAR_MODE=${STATIC_VISUAL_LN_LINEAR_MODE}"
 echo "W8A8_ENCODER VISION_COMPILE_BACKEND=${VISION_COMPILE_BACKEND}"
 echo "W8A8_ENCODER W8A8_WEIGHT_LAYOUT=${W8A8_WEIGHT_LAYOUT}"
 echo "W8A8_ENCODER W8A8_SITES=${W8A8_SITES}"
@@ -50,7 +52,7 @@ for quantization in ${QUANTIZATION_CASES}; do
     --vision-prompt-fa-mask-sparse-mode 1 \
     --static-visual-fixed-physical-seq-len "${STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN}" \
     --static-visual-ln-impl manual_fp32 \
-    --static-visual-ln-linear-mode grouped_qkv_mlp_fc1 \
+    --static-visual-ln-linear-mode "${STATIC_VISUAL_LN_LINEAR_MODE}" \
     --static-visual-promptfa-pad-head-dim-to 80 \
     --vision-compile-backend "${VISION_COMPILE_BACKEND}" \
     --vision-linear-quantization "${quantization}" \
