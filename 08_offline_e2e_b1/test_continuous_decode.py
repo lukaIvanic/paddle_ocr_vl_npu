@@ -86,6 +86,17 @@ class ContinuousDecodeSchedulerTest(unittest.TestCase):
         self.assertEqual(result.idle_decode_token_slots, 3)
         self.assertEqual(result.raw_decode_token_slots, result.effective_decode_tokens + result.lookahead_decode_token_slots + result.idle_decode_token_slots)
         self.assertTrue(all(slot is None for slot in arena.slots))
+        self.assertTrue(
+            all(completion.ready.cache is None for completion in result.completions)
+        )
+        self.assertTrue(
+            all(
+                completion.ready.rope_deltas is None
+                and completion.ready.cache_position is None
+                and completion.ready.first_token_tensor is None
+                for completion in result.completions
+            )
+        )
 
     def test_prefill_only_requests_do_not_launch_decode(self) -> None:
         arena = DecodeArena(
@@ -113,6 +124,9 @@ class ContinuousDecodeSchedulerTest(unittest.TestCase):
             ["eos", "length"],
         )
         self.assertEqual(result.raw_decode_token_slots, 0)
+        self.assertTrue(
+            all(completion.ready.cache is None for completion in result.completions)
+        )
 
     def test_stream_keeps_slots_filled_across_page_ids(self) -> None:
         transitions = {

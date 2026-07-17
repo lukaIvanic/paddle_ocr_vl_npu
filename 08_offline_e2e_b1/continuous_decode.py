@@ -17,12 +17,20 @@ from timing import synchronize
 class ReadyDecodeRequest:
     request_id: str
     payload: Any
-    cache: LocalPaddleOCRVLStaticCache
-    rope_deltas: torch.Tensor
-    cache_position: torch.Tensor
-    first_token_tensor: torch.Tensor
+    cache: LocalPaddleOCRVLStaticCache | None
+    rope_deltas: torch.Tensor | None
+    cache_position: torch.Tensor | None
+    first_token_tensor: torch.Tensor | None
     first_token: int
     prompt_length: int
+
+    def release_device_state(self) -> None:
+        """Drop the per-request NPU prefix after it enters the decode arena."""
+
+        self.cache = None
+        self.rope_deltas = None
+        self.cache_position = None
+        self.first_token_tensor = None
 
 
 @dataclass
@@ -198,38 +206,51 @@ class DecodeArena:
     def admit(self, slot_index: int, ready: ReadyDecodeRequest) -> tuple[DecodeSlotState, int]:
         if self.slots[slot_index] is not None:
             raise RuntimeError(f"decode slot {slot_index} is not free")
+        source_cache = ready.cache
+        source_rope_deltas = ready.rope_deltas
+        source_cache_position = ready.cache_position
+        source_first_token = ready.first_token_tensor
+        if (
+            source_cache is None
+            or source_rope_deltas is None
+            or source_cache_position is None
+            or source_first_token is None
+        ):
+            raise RuntimeError(
+                f"request {ready.request_id} no longer owns prefill device state"
+            )
         prompt_length = int(ready.prompt_length)
         if prompt_length <= 0 or prompt_length > int(self.cache.cache_length):
             raise ValueError(
                 f"request {ready.request_id} has invalid prompt length {prompt_length}"
             )
-        if len(ready.cache.key_caches) != len(self.cache.key_caches):
+        if len(source_cache.key_caches) != len(self.cache.key_caches):
             raise ValueError("ready cache and decode arena have different layer counts")
 
         copied_bytes = 0
-        for source in (*ready.cache.key_caches, *ready.cache.value_caches):
+        for source in (*source_cache.key_caches, *source_cache.value_caches):
             copied_bytes += int(source[:, :, :prompt_length, :].numel()) * source.element_size()
 
         def copy_state() -> None:
             for destination, source in zip(
                 self.cache.key_caches,
-                ready.cache.key_caches,
+                source_cache.key_caches,
             ):
                 destination[slot_index : slot_index + 1, :, :prompt_length, :].copy_(
                     source[:, :, :prompt_length, :]
                 )
             for destination, source in zip(
                 self.cache.value_caches,
-                ready.cache.value_caches,
+                source_cache.value_caches,
             ):
                 destination[slot_index : slot_index + 1, :, :prompt_length, :].copy_(
                     source[:, :, :prompt_length, :]
                 )
-            self.rope_deltas[slot_index : slot_index + 1].copy_(ready.rope_deltas)
+            self.rope_deltas[slot_index : slot_index + 1].copy_(source_rope_deltas)
             self.cache_position[slot_index : slot_index + 1].copy_(
-                ready.cache_position.reshape(1)
+                source_cache_position.reshape(1)
             )
-            self.next_token[slot_index : slot_index + 1].copy_(ready.first_token_tensor)
+            self.next_token[slot_index : slot_index + 1].copy_(source_first_token)
             self.active_mask[slot_index].fill_(True)
 
         started = time.perf_counter()
@@ -245,6 +266,11 @@ class DecodeArena:
             admitted_at=time.perf_counter(),
         )
         self.slots[slot_index] = state
+        # DecodeSlotState and DecodeCompletion intentionally retain request
+        # metadata, but the copied prefill cache must not survive admission.
+        # Large PaddleX calls may contain hundreds of crops; retaining one
+        # cache per completed crop grows HBM until the outer call returns.
+        ready.release_device_state()
         return state, copied_bytes
 
     def release(self, slot_index: int) -> DecodeSlotState:
@@ -477,6 +503,7 @@ class ContinuousDecodeScheduler:
                         break
                     ready = ready_queue.popleft()
                     if ready.first_token == self.eos_token_id or self.max_new_tokens == 1:
+                        ready.release_device_state()
                         record_completion(
                             DecodeCompletion(
                                 ready=ready,

@@ -74,10 +74,10 @@ class PrefilledRecognition:
     box: Box
     crop_size: tuple[int, int]
     skip_special_tokens: bool
-    cache: LocalPaddleOCRVLStaticCache
-    rope_deltas: torch.Tensor
-    next_cache_position: torch.Tensor
-    next_token: torch.Tensor
+    cache: LocalPaddleOCRVLStaticCache | None
+    rope_deltas: torch.Tensor | None
+    next_cache_position: torch.Tensor | None
+    next_token: torch.Tensor | None
     first_token: int
     input_tokens: int
     projected_image_tokens: int
@@ -87,6 +87,33 @@ class PrefilledRecognition:
     device_stage_s: dict[str, float]
     request_started: float
     prefill_finished: float
+
+    def take_device_state(
+        self,
+    ) -> tuple[
+        LocalPaddleOCRVLStaticCache,
+        torch.Tensor,
+        torch.Tensor,
+        torch.Tensor,
+    ]:
+        """Move the pending NPU prefix out of the long-lived result payload."""
+
+        cache = self.cache
+        rope_deltas = self.rope_deltas
+        next_cache_position = self.next_cache_position
+        next_token = self.next_token
+        if (
+            cache is None
+            or rope_deltas is None
+            or next_cache_position is None
+            or next_token is None
+        ):
+            raise RuntimeError(f"prefill device state already taken for {self.request_id}")
+        self.cache = None
+        self.rope_deltas = None
+        self.next_cache_position = None
+        self.next_token = None
+        return cache, rope_deltas, next_cache_position, next_token
 
 
 class ContinuousRecognizer:
@@ -289,13 +316,16 @@ class ContinuousRecognizer:
         def ready_stream() -> Iterable[ReadyDecodeRequest]:
             for request in requests:
                 state = self._prefill(request)
+                cache, rope_deltas, cache_position, first_token_tensor = (
+                    state.take_device_state()
+                )
                 ready = ReadyDecodeRequest(
                     request_id=state.request_id,
                     payload=state,
-                    cache=state.cache,
-                    rope_deltas=state.rope_deltas,
-                    cache_position=state.next_cache_position,
-                    first_token_tensor=state.next_token,
+                    cache=cache,
+                    rope_deltas=rope_deltas,
+                    cache_position=cache_position,
+                    first_token_tensor=first_token_tensor,
                     first_token=state.first_token,
                     prompt_length=state.input_tokens,
                 )
