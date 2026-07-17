@@ -116,13 +116,11 @@ class PackedW8A8Linear(torch.nn.Module):
             self.register_buffer("quant_bias", quant_bias.contiguous(), persistent=False)
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
-        import torch_npu
-
         leading_shape = tuple(hidden_states.shape[:-1])
         flat = hidden_states.reshape(-1, hidden_states.shape[-1])
         if self.mode == "w8a8_dynamic":
-            quantized_x, pertoken_scale = torch_npu.npu_dynamic_quant(flat)
-            output = torch_npu.npu_quant_matmul(
+            quantized_x, pertoken_scale = torch.ops.npu.npu_dynamic_quant(flat)
+            output = torch.ops.npu.npu_quant_matmul(
                 quantized_x,
                 self.weight_int8,
                 self.weight_scale,
@@ -131,7 +129,7 @@ class PackedW8A8Linear(torch.nn.Module):
                 output_dtype=hidden_states.dtype,
             )
         else:
-            quantized_x = torch_npu.npu_quantize(
+            quantized_x = torch.ops.npu.npu_quantize(
                 flat,
                 self.input_scale_reciprocal,
                 self.input_offset,
@@ -139,7 +137,7 @@ class PackedW8A8Linear(torch.nn.Module):
                 axis=-1,
                 div_mode=False,
             )
-            output = torch_npu.npu_quant_matmul(
+            output = torch.ops.npu.npu_quant_matmul(
                 quantized_x,
                 self.weight_int8,
                 self.dequant_scale,
