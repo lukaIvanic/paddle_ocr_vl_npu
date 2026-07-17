@@ -149,9 +149,9 @@ def benchmark_one(
     weight_scale = weight_scale.to(device=device, dtype=torch.float32)
     input_scale = input_scale_cpu.repeat(spec.in_features).to(device=device, dtype=torch.float32)
     input_scale_reciprocal = (1.0 / input_scale_cpu).repeat(spec.in_features).to(
-        device=device, dtype=torch.float32
+        device=device, dtype=dtype
     )
-    input_offset = torch.zeros(spec.in_features, device=device, dtype=torch.float32)
+    input_offset = torch.zeros(spec.in_features, device=device, dtype=dtype)
     input_zero_point = torch.zeros(spec.in_features, device=device, dtype=torch.int8)
     dequant_scale = torch_npu.npu_trans_quant_param(dequant_scale_cpu.to(device=device, dtype=torch.float32))
     quant_bias = quant_bias_cpu.to(device=device)
