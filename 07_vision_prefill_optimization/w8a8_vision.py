@@ -16,7 +16,8 @@ W8A8_WEIGHT_LAYOUT_CHOICES = ("auto", "nd_kn", "nz_kn", "nz_nk_transposed")
 def is_310p_device(device: torch.device) -> bool:
     if device.type != "npu":
         return False
-    name = str(torch.npu.get_device_name(device)).lower()
+    device_index = torch.npu.current_device() if device.index is None else int(device.index)
+    name = str(torch.npu.get_device_name(device_index)).lower()
     return "310p" in name or "300i" in name or "200i" in name
 
 
