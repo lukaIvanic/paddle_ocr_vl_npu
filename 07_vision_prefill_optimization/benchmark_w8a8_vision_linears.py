@@ -324,6 +324,8 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    import torch_npu
+
     device = torch.device(args.device)
     dtype = torch.float16
     rows_values = [int(value) for value in str(args.rows).split(",") if value.strip()]
@@ -334,8 +336,6 @@ def main() -> None:
         raise ValueError(f"unknown layouts: {sorted(unknown_layouts)}")
     if args.iterations <= 0:
         raise ValueError("--iterations must be positive")
-
-    import torch_npu
 
     results: list[dict[str, Any]] = []
     aggregates: list[dict[str, Any]] = []
