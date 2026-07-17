@@ -3,8 +3,11 @@
 
 The benchmark mirrors the four projection calls used by the optimized vision
 encoder boundary: grouped QKV, attention output, MLP fc1, and MLP fc2. Weight
-quantization and packing happen once, outside timed regions. The W8A8 headline
-includes dynamic per-token activation quantization plus the quantized matmul.
+quantization and packing happen once, outside timed regions. Both candidates
+include activation quantization plus the quantized matmul in their headlines:
+
+* dynamic per-token A8, matching the modern A2/A3 vLLM-Ascend path;
+* calibrated static per-tensor A8, matching the portable 310P path.
 """
 
 from __future__ import annotations
@@ -136,11 +139,18 @@ def benchmark_one(
     bias_cpu = torch.zeros(spec.out_features, dtype=dtype)
 
     weight_int8_nk, weight_scale = quantize_weight_per_output_channel(weight_cpu)
+    input_scale_cpu = x_cpu.float().abs().max().clamp_min(torch.finfo(torch.float32).eps) / 127.0
+    dequant_scale_cpu = input_scale_cpu * weight_scale
+    quant_bias_cpu = torch.round(bias_cpu.float() / dequant_scale_cpu).to(torch.int32)
     x = x_cpu.to(device)
     weight_fp = weight_cpu.to(device)
     bias = bias_cpu.to(device)
     weight_int8_kn = pack_weight(weight_int8_nk, device=device, layout=weight_layout)
     weight_scale = weight_scale.to(device=device, dtype=torch.float32)
+    input_scale = input_scale_cpu.repeat(spec.in_features).to(device=device, dtype=torch.float32)
+    input_zero_point = torch.zeros(spec.in_features, device=device, dtype=torch.float32)
+    dequant_scale = torch_npu.npu_trans_quant_param(dequant_scale_cpu.to(device=device, dtype=torch.float32))
+    quant_bias = quant_bias_cpu.to(device=device)
 
     def fp16_linear() -> torch.Tensor:
         return F.linear(x, weight_fp, bias)
@@ -156,7 +166,28 @@ def benchmark_one(
             output_dtype=dtype,
         )
 
+    def static_quantize() -> torch.Tensor:
+        return torch_npu.npu_quantize(
+            x,
+            input_scale,
+            input_zero_point,
+            torch.qint8,
+            axis=-1,
+            div_mode=True,
+        )
+
+    def static_w8a8() -> torch.Tensor:
+        quantized_static_x = static_quantize()
+        return torch_npu.npu_quant_matmul(
+            quantized_static_x,
+            weight_int8_kn,
+            dequant_scale,
+            bias=quant_bias,
+            output_dtype=dtype,
+        )
+
     quantized_x, pertoken_scale = torch_npu.npu_dynamic_quant(x)
+    quantized_static_x = static_quantize()
 
     def dynamic_quant_only() -> torch.Tensor:
         return torch_npu.npu_dynamic_quant(x)[0]
@@ -168,6 +199,15 @@ def benchmark_one(
             weight_scale,
             pertoken_scale=pertoken_scale,
             bias=bias,
+            output_dtype=dtype,
+        )
+
+    def static_prequantized_matmul() -> torch.Tensor:
+        return torch_npu.npu_quant_matmul(
+            quantized_static_x,
+            weight_int8_kn,
+            dequant_scale,
+            bias=quant_bias,
             output_dtype=dtype,
         )
 
@@ -183,6 +223,15 @@ def benchmark_one(
     qmm_s, _ = elapsed_per_call(
         prequantized_matmul, device=device, warmup=warmup, iterations=iterations
     )
+    static_w8a8_s, static_candidate = elapsed_per_call(
+        static_w8a8, device=device, warmup=warmup, iterations=iterations
+    )
+    static_quant_s, _ = elapsed_per_call(
+        static_quantize, device=device, warmup=warmup, iterations=iterations
+    )
+    static_qmm_s, _ = elapsed_per_call(
+        static_prequantized_matmul, device=device, warmup=warmup, iterations=iterations
+    )
 
     maybe_sync(device)
     return {
@@ -196,23 +245,36 @@ def benchmark_one(
         "dynamic_w8a8_s": w8a8_s,
         "dynamic_quant_only_s": quant_s,
         "prequantized_matmul_s": qmm_s,
-        "speedup": float(fp16_s / w8a8_s),
-        "w8a8_time_fraction": float(w8a8_s / fp16_s),
-        "quant_fraction_of_w8a8": float(quant_s / w8a8_s),
-        "diff": diff_stats(reference, candidate),
-        "output_nonfinite_count": int((~torch.isfinite(candidate.float())).sum().item()),
+        "dynamic_speedup": float(fp16_s / w8a8_s),
+        "dynamic_w8a8_time_fraction": float(w8a8_s / fp16_s),
+        "dynamic_quant_fraction_of_w8a8": float(quant_s / w8a8_s),
+        "dynamic_diff": diff_stats(reference, candidate),
+        "dynamic_output_nonfinite_count": int((~torch.isfinite(candidate.float())).sum().item()),
+        "static_input_scale": float(input_scale_cpu.item()),
+        "static_w8a8_s": static_w8a8_s,
+        "static_quant_only_s": static_quant_s,
+        "static_prequantized_matmul_s": static_qmm_s,
+        "static_speedup": float(fp16_s / static_w8a8_s),
+        "static_w8a8_time_fraction": float(static_w8a8_s / fp16_s),
+        "static_quant_fraction_of_w8a8": float(static_quant_s / static_w8a8_s),
+        "static_diff": diff_stats(reference, static_candidate),
+        "static_output_nonfinite_count": int((~torch.isfinite(static_candidate.float())).sum().item()),
     }
 
 
 def aggregate_layer(rows: list[dict[str, Any]]) -> dict[str, Any]:
     fp16_s = float(sum(float(row["fp16_linear_s"]) for row in rows))
-    w8a8_s = float(sum(float(row["dynamic_w8a8_s"]) for row in rows))
+    dynamic_w8a8_s = float(sum(float(row["dynamic_w8a8_s"]) for row in rows))
+    static_w8a8_s = float(sum(float(row["static_w8a8_s"]) for row in rows))
     return {
         "fp16_four_projection_s": fp16_s,
-        "dynamic_w8a8_four_projection_s": w8a8_s,
-        "four_projection_speedup": float(fp16_s / w8a8_s),
+        "dynamic_w8a8_four_projection_s": dynamic_w8a8_s,
+        "dynamic_four_projection_speedup": float(fp16_s / dynamic_w8a8_s),
+        "static_w8a8_four_projection_s": static_w8a8_s,
+        "static_four_projection_speedup": float(fp16_s / static_w8a8_s),
         "estimated_fp16_27_layer_projection_s": float(27 * fp16_s),
-        "estimated_dynamic_w8a8_27_layer_projection_s": float(27 * w8a8_s),
+        "estimated_dynamic_w8a8_27_layer_projection_s": float(27 * dynamic_w8a8_s),
+        "estimated_static_w8a8_27_layer_projection_s": float(27 * static_w8a8_s),
     }
 
 
@@ -269,8 +331,12 @@ def main() -> None:
                 print(
                     f"W8A8_LINEAR layout={layout} rows={rows} name={spec.name} "
                     f"fp16_ms={1000.0 * row['fp16_linear_s']:.4f} "
-                    f"w8a8_ms={1000.0 * row['dynamic_w8a8_s']:.4f} "
-                    f"speedup={row['speedup']:.3f} cosine={row['diff']['cosine']:.7f}",
+                    f"dynamic_ms={1000.0 * row['dynamic_w8a8_s']:.4f} "
+                    f"dynamic_speedup={row['dynamic_speedup']:.3f} "
+                    f"static_ms={1000.0 * row['static_w8a8_s']:.4f} "
+                    f"static_speedup={row['static_speedup']:.3f} "
+                    f"dynamic_cosine={row['dynamic_diff']['cosine']:.7f} "
+                    f"static_cosine={row['static_diff']['cosine']:.7f}",
                     flush=True,
                 )
             aggregate = {
@@ -281,7 +347,8 @@ def main() -> None:
             aggregates.append(aggregate)
             print(
                 f"W8A8_AGGREGATE layout={layout} rows={rows} "
-                f"four_projection_speedup={aggregate['four_projection_speedup']:.3f}",
+                f"dynamic_speedup={aggregate['dynamic_four_projection_speedup']:.3f} "
+                f"static_speedup={aggregate['static_four_projection_speedup']:.3f}",
                 flush=True,
             )
 
@@ -299,10 +366,12 @@ def main() -> None:
         "rows": rows_values,
         "weight_layouts": layouts,
         "quantization": {
-            "activation": "dynamic_symmetric_per_token_int8",
             "weight": "offline_symmetric_per_output_channel_int8",
             "weight_scale_dtype": "float32",
             "output_dtype": "float16",
+            "dynamic_activation": "symmetric_per_token_int8",
+            "static_activation": "calibrated_symmetric_per_tensor_int8",
+            "static_bias": "folded_int32",
             "timed_region": "activation_quantization_plus_npu_quant_matmul",
         },
         "results": results,
