@@ -151,6 +151,7 @@ def benchmark_one(
     input_scale_reciprocal = (1.0 / input_scale_cpu).repeat(spec.in_features).to(
         device=device, dtype=torch.float32
     )
+    input_offset = torch.zeros(spec.in_features, device=device, dtype=torch.float32)
     input_zero_point = torch.zeros(spec.in_features, device=device, dtype=torch.int8)
     dequant_scale = torch_npu.npu_trans_quant_param(dequant_scale_cpu.to(device=device, dtype=torch.float32))
     quant_bias = quant_bias_cpu.to(device=device)
@@ -188,7 +189,7 @@ def benchmark_one(
         return torch_npu.npu_quantize(
             x,
             input_scale_reciprocal,
-            input_zero_point,
+            input_offset,
             torch.qint8,
             axis=-1,
             div_mode=False,
