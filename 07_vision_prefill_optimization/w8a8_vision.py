@@ -13,6 +13,7 @@ VISION_LINEAR_QUANTIZATION_CHOICES = (
     "none",
     "w8a8_dynamic",
     "w8a8_static",
+    "w8a8_static_pad64",
     "w8a8_fused_pertoken",
     "a16w8_weight_only",
 )
@@ -68,7 +69,7 @@ class PackedW8A8Linear(torch.nn.Module):
         static_input_scale: float | None = None,
     ) -> None:
         super().__init__()
-        if mode not in {"w8a8_dynamic", "w8a8_static"}:
+        if mode not in {"w8a8_dynamic", "w8a8_static", "w8a8_static_pad64"}:
             raise ValueError(f"PackedW8A8Linear requires a W8A8 mode, got {mode!r}")
         if weight.device.type != "npu":
             raise ValueError("PackedW8A8Linear requires weights already resident on NPU")
@@ -76,6 +77,36 @@ class PackedW8A8Linear(torch.nn.Module):
         self.weight_layout = str(weight_layout)
         self.in_features = int(weight.shape[1])
         self.out_features = int(weight.shape[0])
+        self.padded_out_features = (
+            ((self.out_features + 63) // 64) * 64
+            if self.mode == "w8a8_static_pad64"
+            else self.out_features
+        )
+
+        if self.padded_out_features != self.out_features:
+            weight = torch.cat(
+                [
+                    weight,
+                    torch.zeros(
+                        (self.padded_out_features - self.out_features, self.in_features),
+                        device=weight.device,
+                        dtype=weight.dtype,
+                    ),
+                ],
+                dim=0,
+            )
+            if bias is not None:
+                bias = torch.cat(
+                    [
+                        bias,
+                        torch.zeros(
+                            self.padded_out_features - self.out_features,
+                            device=bias.device,
+                            dtype=bias.dtype,
+                        ),
+                    ],
+                    dim=0,
+                )
 
         weight_int8_nk, weight_scale = quantize_weight_per_output_channel(weight)
         self.register_buffer("weight_int8", pack_weight(weight_int8_nk, layout=weight_layout), persistent=False)
@@ -86,7 +117,7 @@ class PackedW8A8Linear(torch.nn.Module):
             self.register_buffer("fp_bias", bias.detach().contiguous(), persistent=False)
 
         self.static_input_scale_value = None if static_input_scale is None else float(static_input_scale)
-        if self.mode == "w8a8_static":
+        if self.mode in {"w8a8_static", "w8a8_static_pad64"}:
             if static_input_scale is None or not float(static_input_scale) > 0:
                 raise ValueError("static W8A8 requires a positive calibrated input scale")
             import torch_npu
@@ -116,7 +147,7 @@ class PackedW8A8Linear(torch.nn.Module):
                 persistent=False,
             )
             if bias is None:
-                quant_bias = torch.zeros(self.out_features, device=weight.device, dtype=torch.int32)
+                quant_bias = torch.zeros(self.padded_out_features, device=weight.device, dtype=torch.int32)
             else:
                 quant_bias = torch.round(bias.detach().float() / dequant_scale).to(torch.int32)
             self.register_buffer("quant_bias", quant_bias.contiguous(), persistent=False)
@@ -150,6 +181,8 @@ class PackedW8A8Linear(torch.nn.Module):
                 bias=self.quant_bias,
                 output_dtype=hidden_states.dtype,
             )
+        if self.padded_out_features != self.out_features:
+            output = output[..., : self.out_features]
         return output.reshape(*leading_shape, self.out_features)
 
     def metadata(self) -> dict[str, Any]:
@@ -159,10 +192,13 @@ class PackedW8A8Linear(torch.nn.Module):
             "mode": self.mode,
             "in_features": int(self.in_features),
             "out_features": int(self.out_features),
+            "padded_out_features": int(self.padded_out_features),
             "weight_layout": self.weight_layout,
             "packed_weight_format": int(torch_npu.get_npu_format(self.weight_int8)),
             "static_input_scale": self.static_input_scale_value,
-            "static_quantize_div_mode": False if self.mode == "w8a8_static" else None,
+            "static_quantize_div_mode": (
+                False if self.mode in {"w8a8_static", "w8a8_static_pad64"} else None
+            ),
         }
 
 

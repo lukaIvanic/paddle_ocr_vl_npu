@@ -159,7 +159,7 @@ class BatchedStaticVisualEncoderModule(torch.nn.Module):
         return f"layer_{int(layer_index):02d}.{site}"
 
     def set_calibration_enabled(self, enabled: bool) -> None:
-        if bool(enabled) and self.linear_quantization != "w8a8_static":
+        if bool(enabled) and self.linear_quantization not in {"w8a8_static", "w8a8_static_pad64"}:
             raise ValueError("activation calibration is only used for static W8A8")
         if bool(enabled) and self._w8a8_prepared:
             raise RuntimeError("cannot calibrate after W8A8 weights have been prepared")
@@ -174,7 +174,7 @@ class BatchedStaticVisualEncoderModule(torch.nn.Module):
         self._calibration_maxima[key] = maximum if previous is None else torch.maximum(previous, maximum)
 
     def _static_input_scale(self, layer_index: int, site: str) -> float | None:
-        if self.linear_quantization != "w8a8_static":
+        if self.linear_quantization not in {"w8a8_static", "w8a8_static_pad64"}:
             return None
         key = self._site_key(layer_index, site)
         maximum = self._calibration_maxima.get(key)
@@ -246,7 +246,9 @@ class BatchedStaticVisualEncoderModule(torch.nn.Module):
             for key, value in maxima.items()
         }
         return {
-            "enabled": bool(self.linear_quantization == "w8a8_static"),
+            "enabled": bool(
+                self.linear_quantization in {"w8a8_static", "w8a8_static_pad64"}
+            ),
             "site_count": int(len(maxima)),
             "headroom": float(self.w8a8_static_scale_headroom),
             "maxima": maxima,
