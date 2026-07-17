@@ -14,6 +14,9 @@ export MAX_ITEMS="${MAX_ITEMS:-8}"
 export STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN="${STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN:-1024}"
 export STATIC_VISUAL_LN_LINEAR_MODE="${STATIC_VISUAL_LN_LINEAR_MODE:-grouped_qkv_mlp_fc1}"
 export VISION_COMPILE_BACKEND="${VISION_COMPILE_BACKEND:-none}"
+export VISION_USE_TORCHAIR_CACHE_COMPILE="${VISION_USE_TORCHAIR_CACHE_COMPILE:-0}"
+export VISION_TORCHAIR_CACHE_DIR="${VISION_TORCHAIR_CACHE_DIR:-${SCRIPT_DIR}/../.runtime_cache/w8a8_vision_torchair}"
+export VISION_ATTENTION="${VISION_ATTENTION:-prompt_flash_attention}"
 export W8A8_WEIGHT_LAYOUT="${W8A8_WEIGHT_LAYOUT:-auto}"
 export W8A8_SITES="${W8A8_SITES:-qkv,out_proj,fc1,fc2}"
 export W8A8_STATIC_CALIBRATION_BATCHES="${W8A8_STATIC_CALIBRATION_BATCHES:-2}"
@@ -31,6 +34,8 @@ echo "W8A8_ENCODER BATCH_SIZE=${BATCH_SIZE} MAX_ITEMS=${MAX_ITEMS}"
 echo "W8A8_ENCODER FIXED_S=${STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN}"
 echo "W8A8_ENCODER LN_LINEAR_MODE=${STATIC_VISUAL_LN_LINEAR_MODE}"
 echo "W8A8_ENCODER VISION_COMPILE_BACKEND=${VISION_COMPILE_BACKEND}"
+echo "W8A8_ENCODER VISION_USE_TORCHAIR_CACHE_COMPILE=${VISION_USE_TORCHAIR_CACHE_COMPILE}"
+echo "W8A8_ENCODER VISION_ATTENTION=${VISION_ATTENTION}"
 echo "W8A8_ENCODER W8A8_WEIGHT_LAYOUT=${W8A8_WEIGHT_LAYOUT}"
 echo "W8A8_ENCODER W8A8_SITES=${W8A8_SITES}"
 echo "W8A8_ENCODER ENCODER_TIMING_REPEATS=${ENCODER_TIMING_REPEATS}"
@@ -38,6 +43,10 @@ echo "W8A8_ENCODER QUANTIZATION_CASES=${QUANTIZATION_CASES}"
 echo "W8A8_ENCODER OUT_ROOT=${OUT_ROOT}"
 
 for quantization in ${QUANTIZATION_CASES}; do
+  extra_args=()
+  if [[ "${VISION_USE_TORCHAIR_CACHE_COMPILE}" == "1" ]]; then
+    extra_args+=(--vision-use-torchair-cache-compile)
+  fi
   output_json="${OUT_ROOT}/${quantization}.json"
   echo "W8A8_ENCODER_RUN quantization=${quantization} output=${output_json}"
   "${PYTHON_BIN}" "${SCRIPT_DIR}/validate_static_visual_batched_encoder.py" \
@@ -47,7 +56,7 @@ for quantization in ${QUANTIZATION_CASES}; do
     --device "${DEVICE}" \
     --dtype fp16 \
     --npu-jit-compile off \
-    --vision-attention prompt_flash_attention \
+    --vision-attention "${VISION_ATTENTION}" \
     --vision-prompt-fa-layout bnsd \
     --vision-prompt-fa-mask-sparse-mode 1 \
     --static-visual-fixed-physical-seq-len "${STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN}" \
@@ -55,6 +64,7 @@ for quantization in ${QUANTIZATION_CASES}; do
     --static-visual-ln-linear-mode "${STATIC_VISUAL_LN_LINEAR_MODE}" \
     --static-visual-promptfa-pad-head-dim-to 80 \
     --vision-compile-backend "${VISION_COMPILE_BACKEND}" \
+    --vision-torchair-cache-dir "${VISION_TORCHAIR_CACHE_DIR}" \
     --vision-linear-quantization "${quantization}" \
     --w8a8-weight-layout "${W8A8_WEIGHT_LAYOUT}" \
     --w8a8-sites "${W8A8_SITES}" \
@@ -66,7 +76,8 @@ for quantization in ${QUANTIZATION_CASES}; do
     --max-items "${MAX_ITEMS}" \
     --skip-generation \
     --candidate-name "${quantization}_${W8A8_SITES//,/-}" \
-    --output "${output_json}"
+    --output "${output_json}" \
+    "${extra_args[@]}"
 done
 
 "${PYTHON_BIN}" - "${OUT_ROOT}" <<'PY'

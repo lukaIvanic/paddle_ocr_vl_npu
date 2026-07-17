@@ -462,6 +462,7 @@ def encoder_cache_dir(
     promptfa_mask_sparse_mode: int,
     torchair_mode: str,
     linear_quantization: str,
+    w8a8_sites: tuple[str, ...],
     w8a8_weight_layout: str,
     w8a8_static_scale_headroom: float,
 ) -> Path:
@@ -480,7 +481,7 @@ def encoder_cache_dir(
         torchair_mode=torchair_mode,
     )
     quant_suffix = (
-        f"quant-{linear_quantization}_layout-{w8a8_weight_layout}_"
+        f"quant-{linear_quantization}_sites-{'-'.join(w8a8_sites)}_layout-{w8a8_weight_layout}_"
         f"headroom-{float(w8a8_static_scale_headroom):g}"
     )
     return base.parent / f"encoder_only_B{int(batch_size)}_{quant_suffix}_{base.name}"
@@ -547,6 +548,7 @@ def compile_encoder_forward(
             promptfa_mask_sparse_mode=promptfa_mask_sparse_mode,
             torchair_mode=torchair_mode,
             linear_quantization=module.linear_quantization,
+            w8a8_sites=module.w8a8_sites,
             w8a8_weight_layout=module.w8a8_weight_layout,
             w8a8_static_scale_headroom=module.w8a8_static_scale_headroom,
         )
