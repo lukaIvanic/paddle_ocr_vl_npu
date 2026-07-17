@@ -14,6 +14,7 @@ VISION_LINEAR_QUANTIZATION_CHOICES = (
     "w8a8_dynamic",
     "w8a8_static",
     "w8a8_fused_pertoken",
+    "a16w8_weight_only",
 )
 VISION_LINEAR_SITES = ("qkv", "out_proj", "fc1", "fc2")
 W8A8_WEIGHT_LAYOUT_CHOICES = ("auto", "nd_kn", "nz_kn", "nz_nk_transposed")
@@ -210,6 +211,47 @@ class PackedFusedPertokenW8A8Linear(torch.nn.Module):
         }
 
 
+class PackedA16W8Linear(torch.nn.Module):
+    """FP16 activations with prepacked per-channel INT8 weights."""
+
+    def __init__(self, weight: torch.Tensor, bias: torch.Tensor | None) -> None:
+        super().__init__()
+        if weight.device.type != "npu":
+            raise ValueError("PackedA16W8Linear requires NPU weights")
+        self.in_features = int(weight.shape[1])
+        self.out_features = int(weight.shape[0])
+        weight_int8_nk, weight_scale = quantize_weight_per_output_channel(weight)
+        self.register_buffer("weight_int8_nk", weight_int8_nk.contiguous(), persistent=False)
+        self.register_buffer("antiquant_scale", weight_scale.to(dtype=weight.dtype), persistent=False)
+        if bias is None:
+            self.fp_bias = None
+        else:
+            self.register_buffer("fp_bias", bias.detach().contiguous(), persistent=False)
+
+    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        leading_shape = tuple(hidden_states.shape[:-1])
+        flat = hidden_states.reshape(-1, hidden_states.shape[-1])
+        output = torch.ops.npu.npu_weight_quant_batchmatmul(
+            flat,
+            self.weight_int8_nk.transpose(-1, -2),
+            self.antiquant_scale,
+            bias=self.fp_bias,
+        )
+        return output.reshape(*leading_shape, self.out_features)
+
+    def metadata(self) -> dict[str, Any]:
+        import torch_npu
+
+        return {
+            "mode": "a16w8_weight_only",
+            "in_features": int(self.in_features),
+            "out_features": int(self.out_features),
+            "weight_layout": "nd_nk_transposed_at_call",
+            "packed_weight_format": int(torch_npu.get_npu_format(self.weight_int8_nk)),
+            "activation_quantization": "none_fp16",
+        }
+
+
 def packed_from_linears(
     linears: Sequence[torch.nn.Linear],
     *,
@@ -228,6 +270,8 @@ def packed_from_linears(
         bias = torch.cat([linear.bias.detach() for linear in linears if linear.bias is not None], dim=0).contiguous()
     if mode == "w8a8_fused_pertoken":
         return PackedFusedPertokenW8A8Linear(weight, bias)
+    if mode == "a16w8_weight_only":
+        return PackedA16W8Linear(weight, bias)
     return PackedW8A8Linear(
         weight,
         bias,
