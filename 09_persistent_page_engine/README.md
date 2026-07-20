@@ -266,8 +266,15 @@ The recognizer also constructs and warms all three compiled boundaries under
 `torch.inference_mode()`, matching real request execution and keeping TorchAir's
 dispatch-key guards stable across warmup and serving.
 
-The measured 910B validations remain with Experiment 08 rather than being
-duplicated here. Its
+The cross-page bridge was validated on the same uniformly sampled 64-page
+OmniDocBench v1.6 set as the preceding PaddleX adapter run. All 64 compact JSON
+results and Markdown files matched exactly. One schedule handled all 1,332
+crops; useful decode-slot occupancy rose from 41.36% to 96.01%, decode wall fell
+from 51.67s to 23.23s, and E2E time fell from 162.62s to 142.96s (2.234s/page).
+The compact evidence is retained in
+[`run_summary.json`](../tmp/09_persistent_page_engine/omnidocbench_v16_uniform64_b16_cross_page_0c4eebf_20260720/run_summary.json).
+
+Earlier measured 910B validations remain with Experiment 08. Its
 [`NPU_FULL_PAGE_RESULT.md`](../08_offline_e2e_b1/NPU_FULL_PAGE_RESULT.md)
 records the original B=1 path, while
 [`NPU_BATCHED_DECODE_RESULT.md`](../08_offline_e2e_b1/NPU_BATCHED_DECODE_RESULT.md)
