@@ -1,0 +1,5 @@
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/vision_prefill.py:515: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  image_pids = torch.arange(
+When an attempt is made to form the product $BA$, we discover that the
+
+[local] device=npu:0 dtype=torch.float16 static=True decode_attention=increfa input_tokens=253 new_tokens=16 elapsed_s=1.318
