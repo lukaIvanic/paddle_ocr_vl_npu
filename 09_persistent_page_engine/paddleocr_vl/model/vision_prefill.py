@@ -971,7 +971,8 @@ class VisionPrefillRuntime:
         self.device = device
         self.dtype = dtype
         self.cache_root = cache_root.expanduser().resolve()
-        head_dim = int(model.config.vision_config.hidden_size) // int(
+        hidden_size = int(model.config.vision_config.hidden_size)
+        head_dim = hidden_size // int(
             model.config.vision_config.num_attention_heads
         )
         self.compiled: dict[int, Callable[..., torch.Tensor]] = {}
