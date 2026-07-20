@@ -1,5 +1,6 @@
 refs/PaddleOCR/
 .venv/
+.idea/
 __pycache__/
 *.py[cod]
 AGENTS_NPU.md
