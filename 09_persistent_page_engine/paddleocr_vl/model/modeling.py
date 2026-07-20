@@ -454,6 +454,7 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
         self,
         *,
         vision_backend: str,
+        vision_attention: str,
         vision_buckets: str | Iterable[int],
         vision_cache_root: Path,
         vision_padding: str,
@@ -486,6 +487,7 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
         vision_prefill = VisionPrefillRuntime(
             self,
             backend=vision_backend,
+            attention_impl=vision_attention,
             buckets=vision_buckets,
             cache_root=vision_cache_root,
             device=device,

@@ -25,7 +25,12 @@ from paddleocr_vl.serving.runtime_defaults import (
     PADDLEOCR_DEFAULT_MIN_PIXELS,
 )
 from paddleocr_vl.model.text_prefill import TEXT_PADDING_CHOICES, parse_text_buckets
-from paddleocr_vl.model.vision_prefill import VISION_PADDING_CHOICES, parse_vision_buckets
+from paddleocr_vl.model.vision_prefill import (
+    VISION_ATTENTION_CHOICES,
+    VISION_BACKEND_CHOICES,
+    VISION_PADDING_CHOICES,
+    parse_vision_buckets,
+)
 from pipeline.layout_mask_guard import install_layout_mask_guard
 from pipeline.omnidocbench_defaults import (
     OMNIDOCBENCH_CACHE_LENGTH,
@@ -78,6 +83,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         type=int,
         default=None,
         help="Override PaddleX's global recognition min_pixels; omit for the v1.6 default.",
+    )
+    parser.add_argument(
+        "--vision-backend",
+        default="torchair",
+        choices=VISION_BACKEND_CHOICES,
+    )
+    parser.add_argument(
+        "--vision-attention",
+        default="manual",
+        choices=VISION_ATTENTION_CHOICES,
     )
     parser.add_argument(
         "--vision-buckets",
@@ -322,7 +337,8 @@ def main() -> None:
         cache_length=args.cache_length,
         max_new_tokens=args.max_new_tokens,
         torchair_cache_dir=args.torchair_cache_dir.expanduser().resolve(),
-        vision_backend="torchair",
+        vision_backend=args.vision_backend,
+        vision_attention=args.vision_attention,
         vision_buckets=vision_buckets,
         vision_torchair_cache_dir=(
             args.vision_torchair_cache_dir.expanduser().resolve()
@@ -376,6 +392,9 @@ def main() -> None:
                 if args.preprocessor_min_pixels is not None
                 else PADDLEOCR_DEFAULT_MIN_PIXELS
             ),
+            "vision_backend": args.vision_backend,
+            "vision_attention": args.vision_attention,
+            "vision_padding": args.vision_padding,
             "vision_buckets": list(vision_buckets),
             "text_buckets": list(text_buckets),
         },

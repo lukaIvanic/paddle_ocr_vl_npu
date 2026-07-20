@@ -188,19 +188,24 @@ the model's maximum remains unchanged. The model default, requested override,
 effective bounds, resize factor, and nominal minimum image-token count are
 recorded under `configuration.preprocessor` in `run.json`.
 
-The default `--vision-backend torchair` builds or loads one B=1 static graph for
-every configured bucket during recognizer setup. The first uncached run is therefore
-compilation-heavy; per-bucket cache paths and first-call times are recorded in
-`configuration.vision_prefill` and `setup_timing_s.vision_runtime_setup`.
-Subsequent runs reuse the GE caches under
-`.runtime_cache/09_persistent_page_engine_vision_torchair/`. The compiled boundary is
-currently the manual-attention path; unset
-`PADDLE_OCR_VL_VISION_ATTENTION` or set it to `manual`.
+The normal page runners expose the vision comparison directly through
+`--vision-backend raw_eager|torchair` and
+`--vision-attention manual|prompt_flash_attention`. The default remains the
+validated TorchAir/manual combination. TorchAir builds or loads one B=1 static
+graph for every configured bucket during recognizer setup, and keeps manual and
+PromptFA graphs in distinct cache directories. The first uncached run is
+therefore compilation-heavy; per-bucket cache paths and first-call times are
+recorded in `configuration.vision_prefill` and
+`setup_timing_s.vision_runtime_setup`. Subsequent runs reuse the GE caches under
+`.runtime_cache/09_persistent_page_engine_vision_torchair/`.
 
 Each recognition result records its real token count, selected physical bucket,
 padding, and execution route. Aggregate JSON reports bucket counts and the
 overall useful-token fraction so padding cost is visible rather than folded
-into a single throughput number.
+into a single throughput number. `recognition_trace.jsonl` also records the
+vision-stage device time for every real crop, so attention/backend comparisons
+can be grouped by exact token length or bucket after an otherwise normal E2E
+run.
 
 The default artifact directory is timestamped under
 `tmp/09_persistent_page_engine/`. It contains `run.json`, per-page reading-order text,

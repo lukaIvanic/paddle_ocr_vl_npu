@@ -616,11 +616,22 @@ def select_vision_bucket(real_seq_len: int, buckets: Iterable[int]) -> int | Non
 
 
 class VisionPrefillStage(torch.nn.Module):
-    """Manual-BMM vision encoder plus post LayerNorm for eager or compiled use."""
+    """Vision encoder plus post LayerNorm for eager or compiled use."""
 
-    def __init__(self, model: LocalPaddleOCRVLForConditionalGeneration):
+    def __init__(
+        self,
+        model: LocalPaddleOCRVLForConditionalGeneration,
+        *,
+        attention_impl: str,
+    ):
         super().__init__()
         self.transformer = model.visual.vision_model
+        self.attention_impl = str(attention_impl)
+        if self.attention_impl not in VISION_ATTENTION_CHOICES:
+            raise ValueError(
+                "vision attention must be one of "
+                f"{VISION_ATTENTION_CHOICES}, got {attention_impl!r}"
+            )
         self.softmax_dtype_mode = get_vision_softmax_dtype_mode()
 
     def _attention(
@@ -656,28 +667,49 @@ class VisionPrefillStage(torch.nn.Module):
         key_states = key_states.transpose(1, 2).contiguous()
         value_states = value_states.transpose(1, 2).contiguous()
 
-        # Explicit [B*H, S, D] bmm is equivalent to the stock 4-D matmul but
-        # prevents GE from treating the attention head as a broadcast axis.
-        query_bh = query_states.reshape(batch_size * num_heads, seq_length, head_dim)
-        key_bh = key_states.reshape(batch_size * num_heads, seq_length, head_dim)
-        value_bh = value_states.reshape(batch_size * num_heads, seq_length, head_dim)
-        scores = torch.bmm(query_bh, key_bh.transpose(1, 2)).view(
-            batch_size,
-            num_heads,
-            seq_length,
-            seq_length,
-        ) * attention.scaling
-        scores = scores.masked_fill(attention_mask, torch.finfo(scores.dtype).min)
-        probs = attention_softmax(
-            scores,
-            dim=-1,
-            output_dtype=query_states.dtype,
-            mode=self.softmax_dtype_mode,
-        )
-        attention_output = torch.bmm(
-            probs.reshape(batch_size * num_heads, seq_length, seq_length),
-            value_bh,
-        ).view(batch_size, num_heads, seq_length, head_dim)
+        if self.attention_impl == "prompt_flash_attention":
+            attention_output = vision_prompt_flash_attention_bnsd(
+                query_states,
+                key_states,
+                value_states,
+                num_heads=num_heads,
+                scale=float(attention.scaling),
+                atten_mask=attention_mask,
+            )
+        else:
+            # Explicit [B*H, S, D] bmm is equivalent to the stock 4-D matmul
+            # but prevents GE from treating the attention head as a broadcast
+            # axis.
+            query_bh = query_states.reshape(
+                batch_size * num_heads, seq_length, head_dim
+            )
+            key_bh = key_states.reshape(
+                batch_size * num_heads, seq_length, head_dim
+            )
+            value_bh = value_states.reshape(
+                batch_size * num_heads, seq_length, head_dim
+            )
+            scores = torch.bmm(query_bh, key_bh.transpose(1, 2)).view(
+                batch_size,
+                num_heads,
+                seq_length,
+                seq_length,
+            ) * attention.scaling
+            scores = scores.masked_fill(
+                attention_mask, torch.finfo(scores.dtype).min
+            )
+            probs = attention_softmax(
+                scores,
+                dim=-1,
+                output_dtype=query_states.dtype,
+                mode=self.softmax_dtype_mode,
+            )
+            attention_output = torch.bmm(
+                probs.reshape(
+                    batch_size * num_heads, seq_length, seq_length
+                ),
+                value_bh,
+            ).view(batch_size, num_heads, seq_length, head_dim)
         attention_output = attention_output.transpose(1, 2).contiguous().view(
             batch_size,
             seq_length,
@@ -853,10 +885,18 @@ def vision_cache_dir_for_bucket(
     dtype: torch.dtype,
     device: torch.device,
     model_dir: Path,
+    attention_impl: str,
 ) -> Path:
+    attention_key = (
+        "manual_bmm"
+        if attention_impl == "manual"
+        else "promptfa_"
+        f"{cache_key_part(get_vision_prompt_fa_layout())}_"
+        f"sparse{get_vision_prompt_fa_mask_sparse_mode()}"
+    )
     key = "_".join(
         [
-            "encoder_postln_manual_bmm",
+            f"encoder_postln_{attention_key}",
             f"mode{cache_key_part(TORCHAIR_EXECUTION_MODE)}",
             f"softmax{cache_key_part(get_vision_softmax_dtype_mode())}",
             "bs1",
@@ -885,10 +925,17 @@ class VisionPrefillRuntime:
         device: torch.device,
         dtype: torch.dtype,
         model_dir: Path,
+        attention_impl: str = "manual",
         padding: str = "auto",
     ):
         self.model = model
         self.backend = str(backend)
+        self.attention_impl = str(attention_impl)
+        if self.attention_impl not in VISION_ATTENTION_CHOICES:
+            raise ValueError(
+                "vision attention must be one of "
+                f"{VISION_ATTENTION_CHOICES}, got {attention_impl!r}"
+            )
         self.buckets = parse_vision_buckets(buckets)
         self.requested_padding = str(padding)
         if self.requested_padding not in VISION_PADDING_CHOICES:
@@ -910,12 +957,26 @@ class VisionPrefillRuntime:
         self.cache_root = cache_root.expanduser().resolve()
         self.compiled: dict[int, Callable[..., torch.Tensor]] = {}
         self.entrypoints: dict[int, Callable[..., torch.Tensor]] = {}
-        self.eager_stage = VisionPrefillStage(model).eval()
+        self.eager_stage = VisionPrefillStage(
+            model,
+            attention_impl=self.attention_impl,
+        ).eval()
         self.modules: dict[int, VisionPrefillStage] = {}
         self.metadata: dict[str, Any] = {
             "backend": self.backend,
             "enabled": self.backend == "torchair",
             "boundary": "vision_encoder_layers_plus_post_layernorm",
+            "attention": self.attention_impl,
+            "prompt_flash_attention_layout": (
+                get_vision_prompt_fa_layout()
+                if self.attention_impl == "prompt_flash_attention"
+                else None
+            ),
+            "prompt_flash_attention_mask_sparse_mode": (
+                get_vision_prompt_fa_mask_sparse_mode()
+                if self.attention_impl == "prompt_flash_attention"
+                else None
+            ),
             "buckets": list(self.buckets),
             "requested_padding": self.requested_padding,
             "padding": self.padding,
@@ -927,11 +988,6 @@ class VisionPrefillRuntime:
         }
         if self.backend not in VISION_BACKEND_CHOICES:
             raise ValueError(f"vision backend must be one of {VISION_BACKEND_CHOICES}, got {backend!r}")
-        if get_vision_attention_impl() != "manual":
-            raise ValueError(
-                "the unified vision stage uses manual BMM attention; "
-                "set PADDLE_OCR_VL_VISION_ATTENTION=manual"
-            )
         if self.backend == "raw_eager":
             return
         if self.device.type != "npu":
@@ -944,13 +1000,17 @@ class VisionPrefillRuntime:
         wrapper_total_s = 0.0
         first_call_total_s = 0.0
         for bucket in self.buckets:
-            module = VisionPrefillStage(model).eval()
+            module = VisionPrefillStage(
+                model,
+                attention_impl=self.attention_impl,
+            ).eval()
             cache_dir = vision_cache_dir_for_bucket(
                 self.cache_root,
                 bucket=bucket,
                 dtype=self.dtype,
                 device=self.device,
                 model_dir=model_dir,
+                attention_impl=self.attention_impl,
             )
             cache_dir.mkdir(parents=True, exist_ok=True)
             config = CompilerConfig()
@@ -1018,7 +1078,17 @@ class VisionPrefillRuntime:
                     "torch_npu": torch_npu_version_label(device),
                     "torchair": torchair_version_label(device),
                     "vision_source_hash": vision_source_hash(),
-                    "attention": "manual_bmm",
+                    "attention": self.attention_impl,
+                    "prompt_flash_attention_layout": (
+                        get_vision_prompt_fa_layout()
+                        if self.attention_impl == "prompt_flash_attention"
+                        else None
+                    ),
+                    "prompt_flash_attention_mask_sparse_mode": (
+                        get_vision_prompt_fa_mask_sparse_mode()
+                        if self.attention_impl == "prompt_flash_attention"
+                        else None
+                    ),
                     "softmax_dtype": get_vision_softmax_dtype_mode(),
                     "execution_mode": TORCHAIR_EXECUTION_MODE,
                 },

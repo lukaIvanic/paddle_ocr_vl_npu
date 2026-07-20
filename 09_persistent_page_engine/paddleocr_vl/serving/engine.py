@@ -45,7 +45,7 @@ from .types import ContinuousDecodeResult, RecognitionRequest, RecognitionResult
 from utils.timing import DeviceTimeline, synchronize, timed_wall
 from utils.metrics import per_second
 from ..model.vision_prefill import (
-    get_vision_attention_impl,
+    VISION_ATTENTION_CHOICES,
     get_vision_prompt_fa_layout,
     parse_vision_buckets,
 )
@@ -121,6 +121,7 @@ class ContinuousRecognizer:
         max_new_tokens: int,
         torchair_cache_dir: Path,
         vision_backend: str = DEFAULT_VISION_BACKEND,
+        vision_attention: str = "manual",
         vision_buckets: str | Iterable[int] = OPTIMIZED_VISION_BUCKETS,
         vision_torchair_cache_dir: Path | None = None,
         vision_padding: str = "auto",
@@ -153,6 +154,12 @@ class ContinuousRecognizer:
         self.cache_length = int(cache_length)
         self.max_new_tokens = int(max_new_tokens)
         self.vision_backend = str(vision_backend)
+        self.vision_attention = str(vision_attention)
+        if self.vision_attention not in VISION_ATTENTION_CHOICES:
+            raise ValueError(
+                "vision attention must be one of "
+                f"{VISION_ATTENTION_CHOICES}, got {vision_attention!r}"
+            )
         self.vision_buckets = parse_vision_buckets(vision_buckets)
         self.vision_padding = str(vision_padding)
         self.text_backend = str(text_backend)
@@ -200,6 +207,7 @@ class ContinuousRecognizer:
 
         self.stages = self.model.make_inference_stages(
             vision_backend=self.vision_backend,
+            vision_attention=self.vision_attention,
             vision_buckets=self.vision_buckets,
             vision_cache_root=(
                 vision_torchair_cache_dir
@@ -612,7 +620,7 @@ class ContinuousRecognizer:
         patch_size = int(self.preprocessor_config["patch_size"])
         merge_size = int(self.preprocessor_config["merge_size"])
         min_pixels = int(self.preprocessor_config["min_pixels"])
-        vision_attention = get_vision_attention_impl()
+        vision_attention = self.vision_attention
         return {
             "recognizer_model": str(self.model_dir),
             "device": str(self.device),

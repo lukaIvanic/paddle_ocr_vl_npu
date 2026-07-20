@@ -35,6 +35,7 @@ from paddleocr_vl.model.text_prefill import (
     parse_text_buckets,
 )
 from paddleocr_vl.model.vision_prefill import (
+    VISION_ATTENTION_CHOICES,
     VISION_BACKEND_CHOICES,
     VISION_PADDING_CHOICES,
     parse_vision_buckets,
@@ -88,6 +89,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default=DEFAULT_VISION_BACKEND,
         choices=VISION_BACKEND_CHOICES,
         help="Use eager vision, or one static TorchAir encoder graph per configured token bucket.",
+    )
+    parser.add_argument(
+        "--vision-attention",
+        default="manual",
+        choices=VISION_ATTENTION_CHOICES,
+        help="Vision self-attention implementation inside the normal Experiment 09 path.",
     )
     parser.add_argument(
         "--vision-buckets",
@@ -178,6 +185,7 @@ def main() -> None:
         max_new_tokens=args.max_new_tokens,
         torchair_cache_dir=args.torchair_cache_dir.expanduser().resolve(),
         vision_backend=args.vision_backend,
+        vision_attention=args.vision_attention,
         vision_buckets=vision_buckets,
         vision_torchair_cache_dir=args.vision_torchair_cache_dir.expanduser().resolve(),
         vision_padding=args.vision_padding,
