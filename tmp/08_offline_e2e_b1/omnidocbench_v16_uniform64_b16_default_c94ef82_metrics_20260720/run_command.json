@@ -1,0 +1,18 @@
+{
+  "git_commit": "c94ef82dbb9ba38e59808fe3128b7d5f5d26ebf1",
+  "python": "/usr/local/python3.12.13/bin/python3",
+  "physical_npu": 5,
+  "logical_device": "npu:0",
+  "environment_note": "source npu-setup, then prepend existing PaddleX venv and PaddleOCR source to PYTHONPATH without replacing CANN paths",
+  "arguments": {
+    "limit": 64,
+    "selection": "64 evenly spaced pages",
+    "batch_size": 16,
+    "cache_length": 8192,
+    "max_new_tokens": 4096,
+    "min_pixels": "PaddleOCR v1.6 default 112896",
+    "decode": "TorchAir compiled continuous B16",
+    "vision": "optimized compiled buckets with eager overflow above 2048",
+    "text_prefill": "optimized compiled buckets"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "vision_route_breakdown": {
+    "compiled": {
+      "requests": 1263,
+      "useful_tokens": 899488,
+      "physical_tokens": 937024,
+      "core_device_s": 25.39086072921753,
+      "core_useful_tok_s": 35425.660027544865,
+      "core_physical_tok_s": 36903.98722567749
+    },
+    "eager_overflow": {
+      "requests": 69,
+      "useful_tokens": 283768,
+      "physical_tokens": 283768,
+      "core_device_s": 19.92736809672788,
+      "core_useful_tok_s": 14240.11433033123,
+      "core_physical_tok_s": 14240.11433033123
+    }
+  },
+  "eager_overflow_sequence_tokens": {
+    "count": 69,
+    "sum": 283768,
+    "min": 2112,
+    "median": 4600,
+    "p90": 5033.6,
+    "max": 5088,
+    "ceil512_histogram": {
+      "2560": 9,
+      "3072": 4,
+      "3584": 9,
+      "4096": 4,
+      "4608": 9,
+      "5120": 34
+    }
+  },
+  "longest_generation": {
+    "batch_index": 1,
+    "request_id": "paddlex_batch_000001_item_000031",
+    "label": "table",
+    "crop_size": [
+      1211,
+      1247
+    ],
+    "input_tokens": 1273,
+    "generated_tokens_including_eos": 3409,
+    "stop_reason": "eos",
+    "text_prefix": "<fcel>Logit模型<lcel><fcel>小学教育机会模型<lcel><lcel><fcel>小学升初中机会模型<lcel><lcel><fcel>初中升高中机会模型<lcel><lcel><nl><fcel>自变量<lcel><fcel>1982<fcel>1990<fcel>2000<fcel>1982<fcel>1990<fcel>2000<fcel>1982<fcel>1990<fcel>2000<nl><fcel>父亲教育年限<lcel><fcel>\\(1.110^{***}\\)<fcel>\\(1.145^{***}\\)<fcel>\\(1.188^{***}\\)<fcel>\\"
+  },
+  "validation": {
+    "trace_records": 1332,
+    "all_eos": true,
+    "compiled_text_requests": 1332
+  }
+}

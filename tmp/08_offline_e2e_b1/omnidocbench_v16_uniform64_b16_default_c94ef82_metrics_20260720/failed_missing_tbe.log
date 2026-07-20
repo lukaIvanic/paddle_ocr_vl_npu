@@ -1,0 +1,213 @@
+Selected physical NPU 5 as logical npu:0
+Python: /usr/local/python3.12.13/bin/python3
+[32mCreating model: ('PP-DocLayoutV3', '/workspace/models/PP-DocLayoutV3_safetensors', 'transformers')[0m
+Loading weights:   0%|          | 0/858 [00:00<?, ?it/s]Loading weights:  51%|█████▏    | 441/858 [00:00<00:00, 4404.91it/s]Loading weights: 100%|██████████| 858/858 [00:00<00:00, 4072.53it/s]
+[32mCreating model: ('PaddleOCR-VL-1.6-0.9B', None, None)[0m
+[npu] set torch.npu compile mode: jit_compile=False
+[W720 09:13:34.759810669 TensorFactories.cpp:340] Warning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (function operator())
+Traceback (most recent call last):
+  File "/workspace/repos/paddle_ocr_vl_npu/08_offline_e2e_b1/run_omnidocbench_paddlex.py", line 376, in <module>
+    main()
+  File "/workspace/repos/paddle_ocr_vl_npu/08_offline_e2e_b1/run_omnidocbench_paddlex.py", line 286, in main
+    recognizer = ContinuousRecognizer(
+                 ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/repos/paddle_ocr_vl_npu/08_offline_e2e_b1/engine.py", line 210, in __init__
+    self.vision_runtime = BucketedVisionEncoderRuntime(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/repos/paddle_ocr_vl_npu/08_offline_e2e_b1/vision_compile.py", line 425, in __init__
+    warm_output = compiled(warm_prefix, warm_cos, warm_sin, warm_mask)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py", line 599, in __call__
+    return self._compiled_model(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py", line 524, in __call__
+    return self.compiled_func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 967, in compile_wrapper
+    raise e.remove_dynamo_frames() from None  # see TORCHDYNAMO_VERBOSE=1
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/output_graph.py", line 2437, in _call_user_compiler
+    raise BackendCompilerFailed(
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/output_graph.py", line 2412, in _call_user_compiler
+    compiled_fn = compiler_fn(gm, example_inputs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/repro/after_dynamo.py", line 156, in __call__
+    compiled_gm = compiler_fn(gm, example_inputs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/__init__.py", line 2509, in __call__
+    return self.compiler_fn(model_, inputs_, **self.kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py", line 399, in __call__
+    return _compile_graph_with_aot(gm, self.fw_compiler, inputs, self.config, decompositions,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/npu_fx_compiler.py", line 999, in _compile_graph_with_aot
+    return aot_module_simplified(gm, example_inputs, **aot_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/aot_autograd.py", line 1115, in aot_module_simplified
+    compiled_fn, _ = aot_stage2_compile(
+                     ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/graph_compile.py", line 357, in aot_stage2_compile
+    return aot_stage2_inference(aot_state, aot_graph_capture)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/graph_compile.py", line 431, in aot_stage2_inference
+    compiled_fw = _aot_stage2b_inference_compile(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/graph_compile.py", line 400, in _aot_stage2b_inference_compile
+    return _aot_stage2b_compile_forward_or_inference(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/graph_compile.py", line 2300, in _aot_stage2b_compile_forward_or_inference
+    compiled_fw_func = compiler(fw_module, adjusted_flat_args)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/graph_transform_observer.py", line 135, in wrapped
+    with DebugContext(phase):
+         ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/graph_transform_observer.py", line 114, in __exit__
+    raise exc_val.with_traceback(exc_tb)
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/graph_transform_observer.py", line 136, in wrapped
+    return compiler(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/npu_fx_compiler.py", line 822, in _wrap_custom_attr_compiler
+    return compiler(gm, example_inputs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/npu_fx_compiler.py", line 768, in wrapped_compiler
+    return compiler(gm, example_inputs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py", line 405, in fw_compiler
+    py_code = self.compiler(gm, example_inputs).get_code(self.extend_config)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py", line 46, in wapper
+    raise type(e)("\n".join(msg))
+torch._dynamo.exc.BackendCompilerFailed: backend='<torchair.inference._cache_compiler.CacheBackend object at 0xfffbe5634fe0>' raised:
+RuntimeError: Failed to initialize GE [PID: 49072] 2026-07-20-09:13:35.883.345 Environment_Error_Import_Python_Module_Failed(EC0010): Failed to import Python module ModuleNotFoundError: No module named 'tbe'.
+        Solution: Check that all required components are properly installed and the specified Python path matches the Python installation directory. If the path does not match the directory, run set_env.sh in the installation package.
+        TraceBack (most recent call last):
+        AOE failed to call InitCannKB.[FUNC:Initialize][FILE:python_adapter_manager.cc][LINE:52]
+        Failed to initialize TeConfigInfo.[FUNC:TeInnerErrMessageReport][FILE:common_utils.cc][LINE:397]
+        [GraphOpt][InitializeInner][InitTbeFunc] Failed to init tbe.[FUNC:InitializeTeFusion][FILE:tbe_op_store_adapter.cc][LINE:1974]
+        [GraphOpt][InitializeInner][InitTeFusion]: Failed to initialize TeFusion.[FUNC:InitializeInner][FILE:tbe_op_store_adapter.cc][LINE:1941]
+        [SubGraphOpt][PreCompileOp][InitAdapter] InitializeAdapter adapter [tbe_op_adapter] failed! Ret [4294967295][FUNC:InitializeAdapter][FILE:op_store_adapter_manager.cc][LINE:80]
+        [SubGraphOpt][PreCompileOp][Init] Initialize op store adapter failed, OpsStoreName[tbe-custom].[FUNC:Initialize][FILE:op_store_adapter_manager.cc][LINE:121]
+        [FusionMngr][Init] Op store adapter manager init failed.[FUNC:Initialize][FILE:fusion_manager.cc][LINE:118]
+        PluginManager InvokeAll failed.[FUNC:Initialize][FILE:ops_kernel_manager.cc][LINE:100]
+        OpsManager initialize failed.[FUNC:InnerInitialize][FILE:gelib.cc][LINE:223]
+        GELib::InnerInitialize failed.[FUNC:Initialize][FILE:gelib.cc][LINE:161]
+        GEInitializeV2 failed.[FUNC:GEInitializeV2][FILE:ge_api_v2.cc][LINE:323]
+        GEInitializeV2 initialize failed.[FUNC:GEInitialize][FILE:ge_api.cc][LINE:205]
+
+Traceback (most recent call last):
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py", line 43, in wapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py", line 92, in initialize_graph_engine
+    _torchair.InitializeGraphEngine(options)
+RuntimeError: Failed to initialize GE [PID: 49072] 2026-07-20-09:13:35.883.345 Environment_Error_Import_Python_Module_Failed(EC0010): Failed to import Python module ModuleNotFoundError: No module named 'tbe'.
+        Solution: Check that all required components are properly installed and the specified Python path matches the Python installation directory. If the path does not match the directory, run set_env.sh in the installation package.
+        TraceBack (most recent call last):
+        AOE failed to call InitCannKB.[FUNC:Initialize][FILE:python_adapter_manager.cc][LINE:52]
+        Failed to initialize TeConfigInfo.[FUNC:TeInnerErrMessageReport][FILE:common_utils.cc][LINE:397]
+        [GraphOpt][InitializeInner][InitTbeFunc] Failed to init tbe.[FUNC:InitializeTeFusion][FILE:tbe_op_store_adapter.cc][LINE:1974]
+        [GraphOpt][InitializeInner][InitTeFusion]: Failed to initialize TeFusion.[FUNC:InitializeInner][FILE:tbe_op_store_adapter.cc][LINE:1941]
+        [SubGraphOpt][PreCompileOp][InitAdapter] InitializeAdapter adapter [tbe_op_adapter] failed! Ret [4294967295][FUNC:InitializeAdapter][FILE:op_store_adapter_manager.cc][LINE:80]
+        [SubGraphOpt][PreCompileOp][Init] Initialize op store adapter failed, OpsStoreName[tbe-custom].[FUNC:Initialize][FILE:op_store_adapter_manager.cc][LINE:121]
+        [FusionMngr][Init] Op store adapter manager init failed.[FUNC:Initialize][FILE:fusion_manager.cc][LINE:118]
+        PluginManager InvokeAll failed.[FUNC:Initialize][FILE:ops_kernel_manager.cc][LINE:100]
+        OpsManager initialize failed.[FUNC:InnerInitialize][FILE:gelib.cc][LINE:223]
+        GELib::InnerInitialize failed.[FUNC:Initialize][FILE:gelib.cc][LINE:161]
+        GEInitializeV2 failed.[FUNC:GEInitializeV2][FILE:ge_api_v2.cc][LINE:323]
+        GEInitializeV2 initialize failed.[FUNC:GEInitialize][FILE:ge_api.cc][LINE:205]
+
+
+
+[ERROR] 2026-07-20-09:13:47 (PID:49072, Device:0, RankID:-1) ERR03005 GRAPH internal error
+Traceback (most recent call last):
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py", line 43, in wapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py", line 92, in initialize_graph_engine
+    _torchair.InitializeGraphEngine(options)
+RuntimeError: Failed to initialize GE [PID: 49072] 2026-07-20-09:13:35.883.345 Environment_Error_Import_Python_Module_Failed(EC0010): Failed to import Python module ModuleNotFoundError: No module named 'tbe'.
+        Solution: Check that all required components are properly installed and the specified Python path matches the Python installation directory. If the path does not match the directory, run set_env.sh in the installation package.
+        TraceBack (most recent call last):
+        AOE failed to call InitCannKB.[FUNC:Initialize][FILE:python_adapter_manager.cc][LINE:52]
+        Failed to initialize TeConfigInfo.[FUNC:TeInnerErrMessageReport][FILE:common_utils.cc][LINE:397]
+        [GraphOpt][InitializeInner][InitTbeFunc] Failed to init tbe.[FUNC:InitializeTeFusion][FILE:tbe_op_store_adapter.cc][LINE:1974]
+        [GraphOpt][InitializeInner][InitTeFusion]: Failed to initialize TeFusion.[FUNC:InitializeInner][FILE:tbe_op_store_adapter.cc][LINE:1941]
+        [SubGraphOpt][PreCompileOp][InitAdapter] InitializeAdapter adapter [tbe_op_adapter] failed! Ret [4294967295][FUNC:InitializeAdapter][FILE:op_store_adapter_manager.cc][LINE:80]
+        [SubGraphOpt][PreCompileOp][Init] Initialize op store adapter failed, OpsStoreName[tbe-custom].[FUNC:Initialize][FILE:op_store_adapter_manager.cc][LINE:121]
+        [FusionMngr][Init] Op store adapter manager init failed.[FUNC:Initialize][FILE:fusion_manager.cc][LINE:118]
+        PluginManager InvokeAll failed.[FUNC:Initialize][FILE:ops_kernel_manager.cc][LINE:100]
+        OpsManager initialize failed.[FUNC:InnerInitialize][FILE:gelib.cc][LINE:223]
+        GELib::InnerInitialize failed.[FUNC:Initialize][FILE:gelib.cc][LINE:161]
+        GEInitializeV2 failed.[FUNC:GEInitializeV2][FILE:ge_api_v2.cc][LINE:323]
+        GEInitializeV2 initialize failed.[FUNC:GEInitialize][FILE:ge_api.cc][LINE:205]
+
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py", line 43, in wapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/npu_fx_compiler.py", line 592, in __call__
+    return self._get_compiled_gm(gm, example_inputs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/npu_fx_compiler.py", line 633, in _get_compiled_gm
+    return _CompiledFxGraph(self._gen_compiled_gm(gm, example_inputs, observer), self.config)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/npu_fx_compiler.py", line 666, in _gen_compiled_gm
+    graph = GeConcreteGraph(self.config, name="graph_" + str(_next_unique_graph_id()))
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_ge_concrete_graph/fx2ge_converter.py", line 937, in __init__
+    initialize_graph_engine(global_compile_options)
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py", line 46, in wapper
+    raise type(e)("\n".join(msg))
+RuntimeError: Failed to initialize GE [PID: 49072] 2026-07-20-09:13:35.883.345 Environment_Error_Import_Python_Module_Failed(EC0010): Failed to import Python module ModuleNotFoundError: No module named 'tbe'.
+        Solution: Check that all required components are properly installed and the specified Python path matches the Python installation directory. If the path does not match the directory, run set_env.sh in the installation package.
+        TraceBack (most recent call last):
+        AOE failed to call InitCannKB.[FUNC:Initialize][FILE:python_adapter_manager.cc][LINE:52]
+        Failed to initialize TeConfigInfo.[FUNC:TeInnerErrMessageReport][FILE:common_utils.cc][LINE:397]
+        [GraphOpt][InitializeInner][InitTbeFunc] Failed to init tbe.[FUNC:InitializeTeFusion][FILE:tbe_op_store_adapter.cc][LINE:1974]
+        [GraphOpt][InitializeInner][InitTeFusion]: Failed to initialize TeFusion.[FUNC:InitializeInner][FILE:tbe_op_store_adapter.cc][LINE:1941]
+        [SubGraphOpt][PreCompileOp][InitAdapter] InitializeAdapter adapter [tbe_op_adapter] failed! Ret [4294967295][FUNC:InitializeAdapter][FILE:op_store_adapter_manager.cc][LINE:80]
+        [SubGraphOpt][PreCompileOp][Init] Initialize op store adapter failed, OpsStoreName[tbe-custom].[FUNC:Initialize][FILE:op_store_adapter_manager.cc][LINE:121]
+        [FusionMngr][Init] Op store adapter manager init failed.[FUNC:Initialize][FILE:fusion_manager.cc][LINE:118]
+        PluginManager InvokeAll failed.[FUNC:Initialize][FILE:ops_kernel_manager.cc][LINE:100]
+        OpsManager initialize failed.[FUNC:InnerInitialize][FILE:gelib.cc][LINE:223]
+        GELib::InnerInitialize failed.[FUNC:Initialize][FILE:gelib.cc][LINE:161]
+        GEInitializeV2 failed.[FUNC:GEInitializeV2][FILE:ge_api_v2.cc][LINE:323]
+        GEInitializeV2 initialize failed.[FUNC:GEInitialize][FILE:ge_api.cc][LINE:205]
+
+Traceback (most recent call last):
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py", line 43, in wapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py", line 92, in initialize_graph_engine
+    _torchair.InitializeGraphEngine(options)
+RuntimeError: Failed to initialize GE [PID: 49072] 2026-07-20-09:13:35.883.345 Environment_Error_Import_Python_Module_Failed(EC0010): Failed to import Python module ModuleNotFoundError: No module named 'tbe'.
+        Solution: Check that all required components are properly installed and the specified Python path matches the Python installation directory. If the path does not match the directory, run set_env.sh in the installation package.
+        TraceBack (most recent call last):
+        AOE failed to call InitCannKB.[FUNC:Initialize][FILE:python_adapter_manager.cc][LINE:52]
+        Failed to initialize TeConfigInfo.[FUNC:TeInnerErrMessageReport][FILE:common_utils.cc][LINE:397]
+        [GraphOpt][InitializeInner][InitTbeFunc] Failed to init tbe.[FUNC:InitializeTeFusion][FILE:tbe_op_store_adapter.cc][LINE:1974]
+        [GraphOpt][InitializeInner][InitTeFusion]: Failed to initialize TeFusion.[FUNC:InitializeInner][FILE:tbe_op_store_adapter.cc][LINE:1941]
+        [SubGraphOpt][PreCompileOp][InitAdapter] InitializeAdapter adapter [tbe_op_adapter] failed! Ret [4294967295][FUNC:InitializeAdapter][FILE:op_store_adapter_manager.cc][LINE:80]
+        [SubGraphOpt][PreCompileOp][Init] Initialize op store adapter failed, OpsStoreName[tbe-custom].[FUNC:Initialize][FILE:op_store_adapter_manager.cc][LINE:121]
+        [FusionMngr][Init] Op store adapter manager init failed.[FUNC:Initialize][FILE:fusion_manager.cc][LINE:118]
+        PluginManager InvokeAll failed.[FUNC:Initialize][FILE:ops_kernel_manager.cc][LINE:100]
+        OpsManager initialize failed.[FUNC:InnerInitialize][FILE:gelib.cc][LINE:223]
+        GELib::InnerInitialize failed.[FUNC:Initialize][FILE:gelib.cc][LINE:161]
+        GEInitializeV2 failed.[FUNC:GEInitializeV2][FILE:ge_api_v2.cc][LINE:323]
+        GEInitializeV2 initialize failed.[FUNC:GEInitialize][FILE:ge_api.cc][LINE:205]
+
+
+
+[ERROR] 2026-07-20-09:13:47 (PID:49072, Device:0, RankID:-1) ERR03005 GRAPH internal error
+
+
+[ERROR] 2026-07-20-09:13:47 (PID:49072, Device:0, RankID:-1) ERR03005 GRAPH internal error
+
+Set TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS="+dynamo"
+
