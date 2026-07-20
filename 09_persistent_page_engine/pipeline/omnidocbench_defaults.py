@@ -1,0 +1,9 @@
+"""Validated OmniDocBench v1.6 execution profile."""
+
+from __future__ import annotations
+
+
+OMNIDOCBENCH_PAGE_COUNT = 1651
+OMNIDOCBENCH_DECODE_BATCH_SIZE = 16
+OMNIDOCBENCH_CACHE_LENGTH = 8192
+OMNIDOCBENCH_MAX_NEW_TOKENS = 4096

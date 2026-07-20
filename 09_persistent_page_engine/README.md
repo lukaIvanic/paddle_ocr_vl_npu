@@ -14,7 +14,7 @@ backpressure: it should neither submit the entire benchmark at once nor create
 fixed page cohorts that temporarily starve cross-page batching.
 
 The copied baseline does **not** claim that this target is already complete.
-The direct `run_offline_e2e.py` path already uses a run-scoped request source,
+The direct `scripts/run_offline_e2e.py` path already uses a run-scoped request source,
 but the official PaddleX adapter still locks and fully drains each adapter call.
 That adapter-call barrier is the first architectural boundary to replace with
 per-request completion handles and a persistent engine lifetime.
@@ -30,9 +30,10 @@ stream of full PIL pages
   -> one PaddleOCR-VL prefill at a time
        CPU image/prompt preprocessing
        eager native-resolution patch + position embedding
-       dense-bucket compiled vision encoder + post-LayerNorm by default
+       shared vision-prefill stage, TorchAir + bucket padding by default
        eager projector
-       dense-bucket compiled text transformer into a static KV cache
+       shared text-prefill stage into a static KV cache,
+         TorchAir + bucket padding by default
        eager LM head and first-token argmax
        ready B=1 KV state
   -> bounded cross-page ready reservoir
@@ -49,19 +50,25 @@ stream of full PIL pages
   -> emit each page immediately when all of its regions finish
 ```
 
-Vision and text prefill remain sequential B=1. The validated default uses 32
-static TorchAir vision shapes: 32-token steps through 512, 64-token steps
-through 1024, and 128-token steps through 2048. Only the encoder layers and
-final LayerNorm are padded and compiled; patch embedding, position
-interpolation, and the projector stay eager.
+Vision and text prefill remain sequential B=1. Each stage has one
+compiler-safe model path shared by eager and compiled execution. Padding is a
+separate input-shaping policy: `none` keeps the real shape, while `bucket`
+pads to a configured static shape. `auto` selects bucket padding for TorchAir
+and no padding for eager execution. The validated default uses 32 static
+TorchAir vision shapes: 32-token steps through 512, 64-token steps through
+1024, and 128-token steps through 2048. Only the encoder layers and final
+LayerNorm are inside the vision stage; patch embedding, position interpolation,
+and the projector stay eager.
 Real and dummy rows are isolated by an attention mask, and real rows are sliced
 before the projector. Crops above 2048 rows use the faithful eager path without
 padding.
 
 Text token embedding and image scatter stay eager. The text transformer uses a
-measured static-bucket profile, writes only the real prefix into the KV cache,
-and keeps the real next-cache position rather than the padded bucket length.
-Inputs above the largest text bucket use the faithful eager path.
+measured static-bucket profile. A padded call may populate physical bucket rows
+in its private scratch KV cache, but admission copies only the valid real prefix
+into the decode arena and the next-cache position remains the real prompt
+length. Inputs above the largest text bucket use the same stage eagerly without
+padding.
 
 There are two named operating profiles. The small standalone full-page CLI uses
 TorchAir B=4, cache length 2048, and a 768-token cap. The official full
@@ -101,20 +108,19 @@ calls; that limitation is the focus of this experiment.
   queue-depth-one control. A request can execute one look-ahead graph call;
   slot epochs discard that old result after the slot is reused.
 
-`run_offline_e2e.py` intentionally keeps a smaller diagnostic page-preparation
+`scripts/run_offline_e2e.py` intentionally keeps a smaller diagnostic page-preparation
 path and its reading-order text is not an OmniDocBench prediction. For faithful
-page assembly, `run_omnidocbench_paddlex.py` keeps the official PaddleX v1.6
+page assembly, `scripts/run_omnidocbench_paddlex.py` keeps the official PaddleX v1.6
 layout filtering, crop/merge policy, table and formula handling, result objects,
 and Markdown conversion, replacing only PaddleX's inner recognition model with
 this optimized engine.
 
-Both full-benchmark lanes install the same narrow PP-DocLayoutV3 mask guard.
+The full-benchmark runner installs a narrow PP-DocLayoutV3 mask guard.
 Transformers can otherwise call OpenCV with a zero-width mask crop when a thin,
 positive-size detection collapses after scaling and rounding. Valid detections
 still use the installed Transformers method unchanged; only a collapsed slice
 uses that detection's integer bounding rectangle. Every fallback is recorded in
-`layout_mask_guard.json`. `run_with_layout_mask_guard.py` applies the identical
-guard when launching the stock PaddleX/vLLM runner.
+`layout_mask_guard.json`.
 
 ## Timing model
 
@@ -142,6 +148,17 @@ output tok/s includes each request's first token and EOS and divides by run wall
 
 ## Blue Zone run
 
+The smallest complete model path is the one-crop example. It does not construct
+the serving engine or scheduler:
+
+```sh
+PYTHONPATH=09_persistent_page_engine \
+/usr/local/python3.12.13/bin/python3 -m paddleocr_vl.model.example \
+  --model /workspace/models/PaddleOCR-VL-1.6 \
+  --crop crops/crop_01_text_block_en.png \
+  --prompt "OCR:"
+```
+
 The normal command only needs its page and model locations because the
 optimized decode and vision profile is now the CLI default:
 
@@ -151,18 +168,21 @@ cd /workspace/repos/paddle_ocr_vl_npu
 source npu-setup
 
 /usr/local/python3.12.13/bin/python3 \
-  09_persistent_page_engine/run_offline_e2e.py \
+  09_persistent_page_engine/scripts/run_offline_e2e.py \
   --image "/workspace/datasets/OmniDocBench/images/PPT_The Right Moves_page_024.png" \
   --layout-model /workspace/models/PP-DocLayoutV3_safetensors \
-  --recognizer-model /workspace/models/PaddleOCR-VL-1.6 \
-  --device npu:0
+  --recognizer-model /workspace/models/PaddleOCR-VL-1.6
 ```
 
-For a repeatable one-page validation, use `run_npu_smoke.sh`. Environment
+Experiment 09 always uses the logical device `npu:0` selected by `npu-setup`
+and always calls `torch.npu.set_compile_mode(jit_compile=False)`. There is no
+device-resolution or JIT-mode option in this experiment.
+
+For a repeatable one-page validation, use `scripts/run_npu_smoke.sh`. Environment
 overrides remain available for deliberate controls, including `BATCH_SIZE`,
-`DECODE_BACKEND`, `VISION_BACKEND`, `TEXT_BACKEND`, `VISION_BUCKETS`, and
-`TEXT_BUCKETS`. Omitted bucket overrides use the single source of truth in
-`runtime_defaults.py`.
+`DECODE_BACKEND`, `VISION_BACKEND`, `VISION_PADDING`, `TEXT_BACKEND`,
+`TEXT_PADDING`, `VISION_BUCKETS`, and `TEXT_BUCKETS`. Omitted bucket overrides use the single source of truth in
+`paddleocr_vl/serving/runtime_defaults.py`.
 
 Recognition uses the model's `min_pixels` and `max_pixels` by default. Pass
 `--preprocessor-min-pixels N` to override only the recognition-crop minimum;
@@ -173,7 +193,7 @@ recorded under `configuration.preprocessor` in `run.json`.
 The default `--vision-backend torchair` builds or loads one B=1 static graph for
 every configured bucket during recognizer setup. The first uncached run is therefore
 compilation-heavy; per-bucket cache paths and first-call times are recorded in
-`configuration.vision_compile` and `setup_timing_s.vision_runtime_setup`.
+`configuration.vision_prefill` and `setup_timing_s.vision_runtime_setup`.
 Subsequent runs reuse the GE caches under
 `.runtime_cache/09_persistent_page_engine_vision_torchair/`. The compiled boundary is
 currently the manual-attention path; unset
@@ -197,33 +217,52 @@ finish; the engine does not wait for the whole image list before emitting it.
 
 ## Runtime code map
 
-- `run_offline_e2e.py`: CLI, runtime construction, result assembly, and JSON.
-- `run_omnidocbench_paddlex.py`: official PaddleX v1.6/OmniDocBench frontend.
-- `paddlex_adapter.py`: narrow PaddleX recognition-model contract adapter.
-- `layout_mask_guard.py`: shared empty-mask fallback and telemetry.
-- `run_with_layout_mask_guard.py`: stock-runner launcher for the same guard.
-- `pipeline.py`: lazy page/layout/crop routing and page-completion collectors.
-  Crops are created one at a time as the recognizer asks for work.
-- `engine.py`: one model instance, sequential multimodal prefill, compact
-  prefilled state, and result materialization.
-- `continuous_decode.py`: bounded ready reservoir and persistent B=4 slot
-  scheduler.
-- `preprocessing.py`: crop resize/patchify and multimodal prompt construction.
-- `device_runtime.py`: device selection, dtype policy, NPU compile mode, and
-  synchronization.
-- `compile_utils.py`: shared TorchAir import and cache-key helpers.
-- `decode_compile.py`: production decode graph compilation and shape-specific
-  cache identity.
-- `vision_compile.py`: dense static routing and the compiled encoder boundary.
-- `text_compile.py`: static text-transformer routing with real-prefix KV writes.
-- `local_modeling_paddleocr_vl.py`: faithful model and NPU operation path.
-- `runtime_defaults.py`: the measured default profile, kept separate from
-  historical benchmark controls.
+`paddleocr_vl/model/` is the standalone crop model. It can preprocess and
+recognize one crop, but has no request queue, page, layout, PaddleX, or
+OmniDocBench concepts.
 
-The production runtime modules do not import `run_*` entrypoints or `probe_*`
-experiments. Those scripts consume the same preprocessing, device, and compile
-modules as the E2E engine, so diagnostic code cannot silently become a runtime
-dependency or invalidate a decode cache merely because a probe changed.
+- `paddleocr_vl/model/modeling.py`: faithful model weights/math and the
+  connector that assembles the three inference stages.
+- `paddleocr_vl/model/vision_prefill.py`: one compiler-safe vision encoder stage,
+  exact/bucket input preparation, and eager/TorchAir execution wrapper.
+- `paddleocr_vl/model/text_prefill.py`: one compiler-safe text transformer stage,
+  exact/bucket preparation, in-place prefix KV writes, and execution wrapper.
+- `paddleocr_vl/model/text_decode.py`: one static decode-step stage, its execution
+  wrapper/cache identity, and the warmed persistent decode cache.
+- `paddleocr_vl/model/preprocessing.py`: crop resize/patchify and multimodal
+  prompt construction.
+- `paddleocr_vl/model/example.py`: minimal executable one-crop MVP using the
+  model directly, with no serving dependency.
+
+`paddleocr_vl/serving/` adds persistent multi-request inference on top of the
+model package. The model package never imports it.
+
+- `paddleocr_vl/serving/engine.py`: one persistent model instance, sequential multimodal prefill,
+  compact prefilled state, and result materialization.
+- `paddleocr_vl/serving/continuous_decode.py`: bounded ready reservoir and persistent
+  decode-slot scheduler.
+- `paddleocr_vl/serving/types.py`: crop requests, recognition results, and
+  decode-schedule contracts.
+- `paddleocr_vl/serving/runtime_defaults.py`: measured serving-runtime profiles.
+
+`pipeline/` owns full-page concerns and depends on `paddleocr_vl/`, never the
+reverse.
+
+- `pipeline/layout.py`: PP-DocLayoutV3 inference and normalized layout regions.
+- `pipeline/page_pipeline.py`: lazy page/layout/crop routing and page completion.
+- `pipeline/paddlex_adapter.py`: narrow PaddleX recognition-model adapter.
+- `pipeline/layout_mask_guard.py`: PP-DocLayout empty-mask fallback and telemetry.
+- `pipeline/omnidocbench_defaults.py`: validated full-benchmark execution profile.
+- `pipeline/types.py`: boxes, layout regions, page results, and run serialization.
+
+`scripts/` contains serving and pipeline composition roots. It includes the
+diagnostic page runner, official PaddleX/OmniDocBench runner, NPU smoke wrapper,
+and focused probes. `utils/` contains only shared timing and metric helpers.
+
+The production runtime packages do not import `scripts/` entrypoints or probes.
+Those scripts consume the same preprocessing and model-stage modules as the
+E2E engine, so diagnostic code cannot silently become a runtime dependency or
+invalidate a compiler cache merely because a probe changed.
 The recognizer also constructs and warms all three compiled boundaries under
 `torch.inference_mode()`, matching real request execution and keeping TorchAir's
 dispatch-key guards stable across warmup and serving.
