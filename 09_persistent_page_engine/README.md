@@ -199,6 +199,22 @@ recorded in `configuration.vision_prefill` and
 `setup_timing_s.vision_runtime_setup`. Subsequent runs reuse the GE caches under
 `.runtime_cache/09_persistent_page_engine_vision_torchair/`.
 
+PaddleOCR-VL's native vision head dimension is 72, while compiled PromptFA
+requires a dimension divisible by 16. The shared eager/compiled PromptFA path
+therefore zero-pads Q/K/V to 80 only for the attention call, retains the scale
+derived from the real dimension 72, and slices the result back to 72 before the
+output projection. Bucket padding uses PromptFA sparse mode 1 so the supplied
+real/dummy-row mask is honored.
+
+The 64-page comparison retained under
+`tmp/09_persistent_page_engine/vision_matrix_uniform64_analysis_22a2f21/`
+found compiled PromptFA fastest overall: 29.52 seconds of vision-tower device
+time for 1,183,256 real tokens (40.1k useful tokens/s), with 3.46% padding.
+Compiling remained non-regressive through the largest 5,216-token bucket, while
+changing attention or execution by size improved the estimated total by less
+than one percent. The simplest measured policy is therefore compiled PromptFA
+for every retained bucket.
+
 Each recognition result records its real token count, selected physical bucket,
 padding, and execution route. Aggregate JSON reports bucket counts and the
 overall useful-token fraction so padding cost is visible rather than folded
