@@ -131,7 +131,7 @@ class ContinuousRecognizer:
         preprocessor_min_pixels: int | None = None,
     ):
         # TorchAir guards tensor dispatch-key sets. Build and warm every graph
-        # under the same inference-mode contract used by recognize_stream(),
+        # under the same inference-mode contract used by run(),
         # otherwise the first real request invalidates the persistent cache
         # and recompiles the vision, text-prefill, and decode boundaries.
         runtime_started = time.perf_counter()
@@ -253,14 +253,19 @@ class ContinuousRecognizer:
         }
 
     @torch.inference_mode()
-    def recognize_stream(
+    def run(
         self,
         requests: Iterable[RecognitionRequest],
         *,
         schedule_id: str,
-        on_result: Callable[[RecognitionResult], None] | None = None,
-    ) -> tuple[list[RecognitionResult], ContinuousDecodeResult]:
-        """Prefill and decode a bounded stream of independent crop requests."""
+        emit_result: Callable[[RecognitionResult], None],
+    ) -> ContinuousDecodeResult:
+        """Emit independent crop results as they complete.
+
+        Request ordering and higher-level grouping belong to the caller. The
+        return value contains only run-scoped scheduler metrics, which become
+        final after the input stream is drained.
+        """
 
         def ready_stream() -> Iterable[ReadyDecodeRequest]:
             for request in requests:
@@ -281,16 +286,12 @@ class ContinuousRecognizer:
                 del request
                 yield ready
 
-        completion_results: list[RecognitionResult] = []
-
         def handle_completion(completion: DecodeCompletion) -> None:
             result = self._result_from_completion(
                 completion,
                 schedule_id=schedule_id,
             )
-            completion_results.append(result)
-            if on_result is not None:
-                on_result(result)
+            emit_result(result)
 
         decoded = self.decode_scheduler.run_stream(
             ready_stream(),
@@ -299,18 +300,6 @@ class ContinuousRecognizer:
             ready_buffer_low_watermark=self.batch_size,
         )
         decode_wall_s = decoded.timing_s["continuous_decode_wall"]
-
-        result_by_id = {result.request_id: result for result in completion_results}
-        results = [
-            result_by_id[completion.ready.request_id]
-            for completion in decoded.completions
-        ]
-        for result in results:
-            result.timing_s["continuous_decode_wall_shared"] = float(decode_wall_s)
-            result.rates["decode_effective_token_contribution_per_s"] = per_second(
-                result.decode_tokens_after_prefill_including_eos,
-                decode_wall_s,
-            )
 
         schedule_result = ContinuousDecodeResult(
             schedule_id=schedule_id,
@@ -364,7 +353,7 @@ class ContinuousRecognizer:
                 ),
             },
         )
-        return results, schedule_result
+        return schedule_result
 
     def _result_from_completion(
         self,
@@ -419,7 +408,6 @@ class ContinuousRecognizer:
             timing_s=timing,
             device_stage_s=dict(state.device_stage_s),
             rates={
-                "decode_effective_token_contribution_per_s": None,
                 "request_output_tok_per_s": per_second(
                     generated_tokens,
                     timing["request_total"],

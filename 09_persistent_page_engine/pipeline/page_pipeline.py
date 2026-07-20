@@ -408,10 +408,10 @@ class OfflinePagePipeline:
             if len(work.recognized_regions) == work.request_count:
                 emit_completed_page(work)
 
-        _, decode_schedule = self.recognizer.recognize_stream(
+        decode_schedule = self.recognizer.run(
             request_source(),
             schedule_id=schedule_id,
-            on_result=accept_result,
+            emit_result=accept_result,
         )
         run_wall_s = time.perf_counter() - run_started
 

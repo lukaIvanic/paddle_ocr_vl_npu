@@ -117,14 +117,31 @@ class PaddleXContinuousRecognizerAdapter:
                 batch_index=batch_index,
                 skip_special_tokens=skip_special_tokens,
             )
+            result_by_id: dict[str, RecognitionResult] = {}
+
+            def collect_result(result: RecognitionResult) -> None:
+                if result.request_id in result_by_id:
+                    raise RuntimeError(
+                        f"recognizer emitted duplicate result {result.request_id}"
+                    )
+                result_by_id[result.request_id] = result
 
             started = time.perf_counter()
-            results, schedule = self.recognizer.recognize_stream(
+            schedule = self.recognizer.run(
                 requests,
                 schedule_id=f"paddlex_batch_{batch_index:06d}",
+                emit_result=collect_result,
             )
             batch_wall_s = time.perf_counter() - started
-            result_by_id = {result.request_id: result for result in results}
+            missing = [
+                request.request_id
+                for request in requests
+                if request.request_id not in result_by_id
+            ]
+            if missing:
+                raise RuntimeError(
+                    f"recognizer did not emit {len(missing)} PaddleX results"
+                )
             ordered_results = [
                 result_by_id[request.request_id] for request in requests
             ]
