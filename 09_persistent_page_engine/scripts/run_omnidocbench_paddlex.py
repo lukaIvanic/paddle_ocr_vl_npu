@@ -397,6 +397,7 @@ def main() -> None:
             "vision_padding": args.vision_padding,
             "vision_buckets": list(vision_buckets),
             "text_buckets": list(text_buckets),
+            "cpu_preprocessing": recognizer.configuration()["cpu_preprocessing"],
         },
         "setup_s": setup_s,
         "recognizer_setup_timing_s": recognizer.setup_timing_s,

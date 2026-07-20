@@ -256,8 +256,9 @@ OmniDocBench concepts.
 `paddleocr_vl/serving/` adds persistent multi-request inference on top of the
 model package. The model package never imports it.
 
-- `paddleocr_vl/serving/engine.py`: one persistent model instance, sequential multimodal prefill,
-  compact prefilled state, and result materialization.
+- `paddleocr_vl/serving/engine.py`: one persistent model instance, bounded
+  background CPU crop/prompt/MRoPE preparation, sequential multimodal NPU
+  prefill, compact prefilled state, and result materialization.
 - `paddleocr_vl/serving/continuous_decode.py`: bounded ready reservoir and persistent
   decode-slot scheduler.
 - `paddleocr_vl/serving/types.py`: crop requests, recognition results, and
