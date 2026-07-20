@@ -48,6 +48,11 @@ from validate_static_visual_batched_encoder import (
     build_prefix_batch,
     compile_encoder_forward,
 )
+from w8a8_vision import (
+    VISION_LINEAR_QUANTIZATION_CHOICES,
+    VISION_LINEAR_SITES,
+    W8A8_WEIGHT_LAYOUT_CHOICES,
+)
 
 
 PROFILE_METRIC_CHOICES = ("pipe", "memory", "l2", "memory_access")
@@ -118,6 +123,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--static-visual-ln-impl", default="manual_fp32", choices=STATIC_VISUAL_LN_IMPL_CHOICES)
     parser.add_argument("--static-visual-ln-linear-mode", default="grouped_qkv_mlp_fc1", choices=STATIC_VISUAL_LN_LINEAR_MODE_CHOICES)
     parser.add_argument("--static-visual-promptfa-pad-head-dim-to", type=int, default=80)
+    parser.add_argument(
+        "--vision-linear-quantization",
+        default="none",
+        choices=VISION_LINEAR_QUANTIZATION_CHOICES,
+    )
+    parser.add_argument(
+        "--w8a8-weight-layout",
+        default="auto",
+        choices=W8A8_WEIGHT_LAYOUT_CHOICES,
+    )
+    parser.add_argument("--w8a8-sites", default=",".join(VISION_LINEAR_SITES))
+    parser.add_argument("--w8a8-static-scale-headroom", type=float, default=1.05)
     parser.add_argument("--debug-static-visual-no-padding", action="store_true")
     parser.add_argument("--debug-static-visual-min-pad-tokens", type=int, default=0)
     parser.add_argument("--debug-static-visual-pad-to-multiple", type=int, default=0)
@@ -127,9 +144,20 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def make_profile_run_dir(root: Path, *, batch_size: int, fixed_s: int, metric: str) -> Path:
+def make_profile_run_dir(
+    root: Path,
+    *,
+    batch_size: int,
+    fixed_s: int,
+    metric: str,
+    quantization: str,
+    w8a8_sites: tuple[str, ...],
+) -> Path:
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
-    return root.expanduser().resolve() / f"static_visual_encoder_{timestamp}_B{batch_size}_S{fixed_s}_{metric}"
+    sites = "-".join(w8a8_sites) if quantization != "none" else "none"
+    return root.expanduser().resolve() / (
+        f"static_visual_encoder_{timestamp}_B{batch_size}_S{fixed_s}_{metric}_{quantization}_{sites}"
+    )
 
 
 def build_selected_batches(args: argparse.Namespace, inputs: list[Any]) -> tuple[list[list[tuple[int, Any]]], list[dict[str, Any]]]:
@@ -199,6 +227,14 @@ def main() -> None:
         raise ValueError("--profile-warmup-steps must be non-negative")
     if int(args.profile_active_steps) <= 0:
         raise ValueError("--profile-active-steps must be positive")
+    if float(args.w8a8_static_scale_headroom) < 1.0:
+        raise ValueError("--w8a8-static-scale-headroom must be >=1")
+    w8a8_sites = tuple(site.strip() for site in str(args.w8a8_sites).split(",") if site.strip())
+    unknown_w8a8_sites = set(w8a8_sites) - set(VISION_LINEAR_SITES)
+    if unknown_w8a8_sites:
+        raise ValueError(f"unknown --w8a8-sites values: {sorted(unknown_w8a8_sites)}")
+    if str(args.vision_linear_quantization) != "none" and not w8a8_sites:
+        raise ValueError("at least one --w8a8-sites value is required for W8A8")
 
     model, model_dir, device, dtype = load_model_for_args(args)
     if device.type != "npu":
@@ -222,13 +258,55 @@ def main() -> None:
     batch_items = [item for _manifest_index, item in batch_pairs]
     fixed_s = int(args.static_visual_fixed_physical_seq_len)
 
+    maybe_sync(device)
+    prefix_start = time.perf_counter()
+    prefix, rope_cos, rope_sin, mask, prefix_meta = build_prefix_batch(
+        model=model,
+        batch_items=batch_items,
+        device=device,
+        fixed_physical_seq_len=fixed_s,
+        ln_impl=str(args.static_visual_ln_impl),
+        ln_linear_mode=str(args.static_visual_ln_linear_mode),
+        promptfa_pad_head_dim_to=int(args.static_visual_promptfa_pad_head_dim_to),
+        debug_no_padding=bool(args.debug_static_visual_no_padding),
+        debug_min_pad_tokens=int(args.debug_static_visual_min_pad_tokens),
+        debug_pad_to_multiple=int(args.debug_static_visual_pad_to_multiple),
+    )
+    maybe_sync(device)
+    prefix_build_s = time.perf_counter() - prefix_start
+
     encoder_module = BatchedStaticVisualEncoderModule(
         model,
         fixed_physical_seq_len=fixed_s,
         ln_impl=str(args.static_visual_ln_impl),
         ln_linear_mode=str(args.static_visual_ln_linear_mode),
         promptfa_pad_head_dim_to=int(args.static_visual_promptfa_pad_head_dim_to),
+        linear_quantization=str(args.vision_linear_quantization),
+        w8a8_sites=w8a8_sites,
+        w8a8_weight_layout=str(args.w8a8_weight_layout),
+        w8a8_static_scale_headroom=float(args.w8a8_static_scale_headroom),
     ).eval()
+    calibration_meta: dict[str, Any] = {"enabled": False, "completed_batches": 0, "elapsed_s": 0.0}
+    if str(args.vision_linear_quantization) in {"w8a8_static", "w8a8_static_pad64"}:
+        encoder_module.set_calibration_enabled(True)
+        maybe_sync(device)
+        calibration_start = time.perf_counter()
+        encoder_module(prefix, rope_cos, rope_sin, mask)
+        maybe_sync(device)
+        encoder_module.set_calibration_enabled(False)
+        calibration_meta = {
+            "enabled": True,
+            "completed_batches": 1,
+            "elapsed_s": float(time.perf_counter() - calibration_start),
+            **encoder_module.calibration_summary(),
+        }
+    maybe_sync(device)
+    quant_prepare_start = time.perf_counter()
+    quantization_meta = encoder_module.prepare_w8a8()
+    maybe_sync(device)
+    quantization_meta["prepare_s"] = float(time.perf_counter() - quant_prepare_start)
+    quantization_meta["calibration"] = calibration_meta
+
     encoder_forward, compile_meta = compile_encoder_forward(
         encoder_module,
         backend_name="torchair",
@@ -252,23 +330,6 @@ def main() -> None:
     )
 
     maybe_sync(device)
-    prefix_start = time.perf_counter()
-    prefix, rope_cos, rope_sin, mask, prefix_meta = build_prefix_batch(
-        model=model,
-        batch_items=batch_items,
-        device=device,
-        fixed_physical_seq_len=fixed_s,
-        ln_impl=str(args.static_visual_ln_impl),
-        ln_linear_mode=str(args.static_visual_ln_linear_mode),
-        promptfa_pad_head_dim_to=int(args.static_visual_promptfa_pad_head_dim_to),
-        debug_no_padding=bool(args.debug_static_visual_no_padding),
-        debug_min_pad_tokens=int(args.debug_static_visual_min_pad_tokens),
-        debug_pad_to_multiple=int(args.debug_static_visual_pad_to_multiple),
-    )
-    maybe_sync(device)
-    prefix_build_s = time.perf_counter() - prefix_start
-
-    maybe_sync(device)
     first_start = time.perf_counter()
     first_output = encoder_forward(prefix, rope_cos, rope_sin, mask)
     maybe_sync(device)
@@ -287,6 +348,8 @@ def main() -> None:
         batch_size=int(args.batch_size),
         fixed_s=fixed_s,
         metric=str(args.profile_metric),
+        quantization=str(args.vision_linear_quantization),
+        w8a8_sites=w8a8_sites,
     )
     shutil.rmtree(profile_dir, ignore_errors=True)
     profile_dir.mkdir(parents=True, exist_ok=True)
@@ -386,6 +449,7 @@ def main() -> None:
         "compiled_first_call_s": float(compiled_first_call_s),
         "warmup_forward_sync_s": stats(warmup_times_s),
         "compile": clean_json(compile_meta),
+        "quantization": clean_json(quantization_meta),
         "candidate": {
             "device": str(device),
             "dtype": str(dtype),
@@ -395,6 +459,11 @@ def main() -> None:
             "static_visual_ln_impl": str(args.static_visual_ln_impl),
             "static_visual_ln_linear_mode": str(args.static_visual_ln_linear_mode),
             "static_visual_promptfa_pad_head_dim_to": int(args.static_visual_promptfa_pad_head_dim_to),
+            "vision_linear_quantization": str(args.vision_linear_quantization),
+            "w8a8_sites": list(encoder_module.w8a8_sites),
+            "w8a8_weight_layout_requested": str(args.w8a8_weight_layout),
+            "w8a8_weight_layout_resolved": str(encoder_module.w8a8_weight_layout),
+            "w8a8_static_scale_headroom": float(args.w8a8_static_scale_headroom),
             "batched_boundary": "encoder_layers_plus_post_layernorm_only",
             "prefix_boundary": "per_crop_patch_embedding_plus_abs_pos_plus_padding_outside_compile",
         },
