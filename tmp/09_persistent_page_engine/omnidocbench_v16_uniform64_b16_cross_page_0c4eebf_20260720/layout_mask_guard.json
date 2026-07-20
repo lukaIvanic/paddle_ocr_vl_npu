@@ -1,0 +1,7 @@
+{
+  "guard_version": 1,
+  "behavior": "integer_bounding_rectangle_for_empty_scaled_mask_crop",
+  "fallback_calls": 0,
+  "fallback_regions": 0,
+  "events": []
+}
