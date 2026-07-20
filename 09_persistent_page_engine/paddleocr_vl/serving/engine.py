@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import time
+from collections import deque
+from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Iterable
@@ -49,6 +51,23 @@ from ..model.vision_prefill import (
     get_vision_prompt_fa_layout,
     parse_vision_buckets,
 )
+
+
+@dataclass
+class CpuPreparedRecognition:
+    request_id: str
+    prompt: str
+    crop_size: tuple[int, int]
+    skip_special_tokens: bool
+    pixel_values: torch.Tensor
+    image_grid_thw: torch.Tensor
+    input_ids: torch.Tensor
+    attention_mask: torch.Tensor
+    position_ids: torch.Tensor
+    rope_deltas: torch.Tensor
+    timing_s: dict[str, float]
+    request_started: float
+    preparation_finished: float
 
 
 @dataclass
@@ -186,6 +205,11 @@ class ContinuousRecognizer:
             model_preprocessor_config,
             self.preprocessor_min_pixels_override,
         )
+        # Encoding runs continuously on the CPU preparation thread while this
+        # tokenizer remains owned by the NPU thread for result decoding.
+        self.preprocessing_tokenizer = Tokenizer.from_file(
+            str(self.model_dir / "tokenizer.json")
+        )
         self.tokenizer = Tokenizer.from_file(str(self.model_dir / "tokenizer.json"))
         frontend_setup_s = time.perf_counter() - runtime_started
 
@@ -249,6 +273,10 @@ class ContinuousRecognizer:
             decode_fn=self.decode_fn,
             max_new_tokens=self.max_new_tokens,
         )
+        # Keep one complete decode cohort in CPU preparation without coupling
+        # correctness to the relative speed of CPU and NPU stages. B=1 still
+        # needs one item being consumed and one item prepared in the background.
+        self.cpu_preprocess_max_pending = max(2, self.batch_size)
         decode_control_setup_s = time.perf_counter() - started
 
         self.setup_timing_s = {
@@ -276,12 +304,15 @@ class ContinuousRecognizer:
         """
 
         def ready_stream() -> Iterable[ReadyDecodeRequest]:
-            for request in requests:
-                state = self._prefill(request)
+            for prepared, consumer_wait_s in self._iter_cpu_prepared(requests):
+                state = self._prefill_prepared(
+                    prepared,
+                    consumer_wait_s=consumer_wait_s,
+                )
                 cache, rope_deltas, cache_position, first_token_tensor = (
                     state.take_device_state()
                 )
-                ready = ReadyDecodeRequest(
+                yield ReadyDecodeRequest(
                     request_id=state.request_id,
                     payload=state,
                     cache=cache,
@@ -291,8 +322,6 @@ class ContinuousRecognizer:
                     first_token=state.first_token,
                     prompt_length=state.input_tokens,
                 )
-                del request
-                yield ready
 
         def handle_completion(completion: DecodeCompletion) -> None:
             result = self._result_from_completion(
@@ -363,6 +392,54 @@ class ContinuousRecognizer:
         )
         return schedule_result
 
+    def _iter_cpu_prepared(
+        self,
+        requests: Iterable[RecognitionRequest],
+    ) -> Iterable[tuple[CpuPreparedRecognition, float]]:
+        """Prepare requests on one background CPU lane with bounded FIFO state."""
+
+        source = iter(requests)
+        pending: deque[Future[CpuPreparedRecognition]] = deque()
+        source_exhausted = False
+        executor = ThreadPoolExecutor(
+            max_workers=1,
+            thread_name_prefix="paddleocr-vl-cpu-prepare",
+        )
+
+        def fill_cpu_pipeline() -> None:
+            nonlocal source_exhausted
+            while (
+                not source_exhausted
+                and len(pending) < self.cpu_preprocess_max_pending
+            ):
+                try:
+                    request = next(source)
+                except StopIteration:
+                    source_exhausted = True
+                    break
+                submitted_at = time.perf_counter()
+                pending.append(
+                    executor.submit(
+                        self._prepare_cpu,
+                        request,
+                        submitted_at,
+                    )
+                )
+
+        try:
+            fill_cpu_pipeline()
+            while pending:
+                future = pending.popleft()
+                wait_started = time.perf_counter()
+                prepared = future.result()
+                consumer_wait_s = time.perf_counter() - wait_started
+                # Refill before yielding so the worker remains productive while
+                # the consumer performs H2D and NPU prefill for this request.
+                fill_cpu_pipeline()
+                yield prepared, consumer_wait_s
+        finally:
+            executor.shutdown(wait=True, cancel_futures=True)
+
     def _result_from_completion(
         self,
         completion: DecodeCompletion,
@@ -426,8 +503,12 @@ class ContinuousRecognizer:
         )
 
     @torch.inference_mode()
-    def _prefill(self, request: RecognitionRequest) -> PrefilledRecognition:
-        request_started = time.perf_counter()
+    def _prepare_cpu(
+        self,
+        request: RecognitionRequest,
+        submitted_at: float,
+    ) -> CpuPreparedRecognition:
+        preparation_started = time.perf_counter()
         timing: dict[str, float] = {}
         crop_size = tuple(int(value) for value in request.crop.size)
         preprocessor_config = self.preprocessor_config
@@ -451,7 +532,7 @@ class ContinuousRecognizer:
             preprocessor_config,
         )
         input_ids, attention_mask = build_inputs(
-            self.tokenizer,
+            self.preprocessing_tokenizer,
             image_grid_thw,
             request.prompt,
             merge_size=int(preprocessor_config["merge_size"]),
@@ -472,6 +553,50 @@ class ContinuousRecognizer:
             attention_mask,
         )
         timing["cpu_mrope_index"] = time.perf_counter() - started
+
+        preparation_finished = time.perf_counter()
+        timing["cpu_preprocess_background_queue_wait"] = max(
+            0.0,
+            preparation_started - submitted_at,
+        )
+        timing["cpu_preprocess_background_service"] = (
+            preparation_finished - preparation_started
+        )
+        return CpuPreparedRecognition(
+            request_id=request.request_id,
+            prompt=request.prompt,
+            crop_size=crop_size,
+            skip_special_tokens=bool(request.skip_special_tokens),
+            pixel_values=pixel_values,
+            image_grid_thw=image_grid_thw,
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            position_ids=position_ids_cpu,
+            rope_deltas=rope_deltas_cpu,
+            timing_s=timing,
+            request_started=submitted_at,
+            preparation_finished=preparation_finished,
+        )
+
+    @torch.inference_mode()
+    def _prefill_prepared(
+        self,
+        prepared: CpuPreparedRecognition,
+        *,
+        consumer_wait_s: float,
+    ) -> PrefilledRecognition:
+        timing = dict(prepared.timing_s)
+        timing["cpu_preprocess_background_consumer_wait"] = float(consumer_wait_s)
+        timing["cpu_preprocess_background_ready_wait"] = max(
+            0.0,
+            time.perf_counter() - prepared.preparation_finished,
+        )
+        input_ids = prepared.input_ids
+        attention_mask = prepared.attention_mask
+        pixel_values = prepared.pixel_values
+        image_grid_thw = prepared.image_grid_thw
+        position_ids_cpu = prepared.position_ids
+        rope_deltas_cpu = prepared.rope_deltas
 
         moved, transfer_s = timed_wall(
             self.device,
@@ -584,13 +709,28 @@ class ContinuousRecognizer:
         first_token = int(next_token.detach().cpu().item())
         timing["first_token_d2h"] = time.perf_counter() - started
         prefill_finished = time.perf_counter()
-        timing["time_to_first_token"] = prefill_finished - request_started
-        timing["prefill_request_total"] = prefill_finished - request_started
+        timing["time_to_first_token"] = (
+            prefill_finished - prepared.request_started
+        )
+        # Preserve this field as summed request service rather than folding in
+        # time spent queued or already prepared behind another request. The
+        # background queue contribution is reported explicitly above, while
+        # time_to_first_token retains the real submission-to-token latency.
+        timing["prefill_request_total"] = sum(
+            timing[name]
+            for name in (
+                "cpu_image_and_prompt_preprocess",
+                "cpu_mrope_index",
+                "recognizer_h2d",
+                "vision_and_text_prefill_wall",
+                "first_token_d2h",
+            )
+        )
         return PrefilledRecognition(
-            request_id=request.request_id,
-            prompt=request.prompt,
-            crop_size=crop_size,
-            skip_special_tokens=bool(request.skip_special_tokens),
+            request_id=prepared.request_id,
+            prompt=prepared.prompt,
+            crop_size=prepared.crop_size,
+            skip_special_tokens=prepared.skip_special_tokens,
             cache=cache,
             rope_deltas=rope_deltas,
             next_cache_position=torch.full(
@@ -607,7 +747,7 @@ class ContinuousRecognizer:
             text_prefill=text_route,
             timing_s=timing,
             device_stage_s=device_stage_s,
-            request_started=request_started,
+            request_started=prepared.request_started,
             prefill_finished=prefill_finished,
         )
 
@@ -652,6 +792,12 @@ class ContinuousRecognizer:
                 "nominal_minimum_projected_image_tokens": (
                     min_pixels // ((patch_size * merge_size) ** 2)
                 ),
+            },
+            "cpu_preprocessing": {
+                "execution": "background_thread",
+                "workers": 1,
+                "max_pending": self.cpu_preprocess_max_pending,
+                "ordering": "fifo",
             },
             "decode": decode_label,
             "decode_schedule": "run_scoped_persistent_slots_iteration_hot_swap",
