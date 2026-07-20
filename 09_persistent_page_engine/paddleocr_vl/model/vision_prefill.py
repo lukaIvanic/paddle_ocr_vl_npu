@@ -8,24 +8,17 @@ slices the real rows before the existing projector consumes them.
 
 from __future__ import annotations
 
-import hashlib
+import os
 import time
 import types
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Iterable
+from typing import TYPE_CHECKING, Any, Callable, Iterable
 
 import torch
 import torch.nn.functional as F
+from torch import nn
 
-from .modeling import (
-    LocalPaddleOCRVLForConditionalGeneration,
-    _activation,
-    apply_rotary_pos_emb_vision,
-    attention_softmax,
-    get_vision_attention_impl,
-    get_vision_softmax_dtype_mode,
-)
 from .compile_utils import (
     TORCHAIR_EXECUTION_MODE,
     cache_key_part,
@@ -34,12 +27,562 @@ from .compile_utils import (
     torch_npu_version_label,
     torchair_version_label,
 )
+from .config import PaddleOCRVLConfig, PaddleOCRVisionConfig
 from utils.timing import synchronize
+
+if TYPE_CHECKING:
+    from .modeling import LocalPaddleOCRVLForConditionalGeneration
 
 
 DEFAULT_VISION_BUCKETS = (16, 32, 64, 128, 256, 512, 1024, 2048)
 VISION_BACKEND_CHOICES = ("raw_eager", "torchair")
 VISION_PADDING_CHOICES = ("auto", "none", "bucket")
+VISION_ATTENTION_ENV = "PADDLE_OCR_VL_VISION_ATTENTION"
+VISION_ATTENTION_CHOICES = ("manual", "prompt_flash_attention")
+VISION_PROMPT_FA_LAYOUT_ENV = "PADDLE_OCR_VL_VISION_PROMPT_FA_LAYOUT"
+VISION_PROMPT_FA_LAYOUT_CHOICES = ("bnsd", "bsnd", "bsh")
+VISION_PROMPT_FA_MASK_SPARSE_MODE_ENV = (
+    "PADDLE_OCR_VL_VISION_PROMPT_FA_MASK_SPARSE_MODE"
+)
+VISION_SOFTMAX_DTYPE_ENV = "PADDLE_OCR_VL_VISION_SOFTMAX_DTYPE"
+SOFTMAX_DTYPE_CHOICES = ("fp32", "model")
+
+
+def get_vision_attention_impl() -> str:
+    mode = os.environ.get(VISION_ATTENTION_ENV, "manual").strip() or "manual"
+    if mode not in VISION_ATTENTION_CHOICES:
+        raise ValueError(
+            f"{VISION_ATTENTION_ENV} must be one of "
+            f"{VISION_ATTENTION_CHOICES}, got {mode!r}"
+        )
+    return mode
+
+
+def get_vision_prompt_fa_layout() -> str:
+    layout = (
+        os.environ.get(VISION_PROMPT_FA_LAYOUT_ENV, "bnsd").strip().lower()
+        or "bnsd"
+    )
+    if layout not in VISION_PROMPT_FA_LAYOUT_CHOICES:
+        raise ValueError(
+            f"{VISION_PROMPT_FA_LAYOUT_ENV} must be one of "
+            f"{VISION_PROMPT_FA_LAYOUT_CHOICES}, got {layout!r}"
+        )
+    return layout
+
+
+def get_vision_prompt_fa_mask_sparse_mode() -> int:
+    raw = (
+        os.environ.get(VISION_PROMPT_FA_MASK_SPARSE_MODE_ENV, "0").strip()
+        or "0"
+    )
+    try:
+        mode = int(raw)
+    except ValueError as exc:
+        raise ValueError(
+            f"{VISION_PROMPT_FA_MASK_SPARSE_MODE_ENV} must be an integer, "
+            f"got {raw!r}"
+        ) from exc
+    if mode not in (0, 1):
+        raise ValueError(
+            f"{VISION_PROMPT_FA_MASK_SPARSE_MODE_ENV} must be 0 or 1 for "
+            f"vision padding masks, got {mode}"
+        )
+    return mode
+
+
+def get_vision_softmax_dtype_mode() -> str:
+    mode = (
+        os.environ.get(VISION_SOFTMAX_DTYPE_ENV, "fp32").strip().lower()
+        or "fp32"
+    )
+    if mode not in SOFTMAX_DTYPE_CHOICES:
+        raise ValueError(
+            f"{VISION_SOFTMAX_DTYPE_ENV} must be one of "
+            f"{SOFTMAX_DTYPE_CHOICES}, got {mode!r}"
+        )
+    return mode
+
+
+def _activation(name: str, x: torch.Tensor) -> torch.Tensor:
+    if name == "silu":
+        return F.silu(x)
+    if name == "gelu_pytorch_tanh":
+        return F.gelu(x, approximate="tanh")
+    if name == "gelu":
+        return F.gelu(x)
+    raise ValueError(f"unsupported activation: {name!r}")
+
+
+def attention_softmax(
+    scores: torch.Tensor,
+    *,
+    dim: int,
+    output_dtype: torch.dtype,
+    mode: str,
+) -> torch.Tensor:
+    if mode == "fp32":
+        return F.softmax(scores, dim=dim, dtype=torch.float32).to(output_dtype)
+    if mode == "model":
+        return F.softmax(scores, dim=dim, dtype=output_dtype).to(output_dtype)
+    raise ValueError(f"unsupported attention softmax dtype mode: {mode!r}")
+
+
+def rotate_half(x: torch.Tensor) -> torch.Tensor:
+    x1 = x[..., : x.shape[-1] // 2]
+    x2 = x[..., x.shape[-1] // 2 :]
+    return torch.cat((-x2, x1), dim=-1)
+
+
+def apply_rotary_pos_emb_vision(
+    q: torch.Tensor,
+    k: torch.Tensor,
+    cos: torch.Tensor,
+    sin: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    orig_q_dtype = q.dtype
+    orig_k_dtype = k.dtype
+    q = q.float()
+    k = k.float()
+    cos = cos.unsqueeze(-2).float()
+    sin = sin.unsqueeze(-2).float()
+    q_embed = (q * cos) + (rotate_half(q) * sin)
+    k_embed = (k * cos) + (rotate_half(k) * sin)
+    return q_embed.to(orig_q_dtype), k_embed.to(orig_k_dtype)
+
+
+def vision_prompt_flash_attention_bnsd(
+    q_bnsd: torch.Tensor,
+    k_bnsd: torch.Tensor,
+    v_bnsd: torch.Tensor,
+    *,
+    num_heads: int,
+    scale: float,
+    layout: str | None = None,
+    atten_mask: torch.Tensor | None = None,
+) -> torch.Tensor:
+    """Run PromptFA with a selectable public layout and return BNSD output."""
+    if q_bnsd.device.type != "npu":
+        raise RuntimeError(
+            "vision prompt_flash_attention requires NPU tensors plus torch_npu."
+        )
+    import torch_npu
+
+    selected_layout = (
+        get_vision_prompt_fa_layout()
+        if layout is None
+        else layout.strip().lower()
+    )
+    if selected_layout not in VISION_PROMPT_FA_LAYOUT_CHOICES:
+        raise ValueError(
+            f"unsupported vision PromptFA layout: {selected_layout!r}"
+        )
+
+    mask_kwargs = {}
+    sparse_mode = 0
+    if atten_mask is not None:
+        mask_kwargs["atten_mask"] = atten_mask.to(torch.bool).contiguous()
+        sparse_mode = get_vision_prompt_fa_mask_sparse_mode()
+
+    if selected_layout == "bnsd":
+        return torch_npu.npu_prompt_flash_attention(
+            q_bnsd.contiguous(),
+            k_bnsd.contiguous(),
+            v_bnsd.contiguous(),
+            num_heads=int(num_heads),
+            input_layout="BNSD",
+            scale_value=float(scale),
+            sparse_mode=sparse_mode,
+            **mask_kwargs,
+        )
+
+    if selected_layout == "bsnd":
+        out_bsnd = torch_npu.npu_prompt_flash_attention(
+            q_bnsd.transpose(1, 2).contiguous(),
+            k_bnsd.transpose(1, 2).contiguous(),
+            v_bnsd.transpose(1, 2).contiguous(),
+            num_heads=int(num_heads),
+            input_layout="BSND",
+            scale_value=float(scale),
+            sparse_mode=sparse_mode,
+            **mask_kwargs,
+        )
+        return out_bsnd.transpose(1, 2).contiguous()
+
+    batch, heads, seq_len, head_dim = q_bnsd.shape
+    out_bsh = torch_npu.npu_prompt_flash_attention(
+        q_bnsd.transpose(1, 2).contiguous().view(
+            batch, seq_len, heads * head_dim
+        ),
+        k_bnsd.transpose(1, 2).contiguous().view(
+            batch, seq_len, heads * head_dim
+        ),
+        v_bnsd.transpose(1, 2).contiguous().view(
+            batch, seq_len, heads * head_dim
+        ),
+        num_heads=int(num_heads),
+        input_layout="BSH",
+        scale_value=float(scale),
+        sparse_mode=sparse_mode,
+        **mask_kwargs,
+    )
+    return (
+        out_bsh.view(batch, seq_len, heads, head_dim)
+        .transpose(1, 2)
+        .contiguous()
+    )
+
+
+class PaddleOCRProjector(nn.Module):
+    def __init__(self, config: PaddleOCRVLConfig):
+        super().__init__()
+        merge = config.vision_config.spatial_merge_size
+        hidden_size = config.vision_config.hidden_size * merge * merge
+        self.merge_kernel_size = (merge, merge)
+        self.pre_norm = nn.LayerNorm(config.vision_config.hidden_size, eps=1e-5)
+        self.linear_1 = nn.Linear(hidden_size, hidden_size, bias=True)
+        self.linear_2 = nn.Linear(
+            hidden_size, config.text_config.hidden_size, bias=True
+        )
+
+    def forward(
+        self,
+        image_features: torch.Tensor,
+        image_grid_thw: torch.Tensor,
+    ) -> torch.Tensor:
+        chunks = image_features.split(image_grid_thw.prod(dim=1).tolist(), dim=0)
+        m1, m2 = self.merge_kernel_size
+        processed = []
+        for image_feature, image_grid in zip(chunks, image_grid_thw):
+            image_feature = self.pre_norm(image_feature)
+            t, h, w = [int(v.item()) for v in image_grid]
+            d = image_feature.shape[-1]
+            h_block = h // m1
+            w_block = w // m2
+            image_feature = image_feature.reshape(
+                t, h_block, m1, w_block, m2, d
+            )
+            image_feature = image_feature.transpose(2, 3)
+            image_feature = image_feature.reshape(
+                t * h_block * w_block, m1 * m2 * d
+            )
+            hidden_states = self.linear_1(image_feature)
+            hidden_states = F.gelu(hidden_states)
+            hidden_states = self.linear_2(hidden_states)
+            processed.append(hidden_states)
+        return torch.cat(processed, dim=0)
+
+
+class PaddleOCRVisionRotaryEmbedding(nn.Module):
+    def __init__(self, dim: int, theta: float = 10000.0):
+        super().__init__()
+        self.dim = int(dim)
+        self.theta = float(theta)
+        self.register_buffer("inv_freq", self._compute_inv_freq(), persistent=False)
+
+    def _compute_inv_freq(self) -> torch.Tensor:
+        return 1.0 / (
+            self.theta
+            ** (torch.arange(0, self.dim, 2, dtype=torch.float32) / self.dim)
+        )
+
+    def reset_inv_freq(self, device: torch.device | None = None) -> None:
+        self.register_buffer(
+            "inv_freq",
+            self._compute_inv_freq().to(device=device),
+            persistent=False,
+        )
+
+    def forward(self, seqlen: int | torch.Tensor) -> torch.Tensor:
+        seq = torch.arange(
+            int(seqlen),
+            device=self.inv_freq.device,
+            dtype=self.inv_freq.dtype,
+        )
+        return torch.outer(seq, self.inv_freq)
+
+
+class PaddleOCRVisionEmbeddings(nn.Module):
+    def __init__(self, config: PaddleOCRVisionConfig):
+        super().__init__()
+        self.config = config
+        self.embed_dim = config.hidden_size
+        self.image_size = config.image_size
+        self.patch_size = config.patch_size
+        self.patch_embedding = nn.Conv2d(
+            in_channels=config.num_channels,
+            out_channels=self.embed_dim,
+            kernel_size=self.patch_size,
+            stride=self.patch_size,
+            padding=0,
+        )
+        self.num_patches = (self.image_size // self.patch_size) ** 2
+        self.position_embedding = nn.Embedding(self.num_patches, self.embed_dim)
+
+    def interpolate_pos_encoding(
+        self,
+        embeddings: torch.Tensor,
+        height: int,
+        width: int,
+    ) -> torch.Tensor:
+        num_positions = self.position_embedding.weight.shape[0]
+        dim = embeddings.shape[-1]
+        sqrt_num_positions = int(num_positions**0.5)
+        patch_pos_embed = self.position_embedding.weight.unsqueeze(0)
+        patch_pos_embed = patch_pos_embed.reshape(
+            1, sqrt_num_positions, sqrt_num_positions, dim
+        ).permute(0, 3, 1, 2)
+        patch_pos_embed = F.interpolate(
+            patch_pos_embed,
+            size=(height, width),
+            mode="bilinear",
+            align_corners=False,
+        )
+        return patch_pos_embed.permute(0, 2, 3, 1).view(1, -1, dim)
+
+    def forward(
+        self,
+        pixel_values: torch.Tensor,
+        image_grid_thw: torch.Tensor,
+    ) -> torch.Tensor:
+        batch_size, sequence_len, channel, height, width = pixel_values.shape
+        target_dtype = self.patch_embedding.weight.dtype
+        pixel_values = pixel_values.reshape(
+            batch_size * sequence_len, channel, height, width
+        )
+        patch_embeds = self.patch_embedding(pixel_values.to(dtype=target_dtype))
+        embeddings = patch_embeds.flatten(-2).squeeze(-1)
+        embeddings = embeddings.reshape(batch_size, sequence_len, -1).squeeze(0)
+        start = 0
+        tmp_embeddings = []
+        for image_grid in image_grid_thw:
+            t, h, w = [int(v.item()) for v in image_grid]
+            end = start + t * h * w
+            image_embeddings = embeddings[start:end, :]
+            pos = (
+                self.interpolate_pos_encoding(image_embeddings, h, w)
+                .squeeze(0)
+                .repeat(t, 1)
+            )
+            tmp_embeddings.append(image_embeddings + pos)
+            start = end
+        return torch.cat(tmp_embeddings, dim=0)
+
+
+class PaddleOCRVisionAttention(nn.Module):
+    def __init__(self, config: PaddleOCRVisionConfig):
+        super().__init__()
+        self.embed_dim = config.hidden_size
+        self.num_heads = config.num_attention_heads
+        self.head_dim = self.embed_dim // self.num_heads
+        self.scaling = self.head_dim**-0.5
+        self.k_proj = nn.Linear(self.embed_dim, self.embed_dim)
+        self.v_proj = nn.Linear(self.embed_dim, self.embed_dim)
+        self.q_proj = nn.Linear(self.embed_dim, self.embed_dim)
+        self.out_proj = nn.Linear(self.embed_dim, self.embed_dim)
+
+    def forward(
+        self,
+        hidden_states: torch.Tensor,
+        cu_seqlens: torch.Tensor,
+        position_embeddings: tuple[torch.Tensor, torch.Tensor],
+    ) -> torch.Tensor:
+        seq_length = hidden_states.shape[0]
+        query_states = self.q_proj(hidden_states).view(
+            seq_length, self.num_heads, self.head_dim
+        )
+        key_states = self.k_proj(hidden_states).view(
+            seq_length, self.num_heads, self.head_dim
+        )
+        value_states = self.v_proj(hidden_states).view(
+            seq_length, self.num_heads, self.head_dim
+        )
+        cos, sin = position_embeddings
+        query_states, key_states = apply_rotary_pos_emb_vision(
+            query_states, key_states, cos, sin
+        )
+        query_states = query_states.transpose(0, 1).unsqueeze(0)
+        key_states = key_states.transpose(0, 1).unsqueeze(0)
+        value_states = value_states.transpose(0, 1).unsqueeze(0)
+        if int(cu_seqlens.numel()) == 2:
+            q_splits = (query_states,)
+            k_splits = (key_states,)
+            v_splits = (value_states,)
+        else:
+            lengths = (
+                (cu_seqlens[1:] - cu_seqlens[:-1]).detach().cpu().tolist()
+            )
+            q_splits, k_splits, v_splits = [
+                torch.split(tensor, lengths, dim=2)
+                for tensor in (query_states, key_states, value_states)
+            ]
+        outputs = []
+        attention_impl = get_vision_attention_impl()
+        for q, k, v in zip(q_splits, k_splits, v_splits):
+            if attention_impl == "prompt_flash_attention":
+                outputs.append(
+                    vision_prompt_flash_attention_bnsd(
+                        q,
+                        k,
+                        v,
+                        num_heads=int(self.num_heads),
+                        scale=float(self.scaling),
+                    )
+                )
+            elif attention_impl == "manual":
+                scores = torch.matmul(q, k.transpose(2, 3)) * self.scaling
+                probs = attention_softmax(
+                    scores,
+                    dim=-1,
+                    output_dtype=q.dtype,
+                    mode=get_vision_softmax_dtype_mode(),
+                )
+                outputs.append(torch.matmul(probs, v))
+            else:
+                raise ValueError(
+                    f"unknown vision attention implementation: "
+                    f"{attention_impl!r}"
+                )
+        attn_output = torch.cat(outputs, dim=2)
+        attn_output = (
+            attn_output.transpose(1, 2)
+            .contiguous()
+            .view(seq_length, -1)
+        )
+        return self.out_proj(attn_output)
+
+
+class PaddleOCRVisionMLP(nn.Module):
+    def __init__(self, config: PaddleOCRVisionConfig):
+        super().__init__()
+        self.hidden_act = config.hidden_act
+        self.fc1 = nn.Linear(config.hidden_size, config.intermediate_size)
+        self.fc2 = nn.Linear(config.intermediate_size, config.hidden_size)
+
+    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        return self.fc2(_activation(self.hidden_act, self.fc1(hidden_states)))
+
+
+class PaddleOCRVisionEncoderLayer(nn.Module):
+    def __init__(self, config: PaddleOCRVisionConfig):
+        super().__init__()
+        self.layer_norm1 = nn.LayerNorm(
+            config.hidden_size, eps=config.layer_norm_eps
+        )
+        self.self_attn = PaddleOCRVisionAttention(config)
+        self.layer_norm2 = nn.LayerNorm(
+            config.hidden_size, eps=config.layer_norm_eps
+        )
+        self.mlp = PaddleOCRVisionMLP(config)
+
+    def forward(
+        self,
+        hidden_states: torch.Tensor,
+        cu_seqlens: torch.Tensor,
+        position_embeddings: tuple[torch.Tensor, torch.Tensor],
+    ) -> torch.Tensor:
+        hidden_states = hidden_states + self.self_attn(
+            self.layer_norm1(hidden_states),
+            cu_seqlens,
+            position_embeddings,
+        )
+        return hidden_states + self.mlp(self.layer_norm2(hidden_states))
+
+
+class PaddleOCRVisionEncoder(nn.Module):
+    def __init__(self, config: PaddleOCRVisionConfig):
+        super().__init__()
+        self.config = config
+        self.layers = nn.ModuleList(
+            [
+                PaddleOCRVisionEncoderLayer(config)
+                for _ in range(config.num_hidden_layers)
+            ]
+        )
+        head_dim = config.hidden_size // config.num_attention_heads
+        self.rotary_pos_emb = PaddleOCRVisionRotaryEmbedding(head_dim // 2)
+
+    def forward(
+        self,
+        inputs_embeds: torch.Tensor,
+        cu_seqlens: torch.Tensor,
+        image_grid_thw: torch.Tensor,
+    ) -> torch.Tensor:
+        device = inputs_embeds.device
+        split_hids = []
+        split_wids = []
+        for t, h, w in image_grid_thw:
+            image_pids = torch.arange(
+                int(t * h * w), device=device
+            ) % int(h * w)
+            split_hids.append(image_pids // int(w))
+            split_wids.append(image_pids % int(w))
+        pids = torch.stack(
+            [torch.cat(split_hids), torch.cat(split_wids)], dim=-1
+        )
+        max_grid_size = max(
+            max(int(h), int(w)) for _, h, w in image_grid_thw
+        )
+        rotary_max = self.rotary_pos_emb(max_grid_size)
+        rotary_embeddings = rotary_max[pids].flatten(1).repeat(1, 2)
+        position_embeddings = (
+            rotary_embeddings.cos(),
+            rotary_embeddings.sin(),
+        )
+        hidden_states = inputs_embeds
+        for encoder_layer in self.layers:
+            hidden_states = encoder_layer(
+                hidden_states, cu_seqlens, position_embeddings
+            )
+        return hidden_states
+
+
+class PaddleOCRVisionTransformer(nn.Module):
+    def __init__(self, config: PaddleOCRVisionConfig):
+        super().__init__()
+        self.embeddings = PaddleOCRVisionEmbeddings(config)
+        self.encoder = PaddleOCRVisionEncoder(config)
+        self.post_layernorm = nn.LayerNorm(
+            config.hidden_size, eps=config.layer_norm_eps
+        )
+
+    def forward(
+        self,
+        pixel_values: torch.Tensor,
+        cu_seqlens: torch.Tensor,
+        image_grid_thw: torch.Tensor,
+    ) -> torch.Tensor:
+        hidden_states = self.embeddings(
+            pixel_values, image_grid_thw=image_grid_thw
+        )
+        hidden_states = self.encoder(
+            hidden_states,
+            cu_seqlens=cu_seqlens,
+            image_grid_thw=image_grid_thw,
+        )
+        return self.post_layernorm(hidden_states)
+
+
+class PaddleOCRVisionModel(nn.Module):
+    def __init__(self, config: PaddleOCRVisionConfig):
+        super().__init__()
+        self.vision_model = PaddleOCRVisionTransformer(config)
+
+    @property
+    def dtype(self) -> torch.dtype:
+        return self.vision_model.embeddings.patch_embedding.weight.dtype
+
+    def forward(
+        self,
+        pixel_values: torch.Tensor,
+        cu_seqlens: torch.Tensor,
+        image_grid_thw: torch.Tensor,
+    ) -> torch.Tensor:
+        return self.vision_model(
+            pixel_values=pixel_values,
+            cu_seqlens=cu_seqlens,
+            image_grid_thw=image_grid_thw,
+        )
 
 
 def parse_vision_buckets(value: str | Iterable[int]) -> tuple[int, ...]:
@@ -300,12 +843,7 @@ def prepare_vision_prefill(
 
 
 def vision_source_hash() -> str:
-    here = Path(__file__).resolve().parent
-    digest = hashlib.sha1()
-    for name in ("modeling.py", "vision_prefill.py"):
-        digest.update(name.encode("utf-8"))
-        digest.update(short_file_hash(here / name).encode("utf-8"))
-    return digest.hexdigest()[:12]
+    return short_file_hash(Path(__file__).resolve())
 
 
 def vision_cache_dir_for_bucket(

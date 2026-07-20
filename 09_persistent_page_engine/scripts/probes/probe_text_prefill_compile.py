@@ -18,7 +18,6 @@ sys.path.insert(0, str(EXPERIMENT_ROOT))
 
 from paddleocr_vl.model.modeling import (
     LocalPaddleOCRVLForConditionalGeneration,
-    LocalPaddleOCRVLStaticCache,
     _resolve_model_dir,
 )
 from paddleocr_vl.model.preprocessing import (
@@ -27,6 +26,7 @@ from paddleocr_vl.model.preprocessing import (
     preprocess_pil_image,
 )
 from paddleocr_vl.model.text_prefill import TextPrefillRuntime
+from paddleocr_vl.model.text_decode import LocalPaddleOCRVLStaticCache
 from utils.timing import synchronize
 
 

@@ -17,14 +17,14 @@ from .continuous_decode import (
     ReadyDecodeRequest,
 )
 from ..model.modeling import (
+    LocalPaddleOCRVLForConditionalGeneration,
+    _resolve_model_dir,
+)
+from ..model.text_decode import (
     DECODE_ATTENTION,
     DECODE_CACHE_UPDATE,
-    LocalPaddleOCRVLForConditionalGeneration,
     LocalPaddleOCRVLStaticCache,
-    _resolve_model_dir,
     cast_decode_linear_weights_to_nz,
-    get_vision_attention_impl,
-    get_vision_prompt_fa_layout,
 )
 from ..model.preprocessing import (
     apply_min_pixels_override,
@@ -44,7 +44,11 @@ from ..model.text_prefill import parse_text_buckets
 from .types import ContinuousDecodeResult, RecognitionRequest, RecognitionResult
 from utils.timing import DeviceTimeline, synchronize, timed_wall
 from utils.metrics import per_second
-from ..model.vision_prefill import parse_vision_buckets
+from ..model.vision_prefill import (
+    get_vision_attention_impl,
+    get_vision_prompt_fa_layout,
+    parse_vision_buckets,
+)
 
 
 @dataclass

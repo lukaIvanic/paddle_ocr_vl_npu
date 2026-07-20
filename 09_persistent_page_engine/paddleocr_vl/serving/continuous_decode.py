@@ -9,7 +9,7 @@ from typing import Any, Callable, Iterable
 
 import torch
 
-from ..model.modeling import LocalPaddleOCRVLStaticCache
+from ..model.text_decode import LocalPaddleOCRVLStaticCache
 from utils.timing import synchronize
 
 

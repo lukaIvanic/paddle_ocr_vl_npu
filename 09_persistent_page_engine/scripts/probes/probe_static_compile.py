@@ -17,6 +17,7 @@ sys.path.insert(0, str(EXPERIMENT_ROOT))
 
 from paddleocr_vl.model.text_decode import (
     TextDecodeStage,
+    cast_decode_linear_weights_to_nz,
     compile_text_decode_stage,
     decode_attention_label,
     decode_cache_update_label,
@@ -24,7 +25,6 @@ from paddleocr_vl.model.text_decode import (
 from paddleocr_vl.model.modeling import (
     LocalPaddleOCRVLForConditionalGeneration,
     _resolve_model_dir,
-    cast_decode_linear_weights_to_nz,
 )
 from paddleocr_vl.model.preprocessing import (
     build_inputs,

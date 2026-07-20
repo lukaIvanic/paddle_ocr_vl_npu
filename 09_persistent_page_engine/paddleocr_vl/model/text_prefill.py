@@ -9,26 +9,17 @@ the last real prompt token, so padded query rows never become observable.
 
 from __future__ import annotations
 
-import hashlib
+import os
 import time
 import types
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Iterable
+from typing import TYPE_CHECKING, Any, Callable, Iterable
 
 import torch
 import torch.nn.functional as F
+from torch import nn
 
-from .modeling import (
-    LocalPaddleOCRVLForConditionalGeneration,
-    LocalPaddleOCRVLStaticCache,
-    _linear_tokenwise,
-    attention_softmax,
-    build_causal_mask,
-    get_text_softmax_dtype_mode,
-    repeat_kv,
-    update_prefill_kv_cache_,
-)
 from .compile_utils import (
     TORCHAIR_EXECUTION_MODE,
     cache_key_part,
@@ -37,12 +28,581 @@ from .compile_utils import (
     torch_npu_version_label,
     torchair_version_label,
 )
+from .config import PaddleOCRTextConfig
+from .text_decode import LocalPaddleOCRVLStaticCache
 from utils.timing import synchronize
+
+if TYPE_CHECKING:
+    from .modeling import LocalPaddleOCRVLForConditionalGeneration
 
 
 DEFAULT_TEXT_BUCKETS = (32, 64, 128, 256, 512, 1024, 2048)
 TEXT_BACKEND_CHOICES = ("raw_eager", "torchair")
 TEXT_PADDING_CHOICES = ("auto", "none", "bucket")
+TEXT_SOFTMAX_DTYPE_ENV = "PADDLE_OCR_VL_TEXT_SOFTMAX_DTYPE"
+SOFTMAX_DTYPE_CHOICES = ("fp32", "model")
+
+
+def get_text_softmax_dtype_mode() -> str:
+    mode = (
+        os.environ.get(TEXT_SOFTMAX_DTYPE_ENV, "fp32").strip().lower()
+        or "fp32"
+    )
+    if mode not in SOFTMAX_DTYPE_CHOICES:
+        raise ValueError(
+            f"{TEXT_SOFTMAX_DTYPE_ENV} must be one of "
+            f"{SOFTMAX_DTYPE_CHOICES}, got {mode!r}"
+        )
+    return mode
+
+
+def _activation(name: str, x: torch.Tensor) -> torch.Tensor:
+    if name == "silu":
+        return F.silu(x)
+    if name == "gelu_pytorch_tanh":
+        return F.gelu(x, approximate="tanh")
+    if name == "gelu":
+        return F.gelu(x)
+    raise ValueError(f"unsupported activation: {name!r}")
+
+
+def _linear_tokenwise(linear: nn.Linear, x: torch.Tensor) -> torch.Tensor:
+    """Apply a Linear through a compiler-safe 2-D token matrix."""
+    leading_shape = x.shape[:-1]
+    output = linear(x.reshape(-1, x.shape[-1]))
+    return output.reshape(*leading_shape, output.shape[-1])
+
+
+def attention_softmax(
+    scores: torch.Tensor,
+    *,
+    dim: int,
+    output_dtype: torch.dtype,
+    mode: str,
+) -> torch.Tensor:
+    if mode == "fp32":
+        return F.softmax(scores, dim=dim, dtype=torch.float32).to(output_dtype)
+    if mode == "model":
+        return F.softmax(scores, dim=dim, dtype=output_dtype).to(output_dtype)
+    raise ValueError(f"unsupported attention softmax dtype mode: {mode!r}")
+
+
+def rotate_half(x: torch.Tensor) -> torch.Tensor:
+    x1 = x[..., : x.shape[-1] // 2]
+    x2 = x[..., x.shape[-1] // 2 :]
+    return torch.cat((-x2, x1), dim=-1)
+
+
+def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
+    if n_rep == 1:
+        return hidden_states
+    batch, num_key_value_heads, seq_len, head_dim = hidden_states.shape
+    hidden_states = hidden_states[:, :, None, :, :].expand(
+        batch,
+        num_key_value_heads,
+        n_rep,
+        seq_len,
+        head_dim,
+    )
+    return hidden_states.reshape(
+        batch, num_key_value_heads * n_rep, seq_len, head_dim
+    )
+
+
+def apply_multimodal_rotary_pos_emb(
+    q: torch.Tensor,
+    k: torch.Tensor,
+    cos: torch.Tensor,
+    sin: torch.Tensor,
+    mrope_section: list[int],
+    unsqueeze_dim: int = 1,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    mrope_section = [int(value) for value in mrope_section] * 2
+    cos = torch.cat(
+        [
+            part[i % 3]
+            for i, part in enumerate(cos.split(mrope_section, dim=-1))
+        ],
+        dim=-1,
+    )
+    sin = torch.cat(
+        [
+            part[i % 3]
+            for i, part in enumerate(sin.split(mrope_section, dim=-1))
+        ],
+        dim=-1,
+    )
+    cos = cos.unsqueeze(unsqueeze_dim)
+    sin = sin.unsqueeze(unsqueeze_dim)
+    return (
+        (q * cos) + (rotate_half(q) * sin),
+        (k * cos) + (rotate_half(k) * sin),
+    )
+
+
+def build_causal_mask(
+    inputs_embeds: torch.Tensor,
+    attention_mask: torch.Tensor | None,
+    cache_position: torch.Tensor,
+    past_length: int = 0,
+) -> torch.Tensor:
+    batch_size, query_length = inputs_embeds.shape[:2]
+    if attention_mask is None:
+        kv_length = int(past_length + query_length)
+        attention_mask = torch.ones(
+            batch_size,
+            kv_length,
+            device=inputs_embeds.device,
+            dtype=torch.long,
+        )
+    else:
+        kv_length = int(attention_mask.shape[-1])
+    kv_positions = torch.arange(
+        kv_length,
+        device=inputs_embeds.device,
+        dtype=cache_position.dtype,
+    )
+    allowed = kv_positions.unsqueeze(0) <= cache_position.reshape(-1, 1)
+    allowed = allowed.reshape(1, 1, query_length, kv_length).expand(
+        batch_size, 1, query_length, kv_length
+    )
+    padding_allowed = attention_mask[:, None, None, :kv_length].to(
+        device=inputs_embeds.device, dtype=torch.bool
+    )
+    allowed = allowed & padding_allowed
+    mask = torch.zeros(
+        (batch_size, 1, query_length, kv_length),
+        device=inputs_embeds.device,
+        dtype=inputs_embeds.dtype,
+    )
+    return mask.masked_fill(
+        ~allowed, torch.finfo(inputs_embeds.dtype).min
+    )
+
+
+def update_prefill_kv_cache_(
+    key_cache: torch.Tensor,
+    value_cache: torch.Tensor,
+    key_states: torch.Tensor,
+    value_states: torch.Tensor,
+) -> None:
+    sequence_length = int(key_states.shape[2])
+    key_cache[:, :, :sequence_length, :].copy_(key_states.contiguous())
+    value_cache[:, :, :sequence_length, :].copy_(value_states.contiguous())
+
+
+class PaddleOCRRMSNorm(nn.Module):
+    def __init__(self, hidden_size: int, eps: float):
+        super().__init__()
+        self.weight = nn.Parameter(torch.ones(hidden_size))
+        self.variance_epsilon = float(eps)
+
+    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        input_dtype = hidden_states.dtype
+        hidden_states = hidden_states.to(torch.float32)
+        variance = hidden_states.pow(2).mean(-1, keepdim=True)
+        hidden_states = hidden_states * torch.rsqrt(
+            variance + self.variance_epsilon
+        )
+        return self.weight * hidden_states.to(input_dtype)
+
+
+class PaddleOCRRotaryEmbedding(nn.Module):
+    def __init__(self, config: PaddleOCRTextConfig):
+        super().__init__()
+        rope = config.rope_parameters or {}
+        self.base = float(rope.get("rope_theta", 500000.0))
+        self.dim = int(config.head_dim)
+        self.register_buffer("inv_freq", self._compute_inv_freq(), persistent=False)
+        self.attention_scaling = 1.0
+
+    def _compute_inv_freq(self) -> torch.Tensor:
+        return 1.0 / (
+            self.base
+            ** (torch.arange(0, self.dim, 2, dtype=torch.float32) / self.dim)
+        )
+
+    def reset_inv_freq(self, device: torch.device | None = None) -> None:
+        self.register_buffer(
+            "inv_freq",
+            self._compute_inv_freq().to(device=device),
+            persistent=False,
+        )
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        position_ids: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        inv_freq = self.inv_freq[None, None, :, None].float().expand(
+            3, position_ids.shape[1], -1, 1
+        )
+        position_ids = position_ids[:, :, None, :].float()
+        freqs = (inv_freq * position_ids).transpose(2, 3)
+        emb = torch.cat((freqs, freqs), dim=-1)
+        cos = emb.cos() * self.attention_scaling
+        sin = emb.sin() * self.attention_scaling
+        return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
+
+
+class PaddleOCRMLP(nn.Module):
+    def __init__(self, config: PaddleOCRTextConfig):
+        super().__init__()
+        self.hidden_act = config.hidden_act
+        self.gate_proj = nn.Linear(
+            config.hidden_size,
+            config.intermediate_size,
+            bias=config.use_bias,
+        )
+        self.up_proj = nn.Linear(
+            config.hidden_size,
+            config.intermediate_size,
+            bias=config.use_bias,
+        )
+        self.down_proj = nn.Linear(
+            config.intermediate_size,
+            config.hidden_size,
+            bias=config.use_bias,
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        gate = _linear_tokenwise(self.gate_proj, x)
+        up = _linear_tokenwise(self.up_proj, x)
+        return _linear_tokenwise(
+            self.down_proj, _activation(self.hidden_act, gate) * up
+        )
+
+
+class PaddleOCRAttention(nn.Module):
+    def __init__(self, config: PaddleOCRTextConfig, layer_idx: int):
+        super().__init__()
+        self.layer_idx = int(layer_idx)
+        self.num_heads = config.num_attention_heads
+        self.head_dim = config.head_dim
+        self.num_key_value_heads = config.num_key_value_heads
+        self.num_key_value_groups = (
+            config.num_attention_heads // config.num_key_value_heads
+        )
+        self.scaling = config.head_dim**-0.5
+        self.mrope_section = list(
+            (config.rope_parameters or {})["mrope_section"]
+        )
+        self.q_proj = nn.Linear(
+            config.hidden_size,
+            config.num_attention_heads * config.head_dim,
+            bias=config.use_bias,
+        )
+        self.k_proj = nn.Linear(
+            config.hidden_size,
+            config.num_key_value_heads * config.head_dim,
+            bias=config.use_bias,
+        )
+        self.v_proj = nn.Linear(
+            config.hidden_size,
+            config.num_key_value_heads * config.head_dim,
+            bias=config.use_bias,
+        )
+        self.o_proj = nn.Linear(
+            config.num_attention_heads * config.head_dim,
+            config.hidden_size,
+            bias=config.use_bias,
+        )
+
+    def project_qkv(
+        self, hidden_states: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        batch, query_length, _hidden = hidden_states.shape
+        query_states = _linear_tokenwise(
+            self.q_proj, hidden_states
+        ).view(
+            batch, query_length, self.num_heads, self.head_dim
+        ).transpose(1, 2)
+        key_states = _linear_tokenwise(
+            self.k_proj, hidden_states
+        ).view(
+            batch,
+            query_length,
+            self.num_key_value_heads,
+            self.head_dim,
+        ).transpose(1, 2)
+        value_states = _linear_tokenwise(
+            self.v_proj, hidden_states
+        ).view(
+            batch,
+            query_length,
+            self.num_key_value_heads,
+            self.head_dim,
+        ).transpose(1, 2)
+        return query_states, key_states, value_states
+
+    def apply_rotary(
+        self,
+        query_states: torch.Tensor,
+        key_states: torch.Tensor,
+        position_embeddings: tuple[torch.Tensor, torch.Tensor],
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        return apply_multimodal_rotary_pos_emb(
+            query_states,
+            key_states,
+            position_embeddings[0],
+            position_embeddings[1],
+            self.mrope_section,
+        )
+
+    def attend(
+        self,
+        query_states: torch.Tensor,
+        key_states: torch.Tensor,
+        value_states: torch.Tensor,
+        attention_mask: torch.Tensor | None,
+    ) -> torch.Tensor:
+        batch, _heads, query_length, _dim = query_states.shape
+        key_for_attn = repeat_kv(
+            key_states, self.num_key_value_groups
+        )
+        value_for_attn = repeat_kv(
+            value_states, self.num_key_value_groups
+        )
+        scores = (
+            torch.matmul(query_states, key_for_attn.transpose(2, 3))
+            * self.scaling
+        )
+        if attention_mask is not None:
+            scores = scores + attention_mask[
+                :, :, :, : key_for_attn.shape[-2]
+            ]
+        probs = attention_softmax(
+            scores,
+            dim=-1,
+            output_dtype=query_states.dtype,
+            mode=get_text_softmax_dtype_mode(),
+        )
+        attention_output = torch.matmul(probs, value_for_attn)
+        attention_output = (
+            attention_output.transpose(1, 2)
+            .contiguous()
+            .reshape(batch, query_length, -1)
+        )
+        return _linear_tokenwise(self.o_proj, attention_output)
+
+    def forward(
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: torch.Tensor | None,
+        position_embeddings: tuple[torch.Tensor, torch.Tensor],
+        past_key_values: list[tuple[torch.Tensor, torch.Tensor]] | None = None,
+        use_cache: bool = False,
+    ) -> tuple[torch.Tensor, tuple[torch.Tensor, torch.Tensor] | None]:
+        query_states, key_states, value_states = self.project_qkv(hidden_states)
+        query_states, key_states = self.apply_rotary(
+            query_states, key_states, position_embeddings
+        )
+        if past_key_values is not None:
+            past_key, past_value = past_key_values[self.layer_idx]
+            key_states = torch.cat((past_key, key_states), dim=2)
+            value_states = torch.cat((past_value, value_states), dim=2)
+        new_past = (key_states, value_states) if use_cache else None
+        return (
+            self.attend(
+                query_states, key_states, value_states, attention_mask
+            ),
+            new_past,
+        )
+
+    def forward_prefill_static(
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: torch.Tensor | None,
+        position_embeddings: tuple[torch.Tensor, torch.Tensor],
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        query_states, key_states, value_states = self.project_qkv(hidden_states)
+        query_states, key_states = self.apply_rotary(
+            query_states, key_states, position_embeddings
+        )
+        return (
+            self.attend(
+                query_states, key_states, value_states, attention_mask
+            ),
+            key_states,
+            value_states,
+        )
+
+
+class PaddleOCRDecoderLayer(nn.Module):
+    def __init__(self, config: PaddleOCRTextConfig, layer_idx: int):
+        super().__init__()
+        self.layer_idx = int(layer_idx)
+        self.self_attn = PaddleOCRAttention(config, layer_idx)
+        self.mlp = PaddleOCRMLP(config)
+        self.input_layernorm = PaddleOCRRMSNorm(
+            config.hidden_size, eps=config.rms_norm_eps
+        )
+        self.post_attention_layernorm = PaddleOCRRMSNorm(
+            config.hidden_size, eps=config.rms_norm_eps
+        )
+
+    def forward(
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: torch.Tensor | None,
+        position_embeddings: tuple[torch.Tensor, torch.Tensor],
+        past_key_values: list[tuple[torch.Tensor, torch.Tensor]] | None = None,
+        use_cache: bool = False,
+    ) -> tuple[torch.Tensor, tuple[torch.Tensor, torch.Tensor] | None]:
+        residual = hidden_states
+        hidden_states = self.input_layernorm(hidden_states)
+        hidden_states, new_past = self.self_attn(
+            hidden_states,
+            attention_mask,
+            position_embeddings,
+            past_key_values=past_key_values,
+            use_cache=use_cache,
+        )
+        hidden_states = residual + hidden_states
+        residual = hidden_states
+        hidden_states = self.post_attention_layernorm(hidden_states)
+        hidden_states = self.mlp(hidden_states)
+        return residual + hidden_states, new_past
+
+    def apply_blocks(
+        self,
+        residual: torch.Tensor,
+        attention_output: torch.Tensor,
+    ) -> torch.Tensor:
+        hidden_states = residual + attention_output
+        residual = hidden_states
+        hidden_states = self.post_attention_layernorm(hidden_states)
+        hidden_states = self.mlp(hidden_states)
+        return residual + hidden_states
+
+    def forward_prefill_static(
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: torch.Tensor | None,
+        position_embeddings: tuple[torch.Tensor, torch.Tensor],
+        cache: LocalPaddleOCRVLStaticCache | None = None,
+    ) -> torch.Tensor:
+        residual = hidden_states
+        hidden_states = self.input_layernorm(hidden_states)
+        attention_output, key_states, value_states = (
+            self.self_attn.forward_prefill_static(
+                hidden_states,
+                attention_mask,
+                position_embeddings,
+            )
+        )
+        if cache is not None:
+            key_cache, value_cache = cache.layer(self.layer_idx)
+            update_prefill_kv_cache_(
+                key_cache,
+                value_cache,
+                key_states,
+                value_states,
+            )
+        return self.apply_blocks(residual, attention_output)
+
+
+class PaddleOCRTextModel(nn.Module):
+    def __init__(self, config: PaddleOCRTextConfig):
+        super().__init__()
+        self.config = config
+        self.embed_tokens = nn.Embedding(
+            config.vocab_size,
+            config.hidden_size,
+            config.pad_token_id,
+        )
+        self.layers = nn.ModuleList(
+            [
+                PaddleOCRDecoderLayer(config, layer_idx)
+                for layer_idx in range(config.num_hidden_layers)
+            ]
+        )
+        self.norm = PaddleOCRRMSNorm(
+            config.hidden_size, eps=config.rms_norm_eps
+        )
+        self.rotary_emb = PaddleOCRRotaryEmbedding(config)
+
+    def forward(
+        self,
+        input_ids: torch.Tensor | None = None,
+        inputs_embeds: torch.Tensor | None = None,
+        attention_mask: torch.Tensor | None = None,
+        position_ids: torch.Tensor | None = None,
+        past_key_values: list[tuple[torch.Tensor, torch.Tensor]] | None = None,
+        use_cache: bool = False,
+    ) -> tuple[
+        torch.Tensor,
+        list[tuple[torch.Tensor, torch.Tensor]] | None,
+    ]:
+        if inputs_embeds is None:
+            if input_ids is None:
+                raise ValueError("input_ids or inputs_embeds is required")
+            inputs_embeds = self.embed_tokens(input_ids)
+        past_length = (
+            0
+            if past_key_values is None
+            else int(past_key_values[0][0].shape[2])
+        )
+        cache_position = torch.arange(
+            past_length,
+            past_length + inputs_embeds.shape[1],
+            device=inputs_embeds.device,
+            dtype=torch.long,
+        )
+        if position_ids is None:
+            position_ids = cache_position.view(1, 1, -1).expand(
+                3, inputs_embeds.shape[0], -1
+            )
+        elif position_ids.ndim == 2:
+            position_ids = position_ids[None, ...].expand(3, -1, -1)
+        if position_ids.ndim == 3 and position_ids.shape[0] == 4:
+            position_ids = position_ids[1:]
+        causal_mask = build_causal_mask(
+            inputs_embeds,
+            attention_mask,
+            cache_position,
+            past_length=past_length,
+        )
+        position_embeddings = self.rotary_emb(inputs_embeds, position_ids)
+        hidden_states = inputs_embeds
+        new_past_key_values = [] if use_cache else None
+        for layer in self.layers:
+            hidden_states, new_past = layer(
+                hidden_states,
+                causal_mask,
+                position_embeddings,
+                past_key_values=past_key_values,
+                use_cache=use_cache,
+            )
+            if use_cache:
+                new_past_key_values.append(new_past)
+        return self.norm(hidden_states), new_past_key_values
+
+    def forward_prefill_static(
+        self,
+        inputs_embeds: torch.Tensor,
+        attention_mask: torch.Tensor | None,
+        position_ids: torch.Tensor,
+        cache: LocalPaddleOCRVLStaticCache | None = None,
+    ) -> torch.Tensor:
+        cache_position = torch.arange(
+            inputs_embeds.shape[1],
+            device=inputs_embeds.device,
+            dtype=torch.int64,
+        )
+        causal_mask = build_causal_mask(
+            inputs_embeds, attention_mask, cache_position
+        )
+        position_embeddings = self.rotary_emb(inputs_embeds, position_ids)
+        hidden_states = inputs_embeds
+        for layer in self.layers:
+            hidden_states = layer.forward_prefill_static(
+                hidden_states,
+                causal_mask,
+                position_embeddings,
+                cache=cache,
+            )
+        return self.norm(hidden_states)
 
 
 def parse_text_buckets(value: str | Iterable[int]) -> tuple[int, ...]:
@@ -263,12 +823,7 @@ def prepare_text_prefill(
 
 
 def text_source_hash() -> str:
-    here = Path(__file__).resolve().parent
-    digest = hashlib.sha1()
-    for name in ("modeling.py", "text_prefill.py"):
-        digest.update(name.encode("utf-8"))
-        digest.update(short_file_hash(here / name).encode("utf-8"))
-    return digest.hexdigest()[:12]
+    return short_file_hash(Path(__file__).resolve())
 
 
 def text_cache_dir_for_bucket(

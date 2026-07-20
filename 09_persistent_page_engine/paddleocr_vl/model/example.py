@@ -12,16 +12,13 @@ from tokenizers import Tokenizer
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
-from .modeling import (
-    DECODE_ATTENTION,
-    LocalPaddleOCRVLForConditionalGeneration,
-    _resolve_model_dir,
-)
+from .modeling import LocalPaddleOCRVLForConditionalGeneration, _resolve_model_dir
 from .preprocessing import (
     build_inputs,
     load_preprocessor_config,
     preprocess_image,
 )
+from .text_decode import DECODE_ATTENTION
 from utils.timing import synchronize
 
 
