@@ -1,0 +1,57 @@
+{
+  "workload": {
+    "dataset": "OmniDocBench v1.6 uniform 64-page subset",
+    "pages": 64,
+    "crops": 1332,
+    "batch_size": 16,
+    "cache_length": 8192,
+    "max_new_tokens": 4096,
+    "vision": "TorchAir compiled PromptFA, 27 buckets",
+    "text_prefill": "TorchAir compiled",
+    "decode": "TorchAir compiled continuous B=16"
+  },
+  "baseline": {
+    "commit": "87a0bda",
+    "pipeline_e2e_s": 122.58940916205756,
+    "s_per_page": 1.9154595181571494,
+    "pages_per_s": 0.5220679374952769,
+    "output_tok_per_s": 518.3169227224738
+  },
+  "background": {
+    "commit": "69494a9",
+    "pipeline_e2e_s": 107.38301593897631,
+    "s_per_page": 1.677859624046505,
+    "pages_per_s": 0.5959974157959016,
+    "output_tok_per_s": 591.7547507182126
+  },
+  "improvement": {
+    "wall_s_saved": 15.20639322308125,
+    "wall_reduction_percent": 12.404328666744039,
+    "throughput_gain_percent": 14.160892288332395,
+    "speedup": 1.141608922883324
+  },
+  "cpu_background": {
+    "service_s": 19.638206483912654,
+    "consumer_wait_s": 0.010946605063509196,
+    "consumer_block_fraction_percent": 0.055741368604493,
+    "requests_with_consumer_wait_over_1ms": 0,
+    "max_consumer_wait_s": 6.52410089969635e-05
+  },
+  "parity": {
+    "all_64_prediction_files_byte_identical": true,
+    "all_1332_canonical_crop_records_identical": true,
+    "full_canonical_sha256": "0eea076aadc88f8ae00e98edc986ea0fae36b3bd0ce3005e4aac91411002bb33",
+    "smoke_canonical_sha256": "34d9eca44736514042ed1d389a1d3b0b8b45dfda2c10a1edf4618ae296e764a1",
+    "generated_tokens_including_eos": 63531,
+    "stop_reasons": {
+      "eos": 1332
+    },
+    "decode_graph_calls": 4049,
+    "real_vision_tokens": 1183256,
+    "real_text_tokens": 313130
+  },
+  "notes": [
+    "pipeline_e2e_s excludes model and graph setup",
+    "CPU service remains measured even when hidden behind other pipeline work"
+  ]
+}

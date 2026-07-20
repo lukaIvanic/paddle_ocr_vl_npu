@@ -1,0 +1,4 @@
+2. 对人体吸入的空气和呼出气体的探究
+
+
+<table border=1 style='margin: auto; word-wrap: break-word;'><tr><td style='text-align: center; word-wrap: break-word;'>实验步骤</td><td style='text-align: center; word-wrap: break-word;'>实验现象</td><td style='text-align: center; word-wrap: break-word;'>实验结论</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>取其中一瓶呼出的气体和等体积的一瓶空气，将燃着的木条分别插入集气瓶中，盖上玻璃片</td><td style='text-align: center; word-wrap: break-word;'></td><td style='text-align: center; word-wrap: break-word;'>人呼出的气体中氧气的含量小于空气中氧气的含量</td></tr><tr><td style='text-align: center; word-wrap: break-word;'></td><td style='text-align: center; word-wrap: break-word;'>呼出气体中澄清石灰水变浑浊，空气瓶中无明显现象</td><td style='text-align: center; word-wrap: break-word;'></td></tr><tr><td style='text-align: center; word-wrap: break-word;'></td><td style='text-align: center; word-wrap: break-word;'></td><td style='text-align: center; word-wrap: break-word;'></td></tr></table>

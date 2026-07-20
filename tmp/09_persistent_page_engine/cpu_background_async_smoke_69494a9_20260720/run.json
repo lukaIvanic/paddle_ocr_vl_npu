@@ -1,0 +1,956 @@
+{
+  "experiment": "09_persistent_page_engine",
+  "configuration": {
+    "recognizer_model": "/workspace/models/PaddleOCR-VL-1.6",
+    "device": "npu:0",
+    "dtype": "torch.float16",
+    "decode_backend": "raw_eager",
+    "decode_attention": "increfa",
+    "decode_cache_update": "npu_scatter",
+    "cache_length": 2048,
+    "max_new_tokens": 64,
+    "batch_size": 4,
+    "vision_prefill": {
+      "backend": "raw_eager",
+      "enabled": false,
+      "boundary": "vision_encoder_layers_plus_post_layernorm",
+      "attention": "manual",
+      "prompt_flash_attention_layout": null,
+      "prompt_flash_attention_mask_sparse_mode": null,
+      "vision_head_dim": 72,
+      "prompt_flash_attention_call_head_dim": null,
+      "buckets": [
+        32,
+        64,
+        96,
+        128,
+        160,
+        192,
+        224,
+        256,
+        288,
+        320,
+        352,
+        384,
+        416,
+        448,
+        480,
+        512,
+        576,
+        640,
+        704,
+        768,
+        832,
+        896,
+        960,
+        1024,
+        1152,
+        1280,
+        1408,
+        1536,
+        1664,
+        1792,
+        1920,
+        2048
+      ],
+      "requested_padding": "auto",
+      "padding": "none",
+      "overflow": null
+    },
+    "vision_backend": "raw_eager",
+    "vision_attention": "manual",
+    "vision_prompt_fa_layout": null,
+    "text_prefill": {
+      "backend": "raw_eager",
+      "enabled": false,
+      "boundary": "text_transformer_plus_in_place_prefill_kv_writes",
+      "buckets": [
+        32,
+        64,
+        96,
+        128,
+        160,
+        176,
+        192,
+        208,
+        224,
+        256,
+        320,
+        384,
+        448,
+        576,
+        640,
+        768,
+        896,
+        1024,
+        1152,
+        1280,
+        1312
+      ],
+      "requested_padding": "auto",
+      "padding": "none",
+      "overflow": null
+    },
+    "text_backend": "raw_eager",
+    "preprocessor": {
+      "model_default_min_pixels": 112896,
+      "min_pixels_override": null,
+      "effective_min_pixels": 112896,
+      "effective_max_pixels": 1003520,
+      "patch_size": 14,
+      "merge_size": 2,
+      "resize_factor": 28,
+      "nominal_minimum_projected_image_tokens": 144
+    },
+    "cpu_preprocessing": {
+      "execution": "background_thread",
+      "workers": 1,
+      "max_pending": 4,
+      "ordering": "fifo"
+    },
+    "decode": "eager_static_b4",
+    "decode_schedule": "run_scoped_persistent_slots_iteration_hot_swap",
+    "ready_buffer_capacity": 16,
+    "ready_buffer_low_watermark": 4,
+    "decode_completion_detection": "queue_depth_one_async_token_copy",
+    "kv_admission": "copy_valid_prefill_prefix_into_fixed_slot",
+    "text_decode": {
+      "backend": "raw_eager",
+      "enabled": false,
+      "boundary": "token_embedding_text_transformer_lm_head_static_step",
+      "linear_weight_format": "decode_native_fallback",
+      "decode_attention": "increfa",
+      "decode_cache_update": "npu_scatter",
+      "compile_api": "none"
+    },
+    "linear_weight_format": {
+      "requested_mode": "decode_nz",
+      "mode": "decode_native_fallback",
+      "effective_mode": "decode_native_fallback",
+      "target_format": "FRACTAL_NZ",
+      "target_format_code": 29,
+      "target_count": 127,
+      "cast_count": 1,
+      "converted_count": 0,
+      "already_nz_count": 0,
+      "converted_modules_sample": [],
+      "before_formats_sample": {
+        "model.layers.0.self_attn.q_proj": 2
+      },
+      "after_formats_sample": {
+        "model.layers.0.self_attn.q_proj": 2
+      },
+      "all_after_are_nz": false,
+      "fallback_reason": "npu_format_cast_did_not_produce_fractal_nz",
+      "failures_sample": [
+        {
+          "module": "model.layers.0.self_attn.q_proj",
+          "before_format": 2,
+          "after_format": 2,
+          "error": "npu_format_cast_did_not_produce_fractal_nz"
+        }
+      ]
+    },
+    "layout_model": "/workspace/models/PP-DocLayoutV3_safetensors",
+    "layout_threshold": 0.3,
+    "layout_runtime": "transformers.AutoModelForObjectDetection",
+    "layout_source": "real_pp_doclayout_v3_inference",
+    "region_execution": "lazy_sequential_prefill_run_scoped_continuous_decode",
+    "cross_page_decode": true,
+    "page_completion": "emit_when_all_page_regions_complete",
+    "recognize_chart": false,
+    "recognize_seal": false,
+    "recognize_image": false,
+    "max_regions_debug_limit": 8
+  },
+  "setup_timing_s": {
+    "npu_runtime_init": 6.191894654999487,
+    "layout_model_load": 6.066627557040192,
+    "layout_runtime_total": 10.341697224008385,
+    "recognizer_frontend_setup": 0.8771513479878195,
+    "recognizer_model_load": 14.641316269000527,
+    "decode_weight_format": 4.829890687018633,
+    "vision_runtime_setup": 0.004334254015702754,
+    "text_runtime_setup": 0.0021876569953747094,
+    "compile_wrapper": 7.834099233150482e-05,
+    "compile_first_call": 0.8762316629872657,
+    "decode_control_setup": 0.013904996972996742,
+    "recognizer_runtime_total": 21.264654457976576,
+    "total": 37.799114702036604
+  },
+  "pages": [
+    {
+      "page_id": "page_0000_PPT_The Right Moves_page_024",
+      "image_path": "/workspace/datasets/OmniDocBench/images/PPT_The Right Moves_page_024.png",
+      "image_size": [
+        2000,
+        1500
+      ],
+      "layout_regions": [
+        {
+          "order": 1,
+          "label_id": 17,
+          "label": "paragraph_title",
+          "score": 0.8818256258964539,
+          "box": {
+            "x0": 11.354387283325195,
+            "y0": 138.77566528320312,
+            "x1": 1070.3265380859375,
+            "y1": 236.5224609375
+          },
+          "polygon_points": [
+            [
+              11.0,
+              138.0
+            ],
+            [
+              11.0,
+              235.0
+            ],
+            [
+              1069.0,
+              235.0
+            ],
+            [
+              1060.0,
+              138.0
+            ]
+          ]
+        },
+        {
+          "order": 2,
+          "label_id": 22,
+          "label": "text",
+          "score": 0.9251610040664673,
+          "box": {
+            "x0": 112.8045883178711,
+            "y0": 338.29254150390625,
+            "x1": 1676.3753662109375,
+            "y1": 488.9217224121094
+          },
+          "polygon_points": [
+            [
+              112.0,
+              338.0
+            ],
+            [
+              112.0,
+              487.0
+            ],
+            [
+              1675.0,
+              487.0
+            ],
+            [
+              1675.0,
+              338.0
+            ]
+          ]
+        },
+        {
+          "order": 3,
+          "label_id": 22,
+          "label": "text",
+          "score": 0.9484102725982666,
+          "box": {
+            "x0": 107.42211151123047,
+            "y0": 597.5153198242188,
+            "x1": 1871.3951416015625,
+            "y1": 983.65185546875
+          },
+          "polygon_points": [
+            [
+              107.0,
+              597.0
+            ],
+            [
+              107.0,
+              982.0
+            ],
+            [
+              1870.0,
+              982.0
+            ],
+            [
+              1870.0,
+              597.0
+            ]
+          ]
+        },
+        {
+          "order": 4,
+          "label_id": 22,
+          "label": "text",
+          "score": 0.9403578639030457,
+          "box": {
+            "x0": 112.03056335449219,
+            "y0": 1083.3680419921875,
+            "x1": 1854.6383056640625,
+            "y1": 1242.0799560546875
+          },
+          "polygon_points": [
+            [
+              112.0,
+              1083.0
+            ],
+            [
+              112.0,
+              1241.0
+            ],
+            [
+              1853.0,
+              1234.0
+            ],
+            [
+              1853.0,
+              1083.0
+            ]
+          ]
+        },
+        {
+          "order": 5,
+          "label_id": 16,
+          "label": "number",
+          "score": 0.788901150226593,
+          "box": {
+            "x0": 1835.696533203125,
+            "y0": 1381.580078125,
+            "x1": 1885.6480712890625,
+            "y1": 1419.83203125
+          },
+          "polygon_points": [
+            [
+              1835.0,
+              1381.0
+            ],
+            [
+              1835.0,
+              1418.0
+            ],
+            [
+              1884.0,
+              1418.0
+            ],
+            [
+              1884.0,
+              1381.0
+            ]
+          ]
+        }
+      ],
+      "recognized_regions": [
+        {
+          "request_id": "page_0000_PPT_The Right Moves_page_024_region_001",
+          "decode_schedule_id": "run_cross_page_continuous_decode",
+          "decode_slot_index": 0,
+          "decode_slot_epoch": 1,
+          "layout_order": 1,
+          "label": "paragraph_title",
+          "prompt": "OCR:",
+          "box": {
+            "x0": 11.354387283325195,
+            "y0": 138.77566528320312,
+            "x1": 1070.3265380859375,
+            "y1": 236.5224609375
+          },
+          "crop_size": [
+            1060,
+            99
+          ],
+          "text": "Subject Support con't.",
+          "token_ids": [
+            6237,
+            17766,
+            406,
+            93968,
+            93921,
+            93937,
+            2
+          ],
+          "stop_reason": "eos",
+          "input_tokens": 165,
+          "projected_image_tokens": 152,
+          "generated_tokens_including_eos": 7,
+          "decode_tokens_after_prefill_including_eos": 6,
+          "decode_calls_executed": 7,
+          "timing_s": {
+            "cpu_image_and_prompt_preprocess": 0.011915392999071628,
+            "cpu_mrope_index": 0.0011379900388419628,
+            "cpu_preprocess_background_queue_wait": 0.0011511699995025992,
+            "cpu_preprocess_background_service": 0.013118592964019626,
+            "cpu_preprocess_background_consumer_wait": 0.010589900019112974,
+            "cpu_preprocess_background_ready_wait": 0.0003079150337725878,
+            "recognizer_h2d": 0.0038852159632369876,
+            "vision_and_text_prefill_wall": 0.16531103901797906,
+            "first_token_d2h": 0.00011247198563069105,
+            "time_to_first_token": 0.1840553680085577,
+            "prefill_request_total": 0.18236211000476032,
+            "decode_ready_queue_wait": 0.6004997059935704,
+            "decode_slot_residency": 0.23003391997190192,
+            "detokenize": 0.00023369397968053818,
+            "request_total": 1.0148226879537106
+          },
+          "device_stage_s": {
+            "vision_embeddings": 0.01996548080444336,
+            "vision_prefill_input_prep": 0.00953007984161377,
+            "vision_prefill": 0.05891532135009766,
+            "adaptive_mlp_projector": 0.0013327000141143798,
+            "text_token_embedding": 0.000256879985332489,
+            "image_embed_scatter": 0.010335479736328125,
+            "static_cache_alloc": 0.0003415800034999847,
+            "text_prefill_input_prep": 0.000667460024356842,
+            "text_prefill": 0.05921313858032227,
+            "prefill_lm_head": 0.00019186000525951385,
+            "prefill_argmax": 0.0025589599609375
+          },
+          "rates": {
+            "request_output_tok_per_s": 6.897756704784366
+          },
+          "vision": {
+            "execution": "eager",
+            "real_vision_tokens": 608,
+            "physical_vision_tokens": 608,
+            "padding_vision_tokens": 0,
+            "useful_token_fraction": 1.0,
+            "bucket": null
+          },
+          "text_prefill": {
+            "execution": "eager",
+            "real_text_tokens": 165,
+            "physical_text_tokens": 165,
+            "padding_text_tokens": 0,
+            "useful_token_fraction": 1.0,
+            "bucket": null
+          }
+        },
+        {
+          "request_id": "page_0000_PPT_The Right Moves_page_024_region_002",
+          "decode_schedule_id": "run_cross_page_continuous_decode",
+          "decode_slot_index": 1,
+          "decode_slot_epoch": 1,
+          "layout_order": 2,
+          "label": "text",
+          "prompt": "OCR:",
+          "box": {
+            "x0": 112.8045883178711,
+            "y0": 338.29254150390625,
+            "x1": 1676.3753662109375,
+            "y1": 488.9217224121094
+          },
+          "crop_size": [
+            1565,
+            151
+          ],
+          "text": "- ESL subject section courses are credit-granting courses.",
+          "token_ids": [
+            93942,
+            451,
+            4882,
+            3973,
+            4387,
+            27687,
+            524,
+            11154,
+            93942,
+            26489,
+            305,
+            27687,
+            93937,
+            2
+          ],
+          "stop_reason": "eos",
+          "input_tokens": 293,
+          "projected_image_tokens": 280,
+          "generated_tokens_including_eos": 14,
+          "decode_tokens_after_prefill_including_eos": 13,
+          "decode_calls_executed": 14,
+          "timing_s": {
+            "cpu_image_and_prompt_preprocess": 0.0213119619875215,
+            "cpu_mrope_index": 0.0014313539722934365,
+            "cpu_preprocess_background_queue_wait": 0.012749516987241805,
+            "cpu_preprocess_background_service": 0.022774106997530907,
+            "cpu_preprocess_background_consumer_wait": 1.4620018191635609e-05,
+            "cpu_preprocess_background_ready_wait": 0.14738029503496364,
+            "recognizer_h2d": 0.0020028240396641195,
+            "vision_and_text_prefill_wall": 0.08703673898708075,
+            "first_token_d2h": 9.76019655354321e-05,
+            "time_to_first_token": 0.2721268549794331,
+            "prefill_request_total": 0.11188048095209524,
+            "decode_ready_queue_wait": 0.5137499220436439,
+            "decode_slot_residency": 0.45072240999434143,
+            "detokenize": 0.00013809202937409282,
+            "request_total": 1.2367372790467925
+          },
+          "device_stage_s": {
+            "vision_embeddings": 0.00123062002658844,
+            "vision_prefill_input_prep": 0.0015690200328826905,
+            "vision_prefill": 0.04068898010253906,
+            "adaptive_mlp_projector": 0.00017863999307155608,
+            "text_token_embedding": 1.4960000291466713e-05,
+            "image_embed_scatter": 0.001872979998588562,
+            "static_cache_alloc": 1.5999999595806003e-07,
+            "text_prefill_input_prep": 0.00025672000646591184,
+            "text_prefill": 0.040128440856933595,
+            "prefill_lm_head": 0.0002547399997711182,
+            "prefill_argmax": 0.0001168999969959259
+          },
+          "rates": {
+            "request_output_tok_per_s": 11.320108350570957
+          },
+          "vision": {
+            "execution": "eager",
+            "real_vision_tokens": 1120,
+            "physical_vision_tokens": 1120,
+            "padding_vision_tokens": 0,
+            "useful_token_fraction": 1.0,
+            "bucket": null
+          },
+          "text_prefill": {
+            "execution": "eager",
+            "real_text_tokens": 293,
+            "physical_text_tokens": 293,
+            "padding_text_tokens": 0,
+            "useful_token_fraction": 1.0,
+            "bucket": null
+          }
+        },
+        {
+          "request_id": "page_0000_PPT_The Right Moves_page_024_region_003",
+          "decode_schedule_id": "run_cross_page_continuous_decode",
+          "decode_slot_index": 2,
+          "decode_slot_epoch": 1,
+          "layout_order": 3,
+          "label": "text",
+          "prompt": "OCR:",
+          "box": {
+            "x0": 107.42211151123047,
+            "y0": 597.5153198242188,
+            "x1": 1871.3951416015625,
+            "y1": 983.65185546875
+          },
+          "crop_size": [
+            1765,
+            387
+          ],
+          "text": "These courses focus on the subject content while placing emphasis on subject-related vocabulary, language structures and cultural background in order to support students who are acquiring English at the same time that they are learning the subject.",
+          "token_ids": [
+            12860,
+            27687,
+            6942,
+            400,
+            290,
+            3973,
+            2209,
+            2039,
+            35158,
+            33584,
+            400,
+            3973,
+            93942,
+            6849,
+            75139,
+            93938,
+            3934,
+            10125,
+            326,
+            19817,
+            4600,
+            307,
+            1751,
+            318,
+            1828,
+            7602,
+            1289,
+            524,
+            68649,
+            7659,
+            488,
+            290,
+            1614,
+            960,
+            418,
+            918,
+            524,
+            9098,
+            290,
+            3973,
+            93937,
+            2
+          ],
+          "stop_reason": "eos",
+          "input_tokens": 895,
+          "projected_image_tokens": 882,
+          "generated_tokens_including_eos": 42,
+          "decode_tokens_after_prefill_including_eos": 41,
+          "decode_calls_executed": 42,
+          "timing_s": {
+            "cpu_image_and_prompt_preprocess": 0.06263429502723739,
+            "cpu_mrope_index": 0.0017524300492368639,
+            "cpu_preprocess_background_queue_wait": 0.033903116011060774,
+            "cpu_preprocess_background_service": 0.0644167650025338,
+            "cpu_preprocess_background_consumer_wait": 1.4490040484815836e-05,
+            "cpu_preprocess_background_ready_wait": 0.1724509209743701,
+            "recognizer_h2d": 0.0029534900095313787,
+            "vision_and_text_prefill_wall": 0.30937541800085455,
+            "first_token_d2h": 8.682202314957976e-05,
+            "time_to_first_token": 0.5832630330114625,
+            "prefill_request_total": 0.37680245511000976,
+            "decode_ready_queue_wait": 0.20307913096621633,
+            "decode_slot_residency": 1.33173059404362,
+            "detokenize": 0.00023420399520546198,
+            "request_total": 2.1183069620165043
+          },
+          "device_stage_s": {
+            "vision_embeddings": 0.001041159987449646,
+            "vision_prefill_input_prep": 0.0013449000120162964,
+            "vision_prefill": 0.2605191955566406,
+            "adaptive_mlp_projector": 0.00028488001227378843,
+            "text_token_embedding": 4.055999964475632e-05,
+            "image_embed_scatter": 0.005038700103759766,
+            "static_cache_alloc": 1.5999999595806003e-07,
+            "text_prefill_input_prep": 0.00024993999302387235,
+            "text_prefill": 0.03989023971557617,
+            "prefill_lm_head": 0.00038537999987602235,
+            "prefill_argmax": 2.3259999230504036e-05
+          },
+          "rates": {
+            "request_output_tok_per_s": 19.827154776481713
+          },
+          "vision": {
+            "execution": "eager",
+            "real_vision_tokens": 3528,
+            "physical_vision_tokens": 3528,
+            "padding_vision_tokens": 0,
+            "useful_token_fraction": 1.0,
+            "bucket": null
+          },
+          "text_prefill": {
+            "execution": "eager",
+            "real_text_tokens": 895,
+            "physical_text_tokens": 895,
+            "padding_text_tokens": 0,
+            "useful_token_fraction": 1.0,
+            "bucket": null
+          }
+        },
+        {
+          "request_id": "page_0000_PPT_The Right Moves_page_024_region_004",
+          "decode_schedule_id": "run_cross_page_continuous_decode",
+          "decode_slot_index": 3,
+          "decode_slot_epoch": 1,
+          "layout_order": 4,
+          "label": "text",
+          "prompt": "OCR:",
+          "box": {
+            "x0": 112.03056335449219,
+            "y0": 1083.3680419921875,
+            "x1": 1854.6383056640625,
+            "y1": 1242.0799560546875
+          },
+          "crop_size": [
+            1743,
+            160
+          ],
+          "text": "• Often these subject specific courses are aligned with specific ESL levels.",
+          "token_ids": [
+            95848,
+            70259,
+            1375,
+            3973,
+            2727,
+            27687,
+            524,
+            25500,
+            441,
+            2727,
+            451,
+            4882,
+            5147,
+            93937,
+            2
+          ],
+          "stop_reason": "eos",
+          "input_tokens": 385,
+          "projected_image_tokens": 372,
+          "generated_tokens_including_eos": 15,
+          "decode_tokens_after_prefill_including_eos": 14,
+          "decode_calls_executed": 15,
+          "timing_s": {
+            "cpu_image_and_prompt_preprocess": 0.02613522403407842,
+            "cpu_mrope_index": 0.001096489024348557,
+            "cpu_preprocess_background_queue_wait": 0.09797171503305435,
+            "cpu_preprocess_background_service": 0.027257383975666016,
+            "cpu_preprocess_background_consumer_wait": 1.0180054232478142e-05,
+            "cpu_preprocess_background_ready_wait": 0.4585867440328002,
+            "recognizer_h2d": 0.002305088972207159,
+            "vision_and_text_prefill_wall": 0.10181397094856948,
+            "first_token_d2h": 9.969103848561645e-05,
+            "time_to_first_token": 0.6881190350395627,
+            "prefill_request_total": 0.13145046401768923,
+            "decode_ready_queue_wait": 0.09993345901602879,
+            "decode_slot_residency": 0.4786195839988068,
+            "detokenize": 8.455198258161545e-05,
+            "request_total": 1.26675663003698
+          },
+          "device_stage_s": {
+            "vision_embeddings": 0.0009322400093078613,
+            "vision_prefill_input_prep": 0.0012124799489974976,
+            "vision_prefill": 0.05512242126464844,
+            "adaptive_mlp_projector": 0.00019842000305652618,
+            "text_token_embedding": 1.8540000542998313e-05,
+            "image_embed_scatter": 0.002330739974975586,
+            "static_cache_alloc": 1.5999999595806003e-07,
+            "text_prefill_input_prep": 0.00024174000322818757,
+            "text_prefill": 0.040680221557617184,
+            "prefill_lm_head": 0.00026662001013755797,
+            "prefill_argmax": 0.00010598000138998032
+          },
+          "rates": {
+            "request_output_tok_per_s": 11.841264252599263
+          },
+          "vision": {
+            "execution": "eager",
+            "real_vision_tokens": 1488,
+            "physical_vision_tokens": 1488,
+            "padding_vision_tokens": 0,
+            "useful_token_fraction": 1.0,
+            "bucket": null
+          },
+          "text_prefill": {
+            "execution": "eager",
+            "real_text_tokens": 385,
+            "physical_text_tokens": 385,
+            "padding_text_tokens": 0,
+            "useful_token_fraction": 1.0,
+            "bucket": null
+          }
+        },
+        {
+          "request_id": "page_0000_PPT_The Right Moves_page_024_region_005",
+          "decode_schedule_id": "run_cross_page_continuous_decode",
+          "decode_slot_index": 0,
+          "decode_slot_epoch": 2,
+          "layout_order": 5,
+          "label": "number",
+          "prompt": "OCR:",
+          "box": {
+            "x0": 1835.696533203125,
+            "y0": 1381.580078125,
+            "x1": 1885.6480712890625,
+            "y1": 1419.83203125
+          },
+          "crop_size": [
+            51,
+            39
+          ],
+          "text": "24",
+          "token_ids": [
+            5,
+            7,
+            2
+          ],
+          "stop_reason": "eos",
+          "input_tokens": 167,
+          "projected_image_tokens": 154,
+          "generated_tokens_including_eos": 3,
+          "decode_tokens_after_prefill_including_eos": 2,
+          "decode_calls_executed": 3,
+          "timing_s": {
+            "cpu_image_and_prompt_preprocess": 0.008416462980676442,
+            "cpu_mrope_index": 0.0011449999874457717,
+            "cpu_preprocess_background_queue_wait": 0.11463820800418034,
+            "cpu_preprocess_background_service": 0.009583833045326173,
+            "cpu_preprocess_background_consumer_wait": 5.300098564475775e-05,
+            "cpu_preprocess_background_ready_wait": 0.554671177000273,
+            "recognizer_h2d": 0.002461411990225315,
+            "vision_and_text_prefill_wall": 0.08366445201681927,
+            "first_token_d2h": 8.256104774773121e-05,
+            "time_to_first_token": 0.7652179350261576,
+            "prefill_request_total": 0.09576988802291453,
+            "decode_ready_queue_wait": 0.23778168100398034,
+            "decode_slot_residency": 0.09469639998860657,
+            "detokenize": 1.7380050849169493e-05,
+            "request_total": 1.0977133960695937
+          },
+          "device_stage_s": {
+            "vision_embeddings": 0.0011088999509811402,
+            "vision_prefill_input_prep": 0.0013880800008773803,
+            "vision_prefill": 0.037456501007080076,
+            "adaptive_mlp_projector": 0.0011780600547790527,
+            "text_token_embedding": 0.0001720999926328659,
+            "image_embed_scatter": 0.0014245799779891968,
+            "static_cache_alloc": 5.311999842524528e-05,
+            "text_prefill_input_prep": 0.0005098000168800354,
+            "text_prefill": 0.03910005950927734,
+            "prefill_lm_head": 0.00022638000547885894,
+            "prefill_argmax": 0.00012567999958992005
+          },
+          "rates": {
+            "request_output_tok_per_s": 2.7329538026424918
+          },
+          "vision": {
+            "execution": "eager",
+            "real_vision_tokens": 616,
+            "physical_vision_tokens": 616,
+            "padding_vision_tokens": 0,
+            "useful_token_fraction": 1.0,
+            "bucket": null
+          },
+          "text_prefill": {
+            "execution": "eager",
+            "real_text_tokens": 167,
+            "physical_text_tokens": 167,
+            "padding_text_tokens": 0,
+            "useful_token_fraction": 1.0,
+            "bucket": null
+          }
+        }
+      ],
+      "decode_schedule_id": "run_cross_page_continuous_decode",
+      "skipped_regions": [],
+      "reading_order_text": "Subject Support con't.\n\n- ESL subject section courses are credit-granting courses.\n\nThese courses focus on the subject content while placing emphasis on subject-related vocabulary, language structures and cultural background in order to support students who are acquiring English at the same time that they are learning the subject.\n\n• Often these subject specific courses are aligned with specific ESL levels.",
+      "timing_s": {
+        "image_load": 0.03262823499972001,
+        "layout_preprocess": 0.05419477098621428,
+        "layout_h2d": 0.0013684729929082096,
+        "layout_inference": 0.3808686530101113,
+        "layout_postprocess": 0.1369283680105582,
+        "layout_total": 0.5735957989818417,
+        "crop_extraction": 0.002823418006300926,
+        "recognition_wall": 2.122809687978588,
+        "sequential_prefill_wall_sum": 0.8982653981074691,
+        "reading_order_text_postprocess": 6.536097498610616e-05,
+        "page_total": 2.729619831952732,
+        "run_submission_to_page_completion": 2.7301541609922424,
+        "artifact_write": 0.23308138200081885,
+        "page_total_including_artifacts": 2.9627328040078282
+      },
+      "rates": {
+        "layout_regions_per_s": 13.127885323414263,
+        "recognition_regions_per_s": 2.3553689378350118,
+        "page_output_tok_per_s": 29.674462008159477
+      },
+      "partial": false
+    }
+  ],
+  "decode_schedule": {
+    "schedule_id": "run_cross_page_continuous_decode",
+    "batch_size": 4,
+    "requests": 5,
+    "ready_buffer_capacity": 16,
+    "ready_buffer_low_watermark": 4,
+    "max_ready_queue_depth": 5,
+    "ready_source_refill_count": 1,
+    "graph_calls": 42,
+    "initial_admissions": 4,
+    "hot_swap_admissions": 1,
+    "prefill_only_completions": 0,
+    "raw_decode_token_slots": 168,
+    "active_decode_token_slots": 81,
+    "effective_decode_tokens": 76,
+    "idle_decode_token_slots": 87,
+    "lookahead_decode_token_slots": 5,
+    "kv_prefix_bytes_copied": 35112960,
+    "initial_kv_prefix_bytes_copied": 32034816,
+    "hot_swap_kv_prefix_bytes_copied": 3078144,
+    "timing_s": {
+      "continuous_decode_wall": 1.339644436025992,
+      "decode_host_exclusive_wall": 1.339644436025992,
+      "run_scoped_scheduler_wall": 2.9640606270404533,
+      "ready_source_wall": 1.3883611380006187,
+      "completion_callback_wall": 0.23605505301384255,
+      "decode_model_and_argmax_device": 1.3006794948577882,
+      "slot_admission_device": 0.010995659708976747,
+      "slot_admission_enqueue_wall": 0.010972927033435553,
+      "d2h_wait_wall": 0.0010741811711341143,
+      "retire_and_refill_host_wall": 0.23955518211005256
+    },
+    "rates": {
+      "raw_decode_tok_per_s": 125.40641044900397,
+      "effective_decode_tok_per_s": 56.73147139359703,
+      "effective_fraction": 0.4523809523809524,
+      "active_slot_fraction": 0.48214285714285715,
+      "effective_device_tok_per_s": 58.43099725986652,
+      "scheduler_effective_tok_per_s": 25.640501178238132
+    }
+  },
+  "aggregate": {
+    "pages": 1,
+    "partial_pages": 0,
+    "layout_regions": 5,
+    "recognized_regions": 5,
+    "skipped_regions": 0,
+    "decode_schedules": 1,
+    "decode_graph_calls": 42,
+    "initial_decode_admissions": 4,
+    "hot_swap_decode_admissions": 1,
+    "ready_buffer_capacity": 16,
+    "ready_buffer_low_watermark": 4,
+    "max_ready_queue_depth": 5,
+    "ready_source_refill_count": 1,
+    "layout_label_counts": {
+      "number": 1,
+      "paragraph_title": 1,
+      "text": 3
+    },
+    "stop_reason_counts": {
+      "eos": 5
+    },
+    "generated_tokens_including_eos": 81,
+    "vision_execution_counts": {
+      "eager": 5
+    },
+    "vision_bucket_counts": {},
+    "real_vision_tokens": 7360,
+    "physical_vision_tokens": 7360,
+    "vision_useful_token_fraction": 1.0,
+    "text_execution_counts": {
+      "eager": 5
+    },
+    "text_bucket_counts": {},
+    "real_text_tokens": 1905,
+    "physical_text_tokens": 1905,
+    "text_useful_token_fraction": 1.0,
+    "raw_decode_token_slots": 168,
+    "active_decode_token_slots": 81,
+    "effective_decode_tokens": 76,
+    "idle_decode_token_slots": 87,
+    "lookahead_decode_token_slots": 5,
+    "kv_prefix_bytes_copied": 35112960,
+    "run_wall_s": 2.9648954609874636,
+    "sum_page_latency_s": 2.729619831952732,
+    "mean_page_latency_s": 2.729619831952732,
+    "continuous_decode_wall_s": 1.339644436025992,
+    "run_scoped_scheduler_wall_s": 2.9640606270404533,
+    "rates": {
+      "pages_per_s": 0.33728001987191425,
+      "regions_per_s": 1.6864000993595711,
+      "raw_decode_tok_per_s": 125.40641044900397,
+      "effective_decode_tok_per_s": 56.73147139359703,
+      "effective_fraction": 0.4523809523809524,
+      "active_slot_fraction": 0.48214285714285715,
+      "e2e_output_tok_per_s": 27.319681609625054
+    },
+    "page_completion_order": [
+      "page_0000_PPT_The Right Moves_page_024"
+    ]
+  },
+  "metric_definitions": {
+    "layout_inference": "Synchronized wall time for the real PP-DocLayoutV3 model call only.",
+    "page_total": "Per-page latency from beginning that page's image load through its immediate completion emission; pages can overlap in the run-scoped scheduler.",
+    "run_wall_s": "Wall time from starting the first page until every page has emitted; this is the E2E throughput denominator.",
+    "page_total_including_artifacts": "page_total plus page text and optional annotated-image/crop writes.",
+    "request_total": "In-memory crop preprocessing through prefill, compiled decode, D2H token transfer, and detokenization.",
+    "device_stage_s": "Accelerator event time for vision/text-prefill sub-stages; it is not host wall time.",
+    "vision_prefill": "Accelerator event time for the shared vision encoder plus final LayerNorm stage, whether called eagerly or through TorchAir; input preparation is reported separately.",
+    "vision_useful_token_fraction": "Sum of real vision tokens divided by sum of physical bucket tokens; eager and overflow requests have no padding.",
+    "text_prefill": "Accelerator event time for the shared text-transformer stage, including in-place KV cache population, whether called eagerly or through TorchAir.",
+    "text_useful_token_fraction": "Sum of real text-prefill tokens divided by sum of physical bucket tokens; eager and overflow requests have no padding.",
+    "continuous_decode_wall": "Decode throughput denominator: the larger of exclusive host-control wall time and serialized decode-plus-admission device time, preventing overlapped producer synchronization from understating decode cost.",
+    "run_scoped_scheduler_wall": "Full recognition scheduler wall including lazy page production, eager prefill, decode, detokenization, and page-completion callbacks.",
+    "raw_decode_tok_per_s": "Every persistent-arena token slot executed by the compiled graph divided by continuous-decode wall time, including idle slots and one-step completion look-ahead.",
+    "effective_decode_tok_per_s": "Real generated tokens after each prefill-produced first token, including EOS but excluding idle and look-ahead slots, divided by the same decode-control wall time.",
+    "active_slot_fraction": "Slots assigned to a real request when an iteration launched divided by all fixed-arena slots. It includes the one delayed look-ahead iteration.",
+    "e2e_output_tok_per_s": "All generated tokens including each first token and EOS divided by run wall time."
+  }
+}

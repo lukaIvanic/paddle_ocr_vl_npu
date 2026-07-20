@@ -1,0 +1,7 @@
+Loading weights:   0%|          | 0/858 [00:00<?, ?it/s]Loading weights:  59%|█████▉    | 508/858 [00:00<00:00, 5079.22it/s]Loading weights: 100%|██████████| 858/858 [00:00<00:00, 5080.24it/s]
+[W720 19:50:54.468087131 TensorFactories.cpp:340] Warning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (function operator())
+page_completed=page_0000_PPT_The Right Moves_page_024 recognized_regions=5 latency_s=2.729620
+output=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/cpu_background_async_smoke_69494a9_20260720/run.json
+pages=1 layout_regions=5 recognized_regions=5 partial_pages=0
+run_wall_s=2.964895 decode_wall_s=1.339644 raw_decode_tok_per_s=125.40641044900397 effective_decode_tok_per_s=56.73147139359703 e2e_output_tok_per_s=27.319681609625054
+validated=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/cpu_background_async_smoke_69494a9_20260720/run.json
