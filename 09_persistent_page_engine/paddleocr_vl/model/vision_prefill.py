@@ -73,8 +73,8 @@ def get_vision_prompt_fa_layout() -> str:
 
 def get_vision_prompt_fa_mask_sparse_mode() -> int:
     raw = (
-        os.environ.get(VISION_PROMPT_FA_MASK_SPARSE_MODE_ENV, "0").strip()
-        or "0"
+        os.environ.get(VISION_PROMPT_FA_MASK_SPARSE_MODE_ENV, "1").strip()
+        or "1"
     )
     try:
         mode = int(raw)
@@ -89,6 +89,12 @@ def get_vision_prompt_fa_mask_sparse_mode() -> int:
             f"vision padding masks, got {mode}"
         )
     return mode
+
+
+def prompt_flash_attention_call_head_dim(head_dim: int) -> int:
+    """Return the smallest PromptFA-compatible head dimension."""
+    head_dim = int(head_dim)
+    return ((head_dim + 15) // 16) * 16
 
 
 def get_vision_softmax_dtype_mode() -> str:
@@ -668,6 +674,12 @@ class VisionPrefillStage(torch.nn.Module):
         value_states = value_states.transpose(1, 2).contiguous()
 
         if self.attention_impl == "prompt_flash_attention":
+            call_head_dim = prompt_flash_attention_call_head_dim(head_dim)
+            if call_head_dim != head_dim:
+                padding = (0, call_head_dim - head_dim)
+                query_states = F.pad(query_states, padding).contiguous()
+                key_states = F.pad(key_states, padding).contiguous()
+                value_states = F.pad(value_states, padding).contiguous()
             attention_output = vision_prompt_flash_attention_bnsd(
                 query_states,
                 key_states,
@@ -676,6 +688,8 @@ class VisionPrefillStage(torch.nn.Module):
                 scale=float(attention.scaling),
                 atten_mask=attention_mask,
             )
+            if call_head_dim != head_dim:
+                attention_output = attention_output[..., :head_dim].contiguous()
         else:
             # Explicit [B*H, S, D] bmm is equivalent to the stock 4-D matmul
             # but prevents GE from treating the attention head as a broadcast
@@ -886,11 +900,13 @@ def vision_cache_dir_for_bucket(
     device: torch.device,
     model_dir: Path,
     attention_impl: str,
+    head_dim: int,
 ) -> Path:
     attention_key = (
         "manual_bmm"
         if attention_impl == "manual"
         else "promptfa_"
+        f"d{prompt_flash_attention_call_head_dim(head_dim)}_"
         f"{cache_key_part(get_vision_prompt_fa_layout())}_"
         f"sparse{get_vision_prompt_fa_mask_sparse_mode()}"
     )
@@ -955,6 +971,9 @@ class VisionPrefillRuntime:
         self.device = device
         self.dtype = dtype
         self.cache_root = cache_root.expanduser().resolve()
+        head_dim = int(model.config.vision_config.hidden_size) // int(
+            model.config.vision_config.num_attention_heads
+        )
         self.compiled: dict[int, Callable[..., torch.Tensor]] = {}
         self.entrypoints: dict[int, Callable[..., torch.Tensor]] = {}
         self.eager_stage = VisionPrefillStage(
@@ -977,6 +996,12 @@ class VisionPrefillRuntime:
                 if self.attention_impl == "prompt_flash_attention"
                 else None
             ),
+            "vision_head_dim": head_dim,
+            "prompt_flash_attention_call_head_dim": (
+                prompt_flash_attention_call_head_dim(head_dim)
+                if self.attention_impl == "prompt_flash_attention"
+                else None
+            ),
             "buckets": list(self.buckets),
             "requested_padding": self.requested_padding,
             "padding": self.padding,
@@ -994,8 +1019,6 @@ class VisionPrefillRuntime:
             raise ValueError("compiled vision backend torchair requires an NPU device")
 
         torchair, CompilerConfig = import_torchair()
-        hidden_size = int(model.config.vision_config.hidden_size)
-        head_dim = hidden_size // int(model.config.vision_config.num_attention_heads)
         per_bucket: dict[str, Any] = {}
         wrapper_total_s = 0.0
         first_call_total_s = 0.0
@@ -1011,6 +1034,7 @@ class VisionPrefillRuntime:
                 device=self.device,
                 model_dir=model_dir,
                 attention_impl=self.attention_impl,
+                head_dim=head_dim,
             )
             cache_dir.mkdir(parents=True, exist_ok=True)
             config = CompilerConfig()
