@@ -14,6 +14,8 @@ class RecognitionRequest:
     crop: Image.Image
     prompt: str
     skip_special_tokens: bool = True
+    min_pixels: int | None = None
+    max_pixels: int | None = None
 
 
 @dataclass

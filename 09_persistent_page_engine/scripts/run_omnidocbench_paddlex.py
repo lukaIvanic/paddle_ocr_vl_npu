@@ -33,7 +33,7 @@ from pipeline.omnidocbench_defaults import (
     OMNIDOCBENCH_MAX_NEW_TOKENS,
     OMNIDOCBENCH_PAGE_COUNT,
 )
-from pipeline.paddlex_adapter import PaddleXContinuousRecognizerAdapter
+from pipeline.paddlex_page_bridge import PaddleXPageBridge
 
 
 DEFAULT_DATASET_JSON = Path("/workspace/datasets/OmniDocBench/OmniDocBench.json")
@@ -187,36 +187,42 @@ def validate_args(args: argparse.Namespace) -> None:
 
 def run_predictions(
     official_pipeline: Any,
+    bridge: PaddleXPageBridge,
     image_paths: list[Path],
     *,
     predictions_dir: Path,
     compact_path: Path,
-    min_pixels: int | None,
-    max_new_tokens: int,
-) -> tuple[int, list[float], float]:
+) -> tuple[int, list[float], float, Any]:
     completion_s: list[float] = []
     result_count = 0
     predict_started = time.perf_counter()
+
+    def save_result(result: Any) -> None:
+        nonlocal result_count
+        result.save_to_markdown(save_path=str(predictions_dir))
+        append_compact_page_result(compact_handle, result)
+        result_count += 1
+        completion_s.append(time.perf_counter() - predict_started)
+        print(
+            f"completed={result_count}/{len(image_paths)} "
+            f"elapsed_s={completion_s[-1]:.3f}",
+            flush=True,
+        )
+
     try:
         with compact_path.open("w", encoding="utf-8") as compact_handle:
-            for result in official_pipeline.predict_iter(
+            page_run = bridge.run(
                 [str(path) for path in image_paths],
-                use_queues=True,
-                min_pixels=min_pixels,
-                max_new_tokens=max_new_tokens,
-            ):
-                result.save_to_markdown(save_path=str(predictions_dir))
-                append_compact_page_result(compact_handle, result)
-                result_count += 1
-                completion_s.append(time.perf_counter() - predict_started)
-                print(
-                    f"completed={result_count}/{len(image_paths)} "
-                    f"elapsed_s={completion_s[-1]:.3f}",
-                    flush=True,
-                )
+                emit_page=save_result,
+            )
     finally:
         official_pipeline.close()
-    return result_count, completion_s, time.perf_counter() - predict_started
+    return (
+        result_count,
+        completion_s,
+        time.perf_counter() - predict_started,
+        page_run,
+    )
 
 
 def validate_predictions(predictions_dir: Path, image_paths: list[Path]) -> list[str]:
@@ -265,7 +271,7 @@ def main() -> None:
         "offset": args.offset,
         "count": args.limit,
         "images": [path.name for path in image_paths],
-        "pipeline": "official_paddlex_v1.6_with_experiment09_vl_rec_model_adapter",
+        "pipeline": "official_paddlex_v1.6_with_cross_page_recognition_bridge",
     }
     (output_dir / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
@@ -301,15 +307,12 @@ def main() -> None:
     auto_parallel_pipeline = official_pipeline.paddlex_pipeline
     if auto_parallel_pipeline.multi_device_inference:
         raise ValueError(
-            "the custom adapter requires one selected NPU; multi-device PaddleX "
+            "the cross-page bridge requires one selected NPU; multi-device PaddleX "
             "dispatch would create multiple independent recognition runtimes"
         )
-    # AutoParallelImageSimpleInferencePipeline forwards attribute reads through
-    # __getattr__, but assigning on the wrapper would shadow rather than replace
-    # the model used by predict(). Replace the actual internal pipeline field.
+    # The bridge calls the concrete pipeline's page helpers directly. Attribute
+    # access on the auto-parallel wrapper only forwards reads.
     paddlex_pipeline = auto_parallel_pipeline._pipeline
-    original_vl_rec_model = paddlex_pipeline.vl_rec_model
-    original_vl_rec_model.close()
 
     recognizer = ContinuousRecognizer(
         model=str(recognizer_model),
@@ -331,23 +334,22 @@ def main() -> None:
         text_padding=args.text_padding,
         preprocessor_min_pixels=args.preprocessor_min_pixels,
     )
-    adapter = PaddleXContinuousRecognizerAdapter(
+    bridge = PaddleXPageBridge(
+        paddlex_pipeline,
         recognizer,
-        batch_size=args.batch_size,
         trace_path=output_dir / "recognition_trace.jsonl",
+        min_pixels=args.preprocessor_min_pixels,
     )
-    paddlex_pipeline.vl_rec_model = adapter
     setup_s = time.perf_counter() - setup_started
 
     compact_path = output_dir / "page_regions.jsonl"
     try:
-        result_count, completion_s, pipeline_e2e_s = run_predictions(
+        result_count, completion_s, pipeline_e2e_s, page_run = run_predictions(
             official_pipeline,
+            bridge,
             image_paths,
             predictions_dir=predictions_dir,
             compact_path=compact_path,
-            min_pixels=args.preprocessor_min_pixels,
-            max_new_tokens=args.max_new_tokens,
         )
     finally:
         layout_mask_guard.write_snapshot(layout_mask_guard_path)
@@ -385,7 +387,8 @@ def main() -> None:
         "result_count": result_count,
         "prediction_count": len(prediction_files),
         "completion_s": completion_s,
-        "adapter": adapter.summary(),
+        "recognition": page_run.summary,
+        "page_completion_order": page_run.completion_order,
         "layout_mask_guard": layout_mask_guard.snapshot(),
         "layout_mask_guard_path": str(layout_mask_guard_path),
         "predictions_dir": str(predictions_dir),

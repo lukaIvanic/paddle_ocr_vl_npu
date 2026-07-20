@@ -422,17 +422,31 @@ class ContinuousRecognizer:
         request_started = time.perf_counter()
         timing: dict[str, float] = {}
         crop_size = tuple(int(value) for value in request.crop.size)
+        preprocessor_config = self.preprocessor_config
+        if request.min_pixels is not None or request.max_pixels is not None:
+            if request.min_pixels is None or request.max_pixels is None:
+                raise ValueError(
+                    "request-specific min_pixels and max_pixels must be provided together"
+                )
+            if request.min_pixels <= 0 or request.max_pixels < request.min_pixels:
+                raise ValueError(
+                    "invalid request-specific pixel profile: "
+                    f"min={request.min_pixels} max={request.max_pixels}"
+                )
+            preprocessor_config = dict(preprocessor_config)
+            preprocessor_config["min_pixels"] = int(request.min_pixels)
+            preprocessor_config["max_pixels"] = int(request.max_pixels)
 
         started = time.perf_counter()
         pixel_values, image_grid_thw = preprocess_pil_image(
             request.crop,
-            self.preprocessor_config,
+            preprocessor_config,
         )
         input_ids, attention_mask = build_inputs(
             self.tokenizer,
             image_grid_thw,
             request.prompt,
-            merge_size=int(self.preprocessor_config["merge_size"]),
+            merge_size=int(preprocessor_config["merge_size"]),
         )
         timing["cpu_image_and_prompt_preprocess"] = time.perf_counter() - started
 

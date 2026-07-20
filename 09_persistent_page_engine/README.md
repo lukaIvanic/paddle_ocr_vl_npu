@@ -13,11 +13,10 @@ page should be emitted immediately. The bounded frontend must provide
 backpressure: it should neither submit the entire benchmark at once nor create
 fixed page cohorts that temporarily starve cross-page batching.
 
-The copied baseline does **not** claim that this target is already complete.
-The direct `scripts/run_offline_e2e.py` path already uses a run-scoped request source,
-but the official PaddleX adapter still locks and fully drains each adapter call.
-That adapter-call barrier is the first architectural boundary to replace with
-per-request completion handles and a persistent engine lifetime.
+The faithful PaddleX path now removes its former recognition-batch barrier.
+PaddleX still performs the official layout preparation and page assembly, but
+all prepared crops enter one run-scoped recognizer schedule and each page is
+emitted when its own final crop completes.
 
 The baseline keeps both models resident in one Python process and executes this
 path:
@@ -84,11 +83,9 @@ prompt KV prefix, while stale cache tails remain safely hidden by each row's
 cache position. The ready reservoir is internal and bounded, so the pipeline
 does not materialize every page's NPU KV caches before decode.
 
-In the direct runner, a page is an input/output aggregation boundary rather
-than a scheduling boundary. Each request carries its page identity through the
-engine; per-page collectors restore reading order and can emit independently.
-The PaddleX adapter does not yet preserve this property across separate adapter
-calls; that limitation is the focus of this experiment.
+In both runners, a page is an input/output aggregation boundary rather than a
+scheduling boundary. Each request carries its page identity through the engine;
+per-page collectors restore reading order and can emit independently.
 
 ## What is faithful in this first cut
 
@@ -110,10 +107,11 @@ calls; that limitation is the focus of this experiment.
 
 `scripts/run_offline_e2e.py` intentionally keeps a smaller diagnostic page-preparation
 path and its reading-order text is not an OmniDocBench prediction. For faithful
-page assembly, `scripts/run_omnidocbench_paddlex.py` keeps the official PaddleX v1.6
-layout filtering, crop/merge policy, table and formula handling, result objects,
-and Markdown conversion, replacing only PaddleX's inner recognition model with
-this optimized engine.
+page assembly, `scripts/run_omnidocbench_paddlex.py` keeps the official PaddleX
+v1.6 layout filtering, crop/merge policy, table and formula handling, result
+objects, and Markdown conversion. Its small page bridge skips only PaddleX's
+synchronous VLM batch call and routes the same prepared crops through this
+optimized engine as one continuous run.
 
 The full-benchmark runner installs a narrow PP-DocLayoutV3 mask guard.
 Transformers can otherwise call OpenCV with a zero-width mask crop when a thin,
@@ -250,7 +248,8 @@ reverse.
 
 - `pipeline/layout.py`: PP-DocLayoutV3 inference and normalized layout regions.
 - `pipeline/page_pipeline.py`: lazy page/layout/crop routing and page completion.
-- `pipeline/paddlex_adapter.py`: narrow PaddleX recognition-model adapter.
+- `pipeline/paddlex_page_bridge.py`: official PaddleX page preparation and
+  assembly around one cross-page recognition schedule.
 - `pipeline/layout_mask_guard.py`: PP-DocLayout empty-mask fallback and telemetry.
 - `pipeline/omnidocbench_defaults.py`: validated full-benchmark execution profile.
 - `pipeline/types.py`: boxes, layout regions, page results, and run serialization.
