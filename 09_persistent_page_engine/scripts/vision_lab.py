@@ -554,6 +554,13 @@ def _run_group(
                 prepared.attention_mask,
             ),
         )
+        if int(batched_output.shape[0]) != len(group):
+            raise RuntimeError(
+                "batched vision tower did not preserve the requested batch "
+                f"dimension: input B={len(group)} output shape="
+                f"{tuple(batched_output.shape)}. The existing TorchAir vision "
+                "runtime is compiled and cache-keyed for B=1."
+            )
         tower_segments = [
             batched_output[index, :length].contiguous()
             for index, length in enumerate(lengths)
