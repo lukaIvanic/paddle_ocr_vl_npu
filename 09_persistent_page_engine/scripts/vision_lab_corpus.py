@@ -17,6 +17,7 @@ REPO_ROOT = EXPERIMENT_ROOT.parent
 sys.path.insert(0, str(EXPERIMENT_ROOT))
 
 from paddleocr_vl.model.preprocessing import image_grid_thw_from_size
+from paddleocr_vl.serving.runtime_defaults import OPTIMIZED_VISION_BUCKETS
 
 
 DEFAULT_TRACE = (
@@ -45,6 +46,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="Comma-separated target tower-token counts for a synthetic corpus.",
     )
     parser.add_argument("--count-per-length", type=int, default=1)
+    parser.add_argument(
+        "--min-pixels-variant",
+        type=int,
+        action="append",
+        default=[],
+        help=(
+            "Repeat to re-grid every trace crop with an alternate min_pixels. "
+            "The default trace profile remains the hard regression anchor."
+        ),
+    )
     parser.add_argument("--output", type=Path)
     return parser.parse_args(argv)
 
@@ -72,7 +83,93 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
     return records
 
 
-def build_trace_corpus(path: Path) -> dict[str, Any]:
+def _percentile(values: list[int], fraction: float) -> float:
+    ordered = sorted(values)
+    if not ordered:
+        return 0.0
+    if len(ordered) == 1:
+        return float(ordered[0])
+    position = fraction * (len(ordered) - 1)
+    lower = math.floor(position)
+    upper = math.ceil(position)
+    if lower == upper:
+        return float(ordered[lower])
+    weight = position - lower
+    return ordered[lower] * (1.0 - weight) + ordered[upper] * weight
+
+
+def _bucket_for_tokens(tokens: int) -> int | None:
+    return next(
+        (int(bucket) for bucket in OPTIMIZED_VISION_BUCKETS if tokens <= bucket),
+        None,
+    )
+
+
+def _distribution(items: list[dict[str, Any]]) -> dict[str, Any]:
+    tokens = [int(item["real_vision_tokens"]) for item in items]
+    bucket_histogram: dict[str, int] = {}
+    for value in tokens:
+        bucket = _bucket_for_tokens(value)
+        label = str(bucket) if bucket is not None else "eager_overflow"
+        bucket_histogram[label] = bucket_histogram.get(label, 0) + 1
+    return {
+        "items": len(tokens),
+        "total_real_vision_tokens": sum(tokens),
+        "tokens_per_crop": {
+            "min": min(tokens),
+            "p50": _percentile(tokens, 0.50),
+            "p95": _percentile(tokens, 0.95),
+            "max": max(tokens),
+        },
+        "bucket_histogram": bucket_histogram,
+        "eager_overflow_crops": bucket_histogram.get("eager_overflow", 0),
+    }
+
+
+def _variant_items(
+    default_items: list[dict[str, Any]],
+    *,
+    min_pixels: int,
+) -> list[dict[str, Any]]:
+    if min_pixels <= 0:
+        raise ValueError("min_pixels variants must be positive")
+    variants: list[dict[str, Any]] = []
+    for item in default_items:
+        width, height = (int(value) for value in item["crop_size"])
+        max_pixels = int(item["max_pixels"])
+        if min_pixels > max_pixels:
+            raise ValueError(
+                f"min_pixels variant {min_pixels} exceeds max_pixels {max_pixels}"
+            )
+        grid = image_grid_thw_from_size(
+            width,
+            height,
+            patch_size=PATCH_SIZE,
+            merge_size=MERGE_SIZE,
+            temporal_patch_size=TEMPORAL_PATCH_SIZE,
+            min_pixels=min_pixels,
+            max_pixels=max_pixels,
+        )
+        real_tokens = math.prod(grid)
+        variant = dict(item)
+        variant.update(
+            {
+                "grid_thw": list(grid),
+                "real_vision_tokens": real_tokens,
+                "projected_image_tokens": real_tokens // (MERGE_SIZE * MERGE_SIZE),
+                "min_pixels": min_pixels,
+                "source_default_real_vision_tokens": int(item["real_vision_tokens"]),
+            }
+        )
+        variants.append(variant)
+    return variants
+
+
+def build_trace_corpus(
+    path: Path,
+    *,
+    min_pixels_variants: Sequence[int] = (),
+) -> dict[str, Any]:
     path = path.expanduser().resolve()
     records = _read_jsonl(path)
     items: list[dict[str, Any]] = []
@@ -127,6 +224,15 @@ def build_trace_corpus(path: Path) -> dict[str, Any]:
             f"corpus self-check failed for {len(mismatches)}/{len(records)} crops; "
             f"first mismatches:\n{preview}"
         )
+    variant_payload: dict[str, Any] = {}
+    for value in dict.fromkeys(int(item) for item in min_pixels_variants):
+        variant_items = _variant_items(items, min_pixels=value)
+        variant_payload[f"min_pixels_{value}"] = {
+            "min_pixels": value,
+            "max_pixels_policy": "preserve each source crop max_pixels",
+            "items": variant_items,
+            "distribution": _distribution(variant_items),
+        }
     return {
         "schema_version": 1,
         "kind": "recognition_trace",
@@ -147,6 +253,8 @@ def build_trace_corpus(path: Path) -> dict[str, Any]:
             "mismatches": 0,
             "identity": "patch_count == projected_image_tokens * merge_size^2",
         },
+        "default_distribution": _distribution(items),
+        "variants": variant_payload,
         "items": items,
     }
 
@@ -229,7 +337,10 @@ def build_synthetic_corpus(lengths: list[int], count_per_length: int) -> dict[st
 def main(argv: Sequence[str] | None = None) -> None:
     args = parse_args(argv)
     if args.trace is not None:
-        corpus = build_trace_corpus(args.trace)
+        corpus = build_trace_corpus(
+            args.trace,
+            min_pixels_variants=args.min_pixels_variant,
+        )
         default_name = f"corpus_{args.trace.stem}.json"
     else:
         lengths = [int(piece) for piece in args.lengths.split(",") if piece.strip()]
@@ -252,6 +363,10 @@ def main(argv: Sequence[str] | None = None) -> None:
                 "items": len(corpus["items"]),
                 "real_vision_tokens": total_tokens,
                 "self_check": corpus["self_check"],
+                "variants": {
+                    name: payload["distribution"]
+                    for name, payload in corpus.get("variants", {}).items()
+                },
             },
             indent=2,
         )
