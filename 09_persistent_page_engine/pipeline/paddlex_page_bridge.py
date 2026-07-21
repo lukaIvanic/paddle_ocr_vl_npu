@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable
 
 import numpy as np
+import torch
 from PIL import Image
 
 from paddleocr_vl.serving.engine import ContinuousRecognizer
@@ -560,6 +561,9 @@ class PaddleXPageBridge:
         producer_stop = threading.Event()
         producer_errors: list[BaseException] = []
         producer_thread: threading.Thread | None = None
+        layout_stream: Any | None = None
+        if self.streaming_pages and self.recognizer.device.type == "npu":
+            layout_stream = torch.npu.Stream()
 
         def capture_layout_results(
             images: list[Any],
@@ -747,14 +751,30 @@ class PaddleXPageBridge:
                     self._trace_context.page_hint = ordinal
                     started_ns = time.perf_counter_ns()
                     try:
-                        templates = list(
-                            self.pipeline.predict(
-                                [path],
-                                use_queues=False,
-                                min_pixels=self.min_pixels,
-                                max_new_tokens=self.recognizer.max_new_tokens,
+                        if layout_stream is None:
+                            templates = list(
+                                self.pipeline.predict(
+                                    [path],
+                                    use_queues=False,
+                                    min_pixels=self.min_pixels,
+                                    max_new_tokens=self.recognizer.max_new_tokens,
+                                )
                             )
-                        )
+                        else:
+                            with torch.npu.stream(layout_stream):
+                                try:
+                                    templates = list(
+                                        self.pipeline.predict(
+                                            [path],
+                                            use_queues=False,
+                                            min_pixels=self.min_pixels,
+                                            max_new_tokens=(
+                                                self.recognizer.max_new_tokens
+                                            ),
+                                        )
+                                    )
+                                finally:
+                                    layout_stream.synchronize()
                     finally:
                         if self.timeline is not None:
                             self.timeline.record_span(

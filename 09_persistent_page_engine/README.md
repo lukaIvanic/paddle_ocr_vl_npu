@@ -175,6 +175,14 @@ the next one; layout work itself is never parallelized. Pass
 comparisons. The timeline shows producer work on the
 `paddlex-page-producer` thread and queue residence on the `page-queue` lane.
 
+On NPU, that producer owns one dedicated layout stream and fences it before a
+prepared page enters the handoff queue. Recognition input timing fences only
+the recognizer's current stream, and each prefill timeline resolves by waiting
+on its last recorded end event. These scoped waits preserve each stage's data
+dependencies without making recognition wait for independent layout kernels;
+the continuous-decode scheduler retains its single device-wide synchronization
+as the final run-boundary fence.
+
 ## Blue Zone run
 
 The smallest complete model path is the one-crop example. It does not construct

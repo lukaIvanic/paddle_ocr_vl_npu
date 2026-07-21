@@ -18,13 +18,22 @@ def synchronize(device: torch.device) -> None:
         torch_npu.npu.synchronize(device)
 
 
+def stream_synchronize(device: torch.device) -> None:
+    if device.type == "cuda":
+        torch.cuda.current_stream(device).synchronize()
+    elif device.type == "npu":
+        import torch_npu  # noqa: F401
+
+        torch.npu.current_stream(device).synchronize()
+
+
 def timed_wall(device: torch.device | None, fn: Callable[[], Any]) -> tuple[Any, float]:
     if device is not None:
-        synchronize(device)
+        stream_synchronize(device)
     started = time.perf_counter()
     result = fn()
     if device is not None:
-        synchronize(device)
+        stream_synchronize(device)
     return result, time.perf_counter() - started
 
 
@@ -85,7 +94,18 @@ class DeviceTimeline:
         synchronization is introduced beyond the one resolve() already used.
         """
 
-        synchronize(self.device)
+        latest_end_event = next(
+            (
+                end
+                for _start, end, _enqueued_ns in reversed(self._events.values())
+                if end is not None
+            ),
+            None,
+        )
+        if latest_end_event is None:
+            synchronize(self.device)
+        else:
+            latest_end_event.synchronize()
         resolved: dict[str, dict[str, float | int | str]] = {}
         for name, (start, end, enqueued_ns) in self._events.items():
             if end is None:
