@@ -387,6 +387,7 @@ def main() -> None:
         with timeline.span(
             "Pipeline",
             "Full PaddleOCR-VL page run",
+            event_type="scope",
             args={"pages": len(image_paths), "decode_batch_size": args.batch_size},
         ):
             result_count, completion_s, pipeline_e2e_s, page_run = run_predictions(

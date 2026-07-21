@@ -633,7 +633,7 @@ class PaddleXPageBridge:
                             "Drain PaddleX page source",
                             started_ns,
                             time.perf_counter_ns(),
-                            event_type="wait",
+                            event_type="scope",
                         )
                     break
                 if self.timeline is not None:
@@ -644,7 +644,7 @@ class PaddleXPageBridge:
                         started_ns,
                         time.perf_counter_ns(),
                         flow_id=f"page:{page_ordinal}",
-                        event_type="wait",
+                        event_type="scope",
                     )
                 if not pending:
                     raise RuntimeError("PaddleX emitted a page without captured state")

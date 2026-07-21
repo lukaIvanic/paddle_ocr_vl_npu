@@ -106,6 +106,7 @@ class _DeviceSpanRecord:
     duration_s: float | None
     row: str
     name: str
+    lane: str
     flow_id: str | None
     flow_ids: tuple[str, ...]
     event_type: str
@@ -192,6 +193,7 @@ class DecodeArena:
         *,
         row: str,
         name: str,
+        lane: str = "decode",
         flow_id: str | None = None,
         flow_ids: tuple[str, ...] = (),
         event_type: str = "work",
@@ -216,6 +218,7 @@ class DecodeArena:
                 duration_s=duration_s,
                 row=row,
                 name=name,
+                lane=lane,
                 flow_id=flow_id,
                 flow_ids=tuple(flow_ids),
                 event_type=event_type,
@@ -274,6 +277,8 @@ class DecodeArena:
                     flow_ids=list(record.flow_ids),
                     event_type=record.event_type,
                     clock=clock,
+                    track="device",
+                    lane=record.lane,
                     args=record.args,
                 )
         return (
@@ -593,6 +598,8 @@ class ContinuousDecodeScheduler:
                         completion.admitted_at,
                         completion.completed_at,
                         flow_id=completion.ready.request_id,
+                        track="slot",
+                        lane=completion.slot_index,
                         args={
                             "slot": completion.slot_index,
                             "epoch": completion.slot_epoch,
@@ -605,6 +612,8 @@ class ContinuousDecodeScheduler:
                     "Decode request completed",
                     timestamp_ns=int(completion.completed_at * 1_000_000_000),
                     flow_id=completion.ready.request_id,
+                    track="slot",
+                    lane=completion.slot_index,
                     args={
                         "slot": completion.slot_index,
                         "generated_tokens": len(completion.token_ids),
@@ -643,7 +652,7 @@ class ContinuousDecodeScheduler:
                             "Drain ready-request source",
                             started,
                             finished,
-                            event_type="wait",
+                            event_type="scope",
                         )
                     break
                 finished = time.perf_counter()
@@ -655,7 +664,7 @@ class ContinuousDecodeScheduler:
                         started,
                         finished,
                         flow_id=ready.request_id,
-                        event_type="wait",
+                        event_type="scope",
                     )
                 if ready.request_id in submitted_ids:
                     raise ValueError(f"duplicate decode request id: {ready.request_id}")
@@ -670,6 +679,7 @@ class ContinuousDecodeScheduler:
                         "Decode ready wait",
                         "Ready queue depth",
                         len(ready_queue),
+                        lane="ready-queue",
                         args={"request_id": ready.request_id},
                     )
             if pulled:
@@ -695,6 +705,8 @@ class ContinuousDecodeScheduler:
                             admitted_ns,
                             flow_id=ready.request_id,
                             event_type="wait",
+                            track="queue",
+                            lane="ready-queue",
                             args={
                                 "slot": slot_index,
                                 "ready_queue_after_pop": len(ready_queue),
@@ -835,6 +847,7 @@ class ContinuousDecodeScheduler:
                 "Continuous decode scheduler",
                 scheduler_started,
                 scheduler_started + scheduler_wall_s,
+                event_type="scope",
                 args={"batch_size": self.batch_size},
             )
         decode_host_exclusive_wall_s = max(

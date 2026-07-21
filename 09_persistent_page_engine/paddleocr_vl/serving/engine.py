@@ -428,6 +428,8 @@ class ContinuousRecognizer:
                         "CPU / queue wait",
                         "Crop submitted to CPU worker",
                         flow_id=request.request_id,
+                        track="queue",
+                        lane="cpu-prep",
                         args={"pending_before_submit": len(pending)},
                     )
                 pending.append(
@@ -559,6 +561,8 @@ class ContinuousRecognizer:
                 preparation_started,
                 flow_id=request.request_id,
                 event_type="wait",
+                track="queue",
+                lane="cpu-prep",
             )
         timing: dict[str, float] = {}
         crop_size = tuple(int(value) for value in request.crop.size)
@@ -669,6 +673,8 @@ class ContinuousRecognizer:
                 ready_consumed_at,
                 flow_id=prepared.request_id,
                 event_type="wait",
+                track="queue",
+                lane="prefill-ready",
             )
         input_ids = prepared.input_ids
         attention_mask = prepared.attention_mask
@@ -833,6 +839,8 @@ class ContinuousRecognizer:
                     int(span["end_ns"]),
                     flow_id=prepared.request_id,
                     clock=str(span["clock"]),
+                    track="device",
+                    lane="prefill",
                     args={
                         "stage": stage,
                         "input_tokens": int(input_ids.shape[1]),
@@ -850,6 +858,18 @@ class ContinuousRecognizer:
                     },
                 )
         timing["vision_and_text_prefill_wall"] = time.perf_counter() - prefill_started
+        if self.timeline is not None:
+            # Host-side envelope of the device prefill: enqueue of every stage
+            # plus the pipeline's existing event-resolution synchronize. This is
+            # what the main thread is occupied with while the NPU runs prefill.
+            self.timeline.record_span_seconds(
+                "Vision prefill",
+                "Enqueue prefill and resolve device events",
+                prefill_started,
+                prefill_started + timing["vision_and_text_prefill_wall"],
+                flow_id=prepared.request_id,
+                args={"input_tokens": int(input_ids.shape[1])},
+            )
 
         started = time.perf_counter()
         first_token = int(next_token.detach().cpu().item())
