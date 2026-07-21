@@ -1,0 +1,30 @@
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/vision_prefill.py:1067: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  warm_sin = torch.zeros_like(warm_cos)
+output=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_lab/phase0_speed_padding_ddc169d.json
+status=complete_speed_only new_graphs_compiled=0
+like_for_like default: skipped_speed_only
+like_for_like min_pixels_28224: skipped_speed_only
+corpus | strategy_length | new_graphs | vision_s | ratio | verdict | peak_mem
+default | single_current@ladder | 0 | 10.508171070480346 | 0.9820720626617147 | calibrated_baseline | None
+default | packed_first_fit_decreasing@1920 | 0 | 7.098911305610807 | 0.663449654729982 | skipped_speed_only | 114696704
+min_pixels_28224 | packed_first_fit_decreasing@1024 | 0 | 4.395593175888061 | 0.4108031005502861 | skipped_speed_only | 34079744
+min_pixels_28224 | packed_first_fit_decreasing@1536 | 0 | 3.9420030822753906 | 0.3684115030163917 | skipped_speed_only | 34079744
+min_pixels_28224 | packed_first_fit_decreasing@1920 | 0 | 3.224340365409851 | 0.30134022106634123 | skipped_speed_only | 34079744
+phase1_candidates=[
+  {
+    "target": 3072,
+    "policy": "first_fit_decreasing",
+    "estimated_vision_s": 4.5599875771976555,
+    "incremental_gain_fraction_vs_previous_point": 0.07060747569853404,
+    "passes_5_percent_compile_gate": true,
+    "new_graphs": 1
+  },
+  {
+    "target": 2560,
+    "policy": "first_fit_decreasing",
+    "estimated_vision_s": 4.906417318801822,
+    "incremental_gain_fraction_vs_previous_point": 0.30884932807599547,
+    "passes_5_percent_compile_gate": true,
+    "new_graphs": 1
+  }
+]
