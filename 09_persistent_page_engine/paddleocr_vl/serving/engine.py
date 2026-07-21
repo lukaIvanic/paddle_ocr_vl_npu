@@ -81,8 +81,8 @@ class _InFlightPrefill:
     next_cache_position: torch.Tensor
     next_token: torch.Tensor
     device_inputs: tuple[torch.Tensor, ...]
-    h2d_ready_event: Any | None
-    prefill_ready_event: Any | None
+    h2d_ready_event: Any
+    prefill_ready_event: Any
     vision: dict[str, Any]
     text_prefill: dict[str, Any]
     timing_s: dict[str, float]
@@ -293,15 +293,12 @@ class ContinuousRecognizer:
         self.text_prefill = self.stages.text_prefill
         self.text_decode = self.stages.text_decode
         self.decode_fn = self.text_decode.fn
-        self.prefill_transfer_stream = None
-        self.prefill_host_token = None
-        if self.device.type == "npu":
-            self.prefill_transfer_stream = torch_npu.npu.Stream(device=self.device)
-            self.prefill_host_token = torch.empty(
-                (1,),
-                dtype=torch.int64,
-                pin_memory=True,
-            )
+        self.prefill_transfer_stream = torch_npu.npu.Stream(device=self.device)
+        self.prefill_host_token = torch.empty(
+            (1,),
+            dtype=torch.int64,
+            pin_memory=True,
+        )
 
         started = time.perf_counter()
         self.decode_arena = DecodeArena(
@@ -776,8 +773,6 @@ class ContinuousRecognizer:
 
         device_timeline = DeviceTimeline(self.device)
         enqueue_started = time.perf_counter()
-        h2d_ready_event = None
-
         def move_inputs(*, non_blocking: bool) -> tuple[torch.Tensor, ...]:
             return (
                 input_ids.to(self.device, non_blocking=non_blocking),
@@ -791,23 +786,18 @@ class ContinuousRecognizer:
                 rope_deltas_cpu.to(self.device, non_blocking=non_blocking),
             )
 
-        if self.prefill_transfer_stream is not None:
-            import torch_npu
+        import torch_npu
 
-            with torch_npu.npu.stream(self.prefill_transfer_stream):
-                moved = device_timeline.measure(
-                    "recognition_inputs_h2d",
-                    lambda: move_inputs(non_blocking=True),
-                )
-                h2d_ready_event = self.prefill_transfer_stream.record_event()
-            # This wait is enqueued, not host-blocking: the crop's first
-            # compute kernel cannot observe partially copied inputs.
-            compute_stream = torch_npu.npu.current_stream()
-            compute_stream.wait_event(h2d_ready_event)
-        else:
-            transfer_started = time.perf_counter()
-            moved = move_inputs(non_blocking=False)
-            timing["recognizer_h2d"] = time.perf_counter() - transfer_started
+        with torch_npu.npu.stream(self.prefill_transfer_stream):
+            moved = device_timeline.measure(
+                "recognition_inputs_h2d",
+                lambda: move_inputs(non_blocking=True),
+            )
+            h2d_ready_event = self.prefill_transfer_stream.record_event()
+        # This wait is enqueued, not host-blocking: the crop's first
+        # compute kernel cannot observe partially copied inputs.
+        compute_stream = torch_npu.npu.current_stream()
+        compute_stream.wait_event(h2d_ready_event)
         (
             input_ids_device,
             attention_mask_device,
@@ -915,11 +905,7 @@ class ContinuousRecognizer:
                 keepdim=True,
             ),
         )
-        prefill_ready_event = None
-        if self.prefill_transfer_stream is not None:
-            import torch_npu
-
-            prefill_ready_event = torch_npu.npu.current_stream().record_event()
+        prefill_ready_event = torch_npu.npu.current_stream().record_event()
         enqueue_finished = time.perf_counter()
         if self.timeline is not None:
             self.timeline.record_span_seconds(
@@ -972,24 +958,17 @@ class ContinuousRecognizer:
             timing["recognizer_h2d"] = device_stage_s["recognition_inputs_h2d"]
 
         started = time.perf_counter()
-        if self.prefill_transfer_stream is not None:
-            import torch_npu
+        import torch_npu
 
-            assert inflight.prefill_ready_event is not None
-            assert self.prefill_host_token is not None
-            with torch_npu.npu.stream(self.prefill_transfer_stream):
-                self.prefill_transfer_stream.wait_event(
-                    inflight.prefill_ready_event
-                )
-                self.prefill_host_token.copy_(
-                    inflight.next_token.detach().reshape(-1),
-                    non_blocking=True,
-                )
-                first_token_ready = self.prefill_transfer_stream.record_event()
-            first_token_ready.synchronize()
-            first_token = int(self.prefill_host_token.item())
-        else:
-            first_token = int(inflight.next_token.detach().cpu().item())
+        with torch_npu.npu.stream(self.prefill_transfer_stream):
+            self.prefill_transfer_stream.wait_event(inflight.prefill_ready_event)
+            self.prefill_host_token.copy_(
+                inflight.next_token.detach().reshape(-1),
+                non_blocking=True,
+            )
+            first_token_ready = self.prefill_transfer_stream.record_event()
+        first_token_ready.synchronize()
+        first_token = int(self.prefill_host_token.item())
         timing["first_token_d2h"] = time.perf_counter() - started
         resolve_finished = time.perf_counter()
 

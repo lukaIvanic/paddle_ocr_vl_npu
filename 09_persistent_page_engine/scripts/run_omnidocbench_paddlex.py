@@ -138,15 +138,6 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "HTML timeline (enabled by default)."
         ),
     )
-    parser.add_argument(
-        "--streaming-pages",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-        help=(
-            "Prepare one PaddleX page at a time on a background producer and "
-            "hand it to recognition immediately (enabled by default)."
-        ),
-    )
     return parser.parse_args(argv)
 
 
@@ -376,7 +367,6 @@ def main() -> None:
         recognizer,
         trace_path=output_dir / "recognition_trace.jsonl",
         min_pixels=args.preprocessor_min_pixels,
-        streaming_pages=args.streaming_pages,
         timeline=timeline,
     )
     setup_s = time.perf_counter() - setup_started
@@ -389,7 +379,6 @@ def main() -> None:
             "pipeline": "official_paddlex_v1.6_with_cross_page_recognition_bridge",
             "pages": len(image_paths),
             "decode_batch_size": args.batch_size,
-            "streaming_pages": bool(args.streaming_pages),
             "vision_backend": args.vision_backend,
             "vision_attention": args.vision_attention,
         }
@@ -430,7 +419,6 @@ def main() -> None:
             "batch_size": args.batch_size,
             "cache_length": args.cache_length,
             "max_new_tokens": args.max_new_tokens,
-            "streaming_pages": bool(args.streaming_pages),
             "preprocessor_min_pixels": args.preprocessor_min_pixels,
             "effective_global_min_pixels": (
                 args.preprocessor_min_pixels

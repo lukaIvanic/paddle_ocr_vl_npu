@@ -182,14 +182,16 @@ changes production order only: prefill and decode kernels remain serialized on
 the compute stream.
 
 The faithful PaddleX runner prepares pages sequentially on one background
-producer by default. Each page goes through the unchanged PaddleX
+producer. Each page goes through the unchanged PaddleX
 `predict([page], use_queues=False)` path and enters a one-page bounded queue as
 soon as its layout detection, cropping, and prompt preparation finish. The
 recognizer can therefore start consuming that page while the producer prepares
-the next one; layout work itself is never parallelized. Pass
-`--no-streaming-pages` to restore the previous all-pages
-`predict(all_pages, use_queues=False)` baseline for parity and performance
-comparisons. The timeline shows producer work on the
+the next one; layout work itself is never parallelized. Superseded all-pages
+reference results remain archived under
+`tmp/09_persistent_page_engine/prefill_pipeline_streaming_6b1642f/`,
+`tmp/09_persistent_page_engine/prefill_pipeline_baseline_6b1642f/`, and the
+`sync_scope_*_36f77fa/` run directories for future parity comparisons. The
+timeline shows producer work on the
 `paddlex-page-producer` thread and queue residence on the `page-queue` lane.
 
 On NPU, that producer owns one dedicated layout stream and fences it before a
