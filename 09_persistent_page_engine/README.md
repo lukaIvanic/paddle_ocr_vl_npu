@@ -145,11 +145,18 @@ bounds, device timing, idle/look-ahead slots, and copied KV-prefix bytes. E2E
 output tok/s includes each request's first token and EOS and divides by run wall.
 
 The faithful PaddleX runner also writes `timeline_trace.json` and a
-self-contained `timeline.html`. The timeline places page input, layout,
-crop/page preparation, background CPU preprocessing, MRoPE, transfers,
-vision/text prefill, decode admission/iterations/waits, result assembly, and
-artifact writes on one shared time axis. Clicking an event highlights the same
-page or crop across rows; wait spans are drawn distinctly from work.
+self-contained `timeline.html` (template: `utils/timeline_viewer.html`). Every
+event declares the resource it describes — host thread, device stream, queue,
+or decode slot — and the viewer lays them out accordingly: host threads become
+containment-nested flame charts (generator-driving `next()` frames are scopes,
+not waits, so nested prefill work is never double-counted as idle), NPU prefill
+and decode get their own reconstructed-clock lanes, decode slots draw as
+per-slot occupancy rows, and queue waits aggregate into depth charts instead of
+overpainting one row. Group headers report busy/occupancy percentages for the
+current viewport; clicking a span follows one crop or page end-to-end and opens
+a stage-by-stage breakdown. The viewer template renders standalone too: opening
+it without an embedded trace offers drag-and-drop for any
+`timeline_trace.json`.
 
 Timeline recording adds host timestamping but no accelerator synchronization.
 Prefill device spans reuse the existing per-request `DeviceTimeline.resolve()`
