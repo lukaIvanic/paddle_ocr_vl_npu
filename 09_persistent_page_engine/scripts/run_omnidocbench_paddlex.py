@@ -39,6 +39,7 @@ from pipeline.omnidocbench_defaults import (
     OMNIDOCBENCH_PAGE_COUNT,
 )
 from pipeline.paddlex_page_bridge import PaddleXPageBridge
+from utils.timeline import TimelineRecorder
 
 
 DEFAULT_DATASET_JSON = Path("/workspace/datasets/OmniDocBench/OmniDocBench.json")
@@ -128,6 +129,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default=DEFAULT_TEXT_CACHE_ROOT,
     )
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument(
+        "--timeline",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Record a synchronization-neutral execution trace and self-contained "
+            "HTML timeline (enabled by default)."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -328,6 +338,7 @@ def main() -> None:
     # The bridge calls the concrete pipeline's page helpers directly. Attribute
     # access on the auto-parallel wrapper only forwards reads.
     paddlex_pipeline = auto_parallel_pipeline._pipeline
+    timeline = TimelineRecorder(enabled=args.timeline)
 
     recognizer = ContinuousRecognizer(
         model=str(recognizer_model),
@@ -349,26 +360,47 @@ def main() -> None:
         text_torchair_cache_dir=args.text_torchair_cache_dir.expanduser().resolve(),
         text_padding=args.text_padding,
         preprocessor_min_pixels=args.preprocessor_min_pixels,
+        timeline=timeline,
     )
     bridge = PaddleXPageBridge(
         paddlex_pipeline,
         recognizer,
         trace_path=output_dir / "recognition_trace.jsonl",
         min_pixels=args.preprocessor_min_pixels,
+        timeline=timeline,
     )
     setup_s = time.perf_counter() - setup_started
 
     compact_path = output_dir / "page_regions.jsonl"
+    timeline_json_path = output_dir / "timeline_trace.json"
+    timeline_html_path = output_dir / "timeline.html"
+    timeline.reset(
+        {
+            "pipeline": "official_paddlex_v1.6_with_cross_page_recognition_bridge",
+            "pages": len(image_paths),
+            "decode_batch_size": args.batch_size,
+            "vision_backend": args.vision_backend,
+            "vision_attention": args.vision_attention,
+        }
+    )
     try:
-        result_count, completion_s, pipeline_e2e_s, page_run = run_predictions(
-            official_pipeline,
-            bridge,
-            image_paths,
-            predictions_dir=predictions_dir,
-            compact_path=compact_path,
-        )
+        with timeline.span(
+            "Pipeline",
+            "Full PaddleOCR-VL page run",
+            args={"pages": len(image_paths), "decode_batch_size": args.batch_size},
+        ):
+            result_count, completion_s, pipeline_e2e_s, page_run = run_predictions(
+                official_pipeline,
+                bridge,
+                image_paths,
+                predictions_dir=predictions_dir,
+                compact_path=compact_path,
+            )
     finally:
         layout_mask_guard.write_snapshot(layout_mask_guard_path)
+        if args.timeline:
+            timeline.write_json(timeline_json_path)
+            timeline.write_html(timeline_html_path)
 
     prediction_files = validate_predictions(predictions_dir, image_paths)
     if result_count != len(image_paths):
@@ -413,6 +445,13 @@ def main() -> None:
         "layout_mask_guard_path": str(layout_mask_guard_path),
         "predictions_dir": str(predictions_dir),
         "page_regions_jsonl": str(compact_path),
+        "timeline": {
+            "enabled": bool(args.timeline),
+            "event_count": len(timeline.events()) if args.timeline else 0,
+            "trace_json": str(timeline_json_path) if args.timeline else None,
+            "html": str(timeline_html_path) if args.timeline else None,
+            "additional_device_synchronization": False,
+        },
     }
     summary_path = output_dir / "run_summary.json"
     summary_path.write_text(

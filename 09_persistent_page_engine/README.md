@@ -144,6 +144,19 @@ run-scoped scheduler wall, lazy ready-source wall, refill count, reservoir
 bounds, device timing, idle/look-ahead slots, and copied KV-prefix bytes. E2E
 output tok/s includes each request's first token and EOS and divides by run wall.
 
+The faithful PaddleX runner also writes `timeline_trace.json` and a
+self-contained `timeline.html`. The timeline places page input, layout,
+crop/page preparation, background CPU preprocessing, MRoPE, transfers,
+vision/text prefill, decode admission/iterations/waits, result assembly, and
+artifact writes on one shared time axis. Clicking an event highlights the same
+page or crop across rows; wait spans are drawn distinctly from work.
+
+Timeline recording adds host timestamping but no accelerator synchronization.
+Prefill device spans reuse the existing per-request `DeviceTimeline.resolve()`
+boundary, and decode device spans reuse the scheduler's existing final resolve.
+Pass `--no-timeline` only when measuring the small host-side timestamping and
+in-memory event-recording overhead itself.
+
 ## Blue Zone run
 
 The smallest complete model path is the one-crop example. It does not construct

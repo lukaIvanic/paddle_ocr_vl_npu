@@ -45,6 +45,7 @@ from .runtime_defaults import (
 from ..model.text_prefill import parse_text_buckets
 from .types import ContinuousDecodeResult, RecognitionRequest, RecognitionResult
 from utils.timing import DeviceTimeline, synchronize, timed_wall
+from utils.timeline import TimelineRecorder
 from utils.metrics import per_second
 from ..model.vision_prefill import (
     VISION_ATTENTION_CHOICES,
@@ -149,6 +150,7 @@ class ContinuousRecognizer:
         text_torchair_cache_dir: Path | None = None,
         text_padding: str = "auto",
         preprocessor_min_pixels: int | None = None,
+        timeline: TimelineRecorder | None = None,
     ):
         # TorchAir guards tensor dispatch-key sets. Build and warm every graph
         # under the same inference-mode contract used by run(),
@@ -169,6 +171,7 @@ class ContinuousRecognizer:
             raise ValueError(f"unsupported dtype: {dtype}")
         torch.npu.set_compile_mode(jit_compile=False)
         self.decode_backend = decode_backend
+        self.timeline = timeline
         self.batch_size = int(batch_size)
         self.cache_length = int(cache_length)
         self.max_new_tokens = int(max_new_tokens)
@@ -267,11 +270,13 @@ class ContinuousRecognizer:
             device=self.device,
             batch_size=self.batch_size,
             eos_token_id=int(self.model.config.eos_token_id),
+            timeline=self.timeline,
         )
         self.decode_scheduler = ContinuousDecodeScheduler(
             arena=self.decode_arena,
             decode_fn=self.decode_fn,
             max_new_tokens=self.max_new_tokens,
+            timeline=self.timeline,
         )
         # Keep one complete decode cohort in CPU preparation without coupling
         # correctness to the relative speed of CPU and NPU stages. B=1 still
@@ -418,6 +423,13 @@ class ContinuousRecognizer:
                     source_exhausted = True
                     break
                 submitted_at = time.perf_counter()
+                if self.timeline is not None:
+                    self.timeline.instant(
+                        "CPU / queue wait",
+                        "Crop submitted to CPU worker",
+                        flow_id=request.request_id,
+                        args={"pending_before_submit": len(pending)},
+                    )
                 pending.append(
                     executor.submit(
                         self._prepare_cpu,
@@ -432,7 +444,18 @@ class ContinuousRecognizer:
                 future = pending.popleft()
                 wait_started = time.perf_counter()
                 prepared = future.result()
-                consumer_wait_s = time.perf_counter() - wait_started
+                wait_finished = time.perf_counter()
+                consumer_wait_s = wait_finished - wait_started
+                if self.timeline is not None:
+                    self.timeline.record_span_seconds(
+                        "CPU / queue wait",
+                        "Consumer waiting for prepared crop",
+                        wait_started,
+                        wait_finished,
+                        flow_id=prepared.request_id,
+                        event_type="wait",
+                        args={"pending_after_pop": len(pending)},
+                    )
                 # Refill before yielding so the worker remains productive while
                 # the consumer performs H2D and NPU prefill for this request.
                 fill_cpu_pipeline()
@@ -454,6 +477,25 @@ class ContinuousRecognizer:
             skip_special_tokens=state.skip_special_tokens,
         )
         detokenize_s = time.perf_counter() - started
+        if self.timeline is not None:
+            self.timeline.record_span_seconds(
+                "Result assembly",
+                "Detokenize crop result",
+                started,
+                started + detokenize_s,
+                flow_id=state.request_id,
+                args={"generated_tokens": len(token_ids)},
+            )
+            self.timeline.instant(
+                "Result assembly",
+                "Crop recognition completed",
+                flow_id=state.request_id,
+                args={
+                    "stop_reason": completion.stop_reason,
+                    "decode_slot": completion.slot_index,
+                    "generated_tokens": len(token_ids),
+                },
+            )
         generated_tokens = len(token_ids)
         effective_decode_tokens = max(0, generated_tokens - 1)
         timing = dict(state.timing_s)
@@ -509,6 +551,15 @@ class ContinuousRecognizer:
         submitted_at: float,
     ) -> CpuPreparedRecognition:
         preparation_started = time.perf_counter()
+        if self.timeline is not None:
+            self.timeline.record_span_seconds(
+                "CPU / queue wait",
+                "Queued for CPU preprocessing",
+                submitted_at,
+                preparation_started,
+                flow_id=request.request_id,
+                event_type="wait",
+            )
         timing: dict[str, float] = {}
         crop_size = tuple(int(value) for value in request.crop.size)
         preprocessor_config = self.preprocessor_config
@@ -538,6 +589,15 @@ class ContinuousRecognizer:
             merge_size=int(preprocessor_config["merge_size"]),
         )
         timing["cpu_image_and_prompt_preprocess"] = time.perf_counter() - started
+        if self.timeline is not None:
+            self.timeline.record_span_seconds(
+                "CPU preprocessing",
+                "Image resize, patchify, and prompt construction",
+                started,
+                started + timing["cpu_image_and_prompt_preprocess"],
+                flow_id=request.request_id,
+                args={"crop_width": crop_size[0], "crop_height": crop_size[1]},
+            )
 
         min_cache_length = int(input_ids.shape[1]) + max(0, self.max_new_tokens - 1)
         if self.cache_length < min_cache_length:
@@ -553,6 +613,15 @@ class ContinuousRecognizer:
             attention_mask,
         )
         timing["cpu_mrope_index"] = time.perf_counter() - started
+        if self.timeline is not None:
+            self.timeline.record_span_seconds(
+                "CPU MRoPE",
+                "Build multimodal rotary positions",
+                started,
+                started + timing["cpu_mrope_index"],
+                flow_id=request.request_id,
+                args={"input_tokens": int(input_ids.shape[1])},
+            )
 
         preparation_finished = time.perf_counter()
         timing["cpu_preprocess_background_queue_wait"] = max(
@@ -587,10 +656,20 @@ class ContinuousRecognizer:
     ) -> PrefilledRecognition:
         timing = dict(prepared.timing_s)
         timing["cpu_preprocess_background_consumer_wait"] = float(consumer_wait_s)
+        ready_consumed_at = time.perf_counter()
         timing["cpu_preprocess_background_ready_wait"] = max(
             0.0,
-            time.perf_counter() - prepared.preparation_finished,
+            ready_consumed_at - prepared.preparation_finished,
         )
+        if self.timeline is not None:
+            self.timeline.record_span_seconds(
+                "CPU / queue wait",
+                "Prepared crop waiting for NPU prefill",
+                prepared.preparation_finished,
+                ready_consumed_at,
+                flow_id=prepared.request_id,
+                event_type="wait",
+            )
         input_ids = prepared.input_ids
         attention_mask = prepared.attention_mask
         pixel_values = prepared.pixel_values
@@ -598,6 +677,7 @@ class ContinuousRecognizer:
         position_ids_cpu = prepared.position_ids
         rope_deltas_cpu = prepared.rope_deltas
 
+        transfer_started = time.perf_counter()
         moved, transfer_s = timed_wall(
             self.device,
             lambda: (
@@ -608,13 +688,30 @@ class ContinuousRecognizer:
                 rope_deltas_cpu.to(self.device),
             ),
         )
-        input_ids_device, attention_mask_device, pixel_values_device, position_ids, rope_deltas = moved
+        transfer_finished = time.perf_counter()
+        (
+            input_ids_device,
+            attention_mask_device,
+            pixel_values_device,
+            position_ids,
+            rope_deltas,
+        ) = moved
         timing["recognizer_h2d"] = transfer_s
+        if self.timeline is not None:
+            self.timeline.record_span_seconds(
+                "H2D / D2H transfer",
+                "Recognition inputs H2D",
+                transfer_started,
+                transfer_finished,
+                flow_id=prepared.request_id,
+                event_type="io",
+                args={"input_tokens": int(input_ids.shape[1])},
+            )
 
-        timeline = DeviceTimeline(self.device)
+        device_timeline = DeviceTimeline(self.device)
         prefill_started = time.perf_counter()
         vision_model = self.model.visual.vision_model
-        vision_hidden = timeline.measure(
+        vision_hidden = device_timeline.measure(
             "vision_embeddings",
             lambda: vision_model.embeddings(
                 pixel_values_device.unsqueeze(0),
@@ -622,7 +719,7 @@ class ContinuousRecognizer:
             ),
         )
         vision_route = self.vision_prefill.route(int(vision_hidden.shape[0]))
-        prepared_vision = timeline.measure(
+        prepared_vision = device_timeline.measure(
             "vision_prefill_input_prep",
             lambda: self.vision_prefill.prepare(
                 vision_hidden,
@@ -630,15 +727,15 @@ class ContinuousRecognizer:
                 route=vision_route,
             ),
         )
-        image_features = timeline.measure(
+        image_features = device_timeline.measure(
             "vision_prefill",
             lambda: self.vision_prefill.run_prepared(prepared_vision),
         )
-        image_embeds = timeline.measure(
+        image_embeds = device_timeline.measure(
             "adaptive_mlp_projector",
             lambda: self.model.mlp_AR(image_features, image_grid_thw),
         )
-        inputs_embeds = timeline.measure(
+        inputs_embeds = device_timeline.measure(
             "text_token_embedding",
             lambda: self.model.model.embed_tokens(input_ids_device),
         )
@@ -661,8 +758,11 @@ class ContinuousRecognizer:
                 )
             return inputs_embeds.masked_scatter(image_mask, projected)
 
-        inputs_embeds = timeline.measure("image_embed_scatter", scatter_image_embeds)
-        cache = timeline.measure(
+        inputs_embeds = device_timeline.measure(
+            "image_embed_scatter",
+            scatter_image_embeds,
+        )
+        cache = device_timeline.measure(
             "static_cache_alloc",
             lambda: self.model.allocate_static_cache(
                 batch_size=1,
@@ -677,7 +777,7 @@ class ContinuousRecognizer:
             ),
         )
         text_route = self.text_prefill.route(int(inputs_embeds.shape[1]))
-        prepared_text = timeline.measure(
+        prepared_text = device_timeline.measure(
             "text_prefill_input_prep",
             lambda: self.text_prefill.prepare(
                 inputs_embeds,
@@ -686,15 +786,15 @@ class ContinuousRecognizer:
                 route=text_route,
             ),
         )
-        last_hidden_state = timeline.measure(
+        last_hidden_state = device_timeline.measure(
             "text_prefill",
             lambda: self.text_prefill.run_prepared(prepared_text, cache),
         )
-        logits = timeline.measure(
+        logits = device_timeline.measure(
             "prefill_lm_head",
             lambda: self.model.lm_head(last_hidden_state),
         )
-        next_token = timeline.measure(
+        next_token = device_timeline.measure(
             "prefill_argmax",
             lambda: torch.argmax(
                 logits[:, -1, :].float(),
@@ -702,12 +802,67 @@ class ContinuousRecognizer:
                 keepdim=True,
             ),
         )
-        device_stage_s = timeline.resolve()
+        device_spans = device_timeline.resolve_spans()
+        device_stage_s = {
+            name: float(span["seconds"])
+            for name, span in device_spans.items()
+        }
+        if self.timeline is not None:
+            vision_stages = {
+                "vision_embeddings": "Patch and position embeddings",
+                "vision_prefill_input_prep": "Vision bucket preparation",
+                "vision_prefill": "Vision transformer",
+                "adaptive_mlp_projector": "Adaptive MLP projector",
+            }
+            text_stages = {
+                "text_token_embedding": "Text token embeddings",
+                "image_embed_scatter": "Scatter projected image embeddings",
+                "static_cache_alloc": "Allocate request KV cache",
+                "text_prefill_input_prep": "Text bucket preparation",
+                "text_prefill": "Text transformer prefill",
+                "prefill_lm_head": "Prefill LM head",
+                "prefill_argmax": "First-token argmax",
+            }
+            for stage, label in (*vision_stages.items(), *text_stages.items()):
+                span = device_spans[stage]
+                route = vision_route if stage in vision_stages else text_route
+                self.timeline.record_span(
+                    "Vision prefill" if stage in vision_stages else "Text prefill",
+                    label,
+                    int(span["start_ns"]),
+                    int(span["end_ns"]),
+                    flow_id=prepared.request_id,
+                    clock=str(span["clock"]),
+                    args={
+                        "stage": stage,
+                        "input_tokens": int(input_ids.shape[1]),
+                        "projected_image_tokens": int(image_embeds.shape[0]),
+                        "execution": route.get("execution"),
+                        "bucket": route.get("bucket"),
+                        "real_tokens": route.get(
+                            "real_vision_tokens",
+                            route.get("real_text_tokens"),
+                        ),
+                        "physical_tokens": route.get(
+                            "physical_vision_tokens",
+                            route.get("physical_text_tokens"),
+                        ),
+                    },
+                )
         timing["vision_and_text_prefill_wall"] = time.perf_counter() - prefill_started
 
         started = time.perf_counter()
         first_token = int(next_token.detach().cpu().item())
         timing["first_token_d2h"] = time.perf_counter() - started
+        if self.timeline is not None:
+            self.timeline.record_span_seconds(
+                "H2D / D2H transfer",
+                "First token D2H",
+                started,
+                started + timing["first_token_d2h"],
+                flow_id=prepared.request_id,
+                event_type="io",
+            )
         prefill_finished = time.perf_counter()
         timing["time_to_first_token"] = (
             prefill_finished - prepared.request_started

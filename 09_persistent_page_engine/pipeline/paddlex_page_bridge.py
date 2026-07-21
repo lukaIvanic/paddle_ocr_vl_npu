@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import threading
 import time
+from collections.abc import Iterator
 from collections import Counter, defaultdict, deque
 from dataclasses import dataclass
 from pathlib import Path
@@ -18,6 +20,7 @@ from paddleocr_vl.serving.types import (
     RecognitionRequest,
     RecognitionResult,
 )
+from utils.timeline import TimelineRecorder
 
 
 PROMPT_LABELS = {
@@ -59,6 +62,68 @@ class PaddleXPageRunResult:
     completion_order: list[str]
 
 
+class _TracedCallableProxy:
+    """Trace an external PaddleX callable without changing its implementation."""
+
+    def __init__(
+        self,
+        target: Any,
+        timeline: TimelineRecorder,
+        *,
+        row: str,
+        name: str,
+        flow_id: Callable[[], str | None],
+        event_type: str = "work",
+    ) -> None:
+        self._target = target
+        self._timeline = timeline
+        self._row = row
+        self._name = name
+        self._flow_id = flow_id
+        self._event_type = event_type
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._target, name)
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        started_ns = time.perf_counter_ns()
+        result = self._target(*args, **kwargs)
+        flow_id = self._flow_id()
+        count = None
+        if args:
+            try:
+                count = len(args[0])
+            except TypeError:
+                pass
+        event_args = {"items": count} if count is not None else {}
+        if isinstance(result, Iterator):
+            def traced_iterator():
+                try:
+                    yield from result
+                finally:
+                    self._timeline.record_span(
+                        self._row,
+                        self._name,
+                        started_ns,
+                        time.perf_counter_ns(),
+                        flow_id=flow_id,
+                        event_type=self._event_type,
+                        args=event_args,
+                    )
+
+            return traced_iterator()
+        self._timeline.record_span(
+            self._row,
+            self._name,
+            started_ns,
+            time.perf_counter_ns(),
+            flow_id=flow_id,
+            event_type=self._event_type,
+            args=event_args,
+        )
+        return result
+
+
 class PaddleXPageBridge:
     """Reuse PaddleX page logic without its synchronous VLM batch drain."""
 
@@ -69,11 +134,15 @@ class PaddleXPageBridge:
         *,
         trace_path: Path,
         min_pixels: int | None,
+        timeline: TimelineRecorder | None = None,
     ) -> None:
         self.pipeline = pipeline
         self.recognizer = recognizer
         self.trace_path = trace_path.expanduser().resolve()
         self.min_pixels = min_pixels
+        self.timeline = timeline
+        self._trace_context = threading.local()
+        self._source_page_hint = 0
 
         from paddlex.inference.pipelines.paddleocr_vl.pipeline import IMAGE_LABELS
 
@@ -88,6 +157,153 @@ class PaddleXPageBridge:
         missing = [name for name in required if not hasattr(pipeline, name)]
         if missing:
             raise RuntimeError(f"installed PaddleX lacks required helpers: {missing}")
+
+    def _current_page_flow(self) -> str | None:
+        return getattr(
+            self._trace_context,
+            "flow_id",
+            None,
+        ) or f"page:{self._source_page_hint}"
+
+    def _install_timeline_wrappers(self) -> list[tuple[Any, str, Any]]:
+        if self.timeline is None:
+            return []
+        originals: list[tuple[Any, str, Any]] = []
+
+        def install_callable(
+            owner: Any,
+            attribute: str,
+            row: str,
+            name: str,
+            event_type: str = "work",
+        ) -> None:
+            target = getattr(owner, attribute, None)
+            if target is None:
+                return
+            originals.append((owner, attribute, target))
+            setattr(
+                owner,
+                attribute,
+                _TracedCallableProxy(
+                    target,
+                    self.timeline,
+                    row=row,
+                    name=name,
+                    flow_id=self._current_page_flow,
+                    event_type=event_type,
+                ),
+            )
+
+        install_callable(
+            self.pipeline,
+            "img_reader",
+            "Page input",
+            "Read and decode page images",
+            "io",
+        )
+        install_callable(
+            self.pipeline,
+            "doc_preprocessor_pipeline",
+            "Page input",
+            "Document preprocessing",
+        )
+
+        layout_model = getattr(self.pipeline, "layout_det_model", None)
+        layout_predictor = self._find_layout_predictor(layout_model)
+        if layout_predictor is not None:
+            for attribute, row, name in (
+                (
+                    "preprocess_images",
+                    "Layout detection",
+                    "Layout image preprocessing",
+                ),
+                ("forward", "Layout detection", "Layout transformer inference"),
+                (
+                    "postprocess",
+                    "Layout postprocess",
+                    "Layout detector postprocess",
+                ),
+                (
+                    "layout_postprocess",
+                    "Layout postprocess",
+                    "Layout filtering and reading order",
+                ),
+            ):
+                install_callable(layout_predictor, attribute, row, name)
+        install_callable(
+            self.pipeline,
+            "layout_det_model",
+            "Layout detection",
+            "PP-DocLayoutV3 detection",
+        )
+
+        method_rows = {
+            "_paddleocr_vl_filter_overlap_boxes": (
+                "Layout postprocess",
+                "Filter overlapping layout boxes",
+            ),
+            "_paddleocr_vl_crop_layout_regions": (
+                "Crop / page preparation",
+                "Crop detected layout regions",
+            ),
+            "_paddleocr_vl_merge_adjacent_blocks": (
+                "Layout postprocess",
+                "Merge adjacent layout blocks",
+            ),
+            "_paddleocr_vl_collect_block_vlm_inputs": (
+                "Crop / page preparation",
+                "Build recognition crop requests",
+            ),
+            "_paddleocr_vl_aggregate_vlm_batches": (
+                "Crop / page preparation",
+                "Aggregate PaddleX recognition batches",
+            ),
+            "_paddleocr_vl_assemble_parsing_results": (
+                "Result assembly",
+                "Assemble PaddleX parsing results",
+            ),
+        }
+        for attribute, (row, name) in method_rows.items():
+            install_callable(self.pipeline, attribute, row, name)
+        return originals
+
+    @staticmethod
+    def _find_layout_predictor(layout_model: Any) -> Any | None:
+        if layout_model is None:
+            return None
+        pending = [layout_model]
+        visited: set[int] = set()
+        for _depth in range(4):
+            next_pending: list[Any] = []
+            for candidate in pending:
+                if id(candidate) in visited:
+                    continue
+                visited.add(id(candidate))
+                if all(
+                    callable(getattr(candidate, name, None))
+                    for name in ("preprocess_images", "forward", "postprocess")
+                ):
+                    return candidate
+                for attribute in (
+                    "_predictor",
+                    "predictor",
+                    "_model",
+                    "model",
+                    "_pipeline",
+                    "pipeline",
+                ):
+                    child = getattr(candidate, attribute, None)
+                    if child is not None:
+                        next_pending.append(child)
+            pending = next_pending
+        return None
+
+    @staticmethod
+    def _restore_timeline_wrappers(
+        originals: list[tuple[Any, str, Any]],
+    ) -> None:
+        for owner, attribute, original in reversed(originals):
+            setattr(owner, attribute, original)
 
     def _capture_pages(
         self,
@@ -137,18 +353,41 @@ class PaddleXPageBridge:
         ]
         workers = min(int(self.pipeline.layout_prep_cpu_workers), len(payloads))
         if len(payloads) > 1 and workers > 1:
+            started_ns = time.perf_counter_ns()
             prepared = self.pipeline._paddleocr_vl_layout_prep_parallel_pages(
                 payloads, workers
             )
+            if self.timeline is not None:
+                page_flows = [
+                    f"page:{first_ordinal + offset}"
+                    for offset in range(len(payloads))
+                ]
+                self.timeline.record_span(
+                    "Crop / page preparation",
+                    "Parallel PaddleX layout-to-crop preparation",
+                    started_ns,
+                    time.perf_counter_ns(),
+                    flow_id=page_flows[0],
+                    flow_ids=page_flows,
+                    args={"pages": len(payloads), "workers": workers},
+                )
         else:
-            prepared = [
-                self.pipeline._paddleocr_vl_prepare_page_serial_benchmarked(payload)
-                for payload in payloads
-            ]
+            prepared = []
+            for offset, payload in enumerate(payloads):
+                self._trace_context.flow_id = f"page:{first_ordinal + offset}"
+                try:
+                    prepared.append(
+                        self.pipeline._paddleocr_vl_prepare_page_serial_benchmarked(
+                            payload
+                        )
+                    )
+                finally:
+                    self._trace_context.flow_id = None
 
         pages: list[_PageState] = []
         group_has_spotting = any(item[3] for item in prepared)
         for offset, page in enumerate(prepared):
+            self._trace_context.flow_id = f"page:{first_ordinal + offset}"
             blocks, _has_spotting, drops, batches, profiles = (
                 self.pipeline._paddleocr_vl_aggregate_vlm_batches([page])
             )
@@ -169,20 +408,25 @@ class PaddleXPageBridge:
                     remaining=remaining,
                 )
             )
+            self._trace_context.flow_id = None
         return pages
 
     def _finish_page(self, page: _PageState) -> Any:
         if page.result is None:
             raise RuntimeError(f"page {page.ordinal} has no PaddleX result template")
-        parsing, tables, spotting = (
-            self.pipeline._paddleocr_vl_assemble_parsing_results(
-                page.blocks,
-                page.batches,
-                page.block_profiles,
-                page.drop_figures,
-                page.visible_image_labels,
+        self._trace_context.flow_id = f"page:{page.ordinal}"
+        try:
+            parsing, tables, spotting = (
+                self.pipeline._paddleocr_vl_assemble_parsing_results(
+                    page.blocks,
+                    page.batches,
+                    page.block_profiles,
+                    page.drop_figures,
+                    page.visible_image_labels,
+                )
             )
-        )
+        finally:
+            self._trace_context.flow_id = None
         page.result["parsing_res_list"] = parsing[0]
         page.result["table_res_list"] = tables[0]
         page.result["spotting_res"] = spotting[0]
@@ -312,18 +556,30 @@ class PaddleXPageBridge:
             layout_shape_mode: str = "auto",
         ) -> tuple[list[list], list[list], list[dict], list[Any]]:
             nonlocal next_page
-            captured = self._capture_pages(
-                images,
-                layout_det_results,
-                imgs_in_doc,
-                first_ordinal=next_page,
-                use_chart_recognition=use_chart_recognition,
-                use_seal_recognition=use_seal_recognition,
-                use_ocr_for_image_block=use_ocr_for_image_block,
-                vlm_kwargs=vlm_kwargs,
-                merge_layout_blocks=merge_layout_blocks,
-                layout_shape_mode=layout_shape_mode,
-            )
+            started_ns = time.perf_counter_ns()
+            try:
+                captured = self._capture_pages(
+                    images,
+                    layout_det_results,
+                    imgs_in_doc,
+                    first_ordinal=next_page,
+                    use_chart_recognition=use_chart_recognition,
+                    use_seal_recognition=use_seal_recognition,
+                    use_ocr_for_image_block=use_ocr_for_image_block,
+                    vlm_kwargs=vlm_kwargs,
+                    merge_layout_blocks=merge_layout_blocks,
+                    layout_shape_mode=layout_shape_mode,
+                )
+            finally:
+                if self.timeline is not None:
+                    self.timeline.record_span(
+                        "Crop / page preparation",
+                        "Capture PaddleX pages and recognition crops",
+                        started_ns,
+                        time.perf_counter_ns(),
+                        flow_id=f"page:{next_page}",
+                        args={"pages": len(images)},
+                    )
             pending.extend(captured)
             next_page += len(captured)
             count = len(captured)
@@ -337,18 +593,59 @@ class PaddleXPageBridge:
         def complete_page(page: _PageState) -> None:
             nonlocal completed_pages
             result = self._finish_page(page)
+            started_ns = time.perf_counter_ns()
             emit_page(result)
+            if self.timeline is not None:
+                self.timeline.record_span(
+                    "Artifacts / tracing",
+                    "Emit page result and write page artifacts",
+                    started_ns,
+                    time.perf_counter_ns(),
+                    flow_id=f"page:{page.ordinal}",
+                    event_type="io",
+                )
+                self.timeline.instant(
+                    "Pipeline",
+                    "Page completed",
+                    flow_id=f"page:{page.ordinal}",
+                    args={"remaining_pages": len(paths) - completed_pages - 1},
+                )
             completion_order.append(Path(str(result["input_path"])).name)
             completed_pages += 1
 
         def request_source() -> Iterable[RecognitionRequest]:
             nonlocal next_request
-            for template in self.pipeline.predict(
+            templates = iter(self.pipeline.predict(
                 paths,
                 use_queues=False,
                 min_pixels=self.min_pixels,
                 max_new_tokens=self.recognizer.max_new_tokens,
-            ):
+            ))
+            while True:
+                self._source_page_hint = next_page
+                started_ns = time.perf_counter_ns()
+                try:
+                    template = next(templates)
+                except StopIteration:
+                    if self.timeline is not None:
+                        self.timeline.record_span(
+                            "Page input",
+                            "Drain PaddleX page source",
+                            started_ns,
+                            time.perf_counter_ns(),
+                            event_type="wait",
+                        )
+                    break
+                if self.timeline is not None:
+                    page_ordinal = pending[0].ordinal if pending else next_page
+                    self.timeline.record_span(
+                        "Page input",
+                        "Produce next PaddleX page",
+                        started_ns,
+                        time.perf_counter_ns(),
+                        flow_id=f"page:{page_ordinal}",
+                        event_type="wait",
+                    )
                 if not pending:
                     raise RuntimeError("PaddleX emitted a page without captured state")
                 page = pending.popleft()
@@ -390,6 +687,7 @@ class PaddleXPageBridge:
         self.trace_path.parent.mkdir(parents=True, exist_ok=True)
         started = time.perf_counter()
         self.pipeline.get_layout_parsing_results = capture_layout_results
+        timeline_wrappers = self._install_timeline_wrappers()
         try:
             with self.trace_path.open("w", encoding="utf-8") as trace:
                 def accept_result(result: RecognitionResult) -> None:
@@ -400,6 +698,7 @@ class PaddleXPageBridge:
                     batch["vlm_results"][owner.profile_index] = {"result": result.text}
                     owner.page.remaining -= 1
                     results.append(result)
+                    trace_started_ns = time.perf_counter_ns()
                     trace.write(
                         json.dumps(
                             self._trace(result, owner),
@@ -409,6 +708,15 @@ class PaddleXPageBridge:
                         + "\n"
                     )
                     trace.flush()
+                    if self.timeline is not None:
+                        self.timeline.record_span(
+                            "Artifacts / tracing",
+                            "Write and flush crop trace record",
+                            trace_started_ns,
+                            time.perf_counter_ns(),
+                            flow_id=result.request_id,
+                            event_type="io",
+                        )
                     if owner.page.remaining == 0:
                         complete_page(owner.page)
 
@@ -419,6 +727,7 @@ class PaddleXPageBridge:
                 )
         finally:
             self.pipeline.get_layout_parsing_results = original_get_results
+            self._restore_timeline_wrappers(timeline_wrappers)
 
         wall_s = time.perf_counter() - started
         if owners or completed_pages != len(paths) or len(results) != schedule.requests:
