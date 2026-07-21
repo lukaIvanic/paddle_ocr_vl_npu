@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Measure eager PromptFA batching with packed crops inside each batch row."""
+"""Measure compiled PromptFA batching with packed crops inside each batch row."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import sys
 import time
 import traceback
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Callable, Sequence
 
 import torch
 
@@ -22,7 +22,22 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(EXPERIMENT_ROOT))
 
 from paddleocr_vl.model.modeling import LocalPaddleOCRVLForConditionalGeneration
-from paddleocr_vl.model.vision_prefill import VisionPrefillRuntime
+from paddleocr_vl.model.compile_utils import (
+    TORCHAIR_EXECUTION_MODE,
+    cache_key_part,
+    import_torchair,
+    short_file_hash,
+    torch_npu_version_label,
+    torchair_version_label,
+)
+from paddleocr_vl.model.vision_prefill import (
+    VisionPrefillRuntime,
+    VisionPrefillStage,
+    get_vision_prompt_fa_layout,
+    get_vision_prompt_fa_mask_sparse_mode,
+    unique_bucket_forward,
+    vision_source_hash,
+)
 from utils.timing import DeviceTimeline, synchronize
 from vision_lab import (
     DEFAULT_MODEL,
@@ -47,6 +62,7 @@ DEFAULT_OUTPUT = (
     / "tmp/09_persistent_page_engine/vision_lab"
     / "batched_packed_eager.json"
 )
+DEFAULT_CACHE_ROOT = Path("/dev/shm/vision_lab_cache_all")
 
 
 def _shape(value: str) -> tuple[int, int]:
@@ -64,12 +80,13 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--corpus", type=Path, default=DEFAULT_CORPUS)
     parser.add_argument("--model", type=Path, default=DEFAULT_MODEL)
     parser.add_argument("--variant", default="min_pixels_28224")
+    parser.add_argument("--cache-dir", type=Path, default=DEFAULT_CACHE_ROOT)
     parser.add_argument(
         "--shape",
         type=_shape,
         action="append",
         default=[],
-        help="Repeat static eager shapes; default: 1x3072, 2x1536, 4x768.",
+        help="Repeat static compiled shapes; default: 1x3072, 2x1536, 4x768.",
     )
     parser.add_argument("--warmup", type=int, default=1)
     parser.add_argument("--repeats", type=int, default=1)
@@ -104,7 +121,7 @@ def _chunk_rows(
 def _run_batched_packed(
     *,
     model: LocalPaddleOCRVLForConditionalGeneration,
-    runtime: VisionPrefillRuntime,
+    run_tower: Callable[..., torch.Tensor],
     rows: list[list[dict[str, Any]]],
     batch_size: int,
     sequence_length: int,
@@ -162,12 +179,12 @@ def _run_batched_packed(
     timeline = DeviceTimeline(device)
     output = timeline.measure(
         "vision_tower",
-        lambda: runtime.eager_stage(prefix, rope_cos, rope_sin, attention_mask),
+        lambda: run_tower(prefix, rope_cos, rope_sin, attention_mask),
     )
     spans = timeline.resolve_spans()
     if tuple(output.shape[:2]) != (batch_size, sequence_length):
         raise RuntimeError(
-            "PromptFA eager batching returned the wrong static shape: "
+            "compiled PromptFA batching returned the wrong static shape: "
             f"expected {(batch_size, sequence_length)}, got {tuple(output.shape)}"
         )
     real_tokens = sum(int(item["real_vision_tokens"]) for item in flat_items)
@@ -219,7 +236,8 @@ def _run_shape(
     batch_size: int,
     sequence_length: int,
     model: LocalPaddleOCRVLForConditionalGeneration,
-    runtime: VisionPrefillRuntime,
+    run_tower: Callable[..., torch.Tensor],
+    eager_runtime: VisionPrefillRuntime,
     seed: int,
     dtype: torch.dtype,
     device: torch.device,
@@ -242,7 +260,7 @@ def _run_shape(
         for _ in range(warmup if case_index == 0 else 0):
             _run_batched_packed(
                 model=model,
-                runtime=runtime,
+                run_tower=run_tower,
                 rows=batch_rows,
                 batch_size=batch_size,
                 sequence_length=sequence_length,
@@ -254,7 +272,7 @@ def _run_shape(
         runs = [
             _run_batched_packed(
                 model=model,
-                runtime=runtime,
+                run_tower=run_tower,
                 rows=batch_rows,
                 batch_size=batch_size,
                 sequence_length=sequence_length,
@@ -283,7 +301,7 @@ def _run_shape(
             passthrough_cache[key] = _single_passthrough_ms(
                 item=item,
                 model=model,
-                runtime=runtime,
+                runtime=eager_runtime,
                 seed=seed,
                 dtype=dtype,
                 device=device,
@@ -349,6 +367,94 @@ def _run_shape(
     }
 
 
+def _compiled_shape(
+    *,
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    batch_size: int,
+    sequence_length: int,
+    cache_root: Path,
+    model_dir: Path,
+    dtype: torch.dtype,
+    device: torch.device,
+) -> tuple[Callable[..., torch.Tensor], dict[str, Any]]:
+    """Load or compile exactly one static BxS PromptFA vision graph."""
+    torchair, CompilerConfig = import_torchair()
+    hidden_size = int(model.config.vision_config.hidden_size)
+    head_dim = hidden_size // int(model.config.vision_config.num_attention_heads)
+    key = "_".join(
+        (
+            "encoder_postln_promptfa",
+            f"b{batch_size}",
+            f"s{sequence_length}",
+            f"dtype{cache_key_part(dtype)}",
+            f"layout{cache_key_part(get_vision_prompt_fa_layout())}",
+            f"sparse{get_vision_prompt_fa_mask_sparse_mode()}",
+            f"mode{cache_key_part(TORCHAIR_EXECUTION_MODE)}",
+            f"model{short_file_hash(model_dir / 'config.json')}",
+            f"torch{cache_key_part(torch.__version__)}",
+            f"torchnpu{torch_npu_version_label(device)}",
+            f"torchair{torchair_version_label(device)}",
+            f"src{vision_source_hash()}",
+        )
+    )
+    cache_dir = cache_root.expanduser().resolve() / key
+    cache_existed = cache_dir.exists() and any(cache_dir.iterdir())
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    module = VisionPrefillStage(
+        model,
+        attention_impl="prompt_flash_attention",
+    ).eval()
+    # The three scout shapes have distinct S values, giving Dynamo a distinct
+    # code object for every static graph through the existing helper.
+    entrypoint = unique_bucket_forward(module, sequence_length)
+    synchronize(device)
+    wrapper_started = time.perf_counter()
+    compiled = torchair.inference.cache_compile(
+        entrypoint,
+        config=CompilerConfig(),
+        dynamic=False,
+        cache_dir=str(cache_dir),
+        ge_cache=True,
+    )
+    synchronize(device)
+    wrapper_s = time.perf_counter() - wrapper_started
+    warm_prefix = torch.zeros(
+        (batch_size, sequence_length, hidden_size),
+        device=device,
+        dtype=dtype,
+    )
+    warm_cos = torch.ones(
+        (batch_size, sequence_length, head_dim),
+        device=device,
+        dtype=torch.float32,
+    )
+    warm_sin = torch.zeros_like(warm_cos)
+    warm_mask = torch.zeros(
+        (batch_size, 1, sequence_length, sequence_length),
+        device=device,
+        dtype=torch.bool,
+    )
+    synchronize(device)
+    first_call_started = time.perf_counter()
+    warm_output = compiled(warm_prefix, warm_cos, warm_sin, warm_mask)
+    synchronize(device)
+    first_call_s = time.perf_counter() - first_call_started
+    if tuple(warm_output.shape[:2]) != (batch_size, sequence_length):
+        raise RuntimeError(
+            "compiled PromptFA graph returned the wrong static shape: "
+            f"expected {(batch_size, sequence_length)}, got {tuple(warm_output.shape)}"
+        )
+    del warm_output, warm_prefix, warm_cos, warm_sin, warm_mask
+    return compiled, {
+        "batch_size": batch_size,
+        "sequence_length": sequence_length,
+        "cache_dir": str(cache_dir),
+        "cache_existed_before_run": cache_existed,
+        "compile_wrapper_s": wrapper_s,
+        "compile_first_call_s": first_call_s,
+    }
+
+
 @torch.inference_mode()
 def main(argv: Sequence[str] | None = None) -> None:
     args = parse_args(argv)
@@ -368,7 +474,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         dtype=dtype,
         device=device,
     )
-    runtime = VisionPrefillRuntime(
+    eager_runtime = VisionPrefillRuntime(
         model,
         backend="raw_eager",
         buckets=(32,),
@@ -381,11 +487,40 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     synchronize(device)
     setup_s = time.perf_counter() - setup_started
+    compiled: dict[tuple[int, int], Callable[..., torch.Tensor]] = {}
+    compile_metadata: dict[str, Any] = {}
+    for batch_size, sequence_length in args.shape:
+        print(
+            f"load_or_compile=b{batch_size}_s{sequence_length} "
+            f"physical_tokens={batch_size * sequence_length}",
+            flush=True,
+        )
+        run_tower, metadata = _compiled_shape(
+            model=model,
+            batch_size=batch_size,
+            sequence_length=sequence_length,
+            cache_root=args.cache_dir,
+            model_dir=model_dir,
+            dtype=dtype,
+            device=device,
+        )
+        compiled[(batch_size, sequence_length)] = run_tower
+        compile_metadata[f"b{batch_size}_s{sequence_length}"] = metadata
+        print(
+            f"compiled=b{batch_size}_s{sequence_length} "
+            f"cache_was_warm={metadata['cache_existed_before_run']} "
+            f"first_call_s={metadata['compile_first_call_s']:.3f}",
+            flush=True,
+        )
     results: dict[str, list[dict[str, Any]]] = {}
     passthrough_cache: dict[tuple[str, int], float] = {}
     for corpus_name, items in corpora.items():
         results[corpus_name] = []
         for batch_size, sequence_length in args.shape:
+            print(
+                f"benchmark={corpus_name}:b{batch_size}_s{sequence_length}",
+                flush=True,
+            )
             try:
                 results[corpus_name].append(
                     _run_shape(
@@ -394,7 +529,8 @@ def main(argv: Sequence[str] | None = None) -> None:
                         batch_size=batch_size,
                         sequence_length=sequence_length,
                         model=model,
-                        runtime=runtime,
+                        run_tower=compiled[(batch_size, sequence_length)],
+                        eager_runtime=eager_runtime,
                         seed=args.seed,
                         dtype=dtype,
                         device=device,
@@ -420,7 +556,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     payload = {
         "schema_version": 1,
         "created_at_unix_s": time.time(),
-        "execution": "raw_eager",
+        "execution": "torchair_static",
         "attention": "prompt_flash_attention",
         "packing_policy": "first_fit_decreasing_within_each_batch_row",
         "corpus": str(args.corpus.expanduser().resolve()),
@@ -429,7 +565,10 @@ def main(argv: Sequence[str] | None = None) -> None:
         "warmup": args.warmup,
         "repeats": args.repeats,
         "setup_s": setup_s,
-        "new_graphs_compiled": 0,
+        "compile_metadata": compile_metadata,
+        "new_graphs_compiled": sum(
+            not row["cache_existed_before_run"] for row in compile_metadata.values()
+        ),
         "environment": _environment(device),
         "results": results,
     }
