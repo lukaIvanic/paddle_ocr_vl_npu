@@ -112,6 +112,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default=(2, 4),
         help="Batched strategy group limits.",
     )
+    parser.add_argument(
+        "--batch-bucket",
+        type=int,
+        default=704,
+        help=(
+            "Production bucket whose naturally routed crops are grouped for "
+            "the batched strategy; all other crops remain singletons."
+        ),
+    )
     parser.add_argument("--warmup", type=int, default=3)
     parser.add_argument("--repeats", type=int, default=10)
     parser.add_argument("--seed", type=int, default=20260721)
@@ -139,6 +148,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("--batch-sizes values must be greater than one")
     args.strategy = _strategies(args.strategy)
     args.buckets = parse_vision_buckets(args.buckets)
+    if args.batch_bucket <= 0 or args.batch_bucket not in args.buckets:
+        parser.error("--batch-bucket must be one of --buckets")
     return args
 
 
@@ -223,6 +234,8 @@ def _configuration_groups(
     items: list[dict[str, Any]],
     pack_lengths: Iterable[int],
     batch_sizes: Iterable[int],
+    batch_bucket: int,
+    buckets: tuple[int, ...],
     seed: int,
 ) -> list[dict[str, Any]]:
     configurations: list[dict[str, Any]] = []
@@ -254,22 +267,39 @@ def _configuration_groups(
                     }
                 )
         else:
-            for target in pack_lengths:
-                for batch_size in batch_sizes:
-                    configurations.append(
-                        {
-                            "name": f"batched_b{batch_size}_target{target}",
-                            "strategy": strategy,
-                            "target_length": int(target),
-                            "batch_size": int(batch_size),
-                            "groups": _first_fit_groups(
-                                items,
-                                target=int(target),
-                                max_items=int(batch_size),
-                                seed=seed + int(target) + int(batch_size),
-                            ),
-                        }
-                    )
+            eligible = [
+                item
+                for item in items
+                if select_vision_bucket(
+                    int(item["real_vision_tokens"]), buckets
+                )
+                == batch_bucket
+            ]
+            singletons = [
+                [item]
+                for item in items
+                if select_vision_bucket(
+                    int(item["real_vision_tokens"]), buckets
+                )
+                != batch_bucket
+            ]
+            for batch_size in batch_sizes:
+                grouped = _first_fit_groups(
+                    eligible,
+                    target=int(batch_bucket) * int(batch_size),
+                    max_items=int(batch_size),
+                    seed=seed + int(batch_bucket) + int(batch_size),
+                )
+                configurations.append(
+                    {
+                        "name": f"batched_b{batch_size}_bucket{batch_bucket}",
+                        "strategy": strategy,
+                        "target_length": int(batch_bucket) * int(batch_size),
+                        "batch_size": int(batch_size),
+                        "batch_bucket": int(batch_bucket),
+                        "groups": singletons + grouped,
+                    }
+                )
     return configurations
 
 
@@ -279,11 +309,30 @@ def _route(
     lengths: list[int],
     execution: str,
     buckets: tuple[int, ...],
+    forced_bucket: int | None = None,
 ) -> dict[str, Any]:
     real = max(lengths) if strategy == "batched" else sum(lengths)
-    bucket = select_vision_bucket(real, buckets) if execution == "torchair" else None
+    bucket = (
+        int(forced_bucket)
+        if forced_bucket is not None
+        else select_vision_bucket(real, buckets)
+        if execution == "torchair"
+        else None
+    )
+    if bucket is not None and real > bucket:
+        raise ValueError(
+            f"forced/selected bucket {bucket} is smaller than real length {real}"
+        )
+    if execution == "torchair" and bucket is not None:
+        execution_label = "compiled"
+    elif forced_bucket is not None:
+        execution_label = "eager_padded"
+    elif execution == "torchair":
+        execution_label = "eager_overflow"
+    else:
+        execution_label = "eager"
     return {
-        "execution": "compiled" if bucket is not None else "eager_overflow" if execution == "torchair" else "eager",
+        "execution": execution_label,
         "real_vision_tokens": real,
         "physical_vision_tokens": bucket if bucket is not None else real,
         "padding_vision_tokens": (bucket - real) if bucket is not None else 0,
@@ -301,11 +350,17 @@ def _needed_compiled_buckets(
     needed: set[int] = set()
     for configuration in configurations:
         for group in configuration["groups"]:
+            forced_bucket = (
+                configuration.get("batch_bucket")
+                if configuration["strategy"] == "batched" and len(group) > 1
+                else None
+            )
             route = _route(
                 strategy=configuration["strategy"],
                 lengths=[int(item["real_vision_tokens"]) for item in group],
                 execution=execution,
                 buckets=buckets,
+                forced_bucket=forced_bucket,
             )
             if route["bucket"] is not None:
                 needed.add(int(route["bucket"]))
@@ -708,6 +763,8 @@ def main(argv: Sequence[str] | None = None) -> None:
         items,
         args.pack_lengths,
         args.batch_sizes,
+        args.batch_bucket,
+        args.buckets,
         args.seed,
     )
     compile_buckets = _needed_compiled_buckets(
@@ -790,11 +847,17 @@ def main(argv: Sequence[str] | None = None) -> None:
         failure: dict[str, Any] | None = None
         for case_index, group in enumerate(configuration["groups"]):
             lengths = [int(item["real_vision_tokens"]) for item in group]
+            forced_bucket = (
+                configuration.get("batch_bucket")
+                if configuration["strategy"] == "batched" and len(group) > 1
+                else None
+            )
             route = _route(
                 strategy=configuration["strategy"],
                 lengths=lengths,
                 execution=args.execution,
                 buckets=args.buckets,
+                forced_bucket=forced_bucket,
             )
             try:
                 grids, pixels = _materialize_inputs(
@@ -1054,6 +1117,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "compiled_buckets": list(compile_buckets),
             "pack_lengths": list(args.pack_lengths),
             "batch_sizes": list(args.batch_sizes),
+            "batch_bucket": args.batch_bucket,
             "warmup": args.warmup,
             "repeats": args.repeats,
             "seed": args.seed,
