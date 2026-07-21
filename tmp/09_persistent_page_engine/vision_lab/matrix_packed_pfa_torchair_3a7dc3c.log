@@ -1,0 +1,8 @@
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/vision_prefill.py:1067: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  warm_sin = torch.zeros_like(warm_cos)
+..............output=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_lab/matrix_packed_pfa_torchair_3a7dc3c.json
+configuration | supported | valid | deterministic | tower_s | ratio
+--- | --- | --- | --- | --- | ---
+packed_target1280 | True | True | True | 8.950128235435486 | None
+packed_target1792 | True | True | True | 7.783016437721252 | None
+packed_target1920 | True | True | True | 6.995381273460388 | None

@@ -1,0 +1,54 @@
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/vision_prefill.py:1067: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  warm_sin = torch.zeros_like(warm_cos)
+output=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_lab/calibration_single_torchair_pfa_3a7dc3c.json
+configuration | supported | valid | deterministic | tower_s | ratio
+--- | --- | --- | --- | --- | ---
+single | True | True | True | 10.508171070480346 | 1.0
+calibration={
+  "corpus_self_check": {
+    "passed": true,
+    "checked": 510,
+    "mismatches": 0,
+    "identity": "patch_count == projected_image_tokens * merge_size^2"
+  },
+  "bucket_comparisons": {
+    "640": {
+      "calls": 177,
+      "measured_mean_ms": 18.369187835650255,
+      "pipeline_reference_ms": 17.9,
+      "deviation_fraction": 0.026211610930181983,
+      "within_15_percent": true
+    },
+    "704": {
+      "calls": 149,
+      "measured_mean_ms": 20.101230631578687,
+      "pipeline_reference_ms": 20.0,
+      "deviation_fraction": 0.005061531578934408,
+      "within_15_percent": true
+    },
+    "768": {
+      "calls": 84,
+      "measured_mean_ms": 19.690431697028025,
+      "pipeline_reference_ms": 19.4,
+      "deviation_fraction": 0.014970706032372494,
+      "within_15_percent": true
+    },
+    "1024": {
+      "calls": 7,
+      "measured_mean_ms": 22.1450065612793,
+      "pipeline_reference_ms": 22.1,
+      "deviation_fraction": 0.0020364959854886067,
+      "within_15_percent": true
+    },
+    "1920": {
+      "calls": 5,
+      "measured_mean_ms": 29.951516418457032,
+      "pipeline_reference_ms": 29.9,
+      "deviation_fraction": 0.0017229571390311449,
+      "within_15_percent": true
+    }
+  },
+  "numerics_valid": true,
+  "determinism_passed": true,
+  "passed": true
+}

@@ -1,0 +1,226 @@
+{
+  "schema_version": 1,
+  "created_at_unix_s": 1784646876.0065708,
+  "corpus": {
+    "path": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_lab/corpus_batch704_smoke.json",
+    "sha256": "266d0f098db60cfe0686ef4dab724d280f5af61df2806f9519bf33448e2d721f",
+    "kind": "synthetic",
+    "items": 4,
+    "real_vision_tokens": 2560,
+    "self_check": {
+      "passed": true,
+      "checked": 4,
+      "mismatches": 0
+    }
+  },
+  "config": {
+    "model": "/workspace/models/PaddleOCR-VL-1.6",
+    "dtype": "fp16",
+    "strategies": [
+      "batched"
+    ],
+    "attention": "prompt_flash_attention",
+    "execution": "torchair",
+    "configured_buckets": [
+      704
+    ],
+    "compiled_buckets": [
+      704
+    ],
+    "pack_lengths": [
+      1280,
+      1792,
+      1920
+    ],
+    "batch_sizes": [
+      2,
+      4
+    ],
+    "batch_bucket": 704,
+    "warmup": 1,
+    "repeats": 2,
+    "seed": 20260721,
+    "mean_abs_threshold": 1.0,
+    "cache_dir": "/dev/shm/vision_lab_cache_pfa"
+  },
+  "setup_s": 15.768915603985079,
+  "runtime_metadata": {
+    "backend": "torchair",
+    "enabled": true,
+    "boundary": "vision_encoder_layers_plus_post_layernorm",
+    "attention": "prompt_flash_attention",
+    "prompt_flash_attention_layout": "bnsd",
+    "prompt_flash_attention_mask_sparse_mode": 1,
+    "vision_head_dim": 72,
+    "prompt_flash_attention_call_head_dim": 80,
+    "buckets": [
+      704
+    ],
+    "requested_padding": "bucket",
+    "padding": "bucket",
+    "overflow": "eager_same_stage_unpadded",
+    "compile_api": "torchair.inference.cache_compile",
+    "dynamic": false,
+    "fullgraph": true,
+    "torchair_ge_cache": true,
+    "compile_wrapper_total_s": 8.715200237929821e-05,
+    "compile_first_call_total_s": 4.97994240798289,
+    "per_bucket": {
+      "704": {
+        "compile_wrapper_s": 8.715200237929821e-05,
+        "compile_first_call_s": 4.97994240798289,
+        "torchair_cache_dir": "/dev/shm/vision_lab_cache_pfa/encoder_postln_promptfa_d80_bnsd_sparse1_modeinference_softmaxfp32_bs1_seq704_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srce4a3f96ca523"
+      }
+    },
+    "cache_key_fields": {
+      "dtype": "torch.float16",
+      "model_config_hash": "6d2211febbe9",
+      "torch": "2.10.0+cpu",
+      "torch_npu": "2.10.0",
+      "torchair": "unknown",
+      "vision_source_hash": "e4a3f96ca523",
+      "attention": "prompt_flash_attention",
+      "prompt_flash_attention_layout": "bnsd",
+      "prompt_flash_attention_mask_sparse_mode": 1,
+      "softmax_dtype": "fp32",
+      "execution_mode": "inference"
+    }
+  },
+  "environment": {
+    "commit": "a65946dcda9e91dd9373a354b3af14d1e39325f3",
+    "device": "npu:0",
+    "device_name": "Ascend910B2",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "npu_smi": "+------------------------------------------------------------------------------------------------+\n| npu-smi 25.0.rc1.1               Version: 25.0.rc1.1                                           |\n+---------------------------+---------------+----------------------------------------------------+\n| NPU   Name                | Health        | Power(W)    Temp(C)           Hugepages-Usage(page)|\n| Chip                      | Bus-Id        | AICore(%)   Memory-Usage(MB)  HBM-Usage(MB)        |\n+===========================+===============+====================================================+\n| 0     910B2               | OK            | 107.9       48                0    / 0             |\n| 0                         | 0000:C1:00.0  | 0           0    / 0          3411 / 65536         |\n+===========================+===============+====================================================+\n| 1     910B2               | OK            | 102.4       48                0    / 0             |\n| 0                         | 0000:01:00.0  | 0           0    / 0          3396 / 65536         |\n+===========================+===============+====================================================+\n| 2     910B2               | OK            | 103.5       47                0    / 0             |\n| 0                         | 0000:C2:00.0  | 0           0    / 0          3406 / 65536         |\n+===========================+===============+====================================================+\n| 3     910B2               | OK            | 101.7       46                0    / 0             |\n| 0                         | 0000:02:00.0  | 0           0    / 0          54358/ 65536         |\n+===========================+===============+====================================================+\n| 4     910B2               | OK            | 102.1       48                0    / 0             |\n| 0                         | 0000:81:00.0  | 0           0    / 0          54370/ 65536         |\n+===========================+===============+====================================================+\n| 5     910B2               | OK            | 109.8       46                0    / 0             |\n| 0                         | 0000:41:00.0  | 0           0    / 0          7238 / 65536         |\n+===========================+===============+====================================================+\n| 6     910B2               | OK            | 102.0       49                0    / 0             |\n| 0                         | 0000:82:00.0  | 0           0    / 0          54358/ 65536         |\n+===========================+===============+====================================================+\n| 7     910B2               | OK            | 102.6       49                0    / 0             |\n| 0                         | 0000:42:00.0  | 0           0    / 0          54358/ 65536         |\n+===========================+===============+====================================================+\n+---------------------------+---------------+----------------------------------------------------+\n| NPU     Chip              | Process id    | Process name             | Process memory(MB)      |\n+===========================+===============+====================================================+\n| No running processes found in NPU 0                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 1                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 2                                                            |\n+===========================+===============+====================================================+\n| 3       0                 | 4080623       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 4       0                 | 4080664       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 5       0                 | 2241121       |                          | 3873                    |\n+===========================+===============+====================================================+\n| 6       0                 | 4080722       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 7       0                 | 4080897       |                          | 51013                   |\n+===========================+===============+====================================================+\n"
+  },
+  "calibration": null,
+  "configurations": [
+    {
+      "name": "batched_b2_bucket704",
+      "strategy": "batched",
+      "target_length": 1408,
+      "batch_size": 2,
+      "supported": false,
+      "failure": {
+        "case_index": 0,
+        "items": [
+          "synthetic_000640_0003",
+          "synthetic_000640_0001"
+        ],
+        "exception_type": "IndexError",
+        "message": "index 1 is out of bounds for dimension 0 with size 1",
+        "traceback": [
+          "Traceback (most recent call last):",
+          "  File \"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/vision_lab.py\", line 870, in main",
+          "    _run_group(",
+          "  File \"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/vision_lab.py\", line 558, in _run_group",
+          "    batched_output[index, :length].contiguous()",
+          "    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^",
+          "IndexError: index 1 is out of bounds for dimension 0 with size 1"
+        ]
+      },
+      "groups": 2,
+      "completed_groups": 0,
+      "numerics": {
+        "reference": "single_eager_manual_unpadded",
+        "thresholds": {
+          "projector_mean_abs": 1.0
+        },
+        "diagnostic_thresholds_not_used_for_validity": {
+          "projector_max_abs": 0.02,
+          "projector_max_rel": 0.02
+        },
+        "validity_basis": "finite_outputs_and_projector_mean_abs; max errors are diagnostic for intermediate activations",
+        "errors": {
+          "tower": {
+            "max_abs": 0.0,
+            "max_rel": 0.0,
+            "mean_abs": 0.0
+          },
+          "projector": {
+            "max_abs": 0.0,
+            "max_rel": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "valid": false
+      },
+      "determinism": {
+        "expected": "bitwise_equal",
+        "passed": false
+      },
+      "corpus_projection": {
+        "vision_tower_s": null,
+        "total_stages_s": null,
+        "ratio_vs_single": null,
+        "in_pipeline_reference_s": 10.7
+      },
+      "cases": []
+    },
+    {
+      "name": "batched_b4_bucket704",
+      "strategy": "batched",
+      "target_length": 2816,
+      "batch_size": 4,
+      "supported": false,
+      "failure": {
+        "case_index": 0,
+        "items": [
+          "synthetic_000640_0003",
+          "synthetic_000640_0002",
+          "synthetic_000640_0001",
+          "synthetic_000640_0000"
+        ],
+        "exception_type": "IndexError",
+        "message": "index 1 is out of bounds for dimension 0 with size 1",
+        "traceback": [
+          "Traceback (most recent call last):",
+          "  File \"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/vision_lab.py\", line 870, in main",
+          "    _run_group(",
+          "  File \"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/vision_lab.py\", line 558, in _run_group",
+          "    batched_output[index, :length].contiguous()",
+          "    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^",
+          "IndexError: index 1 is out of bounds for dimension 0 with size 1"
+        ]
+      },
+      "groups": 1,
+      "completed_groups": 0,
+      "numerics": {
+        "reference": "single_eager_manual_unpadded",
+        "thresholds": {
+          "projector_mean_abs": 1.0
+        },
+        "diagnostic_thresholds_not_used_for_validity": {
+          "projector_max_abs": 0.02,
+          "projector_max_rel": 0.02
+        },
+        "validity_basis": "finite_outputs_and_projector_mean_abs; max errors are diagnostic for intermediate activations",
+        "errors": {
+          "tower": {
+            "max_abs": 0.0,
+            "max_rel": 0.0,
+            "mean_abs": 0.0
+          },
+          "projector": {
+            "max_abs": 0.0,
+            "max_rel": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "valid": false
+      },
+      "determinism": {
+        "expected": "bitwise_equal",
+        "passed": false
+      },
+      "corpus_projection": {
+        "vision_tower_s": null,
+        "total_stages_s": null,
+        "ratio_vs_single": null,
+        "in_pipeline_reference_s": 10.7
+      },
+      "cases": []
+    }
+  ]
+}

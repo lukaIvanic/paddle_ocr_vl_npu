@@ -1,0 +1,7 @@
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/vision_prefill.py:816: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  image_pids = torch.arange(int(real_seq_len), device=device, dtype=torch.int64) % int(h * w)
+output=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_lab/matrix_batched704_pfa_eager_f0091a9.json
+configuration | supported | valid | deterministic | tower_s | ratio
+--- | --- | --- | --- | --- | ---
+batched_b2_bucket704 | True | True | True | 17.81655888404846 | None
+batched_b4_bucket704 | True | True | True | 16.57468630447388 | None
