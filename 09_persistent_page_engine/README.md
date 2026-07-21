@@ -175,8 +175,11 @@ pins the five copied input tensors when the runtime supports pinned allocation;
 failure to pin falls back to the same tensors and preserves correctness. The
 transfer stream records a completion event and the compute stream waits on that
 event before starting the crop, mirroring the decode scheduler's established
-stream/event dependency pattern. The lookahead changes production order only:
-prefill and decode kernels remain serialized on the compute stream.
+stream/event dependency pattern. First-token D2H uses the same transfer stream:
+it waits on the crop's argmax event and copies into a pinned host scalar, so the
+copy cannot be queued behind crop N+1 on the compute stream. The lookahead
+changes production order only: prefill and decode kernels remain serialized on
+the compute stream.
 
 The faithful PaddleX runner prepares pages sequentially on one background
 producer by default. Each page goes through the unchanged PaddleX

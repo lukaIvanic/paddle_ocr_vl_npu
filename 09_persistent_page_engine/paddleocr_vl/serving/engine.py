@@ -82,6 +82,7 @@ class _InFlightPrefill:
     next_token: torch.Tensor
     device_inputs: tuple[torch.Tensor, ...]
     h2d_ready_event: Any | None
+    prefill_ready_event: Any | None
     vision: dict[str, Any]
     text_prefill: dict[str, Any]
     timing_s: dict[str, float]
@@ -292,9 +293,15 @@ class ContinuousRecognizer:
         self.text_prefill = self.stages.text_prefill
         self.text_decode = self.stages.text_decode
         self.decode_fn = self.text_decode.fn
-        self.prefill_h2d_stream = None
+        self.prefill_transfer_stream = None
+        self.prefill_host_token = None
         if self.device.type == "npu":
-            self.prefill_h2d_stream = torch_npu.npu.Stream(device=self.device)
+            self.prefill_transfer_stream = torch_npu.npu.Stream(device=self.device)
+            self.prefill_host_token = torch.empty(
+                (1,),
+                dtype=torch.int64,
+                pin_memory=True,
+            )
 
         started = time.perf_counter()
         self.decode_arena = DecodeArena(
@@ -784,15 +791,15 @@ class ContinuousRecognizer:
                 rope_deltas_cpu.to(self.device, non_blocking=non_blocking),
             )
 
-        if self.prefill_h2d_stream is not None:
+        if self.prefill_transfer_stream is not None:
             import torch_npu
 
-            with torch_npu.npu.stream(self.prefill_h2d_stream):
+            with torch_npu.npu.stream(self.prefill_transfer_stream):
                 moved = device_timeline.measure(
                     "recognition_inputs_h2d",
                     lambda: move_inputs(non_blocking=True),
                 )
-                h2d_ready_event = self.prefill_h2d_stream.record_event()
+                h2d_ready_event = self.prefill_transfer_stream.record_event()
             # This wait is enqueued, not host-blocking: the crop's first
             # compute kernel cannot observe partially copied inputs.
             compute_stream = torch_npu.npu.current_stream()
@@ -908,6 +915,11 @@ class ContinuousRecognizer:
                 keepdim=True,
             ),
         )
+        prefill_ready_event = None
+        if self.prefill_transfer_stream is not None:
+            import torch_npu
+
+            prefill_ready_event = torch_npu.npu.current_stream().record_event()
         enqueue_finished = time.perf_counter()
         if self.timeline is not None:
             self.timeline.record_span_seconds(
@@ -934,6 +946,7 @@ class ContinuousRecognizer:
                 rope_deltas,
             ),
             h2d_ready_event=h2d_ready_event,
+            prefill_ready_event=prefill_ready_event,
             vision=vision_route,
             text_prefill=text_route,
             timing_s=timing,
@@ -959,7 +972,24 @@ class ContinuousRecognizer:
             timing["recognizer_h2d"] = device_stage_s["recognition_inputs_h2d"]
 
         started = time.perf_counter()
-        first_token = int(inflight.next_token.detach().cpu().item())
+        if self.prefill_transfer_stream is not None:
+            import torch_npu
+
+            assert inflight.prefill_ready_event is not None
+            assert self.prefill_host_token is not None
+            with torch_npu.npu.stream(self.prefill_transfer_stream):
+                self.prefill_transfer_stream.wait_event(
+                    inflight.prefill_ready_event
+                )
+                self.prefill_host_token.copy_(
+                    inflight.next_token.detach().reshape(-1),
+                    non_blocking=True,
+                )
+                first_token_ready = self.prefill_transfer_stream.record_event()
+            first_token_ready.synchronize()
+            first_token = int(self.prefill_host_token.item())
+        else:
+            first_token = int(inflight.next_token.detach().cpu().item())
         timing["first_token_d2h"] = time.perf_counter() - started
         resolve_finished = time.perf_counter()
 
@@ -1136,7 +1166,7 @@ class ContinuousRecognizer:
                 "pin_recognition_inputs": "best_effort",
             },
             "prefill_production": "one_crop_lookahead",
-            "prefill_h2d": "dedicated_stream_event_dependency",
+            "prefill_transfer": "dedicated_stream_event_dependencies",
             "decode": decode_label,
             "decode_schedule": "run_scoped_persistent_slots_iteration_hot_swap",
             "ready_buffer_capacity": READY_BUFFER_BATCH_MULTIPLIER * self.batch_size,
