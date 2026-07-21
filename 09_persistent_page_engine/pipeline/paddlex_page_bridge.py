@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import queue
 import threading
 import time
 from collections.abc import Iterator
@@ -42,6 +43,7 @@ class _PageState:
     drop_figures: set[Any]
     visible_image_labels: list[str]
     skip_special_tokens: bool
+    spotting_group_size: int
     remaining: int
     result: Any | None = None
 
@@ -53,6 +55,12 @@ class _RequestOwner:
     profile_index: int
     request_index: int
     block_index: int
+
+
+@dataclass
+class _PreparedPage:
+    page: _PageState
+    put_started_ns: int = 0
 
 
 @dataclass(frozen=True)
@@ -134,15 +142,16 @@ class PaddleXPageBridge:
         *,
         trace_path: Path,
         min_pixels: int | None,
+        streaming_pages: bool = True,
         timeline: TimelineRecorder | None = None,
     ) -> None:
         self.pipeline = pipeline
         self.recognizer = recognizer
         self.trace_path = trace_path.expanduser().resolve()
         self.min_pixels = min_pixels
+        self.streaming_pages = bool(streaming_pages)
         self.timeline = timeline
         self._trace_context = threading.local()
-        self._source_page_hint = 0
 
         from paddlex.inference.pipelines.paddleocr_vl.pipeline import IMAGE_LABELS
 
@@ -163,7 +172,7 @@ class PaddleXPageBridge:
             self._trace_context,
             "flow_id",
             None,
-        ) or f"page:{self._source_page_hint}"
+        ) or f"page:{getattr(self._trace_context, 'page_hint', 0)}"
 
     def _install_timeline_wrappers(self) -> list[tuple[Any, str, Any]]:
         if self.timeline is None:
@@ -386,6 +395,7 @@ class PaddleXPageBridge:
 
         pages: list[_PageState] = []
         group_has_spotting = any(item[3] for item in prepared)
+        spotting_group_size = len(prepared)
         for offset, page in enumerate(prepared):
             self._trace_context.flow_id = f"page:{first_ordinal + offset}"
             blocks, _has_spotting, drops, batches, profiles = (
@@ -405,6 +415,7 @@ class PaddleXPageBridge:
                     drop_figures=drops,
                     visible_image_labels=visible_image_labels,
                     skip_special_tokens=not group_has_spotting,
+                    spotting_group_size=spotting_group_size,
                     remaining=remaining,
                 )
             )
@@ -449,6 +460,7 @@ class PaddleXPageBridge:
             "token_ids": result.token_ids,
             "text": result.text,
             "stop_reason": result.stop_reason,
+            "spotting_group_size": owner.page.spotting_group_size,
             "generated_tokens_including_eos": result.generated_tokens_including_eos,
             "decode_tokens_after_prefill_including_eos": (
                 result.decode_tokens_after_prefill_including_eos
@@ -543,6 +555,11 @@ class PaddleXPageBridge:
         next_page = 0
         next_request = 0
         original_get_results = self.pipeline.get_layout_parsing_results
+        prepared_pages: queue.Queue[object] = queue.Queue(maxsize=1)
+        producer_sentinel = object()
+        producer_stop = threading.Event()
+        producer_errors: list[BaseException] = []
+        producer_thread: threading.Thread | None = None
 
         def capture_layout_results(
             images: list[Any],
@@ -613,82 +630,224 @@ class PaddleXPageBridge:
             completion_order.append(Path(str(result["input_path"])).name)
             completed_pages += 1
 
-        def request_source() -> Iterable[RecognitionRequest]:
+        def page_requests(page: _PageState) -> Iterable[RecognitionRequest]:
             nonlocal next_request
-            templates = iter(self.pipeline.predict(
-                paths,
-                use_queues=False,
-                min_pixels=self.min_pixels,
-                max_new_tokens=self.recognizer.max_new_tokens,
-            ))
-            while True:
-                self._source_page_hint = next_page
-                started_ns = time.perf_counter_ns()
-                try:
-                    template = next(templates)
-                except StopIteration:
+            if page.remaining == 0:
+                complete_page(page)
+                return
+            for profile, batch in page.batches.items():
+                for profile_index, (image, prompt, block_id) in enumerate(
+                    zip(batch["images"], batch["queries"], batch["vlm_block_ids"])
+                ):
+                    if prompt not in PROMPT_LABELS:
+                        raise ValueError(f"unsupported PaddleX prompt: {prompt!r}")
+                    request_id = (
+                        f"page_{page.ordinal:06d}_block_{int(block_id[1]):06d}"
+                    )
+                    owners[request_id] = _RequestOwner(
+                        page,
+                        (int(profile[0]), int(profile[1])),
+                        profile_index,
+                        next_request,
+                        int(block_id[1]),
+                    )
+                    next_request += 1
+                    profiles[f"{profile[0]}:{profile[1]}"] += 1
+                    yield RecognitionRequest(
+                        request_id=request_id,
+                        crop=Image.fromarray(np.ascontiguousarray(image[:, :, ::-1])),
+                        prompt=prompt,
+                        skip_special_tokens=page.skip_special_tokens,
+                        min_pixels=int(profile[0]),
+                        max_pixels=int(profile[1]),
+                    )
+
+        def baseline_request_source() -> Iterable[RecognitionRequest]:
+            self._trace_context.page_hint = 0
+            templates = iter(
+                self.pipeline.predict(
+                    paths,
+                    use_queues=False,
+                    min_pixels=self.min_pixels,
+                    max_new_tokens=self.recognizer.max_new_tokens,
+                )
+            )
+            try:
+                while True:
+                    started_ns = time.perf_counter_ns()
+                    try:
+                        template = next(templates)
+                    except StopIteration:
+                        if self.timeline is not None:
+                            self.timeline.record_span(
+                                "Page input",
+                                "Drain PaddleX page source",
+                                started_ns,
+                                time.perf_counter_ns(),
+                                event_type="scope",
+                            )
+                        break
+                    page_ordinal = pending[0].ordinal if pending else next_page
                     if self.timeline is not None:
                         self.timeline.record_span(
                             "Page input",
-                            "Drain PaddleX page source",
+                            "Produce next PaddleX page",
                             started_ns,
                             time.perf_counter_ns(),
+                            flow_id=f"page:{page_ordinal}",
                             event_type="scope",
                         )
+                    if not pending:
+                        raise RuntimeError(
+                            "PaddleX emitted a page without captured state"
+                        )
+                    page = pending.popleft()
+                    page.result = template
+                    yield from page_requests(page)
+            finally:
+                del self._trace_context.page_hint
+            if pending:
+                raise RuntimeError(
+                    f"{len(pending)} captured PaddleX pages were not emitted"
+                )
+
+        def put_prepared_page(item: _PreparedPage) -> bool:
+            item.put_started_ns = time.perf_counter_ns()
+            while not producer_stop.is_set():
+                try:
+                    prepared_pages.put(item, timeout=0.1)
+                    return True
+                except queue.Full:
+                    continue
+            return False
+
+        def put_producer_sentinel() -> None:
+            while True:
+                try:
+                    prepared_pages.put(producer_sentinel, timeout=0.1)
+                    return
+                except queue.Full:
+                    if not producer_stop.is_set():
+                        continue
+                    try:
+                        prepared_pages.get_nowait()
+                    except queue.Empty:
+                        pass
+
+        def produce_pages() -> None:
+            try:
+                for ordinal, path in enumerate(paths):
+                    if producer_stop.is_set():
+                        break
+                    if next_page != ordinal or pending:
+                        raise RuntimeError(
+                            "PaddleX streaming page state lost sequential ordering: "
+                            f"next={next_page} expected={ordinal} pending={len(pending)}"
+                        )
+                    self._trace_context.page_hint = ordinal
+                    started_ns = time.perf_counter_ns()
+                    try:
+                        templates = list(
+                            self.pipeline.predict(
+                                [path],
+                                use_queues=False,
+                                min_pixels=self.min_pixels,
+                                max_new_tokens=self.recognizer.max_new_tokens,
+                            )
+                        )
+                    finally:
+                        if self.timeline is not None:
+                            self.timeline.record_span(
+                                "Page input",
+                                "Prepare page",
+                                started_ns,
+                                time.perf_counter_ns(),
+                                flow_id=f"page:{ordinal}",
+                                event_type="scope",
+                                args={"input_path": path},
+                            )
+                        del self._trace_context.page_hint
+                    if len(templates) != 1 or len(pending) != 1:
+                        raise RuntimeError(
+                            "one PaddleX image input must produce one template and one "
+                            "captured page: "
+                            f"templates={len(templates)} captured={len(pending)}"
+                        )
+                    page = pending.popleft()
+                    if page.ordinal != ordinal:
+                        raise RuntimeError(
+                            "PaddleX streaming page ordinal mismatch: "
+                            f"captured={page.ordinal} expected={ordinal}"
+                        )
+                    page.result = templates[0]
+                    if not put_prepared_page(_PreparedPage(page)):
+                        break
+            except BaseException as exc:
+                producer_errors.append(exc)
+            finally:
+                put_producer_sentinel()
+
+        def streaming_request_source() -> Iterable[RecognitionRequest]:
+            while True:
+                get_started_ns = time.perf_counter_ns()
+                item = prepared_pages.get()
+                get_finished_ns = time.perf_counter_ns()
+                if item is producer_sentinel:
+                    if self.timeline is not None:
+                        self.timeline.record_span(
+                            "Page input",
+                            "Wait for prepared page",
+                            get_started_ns,
+                            get_finished_ns,
+                            event_type="wait",
+                        )
+                    if producer_errors:
+                        raise producer_errors[0]
                     break
+                if not isinstance(item, _PreparedPage):
+                    raise TypeError(f"unexpected prepared-page item: {type(item)!r}")
+                page = item.page
                 if self.timeline is not None:
-                    page_ordinal = pending[0].ordinal if pending else next_page
+                    flow_id = f"page:{page.ordinal}"
                     self.timeline.record_span(
                         "Page input",
-                        "Produce next PaddleX page",
-                        started_ns,
-                        time.perf_counter_ns(),
-                        flow_id=f"page:{page_ordinal}",
-                        event_type="scope",
+                        "Wait for prepared page",
+                        get_started_ns,
+                        get_finished_ns,
+                        flow_id=flow_id,
+                        event_type="wait",
                     )
-                if not pending:
-                    raise RuntimeError("PaddleX emitted a page without captured state")
-                page = pending.popleft()
-                page.result = template
-                if page.remaining == 0:
-                    complete_page(page)
-                    continue
-                for profile, batch in page.batches.items():
-                    for profile_index, (image, prompt, block_id) in enumerate(
-                        zip(batch["images"], batch["queries"], batch["vlm_block_ids"])
-                    ):
-                        if prompt not in PROMPT_LABELS:
-                            raise ValueError(f"unsupported PaddleX prompt: {prompt!r}")
-                        request_id = (
-                            f"page_{page.ordinal:06d}_block_{int(block_id[1]):06d}"
-                        )
-                        owners[request_id] = _RequestOwner(
-                            page,
-                            (int(profile[0]), int(profile[1])),
-                            profile_index,
-                            next_request,
-                            int(block_id[1]),
-                        )
-                        next_request += 1
-                        profiles[f"{profile[0]}:{profile[1]}"] += 1
-                        yield RecognitionRequest(
-                            request_id=request_id,
-                            crop=Image.fromarray(
-                                np.ascontiguousarray(image[:, :, ::-1])
-                            ),
-                            prompt=prompt,
-                            skip_special_tokens=page.skip_special_tokens,
-                            min_pixels=int(profile[0]),
-                            max_pixels=int(profile[1]),
-                        )
-            if pending:
-                raise RuntimeError(f"{len(pending)} captured PaddleX pages were not emitted")
+                    self.timeline.record_span(
+                        "Page input",
+                        "Prepared page waiting for consumer",
+                        item.put_started_ns,
+                        get_finished_ns,
+                        flow_id=flow_id,
+                        event_type="wait",
+                        track="queue",
+                        lane="page-queue",
+                    )
+                yield from page_requests(page)
+
+        def request_source() -> Iterable[RecognitionRequest]:
+            if self.streaming_pages:
+                yield from streaming_request_source()
+            else:
+                yield from baseline_request_source()
 
         self.trace_path.parent.mkdir(parents=True, exist_ok=True)
         started = time.perf_counter()
         self.pipeline.get_layout_parsing_results = capture_layout_results
         timeline_wrappers = self._install_timeline_wrappers()
+        producer_join_timed_out = False
         try:
+            if self.streaming_pages:
+                producer_thread = threading.Thread(
+                    target=produce_pages,
+                    name="paddlex-page-producer",
+                    daemon=True,
+                )
+                producer_thread.start()
             with self.trace_path.open("w", encoding="utf-8") as trace:
                 def accept_result(result: RecognitionResult) -> None:
                     owner = owners.pop(result.request_id)
@@ -726,8 +885,15 @@ class PaddleXPageBridge:
                     emit_result=accept_result,
                 )
         finally:
+            producer_stop.set()
+            if producer_thread is not None:
+                producer_thread.join(timeout=30.0)
+                producer_join_timed_out = producer_thread.is_alive()
             self.pipeline.get_layout_parsing_results = original_get_results
             self._restore_timeline_wrappers(timeline_wrappers)
+
+        if producer_join_timed_out:
+            raise RuntimeError("PaddleX page producer did not stop within 30 seconds")
 
         wall_s = time.perf_counter() - started
         if owners or completed_pages != len(paths) or len(results) != schedule.requests:

@@ -164,6 +164,17 @@ boundary, and decode device spans reuse the scheduler's existing final resolve.
 Pass `--no-timeline` only when measuring the small host-side timestamping and
 in-memory event-recording overhead itself.
 
+The faithful PaddleX runner prepares pages sequentially on one background
+producer by default. Each page goes through the unchanged PaddleX
+`predict([page], use_queues=False)` path and enters a one-page bounded queue as
+soon as its layout detection, cropping, and prompt preparation finish. The
+recognizer can therefore start consuming that page while the producer prepares
+the next one; layout work itself is never parallelized. Pass
+`--no-streaming-pages` to restore the previous all-pages
+`predict(all_pages, use_queues=False)` baseline for parity and performance
+comparisons. The timeline shows producer work on the
+`paddlex-page-producer` thread and queue residence on the `page-queue` lane.
+
 ## Blue Zone run
 
 The smallest complete model path is the one-crop example. It does not construct
