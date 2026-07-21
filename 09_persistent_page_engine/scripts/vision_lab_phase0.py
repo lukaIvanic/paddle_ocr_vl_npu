@@ -91,6 +91,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--repeats", type=int, default=1)
     parser.add_argument("--seed", type=int, default=20260721)
     parser.add_argument("--control-multiplier", type=float, default=2.0)
+    parser.add_argument(
+        "--skip-like-for-like",
+        action="store_true",
+        help="Skip numerics and run the speed/padding study only.",
+    )
     parser.add_argument("--pipeline-vision-s", type=float, default=10.7)
     parser.add_argument("--pipeline-e2e-s", type=float, default=32.8)
     parser.add_argument("--device-occupancy", type=float, default=0.92)
@@ -229,6 +234,46 @@ def _ratio_histogram(values: Iterable[float]) -> dict[str, int]:
         else:
             histogram["gt_4"] += 1
     return histogram
+
+
+def _padding_audit(cases: Sequence[dict[str, Any]]) -> dict[str, Any]:
+    real_tokens = sum(int(case["real_tokens"]) for case in cases)
+    physical_tokens = sum(int(case["physical_tokens"]) for case in cases)
+    if physical_tokens < real_tokens:
+        raise AssertionError(
+            f"physical token accounting underflow: real={real_tokens}, "
+            f"physical={physical_tokens}"
+        )
+    padding_tokens = physical_tokens - real_tokens
+    for case in cases:
+        real = int(case["real_tokens"])
+        physical = int(case["physical_tokens"])
+        if physical < real:
+            raise AssertionError(
+                f"case padding underflow: real={real}, physical={physical}"
+            )
+        if case["kind"] == "target_graph" and physical != int(case["target"]):
+            raise AssertionError(
+                "target-graph call did not use its exact static length: "
+                f"target={case['target']}, physical={physical}"
+            )
+    return {
+        "real_tokens": real_tokens,
+        "physical_tokens": physical_tokens,
+        "padding_tokens": padding_tokens,
+        "real_token_fraction": (
+            real_tokens / physical_tokens if physical_tokens else 1.0
+        ),
+        "padding_fraction": (
+            padding_tokens / physical_tokens if physical_tokens else 0.0
+        ),
+        "max_case_padding_tokens": max(
+            (int(case["physical_tokens"]) - int(case["real_tokens"]) for case in cases),
+            default=0,
+        ),
+        "checked_cases": len(cases),
+        "passed": True,
+    }
 
 
 def _cache_preflight(
@@ -613,6 +658,7 @@ def _scout_target(
         cases.append(
             {
                 "kind": kind,
+                "target": target,
                 "items": len(group),
                 "real_tokens": total,
                 "physical_tokens": int(route["physical_vision_tokens"]),
@@ -638,6 +684,7 @@ def _scout_target(
         "peak_allocated_bytes_delta": max(
             (case["peak_allocated_bytes_delta"] or 0) for case in cases
         ),
+        "padding_audit": _padding_audit(cases),
         "cases": cases,
     }
 
@@ -669,6 +716,7 @@ def _policy_projection(
     costs_ms: list[float] = []
     kinds: list[str] = []
     totals: list[int] = []
+    physical_totals: list[int] = []
     for group in groups:
         total = sum(int(item["real_vision_tokens"]) for item in group)
         kind = _group_kind(group, target)
@@ -676,6 +724,7 @@ def _policy_projection(
         totals.append(total)
         if kind == "target_graph":
             costs_ms.append(target_compiled_ms)
+            physical_totals.append(target)
         elif kind == "passthrough":
             costs_ms.append(
                 sum(
@@ -687,6 +736,15 @@ def _policy_projection(
                     for item in group
                 )
             )
+            physical_totals.append(
+                sum(
+                    select_vision_bucket(
+                        int(item["real_vision_tokens"]), OPTIMIZED_VISION_BUCKETS
+                    )
+                    or int(item["real_vision_tokens"])
+                    for item in group
+                )
+            )
         else:
             costs_ms.append(
                 _existing_bucket_cost(
@@ -695,6 +753,13 @@ def _policy_projection(
                     fallback_ms_per_token=fallback_ms_per_token,
                 )
             )
+            physical_totals.append(
+                select_vision_bucket(total, OPTIMIZED_VISION_BUCKETS) or total
+            )
+    real_tokens = sum(totals)
+    physical_tokens = sum(physical_totals)
+    if physical_tokens < real_tokens:
+        raise AssertionError("policy projection physical-token underflow")
     projection_s = sum(costs_ms) / 1000.0 + overflow_constant_s
     return {
         "policy": policy,
@@ -705,6 +770,18 @@ def _policy_projection(
         "mean_fill_fraction": statistics.mean(
             min(total, target) / target for total in totals
         ),
+        "padding_audit": {
+            "real_tokens": real_tokens,
+            "physical_tokens": physical_tokens,
+            "padding_tokens": physical_tokens - real_tokens,
+            "real_token_fraction": real_tokens / physical_tokens,
+            "padding_fraction": (physical_tokens - real_tokens) / physical_tokens,
+            "max_group_padding_tokens": max(
+                physical - real
+                for physical, real in zip(physical_totals, totals)
+            ),
+            "passed": True,
+        },
         "projected_compiled_vision_s": projection_s,
         "overflow_constant_s": overflow_constant_s,
     }
@@ -775,6 +852,7 @@ def _measure_existing_compiled(
         cases.append(
             {
                 "kind": kind,
+                "target": target,
                 "items": len(group),
                 "real_tokens": total,
                 "physical_tokens": int(route["physical_vision_tokens"]),
@@ -790,6 +868,7 @@ def _measure_existing_compiled(
         "peak_allocated_bytes_delta": max(
             (case["peak_allocated_bytes_delta"] or 0) for case in cases
         ),
+        "padding_audit": _padding_audit(cases),
         "cases": cases,
     }
 
@@ -894,23 +973,35 @@ def main(argv: Sequence[str] | None = None) -> None:
     setup_s = time.perf_counter() - setup_started
 
     validations: dict[str, Any] = {}
-    for name, items in corpora.items():
-        validations[name] = _like_for_like_validation(
-            name=name,
-            items=items,
-            target=args.validation_target,
-            model=model,
-            runtime=compiled_runtime,
-            buckets=buckets,
-            seed=args.seed,
-            dtype=dtype,
-            device=device,
-            multiplier=args.control_multiplier,
-        )
-    all_valid = all(item["valid"] for item in validations.values())
+    if args.skip_like_for_like:
+        validations = {
+            name: {
+                "verdict": "skipped_speed_only",
+                "valid": None,
+                "reason": "explicit --skip-like-for-like",
+            }
+            for name in corpora
+        }
+    else:
+        for name, items in corpora.items():
+            validations[name] = _like_for_like_validation(
+                name=name,
+                items=items,
+                target=args.validation_target,
+                model=model,
+                runtime=compiled_runtime,
+                buckets=buckets,
+                seed=args.seed,
+                dtype=dtype,
+                device=device,
+                multiplier=args.control_multiplier,
+            )
+    run_speed_study = args.skip_like_for_like or all(
+        item["valid"] for item in validations.values()
+    )
 
     eager_scout: dict[str, list[dict[str, Any]]] = {}
-    if all_valid:
+    if run_speed_study:
         for name, items in corpora.items():
             targets = args.default_targets if name == "default" else args.variant_targets
             eager_scout[name] = [
@@ -936,7 +1027,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     }
     anchors: dict[str, Any] = {}
     extrapolation_ratio: float | None = None
-    if all_valid:
+    if run_speed_study:
         default_by_target = {
             int(row["target"]): row for row in eager_scout["default"]
         }
@@ -955,7 +1046,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     exact_variant_compiled: list[dict[str, Any]] = []
     headline_rows: list[dict[str, Any]] = []
     phase1_candidates: list[dict[str, Any]] = []
-    if all_valid and extrapolation_ratio is not None:
+    if run_speed_study and extrapolation_ratio is not None:
         for name, items in corpora.items():
             rows_by_target = {
                 int(row["target"]): row for row in eager_scout[name]
@@ -1107,7 +1198,13 @@ def main(argv: Sequence[str] | None = None) -> None:
         "schema_version": 2,
         "created_at_unix_s": time.time(),
         "phase": "phase0_zero_new_graphs",
-        "status": "complete" if all_valid else "stopped_after_invalid_numerics",
+        "status": (
+            "complete_speed_only"
+            if args.skip_like_for_like
+            else "complete"
+            if run_speed_study
+            else "stopped_after_invalid_numerics"
+        ),
         "config": {
             "corpus": str(args.corpus.expanduser().resolve()),
             "variant": args.variant,
@@ -1117,6 +1214,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "warmup": args.warmup,
             "repeats": args.repeats,
             "seed": args.seed,
+            "skip_like_for_like": args.skip_like_for_like,
             "cache_dir": str(args.cache_dir.expanduser().resolve()),
             "pipeline_vision_s": args.pipeline_vision_s,
             "pipeline_e2e_s": args.pipeline_e2e_s,
@@ -1154,10 +1252,12 @@ def main(argv: Sequence[str] | None = None) -> None:
     print(f"output={output}")
     print(f"status={payload['status']} new_graphs_compiled=0")
     for name, validation in validations.items():
-        print(
-            f"like_for_like {name}: {validation['verdict']} "
-            f"failures={validation['failures']}/{validation['validated_crops']}"
+        suffix = (
+            f" failures={validation['failures']}/{validation['validated_crops']}"
+            if "failures" in validation
+            else ""
         )
+        print(f"like_for_like {name}: {validation['verdict']}{suffix}")
     print("corpus | strategy_length | new_graphs | vision_s | ratio | verdict | peak_mem")
     for row in headline_rows:
         print(
