@@ -26,15 +26,13 @@ stream of full PIL pages
   -> lazy real PP-DocLayoutV3 inference on NPU
   -> reading-ordered layout regions and page collectors
   -> crop and prompt routing into one run-scoped request source
-  -> one PaddleOCR-VL prefill at a time
+  -> one PaddleOCR-VL prefill group at a time
        CPU image/prompt preprocessing
-       eager native-resolution patch + position embedding
-       shared vision-prefill stage, TorchAir + bucket padding by default
-       eager projector
-       shared text-prefill stage into a static KV cache,
-         TorchAir + bucket padding by default
-       eager LM head and first-token argmax
-       ready B=1 KV state
+       eager per-crop native-resolution patch + position embedding
+       optionally pack currently ready crops into one shared vision-tower call
+       split the packed output back into crop order
+       per crop: eager projector, shared text-prefill stage into a static KV
+         cache, eager LM head, first-token argmax, and ready B=1 KV state
   -> bounded cross-page ready reservoir
        high watermark = 4B prepared requests
        low watermark = B prepared requests
@@ -49,7 +47,10 @@ stream of full PIL pages
   -> emit each page immediately when all of its regions finish
 ```
 
-Vision and text prefill remain sequential B=1. Each stage has one
+With vision packing disabled, vision and text prefill remain sequential B=1.
+With packing enabled, only the vision transformer is shared across a group;
+patch/position embedding, projector, text prefill, LM head, and first-token
+selection remain per-crop and preserve crop order. Each stage has one
 compiler-safe model path shared by eager and compiled execution. Padding is a
 separate input-shaping policy: `none` keeps the real shape, while `bucket`
 pads to a configured static shape. `auto` selects bucket padding for TorchAir
@@ -166,20 +167,42 @@ transfer stream, not a synchronized host-wall envelope. Pass `--no-timeline`
 only when measuring the small host-side timestamping and in-memory
 event-recording overhead itself.
 
-Recognition prefill uses one-crop lookahead. After crop N's complete prefill
-chain has been enqueued, crop N+1's asynchronous H2D and prefill chain are
-enqueued before crop N is finalized. Resolving crop N waits only for its final
-device event, so crop N+1 remains queued behind it on the same compute stream
-while the host resolves timings and transfers the first token. CPU preparation
-pins the five copied input tensors when the runtime supports pinned allocation;
-failure to pin falls back to the same tensors and preserves correctness. The
-transfer stream records a completion event and the compute stream waits on that
-event before starting the crop, mirroring the decode scheduler's established
-stream/event dependency pattern. First-token D2H uses the same transfer stream:
-it waits on the crop's argmax event and copies into a pinned host scalar, so the
-copy cannot be queued behind crop N+1 on the compute stream. The lookahead
-changes production order only: prefill and decode kernels remain serialized on
-the compute stream.
+Recognition prefill uses one-group lookahead. A group is one crop when packing
+is disabled. After group G's complete prefill chain has been enqueued, group
+G+1's asynchronous H2D and prefill chain are enqueued before G is finalized.
+Resolving G waits only for its final device event, so G+1 remains queued behind
+it on the same compute stream while the host resolves timings and transfers the
+first tokens. CPU preparation pins the five copied input tensors when the
+runtime supports pinned allocation; failure to pin falls back to the same
+tensors and preserves correctness. The transfer stream records a completion
+event and the compute stream waits on that event before starting the group,
+mirroring the decode scheduler's established stream/event dependency pattern.
+First-token D2H uses the same transfer stream: it waits on the group's argmax
+events and copies one pinned K-token vector, so the copy cannot be queued behind
+G+1 on the compute stream. The lookahead changes production order only: prefill
+and decode kernels remain serialized on the compute stream.
+
+### Packed vision prefill
+
+`--vision-packing greedy` enables impatient arrival-order packing; the default
+is `off`. The group former blocks only for its first crop, then consumes every
+crop already available from CPU preparation while the sum of real vision rows
+fits `--vision-pack-target` (default 1920). It never waits to improve a nonempty
+group. Crops above the target stay on the existing faithful single-crop path,
+including the unchanged eager-overflow route above 2048 rows.
+
+Each crop is embedded independently, then the rows are concatenated for one
+existing shape-routed vision-transformer call. The attention mask prevents
+different crop segments from attending to each other and separately isolates
+dummy bucket rows. The result is split at the recorded real segment lengths;
+the downstream projector and text path then run once per crop as before. The
+packed call reuses the existing shape-keyed TorchAir graphs and introduces no
+new vision bucket shapes.
+
+The run summary records group count, group-size histogram, crops per group,
+real/physical packed tokens, and fill fraction. The timeline shows one
+`Packed vision transformer` device span with every member crop as a flow ID,
+while downstream spans retain their individual crop IDs.
 
 The faithful PaddleX runner prepares pages sequentially on one background
 producer. Each page goes through the unchanged PaddleX
@@ -247,6 +270,25 @@ the model's maximum remains unchanged. The model default, requested override,
 effective bounds, resize factor, and nominal minimum image-token count are
 recorded under `configuration.preprocessor` in `run.json`.
 
+The measured packed min-pixels/4 operating point is explicit rather than a
+default change:
+
+```sh
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
+  09_persistent_page_engine/scripts/run_omnidocbench_paddlex.py \
+  --limit 256 \
+  --batch-size 16 \
+  --cache-length 8192 \
+  --max-new-tokens 4096 \
+  --vision-backend torchair \
+  --vision-attention prompt_flash_attention \
+  --vision-padding auto \
+  --vision-packing greedy \
+  --vision-pack-target 1920 \
+  --preprocessor-min-pixels 28224 \
+  --output-dir tmp/09_persistent_page_engine/packed_minpixels_div4_256p
+```
+
 The normal page runners expose the vision comparison directly through
 `--vision-backend raw_eager|torchair` and
 `--vision-attention manual|prompt_flash_attention`. The default remains the
@@ -273,6 +315,39 @@ Compiling remained non-regressive through the largest 5,216-token bucket, while
 changing attention or execution by size improved the estimated total by less
 than one percent. The simplest measured policy is therefore compiled PromptFA
 for every retained bucket.
+
+### Packed-vision staged validation
+
+Commit `44c20b6` was validated on the first 32 or 256 OmniDocBench pages with
+B=16, cache length 8192, compiled PromptFA, and a 1920-row pack target. E2E
+excludes setup. Score deltas are packed minus the matching unpacked control;
+lower edit distance is better. Peak HBM was sampled on cache-warm 32-page
+replays because the ready-reservoir and two-group in-flight bound are unchanged
+by corpus length.
+
+| Lane | Pages | E2E (s) | Pages/s | Vision tower (s) | Groups / crops per group | Token-diff crops | Score delta (page avg) | Peak HBM |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| Stage 0: packing off, default pixels | 32 | 32.87 | 0.974 | 10.67 | 510 / 1.000 | 0 / 510 | exact baseline | not sampled |
+| Stage A: packed, default pixels | 32 | 30.79 | 1.039 | 8.04 | 266 / 1.917 | 6 / 510 (1.18%) | text 0; formula -0.00006; table 0; order 0 | 23,828 MB |
+| Stage B control: packing off, min-pixels/4 | 32 | 31.13 | 1.028 | 8.49 | 510 / 1.000 | - | unpacked reference | not sampled |
+| Stage B: packed, min-pixels/4 | 32 | 28.06 | 1.140 | 4.56 | 141 / 3.617 | 6 / 510 (1.18%) | text +0.00300; formula -0.00131; table 0; order 0 | 25,097 MB |
+| Stage B control: packing off, min-pixels/4 | 256 | 229.36 | 1.116 | 73.43 | 3,524 / 1.000 | - | unpacked reference | not sampled |
+| Stage B: packed, min-pixels/4 | 256 | 210.88 | 1.214 | 50.38 | 1,079 / 3.266 | 28 / 3,524 (0.795%) | text -0.00270; formula -0.00607; table 0; order -0.00268 | 25,097 MB (32-page replay) |
+
+Packing therefore raised 256-page throughput by 8.8% and reduced serialized
+vision-tower device work by 31.4%, with no score regression. It did not reach
+the projected 1.30 pages/s acceptance target. The greedy stream formed only
+3.266 crops/group, 66.7% of the offline 4.9-crop benchmark and below the
+specified 80% policy-discussion threshold, although the groups it did form had
+96.65% real-token fill. Bounded-window best-fit is the known next policy to
+discuss; it is not implemented here.
+
+The first min-pixels/4 control introduced text buckets 32, 64, 96, and 128.
+Its text-runtime setup took 133.74 seconds and total setup took 176.91 seconds;
+the next packed run reused those graphs (13.65 seconds text setup, 65.33 seconds
+total). The 188 oversized crops in the 256-page packed run remained unchanged
+single-crop eager-overflow groups. No OOM occurred; the measured packed peak
+left about 40 GB of HBM headroom.
 
 Each recognition result records its real token count, selected physical bucket,
 padding, and execution route. Aggregate JSON reports bucket counts and the
