@@ -20,9 +20,12 @@ sys.path.insert(0, str(EXPERIMENT_ROOT))
 
 from paddleocr_vl.serving.engine import ContinuousRecognizer
 from paddleocr_vl.serving.runtime_defaults import (
+    DEFAULT_VISION_PACKING,
+    DEFAULT_VISION_PACK_TARGET,
     OPTIMIZED_TEXT_BUCKETS,
     OPTIMIZED_VISION_BUCKETS,
     PADDLEOCR_DEFAULT_MIN_PIXELS,
+    VISION_PACKING_CHOICES,
 )
 from paddleocr_vl.model.text_prefill import TEXT_PADDING_CHOICES, parse_text_buckets
 from paddleocr_vl.model.vision_prefill import (
@@ -103,6 +106,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--vision-padding",
         default="auto",
         choices=VISION_PADDING_CHOICES,
+    )
+    parser.add_argument(
+        "--vision-packing",
+        default=DEFAULT_VISION_PACKING,
+        choices=VISION_PACKING_CHOICES,
+    )
+    parser.add_argument(
+        "--vision-pack-target",
+        type=int,
+        default=DEFAULT_VISION_PACK_TARGET,
     )
     parser.add_argument(
         "--text-buckets",
@@ -208,6 +221,8 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--cache-length must leave room for the input prompt")
     if args.preprocessor_min_pixels is not None and args.preprocessor_min_pixels <= 0:
         raise ValueError("--preprocessor-min-pixels must be positive")
+    if args.vision_pack_target <= 0:
+        raise ValueError("--vision-pack-target must be positive")
 
 
 def run_predictions(
@@ -355,6 +370,8 @@ def main() -> None:
             args.vision_torchair_cache_dir.expanduser().resolve()
         ),
         vision_padding=args.vision_padding,
+        vision_packing=args.vision_packing,
+        vision_pack_target=args.vision_pack_target,
         text_backend="torchair",
         text_buckets=text_buckets,
         text_torchair_cache_dir=args.text_torchair_cache_dir.expanduser().resolve(),
@@ -381,6 +398,8 @@ def main() -> None:
             "decode_batch_size": args.batch_size,
             "vision_backend": args.vision_backend,
             "vision_attention": args.vision_attention,
+            "vision_packing": args.vision_packing,
+            "vision_pack_target": args.vision_pack_target,
         }
     )
     try:
@@ -428,6 +447,8 @@ def main() -> None:
             "vision_backend": args.vision_backend,
             "vision_attention": args.vision_attention,
             "vision_padding": args.vision_padding,
+            "vision_packing": args.vision_packing,
+            "vision_pack_target": args.vision_pack_target,
             "vision_buckets": list(vision_buckets),
             "text_buckets": list(text_buckets),
             "cpu_preprocessing": recognizer.configuration()["cpu_preprocessing"],

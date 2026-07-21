@@ -504,6 +504,7 @@ class PaddleXPageBridge:
             ),
             "pixel_profile_request_counts": dict(sorted(profiles.items())),
             "device_stage_s": dict(sorted(stage_s.items())),
+            "vision_packing": dict(schedule.vision_packing),
             "run_output_tok_per_s": generated / wall_s if wall_s else None,
             "decode_useful_token_fraction": (
                 schedule.effective_decode_tokens / raw_slots if raw_slots else None

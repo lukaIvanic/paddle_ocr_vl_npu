@@ -797,6 +797,12 @@ class PreparedVisionPrefill:
     execution: str
 
 
+@dataclass(frozen=True)
+class PreparedPackedVisionPrefill:
+    prepared: PreparedVisionPrefill
+    segment_lengths: tuple[int, ...]
+
+
 def build_vision_rope(
     model: LocalPaddleOCRVLForConditionalGeneration,
     image_grid_thw: torch.Tensor,
@@ -885,6 +891,109 @@ def prepare_vision_prefill(
         real_seq_len=real_seq_len,
         physical_seq_len=physical_seq_len,
         execution=str(execution),
+    )
+
+
+def prepare_packed_vision_prefill(
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    hidden_states: Iterable[torch.Tensor],
+    image_grids_thw: Iterable[torch.Tensor],
+    *,
+    physical_seq_len: int,
+    execution: str,
+) -> PreparedPackedVisionPrefill:
+    hidden = list(hidden_states)
+    grids = list(image_grids_thw)
+    if not hidden or len(hidden) != len(grids):
+        raise ValueError(
+            "packed vision inputs require equal non-empty hidden/grid lists"
+        )
+    lengths = tuple(int(value.shape[0]) for value in hidden)
+    real_seq_len = sum(lengths)
+    physical_seq_len = int(physical_seq_len)
+    if real_seq_len > physical_seq_len:
+        raise ValueError(
+            f"packed vision sequence {real_seq_len} exceeds bucket {physical_seq_len}"
+        )
+
+    ropes = [
+        build_vision_rope(
+            model,
+            grid,
+            real_seq_len=length,
+            device=hidden[0].device,
+        )
+        for grid, length in zip(grids, lengths)
+    ]
+    prefix = torch.cat(hidden, dim=0)
+    rope_cos = torch.cat([pair[0] for pair in ropes], dim=0)
+    rope_sin = torch.cat([pair[1] for pair in ropes], dim=0)
+    pad_tokens = physical_seq_len - real_seq_len
+    if pad_tokens:
+        prefix = F.pad(prefix, (0, 0, 0, pad_tokens))
+        rope_cos = torch.cat(
+            [
+                rope_cos,
+                torch.ones(
+                    (pad_tokens, rope_cos.shape[-1]),
+                    device=rope_cos.device,
+                    dtype=rope_cos.dtype,
+                ),
+            ],
+            dim=0,
+        )
+        rope_sin = torch.cat(
+            [
+                rope_sin,
+                torch.zeros(
+                    (pad_tokens, rope_sin.shape[-1]),
+                    device=rope_sin.device,
+                    dtype=rope_sin.dtype,
+                ),
+            ],
+            dim=0,
+        )
+
+    segment_ids = torch.cat(
+        [
+            torch.full(
+                (length,),
+                index,
+                device=prefix.device,
+                dtype=torch.int32,
+            )
+            for index, length in enumerate(lengths)
+        ]
+        + (
+            [
+                torch.full(
+                    (pad_tokens,),
+                    -1,
+                    device=prefix.device,
+                    dtype=torch.int32,
+                )
+            ]
+            if pad_tokens
+            else []
+        )
+    )
+    attention_mask = (segment_ids[:, None] != segment_ids[None, :]).view(
+        1,
+        1,
+        physical_seq_len,
+        physical_seq_len,
+    )
+    return PreparedPackedVisionPrefill(
+        prepared=PreparedVisionPrefill(
+            prefix_hidden_states=prefix.unsqueeze(0).contiguous(),
+            rope_cos=rope_cos.unsqueeze(0).contiguous(),
+            rope_sin=rope_sin.unsqueeze(0).contiguous(),
+            attention_mask=attention_mask.contiguous(),
+            real_seq_len=real_seq_len,
+            physical_seq_len=physical_seq_len,
+            execution=str(execution),
+        ),
+        segment_lengths=lengths,
     )
 
 
@@ -1162,6 +1271,21 @@ class VisionPrefillRuntime:
             self.model,
             prefix_hidden_states,
             image_grid_thw,
+            physical_seq_len=int(route["physical_vision_tokens"]),
+            execution=str(route["execution"]),
+        )
+
+    def prepare_packed(
+        self,
+        hidden_states: Iterable[torch.Tensor],
+        image_grids_thw: Iterable[torch.Tensor],
+        *,
+        route: dict[str, Any],
+    ) -> PreparedPackedVisionPrefill:
+        return prepare_packed_vision_prefill(
+            self.model,
+            hidden_states,
+            image_grids_thw,
             physical_seq_len=int(route["physical_vision_tokens"]),
             execution=str(route["execution"]),
         )
