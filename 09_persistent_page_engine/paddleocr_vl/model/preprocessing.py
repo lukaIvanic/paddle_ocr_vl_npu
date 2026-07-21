@@ -90,6 +90,58 @@ def apply_min_pixels_override(cfg: dict, min_pixels: int | None) -> dict:
     return effective
 
 
+def image_grid_thw_from_size(
+    width: int,
+    height: int,
+    *,
+    patch_size: int,
+    merge_size: int,
+    temporal_patch_size: int,
+    min_pixels: int,
+    max_pixels: int,
+    do_resize: bool = True,
+) -> tuple[int, int, int]:
+    """Return the shape-only image grid used by ``preprocess_pil_image``.
+
+    This deliberately mirrors only the resize and patch-grid math. It does not
+    allocate an image or perform resampling, normalization, or patchification.
+    """
+    width = int(width)
+    height = int(height)
+    patch_size = int(patch_size)
+    merge_size = int(merge_size)
+    temporal_patch_size = int(temporal_patch_size)
+    if width <= 0 or height <= 0:
+        raise ValueError(f"image dimensions must be positive, got {(width, height)}")
+    if patch_size <= 0 or merge_size <= 0:
+        raise ValueError("patch_size and merge_size must be positive")
+    if temporal_patch_size != 1:
+        raise ValueError(
+            "temporal_patch_size must be 1 for this recognizer path, "
+            f"got {temporal_patch_size}"
+        )
+
+    resized_height, resized_width = height, width
+    if do_resize:
+        resized_height, resized_width = smart_resize(
+            height,
+            width,
+            factor=patch_size * merge_size,
+            min_pixels=int(min_pixels),
+            max_pixels=int(max_pixels),
+        )
+    if resized_height % patch_size or resized_width % patch_size:
+        raise ValueError(
+            "resized image dimensions must be divisible by patch_size: "
+            f"size={(resized_width, resized_height)} patch_size={patch_size}"
+        )
+    return (
+        1,
+        resized_height // patch_size,
+        resized_width // patch_size,
+    )
+
+
 def preprocess_pil_image(
     image: Image.Image,
     cfg: dict,
@@ -107,15 +159,19 @@ def preprocess_pil_image(
             f"got {temporal_patch_size}"
         )
 
-    resized_height, resized_width = height, width
+    grid_t, grid_h, grid_w = image_grid_thw_from_size(
+        width,
+        height,
+        patch_size=patch_size,
+        merge_size=merge_size,
+        temporal_patch_size=temporal_patch_size,
+        min_pixels=int(cfg["min_pixels"]),
+        max_pixels=int(cfg["max_pixels"]),
+        do_resize=bool(cfg["do_resize"]),
+    )
+    resized_height = grid_h * patch_size
+    resized_width = grid_w * patch_size
     if cfg["do_resize"]:
-        resized_height, resized_width = smart_resize(
-            height,
-            width,
-            factor=patch_size * merge_size,
-            min_pixels=int(cfg["min_pixels"]),
-            max_pixels=int(cfg["max_pixels"]),
-        )
         resample = Image.Resampling(int(cfg["resample"]))
         image = image.resize((resized_width, resized_height), resample=resample)
 
@@ -131,9 +187,6 @@ def preprocess_pil_image(
 
     patches = array.transpose(2, 0, 1)[None, ...]
     channel = patches.shape[1]
-    grid_t = patches.shape[0] // temporal_patch_size
-    grid_h = resized_height // patch_size
-    grid_w = resized_width // patch_size
     patches = patches.reshape(
         grid_t,
         temporal_patch_size,
