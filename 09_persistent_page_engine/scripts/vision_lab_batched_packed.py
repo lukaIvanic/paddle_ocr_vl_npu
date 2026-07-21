@@ -60,7 +60,7 @@ from vision_lab_phase0 import (
 DEFAULT_OUTPUT = (
     REPO_ROOT
     / "tmp/09_persistent_page_engine/vision_lab"
-    / "batched_packed_eager.json"
+    / "batched_packed_compiled.json"
 )
 DEFAULT_CACHE_ROOT = Path("/dev/shm/vision_lab_cache_all")
 
@@ -153,7 +153,7 @@ def _run_batched_packed(
                 hidden,
                 grids[offset:end],
                 physical=sequence_length,
-                execution="eager_padded",
+                execution="compiled_batched_packed",
             )
         )
         offset = end
@@ -169,7 +169,7 @@ def _run_batched_packed(
                 attention_mask=torch.zeros_like(template.attention_mask),
                 real_seq_len=0,
                 physical_seq_len=sequence_length,
-                execution="eager_padded_dummy_row",
+                execution="compiled_batched_packed_dummy_row",
             )
         )
     prefix = torch.cat([item.prefix_hidden_states for item in row_prepared], dim=0)
