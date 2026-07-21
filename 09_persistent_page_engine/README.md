@@ -161,8 +161,22 @@ it without an embedded trace offers drag-and-drop for any
 Timeline recording adds host timestamping but no accelerator synchronization.
 Prefill device spans reuse the existing per-request `DeviceTimeline.resolve()`
 boundary, and decode device spans reuse the scheduler's existing final resolve.
-Pass `--no-timeline` only when measuring the small host-side timestamping and
-in-memory event-recording overhead itself.
+Recognition-input H2D timing is device-event copy time on the dedicated prefill
+transfer stream, not a synchronized host-wall envelope. Pass `--no-timeline`
+only when measuring the small host-side timestamping and in-memory
+event-recording overhead itself.
+
+Recognition prefill uses one-crop lookahead. After crop N's complete prefill
+chain has been enqueued, crop N+1's asynchronous H2D and prefill chain are
+enqueued before crop N is finalized. Resolving crop N waits only for its final
+device event, so crop N+1 remains queued behind it on the same compute stream
+while the host resolves timings and transfers the first token. CPU preparation
+pins the five copied input tensors when the runtime supports pinned allocation;
+failure to pin falls back to the same tensors and preserves correctness. The
+transfer stream records a completion event and the compute stream waits on that
+event before starting the crop, mirroring the decode scheduler's established
+stream/event dependency pattern. The lookahead changes production order only:
+prefill and decode kernels remain serialized on the compute stream.
 
 The faithful PaddleX runner prepares pages sequentially on one background
 producer by default. Each page goes through the unchanged PaddleX
@@ -176,12 +190,13 @@ comparisons. The timeline shows producer work on the
 `paddlex-page-producer` thread and queue residence on the `page-queue` lane.
 
 On NPU, that producer owns one dedicated layout stream and fences it before a
-prepared page enters the handoff queue. Recognition input timing fences only
-the recognizer's current stream, and each prefill timeline resolves by waiting
-on its last recorded end event. These scoped waits preserve each stage's data
-dependencies without making recognition wait for independent layout kernels;
-the continuous-decode scheduler retains its single device-wide synchronization
-as the final run-boundary fence.
+prepared page enters the handoff queue. Recognition input copies use the
+dedicated prefill transfer stream and an event dependency on the recognizer's
+compute stream, while each prefill timeline resolves by waiting on its last
+recorded end event. These scoped waits preserve each stage's data dependencies
+without making recognition wait for independent layout kernels; the
+continuous-decode scheduler retains its single device-wide synchronization as
+the final run-boundary fence.
 
 ## Blue Zone run
 
