@@ -167,16 +167,17 @@ transfer stream, not a synchronized host-wall envelope. Pass `--no-timeline`
 only when measuring the small host-side timestamping and in-memory
 event-recording overhead itself.
 
-Recognition prefill uses one-group lookahead. A group is one crop when packing
-is disabled. After group G's complete prefill chain has been enqueued, group
-G+1's asynchronous H2D and prefill chain are enqueued before G is finalized.
-Resolving G waits only for its final device event, so G+1 remains queued behind
-it on the same compute stream while the host resolves timings and transfers the
-first tokens. CPU preparation pins the five copied input tensors when the
-runtime supports pinned allocation; failure to pin falls back to the same
-tensors and preserves correctness. The transfer stream records a completion
-event and the compute stream waits on that event before starting the group,
-mirroring the decode scheduler's established stream/event dependency pattern.
+Recognition prefill stages one future group's H2D before yielding any crop from
+the current group to the pull-driven decode scheduler. A group is one crop when
+packing is disabled. This ordering matters because yielding can suspend the
+ready source until the decode reservoir next needs a refill; the future copy
+must already be submitted before that suspension. When the source resumes,
+the staged group's compute chain waits on its recorded H2D completion event and
+starts without a new exposed copy. CPU preparation pins the five copied input
+tensors when the runtime supports pinned allocation; failure to pin falls back
+to the same tensors and preserves correctness. This dedicated transfer-stream
+and compute-stream event dependency mirrors the decode scheduler's established
+stream/event pattern without pre-enqueueing multiple future compute groups.
 First-token D2H uses the same transfer stream: it waits on the group's argmax
 events and copies one pinned K-token vector, so the copy cannot be queued behind
 G+1 on the compute stream. The lookahead changes production order only: prefill

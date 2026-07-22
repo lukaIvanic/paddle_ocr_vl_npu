@@ -117,6 +117,15 @@ class _PreparedPrefillGroup:
 
 
 @dataclass
+class _StagedPrefillGroup:
+    group: _PreparedPrefillGroup
+    device_timeline: DeviceTimeline
+    h2d_ready_event: Any
+    moved_members: list[tuple[torch.Tensor, ...]]
+    timings: list[dict[str, float]]
+
+
+@dataclass
 class _VisionPackingRunStats:
     mode: str
     target: int
@@ -538,7 +547,7 @@ class ContinuousRecognizer:
             )
 
         def ready_stream() -> Iterable[ReadyDecodeRequest]:
-            pending: _InFlightPrefillGroup | None = None
+            current: _InFlightPrefillGroup | None = None
             drained_normally = False
             try:
                 if self.vision_packing == "off":
@@ -547,21 +556,35 @@ class ContinuousRecognizer:
                     groups = self._iter_packed_prefill_groups(requests)
                 else:
                     groups = self._iter_profiled_prefill_groups(requests)
-                for group in groups:
-                    current = self._enqueue_prefill_group(group)
-                    previous = pending
-                    pending = current
-                    if previous is not None:
-                        for state in self._finalize_prefill_group(previous):
-                            yield ready_from(state)
-                if pending is not None:
-                    final = pending
-                    pending = None
+                group_source = iter(groups)
+                try:
+                    first_group = next(group_source)
+                except StopIteration:
+                    drained_normally = True
+                    return
+                current = self._enqueue_staged_prefill_group(
+                    self._stage_prefill_group(first_group)
+                )
+                while current is not None:
+                    try:
+                        next_group = next(group_source)
+                    except StopIteration:
+                        next_staged = None
+                    else:
+                        # Submit the next group's copies before any yield can
+                        # suspend this generator inside the decode scheduler.
+                        next_staged = self._stage_prefill_group(next_group)
+
+                    final = current
+                    current = None
                     for state in self._finalize_prefill_group(final):
                         yield ready_from(state)
+                    if next_staged is None:
+                        break
+                    current = self._enqueue_staged_prefill_group(next_staged)
                 drained_normally = True
             finally:
-                if drained_normally and pending is not None:
+                if drained_normally and current is not None:
                     raise RuntimeError(
                         "ready stream drained with an unfinalized prefill"
                     )
@@ -1212,16 +1235,16 @@ class ContinuousRecognizer:
         return f"member:{int(member_index)}:{stage}"
 
     @torch.inference_mode()
-    def _enqueue_prefill_group(
+    def _stage_prefill_group(
         self,
         group: _PreparedPrefillGroup,
-    ) -> _InFlightPrefillGroup:
+    ) -> _StagedPrefillGroup:
         import torch_npu
 
         if not group.members:
-            raise ValueError("cannot enqueue an empty prefill group")
+            raise ValueError("cannot stage an empty prefill group")
         device_timeline = DeviceTimeline(self.device)
-        enqueue_started = time.perf_counter()
+        submit_started = time.perf_counter()
         moved_members: list[tuple[torch.Tensor, ...]] = []
         timings: list[dict[str, float]] = []
 
@@ -1271,6 +1294,45 @@ class ContinuousRecognizer:
                     )
                 )
             h2d_ready_event = self.prefill_transfer_stream.record_event()
+        submit_finished = time.perf_counter()
+        for timing in timings:
+            timing["prefill_h2d_submit_host"] = submit_finished - submit_started
+        if self.timeline is not None:
+            self.timeline.record_span_seconds(
+                "H2D / D2H transfer",
+                "Submit next prefill group H2D",
+                submit_started,
+                submit_finished,
+                flow_id=group.members[0][0].request_id,
+                flow_ids=[
+                    prepared.request_id for prepared, _wait_s in group.members
+                ],
+                event_type="io",
+                track="host",
+                lane="prefill-submit",
+                args={"group_id": group.group_id, "crops": len(group.members)},
+            )
+        return _StagedPrefillGroup(
+            group=group,
+            device_timeline=device_timeline,
+            h2d_ready_event=h2d_ready_event,
+            moved_members=moved_members,
+            timings=timings,
+        )
+
+    @torch.inference_mode()
+    def _enqueue_staged_prefill_group(
+        self,
+        staged: _StagedPrefillGroup,
+    ) -> _InFlightPrefillGroup:
+        import torch_npu
+
+        group = staged.group
+        device_timeline = staged.device_timeline
+        h2d_ready_event = staged.h2d_ready_event
+        moved_members = staged.moved_members
+        timings = staged.timings
+        enqueue_started = time.perf_counter()
 
         compute_stream = torch_npu.npu.current_stream()
         compute_stream.wait_event(h2d_ready_event)
@@ -1907,9 +1969,9 @@ class ContinuousRecognizer:
                 "pin_recognition_inputs": "best_effort",
             },
             "prefill_production": (
-                "one_group_lookahead"
+                "next_group_h2d_staged_before_ready_yield"
                 if self.vision_packing != "off"
-                else "one_crop_lookahead"
+                else "next_crop_h2d_staged_before_ready_yield"
             ),
             "prefill_transfer": "dedicated_stream_event_dependencies",
             "decode": decode_label,
