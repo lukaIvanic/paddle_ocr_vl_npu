@@ -24,6 +24,7 @@ from paddleocr_vl.model.modeling import (  # noqa: E402
 )
 from paddleocr_vl.model.vision_prefill import (  # noqa: E402
     VisionPrefillRuntime,
+    parse_vision_buckets,
     vision_cache_dir_for_bucket,
 )
 from paddleocr_vl.serving.runtime_defaults import (  # noqa: E402
@@ -63,12 +64,18 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--model", type=Path, default=DEFAULT_MODEL)
     parser.add_argument("--b1-cache-dir", type=Path, default=DEFAULT_B1_CACHE_ROOT)
     parser.add_argument(
+        "--b1-buckets",
+        default=",".join(str(value) for value in OPTIMIZED_VISION_BUCKETS),
+        help="Comma-separated B1 buckets to discover and profile.",
+    )
+    parser.add_argument(
         "--batched-cache-dir", type=Path, default=DEFAULT_BATCHED_CACHE_ROOT
     )
     parser.add_argument("--warmup", type=int, default=2)
     parser.add_argument("--repeats", type=int, default=10)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     args = parser.parse_args(argv)
+    args.b1_buckets = parse_vision_buckets(args.b1_buckets)
     if args.warmup < 0 or args.repeats <= 0:
         parser.error("--warmup must be non-negative and --repeats positive")
     return args
@@ -185,7 +192,7 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     cached_b1: list[int] = []
     skipped_b1: list[dict[str, Any]] = []
-    for bucket in OPTIMIZED_VISION_BUCKETS:
+    for bucket in args.b1_buckets:
         cache_dir = vision_cache_dir_for_bucket(
             args.b1_cache_dir,
             bucket=int(bucket),

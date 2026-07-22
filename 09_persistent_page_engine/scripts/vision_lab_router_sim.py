@@ -54,6 +54,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="Packed E2E trace used for the current-router baseline and eager costs.",
     )
     parser.add_argument(
+        "--profile-json",
+        type=Path,
+        help=(
+            "Optional cached-profile JSON whose measured graphs extend or "
+            "replace the pinned routing profile."
+        ),
+    )
+    parser.add_argument(
         "--lookahead",
         type=int,
         action="append",
@@ -110,10 +118,13 @@ def _load_items(path: Path, variant: str) -> tuple[dict[str, Any], list[dict[str
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not payload.get("self_check", {}).get("passed"):
         raise ValueError("corpus regression self-check is not marked passed")
-    try:
-        raw_items = payload["variants"][variant]["items"]
-    except KeyError as exc:
-        raise KeyError(f"corpus does not contain variant {variant!r}") from exc
+    if variant == "default":
+        raw_items = payload["items"]
+    else:
+        try:
+            raw_items = payload["variants"][variant]["items"]
+        except KeyError as exc:
+            raise KeyError(f"corpus does not contain variant {variant!r}") from exc
     items = [dict(item) for item in raw_items]
     for index, item in enumerate(items):
         item["source_index"] = index
@@ -186,9 +197,12 @@ def _pack_candidate(
     }
 
 
-def _best_candidate(pending: Sequence[dict[str, Any]]) -> dict[str, Any] | None:
+def _best_candidate(
+    pending: Sequence[dict[str, Any]],
+    graph_profile: dict[tuple[int, int], dict[str, float]],
+) -> dict[str, Any] | None:
     candidates: list[dict[str, Any]] = []
-    for (batch_size, sequence_length), cost in PINNED_910B2_PROFILE["graphs"].items():
+    for (batch_size, sequence_length), cost in graph_profile.items():
         candidate = _pack_candidate(
             pending,
             batch_size=int(batch_size),
@@ -222,6 +236,7 @@ def _simulate(
     *,
     lookahead: int,
     eager_ms_by_name: dict[str, float],
+    graph_profile: dict[tuple[int, int], dict[str, float]],
     keep_decisions: bool,
 ) -> dict[str, Any]:
     pending: list[dict[str, Any]] = []
@@ -247,7 +262,7 @@ def _simulate(
     while pending:
         oldest = pending[0]
         route_started = time.perf_counter_ns()
-        candidate = _best_candidate(pending)
+        candidate = _best_candidate(pending, graph_profile)
         router_ns.append(time.perf_counter_ns() - route_started)
         if candidate is None:
             name = str(oldest["name"])
@@ -358,6 +373,7 @@ def _baseline_from_trace(
     records: Sequence[dict[str, Any]],
     *,
     expected_names: set[str],
+    graph_profile: dict[tuple[int, int], dict[str, float]],
 ) -> dict[str, Any]:
     trace_names = {str(record["request_id"]) for record in records}
     if trace_names != expected_names:
@@ -384,7 +400,7 @@ def _baseline_from_trace(
         sequence_length = int(first["pack_physical_vision_tokens"])
         shape = (batch_size, sequence_length)
         try:
-            cost = PINNED_910B2_PROFILE["graphs"][shape]
+            cost = graph_profile[shape]
         except KeyError as exc:
             raise KeyError(f"baseline group {group_id} uses unprofiled shape {shape}") from exc
         real_tokens = sum(int(record["vision"]["real_vision_tokens"]) for record in group)
@@ -453,6 +469,29 @@ def _summary_row(result: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _graph_profile(path: Path | None) -> dict[tuple[int, int], dict[str, float]]:
+    graphs = {
+        (int(batch_size), int(sequence_length)): dict(values)
+        for (batch_size, sequence_length), values in PINNED_910B2_PROFILE[
+            "graphs"
+        ].items()
+    }
+    if path is None:
+        return graphs
+    payload = json.loads(path.expanduser().resolve().read_text(encoding="utf-8"))
+    for row in payload.get("graphs", []):
+        batch_size = int(row["batch_size"])
+        sequence_length = int(row["sequence_length"])
+        median_ms = float(row["median_ms"])
+        graphs[(batch_size, sequence_length)] = {
+            "median_ms": median_ms,
+            "raw_physical_tokens_per_s": (
+                batch_size * sequence_length / (median_ms / 1000.0)
+            ),
+        }
+    return graphs
+
+
 def main(argv: Sequence[str] | None = None) -> None:
     args = parse_args(argv)
     corpus_path = args.corpus.expanduser().resolve()
@@ -461,8 +500,13 @@ def main(argv: Sequence[str] | None = None) -> None:
     corpus, items = _load_items(corpus_path, args.variant)
     records = _read_jsonl(trace_path)
     eager_costs = _eager_costs(records)
+    graph_profile = _graph_profile(args.profile_json)
     expected_names = {str(item["name"]) for item in items}
-    baseline = _baseline_from_trace(records, expected_names=expected_names)
+    baseline = _baseline_from_trace(
+        records,
+        expected_names=expected_names,
+        graph_profile=graph_profile,
+    )
     if baseline["total_real_tokens"] != sum(
         int(item["real_vision_tokens"]) for item in items
     ):
@@ -475,6 +519,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                 items,
                 lookahead=lookahead,
                 eager_ms_by_name=eager_costs,
+                graph_profile=graph_profile,
                 keep_decisions=lookahead == args.audit_lookahead,
             )
         )
@@ -502,7 +547,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "selection": "maximum useful real tokens divided by pinned median graph cost",
             "candidate_graphs": [
                 _shape_label(batch_size, sequence_length)
-                for batch_size, sequence_length in PINNED_910B2_PROFILE["graphs"]
+                for batch_size, sequence_length in graph_profile
             ],
             "not_modeled": [
                 "live crop arrival timestamps",
