@@ -31,8 +31,10 @@ stream of full PIL pages
        eager per-crop native-resolution patch + position embedding
        optionally pack currently ready crops into one shared vision-tower call
        split the packed output back into crop order
-       per crop: eager projector, shared text-prefill stage into a static KV
-         cache, eager LM head, first-token argmax, and ready B=1 KV state
+       per crop: eager projector and a private static KV cache
+       optionally pack the group's independent text prompts into block-diagonal
+         B=1 text-prefill calls, then split their KV prefixes back to each crop
+       eager LM head, first-token argmax, and ready B=1 KV state
   -> bounded cross-page ready reservoir
        high watermark = 4B prepared requests
        low watermark = B prepared requests
@@ -47,10 +49,15 @@ stream of full PIL pages
   -> emit each page immediately when all of its regions finish
 ```
 
-With vision packing disabled, vision and text prefill remain sequential B=1.
-With packing enabled, only the vision transformer is shared across a group;
-patch/position embedding, projector, text prefill, LM head, and first-token
-selection remain per-crop and preserve crop order. Each stage has one
+Vision packing and text packing are independent switches. With text packing
+disabled, text prefill remains sequential B=1 even when vision is packed.
+`--text-packing production_group` applies best-fit decreasing only within the
+already selected vision production group, routes each pack to the smallest of
+128/256/512/1024, resets MRoPE per segment, and uses a block-diagonal causal
+mask. The compiled graph writes a scratch packed KV cache; the valid prefixes
+are then copied into each crop's private decode-ready cache. Prompts above 1024
+tokens retain the normal individual path. Crop results preserve their original
+order. Each stage has one
 compiler-safe model path shared by eager and compiled execution. Padding is a
 separate input-shaping policy: `none` keeps the real shape, while `bucket`
 pads to a configured static shape. `auto` selects bucket padding for TorchAir
@@ -168,6 +175,12 @@ and physical padded-token throughput, plus per-bucket totals. By default the
 lab refuses to compile a missing graph; pass `--allow-compile` only for an
 intentional new static bucket.
 
+The E2E path exposes the validated lab mechanism with
+`--text-packing production_group`. Its run summary adds call reduction, pack
+size and bucket histograms, physical versus real text tokens, and copied KV
+bytes. `device_stage_s.text_kv_redistribute` keeps the required cache-split
+cost separate from `device_stage_s.text_prefill`.
+
 ```sh
 /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
   09_persistent_page_engine/scripts/text_lab_corpus.py
@@ -206,6 +219,25 @@ shape; subsequent runs reuse that cache.
   --pack-scope global \
   --name packed_text_1024
 ```
+
+### Packed-text E2E result
+
+Commit `5ffd072` was run on the first 32 OmniDocBench pages with min-pixels/4,
+B=16 decode, cache length 8192, the profile-guided vision router with lookahead
+32, and compiled PromptFA. The two lanes differed only in text packing; setup
+is excluded from E2E.
+
+| Lane | E2E (s) | Pages/s | Text calls | Text transformer (s) | KV split (s) | Physical / real text tokens |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Text packing off | 27.58 | 1.160 | 510 | 4.45 | 0 | 70,704 / 62,693 |
+| 128/256/512/1024 production-group packs | 24.51 | 1.306 | 104 | 1.09 | 0.87 | 73,088 / 62,693 |
+
+Packing reduced E2E time by 11.2% and transformer calls by 79.6%. Transformer
+device time fell by 75.4%; including KV redistribution, the combined packed
+transformer-plus-split boundary was 1.96 seconds, 55.9% below the unpacked
+transformer alone. The packed graph processed 66.8k physical tokens/s and
+57.3k useful tokens/s. Outputs had exact token parity for 505/510 crops; the
+five differing crops changed the aggregate generated-token count by two.
 
 The faithful PaddleX runner also writes `timeline_trace.json` and a
 self-contained `timeline.html` (template: `utils/timeline_viewer.html`). Every
