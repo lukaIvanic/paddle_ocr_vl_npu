@@ -169,10 +169,11 @@ event-recording overhead itself.
 
 Recognition prefill stages one future group's H2D before yielding any crop from
 the current group to the pull-driven decode scheduler. A group is one crop when
-packing is disabled. G+1 is staged before invoking G's compiled compute graph,
-because the TorchAir call keeps the host occupied for much of G's device work;
-submitting G+1 only after that call returns cannot hide its transfer. The same
-ordering also ensures the future copy is already submitted before yielding can
+packing is disabled. TorchAir occupies the main host thread for much of G's
+device work, so one dedicated host worker submits only G+1's H2D concurrently
+while the main thread invokes G's compute chain. This avoids both late transfer
+submission and the NPU draining two sequentially submitted H2D groups before
+compute begins. The future copy is also already submitted before yielding can
 suspend the ready source until the decode reservoir next needs a refill. The
 staged group's compute chain waits on its own recorded H2D completion event and
 starts without submitting a new copy. CPU preparation pins the five copied input

@@ -549,6 +549,10 @@ class ContinuousRecognizer:
         def ready_stream() -> Iterable[ReadyDecodeRequest]:
             current_staged: _StagedPrefillGroup | None = None
             drained_normally = False
+            h2d_executor = ThreadPoolExecutor(
+                max_workers=1,
+                thread_name_prefix="prefill-h2d",
+            )
             try:
                 if self.vision_packing == "off":
                     groups = self._iter_single_prefill_groups(requests)
@@ -567,15 +571,23 @@ class ContinuousRecognizer:
                     try:
                         next_group = next(group_source)
                     except StopIteration:
-                        next_staged = None
+                        next_stage_future = None
                     else:
-                        # Submit G+1 before invoking G's packed graph. TorchAir
-                        # keeps the host occupied for much of that graph call,
-                        # so staging after it returns is too late to overlap.
-                        next_staged = self._stage_prefill_group(next_group)
+                        # TorchAir occupies this thread for much of G's device
+                        # work. Submit only G+1's H2D on a dedicated host
+                        # worker while this thread invokes G's compute chain.
+                        next_stage_future = h2d_executor.submit(
+                            self._stage_prefill_group,
+                            next_group,
+                        )
 
                     final = self._enqueue_staged_prefill_group(current_staged)
                     current_staged = None
+                    next_staged = (
+                        None
+                        if next_stage_future is None
+                        else next_stage_future.result()
+                    )
                     for state in self._finalize_prefill_group(final):
                         yield ready_from(state)
                     if next_staged is None:
@@ -583,6 +595,7 @@ class ContinuousRecognizer:
                     current_staged = next_staged
                 drained_normally = True
             finally:
+                h2d_executor.shutdown(wait=True, cancel_futures=True)
                 if drained_normally and current_staged is not None:
                     raise RuntimeError(
                         "ready stream drained with an unused staged prefill"
