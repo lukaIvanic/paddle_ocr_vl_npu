@@ -547,7 +547,7 @@ class ContinuousRecognizer:
             )
 
         def ready_stream() -> Iterable[ReadyDecodeRequest]:
-            current: _InFlightPrefillGroup | None = None
+            current_staged: _StagedPrefillGroup | None = None
             drained_normally = False
             try:
                 if self.vision_packing == "off":
@@ -562,31 +562,30 @@ class ContinuousRecognizer:
                 except StopIteration:
                     drained_normally = True
                     return
-                current = self._enqueue_staged_prefill_group(
-                    self._stage_prefill_group(first_group)
-                )
-                while current is not None:
+                current_staged = self._stage_prefill_group(first_group)
+                while current_staged is not None:
                     try:
                         next_group = next(group_source)
                     except StopIteration:
                         next_staged = None
                     else:
-                        # Submit the next group's copies before any yield can
-                        # suspend this generator inside the decode scheduler.
+                        # Submit G+1 before invoking G's packed graph. TorchAir
+                        # keeps the host occupied for much of that graph call,
+                        # so staging after it returns is too late to overlap.
                         next_staged = self._stage_prefill_group(next_group)
 
-                    final = current
-                    current = None
+                    final = self._enqueue_staged_prefill_group(current_staged)
+                    current_staged = None
                     for state in self._finalize_prefill_group(final):
                         yield ready_from(state)
                     if next_staged is None:
                         break
-                    current = self._enqueue_staged_prefill_group(next_staged)
+                    current_staged = next_staged
                 drained_normally = True
             finally:
-                if drained_normally and current is not None:
+                if drained_normally and current_staged is not None:
                     raise RuntimeError(
-                        "ready stream drained with an unfinalized prefill"
+                        "ready stream drained with an unused staged prefill"
                     )
 
         def handle_completion(completion: DecodeCompletion) -> None:
