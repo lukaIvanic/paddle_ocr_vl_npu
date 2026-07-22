@@ -220,39 +220,6 @@ shape; subsequent runs reuse that cache.
   --name packed_text_1024
 ```
 
-`--mode redistribution` isolates the packed-KV split without running the
-transformer. It compares the production layout (one 8192-token destination
-cache per crop), memberwise copies into one compact grouped cache, and one
-grouped gather per K/V tensor. Destination allocation is outside the device
-timing; all three lanes copy the same valid prefixes from one deterministic
-packed scratch cache. The grouped result is checked exactly against the
-memberwise result over every valid position of a representative pack.
-
-```sh
-/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
-  09_persistent_page_engine/scripts/text_lab.py \
-  --mode redistribution \
-  --backend raw_eager \
-  --pack-scope production_group \
-  --name redistribution_256p
-```
-
-On the 256-page corpus at commit `2acb705`, 3,459 packed crops formed 680
-production-group packs (65 overflow crops remain outside this comparison):
-
-| Destination/copy layout | Device time (s) | Modeled launches | Physical KV traffic | Relative to production |
-| --- | ---: | ---: | ---: | ---: |
-| Separate 8192-token caches, memberwise copy | 2.73 | 124,524 | 8.38 GB | 1.00x |
-| Compact grouped cache, memberwise copy | 4.07 | 124,524 | 8.38 GB | 0.67x |
-| Compact grouped cache, grouped gather | 3.70 | 24,480 | 14.03 GB | 0.74x |
-
-The grouped gather was exact but is not a production candidate: eliminating
-80.3% of launches did not offset gather cost and 67.5% ragged-row padding.
-The isolated production-layout time also does not reproduce the full E2E
-run's 8.63-second `text_kv_redistribute` total. Keep the E2E number as the
-serving result; use this lab only for the controlled within-run topology
-comparison until that absolute difference is explained.
-
 ### Packed-text E2E result
 
 Commit `5ffd072` was run on the first 32 OmniDocBench pages with min-pixels/4,
