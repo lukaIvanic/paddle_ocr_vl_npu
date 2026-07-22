@@ -437,8 +437,11 @@ def _baseline_from_trace(
 
 
 def _summary_row(result: dict[str, Any]) -> dict[str, Any]:
+    router_name = result.get("name")
+    if router_name is None:
+        router_name = f"lookahead_{result['lookahead']}"
     return {
-        "router": result.get("name", f"lookahead_{result['lookahead']}"),
+        "router": router_name,
         "compiled_calls": result["compiled"]["calls"],
         "eager_crops": result["eager_overflow"]["crops"],
         "padding_pct": 100.0 * (1.0 - result["compiled"]["useful_token_fraction"]),
