@@ -186,6 +186,27 @@ intentional new static bucket.
   --name profile_current_graphs
 ```
 
+The experimental `--mode packed` path composes multiple independent prompts
+into one B=1 static sequence. It resets MRoPE for every segment and builds a
+block-diagonal causal mask inside the compiled graph, so prompts cannot attend
+across crop boundaries. The current experiment intentionally stops at a packed
+scratch KV cache: its report excludes redistribution of each segment's KV
+prefix into independent decode-ready caches. Consequently, its transformer
+speedup is a validated optimization target rather than an E2E production
+claim. One explicit `--allow-compile` is required when creating a new packed
+shape; subsequent runs reuse that cache.
+
+```sh
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
+  09_persistent_page_engine/scripts/text_lab.py \
+  --mode packed \
+  --pack-length 1024 \
+  --max-pack-members 32 \
+  --pack-scope production_group \
+  --pack-scope global \
+  --name packed_text_1024
+```
+
 The faithful PaddleX runner also writes `timeline_trace.json` and a
 self-contained `timeline.html` (template: `utils/timeline_viewer.html`). Every
 event declares the resource it describes — host thread, device stream, queue,
