@@ -87,6 +87,17 @@ PINNED_910B2_PROFILE = {
     },
 }
 
+LARGE_B1_FALLBACK_SHAPES = (
+    (1, 2304),
+    (1, 2560),
+    (1, 2816),
+    (1, 3072),
+    (1, 3584),
+    (1, 4096),
+    (1, 4608),
+    (1, 5120),
+)
+
 
 @dataclass(frozen=True)
 class ProfiledVisionRoute:
@@ -144,6 +155,8 @@ def select_profiled_vision_route(lengths: Sequence[int]) -> ProfiledVisionRoute:
         raise ValueError("profiled vision routing requires positive crop lengths")
     candidates = []
     for batch_size, sequence_length in PINNED_910B2_PROFILE["graphs"]:
+        if (batch_size, sequence_length) in LARGE_B1_FALLBACK_SHAPES:
+            continue
         route = _candidate(
             lengths,
             batch_size=int(batch_size),
@@ -151,6 +164,15 @@ def select_profiled_vision_route(lengths: Sequence[int]) -> ProfiledVisionRoute:
         )
         if route is not None:
             candidates.append(route)
+    if not candidates:
+        for batch_size, sequence_length in LARGE_B1_FALLBACK_SHAPES:
+            route = _candidate(
+                lengths,
+                batch_size=batch_size,
+                sequence_length=sequence_length,
+            )
+            if route is not None:
+                candidates.append(route)
     if not candidates:
         return ProfiledVisionRoute(
             batch_size=1,
