@@ -75,6 +75,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=20260721)
     parser.add_argument("--progress-every", type=int, default=100)
     parser.add_argument(
+        "--profile-first",
+        action="store_true",
+        help="Run the profile-guided lane before the current-router baseline.",
+    )
+    parser.add_argument(
         "--allow-compile",
         action="store_true",
         help="Allow the two selected batched shapes to compile when absent.",
@@ -524,28 +529,27 @@ def main(argv: Sequence[str] | None = None) -> None:
     synchronize(device)
     setup_s = time.perf_counter() - setup_started
 
-    baseline = _run_lane(
-        "current_fifo_b1",
-        baseline_plan,
-        model=model,
-        runtime=runtime,
-        batched_graphs=batched_graphs,
-        seed=args.seed,
-        dtype=dtype,
-        device=device,
-        progress_every=args.progress_every,
-    )
-    profiled = _run_lane(
-        f"profile_guided_lookahead_{args.lookahead}",
-        profile_plan,
-        model=model,
-        runtime=runtime,
-        batched_graphs=batched_graphs,
-        seed=args.seed,
-        dtype=dtype,
-        device=device,
-        progress_every=args.progress_every,
-    )
+    lane_specs = [
+        ("current_fifo_b1", baseline_plan),
+        (f"profile_guided_lookahead_{args.lookahead}", profile_plan),
+    ]
+    if args.profile_first:
+        lane_specs.reverse()
+    lane_results: dict[str, dict[str, Any]] = {}
+    for lane_name, plan in lane_specs:
+        lane_results[lane_name] = _run_lane(
+            lane_name,
+            plan,
+            model=model,
+            runtime=runtime,
+            batched_graphs=batched_graphs,
+            seed=args.seed,
+            dtype=dtype,
+            device=device,
+            progress_every=args.progress_every,
+        )
+    baseline = lane_results["current_fifo_b1"]
+    profiled = lane_results[f"profile_guided_lookahead_{args.lookahead}"]
     for key in ("crops", "real_vision_tokens"):
         if baseline[key] != profiled[key]:
             raise AssertionError(
@@ -566,6 +570,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "pages": args.pages,
             "crops": len(selected),
             "lookahead": args.lookahead,
+            "lane_order": [name for name, _plan in lane_specs],
             "real_vision_tokens": sum(int(item["real_vision_tokens"]) for item in selected),
             "tensor_policy": (
                 "deterministic shape-equivalent random patch tensors; crop IDs and grids are exact"
