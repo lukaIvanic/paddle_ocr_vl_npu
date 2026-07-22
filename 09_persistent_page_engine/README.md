@@ -145,6 +145,47 @@ run-scoped scheduler wall, lazy ready-source wall, refill count, reservoir
 bounds, device timing, idle/look-ahead slots, and copied KV-prefix bytes. E2E
 output tok/s includes each request's first token and EOS and divides by run wall.
 
+### Text-prefill optimization lab
+
+`scripts/text_lab_corpus.py` turns a recognition trace into an exact text-shape
+workload: it reconstructs each crop grid, expands the real prompt with the
+installed tokenizer, checks the recorded input/image-token counts and bucket
+route, and preserves production request and prefill-group order. The corpus
+stores token IDs rather than image tensors.
+
+`scripts/text_lab.py` then runs either a corpus replay or a per-bucket graph
+profile. It performs the real token embedding lookup and exact MRoPE layout,
+but replaces vision-projector values with a deterministic fixed-seed tensor;
+the text transformer has identical shapes, attention positions, weight format,
+compiled graph and KV writes. Image contents are deliberately outside this
+lab's contract because they do not change text-transformer execution cost.
+
+The headline `text_prefill` measurement is the same production boundary:
+decoder transformer plus in-place prefill KV writes. Token embedding, image
+scatter, scratch-cache allocation, bucket padding, and optional LM head/argmax
+remain separately timed. Replay reports both effective real-token throughput
+and physical padded-token throughput, plus per-bucket totals. By default the
+lab refuses to compile a missing graph; pass `--allow-compile` only for an
+intentional new static bucket.
+
+```sh
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
+  09_persistent_page_engine/scripts/text_lab_corpus.py
+
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
+  09_persistent_page_engine/scripts/text_lab.py \
+  --mode replay \
+  --name replay_256p_baseline
+
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
+  09_persistent_page_engine/scripts/text_lab.py \
+  --mode profile \
+  --profile-buckets 64,128,256,640,1312 \
+  --warmup 2 \
+  --repeats 10 \
+  --name profile_current_graphs
+```
+
 The faithful PaddleX runner also writes `timeline_trace.json` and a
 self-contained `timeline.html` (template: `utils/timeline_viewer.html`). Every
 event declares the resource it describes — host thread, device stream, queue,
