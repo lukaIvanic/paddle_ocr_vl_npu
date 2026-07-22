@@ -74,6 +74,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--seed", type=int, default=20260721)
     parser.add_argument("--progress-every", type=int, default=100)
+    parser.add_argument(
+        "--allow-compile",
+        action="store_true",
+        help="Allow the two selected batched shapes to compile when absent.",
+    )
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     args = parser.parse_args(argv)
     if args.pages <= 0 or args.lookahead <= 0:
@@ -489,7 +494,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         )
         if not cache_dir.is_dir() or not any(cache_dir.rglob("*")):
             missing_batched.append(f"b{batch_size}_s{sequence_length}")
-    if missing_batched:
+    if missing_batched and not args.allow_compile:
         raise RuntimeError(f"missing compatible cached batched graphs: {missing_batched}")
     runtime = VisionPrefillRuntime(
         model,
@@ -569,6 +574,8 @@ def main(argv: Sequence[str] | None = None) -> None:
         "setup_s": setup_s,
         "cache_preflight": {
             "b1": b1_preflight,
+            "batched_missing_before_run": missing_batched,
+            "batched_compile_allowed": bool(args.allow_compile),
             "batched": batched_metadata,
         },
         "plans": {
