@@ -164,8 +164,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     args.pack_scope = tuple(
         dict.fromkeys(args.pack_scope or ("production_group", "global"))
     )
-    if args.mode in ("packed", "redistribution") and args.backend != "torchair":
-        parser.error(f"{args.mode} mode currently requires --backend torchair")
+    if args.mode == "packed" and args.backend != "torchair":
+        parser.error("packed mode currently requires --backend torchair")
     return args
 
 
@@ -1399,7 +1399,17 @@ class TextPrefillLab:
         }
 
     def redistribution(self) -> dict[str, Any]:
-        _compiled, scratch_cache, graph_setup = self._setup_packed_graph()
+        scratch_cache = self.model.allocate_static_cache(
+            batch_size=1,
+            cache_length=self.args.pack_length,
+            device=self.device,
+            dtype=self.dtype,
+            init_mode="empty",
+        )
+        torch.manual_seed(int(self.args.seed))
+        for tensor in scratch_cache.flat_tensors():
+            tensor.uniform_(-1.0, 1.0)
+        synchronize(self.device)
         scopes = {
             scope: self._run_redistribution_scope(
                 scratch_cache,
@@ -1409,7 +1419,11 @@ class TextPrefillLab:
         }
         return {
             "mode": "redistribution",
-            "graph_setup": graph_setup,
+            "scratch_setup": {
+                "source": "deterministic_uniform_synthetic_kv",
+                "cache_length": self.args.pack_length,
+                "flat_cache_tensors": len(scratch_cache.flat_tensors()),
+            },
             "scopes": scopes,
             "integration_status": (
                 "lab-only grouped destination-cache experiment; production "
