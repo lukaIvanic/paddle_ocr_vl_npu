@@ -1,0 +1,144 @@
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/vision_prefill.py:1176: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  warm_sin = torch.zeros_like(warm_cos)
+.lane=current_fifo_b1 calls=100/303 tower_s=2.971
+lane=current_fifo_b1 calls=200/303 tower_s=5.947
+lane=current_fifo_b1 calls=300/303 tower_s=9.204
+lane=current_fifo_b1 calls=303/303 tower_s=9.287
+lane=profile_guided_lookahead_8 calls=100/188 tower_s=3.856
+lane=profile_guided_lookahead_8 calls=188/188 tower_s=7.927
+{
+  "output": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_lab/router_replay_64p_minpixels_div4.json",
+  "comparison": {
+    "vision_tower_s_saved": 1.3605788745880085,
+    "vision_tower_speedup": 1.1716420862736683,
+    "vision_tower_reduction_fraction": 0.14649703035127803
+  },
+  "results": {
+    "current_fifo_b1": {
+      "calls": 303,
+      "crops": 1015,
+      "crops_per_call": 3.34983498349835,
+      "real_vision_tokens": 499816,
+      "physical_vision_tokens": 514040,
+      "padding_vision_tokens": 14224,
+      "real_token_fraction": 0.9723290016341141,
+      "shape_calls": {
+        "b1_s1024": 8,
+        "b1_s1152": 13,
+        "b1_s1280": 16,
+        "b1_s1408": 13,
+        "b1_s1536": 22,
+        "b1_s1664": 15,
+        "b1_s1792": 49,
+        "b1_s192": 4,
+        "b1_s1920": 91,
+        "b1_s2048": 3,
+        "b1_s2068": 1,
+        "b1_s2160": 2,
+        "b1_s2184": 2,
+        "b1_s2220": 1,
+        "b1_s224": 2,
+        "b1_s2240": 1,
+        "b1_s2296": 2,
+        "b1_s2448": 1,
+        "b1_s2496": 1,
+        "b1_s2552": 1,
+        "b1_s256": 1,
+        "b1_s2688": 1,
+        "b1_s2816": 1,
+        "b1_s288": 1,
+        "b1_s2952": 1,
+        "b1_s3108": 1,
+        "b1_s3240": 1,
+        "b1_s3280": 1,
+        "b1_s3312": 1,
+        "b1_s3344": 1,
+        "b1_s3360": 1,
+        "b1_s3456": 1,
+        "b1_s352": 1,
+        "b1_s3608": 1,
+        "b1_s3696": 1,
+        "b1_s384": 1,
+        "b1_s4032": 1,
+        "b1_s4100": 1,
+        "b1_s4140": 1,
+        "b1_s416": 1,
+        "b1_s4224": 1,
+        "b1_s4600": 1,
+        "b1_s4960": 1,
+        "b1_s5084": 1,
+        "b1_s576": 4,
+        "b1_s640": 2,
+        "b1_s704": 5,
+        "b1_s768": 6,
+        "b1_s832": 4,
+        "b1_s896": 3,
+        "b1_s960": 7
+      },
+      "execution_calls": {
+        "compiled": 272,
+        "eager_overflow": 31
+      },
+      "device_stage_s": {
+        "vision_embeddings": 0.5754855231046678,
+        "vision_prefill_input_prep": 0.7735156219005589,
+        "vision_tower": 9.287416074752803
+      },
+      "vision_tower_s": 9.287416074752803,
+      "effective_real_tokens_per_s": 53816.475538197876,
+      "raw_physical_tokens_per_s": 55348.01023907845,
+      "lab_wall_s": 20.764260063006077
+    },
+    "profile_guided_lookahead_8": {
+      "calls": 188,
+      "crops": 1015,
+      "crops_per_call": 5.398936170212766,
+      "real_vision_tokens": 499816,
+      "physical_vision_tokens": 545256,
+      "padding_vision_tokens": 45440,
+      "real_token_fraction": 0.9166629986648474,
+      "shape_calls": {
+        "b1_s1280": 1,
+        "b1_s1408": 5,
+        "b1_s1792": 27,
+        "b1_s1920": 40,
+        "b1_s2048": 51,
+        "b1_s3108": 1,
+        "b1_s3240": 1,
+        "b1_s3280": 1,
+        "b1_s3312": 1,
+        "b1_s3344": 1,
+        "b1_s3360": 1,
+        "b1_s3456": 1,
+        "b1_s3608": 1,
+        "b1_s3696": 1,
+        "b1_s4032": 1,
+        "b1_s4100": 1,
+        "b1_s4140": 1,
+        "b1_s4224": 1,
+        "b1_s4600": 1,
+        "b1_s4960": 1,
+        "b1_s5084": 1,
+        "b2_s3072": 24,
+        "b4_s1024": 24
+      },
+      "execution_calls": {
+        "compiled": 172,
+        "eager_overflow": 16
+      },
+      "device_stage_s": {
+        "vision_embeddings": 0.3894993602931499,
+        "vision_prefill_input_prep": 0.3573212598562238,
+        "vision_tower": 7.926837200164795,
+        "vision_prefill_input_prep_row_0": 0.08833941990137101,
+        "vision_prefill_input_prep_row_1": 0.09136286020278932,
+        "vision_prefill_input_prep_row_2": 0.03791713953018189,
+        "vision_prefill_input_prep_row_3": 0.036710520088672635
+      },
+      "vision_tower_s": 7.926837200164795,
+      "effective_real_tokens_per_s": 63053.64767547,
+      "raw_physical_tokens_per_s": 68786.07270862891,
+      "lab_wall_s": 19.002714003960136
+    }
+  }
+}
