@@ -396,8 +396,13 @@ def _baseline_from_trace(
     shape_calls: Counter[str] = Counter()
     for group_id, group in compiled_groups.items():
         first = group[0]["vision"]
-        batch_size = 1
-        sequence_length = int(first["pack_physical_vision_tokens"])
+        batch_size = int(first.get("pack_batch_size", 1))
+        sequence_length = int(
+            first.get(
+                "pack_sequence_length",
+                int(first["pack_physical_vision_tokens"]) // batch_size,
+            )
+        )
         shape = (batch_size, sequence_length)
         try:
             cost = graph_profile[shape]
@@ -407,7 +412,12 @@ def _baseline_from_trace(
         if real_tokens != int(first["pack_real_vision_tokens"]):
             raise AssertionError(f"baseline pack group {group_id} has inconsistent real tokens")
         compiled_real += real_tokens
-        compiled_physical += sequence_length
+        physical_tokens = batch_size * sequence_length
+        if physical_tokens != int(first["pack_physical_vision_tokens"]):
+            raise AssertionError(
+                f"baseline pack group {group_id} has inconsistent physical tokens"
+            )
+        compiled_physical += physical_tokens
         compiled_ms += float(cost["median_ms"])
         shape_calls[_shape_label(*shape)] += 1
 
@@ -421,7 +431,7 @@ def _baseline_from_trace(
     total_real = compiled_real + eager_real
     hybrid_ms = compiled_ms + eager_ms
     return {
-        "name": "current production FIFO packed B1 router",
+        "name": "current production vision router",
         "crops": len(records),
         "total_real_tokens": total_real,
         "compiled": {
