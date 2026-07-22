@@ -30,6 +30,7 @@ from utils.timing import synchronize
 
 PINNED_910B2_PROFILE = {
     "measured_commit": "bbefb38e9217bfdd614ee72614cd8568bff8c324",
+    "large_b1_measured_commit": "70a97e5",
     "device_name": "Ascend910B2",
     "model_config_hash": "6d2211febbe9",
     "torch": "2.10.0+cpu",
@@ -73,6 +74,14 @@ PINNED_910B2_PROFILE = {
         (1, 1792): {"median_ms": 28.499870, "raw_physical_tokens_per_s": 62877.5},
         (1, 1920): {"median_ms": 29.164190, "raw_physical_tokens_per_s": 65834.2},
         (1, 2048): {"median_ms": 31.565830, "raw_physical_tokens_per_s": 64880.3},
+        (1, 2304): {"median_ms": 37.365240, "raw_physical_tokens_per_s": 61661.6},
+        (1, 2560): {"median_ms": 40.903900, "raw_physical_tokens_per_s": 62585.7},
+        (1, 2816): {"median_ms": 44.992441, "raw_physical_tokens_per_s": 62588.3},
+        (1, 3072): {"median_ms": 46.371449, "raw_physical_tokens_per_s": 66247.7},
+        (1, 3584): {"median_ms": 57.649879, "raw_physical_tokens_per_s": 62168.4},
+        (1, 4096): {"median_ms": 64.408413, "raw_physical_tokens_per_s": 63594.2},
+        (1, 4608): {"median_ms": 74.239029, "raw_physical_tokens_per_s": 62069.8},
+        (1, 5120): {"median_ms": 86.321079, "raw_physical_tokens_per_s": 59313.4},
         (2, 3072): {"median_ms": 80.734600, "raw_physical_tokens_per_s": 76101.2},
         (4, 1024): {"median_ms": 46.402910, "raw_physical_tokens_per_s": 88270.3},
     },

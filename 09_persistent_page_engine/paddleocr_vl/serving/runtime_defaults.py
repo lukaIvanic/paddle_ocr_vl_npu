@@ -23,11 +23,21 @@ READY_BUFFER_BATCH_MULTIPLIER = 4
 PADDLEOCR_DEFAULT_MIN_PIXELS = 112896
 
 # Measured dense policy: <=512 by 32, <=1024 by 64, <=2048 by 128.
-# Larger vision sequences use the faithful eager overflow path.
+# Large B1 graphs cover the remaining faithful resize domain through 5120;
+# the profile-guided router still prefers faster B2/B4 graphs when their
+# padding-aware effective throughput is higher.
 OPTIMIZED_VISION_BUCKETS = (
     *range(32, 512 + 1, 32),
     *range(512 + 64, 1024 + 1, 64),
     *range(1024 + 128, 2048 + 1, 128),
+    2304,
+    2560,
+    2816,
+    3072,
+    3584,
+    4096,
+    4608,
+    5120,
 )
 
 # Text prompts are projected-image tokens plus a short task prompt.  The
