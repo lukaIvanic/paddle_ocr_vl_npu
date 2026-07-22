@@ -1131,6 +1131,23 @@ class TextPrefillLab:
         )
 
     @staticmethod
+    def _redistribute_separate(
+        scratch_cache: LocalPaddleOCRVLStaticCache,
+        destinations: Sequence[LocalPaddleOCRVLStaticCache],
+        *,
+        offsets: Sequence[int],
+        lengths: Sequence[int],
+    ) -> None:
+        for destination, offset, length in zip(destinations, offsets, lengths):
+            for source_tensor, destination_tensor in zip(
+                scratch_cache.flat_tensors(),
+                destination.flat_tensors(),
+            ):
+                destination_tensor[:, :, :length, :].copy_(
+                    source_tensor[:, :, offset : offset + length, :]
+                )
+
+    @staticmethod
     def _redistribute_memberwise(
         scratch_cache: LocalPaddleOCRVLStaticCache,
         destination: LocalPaddleOCRVLStaticCache,
@@ -1282,6 +1299,7 @@ class TextPrefillLab:
         )
         tensor_count = len(scratch_cache.flat_tensors())
         memberwise_durations: list[float] = []
+        separate_durations: list[float] = []
         grouped_durations: list[float] = []
         logical_bytes = 0
         grouped_physical_bytes = 0
@@ -1293,6 +1311,19 @@ class TextPrefillLab:
         warmup_destination = self._allocate_grouped_cache(
             members=len(packs[0]),
             cache_length=warmup_max_length,
+        )
+        warmup_separate = [
+            self._allocate_grouped_cache(
+                members=1,
+                cache_length=self.args.cache_length,
+            )
+            for _member in packs[0]
+        ]
+        self._redistribute_separate(
+            scratch_cache,
+            warmup_separate,
+            offsets=warmup_offsets,
+            lengths=warmup_lengths,
         )
         self._redistribute_memberwise(
             scratch_cache,
@@ -1306,7 +1337,7 @@ class TextPrefillLab:
             gather_indices=warmup_indices,
         )
         synchronize(self.device)
-        del warmup_destination, warmup_indices
+        del warmup_destination, warmup_indices, warmup_separate
         started = time.perf_counter()
         for pack_index, members in enumerate(packs):
             offsets, lengths, max_length, gather_indices = (
@@ -1316,9 +1347,23 @@ class TextPrefillLab:
                 members=len(members),
                 cache_length=max_length,
             )
+            separate_destinations = [
+                self._allocate_grouped_cache(
+                    members=1,
+                    cache_length=self.args.cache_length,
+                )
+                for _member in members
+            ]
             timeline = DeviceTimeline(self.device)
+            separate_name = f"pack{pack_index:06d}::separate"
             memberwise_name = f"pack{pack_index:06d}::memberwise"
             grouped_name = f"pack{pack_index:06d}::grouped"
+            separate_call = lambda: self._redistribute_separate(
+                scratch_cache,
+                separate_destinations,
+                offsets=offsets,
+                lengths=lengths,
+            )
             memberwise_call = lambda: self._redistribute_memberwise(
                 scratch_cache,
                 destination,
@@ -1331,13 +1376,16 @@ class TextPrefillLab:
                 gather_indices=gather_indices,
             )
             calls = (
-                ((memberwise_name, memberwise_call), (grouped_name, grouped_call))
-                if pack_index % 2 == 0
-                else ((grouped_name, grouped_call), (memberwise_name, memberwise_call))
+                (separate_name, separate_call),
+                (memberwise_name, memberwise_call),
+                (grouped_name, grouped_call),
             )
+            rotation = pack_index % len(calls)
+            calls = calls[rotation:] + calls[:rotation]
             for name, call in calls:
                 timeline.measure(name, call)
             spans = timeline.resolve()
+            separate_durations.append(float(spans[separate_name]))
             memberwise_durations.append(float(spans[memberwise_name]))
             grouped_durations.append(float(spans[grouped_name]))
             real_tokens = sum(lengths)
@@ -1347,17 +1395,19 @@ class TextPrefillLab:
             )
             memberwise_launches += len(members) * tensor_count
             grouped_launches += tensor_count
-            del destination, timeline, gather_indices
+            del destination, separate_destinations, timeline, gather_indices
             completed = pack_index + 1
             if completed == 1 or completed % 100 == 0 or completed == len(packs):
                 print(
                     f"REDISTRIBUTION_PROGRESS scope={scope} "
                     f"packs={completed}/{len(packs)} "
-                    f"memberwise_s={sum(memberwise_durations):.3f} "
-                    f"grouped_s={sum(grouped_durations):.3f}",
+                    f"separate_s={sum(separate_durations):.3f} "
+                    f"compact_memberwise_s={sum(memberwise_durations):.3f} "
+                    f"compact_gather_s={sum(grouped_durations):.3f}",
                     flush=True,
                 )
         wall_s = time.perf_counter() - started
+        separate_s = sum(separate_durations)
         memberwise_s = sum(memberwise_durations)
         grouped_s = sum(grouped_durations)
         correctness_pack = max(
@@ -1388,25 +1438,37 @@ class TextPrefillLab:
             "grouped_padding_overhead_fraction": (
                 grouped_physical_bytes / logical_bytes - 1.0
             ),
-            "memberwise": {
+            "production_separate_memberwise": {
+                "device_s": separate_s,
+                "modeled_copy_launches": memberwise_launches,
+                "logical_gb_per_s": logical_bytes / separate_s / 1e9,
+                "latency": latency(separate_durations),
+                "destination_cache_length": self.args.cache_length,
+            },
+            "compact_memberwise": {
                 "device_s": memberwise_s,
                 "modeled_copy_launches": memberwise_launches,
                 "logical_gb_per_s": logical_bytes / memberwise_s / 1e9,
                 "latency": latency(memberwise_durations),
             },
-            "grouped": {
+            "compact_grouped_gather": {
                 "device_s": grouped_s,
                 "modeled_gather_launches": grouped_launches,
                 "logical_gb_per_s": logical_bytes / grouped_s / 1e9,
                 "physical_gb_per_s": grouped_physical_bytes / grouped_s / 1e9,
                 "latency": latency(grouped_durations),
             },
-            "speedup": memberwise_s / grouped_s,
-            "time_reduction_fraction": 1.0 - grouped_s / memberwise_s,
+            "compact_memberwise_vs_production_speedup": (
+                separate_s / memberwise_s
+            ),
+            "compact_gather_vs_production_speedup": separate_s / grouped_s,
+            "compact_gather_vs_memberwise_speedup": memberwise_s / grouped_s,
             "modeled_launch_reduction_fraction": (
                 1.0 - grouped_launches / memberwise_launches
             ),
-            "measurement_order": "alternating_after_one_unmeasured_warmup_each",
+            "measurement_order": (
+                "three-way_rotating_after_one_unmeasured_warmup_each"
+            ),
             "correctness": correctness,
             "wall_s": wall_s,
             "excludes": [
@@ -1719,16 +1781,18 @@ def _print_packed(result: dict[str, Any]) -> None:
 
 def _print_redistribution(result: dict[str, Any]) -> None:
     for scope, row in result["scopes"].items():
-        memberwise = row["memberwise"]
-        grouped = row["grouped"]
+        separate = row["production_separate_memberwise"]
+        memberwise = row["compact_memberwise"]
+        grouped = row["compact_grouped_gather"]
         correctness = row["correctness"]
         print(
             "REDISTRIBUTION_RESULT "
             f"scope={scope} packs={row['packs']} "
             f"items={row['packed_items']} "
-            f"memberwise_s={memberwise['device_s']:.6f} "
-            f"grouped_s={grouped['device_s']:.6f} "
-            f"speedup={row['speedup']:.3f}x "
+            f"separate_s={separate['device_s']:.6f} "
+            f"compact_memberwise_s={memberwise['device_s']:.6f} "
+            f"compact_gather_s={grouped['device_s']:.6f} "
+            f"compact_speedup={row['compact_memberwise_vs_production_speedup']:.3f}x "
             f"grouped_padding={row['grouped_padding_overhead_fraction']:.4f} "
             f"exact={correctness['exact']}"
         )
