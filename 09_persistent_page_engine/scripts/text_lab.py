@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import itertools
 import json
 import math
 import statistics
@@ -181,24 +180,21 @@ def _reference_stages(path: Path) -> dict[str, float]:
 
 
 def _production_groups(items: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
-    groups: list[list[dict[str, Any]]] = []
-    seen: set[int] = set()
-    for _key, members_iter in itertools.groupby(
-        items,
-        key=lambda item: item.get("production_group_id"),
-    ):
-        members = list(members_iter)
-        group_id = members[0].get("production_group_id")
+    grouped: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    ungrouped: list[dict[str, Any]] = []
+    for item in items:
+        group_id = item.get("production_group_id")
         if group_id is None:
-            groups.extend([[member] for member in members])
-            continue
-        group_id = int(group_id)
-        if group_id in seen:
-            raise ValueError(
-                f"production group {group_id} is non-contiguous after source ordering"
-            )
-        seen.add(group_id)
-        groups.append(members)
+            ungrouped.append(item)
+        else:
+            grouped[int(group_id)].append(item)
+    groups = [
+        sorted(members, key=lambda item: int(item["source_index"]))
+        for _group_id, members in sorted(grouped.items())
+    ]
+    groups.extend([[item] for item in ungrouped])
+    if sum(len(group) for group in groups) != len(items):
+        raise AssertionError("production grouping lost corpus items")
     return groups
 
 

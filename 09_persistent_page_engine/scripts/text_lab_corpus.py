@@ -218,6 +218,9 @@ def build_corpus(
             f"records; first mismatches:\n{json.dumps(mismatches[:20], indent=2)}"
         )
 
+    source_indices = [int(item["source_index"]) for item in items]
+    if len(set(source_indices)) != len(source_indices):
+        raise RuntimeError("trace contains duplicate global_request_index values")
     items.sort(key=lambda item: (int(item["source_index"]), int(item["source_line"])))
     real_lengths = [int(item["input_tokens"]) for item in items]
     physical_lengths = [int(item["route"]["physical_text_tokens"]) for item in items]
@@ -236,7 +239,10 @@ def build_corpus(
             "tokenizer_sha256": _sha256(model_dir / "tokenizer.json"),
         },
         "contract": {
-            "ordering": "global_request_index_then_trace_line",
+            "ordering": (
+                "items are stored in request-source order; production_group_id "
+                "preserves profile-guided prefill group membership and sequence"
+            ),
             "batch_size": 1,
             "compiled_buckets": list(buckets),
             "embeddings": (
