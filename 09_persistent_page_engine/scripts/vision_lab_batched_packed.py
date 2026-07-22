@@ -367,7 +367,7 @@ def _run_shape(
     }
 
 
-def _compiled_shape(
+def _compiled_shape_cache_dir(
     *,
     model: LocalPaddleOCRVLForConditionalGeneration,
     batch_size: int,
@@ -376,9 +376,8 @@ def _compiled_shape(
     model_dir: Path,
     dtype: torch.dtype,
     device: torch.device,
-) -> tuple[Callable[..., torch.Tensor], dict[str, Any]]:
-    """Load or compile exactly one static BxS PromptFA vision graph."""
-    torchair, CompilerConfig = import_torchair()
+) -> Path:
+    """Return the exact cache directory for one static BxS PromptFA graph."""
     hidden_size = int(model.config.vision_config.hidden_size)
     head_dim = hidden_size // int(model.config.vision_config.num_attention_heads)
     key = "_".join(
@@ -397,7 +396,32 @@ def _compiled_shape(
             f"src{vision_source_hash()}",
         )
     )
-    cache_dir = cache_root.expanduser().resolve() / key
+    return cache_root.expanduser().resolve() / key
+
+
+def _compiled_shape(
+    *,
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    batch_size: int,
+    sequence_length: int,
+    cache_root: Path,
+    model_dir: Path,
+    dtype: torch.dtype,
+    device: torch.device,
+) -> tuple[Callable[..., torch.Tensor], dict[str, Any]]:
+    """Load or compile exactly one static BxS PromptFA vision graph."""
+    torchair, CompilerConfig = import_torchair()
+    hidden_size = int(model.config.vision_config.hidden_size)
+    head_dim = hidden_size // int(model.config.vision_config.num_attention_heads)
+    cache_dir = _compiled_shape_cache_dir(
+        model=model,
+        batch_size=batch_size,
+        sequence_length=sequence_length,
+        cache_root=cache_root,
+        model_dir=model_dir,
+        dtype=dtype,
+        device=device,
+    )
     cache_existed = cache_dir.exists() and any(cache_dir.iterdir())
     cache_dir.mkdir(parents=True, exist_ok=True)
     module = VisionPrefillStage(
