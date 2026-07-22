@@ -1287,6 +1287,26 @@ class TextPrefillLab:
         grouped_physical_bytes = 0
         memberwise_launches = 0
         grouped_launches = 0
+        warmup_offsets, warmup_lengths, warmup_max_length, warmup_indices = (
+            self._redistribution_plan(packs[0])
+        )
+        warmup_destination = self._allocate_grouped_cache(
+            members=len(packs[0]),
+            cache_length=warmup_max_length,
+        )
+        self._redistribute_memberwise(
+            scratch_cache,
+            warmup_destination,
+            offsets=warmup_offsets,
+            lengths=warmup_lengths,
+        )
+        self._redistribute_grouped(
+            scratch_cache,
+            warmup_destination,
+            gather_indices=warmup_indices,
+        )
+        synchronize(self.device)
+        del warmup_destination, warmup_indices
         started = time.perf_counter()
         for pack_index, members in enumerate(packs):
             offsets, lengths, max_length, gather_indices = (
@@ -1299,27 +1319,24 @@ class TextPrefillLab:
             timeline = DeviceTimeline(self.device)
             memberwise_name = f"pack{pack_index:06d}::memberwise"
             grouped_name = f"pack{pack_index:06d}::grouped"
-            timeline.measure(
-                memberwise_name,
-                lambda offsets=offsets, lengths=lengths, destination=destination: (
-                    self._redistribute_memberwise(
-                        scratch_cache,
-                        destination,
-                        offsets=offsets,
-                        lengths=lengths,
-                    )
-                ),
+            memberwise_call = lambda: self._redistribute_memberwise(
+                scratch_cache,
+                destination,
+                offsets=offsets,
+                lengths=lengths,
             )
-            timeline.measure(
-                grouped_name,
-                lambda gather_indices=gather_indices, destination=destination: (
-                    self._redistribute_grouped(
-                        scratch_cache,
-                        destination,
-                        gather_indices=gather_indices,
-                    )
-                ),
+            grouped_call = lambda: self._redistribute_grouped(
+                scratch_cache,
+                destination,
+                gather_indices=gather_indices,
             )
+            calls = (
+                ((memberwise_name, memberwise_call), (grouped_name, grouped_call))
+                if pack_index % 2 == 0
+                else ((grouped_name, grouped_call), (memberwise_name, memberwise_call))
+            )
+            for name, call in calls:
+                timeline.measure(name, call)
             spans = timeline.resolve()
             memberwise_durations.append(float(spans[memberwise_name]))
             grouped_durations.append(float(spans[grouped_name]))
@@ -1389,6 +1406,7 @@ class TextPrefillLab:
             "modeled_launch_reduction_fraction": (
                 1.0 - grouped_launches / memberwise_launches
             ),
+            "measurement_order": "alternating_after_one_unmeasured_warmup_each",
             "correctness": correctness,
             "wall_s": wall_s,
             "excludes": [
