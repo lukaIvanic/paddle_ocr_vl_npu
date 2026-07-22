@@ -364,8 +364,7 @@ def run_predictions(
         if len(pending) >= PAGE_ARTIFACT_MAX_PENDING:
             wait_for_oldest(final_drain=False)
 
-        payload = result.json["res"]
-        image_name = Path(payload["input_path"]).name
+        image_name = Path(str(result["input_path"])).name
         ordinal = page_ordinals[image_name]
         result_count += 1
         completion_elapsed_s = time.perf_counter() - predict_started
