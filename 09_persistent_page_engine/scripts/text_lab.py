@@ -40,7 +40,10 @@ from paddleocr_vl.model.compile_utils import (
     torch_npu_version_label,
     torchair_version_label,
 )
-from paddleocr_vl.model.text_decode import cast_decode_linear_weights_to_nz
+from paddleocr_vl.model.text_decode import (
+    LocalPaddleOCRVLStaticCache,
+    cast_decode_linear_weights_to_nz,
+)
 from paddleocr_vl.model.text_prefill import (
     TEXT_PADDING_CHOICES,
     TextPrefillStage,
@@ -92,7 +95,9 @@ def _csv_ints(value: str) -> tuple[int, ...]:
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--mode", choices=("replay", "profile", "packed"), default="replay"
+        "--mode",
+        choices=("replay", "profile", "packed", "redistribution"),
+        default="replay",
     )
     parser.add_argument("--corpus", type=Path, default=DEFAULT_CORPUS)
     parser.add_argument("--reference-summary", type=Path, default=DEFAULT_REFERENCE)
@@ -159,8 +164,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     args.pack_scope = tuple(
         dict.fromkeys(args.pack_scope or ("production_group", "global"))
     )
-    if args.mode == "packed" and args.backend != "torchair":
-        parser.error("packed mode currently requires --backend torchair")
+    if args.mode in ("packed", "redistribution") and args.backend != "torchair":
+        parser.error(f"{args.mode} mode currently requires --backend torchair")
     return args
 
 
@@ -1099,6 +1104,319 @@ class TextPrefillLab:
             ),
         }
 
+    @staticmethod
+    def _packed_segment_layout(
+        members: Sequence[dict[str, Any]],
+    ) -> tuple[tuple[int, ...], tuple[int, ...]]:
+        lengths = tuple(int(member["input_tokens"]) for member in members)
+        offsets: list[int] = []
+        cursor = 0
+        for length in lengths:
+            offsets.append(cursor)
+            cursor += length
+        return tuple(offsets), lengths
+
+    def _allocate_grouped_cache(
+        self,
+        *,
+        members: int,
+        cache_length: int,
+    ) -> LocalPaddleOCRVLStaticCache:
+        return self.model.allocate_static_cache(
+            batch_size=int(members),
+            cache_length=int(cache_length),
+            device=self.device,
+            dtype=self.dtype,
+            init_mode="empty",
+        )
+
+    @staticmethod
+    def _redistribute_memberwise(
+        scratch_cache: LocalPaddleOCRVLStaticCache,
+        destination: LocalPaddleOCRVLStaticCache,
+        *,
+        offsets: Sequence[int],
+        lengths: Sequence[int],
+    ) -> None:
+        for row, (offset, length) in enumerate(zip(offsets, lengths)):
+            for source_tensor, destination_tensor in zip(
+                scratch_cache.flat_tensors(),
+                destination.flat_tensors(),
+            ):
+                destination_tensor[
+                    row : row + 1, :, :length, :
+                ].copy_(source_tensor[:, :, offset : offset + length, :])
+
+    @staticmethod
+    def _redistribute_grouped(
+        scratch_cache: LocalPaddleOCRVLStaticCache,
+        destination: LocalPaddleOCRVLStaticCache,
+        *,
+        gather_indices: torch.Tensor,
+    ) -> None:
+        members, _one, cache_length, _one_tail = gather_indices.shape
+        for source_tensor, destination_tensor in zip(
+            scratch_cache.flat_tensors(),
+            destination.flat_tensors(),
+        ):
+            expanded_source = source_tensor.expand(members, -1, -1, -1)
+            expanded_indices = gather_indices.expand(
+                members,
+                source_tensor.shape[1],
+                cache_length,
+                source_tensor.shape[3],
+            )
+            torch.gather(
+                expanded_source,
+                2,
+                expanded_indices,
+                out=destination_tensor,
+            )
+
+    def _redistribution_plan(
+        self,
+        members: Sequence[dict[str, Any]],
+    ) -> tuple[
+        tuple[int, ...],
+        tuple[int, ...],
+        int,
+        torch.Tensor,
+    ]:
+        offsets, lengths = self._packed_segment_layout(members)
+        max_length = max(lengths)
+        offsets_tensor = torch.tensor(
+            offsets,
+            device=self.device,
+            dtype=torch.int64,
+        ).view(-1, 1)
+        lengths_tensor = torch.tensor(
+            lengths,
+            device=self.device,
+            dtype=torch.int64,
+        ).view(-1, 1)
+        local_positions = torch.arange(
+            max_length,
+            device=self.device,
+            dtype=torch.int64,
+        ).view(1, -1)
+        local_positions = torch.minimum(
+            local_positions,
+            lengths_tensor - 1,
+        )
+        gather_indices = (
+            offsets_tensor + local_positions
+        ).view(len(members), 1, max_length, 1)
+        return offsets, lengths, max_length, gather_indices
+
+    def _redistribution_correctness(
+        self,
+        scratch_cache: LocalPaddleOCRVLStaticCache,
+        members: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        offsets, lengths, max_length, gather_indices = (
+            self._redistribution_plan(members)
+        )
+        reference = self._allocate_grouped_cache(
+            members=len(members),
+            cache_length=max_length,
+        )
+        candidate = self._allocate_grouped_cache(
+            members=len(members),
+            cache_length=max_length,
+        )
+        self._redistribute_memberwise(
+            scratch_cache,
+            reference,
+            offsets=offsets,
+            lengths=lengths,
+        )
+        self._redistribute_grouped(
+            scratch_cache,
+            candidate,
+            gather_indices=gather_indices,
+        )
+        differences: list[torch.Tensor] = []
+        for row, length in enumerate(lengths):
+            for reference_tensor, candidate_tensor in zip(
+                reference.flat_tensors(),
+                candidate.flat_tensors(),
+            ):
+                differences.append(
+                    (
+                        reference_tensor[row, :, :length, :].float()
+                        - candidate_tensor[row, :, :length, :].float()
+                    )
+                    .abs()
+                    .max()
+                )
+        max_abs = float(torch.stack(differences).max().item())
+        synchronize(self.device)
+        return {
+            "members": len(members),
+            "lengths": list(lengths),
+            "source_indices": [int(item["source_index"]) for item in members],
+            "valid_prefix_max_abs": max_abs,
+            "exact": max_abs == 0.0,
+        }
+
+    def _run_redistribution_scope(
+        self,
+        scratch_cache: LocalPaddleOCRVLStaticCache,
+        *,
+        scope: str,
+    ) -> dict[str, Any]:
+        packs, overflow = _form_text_packs(
+            self.items,
+            scope=scope,
+            capacity=self.args.pack_length,
+            max_members=self.args.max_pack_members,
+        )
+        if not packs:
+            raise ValueError(f"scope {scope!r} did not form any text packs")
+        bytes_per_token = sum(
+            int(tensor.shape[0])
+            * int(tensor.shape[1])
+            * int(tensor.shape[3])
+            * int(tensor.element_size())
+            for tensor in scratch_cache.flat_tensors()
+        )
+        tensor_count = len(scratch_cache.flat_tensors())
+        memberwise_durations: list[float] = []
+        grouped_durations: list[float] = []
+        logical_bytes = 0
+        grouped_physical_bytes = 0
+        memberwise_launches = 0
+        grouped_launches = 0
+        started = time.perf_counter()
+        for pack_index, members in enumerate(packs):
+            offsets, lengths, max_length, gather_indices = (
+                self._redistribution_plan(members)
+            )
+            destination = self._allocate_grouped_cache(
+                members=len(members),
+                cache_length=max_length,
+            )
+            timeline = DeviceTimeline(self.device)
+            memberwise_name = f"pack{pack_index:06d}::memberwise"
+            grouped_name = f"pack{pack_index:06d}::grouped"
+            timeline.measure(
+                memberwise_name,
+                lambda offsets=offsets, lengths=lengths, destination=destination: (
+                    self._redistribute_memberwise(
+                        scratch_cache,
+                        destination,
+                        offsets=offsets,
+                        lengths=lengths,
+                    )
+                ),
+            )
+            timeline.measure(
+                grouped_name,
+                lambda gather_indices=gather_indices, destination=destination: (
+                    self._redistribute_grouped(
+                        scratch_cache,
+                        destination,
+                        gather_indices=gather_indices,
+                    )
+                ),
+            )
+            spans = timeline.resolve()
+            memberwise_durations.append(float(spans[memberwise_name]))
+            grouped_durations.append(float(spans[grouped_name]))
+            real_tokens = sum(lengths)
+            logical_bytes += real_tokens * bytes_per_token
+            grouped_physical_bytes += (
+                len(members) * max_length * bytes_per_token
+            )
+            memberwise_launches += len(members) * tensor_count
+            grouped_launches += tensor_count
+            del destination, timeline, gather_indices
+            completed = pack_index + 1
+            if completed == 1 or completed % 100 == 0 or completed == len(packs):
+                print(
+                    f"REDISTRIBUTION_PROGRESS scope={scope} "
+                    f"packs={completed}/{len(packs)} "
+                    f"memberwise_s={sum(memberwise_durations):.3f} "
+                    f"grouped_s={sum(grouped_durations):.3f}",
+                    flush=True,
+                )
+        wall_s = time.perf_counter() - started
+        memberwise_s = sum(memberwise_durations)
+        grouped_s = sum(grouped_durations)
+        correctness_pack = max(
+            packs,
+            key=lambda pack: (len(pack), sum(int(item["input_tokens"]) for item in pack)),
+        )
+        correctness = self._redistribution_correctness(
+            scratch_cache,
+            correctness_pack,
+        )
+
+        def latency(values: Sequence[float]) -> dict[str, float]:
+            return {
+                "mean_ms": statistics.mean(values) * 1000.0,
+                "median_ms": statistics.median(values) * 1000.0,
+                "p95_ms": _percentile(values, 0.95) * 1000.0,
+            }
+
+        return {
+            "scope": scope,
+            "policy": "first_fit_decreasing",
+            "packs": len(packs),
+            "packed_items": sum(len(pack) for pack in packs),
+            "overflow_items": len(overflow),
+            "bytes_per_valid_token": bytes_per_token,
+            "logical_valid_bytes": logical_bytes,
+            "grouped_physical_bytes": grouped_physical_bytes,
+            "grouped_padding_overhead_fraction": (
+                grouped_physical_bytes / logical_bytes - 1.0
+            ),
+            "memberwise": {
+                "device_s": memberwise_s,
+                "modeled_copy_launches": memberwise_launches,
+                "logical_gb_per_s": logical_bytes / memberwise_s / 1e9,
+                "latency": latency(memberwise_durations),
+            },
+            "grouped": {
+                "device_s": grouped_s,
+                "modeled_gather_launches": grouped_launches,
+                "logical_gb_per_s": logical_bytes / grouped_s / 1e9,
+                "physical_gb_per_s": grouped_physical_bytes / grouped_s / 1e9,
+                "latency": latency(grouped_durations),
+            },
+            "speedup": memberwise_s / grouped_s,
+            "time_reduction_fraction": 1.0 - grouped_s / memberwise_s,
+            "modeled_launch_reduction_fraction": (
+                1.0 - grouped_launches / memberwise_launches
+            ),
+            "correctness": correctness,
+            "wall_s": wall_s,
+            "excludes": [
+                "destination-cache allocation",
+                "packed transformer execution",
+                "decode-arena admission",
+            ],
+        }
+
+    def redistribution(self) -> dict[str, Any]:
+        _compiled, scratch_cache, graph_setup = self._setup_packed_graph()
+        scopes = {
+            scope: self._run_redistribution_scope(
+                scratch_cache,
+                scope=scope,
+            )
+            for scope in self.args.pack_scope
+        }
+        return {
+            "mode": "redistribution",
+            "graph_setup": graph_setup,
+            "scopes": scopes,
+            "integration_status": (
+                "lab-only grouped destination-cache experiment; production "
+                "still uses memberwise redistribution"
+            ),
+        }
+
     def _load_baseline_records(self) -> tuple[dict[int, dict[str, Any]], float]:
         path = self.args.baseline_lab_result.expanduser().resolve()
         payload = json.loads(path.read_text(encoding="utf-8"))
@@ -1367,6 +1685,23 @@ def _print_packed(result: dict[str, Any]) -> None:
         )
 
 
+def _print_redistribution(result: dict[str, Any]) -> None:
+    for scope, row in result["scopes"].items():
+        memberwise = row["memberwise"]
+        grouped = row["grouped"]
+        correctness = row["correctness"]
+        print(
+            "REDISTRIBUTION_RESULT "
+            f"scope={scope} packs={row['packs']} "
+            f"items={row['packed_items']} "
+            f"memberwise_s={memberwise['device_s']:.6f} "
+            f"grouped_s={grouped['device_s']:.6f} "
+            f"speedup={row['speedup']:.3f}x "
+            f"grouped_padding={row['grouped_padding_overhead_fraction']:.4f} "
+            f"exact={correctness['exact']}"
+        )
+
+
 @torch.inference_mode()
 def main(argv: Sequence[str] | None = None) -> None:
     args = parse_args(argv)
@@ -1376,6 +1711,8 @@ def main(argv: Sequence[str] | None = None) -> None:
         result = lab.replay()
     elif args.mode == "profile":
         result = lab.profile()
+    elif args.mode == "redistribution":
+        result = lab.redistribution()
     else:
         result = lab.packed()
     output = _write_report(args, corpus, lab, result)
@@ -1383,6 +1720,8 @@ def main(argv: Sequence[str] | None = None) -> None:
         _print_replay(result)
     elif args.mode == "packed":
         _print_packed(result)
+    elif args.mode == "redistribution":
+        _print_redistribution(result)
     print(f"Wrote {output}")
 
 
