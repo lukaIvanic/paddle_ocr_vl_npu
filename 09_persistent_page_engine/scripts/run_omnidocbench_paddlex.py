@@ -22,6 +22,7 @@ from paddleocr_vl.serving.engine import ContinuousRecognizer
 from paddleocr_vl.serving.runtime_defaults import (
     DEFAULT_VISION_PACKING,
     DEFAULT_VISION_PACK_TARGET,
+    DEFAULT_VISION_ROUTER_LOOKAHEAD,
     OPTIMIZED_TEXT_BUCKETS,
     OPTIMIZED_VISION_BUCKETS,
     PADDLEOCR_DEFAULT_MIN_PIXELS,
@@ -53,6 +54,7 @@ DEFAULT_PADDLEOCR_SOURCE = Path("/workspace/repos/vllm_paddle_ocr/PaddleOCR")
 DEFAULT_CACHE_ROOT = REPO_ROOT / ".runtime_cache/09_persistent_page_engine_torchair"
 DEFAULT_VISION_CACHE_ROOT = REPO_ROOT / ".runtime_cache/09_persistent_page_engine_vision_torchair"
 DEFAULT_TEXT_CACHE_ROOT = REPO_ROOT / ".runtime_cache/09_persistent_page_engine_text_torchair"
+DEFAULT_BATCHED_VISION_CACHE_ROOT = REPO_ROOT / ".runtime_cache/09_vision_router_batched"
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset-json", type=Path, default=DEFAULT_DATASET_JSON)
@@ -116,6 +118,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--vision-pack-target",
         type=int,
         default=DEFAULT_VISION_PACK_TARGET,
+    )
+    parser.add_argument(
+        "--vision-router-lookahead",
+        type=int,
+        default=DEFAULT_VISION_ROUTER_LOOKAHEAD,
+    )
+    parser.add_argument(
+        "--vision-batched-cache-dir",
+        type=Path,
+        default=DEFAULT_BATCHED_VISION_CACHE_ROOT,
     )
     parser.add_argument(
         "--text-buckets",
@@ -223,6 +235,8 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--preprocessor-min-pixels must be positive")
     if args.vision_pack_target <= 0:
         raise ValueError("--vision-pack-target must be positive")
+    if args.vision_router_lookahead <= 0:
+        raise ValueError("--vision-router-lookahead must be positive")
 
 
 def run_predictions(
@@ -372,6 +386,10 @@ def main() -> None:
         vision_padding=args.vision_padding,
         vision_packing=args.vision_packing,
         vision_pack_target=args.vision_pack_target,
+        vision_router_lookahead=args.vision_router_lookahead,
+        vision_batched_cache_dir=(
+            args.vision_batched_cache_dir.expanduser().resolve()
+        ),
         text_backend="torchair",
         text_buckets=text_buckets,
         text_torchair_cache_dir=args.text_torchair_cache_dir.expanduser().resolve(),
@@ -400,6 +418,7 @@ def main() -> None:
             "vision_attention": args.vision_attention,
             "vision_packing": args.vision_packing,
             "vision_pack_target": args.vision_pack_target,
+            "vision_router_lookahead": args.vision_router_lookahead,
         }
     )
     try:
@@ -449,6 +468,10 @@ def main() -> None:
             "vision_padding": args.vision_padding,
             "vision_packing": args.vision_packing,
             "vision_pack_target": args.vision_pack_target,
+            "vision_router_lookahead": args.vision_router_lookahead,
+            "vision_batched_cache_dir": str(
+                args.vision_batched_cache_dir.expanduser().resolve()
+            ),
             "vision_buckets": list(vision_buckets),
             "text_buckets": list(text_buckets),
             "cpu_preprocessing": recognizer.configuration()["cpu_preprocessing"],

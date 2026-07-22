@@ -40,6 +40,7 @@ from .runtime_defaults import (
     DECODE_BACKEND_CHOICES,
     DEFAULT_VISION_PACKING,
     DEFAULT_VISION_PACK_TARGET,
+    DEFAULT_VISION_ROUTER_LOOKAHEAD,
     DEFAULT_TEXT_BACKEND,
     DEFAULT_VISION_BACKEND,
     OPTIMIZED_TEXT_BUCKETS,
@@ -53,10 +54,12 @@ from utils.timing import DeviceTimeline, synchronize
 from utils.timeline import TimelineRecorder
 from utils.metrics import per_second
 from ..model.vision_prefill import (
+    PreparedVisionPrefill,
     VISION_ATTENTION_CHOICES,
     get_vision_prompt_fa_layout,
     parse_vision_buckets,
 )
+from .vision_router import BatchedVisionGraphRuntime, select_profiled_vision_route
 
 
 @dataclass
@@ -109,12 +112,15 @@ class _PreparedPrefillGroup:
     group_id: int
     members: list[tuple[CpuPreparedRecognition, float]]
     real_vision_tokens: int
+    row_sizes: tuple[int, ...]
+    profiled_route: dict[str, Any] | None = None
 
 
 @dataclass
 class _VisionPackingRunStats:
     mode: str
     target: int
+    lookahead: int
     groups: int = 0
     crops: int = 0
     packed_groups: int = 0
@@ -123,15 +129,37 @@ class _VisionPackingRunStats:
     packed_physical_tokens: int = 0
     eager_overflow_groups: int = 0
     group_size_histogram: Counter[int] | None = None
+    graph_shape_histogram: Counter[str] | None = None
+    ready_window_histogram: Counter[int] | None = None
+    router_cpu_s: float = 0.0
 
     def __post_init__(self) -> None:
         if self.group_size_histogram is None:
             self.group_size_histogram = Counter()
+        if self.graph_shape_histogram is None:
+            self.graph_shape_histogram = Counter()
+        if self.ready_window_histogram is None:
+            self.ready_window_histogram = Counter()
 
     def record(self, *, crops: int, route: dict[str, Any]) -> None:
         self.groups += 1
         self.crops += int(crops)
         self.group_size_histogram[int(crops)] += 1
+        sequence_length = int(
+            route.get("sequence_length")
+            or route.get("bucket")
+            or route["physical_vision_tokens"]
+        )
+        shape = (
+            f"b{int(route.get('batch_size', 1))}_s"
+            f"{sequence_length}"
+            if route.get("execution") == "compiled"
+            else str(route.get("execution", "unknown"))
+        )
+        self.graph_shape_histogram[shape] += 1
+        if route.get("visible_window_size") is not None:
+            self.ready_window_histogram[int(route["visible_window_size"])] += 1
+        self.router_cpu_s += float(route.get("router_cpu_s", 0.0))
         if crops > 1:
             self.packed_groups += 1
             self.packed_real_tokens += int(route["real_vision_tokens"])
@@ -145,6 +173,7 @@ class _VisionPackingRunStats:
         return {
             "mode": self.mode,
             "target": self.target,
+            "lookahead": self.lookahead,
             "groups": self.groups,
             "crops": self.crops,
             "packed_groups": self.packed_groups,
@@ -157,6 +186,12 @@ class _VisionPackingRunStats:
                 str(size): count
                 for size, count in sorted(self.group_size_histogram.items())
             },
+            "graph_shape_histogram": dict(sorted(self.graph_shape_histogram.items())),
+            "ready_window_histogram": {
+                str(size): count
+                for size, count in sorted(self.ready_window_histogram.items())
+            },
+            "router_cpu_s": self.router_cpu_s,
             "packed_real_vision_tokens": self.packed_real_tokens,
             "packed_physical_vision_tokens": self.packed_physical_tokens,
             "packed_fill_fraction": (
@@ -253,6 +288,8 @@ class ContinuousRecognizer:
         vision_padding: str = "auto",
         vision_packing: str = DEFAULT_VISION_PACKING,
         vision_pack_target: int = DEFAULT_VISION_PACK_TARGET,
+        vision_router_lookahead: int = DEFAULT_VISION_ROUTER_LOOKAHEAD,
+        vision_batched_cache_dir: Path | None = None,
         text_backend: str = DEFAULT_TEXT_BACKEND,
         text_buckets: str | Iterable[int] = OPTIMIZED_TEXT_BUCKETS,
         text_torchair_cache_dir: Path | None = None,
@@ -294,6 +331,7 @@ class ContinuousRecognizer:
         self.vision_padding = str(vision_padding)
         self.vision_packing = str(vision_packing)
         self.vision_pack_target = int(vision_pack_target)
+        self.vision_router_lookahead = int(vision_router_lookahead)
         if self.vision_packing not in VISION_PACKING_CHOICES:
             raise ValueError(
                 "vision_packing must be one of "
@@ -304,6 +342,19 @@ class ContinuousRecognizer:
                 "vision_pack_target must be one of the configured vision buckets: "
                 f"target={self.vision_pack_target} buckets={self.vision_buckets}"
             )
+        if self.vision_router_lookahead <= 0:
+            raise ValueError("vision_router_lookahead must be positive")
+        if self.vision_packing == "profile_guided":
+            if self.vision_backend != "torchair":
+                raise ValueError("profile_guided vision routing requires TorchAir")
+            if self.vision_attention != "prompt_flash_attention":
+                raise ValueError(
+                    "profile_guided vision routing requires prompt_flash_attention"
+                )
+            if vision_batched_cache_dir is None:
+                raise ValueError(
+                    "profile_guided vision routing requires vision_batched_cache_dir"
+                )
         self.text_backend = str(text_backend)
         self.text_buckets = parse_text_buckets(text_buckets)
         self.text_padding = str(text_padding)
@@ -383,11 +434,30 @@ class ContinuousRecognizer:
         self.text_prefill = self.stages.text_prefill
         self.text_decode = self.stages.text_decode
         self.decode_fn = self.text_decode.fn
+        self.batched_vision = (
+            BatchedVisionGraphRuntime(
+                self.model,
+                cache_root=vision_batched_cache_dir,
+                model_dir=self.model_dir,
+                dtype=self.dtype,
+                device=self.device,
+            )
+            if self.vision_packing == "profile_guided"
+            else None
+        )
         self.prefill_transfer_stream = torch_npu.npu.Stream(device=self.device)
         # Keep one complete decode cohort in CPU preparation without coupling
         # correctness to the relative speed of CPU and NPU stages. B=1 still
         # needs one item being consumed and one item prepared in the background.
-        self.cpu_preprocess_max_pending = max(2, self.batch_size)
+        self.cpu_preprocess_max_pending = max(
+            2,
+            self.batch_size,
+            (
+                self.vision_router_lookahead
+                if self.vision_packing == "profile_guided"
+                else 0
+            ),
+        )
         self.prefill_host_tokens = torch.empty(
             (self.cpu_preprocess_max_pending + 1,),
             dtype=torch.int64,
@@ -397,6 +467,7 @@ class ContinuousRecognizer:
         self._vision_packing_stats = _VisionPackingRunStats(
             self.vision_packing,
             self.vision_pack_target,
+            self.vision_router_lookahead,
         )
 
         started = time.perf_counter()
@@ -420,6 +491,11 @@ class ContinuousRecognizer:
             "recognizer_model_load": float(model_load_s),
             "decode_weight_format": float(weight_format_s),
             **self.stages.setup_timing_s,
+            "vision_router_setup": (
+                float(self.batched_vision.metadata["setup_s"])
+                if self.batched_vision is not None
+                else 0.0
+            ),
             "decode_control_setup": float(decode_control_setup_s),
             "recognizer_runtime_total": float(time.perf_counter() - runtime_started),
         }
@@ -443,6 +519,7 @@ class ContinuousRecognizer:
         self._vision_packing_stats = _VisionPackingRunStats(
             self.vision_packing,
             self.vision_pack_target,
+            self.vision_router_lookahead,
         )
 
         def ready_from(state: PrefilledRecognition) -> ReadyDecodeRequest:
@@ -464,11 +541,12 @@ class ContinuousRecognizer:
             pending: _InFlightPrefillGroup | None = None
             drained_normally = False
             try:
-                groups = (
-                    self._iter_single_prefill_groups(requests)
-                    if self.vision_packing == "off"
-                    else self._iter_packed_prefill_groups(requests)
-                )
+                if self.vision_packing == "off":
+                    groups = self._iter_single_prefill_groups(requests)
+                elif self.vision_packing == "greedy":
+                    groups = self._iter_packed_prefill_groups(requests)
+                else:
+                    groups = self._iter_profiled_prefill_groups(requests)
                 for group in groups:
                     current = self._enqueue_prefill_group(group)
                     previous = pending
@@ -629,9 +707,18 @@ class ContinuousRecognizer:
     def _prepared_group(
         self,
         members: list[tuple[CpuPreparedRecognition, float]],
+        *,
+        row_sizes: tuple[int, ...] | None = None,
+        profiled_route: dict[str, Any] | None = None,
     ) -> _PreparedPrefillGroup:
         if not members:
             raise ValueError("prefill group must contain at least one crop")
+        if row_sizes is None:
+            row_sizes = (len(members),)
+        if sum(row_sizes) != len(members) or any(size < 0 for size in row_sizes):
+            raise ValueError(
+                f"invalid vision row sizes {row_sizes} for {len(members)} crops"
+            )
         self._vision_pack_sequence += 1
         return _PreparedPrefillGroup(
             group_id=self._vision_pack_sequence,
@@ -639,6 +726,8 @@ class ContinuousRecognizer:
             real_vision_tokens=sum(
                 int(prepared.pixel_values.shape[0]) for prepared, _wait_s in members
             ),
+            row_sizes=tuple(int(size) for size in row_sizes),
+            profiled_route=profiled_route,
         )
 
     def _iter_single_prefill_groups(
@@ -754,6 +843,150 @@ class ContinuousRecognizer:
             producer.join(timeout=30.0)
             if producer.is_alive():
                 raise RuntimeError("packed prefill source did not stop within 30 seconds")
+
+    def _iter_profiled_prefill_groups(
+        self,
+        requests: Iterable[RecognitionRequest],
+    ) -> Iterable[_PreparedPrefillGroup]:
+        """Route up to the currently ready lookahead without waiting to fill it."""
+
+        prepared_queue: queue.Queue[object] = queue.Queue(
+            maxsize=self.cpu_preprocess_max_pending
+        )
+        sentinel = object()
+        stop = threading.Event()
+        errors: list[BaseException] = []
+
+        def put(item: object) -> bool:
+            while not stop.is_set():
+                try:
+                    prepared_queue.put(item, timeout=0.1)
+                    return True
+                except queue.Full:
+                    continue
+            return False
+
+        def produce() -> None:
+            try:
+                for item in self._iter_cpu_prepared(requests):
+                    if not put(item):
+                        return
+            except BaseException as exc:
+                errors.append(exc)
+            finally:
+                put(sentinel)
+
+        producer = threading.Thread(
+            target=produce,
+            name="paddleocr-vl-profiled-prefill-source",
+            daemon=True,
+        )
+        producer.start()
+        visible: list[tuple[CpuPreparedRecognition, float]] = []
+        exhausted = False
+        try:
+            while visible or not exhausted:
+                if not visible:
+                    item = prepared_queue.get()
+                    if item is sentinel:
+                        exhausted = True
+                        if errors:
+                            raise errors[0]
+                        break
+                    if not isinstance(item, tuple) or len(item) != 2:
+                        raise TypeError(f"unexpected prepared crop item: {type(item)!r}")
+                    visible.append(item)
+
+                while (
+                    not exhausted
+                    and len(visible) < self.vision_router_lookahead
+                ):
+                    try:
+                        item = prepared_queue.get_nowait()
+                    except queue.Empty:
+                        break
+                    if item is sentinel:
+                        exhausted = True
+                        break
+                    if not isinstance(item, tuple) or len(item) != 2:
+                        raise TypeError(f"unexpected prepared crop item: {type(item)!r}")
+                    visible.append(item)
+
+                form_started = time.perf_counter()
+                visible_window_size = len(visible)
+                route = select_profiled_vision_route(
+                    [int(item[0].pixel_values.shape[0]) for item in visible]
+                )
+                selected_indices = [index for row in route.rows for index in row]
+                if not selected_indices or selected_indices[0] != 0:
+                    raise RuntimeError("profiled vision route did not select the oldest crop")
+                if len(set(selected_indices)) != len(selected_indices):
+                    raise RuntimeError("profiled vision route selected a crop twice")
+                selected = [visible[index] for index in selected_indices]
+                selected_set = set(selected_indices)
+                visible = [
+                    item for index, item in enumerate(visible) if index not in selected_set
+                ]
+                form_finished = time.perf_counter()
+                router_cpu_s = form_finished - form_started
+                route_dict = {
+                    "execution": route.execution,
+                    "real_vision_tokens": route.real_tokens,
+                    "physical_vision_tokens": route.physical_tokens,
+                    "padding_vision_tokens": route.physical_tokens - route.real_tokens,
+                    "useful_token_fraction": (
+                        float(route.real_tokens) / float(route.physical_tokens)
+                    ),
+                    "bucket": (
+                        route.sequence_length if route.batch_size == 1 else None
+                    ),
+                    "batch_size": route.batch_size,
+                    "sequence_length": route.sequence_length,
+                    "row_sizes": [len(row) for row in route.rows],
+                    "profiled_ms": route.profiled_ms,
+                    "visible_window_size": visible_window_size,
+                    "router_cpu_s": router_cpu_s,
+                }
+                group = self._prepared_group(
+                    selected,
+                    row_sizes=tuple(len(row) for row in route.rows),
+                    profiled_route=route_dict,
+                )
+                if group.real_vision_tokens != route.real_tokens:
+                    raise RuntimeError(
+                        "profiled route token accounting mismatch: "
+                        f"group={group.real_vision_tokens} route={route.real_tokens}"
+                    )
+                if self.timeline is not None:
+                    self.timeline.record_span_seconds(
+                        "Vision prefill",
+                        "Route prepared vision crops",
+                        form_started,
+                        form_finished,
+                        flow_id=selected[0][0].request_id,
+                        flow_ids=[member.request_id for member, _wait_s in selected],
+                        args={
+                            "group_id": group.group_id,
+                            "visible_crops": visible_window_size,
+                            "selected_crops": len(selected),
+                            "batch_size": route.batch_size,
+                            "sequence_length": route.sequence_length,
+                            "real_tokens": route.real_tokens,
+                            "physical_tokens": route.physical_tokens,
+                        },
+                    )
+                yield group
+                if exhausted and not visible:
+                    if errors:
+                        raise errors[0]
+                    break
+        finally:
+            stop.set()
+            producer.join(timeout=30.0)
+            if producer.is_alive():
+                raise RuntimeError(
+                    "profiled prefill source did not stop within 30 seconds"
+                )
 
     def _result_from_completion(
         self,
@@ -1062,8 +1295,21 @@ class ContinuousRecognizer:
 
         real_lengths = [int(hidden.shape[0]) for hidden in hidden_states]
         real_vision_tokens = sum(real_lengths)
-        pack_route = self.vision_prefill.route(real_vision_tokens)
-        if len(group.members) == 1:
+        pack_route = (
+            dict(group.profiled_route)
+            if group.profiled_route is not None
+            else self.vision_prefill.route(real_vision_tokens)
+        )
+        batch_size = int(pack_route.get("batch_size", 1))
+        sequence_length = int(
+            pack_route.get("sequence_length", pack_route["physical_vision_tokens"])
+        )
+        if int(pack_route["real_vision_tokens"]) != real_vision_tokens:
+            raise RuntimeError(
+                "vision route real-token mismatch: "
+                f"route={pack_route['real_vision_tokens']} actual={real_vision_tokens}"
+            )
+        if batch_size == 1 and len(group.members) == 1:
             prepared_vision = device_timeline.measure(
                 "group:vision_prefill_input_prep",
                 lambda: self.vision_prefill.prepare(
@@ -1078,7 +1324,7 @@ class ContinuousRecognizer:
                     lambda: self.vision_prefill.run_prepared(prepared_vision),
                 )
             ]
-        else:
+        elif batch_size == 1:
             prepared_packed = device_timeline.measure(
                 "group:vision_prefill_input_prep",
                 lambda: self.vision_prefill.prepare_packed(
@@ -1100,6 +1346,88 @@ class ContinuousRecognizer:
                     dim=0,
                 )
             )
+        else:
+            if self.batched_vision is None:
+                raise RuntimeError("batched vision route selected without a runtime")
+
+            def prepare_rows() -> tuple[
+                list[PreparedVisionPrefill],
+                list[tuple[int, ...]],
+            ]:
+                rows: list[PreparedVisionPrefill] = []
+                row_segments: list[tuple[int, ...]] = []
+                offset = 0
+                row_route = {
+                    "execution": "compiled",
+                    "physical_vision_tokens": sequence_length,
+                }
+                for row_size in group.row_sizes:
+                    end = offset + row_size
+                    if row_size:
+                        packed = self.vision_prefill.prepare_packed(
+                            hidden_states[offset:end],
+                            [
+                                prepared.image_grid_thw
+                                for prepared, _wait_s in group.members[offset:end]
+                            ],
+                            route=row_route,
+                        )
+                        rows.append(packed.prepared)
+                        row_segments.append(packed.segment_lengths)
+                    offset = end
+                if not rows:
+                    raise RuntimeError("batched vision route had no non-empty rows")
+                while len(rows) < batch_size:
+                    template = rows[0]
+                    rows.append(
+                        PreparedVisionPrefill(
+                            prefix_hidden_states=torch.zeros_like(
+                                template.prefix_hidden_states
+                            ),
+                            rope_cos=torch.ones_like(template.rope_cos),
+                            rope_sin=torch.zeros_like(template.rope_sin),
+                            attention_mask=torch.zeros_like(
+                                template.attention_mask
+                            ),
+                            real_seq_len=0,
+                            physical_seq_len=sequence_length,
+                            execution="compiled",
+                        )
+                    )
+                    row_segments.append(())
+                if len(rows) != batch_size or offset != len(group.members):
+                    raise RuntimeError("batched vision row accounting mismatch")
+                return rows, row_segments
+
+            prepared_rows, row_segments = device_timeline.measure(
+                "group:vision_prefill_input_prep",
+                prepare_rows,
+            )
+            batched_features = device_timeline.measure(
+                "group:vision_prefill",
+                lambda: self.batched_vision.run(
+                    batch_size=batch_size,
+                    sequence_length=sequence_length,
+                    prepared_rows=prepared_rows,
+                ),
+            )
+            image_features = []
+            for row_index, segment_lengths in enumerate(row_segments):
+                if not segment_lengths:
+                    continue
+                row_real_tokens = sum(segment_lengths)
+                image_features.extend(
+                    torch.split(
+                        batched_features[row_index, :row_real_tokens].contiguous(),
+                        segment_lengths,
+                        dim=0,
+                    )
+                )
+            if len(image_features) != len(group.members):
+                raise RuntimeError(
+                    "batched vision output count mismatch: "
+                    f"features={len(image_features)} members={len(group.members)}"
+                )
 
         self._vision_packing_stats.record(
             crops=len(group.members),
@@ -1236,6 +1564,10 @@ class ContinuousRecognizer:
                 "pack_physical_vision_tokens": int(
                     pack_route["physical_vision_tokens"]
                 ),
+                "pack_batch_size": batch_size,
+                "pack_sequence_length": sequence_length,
+                "pack_row_sizes": list(group.row_sizes),
+                "router_visible_crops": pack_route.get("visible_window_size"),
             }
             members.append(
                 _InFlightPrefillMember(
@@ -1535,8 +1867,18 @@ class ContinuousRecognizer:
             "vision_packing": {
                 "mode": self.vision_packing,
                 "target": self.vision_pack_target,
-                "grouping": "impatient_arrival_order_greedy",
-                "oversized": "existing_single_crop_route",
+                "lookahead": self.vision_router_lookahead,
+                "grouping": (
+                    "profiled_oldest_anchored_best_fit"
+                    if self.vision_packing == "profile_guided"
+                    else "impatient_arrival_order_greedy"
+                ),
+                "oversized": "faithful_eager_single_crop_route",
+                "batched_runtime": (
+                    self.batched_vision.metadata
+                    if self.batched_vision is not None
+                    else None
+                ),
             },
             "vision_prompt_fa_layout": (
                 get_vision_prompt_fa_layout()
