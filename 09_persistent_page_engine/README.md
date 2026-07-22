@@ -47,6 +47,9 @@ stream of full PIL pages
        D2H tokens and detokenization
   -> route completions to their page collectors
   -> emit each page immediately when all of its regions finish
+  -> enqueue page artifacts to one bounded, ordered background writer
+       persist Markdown and compact JSONL without blocking decode scheduling
+       propagate writer failures and drain all pending pages before E2E ends
 ```
 
 Vision packing and text packing are independent switches. With text packing
@@ -135,10 +138,12 @@ uses that detection's integer bounding rectangle. Every fallback is recorded in
 - Setup: layout-model load, recognizer-model load, optional weight-format probe,
   compile-wrapper creation, and the first compiled call. Setup is excluded from
   page throughput.
-- Run wall: first page start through the last page emission. This is the E2E
-  throughput denominator; overlapping page latencies are never summed for
-  throughput.
-- Per-page latency: that page's image load through its completion emission.
+- Run wall: first page start through the ordered page-artifact writer's final
+  drain. This is the E2E throughput denominator, so every prediction is durable
+  before the run completes; overlapping page latencies are never summed.
+- Per-page latency: that page's image load through submission to the artifact
+  writer. The single writer preserves completion order and applies bounded
+  backpressure at eight pending pages if storage cannot keep up.
 - `device_stage_s`: NPU-event execution time for vision/text-prefill substages.
   These values diagnose accelerator work and are not interchangeable with host
   wall latency.
@@ -151,6 +156,10 @@ and serialized decode-plus-admission device time. The JSON also exposes full
 run-scoped scheduler wall, lazy ready-source wall, refill count, reservoir
 bounds, device timing, idle/look-ahead slots, and copied KV-prefix bytes. E2E
 output tok/s includes each request's first token and EOS and divides by run wall.
+The run summary's `page_artifact_writer` block reports accumulated writer work,
+queue residence, scheduler backpressure, final-drain wall, and maximum pending
+depth. The timeline records submission on the scheduler thread and artifact
+work on the `page-artifact-writer` thread separately.
 
 ### Text-prefill optimization lab
 

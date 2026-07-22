@@ -7,7 +7,9 @@ import argparse
 import json
 import sys
 import time
+from collections import deque
 from collections.abc import Sequence
+from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -62,6 +64,7 @@ DEFAULT_PACKED_TEXT_CACHE_ROOT = (
     REPO_ROOT / ".runtime_cache/09_persistent_page_engine_text_packed_torchair"
 )
 DEFAULT_BATCHED_VISION_CACHE_ROOT = REPO_ROOT / ".runtime_cache/09_vision_router_batched"
+PAGE_ARTIFACT_MAX_PENDING = 8
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -276,36 +279,144 @@ def run_predictions(
     *,
     predictions_dir: Path,
     compact_path: Path,
-) -> tuple[int, list[float], float, Any]:
+    timeline: TimelineRecorder,
+) -> tuple[int, list[float], float, Any, dict[str, Any]]:
     completion_s: list[float] = []
     result_count = 0
+    write_wall_s: list[float] = []
+    queue_wait_s: list[float] = []
+    pending: deque[Future[None]] = deque()
+    max_pending_observed = 0
+    producer_backpressure_s = 0.0
+    final_drain_s = 0.0
+    page_ordinals = {path.name: ordinal for ordinal, path in enumerate(image_paths)}
     predict_started = time.perf_counter()
+
+    def write_result(
+        result: Any,
+        *,
+        completion_index: int,
+        completion_elapsed_s: float,
+        submitted_ns: int,
+        flow_id: str,
+        image_name: str,
+    ) -> None:
+        started_ns = time.perf_counter_ns()
+        queue_wait_s.append((started_ns - submitted_ns) / 1_000_000_000)
+        timeline.record_span(
+            "Artifacts / tracing",
+            "Page artifact waiting for writer",
+            submitted_ns,
+            started_ns,
+            flow_id=flow_id,
+            event_type="wait",
+            track="queue",
+            lane="page-artifacts",
+            args={"image_name": image_name},
+        )
+        try:
+            result.save_to_markdown(save_path=str(predictions_dir))
+            append_compact_page_result(compact_handle, result)
+            print(
+                f"completed={completion_index}/{len(image_paths)} "
+                f"elapsed_s={completion_elapsed_s:.3f}",
+                flush=True,
+            )
+        finally:
+            finished_ns = time.perf_counter_ns()
+            write_wall_s.append((finished_ns - started_ns) / 1_000_000_000)
+            timeline.record_span(
+                "Artifacts / tracing",
+                "Write page artifacts",
+                started_ns,
+                finished_ns,
+                flow_id=flow_id,
+                event_type="io",
+                args={"image_name": image_name},
+            )
+
+    def wait_for_oldest(*, final_drain: bool) -> None:
+        nonlocal producer_backpressure_s, final_drain_s
+        future = pending.popleft()
+        started_ns = time.perf_counter_ns()
+        future.result()
+        finished_ns = time.perf_counter_ns()
+        waited_s = (finished_ns - started_ns) / 1_000_000_000
+        if final_drain:
+            final_drain_s += waited_s
+            name = "Drain page artifact writer"
+        else:
+            producer_backpressure_s += waited_s
+            name = "Wait for page artifact writer capacity"
+        timeline.record_span(
+            "Artifacts / tracing",
+            name,
+            started_ns,
+            finished_ns,
+            event_type="wait",
+        )
 
     def save_result(result: Any) -> None:
         nonlocal result_count
-        result.save_to_markdown(save_path=str(predictions_dir))
-        append_compact_page_result(compact_handle, result)
+        nonlocal max_pending_observed
+        while pending and pending[0].done():
+            pending.popleft().result()
+        if len(pending) >= PAGE_ARTIFACT_MAX_PENDING:
+            wait_for_oldest(final_drain=False)
+
+        payload = result.json["res"]
+        image_name = Path(payload["input_path"]).name
+        ordinal = page_ordinals[image_name]
         result_count += 1
-        completion_s.append(time.perf_counter() - predict_started)
-        print(
-            f"completed={result_count}/{len(image_paths)} "
-            f"elapsed_s={completion_s[-1]:.3f}",
-            flush=True,
+        completion_elapsed_s = time.perf_counter() - predict_started
+        completion_s.append(completion_elapsed_s)
+        submitted_ns = time.perf_counter_ns()
+        pending.append(
+            writer.submit(
+                write_result,
+                result,
+                completion_index=result_count,
+                completion_elapsed_s=completion_elapsed_s,
+                submitted_ns=submitted_ns,
+                flow_id=f"page:{ordinal}",
+                image_name=image_name,
+            )
         )
+        max_pending_observed = max(max_pending_observed, len(pending))
 
     try:
-        with compact_path.open("w", encoding="utf-8") as compact_handle:
-            page_run = bridge.run(
-                [str(path) for path in image_paths],
-                emit_page=save_result,
-            )
+        with (
+            compact_path.open("w", encoding="utf-8") as compact_handle,
+            ThreadPoolExecutor(
+                max_workers=1,
+                thread_name_prefix="page-artifact-writer",
+            ) as writer,
+        ):
+            try:
+                page_run = bridge.run(
+                    [str(path) for path in image_paths],
+                    emit_page=save_result,
+                )
+            finally:
+                while pending:
+                    wait_for_oldest(final_drain=True)
     finally:
         official_pipeline.close()
+    writer_summary = {
+        "execution": "background_ordered_single_worker",
+        "max_pending": PAGE_ARTIFACT_MAX_PENDING,
+        "max_pending_observed": max_pending_observed,
+        "write_wall_sum_s": sum(write_wall_s),
+        "queue_wait_sum_s": sum(queue_wait_s),
+        "producer_backpressure_s": producer_backpressure_s,
+        "final_drain_s": final_drain_s,
+    }
     return (
         result_count,
         completion_s,
         time.perf_counter() - predict_started,
         page_run,
+        writer_summary,
     )
 
 
@@ -465,12 +576,19 @@ def main() -> None:
             event_type="scope",
             args={"pages": len(image_paths), "decode_batch_size": args.batch_size},
         ):
-            result_count, completion_s, pipeline_e2e_s, page_run = run_predictions(
+            (
+                result_count,
+                completion_s,
+                pipeline_e2e_s,
+                page_run,
+                page_artifact_writer,
+            ) = run_predictions(
                 official_pipeline,
                 bridge,
                 image_paths,
                 predictions_dir=predictions_dir,
                 compact_path=compact_path,
+                timeline=timeline,
             )
     finally:
         layout_mask_guard.write_snapshot(layout_mask_guard_path)
@@ -527,6 +645,7 @@ def main() -> None:
         "result_count": result_count,
         "prediction_count": len(prediction_files),
         "completion_s": completion_s,
+        "page_artifact_writer": page_artifact_writer,
         "recognition": page_run.summary,
         "page_completion_order": page_run.completion_order,
         "layout_mask_guard": layout_mask_guard.snapshot(),

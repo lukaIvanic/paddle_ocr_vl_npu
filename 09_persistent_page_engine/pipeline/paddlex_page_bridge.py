@@ -603,12 +603,11 @@ class PaddleXPageBridge:
             emit_page(result)
             if self.timeline is not None:
                 self.timeline.record_span(
-                    "Artifacts / tracing",
-                    "Emit page result and write page artifacts",
+                    "Result assembly",
+                    "Submit page result",
                     started_ns,
                     time.perf_counter_ns(),
                     flow_id=f"page:{page.ordinal}",
-                    event_type="io",
                 )
                 self.timeline.instant(
                     "Pipeline",
