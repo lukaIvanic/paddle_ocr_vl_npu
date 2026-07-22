@@ -41,6 +41,13 @@ from paddleocr_vl.model.compile_utils import (
     torchair_version_label,
 )
 from paddleocr_vl.model.text_decode import cast_decode_linear_weights_to_nz
+from paddleocr_vl.model.text_direct_arena_prefill import (
+    DirectArenaPackedTextPrefillRuntime,
+)
+from paddleocr_vl.model.text_packed_prefill import (
+    PackedTextPrefillRuntime,
+    PreparedPackedTextPrefill,
+)
 from paddleocr_vl.model.text_prefill import (
     TEXT_PADDING_CHOICES,
     TextPrefillStage,
@@ -68,6 +75,17 @@ DEFAULT_CACHE_ROOT = (
     REPO_ROOT / ".runtime_cache/09_persistent_page_engine_text_torchair"
 )
 DEFAULT_PACKED_CACHE_ROOT = REPO_ROOT / ".runtime_cache/09_text_lab_packed"
+DEFAULT_PRODUCTION_PACKED_CACHE_ROOT = (
+    REPO_ROOT / ".runtime_cache/09_persistent_page_engine_text_packed_torchair"
+)
+DEFAULT_DIRECT_ARENA_CACHE_ROOT = (
+    REPO_ROOT / ".runtime_cache/09_text_lab_direct_arena"
+)
+DEFAULT_PACKED_E2E_SUMMARY = (
+    REPO_ROOT
+    / "tmp/09_persistent_page_engine/text_pack_ab_on_256p_0fd1fbb"
+    / "run_summary.json"
+)
 DEFAULT_BASELINE_LAB_RESULT = (
     DEFAULT_OUTPUT_ROOT / "replay_256p_9e14e4e" / "result.json"
 )
@@ -92,7 +110,9 @@ def _csv_ints(value: str) -> tuple[int, ...]:
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--mode", choices=("replay", "profile", "packed"), default="replay"
+        "--mode",
+        choices=("replay", "profile", "packed", "direct_arena"),
+        default="replay",
     )
     parser.add_argument("--corpus", type=Path, default=DEFAULT_CORPUS)
     parser.add_argument("--reference-summary", type=Path, default=DEFAULT_REFERENCE)
@@ -102,9 +122,25 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--packed-cache-dir", type=Path, default=DEFAULT_PACKED_CACHE_ROOT
     )
     parser.add_argument(
+        "--production-packed-cache-dir",
+        type=Path,
+        default=DEFAULT_PRODUCTION_PACKED_CACHE_ROOT,
+    )
+    parser.add_argument(
+        "--direct-arena-cache-dir",
+        type=Path,
+        default=DEFAULT_DIRECT_ARENA_CACHE_ROOT,
+    )
+    parser.add_argument(
+        "--packed-e2e-summary",
+        type=Path,
+        default=DEFAULT_PACKED_E2E_SUMMARY,
+    )
+    parser.add_argument(
         "--baseline-lab-result", type=Path, default=DEFAULT_BASELINE_LAB_RESULT
     )
     parser.add_argument("--cache-length", type=int, default=8192)
+    parser.add_argument("--arena-batch-size", type=int, default=16)
     parser.add_argument("--pack-length", type=int, default=1024)
     parser.add_argument("--max-pack-members", type=int, default=32)
     parser.add_argument(
@@ -145,6 +181,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     args = parser.parse_args(argv)
     if args.cache_length <= 0:
         parser.error("--cache-length must be positive")
+    if args.arena_batch_size <= 0:
+        parser.error("--arena-batch-size must be positive")
     if args.pack_length <= 0 or args.max_pack_members <= 0:
         parser.error("--pack-length and --max-pack-members must be positive")
     if args.warmup < 0 or args.repeats <= 0:
@@ -159,8 +197,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     args.pack_scope = tuple(
         dict.fromkeys(args.pack_scope or ("production_group", "global"))
     )
-    if args.mode == "packed" and args.backend != "torchair":
-        parser.error("packed mode currently requires --backend torchair")
+    if args.mode in ("packed", "direct_arena") and args.backend != "torchair":
+        parser.error(f"{args.mode} mode currently requires --backend torchair")
     return args
 
 
@@ -1099,6 +1137,302 @@ class TextPrefillLab:
             ),
         }
 
+    def _prepared_from_lab_pack(
+        self,
+        packed: PackedInput,
+    ) -> PreparedPackedTextPrefill:
+        lengths = tuple(int(item["input_tokens"]) for item in packed.members)
+        offsets: list[int] = []
+        cursor = 0
+        for length in lengths:
+            offsets.append(cursor)
+            cursor += length
+        return PreparedPackedTextPrefill(
+            inputs_embeds=packed.inputs_embeds,
+            position_ids=packed.position_ids,
+            segment_ids=packed.segment_ids,
+            local_positions=packed.local_positions,
+            last_token_indices=packed.last_token_indices,
+            segment_lengths=lengths,
+            segment_offsets=tuple(offsets),
+            real_seq_len=packed.real_tokens,
+            physical_seq_len=self.args.pack_length,
+        )
+
+    def _direct_arena_slots(self, members: int) -> torch.Tensor:
+        if members > self.args.arena_batch_size:
+            raise ValueError(
+                f"pack has {members} members but arena has "
+                f"{self.args.arena_batch_size} slots"
+            )
+        slots = torch.zeros(
+            (self.args.max_pack_members,),
+            device=self.device,
+            dtype=torch.int64,
+        )
+        slots[:members] = torch.arange(
+            members,
+            device=self.device,
+            dtype=torch.int64,
+        )
+        return slots
+
+    def _direct_arena_correctness(
+        self,
+        baseline: PackedTextPrefillRuntime,
+        direct: DirectArenaPackedTextPrefillRuntime,
+        members: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        packed = self._prepare_packed_input(members)
+        prepared = self._prepared_from_lab_pack(packed)
+        slots = self._direct_arena_slots(len(members))
+        baseline_hidden = baseline.run_prepared(prepared)
+        direct_hidden = direct.run_prepared(prepared, slots)
+        synchronize(self.device)
+
+        valid_baseline = baseline_hidden[:, : len(members)].float()
+        valid_direct = direct_hidden[:, : len(members)].float()
+        hidden_difference = (valid_baseline - valid_direct).abs()
+        baseline_tokens = torch.argmax(
+            self.model.lm_head(valid_baseline.to(self.dtype)).float(),
+            dim=-1,
+        )
+        direct_tokens = torch.argmax(
+            self.model.lm_head(valid_direct.to(self.dtype)).float(),
+            dim=-1,
+        )
+        scratch = baseline.scratch_caches[prepared.physical_seq_len]
+        kv_differences: list[torch.Tensor] = []
+        for member_index, (offset, length) in enumerate(
+            zip(prepared.segment_offsets, prepared.segment_lengths)
+        ):
+            for scratch_tensor, arena_tensor in zip(
+                scratch.flat_tensors(),
+                direct.arena_cache.flat_tensors(),
+            ):
+                kv_differences.append(
+                    (
+                        scratch_tensor[:, :, offset : offset + length, :].float()
+                        - arena_tensor[
+                            member_index : member_index + 1,
+                            :,
+                            :length,
+                            :,
+                        ].float()
+                    )
+                    .abs()
+                    .max()
+                )
+        kv_max_abs = float(torch.stack(kv_differences).max().item())
+        first_token_matches = int(
+            (baseline_tokens == direct_tokens).sum().item()
+        )
+        synchronize(self.device)
+        return {
+            "members": len(members),
+            "real_tokens": prepared.real_seq_len,
+            "source_indices": [int(item["source_index"]) for item in members],
+            "hidden_mean_abs": float(hidden_difference.mean().item()),
+            "hidden_max_abs": float(hidden_difference.max().item()),
+            "kv_valid_prefix_max_abs": kv_max_abs,
+            "kv_valid_prefix_exact": kv_max_abs == 0.0,
+            "first_token_matches": first_token_matches,
+            "first_token_total": len(members),
+            "first_token_parity": first_token_matches / len(members),
+        }
+
+    def _run_direct_arena_scope(
+        self,
+        baseline: PackedTextPrefillRuntime,
+        direct: DirectArenaPackedTextPrefillRuntime,
+        *,
+        scope: str,
+    ) -> dict[str, Any]:
+        pack_member_limit = min(
+            self.args.max_pack_members,
+            self.args.arena_batch_size,
+        )
+        packs, overflow = _form_text_packs(
+            self.items,
+            scope=scope,
+            capacity=self.args.pack_length,
+            max_members=pack_member_limit,
+        )
+        if not packs:
+            raise ValueError(f"scope {scope!r} did not form any direct packs")
+        correctness_pack = max(
+            packs,
+            key=lambda pack: (
+                len(pack),
+                sum(int(item["input_tokens"]) for item in pack),
+            ),
+        )
+        correctness = self._direct_arena_correctness(
+            baseline,
+            direct,
+            correctness_pack,
+        )
+
+        baseline_durations: list[float] = []
+        direct_durations: list[float] = []
+        chunk_size = 16
+        started = time.perf_counter()
+        for chunk_start in range(0, len(packs), chunk_size):
+            chunk = packs[chunk_start : chunk_start + chunk_size]
+            timeline = DeviceTimeline(self.device)
+            held: list[Any] = []
+            for offset, members in enumerate(chunk):
+                pack_index = chunk_start + offset
+                packed = self._prepare_packed_input(members)
+                prepared = self._prepared_from_lab_pack(packed)
+                slots = self._direct_arena_slots(len(members))
+                baseline_name = f"pack{pack_index:06d}::scratch"
+                direct_name = f"pack{pack_index:06d}::direct_arena"
+                calls = (
+                    (
+                        baseline_name,
+                        lambda prepared=prepared: baseline.run_prepared(prepared),
+                    ),
+                    (
+                        direct_name,
+                        lambda prepared=prepared, slots=slots: direct.run_prepared(
+                            prepared,
+                            slots,
+                        ),
+                    ),
+                )
+                if pack_index % 2:
+                    calls = tuple(reversed(calls))
+                for name, call in calls:
+                    held.append(timeline.measure(name, call))
+                held.extend((packed, prepared, slots))
+            spans = timeline.resolve()
+            for name, seconds in spans.items():
+                if name.endswith("::scratch"):
+                    baseline_durations.append(float(seconds))
+                else:
+                    direct_durations.append(float(seconds))
+            del held
+            completed = min(chunk_start + chunk_size, len(packs))
+            if completed == len(packs) or completed % 128 == 0:
+                print(
+                    f"DIRECT_ARENA_PROGRESS scope={scope} "
+                    f"packs={completed}/{len(packs)} "
+                    f"scratch_s={sum(baseline_durations):.3f} "
+                    f"direct_s={sum(direct_durations):.3f}",
+                    flush=True,
+                )
+        wall_s = time.perf_counter() - started
+        baseline_s = sum(baseline_durations)
+        direct_s = sum(direct_durations)
+        real_tokens = sum(
+            int(item["input_tokens"])
+            for pack in packs
+            for item in pack
+        )
+        physical_tokens = len(packs) * self.args.pack_length
+        current_redistribution_s = None
+        summary_path = self.args.packed_e2e_summary.expanduser().resolve()
+        if summary_path.exists():
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+            current_redistribution_s = float(
+                summary["recognition"]["device_stage_s"]["text_kv_redistribute"]
+            )
+        arena_bytes = sum(
+            tensor.numel() * tensor.element_size()
+            for tensor in direct.arena_cache.flat_tensors()
+        )
+        private_cache_bytes = arena_bytes // self.args.arena_batch_size
+        current_combined_s = (
+            None
+            if current_redistribution_s is None
+            else baseline_s + current_redistribution_s
+        )
+        return {
+            "scope": scope,
+            "policy": "first_fit_decreasing",
+            "packs": len(packs),
+            "packed_items": sum(len(pack) for pack in packs),
+            "overflow_items": len(overflow),
+            "pack_member_limit": pack_member_limit,
+            "real_text_tokens": real_tokens,
+            "physical_text_tokens": physical_tokens,
+            "fill_fraction": real_tokens / physical_tokens,
+            "scratch_graph_s": baseline_s,
+            "direct_arena_graph_s": direct_s,
+            "direct_graph_overhead_s": direct_s - baseline_s,
+            "direct_vs_scratch_ratio": direct_s / baseline_s,
+            "current_e2e_redistribution_s": current_redistribution_s,
+            "projected_current_graph_plus_redistribution_s": current_combined_s,
+            "projected_direct_time_reduction_fraction": (
+                None
+                if current_combined_s is None
+                else 1.0 - direct_s / current_combined_s
+            ),
+            "scratch_effective_tok_per_s": real_tokens / baseline_s,
+            "direct_effective_tok_per_s": real_tokens / direct_s,
+            "scratch_physical_tok_per_s": physical_tokens / baseline_s,
+            "direct_physical_tok_per_s": physical_tokens / direct_s,
+            "correctness": correctness,
+            "hbm": {
+                "arena_bytes": arena_bytes,
+                "private_cache_bytes_per_waiting_crop": private_cache_bytes,
+                "current_64_crop_ready_capacity_bytes": private_cache_bytes * 64,
+                "direct_arena_extra_resident_bytes": 0,
+            },
+            "wall_s": wall_s,
+            "measurement_order": "alternating_scratch_and_direct",
+            "scope_limit": (
+                "lab assumes target arena rows are free; scheduler slot "
+                "availability and decode cadence are not modeled"
+            ),
+        }
+
+    def direct_arena(self) -> dict[str, Any]:
+        buckets = (self.args.pack_length,)
+        baseline = PackedTextPrefillRuntime(
+            self.model,
+            buckets=buckets,
+            max_members=self.args.max_pack_members,
+            cache_root=self.args.production_packed_cache_dir,
+            destination_cache_length=self.args.cache_length,
+            device=self.device,
+            dtype=self.dtype,
+            model_dir=self.model_dir,
+            linear_weight_format=self.linear_weight_format,
+        )
+        direct = DirectArenaPackedTextPrefillRuntime(
+            self.model,
+            buckets=buckets,
+            max_members=self.args.max_pack_members,
+            arena_batch_size=self.args.arena_batch_size,
+            arena_cache_length=self.args.cache_length,
+            cache_root=self.args.direct_arena_cache_dir,
+            device=self.device,
+            dtype=self.dtype,
+            model_dir=self.model_dir,
+            linear_weight_format=self.linear_weight_format,
+            allow_compile=self.args.allow_compile,
+        )
+        scopes = {
+            scope: self._run_direct_arena_scope(
+                baseline,
+                direct,
+                scope=scope,
+            )
+            for scope in self.args.pack_scope
+        }
+        return {
+            "mode": "direct_arena",
+            "baseline_runtime": baseline.metadata,
+            "direct_runtime": direct.metadata,
+            "scopes": scopes,
+            "integration_status": (
+                "lab-only direct arena write; production scheduler still "
+                "owns slot assignment and private ready caches"
+            ),
+        }
+
     def _load_baseline_records(self) -> tuple[dict[int, dict[str, Any]], float]:
         path = self.args.baseline_lab_result.expanduser().resolve()
         payload = json.loads(path.read_text(encoding="utf-8"))
@@ -1291,11 +1625,21 @@ def _write_report(
             "cache_length": args.cache_length,
             "cache_dir": str(args.cache_dir.expanduser().resolve()),
             "packed_cache_dir": str(args.packed_cache_dir.expanduser().resolve()),
+            "production_packed_cache_dir": str(
+                args.production_packed_cache_dir.expanduser().resolve()
+            ),
+            "direct_arena_cache_dir": str(
+                args.direct_arena_cache_dir.expanduser().resolve()
+            ),
+            "packed_e2e_summary": str(
+                args.packed_e2e_summary.expanduser().resolve()
+            ),
             "baseline_lab_result": str(
                 args.baseline_lab_result.expanduser().resolve()
             ),
             "pack_length": args.pack_length,
             "max_pack_members": args.max_pack_members,
+            "arena_batch_size": args.arena_batch_size,
             "pack_scope": list(args.pack_scope),
             "allow_compile": bool(args.allow_compile),
             "include_output_head": bool(args.include_output_head),
@@ -1367,6 +1711,21 @@ def _print_packed(result: dict[str, Any]) -> None:
         )
 
 
+def _print_direct_arena(result: dict[str, Any]) -> None:
+    for scope, row in result["scopes"].items():
+        correctness = row["correctness"]
+        print(
+            "DIRECT_ARENA_RESULT "
+            f"scope={scope} packs={row['packs']} "
+            f"items={row['packed_items']} "
+            f"scratch_s={row['scratch_graph_s']:.6f} "
+            f"direct_s={row['direct_arena_graph_s']:.6f} "
+            f"ratio={row['direct_vs_scratch_ratio']:.4f} "
+            f"kv_exact={correctness['kv_valid_prefix_exact']} "
+            f"first_token_parity={correctness['first_token_parity']:.4f}"
+        )
+
+
 @torch.inference_mode()
 def main(argv: Sequence[str] | None = None) -> None:
     args = parse_args(argv)
@@ -1376,6 +1735,8 @@ def main(argv: Sequence[str] | None = None) -> None:
         result = lab.replay()
     elif args.mode == "profile":
         result = lab.profile()
+    elif args.mode == "direct_arena":
+        result = lab.direct_arena()
     else:
         result = lab.packed()
     output = _write_report(args, corpus, lab, result)
@@ -1383,6 +1744,8 @@ def main(argv: Sequence[str] | None = None) -> None:
         _print_replay(result)
     elif args.mode == "packed":
         _print_packed(result)
+    elif args.mode == "direct_arena":
+        _print_direct_arena(result)
     print(f"Wrote {output}")
 
 
