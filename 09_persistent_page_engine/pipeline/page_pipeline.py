@@ -475,6 +475,8 @@ def aggregate_pages(
         ),
         "max_ready_queue_depth": decode_schedule.max_ready_queue_depth,
         "ready_source_refill_count": decode_schedule.ready_source_refill_count,
+        "vision_packing": dict(decode_schedule.vision_packing),
+        "text_packing": dict(decode_schedule.text_packing),
         "layout_label_counts": dict(
             sorted(Counter(region.label for region in layout_regions).items())
         ),

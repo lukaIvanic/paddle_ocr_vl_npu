@@ -64,4 +64,5 @@ class ContinuousDecodeResult:
     hot_swap_kv_prefix_bytes_copied: int
     timing_s: dict[str, float]
     vision_packing: dict[str, Any]
+    text_packing: dict[str, Any]
     rates: dict[str, float | None]

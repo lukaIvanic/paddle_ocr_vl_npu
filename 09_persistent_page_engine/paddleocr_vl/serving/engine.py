@@ -42,12 +42,17 @@ from .runtime_defaults import (
     DEFAULT_VISION_PACK_TARGET,
     DEFAULT_VISION_ROUTER_LOOKAHEAD,
     DEFAULT_TEXT_BACKEND,
+    DEFAULT_TEXT_PACK_BUCKETS,
+    DEFAULT_TEXT_PACK_MAX_MEMBERS,
+    DEFAULT_TEXT_PACKING,
     DEFAULT_VISION_BACKEND,
     OPTIMIZED_TEXT_BUCKETS,
     OPTIMIZED_VISION_BUCKETS,
     READY_BUFFER_BATCH_MULTIPLIER,
+    TEXT_PACKING_CHOICES,
     VISION_PACKING_CHOICES,
 )
+from ..model.text_packed_prefill import PackedTextPrefillRuntime
 from ..model.text_prefill import parse_text_buckets
 from .types import ContinuousDecodeResult, RecognitionRequest, RecognitionResult
 from utils.timing import DeviceTimeline, synchronize
@@ -96,6 +101,26 @@ class _InFlightPrefillMember:
 
 
 @dataclass
+class _TextPrefillInputMember:
+    prepared: CpuPreparedRecognition
+    moved: tuple[torch.Tensor, ...]
+    cache: LocalPaddleOCRVLStaticCache
+    rope_deltas: torch.Tensor
+    next_cache_position: torch.Tensor
+    inputs_embeds: torch.Tensor
+    vision: dict[str, Any]
+    timing_s: dict[str, float]
+    projected_image_tokens: int
+
+
+@dataclass(frozen=True)
+class _TextPackTrace:
+    member_indices: tuple[int, ...]
+    route: dict[str, Any]
+    stage_keys: dict[str, str]
+
+
+@dataclass
 class _InFlightPrefillGroup:
     group_id: int
     members: list[_InFlightPrefillMember]
@@ -105,6 +130,7 @@ class _InFlightPrefillGroup:
     packed_next_tokens: torch.Tensor
     prefill_started: float
     pack_route: dict[str, Any]
+    text_packs: list[_TextPackTrace]
 
 
 @dataclass
@@ -211,6 +237,77 @@ class _VisionPackingRunStats:
         }
 
 
+@dataclass
+class _TextPackingRunStats:
+    mode: str
+    buckets: tuple[int, ...]
+    groups: int = 0
+    crops: int = 0
+    packs: int = 0
+    packed_crops: int = 0
+    fallback_crops: int = 0
+    packed_real_tokens: int = 0
+    packed_physical_tokens: int = 0
+    redistributed_kv_bytes: int = 0
+    pack_size_histogram: Counter[int] | None = None
+    bucket_histogram: Counter[int] | None = None
+
+    def __post_init__(self) -> None:
+        if self.pack_size_histogram is None:
+            self.pack_size_histogram = Counter()
+        if self.bucket_histogram is None:
+            self.bucket_histogram = Counter()
+
+    def record_pack(
+        self,
+        *,
+        members: int,
+        real_tokens: int,
+        physical_tokens: int,
+        redistributed_kv_bytes: int,
+    ) -> None:
+        self.packs += 1
+        self.packed_crops += int(members)
+        self.packed_real_tokens += int(real_tokens)
+        self.packed_physical_tokens += int(physical_tokens)
+        self.redistributed_kv_bytes += int(redistributed_kv_bytes)
+        self.pack_size_histogram[int(members)] += 1
+        self.bucket_histogram[int(physical_tokens)] += 1
+
+    def summary(self) -> dict[str, Any]:
+        return {
+            "mode": self.mode,
+            "buckets": list(self.buckets),
+            "groups": self.groups,
+            "crops": self.crops,
+            "packs": self.packs,
+            "packed_crops": self.packed_crops,
+            "fallback_crops": self.fallback_crops,
+            "calls": self.packs + self.fallback_crops,
+            "call_reduction_fraction": (
+                1.0 - (self.packs + self.fallback_crops) / self.crops
+                if self.crops
+                else None
+            ),
+            "pack_size_histogram": {
+                str(size): count
+                for size, count in sorted(self.pack_size_histogram.items())
+            },
+            "bucket_histogram": {
+                str(bucket): count
+                for bucket, count in sorted(self.bucket_histogram.items())
+            },
+            "packed_real_text_tokens": self.packed_real_tokens,
+            "packed_physical_text_tokens": self.packed_physical_tokens,
+            "packed_fill_fraction": (
+                self.packed_real_tokens / self.packed_physical_tokens
+                if self.packed_physical_tokens
+                else None
+            ),
+            "redistributed_kv_bytes": self.redistributed_kv_bytes,
+        }
+
+
 def _pin_memory_or_keep(tensor: torch.Tensor) -> torch.Tensor:
     if tensor.device.type != "cpu" or tensor.is_pinned():
         return tensor
@@ -303,6 +400,10 @@ class ContinuousRecognizer:
         text_buckets: str | Iterable[int] = OPTIMIZED_TEXT_BUCKETS,
         text_torchair_cache_dir: Path | None = None,
         text_padding: str = "auto",
+        text_packing: str = DEFAULT_TEXT_PACKING,
+        text_pack_buckets: str | Iterable[int] = DEFAULT_TEXT_PACK_BUCKETS,
+        text_pack_max_members: int = DEFAULT_TEXT_PACK_MAX_MEMBERS,
+        text_packed_cache_dir: Path | None = None,
         preprocessor_min_pixels: int | None = None,
         timeline: TimelineRecorder | None = None,
     ):
@@ -367,6 +468,23 @@ class ContinuousRecognizer:
         self.text_backend = str(text_backend)
         self.text_buckets = parse_text_buckets(text_buckets)
         self.text_padding = str(text_padding)
+        self.text_packing = str(text_packing)
+        self.text_pack_buckets = parse_text_buckets(text_pack_buckets)
+        self.text_pack_max_members = int(text_pack_max_members)
+        if self.text_packing not in TEXT_PACKING_CHOICES:
+            raise ValueError(
+                "text_packing must be one of "
+                f"{TEXT_PACKING_CHOICES}, got {text_packing!r}"
+            )
+        if self.text_pack_max_members <= 0:
+            raise ValueError("text_pack_max_members must be positive")
+        if self.text_packing != "off" and self.text_backend != "torchair":
+            raise ValueError("packed text prefill requires TorchAir text prefill")
+        if self.text_pack_buckets[-1] > self.cache_length:
+            raise ValueError(
+                "largest packed text bucket exceeds the decode cache length: "
+                f"bucket={self.text_pack_buckets[-1]} cache={self.cache_length}"
+            )
         if self.decode_backend not in DECODE_BACKEND_CHOICES:
             raise ValueError(
                 f"decode_backend must be one of {DECODE_BACKEND_CHOICES}, "
@@ -443,6 +561,29 @@ class ContinuousRecognizer:
         self.text_prefill = self.stages.text_prefill
         self.text_decode = self.stages.text_decode
         self.decode_fn = self.text_decode.fn
+        packed_text_started = time.perf_counter()
+        self.packed_text_prefill = (
+            PackedTextPrefillRuntime(
+                self.model,
+                buckets=self.text_pack_buckets,
+                max_members=self.text_pack_max_members,
+                cache_root=(
+                    text_packed_cache_dir
+                    if text_packed_cache_dir is not None
+                    else torchair_cache_dir.parent
+                    / f"{torchair_cache_dir.name}_text_packed"
+                ),
+                destination_cache_length=self.cache_length,
+                device=self.device,
+                dtype=self.dtype,
+                model_dir=self.model_dir,
+                linear_weight_format=str(self.weight_format["effective_mode"]),
+            )
+            if self.text_packing != "off"
+            else None
+        )
+        synchronize(self.device)
+        packed_text_setup_s = time.perf_counter() - packed_text_started
         self.batched_vision = (
             BatchedVisionGraphRuntime(
                 self.model,
@@ -478,6 +619,10 @@ class ContinuousRecognizer:
             self.vision_pack_target,
             self.vision_router_lookahead,
         )
+        self._text_packing_stats = _TextPackingRunStats(
+            self.text_packing,
+            self.text_pack_buckets,
+        )
 
         started = time.perf_counter()
         self.decode_arena = DecodeArena(
@@ -505,6 +650,7 @@ class ContinuousRecognizer:
                 if self.batched_vision is not None
                 else 0.0
             ),
+            "packed_text_runtime_setup": float(packed_text_setup_s),
             "decode_control_setup": float(decode_control_setup_s),
             "recognizer_runtime_total": float(time.perf_counter() - runtime_started),
         }
@@ -529,6 +675,10 @@ class ContinuousRecognizer:
             self.vision_packing,
             self.vision_pack_target,
             self.vision_router_lookahead,
+        )
+        self._text_packing_stats = _TextPackingRunStats(
+            self.text_packing,
+            self.text_pack_buckets,
         )
 
         def ready_from(state: PrefilledRecognition) -> ReadyDecodeRequest:
@@ -638,6 +788,7 @@ class ContinuousRecognizer:
             hot_swap_kv_prefix_bytes_copied=decoded.hot_swap_kv_prefix_bytes_copied,
             timing_s=dict(decoded.timing_s),
             vision_packing=self._vision_packing_stats.summary(),
+            text_packing=self._text_packing_stats.summary(),
             rates={
                 "raw_decode_tok_per_s": per_second(
                     decoded.raw_decode_token_slots,
@@ -1246,6 +1397,45 @@ class ContinuousRecognizer:
     def _group_stage_key(member_index: int, stage: str) -> str:
         return f"member:{int(member_index)}:{stage}"
 
+    def _form_text_pack_indices(
+        self,
+        lengths: list[int],
+    ) -> tuple[list[tuple[int, ...]], tuple[int, ...]]:
+        """Best-fit decreasing inside one already-selected vision group."""
+
+        if self.packed_text_prefill is None:
+            return [], tuple(range(len(lengths)))
+        capacity = self.text_pack_buckets[-1]
+        eligible = [
+            index for index, length in enumerate(lengths) if length <= capacity
+        ]
+        fallback = tuple(
+            index for index, length in enumerate(lengths) if length > capacity
+        )
+        packs: list[list[int]] = []
+        totals: list[int] = []
+        for member_index in sorted(
+            eligible,
+            key=lambda index: (-lengths[index], index),
+        ):
+            length = lengths[member_index]
+            choices = [
+                index
+                for index, pack in enumerate(packs)
+                if len(pack) < self.text_pack_max_members
+                and totals[index] + length <= capacity
+            ]
+            if choices:
+                selected = max(choices, key=lambda index: totals[index])
+                packs[selected].append(member_index)
+                totals[selected] += length
+            else:
+                packs.append([member_index])
+                totals.append(length)
+        if sum(len(pack) for pack in packs) + len(fallback) != len(lengths):
+            raise AssertionError("text pack formation lost prefill members")
+        return [tuple(pack) for pack in packs], fallback
+
     @torch.inference_mode()
     def _stage_prefill_group(
         self,
@@ -1508,8 +1698,7 @@ class ContinuousRecognizer:
             route=pack_route,
         )
         group_padding = int(pack_route["physical_vision_tokens"]) - real_vision_tokens
-        members: list[_InFlightPrefillMember] = []
-        next_tokens: list[torch.Tensor] = []
+        text_inputs: list[_TextPrefillInputMember] = []
         for index, (
             ((prepared, _consumer_wait_s), moved, image_feature, real_length, timing)
         ) in enumerate(
@@ -1588,40 +1777,6 @@ class ContinuousRecognizer:
                     init_mode="empty",
                 ),
             )
-            text_route = self.text_prefill.route(int(inputs_embeds.shape[1]))
-            prepared_text = device_timeline.measure(
-                self._group_stage_key(index, "text_prefill_input_prep"),
-                lambda inputs_embeds=inputs_embeds,
-                attention_mask_device=attention_mask_device,
-                position_ids=position_ids,
-                text_route=text_route: self.text_prefill.prepare(
-                    inputs_embeds,
-                    attention_mask_device,
-                    position_ids,
-                    route=text_route,
-                ),
-            )
-            last_hidden_state = device_timeline.measure(
-                self._group_stage_key(index, "text_prefill"),
-                lambda prepared_text=prepared_text, cache=cache: (
-                    self.text_prefill.run_prepared(prepared_text, cache)
-                ),
-            )
-            logits = device_timeline.measure(
-                self._group_stage_key(index, "prefill_lm_head"),
-                lambda last_hidden_state=last_hidden_state: self.model.lm_head(
-                    last_hidden_state
-                ),
-            )
-            next_token = device_timeline.measure(
-                self._group_stage_key(index, "prefill_argmax"),
-                lambda logits=logits: torch.argmax(
-                    logits[:, -1, :].float(),
-                    dim=-1,
-                    keepdim=True,
-                ),
-            )
-            next_tokens.append(next_token)
             member_padding = group_padding if index == len(group.members) - 1 else 0
             vision_route = {
                 **pack_route,
@@ -1643,24 +1798,216 @@ class ContinuousRecognizer:
                 "pack_row_sizes": list(group.row_sizes),
                 "router_visible_crops": pack_route.get("visible_window_size"),
             }
-            members.append(
-                _InFlightPrefillMember(
+            text_inputs.append(
+                _TextPrefillInputMember(
                     prepared=prepared,
+                    moved=moved,
                     cache=cache,
                     rope_deltas=rope_deltas,
                     next_cache_position=next_cache_position,
-                    next_token=next_token,
-                    device_inputs=moved,
+                    inputs_embeds=inputs_embeds,
                     vision=vision_route,
-                    text_prefill=text_route,
                     timing_s=timing,
-                    input_tokens=int(prepared.input_ids.shape[1]),
                     projected_image_tokens=int(image_embeds.shape[0]),
                 )
             )
 
+        self._text_packing_stats.groups += 1
+        self._text_packing_stats.crops += len(text_inputs)
+        lengths = [int(item.inputs_embeds.shape[1]) for item in text_inputs]
+        pack_indices, fallback_indices = self._form_text_pack_indices(lengths)
+        next_tokens: list[torch.Tensor | None] = [None] * len(text_inputs)
+        text_routes: list[dict[str, Any] | None] = [None] * len(text_inputs)
+        text_packs: list[_TextPackTrace] = []
+
+        if self.packed_text_prefill is not None:
+            for pack_index, indices in enumerate(pack_indices):
+                pack_lengths = [lengths[index] for index in indices]
+                text_route = self.packed_text_prefill.route(pack_lengths)
+                prefix = f"group:text_pack:{pack_index}"
+                prepared_text = device_timeline.measure(
+                    f"{prefix}:text_prefill_input_prep",
+                    lambda indices=indices, text_route=text_route: (
+                        self.packed_text_prefill.prepare(
+                            [text_inputs[index].inputs_embeds for index in indices],
+                            [text_inputs[index].moved[3] for index in indices],
+                            route=text_route,
+                        )
+                    ),
+                )
+                packed_hidden = device_timeline.measure(
+                    f"{prefix}:text_prefill",
+                    lambda prepared_text=prepared_text: (
+                        self.packed_text_prefill.run_prepared(prepared_text)
+                    ),
+                )
+                redistributed_bytes = device_timeline.measure(
+                    f"{prefix}:text_kv_redistribute",
+                    lambda prepared_text=prepared_text, indices=indices: (
+                        self.packed_text_prefill.redistribute_cache(
+                            prepared_text,
+                            [text_inputs[index].cache for index in indices],
+                        )
+                    ),
+                )
+                valid_hidden = packed_hidden[:, : len(indices)]
+                logits = device_timeline.measure(
+                    f"{prefix}:prefill_lm_head",
+                    lambda valid_hidden=valid_hidden: self.model.lm_head(valid_hidden),
+                )
+                packed_tokens = device_timeline.measure(
+                    f"{prefix}:prefill_argmax",
+                    lambda logits=logits: torch.argmax(
+                        logits.float(),
+                        dim=-1,
+                    ),
+                )
+                pack_padding = (
+                    int(text_route["physical_text_tokens"])
+                    - int(text_route["real_text_tokens"])
+                )
+                for position, member_index in enumerate(indices):
+                    member_padding = (
+                        pack_padding if position == len(indices) - 1 else 0
+                    )
+                    real_tokens = lengths[member_index]
+                    text_routes[member_index] = {
+                        **text_route,
+                        "real_text_tokens": real_tokens,
+                        "physical_text_tokens": real_tokens + member_padding,
+                        "padding_text_tokens": member_padding,
+                        "useful_token_fraction": (
+                            real_tokens / (real_tokens + member_padding)
+                        ),
+                        "packing": "production_group",
+                        "pack_group_id": group.group_id,
+                        "text_pack_index": pack_index,
+                        "pack_real_text_tokens": int(
+                            text_route["real_text_tokens"]
+                        ),
+                        "pack_physical_text_tokens": int(
+                            text_route["physical_text_tokens"]
+                        ),
+                    }
+                    next_tokens[member_index] = packed_tokens[
+                        :, position : position + 1
+                    ]
+                stage_keys = {
+                    stage: f"{prefix}:{stage}"
+                    for stage in (
+                        "text_prefill_input_prep",
+                        "text_prefill",
+                        "text_kv_redistribute",
+                        "prefill_lm_head",
+                        "prefill_argmax",
+                    )
+                }
+                text_packs.append(
+                    _TextPackTrace(
+                        member_indices=indices,
+                        route=dict(text_route),
+                        stage_keys=stage_keys,
+                    )
+                )
+                self._text_packing_stats.record_pack(
+                    members=len(indices),
+                    real_tokens=int(text_route["real_text_tokens"]),
+                    physical_tokens=int(text_route["physical_text_tokens"]),
+                    redistributed_kv_bytes=int(redistributed_bytes),
+                )
+
+        self._text_packing_stats.fallback_crops += len(fallback_indices)
+        for member_index in fallback_indices:
+            item = text_inputs[member_index]
+            attention_mask_device = item.moved[1]
+            position_ids = item.moved[3]
+            text_route = self.text_prefill.route(lengths[member_index])
+            prepared_text = device_timeline.measure(
+                self._group_stage_key(
+                    member_index,
+                    "text_prefill_input_prep",
+                ),
+                lambda item=item,
+                attention_mask_device=attention_mask_device,
+                position_ids=position_ids,
+                text_route=text_route: self.text_prefill.prepare(
+                    item.inputs_embeds,
+                    attention_mask_device,
+                    position_ids,
+                    route=text_route,
+                ),
+            )
+            last_hidden_state = device_timeline.measure(
+                self._group_stage_key(member_index, "text_prefill"),
+                lambda prepared_text=prepared_text, cache=item.cache: (
+                    self.text_prefill.run_prepared(prepared_text, cache)
+                ),
+            )
+            logits = device_timeline.measure(
+                self._group_stage_key(member_index, "prefill_lm_head"),
+                lambda last_hidden_state=last_hidden_state: self.model.lm_head(
+                    last_hidden_state
+                ),
+            )
+            next_token = device_timeline.measure(
+                self._group_stage_key(member_index, "prefill_argmax"),
+                lambda logits=logits: torch.argmax(
+                    logits[:, -1, :].float(),
+                    dim=-1,
+                    keepdim=True,
+                ),
+            )
+            text_route = {
+                **text_route,
+                "packing": "fallback_single" if pack_indices else "off",
+                "pack_group_id": group.group_id,
+                "text_pack_index": None,
+                "pack_real_text_tokens": int(text_route["real_text_tokens"]),
+                "pack_physical_text_tokens": int(
+                    text_route["physical_text_tokens"]
+                ),
+            }
+            next_tokens[member_index] = next_token
+            text_routes[member_index] = text_route
+            text_packs.append(
+                _TextPackTrace(
+                    member_indices=(member_index,),
+                    route=dict(text_route),
+                    stage_keys={
+                        stage: self._group_stage_key(member_index, stage)
+                        for stage in (
+                            "text_prefill_input_prep",
+                            "text_prefill",
+                            "prefill_lm_head",
+                            "prefill_argmax",
+                        )
+                    },
+                )
+            )
+
+        if any(token is None for token in next_tokens) or any(
+            route is None for route in text_routes
+        ):
+            raise AssertionError("text prefill did not produce every group member")
+        members = [
+            _InFlightPrefillMember(
+                prepared=item.prepared,
+                cache=item.cache,
+                rope_deltas=item.rope_deltas,
+                next_cache_position=item.next_cache_position,
+                next_token=next_tokens[index],
+                device_inputs=item.moved,
+                vision=item.vision,
+                text_prefill=text_routes[index],
+                timing_s=item.timing_s,
+                input_tokens=int(item.prepared.input_ids.shape[1]),
+                projected_image_tokens=item.projected_image_tokens,
+            )
+            for index, item in enumerate(text_inputs)
+        ]
+
         packed_next_tokens = torch.cat(
-            [token.detach().reshape(-1) for token in next_tokens],
+            [token.detach().reshape(-1) for token in next_tokens if token is not None],
             dim=0,
         ).contiguous()
         prefill_ready_event = torch_npu.npu.current_stream().record_event()
@@ -1693,6 +2040,7 @@ class ContinuousRecognizer:
             packed_next_tokens=packed_next_tokens,
             prefill_started=prefill_started,
             pack_route=pack_route,
+            text_packs=text_packs,
         )
 
     @torch.inference_mode()
@@ -1791,15 +2139,58 @@ class ContinuousRecognizer:
             "vision_embeddings": "Patch and position embeddings",
             "adaptive_mlp_projector": "Adaptive MLP projector",
         }
-        text_stages = {
+        member_text_stages = {
             "text_token_embedding": "Text token embeddings",
             "image_embed_scatter": "Scatter projected image embeddings",
             "static_cache_alloc": "Allocate request KV cache",
+        }
+        shared_text_stages = {
             "text_prefill_input_prep": "Text bucket preparation",
             "text_prefill": "Text transformer prefill",
+            "text_kv_redistribute": "Redistribute packed text KV prefixes",
             "prefill_lm_head": "Prefill LM head",
             "prefill_argmax": "First-token argmax",
         }
+        text_device_by_member = [
+            {stage: 0.0 for stage in shared_text_stages}
+            for _member in inflight.members
+        ]
+        for pack_index, text_pack in enumerate(inflight.text_packs):
+            owner_index = text_pack.member_indices[0]
+            pack_request_ids = [
+                request_ids[index] for index in text_pack.member_indices
+            ]
+            for stage, key in text_pack.stage_keys.items():
+                span = device_spans[key]
+                text_device_by_member[owner_index][stage] += float(
+                    span["seconds"]
+                )
+                if self.timeline is not None:
+                    self.timeline.record_span(
+                        "Text prefill",
+                        shared_text_stages[stage],
+                        int(span["start_ns"]),
+                        int(span["end_ns"]),
+                        flow_id=pack_request_ids[0],
+                        flow_ids=pack_request_ids,
+                        clock=str(span["clock"]),
+                        track="device",
+                        lane="prefill",
+                        args={
+                            "stage": stage,
+                            "vision_group_id": inflight.group_id,
+                            "text_pack_index": pack_index,
+                            "members": len(text_pack.member_indices),
+                            "execution": text_pack.route.get("execution"),
+                            "bucket": text_pack.route.get("bucket"),
+                            "real_tokens": text_pack.route.get(
+                                "real_text_tokens"
+                            ),
+                            "physical_tokens": text_pack.route.get(
+                                "physical_text_tokens"
+                            ),
+                        },
+                    )
         results: list[PrefilledRecognition] = []
         for index, (member, first_token) in enumerate(
             zip(inflight.members, first_tokens)
@@ -1809,10 +2200,11 @@ class ContinuousRecognizer:
             for stage in (
                 "recognition_inputs_h2d",
                 *vision_stages,
-                *text_stages,
+                *member_text_stages,
             ):
                 key = self._group_stage_key(index, stage)
                 device_stage_s[stage] = float(device_spans[key]["seconds"])
+            device_stage_s.update(text_device_by_member[index])
             device_stage_s.update(
                 shared_device_stage_s
                 if index == 0
@@ -1856,7 +2248,10 @@ class ContinuousRecognizer:
                     lane="prefill",
                     args={"input_tokens": member.input_tokens},
                 )
-                for stage, label in (*vision_stages.items(), *text_stages.items()):
+                for stage, label in (
+                    *vision_stages.items(),
+                    *member_text_stages.items(),
+                ):
                     span = device_spans[self._group_stage_key(index, stage)]
                     route = (
                         member.vision if stage in vision_stages else member.text_prefill
@@ -1961,6 +2356,17 @@ class ContinuousRecognizer:
             ),
             "text_prefill": self.text_prefill.metadata,
             "text_backend": self.text_backend,
+            "text_packing": {
+                "mode": self.text_packing,
+                "buckets": list(self.text_pack_buckets),
+                "max_members": self.text_pack_max_members,
+                "grouping": "within_vision_production_group_best_fit_decreasing",
+                "runtime": (
+                    self.packed_text_prefill.metadata
+                    if self.packed_text_prefill is not None
+                    else None
+                ),
+            },
             "preprocessor": {
                 "model_default_min_pixels": self.model_preprocessor_min_pixels,
                 "min_pixels_override": self.preprocessor_min_pixels_override,

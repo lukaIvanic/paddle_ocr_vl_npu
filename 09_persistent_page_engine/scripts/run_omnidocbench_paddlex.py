@@ -20,12 +20,16 @@ sys.path.insert(0, str(EXPERIMENT_ROOT))
 
 from paddleocr_vl.serving.engine import ContinuousRecognizer
 from paddleocr_vl.serving.runtime_defaults import (
+    DEFAULT_TEXT_PACK_BUCKETS,
+    DEFAULT_TEXT_PACK_MAX_MEMBERS,
+    DEFAULT_TEXT_PACKING,
     DEFAULT_VISION_PACKING,
     DEFAULT_VISION_PACK_TARGET,
     DEFAULT_VISION_ROUTER_LOOKAHEAD,
     OPTIMIZED_TEXT_BUCKETS,
     OPTIMIZED_VISION_BUCKETS,
     PADDLEOCR_DEFAULT_MIN_PIXELS,
+    TEXT_PACKING_CHOICES,
     VISION_PACKING_CHOICES,
 )
 from paddleocr_vl.model.text_prefill import TEXT_PADDING_CHOICES, parse_text_buckets
@@ -54,7 +58,12 @@ DEFAULT_PADDLEOCR_SOURCE = Path("/workspace/repos/vllm_paddle_ocr/PaddleOCR")
 DEFAULT_CACHE_ROOT = REPO_ROOT / ".runtime_cache/09_persistent_page_engine_torchair"
 DEFAULT_VISION_CACHE_ROOT = REPO_ROOT / ".runtime_cache/09_persistent_page_engine_vision_torchair"
 DEFAULT_TEXT_CACHE_ROOT = REPO_ROOT / ".runtime_cache/09_persistent_page_engine_text_torchair"
+DEFAULT_PACKED_TEXT_CACHE_ROOT = (
+    REPO_ROOT / ".runtime_cache/09_persistent_page_engine_text_packed_torchair"
+)
 DEFAULT_BATCHED_VISION_CACHE_ROOT = REPO_ROOT / ".runtime_cache/09_vision_router_batched"
+
+
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset-json", type=Path, default=DEFAULT_DATASET_JSON)
@@ -142,6 +151,20 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default="auto",
         choices=TEXT_PADDING_CHOICES,
     )
+    parser.add_argument(
+        "--text-packing",
+        default=DEFAULT_TEXT_PACKING,
+        choices=TEXT_PACKING_CHOICES,
+    )
+    parser.add_argument(
+        "--text-pack-buckets",
+        default=",".join(str(bucket) for bucket in DEFAULT_TEXT_PACK_BUCKETS),
+    )
+    parser.add_argument(
+        "--text-pack-max-members",
+        type=int,
+        default=DEFAULT_TEXT_PACK_MAX_MEMBERS,
+    )
     parser.add_argument("--torchair-cache-dir", type=Path, default=DEFAULT_CACHE_ROOT)
     parser.add_argument(
         "--vision-torchair-cache-dir",
@@ -152,6 +175,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--text-torchair-cache-dir",
         type=Path,
         default=DEFAULT_TEXT_CACHE_ROOT,
+    )
+    parser.add_argument(
+        "--text-packed-cache-dir",
+        type=Path,
+        default=DEFAULT_PACKED_TEXT_CACHE_ROOT,
     )
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument(
@@ -237,6 +265,8 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--vision-pack-target must be positive")
     if args.vision_router_lookahead <= 0:
         raise ValueError("--vision-router-lookahead must be positive")
+    if args.text_pack_max_members <= 0:
+        raise ValueError("--text-pack-max-members must be positive")
 
 
 def run_predictions(
@@ -319,6 +349,7 @@ def main() -> None:
     )
     vision_buckets = parse_vision_buckets(args.vision_buckets)
     text_buckets = selected_text_buckets(args)
+    text_pack_buckets = parse_text_buckets(args.text_pack_buckets)
     manifest = {
         "dataset_json": str(dataset_json),
         "images_dir": str(images_dir),
@@ -394,6 +425,10 @@ def main() -> None:
         text_buckets=text_buckets,
         text_torchair_cache_dir=args.text_torchair_cache_dir.expanduser().resolve(),
         text_padding=args.text_padding,
+        text_packing=args.text_packing,
+        text_pack_buckets=text_pack_buckets,
+        text_pack_max_members=args.text_pack_max_members,
+        text_packed_cache_dir=args.text_packed_cache_dir.expanduser().resolve(),
         preprocessor_min_pixels=args.preprocessor_min_pixels,
         timeline=timeline,
     )
@@ -419,6 +454,8 @@ def main() -> None:
             "vision_packing": args.vision_packing,
             "vision_pack_target": args.vision_pack_target,
             "vision_router_lookahead": args.vision_router_lookahead,
+            "text_packing": args.text_packing,
+            "text_pack_buckets": list(text_pack_buckets),
         }
     )
     try:
@@ -474,6 +511,12 @@ def main() -> None:
             ),
             "vision_buckets": list(vision_buckets),
             "text_buckets": list(text_buckets),
+            "text_packing": args.text_packing,
+            "text_pack_buckets": list(text_pack_buckets),
+            "text_pack_max_members": args.text_pack_max_members,
+            "text_packed_cache_dir": str(
+                args.text_packed_cache_dir.expanduser().resolve()
+            ),
             "cpu_preprocessing": recognizer.configuration()["cpu_preprocessing"],
         },
         "setup_s": setup_s,
