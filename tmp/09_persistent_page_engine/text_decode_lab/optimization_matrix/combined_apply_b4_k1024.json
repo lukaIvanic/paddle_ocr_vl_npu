@@ -18,7 +18,7 @@
     "warmup": 3,
     "repeats": 30,
     "overflow_policy": "error",
-    "allow_compile": true
+    "allow_compile": false
   },
   "corpus_contract": {
     "ordering": "items are stored in exact production request-source order",
@@ -37,33 +37,33 @@
     "warmup": 3,
     "repeats": 30,
     "device_s": {
-      "full_production_step": 0.042881020307540894,
-      "model_and_argmax": 0.04250376021862031,
-      "post_graph_state_update": 0.0003772600889205835
+      "full_production_step": 0.042650839805603025,
+      "model_and_argmax": 0.04227119994163515,
+      "post_graph_state_update": 0.00037963986396787747
     },
     "latency_ms": {
-      "mean": 1.4293673435846965,
-      "median": 1.4201500415802,
-      "p95": 1.4248549699783326,
-      "min": 1.4139599800109863,
-      "max": 1.714840054512024
+      "mean": 1.4216946601867675,
+      "median": 1.4116599559783938,
+      "p95": 1.4144400358200073,
+      "min": 1.4066400527954102,
+      "max": 1.7324399948120117
     },
     "throughput": {
-      "raw_physical_tok_per_s": 2798.440875225566,
-      "active_tok_per_s": 2798.440875225566,
-      "graph_calls_per_s": 699.6102188063915
+      "raw_physical_tok_per_s": 2813.54366167101,
+      "active_tok_per_s": 2813.54366167101,
+      "graph_calls_per_s": 703.3859154177525
     },
     "memory_bytes": {
       "baseline_allocated": 2019151360,
       "peak_delta": 2837504
     },
-    "host_wall_s": 0.04357761098071933
+    "host_wall_s": 0.04327793599804863
   },
   "setup": {
-    "total_s": 21.073146262962837,
-    "model_load_s": 14.903842031955719,
-    "weight_format_s": 4.732538153009955,
-    "runtime_setup_s": 0.2605480479542166,
+    "total_s": 16.026104855001904,
+    "model_load_s": 10.119304575026035,
+    "weight_format_s": 4.556527840963099,
+    "runtime_setup_s": 0.24524880800163373,
     "weight_format": {
       "requested_mode": "decode_nz",
       "mode": "decode_native_fallback",
@@ -129,8 +129,8 @@
       }
     },
     "runtime_setup_detail_s": {
-      "compile_wrapper": 0.001853171968832612,
-      "compile_first_call": 0.2356532050180249
+      "compile_wrapper": 0.0017532699857838452,
+      "compile_first_call": 0.2220370530267246
     }
   }
 }
