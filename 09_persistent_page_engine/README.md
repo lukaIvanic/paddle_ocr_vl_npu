@@ -187,14 +187,8 @@ intentional new static bucket.
 The E2E path exposes the validated lab mechanism with
 `--text-packing production_group`. Its run summary adds call reduction, pack
 size and bucket histograms, physical versus real text tokens, and copied KV
-bytes. Packed graph outputs remain in pooled compact caches while waiting for
-decode admission. Each ready crop holds a reference-counted view of its own
-segment; admission copies that slice directly into the fixed decode arena and
-returns the compact buffer to the pool after the pack's final member. Fallback
-prompts above the packed-bucket limit retain private full-length caches.
-`device_stage_s.text_kv_redistribute` is therefore zero, and the text-packing
-summary reports the pool's allocation, reuse, active-buffer high-water, and
-resident-byte high-water.
+bytes. `device_stage_s.text_kv_redistribute` keeps the required cache-split
+cost separate from `device_stage_s.text_prefill`.
 
 ```sh
 /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
@@ -235,8 +229,8 @@ shape; subsequent runs reuse that cache.
   --name packed_text_1024
 ```
 
-The `--mode cache_lease` lab isolates the production cache boundary. The
-comparison path writes a packed scratch cache,
+The lab-only `--mode cache_lease` prices the next cache-boundary option without
+changing the serving engine. The current path writes a packed scratch cache,
 redistributes every segment into a private full-length cache, and later copies
 that private prefix into the decode arena. The lease path keeps the compact
 packed cache alive and copies each segment slice directly into its arena row.

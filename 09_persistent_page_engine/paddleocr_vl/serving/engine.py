@@ -31,10 +31,6 @@ from ..model.text_decode import (
     cast_decode_linear_weights_to_nz,
     prepare_decode_optimization_modules,
 )
-from ..model.text_cache_lease import (
-    PackedKVCachePool,
-    run_packed_text_prefill_with_cache,
-)
 from ..model.preprocessing import (
     apply_min_pixels_override,
     build_inputs,
@@ -95,7 +91,6 @@ class CpuPreparedRecognition:
 class _InFlightPrefillMember:
     prepared: CpuPreparedRecognition
     cache: LocalPaddleOCRVLStaticCache
-    cache_release: Callable[[], None] | None
     rope_deltas: torch.Tensor
     next_cache_position: torch.Tensor
     next_token: torch.Tensor
@@ -111,8 +106,7 @@ class _InFlightPrefillMember:
 class _TextPrefillInputMember:
     prepared: CpuPreparedRecognition
     moved: tuple[torch.Tensor, ...]
-    cache: LocalPaddleOCRVLStaticCache | None
-    cache_release: Callable[[], None] | None
+    cache: LocalPaddleOCRVLStaticCache
     rope_deltas: torch.Tensor
     next_cache_position: torch.Tensor
     inputs_embeds: torch.Tensor
@@ -345,7 +339,6 @@ class PrefilledRecognition:
     device_stage_s: dict[str, float]
     request_started: float
     prefill_finished: float
-    cache_release: Callable[[], None] | None = None
 
     def take_device_state(
         self,
@@ -354,7 +347,6 @@ class PrefilledRecognition:
         torch.Tensor,
         torch.Tensor,
         torch.Tensor,
-        Callable[[], None] | None,
     ]:
         """Move the pending NPU prefix out of the long-lived result payload."""
 
@@ -362,7 +354,6 @@ class PrefilledRecognition:
         rope_deltas = self.rope_deltas
         next_cache_position = self.next_cache_position
         next_token = self.next_token
-        cache_release = self.cache_release
         if (
             cache is None
             or rope_deltas is None
@@ -374,14 +365,7 @@ class PrefilledRecognition:
         self.rope_deltas = None
         self.next_cache_position = None
         self.next_token = None
-        self.cache_release = None
-        return (
-            cache,
-            rope_deltas,
-            next_cache_position,
-            next_token,
-            cache_release,
-        )
+        return cache, rope_deltas, next_cache_position, next_token
 
 
 class ContinuousRecognizer:
@@ -611,19 +595,6 @@ class ContinuousRecognizer:
             if self.text_packing != "off"
             else None
         )
-        self.packed_kv_cache_pool = (
-            PackedKVCachePool(
-                lambda bucket: self.model.allocate_static_cache(
-                    batch_size=1,
-                    cache_length=bucket,
-                    device=self.device,
-                    dtype=self.dtype,
-                    init_mode="empty",
-                )
-            )
-            if self.packed_text_prefill is not None
-            else None
-        )
         synchronize(self.device)
         packed_text_setup_s = time.perf_counter() - packed_text_started
         self.batched_vision = (
@@ -723,17 +694,9 @@ class ContinuousRecognizer:
             self.text_packing,
             self.text_pack_buckets,
         )
-        if self.packed_kv_cache_pool is not None:
-            self.packed_kv_cache_pool.begin_run()
 
         def ready_from(state: PrefilledRecognition) -> ReadyDecodeRequest:
-            (
-                cache,
-                rope_deltas,
-                cache_position,
-                first_token_tensor,
-                cache_release,
-            ) = (
+            cache, rope_deltas, cache_position, first_token_tensor = (
                 state.take_device_state()
             )
             return ReadyDecodeRequest(
@@ -745,7 +708,6 @@ class ContinuousRecognizer:
                 first_token_tensor=first_token_tensor,
                 first_token=state.first_token,
                 prompt_length=state.input_tokens,
-                cache_release=cache_release,
             )
 
         def ready_stream() -> Iterable[ReadyDecodeRequest]:
@@ -817,16 +779,6 @@ class ContinuousRecognizer:
             ready_buffer_low_watermark=self.batch_size,
         )
         decode_wall_s = decoded.timing_s["continuous_decode_wall"]
-        text_packing_summary = self._text_packing_stats.summary()
-        if self.packed_kv_cache_pool is not None:
-            if self.packed_kv_cache_pool.active_buffers:
-                raise RuntimeError(
-                    "packed KV cache pool retained active leases after decode"
-                )
-            text_packing_summary["cache_storage"] = "pooled_packed_leases"
-            text_packing_summary["cache_pool"] = (
-                self.packed_kv_cache_pool.stats()
-            )
 
         schedule_result = ContinuousDecodeResult(
             schedule_id=schedule_id,
@@ -850,7 +802,7 @@ class ContinuousRecognizer:
             hot_swap_kv_prefix_bytes_copied=decoded.hot_swap_kv_prefix_bytes_copied,
             timing_s=dict(decoded.timing_s),
             vision_packing=self._vision_packing_stats.summary(),
-            text_packing=text_packing_summary,
+            text_packing=self._text_packing_stats.summary(),
             rates={
                 "raw_decode_tok_per_s": per_second(
                     decoded.raw_decode_token_slots,
@@ -1829,6 +1781,16 @@ class ContinuousRecognizer:
                 self._group_stage_key(index, "image_embed_scatter"),
                 scatter_image_embeds,
             )
+            cache = device_timeline.measure(
+                self._group_stage_key(index, "static_cache_alloc"),
+                lambda inputs_embeds=inputs_embeds: self.model.allocate_static_cache(
+                    batch_size=1,
+                    cache_length=self.cache_length,
+                    device=self.device,
+                    dtype=inputs_embeds.dtype,
+                    init_mode="empty",
+                ),
+            )
             member_padding = group_padding if index == len(group.members) - 1 else 0
             vision_route = {
                 **pack_route,
@@ -1854,8 +1816,7 @@ class ContinuousRecognizer:
                 _TextPrefillInputMember(
                     prepared=prepared,
                     moved=moved,
-                    cache=None,
-                    cache_release=None,
+                    cache=cache,
                     rope_deltas=rope_deltas,
                     next_cache_position=next_cache_position,
                     inputs_embeds=inputs_embeds,
@@ -1888,29 +1849,21 @@ class ContinuousRecognizer:
                         )
                     ),
                 )
-                if self.packed_kv_cache_pool is None:
-                    raise AssertionError("packed text prefill has no KV cache pool")
-                lease = self.packed_kv_cache_pool.acquire(
-                    prepared_text.physical_seq_len,
-                    segment_offsets=prepared_text.segment_offsets,
-                    segment_lengths=prepared_text.segment_lengths,
-                )
                 packed_hidden = device_timeline.measure(
                     f"{prefix}:text_prefill",
-                    lambda prepared_text=prepared_text, lease=lease: (
-                        run_packed_text_prefill_with_cache(
-                            self.packed_text_prefill,
+                    lambda prepared_text=prepared_text: (
+                        self.packed_text_prefill.run_prepared(prepared_text)
+                    ),
+                )
+                redistributed_bytes = device_timeline.measure(
+                    f"{prefix}:text_kv_redistribute",
+                    lambda prepared_text=prepared_text, indices=indices: (
+                        self.packed_text_prefill.redistribute_cache(
                             prepared_text,
-                            lease.cache,
+                            [text_inputs[index].cache for index in indices],
                         )
                     ),
                 )
-                for position, member_index in enumerate(indices):
-                    lease_member = lease.members[position]
-                    text_inputs[member_index].cache = lease_member.cache_view()
-                    text_inputs[member_index].cache_release = (
-                        lease_member.release
-                    )
                 valid_hidden = packed_hidden[:, : len(indices)]
                 logits = device_timeline.measure(
                     f"{prefix}:prefill_lm_head",
@@ -1958,6 +1911,7 @@ class ContinuousRecognizer:
                     for stage in (
                         "text_prefill_input_prep",
                         "text_prefill",
+                        "text_kv_redistribute",
                         "prefill_lm_head",
                         "prefill_argmax",
                     )
@@ -1973,7 +1927,7 @@ class ContinuousRecognizer:
                     members=len(indices),
                     real_tokens=int(text_route["real_text_tokens"]),
                     physical_tokens=int(text_route["physical_text_tokens"]),
-                    redistributed_kv_bytes=0,
+                    redistributed_kv_bytes=int(redistributed_bytes),
                 )
 
         self._text_packing_stats.fallback_crops += len(fallback_indices)
@@ -1981,16 +1935,6 @@ class ContinuousRecognizer:
             item = text_inputs[member_index]
             attention_mask_device = item.moved[1]
             position_ids = item.moved[3]
-            item.cache = device_timeline.measure(
-                self._group_stage_key(member_index, "static_cache_alloc"),
-                lambda item=item: self.model.allocate_static_cache(
-                    batch_size=1,
-                    cache_length=self.cache_length,
-                    device=self.device,
-                    dtype=item.inputs_embeds.dtype,
-                    init_mode="empty",
-                ),
-            )
             text_route = self.text_prefill.route(lengths[member_index])
             prepared_text = device_timeline.measure(
                 self._group_stage_key(
@@ -2009,11 +1953,8 @@ class ContinuousRecognizer:
             )
             last_hidden_state = device_timeline.measure(
                 self._group_stage_key(member_index, "text_prefill"),
-                lambda prepared_text=prepared_text, item=item: (
-                    self.text_prefill.run_prepared(
-                        prepared_text,
-                        item.cache,
-                    )
+                lambda prepared_text=prepared_text, cache=item.cache: (
+                    self.text_prefill.run_prepared(prepared_text, cache)
                 ),
             )
             logits = device_timeline.measure(
@@ -2062,13 +2003,10 @@ class ContinuousRecognizer:
             route is None for route in text_routes
         ):
             raise AssertionError("text prefill did not produce every group member")
-        if any(item.cache is None for item in text_inputs):
-            raise AssertionError("text prefill did not assign every KV cache")
         members = [
             _InFlightPrefillMember(
                 prepared=item.prepared,
                 cache=item.cache,
-                cache_release=item.cache_release,
                 rope_deltas=item.rope_deltas,
                 next_cache_position=item.next_cache_position,
                 next_token=next_tokens[index],
@@ -2218,7 +2156,7 @@ class ContinuousRecognizer:
         member_text_stages = {
             "text_token_embedding": "Text token embeddings",
             "image_embed_scatter": "Scatter projected image embeddings",
-            "static_cache_alloc": "Allocate fallback request KV cache",
+            "static_cache_alloc": "Allocate request KV cache",
         }
         shared_text_stages = {
             "text_prefill_input_prep": "Text bucket preparation",
@@ -2279,11 +2217,7 @@ class ContinuousRecognizer:
                 *member_text_stages,
             ):
                 key = self._group_stage_key(index, stage)
-                device_stage_s[stage] = (
-                    float(device_spans[key]["seconds"])
-                    if key in device_spans
-                    else 0.0
-                )
+                device_stage_s[stage] = float(device_spans[key]["seconds"])
             device_stage_s.update(text_device_by_member[index])
             device_stage_s.update(
                 shared_device_stage_s
@@ -2332,10 +2266,7 @@ class ContinuousRecognizer:
                     *vision_stages.items(),
                     *member_text_stages.items(),
                 ):
-                    key = self._group_stage_key(index, stage)
-                    if key not in device_spans:
-                        continue
-                    span = device_spans[key]
+                    span = device_spans[self._group_stage_key(index, stage)]
                     route = (
                         member.vision if stage in vision_stages else member.text_prefill
                     )
@@ -2389,7 +2320,6 @@ class ContinuousRecognizer:
                     device_stage_s=device_stage_s,
                     request_started=prepared.request_started,
                     prefill_finished=resolve_finished,
-                    cache_release=member.cache_release,
                 )
             )
         return results
@@ -2446,11 +2376,6 @@ class ContinuousRecognizer:
                 "buckets": list(self.text_pack_buckets),
                 "max_members": self.text_pack_max_members,
                 "grouping": "within_vision_production_group_best_fit_decreasing",
-                "ready_cache_storage": (
-                    "pooled_packed_cache_leases"
-                    if self.packed_kv_cache_pool is not None
-                    else "private_request_caches"
-                ),
                 "runtime": (
                     self.packed_text_prefill.metadata
                     if self.packed_text_prefill is not None
@@ -2488,11 +2413,6 @@ class ContinuousRecognizer:
             "ready_buffer_low_watermark": self.batch_size,
             "decode_completion_detection": "queue_depth_one_async_token_copy",
             "kv_admission": "copy_valid_prefill_prefix_into_fixed_slot",
-            "packed_kv_admission": (
-                "leased_packed_slice_direct_to_fixed_slot"
-                if self.packed_kv_cache_pool is not None
-                else None
-            ),
             "text_decode": self.text_decode.metadata,
             "linear_weight_format": self.weight_format,
         }
