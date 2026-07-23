@@ -1,0 +1,3 @@
+[2026-07-23-12:50:16.834] [INFO] [AscendProfiler_TraceStepTimeParser:97] Profiler logger initialized at: /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/npu_profiles/b2_k1024_p768_pipe_20260723_125014/liteserver-c001-4_133035_20260723125014305_ascend_pt/logs/profiler_20260723125016_135353_TraceStepTimeParser.log
+[2026-07-23-12:50:16.834] [INFO] [AscendProfiler_TraceStepTimeParser:169] TraceStepTimeParser start.
+[2026-07-23-12:50:16.873] [INFO] [AscendProfiler_TraceStepTimeParser:177] TraceStepTimeParser finish.
