@@ -1,0 +1,3 @@
+[2026-07-23-13:07:04.502] [INFO] [AscendProfiler_CANNExportParser:97] Profiler logger initialized at: /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/npu_profiles/b16_k1024_p768_pipe_20260723_130703/liteserver-c001-4_143733_20260723130703613_ascend_pt/logs/profiler_20260723130704_144375_CANNExportParser.log
+[2026-07-23-13:07:04.502] [INFO] [AscendProfiler_CANNExportParser:51] CANNExportParser start.
+[2026-07-23-13:07:06.530] [INFO] [AscendProfiler_CANNExportParser:79] CANNExportParser finish.

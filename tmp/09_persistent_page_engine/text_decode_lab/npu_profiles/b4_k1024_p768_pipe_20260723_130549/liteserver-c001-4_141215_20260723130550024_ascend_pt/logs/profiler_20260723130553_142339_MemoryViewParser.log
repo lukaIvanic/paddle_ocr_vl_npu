@@ -1,0 +1,3 @@
+[2026-07-23-13:05:53.142] [INFO] [AscendProfiler_MemoryViewParser:97] Profiler logger initialized at: /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/npu_profiles/b4_k1024_p768_pipe_20260723_130549/liteserver-c001-4_141215_20260723130550024_ascend_pt/logs/profiler_20260723130553_142339_MemoryViewParser.log
+[2026-07-23-13:05:53.142] [INFO] [AscendProfiler_MemoryViewParser:78] MemoryViewParser start.
+[2026-07-23-13:05:53.146] [INFO] [AscendProfiler_MemoryViewParser:89] MemoryViewParser finish.

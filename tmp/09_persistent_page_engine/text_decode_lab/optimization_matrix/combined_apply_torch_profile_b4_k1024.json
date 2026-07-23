@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "text_decode_lab_result",
   "configuration": {
-    "mode": "profile",
+    "mode": "torch_profile",
     "corpus": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/corpus_256p_b32_kv4096_7899d40.json",
     "corpus_sha256": "7d5510d09eaf948ff1ce81793918c9496fd7d8587c9d62ea6cfff34c9d025c18",
     "batch_size": 4,
@@ -16,9 +16,9 @@
     "profile_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/npu_profiles",
     "profile_metric": "pipe",
     "warmup": 3,
-    "repeats": 30,
+    "repeats": 3,
     "overflow_policy": "error",
-    "allow_compile": true
+    "allow_compile": false
   },
   "corpus_contract": {
     "ordering": "items are stored in exact production request-source order",
@@ -32,38 +32,26 @@
       "batch_size": 4,
       "cache_length": 1024,
       "active_slots": 4,
-      "initial_cache_position": 768
+      "initial_cache_position": 768,
+      "captured_start_position": 771
     },
-    "warmup": 3,
-    "repeats": 30,
-    "device_s": {
-      "full_production_step": 0.042881020307540894,
-      "model_and_argmax": 0.04250376021862031,
-      "post_graph_state_update": 0.0003772600889205835
-    },
-    "latency_ms": {
-      "mean": 1.4293673435846965,
-      "median": 1.4201500415802,
-      "p95": 1.4248549699783326,
-      "min": 1.4139599800109863,
-      "max": 1.714840054512024
-    },
-    "throughput": {
-      "raw_physical_tok_per_s": 2798.440875225566,
-      "active_tok_per_s": 2798.440875225566,
-      "graph_calls_per_s": 699.6102188063915
-    },
-    "memory_bytes": {
-      "baseline_allocated": 2019151360,
-      "peak_delta": 2837504
-    },
-    "host_wall_s": 0.04357761098071933
+    "warmup_steps_outside_profiler": 3,
+    "captured_steps": 3,
+    "captured_raw_token_slots": 12,
+    "metric": "pipe",
+    "profiler_level": "Level1",
+    "record_shapes": true,
+    "with_stack": true,
+    "profile_memory": false,
+    "profile_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/npu_profiles/b4_k1024_p768_pipe_20260723_130549",
+    "profile_wall_s": 4.918594104994554,
+    "profile_wall_is_throughput_measurement": false
   },
   "setup": {
-    "total_s": 21.073146262962837,
-    "model_load_s": 14.903842031955719,
-    "weight_format_s": 4.732538153009955,
-    "runtime_setup_s": 0.2605480479542166,
+    "total_s": 16.313886015967,
+    "model_load_s": 10.521955148025881,
+    "weight_format_s": 4.441809392010327,
+    "runtime_setup_s": 0.25407826801529154,
     "weight_format": {
       "requested_mode": "decode_nz",
       "mode": "decode_native_fallback",
@@ -129,8 +117,8 @@
       }
     },
     "runtime_setup_detail_s": {
-      "compile_wrapper": 0.001853171968832612,
-      "compile_first_call": 0.2356532050180249
+      "compile_wrapper": 0.0017744809738360345,
+      "compile_first_call": 0.230942124966532
     }
   }
 }

@@ -1,0 +1,3 @@
+[2026-07-23-13:08:24.132] [INFO] [AscendProfiler_OperatorViewParser:97] Profiler logger initialized at: /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/npu_profiles/b64_k1024_p768_pipe_20260723_130821/liteserver-c001-4_146251_20260723130821544_ascend_pt/logs/profiler_20260723130824_147226_OperatorViewParser.log
+[2026-07-23-13:08:24.132] [INFO] [AscendProfiler_OperatorViewParser:30] OperatorViewParser start.
+[2026-07-23-13:08:24.140] [INFO] [AscendProfiler_OperatorViewParser:39] OperatorViewParser finish.

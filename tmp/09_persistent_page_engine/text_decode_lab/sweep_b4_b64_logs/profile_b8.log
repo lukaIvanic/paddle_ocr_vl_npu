@@ -1,0 +1,7 @@
+[W723 13:06:20.250833067 TensorFactories.cpp:340] Warning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (function operator())
+[2026-07-23 13:06:26] [WARNING] [142474] profiler.py: Profiler won't be using warmup, this can skew profiler results
+[2026-07-23 13:06:27] [INFO] [143090] profiler.py: Start parsing profiling data in sync mode at: /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/npu_profiles/b8_k1024_p768_pipe_20260723_130626/liteserver-c001-4_142474_20260723130626496_ascend_pt
+|/-[2026-07-23 13:06:29] [INFO] [143116] profiler.py: CANN profiling data parsed in a total time of 0:00:02.027276
+\[2026-07-23 13:06:30] [INFO] [143090] profiler.py: All profiling data parsed in a total time of 0:00:03.409731
+DECODE_TORCH_PROFILE steps=3 metric=pipe profile_dir=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/npu_profiles/b8_k1024_p768_pipe_20260723_130626
+output=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/optimization_matrix/combined_apply_torch_profile_b8_k1024.json

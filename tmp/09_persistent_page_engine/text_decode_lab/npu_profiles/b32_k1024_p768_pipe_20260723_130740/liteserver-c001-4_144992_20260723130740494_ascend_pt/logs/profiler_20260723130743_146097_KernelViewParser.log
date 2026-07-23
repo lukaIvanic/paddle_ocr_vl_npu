@@ -1,0 +1,3 @@
+[2026-07-23-13:07:43.492] [INFO] [AscendProfiler_KernelViewParser:97] Profiler logger initialized at: /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/npu_profiles/b32_k1024_p768_pipe_20260723_130740/liteserver-c001-4_144992_20260723130740494_ascend_pt/logs/profiler_20260723130743_146097_KernelViewParser.log
+[2026-07-23-13:07:43.492] [INFO] [AscendProfiler_KernelViewParser:38] KernelViewParser start.
+[2026-07-23-13:07:43.526] [INFO] [AscendProfiler_KernelViewParser:46] KernelViewParser finish.

@@ -1,0 +1,4 @@
+[W723 13:02:11.956995144 TensorFactories.cpp:340] Warning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (function operator())
+DECODE_PROFILE mean_ms=2.5158 raw_tok_s=12719.4 active_tok_s=12719.4
+output=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/optimization_matrix/combined_apply_b32_k1024.json
+EXIT_STATUS=0

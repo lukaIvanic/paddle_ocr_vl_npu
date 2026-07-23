@@ -1,0 +1,462 @@
+2026-07-23 13:06:27 [INFO] [143197] [143197] [kernel_parser_worker.cpp:46] Start run KernelParserWorker
+2026-07-23 13:06:27 [INFO] [143197] [143198] [kernel_parser_worker.cpp:58] Start parse hash data
+2026-07-23 13:06:27 [INFO] [143197] [143198] [kernel_parser_worker.cpp:78] Hash data load from path: /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/npu_profiles/b8_k1024_p768_pipe_20260723_130626/liteserver-c001-4_142474_20260723130626496_ascend_pt/PROF_000001_20260723130626526_00142474EACGQLBD/host/data
+2026-07-23 13:06:27 [INFO] [143197] [143199] [kernel_parser_worker.cpp:62] Start parse type info data
+2026-07-23 13:06:27 [INFO] [143197] [143199] [kernel_parser_worker.cpp:100] Typeinfo data load from path: /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/npu_profiles/b8_k1024_p768_pipe_20260723_130626/liteserver-c001-4_142474_20260723130626496_ascend_pt/PROF_000001_20260723130626526_00142474EACGQLBD/host/data
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7383439776149831
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 17421995467204288334
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 4116198631462780492
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 15270733942687104112
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 11455679755271659678
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 9121722233207160946
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 16062568128939123186
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 9711593804331549358
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14455057689400669525
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 436336854339069248
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7002292281251484380
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 3003345164368360871
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 16535296516299154112
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7090398782807627396
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7338948689571016271
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 889161696399250628
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 247669290252505
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 8982915589183173552
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 6209484769057128781
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 15768470993027160692
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 18158413567113398262
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 9913694531017232894
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 293165879027200
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 129428910379546296
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 3753438633497952364
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 256327944357019
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 15492133377068072943
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 313352225419796
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 18046880090692787145
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7663796218060386688
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 17056098602543007917
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 17056098615427909808
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 17056098606837975214
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 17056098611132942511
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 17056098619722877105
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 17056098624017844402
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7338948685276048974
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 15011513660822171831
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 17056098628312811699
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 15011513665117139128
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 15011513669412106425
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 17056098632607778996
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 17056098636902746293
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 16616003461063820614
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 16616003465358787911
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 3858187183056898933
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 259666737698492581
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7279778569934978122
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 10797485872979946435
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 4727051265323026290
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 3667645540410665753
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 4727051269617993587
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 4727051273912960884
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 3210785776593659254
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 597387158006128784
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 4727051278207928181
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 3883648086799171503
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 4727051282502895478
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7338948693865983568
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 15768471001617095286
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 16555219488344405739
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 15768470997322127989
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 4887544611651601321
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 4727051286797862775
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 3883648091094138800
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 4727051291092830072
+2026-07-23 13:06:27 [INFO] [143197] [143199] [db_runner.cpp:53] Start create TypeHashInfo
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 4727051295387797369
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 10056064058961859377
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 4727051299682764666
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 3883648095389106097
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278300291665798
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7338948698160950865
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 15768471010207029880
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 16555219492639373036
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 15768471005912062583
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 4887544615946568618
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278304586633095
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 3883648099684073394
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278308881600392
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278313176567689
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 10144158777339993765
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278317471534986
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 3883648103979040691
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278321766502283
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7338948702455918162
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 15768471018796964474
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 16555219496934340333
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 15768471014501997177
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 4887544620241535915
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278326061469580
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 3883648108274007988
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278330356436877
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278334651404174
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 10232253495718128153
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278338946371471
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 3883648112568975285
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278424845717513
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7338948706750885459
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 15768471027386899068
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 16555219501229307630
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 15768471023091931771
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 4887544624536503212
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278429140684810
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 3883648116863942582
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278433435652107
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278437730619404
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 10320348214096262541
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278442025586701
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 3883648121158909879
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278446320553998
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7338948711045852756
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14563801148486797709
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 16555219505524274927
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14563801144191830412
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 4887544628831470509
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278450615521295
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1945330186614380221
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278454910488592
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278459205455889
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 10408442932474396929
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278463500423186
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1945330190909347518
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278549399769228
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7338948715340820053
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14563801157076732303
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 16555219509819242224
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14563801152781765006
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 4887544633126437806
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278553694736525
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1945330195204314815
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278557989703822
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278562284671119
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 10496537650852531317
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278566579638416
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1945330199499282112
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278570874605713
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7338948719635787350
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14563801165666666897
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 16555219514114209521
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14563801161371699600
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 4887544637421405103
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278575169573010
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1945330203794249409
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278579464540307
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278583759507604
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 11806432568372688848
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278588054474901
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1945330208089216706
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278673953820943
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 9915327254723818010
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14563801174256601491
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 16555219518409176818
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14563801169961634194
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 4887544641716372400
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278678248788240
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1945330212384184003
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278682543755537
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278686838722834
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14361179286292370346
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278691133690131
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1945330216679151300
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278695428657428
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 9915327259018785307
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14563801182846536085
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 16555219522704144115
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14563801178551568788
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 4887544646011339697
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278699723624725
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1945330220974118597
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278704018592022
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278708313559319
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 16915925999917084548
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278712608526616
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1945330225269085894
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278798507872658
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 9915327263313752604
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14563801273040849424
+2026-07-23 13:06:27 [INFO] [143197] [143199] [db_runner.cpp:66] create TypeHashInfo success
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 486019416633956977
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14563801268745882127
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 12611585326813323179
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278802802839955
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1945330311168431936
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278807097807252
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278811392774549
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 4745482374640714669
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278815687741846
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1945330315463399233
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278819982709143
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 9915327267608719901
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14563801281630784018
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 486019420928924274
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14563801277335816721
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 12611585331108290476
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278824277676440
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1945330319758366530
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278828572643737
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278832867611034
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7300229088265428871
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278837162578331
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1945330324053333827
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278923061924373
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 9915327271903687198
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14563801290220718612
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 486019425223891571
+2026-07-23 13:06:27 [INFO] [143197] [143199] [db_runner.h:61] Start insert data to TypeHashInfo
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14563801285925751315
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 12611585335403257773
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278927356891670
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1945330328348301124
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278931651858967
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278935946826264
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 9854975801890143073
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278940241793561
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1945330332643268421
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278944536760858
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 9915327276198654495
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14563801298810653206
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 486019429518858868
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14563801294515685909
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 12611585339698225070
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278948831728155
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1945330336938235718
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278953126695452
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278957421662749
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 12409722519809824571
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957278961716630046
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1945330341233203015
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957279047615976088
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 9915327280493621792
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14563801307400587800
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 486019433813826165
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14563801303105620503
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 12611585343993192367
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957279051910943385
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1945330345528170312
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957279056205910682
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957279060500877979
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14964469233434538773
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957279064795845276
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1945330349823137609
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957279069090812573
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 9915327284788589089
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14563801397594901139
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 486019438108793462
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14563801393299933842
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 12611585348288159664
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957279073385779870
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1945330435722483651
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957279077680747167
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957279081975714464
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 17519215947059252975
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957279086270681761
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1945330440017450948
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957279172170027803
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 9915327289083556386
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14563801406184835733
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 486019442403760759
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14563801401889868436
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 12611585352583126961
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957279176464995100
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1945330444312418245
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957279180759962397
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957279185054929694
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1627218591269382857
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957279189349896991
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1945330448607385542
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957279193644864288
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 9915327293378523683
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14563801414774770327
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 486019446698728056
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14563801410479803030
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 12611585356878094258
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957279197939831585
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1945330452902352839
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957279202234798882
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957279206529766179
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 4181965386498475804
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957279210824733476
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1945330457197320136
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7957279296724079518
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7725679957044931
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 13377201573284175968
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 8129524398116685314
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 6508833392922483510
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7624740049406034945
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 6073971714141050813
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 16116398516968886752
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1163580424429203351
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 8603780826984362527
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14708002284066225944
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 16211518678329608732
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 6951649028811531789
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 454849401225287124
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 5348790472065219804
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 17385213903993931217
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 10659942410990028224
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 1032128552024668513
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 3817770463760011638
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 6146200319328113348
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 15117532149435928738
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 8725242253218266209
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 16222370406053181837
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 8279274873479260287
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 12363006982427124277
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 2768492231409803584
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 16523085412559954427
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 13323997427243048795
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 9756391232172713198
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 13794999903743509972
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 10600772733679844922
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 13602865611787124161
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 2266334407680131408
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 5919563319272490191
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 2633333768048134754
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 2396815181925892301
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 14554525871796095744
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 10437074825486262561
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 11294014662854981805
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 12349962238760471655
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 15234072898451128956
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 10276214297887107645
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 2408655236025820304
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7488232685453138
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 7462279691789118047
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 4015838629976843727
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 182675236085487214
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 16348801526967143478
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 732836365322770968
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 4738190365749210988
+2026-07-23 13:06:27 [WARN] [143197] [143198] [hash_data.cpp:81] Duplicate hash found key: 15946057123525868965
+2026-07-23 13:06:27 [INFO] [143197] [143198] [kernel_parser_worker.cpp:80] Start load runtime op info data
+2026-07-23 13:06:27 [INFO] [143197] [143198] [kernel_parser_worker.cpp:83] success get hash data
+2026-07-23 13:06:27 [INFO] [143197] [143198] [kernel_parser_worker.cpp:90] success get hashDbDumper
+2026-07-23 13:06:27 [INFO] [143197] [143198] [db_runner.cpp:53] Start create GeHashInfo
+2026-07-23 13:06:27 [INFO] [143197] [143199] [db_runner.h:72] insert data to TypeHashInfo success
+2026-07-23 13:06:27 [INFO] [143197] [143199] [base_dumper.h:56] Dump TypeHashInfo data success
+2026-07-23 13:06:27 [INFO] [143197] [143198] [db_runner.cpp:66] create GeHashInfo success
+2026-07-23 13:06:27 [INFO] [143197] [143198] [db_runner.h:61] Start insert data to GeHashInfo
+2026-07-23 13:06:27 [INFO] [143197] [143198] [db_runner.h:72] insert data to GeHashInfo success
+2026-07-23 13:06:27 [INFO] [143197] [143198] [base_dumper.h:56] Dump GeHashInfo data success
+2026-07-23 13:06:27 [INFO] [143197] [143197] [time_logger.h:32] HostTraceWorker start
+2026-07-23 13:06:27 [INFO] [143197] [143197] [time_logger.h:32] Group all events start
+2026-07-23 13:06:27 [INFO] [143197] [143202] [time_logger.h:32] Group Kernel start
+2026-07-23 13:06:27 [INFO] [143197] [143204] [time_logger.h:32] Group GraphIdMap start
+2026-07-23 13:06:27 [INFO] [143197] [143204] [time_logger.h:39] Group GraphIdMap end, cost time = 0 ms
+2026-07-23 13:06:27 [INFO] [143197] [143203] [time_logger.h:32] Group FusionOpInfo start
+2026-07-23 13:06:27 [INFO] [143197] [143202] [time_logger.h:39] Group Kernel end, cost time = 0 ms
+2026-07-23 13:06:27 [INFO] [143197] [143203] [time_logger.h:39] Group FusionOpInfo end, cost time = 0 ms
+2026-07-23 13:06:27 [INFO] [143197] [143204] [time_logger.h:32] Group NodeAttrInfo start
+2026-07-23 13:06:27 [INFO] [143197] [143201] [time_logger.h:32] Group NodeBasicInfo start
+2026-07-23 13:06:27 [INFO] [143197] [143204] [time_logger.h:39] Group NodeAttrInfo end, cost time = 0 ms
+2026-07-23 13:06:27 [INFO] [143197] [143207] [time_logger.h:32] Group TensorInfo start
+2026-07-23 13:06:27 [INFO] [143197] [143201] [time_logger.h:39] Group NodeBasicInfo end, cost time = 0 ms
+2026-07-23 13:06:27 [INFO] [143197] [143208] [time_logger.h:32] Group ContextId start
+2026-07-23 13:06:27 [INFO] [143197] [143202] [time_logger.h:32] Group TaskTrack start
+2026-07-23 13:06:27 [INFO] [143197] [143203] [time_logger.h:32] Group HcclOpInfo start
+2026-07-23 13:06:27 [INFO] [143197] [143206] [time_logger.h:32] Group HcclInfo start
+2026-07-23 13:06:27 [INFO] [143197] [143203] [time_logger.h:39] Group HcclOpInfo end, cost time = 0 ms
+2026-07-23 13:06:27 [INFO] [143197] [143206] [time_logger.h:39] Group HcclInfo end, cost time = 0 ms
+2026-07-23 13:06:27 [INFO] [143197] [143208] [time_logger.h:39] Group ContextId end, cost time = 1 ms
+2026-07-23 13:06:27 [INFO] [143197] [143202] [time_logger.h:39] Group TaskTrack end, cost time = 0 ms
+2026-07-23 13:06:27 [INFO] [143197] [143207] [time_logger.h:39] Group TensorInfo end, cost time = 1 ms
+2026-07-23 13:06:27 [INFO] [143197] [143197] [event_grouper.cpp:127] After group events, Kernel: 296, GraphId: 1, FusionOp: 0, NodeBasic: 269, NodeAttr: 0, Tensor: 266, ContextId: 18, HcclInfo: 0, TaskTrack: 287, HcclOpInfo: 0, thread: 142474
+2026-07-23 13:06:27 [INFO] [143197] [143197] [event_grouper.cpp:127] After group events, Kernel: 51, GraphId: 0, FusionOp: 0, NodeBasic: 24, NodeAttr: 0, Tensor: 24, ContextId: 0, HcclInfo: 0, TaskTrack: 30, HcclOpInfo: 0, thread: 142752
+2026-07-23 13:06:27 [INFO] [143197] [143197] [time_logger.h:39] Group all events end, cost time = 5 ms
+2026-07-23 13:06:27 [INFO] [143197] [143211] [time_logger.h:32] Dump api data start start
+2026-07-23 13:06:27 [INFO] [143197] [143209] [time_logger.h:32] Dump flip tasks data start start
+2026-07-23 13:06:27 [WARN] [143197] [143209] [base_dumper.h:42] Input data is empty, pass dump
+2026-07-23 13:06:27 [INFO] [143197] [143212] [time_logger.h:32] Multi thread build tree start
+2026-07-23 13:06:27 [INFO] [143197] [143211] [db_runner.cpp:53] Start create ApiData
+2026-07-23 13:06:27 [INFO] [143197] [143209] [time_logger.h:39] Dump flip tasks data start end, cost time = 0 ms
+2026-07-23 13:06:27 [INFO] [143197] [143218] [time_logger.h:32] Dump model name data start start
+2026-07-23 13:06:27 [INFO] [143197] [143218] [db_runner.cpp:53] Start create ModelName
+2026-07-23 13:06:27 [INFO] [143197] [143219] [host_trace_worker.cpp:69] Start multi thread build tree, threadId = 142474
+2026-07-23 13:06:27 [INFO] [143197] [143228] [host_trace_worker.cpp:69] Start multi thread build tree, threadId = 142752
+2026-07-23 13:06:27 [INFO] [143197] [143211] [db_runner.cpp:66] create ApiData success
+2026-07-23 13:06:27 [INFO] [143197] [143228] [event_queue.cpp:72] EventQueue for thread 142752 is empty
+2026-07-23 13:06:27 [INFO] [143197] [143228] [event_queue.cpp:72] EventQueue for thread 142752 is empty
+2026-07-23 13:06:27 [INFO] [143197] [143228] [event_queue.cpp:72] EventQueue for thread 142752 is empty
+2026-07-23 13:06:27 [INFO] [143197] [143219] [event_queue.cpp:72] EventQueue for thread 142474 is empty
+2026-07-23 13:06:27 [INFO] [143197] [143218] [db_runner.cpp:66] create ModelName success
+2026-07-23 13:06:27 [INFO] [143197] [143219] [event_queue.cpp:72] EventQueue for thread 142474 is empty
+2026-07-23 13:06:27 [INFO] [143197] [143218] [db_runner.h:61] Start insert data to ModelName
+2026-07-23 13:06:27 [INFO] [143197] [143211] [db_runner.h:61] Start insert data to ApiData
+2026-07-23 13:06:27 [WARN] [143197] [143232] [tree_builder.cpp:192] No Events, event type: 8, threadId = 142752
+2026-07-23 13:06:27 [INFO] [143197] [143231] [tree_builder.cpp:234] Add LevelEvents done, threadId = 142752, event type: 2, matchCnt = 24, mismatchCnt = 0 
+2026-07-23 13:06:27 [WARN] [143197] [143231] [tree_builder.cpp:192] No Events, event type: 3, threadId = 142752
+2026-07-23 13:06:27 [INFO] [143197] [143231] [tree_builder.cpp:234] Add LevelEvents done, threadId = 142752, event type: 4, matchCnt = 24, mismatchCnt = 0 
+2026-07-23 13:06:27 [WARN] [143197] [143231] [tree_builder.cpp:192] No Events, event type: 6, threadId = 142752
+2026-07-23 13:06:27 [WARN] [143197] [143231] [tree_builder.cpp:192] No Events, event type: 10, threadId = 142752
+2026-07-23 13:06:27 [INFO] [143197] [143218] [db_runner.h:72] insert data to ModelName success
+2026-07-23 13:06:27 [INFO] [143197] [143218] [base_dumper.h:56] Dump ModelName data success
+2026-07-23 13:06:27 [INFO] [143197] [143218] [time_logger.h:39] Dump model name data start end, cost time = 1 ms
+2026-07-23 13:06:27 [WARN] [143197] [143229] [tree_builder.cpp:192] No Events, event type: 6, threadId = 142752
+2026-07-23 13:06:27 [WARN] [143197] [143229] [tree_builder.cpp:192] No Events, event type: 5, threadId = 142752
+2026-07-23 13:06:27 [INFO] [143197] [143228] [tree_builder.cpp:73] Build Tree End, ThreadId = 142752
+2026-07-23 13:06:27 [INFO] [143197] [143228] [host_trace_worker.cpp:79] Multi thread build tree done, threadId = 142752
+2026-07-23 13:06:27 [WARN] [143197] [143230] [tree_builder.cpp:192] No Events, event type: 8, threadId = 142474
+2026-07-23 13:06:27 [WARN] [143197] [143234] [tree_builder.cpp:192] No Events, event type: 6, threadId = 142474
+2026-07-23 13:06:27 [WARN] [143197] [143234] [tree_builder.cpp:192] No Events, event type: 5, threadId = 142474
+2026-07-23 13:06:27 [INFO] [143197] [143233] [tree_builder.cpp:234] Add LevelEvents done, threadId = 142474, event type: 2, matchCnt = 269, mismatchCnt = 0 
+2026-07-23 13:06:27 [WARN] [143197] [143233] [tree_builder.cpp:192] No Events, event type: 3, threadId = 142474
+2026-07-23 13:06:27 [INFO] [143197] [143233] [tree_builder.cpp:234] Add LevelEvents done, threadId = 142474, event type: 4, matchCnt = 266, mismatchCnt = 0 
+2026-07-23 13:06:27 [INFO] [143197] [143233] [tree_builder.cpp:234] Add LevelEvents done, threadId = 142474, event type: 6, matchCnt = 18, mismatchCnt = 0 
+2026-07-23 13:06:27 [WARN] [143197] [143233] [tree_builder.cpp:192] No Events, event type: 10, threadId = 142474
+2026-07-23 13:06:27 [INFO] [143197] [143211] [db_runner.h:72] insert data to ApiData success
+2026-07-23 13:06:27 [INFO] [143197] [143211] [base_dumper.h:56] Dump ApiData data success
+2026-07-23 13:06:27 [INFO] [143197] [143211] [time_logger.h:39] Dump api data start end, cost time = 2 ms
+2026-07-23 13:06:27 [INFO] [143197] [143219] [tree_builder.cpp:73] Build Tree End, ThreadId = 142474
+2026-07-23 13:06:27 [INFO] [143197] [143219] [host_trace_worker.cpp:79] Multi thread build tree done, threadId = 142474
+2026-07-23 13:06:27 [INFO] [143197] [143212] [time_logger.h:39] Multi thread build tree end, cost time = 3 ms
+2026-07-23 13:06:27 [INFO] [143197] [143212] [time_logger.h:32] Multi thread analyze tree and dump data start
+2026-07-23 13:06:27 [INFO] [143197] [143236] [host_trace_worker.cpp:95] Start analyze tree and dump data, threadId = 142752
+2026-07-23 13:06:27 [INFO] [143197] [143235] [host_trace_worker.cpp:95] Start analyze tree and dump data, threadId = 142474
+2026-07-23 13:06:27 [INFO] [143197] [143236] [time_logger.h:32] Dump CANN data start
+2026-07-23 13:06:27 [INFO] [143197] [143247] [cann_trace_db_dumper.cpp:148] Empty hccl OPs
+2026-07-23 13:06:27 [INFO] [143197] [143246] [time_logger.h:32] Dump host tasks start
+2026-07-23 13:06:27 [INFO] [143197] [143247] [cann_trace_db_dumper.cpp:396] Empty hccl tasks
+2026-07-23 13:06:27 [INFO] [143197] [143248] [time_logger.h:32] DumpOpDesc Start start
+2026-07-23 13:06:27 [INFO] [143197] [143245] [cann_trace_db_dumper.cpp:449] Empty geFusionOps
+2026-07-23 13:06:27 [INFO] [143197] [143246] [db_runner.cpp:53] Start create HostTask
+2026-07-23 13:06:27 [INFO] [143197] [143248] [db_runner.cpp:53] Start create TaskInfo
+2026-07-23 13:06:27 [INFO] [143197] [143235] [time_logger.h:32] Dump CANN data start
+2026-07-23 13:06:27 [INFO] [143197] [143249] [cann_trace_db_dumper.cpp:148] Empty hccl OPs
+2026-07-23 13:06:27 [INFO] [143197] [143249] [cann_trace_db_dumper.cpp:396] Empty hccl tasks
+2026-07-23 13:06:27 [INFO] [143197] [143249] [cann_trace_db_dumper.cpp:449] Empty geFusionOps
+2026-07-23 13:06:27 [INFO] [143197] [143250] [time_logger.h:32] Dump host tasks start
+2026-07-23 13:06:27 [INFO] [143197] [143251] [time_logger.h:32] DumpOpDesc Start start
+2026-07-23 13:06:27 [INFO] [143197] [143246] [db_runner.cpp:66] create HostTask success
+2026-07-23 13:06:27 [INFO] [143197] [143250] [db_runner.cpp:53] Start create HostTask
+2026-07-23 13:06:27 [INFO] [143197] [143248] [db_runner.cpp:66] create TaskInfo success
+2026-07-23 13:06:27 [INFO] [143197] [143251] [db_runner.cpp:53] Start create TaskInfo
+2026-07-23 13:06:27 [INFO] [143197] [143246] [db_runner.h:61] Start insert data to HostTask
+2026-07-23 13:06:27 [INFO] [143197] [143248] [db_runner.h:61] Start insert data to TaskInfo
+2026-07-23 13:06:27 [INFO] [143197] [143250] [db_runner.cpp:66] create HostTask success
+2026-07-23 13:06:27 [INFO] [143197] [143250] [db_runner.h:61] Start insert data to HostTask
+2026-07-23 13:06:27 [INFO] [143197] [143251] [db_runner.cpp:66] create TaskInfo success
+2026-07-23 13:06:27 [INFO] [143197] [143246] [db_runner.h:72] insert data to HostTask success
+2026-07-23 13:06:27 [INFO] [143197] [143246] [time_logger.h:39] Dump host tasks end, cost time = 2 ms
+2026-07-23 13:06:27 [INFO] [143197] [143248] [db_runner.h:72] insert data to TaskInfo success
+2026-07-23 13:06:27 [INFO] [143197] [143248] [time_logger.h:39] DumpOpDesc Start end, cost time = 2 ms
+2026-07-23 13:06:27 [INFO] [143197] [143236] [time_logger.h:39] Dump CANN data end, cost time = 3 ms
+2026-07-23 13:06:27 [INFO] [143197] [143236] [host_trace_worker.cpp:103] Dump cann trace data done, threadId = 142752
+2026-07-23 13:06:27 [INFO] [143197] [143250] [db_runner.h:72] insert data to HostTask success
+2026-07-23 13:06:27 [INFO] [143197] [143250] [time_logger.h:39] Dump host tasks end, cost time = 2 ms
+2026-07-23 13:06:27 [INFO] [143197] [143251] [db_runner.h:61] Start insert data to TaskInfo
+2026-07-23 13:06:27 [INFO] [143197] [143251] [db_runner.h:72] insert data to TaskInfo success
+2026-07-23 13:06:27 [INFO] [143197] [143251] [time_logger.h:39] DumpOpDesc Start end, cost time = 6 ms
+2026-07-23 13:06:27 [INFO] [143197] [143235] [time_logger.h:39] Dump CANN data end, cost time = 7 ms
+2026-07-23 13:06:27 [INFO] [143197] [143235] [host_trace_worker.cpp:103] Dump cann trace data done, threadId = 142474
+2026-07-23 13:06:27 [INFO] [143197] [143212] [time_logger.h:39] Multi thread analyze tree and dump data end, cost time = 9 ms
+2026-07-23 13:06:27 [INFO] [143197] [143197] [time_logger.h:32] Dump memcpy info data start start
+2026-07-23 13:06:27 [WARN] [143197] [143197] [base_dumper.h:42] Input data is empty, pass dump
+2026-07-23 13:06:27 [INFO] [143197] [143197] [time_logger.h:39] Dump memcpy info data start end, cost time = 0 ms
+2026-07-23 13:06:27 [INFO] [143197] [143197] [time_logger.h:39] HostTraceWorker end, cost time = 18 ms
