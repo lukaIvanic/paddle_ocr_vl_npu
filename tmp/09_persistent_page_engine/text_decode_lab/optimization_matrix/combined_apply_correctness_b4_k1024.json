@@ -1,0 +1,196 @@
+{
+  "schema_version": 1,
+  "kind": "text_decode_lab_result",
+  "configuration": {
+    "mode": "correctness",
+    "corpus": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/corpus_256p_b32_kv4096_7899d40.json",
+    "corpus_sha256": "7d5510d09eaf948ff1ce81793918c9496fd7d8587c9d62ea6cfff34c9d025c18",
+    "batch_size": 4,
+    "cache_length": 1024,
+    "dtype": "fp16",
+    "backend": "torchair",
+    "decode_optimization": "combined_apply",
+    "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_torchair",
+    "active_slots": 4,
+    "profile_position": 1024,
+    "profile_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/npu_profiles",
+    "profile_metric": "pipe",
+    "warmup": 3,
+    "repeats": 20,
+    "overflow_policy": "exclude",
+    "allow_compile": false
+  },
+  "corpus_contract": {
+    "ordering": "items are stored in exact production request-source order",
+    "tokens": "token_ids include the prefill-produced first token and the final EOS/length token exactly as recorded",
+    "scheduler_lifetime": "active_decode_iterations includes production's one queue-depth-one completion look-ahead iteration",
+    "cache_capacity": "replay_required_cache_tokens includes every recorded graph write, including the queue-depth-one look-ahead; production_guard_min_cache_tokens records the source runner's prompt + configured max_new_tokens - 1 admission guard",
+    "device_replay": "recorded request lifetimes drive completion while the real decode arena, graph, D2H token path, admission, and refill machinery run"
+  },
+  "result": {
+    "contract": {
+      "inputs": "recorded token paths and prompt positions",
+      "prompt_kv_values": "independent zero prefixes",
+      "rope_deltas": "zeros",
+      "comparison": "baseline eager production stage versus selected compiled optimization",
+      "selected_optimization": "combined_apply",
+      "integration_gate": "real-crop end-to-end token parity remains required before promoting a decode optimization"
+    },
+    "selected_request_ids": [
+      "page_000080_block_000003"
+    ],
+    "steps": 8,
+    "batch_size": 4,
+    "logits": {
+      "max_abs": 0.1171875,
+      "mean_abs": 0.008368827771432328,
+      "argmax_matches": 32,
+      "argmax_total": 32,
+      "argmax_fraction": 1.0
+    },
+    "written_kv": {
+      "max_abs": 0.0369873046875,
+      "mean_abs": 0.001640428816446931
+    },
+    "per_step": [
+      {
+        "step": 0,
+        "logit_max_abs": 0.0546875,
+        "logit_mean_abs": 0.008864346891641617,
+        "argmax_matches": 4,
+        "kv_written_max_abs": 0.01953125,
+        "kv_written_mean_abs": 0.0014786631412183244
+      },
+      {
+        "step": 1,
+        "logit_max_abs": 0.05078125,
+        "logit_mean_abs": 0.006848377175629139,
+        "argmax_matches": 4,
+        "kv_written_max_abs": 0.0234375,
+        "kv_written_mean_abs": 0.0012694440665654838
+      },
+      {
+        "step": 2,
+        "logit_max_abs": 0.044921875,
+        "logit_mean_abs": 0.0056860195472836494,
+        "argmax_matches": 4,
+        "kv_written_max_abs": 0.018798828125,
+        "kv_written_mean_abs": 0.0015784874946499865
+      },
+      {
+        "step": 3,
+        "logit_max_abs": 0.0458984375,
+        "logit_mean_abs": 0.005829776171594858,
+        "argmax_matches": 4,
+        "kv_written_max_abs": 0.021331787109375,
+        "kv_written_mean_abs": 0.001439199336649229
+      },
+      {
+        "step": 4,
+        "logit_max_abs": 0.046875,
+        "logit_mean_abs": 0.005851049441844225,
+        "argmax_matches": 4,
+        "kv_written_max_abs": 0.0185546875,
+        "kv_written_mean_abs": 0.0015440627984288666
+      },
+      {
+        "step": 5,
+        "logit_max_abs": 0.064453125,
+        "logit_mean_abs": 0.007149321958422661,
+        "argmax_matches": 4,
+        "kv_written_max_abs": 0.0245361328125,
+        "kv_written_mean_abs": 0.0015067691306790544
+      },
+      {
+        "step": 6,
+        "logit_max_abs": 0.040283203125,
+        "logit_mean_abs": 0.01008981466293335,
+        "argmax_matches": 4,
+        "kv_written_max_abs": 0.01904296875,
+        "kv_written_mean_abs": 0.001412097299988899
+      },
+      {
+        "step": 7,
+        "logit_max_abs": 0.1171875,
+        "logit_mean_abs": 0.016631940379738808,
+        "argmax_matches": 4,
+        "kv_written_max_abs": 0.0369873046875,
+        "kv_written_mean_abs": 0.002894707263395604
+      }
+    ]
+  },
+  "setup": {
+    "total_s": 15.888323393010069,
+    "model_load_s": 10.255587160005234,
+    "weight_format_s": 4.2726792769972235,
+    "runtime_setup_s": 0.24605469196103513,
+    "weight_format": {
+      "requested_mode": "decode_nz",
+      "mode": "decode_native_fallback",
+      "effective_mode": "decode_native_fallback",
+      "target_format": "FRACTAL_NZ",
+      "target_format_code": 29,
+      "target_count": 145,
+      "cast_count": 1,
+      "converted_count": 0,
+      "already_nz_count": 0,
+      "converted_modules_sample": [],
+      "before_formats_sample": {
+        "model.layers.0.self_attn.q_proj": 2
+      },
+      "after_formats_sample": {
+        "model.layers.0.self_attn.q_proj": 2
+      },
+      "all_after_are_nz": false,
+      "fallback_reason": "npu_format_cast_did_not_produce_fractal_nz",
+      "failures_sample": [
+        {
+          "module": "model.layers.0.self_attn.q_proj",
+          "before_format": 2,
+          "after_format": 2,
+          "error": "npu_format_cast_did_not_produce_fractal_nz"
+        }
+      ]
+    },
+    "runtime_metadata": {
+      "backend": "torchair",
+      "enabled": true,
+      "boundary": "token_embedding_text_transformer_lm_head_static_step",
+      "linear_weight_format": "decode_native_fallback",
+      "decode_attention": "increfa",
+      "decode_cache_update": "npu_scatter",
+      "decode_optimization": "combined_apply",
+      "decode_optimization_config": {
+        "hoist_mrope": true,
+        "packed_qkv": true,
+        "rms_norm": "npu",
+        "rotary": "npu_apply",
+        "packed_mlp": false,
+        "npu_swiglu": false,
+        "add_rms_norm": true
+      },
+      "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_torchair/decode_native_fallback_increfa_npu_scatter_optcombined_apply_modeinference_dtypefloat16_bs4_cache1024_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcb94a0353d7cd",
+      "torchair_ge_cache": true,
+      "compile_api": "torchair.inference.cache_compile",
+      "cache_key_fields": {
+        "batch_size": 4,
+        "cache_length": 1024,
+        "dtype": "torch.float16",
+        "model_config_hash": "6d2211febbe9",
+        "torch": "2.10.0+cpu",
+        "torch_npu": "2.10.0",
+        "torchair": "unknown",
+        "decode_source_hash": "b94a0353d7cd",
+        "linear_weight_format": "decode_native_fallback",
+        "decode_attention": "increfa",
+        "decode_cache_update": "npu_scatter",
+        "execution_mode": "inference",
+        "decode_optimization": "combined_apply"
+      }
+    },
+    "runtime_setup_detail_s": {
+      "compile_wrapper": 0.001741970016155392,
+      "compile_first_call": 0.22330873500322923
+    }
+  }
+}

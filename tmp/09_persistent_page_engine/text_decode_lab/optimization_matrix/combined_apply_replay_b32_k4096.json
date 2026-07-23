@@ -1,0 +1,204 @@
+{
+  "schema_version": 1,
+  "kind": "text_decode_lab_result",
+  "configuration": {
+    "mode": "replay",
+    "corpus": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/corpus_256p_b32_kv4096_7899d40.json",
+    "corpus_sha256": "7d5510d09eaf948ff1ce81793918c9496fd7d8587c9d62ea6cfff34c9d025c18",
+    "batch_size": 32,
+    "cache_length": 4096,
+    "dtype": "fp16",
+    "backend": "torchair",
+    "decode_optimization": "combined_apply",
+    "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_torchair",
+    "active_slots": 32,
+    "profile_position": 1024,
+    "profile_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/npu_profiles",
+    "profile_metric": "pipe",
+    "warmup": 3,
+    "repeats": 20,
+    "overflow_policy": "error",
+    "allow_compile": false
+  },
+  "corpus_contract": {
+    "ordering": "items are stored in exact production request-source order",
+    "tokens": "token_ids include the prefill-produced first token and the final EOS/length token exactly as recorded",
+    "scheduler_lifetime": "active_decode_iterations includes production's one queue-depth-one completion look-ahead iteration",
+    "cache_capacity": "replay_required_cache_tokens includes every recorded graph write, including the queue-depth-one look-ahead; production_guard_min_cache_tokens records the source runner's prompt + configured max_new_tokens - 1 admission guard",
+    "device_replay": "recorded request lifetimes drive completion while the real decode arena, graph, D2H token path, admission, and refill machinery run"
+  },
+  "result": {
+    "workload": {
+      "requests": 3524,
+      "excluded_overflow_requests": 0,
+      "arrival_mode": "all_ready",
+      "completion_mode": "recorded_request_lifetimes",
+      "prompt_kv_values": "shared deterministic zero prefix",
+      "rope_deltas": "zeros"
+    },
+    "scheduler": {
+      "graph_calls": 8112,
+      "raw_decode_token_slots": 259584,
+      "active_decode_token_slots": 225604,
+      "effective_decode_tokens": 222083,
+      "idle_decode_token_slots": 33980,
+      "lookahead_decode_token_slots": 3521,
+      "prefill_only_completions": 3,
+      "ready_buffer_capacity": 128,
+      "ready_buffer_low_watermark": 32,
+      "max_ready_queue_depth": 128,
+      "ready_source_refill_count": 37,
+      "initial_admissions": 32,
+      "hot_swap_admissions": 3489,
+      "kv_prefix_bytes_copied": 9832347648
+    },
+    "timing_s": {
+      "continuous_decode_wall": 33.7171613999526,
+      "decode_host_exclusive_wall": 33.7171613999526,
+      "run_scoped_scheduler_wall": 33.71816100302385,
+      "ready_source_wall": 0.0009996030712500215,
+      "completion_callback_wall": 0.0,
+      "decode_model_and_argmax_device": 31.966047158241217,
+      "slot_admission_device": 1.56419579988718,
+      "slot_admission_enqueue_wall": 5.602694057975896,
+      "d2h_wait_wall": 17.8103384442511,
+      "retire_and_refill_host_wall": 7.203931393800303
+    },
+    "throughput": {
+      "continuous_decode_effective_tok_per_s": 6586.645814149473,
+      "continuous_decode_raw_physical_tok_per_s": 7698.868742858197,
+      "model_device_effective_tok_per_s": 6947.465193322923,
+      "model_device_raw_physical_tok_per_s": 8120.616187387318,
+      "run_scoped_effective_tok_per_s": 6586.45054752789
+    },
+    "useful_token_fraction": 0.8555342393984221,
+    "memory_bytes": {
+      "baseline_allocated": 4361475584,
+      "peak_delta": 99648512
+    },
+    "lab_wall_s": 33.75677109998651,
+    "simulation_match": true,
+    "excludes": [
+      "vision and text prefill execution",
+      "real prompt KV values",
+      "page/frontend arrival timing",
+      "result assembly and artifact writing"
+    ],
+    "production_reference": {
+      "comparable": true,
+      "accounting": {
+        "graph_calls": {
+          "lab": 8112,
+          "production": 8112,
+          "delta": 0,
+          "matches": true
+        },
+        "raw_decode_token_slots": {
+          "lab": 259584,
+          "production": 259584,
+          "delta": 0,
+          "matches": true
+        },
+        "active_decode_token_slots": {
+          "lab": 225604,
+          "production": 225604,
+          "delta": 0,
+          "matches": true
+        },
+        "effective_decode_tokens": {
+          "lab": 222083,
+          "production": 222083,
+          "delta": 0,
+          "matches": true
+        },
+        "idle_decode_token_slots": {
+          "lab": 33980,
+          "production": 33980,
+          "delta": 0,
+          "matches": true
+        },
+        "lookahead_decode_token_slots": {
+          "lab": 3521,
+          "production": 3521,
+          "delta": 0,
+          "matches": true
+        }
+      },
+      "all_accounting_matches": true
+    }
+  },
+  "setup": {
+    "total_s": 16.89906756102573,
+    "model_load_s": 10.344463200948667,
+    "weight_format_s": 4.854745769989677,
+    "runtime_setup_s": 0.2884874229785055,
+    "weight_format": {
+      "requested_mode": "decode_nz",
+      "mode": "decode_native_fallback",
+      "effective_mode": "decode_native_fallback",
+      "target_format": "FRACTAL_NZ",
+      "target_format_code": 29,
+      "target_count": 145,
+      "cast_count": 1,
+      "converted_count": 0,
+      "already_nz_count": 0,
+      "converted_modules_sample": [],
+      "before_formats_sample": {
+        "model.layers.0.self_attn.q_proj": 2
+      },
+      "after_formats_sample": {
+        "model.layers.0.self_attn.q_proj": 2
+      },
+      "all_after_are_nz": false,
+      "fallback_reason": "npu_format_cast_did_not_produce_fractal_nz",
+      "failures_sample": [
+        {
+          "module": "model.layers.0.self_attn.q_proj",
+          "before_format": 2,
+          "after_format": 2,
+          "error": "npu_format_cast_did_not_produce_fractal_nz"
+        }
+      ]
+    },
+    "runtime_metadata": {
+      "backend": "torchair",
+      "enabled": true,
+      "boundary": "token_embedding_text_transformer_lm_head_static_step",
+      "linear_weight_format": "decode_native_fallback",
+      "decode_attention": "increfa",
+      "decode_cache_update": "npu_scatter",
+      "decode_optimization": "combined_apply",
+      "decode_optimization_config": {
+        "hoist_mrope": true,
+        "packed_qkv": true,
+        "rms_norm": "npu",
+        "rotary": "npu_apply",
+        "packed_mlp": false,
+        "npu_swiglu": false,
+        "add_rms_norm": true
+      },
+      "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_torchair/decode_native_fallback_increfa_npu_scatter_optcombined_apply_modeinference_dtypefloat16_bs32_cache4096_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcb94a0353d7cd",
+      "torchair_ge_cache": true,
+      "compile_api": "torchair.inference.cache_compile",
+      "cache_key_fields": {
+        "batch_size": 32,
+        "cache_length": 4096,
+        "dtype": "torch.float16",
+        "model_config_hash": "6d2211febbe9",
+        "torch": "2.10.0+cpu",
+        "torch_npu": "2.10.0",
+        "torchair": "unknown",
+        "decode_source_hash": "b94a0353d7cd",
+        "linear_weight_format": "decode_native_fallback",
+        "decode_attention": "increfa",
+        "decode_cache_update": "npu_scatter",
+        "execution_mode": "inference",
+        "decode_optimization": "combined_apply"
+      }
+    },
+    "runtime_setup_detail_s": {
+      "compile_wrapper": 0.001873872010037303,
+      "compile_first_call": 0.2569214770337567
+    }
+  }
+}
