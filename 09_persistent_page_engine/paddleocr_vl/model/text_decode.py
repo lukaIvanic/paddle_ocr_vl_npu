@@ -34,6 +34,104 @@ DECODE_ATTENTION = "increfa"
 DECODE_CACHE_UPDATE = "npu_scatter"
 
 
+@dataclass(frozen=True)
+class DecodeOptimizationConfig:
+    """Experimental implementation choices for the text-decode lab.
+
+    Production callers keep the baseline defaults.  The lab selects one
+    named preset so every compiled graph has an explicit, reproducible
+    implementation contract.
+    """
+
+    name: str
+    hoist_mrope: bool = False
+    packed_qkv: bool = False
+    rms_norm: str = "manual"
+    rotary: str = "manual"
+    packed_mlp: bool = False
+    npu_swiglu: bool = False
+    add_rms_norm: bool = False
+
+
+DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
+    "baseline": DecodeOptimizationConfig(name="baseline"),
+    "mrope_hoist": DecodeOptimizationConfig(
+        name="mrope_hoist",
+        hoist_mrope=True,
+    ),
+    "packed_qkv": DecodeOptimizationConfig(
+        name="packed_qkv",
+        packed_qkv=True,
+    ),
+    "npu_rms_norm": DecodeOptimizationConfig(
+        name="npu_rms_norm",
+        rms_norm="npu",
+    ),
+    "npu_apply_rotary": DecodeOptimizationConfig(
+        name="npu_apply_rotary",
+        hoist_mrope=True,
+        rotary="npu_apply",
+    ),
+    "npu_rotary_mul": DecodeOptimizationConfig(
+        name="npu_rotary_mul",
+        hoist_mrope=True,
+        rotary="npu_rotary_mul",
+    ),
+    "packed_mlp": DecodeOptimizationConfig(
+        name="packed_mlp",
+        packed_mlp=True,
+    ),
+    "packed_mlp_swiglu": DecodeOptimizationConfig(
+        name="packed_mlp_swiglu",
+        packed_mlp=True,
+        npu_swiglu=True,
+    ),
+    "npu_add_rms_norm": DecodeOptimizationConfig(
+        name="npu_add_rms_norm",
+        rms_norm="npu",
+        add_rms_norm=True,
+    ),
+    "combined_apply": DecodeOptimizationConfig(
+        name="combined_apply",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        packed_mlp=True,
+        npu_swiglu=True,
+        add_rms_norm=True,
+    ),
+    "combined_rotary_mul": DecodeOptimizationConfig(
+        name="combined_rotary_mul",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_rotary_mul",
+        packed_mlp=True,
+        npu_swiglu=True,
+        add_rms_norm=True,
+    ),
+}
+
+
+def decode_optimization_names() -> tuple[str, ...]:
+    return tuple(DECODE_OPTIMIZATION_PRESETS)
+
+
+def resolve_decode_optimization(
+    optimization: str | DecodeOptimizationConfig,
+) -> DecodeOptimizationConfig:
+    if isinstance(optimization, DecodeOptimizationConfig):
+        return optimization
+    try:
+        return DECODE_OPTIMIZATION_PRESETS[str(optimization)]
+    except KeyError as exc:
+        raise ValueError(
+            f"unknown decode optimization {optimization!r}; expected one of "
+            f"{decode_optimization_names()}"
+        ) from exc
+
+
 @dataclass
 class LocalPaddleOCRVLStaticCache:
     """Fixed-shape KV tensors shared by prefill and continuous decode."""
@@ -99,6 +197,62 @@ def _linear_tokenwise(linear: nn.Linear, x: torch.Tensor) -> torch.Tensor:
     return output.reshape(*leading_shape, output.shape[-1])
 
 
+def _packed_linear(
+    modules: tuple[nn.Linear, ...],
+) -> nn.Linear:
+    first = modules[0]
+    if any(module.in_features != first.in_features for module in modules):
+        raise ValueError("packed Linear inputs must share in_features")
+    biases = tuple(module.bias for module in modules)
+    if any(bias is None for bias in biases) and not all(
+        bias is None for bias in biases
+    ):
+        raise ValueError("packed Linear inputs must use the same bias contract")
+    packed = nn.Linear(
+        first.in_features,
+        sum(module.out_features for module in modules),
+        bias=biases[0] is not None,
+        device=first.weight.device,
+        dtype=first.weight.dtype,
+    )
+    with torch.no_grad():
+        packed.weight.copy_(
+            torch.cat([module.weight for module in modules], dim=0)
+        )
+        if packed.bias is not None:
+            packed.bias.copy_(
+                torch.cat(
+                    [bias for bias in biases if bias is not None],
+                    dim=0,
+                )
+            )
+    return packed
+
+
+def prepare_decode_optimization_modules(
+    model: "LocalPaddleOCRVLForConditionalGeneration",
+    optimization: str | DecodeOptimizationConfig,
+) -> DecodeOptimizationConfig:
+    """Create packed projections once, before weight-format conversion."""
+    config = resolve_decode_optimization(optimization)
+    for layer in model.model.layers:
+        attention = layer.self_attn
+        if config.packed_qkv and not hasattr(
+            attention, "decode_qkv_proj"
+        ):
+            attention.decode_qkv_proj = _packed_linear(
+                (attention.q_proj, attention.k_proj, attention.v_proj)
+            )
+        mlp = layer.mlp
+        if config.packed_mlp and not hasattr(
+            mlp, "decode_gate_up_proj"
+        ):
+            mlp.decode_gate_up_proj = _packed_linear(
+                (mlp.gate_proj, mlp.up_proj)
+            )
+    return config
+
+
 def build_static_decode_bool_mask(
     cache_position: torch.Tensor,
     cache_length: int,
@@ -147,20 +301,218 @@ def update_decode_kv_cache_(
     value_cache[batch_indices, :, positions, :] = value_states.squeeze(2)
 
 
+def _prepare_multimodal_rotary_factors(
+    position_embeddings: tuple[torch.Tensor, torch.Tensor],
+    mrope_section: list[int],
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Perform the MRoPE section selection once per decode step."""
+    section = [int(value) for value in mrope_section] * 2
+    prepared = []
+    for factors in position_embeddings:
+        prepared.append(
+            torch.cat(
+                [
+                    part[index % 3]
+                    for index, part in enumerate(
+                        factors.split(section, dim=-1)
+                    )
+                ],
+                dim=-1,
+            )
+            .unsqueeze(1)
+            .contiguous()
+        )
+    return prepared[0], prepared[1]
+
+
+def _project_decode_qkv(
+    attention: nn.Module,
+    hidden_states: torch.Tensor,
+    optimization: DecodeOptimizationConfig,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    if not optimization.packed_qkv:
+        return attention.project_qkv(hidden_states)
+    batch, query_length, _hidden = hidden_states.shape
+    qkv = _linear_tokenwise(
+        attention.decode_qkv_proj,
+        hidden_states,
+    )
+    q_size = int(attention.num_heads * attention.head_dim)
+    kv_size = int(attention.num_key_value_heads * attention.head_dim)
+    query_states, key_states, value_states = qkv.split(
+        (q_size, kv_size, kv_size),
+        dim=-1,
+    )
+    query_states = query_states.view(
+        batch,
+        query_length,
+        attention.num_heads,
+        attention.head_dim,
+    ).transpose(1, 2)
+    key_states = key_states.view(
+        batch,
+        query_length,
+        attention.num_key_value_heads,
+        attention.head_dim,
+    ).transpose(1, 2)
+    value_states = value_states.view(
+        batch,
+        query_length,
+        attention.num_key_value_heads,
+        attention.head_dim,
+    ).transpose(1, 2)
+    return query_states, key_states, value_states
+
+
+def _apply_decode_rotary(
+    attention: nn.Module,
+    query_states: torch.Tensor,
+    key_states: torch.Tensor,
+    position_embeddings: tuple[torch.Tensor, torch.Tensor],
+    prepared_factors: tuple[torch.Tensor, torch.Tensor] | None,
+    optimization: DecodeOptimizationConfig,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    if prepared_factors is None:
+        return attention.apply_rotary(
+            query_states,
+            key_states,
+            position_embeddings,
+        )
+    cos, sin = prepared_factors
+    if optimization.rotary == "manual":
+        half = query_states.shape[-1] // 2
+        query_rotated = torch.cat(
+            (-query_states[..., half:], query_states[..., :half]),
+            dim=-1,
+        )
+        key_rotated = torch.cat(
+            (-key_states[..., half:], key_states[..., :half]),
+            dim=-1,
+        )
+        return (
+            (query_states * cos) + (query_rotated * sin),
+            (key_states * cos) + (key_rotated * sin),
+        )
+
+    import torch_npu
+
+    if optimization.rotary == "npu_rotary_mul":
+        return (
+            torch_npu.npu_rotary_mul(
+                query_states.contiguous(),
+                cos,
+                sin,
+                rotary_mode="half",
+            ),
+            torch_npu.npu_rotary_mul(
+                key_states.contiguous(),
+                cos,
+                sin,
+                rotary_mode="half",
+            ),
+        )
+    if optimization.rotary == "npu_apply":
+        query_bsnd = query_states.transpose(1, 2).contiguous()
+        key_bsnd = key_states.transpose(1, 2).contiguous()
+        query_bsnd, key_bsnd = torch_npu.npu_apply_rotary_pos_emb(
+            query_bsnd,
+            key_bsnd,
+            cos,
+            sin,
+            layout="BSND",
+            rotary_mode="half",
+        )
+        return (
+            query_bsnd.transpose(1, 2),
+            key_bsnd.transpose(1, 2),
+        )
+    raise ValueError(
+        f"unsupported decode rotary implementation: "
+        f"{optimization.rotary!r}"
+    )
+
+
+def _decode_rms_norm(
+    norm: nn.Module,
+    hidden_states: torch.Tensor,
+    optimization: DecodeOptimizationConfig,
+) -> torch.Tensor:
+    if optimization.rms_norm == "manual":
+        return norm(hidden_states)
+    if optimization.rms_norm != "npu":
+        raise ValueError(
+            f"unsupported decode RMSNorm implementation: "
+            f"{optimization.rms_norm!r}"
+        )
+    import torch_npu
+
+    return torch_npu.npu_rms_norm(
+        hidden_states,
+        norm.weight,
+        norm.variance_epsilon,
+    )[0]
+
+
+def _decode_add_rms_norm(
+    x: torch.Tensor,
+    residual: torch.Tensor,
+    norm: nn.Module,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    import torch_npu
+
+    normalized, _rstd, summed = torch_npu.npu_add_rms_norm(
+        x,
+        residual,
+        norm.weight,
+        norm.variance_epsilon,
+    )
+    return normalized, summed
+
+
+def _decode_mlp(
+    mlp: nn.Module,
+    hidden_states: torch.Tensor,
+    optimization: DecodeOptimizationConfig,
+) -> torch.Tensor:
+    if not optimization.packed_mlp:
+        return mlp(hidden_states)
+    gate_up = _linear_tokenwise(
+        mlp.decode_gate_up_proj,
+        hidden_states,
+    )
+    if optimization.npu_swiglu:
+        import torch_npu
+
+        activated = torch_npu.npu_swiglu(gate_up, dim=-1)
+    else:
+        gate, up = gate_up.chunk(2, dim=-1)
+        activated = torch.nn.functional.silu(gate) * up
+    return _linear_tokenwise(mlp.down_proj, activated)
+
+
 def _decode_attention(
     attention: nn.Module,
     hidden_states: torch.Tensor,
     position_embeddings: tuple[torch.Tensor, torch.Tensor],
+    prepared_factors: tuple[torch.Tensor, torch.Tensor] | None,
     key_cache: torch.Tensor,
     value_cache: torch.Tensor,
     cache_position: torch.Tensor,
     attention_mask: torch.Tensor | None,
+    optimization: DecodeOptimizationConfig,
 ) -> torch.Tensor:
-    query_states, key_states, value_states = attention.project_qkv(hidden_states)
-    query_states, key_states = attention.apply_rotary(
+    query_states, key_states, value_states = _project_decode_qkv(
+        attention,
+        hidden_states,
+        optimization,
+    )
+    query_states, key_states = _apply_decode_rotary(
+        attention,
         query_states,
         key_states,
         position_embeddings,
+        prepared_factors,
+        optimization,
     )
     update_decode_kv_cache_(
         key_cache,
@@ -219,8 +571,10 @@ def run_text_decode_transformer(
     value_caches: tuple[torch.Tensor, ...],
     cache_length: int,
     attention_mask: torch.Tensor | None = None,
+    optimization: str | DecodeOptimizationConfig = "baseline",
 ) -> torch.Tensor:
     """Execute the complete one-token transformer decode stage."""
+    optimization = resolve_decode_optimization(optimization)
     batch_size, seq_length, _hidden = inputs_embeds.shape
     if seq_length != 1:
         raise ValueError(
@@ -246,21 +600,115 @@ def run_text_decode_transformer(
     )
     position_ids = position_ids.unsqueeze(0).expand(3, -1, -1)
     position_embeddings = text_model.rotary_emb(inputs_embeds, position_ids)
+    prepared_factors = (
+        _prepare_multimodal_rotary_factors(
+            position_embeddings,
+            text_model.layers[0].self_attn.mrope_section,
+        )
+        if optimization.hoist_mrope
+        else None
+    )
     hidden_states = inputs_embeds
+    if optimization.name == "baseline":
+        for layer_idx, layer in enumerate(text_model.layers):
+            residual = hidden_states
+            attention_input = layer.input_layernorm(hidden_states)
+            attention_output = _decode_attention(
+                layer.self_attn,
+                attention_input,
+                position_embeddings,
+                None,
+                key_caches[layer_idx],
+                value_caches[layer_idx],
+                cache_position,
+                attention_mask,
+                optimization,
+            )
+            hidden_states = layer.apply_blocks(residual, attention_output)
+        return text_model.norm(hidden_states)
+
+    if optimization.add_rms_norm:
+        residual: torch.Tensor | None = None
+        for layer_idx, layer in enumerate(text_model.layers):
+            if residual is None:
+                attention_input = _decode_rms_norm(
+                    layer.input_layernorm,
+                    hidden_states,
+                    optimization,
+                )
+                residual = hidden_states
+            else:
+                attention_input, residual = _decode_add_rms_norm(
+                    hidden_states,
+                    residual,
+                    layer.input_layernorm,
+                )
+            attention_output = _decode_attention(
+                layer.self_attn,
+                attention_input,
+                position_embeddings,
+                prepared_factors,
+                key_caches[layer_idx],
+                value_caches[layer_idx],
+                cache_position,
+                attention_mask,
+                optimization,
+            )
+            mlp_input, residual = _decode_add_rms_norm(
+                attention_output,
+                residual,
+                layer.post_attention_layernorm,
+            )
+            hidden_states = _decode_mlp(
+                layer.mlp,
+                mlp_input,
+                optimization,
+            )
+        hidden_states, _residual = _decode_add_rms_norm(
+            hidden_states,
+            residual,
+            text_model.norm,
+        )
+        return hidden_states
+
     for layer_idx, layer in enumerate(text_model.layers):
         residual = hidden_states
-        attention_input = layer.input_layernorm(hidden_states)
+        attention_input = _decode_rms_norm(
+            layer.input_layernorm,
+            hidden_states,
+            optimization,
+        )
         attention_output = _decode_attention(
             layer.self_attn,
             attention_input,
             position_embeddings,
+            prepared_factors,
             key_caches[layer_idx],
             value_caches[layer_idx],
             cache_position,
             attention_mask,
+            optimization,
         )
-        hidden_states = layer.apply_blocks(residual, attention_output)
-    return text_model.norm(hidden_states)
+        if (
+            optimization.rms_norm == "manual"
+            and not optimization.packed_mlp
+        ):
+            hidden_states = layer.apply_blocks(residual, attention_output)
+            continue
+        hidden_states = residual + attention_output
+        residual = hidden_states
+        hidden_states = _decode_rms_norm(
+            layer.post_attention_layernorm,
+            hidden_states,
+            optimization,
+        )
+        hidden_states = _decode_mlp(
+            layer.mlp,
+            hidden_states,
+            optimization,
+        )
+        hidden_states = residual + hidden_states
+    return _decode_rms_norm(text_model.norm, hidden_states, optimization)
 
 
 def cast_decode_linear_weights_to_nz(
@@ -374,10 +822,15 @@ class TextDecodeStage(torch.nn.Module):
     graph can mutate the persistent decode arena in place.
     """
 
-    def __init__(self, model: LocalPaddleOCRVLForConditionalGeneration):
+    def __init__(
+        self,
+        model: LocalPaddleOCRVLForConditionalGeneration,
+        optimization: str | DecodeOptimizationConfig = "baseline",
+    ):
         super().__init__()
         self.model = model
         self.num_layers = int(model.config.text_config.num_hidden_layers)
+        self.optimization = resolve_decode_optimization(optimization)
 
     def forward(
         self,
@@ -398,6 +851,7 @@ class TextDecodeStage(torch.nn.Module):
             value_caches=value_caches,
             cache_length=int(key_caches[0].shape[2]),
             attention_mask=None,
+            optimization=self.optimization,
         )
         return _linear_tokenwise(self.model.lm_head, hidden_states[:, -1:, :])
 
@@ -431,7 +885,9 @@ def torchair_cache_dir_for_shape(
     device: torch.device | None = None,
     model_dir: Path | None = None,
     linear_weight_format: str = DECODE_LINEAR_WEIGHT_FORMAT,
+    optimization: str | DecodeOptimizationConfig = "baseline",
 ) -> Path:
+    optimization = resolve_decode_optimization(optimization)
     model_hash = (
         short_file_hash(model_dir / "config.json")
         if model_dir is not None
@@ -442,6 +898,7 @@ def torchair_cache_dir_for_shape(
             linear_weight_format,
             DECODE_ATTENTION,
             DECODE_CACHE_UPDATE,
+            f"opt{cache_key_part(optimization.name)}",
             f"mode{cache_key_part(TORCHAIR_EXECUTION_MODE)}",
             f"dtype{cache_key_part(dtype or 'unknown')}",
             f"bs{int(batch_size)}",
@@ -467,7 +924,9 @@ def compile_text_decode_stage(
     dtype: torch.dtype | None = None,
     model_dir: Path | None = None,
     linear_weight_format: str = DECODE_LINEAR_WEIGHT_FORMAT,
+    optimization: str | DecodeOptimizationConfig = "baseline",
 ) -> tuple[Any, dict[str, Any]]:
+    optimization = resolve_decode_optimization(optimization)
     common_metadata = {
         "backend": backend_name,
         "enabled": backend_name != "raw_eager",
@@ -475,6 +934,16 @@ def compile_text_decode_stage(
         "linear_weight_format": linear_weight_format,
         "decode_attention": decode_attention_label(device),
         "decode_cache_update": decode_cache_update_label(device),
+        "decode_optimization": optimization.name,
+        "decode_optimization_config": {
+            "hoist_mrope": optimization.hoist_mrope,
+            "packed_qkv": optimization.packed_qkv,
+            "rms_norm": optimization.rms_norm,
+            "rotary": optimization.rotary,
+            "packed_mlp": optimization.packed_mlp,
+            "npu_swiglu": optimization.npu_swiglu,
+            "add_rms_norm": optimization.add_rms_norm,
+        },
     }
     if backend_name == "raw_eager":
         return stage, {**common_metadata, "compile_api": "none"}
@@ -491,6 +960,7 @@ def compile_text_decode_stage(
             device=device,
             model_dir=model_dir,
             linear_weight_format=linear_weight_format,
+            optimization=optimization,
         )
         shape_cache_dir.mkdir(parents=True, exist_ok=True)
         compiled_decode = torchair.inference.cache_compile(
@@ -522,6 +992,7 @@ def compile_text_decode_stage(
                 "decode_attention": decode_attention_label(device),
                 "decode_cache_update": decode_cache_update_label(device),
                 "execution_mode": TORCHAIR_EXECUTION_MODE,
+                "decode_optimization": optimization.name,
             },
         }
 
@@ -550,8 +1021,16 @@ class TextDecodeRuntime:
         dtype: torch.dtype,
         model_dir: Path,
         linear_weight_format: str,
+        optimization: str | DecodeOptimizationConfig = "baseline",
     ):
-        self.stage = TextDecodeStage(model).eval()
+        self.optimization = prepare_decode_optimization_modules(
+            model,
+            optimization,
+        )
+        self.stage = TextDecodeStage(
+            model,
+            optimization=self.optimization,
+        ).eval()
         synchronize(device)
         started = time.perf_counter()
         self.fn, self.metadata = compile_text_decode_stage(
@@ -564,6 +1043,7 @@ class TextDecodeRuntime:
             dtype=dtype,
             model_dir=model_dir,
             linear_weight_format=linear_weight_format,
+            optimization=self.optimization,
         )
         synchronize(device)
         compile_wrapper_s = time.perf_counter() - started

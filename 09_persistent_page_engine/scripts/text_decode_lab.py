@@ -27,8 +27,11 @@ from paddleocr_vl.model.modeling import (
     _resolve_model_dir,
 )
 from paddleocr_vl.model.text_decode import (
+    TextDecodeStage,
     TextDecodeRuntime,
     cast_decode_linear_weights_to_nz,
+    decode_optimization_names,
+    prepare_decode_optimization_modules,
     torchair_cache_dir_for_shape,
 )
 from paddleocr_vl.serving.continuous_decode import (
@@ -65,6 +68,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--dtype", choices=("fp16", "bf16"), default="fp16")
     parser.add_argument(
         "--backend", choices=("torchair", "raw_eager"), default="torchair"
+    )
+    parser.add_argument(
+        "--decode-optimization",
+        choices=decode_optimization_names(),
+        default="baseline",
+        help=(
+            "Named text-transformer implementation preset. The baseline "
+            "matches the production implementation; other presets are "
+            "lab-only candidates."
+        ),
     )
     parser.add_argument("--active-slots", type=int)
     parser.add_argument("--profile-position", type=int, default=1024)
@@ -329,6 +342,10 @@ class TextDecodeLab:
         synchronize(self.device)
         self.model_load_s = time.perf_counter() - model_started
 
+        self.optimization = prepare_decode_optimization_modules(
+            self.model,
+            args.decode_optimization,
+        )
         format_started = time.perf_counter()
         self.weight_format = cast_decode_linear_weights_to_nz(self.model)
         synchronize(self.device)
@@ -348,7 +365,12 @@ class TextDecodeLab:
             dtype=self.dtype,
             model_dir=self.model_dir,
             linear_weight_format=self.linear_weight_format,
+            optimization=self.optimization,
         )
+        self.reference_stage = TextDecodeStage(
+            self.model,
+            optimization="baseline",
+        ).eval()
         synchronize(self.device)
         self.runtime_setup_s = time.perf_counter() - runtime_started
         self.setup_s = time.perf_counter() - setup_started
@@ -362,6 +384,7 @@ class TextDecodeLab:
             device=self.device,
             model_dir=self.model_dir,
             linear_weight_format=self.linear_weight_format,
+            optimization=self.optimization,
         )
         if (
             not shape_dir.is_dir() or not any(shape_dir.iterdir())
@@ -825,7 +848,7 @@ class TextDecodeLab:
 
         for step in range(self.args.correctness_steps):
             written_positions = positions.clone()
-            eager_logits = self.runtime.stage(
+            eager_logits = self.reference_stage(
                 input_ids,
                 positions,
                 rope_deltas,
@@ -901,7 +924,11 @@ class TextDecodeLab:
                 "inputs": "recorded token paths and prompt positions",
                 "prompt_kv_values": "independent zero prefixes",
                 "rope_deltas": "zeros",
-                "comparison": "raw eager production stage versus selected backend",
+                "comparison": (
+                    "baseline eager production stage versus selected "
+                    "compiled optimization"
+                ),
+                "selected_optimization": self.optimization.name,
                 "integration_gate": (
                     "real-crop end-to-end token parity remains required before "
                     "promoting a decode optimization"
@@ -1000,6 +1027,7 @@ def _write_report(
             "cache_length": args.cache_length,
             "dtype": args.dtype,
             "backend": args.backend,
+            "decode_optimization": args.decode_optimization,
             "cache_dir": str(args.cache_dir.expanduser().resolve()),
             "active_slots": args.active_slots,
             "profile_position": args.profile_position,

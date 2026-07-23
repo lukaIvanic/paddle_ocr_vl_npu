@@ -266,6 +266,15 @@ summary.
   end-to-end token-parity run remains mandatory before a candidate optimization
   enters production.
 
+The lab also accepts one explicit `--decode-optimization` preset. `baseline`
+keeps the production implementation unchanged; the other presets isolate
+MRoPE-factor hoisting, packed QKV and MLP projections, native RMSNorm and
+rotary operators, fused residual-add/RMSNorm, and native SwiGLU. Packed
+projection modules are materialized before the decode weight-format pass so
+their weights receive the same FRACTAL_NZ treatment as production linears.
+Each preset has a distinct TorchAir cache key. Correctness mode always compares
+the selected compiled preset against the baseline eager stage.
+
 TorchAir graph creation is opt-in. A missing shape fails unless
 `--allow-compile` is explicit, and each invocation profiles only the requested
 shape rather than expanding a hidden matrix. The default decode cache root is
@@ -319,6 +328,8 @@ reused without copying it or maintaining a second cache.
   --correctness-items 1 \
   --correctness-steps 8 \
   --name correctness_b32_k4096
+
+09_persistent_page_engine/scripts/run_text_decode_optimization_lane.sh
 ```
 
 ### Packed-text E2E result
