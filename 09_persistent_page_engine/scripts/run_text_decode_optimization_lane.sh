@@ -13,6 +13,7 @@ cache_length=${CACHE_LENGTH:-1024}
 profile_position=${PROFILE_POSITION:-768}
 warmup=${WARMUP:-3}
 repeats=${REPEATS:-20}
+cooldown_s=${COOLDOWN_S:-10}
 cache_dir=${CACHE_DIR:-.runtime_cache/09_persistent_page_engine_torchair}
 output_root=${OUTPUT_ROOT:-tmp/09_persistent_page_engine/text_decode_lab/optimization_matrix}
 optimizations=${OPTIMIZATIONS:-"baseline mrope_hoist packed_qkv npu_rms_norm npu_apply_rotary npu_rotary_mul packed_mlp packed_mlp_swiglu npu_add_rms_norm"}
@@ -24,6 +25,7 @@ echo "cache_length=$cache_length"
 echo "profile_position=$profile_position"
 echo "warmup=$warmup"
 echo "repeats=$repeats"
+echo "cooldown_s=$cooldown_s"
 echo "cache_dir=$cache_dir"
 echo "optimizations=$optimizations"
 
@@ -41,6 +43,7 @@ for optimization in $optimizations; do
     --allow-compile \
     --output "$output_root/${optimization}_b${batch_size}_k${cache_length}.json"
   echo "DONE optimization=$optimization"
+  sleep "$cooldown_s"
 done
 
 echo "OPTIMIZATION_MATRIX_COMPLETE"
