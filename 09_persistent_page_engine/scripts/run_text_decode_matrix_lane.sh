@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -eo pipefail
 
 if [[ $# -ne 5 ]]; then
   echo "usage: $0 CACHE_LENGTH PROFILE_POSITION PHYSICAL_NPU CACHE_DIR LOG_PATH" >&2
@@ -15,6 +15,7 @@ log_path=$5
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 cd "$repo_root"
 source /usr/local/bin/npu-setup
+set -u
 export ASCEND_RT_VISIBLE_DEVICES="$physical_npu"
 
 mkdir -p "$(dirname "$log_path")"
