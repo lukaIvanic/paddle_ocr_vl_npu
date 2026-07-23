@@ -5,13 +5,13 @@
     "mode": "profile",
     "corpus": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/corpus_256p_b32_kv4096_7899d40.json",
     "corpus_sha256": "7d5510d09eaf948ff1ce81793918c9496fd7d8587c9d62ea6cfff34c9d025c18",
-    "batch_size": 4,
+    "batch_size": 64,
     "cache_length": 1024,
     "dtype": "fp16",
     "backend": "torchair",
     "decode_optimization": "baseline",
     "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_torchair",
-    "active_slots": 4,
+    "active_slots": 64,
     "profile_position": 768,
     "profile_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/npu_profiles",
     "profile_metric": "pipe",
@@ -29,41 +29,41 @@
   },
   "result": {
     "shape": {
-      "batch_size": 4,
+      "batch_size": 64,
       "cache_length": 1024,
-      "active_slots": 4,
+      "active_slots": 64,
       "initial_cache_position": 768
     },
     "warmup": 3,
     "repeats": 30,
     "device_s": {
-      "full_production_step": 0.08554995965957642,
-      "model_and_argmax": 0.08515916037559508,
-      "post_graph_state_update": 0.0003907992839813357
+      "full_production_step": 0.1685464596748352,
+      "model_and_argmax": 0.16811046075820923,
+      "post_graph_state_update": 0.0004359989166259626
     },
     "latency_ms": {
-      "mean": 2.8516653219858803,
-      "median": 2.8312199115753174,
-      "p95": 2.836206042766571,
-      "min": 2.8269200325012207,
-      "max": 3.435159921646118
+      "mean": 5.618215322494507,
+      "median": 5.599949836730957,
+      "p95": 5.6086077928543085,
+      "min": 5.591040134429932,
+      "max": 6.171639919281006
     },
     "throughput": {
-      "raw_physical_tok_per_s": 1402.6891476922779,
-      "active_tok_per_s": 1402.6891476922779,
-      "graph_calls_per_s": 350.67228692306946
+      "raw_physical_tok_per_s": 11391.517826622527,
+      "active_tok_per_s": 11391.517826622527,
+      "graph_calls_per_s": 177.99246604097698
     },
     "memory_bytes": {
-      "baseline_allocated": 1918487040,
-      "peak_delta": 2837504
+      "baseline_allocated": 3050952192,
+      "peak_delta": 40503808
     },
-    "host_wall_s": 0.08614714397117496
+    "host_wall_s": 0.16913403500802815
   },
   "setup": {
-    "total_s": 45.24860401201295,
-    "model_load_s": 14.673058018961456,
-    "weight_format_s": 4.531495166011155,
-    "runtime_setup_s": 24.952127138967626,
+    "total_s": 40.8857231309521,
+    "model_load_s": 10.049994706001598,
+    "weight_format_s": 4.3563199790078215,
+    "runtime_setup_s": 25.401019368029665,
     "weight_format": {
       "requested_mode": "decode_nz",
       "mode": "decode_native_fallback",
@@ -109,11 +109,11 @@
         "npu_swiglu": false,
         "add_rms_norm": false
       },
-      "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_torchair/decode_native_fallback_increfa_npu_scatter_optbaseline_modeinference_dtypefloat16_bs4_cache1024_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcb94a0353d7cd",
+      "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_torchair/decode_native_fallback_increfa_npu_scatter_optbaseline_modeinference_dtypefloat16_bs64_cache1024_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcb94a0353d7cd",
       "torchair_ge_cache": true,
       "compile_api": "torchair.inference.cache_compile",
       "cache_key_fields": {
-        "batch_size": 4,
+        "batch_size": 64,
         "cache_length": 1024,
         "dtype": "torch.float16",
         "model_config_hash": "6d2211febbe9",
@@ -129,8 +129,8 @@
       }
     },
     "runtime_setup_detail_s": {
-      "compile_wrapper": 0.001803371007554233,
-      "compile_first_call": 24.92888689303072
+      "compile_wrapper": 0.0017784599913284183,
+      "compile_first_call": 25.375343282008544
     }
   }
 }
