@@ -463,6 +463,7 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
         text_cache_root: Path,
         text_padding: str,
         decode_backend: str,
+        decode_optimization: str,
         decode_cache_root: Path,
         batch_size: int,
         cache_length: int,
@@ -519,6 +520,7 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
         text_decode = TextDecodeRuntime(
             self,
             backend=decode_backend,
+            optimization=decode_optimization,
             device=device,
             cache_root=decode_cache_root,
             batch_size=batch_size,

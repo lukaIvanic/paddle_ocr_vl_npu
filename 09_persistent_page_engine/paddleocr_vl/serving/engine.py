@@ -29,6 +29,8 @@ from ..model.text_decode import (
     DECODE_CACHE_UPDATE,
     LocalPaddleOCRVLStaticCache,
     cast_decode_linear_weights_to_nz,
+    decode_optimization_names,
+    prepare_decode_optimization_modules,
 )
 from ..model.preprocessing import (
     apply_min_pixels_override,
@@ -38,6 +40,7 @@ from ..model.preprocessing import (
 )
 from .runtime_defaults import (
     DECODE_BACKEND_CHOICES,
+    DEFAULT_DECODE_OPTIMIZATION,
     DEFAULT_VISION_PACKING,
     DEFAULT_VISION_PACK_TARGET,
     DEFAULT_VISION_ROUTER_LOOKAHEAD,
@@ -387,6 +390,7 @@ class ContinuousRecognizer:
         cache_length: int,
         max_new_tokens: int,
         torchair_cache_dir: Path,
+        decode_optimization: str = DEFAULT_DECODE_OPTIMIZATION,
         vision_backend: str = DEFAULT_VISION_BACKEND,
         vision_attention: str = "manual",
         vision_buckets: str | Iterable[int] = OPTIMIZED_VISION_BUCKETS,
@@ -426,6 +430,12 @@ class ContinuousRecognizer:
             raise ValueError(f"unsupported dtype: {dtype}")
         torch.npu.set_compile_mode(jit_compile=False)
         self.decode_backend = decode_backend
+        self.decode_optimization = str(decode_optimization)
+        if self.decode_optimization not in decode_optimization_names():
+            raise ValueError(
+                "decode_optimization must be one of "
+                f"{decode_optimization_names()}, got {self.decode_optimization!r}"
+            )
         self.timeline = timeline
         self.batch_size = int(batch_size)
         self.cache_length = int(cache_length)
@@ -526,6 +536,15 @@ class ContinuousRecognizer:
 
         synchronize(self.device)
         started = time.perf_counter()
+        decode_optimization_config = prepare_decode_optimization_modules(
+            self.model,
+            self.decode_optimization,
+        )
+        synchronize(self.device)
+        decode_optimization_setup_s = time.perf_counter() - started
+
+        synchronize(self.device)
+        started = time.perf_counter()
         self.weight_format = cast_decode_linear_weights_to_nz(self.model)
         synchronize(self.device)
         weight_format_s = time.perf_counter() - started
@@ -549,6 +568,7 @@ class ContinuousRecognizer:
             ),
             text_padding=self.text_padding,
             decode_backend=self.decode_backend,
+            decode_optimization=decode_optimization_config.name,
             decode_cache_root=torchair_cache_dir,
             batch_size=self.batch_size,
             cache_length=self.cache_length,
@@ -643,6 +663,7 @@ class ContinuousRecognizer:
         self.setup_timing_s = {
             "recognizer_frontend_setup": float(frontend_setup_s),
             "recognizer_model_load": float(model_load_s),
+            "decode_optimization_setup": float(decode_optimization_setup_s),
             "decode_weight_format": float(weight_format_s),
             **self.stages.setup_timing_s,
             "vision_router_setup": (
@@ -2325,6 +2346,7 @@ class ContinuousRecognizer:
             "device": str(self.device),
             "dtype": str(self.dtype),
             "decode_backend": self.decode_backend,
+            "decode_optimization": self.decode_optimization,
             "decode_attention": DECODE_ATTENTION if self.device.type == "npu" else "manual",
             "decode_cache_update": DECODE_CACHE_UPDATE if self.device.type == "npu" else "per_row_copy",
             "cache_length": self.cache_length,

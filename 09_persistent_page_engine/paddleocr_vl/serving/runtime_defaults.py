@@ -5,6 +5,7 @@ from __future__ import annotations
 
 DECODE_BACKEND_CHOICES = ("raw_eager", "torchair")
 DEFAULT_DECODE_BACKEND = "torchair"
+DEFAULT_DECODE_OPTIMIZATION = "combined_apply"
 DEFAULT_DECODE_BATCH_SIZE = 4
 DEFAULT_CACHE_LENGTH = 2048
 DEFAULT_MAX_NEW_TOKENS = 768

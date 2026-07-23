@@ -22,6 +22,7 @@ sys.path.insert(0, str(EXPERIMENT_ROOT))
 
 from paddleocr_vl.serving.engine import ContinuousRecognizer
 from paddleocr_vl.serving.runtime_defaults import (
+    DEFAULT_DECODE_OPTIMIZATION,
     DEFAULT_TEXT_PACK_BUCKETS,
     DEFAULT_TEXT_PACK_MAX_MEMBERS,
     DEFAULT_TEXT_PACKING,
@@ -34,6 +35,7 @@ from paddleocr_vl.serving.runtime_defaults import (
     TEXT_PACKING_CHOICES,
     VISION_PACKING_CHOICES,
 )
+from paddleocr_vl.model.text_decode import decode_optimization_names
 from paddleocr_vl.model.text_prefill import TEXT_PADDING_CHOICES, parse_text_buckets
 from paddleocr_vl.model.vision_prefill import (
     VISION_ATTENTION_CHOICES,
@@ -95,6 +97,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--max-new-tokens",
         type=int,
         default=OMNIDOCBENCH_MAX_NEW_TOKENS,
+    )
+    parser.add_argument(
+        "--decode-optimization",
+        default=DEFAULT_DECODE_OPTIMIZATION,
+        choices=decode_optimization_names(),
     )
     parser.add_argument(
         "--preprocessor-min-pixels",
@@ -518,6 +525,7 @@ def main() -> None:
         cache_length=args.cache_length,
         max_new_tokens=args.max_new_tokens,
         torchair_cache_dir=args.torchair_cache_dir.expanduser().resolve(),
+        decode_optimization=args.decode_optimization,
         vision_backend=args.vision_backend,
         vision_attention=args.vision_attention,
         vision_buckets=vision_buckets,
@@ -559,6 +567,7 @@ def main() -> None:
             "pipeline": "official_paddlex_v1.6_with_cross_page_recognition_bridge",
             "pages": len(image_paths),
             "decode_batch_size": args.batch_size,
+            "decode_optimization": args.decode_optimization,
             "vision_backend": args.vision_backend,
             "vision_attention": args.vision_attention,
             "vision_packing": args.vision_packing,
@@ -611,6 +620,7 @@ def main() -> None:
             "batch_size": args.batch_size,
             "cache_length": args.cache_length,
             "max_new_tokens": args.max_new_tokens,
+            "decode_optimization": args.decode_optimization,
             "preprocessor_min_pixels": args.preprocessor_min_pixels,
             "effective_global_min_pixels": (
                 args.preprocessor_min_pixels

@@ -266,14 +266,21 @@ summary.
   end-to-end token-parity run remains mandatory before a candidate optimization
   enters production.
 
-The lab also accepts one explicit `--decode-optimization` preset. `baseline`
-keeps the production implementation unchanged; the other presets isolate
+The lab and both Experiment 09 E2E runners accept one explicit
+`--decode-optimization` preset. E2E defaults to the validated `combined_apply`
+path: MRoPE-factor hoisting, packed QKV, native RMSNorm and rotary operators,
+and fused residual-add/RMSNorm. `baseline` retains the previous production
+implementation for controlled comparisons; the other presets isolate
 MRoPE-factor hoisting, packed QKV and MLP projections, native RMSNorm and
 rotary operators, fused residual-add/RMSNorm, and native SwiGLU. Packed
 projection modules are materialized before the decode weight-format pass so
 their weights receive the same FRACTAL_NZ treatment as production linears.
 Each preset has a distinct TorchAir cache key. Correctness mode always compares
 the selected compiled preset against the baseline eager stage.
+
+The faithful OmniDocBench runner defaults to the measured B32/KV4096 decode
+shape. Its 2,808-token generation cap leaves room for the retained corpus's
+1,289-token maximum prompt in that static cache.
 
 TorchAir graph creation is opt-in. A missing shape fails unless
 `--allow-compile` is explicit, and each invocation profiles only the requested
