@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "kind": "text_decode_lab_result",
+  "configuration": {
+    "mode": "profile",
+    "corpus": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/corpus_256p_b32_kv4096_7899d40.json",
+    "corpus_sha256": "7d5510d09eaf948ff1ce81793918c9496fd7d8587c9d62ea6cfff34c9d025c18",
+    "batch_size": 1,
+    "cache_length": 1024,
+    "dtype": "fp16",
+    "backend": "torchair",
+    "decode_optimization": "combined_apply",
+    "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_torchair",
+    "active_slots": 1,
+    "profile_position": 768,
+    "profile_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/npu_profiles",
+    "profile_metric": "pipe",
+    "warmup": 3,
+    "repeats": 30,
+    "overflow_policy": "error",
+    "allow_compile": true
+  },
+  "corpus_contract": {
+    "ordering": "items are stored in exact production request-source order",
+    "tokens": "token_ids include the prefill-produced first token and the final EOS/length token exactly as recorded",
+    "scheduler_lifetime": "active_decode_iterations includes production's one queue-depth-one completion look-ahead iteration",
+    "cache_capacity": "replay_required_cache_tokens includes every recorded graph write, including the queue-depth-one look-ahead; production_guard_min_cache_tokens records the source runner's prompt + configured max_new_tokens - 1 admission guard",
+    "device_replay": "recorded request lifetimes drive completion while the real decode arena, graph, D2H token path, admission, and refill machinery run"
+  },
+  "result": {
+    "shape": {
+      "batch_size": 1,
+      "cache_length": 1024,
+      "active_slots": 1,
+      "initial_cache_position": 768
+    },
+    "warmup": 3,
+    "repeats": 30,
+    "device_s": {
+      "full_production_step": 0.040526700377464295,
+      "model_and_argmax": 0.04016288018226624,
+      "post_graph_state_update": 0.000363820195198053
+    },
+    "latency_ms": {
+      "mean": 1.3508900125821433,
+      "median": 1.3413400053977966,
+      "p95": 1.3466639876365663,
+      "min": 1.3367799520492554,
+      "max": 1.6198400259017944
+    },
+    "throughput": {
+      "raw_physical_tok_per_s": 740.2527153846978,
+      "active_tok_per_s": 740.2527153846978,
+      "graph_calls_per_s": 740.2527153846978
+    },
+    "memory_bytes": {
+      "baseline_allocated": 1957293568,
+      "peak_delta": 623104
+    },
+    "host_wall_s": 0.04112509900005534
+  },
+  "setup": {
+    "total_s": 16.83456882601604,
+    "model_load_s": 10.361823896993883,
+    "weight_format_s": 4.752842188056093,
+    "runtime_setup_s": 0.2520848639542237,
+    "weight_format": {
+      "requested_mode": "decode_nz",
+      "mode": "decode_native_fallback",
+      "effective_mode": "decode_native_fallback",
+      "target_format": "FRACTAL_NZ",
+      "target_format_code": 29,
+      "target_count": 145,
+      "cast_count": 1,
+      "converted_count": 0,
+      "already_nz_count": 0,
+      "converted_modules_sample": [],
+      "before_formats_sample": {
+        "model.layers.0.self_attn.q_proj": 2
+      },
+      "after_formats_sample": {
+        "model.layers.0.self_attn.q_proj": 2
+      },
+      "all_after_are_nz": false,
+      "fallback_reason": "npu_format_cast_did_not_produce_fractal_nz",
+      "failures_sample": [
+        {
+          "module": "model.layers.0.self_attn.q_proj",
+          "before_format": 2,
+          "after_format": 2,
+          "error": "npu_format_cast_did_not_produce_fractal_nz"
+        }
+      ]
+    },
+    "runtime_metadata": {
+      "backend": "torchair",
+      "enabled": true,
+      "boundary": "token_embedding_text_transformer_lm_head_static_step",
+      "linear_weight_format": "decode_native_fallback",
+      "decode_attention": "increfa",
+      "decode_cache_update": "npu_scatter",
+      "decode_optimization": "combined_apply",
+      "decode_optimization_config": {
+        "hoist_mrope": true,
+        "packed_qkv": true,
+        "rms_norm": "npu",
+        "rotary": "npu_apply",
+        "packed_mlp": false,
+        "npu_swiglu": false,
+        "add_rms_norm": true
+      },
+      "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_torchair/decode_native_fallback_increfa_npu_scatter_optcombined_apply_modeinference_dtypefloat16_bs1_cache1024_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcb94a0353d7cd",
+      "torchair_ge_cache": true,
+      "compile_api": "torchair.inference.cache_compile",
+      "cache_key_fields": {
+        "batch_size": 1,
+        "cache_length": 1024,
+        "dtype": "torch.float16",
+        "model_config_hash": "6d2211febbe9",
+        "torch": "2.10.0+cpu",
+        "torch_npu": "2.10.0",
+        "torchair": "unknown",
+        "decode_source_hash": "b94a0353d7cd",
+        "linear_weight_format": "decode_native_fallback",
+        "decode_attention": "increfa",
+        "decode_cache_update": "npu_scatter",
+        "execution_mode": "inference",
+        "decode_optimization": "combined_apply"
+      }
+    },
+    "runtime_setup_detail_s": {
+      "compile_wrapper": 0.0017664300394244492,
+      "compile_first_call": 0.22699357802048326
+    }
+  }
+}
