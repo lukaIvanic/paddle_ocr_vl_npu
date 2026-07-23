@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Callable, Iterable
+from typing import Any, Callable, Iterable
 
 from .text_decode import LocalPaddleOCRVLStaticCache
 
@@ -24,6 +24,33 @@ def static_cache_nbytes(cache: LocalPaddleOCRVLStaticCache) -> int:
     return sum(
         int(tensor.numel()) * int(tensor.element_size())
         for tensor in cache.flat_tensors()
+    )
+
+
+def run_packed_text_prefill_with_cache(
+    runtime: Any,
+    prepared: Any,
+    cache: LocalPaddleOCRVLStaticCache,
+) -> Any:
+    """Invoke an existing packed graph with a caller-owned cache tensor set.
+
+    This adapter deliberately lives outside ``text_packed_prefill.py`` so the
+    established graph source hash and compiled-cache keys do not change.
+    """
+
+    physical_seq_len = int(prepared.physical_seq_len)
+    if int(cache.cache_length) != physical_seq_len:
+        raise ValueError(
+            "packed cache length does not match the prepared graph: "
+            f"cache={cache.cache_length} prepared={physical_seq_len}"
+        )
+    return runtime.compiled[physical_seq_len](
+        prepared.inputs_embeds,
+        prepared.position_ids,
+        prepared.segment_ids,
+        prepared.local_positions,
+        prepared.last_token_indices,
+        *cache.flat_tensors(),
     )
 
 
@@ -179,6 +206,19 @@ class PackedKVCachePool:
     @property
     def allocated_bytes(self) -> int:
         return sum(buffer.nbytes for buffer in self._buffers.values())
+
+    def begin_run(self) -> None:
+        """Reset run-scoped counters while retaining idle pooled buffers."""
+
+        if self.active_buffers:
+            raise RuntimeError(
+                "packed KV pool cannot begin a run with active leases"
+            )
+        self.acquisitions = 0
+        self.allocations = 0
+        self.reuses = 0
+        self.high_water_active_buffers = 0
+        self.high_water_active_bytes = 0
 
     def acquire(
         self,
