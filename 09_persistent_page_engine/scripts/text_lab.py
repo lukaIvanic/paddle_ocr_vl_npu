@@ -40,7 +40,16 @@ from paddleocr_vl.model.compile_utils import (
     torch_npu_version_label,
     torchair_version_label,
 )
-from paddleocr_vl.model.text_decode import cast_decode_linear_weights_to_nz
+from paddleocr_vl.model.text_cache_lease import (
+    PackedKVCacheLease,
+    PackedKVCachePool,
+    static_cache_nbytes,
+)
+from paddleocr_vl.model.text_decode import (
+    LocalPaddleOCRVLStaticCache,
+    TextDecodeStage,
+    cast_decode_linear_weights_to_nz,
+)
 from paddleocr_vl.model.text_direct_arena_prefill import (
     DirectArenaPackedTextPrefillRuntime,
 )
@@ -111,7 +120,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--mode",
-        choices=("replay", "profile", "packed", "direct_arena"),
+        choices=("replay", "profile", "packed", "direct_arena", "cache_lease"),
         default="replay",
     )
     parser.add_argument("--corpus", type=Path, default=DEFAULT_CORPUS)
@@ -141,6 +150,17 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--cache-length", type=int, default=8192)
     parser.add_argument("--arena-batch-size", type=int, default=16)
+    parser.add_argument(
+        "--ready-buffer-capacity",
+        type=int,
+        help="Ready-reservoir size for packed-lease HBM projection; default 4x arena.",
+    )
+    parser.add_argument(
+        "--lease-decode-steps",
+        type=int,
+        default=3,
+        help="Eager decode steps used to validate leased-prefix token parity.",
+    )
     parser.add_argument("--pack-length", type=int, default=1024)
     parser.add_argument("--max-pack-members", type=int, default=32)
     parser.add_argument(
@@ -183,6 +203,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("--cache-length must be positive")
     if args.arena_batch_size <= 0:
         parser.error("--arena-batch-size must be positive")
+    if args.ready_buffer_capacity is not None and args.ready_buffer_capacity <= 0:
+        parser.error("--ready-buffer-capacity must be positive")
+    if args.lease_decode_steps < 0:
+        parser.error("--lease-decode-steps must be non-negative")
     if args.pack_length <= 0 or args.max_pack_members <= 0:
         parser.error("--pack-length and --max-pack-members must be positive")
     if args.warmup < 0 or args.repeats <= 0:
@@ -197,7 +221,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     args.pack_scope = tuple(
         dict.fromkeys(args.pack_scope or ("production_group", "global"))
     )
-    if args.mode in ("packed", "direct_arena") and args.backend != "torchair":
+    if (
+        args.mode in ("packed", "direct_arena", "cache_lease")
+        and args.backend != "torchair"
+    ):
         parser.error(f"{args.mode} mode currently requires --backend torchair")
     return args
 
@@ -1433,6 +1460,716 @@ class TextPrefillLab:
             ),
         }
 
+    def _new_static_cache(
+        self,
+        *,
+        batch_size: int,
+        cache_length: int,
+        init_mode: str = "empty",
+    ) -> LocalPaddleOCRVLStaticCache:
+        return self.model.allocate_static_cache(
+            batch_size=batch_size,
+            cache_length=cache_length,
+            device=self.device,
+            dtype=self.dtype,
+            init_mode=init_mode,
+        )
+
+    def _new_lease_pool(self) -> PackedKVCachePool:
+        return PackedKVCachePool(
+            lambda bucket: self._new_static_cache(
+                batch_size=1,
+                cache_length=bucket,
+            )
+        )
+
+    @staticmethod
+    def _run_packed_with_cache(
+        runtime: PackedTextPrefillRuntime,
+        prepared: PreparedPackedTextPrefill,
+        cache: LocalPaddleOCRVLStaticCache,
+    ) -> torch.Tensor:
+        if int(cache.cache_length) != prepared.physical_seq_len:
+            raise ValueError(
+                "packed cache length does not match the prepared graph: "
+                f"cache={cache.cache_length} "
+                f"prepared={prepared.physical_seq_len}"
+            )
+        return runtime.compiled[prepared.physical_seq_len](
+            prepared.inputs_embeds,
+            prepared.position_ids,
+            prepared.segment_ids,
+            prepared.local_positions,
+            prepared.last_token_indices,
+            *cache.flat_tensors(),
+        )
+
+    @staticmethod
+    def _copy_private_prefixes_to_arena(
+        private_caches: Sequence[LocalPaddleOCRVLStaticCache],
+        segment_lengths: Sequence[int],
+        arena: LocalPaddleOCRVLStaticCache,
+    ) -> int:
+        if len(private_caches) != len(segment_lengths):
+            raise ValueError("private cache copies do not align with segments")
+        copied_bytes = 0
+        for slot, (source_cache, length) in enumerate(
+            zip(private_caches, segment_lengths)
+        ):
+            for destination, source in zip(
+                arena.flat_tensors(),
+                source_cache.flat_tensors(),
+            ):
+                prefix = source[:, :, : int(length), :]
+                destination[slot : slot + 1, :, : int(length), :].copy_(prefix)
+                copied_bytes += int(prefix.numel()) * int(prefix.element_size())
+        return copied_bytes
+
+    @staticmethod
+    def _copy_leased_prefixes_to_arena(
+        lease: PackedKVCacheLease,
+        arena: LocalPaddleOCRVLStaticCache,
+    ) -> int:
+        copied_bytes = 0
+        for slot, member in enumerate(lease.members):
+            source_cache = member.cache_view()
+            for destination, source in zip(
+                arena.flat_tensors(),
+                source_cache.flat_tensors(),
+            ):
+                destination[
+                    slot : slot + 1,
+                    :,
+                    : member.length,
+                    :,
+                ].copy_(source)
+                copied_bytes += int(source.numel()) * int(source.element_size())
+        return copied_bytes
+
+    @staticmethod
+    def _lease_valid_snapshot(
+        lease: PackedKVCacheLease,
+    ) -> tuple[torch.Tensor, ...]:
+        snapshots: list[torch.Tensor] = []
+        for member in lease.members:
+            snapshots.extend(
+                tensor.clone() for tensor in member.cache_view().flat_tensors()
+            )
+        return tuple(snapshots)
+
+    @staticmethod
+    def _snapshot_max_abs(
+        lease: PackedKVCacheLease,
+        snapshot: Sequence[torch.Tensor],
+    ) -> float:
+        current = [
+            tensor
+            for member in lease.members
+            for tensor in member.cache_view().flat_tensors()
+        ]
+        if len(current) != len(snapshot):
+            raise ValueError("packed KV snapshot no longer aligns")
+        maxima = [
+            (actual.float() - expected.float()).abs().max()
+            for actual, expected in zip(current, snapshot)
+        ]
+        return float(torch.stack(maxima).max().item()) if maxima else 0.0
+
+    def _lease_reuse_probe(
+        self,
+        runtime: PackedTextPrefillRuntime,
+        pool: PackedKVCachePool,
+        packs: Sequence[list[dict[str, Any]]],
+    ) -> dict[str, Any]:
+        if len(packs) < 3:
+            raise ValueError("packed KV reuse probe requires at least three packs")
+        prepared = [
+            self._prepared_from_lab_pack(self._prepare_packed_input(pack))
+            for pack in packs[:3]
+        ]
+        first = pool.acquire(
+            prepared[0].physical_seq_len,
+            segment_offsets=prepared[0].segment_offsets,
+            segment_lengths=prepared[0].segment_lengths,
+        )
+        first_output = self._run_packed_with_cache(
+            runtime,
+            prepared[0],
+            first.cache,
+        )
+        synchronize(self.device)
+        first_snapshot = self._lease_valid_snapshot(first)
+
+        second = pool.acquire(
+            prepared[1].physical_seq_len,
+            segment_offsets=prepared[1].segment_offsets,
+            segment_lengths=prepared[1].segment_lengths,
+        )
+        second_output = self._run_packed_with_cache(
+            runtime,
+            prepared[1],
+            second.cache,
+        )
+        synchronize(self.device)
+        first_while_second_live_max_abs = self._snapshot_max_abs(
+            first,
+            first_snapshot,
+        )
+        second_snapshot = self._lease_valid_snapshot(second)
+        first_buffer = first.buffer_id
+        second_buffer = second.buffer_id
+        first.release_all()
+
+        third = pool.acquire(
+            prepared[2].physical_seq_len,
+            segment_offsets=prepared[2].segment_offsets,
+            segment_lengths=prepared[2].segment_lengths,
+        )
+        third_output = self._run_packed_with_cache(
+            runtime,
+            prepared[2],
+            third.cache,
+        )
+        synchronize(self.device)
+        second_while_first_reused_max_abs = self._snapshot_max_abs(
+            second,
+            second_snapshot,
+        )
+        reused_first_buffer = third.buffer_id == first_buffer
+        distinct_live_buffers = first_buffer != second_buffer
+        third_buffer = third.buffer_id
+        second.release_all()
+        third.release_all()
+        del (
+            first_output,
+            second_output,
+            third_output,
+            first_snapshot,
+            second_snapshot,
+            prepared,
+        )
+        return {
+            "distinct_buffers_while_both_live": distinct_live_buffers,
+            "released_buffer_reused": reused_first_buffer,
+            "buffer_ids": {
+                "first": first_buffer,
+                "second": second_buffer,
+                "third": third_buffer,
+            },
+            "first_while_second_live_max_abs": first_while_second_live_max_abs,
+            "second_while_first_reused_max_abs": (
+                second_while_first_reused_max_abs
+            ),
+            "passed": (
+                distinct_live_buffers
+                and reused_first_buffer
+                and first_while_second_live_max_abs == 0.0
+                and second_while_first_reused_max_abs == 0.0
+                and pool.active_buffers == 0
+            ),
+        }
+
+    def _rope_deltas(
+        self,
+        members: Sequence[dict[str, Any]],
+    ) -> torch.Tensor:
+        values: list[torch.Tensor] = []
+        for item in members:
+            input_ids = torch.tensor([item["input_ids"]], dtype=torch.int64)
+            attention_mask = torch.ones_like(input_ids)
+            grid = torch.tensor([item["grid_thw"]], dtype=torch.int64)
+            _positions, rope_deltas = self.model.get_rope_index(
+                input_ids,
+                grid,
+                attention_mask,
+            )
+            values.append(rope_deltas)
+        return torch.cat(values, dim=0).to(self.device)
+
+    def _cache_lease_correctness(
+        self,
+        runtime: PackedTextPrefillRuntime,
+        pool: PackedKVCachePool,
+        members: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        members = members[: min(2, self.args.arena_batch_size)]
+        if len(members) < 2:
+            raise ValueError("packed KV correctness requires two members")
+        packed = self._prepare_packed_input(members)
+        prepared = self._prepared_from_lab_pack(packed)
+
+        private_caches = [
+            self._new_static_cache(
+                batch_size=1,
+                cache_length=self.args.cache_length,
+            )
+            for _member in members
+        ]
+        current_arena = self._new_static_cache(
+            batch_size=len(members),
+            cache_length=self.args.cache_length,
+            init_mode="zeros",
+        )
+        leased_arena = self._new_static_cache(
+            batch_size=len(members),
+            cache_length=self.args.cache_length,
+            init_mode="zeros",
+        )
+
+        current_hidden = runtime.run_prepared(prepared)
+        current_redistribution_bytes = runtime.redistribute_cache(
+            prepared,
+            private_caches,
+        )
+        current_admission_bytes = self._copy_private_prefixes_to_arena(
+            private_caches,
+            prepared.segment_lengths,
+            current_arena,
+        )
+
+        lease = pool.acquire(
+            prepared.physical_seq_len,
+            segment_offsets=prepared.segment_offsets,
+            segment_lengths=prepared.segment_lengths,
+        )
+        leased_hidden = self._run_packed_with_cache(
+            runtime,
+            prepared,
+            lease.cache,
+        )
+        leased_admission_bytes = self._copy_leased_prefixes_to_arena(
+            lease,
+            leased_arena,
+        )
+        synchronize(self.device)
+
+        valid_current_hidden = current_hidden[:, : len(members)].float()
+        valid_leased_hidden = leased_hidden[:, : len(members)].float()
+        hidden_difference = (
+            valid_current_hidden - valid_leased_hidden
+        ).abs()
+        current_tokens = torch.argmax(
+            self.model.lm_head(valid_current_hidden.to(self.dtype)).float(),
+            dim=-1,
+        ).reshape(-1)
+        leased_tokens = torch.argmax(
+            self.model.lm_head(valid_leased_hidden.to(self.dtype)).float(),
+            dim=-1,
+        ).reshape(-1)
+
+        kv_maxima: list[torch.Tensor] = []
+        for slot, length in enumerate(prepared.segment_lengths):
+            for current, leased in zip(
+                current_arena.flat_tensors(),
+                leased_arena.flat_tensors(),
+            ):
+                kv_maxima.append(
+                    (
+                        current[slot : slot + 1, :, :length, :].float()
+                        - leased[slot : slot + 1, :, :length, :].float()
+                    )
+                    .abs()
+                    .max()
+                )
+        kv_max_abs = float(torch.stack(kv_maxima).max().item())
+
+        decode_steps: list[dict[str, Any]] = []
+        current_input = current_tokens.reshape(-1, 1)
+        leased_input = leased_tokens.reshape(-1, 1)
+        current_position = torch.tensor(
+            prepared.segment_lengths,
+            device=self.device,
+            dtype=torch.int64,
+        )
+        leased_position = current_position.clone()
+        rope_deltas = self._rope_deltas(members)
+        decode_stage = TextDecodeStage(self.model).eval()
+        for step in range(self.args.lease_decode_steps):
+            current_logits = decode_stage(
+                current_input,
+                current_position,
+                rope_deltas,
+                *current_arena.flat_tensors(),
+            )
+            leased_logits = decode_stage(
+                leased_input,
+                leased_position,
+                rope_deltas,
+                *leased_arena.flat_tensors(),
+            )
+            current_input = torch.argmax(
+                current_logits[:, -1, :].float(),
+                dim=-1,
+                keepdim=True,
+            )
+            leased_input = torch.argmax(
+                leased_logits[:, -1, :].float(),
+                dim=-1,
+                keepdim=True,
+            )
+            logit_difference = (
+                current_logits.float() - leased_logits.float()
+            ).abs()
+            synchronize(self.device)
+            matches = int((current_input == leased_input).sum().item())
+            decode_steps.append(
+                {
+                    "step": step,
+                    "token_matches": matches,
+                    "tokens": len(members),
+                    "token_parity": matches / len(members),
+                    "logit_mean_abs": float(logit_difference.mean().item()),
+                    "logit_max_abs": float(logit_difference.max().item()),
+                }
+            )
+            current_position += 1
+            leased_position += 1
+
+        prefill_token_matches = int(
+            (current_tokens == leased_tokens).sum().item()
+        )
+        lease.release_all()
+        return {
+            "members": len(members),
+            "source_indices": [int(item["source_index"]) for item in members],
+            "segment_lengths": list(prepared.segment_lengths),
+            "alternate_cache_tensor_identity_accepted": True,
+            "hidden_mean_abs": float(hidden_difference.mean().item()),
+            "hidden_max_abs": float(hidden_difference.max().item()),
+            "prefill_first_token_matches": prefill_token_matches,
+            "prefill_first_token_total": len(members),
+            "prefill_first_token_parity": prefill_token_matches / len(members),
+            "arena_kv_valid_prefix_max_abs": kv_max_abs,
+            "arena_kv_valid_prefix_exact": kv_max_abs == 0.0,
+            "current_redistribution_bytes": current_redistribution_bytes,
+            "current_admission_bytes": current_admission_bytes,
+            "leased_admission_bytes": leased_admission_bytes,
+            "decode_steps": decode_steps,
+            "decode_token_parity": (
+                1.0
+                if not decode_steps
+                else sum(row["token_matches"] for row in decode_steps)
+                / sum(row["tokens"] for row in decode_steps)
+            ),
+            "passed": (
+                kv_max_abs == 0.0
+                and prefill_token_matches == len(members)
+                and all(row["token_parity"] == 1.0 for row in decode_steps)
+                and current_redistribution_bytes == current_admission_bytes
+                and current_admission_bytes == leased_admission_bytes
+            ),
+        }
+
+    def _lease_reservoir_projection(
+        self,
+        packs: Sequence[list[dict[str, Any]]],
+        *,
+        lease_bytes: int,
+        private_cache_bytes: int,
+    ) -> dict[str, Any]:
+        ready_capacity = (
+            self.args.ready_buffer_capacity
+            if self.args.ready_buffer_capacity is not None
+            else self.args.arena_batch_size * 4
+        )
+        owner_ids = [
+            pack_index
+            for pack_index, pack in enumerate(packs)
+            for _member in pack
+        ]
+        window = min(ready_capacity, len(owner_ids))
+        distinct_counts = [
+            len(set(owner_ids[start : start + window]))
+            for start in range(0, len(owner_ids) - window + 1)
+        ]
+        max_live_leases = max(distinct_counts, default=0)
+        mean_live_leases = (
+            statistics.mean(distinct_counts) if distinct_counts else 0.0
+        )
+        current_bytes = window * private_cache_bytes
+        leased_bytes = max_live_leases * lease_bytes
+        return {
+            "ready_buffer_capacity": ready_capacity,
+            "modeled_ready_members": window,
+            "packed_members_in_scope": len(owner_ids),
+            "max_live_leases": max_live_leases,
+            "mean_live_leases": mean_live_leases,
+            "private_cache_bytes_per_ready_member": private_cache_bytes,
+            "packed_lease_bytes_per_buffer": lease_bytes,
+            "current_private_ready_bytes": current_bytes,
+            "leased_ready_bytes_high_water": leased_bytes,
+            "saved_ready_bytes": current_bytes - leased_bytes,
+            "saved_ready_fraction": (
+                0.0 if current_bytes == 0 else 1.0 - leased_bytes / current_bytes
+            ),
+            "method": (
+                "maximum distinct packed-cache owners across every contiguous "
+                "ready-reservoir window"
+            ),
+            "excludes_overflow_items": True,
+        }
+
+    def _run_cache_lease_scope(
+        self,
+        runtime: PackedTextPrefillRuntime,
+        pool: PackedKVCachePool,
+        *,
+        scope: str,
+    ) -> dict[str, Any]:
+        pack_member_limit = min(
+            self.args.max_pack_members,
+            self.args.arena_batch_size,
+        )
+        packs, overflow = _form_text_packs(
+            self.items,
+            scope=scope,
+            capacity=self.args.pack_length,
+            max_members=pack_member_limit,
+        )
+        if not packs:
+            raise ValueError(f"scope {scope!r} did not form any cache-lease packs")
+        private_caches = [
+            self._new_static_cache(
+                batch_size=1,
+                cache_length=self.args.cache_length,
+            )
+            for _index in range(max(len(pack) for pack in packs))
+        ]
+        arena = self._new_static_cache(
+            batch_size=self.args.arena_batch_size,
+            cache_length=self.args.cache_length,
+        )
+        synchronize(self.device)
+
+        totals = Counter()
+        samples: dict[str, list[float]] = defaultdict(list)
+        byte_totals = Counter()
+        chunk_size = 16
+        started = time.perf_counter()
+        for chunk_start in range(0, len(packs), chunk_size):
+            chunk = packs[chunk_start : chunk_start + chunk_size]
+            timeline = DeviceTimeline(self.device)
+            held: list[Any] = []
+            for offset, members in enumerate(chunk):
+                pack_index = chunk_start + offset
+                packed = self._prepare_packed_input(members)
+                prepared = self._prepared_from_lab_pack(packed)
+                current_destinations = private_caches[: len(members)]
+
+                def current_path() -> None:
+                    held.append(
+                        timeline.measure(
+                            f"pack{pack_index:06d}::current_graph",
+                            lambda: runtime.run_prepared(prepared),
+                        )
+                    )
+                    byte_totals["current_redistribution"] += int(
+                        timeline.measure(
+                            f"pack{pack_index:06d}::current_redistribution",
+                            lambda: runtime.redistribute_cache(
+                                prepared,
+                                current_destinations,
+                            ),
+                        )
+                    )
+                    byte_totals["current_admission"] += int(
+                        timeline.measure(
+                            f"pack{pack_index:06d}::current_admission",
+                            lambda: self._copy_private_prefixes_to_arena(
+                                current_destinations,
+                                prepared.segment_lengths,
+                                arena,
+                            ),
+                        )
+                    )
+
+                def leased_path() -> None:
+                    lease = pool.acquire(
+                        prepared.physical_seq_len,
+                        segment_offsets=prepared.segment_offsets,
+                        segment_lengths=prepared.segment_lengths,
+                    )
+                    held.append(
+                        timeline.measure(
+                            f"pack{pack_index:06d}::leased_graph",
+                            lambda: self._run_packed_with_cache(
+                                runtime,
+                                prepared,
+                                lease.cache,
+                            ),
+                        )
+                    )
+                    byte_totals["leased_admission"] += int(
+                        timeline.measure(
+                            f"pack{pack_index:06d}::leased_admission",
+                            lambda: self._copy_leased_prefixes_to_arena(
+                                lease,
+                                arena,
+                            ),
+                        )
+                    )
+                    # The admission reads are enqueued on the same stream as
+                    # the next graph, so returning the buffer here is ordered.
+                    lease.release_all()
+
+                calls = (current_path, leased_path)
+                if pack_index % 2:
+                    calls = tuple(reversed(calls))
+                for call in calls:
+                    call()
+                held.extend((packed, prepared))
+
+            spans = timeline.resolve()
+            for name, seconds in spans.items():
+                stage = name.rsplit("::", 1)[-1]
+                totals[stage] += float(seconds)
+                samples[stage].append(float(seconds))
+            del held
+            completed = min(chunk_start + chunk_size, len(packs))
+            if completed == len(packs) or completed % 128 == 0:
+                current_s = (
+                    totals["current_graph"]
+                    + totals["current_redistribution"]
+                    + totals["current_admission"]
+                )
+                leased_s = totals["leased_graph"] + totals["leased_admission"]
+                print(
+                    f"CACHE_LEASE_PROGRESS scope={scope} "
+                    f"packs={completed}/{len(packs)} "
+                    f"current_s={current_s:.3f} leased_s={leased_s:.3f}",
+                    flush=True,
+                )
+        wall_s = time.perf_counter() - started
+        if pool.active_buffers:
+            raise RuntimeError("packed KV timing left active leases")
+
+        current_s = (
+            totals["current_graph"]
+            + totals["current_redistribution"]
+            + totals["current_admission"]
+        )
+        leased_s = totals["leased_graph"] + totals["leased_admission"]
+        lease_bytes = static_cache_nbytes(
+            runtime.scratch_caches[self.args.pack_length]
+        )
+        private_cache_bytes = static_cache_nbytes(private_caches[0])
+        return {
+            "scope": scope,
+            "policy": "first_fit_decreasing",
+            "packs": len(packs),
+            "packed_items": sum(len(pack) for pack in packs),
+            "overflow_items": len(overflow),
+            "pack_member_limit": pack_member_limit,
+            "member_histogram": dict(
+                sorted(Counter(len(pack) for pack in packs).items())
+            ),
+            "real_text_tokens": sum(
+                int(item["input_tokens"])
+                for pack in packs
+                for item in pack
+            ),
+            "physical_text_tokens": len(packs) * self.args.pack_length,
+            "device_s": {
+                name: float(seconds) for name, seconds in sorted(totals.items())
+            },
+            "current_two_copy_s": current_s,
+            "leased_one_copy_s": leased_s,
+            "time_saved_s": current_s - leased_s,
+            "speedup": current_s / leased_s,
+            "copy_only_s": {
+                "current": (
+                    totals["current_redistribution"]
+                    + totals["current_admission"]
+                ),
+                "leased": totals["leased_admission"],
+            },
+            "copied_bytes": {
+                name: int(value) for name, value in sorted(byte_totals.items())
+            },
+            "latency_ms": {
+                name: {
+                    "mean": statistics.mean(values) * 1000.0,
+                    "median": statistics.median(values) * 1000.0,
+                    "p95": _percentile(values, 0.95) * 1000.0,
+                }
+                for name, values in sorted(samples.items())
+            },
+            "hbm": self._lease_reservoir_projection(
+                packs,
+                lease_bytes=lease_bytes,
+                private_cache_bytes=private_cache_bytes,
+            ),
+            "wall_s": wall_s,
+            "measurement_order": "alternating_current_and_leased_per_pack",
+            "timing_boundary": (
+                "packed transformer KV write plus KV-only redistribution and "
+                "decode-arena admission copies; output head is excluded"
+            ),
+        }
+
+    def cache_lease(self) -> dict[str, Any]:
+        runtime = PackedTextPrefillRuntime(
+            self.model,
+            buckets=(self.args.pack_length,),
+            max_members=self.args.max_pack_members,
+            cache_root=self.args.production_packed_cache_dir,
+            destination_cache_length=self.args.cache_length,
+            device=self.device,
+            dtype=self.dtype,
+            model_dir=self.model_dir,
+            linear_weight_format=self.linear_weight_format,
+        )
+        global_packs, _overflow = _form_text_packs(
+            self.items,
+            scope="global",
+            capacity=self.args.pack_length,
+            max_members=min(
+                self.args.max_pack_members,
+                self.args.arena_batch_size,
+            ),
+        )
+        if len(global_packs) < 3:
+            raise ValueError("cache-lease lab requires at least three packs")
+        pool = self._new_lease_pool()
+        reuse_probe = self._lease_reuse_probe(runtime, pool, global_packs)
+        if not reuse_probe["passed"]:
+            raise RuntimeError(f"packed KV reuse probe failed: {reuse_probe}")
+
+        scopes = {
+            scope: self._run_cache_lease_scope(
+                runtime,
+                pool,
+                scope=scope,
+            )
+            for scope in self.args.pack_scope
+        }
+        correctness_pack = max(
+            (pack for pack in global_packs if len(pack) > 1),
+            key=lambda pack: (
+                len(pack),
+                sum(int(item["input_tokens"]) for item in pack),
+            ),
+        )
+        correctness = self._cache_lease_correctness(
+            runtime,
+            pool,
+            correctness_pack,
+        )
+        if pool.active_buffers:
+            raise RuntimeError("cache-lease lab finished with active buffers")
+        return {
+            "mode": "cache_lease",
+            "runtime": runtime.metadata,
+            "reuse_probe": reuse_probe,
+            "correctness": correctness,
+            "pool": pool.stats(),
+            "scopes": scopes,
+            "integration_status": (
+                "lab-only: packed caches are leased and admitted by slice; "
+                "the production ready-request contract is unchanged"
+            ),
+        }
+
     def _load_baseline_records(self) -> tuple[dict[int, dict[str, Any]], float]:
         path = self.args.baseline_lab_result.expanduser().resolve()
         payload = json.loads(path.read_text(encoding="utf-8"))
@@ -1640,6 +2377,12 @@ def _write_report(
             "pack_length": args.pack_length,
             "max_pack_members": args.max_pack_members,
             "arena_batch_size": args.arena_batch_size,
+            "ready_buffer_capacity": (
+                args.ready_buffer_capacity
+                if args.ready_buffer_capacity is not None
+                else args.arena_batch_size * 4
+            ),
+            "lease_decode_steps": args.lease_decode_steps,
             "pack_scope": list(args.pack_scope),
             "allow_compile": bool(args.allow_compile),
             "include_output_head": bool(args.include_output_head),
@@ -1726,6 +2469,30 @@ def _print_direct_arena(result: dict[str, Any]) -> None:
         )
 
 
+def _print_cache_lease(result: dict[str, Any]) -> None:
+    correctness = result["correctness"]
+    reuse = result["reuse_probe"]
+    print(
+        "CACHE_LEASE_CORRECTNESS "
+        f"kv_exact={correctness['arena_kv_valid_prefix_exact']} "
+        f"prefill_token_parity={correctness['prefill_first_token_parity']:.4f} "
+        f"decode_token_parity={correctness['decode_token_parity']:.4f} "
+        f"reuse_passed={reuse['passed']}"
+    )
+    for scope, row in result["scopes"].items():
+        hbm = row["hbm"]
+        print(
+            "CACHE_LEASE_RESULT "
+            f"scope={scope} packs={row['packs']} "
+            f"items={row['packed_items']} "
+            f"current_s={row['current_two_copy_s']:.6f} "
+            f"leased_s={row['leased_one_copy_s']:.6f} "
+            f"speedup={row['speedup']:.3f}x "
+            f"saved_s={row['time_saved_s']:.6f} "
+            f"ready_hbm_saved_gib={hbm['saved_ready_bytes'] / 2**30:.3f}"
+        )
+
+
 @torch.inference_mode()
 def main(argv: Sequence[str] | None = None) -> None:
     args = parse_args(argv)
@@ -1737,6 +2504,8 @@ def main(argv: Sequence[str] | None = None) -> None:
         result = lab.profile()
     elif args.mode == "direct_arena":
         result = lab.direct_arena()
+    elif args.mode == "cache_lease":
+        result = lab.cache_lease()
     else:
         result = lab.packed()
     output = _write_report(args, corpus, lab, result)
@@ -1746,6 +2515,8 @@ def main(argv: Sequence[str] | None = None) -> None:
         _print_packed(result)
     elif args.mode == "direct_arena":
         _print_direct_arena(result)
+    elif args.mode == "cache_lease":
+        _print_cache_lease(result)
     print(f"Wrote {output}")
 
 

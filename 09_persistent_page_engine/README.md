@@ -229,6 +229,30 @@ shape; subsequent runs reuse that cache.
   --name packed_text_1024
 ```
 
+The lab-only `--mode cache_lease` prices the next cache-boundary option without
+changing the serving engine. The current path writes a packed scratch cache,
+redistributes every segment into a private full-length cache, and later copies
+that private prefix into the decode arena. The lease path keeps the compact
+packed cache alive and copies each segment slice directly into its arena row.
+It alternates both paths pack-by-pack through the same compiled graph, verifies
+exact valid-prefix KV equality and multi-step token parity, exercises pooled
+buffer reuse, and projects ready-reservoir HBM from the actual pack ownership
+sequence. Buffer recycling relies on the existing single-stream ordering:
+release occurs only after the last admission read has been enqueued.
+
+```sh
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
+  09_persistent_page_engine/scripts/text_lab.py \
+  --mode cache_lease \
+  --pack-length 1024 \
+  --max-pack-members 32 \
+  --arena-batch-size 32 \
+  --cache-length 4096 \
+  --ready-buffer-capacity 128 \
+  --pack-scope production_group \
+  --name cache_lease_256p
+```
+
 ### Text-decode optimization lab
 
 `scripts/text_decode_lab_corpus.py` turns a production recognition trace into
