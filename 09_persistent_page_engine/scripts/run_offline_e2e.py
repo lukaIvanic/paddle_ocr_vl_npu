@@ -22,7 +22,6 @@ from paddleocr_vl.serving.runtime_defaults import (
     DECODE_BACKEND_CHOICES,
     DEFAULT_CACHE_LENGTH,
     DEFAULT_DECODE_BACKEND,
-    DEFAULT_DECODE_OPTIMIZATION,
     DEFAULT_DECODE_BATCH_SIZE,
     DEFAULT_MAX_NEW_TOKENS,
     DEFAULT_TEXT_BACKEND,
@@ -30,7 +29,6 @@ from paddleocr_vl.serving.runtime_defaults import (
     OPTIMIZED_TEXT_BUCKETS,
     OPTIMIZED_VISION_BUCKETS,
 )
-from paddleocr_vl.model.text_decode import decode_optimization_names
 from paddleocr_vl.model.text_prefill import (
     TEXT_BACKEND_CHOICES,
     TEXT_PADDING_CHOICES,
@@ -66,11 +64,6 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--decode-backend",
         default=DEFAULT_DECODE_BACKEND,
         choices=DECODE_BACKEND_CHOICES,
-    )
-    parser.add_argument(
-        "--decode-optimization",
-        default=DEFAULT_DECODE_OPTIMIZATION,
-        choices=decode_optimization_names(),
     )
     parser.add_argument(
         "--batch-size",
@@ -187,7 +180,6 @@ def main() -> None:
         model=args.recognizer_model,
         dtype=args.dtype,
         decode_backend=args.decode_backend,
-        decode_optimization=args.decode_optimization,
         batch_size=args.batch_size,
         cache_length=args.cache_length,
         max_new_tokens=args.max_new_tokens,

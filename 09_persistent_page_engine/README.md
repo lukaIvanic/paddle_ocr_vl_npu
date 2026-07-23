@@ -266,11 +266,12 @@ summary.
   end-to-end token-parity run remains mandatory before a candidate optimization
   enters production.
 
-The lab and both Experiment 09 E2E runners accept one explicit
-`--decode-optimization` preset. E2E defaults to the validated `combined_apply`
+The Experiment 09 E2E runners always use the validated `combined_apply` decode
 path: MRoPE-factor hoisting, packed QKV, native RMSNorm and rotary operators,
-and fused residual-add/RMSNorm. `baseline` retains the previous production
-implementation for controlled comparisons; the other presets isolate
+and fused residual-add/RMSNorm. This is deliberately not a production CLI
+switch. The text-decode lab retains its explicit `--decode-optimization`
+presets for controlled comparisons: `baseline` retains the previous production
+implementation, while the other presets isolate
 MRoPE-factor hoisting, packed QKV and MLP projections, native RMSNorm and
 rotary operators, fused residual-add/RMSNorm, and native SwiGLU. Packed
 projection modules are materialized before the decode weight-format pass so

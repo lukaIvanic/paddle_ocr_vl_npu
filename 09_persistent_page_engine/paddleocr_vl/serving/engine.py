@@ -29,7 +29,6 @@ from ..model.text_decode import (
     DECODE_CACHE_UPDATE,
     LocalPaddleOCRVLStaticCache,
     cast_decode_linear_weights_to_nz,
-    decode_optimization_names,
     prepare_decode_optimization_modules,
 )
 from ..model.preprocessing import (
@@ -390,7 +389,6 @@ class ContinuousRecognizer:
         cache_length: int,
         max_new_tokens: int,
         torchair_cache_dir: Path,
-        decode_optimization: str = DEFAULT_DECODE_OPTIMIZATION,
         vision_backend: str = DEFAULT_VISION_BACKEND,
         vision_attention: str = "manual",
         vision_buckets: str | Iterable[int] = OPTIMIZED_VISION_BUCKETS,
@@ -430,12 +428,7 @@ class ContinuousRecognizer:
             raise ValueError(f"unsupported dtype: {dtype}")
         torch.npu.set_compile_mode(jit_compile=False)
         self.decode_backend = decode_backend
-        self.decode_optimization = str(decode_optimization)
-        if self.decode_optimization not in decode_optimization_names():
-            raise ValueError(
-                "decode_optimization must be one of "
-                f"{decode_optimization_names()}, got {self.decode_optimization!r}"
-            )
+        self.decode_optimization = DEFAULT_DECODE_OPTIMIZATION
         self.timeline = timeline
         self.batch_size = int(batch_size)
         self.cache_length = int(cache_length)
