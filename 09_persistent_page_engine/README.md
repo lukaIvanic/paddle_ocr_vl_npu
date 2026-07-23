@@ -229,6 +229,82 @@ shape; subsequent runs reuse that cache.
   --name packed_text_1024
 ```
 
+### Text-decode optimization lab
+
+`scripts/text_decode_lab_corpus.py` turns a production recognition trace into
+an exact decode-lifetime workload. It preserves request-source order, prompt
+lengths, first and generated token IDs, EOS/length stops, the production cache
+guard, the exact KV capacity required to replay every recorded graph write, and
+the extra active iteration caused by the scheduler's queue-depth-one completion
+look-ahead. The builder verifies its request and token totals against the run
+summary.
+
+`scripts/text_decode_lab.py` deliberately separates four questions:
+
+- `simulate` reconstructs stable-slot occupancy without loading the model or
+  using an NPU. It must reproduce the reference run's graph-call, active,
+  effective, idle, and look-ahead accounting before the corpus is trusted.
+- `profile` measures one deliberate `(batch_size, cache_length)` production
+  graph shape. Its outer device span includes token selection and the
+  post-graph arena state updates; the report also keeps the model-plus-argmax
+  inner span separate.
+- `replay` runs the real `TextDecodeRuntime`, `DecodeArena`, sampled-token D2H
+  ring, retirement, refill, admission-copy, and hot-swap scheduler. Recorded
+  request lengths decide completion, so every tested shape sees the same
+  workload even when synthetic prompt KV values change model token choices.
+  Prompt KV is a shared deterministic zero prefix and every request is ready at
+  replay start; vision/text prefill and frontend arrival timing are outside this
+  mode's contract.
+- `correctness` teacher-forces recorded token paths through the raw-eager and
+  selected decode backends for multiple steps, comparing logits, top-1 tokens,
+  and newly written KV positions. This is a graph correctness gate; a real-crop
+  end-to-end token-parity run remains mandatory before a candidate optimization
+  enters production.
+
+TorchAir graph creation is opt-in. A missing shape fails unless
+`--allow-compile` is explicit, and each invocation profiles only the requested
+shape rather than expanding a hidden matrix. The default decode cache root is
+the production Experiment 09 root, so an already-compiled production shape is
+reused without copying it or maintaining a second cache.
+
+```sh
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
+  09_persistent_page_engine/scripts/text_decode_lab_corpus.py
+
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
+  09_persistent_page_engine/scripts/text_decode_lab.py \
+  --mode simulate \
+  --batch-size 32 \
+  --cache-length 4096 \
+  --name simulate_b32_k4096
+
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
+  09_persistent_page_engine/scripts/text_decode_lab.py \
+  --mode profile \
+  --batch-size 32 \
+  --cache-length 4096 \
+  --profile-position 1024 \
+  --warmup 3 \
+  --repeats 20 \
+  --name profile_b32_k4096
+
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
+  09_persistent_page_engine/scripts/text_decode_lab.py \
+  --mode replay \
+  --batch-size 32 \
+  --cache-length 4096 \
+  --name replay_b32_k4096
+
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
+  09_persistent_page_engine/scripts/text_decode_lab.py \
+  --mode correctness \
+  --batch-size 1 \
+  --cache-length 4096 \
+  --correctness-items 1 \
+  --correctness-steps 32 \
+  --name correctness_b1_k4096
+```
+
 ### Packed-text E2E result
 
 Commit `5ffd072` was run on the first 32 OmniDocBench pages with min-pixels/4,

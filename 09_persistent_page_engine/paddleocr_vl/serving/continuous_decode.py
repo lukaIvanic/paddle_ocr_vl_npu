@@ -449,7 +449,12 @@ class DecodeArena:
 
 
 class ContinuousDecodeScheduler:
-    """Run a ready queue through a persistent decode arena until completion."""
+    """Run a ready queue through a persistent decode arena until completion.
+
+    ``completion_policy`` is an optional decode-control seam for deterministic
+    workload replay. Production leaves it unset and retains the normal
+    EOS/max-length behavior.
+    """
 
     def __init__(
         self,
@@ -458,6 +463,9 @@ class ContinuousDecodeScheduler:
         decode_fn: Callable[..., torch.Tensor],
         max_new_tokens: int,
         timeline: TimelineRecorder | None = None,
+        completion_policy: (
+            Callable[[DecodeSlotState, int], str | None] | None
+        ) = None,
     ) -> None:
         self.arena = arena
         self.decode_fn = decode_fn
@@ -466,6 +474,7 @@ class ContinuousDecodeScheduler:
         self.batch_size = arena.batch_size
         self.eos_token_id = arena.eos_token_id
         self.timeline = timeline
+        self.completion_policy = completion_policy
         self.copy_stream = None
         self.host_token_ring = None
         if self.device.type == "npu":
@@ -477,6 +486,22 @@ class ContinuousDecodeScheduler:
                 dtype=torch.int64,
                 pin_memory=True,
             )
+
+    def _completion_reason(
+        self,
+        state: DecodeSlotState,
+        token_id: int,
+    ) -> str | None:
+        if self.completion_policy is not None:
+            reason = self.completion_policy(state, token_id)
+            if reason is not None and not reason:
+                raise ValueError("completion policy returned an empty stop reason")
+            return reason
+        if token_id == self.eos_token_id:
+            return "eos"
+        if len(state.token_ids) >= self.max_new_tokens:
+            return "length"
+        return None
 
     def _schedule_token_copy(
         self,
@@ -785,15 +810,14 @@ class ContinuousDecodeScheduler:
                         continue
                     token_id = int(host_tokens[slot_index])
                     state.token_ids.append(token_id)
-                    if token_id == self.eos_token_id or len(state.token_ids) >= self.max_new_tokens:
+                    stop_reason = self._completion_reason(state, token_id)
+                    if stop_reason is not None:
                         released = self.arena.release(slot_index)
                         record_completion(
                             DecodeCompletion(
                                 ready=released.ready,
                                 token_ids=list(released.token_ids),
-                                stop_reason=(
-                                    "eos" if token_id == self.eos_token_id else "length"
-                                ),
+                                stop_reason=stop_reason,
                                 slot_index=slot_index,
                                 slot_epoch=released.epoch,
                                 admitted_at=released.admitted_at,
