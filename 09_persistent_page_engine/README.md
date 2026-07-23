@@ -298,11 +298,11 @@ reused without copying it or maintaining a second cache.
 /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
   09_persistent_page_engine/scripts/text_decode_lab.py \
   --mode correctness \
-  --batch-size 1 \
+  --batch-size 32 \
   --cache-length 4096 \
   --correctness-items 1 \
-  --correctness-steps 32 \
-  --name correctness_b1_k4096
+  --correctness-steps 8 \
+  --name correctness_b32_k4096
 ```
 
 ### Packed-text E2E result
