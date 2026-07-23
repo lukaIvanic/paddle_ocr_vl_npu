@@ -5,6 +5,10 @@ repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 cd "$repo_root"
 source /usr/local/bin/npu-setup
 set -u
+if [[ -n ${PHYSICAL_NPU:-} ]]; then
+  export ASCEND_RT_VISIBLE_DEVICES=$PHYSICAL_NPU
+  echo "Overriding selected device with physical NPU $PHYSICAL_NPU"
+fi
 
 python_bin=${PYTHON_BIN:-/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python}
 lab=09_persistent_page_engine/scripts/text_decode_lab.py
