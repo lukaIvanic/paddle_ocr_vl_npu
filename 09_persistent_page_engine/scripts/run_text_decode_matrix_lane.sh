@@ -14,7 +14,7 @@ log_path=$5
 
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 cd "$repo_root"
-source npu-setup
+source /usr/local/bin/npu-setup
 export ASCEND_RT_VISIBLE_DEVICES="$physical_npu"
 
 mkdir -p "$(dirname "$log_path")"
