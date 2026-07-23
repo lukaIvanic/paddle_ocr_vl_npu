@@ -97,6 +97,14 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         packed_qkv=True,
         rms_norm="npu",
         rotary="npu_apply",
+        add_rms_norm=True,
+    ),
+    "combined_apply_all": DecodeOptimizationConfig(
+        name="combined_apply_all",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
         packed_mlp=True,
         npu_swiglu=True,
         add_rms_norm=True,
@@ -107,8 +115,6 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         packed_qkv=True,
         rms_norm="npu",
         rotary="npu_rotary_mul",
-        packed_mlp=True,
-        npu_swiglu=True,
         add_rms_norm=True,
     ),
 }
