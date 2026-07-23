@@ -239,7 +239,7 @@ the extra active iteration caused by the scheduler's queue-depth-one completion
 look-ahead. The builder verifies its request and token totals against the run
 summary.
 
-`scripts/text_decode_lab.py` deliberately separates four questions:
+`scripts/text_decode_lab.py` deliberately separates five questions:
 
 - `simulate` reconstructs stable-slot occupancy without loading the model or
   using an NPU. It must reproduce the reference run's graph-call, active,
@@ -248,6 +248,11 @@ summary.
   graph shape. Its outer device span includes token selection and the
   post-graph arena state updates; the report also keeps the model-plus-argmax
   inner span separate.
+- `torch_profile` captures a bounded set of already-warmed compiled decode
+  steps with the native `torch_npu` profiler. It records CPU/NPU activities,
+  operator shapes, framework stacks, a Chrome timeline, CANN operator/kernel
+  tables, and one selected Level1 AI Core metric. Profiler wall time is
+  intentionally not treated as throughput because collection perturbs it.
 - `replay` runs the real `TextDecodeRuntime`, `DecodeArena`, sampled-token D2H
   ring, retirement, refill, admission-copy, and hot-swap scheduler. Recorded
   request lengths decide completion, so every tested shape sees the same
@@ -287,6 +292,17 @@ reused without copying it or maintaining a second cache.
   --warmup 3 \
   --repeats 20 \
   --name profile_b32_k4096
+
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
+  09_persistent_page_engine/scripts/text_decode_lab.py \
+  --mode torch_profile \
+  --batch-size 4 \
+  --cache-length 1024 \
+  --profile-position 1000 \
+  --warmup 3 \
+  --repeats 3 \
+  --profile-metric pipe \
+  --name torch_profile_b4_k1024
 
 /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
   09_persistent_page_engine/scripts/text_decode_lab.py \

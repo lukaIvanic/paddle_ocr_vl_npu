@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import math
+import shutil
 import statistics
 import sys
 import time
@@ -49,7 +50,8 @@ DEFAULT_OUTPUT_ROOT = REPO_ROOT / "tmp/09_persistent_page_engine/text_decode_lab
 DEFAULT_CACHE_ROOT = (
     REPO_ROOT / ".runtime_cache/09_persistent_page_engine_torchair"
 )
-MODES = ("simulate", "profile", "replay", "correctness")
+MODES = ("simulate", "profile", "torch_profile", "replay", "correctness")
+NPU_PROFILE_METRICS = ("pipe", "memory", "l2", "memory_access")
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -66,6 +68,18 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--active-slots", type=int)
     parser.add_argument("--profile-position", type=int, default=1024)
+    parser.add_argument(
+        "--profile-dir",
+        type=Path,
+        default=DEFAULT_OUTPUT_ROOT / "npu_profiles",
+        help="Root for raw torch_npu profiler output in torch_profile mode.",
+    )
+    parser.add_argument(
+        "--profile-metric",
+        choices=NPU_PROFILE_METRICS,
+        default="pipe",
+        help="AI Core metric collected by torch_npu profiler.",
+    )
     parser.add_argument("--warmup", type=int, default=3)
     parser.add_argument("--repeats", type=int, default=20)
     parser.add_argument("--max-items", type=int)
@@ -105,6 +119,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("--correctness-items must be in [1, batch-size]")
     if args.correctness_steps <= 0:
         parser.error("--correctness-steps must be positive")
+    if args.mode == "torch_profile" and args.repeats > 8:
+        parser.error(
+            "torch_profile mode permits at most 8 captured steps to keep "
+            "profiler output bounded"
+        )
     return args
 
 
@@ -166,6 +185,24 @@ def _peak_memory_delta(device: torch.device, baseline: int) -> int | None:
         return max(0, int(torch.npu.max_memory_allocated(device)) - baseline)
     except Exception:
         return None
+
+
+def _npu_profiler_config(metric: str) -> Any:
+    import torch_npu.profiler as npu_prof
+
+    metrics = {
+        "pipe": npu_prof.AiCMetrics.PipeUtilization,
+        "memory": npu_prof.AiCMetrics.Memory,
+        "l2": npu_prof.AiCMetrics.L2Cache,
+        "memory_access": npu_prof.AiCMetrics.MemoryAccess,
+    }
+    return npu_prof._ExperimentalConfig(
+        profiler_level=npu_prof.ProfilerLevel.Level1,
+        aic_metrics=metrics[metric],
+        l2_cache=metric == "l2",
+        export_type=npu_prof.ExportType.Text,
+        data_simplification=False,
+    )
 
 
 def _filter_for_cache(
@@ -451,6 +488,110 @@ class TextDecodeLab:
                 "peak_delta": _peak_memory_delta(self.device, memory_baseline),
             },
             "host_wall_s": wall_s,
+        }
+
+    def torch_profile(self) -> dict[str, Any]:
+        if self.device.type != "npu":
+            raise ValueError("torch_profile mode requires an NPU device")
+        if self.args.backend != "torchair":
+            raise ValueError(
+                "torch_profile mode requires --backend torchair so the "
+                "capture contains the production compiled decode graph"
+            )
+        last_position = (
+            self.args.profile_position + self.args.warmup + self.args.repeats
+        )
+        if last_position >= self.args.cache_length:
+            raise ValueError(
+                "profile position plus warmup/repeats reaches cache capacity: "
+                f"{last_position} >= {self.args.cache_length}"
+            )
+
+        import torch_npu.profiler as npu_prof
+
+        profile_root = self.args.profile_dir.expanduser().resolve()
+        run_name = "_".join(
+            [
+                f"b{self.args.batch_size}",
+                f"k{self.args.cache_length}",
+                f"p{self.args.profile_position}",
+                self.args.profile_metric,
+                time.strftime("%Y%m%d_%H%M%S"),
+            ]
+        )
+        profile_dir = profile_root / run_name
+        shutil.rmtree(profile_dir, ignore_errors=True)
+        profile_dir.mkdir(parents=True, exist_ok=True)
+
+        arena = self._dummy_arena(
+            active_slots=self.args.active_slots,
+            cache_position=self.args.profile_position,
+        )
+        for iteration in range(self.args.warmup):
+            arena.step(self.runtime.fn, iteration=iteration)
+        synchronize(self.device)
+
+        schedule = npu_prof.schedule(wait=0, warmup=0, active=1, repeat=1)
+        synchronize(self.device)
+        wall_started = time.perf_counter()
+        with npu_prof.profile(
+            activities=[
+                npu_prof.ProfilerActivity.CPU,
+                npu_prof.ProfilerActivity.NPU,
+            ],
+            schedule=schedule,
+            experimental_config=_npu_profiler_config(
+                self.args.profile_metric
+            ),
+            on_trace_ready=npu_prof.tensorboard_trace_handler(
+                str(profile_dir),
+                analyse_flag=True,
+            ),
+            record_shapes=True,
+            profile_memory=False,
+            with_stack=True,
+            with_modules=False,
+            with_flops=False,
+        ) as profiler:
+            with torch.profiler.record_function(
+                "paddleocr_vl.compiled_decode_profile"
+            ):
+                for captured_step in range(self.args.repeats):
+                    with torch.profiler.record_function(
+                        "paddleocr_vl.compiled_decode_step"
+                    ):
+                        arena.step(
+                            self.runtime.fn,
+                            iteration=self.args.warmup + captured_step,
+                        )
+            synchronize(self.device)
+            profiler.step()
+        synchronize(self.device)
+        profile_wall_s = time.perf_counter() - wall_started
+
+        return {
+            "shape": {
+                "batch_size": self.args.batch_size,
+                "cache_length": self.args.cache_length,
+                "active_slots": self.args.active_slots,
+                "initial_cache_position": self.args.profile_position,
+                "captured_start_position": (
+                    self.args.profile_position + self.args.warmup
+                ),
+            },
+            "warmup_steps_outside_profiler": self.args.warmup,
+            "captured_steps": self.args.repeats,
+            "captured_raw_token_slots": (
+                self.args.repeats * self.args.batch_size
+            ),
+            "metric": self.args.profile_metric,
+            "profiler_level": "Level1",
+            "record_shapes": True,
+            "with_stack": True,
+            "profile_memory": False,
+            "profile_dir": str(profile_dir),
+            "profile_wall_s": profile_wall_s,
+            "profile_wall_is_throughput_measurement": False,
         }
 
     def replay(
@@ -862,6 +1003,8 @@ def _write_report(
             "cache_dir": str(args.cache_dir.expanduser().resolve()),
             "active_slots": args.active_slots,
             "profile_position": args.profile_position,
+            "profile_dir": str(args.profile_dir.expanduser().resolve()),
+            "profile_metric": args.profile_metric,
             "warmup": args.warmup,
             "repeats": args.repeats,
             "overflow_policy": args.overflow_policy,
@@ -903,6 +1046,13 @@ def _print_result(mode: str, result: dict[str, Any]) -> None:
             f"raw_tok_s={throughput['raw_physical_tok_per_s']:.1f} "
             f"active_tok_s={throughput['active_tok_per_s']:.1f}"
         )
+    elif mode == "torch_profile":
+        print(
+            "DECODE_TORCH_PROFILE "
+            f"steps={result['captured_steps']} "
+            f"metric={result['metric']} "
+            f"profile_dir={result['profile_dir']}"
+        )
     elif mode == "replay":
         scheduler = result["scheduler"]
         throughput = result["throughput"]
@@ -933,9 +1083,13 @@ def main(argv: Sequence[str] | None = None) -> None:
     corpus, selected_items = _load_corpus(args.corpus, args.max_items)
 
     lab: TextDecodeLab | None = None
-    if args.mode == "profile":
+    if args.mode in ("profile", "torch_profile"):
         lab = TextDecodeLab(args)
-        result: dict[str, Any] = lab.profile()
+        result: dict[str, Any] = (
+            lab.profile()
+            if args.mode == "profile"
+            else lab.torch_profile()
+        )
     else:
         items, overflow = _filter_for_cache(
             selected_items,
@@ -968,7 +1122,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             },
             "production_reference": reference,
         }
-    elif args.mode != "profile":
+    elif args.mode not in ("profile", "torch_profile"):
         lab = TextDecodeLab(args)
         if args.mode == "replay":
             result = lab.replay(items, overflow)
