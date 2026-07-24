@@ -1,0 +1,1777 @@
+[W724 12:01:54.692661566 TensorFactories.cpp:340] Warning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (function operator())
+.{
+  "schema_version": 1,
+  "kind": "random_full_decoder_paged_fia_benchmark",
+  "passed": true,
+  "configuration": {
+    "model_config": "/workspace/models/PaddleOCR-VL-1.6/config.json",
+    "random_weights": true,
+    "seed": 7,
+    "batch_size": 1,
+    "cache_length": 1024,
+    "block_size": 128,
+    "paged_cache_layout": "PA_NZ",
+    "paged_cache_shape": "[num_blocks,Nkv*head_dim/16,block_size,16]",
+    "paged_fia_view": "[num_blocks,Nkv,head_dim/16,block_size,16]",
+    "paged_cache_state": "in-place npu_scatter_nd_update_ graph inputs",
+    "positions": [
+      127,
+      511,
+      768,
+      1023
+    ],
+    "warmup": 3,
+    "repeats": 30,
+    "dtype": "torch.float16",
+    "optimization": "combined_apply",
+    "full_step": "embedding_18_layers_final_norm_lm_head_argmax"
+  },
+  "architecture": {
+    "hidden_size": 1024,
+    "intermediate_size": 3072,
+    "num_hidden_layers": 18,
+    "num_attention_heads": 16,
+    "num_key_value_heads": 2,
+    "head_dim": 128,
+    "vocab_size": 103424,
+    "parameters_before_packed_qkv": {
+      "decoder_layers": 254840832,
+      "token_embedding": 105906176,
+      "final_norm": 1024,
+      "lm_head": 105906176,
+      "allocated_total": 466654208
+    },
+    "parameters_after_packed_qkv": {
+      "decoder_layers": 302026752,
+      "token_embedding": 105906176,
+      "final_norm": 1024,
+      "lm_head": 105906176,
+      "allocated_total": 513840128
+    }
+  },
+  "versions": {
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "torchair": "unknown"
+  },
+  "setup_s": {
+    "total": 44.8525379600469,
+    "random_model_create_and_transfer": 5.698229604982771,
+    "weight_format": 4.375722158001736,
+    "increfa_runtime": 0.2510709270136431
+  },
+  "weight_format": {
+    "requested_mode": "decode_nz",
+    "mode": "decode_native_fallback",
+    "effective_mode": "decode_native_fallback",
+    "target_format": "FRACTAL_NZ",
+    "target_format_code": 29,
+    "target_count": 145,
+    "cast_count": 1,
+    "converted_count": 0,
+    "already_nz_count": 0,
+    "converted_modules_sample": [],
+    "before_formats_sample": {
+      "model.layers.0.self_attn.q_proj": 2
+    },
+    "after_formats_sample": {
+      "model.layers.0.self_attn.q_proj": 2
+    },
+    "all_after_are_nz": false,
+    "fallback_reason": "npu_format_cast_did_not_produce_fractal_nz",
+    "failures_sample": [
+      {
+        "module": "model.layers.0.self_attn.q_proj",
+        "before_format": 2,
+        "after_format": 2,
+        "error": "npu_format_cast_did_not_produce_fractal_nz"
+      }
+    ]
+  },
+  "compile": {
+    "increfa": {
+      "backend": "torchair",
+      "enabled": true,
+      "boundary": "token_embedding_text_transformer_lm_head_static_step",
+      "linear_weight_format": "decode_native_fallback",
+      "decode_attention": "increfa",
+      "decode_cache_update": "npu_scatter",
+      "decode_optimization": "combined_apply",
+      "decode_optimization_config": {
+        "hoist_mrope": true,
+        "packed_qkv": true,
+        "rms_norm": "npu",
+        "rotary": "npu_apply",
+        "packed_mlp": false,
+        "npu_swiglu": false,
+        "add_rms_norm": true
+      },
+      "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_torchair/decode_native_fallback_increfa_npu_scatter_optcombined_apply_modeinference_dtypefloat16_bs1_cache1024_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcb94a0353d7cd",
+      "torchair_ge_cache": true,
+      "compile_api": "torchair.inference.cache_compile",
+      "cache_key_fields": {
+        "batch_size": 1,
+        "cache_length": 1024,
+        "dtype": "torch.float16",
+        "model_config_hash": "6d2211febbe9",
+        "torch": "2.10.0+cpu",
+        "torch_npu": "2.10.0",
+        "torchair": "unknown",
+        "decode_source_hash": "b94a0353d7cd",
+        "linear_weight_format": "decode_native_fallback",
+        "decode_attention": "increfa",
+        "decode_cache_update": "npu_scatter",
+        "execution_mode": "inference",
+        "decode_optimization": "combined_apply"
+      }
+    },
+    "increfa_setup_detail_s": {
+      "compile_wrapper": 0.002993621048517525,
+      "compile_first_call": 0.2316015660762787
+    },
+    "paged_fia_v2": {
+      "compile_wrapper_s": 0.0003422660520300269,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_torchair/paged_fia_v2_combined_apply_b1_k1024_block128_src7b71d6ab2341",
+      "api": "torchair.inference.cache_compile",
+      "dynamic": false,
+      "first_call_s": 34.35422849399038
+    }
+  },
+  "anchor": {
+    "saved_b1_k1024_full_production_step_tok_per_s": 742.6,
+    "saved_b1_k1024_model_and_argmax_tok_per_s": 749.6,
+    "benchmark_boundary": "model_and_argmax",
+    "selected_position": 768,
+    "measured_increfa_tok_per_s": 744.1749905870047
+  },
+  "rows": [
+    {
+      "cache_position": 127,
+      "actual_kv_length": 128,
+      "increfa": {
+        "total_s": 0.04023337936401367,
+        "mean_ms": 1.3411126454671225,
+        "raw_tokens_per_s": 745.649519732692
+      },
+      "paged_fia_v2": {
+        "total_s": 0.11243637847900391,
+        "mean_ms": 3.7478792826334635,
+        "raw_tokens_per_s": 266.81755856804057
+      },
+      "paged_vs_increfa_speedup": 0.35783240182826376,
+      "correctness": {
+        "logits": {
+          "max_abs": 0.001953125,
+          "mean_abs": 0.00018747348804026842
+        },
+        "argmax_matches": 1,
+        "argmax_total": 1,
+        "written_kv": {
+          "max_abs": 0.001953125,
+          "mean_abs": 4.159819541705979e-05,
+          "per_tensor": [
+            {
+              "tensor_index": 0,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 1,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 2,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 3,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 4,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 5,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 6,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 7,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 8,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 9,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 10,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 11,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 12,
+              "max_abs": 0.0009765625,
+              "mean_abs": 5.316734313964844e-05
+            },
+            {
+              "tensor_index": 13,
+              "max_abs": 0.0009765625,
+              "mean_abs": 8.812546730041504e-05
+            },
+            {
+              "tensor_index": 14,
+              "max_abs": 0.0009765625,
+              "mean_abs": 0.0001180991530418396
+            },
+            {
+              "tensor_index": 15,
+              "max_abs": 0.0009765625,
+              "mean_abs": 0.0001551508903503418
+            },
+            {
+              "tensor_index": 16,
+              "max_abs": 0.0009765625,
+              "mean_abs": 0.0001589953899383545
+            },
+            {
+              "tensor_index": 17,
+              "max_abs": 0.0009765625,
+              "mean_abs": 0.00020585954189300537
+            },
+            {
+              "tensor_index": 18,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 19,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 20,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 21,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 22,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 23,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 24,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 25,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 26,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 27,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 28,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 29,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 30,
+              "max_abs": 0.0009765625,
+              "mean_abs": 4.4465065002441406e-05
+            },
+            {
+              "tensor_index": 31,
+              "max_abs": 0.0009765625,
+              "mean_abs": 6.327778100967407e-05
+            },
+            {
+              "tensor_index": 32,
+              "max_abs": 0.001953125,
+              "mean_abs": 0.00012071430683135986
+            },
+            {
+              "tensor_index": 33,
+              "max_abs": 0.0009765625,
+              "mean_abs": 8.72928649187088e-05
+            },
+            {
+              "tensor_index": 34,
+              "max_abs": 0.0009765625,
+              "mean_abs": 0.00018505379557609558
+            },
+            {
+              "tensor_index": 35,
+              "max_abs": 0.0009765625,
+              "mean_abs": 0.00021733343601226807
+            }
+          ]
+        },
+        "first_layer_written_kv": {
+          "key": {
+            "tensor_index": 0,
+            "max_abs": 0.0,
+            "mean_abs": 0.0
+          },
+          "value": {
+            "tensor_index": 18,
+            "max_abs": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "input_page_pool_change": {
+          "max_abs": 2.36279296875,
+          "mean_abs": 0.4573904598752658,
+          "per_tensor": [
+            {
+              "tensor_index": 0,
+              "max_abs": 1.895477294921875,
+              "mean_abs": 0.43001246452331543
+            },
+            {
+              "tensor_index": 1,
+              "max_abs": 1.8034286499023438,
+              "mean_abs": 0.43949851393699646
+            },
+            {
+              "tensor_index": 2,
+              "max_abs": 2.1067962646484375,
+              "mean_abs": 0.4734860062599182
+            },
+            {
+              "tensor_index": 3,
+              "max_abs": 1.450775146484375,
+              "mean_abs": 0.4274449944496155
+            },
+            {
+              "tensor_index": 4,
+              "max_abs": 1.9393386840820312,
+              "mean_abs": 0.44852590560913086
+            },
+            {
+              "tensor_index": 5,
+              "max_abs": 1.391876220703125,
+              "mean_abs": 0.46876680850982666
+            },
+            {
+              "tensor_index": 6,
+              "max_abs": 1.93408203125,
+              "mean_abs": 0.4941822290420532
+            },
+            {
+              "tensor_index": 7,
+              "max_abs": 2.2742462158203125,
+              "mean_abs": 0.4573493003845215
+            },
+            {
+              "tensor_index": 8,
+              "max_abs": 1.7113800048828125,
+              "mean_abs": 0.44277480244636536
+            },
+            {
+              "tensor_index": 9,
+              "max_abs": 1.7331695556640625,
+              "mean_abs": 0.4161258637905121
+            },
+            {
+              "tensor_index": 10,
+              "max_abs": 1.3974609375,
+              "mean_abs": 0.41826295852661133
+            },
+            {
+              "tensor_index": 11,
+              "max_abs": 1.9418487548828125,
+              "mean_abs": 0.49656474590301514
+            },
+            {
+              "tensor_index": 12,
+              "max_abs": 1.686147689819336,
+              "mean_abs": 0.47723278403282166
+            },
+            {
+              "tensor_index": 13,
+              "max_abs": 2.0821475982666016,
+              "mean_abs": 0.48827433586120605
+            },
+            {
+              "tensor_index": 14,
+              "max_abs": 1.9232559204101562,
+              "mean_abs": 0.46293312311172485
+            },
+            {
+              "tensor_index": 15,
+              "max_abs": 1.81927490234375,
+              "mean_abs": 0.4297255277633667
+            },
+            {
+              "tensor_index": 16,
+              "max_abs": 1.6083984375,
+              "mean_abs": 0.4463307559490204
+            },
+            {
+              "tensor_index": 17,
+              "max_abs": 2.0960235595703125,
+              "mean_abs": 0.4470881223678589
+            },
+            {
+              "tensor_index": 18,
+              "max_abs": 1.7492256164550781,
+              "mean_abs": 0.44499170780181885
+            },
+            {
+              "tensor_index": 19,
+              "max_abs": 1.7609100341796875,
+              "mean_abs": 0.44076526165008545
+            },
+            {
+              "tensor_index": 20,
+              "max_abs": 2.1848297119140625,
+              "mean_abs": 0.4525805115699768
+            },
+            {
+              "tensor_index": 21,
+              "max_abs": 1.481201171875,
+              "mean_abs": 0.4617578089237213
+            },
+            {
+              "tensor_index": 22,
+              "max_abs": 1.722442626953125,
+              "mean_abs": 0.5037603378295898
+            },
+            {
+              "tensor_index": 23,
+              "max_abs": 1.6539306640625,
+              "mean_abs": 0.4476383328437805
+            },
+            {
+              "tensor_index": 24,
+              "max_abs": 1.3771209716796875,
+              "mean_abs": 0.4650261700153351
+            },
+            {
+              "tensor_index": 25,
+              "max_abs": 1.8101577758789062,
+              "mean_abs": 0.46373212337493896
+            },
+            {
+              "tensor_index": 26,
+              "max_abs": 1.6721343994140625,
+              "mean_abs": 0.44835546612739563
+            },
+            {
+              "tensor_index": 27,
+              "max_abs": 1.859100341796875,
+              "mean_abs": 0.45192277431488037
+            },
+            {
+              "tensor_index": 28,
+              "max_abs": 1.7481842041015625,
+              "mean_abs": 0.46442651748657227
+            },
+            {
+              "tensor_index": 29,
+              "max_abs": 1.8909072875976562,
+              "mean_abs": 0.45032602548599243
+            },
+            {
+              "tensor_index": 30,
+              "max_abs": 1.8134450912475586,
+              "mean_abs": 0.4915139079093933
+            },
+            {
+              "tensor_index": 31,
+              "max_abs": 1.4209709167480469,
+              "mean_abs": 0.45390546321868896
+            },
+            {
+              "tensor_index": 32,
+              "max_abs": 2.2788238525390625,
+              "mean_abs": 0.4792329967021942
+            },
+            {
+              "tensor_index": 33,
+              "max_abs": 1.7130088806152344,
+              "mean_abs": 0.4825005531311035
+            },
+            {
+              "tensor_index": 34,
+              "max_abs": 1.721954345703125,
+              "mean_abs": 0.442161500453949
+            },
+            {
+              "tensor_index": 35,
+              "max_abs": 2.36279296875,
+              "mean_abs": 0.4568798542022705
+            }
+          ]
+        }
+      }
+    },
+    {
+      "cache_position": 511,
+      "actual_kv_length": 512,
+      "increfa": {
+        "total_s": 0.0403814811706543,
+        "mean_ms": 1.3460493723551432,
+        "raw_tokens_per_s": 742.9147998117849
+      },
+      "paged_fia_v2": {
+        "total_s": 0.11235188293457031,
+        "mean_ms": 3.745062764485677,
+        "raw_tokens_per_s": 267.0182218260723
+      },
+      "paged_vs_increfa_speedup": 0.359419709896371,
+      "correctness": {
+        "logits": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        },
+        "argmax_matches": 1,
+        "argmax_total": 1,
+        "written_kv": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "per_tensor": [
+            {
+              "tensor_index": 0,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 1,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 2,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 3,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 4,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 5,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 6,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 7,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 8,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 9,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 10,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 11,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 12,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 13,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 14,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 15,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 16,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 17,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 18,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 19,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 20,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 21,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 22,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 23,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 24,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 25,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 26,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 27,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 28,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 29,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 30,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 31,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 32,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 33,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 34,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 35,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            }
+          ]
+        },
+        "first_layer_written_kv": {
+          "key": {
+            "tensor_index": 0,
+            "max_abs": 0.0,
+            "mean_abs": 0.0
+          },
+          "value": {
+            "tensor_index": 18,
+            "max_abs": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "input_page_pool_change": {
+          "max_abs": 2.3713531494140625,
+          "mean_abs": 0.458429673479663,
+          "per_tensor": [
+            {
+              "tensor_index": 0,
+              "max_abs": 1.8565521240234375,
+              "mean_abs": 0.4365781545639038
+            },
+            {
+              "tensor_index": 1,
+              "max_abs": 2.036224365234375,
+              "mean_abs": 0.44759297370910645
+            },
+            {
+              "tensor_index": 2,
+              "max_abs": 2.1513900756835938,
+              "mean_abs": 0.4701312780380249
+            },
+            {
+              "tensor_index": 3,
+              "max_abs": 1.3708343505859375,
+              "mean_abs": 0.42963892221450806
+            },
+            {
+              "tensor_index": 4,
+              "max_abs": 1.9127731323242188,
+              "mean_abs": 0.45218896865844727
+            },
+            {
+              "tensor_index": 5,
+              "max_abs": 1.41534423828125,
+              "mean_abs": 0.4723716974258423
+            },
+            {
+              "tensor_index": 6,
+              "max_abs": 2.1233673095703125,
+              "mean_abs": 0.4867708683013916
+            },
+            {
+              "tensor_index": 7,
+              "max_abs": 1.8568916320800781,
+              "mean_abs": 0.4652959406375885
+            },
+            {
+              "tensor_index": 8,
+              "max_abs": 1.7173042297363281,
+              "mean_abs": 0.4392925798892975
+            },
+            {
+              "tensor_index": 9,
+              "max_abs": 1.559356689453125,
+              "mean_abs": 0.424877405166626
+            },
+            {
+              "tensor_index": 10,
+              "max_abs": 1.5288763046264648,
+              "mean_abs": 0.4226788282394409
+            },
+            {
+              "tensor_index": 11,
+              "max_abs": 1.9827499389648438,
+              "mean_abs": 0.49606186151504517
+            },
+            {
+              "tensor_index": 12,
+              "max_abs": 1.7290802001953125,
+              "mean_abs": 0.48162153363227844
+            },
+            {
+              "tensor_index": 13,
+              "max_abs": 2.0865325927734375,
+              "mean_abs": 0.4846915602684021
+            },
+            {
+              "tensor_index": 14,
+              "max_abs": 1.9230270385742188,
+              "mean_abs": 0.469432532787323
+            },
+            {
+              "tensor_index": 15,
+              "max_abs": 1.822235107421875,
+              "mean_abs": 0.42208537459373474
+            },
+            {
+              "tensor_index": 16,
+              "max_abs": 1.569528579711914,
+              "mean_abs": 0.4451633393764496
+            },
+            {
+              "tensor_index": 17,
+              "max_abs": 1.7532501220703125,
+              "mean_abs": 0.4531799256801605
+            },
+            {
+              "tensor_index": 18,
+              "max_abs": 1.7575068473815918,
+              "mean_abs": 0.44568753242492676
+            },
+            {
+              "tensor_index": 19,
+              "max_abs": 1.7819747924804688,
+              "mean_abs": 0.44052669405937195
+            },
+            {
+              "tensor_index": 20,
+              "max_abs": 2.1746368408203125,
+              "mean_abs": 0.4556698203086853
+            },
+            {
+              "tensor_index": 21,
+              "max_abs": 1.458674430847168,
+              "mean_abs": 0.463217556476593
+            },
+            {
+              "tensor_index": 22,
+              "max_abs": 1.763458251953125,
+              "mean_abs": 0.5027914047241211
+            },
+            {
+              "tensor_index": 23,
+              "max_abs": 1.6206817626953125,
+              "mean_abs": 0.44769927859306335
+            },
+            {
+              "tensor_index": 24,
+              "max_abs": 1.3287239074707031,
+              "mean_abs": 0.4630642831325531
+            },
+            {
+              "tensor_index": 25,
+              "max_abs": 1.8316802978515625,
+              "mean_abs": 0.46397271752357483
+            },
+            {
+              "tensor_index": 26,
+              "max_abs": 1.6710071563720703,
+              "mean_abs": 0.446588397026062
+            },
+            {
+              "tensor_index": 27,
+              "max_abs": 1.9070091247558594,
+              "mean_abs": 0.4507825970649719
+            },
+            {
+              "tensor_index": 28,
+              "max_abs": 1.7356643676757812,
+              "mean_abs": 0.46140459179878235
+            },
+            {
+              "tensor_index": 29,
+              "max_abs": 1.912261962890625,
+              "mean_abs": 0.45213931798934937
+            },
+            {
+              "tensor_index": 30,
+              "max_abs": 1.78485107421875,
+              "mean_abs": 0.4906122088432312
+            },
+            {
+              "tensor_index": 31,
+              "max_abs": 1.456634521484375,
+              "mean_abs": 0.4572160840034485
+            },
+            {
+              "tensor_index": 32,
+              "max_abs": 2.2979202270507812,
+              "mean_abs": 0.4803519546985626
+            },
+            {
+              "tensor_index": 33,
+              "max_abs": 1.7257614135742188,
+              "mean_abs": 0.48237478733062744
+            },
+            {
+              "tensor_index": 34,
+              "max_abs": 1.7454185485839844,
+              "mean_abs": 0.4435386061668396
+            },
+            {
+              "tensor_index": 35,
+              "max_abs": 2.3713531494140625,
+              "mean_abs": 0.45617666840553284
+            }
+          ]
+        }
+      }
+    },
+    {
+      "cache_position": 768,
+      "actual_kv_length": 769,
+      "increfa": {
+        "total_s": 0.0403130989074707,
+        "mean_ms": 1.3437699635823568,
+        "raw_tokens_per_s": 744.1749905870047
+      },
+      "paged_fia_v2": {
+        "total_s": 0.112233642578125,
+        "mean_ms": 3.7411214192708333,
+        "raw_tokens_per_s": 267.2995307901303
+      },
+      "paged_vs_increfa_speedup": 0.35918908075543443,
+      "correctness": {
+        "logits": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        },
+        "argmax_matches": 1,
+        "argmax_total": 1,
+        "written_kv": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "per_tensor": [
+            {
+              "tensor_index": 0,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 1,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 2,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 3,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 4,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 5,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 6,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 7,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 8,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 9,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 10,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 11,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 12,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 13,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 14,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 15,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 16,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 17,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 18,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 19,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 20,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 21,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 22,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 23,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 24,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 25,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 26,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 27,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 28,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 29,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 30,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 31,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 32,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 33,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 34,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 35,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            }
+          ]
+        },
+        "first_layer_written_kv": {
+          "key": {
+            "tensor_index": 0,
+            "max_abs": 0.0,
+            "mean_abs": 0.0
+          },
+          "value": {
+            "tensor_index": 18,
+            "max_abs": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "input_page_pool_change": {
+          "max_abs": 2.4007489681243896,
+          "mean_abs": 0.45763998727003735,
+          "per_tensor": [
+            {
+              "tensor_index": 0,
+              "max_abs": 1.7425537109375,
+              "mean_abs": 0.42676591873168945
+            },
+            {
+              "tensor_index": 1,
+              "max_abs": 1.8430862426757812,
+              "mean_abs": 0.4388887286186218
+            },
+            {
+              "tensor_index": 2,
+              "max_abs": 2.2527542114257812,
+              "mean_abs": 0.46803587675094604
+            },
+            {
+              "tensor_index": 3,
+              "max_abs": 1.361236572265625,
+              "mean_abs": 0.4302516579627991
+            },
+            {
+              "tensor_index": 4,
+              "max_abs": 1.9183521270751953,
+              "mean_abs": 0.45219168066978455
+            },
+            {
+              "tensor_index": 5,
+              "max_abs": 1.6008148193359375,
+              "mean_abs": 0.46009981632232666
+            },
+            {
+              "tensor_index": 6,
+              "max_abs": 2.094757080078125,
+              "mean_abs": 0.4926840662956238
+            },
+            {
+              "tensor_index": 7,
+              "max_abs": 1.90435791015625,
+              "mean_abs": 0.4639243185520172
+            },
+            {
+              "tensor_index": 8,
+              "max_abs": 1.5609664916992188,
+              "mean_abs": 0.4417470693588257
+            },
+            {
+              "tensor_index": 9,
+              "max_abs": 1.6084785461425781,
+              "mean_abs": 0.42524001002311707
+            },
+            {
+              "tensor_index": 10,
+              "max_abs": 1.537567138671875,
+              "mean_abs": 0.41721123456954956
+            },
+            {
+              "tensor_index": 11,
+              "max_abs": 1.945770263671875,
+              "mean_abs": 0.502697229385376
+            },
+            {
+              "tensor_index": 12,
+              "max_abs": 1.6675567626953125,
+              "mean_abs": 0.4859791398048401
+            },
+            {
+              "tensor_index": 13,
+              "max_abs": 2.0839691162109375,
+              "mean_abs": 0.4852132499217987
+            },
+            {
+              "tensor_index": 14,
+              "max_abs": 1.88482666015625,
+              "mean_abs": 0.4684232473373413
+            },
+            {
+              "tensor_index": 15,
+              "max_abs": 1.7984800338745117,
+              "mean_abs": 0.4173860251903534
+            },
+            {
+              "tensor_index": 16,
+              "max_abs": 1.8031234741210938,
+              "mean_abs": 0.44238516688346863
+            },
+            {
+              "tensor_index": 17,
+              "max_abs": 2.0020751953125,
+              "mean_abs": 0.46084147691726685
+            },
+            {
+              "tensor_index": 18,
+              "max_abs": 1.7410736083984375,
+              "mean_abs": 0.4455980062484741
+            },
+            {
+              "tensor_index": 19,
+              "max_abs": 1.7859745025634766,
+              "mean_abs": 0.44205600023269653
+            },
+            {
+              "tensor_index": 20,
+              "max_abs": 2.1628341674804688,
+              "mean_abs": 0.45200008153915405
+            },
+            {
+              "tensor_index": 21,
+              "max_abs": 1.455596923828125,
+              "mean_abs": 0.46336543560028076
+            },
+            {
+              "tensor_index": 22,
+              "max_abs": 1.7108936309814453,
+              "mean_abs": 0.5022276639938354
+            },
+            {
+              "tensor_index": 23,
+              "max_abs": 1.6583251953125,
+              "mean_abs": 0.4479157030582428
+            },
+            {
+              "tensor_index": 24,
+              "max_abs": 1.3548431396484375,
+              "mean_abs": 0.4648735225200653
+            },
+            {
+              "tensor_index": 25,
+              "max_abs": 1.832733154296875,
+              "mean_abs": 0.46322327852249146
+            },
+            {
+              "tensor_index": 26,
+              "max_abs": 1.6739740371704102,
+              "mean_abs": 0.4462975859642029
+            },
+            {
+              "tensor_index": 27,
+              "max_abs": 1.9030914306640625,
+              "mean_abs": 0.45280516147613525
+            },
+            {
+              "tensor_index": 28,
+              "max_abs": 1.7117156982421875,
+              "mean_abs": 0.4606582522392273
+            },
+            {
+              "tensor_index": 29,
+              "max_abs": 1.9054222106933594,
+              "mean_abs": 0.45029449462890625
+            },
+            {
+              "tensor_index": 30,
+              "max_abs": 1.8291244506835938,
+              "mean_abs": 0.4912417531013489
+            },
+            {
+              "tensor_index": 31,
+              "max_abs": 1.4340262413024902,
+              "mean_abs": 0.45221230387687683
+            },
+            {
+              "tensor_index": 32,
+              "max_abs": 2.3154525756835938,
+              "mean_abs": 0.4783099293708801
+            },
+            {
+              "tensor_index": 33,
+              "max_abs": 1.7162437438964844,
+              "mean_abs": 0.48231297731399536
+            },
+            {
+              "tensor_index": 34,
+              "max_abs": 1.7755126953125,
+              "mean_abs": 0.4427940249443054
+            },
+            {
+              "tensor_index": 35,
+              "max_abs": 2.4007489681243896,
+              "mean_abs": 0.45688745379447937
+            }
+          ]
+        }
+      }
+    },
+    {
+      "cache_position": 1023,
+      "actual_kv_length": 1024,
+      "increfa": {
+        "total_s": 0.040394519805908205,
+        "mean_ms": 1.3464839935302735,
+        "raw_tokens_per_s": 742.6750000779097
+      },
+      "paged_fia_v2": {
+        "total_s": 0.11281983947753907,
+        "mean_ms": 3.760661315917969,
+        "raw_tokens_per_s": 265.9106779350861
+      },
+      "paged_vs_increfa_speedup": 0.35804447154837704,
+      "correctness": {
+        "logits": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        },
+        "argmax_matches": 1,
+        "argmax_total": 1,
+        "written_kv": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "per_tensor": [
+            {
+              "tensor_index": 0,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 1,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 2,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 3,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 4,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 5,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 6,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 7,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 8,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 9,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 10,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 11,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 12,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 13,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 14,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 15,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 16,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 17,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 18,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 19,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 20,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 21,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 22,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 23,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 24,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 25,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 26,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 27,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 28,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 29,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 30,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 31,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 32,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 33,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 34,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            {
+              "tensor_index": 35,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            }
+          ]
+        },
+        "first_layer_written_kv": {
+          "key": {
+            "tensor_index": 0,
+            "max_abs": 0.0,
+            "mean_abs": 0.0
+          },
+          "value": {
+            "tensor_index": 18,
+            "max_abs": 0.0,
+            "mean_abs": 0.0
+          }
+        },
+        "input_page_pool_change": {
+          "max_abs": 2.42034912109375,
+          "mean_abs": 0.45750558459096485,
+          "per_tensor": [
+            {
+              "tensor_index": 0,
+              "max_abs": 1.779052734375,
+              "mean_abs": 0.43142518401145935
+            },
+            {
+              "tensor_index": 1,
+              "max_abs": 2.0819549560546875,
+              "mean_abs": 0.4431215822696686
+            },
+            {
+              "tensor_index": 2,
+              "max_abs": 1.7883872985839844,
+              "mean_abs": 0.4700482487678528
+            },
+            {
+              "tensor_index": 3,
+              "max_abs": 1.4275283813476562,
+              "mean_abs": 0.4351675510406494
+            },
+            {
+              "tensor_index": 4,
+              "max_abs": 1.935638427734375,
+              "mean_abs": 0.44836926460266113
+            },
+            {
+              "tensor_index": 5,
+              "max_abs": 1.380584716796875,
+              "mean_abs": 0.4697391092777252
+            },
+            {
+              "tensor_index": 6,
+              "max_abs": 1.88922119140625,
+              "mean_abs": 0.4953925609588623
+            },
+            {
+              "tensor_index": 7,
+              "max_abs": 2.243499755859375,
+              "mean_abs": 0.4590439200401306
+            },
+            {
+              "tensor_index": 8,
+              "max_abs": 1.8245697021484375,
+              "mean_abs": 0.4409661889076233
+            },
+            {
+              "tensor_index": 9,
+              "max_abs": 1.81964111328125,
+              "mean_abs": 0.4167589545249939
+            },
+            {
+              "tensor_index": 10,
+              "max_abs": 1.41357421875,
+              "mean_abs": 0.41744112968444824
+            },
+            {
+              "tensor_index": 11,
+              "max_abs": 1.6136054992675781,
+              "mean_abs": 0.5019811391830444
+            },
+            {
+              "tensor_index": 12,
+              "max_abs": 1.749755859375,
+              "mean_abs": 0.47828197479248047
+            },
+            {
+              "tensor_index": 13,
+              "max_abs": 2.052520751953125,
+              "mean_abs": 0.48047754168510437
+            },
+            {
+              "tensor_index": 14,
+              "max_abs": 1.929412841796875,
+              "mean_abs": 0.47436994314193726
+            },
+            {
+              "tensor_index": 15,
+              "max_abs": 1.8012170791625977,
+              "mean_abs": 0.4252402186393738
+            },
+            {
+              "tensor_index": 16,
+              "max_abs": 1.7918635606765747,
+              "mean_abs": 0.4439634382724762
+            },
+            {
+              "tensor_index": 17,
+              "max_abs": 2.1758575439453125,
+              "mean_abs": 0.4537588357925415
+            },
+            {
+              "tensor_index": 18,
+              "max_abs": 1.742767333984375,
+              "mean_abs": 0.4444185495376587
+            },
+            {
+              "tensor_index": 19,
+              "max_abs": 1.7844390869140625,
+              "mean_abs": 0.4413979649543762
+            },
+            {
+              "tensor_index": 20,
+              "max_abs": 2.1553916931152344,
+              "mean_abs": 0.45056185126304626
+            },
+            {
+              "tensor_index": 21,
+              "max_abs": 1.4661026000976562,
+              "mean_abs": 0.46293407678604126
+            },
+            {
+              "tensor_index": 22,
+              "max_abs": 1.780792236328125,
+              "mean_abs": 0.5017657279968262
+            },
+            {
+              "tensor_index": 23,
+              "max_abs": 1.6429691314697266,
+              "mean_abs": 0.44701290130615234
+            },
+            {
+              "tensor_index": 24,
+              "max_abs": 1.3458633422851562,
+              "mean_abs": 0.4637175500392914
+            },
+            {
+              "tensor_index": 25,
+              "max_abs": 1.8074188232421875,
+              "mean_abs": 0.46361231803894043
+            },
+            {
+              "tensor_index": 26,
+              "max_abs": 1.6585540771484375,
+              "mean_abs": 0.44382143020629883
+            },
+            {
+              "tensor_index": 27,
+              "max_abs": 1.9132499694824219,
+              "mean_abs": 0.45142126083374023
+            },
+            {
+              "tensor_index": 28,
+              "max_abs": 1.7217903137207031,
+              "mean_abs": 0.4586862325668335
+            },
+            {
+              "tensor_index": 29,
+              "max_abs": 1.872283935546875,
+              "mean_abs": 0.44780755043029785
+            },
+            {
+              "tensor_index": 30,
+              "max_abs": 1.848541259765625,
+              "mean_abs": 0.49202942848205566
+            },
+            {
+              "tensor_index": 31,
+              "max_abs": 1.451568603515625,
+              "mean_abs": 0.45640838146209717
+            },
+            {
+              "tensor_index": 32,
+              "max_abs": 2.295318603515625,
+              "mean_abs": 0.4784393012523651
+            },
+            {
+              "tensor_index": 33,
+              "max_abs": 1.6933135986328125,
+              "mean_abs": 0.48203080892562866
+            },
+            {
+              "tensor_index": 34,
+              "max_abs": 1.740814208984375,
+              "mean_abs": 0.4448951482772827
+            },
+            {
+              "tensor_index": 35,
+              "max_abs": 2.42034912109375,
+              "mean_abs": 0.45369377732276917
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
