@@ -224,7 +224,7 @@ def _paged_decode_attention(
     block_table: torch.Tensor,
     block_size: int,
     optimization: Any,
-) -> torch.Tensor:
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     query_states, key_states, value_states = _project_decode_qkv(
         attention,
         hidden_states,
@@ -239,22 +239,24 @@ def _paged_decode_attention(
         optimization,
     )
     slots = _slot_mapping(cache_position, block_table, block_size)
-    torch_npu.npu_scatter_pa_kv_cache(
-        key_states.squeeze(2).contiguous(),
-        value_states.squeeze(2).contiguous(),
-        key_cache,
-        value_cache,
-        slots,
+    updated_key_cache, updated_value_cache = (
+        torch.ops.npu.npu_scatter_pa_kv_cache_functional(
+            key_states.squeeze(2).contiguous(),
+            value_states.squeeze(2).contiguous(),
+            key_cache,
+            value_cache,
+            slots,
+        )
     )
     batch_size = query_states.shape[0]
-    key_cache_fia = key_cache.view(
-        key_cache.shape[0],
+    key_cache_fia = updated_key_cache.view(
+        updated_key_cache.shape[0],
         attention.num_key_value_heads,
         attention.head_dim // PA_NZ_LAST_DIM,
         block_size,
         PA_NZ_LAST_DIM,
     )
-    value_cache_fia = value_cache.view_as(key_cache_fia)
+    value_cache_fia = updated_value_cache.view_as(key_cache_fia)
     attention_output = tng.ops.npu_fused_infer_attention_score_v2(
         query_states.contiguous(),
         key_cache_fia,
@@ -279,7 +281,11 @@ def _paged_decode_attention(
             attention.num_heads * attention.head_dim,
         )
     )
-    return _linear_tokenwise(attention.o_proj, attention_output)
+    return (
+        _linear_tokenwise(attention.o_proj, attention_output),
+        updated_key_cache,
+        updated_value_cache,
+    )
 
 
 class PagedFIATextDecodeStage(nn.Module):
@@ -305,7 +311,7 @@ class PagedFIATextDecodeStage(nn.Module):
         rope_deltas: torch.Tensor,
         block_table: torch.Tensor,
         *flat_cache_tensors: torch.Tensor,
-    ) -> torch.Tensor:
+    ) -> tuple[torch.Tensor, ...]:
         key_caches = flat_cache_tensors[: self.num_layers]
         value_caches = flat_cache_tensors[self.num_layers :]
         inputs_embeds = self.model.model.embed_tokens(input_ids)
@@ -334,6 +340,8 @@ class PagedFIATextDecodeStage(nn.Module):
 
         hidden_states = inputs_embeds
         residual: torch.Tensor | None = None
+        updated_key_caches = []
+        updated_value_caches = []
         for layer_index, layer in enumerate(self.model.model.layers):
             if residual is None:
                 attention_input = _decode_rms_norm(
@@ -348,7 +356,11 @@ class PagedFIATextDecodeStage(nn.Module):
                     residual,
                     layer.input_layernorm,
                 )
-            attention_output = _paged_decode_attention(
+            (
+                attention_output,
+                updated_key_cache,
+                updated_value_cache,
+            ) = _paged_decode_attention(
                 layer.self_attn,
                 attention_input,
                 position_embeddings,
@@ -360,6 +372,8 @@ class PagedFIATextDecodeStage(nn.Module):
                 self.block_size,
                 self.optimization,
             )
+            updated_key_caches.append(updated_key_cache)
+            updated_value_caches.append(updated_value_cache)
             mlp_input, residual = _decode_add_rms_norm(
                 attention_output,
                 residual,
@@ -375,9 +389,14 @@ class PagedFIATextDecodeStage(nn.Module):
             residual,
             self.model.model.norm,
         )
-        return _linear_tokenwise(
+        logits = _linear_tokenwise(
             self.model.lm_head,
             hidden_states[:, -1:, :],
+        )
+        return (
+            logits,
+            *updated_key_caches,
+            *updated_value_caches,
         )
 
 
@@ -571,22 +590,34 @@ def _cache_delta_stats(
 
 
 def _timed_decode(
-    fn: Callable[..., torch.Tensor],
+    fn: Callable[..., Any],
     args: tuple[torch.Tensor, ...],
     *,
     warmup: int,
     repeats: int,
     device: torch.device,
+    state_prefix: int | None = None,
 ) -> dict[str, float]:
+    current_args = args
     for _ in range(warmup):
-        logits = fn(*args)
+        output = fn(*current_args)
+        if state_prefix is None:
+            logits = output
+        else:
+            logits = output[0]
+            current_args = (*current_args[:state_prefix], *output[1:])
         torch.argmax(logits[:, -1, :].float(), dim=-1, keepdim=True)
     synchronize(device)
     start = torch_npu.npu.Event(enable_timing=True)
     end = torch_npu.npu.Event(enable_timing=True)
     start.record()
     for _ in range(repeats):
-        logits = fn(*args)
+        output = fn(*current_args)
+        if state_prefix is None:
+            logits = output
+        else:
+            logits = output[0]
+            current_args = (*current_args[:state_prefix], *output[1:])
         torch.argmax(logits[:, -1, :].float(), dim=-1, keepdim=True)
     end.record()
     end.synchronize()
@@ -691,7 +722,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         cache_length=args.cache_length,
         block_size=args.block_size,
     )
-    warm_dense, warm_paged = _allocate_matching_caches(
+    _warm_dense, warm_paged = _allocate_matching_caches(
         config.text_config,
         batch_size=args.batch_size,
         cache_length=args.cache_length,
@@ -771,12 +802,21 @@ def main(argv: Sequence[str] | None = None) -> int:
             rope_deltas,
             *dense_cache.flat_tensors(),
         )
-        paged_logits = paged_fn(
+        paged_output = paged_fn(
             input_ids,
             cache_position,
             rope_deltas,
             paged_cache.block_table,
             *paged_cache.flat_tensors(),
+        )
+        paged_logits = paged_output[0]
+        num_layers = config.text_config.num_hidden_layers
+        returned_paged_cache = PagedCache(
+            tuple(paged_output[1 : 1 + num_layers]),
+            tuple(paged_output[1 + num_layers :]),
+            paged_cache.block_table,
+            paged_cache.block_size,
+            paged_cache.cache_length,
         )
         synchronize(device)
         incre_tokens = torch.argmax(
@@ -790,9 +830,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         logits_delta = _delta_stats(paged_logits, incre_logits)
         cache_delta = _cache_delta_stats(
             _dense_cache_written_values(dense_cache, cache_position),
-            _page_cache_written_values(paged_cache, cache_position),
+            _page_cache_written_values(
+                returned_paged_cache,
+                cache_position,
+            ),
         )
-        page_mutation = _cache_delta_stats(
+        returned_page_state_change = _cache_delta_stats(
+            _page_cache_written_values(
+                returned_paged_cache,
+                cache_position,
+            ),
+            page_values_before,
+        )
+        input_page_pool_change = _cache_delta_stats(
             _page_cache_written_values(paged_cache, cache_position),
             page_values_before,
         )
@@ -827,6 +877,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             warmup=args.warmup,
             repeats=args.repeats,
             device=device,
+            state_prefix=4,
         )
         rows.append(
             {
@@ -845,7 +896,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                     "argmax_total": args.batch_size,
                     "written_kv": cache_delta,
                     "first_layer_written_kv": first_layer_delta,
-                    "page_pool_mutation": page_mutation,
+                    "returned_page_state_change": (
+                        returned_page_state_change
+                    ),
+                    "input_page_pool_change": input_page_pool_change,
                 },
             }
         )
@@ -870,7 +924,12 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "max_abs"
             ]
             == 0.0
-            and row["correctness"]["page_pool_mutation"]["max_abs"] > 0.0
+            and row["correctness"]["returned_page_state_change"][
+                "max_abs"
+            ]
+            > 0.0
+            and row["correctness"]["input_page_pool_change"]["max_abs"]
+            == 0.0
             and row["correctness"]["argmax_matches"]
             == row["correctness"]["argmax_total"]
             for row in rows
@@ -888,6 +947,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             ),
             "paged_fia_view": (
                 "[num_blocks,Nkv,head_dim/16,block_size,16]"
+            ),
+            "paged_cache_state": (
+                "functional graph outputs rebound as next-step inputs"
             ),
             "positions": list(args.positions),
             "warmup": args.warmup,
