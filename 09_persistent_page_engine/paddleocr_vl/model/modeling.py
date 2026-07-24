@@ -9,9 +9,10 @@ model and provides the small offline-reference generation surface.
 from __future__ import annotations
 
 import time
+from contextlib import nullcontext
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
+from typing import Any, Iterable
 
 import torch
 import torch.nn.functional as F
@@ -471,6 +472,7 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
         dtype: torch.dtype,
         model_dir: Path,
         linear_weight_format: str,
+        prefill_stream: Any | None = None,
     ) -> PaddleOCRVLInferenceStages:
         """Assemble vision prefill, text prefill, and text decode runtimes.
 
@@ -483,37 +485,46 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
 
         setup_timing_s: dict[str, float] = {}
 
-        synchronize(device)
+        def prefill_stream_context():
+            if prefill_stream is None:
+                return nullcontext()
+            import torch_npu
+
+            return torch_npu.npu.stream(prefill_stream)
+
         started = time.perf_counter()
-        vision_prefill = VisionPrefillRuntime(
-            self,
-            backend=vision_backend,
-            attention_impl=vision_attention,
-            buckets=vision_buckets,
-            cache_root=vision_cache_root,
-            device=device,
-            dtype=dtype,
-            model_dir=model_dir,
-            padding=vision_padding,
-        )
-        synchronize(device)
+        with prefill_stream_context():
+            synchronize(device)
+            vision_prefill = VisionPrefillRuntime(
+                self,
+                backend=vision_backend,
+                attention_impl=vision_attention,
+                buckets=vision_buckets,
+                cache_root=vision_cache_root,
+                device=device,
+                dtype=dtype,
+                model_dir=model_dir,
+                padding=vision_padding,
+            )
+            synchronize(device)
         setup_timing_s["vision_runtime_setup"] = time.perf_counter() - started
 
-        synchronize(device)
         started = time.perf_counter()
-        text_prefill = TextPrefillRuntime(
-            self,
-            backend=text_backend,
-            buckets=text_buckets,
-            cache_root=text_cache_root,
-            cache_length=cache_length,
-            device=device,
-            dtype=dtype,
-            model_dir=model_dir,
-            linear_weight_format=linear_weight_format,
-            padding=text_padding,
-        )
-        synchronize(device)
+        with prefill_stream_context():
+            synchronize(device)
+            text_prefill = TextPrefillRuntime(
+                self,
+                backend=text_backend,
+                buckets=text_buckets,
+                cache_root=text_cache_root,
+                cache_length=cache_length,
+                device=device,
+                dtype=dtype,
+                model_dir=model_dir,
+                linear_weight_format=linear_weight_format,
+                padding=text_padding,
+            )
+            synchronize(device)
         setup_timing_s["text_runtime_setup"] = time.perf_counter() - started
 
         started = time.perf_counter()

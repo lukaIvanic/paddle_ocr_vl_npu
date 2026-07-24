@@ -576,6 +576,11 @@ class ContinuousRecognizer:
         synchronize(self.device)
         weight_format_s = time.perf_counter() - started
 
+        self.prefill_compute_stream = (
+            torch_npu.npu.Stream(device=self.device)
+            if self.prefill_decode_overlap
+            else None
+        )
         self.stages = self.model.make_inference_stages(
             vision_backend=self.vision_backend,
             vision_attention=self.vision_attention,
@@ -603,14 +608,16 @@ class ContinuousRecognizer:
             dtype=self.dtype,
             model_dir=self.model_dir,
             linear_weight_format=str(self.weight_format["effective_mode"]),
+            prefill_stream=self.prefill_compute_stream,
         )
         self.vision_prefill = self.stages.vision_prefill
         self.text_prefill = self.stages.text_prefill
         self.text_decode = self.stages.text_decode
         self.decode_fn = self.text_decode.fn
-        packed_text_started = time.perf_counter()
-        self.packed_text_prefill = (
-            PackedTextPrefillRuntime(
+        def build_packed_text_prefill() -> PackedTextPrefillRuntime | None:
+            if self.text_packing == "off":
+                return None
+            return PackedTextPrefillRuntime(
                 self.model,
                 buckets=self.text_pack_buckets,
                 max_members=self.text_pack_max_members,
@@ -626,28 +633,33 @@ class ContinuousRecognizer:
                 model_dir=self.model_dir,
                 linear_weight_format=str(self.weight_format["effective_mode"]),
             )
-            if self.text_packing != "off"
-            else None
-        )
+
+        packed_text_started = time.perf_counter()
+        if self.prefill_compute_stream is None:
+            self.packed_text_prefill = build_packed_text_prefill()
+        else:
+            with torch_npu.npu.stream(self.prefill_compute_stream):
+                self.packed_text_prefill = build_packed_text_prefill()
         synchronize(self.device)
         packed_text_setup_s = time.perf_counter() - packed_text_started
-        self.batched_vision = (
-            BatchedVisionGraphRuntime(
+
+        def build_batched_vision() -> BatchedVisionGraphRuntime | None:
+            if self.vision_packing != "profile_guided":
+                return None
+            return BatchedVisionGraphRuntime(
                 self.model,
                 cache_root=vision_batched_cache_dir,
                 model_dir=self.model_dir,
                 dtype=self.dtype,
                 device=self.device,
             )
-            if self.vision_packing == "profile_guided"
-            else None
-        )
+
+        if self.prefill_compute_stream is None:
+            self.batched_vision = build_batched_vision()
+        else:
+            with torch_npu.npu.stream(self.prefill_compute_stream):
+                self.batched_vision = build_batched_vision()
         self.prefill_transfer_stream = torch_npu.npu.Stream(device=self.device)
-        self.prefill_compute_stream = (
-            torch_npu.npu.Stream(device=self.device)
-            if self.prefill_decode_overlap
-            else None
-        )
         # Keep one complete decode cohort in CPU preparation without coupling
         # correctness to the relative speed of CPU and NPU stages. B=1 still
         # needs one item being consumed and one item prepared in the background.
