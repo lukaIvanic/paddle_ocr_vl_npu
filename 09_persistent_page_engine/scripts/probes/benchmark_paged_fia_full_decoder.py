@@ -38,6 +38,7 @@ from paddleocr_vl.model.config import PaddleOCRTextConfig, PaddleOCRVLConfig
 from paddleocr_vl.model.text_decode import (
     LocalPaddleOCRVLStaticCache,
     TextDecodeRuntime,
+    TextDecodeStage,
     _apply_decode_rotary,
     _decode_add_rms_norm,
     _decode_mlp,
@@ -77,8 +78,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--paged-single-stream",
         action="store_true",
         help=(
-            "Compile only the paged-FIA lane with "
-            "ge.enableSingleStream=true."
+            "Compile both comparison lanes with ge.enableSingleStream=true; "
+            "TorchAir requires one global stream mode per process."
         ),
     )
     parser.add_argument(
@@ -703,6 +704,82 @@ def _compile_paged_stage(
     }
 
 
+@dataclass
+class _ProbeTextDecodeRuntime:
+    fn: Callable[..., torch.Tensor]
+    metadata: dict[str, Any]
+    setup_timing_s: dict[str, float]
+
+
+def _single_stream_incre_runtime(
+    model: nn.Module,
+    *,
+    device: torch.device,
+    cache_root: Path,
+    batch_size: int,
+    cache_length: int,
+    dtype: torch.dtype,
+    optimization: Any,
+) -> _ProbeTextDecodeRuntime:
+    stage = TextDecodeStage(model, optimization=optimization).eval()
+    torchair, CompilerConfig = import_torchair()
+    compiler_config = CompilerConfig()
+    compiler_config.ge_config.enable_single_stream = True
+    cache_dir = (
+        cache_root.expanduser().resolve()
+        / (
+            f"increfa_{OPTIMIZATION}_b{batch_size}_k{cache_length}_"
+            f"single_stream_src{_script_hash()}"
+        )
+    )
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    wrapper_started = time.perf_counter()
+    fn = torchair.inference.cache_compile(
+        stage.forward,
+        config=compiler_config,
+        dynamic=False,
+        cache_dir=str(cache_dir),
+        ge_cache=True,
+    )
+    compile_wrapper_s = time.perf_counter() - wrapper_started
+
+    warm_cache = model.allocate_static_cache(
+        batch_size=batch_size,
+        cache_length=cache_length,
+        device=device,
+        dtype=dtype,
+        init_mode="zeros",
+    )
+    warm_input = torch.zeros((batch_size, 1), device=device, dtype=torch.int64)
+    warm_position = torch.ones((batch_size,), device=device, dtype=torch.int64)
+    warm_rope = torch.zeros((batch_size, 1), device=device, dtype=torch.int64)
+    synchronize(device)
+    first_call_started = time.perf_counter()
+    fn(
+        warm_input,
+        warm_position,
+        warm_rope,
+        *warm_cache.flat_tensors(),
+    )
+    synchronize(device)
+    compile_first_call_s = time.perf_counter() - first_call_started
+    return _ProbeTextDecodeRuntime(
+        fn=fn,
+        metadata={
+            "backend": "torchair",
+            "compile_api": "torchair.inference.cache_compile",
+            "cache_dir": str(cache_dir),
+            "dynamic": False,
+            "single_stream": True,
+            "ge_enable_single_stream": True,
+        },
+        setup_timing_s={
+            "compile_wrapper": float(compile_wrapper_s),
+            "compile_first_call": float(compile_first_call_s),
+        },
+    )
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     if not torch.npu.is_available():
@@ -737,18 +814,29 @@ def main(argv: Sequence[str] | None = None) -> int:
     linear_weight_format = str(weight_format["effective_mode"])
 
     incre_started = time.perf_counter()
-    incre_runtime = TextDecodeRuntime(
-        model,
-        backend="torchair",
-        device=device,
-        cache_root=args.cache_dir,
-        batch_size=args.batch_size,
-        cache_length=args.cache_length,
-        dtype=dtype,
-        model_dir=args.model,
-        linear_weight_format=linear_weight_format,
-        optimization=optimization,
-    )
+    if args.paged_single_stream:
+        incre_runtime = _single_stream_incre_runtime(
+            model,
+            device=device,
+            cache_root=args.cache_dir,
+            batch_size=args.batch_size,
+            cache_length=args.cache_length,
+            dtype=dtype,
+            optimization=optimization,
+        )
+    else:
+        incre_runtime = TextDecodeRuntime(
+            model,
+            backend="torchair",
+            device=device,
+            cache_root=args.cache_dir,
+            batch_size=args.batch_size,
+            cache_length=args.cache_length,
+            dtype=dtype,
+            model_dir=args.model,
+            linear_weight_format=linear_weight_format,
+            optimization=optimization,
+        )
     incre_setup_s = time.perf_counter() - incre_started
 
     paged_stage = PagedFIATextDecodeStage(

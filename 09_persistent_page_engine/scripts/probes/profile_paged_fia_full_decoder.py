@@ -74,8 +74,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--paged-single-stream",
         action="store_true",
         help=(
-            "Compile only the paged-FIA lane with "
-            "ge.enableSingleStream=true."
+            "Compile both comparison lanes with ge.enableSingleStream=true; "
+            "TorchAir requires one global stream mode per process."
         ),
     )
     parser.add_argument("--position", type=int, default=768)
@@ -204,18 +204,29 @@ def main(argv: Sequence[str] | None = None) -> int:
     synchronize(device)
     linear_weight_format = str(weight_format["effective_mode"])
 
-    incre_runtime = TextDecodeRuntime(
-        model,
-        backend="torchair",
-        device=device,
-        cache_root=args.cache_dir,
-        batch_size=args.batch_size,
-        cache_length=args.cache_length,
-        dtype=dtype,
-        model_dir=args.model,
-        linear_weight_format=linear_weight_format,
-        optimization=optimization,
-    )
+    if args.paged_single_stream:
+        incre_runtime = bench._single_stream_incre_runtime(
+            model,
+            device=device,
+            cache_root=args.cache_dir,
+            batch_size=args.batch_size,
+            cache_length=args.cache_length,
+            dtype=dtype,
+            optimization=optimization,
+        )
+    else:
+        incre_runtime = TextDecodeRuntime(
+            model,
+            backend="torchair",
+            device=device,
+            cache_root=args.cache_dir,
+            batch_size=args.batch_size,
+            cache_length=args.cache_length,
+            dtype=dtype,
+            model_dir=args.model,
+            linear_weight_format=linear_weight_format,
+            optimization=optimization,
+        )
     paged_stage = bench.PagedFIATextDecodeStage(
         model,
         block_size=args.block_size,
