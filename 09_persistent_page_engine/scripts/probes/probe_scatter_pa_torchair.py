@@ -78,6 +78,7 @@ def _stats(
     expected_key = key.reshape(1, 16, 16)[0]
     expected_value = value.reshape(1, 16, 16)[0]
     return {
+        "format": int(torch_npu.get_npu_format(key_cache)),
         "key_slot_max_abs": float(
             (
                 key_cache[physical_block, :, offset, :].float()
@@ -116,10 +117,34 @@ def main(argv: Sequence[str] | None = None) -> int:
     slot_mapping = torch.tensor([768], device=device, dtype=torch.int32)
     eager_key_cache = torch.zeros(shape, device=device, dtype=torch.float16)
     eager_value_cache = torch.zeros_like(eager_key_cache)
-    compiled_key_cache = torch.zeros_like(eager_key_cache)
-    compiled_value_cache = torch.zeros_like(eager_key_cache)
-    torch_compile_key_cache = torch.zeros_like(eager_key_cache)
-    torch_compile_value_cache = torch.zeros_like(eager_key_cache)
+    compiled_key_cache = torch_npu.empty_with_format(
+        shape,
+        dtype=torch.float16,
+        device=device,
+        acl_format=29,
+    )
+    compiled_value_cache = torch_npu.empty_with_format(
+        shape,
+        dtype=torch.float16,
+        device=device,
+        acl_format=29,
+    )
+    torch_compile_key_cache = torch_npu.empty_with_format(
+        shape,
+        dtype=torch.float16,
+        device=device,
+        acl_format=29,
+    )
+    torch_compile_value_cache = torch_npu.empty_with_format(
+        shape,
+        dtype=torch.float16,
+        device=device,
+        acl_format=29,
+    )
+    compiled_key_cache.zero_()
+    compiled_value_cache.zero_()
+    torch_compile_key_cache.zero_()
+    torch_compile_value_cache.zero_()
 
     stage = FunctionalUpdate().eval()
     eager_key_out, eager_value_out = stage(
