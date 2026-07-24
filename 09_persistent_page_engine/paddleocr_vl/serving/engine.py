@@ -20,6 +20,7 @@ from .continuous_decode import (
     DecodeArena,
     ReadyDecodeRequest,
 )
+from .prefill_cache_pool import PrefillKVCacheLease, PrefillKVCachePool
 from ..model.modeling import (
     LocalPaddleOCRVLForConditionalGeneration,
     _resolve_model_dir,
@@ -91,6 +92,7 @@ class CpuPreparedRecognition:
 class _InFlightPrefillMember:
     prepared: CpuPreparedRecognition
     cache: LocalPaddleOCRVLStaticCache
+    cache_lease: PrefillKVCacheLease
     rope_deltas: torch.Tensor
     next_cache_position: torch.Tensor
     next_token: torch.Tensor
@@ -107,6 +109,7 @@ class _TextPrefillInputMember:
     prepared: CpuPreparedRecognition
     moved: tuple[torch.Tensor, ...]
     cache: LocalPaddleOCRVLStaticCache
+    cache_lease: PrefillKVCacheLease
     rope_deltas: torch.Tensor
     next_cache_position: torch.Tensor
     inputs_embeds: torch.Tensor
@@ -327,6 +330,7 @@ class PrefilledRecognition:
     crop_size: tuple[int, int]
     skip_special_tokens: bool
     cache: LocalPaddleOCRVLStaticCache | None
+    cache_release: Callable[[], None] | None
     rope_deltas: torch.Tensor | None
     next_cache_position: torch.Tensor | None
     next_token: torch.Tensor | None
@@ -347,6 +351,7 @@ class PrefilledRecognition:
         torch.Tensor,
         torch.Tensor,
         torch.Tensor,
+        Callable[[], None] | None,
     ]:
         """Move the pending NPU prefix out of the long-lived result payload."""
 
@@ -354,6 +359,7 @@ class PrefilledRecognition:
         rope_deltas = self.rope_deltas
         next_cache_position = self.next_cache_position
         next_token = self.next_token
+        cache_release = self.cache_release
         if (
             cache is None
             or rope_deltas is None
@@ -362,10 +368,17 @@ class PrefilledRecognition:
         ):
             raise RuntimeError(f"prefill device state already taken for {self.request_id}")
         self.cache = None
+        self.cache_release = None
         self.rope_deltas = None
         self.next_cache_position = None
         self.next_token = None
-        return cache, rope_deltas, next_cache_position, next_token
+        return (
+            cache,
+            rope_deltas,
+            next_cache_position,
+            next_token,
+            cache_release,
+        )
 
 
 class ContinuousRecognizer:
@@ -637,6 +650,27 @@ class ContinuousRecognizer:
             self.text_pack_buckets,
         )
 
+        private_cache_pool_started = time.perf_counter()
+        private_cache_capacity = (
+            READY_BUFFER_BATCH_MULTIPLIER * self.batch_size
+            + self.cpu_preprocess_max_pending
+        )
+        private_cache_storage = self.model.allocate_static_cache(
+            batch_size=private_cache_capacity,
+            cache_length=self.cache_length,
+            device=self.device,
+            dtype=self.dtype,
+            init_mode="zeros",
+        )
+        synchronize(self.device)
+        self.prefill_cache_pool = PrefillKVCachePool(
+            private_cache_storage,
+            device=self.device,
+        )
+        private_cache_pool_setup_s = (
+            time.perf_counter() - private_cache_pool_started
+        )
+
         started = time.perf_counter()
         self.decode_arena = DecodeArena(
             cache=self.text_decode.warm_cache,
@@ -665,6 +699,7 @@ class ContinuousRecognizer:
                 else 0.0
             ),
             "packed_text_runtime_setup": float(packed_text_setup_s),
+            "private_cache_pool_setup": float(private_cache_pool_setup_s),
             "decode_control_setup": float(decode_control_setup_s),
             "recognizer_runtime_total": float(time.perf_counter() - runtime_started),
         }
@@ -696,7 +731,7 @@ class ContinuousRecognizer:
         )
 
         def ready_from(state: PrefilledRecognition) -> ReadyDecodeRequest:
-            cache, rope_deltas, cache_position, first_token_tensor = (
+            cache, rope_deltas, cache_position, first_token_tensor, cache_release = (
                 state.take_device_state()
             )
             return ReadyDecodeRequest(
@@ -708,6 +743,7 @@ class ContinuousRecognizer:
                 first_token_tensor=first_token_tensor,
                 first_token=state.first_token,
                 prompt_length=state.input_tokens,
+                cache_release=cache_release,
             )
 
         def ready_stream() -> Iterable[ReadyDecodeRequest]:
@@ -779,6 +815,12 @@ class ContinuousRecognizer:
             ready_buffer_low_watermark=self.batch_size,
         )
         decode_wall_s = decoded.timing_s["continuous_decode_wall"]
+        private_cache_pool_stats = self.prefill_cache_pool.stats()
+        if int(private_cache_pool_stats["active_slots"]) != 0:
+            raise RuntimeError(
+                "prefill KV cache arena still owns active request slots after decode: "
+                f"{private_cache_pool_stats}"
+            )
 
         schedule_result = ContinuousDecodeResult(
             schedule_id=schedule_id,
@@ -802,7 +844,10 @@ class ContinuousRecognizer:
             hot_swap_kv_prefix_bytes_copied=decoded.hot_swap_kv_prefix_bytes_copied,
             timing_s=dict(decoded.timing_s),
             vision_packing=self._vision_packing_stats.summary(),
-            text_packing=self._text_packing_stats.summary(),
+            text_packing={
+                **self._text_packing_stats.summary(),
+                "private_cache_pool": private_cache_pool_stats,
+            },
             rates={
                 "raw_decode_tok_per_s": per_second(
                     decoded.raw_decode_token_slots,
@@ -1781,16 +1826,11 @@ class ContinuousRecognizer:
                 self._group_stage_key(index, "image_embed_scatter"),
                 scatter_image_embeds,
             )
-            cache = device_timeline.measure(
+            cache_lease = device_timeline.measure(
                 self._group_stage_key(index, "static_cache_alloc"),
-                lambda inputs_embeds=inputs_embeds: self.model.allocate_static_cache(
-                    batch_size=1,
-                    cache_length=self.cache_length,
-                    device=self.device,
-                    dtype=inputs_embeds.dtype,
-                    init_mode="zeros",
-                ),
+                self.prefill_cache_pool.acquire,
             )
+            cache = cache_lease.cache
             member_padding = group_padding if index == len(group.members) - 1 else 0
             vision_route = {
                 **pack_route,
@@ -1817,6 +1857,7 @@ class ContinuousRecognizer:
                     prepared=prepared,
                     moved=moved,
                     cache=cache,
+                    cache_lease=cache_lease,
                     rope_deltas=rope_deltas,
                     next_cache_position=next_cache_position,
                     inputs_embeds=inputs_embeds,
@@ -2007,6 +2048,7 @@ class ContinuousRecognizer:
             _InFlightPrefillMember(
                 prepared=item.prepared,
                 cache=item.cache,
+                cache_lease=item.cache_lease,
                 rope_deltas=item.rope_deltas,
                 next_cache_position=item.next_cache_position,
                 next_token=next_tokens[index],
@@ -2156,7 +2198,7 @@ class ContinuousRecognizer:
         member_text_stages = {
             "text_token_embedding": "Text token embeddings",
             "image_embed_scatter": "Scatter projected image embeddings",
-            "static_cache_alloc": "Allocate request KV cache",
+            "static_cache_alloc": "Acquire private KV cache slot",
         }
         shared_text_stages = {
             "text_prefill_input_prep": "Text bucket preparation",
@@ -2308,6 +2350,7 @@ class ContinuousRecognizer:
                     crop_size=prepared.crop_size,
                     skip_special_tokens=prepared.skip_special_tokens,
                     cache=member.cache,
+                    cache_release=member.cache_lease.release,
                     rope_deltas=member.rope_deltas,
                     next_cache_position=member.next_cache_position,
                     next_token=member.next_token,
@@ -2412,7 +2455,8 @@ class ContinuousRecognizer:
             "ready_buffer_capacity": READY_BUFFER_BATCH_MULTIPLIER * self.batch_size,
             "ready_buffer_low_watermark": self.batch_size,
             "decode_completion_detection": "queue_depth_one_async_token_copy",
-            "kv_admission": "copy_valid_prefill_prefix_into_fixed_slot",
+            "private_prefill_cache": self.prefill_cache_pool.stats(),
+            "kv_admission": "full_prefill_cache_foreach_copy_into_fixed_slot",
             "text_decode": self.text_decode.metadata,
             "linear_weight_format": self.weight_format,
         }

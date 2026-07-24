@@ -24,14 +24,19 @@ class ReadyDecodeRequest:
     first_token_tensor: torch.Tensor | None
     first_token: int
     prompt_length: int
+    cache_release: Callable[[], None] | None = None
 
     def release_device_state(self) -> None:
         """Drop the per-request NPU prefix after it enters the decode arena."""
 
+        cache_release = self.cache_release
+        self.cache_release = None
         self.cache = None
         self.rope_deltas = None
         self.cache_position = None
         self.first_token_tensor = None
+        if cache_release is not None:
+            cache_release()
 
 
 @dataclass
