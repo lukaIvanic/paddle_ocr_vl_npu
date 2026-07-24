@@ -342,6 +342,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             "actual_kv_length": args.position + 1,
             "block_size": args.block_size,
             "paged_single_stream": args.paged_single_stream,
+            "paged_metadata_scope": (
+                "once_per_decode_step_before_18_layer_loop"
+            ),
             "dtype": str(dtype),
             "optimization": bench.OPTIMIZATION,
             "profile_metric": args.profile_metric,

@@ -9,7 +9,9 @@ one-token decode step:
 
 Both lanes share the same model weights and TorchAir static compilation. The
 only material execution difference is dense-cache IncreFA versus a page-native
-KV cache, page scatter, and ``torchair.ops`` FIA v2.
+KV cache, page scatter, and ``torchair.ops`` FIA v2. Paged-cache scatter and
+sequence-length metadata are built once per decode step and shared by all
+decoder layers.
 """
 
 from __future__ import annotations
@@ -252,7 +254,9 @@ def _paged_decode_attention(
     prepared_factors: tuple[torch.Tensor, torch.Tensor],
     key_cache: torch.Tensor,
     value_cache: torch.Tensor,
-    cache_position: torch.Tensor,
+    scatter_indices: torch.Tensor,
+    actual_seq_qlen: torch.Tensor,
+    actual_seq_kvlen: torch.Tensor,
     block_table: torch.Tensor,
     block_size: int,
     optimization: Any,
@@ -272,12 +276,6 @@ def _paged_decode_attention(
     )
     batch_size = query_states.shape[0]
     num_hidden_tiles = key_cache.shape[1]
-    scatter_indices = _pa_nz_scatter_indices(
-        cache_position,
-        block_table,
-        block_size,
-        num_hidden_tiles,
-    )
     key_updates = (
         key_states.squeeze(2)
         .contiguous()
@@ -316,8 +314,8 @@ def _paged_decode_attention(
         num_key_value_heads=int(attention.num_key_value_heads),
         input_layout="BNSD",
         softmax_scale=float(attention.scaling),
-        actual_seq_qlen=torch.ones_like(cache_position, dtype=torch.int64),
-        actual_seq_kvlen=cache_position.to(torch.int64) + 1,
+        actual_seq_qlen=actual_seq_qlen,
+        actual_seq_kvlen=actual_seq_kvlen,
         block_table=block_table,
         block_size=block_size,
         sparse_mode=0,
@@ -384,6 +382,17 @@ class PagedFIATextDecodeStage(nn.Module):
             position_embeddings,
             self.model.model.layers[0].self_attn.mrope_section,
         )
+        scatter_indices = _pa_nz_scatter_indices(
+            cache_position,
+            block_table,
+            self.block_size,
+            key_caches[0].shape[1],
+        )
+        actual_seq_qlen = torch.ones_like(
+            cache_position,
+            dtype=torch.int64,
+        )
+        actual_seq_kvlen = cache_position + 1
 
         hidden_states = inputs_embeds
         residual: torch.Tensor | None = None
@@ -408,7 +417,9 @@ class PagedFIATextDecodeStage(nn.Module):
                 prepared_factors,
                 key_caches[layer_index],
                 value_caches[layer_index],
-                cache_position,
+                scatter_indices,
+                actual_seq_qlen,
+                actual_seq_kvlen,
                 block_table,
                 self.block_size,
                 self.optimization,
@@ -1054,6 +1065,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             ),
             "paged_cache_state": (
                 "in-place npu_scatter_nd_update_ graph inputs"
+            ),
+            "paged_metadata_scope": (
+                "once_per_decode_step_before_18_layer_loop"
             ),
             "paged_single_stream": args.paged_single_stream,
             "positions": list(args.positions),
