@@ -113,7 +113,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     shape = (8, 16, 128, 16)
     key = torch.randn((1, 2, 128), device=device, dtype=torch.float16)
     value = torch.randn_like(key)
-    slot_mapping = torch.tensor([768], device=device, dtype=torch.int64)
+    slot_mapping = torch.tensor([768], device=device, dtype=torch.int32)
     eager_key_cache = torch.zeros(shape, device=device, dtype=torch.float16)
     eager_value_cache = torch.zeros_like(eager_key_cache)
     compiled_key_cache = torch.zeros_like(eager_key_cache)
