@@ -110,6 +110,54 @@
       "generated_tokens_including_eos": 26802,
       "decode_graph_calls": 1330,
       "token_or_text_mismatches_vs_npu7_baseline": 5
+    },
+    "zero_once_prefill_cache_pool_run_1": {
+      "commit": "297accd75f3299274e2ddd736190120e273000c7",
+      "remote_output": "tmp/09_persistent_page_engine/prefill_cache_pool_32p_297accd",
+      "pipeline_e2e_s": 18.617063550045714,
+      "pages_per_s": 1.7188532398774254,
+      "decode_wall_s": 6.608816395630129,
+      "private_cache_pool_setup_s": 0.015932171023450792,
+      "cache_slot_acquire_device_s": 0.007369219976288135,
+      "slot_admission_device_s": 0.7416698890000001,
+      "combined_cache_path_device_s": 0.7490391089762882,
+      "slot_admission_median_ms": 0.0784595,
+      "generated_tokens_including_eos": 26764,
+      "decode_graph_calls": 1330,
+      "token_or_text_mismatches_vs_npu7_baseline": 6,
+      "pool": {
+        "capacity": 160,
+        "allocated_bytes": 12079595520,
+        "high_water_active_slots": 144,
+        "acquisitions": 510,
+        "reuses": 350,
+        "releases": 510,
+        "active_slots_at_end": 0
+      }
+    },
+    "zero_once_prefill_cache_pool_run_2": {
+      "commit": "297accd75f3299274e2ddd736190120e273000c7",
+      "remote_output": "tmp/09_persistent_page_engine/prefill_cache_pool_repeat2_32p_297accd",
+      "pipeline_e2e_s": 19.035941799054854,
+      "pages_per_s": 1.681030565117026,
+      "decode_wall_s": 6.502086336025968,
+      "private_cache_pool_setup_s": 0.015844670007936656,
+      "cache_slot_acquire_device_s": 0.008518560148324576,
+      "slot_admission_device_s": 0.702022279,
+      "combined_cache_path_device_s": 0.7105408391483246,
+      "slot_admission_median_ms": 0.0818595,
+      "generated_tokens_including_eos": 26798,
+      "decode_graph_calls": 1329,
+      "token_or_text_mismatches_vs_pool_run_1": 6,
+      "pool": {
+        "capacity": 160,
+        "allocated_bytes": 12079595520,
+        "high_water_active_slots": 144,
+        "acquisitions": 510,
+        "reuses": 350,
+        "releases": 510,
+        "active_slots_at_end": 0
+      }
     }
   },
   "first_experiment_conclusion": {
@@ -128,5 +176,19 @@
     "measured_targeted_device_time_saved_s": 0.1073922794713773,
     "same_npu_e2e_delta_using_optimized_mean_s": -1.3477529810043052,
     "recommendation": "retain init_mode=zeros plus full ForeachCopy for larger-scale confirmation; the direct mechanism is modestly faster, while the larger 32-page E2E difference includes unrelated run variance"
+  },
+  "zero_once_prefill_cache_pool_conclusion": {
+    "repeat_count": 2,
+    "mean_pipeline_e2e_s": 18.826502674550284,
+    "mean_pages_per_s": 1.6999419024972258,
+    "mean_private_cache_pool_setup_s": 0.015888420515693724,
+    "mean_cache_slot_acquire_plus_admission_s": 0.7297899740623064,
+    "device_time_saved_vs_per_request_zero_mean_s": 0.4216650913399518,
+    "device_time_saved_vs_prefix_copy_baseline_s": 0.5290573708113291,
+    "e2e_saved_vs_per_request_zero_mean_s": 0.10887543048011067,
+    "arena_capacity": 160,
+    "arena_allocated_bytes": 12079595520,
+    "observed_high_water_active_slots": 144,
+    "recommendation": "retain the zero-once prefill KV arena and full ForeachCopy admission"
   }
 }

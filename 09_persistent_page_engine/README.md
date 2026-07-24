@@ -31,19 +31,19 @@ stream of full PIL pages
        eager per-crop native-resolution patch + position embedding
        optionally pack currently ready crops into one shared vision-tower call
        split the packed output back into crop order
-       per crop: eager projector and a private static KV cache
+       per crop: eager projector and a leased row in a zero-once KV arena
        optionally pack the group's independent text prompts into block-diagonal
          B=1 text-prefill calls, then split their KV prefixes back to each crop
-       eager LM head, first-token argmax, and ready B=1 KV state
+       eager LM head, first-token argmax, and ready B=1 KV-arena view
   -> bounded cross-page ready reservoir
        high watermark = 4B prepared requests
        low watermark = B prepared requests
        refill in bursts rather than after every completion
   -> persistent power-of-two compiled decode arena
-       fill free slots from ready B=1 KV states
+       fill free slots with one full-cache ForeachCopy from ready KV rows
        run one autoregressive iteration
        retire EOS/length-complete requests
-       hot-swap the next ready KV prefix into each freed slot
+       hot-swap the next ready KV row into each freed slot
        D2H tokens and detokenization
   -> route completions to their page collectors
   -> emit each page immediately when all of its regions finish
@@ -58,7 +58,8 @@ disabled, text prefill remains sequential B=1 even when vision is packed.
 already selected vision production group, routes each pack to the smallest of
 128/256/512/1024, resets MRoPE per segment, and uses a block-diagonal causal
 mask. The compiled graph writes a scratch packed KV cache; the valid prefixes
-are then copied into each crop's private decode-ready cache. Prompts above 1024
+are then copied into leased rows of a persistent zero-initialized KV arena.
+Prompts above 1024
 tokens retain the normal individual path. Crop results preserve their original
 order. Each stage has one
 compiler-safe model path shared by eager and compiled execution. Padding is a
@@ -75,10 +76,10 @@ padding.
 
 Text token embedding and image scatter stay eager. The text transformer uses a
 measured static-bucket profile. A padded call may populate physical bucket rows
-in its private scratch KV cache, but admission copies only the valid real prefix
-into the decode arena and the next-cache position remains the real prompt
-length. Inputs above the largest text bucket use the same stage eagerly without
-padding.
+in its private scratch KV cache. Its valid prefix is written into a zero-once
+private-arena row; admission copies that full fixed cache with one ForeachCopy,
+while the next-cache position remains the real prompt length. Inputs above the
+largest text bucket use the same stage eagerly without padding.
 
 There are two named operating profiles. The small standalone full-page CLI uses
 TorchAir B=4, cache length 2048, and a 768-token cap. The official full
@@ -87,12 +88,13 @@ OmniDocBench runner uses B=16, cache length 8192, and PaddleX's 4096-token cap.
 boundaries; it is not a competing production path.
 
 Prefills are produced lazily for one run-scoped decode scheduler instead of
-draining decode at every page boundary. Decode owns one persistent fixed-shape arena. Slot
-indices stay stable; a finished request is replaced in place without moving
-other active requests or rebuilding the batch. Admission copies only the valid
-prompt KV prefix, while stale cache tails remain safely hidden by each row's
-cache position. The ready reservoir is internal and bounded, so the pipeline
-does not materialize every page's NPU KV caches before decode.
+draining decode at every page boundary. Decode owns one persistent fixed-shape
+arena, and queued prefills lease rows from a second zero-once arena sized for
+the ready reservoir plus one production window. Slot indices stay stable; a
+finished request is replaced in place without moving other active requests or
+rebuilding the batch. Admission copies the full initialized KV row with one
+ForeachCopy. The real cache position still hides finite stale tail values.
+Stream events guard each returned prefill row before reuse.
 
 In both runners, a page is an input/output aggregation boundary rather than a
 scheduling boundary. Each request carries its page identity through the engine;
