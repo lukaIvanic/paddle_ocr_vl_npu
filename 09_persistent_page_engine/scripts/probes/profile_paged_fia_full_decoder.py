@@ -71,6 +71,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--cache-length", type=int, default=1024)
     parser.add_argument("--block-size", type=int, default=128)
     parser.add_argument(
+        "--paged-cache-update",
+        choices=bench.CACHE_UPDATE_MODES,
+        default="scatter_nd",
+    )
+    parser.add_argument(
         "--paged-single-stream",
         action="store_true",
         help=(
@@ -230,6 +235,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     paged_stage = bench.PagedFIATextDecodeStage(
         model,
         block_size=args.block_size,
+        cache_update_mode=args.paged_cache_update,
         optimization=optimization,
     ).eval()
     paged_fn, paged_compile = bench._compile_paged_stage(
@@ -238,6 +244,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         batch_size=args.batch_size,
         cache_length=args.cache_length,
         block_size=args.block_size,
+        cache_update_mode=args.paged_cache_update,
         single_stream=args.paged_single_stream,
     )
 
@@ -341,6 +348,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "cache_length": args.cache_length,
             "actual_kv_length": args.position + 1,
             "block_size": args.block_size,
+            "paged_cache_update": args.paged_cache_update,
             "paged_single_stream": args.paged_single_stream,
             "paged_metadata_scope": (
                 "once_per_decode_step_before_18_layer_loop"

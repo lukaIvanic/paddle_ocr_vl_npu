@@ -66,6 +66,7 @@ DEFAULT_OUTPUT = (
 )
 OPTIMIZATION = "combined_apply"
 PA_NZ_LAST_DIM = 16
+CACHE_UPDATE_MODES = ("scatter_nd", "scatter_pa")
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -76,6 +77,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--cache-length", type=int, default=1024)
     parser.add_argument("--block-size", type=int, default=128)
+    parser.add_argument(
+        "--paged-cache-update",
+        choices=CACHE_UPDATE_MODES,
+        default="scatter_nd",
+        help=(
+            "Paged-cache writer inside the compiled decoder. "
+            "scatter_pa uses torch_npu.npu_scatter_pa_kv_cache."
+        ),
+    )
     parser.add_argument(
         "--paged-single-stream",
         action="store_true",
@@ -205,29 +215,23 @@ def _create_random_model(
 
 
 def _pa_nz_scatter_indices(
-    cache_position: torch.Tensor,
-    block_table: torch.Tensor,
+    slot_mapping: torch.Tensor,
     block_size: int,
     num_hidden_tiles: int,
 ) -> torch.Tensor:
-    positions = cache_position.reshape(-1).to(dtype=torch.int64)
-    logical_blocks = torch.div(
-        positions,
+    slots = slot_mapping.reshape(-1).to(dtype=torch.int64)
+    physical_blocks = torch.div(
+        slots,
         block_size,
         rounding_mode="floor",
     )
-    physical_blocks = torch.gather(
-        block_table,
-        1,
-        logical_blocks.view(-1, 1),
-    ).reshape(-1)
-    offsets = torch.remainder(positions, block_size)
+    offsets = torch.remainder(slots, block_size)
     hidden_tiles = torch.arange(
         num_hidden_tiles,
-        device=cache_position.device,
+        device=slot_mapping.device,
         dtype=torch.int64,
     )
-    batch_size = positions.shape[0]
+    batch_size = slots.shape[0]
     return torch.stack(
         (
             physical_blocks.view(-1, 1).expand(
@@ -247,6 +251,26 @@ def _pa_nz_scatter_indices(
     ).reshape(-1, 3)
 
 
+def _pa_slot_mapping(
+    cache_position: torch.Tensor,
+    block_table: torch.Tensor,
+    block_size: int,
+) -> torch.Tensor:
+    positions = cache_position.reshape(-1).to(dtype=torch.int64)
+    logical_blocks = torch.div(
+        positions,
+        block_size,
+        rounding_mode="floor",
+    )
+    physical_blocks = torch.gather(
+        block_table,
+        1,
+        logical_blocks.view(-1, 1),
+    ).reshape(-1)
+    offsets = torch.remainder(positions, block_size)
+    return physical_blocks * block_size + offsets
+
+
 def _paged_decode_attention(
     attention: nn.Module,
     hidden_states: torch.Tensor,
@@ -254,11 +278,12 @@ def _paged_decode_attention(
     prepared_factors: tuple[torch.Tensor, torch.Tensor],
     key_cache: torch.Tensor,
     value_cache: torch.Tensor,
-    scatter_indices: torch.Tensor,
+    cache_update_metadata: torch.Tensor,
     actual_seq_qlen: torch.Tensor,
     actual_seq_kvlen: torch.Tensor,
     block_table: torch.Tensor,
     block_size: int,
+    cache_update_mode: str,
     optimization: Any,
 ) -> torch.Tensor:
     query_states, key_states, value_states = _project_decode_qkv(
@@ -276,28 +301,38 @@ def _paged_decode_attention(
     )
     batch_size = query_states.shape[0]
     num_hidden_tiles = key_cache.shape[1]
-    key_updates = (
-        key_states.squeeze(2)
-        .contiguous()
-        .view(batch_size, num_hidden_tiles, PA_NZ_LAST_DIM)
-        .reshape(-1, PA_NZ_LAST_DIM)
-    )
-    value_updates = (
-        value_states.squeeze(2)
-        .contiguous()
-        .view(batch_size, num_hidden_tiles, PA_NZ_LAST_DIM)
-        .reshape(-1, PA_NZ_LAST_DIM)
-    )
-    torch_npu.npu_scatter_nd_update_(
-        key_cache,
-        scatter_indices,
-        key_updates,
-    )
-    torch_npu.npu_scatter_nd_update_(
-        value_cache,
-        scatter_indices,
-        value_updates,
-    )
+    if cache_update_mode == "scatter_pa":
+        torch_npu.npu_scatter_pa_kv_cache(
+            key=key_states.squeeze(2).contiguous(),
+            value=value_states.squeeze(2).contiguous(),
+            key_cache=key_cache,
+            value_cache=value_cache,
+            slot_mapping=cache_update_metadata.contiguous(),
+            cache_mode="PA_NZ",
+        )
+    else:
+        key_updates = (
+            key_states.squeeze(2)
+            .contiguous()
+            .view(batch_size, num_hidden_tiles, PA_NZ_LAST_DIM)
+            .reshape(-1, PA_NZ_LAST_DIM)
+        )
+        value_updates = (
+            value_states.squeeze(2)
+            .contiguous()
+            .view(batch_size, num_hidden_tiles, PA_NZ_LAST_DIM)
+            .reshape(-1, PA_NZ_LAST_DIM)
+        )
+        torch_npu.npu_scatter_nd_update_(
+            key_cache,
+            cache_update_metadata,
+            key_updates,
+        )
+        torch_npu.npu_scatter_nd_update_(
+            value_cache,
+            cache_update_metadata,
+            value_updates,
+        )
     key_cache_fia = key_cache.view(
         key_cache.shape[0],
         attention.num_key_value_heads,
@@ -341,11 +376,13 @@ class PagedFIATextDecodeStage(nn.Module):
         model: RandomPaddleTextForCausalLM,
         *,
         block_size: int,
+        cache_update_mode: str,
         optimization: Any,
     ):
         super().__init__()
         self.model = model
         self.block_size = int(block_size)
+        self.cache_update_mode = cache_update_mode
         self.num_layers = int(model.config.text_config.num_hidden_layers)
         self.optimization = optimization
 
@@ -382,12 +419,19 @@ class PagedFIATextDecodeStage(nn.Module):
             position_embeddings,
             self.model.model.layers[0].self_attn.mrope_section,
         )
-        scatter_indices = _pa_nz_scatter_indices(
+        slot_mapping = _pa_slot_mapping(
             cache_position,
             block_table,
             self.block_size,
-            key_caches[0].shape[1],
         )
+        if self.cache_update_mode == "scatter_pa":
+            cache_update_metadata = slot_mapping
+        else:
+            cache_update_metadata = _pa_nz_scatter_indices(
+                slot_mapping,
+                self.block_size,
+                key_caches[0].shape[1],
+            )
         actual_seq_qlen = torch.ones_like(
             cache_position,
             dtype=torch.int64,
@@ -417,11 +461,12 @@ class PagedFIATextDecodeStage(nn.Module):
                 prepared_factors,
                 key_caches[layer_index],
                 value_caches[layer_index],
-                scatter_indices,
+                cache_update_metadata,
                 actual_seq_qlen,
                 actual_seq_kvlen,
                 block_table,
                 self.block_size,
+                self.cache_update_mode,
                 self.optimization,
             )
             mlp_input, residual = _decode_add_rms_norm(
@@ -682,6 +727,7 @@ def _compile_paged_stage(
     batch_size: int,
     cache_length: int,
     block_size: int,
+    cache_update_mode: str,
     single_stream: bool,
 ) -> tuple[Callable[..., torch.Tensor], dict[str, Any]]:
     torchair, CompilerConfig = import_torchair()
@@ -692,7 +738,8 @@ def _compile_paged_stage(
         cache_root.expanduser().resolve()
         / (
             f"paged_fia_v2_{OPTIMIZATION}_b{batch_size}_"
-            f"k{cache_length}_block{block_size}_{stream_mode}_"
+            f"k{cache_length}_block{block_size}_{cache_update_mode}_"
+            f"{stream_mode}_"
             f"src{_script_hash()}"
         )
     )
@@ -710,6 +757,7 @@ def _compile_paged_stage(
         "cache_dir": str(cache_dir),
         "api": "torchair.inference.cache_compile",
         "dynamic": False,
+        "cache_update_mode": cache_update_mode,
         "single_stream": bool(single_stream),
         "ge_enable_single_stream": bool(single_stream),
     }
@@ -853,6 +901,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     paged_stage = PagedFIATextDecodeStage(
         model,
         block_size=args.block_size,
+        cache_update_mode=args.paged_cache_update,
         optimization=optimization,
     ).eval()
     paged_fn, paged_compile = _compile_paged_stage(
@@ -861,6 +910,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         batch_size=args.batch_size,
         cache_length=args.cache_length,
         block_size=args.block_size,
+        cache_update_mode=args.paged_cache_update,
         single_stream=args.paged_single_stream,
     )
     _warm_dense, warm_paged = _allocate_matching_caches(
@@ -1064,8 +1114,14 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "[num_blocks,Nkv,head_dim/16,block_size,16]"
             ),
             "paged_cache_state": (
-                "in-place npu_scatter_nd_update_ graph inputs"
+                "in-place graph inputs updated by "
+                + (
+                    "npu_scatter_pa_kv_cache"
+                    if args.paged_cache_update == "scatter_pa"
+                    else "npu_scatter_nd_update_"
+                )
             ),
+            "paged_cache_update": args.paged_cache_update,
             "paged_metadata_scope": (
                 "once_per_decode_step_before_18_layer_loop"
             ),
