@@ -247,10 +247,18 @@ def _paged_decode_attention(
         slots,
     )
     batch_size = query_states.shape[0]
+    key_cache_fia = key_cache.view(
+        key_cache.shape[0],
+        attention.num_key_value_heads,
+        attention.head_dim // PA_NZ_LAST_DIM,
+        block_size,
+        PA_NZ_LAST_DIM,
+    )
+    value_cache_fia = value_cache.view_as(key_cache_fia)
     attention_output = tng.ops.npu_fused_infer_attention_score_v2(
         query_states.contiguous(),
-        key_cache,
-        value_cache,
+        key_cache_fia,
+        value_cache_fia,
         num_query_heads=int(attention.num_heads),
         num_key_value_heads=int(attention.num_key_value_heads),
         input_layout="BNSD",
@@ -840,6 +848,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             "paged_cache_layout": "PA_NZ",
             "paged_cache_shape": (
                 "[num_blocks,Nkv*head_dim/16,block_size,16]"
+            ),
+            "paged_fia_view": (
+                "[num_blocks,Nkv,head_dim/16,block_size,16]"
             ),
             "positions": list(args.positions),
             "warmup": args.warmup,
