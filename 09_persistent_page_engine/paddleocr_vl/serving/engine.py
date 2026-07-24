@@ -1788,7 +1788,7 @@ class ContinuousRecognizer:
                     cache_length=self.cache_length,
                     device=self.device,
                     dtype=inputs_embeds.dtype,
-                    init_mode="zeros",
+                    init_mode="empty",
                 ),
             )
             member_padding = group_padding if index == len(group.members) - 1 else 0
