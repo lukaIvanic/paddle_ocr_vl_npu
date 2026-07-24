@@ -525,6 +525,7 @@ class PaddleXPageBridge:
         *,
         emit_page: Callable[[Any], None],
         schedule_id: str = "paddlex_cross_page",
+        preprocess_all_pages_first: bool = False,
     ) -> PaddleXPageRunResult:
         paths = list(image_paths)
         if not paths:
@@ -539,7 +540,9 @@ class PaddleXPageBridge:
         next_page = 0
         next_request = 0
         original_get_results = self.pipeline.get_layout_parsing_results
-        prepared_pages: queue.Queue[object] = queue.Queue(maxsize=1)
+        prepared_pages: queue.Queue[object] = queue.Queue(
+            maxsize=len(paths) + 1 if preprocess_all_pages_first else 1
+        )
         producer_sentinel = object()
         producer_stop = threading.Event()
         producer_errors: list[BaseException] = []
@@ -778,12 +781,23 @@ class PaddleXPageBridge:
         timeline_wrappers = self._install_timeline_wrappers()
         producer_join_timed_out = False
         try:
-            producer_thread = threading.Thread(
-                target=produce_pages,
-                name="paddlex-page-producer",
-                daemon=True,
-            )
-            producer_thread.start()
+            if preprocess_all_pages_first:
+                produce_pages()
+                if producer_errors:
+                    raise producer_errors[0]
+                if self.timeline is not None:
+                    self.timeline.instant(
+                        "Pipeline",
+                        "All pages prepared; recognition starting",
+                        args={"pages": len(paths)},
+                    )
+            else:
+                producer_thread = threading.Thread(
+                    target=produce_pages,
+                    name="paddlex-page-producer",
+                    daemon=True,
+                )
+                producer_thread.start()
             with self.trace_path.open("w", encoding="utf-8") as trace:
                 def accept_result(result: RecognitionResult) -> None:
                     owner = owners.pop(result.request_id)

@@ -194,6 +194,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "HTML timeline (enabled by default)."
         ),
     )
+    parser.add_argument(
+        "--preprocess-all-pages-first",
+        action="store_true",
+        help=(
+            "Finish PaddleX layout detection and crop/page preparation for every "
+            "input page before starting recognition. By default one prepared page "
+            "is handed to recognition while the next page is produced."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -280,6 +289,7 @@ def run_predictions(
     predictions_dir: Path,
     compact_path: Path,
     timeline: TimelineRecorder,
+    preprocess_all_pages_first: bool,
 ) -> tuple[int, list[float], float, Any, dict[str, Any]]:
     completion_s: list[float] = []
     result_count = 0
@@ -395,6 +405,7 @@ def run_predictions(
                 page_run = bridge.run(
                     [str(path) for path in image_paths],
                     emit_page=save_result,
+                    preprocess_all_pages_first=preprocess_all_pages_first,
                 )
             finally:
                 while pending:
@@ -467,6 +478,11 @@ def main() -> None:
         "count": args.limit,
         "images": [path.name for path in image_paths],
         "pipeline": "official_paddlex_v1.6_with_cross_page_recognition_bridge",
+        "page_preprocessing_mode": (
+            "all_before_recognition"
+            if args.preprocess_all_pages_first
+            else "streaming_one_page_queue"
+        ),
     }
     (output_dir / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
@@ -568,6 +584,7 @@ def main() -> None:
             "vision_router_lookahead": args.vision_router_lookahead,
             "text_packing": args.text_packing,
             "text_pack_buckets": list(text_pack_buckets),
+            "page_preprocessing_mode": manifest["page_preprocessing_mode"],
         }
     )
     try:
@@ -590,6 +607,7 @@ def main() -> None:
                 predictions_dir=predictions_dir,
                 compact_path=compact_path,
                 timeline=timeline,
+                preprocess_all_pages_first=args.preprocess_all_pages_first,
             )
     finally:
         layout_mask_guard.write_snapshot(layout_mask_guard_path)
@@ -638,6 +656,7 @@ def main() -> None:
                 args.text_packed_cache_dir.expanduser().resolve()
             ),
             "cpu_preprocessing": recognizer_configuration["cpu_preprocessing"],
+            "page_preprocessing_mode": manifest["page_preprocessing_mode"],
         },
         "setup_s": setup_s,
         "recognizer_setup_timing_s": recognizer.setup_timing_s,
