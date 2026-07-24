@@ -244,6 +244,7 @@ def _paged_decode_attention(
         key_cache,
         value_cache,
         slots,
+        cache_mode="Norm",
     )
     batch_size = query_states.shape[0]
     attention_output = tng.ops.npu_fused_infer_attention_score_v2(
