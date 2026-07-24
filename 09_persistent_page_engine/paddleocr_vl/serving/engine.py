@@ -1781,15 +1781,26 @@ class ContinuousRecognizer:
                 self._group_stage_key(index, "image_embed_scatter"),
                 scatter_image_embeds,
             )
-            cache = device_timeline.measure(
-                self._group_stage_key(index, "static_cache_alloc"),
-                lambda inputs_embeds=inputs_embeds: self.model.allocate_static_cache(
+            def allocate_clean_cache(
+                inputs_embeds: torch.Tensor = inputs_embeds,
+            ) -> LocalPaddleOCRVLStaticCache:
+                cache = self.model.allocate_static_cache(
                     batch_size=1,
                     cache_length=self.cache_length,
                     device=self.device,
                     dtype=inputs_embeds.dtype,
                     init_mode="empty",
-                ),
+                )
+                # Decode admission copies the whole fixed cache with one fused
+                # foreach operation. Clear allocator-reused tail storage before
+                # prefill so that the otherwise-unused tail cannot carry NaNs
+                # or other invalid values into the decode arena.
+                torch._foreach_zero_(cache.flat_tensors())
+                return cache
+
+            cache = device_timeline.measure(
+                self._group_stage_key(index, "static_cache_alloc"),
+                allocate_clean_cache,
             )
             member_padding = group_padding if index == len(group.members) - 1 else 0
             vision_route = {
