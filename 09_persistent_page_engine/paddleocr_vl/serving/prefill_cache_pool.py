@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import threading
 from collections import deque
 from dataclasses import dataclass
 from typing import Any
@@ -78,6 +79,7 @@ class PrefillKVCachePool:
         self._free = deque(_FreeSlot(index) for index in range(capacity))
         self._active: dict[int, PrefillKVCacheLease] = {}
         self._generations = [0] * capacity
+        self._lock = threading.Lock()
         self.acquisitions = 0
         self.reuses = 0
         self.releases = 0
@@ -97,51 +99,55 @@ class PrefillKVCachePool:
         )
 
     def acquire(self) -> PrefillKVCacheLease:
-        if not self._free:
-            raise RuntimeError(
-                "prefill KV cache arena exhausted: "
-                f"capacity={self.capacity} active={len(self._active)}"
+        with self._lock:
+            if not self._free:
+                raise RuntimeError(
+                    "prefill KV cache arena exhausted: "
+                    f"capacity={self.capacity} active={len(self._active)}"
+                )
+            free = self._free.popleft()
+            self._generations[free.slot_index] += 1
+            lease = PrefillKVCacheLease(
+                self,
+                slot_index=free.slot_index,
+                generation=self._generations[free.slot_index],
+                cache=self._cache_view(free.slot_index),
             )
-        free = self._free.popleft()
+            if free.slot_index in self._active:
+                raise RuntimeError("prefill KV cache arena handed out an active slot")
+            self._active[free.slot_index] = lease
+            self.acquisitions += 1
+            self.high_water_active = max(self.high_water_active, len(self._active))
         if free.ready_event is not None:
             import torch_npu
 
             torch_npu.npu.current_stream().wait_event(free.ready_event)
-            self.reuses += 1
-        self._generations[free.slot_index] += 1
-        lease = PrefillKVCacheLease(
-            self,
-            slot_index=free.slot_index,
-            generation=self._generations[free.slot_index],
-            cache=self._cache_view(free.slot_index),
-        )
-        if free.slot_index in self._active:
-            raise RuntimeError("prefill KV cache arena handed out an active slot")
-        self._active[free.slot_index] = lease
-        self.acquisitions += 1
-        self.high_water_active = max(self.high_water_active, len(self._active))
+            with self._lock:
+                self.reuses += 1
         return lease
 
     def _release(self, lease: PrefillKVCacheLease) -> None:
-        active = self._active.get(lease.slot_index)
-        if active is not lease:
-            raise RuntimeError("prefill KV cache arena received a stale lease")
         import torch_npu
 
         ready_event = torch_npu.npu.current_stream().record_event()
-        del self._active[lease.slot_index]
-        self._free.append(_FreeSlot(lease.slot_index, ready_event))
-        self.releases += 1
+        with self._lock:
+            active = self._active.get(lease.slot_index)
+            if active is not lease:
+                raise RuntimeError("prefill KV cache arena received a stale lease")
+            del self._active[lease.slot_index]
+            self._free.append(_FreeSlot(lease.slot_index, ready_event))
+            self.releases += 1
 
     def stats(self) -> dict[str, int | str]:
-        return {
-            "storage": "zero_once_fixed_arena",
-            "capacity": self.capacity,
-            "allocated_bytes": self.nbytes,
-            "acquisitions": self.acquisitions,
-            "reuses": self.reuses,
-            "releases": self.releases,
-            "active_slots": len(self._active),
-            "free_slots": len(self._free),
-            "high_water_active_slots": self.high_water_active,
-        }
+        with self._lock:
+            return {
+                "storage": "zero_once_fixed_arena",
+                "capacity": self.capacity,
+                "allocated_bytes": self.nbytes,
+                "acquisitions": self.acquisitions,
+                "reuses": self.reuses,
+                "releases": self.releases,
+                "active_slots": len(self._active),
+                "free_slots": len(self._free),
+                "high_water_active_slots": self.high_water_active,
+            }
