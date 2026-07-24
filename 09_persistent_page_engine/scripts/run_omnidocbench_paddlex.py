@@ -204,14 +204,6 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
-        "--overlap-prefill-decode",
-        action="store_true",
-        help=(
-            "Experimentally run recognition prefill on a dedicated NPU stream "
-            "while decode continues. Requires --preprocess-all-pages-first."
-        ),
-    )
-    parser.add_argument(
         "--vision-route-plan",
         type=Path,
         default=None,
@@ -296,10 +288,6 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--vision-router-lookahead must be positive")
     if args.text_pack_max_members <= 0:
         raise ValueError("--text-pack-max-members must be positive")
-    if args.overlap_prefill_decode and not args.preprocess_all_pages_first:
-        raise ValueError(
-            "--overlap-prefill-decode requires --preprocess-all-pages-first"
-        )
 
 
 def run_predictions(
@@ -587,7 +575,6 @@ def main() -> None:
         text_pack_max_members=args.text_pack_max_members,
         text_packed_cache_dir=args.text_packed_cache_dir.expanduser().resolve(),
         preprocessor_min_pixels=args.preprocessor_min_pixels,
-        prefill_decode_overlap=args.overlap_prefill_decode,
         vision_route_plan=vision_route_plan,
         timeline=timeline,
     )
@@ -618,7 +605,6 @@ def main() -> None:
             "text_packing": args.text_packing,
             "text_pack_buckets": list(text_pack_buckets),
             "page_preprocessing_mode": manifest["page_preprocessing_mode"],
-            "prefill_decode_overlap": bool(args.overlap_prefill_decode),
             "vision_route_plan": (
                 str(vision_route_plan_path)
                 if vision_route_plan_path is not None
@@ -706,7 +692,6 @@ def main() -> None:
             ),
             "cpu_preprocessing": recognizer_configuration["cpu_preprocessing"],
             "page_preprocessing_mode": manifest["page_preprocessing_mode"],
-            "prefill_decode_overlap": bool(args.overlap_prefill_decode),
             "vision_route_plan_input": (
                 str(vision_route_plan_path)
                 if vision_route_plan_path is not None

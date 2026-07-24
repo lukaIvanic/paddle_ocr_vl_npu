@@ -382,15 +382,13 @@ class PrefilledRecognition:
 
 
 class ContinuousRecognizer:
-    """One persistent model with prefill and continuous decode.
+    """One persistent model with sequential prefill and continuous decode.
 
     Every real crop is prefilled independently. Vision prefill, text prefill,
     and text decode each have one model path; an execution wrapper selects
     eager or compiled execution around that path. Prefill padding is configured
     separately from compilation. A fixed decode arena keeps its tensor shapes
-    stable while ready KV prefixes replace finished requests between steps. An
-    experimental mode may produce prefills on a second NPU stream while decode
-    continues on the default stream.
+    stable while ready KV prefixes replace finished requests between steps.
     """
 
     @torch.inference_mode()
@@ -422,7 +420,6 @@ class ContinuousRecognizer:
         text_pack_max_members: int = DEFAULT_TEXT_PACK_MAX_MEMBERS,
         text_packed_cache_dir: Path | None = None,
         preprocessor_min_pixels: int | None = None,
-        prefill_decode_overlap: bool = False,
         vision_route_plan: dict[str, Any] | None = None,
         timeline: TimelineRecorder | None = None,
     ):
@@ -450,10 +447,6 @@ class ContinuousRecognizer:
         self.batch_size = int(batch_size)
         self.cache_length = int(cache_length)
         self.max_new_tokens = int(max_new_tokens)
-        self.prefill_decode_overlap = bool(prefill_decode_overlap)
-        self.prefill_decode_handoff_capacity = (
-            READY_BUFFER_BATCH_MULTIPLIER * self.batch_size
-        )
         self.vision_backend = str(vision_backend)
         self.vision_attention = str(vision_attention)
         if self.vision_attention not in VISION_ATTENTION_CHOICES:
@@ -576,11 +569,6 @@ class ContinuousRecognizer:
         synchronize(self.device)
         weight_format_s = time.perf_counter() - started
 
-        self.prefill_compute_stream = (
-            torch_npu.npu.Stream(device=self.device)
-            if self.prefill_decode_overlap
-            else None
-        )
         self.stages = self.model.make_inference_stages(
             vision_backend=self.vision_backend,
             vision_attention=self.vision_attention,
@@ -608,16 +596,14 @@ class ContinuousRecognizer:
             dtype=self.dtype,
             model_dir=self.model_dir,
             linear_weight_format=str(self.weight_format["effective_mode"]),
-            prefill_stream=self.prefill_compute_stream,
         )
         self.vision_prefill = self.stages.vision_prefill
         self.text_prefill = self.stages.text_prefill
         self.text_decode = self.stages.text_decode
         self.decode_fn = self.text_decode.fn
-        def build_packed_text_prefill() -> PackedTextPrefillRuntime | None:
-            if self.text_packing == "off":
-                return None
-            return PackedTextPrefillRuntime(
+        packed_text_started = time.perf_counter()
+        self.packed_text_prefill = (
+            PackedTextPrefillRuntime(
                 self.model,
                 buckets=self.text_pack_buckets,
                 max_members=self.text_pack_max_members,
@@ -633,32 +619,22 @@ class ContinuousRecognizer:
                 model_dir=self.model_dir,
                 linear_weight_format=str(self.weight_format["effective_mode"]),
             )
-
-        packed_text_started = time.perf_counter()
-        if self.prefill_compute_stream is None:
-            self.packed_text_prefill = build_packed_text_prefill()
-        else:
-            with torch_npu.npu.stream(self.prefill_compute_stream):
-                self.packed_text_prefill = build_packed_text_prefill()
+            if self.text_packing != "off"
+            else None
+        )
         synchronize(self.device)
         packed_text_setup_s = time.perf_counter() - packed_text_started
-
-        def build_batched_vision() -> BatchedVisionGraphRuntime | None:
-            if self.vision_packing != "profile_guided":
-                return None
-            return BatchedVisionGraphRuntime(
+        self.batched_vision = (
+            BatchedVisionGraphRuntime(
                 self.model,
                 cache_root=vision_batched_cache_dir,
                 model_dir=self.model_dir,
                 dtype=self.dtype,
                 device=self.device,
             )
-
-        if self.prefill_compute_stream is None:
-            self.batched_vision = build_batched_vision()
-        else:
-            with torch_npu.npu.stream(self.prefill_compute_stream):
-                self.batched_vision = build_batched_vision()
+            if self.vision_packing == "profile_guided"
+            else None
+        )
         self.prefill_transfer_stream = torch_npu.npu.Stream(device=self.device)
         # Keep one complete decode cohort in CPU preparation without coupling
         # correctness to the relative speed of CPU and NPU stages. B=1 still
@@ -693,11 +669,6 @@ class ContinuousRecognizer:
         private_cache_capacity = (
             READY_BUFFER_BATCH_MULTIPLIER * self.batch_size
             + self.cpu_preprocess_max_pending
-            + (
-                self.prefill_decode_handoff_capacity
-                if self.prefill_decode_overlap
-                else 0
-            )
         )
         private_cache_storage = self.model.allocate_static_cache(
             batch_size=private_cache_capacity,
@@ -846,95 +817,6 @@ class ContinuousRecognizer:
                         "ready stream drained with an unused staged prefill"
                     )
 
-        def overlapped_ready_stream() -> Iterable[ReadyDecodeRequest]:
-            """Produce prefills on a second NPU stream behind a bounded handoff."""
-
-            import torch_npu
-
-            if self.prefill_compute_stream is None:
-                raise RuntimeError("prefill/decode overlap has no prefill stream")
-            handoff: queue.Queue[object] = queue.Queue(
-                maxsize=self.prefill_decode_handoff_capacity
-            )
-            sentinel = object()
-            stop = threading.Event()
-            errors: list[BaseException] = []
-
-            def put(item: object) -> bool:
-                while not stop.is_set():
-                    try:
-                        handoff.put(item, timeout=0.1)
-                        if self.timeline is not None and item is not sentinel:
-                            self.timeline.counter(
-                                "Decode ready wait",
-                                "Concurrent prefill handoff depth",
-                                handoff.qsize(),
-                                track="queue",
-                                lane="prefill-decode-handoff",
-                            )
-                        return True
-                    except queue.Full:
-                        continue
-                return False
-
-            def produce() -> None:
-                started = time.perf_counter()
-                try:
-                    with (
-                        torch.inference_mode(),
-                        torch_npu.npu.stream(self.prefill_compute_stream),
-                    ):
-                        for ready in ready_stream():
-                            if not put(ready):
-                                return
-                except BaseException as exc:
-                    errors.append(exc)
-                finally:
-                    put(sentinel)
-                    if self.timeline is not None:
-                        self.timeline.record_span_seconds(
-                            "Pipeline",
-                            "Concurrent prefill producer",
-                            started,
-                            time.perf_counter(),
-                            event_type="scope",
-                        )
-
-            producer = threading.Thread(
-                target=produce,
-                name="paddleocr-vl-prefill-producer",
-                daemon=True,
-            )
-            producer.start()
-            try:
-                while True:
-                    item = handoff.get()
-                    if item is sentinel:
-                        if errors:
-                            raise errors[0]
-                        break
-                    if not isinstance(item, ReadyDecodeRequest):
-                        raise TypeError(
-                            f"unexpected prefill handoff item: {type(item)!r}"
-                        )
-                    if self.timeline is not None:
-                        self.timeline.counter(
-                            "Decode ready wait",
-                            "Concurrent prefill handoff depth",
-                            handoff.qsize(),
-                            track="queue",
-                            lane="prefill-decode-handoff",
-                            args={"request_id": item.request_id},
-                        )
-                    yield item
-            finally:
-                stop.set()
-                producer.join(timeout=30.0)
-                if producer.is_alive():
-                    raise RuntimeError(
-                        "concurrent prefill producer did not stop within 30 seconds"
-                    )
-
         def handle_completion(completion: DecodeCompletion) -> None:
             result = self._result_from_completion(
                 completion,
@@ -942,13 +824,8 @@ class ContinuousRecognizer:
             )
             emit_result(result)
 
-        ready_source = (
-            overlapped_ready_stream()
-            if self.prefill_decode_overlap
-            else ready_stream()
-        )
         decoded = self.decode_scheduler.run_stream(
-            ready_source,
+            ready_stream(),
             on_completion=handle_completion,
             ready_buffer_capacity=READY_BUFFER_BATCH_MULTIPLIER * self.batch_size,
             ready_buffer_low_watermark=self.batch_size,
@@ -2685,16 +2562,6 @@ class ContinuousRecognizer:
                 else "next_crop_h2d_staged_before_ready_yield"
             ),
             "prefill_transfer": "dedicated_stream_event_dependencies",
-            "prefill_decode_execution": (
-                "concurrent_dedicated_npu_stream"
-                if self.prefill_decode_overlap
-                else "serialized_on_decode_demand"
-            ),
-            "prefill_decode_handoff_capacity": (
-                self.prefill_decode_handoff_capacity
-                if self.prefill_decode_overlap
-                else 0
-            ),
             "decode": decode_label,
             "decode_schedule": "run_scoped_persistent_slots_iteration_hot_swap",
             "ready_buffer_capacity": READY_BUFFER_BATCH_MULTIPLIER * self.batch_size,

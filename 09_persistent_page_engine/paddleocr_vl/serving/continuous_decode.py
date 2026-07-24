@@ -328,18 +328,6 @@ class DecodeArena:
             destination[slot_index : slot_index + 1]
             for destination in self.cache.flat_tensors()
         )
-        if self.device.type == "npu":
-            import torch_npu
-
-            decode_stream = torch_npu.npu.current_stream()
-            # Admission consumes prefill-stream tensors asynchronously. Keep
-            # their storage out of the allocator until these copies finish.
-            for tensor in (
-                source_rope_deltas,
-                source_cache_position,
-                source_first_token,
-            ):
-                tensor.record_stream(decode_stream)
         useful_prefix_bytes = sum(
             int(source[:, :, :prompt_length, :].numel()) * source.element_size()
             for source in source_tensors
