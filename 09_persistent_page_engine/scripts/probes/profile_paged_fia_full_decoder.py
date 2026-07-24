@@ -134,13 +134,23 @@ def _profile_lane(
     metric: str,
     warmup: int,
     profile_iters: int,
+    state_prefix: int | None = None,
 ) -> dict[str, Any]:
     import torch_npu.profiler as npu_prof
 
     shutil.rmtree(profile_dir, ignore_errors=True)
     profile_dir.mkdir(parents=True, exist_ok=True)
+    current_args = call_args
     for _ in range(warmup):
-        logits = fn(*call_args)
+        output = fn(*current_args)
+        if state_prefix is None:
+            logits = output
+        else:
+            logits = output[0]
+            current_args = (
+                *current_args[:state_prefix],
+                *output[1:],
+            )
         torch.argmax(logits[:, -1, :].float(), dim=-1, keepdim=True)
     synchronize(device)
 
@@ -167,7 +177,15 @@ def _profile_lane(
             f"paddleocr_vl.full_decoder.{name}"
         ):
             for _ in range(profile_iters):
-                logits = fn(*call_args)
+                output = fn(*current_args)
+                if state_prefix is None:
+                    logits = output
+                else:
+                    logits = output[0]
+                    current_args = (
+                        *current_args[:state_prefix],
+                        *output[1:],
+                    )
                 torch.argmax(
                     logits[:, -1, :].float(),
                     dim=-1,
@@ -291,7 +309,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
 
     # Load or compile the paged graph before either profiler capture.
-    paged_logits = paged_fn(*paged_args)
+    paged_output = paged_fn(*paged_args)
+    paged_logits = (
+        paged_output[0]
+        if args.paged_cache_update == "scatter_pa"
+        else paged_output
+    )
     incre_logits = incre_runtime.fn(*incre_args)
     synchronize(device)
     correctness = bench._delta_stats(paged_logits, incre_logits)
@@ -315,7 +338,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         args.profile_root.expanduser().resolve()
         / (
             f"b{args.batch_size}_k{args.cache_length}_"
-            f"p{args.position}_{stream_mode}_"
+            f"p{args.position}_{args.paged_cache_update}_{stream_mode}_"
             f"{args.profile_metric}_{run_stamp}"
         )
     )
@@ -338,6 +361,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         metric=args.profile_metric,
         warmup=args.warmup,
         profile_iters=args.profile_iters,
+        state_prefix=(
+            4 if args.paged_cache_update == "scatter_pa" else None
+        ),
     )
 
     result = {

@@ -393,7 +393,7 @@ class PagedFIATextDecodeStage(nn.Module):
         rope_deltas: torch.Tensor,
         block_table: torch.Tensor,
         *flat_cache_tensors: torch.Tensor,
-    ) -> torch.Tensor:
+    ) -> Any:
         key_caches = flat_cache_tensors[: self.num_layers]
         value_caches = flat_cache_tensors[self.num_layers :]
         inputs_embeds = self.model.model.embed_tokens(input_ids)
@@ -488,6 +488,8 @@ class PagedFIATextDecodeStage(nn.Module):
             self.model.lm_head,
             hidden_states[:, -1:, :],
         )
+        if self.cache_update_mode == "scatter_pa":
+            return (logits, *key_caches, *value_caches)
         return logits
 
 
@@ -1000,7 +1002,27 @@ def main(argv: Sequence[str] | None = None) -> int:
             paged_cache.block_table,
             *paged_cache.flat_tensors(),
         )
-        paged_logits = paged_output
+        if args.paged_cache_update == "scatter_pa":
+            paged_logits = paged_output[0]
+            returned_cache_tensors = paged_output[1:]
+            paged_cache_after = PagedCache(
+                key_caches=tuple(
+                    returned_cache_tensors[
+                        : config.text_config.num_hidden_layers
+                    ]
+                ),
+                value_caches=tuple(
+                    returned_cache_tensors[
+                        config.text_config.num_hidden_layers :
+                    ]
+                ),
+                block_table=paged_cache.block_table,
+                block_size=paged_cache.block_size,
+                cache_length=paged_cache.cache_length,
+            )
+        else:
+            paged_logits = paged_output
+            paged_cache_after = paged_cache
         synchronize(device)
         incre_tokens = torch.argmax(
             incre_logits[:, -1, :].float(),
@@ -1013,10 +1035,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         logits_delta = _delta_stats(paged_logits, incre_logits)
         cache_delta = _cache_delta_stats(
             _dense_cache_written_values(dense_cache, cache_position),
-            _page_cache_written_values(paged_cache, cache_position),
+            _page_cache_written_values(paged_cache_after, cache_position),
         )
         input_page_pool_change = _cache_delta_stats(
-            _page_cache_written_values(paged_cache, cache_position),
+            _page_cache_written_values(paged_cache_after, cache_position),
             page_values_before,
         )
         first_layer_delta = {
@@ -1050,6 +1072,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             warmup=args.warmup,
             repeats=args.repeats,
             device=device,
+            state_prefix=(
+                4 if args.paged_cache_update == "scatter_pa" else None
+            ),
         )
         rows.append(
             {
