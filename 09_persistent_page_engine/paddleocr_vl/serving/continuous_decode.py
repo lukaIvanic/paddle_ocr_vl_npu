@@ -315,24 +315,26 @@ class DecodeArena:
             )
         if len(source_cache.key_caches) != len(self.cache.key_caches):
             raise ValueError("ready cache and decode arena have different layer counts")
-        if int(source_cache.cache_length) != int(self.cache.cache_length):
-            raise ValueError("ready cache and decode arena have different cache lengths")
 
-        source_tensors = source_cache.flat_tensors()
-        destination_tensors = tuple(
-            destination[slot_index : slot_index + 1]
-            for destination in self.cache.flat_tensors()
-        )
-        useful_prefix_bytes = sum(
-            int(source[:, :, :prompt_length, :].numel()) * source.element_size()
-            for source in source_tensors
-        )
-        physical_copied_bytes = sum(
-            int(source.numel()) * source.element_size() for source in source_tensors
-        )
+        copied_bytes = 0
+        for source in (*source_cache.key_caches, *source_cache.value_caches):
+            copied_bytes += int(source[:, :, :prompt_length, :].numel()) * source.element_size()
 
         def copy_state() -> None:
-            torch._foreach_copy_(destination_tensors, source_tensors)
+            for destination, source in zip(
+                self.cache.key_caches,
+                source_cache.key_caches,
+            ):
+                destination[slot_index : slot_index + 1, :, :prompt_length, :].copy_(
+                    source[:, :, :prompt_length, :]
+                )
+            for destination, source in zip(
+                self.cache.value_caches,
+                source_cache.value_caches,
+            ):
+                destination[slot_index : slot_index + 1, :, :prompt_length, :].copy_(
+                    source[:, :, :prompt_length, :]
+                )
             self.rope_deltas[slot_index : slot_index + 1].copy_(source_rope_deltas)
             self.cache_position[slot_index : slot_index + 1].copy_(
                 source_cache_position.reshape(1)
@@ -345,19 +347,18 @@ class DecodeArena:
             self._admission_event_spans,
             copy_state,
             row="Decode admission",
-            name="Copy full prefetched KV cache into decode slot",
+            name="Copy prefetched KV prefix into decode slot",
             flow_id=ready.request_id,
             event_type="io",
             args={
                 "slot": slot_index,
                 "prompt_tokens": prompt_length,
-                "useful_prefix_bytes": useful_prefix_bytes,
-                "physical_copied_bytes": physical_copied_bytes,
+                "copied_bytes": copied_bytes,
                 "hot_swap": hot_swap,
             },
         )
         self.admission_enqueue_wall_s += time.perf_counter() - started
-        self.kv_prefix_bytes_copied += useful_prefix_bytes
+        self.kv_prefix_bytes_copied += copied_bytes
         self._epochs[slot_index] += 1
         state = DecodeSlotState(
             slot_index=slot_index,
@@ -372,7 +373,7 @@ class DecodeArena:
         # Large producer streams may contain hundreds of crops; retaining one
         # cache per completed crop grows HBM until the outer call returns.
         ready.release_device_state()
-        return state, useful_prefix_bytes
+        return state, copied_bytes
 
     def release(self, slot_index: int) -> DecodeSlotState:
         state = self.slots[slot_index]

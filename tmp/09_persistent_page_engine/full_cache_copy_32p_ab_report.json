@@ -1,0 +1,78 @@
+{
+  "experiment": "private KV4096 cache to B32 decode-arena row",
+  "date": "2026-07-24",
+  "physical_npu": 5,
+  "common_configuration": {
+    "pages": 32,
+    "recognition_requests": 510,
+    "decode_batch_size": 32,
+    "cache_length": 4096,
+    "max_new_tokens": 2808,
+    "preprocessor_min_pixels": 28224,
+    "vision_attention": "prompt_flash_attention",
+    "vision_packing": "profile_guided",
+    "vision_router_lookahead": 32,
+    "text_packing": "production_group"
+  },
+  "runs": {
+    "prefix_copy_baseline": {
+      "commit": "a3e592ef299f14073c06fcfc3d023d727161a729",
+      "remote_output": "tmp/09_persistent_page_engine/full_cache_copy_baseline_32p_a3e592e",
+      "pipeline_e2e_s": 19.1881573459832,
+      "pages_per_s": 1.6676953092996603,
+      "decode_wall_s": 7.01956973108463,
+      "static_cache_alloc_device_s": 0.045558320098775286,
+      "slot_admission_device_s": 1.077227049,
+      "slot_admission_mean_ms": 2.1122099,
+      "slot_admission_median_ms": 1.4069795,
+      "slot_admission_p95_ms": 5.5809,
+      "logical_and_physical_kv_bytes_copied": 1155557376,
+      "generated_tokens_including_eos": 26754,
+      "decode_graph_calls": 1328
+    },
+    "unsafe_full_foreach_copy": {
+      "commit": "d0756b52980cb204decfd35eda251161884687fe",
+      "remote_output": "tmp/09_persistent_page_engine/full_cache_copy_foreach_32p_d0756b5",
+      "pipeline_e2e_s": 50.80975872697309,
+      "pages_per_s": 0.6298002746274082,
+      "decode_wall_s": 38.05898557184264,
+      "slot_admission_device_s": 0.954497678,
+      "slot_admission_mean_ms": 1.8715640745098039,
+      "slot_admission_median_ms": 0.07721,
+      "slot_admission_p95_ms": 1.393839,
+      "logical_prefix_bytes": 1155557376,
+      "physical_kv_bytes_copied": 38503710720,
+      "generated_tokens_including_eos": 205568,
+      "decode_graph_calls": 8824,
+      "token_or_text_mismatches_vs_baseline": 67,
+      "length_limited_requests": 65,
+      "verdict": "invalid: copying undefined torch.empty tails poisons hot-swap decode"
+    },
+    "fused_clear_then_full_foreach_copy": {
+      "commit": "ba3edd3c6ba33d100530b0b4a51b19a16cb55d1a",
+      "remote_output": "tmp/09_persistent_page_engine/full_cache_clear_foreach_32p_ba3edd3",
+      "pipeline_e2e_s": 19.54573689296376,
+      "pages_per_s": 1.6371856520548802,
+      "decode_wall_s": 6.31461539841257,
+      "static_cache_alloc_and_clear_device_s": 0.9370971510242674,
+      "slot_admission_device_s": 0.260297286,
+      "slot_admission_mean_ms": 0.5103868352941177,
+      "slot_admission_median_ms": 0.10189,
+      "slot_admission_p95_ms": 1.18402,
+      "logical_prefix_bytes": 1155557376,
+      "physical_kv_bytes_copied": 38503710720,
+      "physical_kv_bytes_cleared": 38503710720,
+      "generated_tokens_including_eos": 26790,
+      "decode_graph_calls": 1330,
+      "token_or_text_mismatches_vs_baseline": 4,
+      "verdict": "valid enough for performance pricing, but slower end to end"
+    }
+  },
+  "conclusion": {
+    "admission_device_time_saved_s": 0.816929763,
+    "cache_allocation_and_clear_device_time_added_s": 0.8915388309254921,
+    "combined_targeted_device_time_delta_s": 0.07460906792549216,
+    "pipeline_e2e_delta_s": 0.3575795469805598,
+    "recommendation": "keep prefix-only copies; full-buffer copy is unsafe without clearing and the safe clear consumes the launch-overhead saving"
+  }
+}
