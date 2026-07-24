@@ -420,6 +420,7 @@ class ContinuousRecognizer:
         text_pack_max_members: int = DEFAULT_TEXT_PACK_MAX_MEMBERS,
         text_packed_cache_dir: Path | None = None,
         preprocessor_min_pixels: int | None = None,
+        vision_route_plan: dict[str, Any] | None = None,
         timeline: TimelineRecorder | None = None,
     ):
         # TorchAir guards tensor dispatch-key sets. Build and warm every graph
@@ -481,6 +482,19 @@ class ContinuousRecognizer:
                 raise ValueError(
                     "profile_guided vision routing requires vision_batched_cache_dir"
                 )
+        if vision_route_plan is not None:
+            if self.vision_packing != "profile_guided":
+                raise ValueError(
+                    "a vision route plan requires profile_guided vision packing"
+                )
+            if int(vision_route_plan.get("schema_version", 0)) != 1:
+                raise ValueError("unsupported vision route plan schema")
+            groups = vision_route_plan.get("groups")
+            if not isinstance(groups, list) or not groups:
+                raise ValueError("vision route plan must contain non-empty groups")
+            self._vision_route_replay_groups = [dict(group) for group in groups]
+        else:
+            self._vision_route_replay_groups = None
         self.text_backend = str(text_backend)
         self.text_buckets = parse_text_buckets(text_buckets)
         self.text_padding = str(text_padding)
@@ -640,6 +654,7 @@ class ContinuousRecognizer:
             pin_memory=True,
         )
         self._vision_pack_sequence = 0
+        self._captured_vision_route_groups: list[dict[str, Any]] = []
         self._vision_packing_stats = _VisionPackingRunStats(
             self.vision_packing,
             self.vision_pack_target,
@@ -720,6 +735,7 @@ class ContinuousRecognizer:
         """
 
         self._vision_pack_sequence = 0
+        self._captured_vision_route_groups = []
         self._vision_packing_stats = _VisionPackingRunStats(
             self.vision_packing,
             self.vision_pack_target,
@@ -880,6 +896,13 @@ class ContinuousRecognizer:
             },
         )
         return schedule_result
+
+    def vision_route_plan(self) -> dict[str, Any]:
+        return {
+            "schema_version": 1,
+            "vision_packing": self.vision_packing,
+            "groups": list(self._captured_vision_route_groups),
+        }
 
     def _iter_cpu_prepared(
         self,
@@ -1095,6 +1118,10 @@ class ContinuousRecognizer:
     ) -> Iterable[_PreparedPrefillGroup]:
         """Route up to the currently ready lookahead without waiting to fill it."""
 
+        if self._vision_route_replay_groups is not None:
+            yield from self._iter_replayed_profiled_prefill_groups(requests)
+            return
+
         prepared_queue: queue.Queue[object] = queue.Queue(
             maxsize=self.cpu_preprocess_max_pending
         )
@@ -1197,6 +1224,7 @@ class ContinuousRecognizer:
                     row_sizes=tuple(len(row) for row in route.rows),
                     profiled_route=route_dict,
                 )
+                self._capture_profiled_vision_group(group)
                 if group.real_vision_tokens != route.real_tokens:
                     raise RuntimeError(
                         "profiled route token accounting mismatch: "
@@ -1232,6 +1260,90 @@ class ContinuousRecognizer:
                 raise RuntimeError(
                     "profiled prefill source did not stop within 30 seconds"
                 )
+
+    def _capture_profiled_vision_group(
+        self,
+        group: _PreparedPrefillGroup,
+    ) -> None:
+        if group.profiled_route is None:
+            raise ValueError("profiled vision group is missing its route")
+        route = {
+            key: value
+            for key, value in group.profiled_route.items()
+            if key != "router_cpu_s"
+        }
+        self._captured_vision_route_groups.append(
+            {
+                "request_ids": [
+                    prepared.request_id for prepared, _wait_s in group.members
+                ],
+                "row_sizes": list(group.row_sizes),
+                "route": route,
+            }
+        )
+
+    def _iter_replayed_profiled_prefill_groups(
+        self,
+        requests: Iterable[RecognitionRequest],
+    ) -> Iterable[_PreparedPrefillGroup]:
+        prepared_source = iter(self._iter_cpu_prepared(requests))
+        waiting: dict[str, tuple[CpuPreparedRecognition, float]] = {}
+        consumed_request_ids: set[str] = set()
+
+        for plan_index, entry in enumerate(self._vision_route_replay_groups or ()):
+            request_ids = entry.get("request_ids")
+            row_sizes = entry.get("row_sizes")
+            planned_route = entry.get("route")
+            if (
+                not isinstance(request_ids, list)
+                or not request_ids
+                or len(set(request_ids)) != len(request_ids)
+                or not isinstance(row_sizes, list)
+                or not isinstance(planned_route, dict)
+            ):
+                raise ValueError(f"invalid vision route plan group {plan_index}")
+
+            missing = set(str(request_id) for request_id in request_ids)
+            while not missing.issubset(waiting):
+                try:
+                    item = next(prepared_source)
+                except StopIteration as exc:
+                    raise RuntimeError(
+                        "vision route plan references requests absent from the "
+                        f"input stream: {sorted(missing - set(waiting))[:5]}"
+                    ) from exc
+                request_id = item[0].request_id
+                if request_id in waiting or request_id in consumed_request_ids:
+                    raise RuntimeError(
+                        f"duplicate prepared request while replaying route: {request_id}"
+                    )
+                waiting[request_id] = item
+
+            selected = [waiting.pop(str(request_id)) for request_id in request_ids]
+            consumed_request_ids.update(str(request_id) for request_id in request_ids)
+            route_started = time.perf_counter()
+            route = dict(planned_route)
+            route["router_cpu_s"] = time.perf_counter() - route_started
+            group = self._prepared_group(
+                selected,
+                row_sizes=tuple(int(size) for size in row_sizes),
+                profiled_route=route,
+            )
+            self._capture_profiled_vision_group(group)
+            yield group
+
+        try:
+            extra = next(prepared_source)
+        except StopIteration:
+            extra = None
+        if extra is not None or waiting:
+            extra_ids = list(waiting)
+            if extra is not None:
+                extra_ids.append(extra[0].request_id)
+            raise RuntimeError(
+                "vision route plan did not consume the full request stream: "
+                f"{extra_ids[:5]}"
+            )
 
     def _result_from_completion(
         self,

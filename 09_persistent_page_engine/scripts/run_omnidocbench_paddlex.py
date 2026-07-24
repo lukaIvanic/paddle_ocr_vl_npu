@@ -203,6 +203,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "is handed to recognition while the next page is produced."
         ),
     )
+    parser.add_argument(
+        "--vision-route-plan",
+        type=Path,
+        default=None,
+        help=(
+            "Replay the exact profile-guided vision groups recorded by a previous "
+            "run. This is intended for controlled scheduling comparisons."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -471,6 +480,16 @@ def main() -> None:
     vision_buckets = parse_vision_buckets(args.vision_buckets)
     text_buckets = selected_text_buckets(args)
     text_pack_buckets = parse_text_buckets(args.text_pack_buckets)
+    vision_route_plan_path = (
+        args.vision_route_plan.expanduser().resolve()
+        if args.vision_route_plan is not None
+        else None
+    )
+    vision_route_plan = (
+        json.loads(vision_route_plan_path.read_text(encoding="utf-8"))
+        if vision_route_plan_path is not None
+        else None
+    )
     manifest = {
         "dataset_json": str(dataset_json),
         "images_dir": str(images_dir),
@@ -556,6 +575,7 @@ def main() -> None:
         text_pack_max_members=args.text_pack_max_members,
         text_packed_cache_dir=args.text_packed_cache_dir.expanduser().resolve(),
         preprocessor_min_pixels=args.preprocessor_min_pixels,
+        vision_route_plan=vision_route_plan,
         timeline=timeline,
     )
     recognizer_configuration = recognizer.configuration()
@@ -585,6 +605,11 @@ def main() -> None:
             "text_packing": args.text_packing,
             "text_pack_buckets": list(text_pack_buckets),
             "page_preprocessing_mode": manifest["page_preprocessing_mode"],
+            "vision_route_plan": (
+                str(vision_route_plan_path)
+                if vision_route_plan_path is not None
+                else None
+            ),
         }
     )
     try:
@@ -620,6 +645,16 @@ def main() -> None:
         raise RuntimeError(
             f"expected {len(image_paths)} page results, got {result_count}"
         )
+    captured_vision_route_plan_path = output_dir / "vision_route_plan.json"
+    captured_vision_route_plan_path.write_text(
+        json.dumps(
+            recognizer.vision_route_plan(),
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
 
     summary = {
         **manifest,
@@ -657,6 +692,11 @@ def main() -> None:
             ),
             "cpu_preprocessing": recognizer_configuration["cpu_preprocessing"],
             "page_preprocessing_mode": manifest["page_preprocessing_mode"],
+            "vision_route_plan_input": (
+                str(vision_route_plan_path)
+                if vision_route_plan_path is not None
+                else None
+            ),
         },
         "setup_s": setup_s,
         "recognizer_setup_timing_s": recognizer.setup_timing_s,
@@ -673,6 +713,7 @@ def main() -> None:
         "layout_mask_guard_path": str(layout_mask_guard_path),
         "predictions_dir": str(predictions_dir),
         "page_regions_jsonl": str(compact_path),
+        "vision_route_plan": str(captured_vision_route_plan_path),
         "timeline": {
             "enabled": bool(args.timeline),
             "event_count": len(timeline.events()) if args.timeline else 0,
