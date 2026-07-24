@@ -285,7 +285,7 @@ def _paged_decode_attention(
     block_size: int,
     cache_update_mode: str,
     optimization: Any,
-) -> torch.Tensor:
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     query_states, key_states, value_states = _project_decode_qkv(
         attention,
         hidden_states,
@@ -302,13 +302,14 @@ def _paged_decode_attention(
     batch_size = query_states.shape[0]
     num_hidden_tiles = key_cache.shape[1]
     if cache_update_mode == "scatter_pa":
-        torch_npu.npu_scatter_pa_kv_cache(
-            key=key_states.squeeze(2).contiguous(),
-            value=value_states.squeeze(2).contiguous(),
-            key_cache=key_cache,
-            value_cache=value_cache,
-            slot_mapping=cache_update_metadata.contiguous(),
-            cache_mode="PA_NZ",
+        updated_key_cache, updated_value_cache = (
+            torch_npu.npu_scatter_pa_kv_cache_functional(
+                key=key_states.squeeze(2).contiguous(),
+                value=value_states.squeeze(2).contiguous(),
+                key_cache=key_cache,
+                value_cache=value_cache,
+                slot_mapping=cache_update_metadata.contiguous(),
+            )
         )
     else:
         key_updates = (
@@ -333,14 +334,16 @@ def _paged_decode_attention(
             cache_update_metadata,
             value_updates,
         )
-    key_cache_fia = key_cache.view(
-        key_cache.shape[0],
+        updated_key_cache = key_cache
+        updated_value_cache = value_cache
+    key_cache_fia = updated_key_cache.view(
+        updated_key_cache.shape[0],
         attention.num_key_value_heads,
         attention.head_dim // PA_NZ_LAST_DIM,
         block_size,
         PA_NZ_LAST_DIM,
     )
-    value_cache_fia = value_cache.view_as(key_cache_fia)
+    value_cache_fia = updated_value_cache.view_as(key_cache_fia)
     attention_output = tng.ops.npu_fused_infer_attention_score_v2(
         query_states.contiguous(),
         key_cache_fia,
@@ -365,7 +368,11 @@ def _paged_decode_attention(
             attention.num_heads * attention.head_dim,
         )
     )
-    return _linear_tokenwise(attention.o_proj, attention_output)
+    return (
+        _linear_tokenwise(attention.o_proj, attention_output),
+        updated_key_cache,
+        updated_value_cache,
+    )
 
 
 class PagedFIATextDecodeStage(nn.Module):
@@ -440,6 +447,8 @@ class PagedFIATextDecodeStage(nn.Module):
 
         hidden_states = inputs_embeds
         residual: torch.Tensor | None = None
+        updated_key_caches: list[torch.Tensor] = []
+        updated_value_caches: list[torch.Tensor] = []
         for layer_index, layer in enumerate(self.model.model.layers):
             if residual is None:
                 attention_input = _decode_rms_norm(
@@ -454,7 +463,11 @@ class PagedFIATextDecodeStage(nn.Module):
                     residual,
                     layer.input_layernorm,
                 )
-            attention_output = _paged_decode_attention(
+            (
+                attention_output,
+                updated_key_cache,
+                updated_value_cache,
+            ) = _paged_decode_attention(
                 layer.self_attn,
                 attention_input,
                 position_embeddings,
@@ -469,6 +482,9 @@ class PagedFIATextDecodeStage(nn.Module):
                 self.cache_update_mode,
                 self.optimization,
             )
+            if self.cache_update_mode == "scatter_pa":
+                updated_key_caches.append(updated_key_cache)
+                updated_value_caches.append(updated_value_cache)
             mlp_input, residual = _decode_add_rms_norm(
                 attention_output,
                 residual,
@@ -489,7 +505,11 @@ class PagedFIATextDecodeStage(nn.Module):
             hidden_states[:, -1:, :],
         )
         if self.cache_update_mode == "scatter_pa":
-            return (logits, *key_caches, *value_caches)
+            return (
+                logits,
+                *updated_key_caches,
+                *updated_value_caches,
+            )
         return logits
 
 
@@ -1139,11 +1159,14 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "[num_blocks,Nkv,head_dim/16,block_size,16]"
             ),
             "paged_cache_state": (
-                "in-place graph inputs updated by "
-                + (
-                    "npu_scatter_pa_kv_cache"
-                    if args.paged_cache_update == "scatter_pa"
-                    else "npu_scatter_nd_update_"
+                (
+                    "explicit functional cache outputs from "
+                    "npu_scatter_pa_kv_cache_functional"
+                )
+                if args.paged_cache_update == "scatter_pa"
+                else (
+                    "in-place graph inputs updated by "
+                    "npu_scatter_nd_update_"
                 )
             ),
             "paged_cache_update": args.paged_cache_update,
