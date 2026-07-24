@@ -48,20 +48,22 @@ def _source_hash() -> str:
     return hashlib.sha1(Path(__file__).read_bytes()).hexdigest()[:12]
 
 
-def _functional_update(
-    key: torch.Tensor,
-    value: torch.Tensor,
-    key_cache: torch.Tensor,
-    value_cache: torch.Tensor,
-    slot_mapping: torch.Tensor,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    return torch_npu.npu_scatter_pa_kv_cache_functional(
-        key,
-        value,
-        key_cache,
-        value_cache,
-        slot_mapping,
-    )
+class FunctionalUpdate(torch.nn.Module):
+    def forward(
+        self,
+        key: torch.Tensor,
+        value: torch.Tensor,
+        key_cache: torch.Tensor,
+        value_cache: torch.Tensor,
+        slot_mapping: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        return torch_npu.npu_scatter_pa_kv_cache_functional(
+            key,
+            value,
+            key_cache,
+            value_cache,
+            slot_mapping,
+        )
 
 
 def _stats(
@@ -117,7 +119,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     compiled_key_cache = torch.zeros_like(eager_key_cache)
     compiled_value_cache = torch.zeros_like(eager_key_cache)
 
-    eager_key_out, eager_value_out = _functional_update(
+    stage = FunctionalUpdate().eval()
+    eager_key_out, eager_value_out = stage(
         key,
         value,
         eager_key_cache,
@@ -132,7 +135,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     cache_dir.mkdir(parents=True, exist_ok=True)
     compiled = torchair.inference.cache_compile(
-        _functional_update,
+        stage.forward,
         config=CompilerConfig(),
         dynamic=False,
         cache_dir=str(cache_dir),
