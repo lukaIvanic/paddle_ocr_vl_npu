@@ -62,6 +62,7 @@ DEFAULT_OUTPUT = (
     / "paged_fia_full_decoder_b1_k1024.json"
 )
 OPTIMIZATION = "combined_apply"
+PA_NZ_LAST_DIM = 16
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -244,7 +245,6 @@ def _paged_decode_attention(
         key_cache,
         value_cache,
         slots,
-        cache_mode="Norm",
     )
     batch_size = query_states.shape[0]
     attention_output = tng.ops.npu_fused_infer_attention_score_v2(
@@ -373,27 +373,42 @@ class PagedFIATextDecodeStage(nn.Module):
         )
 
 
-def _dense_to_pages(
+def _dense_to_paged_nz(
     tensor: torch.Tensor,
     *,
     block_size: int,
 ) -> torch.Tensor:
     batch_size, num_kv_heads, cache_length, head_dim = tensor.shape
     blocks_per_request = cache_length // block_size
-    return (
+    hidden_size = num_kv_heads * head_dim
+    if hidden_size % PA_NZ_LAST_DIM:
+        raise ValueError(
+            "paged-NZ hidden size must be divisible by "
+            f"{PA_NZ_LAST_DIM}: {hidden_size}"
+        )
+    normal_pages = (
         tensor.permute(0, 2, 1, 3)
         .contiguous()
         .view(
             batch_size,
             blocks_per_request,
             block_size,
-            num_kv_heads * head_dim,
+            hidden_size,
         )
         .reshape(
             batch_size * blocks_per_request,
             block_size,
-            num_kv_heads * head_dim,
+            hidden_size,
         )
+    )
+    return (
+        normal_pages.view(
+            batch_size * blocks_per_request,
+            block_size,
+            hidden_size // PA_NZ_LAST_DIM,
+            PA_NZ_LAST_DIM,
+        )
+        .permute(0, 2, 1, 3)
         .contiguous()
     )
 
@@ -425,10 +440,16 @@ def _allocate_matching_caches(
         dense_keys.append(dense_key)
         dense_values.append(dense_value)
         page_keys.append(
-            _dense_to_pages(dense_key, block_size=block_size).clone()
+            _dense_to_paged_nz(
+                dense_key,
+                block_size=block_size,
+            ).clone()
         )
         page_values.append(
-            _dense_to_pages(dense_value, block_size=block_size).clone()
+            _dense_to_paged_nz(
+                dense_value,
+                block_size=block_size,
+            ).clone()
         )
     blocks_per_request = cache_length // block_size
     block_table = torch.arange(
@@ -469,8 +490,15 @@ def _page_cache_written_values(
     offsets = torch.remainder(positions, cache.block_size)
     outputs = []
     for tensor in cache.flat_tensors():
-        values = tensor[physical_blocks, offsets]
-        outputs.append(values.view(positions.shape[0], -1))
+        blocks = tensor.index_select(0, physical_blocks)
+        gather_index = offsets.view(-1, 1, 1, 1).expand(
+            -1,
+            blocks.shape[1],
+            1,
+            blocks.shape[3],
+        )
+        values = blocks.gather(2, gather_index).squeeze(2)
+        outputs.append(values.reshape(positions.shape[0], -1))
     return tuple(outputs)
 
 
@@ -809,6 +837,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             "batch_size": args.batch_size,
             "cache_length": args.cache_length,
             "block_size": args.block_size,
+            "paged_cache_layout": "PA_NZ",
+            "paged_cache_shape": (
+                "[num_blocks,Nkv*head_dim/16,block_size,16]"
+            ),
             "positions": list(args.positions),
             "warmup": args.warmup,
             "repeats": args.repeats,
