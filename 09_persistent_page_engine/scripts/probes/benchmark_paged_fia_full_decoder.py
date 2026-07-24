@@ -115,6 +115,24 @@ class RandomPaddleTextForCausalLM(nn.Module):
             bias=False,
         )
 
+    def allocate_static_cache(
+        self,
+        *,
+        batch_size: int,
+        cache_length: int,
+        device: torch.device,
+        dtype: torch.dtype,
+        init_mode: str = "zeros",
+    ) -> LocalPaddleOCRVLStaticCache:
+        return LocalPaddleOCRVLStaticCache.allocate(
+            self.config.text_config,
+            batch_size=batch_size,
+            cache_length=cache_length,
+            device=device,
+            dtype=dtype,
+            init_mode=init_mode,
+        )
+
 
 @dataclass
 class PagedCache:
