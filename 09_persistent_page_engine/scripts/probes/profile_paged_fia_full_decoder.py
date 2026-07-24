@@ -70,6 +70,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--cache-length", type=int, default=1024)
     parser.add_argument("--block-size", type=int, default=128)
+    parser.add_argument(
+        "--paged-single-stream",
+        action="store_true",
+        help=(
+            "Compile only the paged-FIA lane with "
+            "ge.enableSingleStream=true."
+        ),
+    )
     parser.add_argument("--position", type=int, default=768)
     parser.add_argument("--warmup", type=int, default=5)
     parser.add_argument("--profile-iters", type=int, default=5)
@@ -219,6 +227,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         batch_size=args.batch_size,
         cache_length=args.cache_length,
         block_size=args.block_size,
+        single_stream=args.paged_single_stream,
     )
 
     dense_cache, paged_cache = bench._allocate_matching_caches(
@@ -279,11 +288,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     correctness["argmax_total"] = args.batch_size
 
     run_stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    stream_mode = (
+        "single_stream"
+        if args.paged_single_stream
+        else "multi_stream"
+    )
     run_root = (
         args.profile_root.expanduser().resolve()
         / (
             f"b{args.batch_size}_k{args.cache_length}_"
-            f"p{args.position}_{args.profile_metric}_{run_stamp}"
+            f"p{args.position}_{stream_mode}_"
+            f"{args.profile_metric}_{run_stamp}"
         )
     )
     incre_profile = _profile_lane(
@@ -315,6 +330,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "cache_length": args.cache_length,
             "actual_kv_length": args.position + 1,
             "block_size": args.block_size,
+            "paged_single_stream": args.paged_single_stream,
             "dtype": str(dtype),
             "optimization": bench.OPTIMIZATION,
             "profile_metric": args.profile_metric,

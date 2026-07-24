@@ -74,6 +74,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--cache-length", type=int, default=1024)
     parser.add_argument("--block-size", type=int, default=128)
     parser.add_argument(
+        "--paged-single-stream",
+        action="store_true",
+        help=(
+            "Compile only the paged-FIA lane with "
+            "ge.enableSingleStream=true."
+        ),
+    )
+    parser.add_argument(
         "--positions",
         default="127,511,768,1023",
         help="Comma-separated zero-based cache positions benchmarked in one graph.",
@@ -662,20 +670,25 @@ def _compile_paged_stage(
     batch_size: int,
     cache_length: int,
     block_size: int,
+    single_stream: bool,
 ) -> tuple[Callable[..., torch.Tensor], dict[str, Any]]:
     torchair, CompilerConfig = import_torchair()
+    compiler_config = CompilerConfig()
+    compiler_config.ge_config.enable_single_stream = bool(single_stream)
+    stream_mode = "single_stream" if single_stream else "multi_stream"
     cache_dir = (
         cache_root.expanduser().resolve()
         / (
             f"paged_fia_v2_{OPTIMIZATION}_b{batch_size}_"
-            f"k{cache_length}_block{block_size}_src{_script_hash()}"
+            f"k{cache_length}_block{block_size}_{stream_mode}_"
+            f"src{_script_hash()}"
         )
     )
     cache_dir.mkdir(parents=True, exist_ok=True)
     started = time.perf_counter()
     fn = torchair.inference.cache_compile(
         stage.forward,
-        config=CompilerConfig(),
+        config=compiler_config,
         dynamic=False,
         cache_dir=str(cache_dir),
         ge_cache=True,
@@ -685,6 +698,8 @@ def _compile_paged_stage(
         "cache_dir": str(cache_dir),
         "api": "torchair.inference.cache_compile",
         "dynamic": False,
+        "single_stream": bool(single_stream),
+        "ge_enable_single_stream": bool(single_stream),
     }
 
 
@@ -747,6 +762,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         batch_size=args.batch_size,
         cache_length=args.cache_length,
         block_size=args.block_size,
+        single_stream=args.paged_single_stream,
     )
     _warm_dense, warm_paged = _allocate_matching_caches(
         config.text_config,
@@ -951,6 +967,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "paged_cache_state": (
                 "in-place npu_scatter_nd_update_ graph inputs"
             ),
+            "paged_single_stream": args.paged_single_stream,
             "positions": list(args.positions),
             "warmup": args.warmup,
             "repeats": args.repeats,
