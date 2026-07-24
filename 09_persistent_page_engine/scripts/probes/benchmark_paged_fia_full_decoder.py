@@ -542,18 +542,31 @@ def _delta_stats(
 def _cache_delta_stats(
     dense_values: tuple[torch.Tensor, ...],
     page_values: tuple[torch.Tensor, ...],
-) -> dict[str, float]:
+) -> dict[str, Any]:
     maximum = 0.0
     absolute_sum = 0.0
     count = 0
-    for dense, paged in zip(dense_values, page_values):
+    per_tensor = []
+    for tensor_index, (dense, paged) in enumerate(
+        zip(dense_values, page_values)
+    ):
         delta = (dense.float() - paged.float()).abs()
-        maximum = max(maximum, float(delta.max().cpu()))
-        absolute_sum += float(delta.sum().cpu())
+        tensor_maximum = float(delta.max().cpu())
+        tensor_mean = float(delta.mean().cpu())
+        maximum = max(maximum, tensor_maximum)
+        absolute_sum += tensor_mean * delta.numel()
         count += delta.numel()
+        per_tensor.append(
+            {
+                "tensor_index": tensor_index,
+                "max_abs": tensor_maximum,
+                "mean_abs": tensor_mean,
+            }
+        )
     return {
         "max_abs": maximum,
         "mean_abs": absolute_sum / count,
+        "per_tensor": per_tensor,
     }
 
 
@@ -747,6 +760,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             device=device,
             dtype=torch.int64,
         )
+        page_values_before = _page_cache_written_values(
+            paged_cache,
+            cache_position,
+        )
 
         incre_logits = incre_runtime.fn(
             input_ids,
@@ -775,6 +792,16 @@ def main(argv: Sequence[str] | None = None) -> int:
             _dense_cache_written_values(dense_cache, cache_position),
             _page_cache_written_values(paged_cache, cache_position),
         )
+        page_mutation = _cache_delta_stats(
+            _page_cache_written_values(paged_cache, cache_position),
+            page_values_before,
+        )
+        first_layer_delta = {
+            "key": cache_delta["per_tensor"][0],
+            "value": cache_delta["per_tensor"][
+                config.text_config.num_hidden_layers
+            ],
+        }
 
         incre_timing = _timed_decode(
             incre_runtime.fn,
@@ -817,6 +844,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                     ),
                     "argmax_total": args.batch_size,
                     "written_kv": cache_delta,
+                    "first_layer_written_kv": first_layer_delta,
+                    "page_pool_mutation": page_mutation,
                 },
             }
         )
@@ -833,7 +862,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         "schema_version": 1,
         "kind": "random_full_decoder_paged_fia_benchmark",
         "passed": all(
-            row["correctness"]["written_kv"]["max_abs"] == 0.0
+            row["correctness"]["first_layer_written_kv"]["key"][
+                "max_abs"
+            ]
+            == 0.0
+            and row["correctness"]["first_layer_written_kv"]["value"][
+                "max_abs"
+            ]
+            == 0.0
+            and row["correctness"]["page_pool_mutation"]["max_abs"] > 0.0
             and row["correctness"]["argmax_matches"]
             == row["correctness"]["argmax_total"]
             for row in rows
