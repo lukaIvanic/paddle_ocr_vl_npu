@@ -118,6 +118,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     eager_value_cache = torch.zeros_like(eager_key_cache)
     compiled_key_cache = torch.zeros_like(eager_key_cache)
     compiled_value_cache = torch.zeros_like(eager_key_cache)
+    torch_compile_key_cache = torch.zeros_like(eager_key_cache)
+    torch_compile_value_cache = torch.zeros_like(eager_key_cache)
 
     stage = FunctionalUpdate().eval()
     eager_key_out, eager_value_out = stage(
@@ -146,6 +148,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         value,
         compiled_key_cache,
         compiled_value_cache,
+        slot_mapping,
+    )
+    backend = torchair.get_npu_backend(compiler_config=CompilerConfig())
+    torch_compiled = torch.compile(
+        stage.forward,
+        backend=backend,
+        dynamic=False,
+        fullgraph=True,
+    )
+    torch_compile_key_out, torch_compile_value_out = torch_compiled(
+        key,
+        value,
+        torch_compile_key_cache,
+        torch_compile_value_cache,
         slot_mapping,
     )
     synchronize(device)
@@ -177,12 +193,30 @@ def main(argv: Sequence[str] | None = None) -> int:
             physical_block=6,
             offset=0,
         ),
+        "torch_compile_output": _stats(
+            key,
+            value,
+            torch_compile_key_out,
+            torch_compile_value_out,
+            physical_block=6,
+            offset=0,
+        ),
+        "torch_compile_input_after_call": _stats(
+            key,
+            value,
+            torch_compile_key_cache,
+            torch_compile_value_cache,
+            physical_block=6,
+            offset=0,
+        ),
     }
     result["passed"] = (
         result["eager_output"]["key_slot_max_abs"] == 0.0
         and result["eager_output"]["value_slot_max_abs"] == 0.0
         and result["compiled_output"]["key_slot_max_abs"] == 0.0
         and result["compiled_output"]["value_slot_max_abs"] == 0.0
+        and result["torch_compile_output"]["key_slot_max_abs"] == 0.0
+        and result["torch_compile_output"]["value_slot_max_abs"] == 0.0
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
