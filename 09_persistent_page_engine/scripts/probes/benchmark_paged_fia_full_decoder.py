@@ -24,6 +24,8 @@ from pathlib import Path
 from typing import Any, Callable, Sequence
 
 import torch
+import torch_npu
+import torchair as tng
 from torch import nn
 
 HERE = Path(__file__).resolve().parent
@@ -222,9 +224,6 @@ def _paged_decode_attention(
     block_size: int,
     optimization: Any,
 ) -> torch.Tensor:
-    import torch_npu
-    import torchair as tng
-
     query_states, key_states, value_states = _project_decode_qkv(
         attention,
         hidden_states,
@@ -529,8 +528,6 @@ def _timed_decode(
     repeats: int,
     device: torch.device,
 ) -> dict[str, float]:
-    import torch_npu
-
     for _ in range(warmup):
         logits = fn(*args)
         torch.argmax(logits[:, -1, :].float(), dim=-1, keepdim=True)
@@ -586,9 +583,6 @@ def _compile_paged_stage(
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
-    import torch_npu
-    import torchair as tng
-
     if not torch.npu.is_available():
         raise RuntimeError("benchmark requires an available Ascend NPU")
     if not hasattr(tng.ops, "npu_fused_infer_attention_score_v2"):
