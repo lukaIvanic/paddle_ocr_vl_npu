@@ -66,13 +66,67 @@
       "decode_graph_calls": 1330,
       "token_or_text_mismatches_vs_baseline": 4,
       "verdict": "valid enough for performance pricing, but slower end to end"
+    },
+    "prefix_copy_baseline_npu7": {
+      "commit": "918e779b4f75b2287f7a520c21b4c77e9db3828d",
+      "remote_output": "tmp/09_persistent_page_engine/full_cache_prefix_baseline_npu7_32p_918e779",
+      "pipeline_e2e_s": 20.2831310860347,
+      "pages_per_s": 1.5776656899896768,
+      "decode_wall_s": 7.090094675775617,
+      "static_cache_alloc_device_s": 0.06473775987363542,
+      "slot_admission_device_s": 1.194109585,
+      "slot_admission_median_ms": 1.436089,
+      "generated_tokens_including_eos": 26774,
+      "decode_graph_calls": 1329
+    },
+    "init_zeros_then_full_foreach_copy_run_1": {
+      "commit": "8d89caec546234de2d4f5cffed9c6693a14df141",
+      "remote_output": "tmp/09_persistent_page_engine/full_cache_init_zeros_32p_8d89cae",
+      "pipeline_e2e_s": 18.655764007009566,
+      "pages_per_s": 1.7152875640995768,
+      "decode_wall_s": 6.616769712418318,
+      "static_cache_alloc_device_s": 0.31067628384381496,
+      "slot_admission_device_s": 0.768712694,
+      "slot_admission_median_ms": 0.09419,
+      "logical_prefix_bytes": 1155557376,
+      "physical_kv_bytes_copied": 38503710720,
+      "physical_kv_bytes_initialized": 38503710720,
+      "generated_tokens_including_eos": 26754,
+      "decode_graph_calls": 1329,
+      "token_or_text_mismatches_vs_npu7_baseline": 6
+    },
+    "init_zeros_then_full_foreach_copy_run_2": {
+      "commit": "1c8825c3c037ccb7741fe53f71c99f30d35ba11d",
+      "remote_output": "tmp/09_persistent_page_engine/full_cache_init_zeros_repeat2_32p_1c8825c",
+      "pipeline_e2e_s": 19.214992203051224,
+      "pages_per_s": 1.6653662755542828,
+      "decode_wall_s": 6.6960090957582,
+      "static_cache_alloc_device_s": 0.4373263579607011,
+      "slot_admission_device_s": 0.786194795,
+      "slot_admission_median_ms": 0.08948,
+      "logical_prefix_bytes": 1155557376,
+      "physical_kv_bytes_copied": 38503710720,
+      "physical_kv_bytes_initialized": 38503710720,
+      "generated_tokens_including_eos": 26802,
+      "decode_graph_calls": 1330,
+      "token_or_text_mismatches_vs_npu7_baseline": 5
     }
   },
-  "conclusion": {
+  "first_experiment_conclusion": {
     "admission_device_time_saved_s": 0.816929763,
     "cache_allocation_and_clear_device_time_added_s": 0.8915388309254921,
     "combined_targeted_device_time_delta_s": 0.07460906792549216,
     "pipeline_e2e_delta_s": 0.3575795469805598,
-    "recommendation": "keep prefix-only copies; full-buffer copy is unsafe without clearing and the safe clear consumes the launch-overhead saving"
+    "recommendation": "the explicit fused clear consumed the full-copy saving"
+  },
+  "init_zeros_follow_up_conclusion": {
+    "optimized_repeat_count": 2,
+    "optimized_mean_pipeline_e2e_s": 18.935378105030395,
+    "optimized_mean_pages_per_s": 1.69032691982693,
+    "optimized_mean_static_cache_alloc_plus_admission_s": 1.1514550654022582,
+    "same_npu_baseline_static_cache_alloc_plus_admission_s": 1.2588473448736355,
+    "measured_targeted_device_time_saved_s": 0.1073922794713773,
+    "same_npu_e2e_delta_using_optimized_mean_s": -1.3477529810043052,
+    "recommendation": "retain init_mode=zeros plus full ForeachCopy for larger-scale confirmation; the direct mechanism is modestly faster, while the larger 32-page E2E difference includes unrelated run variance"
   }
 }
