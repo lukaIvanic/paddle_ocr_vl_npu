@@ -433,9 +433,9 @@ def install_layout_runtime_optimizations(
                 "_attn_implementation",
             ):
                 config._attn_implementation = "eager"
-        model.model.generate_anchors = MethodType(
+        model.generate_anchors = MethodType(
             _generate_anchors_compile_friendly,
-            model.model,
+            model,
         )
         model.forward = torchair.inference.cache_compile(
             model.forward,
