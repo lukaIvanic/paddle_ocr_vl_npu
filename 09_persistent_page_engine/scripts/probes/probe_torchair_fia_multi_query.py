@@ -355,8 +355,7 @@ class MultiQueryPagedFIAStage(nn.Module):
             cache_update_indices,
             kv_updates,
         )
-        key_cache = kv_cache[0]
-        value_cache = kv_cache[1]
+        key_cache, value_cache = torch.unbind(kv_cache, dim=0)
         key_cache_fia = key_cache.view(
             key_cache.shape[0],
             attention.num_key_value_heads,
