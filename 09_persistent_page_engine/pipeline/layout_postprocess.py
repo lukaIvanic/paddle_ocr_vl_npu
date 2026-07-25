@@ -41,19 +41,18 @@ LARGE_CONTAINER_LABELS = {
 }
 
 
-def _polygon_overlap_ratio(
-    polygon1: Any,
-    polygon2: Any,
-    mode: str = "union",
-) -> float:
+def _valid_polygon_geometry(points: Any) -> Any:
     from shapely.geometry import Polygon
 
-    poly1 = Polygon(polygon1)
-    poly2 = Polygon(polygon2)
-    if not poly1.is_valid:
-        poly1 = poly1.buffer(0)
-    if not poly2.is_valid:
-        poly2 = poly2.buffer(0)
+    polygon = Polygon(points)
+    return polygon if polygon.is_valid else polygon.buffer(0)
+
+
+def _geometry_overlap_ratio(
+    poly1: Any,
+    poly2: Any,
+    mode: str,
+) -> float:
     intersection = poly1.intersection(poly2).area
     if mode == "union":
         reference = poly1.union(poly2).area
@@ -64,6 +63,18 @@ def _polygon_overlap_ratio(
     else:
         raise ValueError(f"unsupported polygon overlap mode: {mode}")
     return intersection / reference if reference else 0.0
+
+
+def _polygon_overlap_ratio(
+    polygon1: Any,
+    polygon2: Any,
+    mode: str = "union",
+) -> float:
+    return _geometry_overlap_ratio(
+        _valid_polygon_geometry(polygon1),
+        _valid_polygon_geometry(polygon2),
+        mode,
+    )
 
 
 def _box_overlap_ratio(
@@ -206,19 +217,29 @@ def _normalize_polygon(
     if quad is not None:
         rect_list = rect.tolist()
         quad_list = quad.tolist()
-        if _polygon_overlap_ratio(rect_list, quad_list, "union") >= 0.95:
+        rect_geometry = _valid_polygon_geometry(rect_list)
+        quad_geometry = _valid_polygon_geometry(quad_list)
+        if (
+            _geometry_overlap_ratio(
+                rect_geometry,
+                quad_geometry,
+                "union",
+            )
+            >= 0.95
+        ):
             return rect
         polygon_list = polygon.tolist()
-        polygon_quad_iou = _polygon_overlap_ratio(
-            polygon_list,
-            quad_list,
+        polygon_geometry = _valid_polygon_geometry(polygon_list)
+        polygon_quad_iou = _geometry_overlap_ratio(
+            polygon_geometry,
+            quad_geometry,
             "union",
         )
         previous_iou = 0.0
         if previous_polygon is not None:
-            previous_iou = _polygon_overlap_ratio(
-                previous_polygon.tolist(),
-                rect_list,
+            previous_iou = _geometry_overlap_ratio(
+                _valid_polygon_geometry(previous_polygon.tolist()),
+                rect_geometry,
                 "small",
             )
         if polygon_quad_iou >= 0.8 and previous_iou < 0.01:

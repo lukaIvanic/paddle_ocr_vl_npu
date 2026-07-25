@@ -13,10 +13,12 @@ page should be emitted immediately. The bounded frontend must provide
 backpressure: it should neither submit the entire benchmark at once nor create
 fixed page cohorts that temporarily starve cross-page batching.
 
-The faithful PaddleX path now removes its former recognition-batch barrier.
-PaddleX still performs the official layout preparation and page assembly, but
-all prepared crops enter one run-scoped recognizer schedule and each page is
-emitted when its own final crop completes.
+The production path no longer imports PaddleX or PaddleOCR. Experiment 09 owns
+the fixed PaddleOCR-VL 1.6 page contract directly: PP-DocLayoutV3 loading and
+inference, detector geometry, crop/merge policy, prompt routing, result
+assembly, compact JSON, and Markdown formatting. All prepared crops still enter
+one run-scoped recognizer schedule and each page is emitted when its own final
+crop completes.
 
 The baseline keeps both models resident in one Python process and executes this
 path:
@@ -82,8 +84,8 @@ while the next-cache position remains the real prompt length. Inputs above the
 largest text bucket use the same stage eagerly without padding.
 
 There are two named operating profiles. The small standalone full-page CLI uses
-TorchAir B=4, cache length 2048, and a 768-token cap. The official full
-OmniDocBench runner uses B=16, cache length 8192, and PaddleX's 4096-token cap.
+TorchAir B=4, cache length 2048, and a 768-token cap. The full OmniDocBench
+runner uses B=32, cache length 4096, and a 4096-token cap.
 `raw_eager` remains an explicit correctness control for the core compiled
 boundaries; it is not a competing production path.
 
@@ -109,7 +111,7 @@ per-page collectors restore reading order and can emit independently.
   reading order remain outside the graph and preserve the reference requests.
 - Transformers' PP-DocLayoutV3 postprocessor supplies thresholding, polygons,
   and learned reading order.
-- Prompt routing follows the official PaddleX PaddleOCR-VL pipeline: table,
+- Prompt routing preserves the PaddleOCR-VL 1.6 contract: table,
   chart, non-number formula, spotting, and seal receive their specialized
   prompts; other labels receive `OCR:`.
 - Official v1.6 defaults are retained for image/chart/seal blocks: image blocks
@@ -121,13 +123,12 @@ per-page collectors restore reading order and can emit independently.
   queue-depth-one control. A request can execute one look-ahead graph call;
   slot epochs discard that old result after the slot is reused.
 
-`scripts/run_offline_e2e.py` intentionally keeps a smaller diagnostic page-preparation
-path and its reading-order text is not an OmniDocBench prediction. For faithful
-page assembly, `scripts/run_omnidocbench_paddlex.py` keeps the official PaddleX
-v1.6 layout filtering, crop/merge policy, table and formula handling, result
-objects, and Markdown conversion. Its small page bridge skips only PaddleX's
-synchronous VLM batch call and routes the same prepared crops through this
-optimized engine as one continuous run.
+`scripts/run_offline_e2e.py` intentionally keeps a smaller diagnostic
+page-preparation path and its reading-order text is not an OmniDocBench
+prediction. `scripts/run_omnidocbench.py` is the production entrypoint. It uses
+the owned layout frontend and page engine for the complete page-to-Markdown
+path. A runtime assertion fails the run if any `paddlex` module was imported;
+the summary records the same audit.
 
 The full-benchmark runner installs a narrow PP-DocLayoutV3 mask guard.
 Transformers can otherwise call OpenCV with a zero-width mask crop when a thin,
@@ -388,7 +389,7 @@ transformer alone. The packed graph processed 66.8k physical tokens/s and
 57.3k useful tokens/s. Outputs had exact token parity for 505/510 crops; the
 five differing crops changed the aggregate generated-token count by two.
 
-The faithful PaddleX runner also writes `timeline_trace.json` and a
+The owned OmniDocBench runner also writes `timeline_trace.json` and a
 self-contained `timeline.html` (template: `utils/timeline_viewer.html`). Every
 event declares the resource it describes — host thread, device stream, queue,
 or decode slot — and the viewer lays them out accordingly: host threads become
@@ -451,18 +452,17 @@ real/physical packed tokens, and fill fraction. The timeline shows one
 `Packed vision transformer` device span with every member crop as a flow ID,
 while downstream spans retain their individual crop IDs.
 
-The faithful PaddleX runner prepares pages sequentially on one background
-producer. Each page goes through the unchanged PaddleX
-`predict([page], use_queues=False)` path and enters a one-page bounded queue as
-soon as its layout detection, cropping, and prompt preparation finish. The
-recognizer can therefore start consuming that page while the producer prepares
-the next one; layout work itself is never parallelized. Superseded all-pages
+The owned runner prepares pages sequentially on one background producer. Each
+page enters a one-page bounded queue as soon as layout detection, cropping, and
+prompt preparation finish. The recognizer can therefore start consuming that
+page while the producer prepares the next one; layout work itself is never
+parallelized. Superseded all-pages
 reference results remain archived under
 `tmp/09_persistent_page_engine/prefill_pipeline_streaming_6b1642f/`,
 `tmp/09_persistent_page_engine/prefill_pipeline_baseline_6b1642f/`, and the
 `sync_scope_*_36f77fa/` run directories for future parity comparisons. The
-timeline shows producer work on the
-`paddlex-page-producer` thread and queue residence on the `page-queue` lane.
+timeline shows producer work on the `owned-page-producer` thread and queue
+residence on the `page-queue` lane.
 
 On NPU, that producer owns one dedicated layout stream and fences it before a
 prepared page enters the handoff queue. Recognition input copies use the
@@ -475,12 +475,11 @@ the final run-boundary fence.
 
 ## Layout frontend lab
 
-`scripts/layout_lab.py` runs the same PaddleX page path in
-all-pages-before-recognition mode and replaces the recognizer with a request
-collector. The measured boundary includes image loading, document and layout
-preprocessing, PP-DocLayoutV3 inference and postprocessing, cropping, prompt
-routing, and final `RecognitionRequest` materialization. It never loads or
-executes the local OCR model.
+`scripts/layout_owned_lab.py` runs the exact owned page path without the
+recognizer. The measured boundary includes image loading, layout preprocessing,
+PP-DocLayoutV3 inference and postprocessing, cropping, prompt routing, and final
+`RecognitionRequest` materialization. It never loads or executes the local OCR
+model.
 
 The output `requests.jsonl` records request order, page and block identity,
 prompt, pixel profile, crop shape, and an exact hash of the crop pixels. Use
@@ -488,16 +487,15 @@ prompt, pixel profile, crop shape, and an exact hash of the crop pixels. Use
 
 ```sh
 /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
-  09_persistent_page_engine/scripts/layout_lab.py \
+  09_persistent_page_engine/scripts/layout_owned_lab.py \
   --limit 32 \
-  --output-dir tmp/09_persistent_page_engine/layout_lab_32p
+  --output-dir tmp/09_persistent_page_engine/layout_owned_32p
 ```
 
-The lab defaults to the same output-exact `npugraph` / `mask` route as the
-production runner. `--layout-backend eager` is the uncaptured control.
-`--layout-polygons rect` skips final mask production and uses detector
-rectangles directly; it is a faster, deliberately non-exact research lane and
-is not the production default.
+The lab uses the same output-exact NPU-graph/mask route as production. Its
+request manifest includes order, page/block identity, prompt, pixel profile,
+crop shape, and exact crop-pixel hash. The first 32 OmniDocBench pages produce
+the same 510-request hash as the retired PaddleX oracle.
 
 ## Blue Zone run
 
@@ -548,7 +546,7 @@ default change:
 
 ```sh
 /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
-  09_persistent_page_engine/scripts/run_omnidocbench_paddlex.py \
+  09_persistent_page_engine/scripts/run_omnidocbench.py \
   --limit 256 \
   --batch-size 16 \
   --cache-length 8192 \
@@ -675,17 +673,25 @@ model package. The model package never imports it.
 `pipeline/` owns full-page concerns and depends on `paddleocr_vl/`, never the
 reverse.
 
-- `pipeline/layout.py`: PP-DocLayoutV3 inference and normalized layout regions.
+- `pipeline/layout_frontend.py`: owned PP-DocLayoutV3 model loading, sequential
+  page inference, and exact page-to-request materialization.
+- `pipeline/layout_model_runtime.py`: captured NPU model forward and selected
+  mask postprocessing.
+- `pipeline/layout_postprocess.py`: fixed v1.6 detector geometry, filtering,
+  crop, and merge policy.
+- `pipeline/layout_output.py`: recognition-result assembly, OTSL tables,
+  compact JSON, images, and Markdown.
+- `pipeline/page_engine.py`: bounded sequential page producer, one continuous
+  crop schedule, per-page collectors, and immediate completion.
+- `pipeline/layout.py`: older standalone PP-DocLayoutV3 diagnostic path.
 - `pipeline/page_pipeline.py`: lazy page/layout/crop routing and page completion.
-- `pipeline/paddlex_page_bridge.py`: official PaddleX page preparation and
-  assembly around one cross-page recognition schedule.
 - `pipeline/layout_mask_guard.py`: PP-DocLayout empty-mask fallback and telemetry.
 - `pipeline/omnidocbench_defaults.py`: validated full-benchmark execution profile.
 - `pipeline/types.py`: boxes, layout regions, page results, and run serialization.
 
 `scripts/` contains serving and pipeline composition roots. It includes the
-diagnostic page runner, official PaddleX/OmniDocBench runner, NPU smoke wrapper,
-and focused probes. `utils/` contains only shared timing and metric helpers.
+diagnostic page runner, owned OmniDocBench runner, NPU smoke wrapper, labs, and
+focused probes. `utils/` contains only shared timing and metric helpers.
 
 The production runtime packages do not import `scripts/` entrypoints or probes.
 Those scripts consume the same preprocessing and model-stage modules as the
@@ -695,9 +701,9 @@ The recognizer also constructs and warms all three compiled boundaries under
 `torch.inference_mode()`, matching real request execution and keeping TorchAir's
 dispatch-key guards stable across warmup and serving.
 
-The cross-page bridge was validated on the same uniformly sampled 64-page
-OmniDocBench v1.6 set as the preceding PaddleX adapter run. All 64 compact JSON
-results and Markdown files matched exactly. One schedule handled all 1,332
+The retired cross-page PaddleX bridge was validated on the same uniformly
+sampled 64-page OmniDocBench v1.6 set as the preceding adapter run. All 64
+compact JSON results and Markdown files matched exactly. One schedule handled all 1,332
 crops; useful decode-slot occupancy rose from 41.36% to 96.01%, decode wall fell
 from 51.67s to 23.23s, and E2E time fell from 162.62s to 142.96s (2.234s/page).
 The compact evidence is retained in
