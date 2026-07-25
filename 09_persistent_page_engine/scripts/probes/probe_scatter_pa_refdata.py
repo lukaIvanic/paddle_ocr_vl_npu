@@ -50,6 +50,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             / "scatter_pa_refdata_probe.json"
         ),
     )
+    parser.add_argument(
+        "--skip-eager",
+        action="store_true",
+        help=(
+            "Skip the eager control. This is needed when testing an ACL "
+            "internal format that the eager ACLNN route rejects but GE may "
+            "accept."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -240,17 +249,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
 
     stage = InplaceUpdate().eval()
-    eager = _run_steps(
-        stage,
-        keys,
-        values,
-        eager_key_cache,
-        eager_value_cache,
-        start_slot=start_slot,
-        block_size=block_size,
-        tile_size=args.tile_size,
-        device=device,
-    )
+    eager = None
+    if not args.skip_eager:
+        eager = _run_steps(
+            stage,
+            keys,
+            values,
+            eager_key_cache,
+            eager_value_cache,
+            start_slot=start_slot,
+            block_size=block_size,
+            tile_size=args.tile_size,
+            device=device,
+        )
 
     torchair, CompilerConfig = import_torchair()
     compiler_config = CompilerConfig()
@@ -276,7 +287,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
 
     expected_nonzero = args.steps * hidden_size
-    all_steps = [*eager["steps"], *compiled["steps"]]
+    all_steps = [*compiled["steps"]]
+    if eager is not None:
+        all_steps = [*eager["steps"], *all_steps]
     passed = all(
         step["input_key_error"] == 0.0
         and step["input_value_error"] == 0.0
@@ -287,9 +300,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     passed = (
         passed
-        and eager["steps"][-1]["key_nonzero"] == expected_nonzero
         and compiled["steps"][-1]["key_nonzero"] == expected_nonzero
     )
+    if eager is not None:
+        passed = (
+            passed
+            and eager["steps"][-1]["key_nonzero"] == expected_nonzero
+        )
     result = {
         "schema_version": 1,
         "passed": passed,
