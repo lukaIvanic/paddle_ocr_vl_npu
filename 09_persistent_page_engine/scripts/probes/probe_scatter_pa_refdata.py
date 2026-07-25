@@ -130,6 +130,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--omniinfer-cache-allocation",
+        action="store_true",
+        help=(
+            "Allocate K/V as one 5-D tensor, cast it to ACL format 2 (ND), "
+            "then split it exactly as OmniInfer does."
+        ),
+    )
+    parser.add_argument(
         "--graph-dump-dir",
         type=Path,
         default=None,
@@ -192,6 +200,31 @@ def _allocate_cache(
     )
     cache.zero_()
     return cache
+
+
+def _allocate_cache_pair(
+    shape: tuple[int, ...],
+    *,
+    device: torch.device,
+    acl_format: int,
+    omniinfer_allocation: bool,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    if not omniinfer_allocation:
+        return (
+            _allocate_cache(shape, device=device, acl_format=acl_format),
+            _allocate_cache(shape, device=device, acl_format=acl_format),
+        )
+    if acl_format != 0:
+        raise ValueError(
+            "OmniInfer allocation owns the cache format; use --acl-format 0"
+        )
+    pair = torch.zeros(
+        (2, *shape),
+        device=device,
+        dtype=torch.float16,
+    )
+    pair = torch_npu.npu_format_cast(pair, 2)
+    return pair[0], pair[1]
 
 
 def _slot_error(
@@ -299,6 +332,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     device = torch.device("npu:0")
     torch.npu.set_compile_mode(jit_compile=False)
+    if args.omniinfer_cache_allocation:
+        torch.npu.config.allow_internal_format = True
     torch.manual_seed(7)
 
     block_size = 128
@@ -325,25 +360,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     ]
     values = [torch.randn_like(key) for key in keys]
 
-    eager_key_cache = _allocate_cache(
+    eager_key_cache, eager_value_cache = _allocate_cache_pair(
         shape,
         device=device,
         acl_format=args.acl_format,
+        omniinfer_allocation=args.omniinfer_cache_allocation,
     )
-    eager_value_cache = _allocate_cache(
+    compiled_key_cache, compiled_value_cache = _allocate_cache_pair(
         shape,
         device=device,
         acl_format=args.acl_format,
-    )
-    compiled_key_cache = _allocate_cache(
-        shape,
-        device=device,
-        acl_format=args.acl_format,
-    )
-    compiled_value_cache = _allocate_cache(
-        shape,
-        device=device,
-        acl_format=args.acl_format,
+        omniinfer_allocation=args.omniinfer_cache_allocation,
     )
 
     eager_stage = InplaceUpdate().eval()
@@ -432,6 +459,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "passed": passed,
         "cache_shape": list(shape),
         "acl_format_requested": args.acl_format,
+        "omniinfer_cache_allocation": args.omniinfer_cache_allocation,
         "tile_size": args.tile_size,
         "steps_requested": args.steps,
         "expected_nonzero_per_cache": expected_nonzero,
