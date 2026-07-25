@@ -247,28 +247,25 @@ def _normalize_polygon(
 
     quad = _polygon_to_quad(polygon)
     if quad is not None:
-        rect_list = rect.tolist()
-        quad_list = quad.tolist()
         rect_quad_iou = _convex_overlap_ratio(
-            rect_list,
-            quad_list,
+            rect,
+            quad,
             "union",
         )
         if rect_quad_iou is None:
             raise AssertionError("rectangles must be convex")
         if rect_quad_iou >= 0.95:
             return rect
-        polygon_list = polygon.tolist()
         polygon_quad_iou = _convex_overlap_ratio(
-            polygon_list,
-            quad_list,
+            polygon,
+            quad,
             "union",
         )
         rect_geometry = None
         if polygon_quad_iou is None:
             polygon_quad_iou = _geometry_overlap_ratio(
-                _valid_polygon_geometry(polygon_list),
-                _valid_polygon_geometry(quad_list),
+                _valid_polygon_geometry(polygon),
+                _valid_polygon_geometry(quad),
                 "union",
             )
         previous_iou = 0.0
@@ -282,10 +279,10 @@ def _normalize_polygon(
                 rect_geometry = (
                     rect_geometry
                     if rect_geometry is not None
-                    else _valid_polygon_geometry(rect_list)
+                    else _valid_polygon_geometry(rect)
                 )
                 previous_iou = _geometry_overlap_ratio(
-                    _valid_polygon_geometry(previous_polygon.tolist()),
+                    _valid_polygon_geometry(previous_polygon),
                     rect_geometry,
                     "small",
                 )
