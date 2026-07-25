@@ -27,6 +27,7 @@ import math
 import sys
 import time
 import types
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Sequence
 
@@ -315,8 +316,7 @@ class MultiQueryPagedFIAStage(nn.Module):
         hidden_states: torch.Tensor,
         position_embeddings: tuple[torch.Tensor, torch.Tensor],
         prepared_factors: tuple[torch.Tensor, torch.Tensor],
-        key_cache: torch.Tensor,
-        value_cache: torch.Tensor,
+        kv_cache: torch.Tensor,
         cache_update_indices: torch.Tensor,
         attention_mask: torch.Tensor,
         block_table: torch.Tensor,
@@ -335,29 +335,27 @@ class MultiQueryPagedFIAStage(nn.Module):
             self.optimization,
         )
         token_count = self.batch_size * self.query_bucket
-        hidden_tiles = key_cache.shape[1]
+        hidden_tiles = kv_cache.shape[2]
         key_updates = (
             key_states.transpose(1, 2)
             .contiguous()
             .view(token_count, hidden_tiles, base.PA_NZ_LAST_DIM)
-            .reshape(-1, base.PA_NZ_LAST_DIM)
         )
         value_updates = (
             value_states.transpose(1, 2)
             .contiguous()
             .view(token_count, hidden_tiles, base.PA_NZ_LAST_DIM)
-            .reshape(-1, base.PA_NZ_LAST_DIM)
         )
+        kv_updates = torch.stack(
+            (key_updates, value_updates),
+            dim=0,
+        ).reshape(-1, base.PA_NZ_LAST_DIM)
         torch_npu.npu_scatter_nd_update_(
-            key_cache,
+            kv_cache,
             cache_update_indices,
-            key_updates,
+            kv_updates,
         )
-        torch_npu.npu_scatter_nd_update_(
-            value_cache,
-            cache_update_indices,
-            value_updates,
-        )
+        key_cache, value_cache = torch.unbind(kv_cache, dim=0)
         key_cache_fia = key_cache.view(
             key_cache.shape[0],
             attention.num_key_value_heads,
@@ -402,8 +400,7 @@ class MultiQueryPagedFIAStage(nn.Module):
         block_table: torch.Tensor,
         *flat_cache_tensors: torch.Tensor,
     ) -> torch.Tensor:
-        key_caches = flat_cache_tensors[: self.num_layers]
-        value_caches = flat_cache_tensors[self.num_layers :]
+        kv_caches = flat_cache_tensors
         inputs_embeds = self.model.model.embed_tokens(input_ids)
         query_indices = torch.arange(
             self.query_bucket,
@@ -419,10 +416,33 @@ class MultiQueryPagedFIAStage(nn.Module):
             query_lengths.to(torch.int64),
             block_table,
         )
-        cache_update_indices = base._pa_nz_scatter_indices(
+        per_cache_update_indices = base._pa_nz_scatter_indices(
             slot_mapping.reshape(-1),
             self.block_size,
-            key_caches[0].shape[1],
+            kv_caches[0].shape[2],
+        )
+        cache_selectors = torch.arange(
+            2,
+            device=slot_mapping.device,
+            dtype=torch.int64,
+        ).view(2, 1, 1).expand(
+            2,
+            per_cache_update_indices.shape[0],
+            1,
+        )
+        cache_update_indices = torch.cat(
+            (
+                cache_selectors,
+                per_cache_update_indices.view(
+                    1,
+                    -1,
+                    per_cache_update_indices.shape[-1],
+                ).expand(2, -1, -1),
+            ),
+            dim=-1,
+        ).reshape(
+            -1,
+            per_cache_update_indices.shape[-1] + 1,
         )
         attention_mask = self._attention_mask(
             positions,
@@ -469,8 +489,7 @@ class MultiQueryPagedFIAStage(nn.Module):
                 attention_input,
                 position_embeddings,
                 prepared_factors,
-                key_caches[layer_index],
-                value_caches[layer_index],
+                kv_caches[layer_index],
                 cache_update_indices,
                 attention_mask,
                 block_table,
@@ -501,6 +520,19 @@ class MultiQueryPagedFIAStage(nn.Module):
         return _linear_tokenwise(self.model.lm_head, last_hidden)
 
 
+@dataclass
+class MultiQueryPagedCache:
+    key_caches: tuple[torch.Tensor, ...]
+    value_caches: tuple[torch.Tensor, ...]
+    combined_caches: tuple[torch.Tensor, ...]
+    block_table: torch.Tensor
+    block_size: int
+    cache_length: int
+
+    def flat_tensors(self) -> tuple[torch.Tensor, ...]:
+        return self.combined_caches
+
+
 def _allocate_matching_multi_query_caches(
     config: base.PaddleOCRVLConfig,
     *,
@@ -513,7 +545,7 @@ def _allocate_matching_multi_query_caches(
     seed: int,
 ) -> tuple[
     tuple[LocalPaddleOCRVLStaticCache, ...],
-    base.PagedCache,
+    MultiQueryPagedCache,
     int,
 ]:
     dense, paged = base._allocate_matching_caches(
@@ -552,12 +584,27 @@ def _allocate_matching_multi_query_caches(
         )
         return torch.cat((tensor, dummy), dim=0).contiguous()
 
-    paged_with_scratch = base.PagedCache(
-        tuple(with_dummy_pages(tensor) for tensor in paged.key_caches),
-        tuple(with_dummy_pages(tensor) for tensor in paged.value_caches),
-        paged.block_table,
-        block_size,
-        cache_length,
+    combined_caches = tuple(
+        torch.stack(
+            (
+                with_dummy_pages(key_cache),
+                with_dummy_pages(value_cache),
+            ),
+            dim=0,
+        ).contiguous()
+        for key_cache, value_cache in zip(
+            paged.key_caches,
+            paged.value_caches,
+            strict=True,
+        )
+    )
+    paged_with_scratch = MultiQueryPagedCache(
+        key_caches=tuple(cache[0] for cache in combined_caches),
+        value_caches=tuple(cache[1] for cache in combined_caches),
+        combined_caches=combined_caches,
+        block_table=paged.block_table,
+        block_size=block_size,
+        cache_length=cache_length,
     )
     return (
         dense_rows,
@@ -667,7 +714,7 @@ def _run_sequential_reference(
 def _written_cache_values(
     *,
     dense_rows: Sequence[LocalPaddleOCRVLStaticCache],
-    paged_cache: base.PagedCache,
+    paged_cache: MultiQueryPagedCache,
     start_positions: Sequence[int],
     query_lengths: Sequence[int],
 ) -> tuple[tuple[torch.Tensor, ...], tuple[torch.Tensor, ...]]:
@@ -707,7 +754,7 @@ def _written_cache_values(
         paged_cache.block_size,
     )
     for cache_index, paged_tensor in enumerate(
-        paged_cache.flat_tensors()
+        (*paged_cache.key_caches, *paged_cache.value_caches)
     ):
         is_value = cache_index >= len(paged_cache.key_caches)
         layer_index = (
@@ -1054,7 +1101,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             "block_size": args.block_size,
             "input_layout": "BNSD",
             "paged_cache_layout": "PA_NZ",
-            "cache_writer": "torch_npu.npu_scatter_nd_update_",
+            "cache_writer": (
+                "one torch_npu.npu_scatter_nd_update_ per layer over a "
+                "combined K/V cache"
+            ),
             "runtime_query_lengths": True,
             "fixed_fia_query_bucket_lengths": (
                 list(stage.fixed_actual_query_lengths)
