@@ -11,6 +11,7 @@ import sys
 import time
 from collections import Counter, defaultdict
 from collections.abc import Sequence
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -56,6 +57,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--limit", type=int, default=32)
+    parser.add_argument("--workers", type=int, choices=(1, 2), default=1)
     parser.add_argument("--preprocessor-min-pixels", type=int)
     parser.add_argument("--reference-requests", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
@@ -137,6 +139,26 @@ def _request_record(
     }
 
 
+def _aggregate_mask_snapshots(
+    frontends: list[OwnedLayoutFrontend],
+) -> dict[str, Any]:
+    snapshots = [
+        frontend.mask_fast_path.snapshot()
+        for frontend in frontends
+    ]
+    totals = {
+        name: sum(snapshot[name] for snapshot in snapshots)
+        for name in snapshots[0]
+        if name != "coverage"
+    }
+    totals["coverage"] = (
+        totals["rectangle_fast_paths"] / totals["detections"]
+        if totals["detections"]
+        else 0.0
+    )
+    return totals
+
+
 def main(argv: Sequence[str] | None = None) -> None:
     args = parse_args(argv)
     dataset_json = args.dataset_json.expanduser().resolve()
@@ -163,42 +185,97 @@ def main(argv: Sequence[str] | None = None) -> None:
         {
             "kind": "owned_layout_frontend_lab",
             "pages": len(image_paths),
+            "workers": args.workers,
             "paddlex_imported": False,
             "ocr_requests_executed": 0,
         }
     )
 
+    memory_before_setup = int(torch.npu.memory_allocated(device))
     setup_started = time.perf_counter()
-    frontend = OwnedLayoutFrontend(
-        model_dir,
-        device,
-        timeline=timeline,
-        graph_capture=True,
-        device_stage_timing=True,
-    )
+    frontends = [
+        OwnedLayoutFrontend(
+            model_dir,
+            device,
+            timeline=timeline,
+            graph_capture=True,
+            device_stage_timing=True,
+        )
+        for _ in range(args.workers)
+    ]
     setup_s = time.perf_counter() - setup_started
+    memory_after_setup = int(torch.npu.memory_allocated(device))
+
+    def prepare_worker(
+        worker_index: int,
+    ) -> list[
+        tuple[
+            int,
+            list[RecognitionRequest],
+            dict[str, float],
+            dict[str, Any],
+        ]
+    ]:
+        frontend = frontends[worker_index]
+        prepared = []
+        for ordinal in range(
+            worker_index,
+            len(image_paths),
+            args.workers,
+        ):
+            page = frontend.prepare_page(
+                image_paths[ordinal],
+                ordinal,
+                min_pixels=args.preprocessor_min_pixels,
+            )
+            prepared.append(
+                (
+                    page.ordinal,
+                    page.requests,
+                    page.timing_s,
+                    page.statistics,
+                )
+            )
+        return prepared
+
+    frontend_started = time.perf_counter()
+    if args.workers == 1:
+        prepared_pages = prepare_worker(0)
+    else:
+        with ThreadPoolExecutor(
+            max_workers=args.workers,
+            thread_name_prefix="layout-page",
+        ) as executor:
+            worker_pages = list(
+                executor.map(prepare_worker, range(args.workers))
+            )
+        prepared_pages = sorted(
+            (
+                page
+                for pages in worker_pages
+                for page in pages
+            ),
+            key=lambda page: page[0],
+        )
+    frontend_wall_s = time.perf_counter() - frontend_started
 
     requests: list[RecognitionRequest] = []
     stage_totals: defaultdict[str, float] = defaultdict(float)
     page_statistics: list[dict[str, Any]] = []
-    frontend_started = time.perf_counter()
-    for ordinal, path in enumerate(image_paths):
-        page = frontend.prepare_page(
-            path,
-            ordinal,
-            min_pixels=args.preprocessor_min_pixels,
-        )
-        requests.extend(page.requests)
-        for name, seconds in page.timing_s.items():
+    for ordinal, page_requests, page_timing, page_summary in prepared_pages:
+        path = image_paths[ordinal]
+        requests.extend(page_requests)
+        for name, seconds in page_timing.items():
             stage_totals[name] += float(seconds)
         page_statistics.append(
             {
                 "page": path.name,
-                **page.statistics,
-                "timing_s": page.timing_s,
+                **page_summary,
+                "timing_s": page_timing,
             }
         )
-    frontend_wall_s = time.perf_counter() - frontend_started
+
+    mask_fast_path = _aggregate_mask_snapshots(frontends)
 
     records = [
         _request_record(request, index, image_paths)
@@ -244,7 +321,16 @@ def main(argv: Sequence[str] | None = None) -> None:
         "images": [path.name for path in image_paths],
         "layout_model": str(model_dir),
         "layout_model_backend": "transformers_npugraph",
+        "workers": args.workers,
         "setup_s": setup_s,
+        "setup_by_worker_s": [
+            frontend.setup_s for frontend in frontends
+        ],
+        "npu_memory_allocated_bytes": {
+            "before_setup": memory_before_setup,
+            "after_setup": memory_after_setup,
+            "setup_delta": memory_after_setup - memory_before_setup,
+        },
         "frontend_wall_s": frontend_wall_s,
         "pages_per_s": len(image_paths) / frontend_wall_s,
         "s_per_page": frontend_wall_s / len(image_paths),
@@ -268,9 +354,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         "request_manifest": str(requests_path),
         "request_manifest_sha256": _sha256(requests_path),
         "reference_comparison": reference,
-        "layout_mask_rectangle_fast_path": (
-            frontend.mask_fast_path.snapshot()
-        ),
+        "layout_mask_rectangle_fast_path": mask_fast_path,
         "page_statistics": page_statistics,
         "timeline": {
             "enabled": bool(args.timeline),
