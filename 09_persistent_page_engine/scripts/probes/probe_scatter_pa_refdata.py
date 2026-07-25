@@ -121,6 +121,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--compiled-call",
+        choices=("inplace", "functional"),
+        default="inplace",
+        help=(
+            "Compile the public in-place op with RefData, or call its "
+            "functionalized overload directly and thread returned caches."
+        ),
+    )
+    parser.add_argument(
         "--graph-dump-dir",
         type=Path,
         default=None,
@@ -147,6 +156,24 @@ class InplaceUpdate(torch.nn.Module):
             cache_mode="PA_NZ",
         )
         return key_cache, value_cache
+
+
+class FunctionalUpdate(torch.nn.Module):
+    def forward(
+        self,
+        key: torch.Tensor,
+        value: torch.Tensor,
+        key_cache: torch.Tensor,
+        value_cache: torch.Tensor,
+        slot_mapping: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        return torch.ops.npu.npu_scatter_pa_kv_cache_functional.default(
+            key,
+            value,
+            key_cache,
+            value_cache,
+            slot_mapping,
+        )
 
 
 def _allocate_cache(
@@ -194,8 +221,8 @@ def _run_steps(
     device: torch.device,
 ) -> dict[str, object]:
     step_results: list[dict[str, object]] = []
-    key_out = key_cache
-    value_out = value_cache
+    key_in = key_cache
+    value_in = value_cache
     for step, (key, value) in enumerate(zip(keys, values, strict=True)):
         slot = start_slot + step
         slot_mapping = torch.tensor(
@@ -206,8 +233,8 @@ def _run_steps(
         key_out, value_out = stage(
             key,
             value,
-            key_cache,
-            value_cache,
+            key_in,
+            value_in,
             slot_mapping,
         )
         synchronize(device)
@@ -217,14 +244,14 @@ def _run_steps(
                 "slot": slot,
                 "input_key_error": _slot_error(
                     key,
-                    key_cache,
+                    key_in,
                     slot=slot,
                     block_size=block_size,
                     tile_size=tile_size,
                 ),
                 "input_value_error": _slot_error(
                     value,
-                    value_cache,
+                    value_in,
                     slot=slot,
                     block_size=block_size,
                     tile_size=tile_size,
@@ -244,13 +271,17 @@ def _run_steps(
                     tile_size=tile_size,
                 ),
                 "input_output_alias": (
-                    key_cache.data_ptr() == key_out.data_ptr()
-                    and value_cache.data_ptr() == value_out.data_ptr()
+                    key_in.data_ptr() == key_out.data_ptr()
+                    and value_in.data_ptr() == value_out.data_ptr()
                 ),
-                "key_nonzero": int((key_cache != 0).sum().cpu()),
-                "value_nonzero": int((value_cache != 0).sum().cpu()),
+                "input_key_nonzero": int((key_in != 0).sum().cpu()),
+                "input_value_nonzero": int((value_in != 0).sum().cpu()),
+                "output_key_nonzero": int((key_out != 0).sum().cpu()),
+                "output_value_nonzero": int((value_out != 0).sum().cpu()),
             }
         )
+        key_in = key_out
+        value_in = value_out
     return {
         "key_cache_format": int(torch_npu.get_npu_format(key_cache)),
         "value_cache_format": int(torch_npu.get_npu_format(value_cache)),
@@ -315,11 +346,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         acl_format=args.acl_format,
     )
 
-    stage = InplaceUpdate().eval()
+    eager_stage = InplaceUpdate().eval()
     eager = None
     if not args.skip_eager:
         eager = _run_steps(
-            stage,
+            eager_stage,
             keys,
             values,
             eager_key_cache,
@@ -341,8 +372,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         compiler_config.debug.graph_dump.path = str(graph_dump_dir)
     backend = torchair.get_npu_backend(compiler_config=compiler_config)
     torch._dynamo.reset()
+    compiled_module = (
+        InplaceUpdate()
+        if args.compiled_call == "inplace"
+        else FunctionalUpdate()
+    ).eval()
     compiled_stage = torch.compile(
-        stage.forward,
+        compiled_module.forward,
         backend=backend,
         dynamic=False,
         fullgraph=True,
@@ -360,25 +396,36 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
 
     expected_nonzero = args.steps * hidden_size
-    all_steps = [*compiled["steps"]]
-    if eager is not None:
-        all_steps = [*eager["steps"], *all_steps]
     passed = all(
-        step["input_key_error"] == 0.0
-        and step["input_value_error"] == 0.0
-        and step["output_key_error"] == 0.0
+        step["output_key_error"] == 0.0
         and step["output_value_error"] == 0.0
-        and step["input_output_alias"]
-        for step in all_steps
+        for step in compiled["steps"]
     )
     passed = (
         passed
-        and compiled["steps"][-1]["key_nonzero"] == expected_nonzero
+        and compiled["steps"][-1]["output_key_nonzero"] == expected_nonzero
+        and compiled["steps"][-1]["output_value_nonzero"] == expected_nonzero
     )
+    if args.compiled_call == "inplace":
+        passed = passed and all(
+            step["input_key_error"] == 0.0
+            and step["input_value_error"] == 0.0
+            and step["input_output_alias"]
+            for step in compiled["steps"]
+        )
     if eager is not None:
+        passed = passed and all(
+            step["input_key_error"] == 0.0
+            and step["input_value_error"] == 0.0
+            and step["output_key_error"] == 0.0
+            and step["output_value_error"] == 0.0
+            and step["input_output_alias"]
+            for step in eager["steps"]
+        )
         passed = (
             passed
-            and eager["steps"][-1]["key_nonzero"] == expected_nonzero
+            and eager["steps"][-1]["output_key_nonzero"] == expected_nonzero
+            and eager["steps"][-1]["output_value_nonzero"] == expected_nonzero
         )
     result = {
         "schema_version": 1,
@@ -390,6 +437,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "expected_nonzero_per_cache": expected_nonzero,
         "compiler": {
             "route": "torch.compile",
+            "compiled_call": args.compiled_call,
             "fullgraph": True,
             "dynamic": False,
             "enable_ref_data": True,
