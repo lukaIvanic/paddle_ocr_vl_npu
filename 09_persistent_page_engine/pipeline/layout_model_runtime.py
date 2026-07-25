@@ -789,7 +789,16 @@ def _post_process_selected_masks_only(
             0,
             selected_queries,
         )
-        selected_masks = None
+        cpu_boxes = selected_boxes.detach().cpu()
+        cpu_scores = selected_scores.detach().cpu()
+        cpu_labels = selected_labels.detach().cpu()
+        cpu_order = kept_order.detach().cpu()
+        result = {
+            "scores": cpu_scores,
+            "labels": cpu_labels,
+            "boxes": cpu_boxes,
+            "order_seq": cpu_order,
+        }
         if use_polygons:
             if masks is None:
                 raise AssertionError("layout mask output is unavailable")
@@ -800,26 +809,6 @@ def _post_process_selected_masks_only(
             selected_masks = (
                 selected_masks.sigmoid() > threshold
             ).to(torch.uint8)
-
-        metadata = torch.cat(
-            [
-                selected_boxes,
-                selected_scores[:, None],
-                selected_labels.to(selected_boxes.dtype)[:, None],
-                kept_order.to(selected_boxes.dtype)[:, None],
-            ],
-            dim=1,
-        ).detach().cpu()
-        cpu_boxes = metadata[:, :4]
-        result = {
-            "scores": metadata[:, 4],
-            "labels": metadata[:, 5],
-            "boxes": cpu_boxes,
-            "order_seq": metadata[:, 6],
-        }
-        if use_polygons:
-            if selected_masks is None:
-                raise AssertionError("selected layout masks are unavailable")
             cpu_masks = selected_masks.detach().cpu()
             result["polygon_points"] = (
                 processor._extract_polygon_points_by_masks(
