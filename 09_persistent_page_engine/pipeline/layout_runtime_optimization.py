@@ -445,6 +445,63 @@ def _mask_to_box_compile_friendly(
     )
 
 
+def _mask_to_box_capture_friendly(
+    mask: torch.Tensor,
+    dtype: torch.dtype,
+) -> torch.Tensor:
+    """Original mask bounds without host-to-device constants during capture."""
+
+    mask = mask.bool()
+    height, width = mask.shape[-2:]
+    y_coords, x_coords = torch.meshgrid(
+        torch.arange(height, device=mask.device),
+        torch.arange(width, device=mask.device),
+        indexing="ij",
+    )
+    x_coords = x_coords.to(dtype)
+    y_coords = y_coords.to(dtype)
+
+    x_coords_masked = x_coords * mask
+    x_max = x_coords_masked.flatten(start_dim=-2).max(dim=-1).values + 1
+    x_min = torch.where(
+        mask,
+        x_coords_masked,
+        torch.full_like(x_coords_masked, torch.finfo(dtype).max),
+    ).flatten(start_dim=-2).min(dim=-1).values
+
+    y_coords_masked = y_coords * mask
+    y_max = y_coords_masked.flatten(start_dim=-2).max(dim=-1).values + 1
+    y_min = torch.where(
+        mask,
+        y_coords_masked,
+        torch.full_like(y_coords_masked, torch.finfo(dtype).max),
+    ).flatten(start_dim=-2).min(dim=-1).values
+
+    unnormalized_bbox = torch.stack(
+        [x_min, y_min, x_max, y_max],
+        dim=-1,
+    )
+    is_mask_non_empty = torch.any(mask, dim=(-2, -1)).unsqueeze(-1)
+    unnormalized_bbox = unnormalized_bbox * is_mask_non_empty
+    device_width = x_coords[-1, -1] + 1
+    device_height = y_coords[-1, -1] + 1
+    normalized_bbox = unnormalized_bbox / torch.stack(
+        [device_width, device_height, device_width, device_height]
+    )
+    x_min_norm, y_min_norm, x_max_norm, y_max_norm = normalized_bbox.unbind(
+        dim=-1
+    )
+    return torch.stack(
+        [
+            (x_min_norm + x_max_norm) / 2,
+            (y_min_norm + y_max_norm) / 2,
+            x_max_norm - x_min_norm,
+            y_max_norm - y_min_norm,
+        ],
+        dim=-1,
+    )
+
+
 class _NpuGraphCoreForward:
     """Capture the fixed-shape core model once and replay it per page."""
 
@@ -592,6 +649,13 @@ def install_layout_runtime_optimizations(
     compiled = False
     graph_capture = False
     if backend == "npugraph":
+        from transformers.models.pp_doclayout_v3 import (
+            modeling_pp_doclayout_v3,
+        )
+
+        modeling_pp_doclayout_v3.mask_to_box_coordinate = (
+            _mask_to_box_capture_friendly
+        )
         model.forward = _NpuGraphCoreForward(model.forward)
         graph_capture = True
     elif backend == "torchair":
