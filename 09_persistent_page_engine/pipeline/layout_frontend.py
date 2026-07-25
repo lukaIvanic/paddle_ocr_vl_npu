@@ -177,6 +177,7 @@ class OwnedLayoutFrontend:
         threshold: float = 0.3,
         timeline: TimelineRecorder | None = None,
         graph_capture: bool = True,
+        device_stage_timing: bool = False,
     ) -> None:
         from transformers import AutoImageProcessor, AutoModelForObjectDetection
 
@@ -187,6 +188,7 @@ class OwnedLayoutFrontend:
         self.model_dir = model_dir.expanduser().resolve()
         self.device = device
         self.timeline = timeline
+        self.device_stage_timing = bool(device_stage_timing)
         self.labels = _load_layout_labels(self.model_dir)
 
         setup_started = time.perf_counter()
@@ -298,7 +300,24 @@ class OwnedLayoutFrontend:
 
         started = time.perf_counter()
         started_ns = time.perf_counter_ns()
+        device_events: dict[str, Any] | None = None
+        if self.device_stage_timing:
+            import torch_npu
+
+            device_events = {
+                name: torch_npu.npu.Event(enable_timing=True)
+                for name in (
+                    "model_start",
+                    "model_end",
+                    "metadata_end",
+                    "mask_start",
+                    "mask_end",
+                )
+            }
+            device_events["model_start"].record()
         outputs = self.model(**inputs)
+        if device_events is not None:
+            device_events["model_end"].record()
         timing["layout_model_submit_s"] = time.perf_counter() - started
         self._span(
             "Layout detection",
@@ -314,8 +333,39 @@ class OwnedLayoutFrontend:
             outputs,
             threshold=self.postprocessor.threshold,
             target_sizes=[[height, width]],
+            timing=timing,
+            device_timing_events=device_events,
         )
+        if device_events is not None:
+            timing["layout_model_device_s"] = (
+                float(
+                    device_events["model_start"].elapsed_time(
+                        device_events["model_end"]
+                    )
+                )
+                / 1000.0
+            )
+            timing["layout_device_metadata_postprocess_s"] = (
+                float(
+                    device_events["model_end"].elapsed_time(
+                        device_events["metadata_end"]
+                    )
+                )
+                / 1000.0
+            )
+            timing["layout_device_mask_postprocess_s"] = (
+                float(
+                    device_events["mask_start"].elapsed_time(
+                        device_events["mask_end"]
+                    )
+                )
+                / 1000.0
+            )
+        postprocessor_started = time.perf_counter()
         boxes = self.postprocessor(predictions[0], (width, height))
+        timing["layout_structural_postprocess_cpu_s"] = (
+            time.perf_counter() - postprocessor_started
+        )
         timing["layout_postprocess_s"] = time.perf_counter() - started
         self._span(
             "Layout postprocess",

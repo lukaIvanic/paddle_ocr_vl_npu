@@ -174,6 +174,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         device,
         timeline=timeline,
         graph_capture=True,
+        device_stage_timing=True,
     )
     setup_s = time.perf_counter() - setup_started
 

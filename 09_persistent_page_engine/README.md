@@ -498,6 +498,15 @@ request manifest includes order, page/block identity, prompt, pixel profile,
 crop shape, and exact crop-pixel hash. The first 32 OmniDocBench pages produce
 the same 510-request hash as the retired PaddleX oracle.
 
+The lab also enables NPU-event stage timing around the detector graph and the
+device metadata/mask postprocess tails. The corresponding
+`layout_model_device_s`, `layout_device_metadata_postprocess_s`, and
+`layout_device_mask_postprocess_s` fields are accelerator execution times.
+`layout_metadata_wait_and_d2h_s` and `layout_mask_wait_and_d2h_s` are host-wall
+wait-plus-copy measurements at the existing `.cpu()` boundaries; they must not
+be added to the device times as independent critical-path work. This
+instrumentation is disabled in the production frontend.
+
 ## Blue Zone run
 
 The smallest complete model path is the one-crop example. It does not construct

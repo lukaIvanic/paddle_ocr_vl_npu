@@ -727,6 +727,9 @@ def _post_process_selected_masks_only(
     outputs: Any,
     threshold: float = 0.5,
     target_sizes: Any = None,
+    *,
+    timing: dict[str, float] | None = None,
+    device_timing_events: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """Preserve detector results while processing masks after selection."""
 
@@ -740,6 +743,10 @@ def _post_process_selected_masks_only(
     if len(logits) != len(target_sizes):
         raise ValueError(
             "target size count must match detector batch dimension"
+        )
+    if device_timing_events is not None and len(target_sizes) != 1:
+        raise ValueError(
+            "layout device timing currently requires a singleton detector batch"
         )
 
     order_seqs = processor._get_order_seqs(order_logits)
@@ -801,10 +808,21 @@ def _post_process_selected_masks_only(
             0,
             selected_queries,
         )
+
+        if device_timing_events is not None:
+            device_timing_events["metadata_end"].record()
+
+        d2h_started = time.perf_counter()
         cpu_boxes = selected_boxes.detach().cpu()
         cpu_scores = selected_scores.detach().cpu()
         cpu_labels = selected_labels.detach().cpu()
         cpu_order = kept_order.detach().cpu()
+        if timing is not None:
+            timing["layout_metadata_wait_and_d2h_s"] = (
+                timing.get("layout_metadata_wait_and_d2h_s", 0.0)
+                + time.perf_counter()
+                - d2h_started
+            )
         result = {
             "scores": cpu_scores,
             "labels": cpu_labels,
@@ -814,12 +832,24 @@ def _post_process_selected_masks_only(
         if use_polygons:
             if masks is None:
                 raise AssertionError("layout mask output is unavailable")
+            if device_timing_events is not None:
+                device_timing_events["mask_start"].record()
             selected_masks = masks[batch_index].index_select(
                 0,
                 selected_queries,
             )
             selected_masks = selected_masks.sigmoid() > threshold
+            if device_timing_events is not None:
+                device_timing_events["mask_end"].record()
+            mask_d2h_started = time.perf_counter()
             cpu_masks = selected_masks.detach().cpu()
+            if timing is not None:
+                timing["layout_mask_wait_and_d2h_s"] = (
+                    timing.get("layout_mask_wait_and_d2h_s", 0.0)
+                    + time.perf_counter()
+                    - mask_d2h_started
+                )
+            polygon_started = time.perf_counter()
             result["polygon_points"] = (
                 processor._extract_polygon_points_by_masks(
                     cpu_boxes.numpy(),
@@ -830,6 +860,12 @@ def _post_process_selected_masks_only(
                     ],
                 )
             )
+            if timing is not None:
+                timing["layout_mask_polygon_cpu_s"] = (
+                    timing.get("layout_mask_polygon_cpu_s", 0.0)
+                    + time.perf_counter()
+                    - polygon_started
+                )
         results.append(result)
 
     return results
