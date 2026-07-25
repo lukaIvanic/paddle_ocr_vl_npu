@@ -6,6 +6,7 @@ import threading
 import time
 from typing import Any
 
+import cv2
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -332,6 +333,73 @@ def _extract_custom_vertices_vectorized(
         step_size = (norm_1[sharp] + norm_2[sharp]) / 2
         output[sharp] += direction * step_size[:, None]
     return [tuple(point) for point in output]
+
+
+def _extract_polygon_points_by_masks_owned(
+    processor: Any,
+    boxes: Any,
+    masks: Any,
+    scale_ratio: Any,
+) -> list[Any]:
+    """Preserve the Transformers mask contract without redundant copies."""
+
+    boxes_np = np.asarray(boxes)
+    masks_np = np.asarray(masks)
+    scale_width = float(scale_ratio[0]) / 4.0
+    scale_height = float(scale_ratio[1]) / 4.0
+    mask_height, mask_width = masks_np.shape[1:]
+    polygon_points: list[Any] = []
+
+    for box, mask in zip(boxes_np, masks_np):
+        x_min, y_min, x_max, y_max = (int(value) for value in box)
+        box_width = x_max - x_min
+        box_height = y_max - y_min
+        rect = np.array(
+            [
+                [x_min, y_min],
+                [x_max, y_min],
+                [x_max, y_max],
+                [x_min, y_max],
+            ],
+            dtype=np.float32,
+        )
+        if box_width <= 0 or box_height <= 0:
+            polygon_points.append(rect)
+            continue
+
+        x_start = max(
+            0,
+            min(mask_width, int(round(x_min * scale_width))),
+        )
+        x_end = max(
+            0,
+            min(mask_width, int(round(x_max * scale_width))),
+        )
+        y_start = max(
+            0,
+            min(mask_height, int(round(y_min * scale_height))),
+        )
+        y_end = max(
+            0,
+            min(mask_height, int(round(y_max * scale_height))),
+        )
+        cropped_mask = mask[y_start:y_end, x_start:x_end]
+        if cropped_mask.dtype != np.uint8:
+            cropped_mask = cropped_mask.astype(np.uint8)
+        resized_mask = cv2.resize(
+            cropped_mask,
+            (box_width, box_height),
+            interpolation=cv2.INTER_NEAREST,
+        )
+        polygon = processor._mask2polygon(resized_mask)
+        if polygon is not None and len(polygon) < 4:
+            polygon_points.append(rect)
+            continue
+        if polygon is not None and len(polygon) > 0:
+            polygon = polygon + np.array([x_min, y_min])
+        polygon_points.append(polygon)
+
+    return polygon_points
 
 
 class _MaskRectangleFastPath:
