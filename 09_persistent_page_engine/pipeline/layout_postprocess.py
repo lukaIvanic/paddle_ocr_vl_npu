@@ -32,6 +32,14 @@ SKIP_ORDER_LABELS = {
 
 IMAGE_LABELS = ["image", "header_image", "footer_image"]
 
+LARGE_CONTAINER_LABELS = {
+    "chart",
+    "display_formula",
+    "doc_title",
+    "inline_formula",
+    "paragraph_title",
+}
+
 
 def _polygon_overlap_ratio(
     polygon1: Any,
@@ -218,10 +226,99 @@ def _normalize_polygon(
     return polygon
 
 
+def _pairwise_containment(boxes: np.ndarray) -> np.ndarray:
+    coords = boxes[:, 2:6]
+    x1, y1, x2, y2 = coords.T
+    widths = np.maximum(
+        0,
+        np.minimum(x2[:, None], x2[None, :])
+        - np.maximum(x1[:, None], x1[None, :]),
+    )
+    heights = np.maximum(
+        0,
+        np.minimum(y2[:, None], y2[None, :])
+        - np.maximum(y1[:, None], y1[None, :]),
+    )
+    intersection = widths * heights
+    areas = (x2 - x1) * (y2 - y1)
+    ratios = np.divide(
+        intersection,
+        areas[:, None],
+        out=np.zeros_like(intersection),
+        where=areas[:, None] > 0,
+    )
+    contained = ratios >= 0.9
+    np.fill_diagonal(contained, False)
+    return contained
+
+
+def _containment_flags(
+    boxes: np.ndarray,
+    *,
+    formula_index: int,
+    category_index: int,
+) -> tuple[np.ndarray, np.ndarray]:
+    contains_other = np.zeros(len(boxes), dtype=int)
+    contained_by_other = np.zeros(len(boxes), dtype=int)
+    if len(boxes) == 0:
+        return contains_other, contained_by_other
+    contained = _pairwise_containment(boxes)
+    classes = boxes[:, 0]
+    contained &= ~(
+        (classes[:, None] == formula_index)
+        & (classes[None, :] != formula_index)
+    )
+    contained &= classes[None, :] == category_index
+    contained_by_other[contained.any(axis=1)] = 1
+    contains_other[contained.any(axis=0)] = 1
+    return contains_other, contained_by_other
+
+
+def _pairwise_iou(boxes: np.ndarray) -> np.ndarray:
+    x1, y1, x2, y2 = boxes.T
+    widths = np.maximum(
+        0,
+        np.minimum(x2[:, None], x2[None, :])
+        - np.maximum(x1[:, None], x1[None, :])
+        + 1,
+    )
+    heights = np.maximum(
+        0,
+        np.minimum(y2[:, None], y2[None, :])
+        - np.maximum(y1[:, None], y1[None, :])
+        + 1,
+    )
+    intersection = widths * heights
+    areas = (x2 - x1 + 1) * (y2 - y1 + 1)
+    return intersection / (
+        areas[:, None] + areas[None, :] - intersection
+    )
+
+
+def _nms(boxes: np.ndarray) -> list[int]:
+    if len(boxes) == 0:
+        return []
+    classes = boxes[:, 0]
+    ious = _pairwise_iou(boxes[:, 2:6])
+    remaining = np.argsort(boxes[:, 1])[::-1]
+    selected: list[int] = []
+    while remaining.size:
+        current = int(remaining[0])
+        selected.append(current)
+        candidates = remaining[1:]
+        thresholds = np.where(
+            classes[candidates] == classes[current],
+            0.6,
+            0.98,
+        )
+        remaining = candidates[ious[current, candidates] < thresholds]
+    return selected
+
+
 class LayoutPostprocessor:
     """Fixed PP-DocLayoutV3 v1.6 postprocessor."""
 
-    def __init__(self, labels: list[str], threshold: float = 0.5) -> None:
+    def __init__(self, labels: list[str], threshold: float = 0.3) -> None:
         self.labels = labels
         self.threshold = float(threshold)
 
@@ -268,6 +365,10 @@ class LayoutPostprocessor:
             if selected
         ]
 
+        selected_indices = _nms(boxes[:, :6])
+        boxes = np.asarray(boxes[selected_indices])
+        polygons = [polygons[index] for index in selected_indices]
+
         if len(boxes) > 1:
             width, height = image_size
             area_threshold = 0.82 if width > height else 0.93
@@ -292,8 +393,23 @@ class LayoutPostprocessor:
                 boxes = np.asarray(filtered_boxes)
                 polygons = filtered_polygons
 
-        # The shipped v1.6 model uses no layout_merge_bboxes_mode, so its
-        # containment filter is intentionally absent from this fixed path.
+        keep = np.ones(len(boxes), dtype=bool)
+        formula_index = self.labels.index("display_formula")
+        for label in LARGE_CONTAINER_LABELS:
+            category_index = self.labels.index(label)
+            _, contained_by_other = _containment_flags(
+                boxes[:, :6],
+                formula_index=formula_index,
+                category_index=category_index,
+            )
+            keep &= contained_by_other == 0
+        boxes = boxes[keep]
+        polygons = [
+            polygon
+            for polygon, selected in zip(polygons, keep)
+            if selected
+        ]
+
         sorted_indices = np.argsort(boxes[:, 6])
         boxes = boxes[sorted_indices, :6]
         polygons = [polygons[index] for index in sorted_indices]
