@@ -209,6 +209,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default="eager",
     )
     parser.add_argument(
+        "--layout-polygons",
+        choices=("mask", "rect"),
+        default="mask",
+    )
+    parser.add_argument(
         "--layout-torchair-cache-dir",
         type=Path,
         default=DEFAULT_LAYOUT_TORCHAIR_CACHE,
@@ -369,6 +374,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     layout_optimizations = install_layout_runtime_optimizations(
         auto_parallel._pipeline,
         backend=args.layout_backend,
+        polygon_mode=args.layout_polygons,
         torchair_cache_dir=(
             args.layout_torchair_cache_dir.expanduser().resolve()
             if args.layout_backend == "torchair"

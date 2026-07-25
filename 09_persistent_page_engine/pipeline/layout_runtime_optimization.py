@@ -149,7 +149,8 @@ def _post_process_selected_masks_only(
     boxes = outputs.pred_boxes
     logits = outputs.logits
     order_logits = outputs.order_logits
-    masks = outputs.out_masks
+    use_polygons = getattr(processor, "_layout_polygon_mode", "mask") == "mask"
+    masks = outputs.out_masks if use_polygons else None
     if target_sizes is None:
         raise ValueError("layout postprocessing requires target image sizes")
     if len(logits) != len(target_sizes):
@@ -216,36 +217,38 @@ def _post_process_selected_masks_only(
             0,
             selected_queries,
         )
-        selected_masks = masks[batch_index].index_select(
-            0,
-            selected_queries,
-        )
-        selected_masks = (
-            selected_masks.sigmoid() > threshold
-        ).int()
-
         cpu_boxes = selected_boxes.detach().cpu()
-        cpu_masks = selected_masks.detach().cpu()
         cpu_scores = selected_scores.detach().cpu()
         cpu_labels = selected_labels.detach().cpu()
         cpu_order = kept_order.detach().cpu()
-        polygon_points = processor._extract_polygon_points_by_masks(
-            cpu_boxes.numpy(),
-            cpu_masks.numpy(),
-            [
-                processor.size["width"] / target_size[1],
-                processor.size["height"] / target_size[0],
-            ],
-        )
-        results.append(
-            {
-                "scores": cpu_scores,
-                "labels": cpu_labels,
-                "boxes": cpu_boxes,
-                "polygon_points": polygon_points,
-                "order_seq": cpu_order,
-            }
-        )
+        result = {
+            "scores": cpu_scores,
+            "labels": cpu_labels,
+            "boxes": cpu_boxes,
+            "order_seq": cpu_order,
+        }
+        if use_polygons:
+            if masks is None:
+                raise AssertionError("layout mask output is unavailable")
+            selected_masks = masks[batch_index].index_select(
+                0,
+                selected_queries,
+            )
+            selected_masks = (
+                selected_masks.sigmoid() > threshold
+            ).int()
+            cpu_masks = selected_masks.detach().cpu()
+            result["polygon_points"] = (
+                processor._extract_polygon_points_by_masks(
+                    cpu_boxes.numpy(),
+                    cpu_masks.numpy(),
+                    [
+                        processor.size["width"] / target_size[1],
+                        processor.size["height"] / target_size[0],
+                    ],
+                )
+            )
+        results.append(result)
 
     return results
 
@@ -371,13 +374,16 @@ def _decoder_forward_final_heads_only(
             reference_points = new_reference_points.detach()
 
     out_query = norm(hidden_states)
-    mask_query_embed = mask_query_head(out_query)
-    batch_size, mask_dim, _ = mask_query_embed.shape
-    _, _, mask_height, mask_width = mask_feat.shape
-    out_mask = torch.bmm(
-        mask_query_embed,
-        mask_feat.flatten(start_dim=2),
-    ).reshape(batch_size, mask_dim, mask_height, mask_width)
+    if getattr(decoder, "_layout_emit_masks", True):
+        mask_query_embed = mask_query_head(out_query)
+        batch_size, mask_dim, _ = mask_query_embed.shape
+        _, _, mask_height, mask_width = mask_feat.shape
+        out_mask = torch.bmm(
+            mask_query_embed,
+            mask_feat.flatten(start_dim=2),
+        ).reshape(batch_size, mask_dim, mask_height, mask_width)
+    else:
+        out_mask = hidden_states[..., :1].unsqueeze(-1)
 
     logits = (
         decoder.class_embed(out_query)
@@ -704,6 +710,7 @@ def install_layout_runtime_optimizations(
     paddlex_pipeline: Any,
     *,
     backend: str = "eager",
+    polygon_mode: str = "mask",
     torchair_cache_dir: Path | None = None,
 ) -> dict[str, Any]:
     """Install output-preserving optimizations on the concrete PaddleX pipeline."""
@@ -726,6 +733,11 @@ def install_layout_runtime_optimizations(
         )
 
     predictor.process = MethodType(_process_with_tensor_inputs, predictor)
+    if polygon_mode not in ("mask", "rect"):
+        raise ValueError(
+            f"polygon mode must be 'mask' or 'rect', got {polygon_mode!r}"
+        )
+    predictor.image_processor._layout_polygon_mode = polygon_mode
     predictor.image_processor.post_process_object_detection = MethodType(
         _post_process_selected_masks_only,
         predictor.image_processor,
@@ -761,6 +773,7 @@ def install_layout_runtime_optimizations(
             "unsupported PP-DocLayoutV3 model; decoder was not found"
         )
     decoder.forward = MethodType(_decoder_forward_final_heads_only, decoder)
+    decoder._layout_emit_masks = polygon_mode == "mask"
 
     compiled = False
     graph_capture = False
@@ -821,6 +834,7 @@ def install_layout_runtime_optimizations(
         "direct_tensor_preprocessing": True,
         "filter_masks_before_postprocess": True,
         "final_decoder_heads_only": True,
+        "polygon_mode": polygon_mode,
         "model_backend": backend,
         "model_compiled": compiled,
         "model_graph_capture": graph_capture,
