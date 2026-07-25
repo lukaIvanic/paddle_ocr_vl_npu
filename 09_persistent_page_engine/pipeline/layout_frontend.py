@@ -46,8 +46,7 @@ from .layout_model_runtime import (
 class PreparedLayoutPage:
     ordinal: int
     image_path: Path
-    image: np.ndarray
-    layout_boxes: list[dict[str, Any]]
+    image_size: tuple[int, int]
     blocks: list[dict[str, Any]]
     requests: list[RecognitionRequest]
     request_block_indices: list[int]
@@ -438,6 +437,13 @@ class OwnedLayoutFrontend:
                 )
             )
             request_block_indices.append(block_index)
+
+        # Requests and visible page artifacts now own independent RGB images.
+        # Release non-visible NumPy crops before layout-first mode queues the
+        # prepared page for recognition.
+        for block in blocks:
+            if block["label"] not in image_labels:
+                block["img"] = None
         preparation_s = time.perf_counter() - preparation_started
         self._span(
             "Crop / page preparation",
@@ -465,8 +471,7 @@ class OwnedLayoutFrontend:
         return PreparedLayoutPage(
             ordinal=ordinal,
             image_path=path,
-            image=image,
-            layout_boxes=boxes,
+            image_size=(image.shape[1], image.shape[0]),
             blocks=blocks,
             requests=requests,
             request_block_indices=request_block_indices,

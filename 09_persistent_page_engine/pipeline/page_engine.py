@@ -118,7 +118,7 @@ class OwnedPageEngine:
 
     def _finish_page(self, page: _PageState) -> OwnedPageResult:
         prepared = page.prepared
-        height, width = prepared.image.shape[:2]
+        width, height = prepared.image_size
         blocks = assemble_page_blocks(
             prepared.blocks,
             page.recognition,
