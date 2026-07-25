@@ -43,8 +43,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--decoders",
         nargs="+",
-        default=["opencv", "pillow", "torchvision", "pyspng"],
+        default=["opencv", "pillow", "torchvision"],
         choices=["opencv", "pillow", "torchvision", "pyspng"],
+    )
+    parser.add_argument(
+        "--format",
+        choices=["all", "png", "jpeg"],
+        default="all",
+        help="Filter the selected pages by their encoded-byte format.",
     )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
@@ -86,6 +92,18 @@ def rgb_to_bgr(value: np.ndarray) -> np.ndarray:
     return np.ascontiguousarray(value[:, :, ::-1])
 
 
+def encoded_format(data: bytes) -> str:
+    if data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "png"
+    if data.startswith(b"\xff\xd8\xff"):
+        return "jpeg"
+    if data.startswith((b"II*\x00", b"MM\x00*")):
+        return "tiff"
+    if data.startswith(b"RIFF") and data[8:12] == b"WEBP":
+        return "webp"
+    return "unknown"
+
+
 def make_opencv() -> Decoder:
     def decode(data: bytes) -> np.ndarray:
         value = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
@@ -121,11 +139,11 @@ def make_pillow() -> Decoder:
 def make_torchvision() -> Decoder:
     import torch
     import torchvision
-    from torchvision.io import ImageReadMode, decode_png
+    from torchvision.io import ImageReadMode, decode_image
 
     def decode(data: bytes) -> Any:
         encoded = torch.frombuffer(bytearray(data), dtype=torch.uint8)
-        return decode_png(encoded, mode=ImageReadMode.RGB)
+        return decode_image(encoded, mode=ImageReadMode.RGB)
 
     def adapt(value: Any) -> np.ndarray:
         rgb = value.permute(1, 2, 0).contiguous().numpy()
@@ -221,6 +239,21 @@ def main(argv: Sequence[str] | None = None) -> None:
     read_started = time.perf_counter_ns()
     encoded_pages = [path.read_bytes() for path in paths]
     read_s = (time.perf_counter_ns() - read_started) / 1_000_000_000
+    formats = [encoded_format(data) for data in encoded_pages]
+    format_counts = {
+        name: formats.count(name) for name in sorted(set(formats))
+    }
+    if args.format != "all":
+        selected = [
+            (path, data, name)
+            for path, data, name in zip(paths, encoded_pages, formats)
+            if name == args.format
+        ]
+        paths = [path for path, _, _ in selected]
+        encoded_pages = [data for _, data, _ in selected]
+        formats = [name for _, _, name in selected]
+        if not paths:
+            raise ValueError(f"selected corpus has no {args.format} images")
 
     decoders: list[Decoder] = []
     unavailable: dict[str, str] = {}
@@ -293,6 +326,11 @@ def main(argv: Sequence[str] | None = None) -> None:
         "images_dir": str(images_dir),
         "offset": args.offset,
         "pages": len(paths),
+        "format_filter": args.format,
+        "input_format_counts_before_filter": format_counts,
+        "selected_format_counts": {
+            name: formats.count(name) for name in sorted(set(formats))
+        },
         "compressed_bytes": sum(len(data) for data in encoded_pages),
         "read_all_compressed_bytes_s": read_s,
         "total_pixels": total_pixels,
