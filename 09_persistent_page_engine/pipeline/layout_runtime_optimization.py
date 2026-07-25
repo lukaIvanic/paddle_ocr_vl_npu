@@ -716,6 +716,7 @@ def install_layout_runtime_optimizations(
     *,
     backend: str = "eager",
     polygon_mode: str = "mask",
+    mask_rectangle_fast_path: bool = False,
 ) -> dict[str, Any]:
     """Install layout optimizations on the concrete PaddleX pipeline.
 
@@ -750,15 +751,17 @@ def install_layout_runtime_optimizations(
         _post_process_selected_masks_only,
         predictor.image_processor,
     )
-    mask_rectangle_fast_path = None
-    if polygon_mode == "mask":
-        mask_rectangle_fast_path = _MaskRectangleFastPath(
+    mask_rectangle_fast_path_state = None
+    if polygon_mode == "mask" and mask_rectangle_fast_path:
+        mask_rectangle_fast_path_state = _MaskRectangleFastPath(
             predictor.image_processor._extract_polygon_points_by_masks
         )
         predictor.image_processor._extract_polygon_points_by_masks = (
-            mask_rectangle_fast_path
+            mask_rectangle_fast_path_state
         )
-    predictor._layout_mask_rectangle_fast_path = mask_rectangle_fast_path
+    predictor._layout_mask_rectangle_fast_path = (
+        mask_rectangle_fast_path_state
+    )
 
     from paddlex.inference.models.layout_analysis import (
         processors as layout_processors,
@@ -813,6 +816,7 @@ def install_layout_runtime_optimizations(
         "direct_tensor_preprocessing": True,
         "filter_masks_before_postprocess": True,
         "final_decoder_heads_only": True,
+        "mask_rectangle_fast_path": bool(mask_rectangle_fast_path),
         "polygon_mode": polygon_mode,
         "model_backend": backend,
         "model_graph_capture": graph_capture,

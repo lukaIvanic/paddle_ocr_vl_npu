@@ -371,6 +371,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         auto_parallel._pipeline,
         backend=args.layout_backend,
         polygon_mode=args.layout_polygons,
+        mask_rectangle_fast_path=args.layout_polygons == "mask",
     )
     setup_s = time.perf_counter() - setup_started
 
