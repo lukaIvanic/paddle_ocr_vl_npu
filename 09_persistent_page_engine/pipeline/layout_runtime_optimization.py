@@ -445,6 +445,92 @@ def _mask_to_box_compile_friendly(
     )
 
 
+class _NpuGraphCoreForward:
+    """Capture the fixed-shape core model once and replay it per page."""
+
+    def __init__(self, eager_forward: Any) -> None:
+        self.eager_forward = eager_forward
+        self.graph: Any = None
+        self.output: Any = None
+        self.pixel_values: torch.Tensor | None = None
+        self.pixel_mask: torch.Tensor | None = None
+        self.constant_kwargs: dict[str, Any] | None = None
+
+    def _validate_constants(
+        self,
+        *,
+        encoder_outputs: Any,
+        labels: Any,
+        kwargs: dict[str, Any],
+    ) -> None:
+        if encoder_outputs is not None or labels is not None:
+            raise RuntimeError(
+                "layout NPU graph only supports inference without supplied "
+                "encoder outputs or labels"
+            )
+        if self.constant_kwargs is not None and kwargs != self.constant_kwargs:
+            raise RuntimeError(
+                "layout NPU graph received different non-tensor arguments"
+            )
+
+    def __call__(
+        self,
+        pixel_values: torch.Tensor,
+        pixel_mask: torch.Tensor | None = None,
+        encoder_outputs: Any = None,
+        labels: Any = None,
+        **kwargs: Any,
+    ) -> Any:
+        self._validate_constants(
+            encoder_outputs=encoder_outputs,
+            labels=labels,
+            kwargs=kwargs,
+        )
+        if self.graph is None:
+            self.pixel_values = torch.empty_like(pixel_values)
+            self.pixel_values.copy_(pixel_values)
+            if pixel_mask is not None:
+                self.pixel_mask = torch.empty_like(pixel_mask)
+                self.pixel_mask.copy_(pixel_mask)
+            self.constant_kwargs = dict(kwargs)
+
+            self.eager_forward(
+                self.pixel_values,
+                pixel_mask=self.pixel_mask,
+                **self.constant_kwargs,
+            )
+            torch.npu.synchronize()
+
+            self.graph = torch.npu.NPUGraph()
+            with torch.npu.graph(self.graph):
+                self.output = self.eager_forward(
+                    self.pixel_values,
+                    pixel_mask=self.pixel_mask,
+                    **self.constant_kwargs,
+                )
+            torch.npu.synchronize()
+        else:
+            if self.pixel_values is None:
+                raise AssertionError("captured layout input is missing")
+            if pixel_values.shape != self.pixel_values.shape:
+                raise RuntimeError(
+                    "layout NPU graph input shape changed from "
+                    f"{tuple(self.pixel_values.shape)} to "
+                    f"{tuple(pixel_values.shape)}"
+                )
+            self.pixel_values.copy_(pixel_values)
+            if pixel_mask is None:
+                if self.pixel_mask is not None:
+                    raise RuntimeError("layout NPU graph pixel mask disappeared")
+            else:
+                if self.pixel_mask is None:
+                    raise RuntimeError("layout NPU graph pixel mask appeared")
+                self.pixel_mask.copy_(pixel_mask)
+
+        self.graph.replay()
+        return self.output
+
+
 def install_layout_runtime_optimizations(
     paddlex_pipeline: Any,
     *,
@@ -504,7 +590,11 @@ def install_layout_runtime_optimizations(
     decoder.forward = MethodType(_decoder_forward_final_heads_only, decoder)
 
     compiled = False
-    if backend == "torchair":
+    graph_capture = False
+    if backend == "npugraph":
+        model.forward = _NpuGraphCoreForward(model.forward)
+        graph_capture = True
+    elif backend == "torchair":
         if torchair_cache_dir is None:
             raise ValueError(
                 "TorchAir layout execution requires a cache directory"
@@ -543,7 +633,8 @@ def install_layout_runtime_optimizations(
         compiled = True
     elif backend != "eager":
         raise ValueError(
-            f"layout backend must be 'eager' or 'torchair', got {backend!r}"
+            "layout backend must be 'eager', 'npugraph', or 'torchair', "
+            f"got {backend!r}"
         )
 
     return {
@@ -551,6 +642,7 @@ def install_layout_runtime_optimizations(
         "final_decoder_heads_only": True,
         "model_backend": backend,
         "model_compiled": compiled,
+        "model_graph_capture": graph_capture,
         "transformers_runtime_shape_checks": (
             "outside_static_graph" if compiled else "enabled"
         ),
