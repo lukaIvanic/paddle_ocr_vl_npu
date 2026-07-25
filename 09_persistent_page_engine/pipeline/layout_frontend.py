@@ -9,11 +9,11 @@ from pathlib import Path
 from types import MethodType
 from typing import Any
 
-import cv2
 import numpy as np
 import torch
 import yaml
 from PIL import Image
+from torchvision.io import ImageReadMode, decode_image
 
 from paddleocr_vl.serving.types import RecognitionRequest
 from utils.timeline import TimelineRecorder
@@ -108,15 +108,22 @@ def _normalization_divisor(processor: Any) -> torch.Tensor:
     return std_tensor.reshape(-1, 1, 1)
 
 
-def _decode_bgr(path: Path) -> tuple[np.ndarray, dict[str, float | int]]:
+def _decode_rgb(path: Path) -> tuple[np.ndarray, dict[str, float | int]]:
     started = time.perf_counter()
     compressed = path.read_bytes()
     read_finished = time.perf_counter()
-    encoded = np.frombuffer(compressed, dtype=np.uint8)
-    image = cv2.imdecode(encoded, cv2.IMREAD_COLOR)
+    encoded = torch.frombuffer(bytearray(compressed), dtype=torch.uint8)
+    image = (
+        decode_image(encoded, mode=ImageReadMode.RGB)
+        .permute(1, 2, 0)
+        .numpy()
+    )
     decode_finished = time.perf_counter()
-    if image is None:
-        raise RuntimeError(f"OpenCV failed to decode {path}")
+    if image.ndim != 3 or image.shape[2] != 3 or image.dtype != np.uint8:
+        raise RuntimeError(
+            f"TorchVision returned an unsupported image for {path}: "
+            f"shape={image.shape}, dtype={image.dtype}"
+        )
     return image, {
         "compressed_bytes": len(compressed),
         "file_read_s": read_finished - started,
@@ -138,18 +145,18 @@ def _prompt_for_label(label: str) -> str:
     return "OCR:"
 
 
-def _bgr_to_pil_rgb(image: np.ndarray) -> Image.Image:
-    """Decode a BGR NumPy buffer directly into an independent RGB image."""
+def _rgb_to_pil(image: np.ndarray) -> Image.Image:
+    """Copy an RGB NumPy buffer into an independent RGB image."""
 
     if not image.flags.c_contiguous:
         image = np.ascontiguousarray(image)
     height, width = image.shape[:2]
-    return Image.frombuffer(
+    return Image.frombytes(
         "RGB",
         (width, height),
         image,
         "raw",
-        "BGR",
+        "RGB",
         0,
         1,
     )
@@ -243,20 +250,16 @@ class OwnedLayoutFrontend:
                 args=args or {},
             )
 
-    def _prepare_pixel_values(self, image_bgr: np.ndarray) -> torch.Tensor:
+    def _prepare_pixel_values(self, image_rgb: np.ndarray) -> torch.Tensor:
         """Run the processor's exact singleton math without batch plumbing."""
 
-        pixel_values = torch.from_numpy(image_bgr).permute(2, 0, 1).unsqueeze(0)
+        pixel_values = torch.from_numpy(image_rgb).permute(2, 0, 1).unsqueeze(0)
         pixel_values = self.processor.resize(
             image=pixel_values,
             size=self.processor.size,
             resample=self.processor.resample,
             antialias=False,
         )
-        # Resize is channel-independent, so delay BGR -> RGB until the tensor
-        # is at the detector's fixed input size instead of copying the full
-        # decoded page.
-        pixel_values = pixel_values.flip(1)
         pixel_values = pixel_values.to(dtype=torch.float32)
         pixel_values.div_(self._normalization_divisor)
         return pixel_values.to(
@@ -267,16 +270,16 @@ class OwnedLayoutFrontend:
     @torch.inference_mode()
     def _detect(
         self,
-        image_bgr: np.ndarray,
+        image_rgb: np.ndarray,
         *,
         flow_id: str,
     ) -> tuple[list[dict[str, Any]], dict[str, float]]:
         timing: dict[str, float] = {}
-        height, width = image_bgr.shape[:2]
+        height, width = image_rgb.shape[:2]
 
         started = time.perf_counter()
         started_ns = time.perf_counter_ns()
-        inputs = {"pixel_values": self._prepare_pixel_values(image_bgr)}
+        inputs = {"pixel_values": self._prepare_pixel_values(image_rgb)}
         timing["layout_preprocess_h2d_s"] = time.perf_counter() - started
         self._span(
             "Layout detection",
@@ -329,7 +332,7 @@ class OwnedLayoutFrontend:
         page_started_ns = time.perf_counter_ns()
 
         decode_started_ns = time.perf_counter_ns()
-        image, decode = _decode_bgr(path)
+        image, decode = _decode_rgb(path)
         self._span(
             "Page input",
             "Owned page read and decode",
@@ -390,7 +393,7 @@ class OwnedLayoutFrontend:
         if len(request_specs) > 1:
             crops = list(
                 self._crop_executor.map(
-                    _bgr_to_pil_rgb,
+                    _rgb_to_pil,
                     (
                         block_image
                         for _, block_image, _ in request_specs
@@ -399,7 +402,7 @@ class OwnedLayoutFrontend:
             )
         else:
             crops = [
-                _bgr_to_pil_rgb(block_image)
+                _rgb_to_pil(block_image)
                 for _, block_image, _ in request_specs
             ]
 

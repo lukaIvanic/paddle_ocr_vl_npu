@@ -57,11 +57,11 @@ def construct_image_path(label: str, box: Any) -> str:
 
 
 def gather_document_images(
-    image_bgr: np.ndarray,
+    image_rgb: np.ndarray,
     layout_boxes: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     """Mirror PaddleX's image inventory from detector boxes."""
-    height, width = image_bgr.shape[:2]
+    height, width = image_rgb.shape[:2]
     images: list[dict[str, Any]] = []
     for box in layout_boxes:
         if box["label"] not in IMAGE_LABELS:
@@ -76,7 +76,7 @@ def gather_document_images(
         if x_max <= x_min or y_max <= y_min:
             continue
         crop_rgb = np.ascontiguousarray(
-            image_bgr[y_min:y_max, x_min:x_max, :3][:, :, ::-1]
+            image_rgb[y_min:y_max, x_min:x_max, :3]
         )
         images.append(
             {
@@ -427,7 +427,7 @@ def assemble_page_blocks(
             path = construct_image_path(label, source["box"])
             image_blocks[path] = block
             if path not in dropped_figure_paths:
-                rgb = np.ascontiguousarray(source["img"][:, :, ::-1])
+                rgb = np.ascontiguousarray(source["img"])
                 block.image = {"path": path, "img": Image.fromarray(rgb)}
             else:
                 continue
