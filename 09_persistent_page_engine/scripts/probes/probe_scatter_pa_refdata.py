@@ -21,6 +21,57 @@ from paddleocr_vl.model.compile_utils import import_torchair
 from utils.timing import synchronize
 
 
+def _install_scatter_pa_metadata_converter(torchair) -> None:
+    """Preserve PA cache metadata across the converter's TensorMove.
+
+    The installed ScatterPaKvCache converter creates TensorMove nodes without
+    assigning their output metadata. GE then sees unshaped float cache inputs
+    even when the FX inputs are shaped float16 tensors. TorchAir's generic
+    auto-functionalization path already applies this exact set_meta rule.
+    """
+    from torchair._ge_concrete_graph import ge_apis as ge
+    from torchair._ge_concrete_graph.fx2ge_converter import (
+        register_fx_node_ge_converter,
+    )
+    from torchair.ge._ge_graph import Tensor, TensorSpec
+
+    def convert_scatter_pa(
+        key: Tensor,
+        value: Tensor,
+        key_cache: Tensor,
+        value_cache: Tensor,
+        slot_mapping: Tensor,
+        *,
+        compress_lens: Tensor | None = None,
+        compress_seq_offset: Tensor | None = None,
+        seq_lens: Tensor | None = None,
+        meta_outputs: TensorSpec | None = None,
+    ):
+        del meta_outputs
+        key_cache_copy = ge.TensorMove(key_cache)
+        key_cache_copy.set_meta(key_cache.meta)
+        value_cache_copy = ge.TensorMove(value_cache)
+        value_cache_copy.set_meta(value_cache.meta)
+        return ge.ScatterPaKvCache(
+            key,
+            key_cache_copy,
+            slot_mapping,
+            value,
+            value_cache_copy,
+            compress_lens=compress_lens,
+            compress_seq_offset=compress_seq_offset,
+            seq_lens=seq_lens,
+            cache_mode="PA_NZ",
+            scatter_mode="None",
+            strides=[1, 1],
+            offsets=[0, 0],
+        )
+
+    register_fx_node_ge_converter(
+        torch.ops.npu.npu_scatter_pa_kv_cache_functional.default
+    )(convert_scatter_pa)
+
+
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--steps", type=int, default=3)
@@ -270,6 +321,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
 
     torchair, CompilerConfig = import_torchair()
+    _install_scatter_pa_metadata_converter(torchair)
     compiler_config = CompilerConfig()
     compiler_config.experimental_config.enable_ref_data = True
     if args.graph_dump_dir is not None:
@@ -331,6 +383,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "fullgraph": True,
             "dynamic": False,
             "enable_ref_data": True,
+            "scatter_pa_metadata_converter": True,
         },
         "eager": eager,
         "compiled": compiled,
