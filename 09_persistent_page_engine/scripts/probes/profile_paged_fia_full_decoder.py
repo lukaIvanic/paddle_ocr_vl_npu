@@ -69,6 +69,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--cache-length", type=int, default=1024)
+    parser.add_argument("--attention-bucket-length", type=int, default=None)
     parser.add_argument("--block-size", type=int, default=128)
     parser.add_argument(
         "--paged-cache-update",
@@ -104,8 +105,20 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("--cache-length must be positive")
     if args.block_size <= 0 or args.cache_length % args.block_size:
         parser.error("--block-size must evenly divide --cache-length")
+    if args.attention_bucket_length is None:
+        args.attention_bucket_length = args.cache_length
+    if (
+        args.attention_bucket_length <= 0
+        or args.attention_bucket_length > args.cache_length
+    ):
+        parser.error(
+            "--attention-bucket-length must be positive and no larger than "
+            "--cache-length"
+        )
     if args.position < 0 or args.position >= args.cache_length:
         parser.error("--position must fit in --cache-length")
+    if args.position >= args.attention_bucket_length:
+        parser.error("--position must fit in --attention-bucket-length")
     if args.warmup < 0 or args.profile_iters <= 0:
         parser.error("--warmup must be non-negative and profile-iters positive")
     return args
@@ -262,7 +275,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         optimization=optimization,
         native_fia=args.paged_metadata == "fixed_bucket_mask",
         fixed_actual_kv_lengths=(
-            [args.cache_length] * args.batch_size
+            [args.attention_bucket_length] * args.batch_size
             if args.paged_metadata == "fixed_bucket_mask"
             else None
         ),
@@ -272,6 +285,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         cache_root=args.cache_dir,
         batch_size=args.batch_size,
         cache_length=args.cache_length,
+        attention_bucket_length=args.attention_bucket_length,
         block_size=args.block_size,
         cache_update_mode=args.paged_cache_update,
         metadata_mode=args.paged_metadata,
@@ -384,6 +398,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "configuration": {
             "batch_size": args.batch_size,
             "cache_length": args.cache_length,
+            "attention_bucket_length": args.attention_bucket_length,
             "actual_kv_length": args.position + 1,
             "block_size": args.block_size,
             "paged_cache_update": args.paged_cache_update,

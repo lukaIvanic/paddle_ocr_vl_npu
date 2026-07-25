@@ -104,6 +104,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--attention-bucket-length",
+        type=int,
+        default=None,
+        help=(
+            "Static valid-prefix bucket used by fixed_bucket_mask. Defaults "
+            "to --cache-length, but may be smaller than the physical cache."
+        ),
+    )
+    parser.add_argument(
         "--paged-single-stream",
         action="store_true",
         help=(
@@ -135,6 +144,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("--cache-length must be positive")
     if args.block_size <= 0 or args.cache_length % args.block_size:
         parser.error("--block-size must evenly divide --cache-length")
+    if args.attention_bucket_length is None:
+        args.attention_bucket_length = args.cache_length
+    if (
+        args.attention_bucket_length <= 0
+        or args.attention_bucket_length > args.cache_length
+    ):
+        parser.error(
+            "--attention-bucket-length must be positive and no larger than "
+            "--cache-length"
+        )
     if args.warmup < 0 or args.repeats <= 0:
         parser.error("--warmup must be non-negative and --repeats positive")
     try:
@@ -170,6 +189,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
                 "--batch-positions must be within the selected cache capacity"
             )
         args.positions = (max(args.batch_positions),)
+    if max(args.positions) >= args.attention_bucket_length:
+        parser.error(
+            "all runtime positions must fit inside --attention-bucket-length"
+        )
     return args
 
 
@@ -889,6 +912,7 @@ def _compile_paged_stage(
     cache_root: Path,
     batch_size: int,
     cache_length: int,
+    attention_bucket_length: int,
     block_size: int,
     cache_update_mode: str,
     metadata_mode: str,
@@ -902,7 +926,8 @@ def _compile_paged_stage(
         cache_root.expanduser().resolve()
         / (
             f"paged_fia_v2_{OPTIMIZATION}_b{batch_size}_"
-            f"k{cache_length}_block{block_size}_{cache_update_mode}_"
+            f"k{cache_length}_a{attention_bucket_length}_"
+            f"block{block_size}_{cache_update_mode}_"
             f"{metadata_mode}_"
             f"{stream_mode}_"
             f"src{_script_hash()}"
@@ -924,6 +949,7 @@ def _compile_paged_stage(
         "dynamic": False,
         "cache_update_mode": cache_update_mode,
         "metadata_mode": metadata_mode,
+        "attention_bucket_length": attention_bucket_length,
         "single_stream": bool(single_stream),
         "ge_enable_single_stream": bool(single_stream),
     }
@@ -1071,7 +1097,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         optimization=optimization,
         native_fia=args.paged_metadata == "fixed_bucket_mask",
         fixed_actual_kv_lengths=(
-            [args.cache_length] * args.batch_size
+            [args.attention_bucket_length] * args.batch_size
             if args.paged_metadata == "fixed_bucket_mask"
             else None
         ),
@@ -1081,6 +1107,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         cache_root=args.cache_dir,
         batch_size=args.batch_size,
         cache_length=args.cache_length,
+        attention_bucket_length=args.attention_bucket_length,
         block_size=args.block_size,
         cache_update_mode=args.paged_cache_update,
         metadata_mode=args.paged_metadata,
@@ -1309,6 +1336,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "seed": args.seed,
             "batch_size": args.batch_size,
             "cache_length": args.cache_length,
+            "attention_bucket_length": args.attention_bucket_length,
             "block_size": args.block_size,
             "paged_cache_layout": "PA_NZ",
             "paged_cache_shape": (
