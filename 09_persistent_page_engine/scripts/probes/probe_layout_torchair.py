@@ -102,19 +102,58 @@ def _device_average_s(
     return float(start.elapsed_time(end)) / 1000.0 / repeats
 
 
+def _record_anchor_call(model: Any) -> tuple[Any, dict[str, Any]]:
+    """Record the concrete anchor arguments used by one eager forward."""
+
+    detector = model.model
+    original = detector.generate_anchors
+    recorded: dict[str, Any] = {}
+
+    def recording_generate_anchors(
+        _self: Any,
+        spatial_shapes: Any = None,
+        grid_size: float = 0.05,
+        device: Any = "cpu",
+        dtype: torch.dtype = torch.float32,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        recorded.update(
+            {
+                "spatial_shapes": tuple(
+                    tuple(int(value) for value in shape)
+                    for shape in spatial_shapes
+                ),
+                "grid_size": float(grid_size),
+                "device": device,
+                "dtype": dtype,
+            }
+        )
+        return original(
+            spatial_shapes=spatial_shapes,
+            grid_size=grid_size,
+            device=device,
+            dtype=dtype,
+        )
+
+    detector.generate_anchors = MethodType(
+        recording_generate_anchors,
+        detector,
+    )
+    return original, recorded
+
+
 def _install_static_anchor_cache(
     model: Any,
     *,
-    device: torch.device,
-    dtype: torch.dtype,
+    original: Any,
+    recorded: dict[str, Any],
 ) -> None:
     """Return the detector's invariant 800x800 anchors as captured tensors."""
 
+    if not recorded:
+        raise RuntimeError("eager forward did not generate detector anchors")
     detector = model.model
     anchors, valid_mask = detector.generate_anchors(
-        spatial_shapes=None,
-        device=device,
-        dtype=dtype,
+        **recorded,
     )
 
     def static_generate_anchors(
@@ -164,13 +203,16 @@ def main() -> None:
     image_rgb, _decode_timing = _decode_rgb(image_path)
     pixel_values = frontend._prepare_pixel_values(image_rgb)
 
+    original_generate_anchors, recorded_anchor_call = _record_anchor_call(
+        frontend.model
+    )
     eager_output = frontend.model(pixel_values=pixel_values)
     torch_npu.npu.synchronize(device)
     eager_reference = _cpu_clone(eager_output)
     _install_static_anchor_cache(
         frontend.model,
-        device=device,
-        dtype=frontend.model_dtype,
+        original=original_generate_anchors,
+        recorded=recorded_anchor_call,
     )
     cached_anchor_output = frontend.model(pixel_values=pixel_values)
     torch_npu.npu.synchronize(device)
