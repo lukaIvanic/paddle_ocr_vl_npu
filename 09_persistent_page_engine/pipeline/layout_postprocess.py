@@ -33,6 +33,7 @@ SKIP_ORDER_LABELS = {
 }
 
 IMAGE_LABELS = ["image", "header_image", "footer_image"]
+_INDEPENDENT_CROP_LABELS = {*IMAGE_LABELS, "chart", "seal", "table"}
 
 LARGE_CONTAINER_LABELS = {
     "chart",
@@ -747,14 +748,24 @@ def crop_layout_regions(
     def crop_one(box_info: dict[str, Any]) -> dict[str, Any]:
         box = box_info["coordinate"]
         x_min, y_min, x_max, y_max = [int(value) for value in box]
-        crop = image[y_min:y_max, x_min:x_max].copy()
+        full_rectangle = _is_full_crop_rectangle(box_info)
+        crop_view = image[y_min:y_max, x_min:x_max]
+        # Recognition-only rectangles are materialized directly into their
+        # final PIL request below. Keep visible and mutable blocks independent.
+        if (
+            full_rectangle
+            and box_info["label"] not in _INDEPENDENT_CROP_LABELS
+        ):
+            crop = crop_view
+        else:
+            crop = crop_view.copy()
         output = {
             "img": crop,
             "box": box,
             "label": box_info["label"],
             "polygon_points": box_info["polygon_points"],
         }
-        if not _is_full_crop_rectangle(box_info):
+        if not full_rectangle:
             mask = np.zeros(crop.shape[:2], dtype=np.int32)
             polygon = np.asarray(
                 box_info["polygon_points"],
