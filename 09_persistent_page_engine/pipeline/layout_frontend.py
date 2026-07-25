@@ -189,6 +189,10 @@ class OwnedLayoutFrontend:
             self.labels,
             threshold=threshold,
         )
+        self._crop_executor = ThreadPoolExecutor(
+            max_workers=4,
+            thread_name_prefix="layout-crop",
+        )
         torch.npu.synchronize()
         self.setup_s = time.perf_counter() - setup_started
         self.graph_capture = bool(graph_capture)
@@ -324,7 +328,11 @@ class OwnedLayoutFrontend:
         preparation_started = time.perf_counter()
         preparation_started_ns = time.perf_counter_ns()
         document_images = gather_document_images(image, boxes)
-        blocks = crop_layout_regions(image, boxes)
+        blocks = crop_layout_regions(
+            image,
+            boxes,
+            executor=self._crop_executor if len(boxes) > 1 else None,
+        )
         image_labels = IMAGE_LABELS + ["chart", "seal"]
         blocks = merge_blocks(
             blocks,
@@ -360,21 +368,16 @@ class OwnedLayoutFrontend:
                     block_image = cropped
             request_specs.append((block_index, block_image, prompt))
 
-        worker_count = min(4, len(request_specs))
-        if worker_count > 1:
-            with ThreadPoolExecutor(
-                max_workers=worker_count,
-                thread_name_prefix="layout-crop",
-            ) as executor:
-                crops = list(
-                    executor.map(
-                        _bgr_to_pil_rgb,
-                        (
-                            block_image
-                            for _, block_image, _ in request_specs
-                        ),
-                    )
+        if len(request_specs) > 1:
+            crops = list(
+                self._crop_executor.map(
+                    _bgr_to_pil_rgb,
+                    (
+                        block_image
+                        for _, block_image, _ in request_specs
+                    ),
                 )
+            )
         else:
             crops = [
                 _bgr_to_pil_rgb(block_image)

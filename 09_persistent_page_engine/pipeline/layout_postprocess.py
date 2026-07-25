@@ -8,6 +8,7 @@ to the fixed v1.6 configuration exercised by this project.
 
 from __future__ import annotations
 
+from concurrent.futures import Executor
 from typing import Any
 
 import cv2
@@ -615,9 +616,10 @@ def _is_full_crop_rectangle(box_info: dict[str, Any]) -> bool:
 def crop_layout_regions(
     image: np.ndarray,
     boxes: list[dict[str, Any]],
+    *,
+    executor: Executor | None = None,
 ) -> list[dict[str, Any]]:
-    outputs: list[dict[str, Any]] = []
-    for box_info in boxes:
+    def crop_one(box_info: dict[str, Any]) -> dict[str, Any]:
         box = box_info["coordinate"]
         x_min, y_min, x_max, y_max = [int(value) for value in box]
         crop = image[y_min:y_max, x_min:x_max].copy()
@@ -636,8 +638,11 @@ def crop_layout_regions(
             polygon = polygon - np.array([x_min, y_min])
             cv2.fillPoly(mask, [polygon], 1)
             crop[~mask.astype(bool)] = 255
-        outputs.append(output)
-    return outputs
+        return output
+
+    if executor is None:
+        return [crop_one(box_info) for box_info in boxes]
+    return list(executor.map(crop_one, boxes))
 
 
 def _to_pil(image: np.ndarray | Image.Image) -> Image.Image:
