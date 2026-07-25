@@ -369,6 +369,13 @@ def install_layout_runtime_optimizations(
         modeling_pp_doclayout_v3.torch_compilable_check = (
             lambda *args, **kwargs: None
         )
+        for module in model.modules():
+            config = getattr(module, "config", None)
+            if config is not None and hasattr(
+                config,
+                "_attn_implementation",
+            ):
+                config._attn_implementation = "eager"
         model.forward = torchair.inference.cache_compile(
             model.forward,
             config=CompilerConfig(),
@@ -389,6 +396,9 @@ def install_layout_runtime_optimizations(
         "model_compiled": compiled,
         "transformers_runtime_shape_checks": (
             "outside_static_graph" if compiled else "enabled"
+        ),
+        "transformer_attention": (
+            "explicit_eager" if compiled else "installed_default"
         ),
         "torchair_cache_dir": (
             str(torchair_cache_dir) if torchair_cache_dir is not None else None
