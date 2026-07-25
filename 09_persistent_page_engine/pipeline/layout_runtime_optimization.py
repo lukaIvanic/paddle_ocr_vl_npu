@@ -348,6 +348,20 @@ def _post_process_selected_masks_only(
     )
     labels = flattened_indices % class_count
     query_indices = flattened_indices // class_count
+    mask_query_limit = getattr(
+        processor,
+        "_layout_mask_query_limit",
+        None,
+    )
+    available_mask_queries = (
+        torch.topk(
+            logits.max(dim=-1).values,
+            k=mask_query_limit,
+            dim=-1,
+        ).indices
+        if mask_query_limit is not None
+        else None
+    )
 
     results: list[dict[str, Any]] = []
     for batch_index, target_size in enumerate(target_sizes):
@@ -391,6 +405,18 @@ def _post_process_selected_masks_only(
         if use_polygons:
             if masks is None:
                 raise AssertionError("layout mask output is unavailable")
+            if available_mask_queries is not None:
+                available = available_mask_queries[batch_index]
+                has_mask = (
+                    selected_queries.unsqueeze(-1)
+                    == available.unsqueeze(0)
+                ).any(dim=-1)
+                if not bool(has_mask.all().item()):
+                    missing = selected_queries[~has_mask].detach().cpu().tolist()
+                    raise RuntimeError(
+                        "layout mask query limit excluded selected queries: "
+                        f"limit={mask_query_limit} missing={missing}"
+                    )
             selected_masks = masks[batch_index].index_select(
                 0,
                 selected_queries,
@@ -535,22 +561,72 @@ def _decoder_forward_final_heads_only(
             reference_points = new_reference_points.detach()
 
     out_query = norm(hidden_states)
-    if getattr(decoder, "_layout_emit_masks", True):
-        mask_query_embed = mask_query_head(out_query)
-        batch_size, mask_dim, _ = mask_query_embed.shape
-        _, _, mask_height, mask_width = mask_feat.shape
-        out_mask = torch.bmm(
-            mask_query_embed,
-            mask_feat.flatten(start_dim=2),
-        ).reshape(batch_size, mask_dim, mask_height, mask_width)
-    else:
-        out_mask = hidden_states[..., :1].unsqueeze(-1)
-
     logits = (
         decoder.class_embed(out_query)
         if decoder.class_embed is not None
         else None
     )
+    if getattr(decoder, "_layout_emit_masks", True):
+        batch_size, query_count, _ = out_query.shape
+        _, _, mask_height, mask_width = mask_feat.shape
+        mask_query_limit = getattr(
+            decoder,
+            "_layout_mask_query_limit",
+            None,
+        )
+        mask_queries = out_query
+        mask_query_indices = None
+        if mask_query_limit is not None:
+            if logits is None:
+                raise RuntimeError(
+                    "limited layout masks require classification logits"
+                )
+            mask_query_indices = torch.topk(
+                logits.max(dim=-1).values,
+                k=mask_query_limit,
+                dim=-1,
+            ).indices
+            mask_queries = torch.gather(
+                out_query,
+                dim=1,
+                index=mask_query_indices.unsqueeze(-1).expand(
+                    -1,
+                    -1,
+                    out_query.shape[-1],
+                ),
+            )
+
+        mask_query_embed = mask_query_head(mask_queries)
+        mask_dim = mask_query_embed.shape[1]
+        computed_masks = torch.bmm(
+            mask_query_embed,
+            mask_feat.flatten(start_dim=2),
+        ).reshape(batch_size, mask_dim, mask_height, mask_width)
+        if mask_query_indices is None:
+            out_mask = computed_masks
+        else:
+            out_mask = torch.zeros(
+                (
+                    batch_size,
+                    query_count,
+                    mask_height,
+                    mask_width,
+                ),
+                dtype=computed_masks.dtype,
+                device=computed_masks.device,
+            ).scatter(
+                dim=1,
+                index=mask_query_indices[:, :, None, None].expand(
+                    -1,
+                    -1,
+                    mask_height,
+                    mask_width,
+                ),
+                src=computed_masks,
+            )
+    else:
+        out_mask = hidden_states[..., :1].unsqueeze(-1)
+
     order_logits = None
     if order_head is not None and global_pointer is not None:
         valid_query = (
@@ -723,6 +799,7 @@ def install_layout_runtime_optimizations(
     backend: str = "eager",
     polygon_mode: str = "mask",
     mask_rectangle_fast_path: bool = False,
+    mask_query_limit: int | None = None,
 ) -> dict[str, Any]:
     """Install layout optimizations on the concrete PaddleX pipeline.
 
@@ -753,6 +830,9 @@ def install_layout_runtime_optimizations(
             f"polygon mode must be 'mask' or 'rect', got {polygon_mode!r}"
         )
     predictor.image_processor._layout_polygon_mode = polygon_mode
+    if mask_query_limit is not None and mask_query_limit <= 0:
+        raise ValueError("mask query limit must be positive")
+    predictor.image_processor._layout_mask_query_limit = mask_query_limit
     predictor.image_processor.post_process_object_detection = MethodType(
         _post_process_selected_masks_only,
         predictor.image_processor,
@@ -800,6 +880,9 @@ def install_layout_runtime_optimizations(
         )
     decoder.forward = MethodType(_decoder_forward_final_heads_only, decoder)
     decoder._layout_emit_masks = polygon_mode == "mask"
+    decoder._layout_mask_query_limit = (
+        mask_query_limit if polygon_mode == "mask" else None
+    )
 
     graph_capture = False
     if backend == "npugraph":
@@ -823,6 +906,7 @@ def install_layout_runtime_optimizations(
         "filter_masks_before_postprocess": True,
         "final_decoder_heads_only": True,
         "mask_rectangle_fast_path": bool(mask_rectangle_fast_path),
+        "mask_query_limit": mask_query_limit,
         "polygon_mode": polygon_mode,
         "model_backend": backend,
         "model_graph_capture": graph_capture,

@@ -214,6 +214,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "box-only research path."
         ),
     )
+    parser.add_argument(
+        "--layout-mask-query-limit",
+        type=int,
+        default=None,
+        help=(
+            "Research-only fixed number of top-scoring decoder queries whose "
+            "200x200 masks are materialized."
+        ),
+    )
     args = parser.parse_args(argv)
     if args.offset < 0 or args.limit <= 0:
         parser.error("--offset must be non-negative and --limit positive")
@@ -221,6 +230,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("--max-new-tokens must be positive")
     if args.preprocessor_min_pixels is not None and args.preprocessor_min_pixels <= 0:
         parser.error("--preprocessor-min-pixels must be positive")
+    if (
+        args.layout_mask_query_limit is not None
+        and args.layout_mask_query_limit <= 0
+    ):
+        parser.error("--layout-mask-query-limit must be positive")
     return args
 
 
@@ -372,6 +386,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         backend=args.layout_backend,
         polygon_mode=args.layout_polygons,
         mask_rectangle_fast_path=args.layout_polygons == "mask",
+        mask_query_limit=args.layout_mask_query_limit,
     )
     setup_s = time.perf_counter() - setup_started
 
