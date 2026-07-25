@@ -238,7 +238,19 @@ def _polygon_to_quad(polygon: Any) -> np.ndarray | None:
     points = np.asarray(polygon, dtype=np.float32)
     if points.ndim == 1:
         points = points.reshape(-1, 2)
-    quad = cv2.boxPoints(cv2.minAreaRect(points))
+    rectangle = cv2.minAreaRect(points)
+    quad = cv2.boxPoints(rectangle)
+    coordinate_sums = quad[:, 0] + quad[:, 1]
+    top_left = int(np.argmin(coordinate_sums))
+    if (
+        min(rectangle[1]) > 1e-3
+        and np.count_nonzero(
+            coordinate_sums == coordinate_sums[top_left]
+        )
+        == 1
+    ):
+        return np.roll(quad, -top_left, axis=0)
+
     center = quad.mean(axis=0)
     angles = np.arctan2(quad[:, 1] - center[1], quad[:, 0] - center[0])
     quad = quad[np.argsort(angles)]
