@@ -1,0 +1,208 @@
+{
+  "schema_version": 1,
+  "kind": "npugraph_paged_fia_multistep_replay",
+  "passed": true,
+  "configuration": {
+    "batch_size": 1,
+    "cache_length": 4096,
+    "block_size": 128,
+    "initial_positions": [
+      768
+    ],
+    "correctness_steps": 4,
+    "warmup_steps": 20,
+    "timing_steps": 600,
+    "breakdown_steps": 200,
+    "profile_steps": 0,
+    "model_weights": "random",
+    "architecture": "full_paddle_text_decoder",
+    "graph": "torch.npu.NPUGraph",
+    "fia_metadata_update": "graph_task_update_begin_end_per_layer_per_replay",
+    "paged_cache_layout": "PA_NZ",
+    "paged_cache_update": "npu_scatter_pa_kv_cache",
+    "paged_attention": "npu_fused_infer_attention_score_v2.out"
+  },
+  "versions": {
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0"
+  },
+  "captured_fia_tasks": 18,
+  "correctness": [
+    {
+      "step": 0,
+      "positions": [
+        768
+      ],
+      "argmax_matches": 1,
+      "argmax_total": 1,
+      "logits": {
+        "max_abs": 0.00222015380859375,
+        "mean_abs": 0.00038027495611459017
+      },
+      "written_kv": {
+        "max_abs": 0.001953125,
+        "mean_abs": 0.00022630496985382505
+      },
+      "passed": true
+    },
+    {
+      "step": 1,
+      "positions": [
+        769
+      ],
+      "argmax_matches": 1,
+      "argmax_total": 1,
+      "logits": {
+        "max_abs": 0.002105712890625,
+        "mean_abs": 0.0003823535516858101
+      },
+      "written_kv": {
+        "max_abs": 0.001953125,
+        "mean_abs": 0.0001954166542014314
+      },
+      "passed": true
+    },
+    {
+      "step": 2,
+      "positions": [
+        770
+      ],
+      "argmax_matches": 1,
+      "argmax_total": 1,
+      "logits": {
+        "max_abs": 0.001953125,
+        "mean_abs": 0.00036558377905748785
+      },
+      "written_kv": {
+        "max_abs": 0.001953125,
+        "mean_abs": 0.0001763657589132587
+      },
+      "passed": true
+    },
+    {
+      "step": 3,
+      "positions": [
+        771
+      ],
+      "argmax_matches": 1,
+      "argmax_total": 1,
+      "logits": {
+        "max_abs": 0.0029296875,
+        "mean_abs": 0.00039008987369015813
+      },
+      "written_kv": {
+        "max_abs": 0.001953125,
+        "mean_abs": 0.00021291560389929346
+      },
+      "passed": true
+    }
+  ],
+  "timing": {
+    "increfa": {
+      "device_s": 0.9123807373046875,
+      "wall_s": 0.9128699949942529,
+      "mean_device_ms": 1.5206345621744792,
+      "raw_device_tokens_per_s": 657.6201967749691,
+      "raw_wall_tokens_per_s": 657.2677416172248
+    },
+    "npugraph_paged_fia": {
+      "device_s": 1.8354107666015624,
+      "wall_s": 1.8356440679635853,
+      "mean_device_ms": 3.0590179443359373,
+      "raw_device_tokens_per_s": 326.90229942965686,
+      "raw_wall_tokens_per_s": 326.86075174999695,
+      "graph_task_updates_per_step": 18
+    },
+    "fia_vs_increfa_raw_wall_speedup": 0.4973022880230625
+  },
+  "phase_breakdown": {
+    "steps": 200,
+    "wall_mean_ms": 3.389419805025682,
+    "host_submission_ms": {
+      "graph_task_update_18": {
+        "mean": 3.005649180850014,
+        "min": 2.918979967944324,
+        "p50": 2.9985709115862846,
+        "p90": 3.0462020076811314,
+        "max": 3.4395380644127727
+      },
+      "graph_replay": {
+        "mean": 0.0327139045111835,
+        "min": 0.029320945031940937,
+        "p50": 0.030940980650484562,
+        "p90": 0.037400983273983,
+        "max": 0.06955105345696211
+      },
+      "state_advance": {
+        "mean": 0.096775374840945,
+        "min": 0.09348196908831596,
+        "p50": 0.0965020153671503,
+        "p90": 0.09786209557205439,
+        "max": 0.11449202429503202
+      }
+    },
+    "host_update_components_ms": {
+      "update_begin": {
+        "mean": 0.33472186943981797,
+        "min": 0.31599204521626234,
+        "p50": 0.3339160466566682,
+        "p90": 0.34709565807133913,
+        "max": 0.36424887366592884
+      },
+      "fia_out_reissue": {
+        "mean": 1.9377502094721422,
+        "min": 1.8784611020237207,
+        "p50": 1.934261992573738,
+        "p90": 1.958332723006606,
+        "max": 2.378098899498582
+      },
+      "update_end": {
+        "mean": 0.43298304663039744,
+        "min": 0.4019782645627856,
+        "p50": 0.43164798989892006,
+        "p90": 0.4505569813773036,
+        "max": 0.5535496165975928
+      },
+      "event_record": {
+        "mean": 0.18334860156755894,
+        "min": 0.16844202764332294,
+        "p50": 0.1840628683567047,
+        "p90": 0.1883330987766385,
+        "max": 0.2039618557319045
+      },
+      "other": {
+        "mean": 0.11684545374009758,
+        "min": 0.11059083044528961,
+        "p50": 0.11436245404183865,
+        "p90": 0.1201119739562273,
+        "max": 0.4384481580927968
+      }
+    },
+    "host_update_component_scope": "Each component is the total across all captured FIA layer tasks in one decode iteration",
+    "device_stream_ms": {
+      "update_stream": {
+        "mean": 2.9388413000106812,
+        "min": 2.8521199226379395,
+        "p50": 2.9330599308013916,
+        "p90": 2.9753799438476562,
+        "max": 3.375200033187866
+      },
+      "replay_stream_including_event_waits": {
+        "mean": 1.642279604077339,
+        "min": 1.6226999759674072,
+        "p50": 1.642359972000122,
+        "p90": 1.6533600091934204,
+        "max": 1.6635799407958984
+      },
+      "state_advance": {
+        "mean": 0.003706400007940829,
+        "min": 0.0034000000450760126,
+        "p50": 0.003719999920576811,
+        "p90": 0.003920000046491623,
+        "max": 0.00418000016361475
+      }
+    },
+    "interpretation": "update and replay stream spans can overlap; the replay span includes any waits on the 18 per-layer update events"
+  },
+  "profiler": null
+}
