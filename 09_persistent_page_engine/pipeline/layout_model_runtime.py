@@ -319,6 +319,7 @@ def _extract_custom_vertices_vectorized(
         len(points) == 4
         and np.all(selected)
         and np.all(np.sum(vector_1 * vector_2, axis=1) == 0)
+        and np.isscalar(sharp_angle_thresh)
         and abs(90.0 - sharp_angle_thresh) >= 1
     ):
         return [tuple(point) for point in points.astype(np.float64, copy=True)]
