@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 import cv2
@@ -17,6 +18,10 @@ class _CropRectangleFastPath:
 
     def __init__(self, original: Any) -> None:
         self.original = original
+        self._fallback_executor = ThreadPoolExecutor(
+            max_workers=4,
+            thread_name_prefix="layout-mask",
+        )
         self._lock = threading.Lock()
         self._calls = 0
         self._boxes = 0
@@ -504,11 +509,37 @@ class _MaskRectangleFastPath:
 
         fallback_started_ns = time.perf_counter_ns()
         if fallback_indices:
-            fallback_polygons = self.original(
-                boxes_np[fallback_indices],
-                masks_np[fallback_indices],
-                scale_ratio,
-            )
+            fallback_boxes = boxes_np[fallback_indices]
+            fallback_masks = masks_np[fallback_indices]
+            if len(fallback_indices) < 4:
+                fallback_polygons = self.original(
+                    fallback_boxes,
+                    fallback_masks,
+                    scale_ratio,
+                )
+            else:
+                worker_count = min(4, len(fallback_indices))
+                chunk_size = (
+                    len(fallback_indices) + worker_count - 1
+                ) // worker_count
+                futures = [
+                    self._fallback_executor.submit(
+                        self.original,
+                        fallback_boxes[start : start + chunk_size],
+                        fallback_masks[start : start + chunk_size],
+                        scale_ratio,
+                    )
+                    for start in range(
+                        0,
+                        len(fallback_indices),
+                        chunk_size,
+                    )
+                ]
+                fallback_polygons = [
+                    polygon
+                    for future in futures
+                    for polygon in future.result()
+                ]
             if len(fallback_polygons) != len(fallback_indices):
                 raise RuntimeError(
                     "PP-DocLayout mask extractor returned "
