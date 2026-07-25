@@ -193,16 +193,27 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     memory_before_setup = int(torch.npu.memory_allocated(device))
     setup_started = time.perf_counter()
-    frontends = [
-        OwnedLayoutFrontend(
-            model_dir,
-            device,
-            timeline=timeline,
-            graph_capture=True,
-            device_stage_timing=True,
-        )
-        for _ in range(args.workers)
-    ]
+    worker_streams = (
+        [torch.npu.current_stream(device)]
+        if args.workers == 1
+        else [
+            torch_npu.npu.Stream(device=device)
+            for _ in range(args.workers)
+        ]
+    )
+    frontends = []
+    for stream in worker_streams:
+        with torch_npu.npu.stream(stream):
+            frontends.append(
+                OwnedLayoutFrontend(
+                    model_dir,
+                    device,
+                    timeline=timeline,
+                    graph_capture=True,
+                    device_stage_timing=True,
+                )
+            )
+        stream.synchronize()
     setup_s = time.perf_counter() - setup_started
     memory_after_setup = int(torch.npu.memory_allocated(device))
 
@@ -217,25 +228,26 @@ def main(argv: Sequence[str] | None = None) -> None:
         ]
     ]:
         frontend = frontends[worker_index]
-        prepared = []
-        for ordinal in range(
-            worker_index,
-            len(image_paths),
-            args.workers,
-        ):
-            page = frontend.prepare_page(
-                image_paths[ordinal],
-                ordinal,
-                min_pixels=args.preprocessor_min_pixels,
-            )
-            prepared.append(
-                (
-                    page.ordinal,
-                    page.requests,
-                    page.timing_s,
-                    page.statistics,
+        with torch_npu.npu.stream(worker_streams[worker_index]):
+            prepared = []
+            for ordinal in range(
+                worker_index,
+                len(image_paths),
+                args.workers,
+            ):
+                page = frontend.prepare_page(
+                    image_paths[ordinal],
+                    ordinal,
+                    min_pixels=args.preprocessor_min_pixels,
                 )
-            )
+                prepared.append(
+                    (
+                        page.ordinal,
+                        page.requests,
+                        page.timing_s,
+                        page.statistics,
+                    )
+                )
         return prepared
 
     frontend_started = time.perf_counter()
@@ -322,6 +334,9 @@ def main(argv: Sequence[str] | None = None) -> None:
         "layout_model": str(model_dir),
         "layout_model_backend": "transformers_npugraph",
         "workers": args.workers,
+        "worker_npu_streams": (
+            "default" if args.workers == 1 else "dedicated_per_worker"
+        ),
         "setup_s": setup_s,
         "setup_by_worker_s": [
             frontend.setup_s for frontend in frontends
