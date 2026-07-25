@@ -373,6 +373,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         polygon_mode=args.layout_polygons,
         mask_rectangle_fast_path=args.layout_polygons == "mask",
         crop_rectangle_fast_path=args.layout_polygons == "mask",
+        polygon_normalization_fast_path=args.layout_polygons == "mask",
     )
     setup_s = time.perf_counter() - setup_started
 
@@ -467,6 +468,16 @@ def main(argv: Sequence[str] | None = None) -> None:
         if crop_rectangle_fast_path is not None
         else None
     )
+    polygon_normalization_fast_path = getattr(
+        auto_parallel._pipeline,
+        "_layout_polygon_normalization_fast_path",
+        None,
+    )
+    polygon_normalization_fast_path_summary = (
+        polygon_normalization_fast_path.snapshot()
+        if polygon_normalization_fast_path is not None
+        else None
+    )
     artifact_write_s = time.perf_counter() - artifact_started
 
     reference = None
@@ -528,6 +539,9 @@ def main(argv: Sequence[str] | None = None) -> None:
         ),
         "layout_crop_rectangle_fast_path": (
             crop_rectangle_fast_path_summary
+        ),
+        "layout_polygon_normalization_fast_path": (
+            polygon_normalization_fast_path_summary
         ),
         "timeline": {
             "enabled": bool(args.timeline),

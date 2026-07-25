@@ -140,6 +140,140 @@ class _CropRectangleFastPath:
             }
 
 
+class _PolygonNormalizationFastPath:
+    """Resolve contained axis-aligned rectangles without OpenCV or Shapely."""
+
+    def __init__(self, original: Any) -> None:
+        self.original = original
+        self._lock = threading.Lock()
+        self._calls = 0
+        self._rectangle_fast_paths = 0
+        self._fallbacks = 0
+        self._wall_ns = 0
+        self._predicate_ns = 0
+        self._fallback_ns = 0
+
+    @staticmethod
+    def _contained_rectangle_result(
+        box: Any,
+        polygon: Any,
+        layout_shape_mode: str,
+    ) -> np.ndarray | None:
+        if layout_shape_mode != "auto" or polygon is None:
+            return None
+
+        points = np.asarray(polygon, dtype=np.float32)
+        if points.size != 8:
+            return None
+        points = points.reshape(4, 2)
+        x_values = np.unique(points[:, 0])
+        y_values = np.unique(points[:, 1])
+        if len(x_values) != 2 or len(y_values) != 2:
+            return None
+        expected = {
+            (float(x_values[0]), float(y_values[0])),
+            (float(x_values[1]), float(y_values[0])),
+            (float(x_values[1]), float(y_values[1])),
+            (float(x_values[0]), float(y_values[1])),
+        }
+        if {tuple(point) for point in points.tolist()} != expected:
+            return None
+
+        # The original normalizer converts the detected box to int32 before
+        # constructing its rectangle.
+        x_min, y_min, x_max, y_max = np.asarray(box).astype(np.int32)
+        polygon_x_min = float(x_values[0])
+        polygon_x_max = float(x_values[1])
+        polygon_y_min = float(y_values[0])
+        polygon_y_max = float(y_values[1])
+        if not (
+            polygon_x_min >= x_min
+            and polygon_y_min >= y_min
+            and polygon_x_max <= x_max
+            and polygon_y_max <= y_max
+        ):
+            return None
+
+        rect_area = float((x_max - x_min) * (y_max - y_min))
+        polygon_area = (
+            (polygon_x_max - polygon_x_min)
+            * (polygon_y_max - polygon_y_min)
+        )
+        if rect_area <= 0 or polygon_area / rect_area < 0.95:
+            return None
+
+        # For a contained axis-aligned rectangle this is exactly the same
+        # union IoU tested by the original Shapely path.
+        return np.array(
+            [
+                [x_min, y_min],
+                [x_max, y_min],
+                [x_max, y_max],
+                [x_min, y_max],
+            ],
+            dtype=np.float32,
+        )
+
+    def __call__(
+        self,
+        box: Any,
+        polygon: Any,
+        layout_shape_mode: str,
+        previous_polygon: Any = None,
+    ) -> Any:
+        started_ns = time.perf_counter_ns()
+        predicate_started_ns = time.perf_counter_ns()
+        rectangle = self._contained_rectangle_result(
+            box,
+            polygon,
+            layout_shape_mode,
+        )
+        predicate_ns = time.perf_counter_ns() - predicate_started_ns
+
+        fallback_ns = 0
+        if rectangle is not None:
+            result = rectangle
+            rectangle_fast_paths = 1
+            fallbacks = 0
+        else:
+            fallback_started_ns = time.perf_counter_ns()
+            result = self.original(
+                box,
+                polygon,
+                layout_shape_mode,
+                previous_polygon,
+            )
+            fallback_ns = time.perf_counter_ns() - fallback_started_ns
+            rectangle_fast_paths = 0
+            fallbacks = 1
+
+        finished_ns = time.perf_counter_ns()
+        with self._lock:
+            self._calls += 1
+            self._rectangle_fast_paths += rectangle_fast_paths
+            self._fallbacks += fallbacks
+            self._wall_ns += finished_ns - started_ns
+            self._predicate_ns += predicate_ns
+            self._fallback_ns += fallback_ns
+        return result
+
+    def snapshot(self) -> dict[str, Any]:
+        with self._lock:
+            return {
+                "calls": self._calls,
+                "rectangle_fast_paths": self._rectangle_fast_paths,
+                "fallbacks": self._fallbacks,
+                "coverage": (
+                    self._rectangle_fast_paths / self._calls
+                    if self._calls
+                    else 0.0
+                ),
+                "wall_s": self._wall_ns / 1_000_000_000,
+                "predicate_s": self._predicate_ns / 1_000_000_000,
+                "fallback_s": self._fallback_ns / 1_000_000_000,
+            }
+
+
 def _full_border_contour(box: Any) -> np.ndarray:
     """Return the contour produced by a full resized binary mask."""
 
@@ -852,6 +986,7 @@ def install_layout_runtime_optimizations(
     polygon_mode: str = "mask",
     mask_rectangle_fast_path: bool = False,
     crop_rectangle_fast_path: bool = False,
+    polygon_normalization_fast_path: bool = False,
 ) -> dict[str, Any]:
     """Install layout optimizations on the concrete PaddleX pipeline.
 
@@ -914,6 +1049,20 @@ def install_layout_runtime_optimizations(
         processors as detection_processors,
     )
 
+    polygon_normalization_fast_path_state = None
+    if polygon_mode == "mask" and polygon_normalization_fast_path:
+        polygon_normalization_fast_path_state = (
+            _PolygonNormalizationFastPath(
+                layout_processors._normalize_layout_polygon
+            )
+        )
+        layout_processors._normalize_layout_polygon = (
+            polygon_normalization_fast_path_state
+        )
+    paddlex_pipeline._layout_polygon_normalization_fast_path = (
+        polygon_normalization_fast_path_state
+    )
+
     for module in (layout_processors, detection_processors):
         module.nms = _vectorized_nms
         module.check_containment = _vectorized_check_containment
@@ -962,6 +1111,9 @@ def install_layout_runtime_optimizations(
         "final_decoder_heads_only": True,
         "mask_rectangle_fast_path": bool(mask_rectangle_fast_path),
         "crop_rectangle_fast_path": bool(crop_rectangle_fast_path),
+        "polygon_normalization_fast_path": bool(
+            polygon_normalization_fast_path
+        ),
         "polygon_mode": polygon_mode,
         "model_backend": backend,
         "model_graph_capture": graph_capture,
