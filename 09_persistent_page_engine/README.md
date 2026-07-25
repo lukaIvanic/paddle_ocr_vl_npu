@@ -470,6 +470,26 @@ without making recognition wait for independent layout kernels; the
 continuous-decode scheduler retains its single device-wide synchronization as
 the final run-boundary fence.
 
+## Layout frontend lab
+
+`scripts/layout_lab.py` runs the same PaddleX page path in
+all-pages-before-recognition mode and replaces the recognizer with a request
+collector. The measured boundary includes image loading, document and layout
+preprocessing, PP-DocLayoutV3 inference and postprocessing, cropping, prompt
+routing, and final `RecognitionRequest` materialization. It never loads or
+executes the local OCR model.
+
+The output `requests.jsonl` records request order, page and block identity,
+prompt, pixel profile, crop shape, and an exact hash of the crop pixels. Use
+`--reference-requests` to fail unless a candidate run produces the same file:
+
+```sh
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
+  09_persistent_page_engine/scripts/layout_lab.py \
+  --limit 32 \
+  --output-dir tmp/09_persistent_page_engine/layout_lab_32p
+```
+
 ## Blue Zone run
 
 The smallest complete model path is the one-crop example. It does not construct

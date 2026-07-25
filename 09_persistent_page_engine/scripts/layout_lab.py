@@ -79,7 +79,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--max-new-tokens",
         type=int,
         default=OMNIDOCBENCH_MAX_NEW_TOKENS,
-        help="PaddleX request metadata only; no recognizer is constructed.",
+        help="PaddleX request metadata only; no local OCR model is loaded.",
     )
     parser.add_argument(
         "--reference-requests",
@@ -252,7 +252,8 @@ def main(argv: Sequence[str] | None = None) -> None:
         {
             "kind": "layout_frontend_lab",
             "pages": len(image_paths),
-            "ocr_recognizer_instantiated": False,
+            "local_ocr_model_loaded": False,
+            "ocr_requests_executed": 0,
         }
     )
     collector = _RequestCollector(args.max_new_tokens)
@@ -328,7 +329,9 @@ def main(argv: Sequence[str] | None = None) -> None:
             "jit_compile": False,
             "preprocessor_min_pixels": args.preprocessor_min_pixels,
             "max_new_tokens_passthrough": args.max_new_tokens,
-            "ocr_recognizer_instantiated": False,
+            "recognizer_execution": "replaced_by_request_collector",
+            "local_ocr_model_loaded": False,
+            "ocr_requests_executed": 0,
         },
         "setup_s": setup_s,
         "frontend_wall_s": frontend_wall_s,
