@@ -84,6 +84,30 @@ def _find_decoder(model: Any) -> Any:
     return decoder
 
 
+def _normalization_divisor(processor: Any) -> torch.Tensor:
+    mean, std, do_rescale = processor._fuse_mean_std_and_rescale_factor(
+        do_normalize=processor.do_normalize,
+        image_mean=processor.image_mean,
+        image_std=processor.image_std,
+        do_rescale=processor.do_rescale,
+        rescale_factor=processor.rescale_factor,
+        device=None,
+    )
+    mean_tensor = torch.as_tensor(mean, dtype=torch.float32)
+    std_tensor = torch.as_tensor(std, dtype=torch.float32)
+    if (
+        not processor.do_normalize
+        or do_rescale
+        or mean_tensor.ndim != 1
+        or mean_tensor.shape != std_tensor.shape
+        or not torch.equal(mean_tensor, torch.zeros_like(mean_tensor))
+    ):
+        raise RuntimeError(
+            "owned layout preprocessing requires fused zero-mean normalization"
+        )
+    return std_tensor.reshape(-1, 1, 1)
+
+
 def _decode_bgr(path: Path) -> tuple[np.ndarray, dict[str, float | int]]:
     started = time.perf_counter()
     compressed = path.read_bytes()
@@ -152,6 +176,7 @@ class OwnedLayoutFrontend:
 
         setup_started = time.perf_counter()
         self.processor = AutoImageProcessor.from_pretrained(self.model_dir)
+        self._normalization_divisor = _normalization_divisor(self.processor)
         self.model = AutoModelForObjectDetection.from_pretrained(
             self.model_dir
         )
@@ -232,14 +257,8 @@ class OwnedLayoutFrontend:
         # is at the detector's fixed input size instead of copying the full
         # decoded page.
         pixel_values = pixel_values.flip(1)
-        pixel_values = self.processor.rescale_and_normalize(
-            pixel_values,
-            self.processor.do_rescale,
-            self.processor.rescale_factor,
-            self.processor.do_normalize,
-            self.processor.image_mean,
-            self.processor.image_std,
-        )
+        pixel_values = pixel_values.to(dtype=torch.float32)
+        pixel_values.div_(self._normalization_divisor)
         return pixel_values.to(
             device=self.device,
             dtype=self.model_dtype,
