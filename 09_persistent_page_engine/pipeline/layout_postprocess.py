@@ -8,6 +8,7 @@ to the fixed v1.6 configuration exercised by this project.
 
 from __future__ import annotations
 
+import math
 from concurrent.futures import Executor
 from typing import Any
 
@@ -249,13 +250,17 @@ def _polygon_to_quad(polygon: Any) -> np.ndarray | None:
         )
         == 1
     ):
-        return np.roll(quad, -top_left, axis=0)
+        if top_left == 0:
+            return quad.copy()
+        return np.concatenate((quad[top_left:], quad[:top_left]), axis=0)
 
     center = quad.mean(axis=0)
     angles = np.arctan2(quad[:, 1] - center[1], quad[:, 0] - center[0])
     quad = quad[np.argsort(angles)]
     top_left = np.argmin(quad[:, 0] + quad[:, 1])
-    return np.roll(quad, -top_left, axis=0)
+    if top_left == 0:
+        return quad.copy()
+    return np.concatenate((quad[top_left:], quad[:top_left]), axis=0)
 
 
 def _normalize_polygon(
@@ -309,20 +314,46 @@ def _normalize_polygon(
                 dtype=np.float32,
             ).reshape(-1, 2)
             if previous_points.size:
-                previous_min = previous_points.min(axis=0)
-                previous_max = previous_points.max(axis=0)
-                rect_min = rect.min(axis=0)
-                rect_max = rect.max(axis=0)
-                finite_bounds = (
-                    np.all(np.isfinite(previous_min))
-                    and np.all(np.isfinite(previous_max))
-                    and np.all(np.isfinite(rect_min))
-                    and np.all(np.isfinite(rect_max))
-                )
-                overlaps_rect = (
-                    np.all(previous_max > rect_min)
-                    and np.all(rect_max > previous_min)
-                )
+                if previous_points.shape == (4, 2):
+                    x_0, y_0 = previous_points[0]
+                    x_1, y_1 = previous_points[1]
+                    x_2, y_2 = previous_points[2]
+                    x_3, y_3 = previous_points[3]
+                    finite_bounds = (
+                        math.isfinite(x_0)
+                        and math.isfinite(y_0)
+                        and math.isfinite(x_1)
+                        and math.isfinite(y_1)
+                        and math.isfinite(x_2)
+                        and math.isfinite(y_2)
+                        and math.isfinite(x_3)
+                        and math.isfinite(y_3)
+                    )
+                    previous_x_min = min(x_0, x_1, x_2, x_3)
+                    previous_x_max = max(x_0, x_1, x_2, x_3)
+                    previous_y_min = min(y_0, y_1, y_2, y_3)
+                    previous_y_max = max(y_0, y_1, y_2, y_3)
+                    overlaps_rect = (
+                        previous_x_max > rect[0, 0]
+                        and previous_y_max > rect[0, 1]
+                        and rect[2, 0] > previous_x_min
+                        and rect[2, 1] > previous_y_min
+                    )
+                else:
+                    previous_min = previous_points.min(axis=0)
+                    previous_max = previous_points.max(axis=0)
+                    rect_min = rect.min(axis=0)
+                    rect_max = rect.max(axis=0)
+                    finite_bounds = (
+                        np.all(np.isfinite(previous_min))
+                        and np.all(np.isfinite(previous_max))
+                        and np.all(np.isfinite(rect_min))
+                        and np.all(np.isfinite(rect_max))
+                    )
+                    overlaps_rect = (
+                        np.all(previous_max > rect_min)
+                        and np.all(rect_max > previous_min)
+                    )
                 if not finite_bounds or overlaps_rect:
                     previous_iou = _convex_overlap_ratio(
                         previous_points,
