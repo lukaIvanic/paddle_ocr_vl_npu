@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -184,6 +185,10 @@ class OwnedLayoutFrontend:
     ) -> None:
         from transformers import AutoImageProcessor, AutoModelForObjectDetection
 
+        # The frontend submits one 800x800 detector resize at a time. Letting
+        # PyTorch fan each resize across all 192 host CPUs costs more in thread
+        # scheduling than it saves in image work.
+        torch.set_num_threads(min(64, len(os.sched_getaffinity(0))))
         self.model_dir = model_dir.expanduser().resolve()
         self.device = device
         self.timeline = timeline
