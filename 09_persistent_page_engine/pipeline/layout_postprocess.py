@@ -8,7 +8,6 @@ to the fixed v1.6 configuration exercised by this project.
 
 from __future__ import annotations
 
-from copy import deepcopy
 from typing import Any
 
 import cv2
@@ -527,70 +526,8 @@ def _filter_detector_boxes(
     source: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     boxes = [box for box in source if box["label"] != "reference"]
-    dropped: set[int] = set()
-    for first_index, first in enumerate(boxes):
-        x1, y1, x2, y2 = first["coordinate"]
-        if x2 - x1 < 6 or y2 - y1 < 6:
-            dropped.add(first_index)
-        for second_index in range(first_index + 1, len(boxes)):
-            if first_index in dropped or second_index in dropped:
-                continue
-            second = boxes[second_index]
-            overlap = _box_overlap_ratio(
-                first["coordinate"],
-                second["coordinate"],
-                "small",
-            )
-            if (
-                first["label"] == "inline_formula"
-                or second["label"] == "inline_formula"
-            ) and overlap > 0.5:
-                if first["label"] == "inline_formula":
-                    dropped.add(first_index)
-                if second["label"] == "inline_formula":
-                    dropped.add(second_index)
-                continue
-            if overlap <= 0.7:
-                continue
-            if (
-                _polygon_overlap_ratio(
-                    first["polygon_points"],
-                    second["polygon_points"],
-                    "small",
-                )
-                < 0.7
-            ):
-                continue
-            first_area = (x2 - x1) * (y2 - y1)
-            sx1, sy1, sx2, sy2 = second["coordinate"]
-            second_area = (sx2 - sx1) * (sy2 - sy1)
-            labels = {first["label"], second["label"]}
-            if labels & {"image", "table", "seal", "chart"} and len(labels) > 1:
-                if "table" not in labels or labels <= {
-                    "table",
-                    "image",
-                    "seal",
-                    "chart",
-                }:
-                    continue
-            dropped.add(second_index if first_area >= second_area else first_index)
-    return [
-        box for index, box in enumerate(boxes) if index not in dropped
-    ]
-
-
-def filter_overlap_boxes(
-    layout_result: dict[str, Any],
-) -> dict[str, Any]:
-    filtered = deepcopy(layout_result)
-    boxes = [
-        box
-        for box in filtered["boxes"]
-        if box["label"] != "reference"
-    ]
     if not boxes:
-        filtered["boxes"] = boxes
-        return filtered
+        return []
     coords = np.asarray(
         [box["coordinate"] for box in boxes],
         dtype=np.float64,
@@ -654,10 +591,9 @@ def filter_overlap_boxes(
                 if areas[first_index] >= areas[second_index]
                 else first_index
             )
-    filtered["boxes"] = [
+    return [
         box for index, box in enumerate(boxes) if index not in dropped
     ]
-    return filtered
 
 
 def _is_full_crop_rectangle(box_info: dict[str, Any]) -> bool:
