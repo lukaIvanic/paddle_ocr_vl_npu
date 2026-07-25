@@ -113,6 +113,23 @@ def _prompt_for_label(label: str) -> str:
     return "OCR:"
 
 
+def _bgr_to_pil_rgb(image: np.ndarray) -> Image.Image:
+    """Decode a BGR NumPy buffer directly into an independent RGB image."""
+
+    if not image.flags.c_contiguous:
+        image = np.ascontiguousarray(image)
+    height, width = image.shape[:2]
+    return Image.frombuffer(
+        "RGB",
+        (width, height),
+        image,
+        "raw",
+        "BGR",
+        0,
+        1,
+    )
+
+
 class OwnedLayoutFrontend:
     """Own the exact sequential page-to-recognition-request contract."""
 
@@ -338,13 +355,12 @@ class OwnedLayoutFrontend:
                 crop_height, crop_width = cropped.shape[:2]
                 if crop_height > 2 and crop_width > 2:
                     block_image = cropped
-            rgb = np.ascontiguousarray(block_image[:, :, ::-1])
             requests.append(
                 RecognitionRequest(
                     request_id=(
                         f"page_{ordinal:06d}_block_{block_index:06d}"
                     ),
-                    crop=Image.fromarray(rgb),
+                    crop=_bgr_to_pil_rgb(block_image),
                     prompt=prompt,
                     skip_special_tokens=True,
                     min_pixels=effective_min_pixels,
