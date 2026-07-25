@@ -18,10 +18,6 @@ class _CropRectangleFastPath:
 
     def __init__(self, original: Any) -> None:
         self.original = original
-        self._fallback_executor = ThreadPoolExecutor(
-            max_workers=4,
-            thread_name_prefix="layout-mask",
-        )
         self._lock = threading.Lock()
         self._calls = 0
         self._boxes = 0
@@ -150,6 +146,10 @@ class _PolygonNormalizationFastPath:
 
     def __init__(self, original: Any) -> None:
         self.original = original
+        self._fallback_executor = ThreadPoolExecutor(
+            max_workers=4,
+            thread_name_prefix="layout-mask",
+        )
         self._lock = threading.Lock()
         self._calls = 0
         self._rectangle_fast_paths = 0
