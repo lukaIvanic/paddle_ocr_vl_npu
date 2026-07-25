@@ -1053,7 +1053,8 @@ def _mask_to_box_capture_friendly(
         mask,
         x_coords_masked,
         torch.full_like(x_coords_masked, torch.finfo(dtype).max),
-    ).flatten(start_dim=-2).min(dim=-1).values
+    ).flatten(start_dim=-2)
+    x_min = -(-x_min).max(dim=-1).values
 
     y_coords_masked = y_coords * mask
     y_max = y_coords_masked.flatten(start_dim=-2).max(dim=-1).values + 1
@@ -1061,13 +1062,14 @@ def _mask_to_box_capture_friendly(
         mask,
         y_coords_masked,
         torch.full_like(y_coords_masked, torch.finfo(dtype).max),
-    ).flatten(start_dim=-2).min(dim=-1).values
+    ).flatten(start_dim=-2)
+    y_min = -(-y_min).max(dim=-1).values
 
     unnormalized_bbox = torch.stack(
         [x_min, y_min, x_max, y_max],
         dim=-1,
     )
-    is_mask_non_empty = torch.any(mask, dim=(-2, -1)).unsqueeze(-1)
+    is_mask_non_empty = mask.flatten(start_dim=-2).any(dim=-1).unsqueeze(-1)
     unnormalized_bbox = unnormalized_bbox * is_mask_non_empty
     device_width = x_coords[-1, -1] + 1
     device_height = y_coords[-1, -1] + 1

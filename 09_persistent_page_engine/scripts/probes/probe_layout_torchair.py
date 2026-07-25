@@ -21,6 +21,7 @@ sys.path.insert(0, str(EXPERIMENT_ROOT))
 
 from paddleocr_vl.model.compile_utils import import_torchair
 from pipeline.layout_frontend import OwnedLayoutFrontend, _decode_rgb
+from pipeline.layout_model_runtime import _mask_to_box_capture_friendly
 
 
 DEFAULT_IMAGE = Path(
@@ -187,6 +188,13 @@ def main() -> None:
     # detector input and spatial feature shapes are fixed in this probe.
     os.environ["TRANSFORMERS_DISABLE_TORCH_CHECK"] = "1"
     device = torch.device("npu:0")
+    from transformers.models.pp_doclayout_v3 import (
+        modeling_pp_doclayout_v3,
+    )
+
+    modeling_pp_doclayout_v3.mask_to_box_coordinate = (
+        _mask_to_box_capture_friendly
+    )
     model_dir = args.layout_model.expanduser().resolve()
     image_path = args.image.expanduser().resolve()
     cache_dir = args.cache_dir.expanduser().resolve()
