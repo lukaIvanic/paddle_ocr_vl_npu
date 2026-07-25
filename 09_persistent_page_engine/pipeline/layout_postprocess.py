@@ -185,29 +185,48 @@ def _axis_aligned_rect_fast_path(
     if points.size != 8:
         return None
     points = points.reshape(4, 2)
-    xs = np.unique(points[:, 0])
-    ys = np.unique(points[:, 1])
-    if len(xs) != 2 or len(ys) != 2:
+    x_0, y_0 = points[0]
+    x_1, y_1 = points[1]
+    x_2, y_2 = points[2]
+    x_3, y_3 = points[3]
+    if (
+        (x_0 != x_1 and x_0 != x_2 and x_0 != x_3)
+        or (y_0 != y_1 and y_0 != y_2 and y_0 != y_3)
+    ):
         return None
-    expected = {
-        (float(xs[0]), float(ys[0])),
-        (float(xs[1]), float(ys[0])),
-        (float(xs[1]), float(ys[1])),
-        (float(xs[0]), float(ys[1])),
-    }
-    if {tuple(point) for point in points.tolist()} != expected:
+
+    polygon_x_min = min(x_0, x_1, x_2, x_3)
+    polygon_x_max = max(x_0, x_1, x_2, x_3)
+    polygon_y_min = min(y_0, y_1, y_2, y_3)
+    polygon_y_max = max(y_0, y_1, y_2, y_3)
+    corner_mask = 0
+    for x, y in points:
+        if x == polygon_x_min and y == polygon_y_min:
+            corner_mask |= 1
+        elif x == polygon_x_max and y == polygon_y_min:
+            corner_mask |= 2
+        elif x == polygon_x_max and y == polygon_y_max:
+            corner_mask |= 4
+        elif x == polygon_x_min and y == polygon_y_max:
+            corner_mask |= 8
+        else:
+            return None
+    if corner_mask != 15:
         return None
 
     x_min, y_min, x_max, y_max = np.asarray(box).astype(np.int32)
     if not (
-        xs[0] >= x_min
-        and ys[0] >= y_min
-        and xs[1] <= x_max
-        and ys[1] <= y_max
+        polygon_x_min >= x_min
+        and polygon_y_min >= y_min
+        and polygon_x_max <= x_max
+        and polygon_y_max <= y_max
     ):
         return None
     box_area = float((x_max - x_min) * (y_max - y_min))
-    polygon_area = float((xs[1] - xs[0]) * (ys[1] - ys[0]))
+    polygon_area = float(
+        (polygon_x_max - polygon_x_min)
+        * (polygon_y_max - polygon_y_min)
+    )
     if box_area <= 0 or polygon_area / box_area < 0.95:
         return None
     return _rect_from_box(box)
