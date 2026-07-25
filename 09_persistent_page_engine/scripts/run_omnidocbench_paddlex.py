@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run official PaddleX v1.6 page assembly with Experiment 09 recognition."""
+"""Run the self-contained Experiment 09 OmniDocBench pipeline."""
 
 from __future__ import annotations
 
@@ -42,16 +42,14 @@ from paddleocr_vl.model.vision_prefill import (
     parse_vision_buckets,
 )
 from pipeline.layout_mask_guard import install_layout_mask_guard
-from pipeline.layout_runtime_optimization import (
-    install_layout_runtime_optimizations,
-)
+from pipeline.layout_frontend import OwnedLayoutFrontend
 from pipeline.omnidocbench_defaults import (
     OMNIDOCBENCH_CACHE_LENGTH,
     OMNIDOCBENCH_DECODE_BATCH_SIZE,
     OMNIDOCBENCH_MAX_NEW_TOKENS,
     OMNIDOCBENCH_PAGE_COUNT,
 )
-from pipeline.paddlex_page_bridge import PaddleXPageBridge
+from pipeline.page_engine import OwnedPageEngine
 from utils.timeline import TimelineRecorder
 
 
@@ -59,7 +57,6 @@ DEFAULT_DATASET_JSON = Path("/workspace/datasets/OmniDocBench/OmniDocBench.json"
 DEFAULT_IMAGES_DIR = Path("/workspace/datasets/OmniDocBench/images")
 DEFAULT_LAYOUT_MODEL = Path("/workspace/models/PP-DocLayoutV3_safetensors")
 DEFAULT_RECOGNIZER_MODEL = Path("/workspace/models/PaddleOCR-VL-1.6")
-DEFAULT_PADDLEOCR_SOURCE = Path("/workspace/repos/vllm_paddle_ocr/PaddleOCR")
 DEFAULT_CACHE_ROOT = REPO_ROOT / ".runtime_cache/09_persistent_page_engine_torchair"
 DEFAULT_VISION_CACHE_ROOT = REPO_ROOT / ".runtime_cache/09_persistent_page_engine_vision_torchair"
 DEFAULT_TEXT_CACHE_ROOT = REPO_ROOT / ".runtime_cache/09_persistent_page_engine_text_torchair"
@@ -76,7 +73,6 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--images-dir", type=Path, default=DEFAULT_IMAGES_DIR)
     parser.add_argument("--layout-model", type=Path, default=DEFAULT_LAYOUT_MODEL)
     parser.add_argument("--recognizer-model", type=Path, default=DEFAULT_RECOGNIZER_MODEL)
-    parser.add_argument("--paddleocr-source", type=Path, default=DEFAULT_PADDLEOCR_SOURCE)
     parser.add_argument(
         "--dtype",
         default="fp16",
@@ -103,7 +99,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--preprocessor-min-pixels",
         type=int,
         default=None,
-        help="Override PaddleX's global recognition min_pixels; omit for the v1.6 default.",
+        help="Override the global recognition min_pixels; omit for the v1.6 default.",
     )
     parser.add_argument(
         "--vision-backend",
@@ -201,7 +197,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--preprocess-all-pages-first",
         action="store_true",
         help=(
-            "Finish PaddleX layout detection and crop/page preparation for every "
+            "Finish layout detection and crop/page preparation for every "
             "input page before starting recognition. By default one prepared page "
             "is handed to recognition while the next page is produced."
         ),
@@ -294,8 +290,7 @@ def validate_args(args: argparse.Namespace) -> None:
 
 
 def run_predictions(
-    official_pipeline: Any,
-    bridge: PaddleXPageBridge,
+    page_engine: OwnedPageEngine,
     image_paths: list[Path],
     *,
     predictions_dir: Path,
@@ -405,25 +400,22 @@ def run_predictions(
         )
         max_pending_observed = max(max_pending_observed, len(pending))
 
-    try:
-        with (
-            compact_path.open("w", encoding="utf-8") as compact_handle,
-            ThreadPoolExecutor(
-                max_workers=1,
-                thread_name_prefix="page-artifact-writer",
-            ) as writer,
-        ):
-            try:
-                page_run = bridge.run(
-                    [str(path) for path in image_paths],
-                    emit_page=save_result,
-                    preprocess_all_pages_first=preprocess_all_pages_first,
-                )
-            finally:
-                while pending:
-                    wait_for_oldest(final_drain=True)
-    finally:
-        official_pipeline.close()
+    with (
+        compact_path.open("w", encoding="utf-8") as compact_handle,
+        ThreadPoolExecutor(
+            max_workers=1,
+            thread_name_prefix="page-artifact-writer",
+        ) as writer,
+    ):
+        try:
+            page_run = page_engine.run(
+                [str(path) for path in image_paths],
+                emit_page=save_result,
+                preprocess_all_pages_first=preprocess_all_pages_first,
+            )
+        finally:
+            while pending:
+                wait_for_oldest(final_drain=True)
     writer_summary = {
         "execution": "background_ordered_single_worker",
         "max_pending": PAGE_ARTIFACT_MAX_PENDING,
@@ -462,13 +454,10 @@ def main() -> None:
     images_dir = args.images_dir.expanduser().resolve()
     layout_model = args.layout_model.expanduser().resolve()
     recognizer_model = args.recognizer_model.expanduser().resolve()
-    paddleocr_source = args.paddleocr_source.expanduser().resolve()
     output_dir = args.output_dir.expanduser().resolve()
     predictions_dir = output_dir / "predictions"
     output_dir.mkdir(parents=True, exist_ok=True)
     predictions_dir.mkdir(parents=True, exist_ok=True)
-    if not paddleocr_source.is_dir():
-        raise FileNotFoundError(f"PaddleOCR source not found: {paddleocr_source}")
 
     subset, image_paths = load_page_paths(
         dataset_json,
@@ -499,7 +488,7 @@ def main() -> None:
         "offset": args.offset,
         "count": args.limit,
         "images": [path.name for path in image_paths],
-        "pipeline": "official_paddlex_v1.6_with_cross_page_recognition_bridge",
+        "pipeline": "owned_paddleocr_vl_v1.6",
         "page_preprocessing_mode": (
             "all_before_recognition"
             if args.preprocess_all_pages_first
@@ -520,38 +509,13 @@ def main() -> None:
         raise RuntimeError("Experiment 09 requires an available NPU")
     torch.npu.set_compile_mode(jit_compile=False)
 
-    sys.path.insert(0, str(paddleocr_source))
-    from paddleocr import PaddleOCRVL
-
     setup_started = time.perf_counter()
-    official_pipeline = PaddleOCRVL(
-        pipeline_version="v1.6",
-        layout_detection_model_dir=str(layout_model),
-        vl_rec_backend="vllm-server",
-        vl_rec_server_url="http://127.0.0.1:9/v1",
-        vl_rec_api_model_name="unused-local-adapter",
-        vl_rec_max_concurrency=args.batch_size,
-        use_doc_orientation_classify=False,
-        use_doc_unwarping=False,
-        use_queues=True,
-        device="npu:0",
-        engine="transformers",
-    )
-    auto_parallel_pipeline = official_pipeline.paddlex_pipeline
-    if auto_parallel_pipeline.multi_device_inference:
-        raise ValueError(
-            "the cross-page bridge requires one selected NPU; multi-device PaddleX "
-            "dispatch would create multiple independent recognition runtimes"
-        )
-    # The bridge calls the concrete pipeline's page helpers directly. Attribute
-    # access on the auto-parallel wrapper only forwards reads.
-    paddlex_pipeline = auto_parallel_pipeline._pipeline
-    layout_optimizations = install_layout_runtime_optimizations(
-        paddlex_pipeline,
-        backend="npugraph",
-        polygon_mode="mask",
-    )
     timeline = TimelineRecorder(enabled=args.timeline)
+    layout_frontend = OwnedLayoutFrontend(
+        layout_model,
+        torch.device("npu:0"),
+        timeline=timeline,
+    )
 
     recognizer = ContinuousRecognizer(
         model=str(recognizer_model),
@@ -587,8 +551,8 @@ def main() -> None:
         timeline=timeline,
     )
     recognizer_configuration = recognizer.configuration()
-    bridge = PaddleXPageBridge(
-        paddlex_pipeline,
+    page_engine = OwnedPageEngine(
+        layout_frontend,
         recognizer,
         trace_path=output_dir / "recognition_trace.jsonl",
         min_pixels=args.preprocessor_min_pixels,
@@ -601,7 +565,7 @@ def main() -> None:
     timeline_html_path = output_dir / "timeline.html"
     timeline.reset(
         {
-            "pipeline": "official_paddlex_v1.6_with_cross_page_recognition_bridge",
+            "pipeline": "owned_paddleocr_vl_v1.6",
             "pages": len(image_paths),
             "decode_batch_size": args.batch_size,
             "decode_optimization": recognizer_configuration["decode_optimization"],
@@ -612,7 +576,7 @@ def main() -> None:
             "vision_router_lookahead": args.vision_router_lookahead,
             "text_packing": args.text_packing,
             "text_pack_buckets": list(text_pack_buckets),
-            "layout_optimizations": layout_optimizations,
+            "layout_frontend": "owned_no_paddlex",
             "page_preprocessing_mode": manifest["page_preprocessing_mode"],
             "vision_route_plan": (
                 str(vision_route_plan_path)
@@ -624,7 +588,7 @@ def main() -> None:
     try:
         with timeline.span(
             "Pipeline",
-            "Full PaddleOCR-VL page run",
+            "Full owned PaddleOCR-VL page run",
             event_type="scope",
             args={"pages": len(image_paths), "decode_batch_size": args.batch_size},
         ):
@@ -635,8 +599,7 @@ def main() -> None:
                 page_run,
                 page_artifact_writer,
             ) = run_predictions(
-                official_pipeline,
-                bridge,
+                page_engine,
                 image_paths,
                 predictions_dir=predictions_dir,
                 compact_path=compact_path,
@@ -717,6 +680,7 @@ def main() -> None:
         "completion_s": completion_s,
         "page_artifact_writer": page_artifact_writer,
         "recognition": page_run.summary,
+        "layout_frontend": page_run.frontend,
         "page_completion_order": page_run.completion_order,
         "layout_mask_guard": layout_mask_guard.snapshot(),
         "layout_mask_guard_path": str(layout_mask_guard_path),

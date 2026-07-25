@@ -25,6 +25,10 @@ from .layout_postprocess import (
     filter_overlap_boxes,
     merge_blocks,
 )
+from .layout_output import (
+    gather_document_images,
+    tokenize_table_figures,
+)
 from .layout_runtime_optimization import (
     _MaskRectangleFastPath,
     _NpuGraphCoreForward,
@@ -42,6 +46,10 @@ class PreparedLayoutPage:
     layout_boxes: list[dict[str, Any]]
     blocks: list[dict[str, Any]]
     requests: list[RecognitionRequest]
+    request_block_indices: list[int]
+    figure_token_maps: dict[int, dict[str, str]]
+    dropped_figure_paths: set[str]
+    document_images: list[dict[str, Any]]
     timing_s: dict[str, float]
     statistics: dict[str, Any]
 
@@ -279,6 +287,7 @@ class OwnedLayoutFrontend:
         boxes, detect_timing = self._detect(image, flow_id=flow_id)
         preparation_started = time.perf_counter()
         preparation_started_ns = time.perf_counter_ns()
+        document_images = gather_document_images(image, boxes)
         filtered = filter_overlap_boxes({"boxes": boxes})["boxes"]
         blocks = crop_layout_regions(image, filtered)
         image_labels = IMAGE_LABELS + ["chart", "seal"]
@@ -289,13 +298,28 @@ class OwnedLayoutFrontend:
 
         effective_min_pixels = int(min_pixels or 112_896)
         requests: list[RecognitionRequest] = []
+        request_block_indices: list[int] = []
+        figure_token_maps: dict[int, dict[str, str]] = {}
+        dropped_figure_paths: set[str] = set()
         for block_index, block in enumerate(blocks):
             block_image = block["img"]
             label = block["label"]
             if label in image_labels or block_image is None:
                 continue
             prompt = _prompt_for_label(label)
-            if "formula" in label and label != "formula_number":
+            if label == "table":
+                (
+                    block_image,
+                    figure_token_map,
+                    dropped,
+                ) = tokenize_table_figures(
+                    block_image,
+                    block["box"],
+                    document_images,
+                )
+                figure_token_maps[block_index] = figure_token_map
+                dropped_figure_paths.update(dropped)
+            elif "formula" in label and label != "formula_number":
                 cropped = crop_formula_margin(block_image)
                 crop_height, crop_width = cropped.shape[:2]
                 if crop_height > 2 and crop_width > 2:
@@ -313,6 +337,7 @@ class OwnedLayoutFrontend:
                     max_pixels=int(max_pixels),
                 )
             )
+            request_block_indices.append(block_index)
         preparation_s = time.perf_counter() - preparation_started
         self._span(
             "Crop / page preparation",
@@ -344,6 +369,10 @@ class OwnedLayoutFrontend:
             layout_boxes=filtered,
             blocks=blocks,
             requests=requests,
+            request_block_indices=request_block_indices,
+            figure_token_maps=figure_token_maps,
+            dropped_figure_paths=dropped_figure_paths,
+            document_images=document_images,
             timing_s=timing,
             statistics={
                 "raw_layout_boxes": len(boxes),
