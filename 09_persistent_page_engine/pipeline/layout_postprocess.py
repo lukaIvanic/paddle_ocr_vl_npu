@@ -299,24 +299,46 @@ def _normalize_polygon(
                 _valid_polygon_geometry(quad),
                 "union",
             )
+        if polygon_quad_iou < 0.8:
+            return polygon
+
         previous_iou = 0.0
         if previous_polygon is not None:
-            previous_iou = _convex_overlap_ratio(
+            previous_points = np.asarray(
                 previous_polygon,
-                rect,
-                "small",
+                dtype=np.float32,
+            ).reshape(-1, 2)
+            previous_min = previous_points.min(axis=0)
+            previous_max = previous_points.max(axis=0)
+            rect_min = rect.min(axis=0)
+            rect_max = rect.max(axis=0)
+            finite_bounds = (
+                np.all(np.isfinite(previous_min))
+                and np.all(np.isfinite(previous_max))
+                and np.all(np.isfinite(rect_min))
+                and np.all(np.isfinite(rect_max))
             )
-            if previous_iou is None:
-                rect_geometry = (
-                    rect_geometry
-                    if rect_geometry is not None
-                    else _valid_polygon_geometry(rect)
-                )
-                previous_iou = _geometry_overlap_ratio(
-                    _valid_polygon_geometry(previous_polygon),
-                    rect_geometry,
+            overlaps_rect = (
+                np.all(previous_max > rect_min)
+                and np.all(rect_max > previous_min)
+            )
+            if not finite_bounds or overlaps_rect:
+                previous_iou = _convex_overlap_ratio(
+                    previous_points,
+                    rect,
                     "small",
                 )
+                if previous_iou is None:
+                    rect_geometry = (
+                        rect_geometry
+                        if rect_geometry is not None
+                        else _valid_polygon_geometry(rect)
+                    )
+                    previous_iou = _geometry_overlap_ratio(
+                        _valid_polygon_geometry(previous_points),
+                        rect_geometry,
+                        "small",
+                    )
         if polygon_quad_iou >= 0.8 and previous_iou < 0.01:
             return quad
     return polygon
@@ -346,28 +368,6 @@ def _pairwise_containment(boxes: np.ndarray) -> np.ndarray:
     contained = ratios >= 0.9
     np.fill_diagonal(contained, False)
     return contained
-
-
-def _containment_flags(
-    boxes: np.ndarray,
-    *,
-    formula_index: int,
-    category_index: int,
-) -> tuple[np.ndarray, np.ndarray]:
-    contains_other = np.zeros(len(boxes), dtype=int)
-    contained_by_other = np.zeros(len(boxes), dtype=int)
-    if len(boxes) == 0:
-        return contains_other, contained_by_other
-    contained = _pairwise_containment(boxes)
-    classes = boxes[:, 0]
-    contained &= ~(
-        (classes[:, None] == formula_index)
-        & (classes[None, :] != formula_index)
-    )
-    contained &= classes[None, :] == category_index
-    contained_by_other[contained.any(axis=1)] = 1
-    contains_other[contained.any(axis=0)] = 1
-    return contains_other, contained_by_other
 
 
 def _pairwise_iou(boxes: np.ndarray) -> np.ndarray:
@@ -491,14 +491,17 @@ class LayoutPostprocessor:
 
         keep = np.ones(len(boxes), dtype=bool)
         formula_index = self.labels.index("display_formula")
-        for label in LARGE_CONTAINER_LABELS:
-            category_index = self.labels.index(label)
-            _, contained_by_other = _containment_flags(
-                boxes[:, :6],
-                formula_index=formula_index,
-                category_index=category_index,
-            )
-            keep &= contained_by_other == 0
+        classes = boxes[:, 0]
+        contained = _pairwise_containment(boxes[:, :6])
+        contained &= ~(
+            (classes[:, None] == formula_index)
+            & (classes[None, :] != formula_index)
+        )
+        container_indices = [
+            self.labels.index(label) for label in LARGE_CONTAINER_LABELS
+        ]
+        contained &= np.isin(classes, container_indices)[None, :]
+        keep &= ~contained.any(axis=1)
         boxes = boxes[keep]
         polygons = [
             polygon
