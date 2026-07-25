@@ -23,12 +23,12 @@ from utils.timing import synchronize
 
 
 def _install_scatter_pa_metadata_converter(torchair) -> None:
-    """Preserve PA cache metadata across the converter's TensorMove.
+    """Preserve concrete PA cache descriptors across the converter.
 
     The installed ScatterPaKvCache converter creates TensorMove nodes without
-    assigning their output metadata. GE then sees unshaped float cache inputs
-    even when the FX inputs are shaped float16 tensors. TorchAir's generic
-    auto-functionalization path already applies this exact set_meta rule.
+    assigning their output metadata. ``set_meta`` alone fills TorchAir's
+    symbolic metadata but not the protobuf shape used by CANN tiling. Materialize
+    the static descriptor here because this probe compiles a static full graph.
     """
     del torchair
     # TorchAir imports custom converters lazily from _get_converter().  Load
@@ -45,6 +45,18 @@ def _install_scatter_pa_metadata_converter(torchair) -> None:
     )
     from torchair.ge._ge_graph import Tensor, TensorSpec
 
+    def preserve_static_descriptor(
+        target: Tensor,
+        source: Tensor,
+    ) -> Tensor:
+        target.set_meta(source.meta)
+        target.desc.shape.dim[:] = [
+            int(dimension) for dimension in source.meta.shape
+        ]
+        target.desc.layout = source.desc.layout or "ND"
+        target.desc.device_type = source.desc.device_type or "NPU"
+        return target
+
     def convert_scatter_pa(
         key: Tensor,
         value: Tensor,
@@ -58,11 +70,15 @@ def _install_scatter_pa_metadata_converter(torchair) -> None:
         meta_outputs: TensorSpec | None = None,
     ):
         del meta_outputs
-        key_cache_copy = ge.TensorMove(key_cache)
-        key_cache_copy.set_meta(key_cache.meta)
-        value_cache_copy = ge.TensorMove(value_cache)
-        value_cache_copy.set_meta(value_cache.meta)
-        return ge.ScatterPaKvCache(
+        key_cache_copy = preserve_static_descriptor(
+            ge.TensorMove(key_cache),
+            key_cache,
+        )
+        value_cache_copy = preserve_static_descriptor(
+            ge.TensorMove(value_cache),
+            value_cache,
+        )
+        key_cache_out, value_cache_out = ge.ScatterPaKvCache(
             key,
             key_cache_copy,
             slot_mapping,
@@ -75,6 +91,10 @@ def _install_scatter_pa_metadata_converter(torchair) -> None:
             scatter_mode="None",
             strides=[1, 1],
             offsets=[0, 0],
+        )
+        return (
+            preserve_static_descriptor(key_cache_out, key_cache),
+            preserve_static_descriptor(value_cache_out, value_cache),
         )
 
     register_fx_node_ge_converter(
