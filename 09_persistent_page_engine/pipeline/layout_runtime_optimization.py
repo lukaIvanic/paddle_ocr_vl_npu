@@ -352,6 +352,99 @@ def _generate_anchors_compile_friendly(
     return anchors, valid_mask
 
 
+def _mask_to_box_compile_friendly(
+    mask: torch.Tensor,
+    dtype: torch.dtype,
+) -> torch.Tensor:
+    """Equivalent mask bounds using TorchAir-supported top-k reductions."""
+
+    mask = mask.bool()
+    height, width = mask.shape[-2:]
+    y_coords, x_coords = torch.meshgrid(
+        torch.arange(height, device=mask.device),
+        torch.arange(width, device=mask.device),
+        indexing="ij",
+    )
+    x_coords = x_coords.to(dtype)
+    y_coords = y_coords.to(dtype)
+    flattened_mask = mask.flatten(start_dim=-2)
+
+    x_coords_masked = x_coords * mask
+    flattened_x = x_coords_masked.flatten(start_dim=-2)
+    x_max = torch.topk(
+        flattened_x,
+        k=1,
+        dim=-1,
+        largest=True,
+    ).values.squeeze(-1) + 1
+    x_min_candidates = torch.where(
+        mask,
+        x_coords_masked,
+        torch.tensor(
+            torch.finfo(dtype).max,
+            dtype=dtype,
+            device=mask.device,
+        ),
+    ).flatten(start_dim=-2)
+    x_min = torch.topk(
+        x_min_candidates,
+        k=1,
+        dim=-1,
+        largest=False,
+    ).values.squeeze(-1)
+
+    y_coords_masked = y_coords * mask
+    flattened_y = y_coords_masked.flatten(start_dim=-2)
+    y_max = torch.topk(
+        flattened_y,
+        k=1,
+        dim=-1,
+        largest=True,
+    ).values.squeeze(-1) + 1
+    y_min_candidates = torch.where(
+        mask,
+        y_coords_masked,
+        torch.tensor(
+            torch.finfo(dtype).max,
+            dtype=dtype,
+            device=mask.device,
+        ),
+    ).flatten(start_dim=-2)
+    y_min = torch.topk(
+        y_min_candidates,
+        k=1,
+        dim=-1,
+        largest=False,
+    ).values.squeeze(-1)
+
+    unnormalized_bbox = torch.stack(
+        [x_min, y_min, x_max, y_max],
+        dim=-1,
+    )
+    is_mask_non_empty = (
+        flattened_mask.to(torch.int8).sum(dim=-1, keepdim=True) > 0
+    )
+    unnormalized_bbox = unnormalized_bbox * is_mask_non_empty
+    norm_tensor = torch.tensor(
+        [width, height, width, height],
+        device=mask.device,
+        dtype=dtype,
+    )
+    normalized_bbox = unnormalized_bbox / norm_tensor
+    x_min_norm, y_min_norm, x_max_norm, y_max_norm = normalized_bbox.unbind(
+        dim=-1
+    )
+    return torch.stack(
+        [
+            (x_min_norm + x_max_norm) / 2,
+            (y_min_norm + y_max_norm) / 2,
+            x_max_norm - x_min_norm,
+            y_max_norm - y_min_norm,
+        ],
+        dim=-1,
+    )
+
+
 def install_layout_runtime_optimizations(
     paddlex_pipeline: Any,
     *,
@@ -425,6 +518,9 @@ def install_layout_runtime_optimizations(
         torchair_cache_dir.mkdir(parents=True, exist_ok=True)
         modeling_pp_doclayout_v3.torch_compilable_check = (
             lambda *args, **kwargs: None
+        )
+        modeling_pp_doclayout_v3.mask_to_box_coordinate = (
+            _mask_to_box_compile_friendly
         )
         for module in model.modules():
             config = getattr(module, "config", None)
