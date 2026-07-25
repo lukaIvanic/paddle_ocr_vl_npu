@@ -280,8 +280,8 @@ def _slot_error(
         expected = update.reshape(-1, tile_size)
         actual = cache[physical_block, :, offset, :]
     else:
-        expected = update.reshape(-1)
-        actual = cache[physical_block, offset, :]
+        expected = update.reshape(update.shape[-2], update.shape[-1])
+        actual = cache[physical_block, offset, :, :]
     return float((actual.float() - expected.float()).abs().max().cpu())
 
 
@@ -404,7 +404,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             args.tile_size,
         )
     else:
-        shape = (num_blocks, block_size, hidden_size)
+        shape = (num_blocks, block_size, num_kv_heads, head_dim)
     start_slot = 768
     keys = [
         torch.randn(
