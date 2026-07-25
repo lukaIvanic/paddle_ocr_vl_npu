@@ -421,7 +421,7 @@ class _MaskRectangleFastPath:
     def __init__(self, original: Any) -> None:
         self.original = original
         self._fallback_executor = ThreadPoolExecutor(
-            max_workers=8,
+            max_workers=4,
             thread_name_prefix="layout-mask",
         )
         self._lock = threading.Lock()
@@ -530,7 +530,7 @@ class _MaskRectangleFastPath:
                     scale_ratio,
                 )
             else:
-                worker_count = min(8, len(fallback_indices))
+                worker_count = min(4, len(fallback_indices))
                 chunk_size = (
                     len(fallback_indices) + worker_count - 1
                 ) // worker_count
