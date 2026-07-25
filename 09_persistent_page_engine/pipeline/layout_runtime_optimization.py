@@ -295,6 +295,63 @@ def _decoder_forward_final_heads_only(
     )
 
 
+def _generate_anchors_compile_friendly(
+    layout_model: Any,
+    spatial_shapes: Any = None,
+    grid_size: float = 0.05,
+    device: Any = "cpu",
+    dtype: torch.dtype = torch.float32,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Equivalent fixed-anchor generation without unsupported aten.all."""
+
+    if spatial_shapes is None:
+        spatial_shapes = [
+            [
+                int(layout_model.config.anchor_image_size[0] / stride),
+                int(layout_model.config.anchor_image_size[1] / stride),
+            ]
+            for stride in layout_model.config.feat_strides
+        ]
+
+    per_level = []
+    for level, (height, width) in enumerate(spatial_shapes):
+        grid_y, grid_x = torch.meshgrid(
+            torch.arange(end=height, device=device).to(dtype),
+            torch.arange(end=width, device=device).to(dtype),
+            indexing="ij",
+        )
+        grid_xy = torch.stack([grid_x, grid_y], -1).unsqueeze(0) + 0.5
+        grid_xy[..., 0] /= width
+        grid_xy[..., 1] /= height
+        width_height = (
+            torch.ones_like(grid_xy) * grid_size * (2.0**level)
+        )
+        per_level.append(
+            torch.cat([grid_xy, width_height], -1).reshape(
+                -1,
+                height * width,
+                4,
+            )
+        )
+
+    anchors = torch.cat(per_level, 1)
+    valid_coordinates = (anchors > 1e-2) & (anchors < 1 - 1e-2)
+    valid_mask = (
+        valid_coordinates.to(torch.int8).sum(dim=-1, keepdim=True) == 4
+    )
+    anchors = torch.log(anchors / (1 - anchors))
+    anchors = torch.where(
+        valid_mask,
+        anchors,
+        torch.tensor(
+            torch.finfo(dtype).max,
+            dtype=dtype,
+            device=device,
+        ),
+    )
+    return anchors, valid_mask
+
+
 def install_layout_runtime_optimizations(
     paddlex_pipeline: Any,
     *,
@@ -376,6 +433,10 @@ def install_layout_runtime_optimizations(
                 "_attn_implementation",
             ):
                 config._attn_implementation = "eager"
+        model.model.generate_anchors = MethodType(
+            _generate_anchors_compile_friendly,
+            model.model,
+        )
         model.forward = torchair.inference.cache_compile(
             model.forward,
             config=CompilerConfig(),
