@@ -66,7 +66,11 @@ DEFAULT_OUTPUT = (
 )
 OPTIMIZATION = "combined_apply"
 PA_NZ_LAST_DIM = 16
-CACHE_UPDATE_MODES = ("scatter_nd", "scatter_pa")
+CACHE_UPDATE_MODES = (
+    "scatter_nd",
+    "scatter_pa",
+    "scatter_pa_inplace",
+)
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -285,6 +289,8 @@ def _paged_decode_attention(
     block_size: int,
     cache_update_mode: str,
     optimization: Any,
+    native_fia: bool = False,
+    fixed_actual_kv_length: int | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     query_states, key_states, value_states = _project_decode_qkv(
         attention,
@@ -311,6 +317,17 @@ def _paged_decode_attention(
                 slot_mapping=cache_update_metadata.contiguous(),
             )
         )
+    elif cache_update_mode == "scatter_pa_inplace":
+        torch_npu.npu_scatter_pa_kv_cache(
+            key=key_states.squeeze(2).contiguous(),
+            value=value_states.squeeze(2).contiguous(),
+            key_cache=key_cache,
+            value_cache=value_cache,
+            slot_mapping=cache_update_metadata.contiguous(),
+            cache_mode="PA_NZ",
+        )
+        updated_key_cache = key_cache
+        updated_value_cache = value_cache
     else:
         key_updates = (
             key_states.squeeze(2)
@@ -344,21 +361,42 @@ def _paged_decode_attention(
         PA_NZ_LAST_DIM,
     )
     value_cache_fia = updated_value_cache.view_as(key_cache_fia)
-    attention_output = tng.ops.npu_fused_infer_attention_score_v2(
-        query_states.contiguous(),
-        key_cache_fia,
-        value_cache_fia,
-        num_query_heads=int(attention.num_heads),
-        num_key_value_heads=int(attention.num_key_value_heads),
-        input_layout="BNSD",
-        softmax_scale=float(attention.scaling),
-        actual_seq_qlen=actual_seq_qlen,
-        actual_seq_kvlen=actual_seq_kvlen,
-        block_table=block_table,
-        block_size=block_size,
-        sparse_mode=0,
-        inner_precise=1,
-    )[0]
+    if native_fia:
+        if batch_size != 1 or fixed_actual_kv_length is None:
+            raise ValueError(
+                "native FIA graph capture requires B=1 and a fixed KV length"
+            )
+        attention_output = torch_npu.npu_fused_infer_attention_score_v2(
+            query_states.contiguous(),
+            key_cache_fia,
+            value_cache_fia,
+            num_query_heads=int(attention.num_heads),
+            num_key_value_heads=int(attention.num_key_value_heads),
+            input_layout="BNSD",
+            softmax_scale=float(attention.scaling),
+            actual_seq_qlen=[1],
+            actual_seq_kvlen=[fixed_actual_kv_length],
+            block_table=block_table,
+            block_size=block_size,
+            sparse_mode=0,
+            inner_precise=1,
+        )[0]
+    else:
+        attention_output = tng.ops.npu_fused_infer_attention_score_v2(
+            query_states.contiguous(),
+            key_cache_fia,
+            value_cache_fia,
+            num_query_heads=int(attention.num_heads),
+            num_key_value_heads=int(attention.num_key_value_heads),
+            input_layout="BNSD",
+            softmax_scale=float(attention.scaling),
+            actual_seq_qlen=actual_seq_qlen,
+            actual_seq_kvlen=actual_seq_kvlen,
+            block_table=block_table,
+            block_size=block_size,
+            sparse_mode=0,
+            inner_precise=1,
+        )[0]
     attention_output = (
         attention_output.transpose(1, 2)
         .contiguous()
@@ -385,6 +423,8 @@ class PagedFIATextDecodeStage(nn.Module):
         block_size: int,
         cache_update_mode: str,
         optimization: Any,
+        native_fia: bool = False,
+        fixed_actual_kv_length: int | None = None,
     ):
         super().__init__()
         self.model = model
@@ -392,6 +432,8 @@ class PagedFIATextDecodeStage(nn.Module):
         self.cache_update_mode = cache_update_mode
         self.num_layers = int(model.config.text_config.num_hidden_layers)
         self.optimization = optimization
+        self.native_fia = native_fia
+        self.fixed_actual_kv_length = fixed_actual_kv_length
 
     def forward(
         self,
@@ -431,7 +473,7 @@ class PagedFIATextDecodeStage(nn.Module):
             block_table,
             self.block_size,
         )
-        if self.cache_update_mode == "scatter_pa":
+        if self.cache_update_mode in ("scatter_pa", "scatter_pa_inplace"):
             cache_update_metadata = slot_mapping
         else:
             cache_update_metadata = _pa_nz_scatter_indices(
@@ -481,6 +523,8 @@ class PagedFIATextDecodeStage(nn.Module):
                 self.block_size,
                 self.cache_update_mode,
                 self.optimization,
+                self.native_fia,
+                self.fixed_actual_kv_length,
             )
             if self.cache_update_mode == "scatter_pa":
                 updated_key_caches.append(updated_key_cache)
