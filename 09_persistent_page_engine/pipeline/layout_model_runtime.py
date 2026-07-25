@@ -276,7 +276,7 @@ class _PolygonNormalizationFastPath:
 def _full_border_contour(box: Any) -> np.ndarray:
     """Return the contour produced by a full resized binary mask."""
 
-    x_min, y_min, x_max, y_max = np.asarray(box).astype(np.int32)
+    x_min, y_min, x_max, y_max = (int(value) for value in box)
     return np.array(
         [
             [x_min, y_min],
@@ -354,9 +354,9 @@ class _MaskRectangleFastPath:
         mask: np.ndarray,
         scale_ratio: Any,
     ) -> bool:
-        x_min, y_min, x_max, y_max = box.astype(np.int32)
-        box_width = int(x_max - x_min)
-        box_height = int(y_max - y_min)
+        x_min, y_min, x_max, y_max = (int(value) for value in box)
+        box_width = x_max - x_min
+        box_height = y_max - y_min
         if box_width <= 0 or box_height <= 0:
             return False
         if box_width == 1 or box_height == 1:
@@ -376,30 +376,30 @@ class _MaskRectangleFastPath:
         scale_width = float(scale_ratio[0]) / 4.0
         scale_height = float(scale_ratio[1]) / 4.0
         mask_height, mask_width = mask.shape
-        x_start, x_end = np.clip(
-            [
-                int(round(x_min * scale_width)),
-                int(round(x_max * scale_width)),
-            ],
+        x_start = max(
             0,
-            mask_width,
+            min(mask_width, int(round(x_min * scale_width))),
         )
-        y_start, y_end = np.clip(
-            [
-                int(round(y_min * scale_height)),
-                int(round(y_max * scale_height)),
-            ],
+        x_end = max(
             0,
-            mask_height,
+            min(mask_width, int(round(x_max * scale_width))),
+        )
+        y_start = max(
+            0,
+            min(mask_height, int(round(y_min * scale_height))),
+        )
+        y_end = max(
+            0,
+            min(mask_height, int(round(y_max * scale_height))),
         )
         if x_start >= x_end or y_start >= y_end:
             return False
         cropped = mask[y_start:y_end, x_start:x_end]
         if not (
-            np.all(cropped[0])
-            and np.all(cropped[-1])
-            and np.all(cropped[:, 0])
-            and np.all(cropped[:, -1])
+            cropped[0].all()
+            and cropped[-1].all()
+            and cropped[:, 0].all()
+            and cropped[:, -1].all()
         ):
             return False
 
