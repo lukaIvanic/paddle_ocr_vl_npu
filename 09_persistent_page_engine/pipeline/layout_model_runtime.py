@@ -308,6 +308,13 @@ def _extract_custom_vertices_vectorized(
         vector_1[:, 1] * vector_2[:, 0]
         - vector_1[:, 0] * vector_2[:, 1]
     )
+    if (
+        points.shape == (4, 2)
+        and np.all(cross_products < 0)
+        and np.all(np.sum(vector_1 * vector_2, axis=1) == 0)
+    ):
+        return [tuple(point) for point in points.astype(np.float64)]
+
     selected = cross_products < 0
     if not np.any(selected):
         return []
