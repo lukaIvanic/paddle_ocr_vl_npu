@@ -10,6 +10,7 @@ import os
 import sys
 import time
 from pathlib import Path
+from types import MethodType
 from typing import Any
 
 import torch
@@ -101,6 +102,37 @@ def _device_average_s(
     return float(start.elapsed_time(end)) / 1000.0 / repeats
 
 
+def _install_static_anchor_cache(
+    model: Any,
+    *,
+    device: torch.device,
+    dtype: torch.dtype,
+) -> None:
+    """Return the detector's invariant 800x800 anchors as captured tensors."""
+
+    detector = model.model
+    anchors, valid_mask = detector.generate_anchors(
+        spatial_shapes=None,
+        device=device,
+        dtype=dtype,
+    )
+
+    def static_generate_anchors(
+        _self: Any,
+        spatial_shapes: Any = None,
+        grid_size: float = 0.05,
+        device: Any = "cpu",
+        dtype: torch.dtype = torch.float32,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        del spatial_shapes, grid_size, device, dtype
+        return anchors, valid_mask
+
+    detector.generate_anchors = MethodType(
+        static_generate_anchors,
+        detector,
+    )
+
+
 @torch.inference_mode()
 def main() -> None:
     args = parse_args()
@@ -135,6 +167,14 @@ def main() -> None:
     eager_output = frontend.model(pixel_values=pixel_values)
     torch_npu.npu.synchronize(device)
     eager_reference = _cpu_clone(eager_output)
+    _install_static_anchor_cache(
+        frontend.model,
+        device=device,
+        dtype=frontend.model_dtype,
+    )
+    cached_anchor_output = frontend.model(pixel_values=pixel_values)
+    torch_npu.npu.synchronize(device)
+    cached_anchor_reference = _cpu_clone(cached_anchor_output)
 
     torchair, CompilerConfig = import_torchair()
     compile_started = time.perf_counter()
@@ -177,6 +217,10 @@ def main() -> None:
         "eager_device_s": eager_device_s,
         "compiled_device_s": compiled_device_s,
         "speedup": eager_device_s / compiled_device_s,
+        "cached_anchor_diff": _diff(
+            cached_anchor_reference,
+            eager_reference,
+        ),
         "diff": _diff(compiled_reference, eager_reference),
     }
     print(json.dumps(result, indent=2, sort_keys=True), flush=True)
