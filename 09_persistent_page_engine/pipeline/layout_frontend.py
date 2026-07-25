@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from types import MethodType
@@ -328,8 +329,7 @@ class OwnedLayoutFrontend:
         )
 
         effective_min_pixels = int(min_pixels or 112_896)
-        requests: list[RecognitionRequest] = []
-        request_block_indices: list[int] = []
+        request_specs: list[tuple[int, np.ndarray, str]] = []
         figure_token_maps: dict[int, dict[str, str]] = {}
         dropped_figure_paths: set[str] = set()
         for block_index, block in enumerate(blocks):
@@ -355,12 +355,41 @@ class OwnedLayoutFrontend:
                 crop_height, crop_width = cropped.shape[:2]
                 if crop_height > 2 and crop_width > 2:
                     block_image = cropped
+            request_specs.append((block_index, block_image, prompt))
+
+        worker_count = min(4, len(request_specs))
+        if worker_count > 1:
+            with ThreadPoolExecutor(
+                max_workers=worker_count,
+                thread_name_prefix="layout-crop",
+            ) as executor:
+                crops = list(
+                    executor.map(
+                        _bgr_to_pil_rgb,
+                        (
+                            block_image
+                            for _, block_image, _ in request_specs
+                        ),
+                    )
+                )
+        else:
+            crops = [
+                _bgr_to_pil_rgb(block_image)
+                for _, block_image, _ in request_specs
+            ]
+
+        requests: list[RecognitionRequest] = []
+        request_block_indices: list[int] = []
+        for (block_index, _, prompt), crop in zip(
+            request_specs,
+            crops,
+        ):
             requests.append(
                 RecognitionRequest(
                     request_id=(
                         f"page_{ordinal:06d}_block_{block_index:06d}"
                     ),
-                    crop=_bgr_to_pil_rgb(block_image),
+                    crop=crop,
                     prompt=prompt,
                     skip_special_tokens=True,
                     min_pixels=effective_min_pixels,
