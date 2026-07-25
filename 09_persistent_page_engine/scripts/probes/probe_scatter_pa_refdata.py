@@ -28,7 +28,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--tile-size",
         type=int,
         choices=(16, 32),
-        default=32,
+        default=16,
         help="PA_NZ hidden-dimension tile used by the cache view.",
     )
     parser.add_argument(
@@ -58,6 +58,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "internal format that the eager ACLNN route rejects but GE may "
             "accept."
         ),
+    )
+    parser.add_argument(
+        "--graph-dump-dir",
+        type=Path,
+        default=None,
+        help="Optional directory for TorchAir pbtxt graph dumps.",
     )
     return parser.parse_args(argv)
 
@@ -266,6 +272,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     torchair, CompilerConfig = import_torchair()
     compiler_config = CompilerConfig()
     compiler_config.experimental_config.enable_ref_data = True
+    if args.graph_dump_dir is not None:
+        graph_dump_dir = args.graph_dump_dir.expanduser().resolve()
+        graph_dump_dir.mkdir(parents=True, exist_ok=True)
+        compiler_config.debug.graph_dump.type = "pbtxt"
+        compiler_config.debug.graph_dump.path = str(graph_dump_dir)
     backend = torchair.get_npu_backend(compiler_config=compiler_config)
     torch._dynamo.reset()
     compiled_stage = torch.compile(
