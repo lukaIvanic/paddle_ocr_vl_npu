@@ -217,14 +217,17 @@ class OwnedLayoutFrontend:
     def _prepare_pixel_values(self, image_bgr: np.ndarray) -> torch.Tensor:
         """Run the processor's exact singleton math without batch plumbing."""
 
-        image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
-        pixel_values = torch.from_numpy(image_rgb).permute(2, 0, 1).unsqueeze(0)
+        pixel_values = torch.from_numpy(image_bgr).permute(2, 0, 1).unsqueeze(0)
         pixel_values = self.processor.resize(
             image=pixel_values,
             size=self.processor.size,
             resample=self.processor.resample,
             antialias=False,
         )
+        # Resize is channel-independent, so delay BGR -> RGB until the tensor
+        # is at the detector's fixed input size instead of copying the full
+        # decoded page.
+        pixel_values = pixel_values.flip(1)
         pixel_values = self.processor.rescale_and_normalize(
             pixel_values,
             self.processor.do_rescale,
