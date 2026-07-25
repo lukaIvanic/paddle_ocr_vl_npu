@@ -276,25 +276,29 @@ class OwnedPageEngine:
             if page.remaining == 0:
                 complete_page(page)
                 return
-            for request, block_index in zip(
-                page.prepared.requests,
-                page.prepared.request_block_indices,
-                strict=True,
-            ):
-                owners[request.request_id] = _RequestOwner(
-                    page=page,
-                    block_index=block_index,
-                    request_index=next_request,
-                    pixel_profile=(
-                        int(request.min_pixels or 112_896),
-                        int(request.max_pixels or 1_003_520),
-                    ),
-                )
-                next_request += 1
-                profiles[
-                    f"{request.min_pixels}:{request.max_pixels}"
-                ] += 1
-                yield request
+            try:
+                for request, block_index in zip(
+                    page.prepared.requests,
+                    page.prepared.request_block_indices,
+                    strict=True,
+                ):
+                    owners[request.request_id] = _RequestOwner(
+                        page=page,
+                        block_index=block_index,
+                        request_index=next_request,
+                        pixel_profile=(
+                            int(request.min_pixels or 112_896),
+                            int(request.max_pixels or 1_003_520),
+                        ),
+                    )
+                    next_request += 1
+                    profiles[
+                        f"{request.min_pixels}:{request.max_pixels}"
+                    ] += 1
+                    yield request
+            finally:
+                page.prepared.requests.clear()
+                page.prepared.request_block_indices.clear()
 
         def put_page(item: _QueuedPage) -> bool:
             item.put_started_ns = time.perf_counter_ns()
