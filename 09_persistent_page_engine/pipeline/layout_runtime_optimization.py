@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from types import MethodType
 from typing import Any
 
@@ -294,7 +295,12 @@ def _decoder_forward_final_heads_only(
     )
 
 
-def install_layout_runtime_optimizations(paddlex_pipeline: Any) -> dict[str, Any]:
+def install_layout_runtime_optimizations(
+    paddlex_pipeline: Any,
+    *,
+    backend: str = "eager",
+    torchair_cache_dir: Path | None = None,
+) -> dict[str, Any]:
     """Install output-preserving optimizations on the concrete PaddleX pipeline."""
 
     predictor = getattr(paddlex_pipeline, "layout_det_model", None)
@@ -347,8 +353,36 @@ def install_layout_runtime_optimizations(paddlex_pipeline: Any) -> dict[str, Any
         )
     decoder.forward = MethodType(_decoder_forward_final_heads_only, decoder)
 
+    compiled = False
+    if backend == "torchair":
+        if torchair_cache_dir is None:
+            raise ValueError(
+                "TorchAir layout execution requires a cache directory"
+            )
+        from paddleocr_vl.model.compile_utils import import_torchair
+
+        torchair, CompilerConfig = import_torchair()
+        torchair_cache_dir.mkdir(parents=True, exist_ok=True)
+        model.forward = torchair.inference.cache_compile(
+            model.forward,
+            config=CompilerConfig(),
+            dynamic=False,
+            cache_dir=str(torchair_cache_dir),
+            ge_cache=True,
+        )
+        compiled = True
+    elif backend != "eager":
+        raise ValueError(
+            f"layout backend must be 'eager' or 'torchair', got {backend!r}"
+        )
+
     return {
         "direct_tensor_preprocessing": True,
         "final_decoder_heads_only": True,
+        "model_backend": backend,
+        "model_compiled": compiled,
+        "torchair_cache_dir": (
+            str(torchair_cache_dir) if torchair_cache_dir is not None else None
+        ),
         "vectorized_geometry": True,
     }
