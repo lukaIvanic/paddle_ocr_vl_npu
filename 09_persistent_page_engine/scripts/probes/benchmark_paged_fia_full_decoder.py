@@ -21,6 +21,7 @@ import hashlib
 import json
 import sys
 import time
+import types
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Sequence
@@ -959,9 +960,29 @@ def _compile_paged_stage(
         )
     )
     cache_dir.mkdir(parents=True, exist_ok=True)
+    bucket_forward_name = (
+        f"forward_b{batch_size}_k{cache_length}_"
+        f"a{attention_bucket_length}_{metadata_mode}"
+    )
+    original_forward = stage.forward.__func__
+    bucket_forward_code = original_forward.__code__.replace(
+        co_name=bucket_forward_name,
+        co_qualname=(
+            f"{type(stage).__qualname__}.{bucket_forward_name}"
+        ),
+    )
+    bucket_forward_function = types.FunctionType(
+        bucket_forward_code,
+        original_forward.__globals__,
+        bucket_forward_name,
+        original_forward.__defaults__,
+        original_forward.__closure__,
+    )
+    bucket_forward_function.__kwdefaults__ = original_forward.__kwdefaults__
+    bucket_forward = types.MethodType(bucket_forward_function, stage)
     started = time.perf_counter()
     fn = torchair.inference.cache_compile(
-        stage.forward,
+        bucket_forward,
         config=compiler_config,
         dynamic=False,
         cache_dir=str(cache_dir),
