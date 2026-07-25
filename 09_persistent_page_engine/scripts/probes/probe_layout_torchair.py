@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -106,6 +107,9 @@ def main() -> None:
     if not torch.npu.is_available():
         raise RuntimeError("layout TorchAir probe requires an NPU")
     torch.npu.set_compile_mode(jit_compile=False)
+    # Transformers documents this switch for production compilation. The
+    # detector input and spatial feature shapes are fixed in this probe.
+    os.environ["TRANSFORMERS_DISABLE_TORCH_CHECK"] = "1"
     device = torch.device("npu:0")
     model_dir = args.layout_model.expanduser().resolve()
     image_path = args.image.expanduser().resolve()
