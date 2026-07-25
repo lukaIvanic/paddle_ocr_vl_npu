@@ -65,11 +65,43 @@ def _geometry_overlap_ratio(
     return intersection / reference if reference else 0.0
 
 
+def _convex_overlap_ratio(
+    polygon1: Any,
+    polygon2: Any,
+    mode: str,
+) -> float | None:
+    """Use OpenCV's native convex intersection when both inputs qualify."""
+    first = np.asarray(polygon1, dtype=np.float32).reshape(-1, 2)
+    second = np.asarray(polygon2, dtype=np.float32).reshape(-1, 2)
+    if (
+        len(first) < 3
+        or len(second) < 3
+        or not cv2.isContourConvex(first)
+        or not cv2.isContourConvex(second)
+    ):
+        return None
+    first_area = abs(float(cv2.contourArea(first)))
+    second_area = abs(float(cv2.contourArea(second)))
+    intersection = float(cv2.intersectConvexConvex(first, second)[0])
+    if mode == "union":
+        reference = first_area + second_area - intersection
+    elif mode == "small":
+        reference = min(first_area, second_area)
+    elif mode == "large":
+        reference = max(first_area, second_area)
+    else:
+        raise ValueError(f"unsupported polygon overlap mode: {mode}")
+    return intersection / reference if reference else 0.0
+
+
 def _polygon_overlap_ratio(
     polygon1: Any,
     polygon2: Any,
     mode: str = "union",
 ) -> float:
+    convex = _convex_overlap_ratio(polygon1, polygon2, mode)
+    if convex is not None:
+        return convex
     return _geometry_overlap_ratio(
         _valid_polygon_geometry(polygon1),
         _valid_polygon_geometry(polygon2),
@@ -217,31 +249,46 @@ def _normalize_polygon(
     if quad is not None:
         rect_list = rect.tolist()
         quad_list = quad.tolist()
-        rect_geometry = _valid_polygon_geometry(rect_list)
-        quad_geometry = _valid_polygon_geometry(quad_list)
-        if (
-            _geometry_overlap_ratio(
-                rect_geometry,
-                quad_geometry,
-                "union",
-            )
-            >= 0.95
-        ):
-            return rect
-        polygon_list = polygon.tolist()
-        polygon_geometry = _valid_polygon_geometry(polygon_list)
-        polygon_quad_iou = _geometry_overlap_ratio(
-            polygon_geometry,
-            quad_geometry,
+        rect_quad_iou = _convex_overlap_ratio(
+            rect_list,
+            quad_list,
             "union",
         )
+        if rect_quad_iou is None:
+            raise AssertionError("rectangles must be convex")
+        if rect_quad_iou >= 0.95:
+            return rect
+        polygon_list = polygon.tolist()
+        polygon_quad_iou = _convex_overlap_ratio(
+            polygon_list,
+            quad_list,
+            "union",
+        )
+        rect_geometry = None
+        if polygon_quad_iou is None:
+            polygon_quad_iou = _geometry_overlap_ratio(
+                _valid_polygon_geometry(polygon_list),
+                _valid_polygon_geometry(quad_list),
+                "union",
+            )
         previous_iou = 0.0
         if previous_polygon is not None:
-            previous_iou = _geometry_overlap_ratio(
-                _valid_polygon_geometry(previous_polygon.tolist()),
-                rect_geometry,
+            previous_iou = _convex_overlap_ratio(
+                previous_polygon,
+                rect,
                 "small",
             )
+            if previous_iou is None:
+                rect_geometry = (
+                    rect_geometry
+                    if rect_geometry is not None
+                    else _valid_polygon_geometry(rect_list)
+                )
+                previous_iou = _geometry_overlap_ratio(
+                    _valid_polygon_geometry(previous_polygon.tolist()),
+                    rect_geometry,
+                    "small",
+                )
         if polygon_quad_iou >= 0.8 and previous_iou < 0.01:
             return quad
     return polygon
