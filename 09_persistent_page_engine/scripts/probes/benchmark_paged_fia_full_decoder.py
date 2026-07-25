@@ -116,6 +116,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default="127,511,768,1023",
         help="Comma-separated zero-based cache positions benchmarked in one graph.",
     )
+    parser.add_argument(
+        "--batch-positions",
+        default=None,
+        help=(
+            "Optional comma-separated position for every batch row. When set, "
+            "run one mixed-length row instead of repeating each --positions "
+            "value across the batch."
+        ),
+    )
     parser.add_argument("--warmup", type=int, default=3)
     parser.add_argument("--repeats", type=int, default=30)
     parser.add_argument("--seed", type=int, default=7)
@@ -140,6 +149,27 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("--positions must contain at least one position")
     if min(args.positions) < 0 or max(args.positions) >= args.cache_length:
         parser.error("--positions must be within the selected cache capacity")
+    if args.batch_positions is not None:
+        try:
+            args.batch_positions = tuple(
+                int(value.strip())
+                for value in args.batch_positions.split(",")
+                if value.strip()
+            )
+        except ValueError as exc:
+            parser.error(f"invalid --batch-positions: {exc}")
+        if len(args.batch_positions) != args.batch_size:
+            parser.error(
+                "--batch-positions must contain exactly --batch-size values"
+            )
+        if (
+            min(args.batch_positions) < 0
+            or max(args.batch_positions) >= args.cache_length
+        ):
+            parser.error(
+                "--batch-positions must be within the selected cache capacity"
+            )
+        args.positions = (max(args.batch_positions),)
     return args
 
 
@@ -1097,6 +1127,11 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     rows = []
     for position in args.positions:
+        row_positions = (
+            args.batch_positions
+            if args.batch_positions is not None
+            else (position,) * args.batch_size
+        )
         dense_cache, paged_cache = _allocate_matching_caches(
             config.text_config,
             batch_size=args.batch_size,
@@ -1104,7 +1139,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             block_size=args.block_size,
             device=device,
             dtype=dtype,
-            seed=args.seed + 1000 + position,
+            seed=args.seed + 1000 + sum(row_positions),
         )
         input_ids = (
             torch.arange(
@@ -1114,9 +1149,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             ).view(-1, 1)
             + 17
         )
-        cache_position = torch.full(
-            (args.batch_size,),
-            position,
+        cache_position = torch.tensor(
+            row_positions,
             device=device,
             dtype=torch.int64,
         )
@@ -1221,6 +1255,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             {
                 "cache_position": position,
                 "actual_kv_length": position + 1,
+                "cache_positions": list(row_positions),
+                "actual_kv_lengths": [
+                    row_position + 1 for row_position in row_positions
+                ],
                 "increfa": incre_timing,
                 "paged_fia_v2": paged_timing,
                 "paged_vs_increfa_speedup": (
@@ -1297,6 +1335,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             ),
             "paged_single_stream": args.paged_single_stream,
             "positions": list(args.positions),
+            "batch_positions": (
+                list(args.batch_positions)
+                if args.batch_positions is not None
+                else None
+            ),
             "warmup": args.warmup,
             "repeats": args.repeats,
             "dtype": str(dtype),
