@@ -592,12 +592,12 @@ class PagedFIATextDecodeStage(nn.Module):
         actual_seq_kvlen = cache_position + 1
         attention_mask = None
         if self.native_fia:
-            bucket_length = max(self.fixed_actual_kv_lengths)
+            mask_length = block_table.shape[1] * self.block_size
             logical_positions = torch.arange(
-                bucket_length,
+                mask_length,
                 dtype=torch.int64,
                 device=inputs_embeds.device,
-            ).view(1, 1, 1, bucket_length)
+            ).view(1, 1, 1, mask_length)
             attention_mask = logical_positions >= actual_seq_kvlen.view(
                 batch_size,
                 1,
