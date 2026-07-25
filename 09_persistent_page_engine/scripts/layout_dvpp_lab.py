@@ -50,12 +50,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--limit", type=int, default=1)
     parser.add_argument("--rounds", type=int, default=3)
     parser.add_argument("--warmup-rounds", type=int, default=1)
+    parser.add_argument("--dvpp-streams", type=int, default=1)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     if args.offset < 0 or args.limit <= 0:
         parser.error("--offset must be non-negative and --limit positive")
     if args.rounds <= 0 or args.warmup_rounds < 0:
         parser.error("--rounds must be positive and --warmup-rounds non-negative")
+    if args.dvpp_streams <= 0:
+        parser.error("--dvpp-streams must be positive")
     return args
 
 
@@ -172,7 +175,7 @@ def run_dvpp_page(
     encoded_cpu: torch.Tensor,
     shape: tuple[int, int, int],
     device: torch.device,
-) -> tuple[torch.Tensor, torch.Tensor, dict[str, float]]:
+) -> tuple[torch.Tensor, torch.Tensor, DeviceTimeline]:
     timeline = DeviceTimeline(device)
     encoded_npu = timeline.measure(
         "compressed_h2d",
@@ -197,9 +200,7 @@ def run_dvpp_page(
     )
     resized_bgr = timeline.measure(
         "layout_channel_reorder",
-        lambda: decoded_rgb.new_empty((1, 3, 800, 800)).copy_(
-            resized_rgb.flip(1)
-        ),
+        lambda: resized_rgb.flip(1).contiguous(),
     )
     pixel_values = timeline.measure(
         "layout_img_to_tensor",
@@ -209,27 +210,48 @@ def run_dvpp_page(
         "full_page_channel_reorder",
         lambda: decoded_rgb.flip(1).permute(0, 2, 3, 1).contiguous(),
     )
-    full_bgr_cpu = timeline.measure(
-        "full_page_d2h",
-        lambda: full_bgr_hwc.cpu(),
+    full_bgr_cpu = torch.empty(
+        full_bgr_hwc.shape,
+        dtype=full_bgr_hwc.dtype,
+        device="cpu",
+        pin_memory=True,
     )
-    return pixel_values, full_bgr_cpu.squeeze(0), timeline.resolve()
+    timeline.measure(
+        "full_page_d2h",
+        lambda: full_bgr_cpu.copy_(full_bgr_hwc, non_blocking=True),
+    )
+    return pixel_values, full_bgr_cpu.squeeze(0), timeline
 
 
 def run_dvpp_round(
     encoded_tensors: list[torch.Tensor],
     shapes: list[tuple[int, int, int]],
     device: torch.device,
+    stream_count: int,
 ) -> tuple[list[torch.Tensor], list[torch.Tensor], dict[str, float], float]:
+    import torch_npu
+
     pixel_values: list[torch.Tensor] = []
     full_pages: list[torch.Tensor] = []
     stage_totals: defaultdict[str, float] = defaultdict(float)
+    timelines: list[DeviceTimeline] = []
+    if stream_count == 1:
+        streams = [torch.npu.current_stream(device)]
+    else:
+        streams = [
+            torch_npu.npu.Stream(device=device) for _ in range(stream_count)
+        ]
     synchronize(device)
     started = time.perf_counter()
-    for encoded, shape in zip(encoded_tensors, shapes):
-        pixels, full_page, timing = run_dvpp_page(encoded, shape, device)
+    for index, (encoded, shape) in enumerate(zip(encoded_tensors, shapes)):
+        stream = streams[index % len(streams)]
+        with torch_npu.npu.stream(stream):
+            pixels, full_page, timeline = run_dvpp_page(encoded, shape, device)
         pixel_values.append(pixels)
         full_pages.append(full_page)
+        timelines.append(timeline)
+    for timeline in timelines:
+        timing = timeline.resolve()
         for name, seconds in timing.items():
             stage_totals[name] += seconds
     synchronize(device)
@@ -305,7 +327,12 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     for _ in range(args.warmup_rounds):
         run_current_round(processor, encoded_pages)
-        run_dvpp_round(encoded_tensors, shapes, device)
+        run_dvpp_round(
+            encoded_tensors,
+            shapes,
+            device,
+            stream_count=args.dvpp_streams,
+        )
 
     current_rounds: list[float] = []
     dvpp_rounds: list[dict[str, float]] = []
@@ -323,6 +350,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             encoded_tensors,
             shapes,
             device,
+            stream_count=args.dvpp_streams,
         )
         dvpp_rounds.append({"wall": dvpp_wall_s, **stages})
 
@@ -362,6 +390,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         "compressed_bytes": sum(len(encoded) for encoded in encoded_pages),
         "decoded_pixels": sum(height * width for height, width, _ in shapes),
         "all_compressed_inputs_pinned": all(pinned),
+        "dvpp_streams": args.dvpp_streams,
         "current": {
             "path": "OpenCV BGR -> PIL -> TorchVision processor",
             "rounds_s": current_rounds,
