@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the self-contained Experiment 09 OmniDocBench pipeline."""
+"""Run the self-contained PaddleX-free Experiment 09 OmniDocBench pipeline."""
 
 from __future__ import annotations
 
@@ -627,6 +627,16 @@ def main() -> None:
         + "\n",
         encoding="utf-8",
     )
+    loaded_paddlex_modules = sorted(
+        name
+        for name in sys.modules
+        if name == "paddlex" or name.startswith("paddlex.")
+    )
+    if loaded_paddlex_modules:
+        raise RuntimeError(
+            "the owned pipeline unexpectedly imported PaddleX modules: "
+            + ", ".join(loaded_paddlex_modules[:10])
+        )
 
     summary = {
         **manifest,
@@ -682,6 +692,8 @@ def main() -> None:
         "recognition": page_run.summary,
         "layout_frontend": page_run.frontend,
         "page_completion_order": page_run.completion_order,
+        "paddlex_runtime_dependency": False,
+        "loaded_paddlex_modules": loaded_paddlex_modules,
         "layout_mask_guard": layout_mask_guard.snapshot(),
         "layout_mask_guard_path": str(layout_mask_guard_path),
         "predictions_dir": str(predictions_dir),

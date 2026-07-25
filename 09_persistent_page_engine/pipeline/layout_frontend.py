@@ -29,7 +29,7 @@ from .layout_output import (
     gather_document_images,
     tokenize_table_figures,
 )
-from .layout_runtime_optimization import (
+from .layout_model_runtime import (
     _MaskRectangleFastPath,
     _NpuGraphCoreForward,
     _decoder_forward_final_heads_only,

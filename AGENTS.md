@@ -25,10 +25,12 @@ B=1 vision and text prefill with static TorchAir buckets, followed by a
 persistent compiled decode arena. Finished requests are hot-swapped between
 decode iterations by copying the next ready request's valid KV prefix into the
 freed slot. It does not yet overlap prefill with decode. The standalone
-`09_persistent_page_engine/scripts/run_offline_e2e.py` page assembler remains diagnostic; the faithful full-page
-path uses official PaddleX v1.6 page preparation and assembly while feeding all
-prepared crops through one run-scoped recognition schedule in
-`09_persistent_page_engine/scripts/run_omnidocbench_paddlex.py`.
+`09_persistent_page_engine/scripts/run_offline_e2e.py` page assembler remains
+diagnostic. The production full-page path owns the fixed PaddleOCR-VL 1.6
+layout, crop, prompt, page assembly, JSON, and Markdown contract directly; it
+does not import PaddleX or PaddleOCR. It feeds all prepared crops through one
+run-scoped recognition schedule in
+`09_persistent_page_engine/scripts/run_omnidocbench.py`.
 The full benchmark also installs the narrow
 `09_persistent_page_engine/pipeline/layout_mask_guard.py` compatibility guard. The recognition model
 is available as a Transformers/PyTorch model at:

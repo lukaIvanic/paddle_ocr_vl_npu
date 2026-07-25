@@ -1,1 +1,1 @@
-"""Page layout, crop routing, and PaddleX integration."""
+"""Owned page layout, crop routing, output assembly, and scheduling."""
