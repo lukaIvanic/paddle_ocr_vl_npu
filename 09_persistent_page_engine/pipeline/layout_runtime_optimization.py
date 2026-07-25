@@ -360,9 +360,15 @@ def install_layout_runtime_optimizations(
                 "TorchAir layout execution requires a cache directory"
             )
         from paddleocr_vl.model.compile_utils import import_torchair
+        from transformers.models.pp_doclayout_v3 import (
+            modeling_pp_doclayout_v3,
+        )
 
         torchair, CompilerConfig = import_torchair()
         torchair_cache_dir.mkdir(parents=True, exist_ok=True)
+        modeling_pp_doclayout_v3.torch_compilable_check = (
+            lambda *args, **kwargs: None
+        )
         model.forward = torchair.inference.cache_compile(
             model.forward,
             config=CompilerConfig(),
@@ -381,6 +387,9 @@ def install_layout_runtime_optimizations(
         "final_decoder_heads_only": True,
         "model_backend": backend,
         "model_compiled": compiled,
+        "transformers_runtime_shape_checks": (
+            "outside_static_graph" if compiled else "enabled"
+        ),
         "torchair_cache_dir": (
             str(torchair_cache_dir) if torchair_cache_dir is not None else None
         ),
