@@ -199,6 +199,7 @@ class _FIAGraphTaskRecorder:
         *,
         timing_events: tuple[torch_npu.npu.Event, torch_npu.npu.Event]
         | None = None,
+        host_breakdown_s: dict[str, float] | None = None,
     ) -> float:
         lengths = [int(length) for length in actual_seq_kv_lengths]
         if len(lengths) != self.batch_size:
@@ -208,10 +209,16 @@ class _FIAGraphTaskRecorder:
             if timing_events is not None:
                 timing_events[0].record(self.update_stream)
             for task in self.tasks:
+                started = time.perf_counter()
                 torch.npu.graph_task_update_begin(
                     self.update_stream,
                     task.handle,
                 )
+                if host_breakdown_s is not None:
+                    host_breakdown_s["update_begin"] += (
+                        time.perf_counter() - started
+                    )
+                started = time.perf_counter()
                 torch_npu.npu_fused_infer_attention_score_v2.out(
                     query=task.query,
                     key=task.key,
@@ -229,8 +236,22 @@ class _FIAGraphTaskRecorder:
                     workspace=task.workspace,
                     out=[task.output, task.softmax_lse],
                 )
+                if host_breakdown_s is not None:
+                    host_breakdown_s["fia_out_reissue"] += (
+                        time.perf_counter() - started
+                    )
+                started = time.perf_counter()
                 torch.npu.graph_task_update_end(self.update_stream)
+                if host_breakdown_s is not None:
+                    host_breakdown_s["update_end"] += (
+                        time.perf_counter() - started
+                    )
+                started = time.perf_counter()
                 task.event.record(self.update_stream)
+                if host_breakdown_s is not None:
+                    host_breakdown_s["event_record"] += (
+                        time.perf_counter() - started
+                    )
             if timing_events is not None:
                 timing_events[1].record(self.update_stream)
         return time.perf_counter() - host_started
@@ -375,6 +396,13 @@ def _profile_paged_phases(
     host_update_ms: list[float] = []
     host_replay_ms: list[float] = []
     host_state_ms: list[float] = []
+    host_update_component_ms = {
+        "update_begin": [],
+        "fia_out_reissue": [],
+        "update_end": [],
+        "event_record": [],
+        "other": [],
+    }
     event_rows = []
     synchronize(input_ids.device)
     wall_started = time.perf_counter()
@@ -391,9 +419,16 @@ def _profile_paged_phases(
             torch_npu.npu.Event(enable_timing=True),
             torch_npu.npu.Event(enable_timing=True),
         )
+        update_components_s = {
+            "update_begin": 0.0,
+            "fia_out_reissue": 0.0,
+            "update_end": 0.0,
+            "event_record": 0.0,
+        }
         update_host_s = recorder.update(
             [position + 1 for position in host_positions],
             timing_events=update_events,
+            host_breakdown_s=update_components_s,
         )
         replay_events[0].record()
         started = time.perf_counter()
@@ -407,6 +442,12 @@ def _profile_paged_phases(
         host_state_ms.append((time.perf_counter() - started) * 1000.0)
         state_events[1].record()
         host_update_ms.append(update_host_s * 1000.0)
+        measured_components_s = sum(update_components_s.values())
+        for name, value_s in update_components_s.items():
+            host_update_component_ms[name].append(value_s * 1000.0)
+        host_update_component_ms["other"].append(
+            (update_host_s - measured_components_s) * 1000.0
+        )
         for index in range(len(host_positions)):
             host_positions[index] += 1
         event_rows.append((update_events, replay_events, state_events))
@@ -433,6 +474,14 @@ def _profile_paged_phases(
             "graph_replay": _distribution(host_replay_ms),
             "state_advance": _distribution(host_state_ms),
         },
+        "host_update_components_ms": {
+            name: _distribution(values)
+            for name, values in host_update_component_ms.items()
+        },
+        "host_update_component_scope": (
+            "Each component is the total across all captured FIA layer "
+            "tasks in one decode iteration"
+        ),
         "device_stream_ms": {
             "update_stream": _distribution(update_device_ms),
             "replay_stream_including_event_waits": _distribution(
