@@ -12,18 +12,18 @@ import torch
 import torch.nn.functional as F
 
 
-def _rounded_rectangle(box: Any) -> np.ndarray:
-    x_min, y_min, x_max, y_max = np.round(
-        np.asarray(box)
-    ).astype(np.int32)
+def _full_border_contour(box: Any) -> np.ndarray:
+    """Return the contour produced by a full resized binary mask."""
+
+    x_min, y_min, x_max, y_max = np.asarray(box).astype(np.int32)
     return np.array(
         [
             [x_min, y_min],
-            [x_max, y_min],
-            [x_max, y_max],
-            [x_min, y_max],
+            [x_min, y_max - 1],
+            [x_max - 1, y_max - 1],
+            [x_max - 1, y_min],
         ],
-        dtype=np.float32,
+        dtype=np.int32,
     )
 
 
@@ -37,12 +37,9 @@ class _MaskRectangleFastPath:
         self._detections = 0
         self._rectangles = 0
         self._fallbacks = 0
-        self._candidate_rectangles = 0
-        self._candidate_rejections = 0
         self._wall_ns = 0
         self._predicate_ns = 0
         self._fallback_ns = 0
-        self._candidate_records: list[dict[str, Any]] = []
 
     @staticmethod
     def _is_full_external_rectangle(
@@ -54,6 +51,16 @@ class _MaskRectangleFastPath:
         box_width = int(x_max - x_min)
         box_height = int(y_max - y_min)
         if box_width <= 0 or box_height <= 0:
+            return False
+        if box_width == 1 or box_height == 1:
+            return False
+
+        # approxPolyDP must retain all four corners. Its epsilon is 0.004 times
+        # the closed contour perimeter.
+        contour_width = box_width - 1
+        contour_height = box_height - 1
+        epsilon = 0.008 * (contour_width + contour_height)
+        if epsilon >= min(contour_width, contour_height):
             return False
 
         # A full external border survives nearest-neighbour resize as a full
@@ -89,42 +96,7 @@ class _MaskRectangleFastPath:
         ):
             return False
 
-        # Transformers truncates the detector box before mask extraction, but
-        # PaddleX rounds it before final polygon normalization. Model the two
-        # coordinate systems explicitly. The extracted full-border contour
-        # ends one pixel before the truncated box's x_max/y_max.
-        contour_x_min = int(x_min)
-        contour_y_min = int(y_min)
-        contour_x_max = int(x_max - 1)
-        contour_y_max = int(y_max - 1)
-        (
-            final_x_min,
-            final_y_min,
-            final_x_max,
-            final_y_max,
-        ) = np.round(box).astype(np.int32)
-        intersection_width = max(
-            0,
-            min(contour_x_max, int(final_x_max))
-            - max(contour_x_min, int(final_x_min)),
-        )
-        intersection_height = max(
-            0,
-            min(contour_y_max, int(final_y_max))
-            - max(contour_y_min, int(final_y_min)),
-        )
-        intersection = intersection_width * intersection_height
-        contour_area = max(0, contour_x_max - contour_x_min) * max(
-            0,
-            contour_y_max - contour_y_min,
-        )
-        final_area = max(0, int(final_x_max) - int(final_x_min)) * max(
-            0,
-            int(final_y_max) - int(final_y_min),
-        )
-        union = contour_area + final_area - intersection
-        overlap = intersection / union if union else 0.0
-        return overlap >= 0.95
+        return True
 
     def __call__(
         self,
@@ -138,9 +110,6 @@ class _MaskRectangleFastPath:
         polygons: list[Any] = []
         rectangles = 0
         fallbacks = 0
-        candidate_rectangles = 0
-        candidate_rejections = 0
-        candidate_records: list[dict[str, Any]] = []
         predicate_ns = 0
         fallback_ns = 0
 
@@ -152,6 +121,11 @@ class _MaskRectangleFastPath:
                 scale_ratio,
             )
             predicate_ns += time.perf_counter_ns() - predicate_started_ns
+
+            if is_candidate:
+                polygons.append(_full_border_contour(box))
+                rectangles += 1
+                continue
 
             fallback_started_ns = time.perf_counter_ns()
             single = self.original(
@@ -166,96 +140,8 @@ class _MaskRectangleFastPath:
                     f"{len(single)} polygons for one detection"
                 )
             reference_polygon = single[0]
-            if is_candidate:
-                from paddlex.inference.models.layout_analysis.processors import (
-                    _normalize_layout_polygon,
-                    calculate_polygon_overlap_ratio,
-                    convert_polygon_to_quad,
-                )
-
-                rounded_box = np.round(box)
-                rectangle = _rounded_rectangle(box)
-                normalized = _normalize_layout_polygon(
-                    box=rounded_box,
-                    polygon=reference_polygon,
-                    layout_shape_mode="auto",
-                )
-                use_rectangle = np.array_equal(
-                    np.asarray(normalized),
-                    rectangle,
-                )
-                reference_array = (
-                    None
-                    if reference_polygon is None
-                    else np.asarray(reference_polygon)
-                )
-                quad = (
-                    None
-                    if reference_array is None
-                    else convert_polygon_to_quad(reference_array)
-                )
-                quad_overlap = (
-                    None
-                    if quad is None
-                    else calculate_polygon_overlap_ratio(
-                        rectangle.tolist(),
-                        quad.tolist(),
-                        mode="union",
-                    )
-                )
-
-                x_min, y_min, x_max, y_max = box.astype(np.int32)
-                scale_width = float(scale_ratio[0]) / 4.0
-                scale_height = float(scale_ratio[1]) / 4.0
-                mask_height, mask_width = masks_np[index].shape
-                x_start, x_end = np.clip(
-                    [
-                        int(round(x_min * scale_width)),
-                        int(round(x_max * scale_width)),
-                    ],
-                    0,
-                    mask_width,
-                )
-                y_start, y_end = np.clip(
-                    [
-                        int(round(y_min * scale_height)),
-                        int(round(y_max * scale_height)),
-                    ],
-                    0,
-                    mask_height,
-                )
-                cropped = masks_np[index, y_start:y_end, x_start:x_end]
-                candidate_records.append(
-                    {
-                        "box_width": int(x_max - x_min),
-                        "box_height": int(y_max - y_min),
-                        "mask_crop_width": int(x_end - x_start),
-                        "mask_crop_height": int(y_end - y_start),
-                        "foreground_fraction": float(cropped.mean()),
-                        "reference_points": (
-                            0
-                            if reference_array is None
-                            else int(len(reference_array))
-                        ),
-                        "quad_overlap": (
-                            None
-                            if quad_overlap is None
-                            else float(quad_overlap)
-                        ),
-                        "normalizes_to_rectangle": bool(use_rectangle),
-                    }
-                )
-                if use_rectangle:
-                    polygons.append(rectangle)
-                    rectangles += 1
-                    candidate_rectangles += 1
-                else:
-                    polygons.append(reference_polygon)
-                    fallbacks += 1
-                    candidate_rejections += 1
-            else:
-                polygons.append(reference_polygon)
-                fallbacks += 1
+            polygons.append(reference_polygon)
+            fallbacks += 1
 
         finished_ns = time.perf_counter_ns()
         with self._lock:
@@ -263,12 +149,9 @@ class _MaskRectangleFastPath:
             self._detections += len(boxes_np)
             self._rectangles += rectangles
             self._fallbacks += fallbacks
-            self._candidate_rectangles += candidate_rectangles
-            self._candidate_rejections += candidate_rejections
             self._wall_ns += finished_ns - started_ns
             self._predicate_ns += predicate_ns
             self._fallback_ns += fallback_ns
-            self._candidate_records.extend(candidate_records)
         return polygons
 
     def snapshot(self) -> dict[str, Any]:
@@ -278,8 +161,6 @@ class _MaskRectangleFastPath:
                 "detections": self._detections,
                 "rectangle_fast_paths": self._rectangles,
                 "fallbacks": self._fallbacks,
-                "candidate_rectangles": self._candidate_rectangles,
-                "candidate_rejections": self._candidate_rejections,
                 "coverage": (
                     self._rectangles / self._detections
                     if self._detections
@@ -288,7 +169,6 @@ class _MaskRectangleFastPath:
                 "wall_s": self._wall_ns / 1_000_000_000,
                 "predicate_s": self._predicate_ns / 1_000_000_000,
                 "fallback_s": self._fallback_ns / 1_000_000_000,
-                "candidate_records": list(self._candidate_records),
             }
 
 
@@ -517,7 +397,7 @@ def _post_process_selected_masks_only(
             )
             selected_masks = (
                 selected_masks.sigmoid() > threshold
-            ).int()
+            ).to(torch.uint8)
             cpu_masks = selected_masks.detach().cpu()
             result["polygon_points"] = (
                 processor._extract_polygon_points_by_masks(
