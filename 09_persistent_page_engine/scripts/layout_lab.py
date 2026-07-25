@@ -205,7 +205,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--layout-backend",
-        choices=("eager", "torchair"),
+        choices=("eager", "npugraph", "torchair"),
         default="eager",
     )
     parser.add_argument(
