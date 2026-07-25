@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import sys
 from pathlib import Path
@@ -29,6 +30,15 @@ def _install_scatter_pa_metadata_converter(torchair) -> None:
     even when the FX inputs are shaped float16 tensors. TorchAir's generic
     auto-functionalization path already applies this exact set_meta rule.
     """
+    del torchair
+    # TorchAir imports custom converters lazily from _get_converter().  Load
+    # the stock registration before installing the override so that the lazy
+    # import cannot replace this converter after compilation starts.
+    importlib.import_module(
+        "torchair._ge_concrete_graph.ge_converter.custom."
+        "npu_scatter_pa_kv_cache"
+    )
+
     from torchair._ge_concrete_graph import ge_apis as ge
     from torchair._ge_concrete_graph.fx2ge_converter import (
         register_fx_node_ge_converter,
