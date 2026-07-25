@@ -300,8 +300,12 @@ def _extract_custom_vertices_vectorized(
     points = np.asarray(polygon)
     if len(points) == 0:
         return []
-    previous = np.roll(points, 1, axis=0)
-    following = np.roll(points, -1, axis=0)
+    previous = np.empty_like(points)
+    previous[0] = points[-1]
+    previous[1:] = points[:-1]
+    following = np.empty_like(points)
+    following[:-1] = points[1:]
+    following[-1] = points[0]
     vector_1 = previous - points
     vector_2 = following - points
     cross_products = (
@@ -311,6 +315,13 @@ def _extract_custom_vertices_vectorized(
     selected = cross_products < 0
     if not np.any(selected):
         return []
+    if (
+        len(points) == 4
+        and np.all(selected)
+        and np.all(np.sum(vector_1 * vector_2, axis=1) == 0)
+        and abs(90.0 - sharp_angle_thresh) >= 1
+    ):
+        return [tuple(point) for point in points.astype(np.float64, copy=True)]
 
     output = points[selected].astype(np.float64, copy=True)
     selected_vector_1 = vector_1[selected]
