@@ -42,6 +42,9 @@ from paddleocr_vl.model.vision_prefill import (
     parse_vision_buckets,
 )
 from pipeline.layout_mask_guard import install_layout_mask_guard
+from pipeline.layout_runtime_optimization import (
+    install_layout_runtime_optimizations,
+)
 from pipeline.omnidocbench_defaults import (
     OMNIDOCBENCH_CACHE_LENGTH,
     OMNIDOCBENCH_DECODE_BATCH_SIZE,
@@ -543,6 +546,9 @@ def main() -> None:
     # The bridge calls the concrete pipeline's page helpers directly. Attribute
     # access on the auto-parallel wrapper only forwards reads.
     paddlex_pipeline = auto_parallel_pipeline._pipeline
+    layout_optimizations = install_layout_runtime_optimizations(
+        paddlex_pipeline
+    )
     timeline = TimelineRecorder(enabled=args.timeline)
 
     recognizer = ContinuousRecognizer(
@@ -604,6 +610,7 @@ def main() -> None:
             "vision_router_lookahead": args.vision_router_lookahead,
             "text_packing": args.text_packing,
             "text_pack_buckets": list(text_pack_buckets),
+            "layout_optimizations": layout_optimizations,
             "page_preprocessing_mode": manifest["page_preprocessing_mode"],
             "vision_route_plan": (
                 str(vision_route_plan_path)

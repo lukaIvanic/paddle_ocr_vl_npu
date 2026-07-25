@@ -25,6 +25,9 @@ sys.path.insert(0, str(EXPERIMENT_ROOT))
 
 from paddleocr_vl.serving.types import RecognitionRequest
 from pipeline.layout_mask_guard import install_layout_mask_guard
+from pipeline.layout_runtime_optimization import (
+    install_layout_runtime_optimizations,
+)
 from pipeline.omnidocbench_defaults import (
     OMNIDOCBENCH_DECODE_BATCH_SIZE,
     OMNIDOCBENCH_MAX_NEW_TOKENS,
@@ -349,6 +352,9 @@ def main(argv: Sequence[str] | None = None) -> None:
     auto_parallel = official_pipeline.paddlex_pipeline
     if auto_parallel.multi_device_inference:
         raise ValueError("layout lab requires one selected NPU")
+    layout_optimizations = install_layout_runtime_optimizations(
+        auto_parallel._pipeline
+    )
     setup_s = time.perf_counter() - setup_started
 
     timeline = TimelineRecorder(enabled=args.timeline)
@@ -442,6 +448,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "paddleocr_source": str(paddleocr_source),
             "device": "npu:0",
             "jit_compile": False,
+            "layout_optimizations": layout_optimizations,
             "image_reader": args.image_reader,
             "preprocessor_min_pixels": args.preprocessor_min_pixels,
             "max_new_tokens_passthrough": args.max_new_tokens,
