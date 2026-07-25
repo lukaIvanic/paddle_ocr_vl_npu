@@ -268,8 +268,12 @@ class MultiQueryPagedFIAStage(nn.Module):
             ).view(self.batch_size, self.query_bucket)
             + self.dummy_slot_base
         )
+        real_query_int = real_query_mask.to(torch.int64)
         return (
-            torch.where(real_query_mask, real_slots, dummy_slots),
+            (
+                real_slots * real_query_int
+                + dummy_slots * (1 - real_query_int)
+            ),
             real_query_mask,
         )
 
@@ -292,15 +296,16 @@ class MultiQueryPagedFIAStage(nn.Module):
         # Avoid a fully masked softmax row for padded query slots. Their
         # outputs are discarded, and their KV writes target scratch pages.
         dummy_allowed = kv_positions == 0
-        allowed = torch.where(
-            real_query_mask.view(
-                self.batch_size,
-                1,
-                self.query_bucket,
-                1,
-            ),
-            useful_allowed,
-            dummy_allowed,
+        expanded_real_query_mask = real_query_mask.view(
+            self.batch_size,
+            1,
+            self.query_bucket,
+            1,
+        )
+        allowed = (
+            useful_allowed & expanded_real_query_mask
+        ) | (
+            dummy_allowed & ~expanded_real_query_mask
         )
         return ~allowed
 
