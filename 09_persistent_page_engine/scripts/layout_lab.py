@@ -202,12 +202,17 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--layout-backend",
         choices=("eager", "npugraph"),
-        default="eager",
+        default="npugraph",
+        help="Layout model execution backend (default: exact static NPU graph).",
     )
     parser.add_argument(
         "--layout-polygons",
         choices=("mask", "rect"),
         default="mask",
+        help=(
+            "Use exact mask-derived crop geometry, or the faster non-exact "
+            "box-only research path."
+        ),
     )
     args = parser.parse_args(argv)
     if args.offset < 0 or args.limit <= 0:

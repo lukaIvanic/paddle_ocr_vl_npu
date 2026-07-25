@@ -561,7 +561,11 @@ def install_layout_runtime_optimizations(
     backend: str = "eager",
     polygon_mode: str = "mask",
 ) -> dict[str, Any]:
-    """Install output-preserving optimizations on the concrete PaddleX pipeline."""
+    """Install layout optimizations on the concrete PaddleX pipeline.
+
+    ``polygon_mode="mask"`` preserves the installed PaddleX crop geometry.
+    ``polygon_mode="rect"`` is a faster, deliberately non-exact lab mode.
+    """
 
     predictor = getattr(paddlex_pipeline, "layout_det_model", None)
     required = (

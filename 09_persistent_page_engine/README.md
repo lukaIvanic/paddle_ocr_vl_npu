@@ -104,6 +104,9 @@ per-page collectors restore reading order and can emit independently.
 
 - Layout is a real `PP-DocLayoutV3` model call through the official
   Transformers implementation and safetensors, not GT or cached boxes.
+- Its fixed-shape, batch-one NPU forward is replayed through a captured NPU
+  graph. Preprocessing, thresholding, mask-derived crop geometry, and learned
+  reading order remain outside the graph and preserve the reference requests.
 - Transformers' PP-DocLayoutV3 postprocessor supplies thresholding, polygons,
   and learned reading order.
 - Prompt routing follows the official PaddleX PaddleOCR-VL pipeline: table,
@@ -489,6 +492,12 @@ prompt, pixel profile, crop shape, and an exact hash of the crop pixels. Use
   --limit 32 \
   --output-dir tmp/09_persistent_page_engine/layout_lab_32p
 ```
+
+The lab defaults to the same output-exact `npugraph` / `mask` route as the
+production runner. `--layout-backend eager` is the uncaptured control.
+`--layout-polygons rect` skips final mask production and uses detector
+rectangles directly; it is a faster, deliberately non-exact research lane and
+is not the production default.
 
 ## Blue Zone run
 

@@ -547,7 +547,9 @@ def main() -> None:
     # access on the auto-parallel wrapper only forwards reads.
     paddlex_pipeline = auto_parallel_pipeline._pipeline
     layout_optimizations = install_layout_runtime_optimizations(
-        paddlex_pipeline
+        paddlex_pipeline,
+        backend="npugraph",
+        polygon_mode="mask",
     )
     timeline = TimelineRecorder(enabled=args.timeline)
 
