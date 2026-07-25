@@ -8,7 +8,10 @@ to the fixed v1.6 configuration exercised by this project.
 
 from __future__ import annotations
 
+import os
 from copy import deepcopy
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
 from typing import Any
 
 import cv2
@@ -227,23 +230,31 @@ def _polygon_to_quad(polygon: Any) -> np.ndarray | None:
     return np.roll(quad, -top_left, axis=0)
 
 
-def _normalize_polygon(
+@dataclass(frozen=True)
+class _PreparedPolygonNormalization:
+    resolved: np.ndarray | None
+    rect: np.ndarray | None = None
+    polygon: np.ndarray | None = None
+    quad: np.ndarray | None = None
+    polygon_quad_iou: float = 0.0
+
+
+def _prepare_polygon_normalization(
     box: Any,
     polygon: Any,
-    previous_polygon: np.ndarray | None,
-) -> np.ndarray:
+) -> _PreparedPolygonNormalization:
     rect = _rect_from_box(box)
     if polygon is None:
-        return rect
+        return _PreparedPolygonNormalization(resolved=rect)
     polygon = np.asarray(polygon, dtype=np.float32)
     if polygon.ndim == 1:
         polygon = polygon.reshape(-1, 2)
     if len(polygon) < 4:
-        return rect
+        return _PreparedPolygonNormalization(resolved=rect)
 
     fast_rect = _axis_aligned_rect_fast_path(box, polygon)
     if fast_rect is not None:
-        return fast_rect
+        return _PreparedPolygonNormalization(resolved=fast_rect)
 
     quad = _polygon_to_quad(polygon)
     if quad is not None:
@@ -257,7 +268,7 @@ def _normalize_polygon(
         if rect_quad_iou is None:
             raise AssertionError("rectangles must be convex")
         if rect_quad_iou >= 0.95:
-            return rect
+            return _PreparedPolygonNormalization(resolved=rect)
         polygon_list = polygon.tolist()
         polygon_quad_iou = _convex_overlap_ratio(
             polygon_list,
@@ -271,27 +282,56 @@ def _normalize_polygon(
                 _valid_polygon_geometry(quad_list),
                 "union",
             )
-        previous_iou = 0.0
-        if previous_polygon is not None:
-            previous_iou = _convex_overlap_ratio(
-                previous_polygon,
-                rect,
+        return _PreparedPolygonNormalization(
+            resolved=None,
+            rect=rect,
+            polygon=polygon,
+            quad=quad,
+            polygon_quad_iou=polygon_quad_iou,
+        )
+    return _PreparedPolygonNormalization(resolved=polygon)
+
+
+def _resolve_polygon_normalization(
+    prepared: _PreparedPolygonNormalization,
+    previous_polygon: np.ndarray | None,
+) -> np.ndarray:
+    if prepared.resolved is not None:
+        return prepared.resolved
+    if (
+        prepared.rect is None
+        or prepared.polygon is None
+        or prepared.quad is None
+    ):
+        raise AssertionError("polygon normalization candidate is incomplete")
+
+    previous_iou = 0.0
+    if previous_polygon is not None:
+        previous_iou = _convex_overlap_ratio(
+            previous_polygon,
+            prepared.rect,
+            "small",
+        )
+        if previous_iou is None:
+            previous_iou = _geometry_overlap_ratio(
+                _valid_polygon_geometry(previous_polygon.tolist()),
+                _valid_polygon_geometry(prepared.rect.tolist()),
                 "small",
             )
-            if previous_iou is None:
-                rect_geometry = (
-                    rect_geometry
-                    if rect_geometry is not None
-                    else _valid_polygon_geometry(rect_list)
-                )
-                previous_iou = _geometry_overlap_ratio(
-                    _valid_polygon_geometry(previous_polygon.tolist()),
-                    rect_geometry,
-                    "small",
-                )
-        if polygon_quad_iou >= 0.8 and previous_iou < 0.01:
-            return quad
-    return polygon
+    if prepared.polygon_quad_iou >= 0.8 and previous_iou < 0.01:
+        return prepared.quad
+    return prepared.polygon
+
+
+def _normalize_polygon(
+    box: Any,
+    polygon: Any,
+    previous_polygon: np.ndarray | None,
+) -> np.ndarray:
+    return _resolve_polygon_normalization(
+        _prepare_polygon_normalization(box, polygon),
+        previous_polygon,
+    )
 
 
 def _pairwise_containment(boxes: np.ndarray) -> np.ndarray:
@@ -389,6 +429,10 @@ class LayoutPostprocessor:
     def __init__(self, labels: list[str], threshold: float = 0.3) -> None:
         self.labels = labels
         self.threshold = float(threshold)
+        self._polygon_executor = ThreadPoolExecutor(
+            max_workers=min(4, os.cpu_count() or 1),
+            thread_name_prefix="layout-polygon",
+        )
 
     def __call__(
         self,
@@ -482,12 +526,16 @@ class LayoutPostprocessor:
         boxes = boxes[sorted_indices, :6]
         polygons = [polygons[index] for index in sorted_indices]
 
+        prepared_normalizations = self._polygon_executor.map(
+            _prepare_polygon_normalization,
+            (box[2:6] for box in boxes),
+            polygons,
+        )
         normalized: list[np.ndarray] = []
-        for box, polygon in zip(boxes, polygons):
+        for prepared in prepared_normalizations:
             normalized.append(
-                _normalize_polygon(
-                    box[2:6],
-                    polygon,
+                _resolve_polygon_normalization(
+                    prepared,
                     normalized[-1] if normalized else None,
                 )
             )
