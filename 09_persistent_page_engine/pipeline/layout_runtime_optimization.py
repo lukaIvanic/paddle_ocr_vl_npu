@@ -7,6 +7,7 @@ from typing import Any
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 
 
 def _pairwise_containment(boxes: np.ndarray) -> np.ndarray:
@@ -198,6 +199,101 @@ def _process_with_tensor_inputs(
     }
 
 
+def _decoder_forward_final_heads_only(
+    decoder: Any,
+    inputs_embeds: torch.Tensor | None = None,
+    encoder_hidden_states: torch.Tensor | None = None,
+    encoder_attention_mask: torch.Tensor | None = None,
+    reference_points: torch.Tensor | None = None,
+    spatial_shapes: torch.Tensor | None = None,
+    spatial_shapes_list: Any = None,
+    level_start_index: torch.Tensor | None = None,
+    order_head: Any = None,
+    global_pointer: Any = None,
+    mask_query_head: Any = None,
+    norm: Any = None,
+    mask_feat: torch.Tensor | None = None,
+    **kwargs: Any,
+) -> Any:
+    """Run every decoder layer but materialize inference heads only once."""
+
+    from transformers.models.pp_doclayout_v3.modeling_pp_doclayout_v3 import (
+        PPDocLayoutV3DecoderOutput,
+        inverse_sigmoid,
+    )
+
+    if inputs_embeds is None or reference_points is None:
+        raise RuntimeError(
+            "PP-DocLayoutV3 inference requires query embeddings and "
+            "reference points"
+        )
+
+    hidden_states = inputs_embeds
+    reference_points = F.sigmoid(reference_points)
+
+    for index, decoder_layer in enumerate(decoder.layers):
+        reference_points_input = reference_points.unsqueeze(2)
+        object_queries_position_embeddings = decoder.query_pos_head(
+            reference_points
+        )
+        hidden_states = decoder_layer(
+            hidden_states,
+            object_queries_position_embeddings=(
+                object_queries_position_embeddings
+            ),
+            encoder_hidden_states=encoder_hidden_states,
+            reference_points=reference_points_input,
+            spatial_shapes=spatial_shapes,
+            spatial_shapes_list=spatial_shapes_list,
+            level_start_index=level_start_index,
+            encoder_attention_mask=encoder_attention_mask,
+            **kwargs,
+        )
+
+        if decoder.bbox_embed is not None:
+            predicted_corners = decoder.bbox_embed(hidden_states)
+            new_reference_points = F.sigmoid(
+                predicted_corners + inverse_sigmoid(reference_points)
+            )
+            reference_points = new_reference_points.detach()
+
+    out_query = norm(hidden_states)
+    mask_query_embed = mask_query_head(out_query)
+    batch_size, mask_dim, _ = mask_query_embed.shape
+    _, _, mask_height, mask_width = mask_feat.shape
+    out_mask = torch.bmm(
+        mask_query_embed,
+        mask_feat.flatten(start_dim=2),
+    ).reshape(batch_size, mask_dim, mask_height, mask_width)
+
+    logits = (
+        decoder.class_embed(out_query)
+        if decoder.class_embed is not None
+        else None
+    )
+    order_logits = None
+    if order_head is not None and global_pointer is not None:
+        valid_query = (
+            out_query[:, -decoder.num_queries :]
+            if decoder.num_queries is not None
+            else out_query
+        )
+        order_logits = global_pointer(order_head[index](valid_query))
+
+    return PPDocLayoutV3DecoderOutput(
+        last_hidden_state=hidden_states,
+        intermediate_hidden_states=hidden_states.unsqueeze(1),
+        intermediate_logits=(
+            logits.unsqueeze(1) if logits is not None else None
+        ),
+        intermediate_reference_points=reference_points.unsqueeze(1),
+        decoder_out_order_logits=(
+            order_logits.unsqueeze(1) if order_logits is not None else None
+        ),
+        decoder_out_masks=out_mask.unsqueeze(1),
+    )
+
+
 def install_layout_runtime_optimizations(paddlex_pipeline: Any) -> dict[str, Any]:
     """Install output-preserving optimizations on the concrete PaddleX pipeline."""
 
@@ -231,7 +327,28 @@ def install_layout_runtime_optimizations(paddlex_pipeline: Any) -> dict[str, Any
         module.nms = _vectorized_nms
         module.check_containment = _vectorized_check_containment
 
+    model = getattr(getattr(predictor, "infer", None), "model", None)
+    decoder = getattr(model, "decoder", None)
+    if decoder is None:
+        decoder = getattr(
+            getattr(getattr(model, "model", None), "decoder", None),
+            "decoder",
+            None,
+        )
+    if decoder is None:
+        decoder = getattr(
+            getattr(model, "model", None),
+            "decoder",
+            None,
+        )
+    if decoder is None or not hasattr(decoder, "layers"):
+        raise RuntimeError(
+            "unsupported PP-DocLayoutV3 model; decoder was not found"
+        )
+    decoder.forward = MethodType(_decoder_forward_final_heads_only, decoder)
+
     return {
         "direct_tensor_preprocessing": True,
+        "final_decoder_heads_only": True,
         "vectorized_geometry": True,
     }
