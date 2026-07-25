@@ -67,6 +67,7 @@ def _install_scatter_pa_metadata_converter(torchair) -> None:
         compress_lens: Tensor | None = None,
         compress_seq_offset: Tensor | None = None,
         seq_lens: Tensor | None = None,
+        cache_mode: str | None = "PA_NZ",
         meta_outputs: TensorSpec | None = None,
     ):
         del meta_outputs
@@ -92,6 +93,9 @@ def _install_scatter_pa_metadata_converter(torchair) -> None:
             strides=[1, 1],
             offsets=[0, 0],
         )
+        key_cache_out.node.attr["cache_mode"].s = (
+            cache_mode or "PA_NZ"
+        ).encode("utf-8")
         return (
             preserve_static_descriptor(key_cache_out, key_cache),
             preserve_static_descriptor(value_cache_out, value_cache),
@@ -111,6 +115,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         choices=(16, 32),
         default=16,
         help="PA_NZ hidden-dimension tile used by the cache view.",
+    )
+    parser.add_argument(
+        "--cache-mode",
+        choices=("PA_NZ", "Norm"),
+        default="PA_NZ",
+        help="ScatterPaKvCache layout mode; Norm is a graph-runtime control.",
     )
     parser.add_argument(
         "--acl-format",
@@ -167,6 +177,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 
 
 class InplaceUpdate(torch.nn.Module):
+    def __init__(self, cache_mode: str) -> None:
+        super().__init__()
+        self.cache_mode = cache_mode
+
     def forward(
         self,
         key: torch.Tensor,
@@ -181,12 +195,16 @@ class InplaceUpdate(torch.nn.Module):
             key_cache=key_cache,
             value_cache=value_cache,
             slot_mapping=slot_mapping,
-            cache_mode="PA_NZ",
+            cache_mode=self.cache_mode,
         )
         return key_cache, value_cache
 
 
 class FunctionalUpdate(torch.nn.Module):
+    def __init__(self, cache_mode: str) -> None:
+        super().__init__()
+        self.cache_mode = cache_mode
+
     def forward(
         self,
         key: torch.Tensor,
@@ -201,6 +219,7 @@ class FunctionalUpdate(torch.nn.Module):
             key_cache,
             value_cache,
             slot_mapping,
+            cache_mode=self.cache_mode,
         )
 
 
@@ -254,10 +273,15 @@ def _slot_error(
     slot: int,
     block_size: int,
     tile_size: int,
+    cache_mode: str,
 ) -> float:
     physical_block, offset = divmod(slot, block_size)
-    expected = update.reshape(-1, tile_size)
-    actual = cache[physical_block, :, offset, :]
+    if cache_mode == "PA_NZ":
+        expected = update.reshape(-1, tile_size)
+        actual = cache[physical_block, :, offset, :]
+    else:
+        expected = update.reshape(-1)
+        actual = cache[physical_block, offset, :]
     return float((actual.float() - expected.float()).abs().max().cpu())
 
 
@@ -271,6 +295,7 @@ def _run_steps(
     start_slot: int,
     block_size: int,
     tile_size: int,
+    cache_mode: str,
     device: torch.device,
 ) -> dict[str, object]:
     step_results: list[dict[str, object]] = []
@@ -301,6 +326,7 @@ def _run_steps(
                     slot=slot,
                     block_size=block_size,
                     tile_size=tile_size,
+                    cache_mode=cache_mode,
                 ),
                 "input_value_error": _slot_error(
                     value,
@@ -308,6 +334,7 @@ def _run_steps(
                     slot=slot,
                     block_size=block_size,
                     tile_size=tile_size,
+                    cache_mode=cache_mode,
                 ),
                 "output_key_error": _slot_error(
                     key,
@@ -315,6 +342,7 @@ def _run_steps(
                     slot=slot,
                     block_size=block_size,
                     tile_size=tile_size,
+                    cache_mode=cache_mode,
                 ),
                 "output_value_error": _slot_error(
                     value,
@@ -322,6 +350,7 @@ def _run_steps(
                     slot=slot,
                     block_size=block_size,
                     tile_size=tile_size,
+                    cache_mode=cache_mode,
                 ),
                 "input_output_alias": (
                     key_in.data_ptr() == key_out.data_ptr()
@@ -353,6 +382,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     device = torch.device("npu:0")
     torch.npu.set_compile_mode(jit_compile=False)
     if args.omniinfer_cache_allocation:
+        if args.cache_mode != "PA_NZ":
+            raise ValueError(
+                "--omniinfer-cache-allocation requires --cache-mode PA_NZ"
+            )
         torch.npu.config.allow_internal_format = True
     torch.manual_seed(7)
 
@@ -363,12 +396,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     hidden_size = num_kv_heads * head_dim
     if hidden_size % args.tile_size:
         raise ValueError("KV hidden size must be divisible by tile size")
-    shape = (
-        num_blocks,
-        hidden_size // args.tile_size,
-        block_size,
-        args.tile_size,
-    )
+    if args.cache_mode == "PA_NZ":
+        shape = (
+            num_blocks,
+            hidden_size // args.tile_size,
+            block_size,
+            args.tile_size,
+        )
+    else:
+        shape = (num_blocks, block_size, hidden_size)
     start_slot = 768
     keys = [
         torch.randn(
@@ -393,7 +429,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         omniinfer_allocation=args.omniinfer_cache_allocation,
     )
 
-    eager_stage = InplaceUpdate().eval()
+    eager_stage = InplaceUpdate(args.cache_mode).eval()
     eager = None
     if not args.skip_eager:
         eager = _run_steps(
@@ -405,6 +441,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             start_slot=start_slot,
             block_size=block_size,
             tile_size=args.tile_size,
+            cache_mode=args.cache_mode,
             device=device,
         )
 
@@ -420,9 +457,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     backend = torchair.get_npu_backend(compiler_config=compiler_config)
     torch._dynamo.reset()
     compiled_module = (
-        InplaceUpdate()
+        InplaceUpdate(args.cache_mode)
         if args.compiled_call == "inplace"
-        else FunctionalUpdate()
+        else FunctionalUpdate(args.cache_mode)
     ).eval()
     compiled_stage = torch.compile(
         compiled_module.forward,
@@ -439,6 +476,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         start_slot=start_slot,
         block_size=block_size,
         tile_size=args.tile_size,
+        cache_mode=args.cache_mode,
         device=device,
     )
 
@@ -478,6 +516,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "schema_version": 1,
         "passed": passed,
         "cache_shape": list(shape),
+        "cache_mode": args.cache_mode,
         "acl_format_requested": args.acl_format,
         "omniinfer_cache_allocation": args.omniinfer_cache_allocation,
         "tile_size": args.tile_size,
