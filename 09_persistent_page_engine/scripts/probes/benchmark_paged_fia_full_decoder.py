@@ -136,6 +136,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--warmup", type=int, default=3)
     parser.add_argument("--repeats", type=int, default=30)
+    parser.add_argument(
+        "--correctness-steps",
+        type=int,
+        default=1,
+        help=(
+            "Changing-position decode steps used to verify cache-state "
+            "propagation through the compiled graph."
+        ),
+    )
     parser.add_argument("--seed", type=int, default=7)
     args = parser.parse_args(argv)
     if args.batch_size <= 0:
@@ -154,8 +163,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "--attention-bucket-length must be positive and no larger than "
             "--cache-length"
         )
-    if args.warmup < 0 or args.repeats <= 0:
-        parser.error("--warmup must be non-negative and --repeats positive")
+    if (
+        args.warmup < 0
+        or args.repeats <= 0
+        or args.correctness_steps <= 0
+    ):
+        parser.error(
+            "--warmup must be non-negative; --repeats and "
+            "--correctness-steps must be positive"
+        )
     try:
         args.positions = tuple(
             int(value.strip())
@@ -192,6 +208,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     if max(args.positions) >= args.attention_bucket_length:
         parser.error(
             "all runtime positions must fit inside --attention-bucket-length"
+        )
+    multistep_start = (
+        max(args.batch_positions)
+        if args.batch_positions is not None
+        else args.positions[0]
+    )
+    if multistep_start + args.correctness_steps > args.attention_bucket_length:
+        parser.error(
+            "--correctness-steps would cross --attention-bucket-length"
         )
     return args
 
@@ -1031,6 +1056,114 @@ def _single_stream_incre_runtime(
     )
 
 
+def _run_multistep_correctness(
+    *,
+    config: PaddleOCRVLConfig,
+    incre_fn: Callable[..., torch.Tensor],
+    paged_fn: Callable[..., torch.Tensor],
+    batch_size: int,
+    cache_length: int,
+    block_size: int,
+    initial_positions: Sequence[int],
+    steps: int,
+    device: torch.device,
+    dtype: torch.dtype,
+    seed: int,
+) -> dict[str, Any]:
+    dense_cache, paged_cache = _allocate_matching_caches(
+        config.text_config,
+        batch_size=batch_size,
+        cache_length=cache_length,
+        block_size=block_size,
+        device=device,
+        dtype=dtype,
+        seed=seed,
+    )
+    dense_input = (
+        torch.arange(batch_size, device=device, dtype=torch.int64)
+        .add_(17)
+        .view(batch_size, 1)
+    )
+    paged_input = dense_input.clone()
+    dense_positions = torch.tensor(
+        initial_positions,
+        device=device,
+        dtype=torch.int64,
+    )
+    paged_positions = dense_positions.clone()
+    dense_rope = torch.zeros(
+        (batch_size, 1),
+        device=device,
+        dtype=torch.int64,
+    )
+    paged_rope = dense_rope.clone()
+    rows = []
+    passed = True
+    for step in range(steps):
+        dense_logits = incre_fn(
+            dense_input,
+            dense_positions,
+            dense_rope,
+            *dense_cache.flat_tensors(),
+        )
+        paged_logits = paged_fn(
+            paged_input,
+            paged_positions,
+            paged_rope,
+            paged_cache.block_table,
+            *paged_cache.flat_tensors(),
+        )
+        synchronize(device)
+        dense_tokens = torch.argmax(
+            dense_logits[:, -1, :].float(),
+            dim=-1,
+            keepdim=True,
+        )
+        paged_tokens = torch.argmax(
+            paged_logits[:, -1, :].float(),
+            dim=-1,
+            keepdim=True,
+        )
+        logits_delta = _delta_stats(paged_logits, dense_logits)
+        cache_delta = _cache_delta_stats(
+            _dense_cache_written_values(dense_cache, dense_positions),
+            _page_cache_written_values(paged_cache, paged_positions),
+        )
+        argmax_matches = int((dense_tokens == paged_tokens).sum().cpu())
+        step_passed = (
+            argmax_matches == batch_size
+            and cache_delta["mean_abs"] < 1e-3
+        )
+        passed = passed and step_passed
+        rows.append(
+            {
+                "step": step,
+                "positions": [
+                    int(position)
+                    for position in dense_positions.cpu().tolist()
+                ],
+                "argmax_matches": argmax_matches,
+                "argmax_total": batch_size,
+                "logits": logits_delta,
+                "written_kv": {
+                    "max_abs": cache_delta["max_abs"],
+                    "mean_abs": cache_delta["mean_abs"],
+                },
+                "passed": step_passed,
+            }
+        )
+        dense_input.copy_(dense_tokens)
+        paged_input.copy_(paged_tokens)
+        dense_positions.add_(1)
+        paged_positions.add_(1)
+    return {
+        "passed": passed,
+        "steps": steps,
+        "initial_positions": list(initial_positions),
+        "rows": rows,
+    }
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     if not torch.npu.is_available():
@@ -1151,6 +1284,34 @@ def main(argv: Sequence[str] | None = None) -> int:
         time.perf_counter() - paged_first_call_started
     )
     setup_s = time.perf_counter() - setup_started
+    multistep_initial_positions = (
+        args.batch_positions
+        if args.batch_positions is not None
+        else (args.positions[0],) * args.batch_size
+    )
+    if args.paged_cache_update == "scatter_pa":
+        multistep_correctness = {
+            "passed": True,
+            "skipped": True,
+            "reason": (
+                "functional scatter_pa returns explicit cache state; this "
+                "probe currently validates in-place cache writers"
+            ),
+        }
+    else:
+        multistep_correctness = _run_multistep_correctness(
+            config=config,
+            incre_fn=incre_runtime.fn,
+            paged_fn=paged_fn,
+            batch_size=args.batch_size,
+            cache_length=args.cache_length,
+            block_size=args.block_size,
+            initial_positions=multistep_initial_positions,
+            steps=args.correctness_steps,
+            device=device,
+            dtype=dtype,
+            seed=args.seed + 50_000,
+        )
 
     rows = []
     for position in args.positions:
@@ -1315,20 +1476,23 @@ def main(argv: Sequence[str] | None = None) -> int:
     result = {
         "schema_version": 1,
         "kind": "random_full_decoder_paged_fia_benchmark",
-        "passed": all(
-            row["correctness"]["first_layer_written_kv"]["key"][
-                "max_abs"
-            ]
-            == 0.0
-            and row["correctness"]["first_layer_written_kv"]["value"][
-                "max_abs"
-            ]
-            == 0.0
-            and row["correctness"]["input_page_pool_change"]["max_abs"]
-            > 0.0
-            and row["correctness"]["argmax_matches"]
-            == row["correctness"]["argmax_total"]
-            for row in rows
+        "passed": (
+            multistep_correctness["passed"]
+            and all(
+                row["correctness"]["first_layer_written_kv"]["key"][
+                    "max_abs"
+                ]
+                == 0.0
+                and row["correctness"]["first_layer_written_kv"]["value"][
+                    "max_abs"
+                ]
+                == 0.0
+                and row["correctness"]["input_page_pool_change"]["max_abs"]
+                > 0.0
+                and row["correctness"]["argmax_matches"]
+                == row["correctness"]["argmax_total"]
+                for row in rows
+            )
         ),
         "configuration": {
             "model_config": str(args.model / "config.json"),
@@ -1370,6 +1534,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             ),
             "warmup": args.warmup,
             "repeats": args.repeats,
+            "correctness_steps": args.correctness_steps,
             "dtype": str(dtype),
             "optimization": OPTIMIZATION,
             "full_step": (
@@ -1414,6 +1579,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             ],
         },
         "rows": rows,
+        "multistep_correctness": multistep_correctness,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + "\n")
