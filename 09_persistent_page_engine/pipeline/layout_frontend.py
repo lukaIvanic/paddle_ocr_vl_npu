@@ -57,6 +57,16 @@ class PreparedLayoutPage:
     statistics: dict[str, Any]
 
 
+@dataclass(frozen=True)
+class DecodedLayoutPage:
+    ordinal: int
+    image_path: Path
+    image: np.ndarray
+    decode_timing: dict[str, float | int]
+    page_started_s: float
+    page_started_ns: int
+
+
 def _load_layout_labels(model_dir: Path) -> list[str]:
     metadata_path = model_dir / "inference.yml"
     if not metadata_path.is_file():
@@ -388,6 +398,37 @@ class OwnedLayoutFrontend:
         )
         return boxes, timing
 
+    def decode_page(
+        self,
+        image_path: Path,
+        ordinal: int,
+    ) -> DecodedLayoutPage:
+        path = image_path.expanduser().resolve()
+        page_started_s = time.perf_counter()
+        page_started_ns = time.perf_counter_ns()
+        decode_started_ns = time.perf_counter_ns()
+        image, decode = _decode_rgb(path)
+        self._span(
+            "Page input",
+            "Owned page read and decode",
+            decode_started_ns,
+            flow_id=f"page:{ordinal}",
+            event_type="io",
+            args={
+                "bytes": decode["compressed_bytes"],
+                "width": image.shape[1],
+                "height": image.shape[0],
+            },
+        )
+        return DecodedLayoutPage(
+            ordinal=ordinal,
+            image_path=path,
+            image=image,
+            decode_timing=decode,
+            page_started_s=page_started_s,
+            page_started_ns=page_started_ns,
+        )
+
     def prepare_page(
         self,
         image_path: Path,
@@ -396,25 +437,24 @@ class OwnedLayoutFrontend:
         min_pixels: int | None = None,
         max_pixels: int = 1_003_520,
     ) -> PreparedLayoutPage:
-        path = image_path.expanduser().resolve()
-        flow_id = f"page:{ordinal}"
-        page_started = time.perf_counter()
-        page_started_ns = time.perf_counter_ns()
-
-        decode_started_ns = time.perf_counter_ns()
-        image, decode = _decode_rgb(path)
-        self._span(
-            "Page input",
-            "Owned page read and decode",
-            decode_started_ns,
-            flow_id=flow_id,
-            event_type="io",
-            args={
-                "bytes": decode["compressed_bytes"],
-                "width": image.shape[1],
-                "height": image.shape[0],
-            },
+        return self.prepare_decoded_page(
+            self.decode_page(image_path, ordinal),
+            min_pixels=min_pixels,
+            max_pixels=max_pixels,
         )
+
+    def prepare_decoded_page(
+        self,
+        decoded: DecodedLayoutPage,
+        *,
+        min_pixels: int | None = None,
+        max_pixels: int = 1_003_520,
+    ) -> PreparedLayoutPage:
+        ordinal = decoded.ordinal
+        path = decoded.image_path
+        image = decoded.image
+        decode = decoded.decode_timing
+        flow_id = f"page:{ordinal}"
 
         boxes, detect_timing = self._detect(image, flow_id=flow_id)
         preparation_started = time.perf_counter()
@@ -516,12 +556,12 @@ class OwnedLayoutFrontend:
             "image_decode_s": float(decode["image_decode_s"]),
             **detect_timing,
             "page_preparation_s": preparation_s,
-            "page_total_s": time.perf_counter() - page_started,
+            "page_total_s": time.perf_counter() - decoded.page_started_s,
         }
         self._span(
             "Page input",
             "Owned page frontend",
-            page_started_ns,
+            decoded.page_started_ns,
             flow_id=flow_id,
             event_type="scope",
             args={"requests": len(requests)},

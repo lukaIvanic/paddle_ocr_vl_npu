@@ -139,26 +139,6 @@ def _request_record(
     }
 
 
-def _aggregate_mask_snapshots(
-    frontends: list[OwnedLayoutFrontend],
-) -> dict[str, Any]:
-    snapshots = [
-        frontend.mask_fast_path.snapshot()
-        for frontend in frontends
-    ]
-    totals = {
-        name: sum(snapshot[name] for snapshot in snapshots)
-        for name in snapshots[0]
-        if name != "coverage"
-    }
-    totals["coverage"] = (
-        totals["rectangle_fast_paths"] / totals["detections"]
-        if totals["detections"]
-        else 0.0
-    )
-    return totals
-
-
 def main(argv: Sequence[str] | None = None) -> None:
     args = parse_args(argv)
     dataset_json = args.dataset_json.expanduser().resolve()
@@ -193,70 +173,76 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     memory_before_setup = int(torch.npu.memory_allocated(device))
     setup_started = time.perf_counter()
-    frontends = [
-        OwnedLayoutFrontend(
-            model_dir,
-            device,
-            timeline=timeline,
-            graph_capture=True,
-            device_stage_timing=True,
-        )
-        for _ in range(args.workers)
-    ]
+    frontend = OwnedLayoutFrontend(
+        model_dir,
+        device,
+        timeline=timeline,
+        graph_capture=True,
+        device_stage_timing=True,
+    )
     setup_s = time.perf_counter() - setup_started
     memory_after_setup = int(torch.npu.memory_allocated(device))
 
-    def prepare_worker(
-        worker_index: int,
-    ) -> list[
-        tuple[
-            int,
-            list[RecognitionRequest],
-            dict[str, float],
-            dict[str, Any],
-        ]
+    def page_record(page: Any) -> tuple[
+        int,
+        list[RecognitionRequest],
+        dict[str, float],
+        dict[str, Any],
     ]:
-        frontend = frontends[worker_index]
-        prepared = []
-        for ordinal in range(
-            worker_index,
-            len(image_paths),
-            args.workers,
-        ):
-            page = frontend.prepare_page(
-                image_paths[ordinal],
-                ordinal,
-                min_pixels=args.preprocessor_min_pixels,
-            )
-            prepared.append(
-                (
-                    page.ordinal,
-                    page.requests,
-                    page.timing_s,
-                    page.statistics,
+        return (
+            page.ordinal,
+            page.requests,
+            page.timing_s,
+            page.statistics,
+        )
+
+    def prepare_serial() -> list[Any]:
+        return [
+            page_record(
+                frontend.prepare_page(
+                    path,
+                    ordinal,
+                    min_pixels=args.preprocessor_min_pixels,
                 )
             )
+            for ordinal, path in enumerate(image_paths)
+        ]
+
+    def prepare_with_decode_prefetch() -> list[Any]:
+        prepared = []
+        with ThreadPoolExecutor(
+            max_workers=1,
+            thread_name_prefix="layout-input",
+        ) as executor:
+            pending = executor.submit(
+                frontend.decode_page,
+                image_paths[0],
+                0,
+            )
+            for ordinal in range(len(image_paths)):
+                decoded = pending.result()
+                if ordinal + 1 < len(image_paths):
+                    pending = executor.submit(
+                        frontend.decode_page,
+                        image_paths[ordinal + 1],
+                        ordinal + 1,
+                    )
+                prepared.append(
+                    page_record(
+                        frontend.prepare_decoded_page(
+                            decoded,
+                            min_pixels=args.preprocessor_min_pixels,
+                        )
+                    )
+                )
         return prepared
 
     frontend_started = time.perf_counter()
-    if args.workers == 1:
-        prepared_pages = prepare_worker(0)
-    else:
-        with ThreadPoolExecutor(
-            max_workers=args.workers,
-            thread_name_prefix="layout-page",
-        ) as executor:
-            worker_pages = list(
-                executor.map(prepare_worker, range(args.workers))
-            )
-        prepared_pages = sorted(
-            (
-                page
-                for pages in worker_pages
-                for page in pages
-            ),
-            key=lambda page: page[0],
-        )
+    prepared_pages = (
+        prepare_serial()
+        if args.workers == 1
+        else prepare_with_decode_prefetch()
+    )
     frontend_wall_s = time.perf_counter() - frontend_started
 
     requests: list[RecognitionRequest] = []
@@ -275,7 +261,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             }
         )
 
-    mask_fast_path = _aggregate_mask_snapshots(frontends)
+    mask_fast_path = frontend.mask_fast_path.snapshot()
 
     records = [
         _request_record(request, index, image_paths)
@@ -322,10 +308,11 @@ def main(argv: Sequence[str] | None = None) -> None:
         "layout_model": str(model_dir),
         "layout_model_backend": "transformers_npugraph",
         "workers": args.workers,
+        "worker_strategy": (
+            "serial" if args.workers == 1 else "one_page_decode_prefetch"
+        ),
         "setup_s": setup_s,
-        "setup_by_worker_s": [
-            frontend.setup_s for frontend in frontends
-        ],
+        "setup_by_worker_s": [frontend.setup_s],
         "npu_memory_allocated_bytes": {
             "before_setup": memory_before_setup,
             "after_setup": memory_after_setup,
