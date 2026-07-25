@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import sys
 import time
 from dataclasses import dataclass
@@ -57,6 +58,9 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--correctness-steps", type=int, default=8)
     parser.add_argument("--warmup-steps", type=int, default=20)
     parser.add_argument("--timing-steps", type=int, default=300)
+    parser.add_argument("--breakdown-steps", type=int, default=0)
+    parser.add_argument("--profile-steps", type=int, default=0)
+    parser.add_argument("--profile-dir", type=Path, default=None)
     parser.add_argument("--seed", type=int, default=7)
     args = parser.parse_args(argv)
     if args.batch_size <= 0:
@@ -71,6 +75,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         args.correctness_steps
         + args.warmup_steps
         + args.timing_steps
+        + args.breakdown_steps
+        + args.profile_steps
     )
     if args.max_position + total_steps >= args.cache_length:
         parser.error("decode progression exceeds --cache-length")
@@ -78,8 +84,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         args.correctness_steps <= 0
         or args.warmup_steps < 0
         or args.timing_steps <= 0
+        or args.breakdown_steps < 0
+        or args.profile_steps < 0
     ):
-        parser.error("step counts must be positive except warmup may be zero")
+        parser.error(
+            "step counts must be positive except warmup, breakdown, and "
+            "profile may be zero"
+        )
+    if args.profile_steps > 0 and args.profile_dir is None:
+        parser.error("--profile-steps requires --profile-dir")
     return args
 
 
@@ -180,11 +193,20 @@ class _FIAGraphTaskRecorder:
         )
         return output
 
-    def update(self, actual_seq_kv_lengths: Sequence[int]) -> None:
+    def update(
+        self,
+        actual_seq_kv_lengths: Sequence[int],
+        *,
+        timing_events: tuple[torch_npu.npu.Event, torch_npu.npu.Event]
+        | None = None,
+    ) -> float:
         lengths = [int(length) for length in actual_seq_kv_lengths]
         if len(lengths) != self.batch_size:
             raise ValueError("one sequence length is required per batch row")
+        host_started = time.perf_counter()
         with torch_npu.npu.stream(self.update_stream):
+            if timing_events is not None:
+                timing_events[0].record(self.update_stream)
             for task in self.tasks:
                 torch.npu.graph_task_update_begin(
                     self.update_stream,
@@ -209,6 +231,9 @@ class _FIAGraphTaskRecorder:
                 )
                 torch.npu.graph_task_update_end(self.update_stream)
                 task.event.record(self.update_stream)
+            if timing_events is not None:
+                timing_events[1].record(self.update_stream)
+        return time.perf_counter() - host_started
 
 
 def _positions(args: argparse.Namespace, device: torch.device) -> torch.Tensor:
@@ -322,6 +347,172 @@ def _timed_paged(
         "raw_device_tokens_per_s": batch_size * steps / device_s,
         "raw_wall_tokens_per_s": batch_size * steps / wall_s,
         "graph_task_updates_per_step": len(recorder.tasks),
+    }
+
+
+def _distribution(values: list[float]) -> dict[str, float]:
+    ordered = sorted(values)
+    return {
+        "mean": sum(ordered) / len(ordered),
+        "min": ordered[0],
+        "p50": ordered[len(ordered) // 2],
+        "p90": ordered[min(len(ordered) - 1, int(len(ordered) * 0.9))],
+        "max": ordered[-1],
+    }
+
+
+def _profile_paged_phases(
+    graph: torch.npu.NPUGraph,
+    output: tuple[torch.Tensor, torch.Tensor],
+    recorder: _FIAGraphTaskRecorder,
+    state: tuple[torch.Tensor, torch.Tensor],
+    host_positions: list[int],
+    *,
+    steps: int,
+) -> dict[str, object]:
+    input_ids, positions = state
+    _logits, tokens = output
+    host_update_ms: list[float] = []
+    host_replay_ms: list[float] = []
+    host_state_ms: list[float] = []
+    event_rows = []
+    synchronize(input_ids.device)
+    wall_started = time.perf_counter()
+    for _ in range(steps):
+        update_events = (
+            torch_npu.npu.Event(enable_timing=True),
+            torch_npu.npu.Event(enable_timing=True),
+        )
+        replay_events = (
+            torch_npu.npu.Event(enable_timing=True),
+            torch_npu.npu.Event(enable_timing=True),
+        )
+        state_events = (
+            torch_npu.npu.Event(enable_timing=True),
+            torch_npu.npu.Event(enable_timing=True),
+        )
+        update_host_s = recorder.update(
+            [position + 1 for position in host_positions],
+            timing_events=update_events,
+        )
+        replay_events[0].record()
+        started = time.perf_counter()
+        graph.replay()
+        host_replay_ms.append((time.perf_counter() - started) * 1000.0)
+        replay_events[1].record()
+        state_events[0].record()
+        started = time.perf_counter()
+        input_ids.copy_(tokens)
+        positions.add_(1)
+        host_state_ms.append((time.perf_counter() - started) * 1000.0)
+        state_events[1].record()
+        host_update_ms.append(update_host_s * 1000.0)
+        for index in range(len(host_positions)):
+            host_positions[index] += 1
+        event_rows.append((update_events, replay_events, state_events))
+    synchronize(input_ids.device)
+    wall_s = time.perf_counter() - wall_started
+    update_device_ms = []
+    replay_device_ms = []
+    state_device_ms = []
+    for update_events, replay_events, state_events in event_rows:
+        update_device_ms.append(
+            float(update_events[0].elapsed_time(update_events[1]))
+        )
+        replay_device_ms.append(
+            float(replay_events[0].elapsed_time(replay_events[1]))
+        )
+        state_device_ms.append(
+            float(state_events[0].elapsed_time(state_events[1]))
+        )
+    return {
+        "steps": steps,
+        "wall_mean_ms": wall_s * 1000.0 / steps,
+        "host_submission_ms": {
+            "graph_task_update_18": _distribution(host_update_ms),
+            "graph_replay": _distribution(host_replay_ms),
+            "state_advance": _distribution(host_state_ms),
+        },
+        "device_stream_ms": {
+            "update_stream": _distribution(update_device_ms),
+            "replay_stream_including_event_waits": _distribution(
+                replay_device_ms
+            ),
+            "state_advance": _distribution(state_device_ms),
+        },
+        "interpretation": (
+            "update and replay stream spans can overlap; the replay span "
+            "includes any waits on the 18 per-layer update events"
+        ),
+    }
+
+
+def _capture_paged_profile(
+    graph: torch.npu.NPUGraph,
+    output: tuple[torch.Tensor, torch.Tensor],
+    recorder: _FIAGraphTaskRecorder,
+    state: tuple[torch.Tensor, torch.Tensor],
+    host_positions: list[int],
+    *,
+    steps: int,
+    profile_dir: Path,
+) -> dict[str, object]:
+    import torch_npu.profiler as npu_prof
+
+    input_ids, positions = state
+    _logits, tokens = output
+    profile_dir = profile_dir.expanduser().resolve()
+    shutil.rmtree(profile_dir, ignore_errors=True)
+    profile_dir.mkdir(parents=True, exist_ok=True)
+    schedule = npu_prof.schedule(wait=0, warmup=0, active=1, repeat=1)
+    experimental = npu_prof._ExperimentalConfig(
+        profiler_level=npu_prof.ProfilerLevel.Level1,
+        aic_metrics=npu_prof.AiCMetrics.PipeUtilization,
+        l2_cache=False,
+        export_type=npu_prof.ExportType.Text,
+        data_simplification=False,
+    )
+    synchronize(input_ids.device)
+    with npu_prof.profile(
+        activities=[
+            npu_prof.ProfilerActivity.CPU,
+            npu_prof.ProfilerActivity.NPU,
+        ],
+        schedule=schedule,
+        experimental_config=experimental,
+        on_trace_ready=npu_prof.tensorboard_trace_handler(
+            str(profile_dir),
+            analyse_flag=True,
+        ),
+        record_shapes=True,
+        profile_memory=False,
+        with_stack=True,
+        with_modules=False,
+        with_flops=False,
+    ) as profiler:
+        with torch.profiler.record_function("fia.multistep_iteration_group"):
+            for _ in range(steps):
+                with torch.profiler.record_function(
+                    "fia.graph_task_update_18"
+                ):
+                    recorder.update(
+                        [position + 1 for position in host_positions]
+                    )
+                with torch.profiler.record_function("fia.graph_replay"):
+                    graph.replay()
+                with torch.profiler.record_function("fia.state_advance"):
+                    input_ids.copy_(tokens)
+                    positions.add_(1)
+                for index in range(len(host_positions)):
+                    host_positions[index] += 1
+        synchronize(input_ids.device)
+        profiler.step()
+    synchronize(input_ids.device)
+    return {
+        "profile_dir": str(profile_dir),
+        "captured_steps": steps,
+        "profiler_level": "Level1",
+        "aic_metrics": "PipeUtilization",
     }
 
 
@@ -498,6 +689,31 @@ def main(argv: Sequence[str] | None = None) -> int:
         warmup=args.warmup_steps,
         steps=args.timing_steps,
     )
+    phase_breakdown = (
+        _profile_paged_phases(
+            graph,
+            graph_output,
+            recorder,
+            (paged_input, paged_positions),
+            host_positions,
+            steps=args.breakdown_steps,
+        )
+        if args.breakdown_steps > 0
+        else None
+    )
+    profiler = (
+        _capture_paged_profile(
+            graph,
+            graph_output,
+            recorder,
+            (paged_input, paged_positions),
+            host_positions,
+            steps=args.profile_steps,
+            profile_dir=args.profile_dir,
+        )
+        if args.profile_steps > 0
+        else None
+    )
     result = {
         "schema_version": 1,
         "kind": "npugraph_paged_fia_multistep_replay",
@@ -512,6 +728,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             "correctness_steps": args.correctness_steps,
             "warmup_steps": args.warmup_steps,
             "timing_steps": args.timing_steps,
+            "breakdown_steps": args.breakdown_steps,
+            "profile_steps": args.profile_steps,
             "model_weights": "random",
             "architecture": "full_paddle_text_decoder",
             "graph": "torch.npu.NPUGraph",
@@ -536,6 +754,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 / incre_timing["raw_wall_tokens_per_s"]
             ),
         },
+        "phase_breakdown": phase_breakdown,
+        "profiler": profiler,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + "\n")
