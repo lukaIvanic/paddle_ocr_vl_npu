@@ -184,29 +184,37 @@ def _axis_aligned_rect_fast_path(
     if points.size != 8:
         return None
     points = points.reshape(4, 2)
-    xs = np.unique(points[:, 0])
-    ys = np.unique(points[:, 1])
-    if len(xs) != 2 or len(ys) != 2:
+    x_low = float(points[:, 0].min())
+    x_high = float(points[:, 0].max())
+    y_low = float(points[:, 1].min())
+    y_high = float(points[:, 1].max())
+    if x_low == x_high or y_low == y_high:
         return None
-    expected = {
-        (float(xs[0]), float(ys[0])),
-        (float(xs[1]), float(ys[0])),
-        (float(xs[1]), float(ys[1])),
-        (float(xs[0]), float(ys[1])),
-    }
-    if {tuple(point) for point in points.tolist()} != expected:
+    x_is_low = points[:, 0] == x_low
+    x_is_high = points[:, 0] == x_high
+    y_is_low = points[:, 1] == y_low
+    y_is_high = points[:, 1] == y_high
+    if not (
+        np.all(x_is_low | x_is_high)
+        and np.all(y_is_low | y_is_high)
+    ):
+        return None
+    corner_codes = x_is_high.astype(np.uint8) | (
+        y_is_high.astype(np.uint8) << 1
+    )
+    if int((1 << corner_codes).sum()) != 15:
         return None
 
     x_min, y_min, x_max, y_max = np.asarray(box).astype(np.int32)
     if not (
-        xs[0] >= x_min
-        and ys[0] >= y_min
-        and xs[1] <= x_max
-        and ys[1] <= y_max
+        x_low >= x_min
+        and y_low >= y_min
+        and x_high <= x_max
+        and y_high <= y_max
     ):
         return None
     box_area = float((x_max - x_min) * (y_max - y_min))
-    polygon_area = float((xs[1] - xs[0]) * (ys[1] - ys[0]))
+    polygon_area = float((x_high - x_low) * (y_high - y_low))
     if box_area <= 0 or polygon_area / box_area < 0.95:
         return None
     return _rect_from_box(box)
@@ -836,10 +844,10 @@ def crop_formula_margin(image: np.ndarray) -> np.ndarray:
     if minimum == maximum:
         return image
     lookup = np.zeros(256, dtype=np.uint8)
-    for value in range(minimum, maximum + 1):
-        lookup[value] = int(
-            (value - minimum) / (maximum - minimum) * 255
-        )
+    values = np.arange(minimum, maximum + 1, dtype=np.float64)
+    lookup[minimum : maximum + 1] = (
+        (values - minimum) / (maximum - minimum) * 255
+    ).astype(np.uint8)
     normalized = cv2.LUT(gray, lookup)
     _, binary = cv2.threshold(
         normalized,
