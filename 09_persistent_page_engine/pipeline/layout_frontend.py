@@ -152,41 +152,9 @@ def _prompt_for_label(label: str) -> str:
 def _rgb_to_pil(image: np.ndarray) -> Image.Image:
     """Copy an RGB NumPy buffer into an independent RGB image."""
 
-    height, width = image.shape[:2]
-    if (
-        image.dtype == np.uint8
-        and image.ndim == 3
-        and image.shape[2] == 3
-        and image.strides[0] > 0
-        and image.strides[1:] == (3, 1)
-    ):
-        root = image
-        while isinstance(root.base, np.ndarray):
-            root = root.base
-        if root.dtype == np.uint8 and root.flags.c_contiguous:
-            offset = (
-                image.__array_interface__["data"][0]
-                - root.__array_interface__["data"][0]
-            )
-            required = (
-                (height - 1) * image.strides[0] + width * 3
-                if height and width
-                else 0
-            )
-            root_bytes = memoryview(root).cast("B")
-            if 0 <= offset and offset + required <= len(root_bytes):
-                return Image.frombytes(
-                    "RGB",
-                    (width, height),
-                    root_bytes[offset:],
-                    "raw",
-                    "RGB",
-                    image.strides[0],
-                    1,
-                )
-
     if not image.flags.c_contiguous:
         image = np.ascontiguousarray(image)
+    height, width = image.shape[:2]
     return Image.frombytes(
         "RGB",
         (width, height),
