@@ -835,20 +835,13 @@ def crop_formula_margin(image: np.ndarray) -> np.ndarray:
     maximum = int(gray.max())
     if minimum == maximum:
         return image
-    lookup = np.zeros(256, dtype=np.uint8)
-    values = np.arange(minimum, maximum + 1, dtype=np.float64)
-    lookup[minimum : maximum + 1] = (
-        (values - minimum) / (maximum - minimum) * 255
-    ).astype(np.uint8)
-    normalized = cv2.LUT(gray, lookup)
-    _, binary = cv2.threshold(
-        normalized,
-        200,
-        255,
-        cv2.THRESH_BINARY_INV,
+    cutoff = minimum + (
+        201 * (maximum - minimum) - 1
+    ) // 255
+    binary = cv2.inRange(
+        gray,
+        0,
+        cutoff,
     )
-    coordinates = cv2.findNonZero(binary)
-    if coordinates is None:
-        return image
-    x, y, width, height = cv2.boundingRect(coordinates)
+    x, y, width, height = cv2.boundingRect(binary)
     return image[y : y + height, x : x + width]
