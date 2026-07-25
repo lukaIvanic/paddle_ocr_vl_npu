@@ -40,6 +40,11 @@ def parse_args() -> argparse.Namespace:
         required=True,
     )
     parser.add_argument("--warmup-iters", type=int, default=2)
+    parser.add_argument(
+        "--allow-internal-format",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+    )
     return parser.parse_args()
 
 
@@ -65,6 +70,9 @@ def main() -> None:
     if not torch.npu.is_available():
         raise RuntimeError("layout detector profiling requires an NPU")
     torch.npu.set_compile_mode(jit_compile=False)
+    torch.npu.config.allow_internal_format = bool(
+        args.allow_internal_format
+    )
     device = torch.device("npu:0")
 
     image_path = args.image.expanduser().resolve()
@@ -125,6 +133,7 @@ def main() -> None:
         "image_size": [int(image_rgb.shape[1]), int(image_rgb.shape[0])],
         "input_shape": [int(value) for value in pixel_values.shape],
         "input_dtype": str(pixel_values.dtype),
+        "allow_internal_format": bool(args.allow_internal_format),
         "setup_s": setup_s,
         "decode_timing": decode_timing,
         "warmup_iters": args.warmup_iters,

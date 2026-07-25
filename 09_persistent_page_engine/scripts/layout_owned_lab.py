@@ -64,6 +64,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         action=argparse.BooleanOptionalAction,
         default=True,
     )
+    parser.add_argument(
+        "--allow-internal-format",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Lab-only torch-npu internal-format experiment.",
+    )
     args = parser.parse_args(argv)
     if args.offset < 0 or args.limit <= 0:
         parser.error("--offset must be non-negative and --limit positive")
@@ -157,6 +163,9 @@ def main(argv: Sequence[str] | None = None) -> None:
     if not torch.npu.is_available():
         raise RuntimeError("owned layout lab requires an NPU")
     torch.npu.set_compile_mode(jit_compile=False)
+    torch.npu.config.allow_internal_format = bool(
+        args.allow_internal_format
+    )
     device = torch.device("npu:0")
     timeline = TimelineRecorder(enabled=args.timeline)
     timeline.reset(
@@ -165,6 +174,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "pages": len(image_paths),
             "paddlex_imported": False,
             "ocr_requests_executed": 0,
+            "allow_internal_format": bool(args.allow_internal_format),
         }
     )
 
@@ -244,6 +254,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         "images": [path.name for path in image_paths],
         "layout_model": str(model_dir),
         "layout_model_backend": "transformers_npugraph",
+        "allow_internal_format": bool(args.allow_internal_format),
         "setup_s": setup_s,
         "frontend_wall_s": frontend_wall_s,
         "pages_per_s": len(image_paths) / frontend_wall_s,
