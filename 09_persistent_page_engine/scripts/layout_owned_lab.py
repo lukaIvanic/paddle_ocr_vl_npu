@@ -21,10 +21,7 @@ EXPERIMENT_ROOT = HERE.parent
 sys.path.insert(0, str(EXPERIMENT_ROOT))
 
 from paddleocr_vl.serving.types import RecognitionRequest
-from pipeline.layout_frontend import (
-    LAYOUT_CONV_WEIGHT_FORMATS,
-    OwnedLayoutFrontend,
-)
+from pipeline.layout_frontend import OwnedLayoutFrontend
 from pipeline.layout_mask_guard import install_layout_mask_guard
 from pipeline.omnidocbench_defaults import (
     OMNIDOCBENCH_PAGE_COUNT,
@@ -66,11 +63,6 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--timeline",
         action=argparse.BooleanOptionalAction,
         default=True,
-    )
-    parser.add_argument(
-        "--conv-weight-format",
-        choices=LAYOUT_CONV_WEIGHT_FORMATS,
-        default="native",
     )
     args = parser.parse_args(argv)
     if args.offset < 0 or args.limit <= 0:
@@ -173,7 +165,6 @@ def main(argv: Sequence[str] | None = None) -> None:
             "pages": len(image_paths),
             "paddlex_imported": False,
             "ocr_requests_executed": 0,
-            "conv_weight_format": args.conv_weight_format,
         }
     )
 
@@ -184,7 +175,6 @@ def main(argv: Sequence[str] | None = None) -> None:
         timeline=timeline,
         graph_capture=True,
         device_stage_timing=True,
-        conv_weight_format=args.conv_weight_format,
     )
     setup_s = time.perf_counter() - setup_started
 
@@ -254,10 +244,6 @@ def main(argv: Sequence[str] | None = None) -> None:
         "images": [path.name for path in image_paths],
         "layout_model": str(model_dir),
         "layout_model_backend": "transformers_npugraph",
-        "conv_weight_format": args.conv_weight_format,
-        "fractal_z_conv_weight_count": (
-            frontend.fractal_z_conv_weight_count
-        ),
         "setup_s": setup_s,
         "frontend_wall_s": frontend_wall_s,
         "pages_per_s": len(image_paths) / frontend_wall_s,
