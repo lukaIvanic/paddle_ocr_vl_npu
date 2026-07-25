@@ -434,6 +434,14 @@ class MultiQueryPagedFIAStage(nn.Module):
             position_embeddings,
             self.model.model.layers[0].self_attn.mrope_section,
         )
+        if self.optimization.rotary == "npu_apply":
+            # The shared decode helper only sees Q=1 in production today, so
+            # its [B,1,Q,D] and the BSND operator's required [B,Q,1,D]
+            # factors are accidentally indistinguishable there.
+            prepared_factors = (
+                prepared_factors[0].transpose(1, 2).contiguous(),
+                prepared_factors[1].transpose(1, 2).contiguous(),
+            )
 
         hidden_states = inputs_embeds
         residual: torch.Tensor | None = None
