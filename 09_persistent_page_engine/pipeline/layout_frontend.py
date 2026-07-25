@@ -41,6 +41,8 @@ from .layout_model_runtime import (
     _post_process_selected_masks_only,
 )
 
+LAYOUT_CONV_WEIGHT_FORMATS = ("native", "fractal_z")
+
 
 @dataclass(frozen=True)
 class PreparedLayoutPage:
@@ -107,6 +109,31 @@ def _normalization_divisor(processor: Any) -> torch.Tensor:
             "owned layout preprocessing requires fused zero-mean normalization"
         )
     return std_tensor.reshape(-1, 1, 1)
+
+
+def _cast_layout_conv_weights_fractal_z(model: torch.nn.Module) -> int:
+    """Store Conv2d weights once in the format used by Ascend convolutions."""
+
+    import torch_npu
+
+    converted = 0
+    torch.npu.config.allow_internal_format = True
+    try:
+        for module in model.modules():
+            if not isinstance(module, torch.nn.Conv2d):
+                continue
+            module.weight.data = torch_npu.npu_format_cast(
+                module.weight.data,
+                4,
+            )
+            if int(torch_npu.get_npu_format(module.weight)) != 4:
+                raise RuntimeError(
+                    "layout convolution weight did not become FRACTAL_Z"
+                )
+            converted += 1
+    finally:
+        torch.npu.config.allow_internal_format = False
+    return converted
 
 
 def _decode_rgb(path: Path) -> tuple[np.ndarray, dict[str, float | int]]:
@@ -178,6 +205,7 @@ class OwnedLayoutFrontend:
         timeline: TimelineRecorder | None = None,
         graph_capture: bool = True,
         device_stage_timing: bool = False,
+        conv_weight_format: str = "native",
     ) -> None:
         from transformers import AutoImageProcessor, AutoModelForObjectDetection
 
@@ -189,6 +217,12 @@ class OwnedLayoutFrontend:
         self.device = device
         self.timeline = timeline
         self.device_stage_timing = bool(device_stage_timing)
+        if conv_weight_format not in LAYOUT_CONV_WEIGHT_FORMATS:
+            raise ValueError(
+                "unsupported layout convolution weight format: "
+                f"{conv_weight_format!r}"
+            )
+        self.conv_weight_format = conv_weight_format
         self.labels = _load_layout_labels(self.model_dir)
 
         setup_started = time.perf_counter()
@@ -199,6 +233,11 @@ class OwnedLayoutFrontend:
         )
         self.model.eval().to(self.device)
         self.model_dtype = next(self.model.parameters()).dtype
+        self.fractal_z_conv_weight_count = (
+            _cast_layout_conv_weights_fractal_z(self.model)
+            if self.conv_weight_format == "fractal_z"
+            else 0
+        )
 
         decoder = _find_decoder(self.model)
         decoder.forward = MethodType(

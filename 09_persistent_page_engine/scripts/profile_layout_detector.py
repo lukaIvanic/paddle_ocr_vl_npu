@@ -16,7 +16,11 @@ HERE = Path(__file__).resolve().parent
 EXPERIMENT_ROOT = HERE.parent
 sys.path.insert(0, str(EXPERIMENT_ROOT))
 
-from pipeline.layout_frontend import OwnedLayoutFrontend, _decode_rgb
+from pipeline.layout_frontend import (
+    LAYOUT_CONV_WEIGHT_FORMATS,
+    OwnedLayoutFrontend,
+    _decode_rgb,
+)
 
 
 DEFAULT_IMAGE = Path(
@@ -41,9 +45,9 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--warmup-iters", type=int, default=2)
     parser.add_argument(
-        "--allow-internal-format",
-        action=argparse.BooleanOptionalAction,
-        default=False,
+        "--conv-weight-format",
+        choices=LAYOUT_CONV_WEIGHT_FORMATS,
+        default="native",
     )
     return parser.parse_args()
 
@@ -70,9 +74,6 @@ def main() -> None:
     if not torch.npu.is_available():
         raise RuntimeError("layout detector profiling requires an NPU")
     torch.npu.set_compile_mode(jit_compile=False)
-    torch.npu.config.allow_internal_format = bool(
-        args.allow_internal_format
-    )
     device = torch.device("npu:0")
 
     image_path = args.image.expanduser().resolve()
@@ -86,6 +87,7 @@ def main() -> None:
         model_dir,
         device,
         graph_capture=True,
+        conv_weight_format=args.conv_weight_format,
     )
     setup_s = time.perf_counter() - setup_started
     image_rgb, decode_timing = _decode_rgb(image_path)
@@ -133,7 +135,10 @@ def main() -> None:
         "image_size": [int(image_rgb.shape[1]), int(image_rgb.shape[0])],
         "input_shape": [int(value) for value in pixel_values.shape],
         "input_dtype": str(pixel_values.dtype),
-        "allow_internal_format": bool(args.allow_internal_format),
+        "conv_weight_format": args.conv_weight_format,
+        "fractal_z_conv_weight_count": (
+            frontend.fractal_z_conv_weight_count
+        ),
         "setup_s": setup_s,
         "decode_timing": decode_timing,
         "warmup_iters": args.warmup_iters,
