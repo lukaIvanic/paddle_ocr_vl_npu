@@ -291,6 +291,7 @@ def _paged_decode_attention(
     optimization: Any,
     native_fia: bool = False,
     fixed_actual_kv_lengths: tuple[int, ...] | None = None,
+    native_fia_runner: Callable[..., torch.Tensor] | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     query_states, key_states, value_states = _project_decode_qkv(
         attention,
@@ -361,7 +362,27 @@ def _paged_decode_attention(
         PA_NZ_LAST_DIM,
     )
     value_cache_fia = updated_value_cache.view_as(key_cache_fia)
-    if native_fia:
+    if native_fia_runner is not None:
+        if (
+            fixed_actual_kv_lengths is None
+            or len(fixed_actual_kv_lengths) != batch_size
+        ):
+            raise ValueError(
+                "native FIA graph-task capture requires one fixed KV length "
+                "for every batch row"
+            )
+        attention_output = native_fia_runner(
+            query=query_states.contiguous(),
+            key=key_cache_fia,
+            value=value_cache_fia,
+            block_table=block_table,
+            block_size=block_size,
+            actual_seq_kv_lengths=fixed_actual_kv_lengths,
+            num_query_heads=int(attention.num_heads),
+            num_key_value_heads=int(attention.num_key_value_heads),
+            softmax_scale=float(attention.scaling),
+        )
+    elif native_fia:
         if (
             fixed_actual_kv_lengths is None
             or len(fixed_actual_kv_lengths) != batch_size
@@ -429,6 +450,7 @@ class PagedFIATextDecodeStage(nn.Module):
         optimization: Any,
         native_fia: bool = False,
         fixed_actual_kv_lengths: Sequence[int] | None = None,
+        native_fia_runner: Callable[..., torch.Tensor] | None = None,
     ):
         super().__init__()
         self.model = model
@@ -437,6 +459,7 @@ class PagedFIATextDecodeStage(nn.Module):
         self.num_layers = int(model.config.text_config.num_hidden_layers)
         self.optimization = optimization
         self.native_fia = native_fia
+        self.native_fia_runner = native_fia_runner
         self.fixed_actual_kv_lengths = (
             tuple(int(length) for length in fixed_actual_kv_lengths)
             if fixed_actual_kv_lengths is not None
@@ -533,6 +556,7 @@ class PagedFIATextDecodeStage(nn.Module):
                 self.optimization,
                 self.native_fia,
                 self.fixed_actual_kv_lengths,
+                self.native_fia_runner,
             )
             if self.cache_update_mode == "scatter_pa":
                 updated_key_caches.append(updated_key_cache)
