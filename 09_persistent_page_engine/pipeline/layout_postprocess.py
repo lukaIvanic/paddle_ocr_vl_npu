@@ -212,32 +212,6 @@ def _axis_aligned_rect_fast_path(
     return _rect_from_box(box)
 
 
-def _dense_polygon_rect_fast_path(
-    box: Any,
-    polygon: np.ndarray,
-) -> np.ndarray | None:
-    """Prove the later min-area rectangle IoU gate will choose the box."""
-
-    points = np.asarray(polygon, dtype=np.float32).reshape(-1, 2)
-    if len(points) < 4 or not cv2.isContourConvex(points):
-        return None
-    x_min, y_min, x_max, y_max = np.asarray(box).astype(np.int32)
-    if (
-        np.any(points[:, 0] < x_min)
-        or np.any(points[:, 0] > x_max)
-        or np.any(points[:, 1] < y_min)
-        or np.any(points[:, 1] > y_max)
-    ):
-        return None
-    rect_area = float((x_max - x_min) * (y_max - y_min))
-    if rect_area <= 0:
-        return None
-    polygon_area = abs(float(cv2.contourArea(points)))
-    if polygon_area / rect_area < 0.975:
-        return None
-    return _rect_from_box(box)
-
-
 def _polygon_to_quad(polygon: Any) -> np.ndarray | None:
     if polygon is None or len(polygon) < 3:
         return None
@@ -267,9 +241,6 @@ def _normalize_polygon(
         return rect
 
     fast_rect = _axis_aligned_rect_fast_path(box, polygon)
-    if fast_rect is not None:
-        return fast_rect
-    fast_rect = _dense_polygon_rect_fast_path(box, polygon)
     if fast_rect is not None:
         return fast_rect
 
