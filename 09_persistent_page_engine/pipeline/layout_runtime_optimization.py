@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from types import MethodType
 from typing import Any
 
@@ -413,156 +412,6 @@ def _decoder_forward_final_heads_only(
     )
 
 
-def _generate_anchors_compile_friendly(
-    layout_model: Any,
-    spatial_shapes: Any = None,
-    grid_size: float = 0.05,
-    device: Any = "cpu",
-    dtype: torch.dtype = torch.float32,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    """Equivalent fixed-anchor generation without unsupported aten.all."""
-
-    if spatial_shapes is None:
-        spatial_shapes = [
-            [
-                int(layout_model.config.anchor_image_size[0] / stride),
-                int(layout_model.config.anchor_image_size[1] / stride),
-            ]
-            for stride in layout_model.config.feat_strides
-        ]
-
-    per_level = []
-    for level, (height, width) in enumerate(spatial_shapes):
-        grid_y, grid_x = torch.meshgrid(
-            torch.arange(end=height, device=device).to(dtype),
-            torch.arange(end=width, device=device).to(dtype),
-            indexing="ij",
-        )
-        grid_xy = torch.stack([grid_x, grid_y], -1).unsqueeze(0) + 0.5
-        grid_xy[..., 0] /= width
-        grid_xy[..., 1] /= height
-        width_height = (
-            torch.ones_like(grid_xy) * grid_size * (2.0**level)
-        )
-        per_level.append(
-            torch.cat([grid_xy, width_height], -1).reshape(
-                -1,
-                height * width,
-                4,
-            )
-        )
-
-    anchors = torch.cat(per_level, 1)
-    valid_coordinates = (anchors > 1e-2) & (anchors < 1 - 1e-2)
-    valid_mask = (
-        valid_coordinates.to(torch.int8).sum(dim=-1, keepdim=True) == 4
-    )
-    anchors = torch.log(anchors / (1 - anchors))
-    anchors = torch.where(
-        valid_mask,
-        anchors,
-        torch.tensor(
-            torch.finfo(dtype).max,
-            dtype=dtype,
-            device=device,
-        ),
-    )
-    return anchors, valid_mask
-
-
-def _mask_to_box_compile_friendly(
-    mask: torch.Tensor,
-    dtype: torch.dtype,
-) -> torch.Tensor:
-    """Equivalent mask bounds using TorchAir-supported top-k reductions."""
-
-    mask = mask.bool()
-    height, width = mask.shape[-2:]
-    y_coords, x_coords = torch.meshgrid(
-        torch.arange(height, device=mask.device),
-        torch.arange(width, device=mask.device),
-        indexing="ij",
-    )
-    x_coords = x_coords.to(dtype)
-    y_coords = y_coords.to(dtype)
-    flattened_mask = mask.flatten(start_dim=-2)
-
-    x_coords_masked = x_coords * mask
-    flattened_x = x_coords_masked.flatten(start_dim=-2)
-    x_max = torch.topk(
-        flattened_x,
-        k=1,
-        dim=-1,
-        largest=True,
-    ).values.squeeze(-1) + 1
-    x_min_candidates = torch.where(
-        mask,
-        x_coords_masked,
-        torch.tensor(
-            torch.finfo(dtype).max,
-            dtype=dtype,
-            device=mask.device,
-        ),
-    ).flatten(start_dim=-2)
-    x_min = torch.topk(
-        x_min_candidates,
-        k=1,
-        dim=-1,
-        largest=False,
-    ).values.squeeze(-1)
-
-    y_coords_masked = y_coords * mask
-    flattened_y = y_coords_masked.flatten(start_dim=-2)
-    y_max = torch.topk(
-        flattened_y,
-        k=1,
-        dim=-1,
-        largest=True,
-    ).values.squeeze(-1) + 1
-    y_min_candidates = torch.where(
-        mask,
-        y_coords_masked,
-        torch.tensor(
-            torch.finfo(dtype).max,
-            dtype=dtype,
-            device=mask.device,
-        ),
-    ).flatten(start_dim=-2)
-    y_min = torch.topk(
-        y_min_candidates,
-        k=1,
-        dim=-1,
-        largest=False,
-    ).values.squeeze(-1)
-
-    unnormalized_bbox = torch.stack(
-        [x_min, y_min, x_max, y_max],
-        dim=-1,
-    )
-    is_mask_non_empty = (
-        flattened_mask.to(torch.int8).sum(dim=-1, keepdim=True) > 0
-    )
-    unnormalized_bbox = unnormalized_bbox * is_mask_non_empty
-    norm_tensor = torch.tensor(
-        [width, height, width, height],
-        device=mask.device,
-        dtype=dtype,
-    )
-    normalized_bbox = unnormalized_bbox / norm_tensor
-    x_min_norm, y_min_norm, x_max_norm, y_max_norm = normalized_bbox.unbind(
-        dim=-1
-    )
-    return torch.stack(
-        [
-            (x_min_norm + x_max_norm) / 2,
-            (y_min_norm + y_max_norm) / 2,
-            x_max_norm - x_min_norm,
-            y_max_norm - y_min_norm,
-        ],
-        dim=-1,
-    )
-
-
 def _mask_to_box_capture_friendly(
     mask: torch.Tensor,
     dtype: torch.dtype,
@@ -711,7 +560,6 @@ def install_layout_runtime_optimizations(
     *,
     backend: str = "eager",
     polygon_mode: str = "mask",
-    torchair_cache_dir: Path | None = None,
 ) -> dict[str, Any]:
     """Install output-preserving optimizations on the concrete PaddleX pipeline."""
 
@@ -775,7 +623,6 @@ def install_layout_runtime_optimizations(
     decoder.forward = MethodType(_decoder_forward_final_heads_only, decoder)
     decoder._layout_emit_masks = polygon_mode == "mask"
 
-    compiled = False
     graph_capture = False
     if backend == "npugraph":
         from transformers.models.pp_doclayout_v3 import (
@@ -787,46 +634,9 @@ def install_layout_runtime_optimizations(
         )
         model.forward = _NpuGraphCoreForward(model.forward)
         graph_capture = True
-    elif backend == "torchair":
-        if torchair_cache_dir is None:
-            raise ValueError(
-                "TorchAir layout execution requires a cache directory"
-            )
-        from paddleocr_vl.model.compile_utils import import_torchair
-        from transformers.models.pp_doclayout_v3 import (
-            modeling_pp_doclayout_v3,
-        )
-
-        torchair, CompilerConfig = import_torchair()
-        torchair_cache_dir.mkdir(parents=True, exist_ok=True)
-        modeling_pp_doclayout_v3.torch_compilable_check = (
-            lambda *args, **kwargs: None
-        )
-        modeling_pp_doclayout_v3.mask_to_box_coordinate = (
-            _mask_to_box_compile_friendly
-        )
-        for module in model.modules():
-            config = getattr(module, "config", None)
-            if config is not None and hasattr(
-                config,
-                "_attn_implementation",
-            ):
-                config._attn_implementation = "eager"
-        model.generate_anchors = MethodType(
-            _generate_anchors_compile_friendly,
-            model,
-        )
-        model.forward = torchair.inference.cache_compile(
-            model.forward,
-            config=CompilerConfig(),
-            dynamic=False,
-            cache_dir=str(torchair_cache_dir),
-            ge_cache=True,
-        )
-        compiled = True
     elif backend != "eager":
         raise ValueError(
-            "layout backend must be 'eager', 'npugraph', or 'torchair', "
+            "layout backend must be 'eager' or 'npugraph', "
             f"got {backend!r}"
         )
 
@@ -836,16 +646,6 @@ def install_layout_runtime_optimizations(
         "final_decoder_heads_only": True,
         "polygon_mode": polygon_mode,
         "model_backend": backend,
-        "model_compiled": compiled,
         "model_graph_capture": graph_capture,
-        "transformers_runtime_shape_checks": (
-            "outside_static_graph" if compiled else "enabled"
-        ),
-        "transformer_attention": (
-            "explicit_eager" if compiled else "installed_default"
-        ),
-        "torchair_cache_dir": (
-            str(torchair_cache_dir) if torchair_cache_dir is not None else None
-        ),
         "vectorized_geometry": True,
     }
