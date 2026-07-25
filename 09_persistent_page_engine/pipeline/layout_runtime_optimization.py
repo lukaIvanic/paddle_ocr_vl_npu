@@ -12,6 +12,134 @@ import torch
 import torch.nn.functional as F
 
 
+class _CropRectangleFastPath:
+    """Skip polygon masking when the mask is provably the whole crop."""
+
+    def __init__(self, original: Any) -> None:
+        self.original = original
+        self._lock = threading.Lock()
+        self._calls = 0
+        self._boxes = 0
+        self._polygon_boxes = 0
+        self._rectangle_fast_paths = 0
+        self._fallbacks = 0
+        self._wall_ns = 0
+        self._rectangle_ns = 0
+        self._fallback_ns = 0
+
+    @staticmethod
+    def _is_full_crop_rectangle(box_info: dict[str, Any]) -> bool:
+        polygon_points = box_info.get("polygon_points")
+        if polygon_points is None:
+            return False
+
+        xmin, ymin, xmax, ymax = [
+            int(value) for value in box_info["coordinate"]
+        ]
+        if xmin >= xmax or ymin >= ymax:
+            return False
+
+        # CropByBoxes casts the polygon to int32 before cv2.fillPoly. Match that
+        # cast before proving that the four points cover the entire sliced
+        # [ymin:ymax, xmin:xmax] image.
+        polygon = np.asarray(polygon_points, dtype=np.int32)
+        if polygon.size != 8:
+            return False
+        polygon = polygon.reshape(4, 2)
+        expected = {
+            (xmin, ymin),
+            (xmax, ymin),
+            (xmax, ymax),
+            (xmin, ymax),
+        }
+        return {tuple(point) for point in polygon.tolist()} == expected
+
+    def __call__(
+        self,
+        image: np.ndarray,
+        boxes: list[dict[str, Any]],
+        layout_shape_mode: str = "auto",
+    ) -> list[dict[str, Any]]:
+        started_ns = time.perf_counter_ns()
+        outputs: list[dict[str, Any]] = []
+        polygon_boxes = 0
+        rectangle_fast_paths = 0
+        fallbacks = 0
+        rectangle_ns = 0
+        fallback_ns = 0
+
+        for box_info in boxes:
+            has_polygon = (
+                layout_shape_mode != "rect"
+                and "polygon_points" in box_info
+            )
+            polygon_boxes += int(has_polygon)
+            if has_polygon and self._is_full_crop_rectangle(box_info):
+                rectangle_started_ns = time.perf_counter_ns()
+                label_id = box_info["cls_id"]
+                box = box_info["coordinate"]
+                label = box_info.get("label", label_id)
+                xmin, ymin, xmax, ymax = [int(value) for value in box]
+                outputs.append(
+                    {
+                        "img": image[ymin:ymax, xmin:xmax].copy(),
+                        "box": box,
+                        "label": label,
+                        "polygon_points": box_info["polygon_points"],
+                    }
+                )
+                rectangle_ns += (
+                    time.perf_counter_ns() - rectangle_started_ns
+                )
+                rectangle_fast_paths += 1
+                continue
+
+            fallback_started_ns = time.perf_counter_ns()
+            single = self.original(
+                image,
+                [box_info],
+                layout_shape_mode,
+            )
+            fallback_ns += time.perf_counter_ns() - fallback_started_ns
+            if len(single) != 1:
+                raise RuntimeError(
+                    "PaddleX CropByBoxes returned "
+                    f"{len(single)} crops for one layout box"
+                )
+            outputs.append(single[0])
+            fallbacks += 1
+
+        finished_ns = time.perf_counter_ns()
+        with self._lock:
+            self._calls += 1
+            self._boxes += len(boxes)
+            self._polygon_boxes += polygon_boxes
+            self._rectangle_fast_paths += rectangle_fast_paths
+            self._fallbacks += fallbacks
+            self._wall_ns += finished_ns - started_ns
+            self._rectangle_ns += rectangle_ns
+            self._fallback_ns += fallback_ns
+        return outputs
+
+    def snapshot(self) -> dict[str, Any]:
+        with self._lock:
+            return {
+                "calls": self._calls,
+                "boxes": self._boxes,
+                "polygon_boxes": self._polygon_boxes,
+                "rectangle_fast_paths": self._rectangle_fast_paths,
+                "fallbacks": self._fallbacks,
+                "coverage": (
+                    self._rectangle_fast_paths / self._polygon_boxes
+                    if self._polygon_boxes
+                    else 0.0
+                ),
+                "wall_s": self._wall_ns / 1_000_000_000,
+                "rectangle_s": self._rectangle_ns / 1_000_000_000,
+                "fallback_s": self._fallback_ns / 1_000_000_000,
+            }
+
+
 def _full_border_contour(box: Any) -> np.ndarray:
     """Return the contour produced by a full resized binary mask."""
 
@@ -723,6 +851,7 @@ def install_layout_runtime_optimizations(
     backend: str = "eager",
     polygon_mode: str = "mask",
     mask_rectangle_fast_path: bool = False,
+    crop_rectangle_fast_path: bool = False,
 ) -> dict[str, Any]:
     """Install layout optimizations on the concrete PaddleX pipeline.
 
@@ -767,6 +896,15 @@ def install_layout_runtime_optimizations(
         )
     predictor._layout_mask_rectangle_fast_path = (
         mask_rectangle_fast_path_state
+    )
+    crop_rectangle_fast_path_state = None
+    if polygon_mode == "mask" and crop_rectangle_fast_path:
+        crop_rectangle_fast_path_state = _CropRectangleFastPath(
+            paddlex_pipeline.crop_by_boxes
+        )
+        paddlex_pipeline.crop_by_boxes = crop_rectangle_fast_path_state
+    paddlex_pipeline._layout_crop_rectangle_fast_path = (
+        crop_rectangle_fast_path_state
     )
 
     from paddlex.inference.models.layout_analysis import (
@@ -823,6 +961,7 @@ def install_layout_runtime_optimizations(
         "filter_masks_before_postprocess": True,
         "final_decoder_heads_only": True,
         "mask_rectangle_fast_path": bool(mask_rectangle_fast_path),
+        "crop_rectangle_fast_path": bool(crop_rectangle_fast_path),
         "polygon_mode": polygon_mode,
         "model_backend": backend,
         "model_graph_capture": graph_capture,
