@@ -44,7 +44,13 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--decoders",
         nargs="+",
         default=["opencv", "pillow", "torchvision"],
-        choices=["opencv", "pillow", "torchvision", "pyspng"],
+        choices=[
+            "opencv",
+            "pillow",
+            "torchvision",
+            "pyspng",
+            "kornia_rs",
+        ],
     )
     parser.add_argument(
         "--format",
@@ -170,11 +176,28 @@ def make_pyspng() -> Decoder:
     )
 
 
+def make_kornia_rs() -> Decoder:
+    import kornia_rs
+    from kornia_rs.image import Image
+
+    def decode(data: bytes) -> np.ndarray:
+        return Image.decode(data, "RGB").data
+
+    return Decoder(
+        "kornia_rs",
+        getattr(kornia_rs, "__version__", None),
+        "NumPy uint8 HWC RGB",
+        decode,
+        rgb_to_bgr,
+    )
+
+
 FACTORIES: dict[str, Callable[[], Decoder]] = {
     "opencv": make_opencv,
     "pillow": make_pillow,
     "torchvision": make_torchvision,
     "pyspng": make_pyspng,
+    "kornia_rs": make_kornia_rs,
 }
 
 
