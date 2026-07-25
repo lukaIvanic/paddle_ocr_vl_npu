@@ -8,7 +8,6 @@ to the fixed v1.6 configuration exercised by this project.
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 import cv2
@@ -617,7 +616,8 @@ def crop_layout_regions(
     image: np.ndarray,
     boxes: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
-    def crop_one(box_info: dict[str, Any]) -> dict[str, Any]:
+    outputs: list[dict[str, Any]] = []
+    for box_info in boxes:
         box = box_info["coordinate"]
         x_min, y_min, x_max, y_max = [int(value) for value in box]
         crop = image[y_min:y_max, x_min:x_max].copy()
@@ -636,16 +636,8 @@ def crop_layout_regions(
             polygon = polygon - np.array([x_min, y_min])
             cv2.fillPoly(mask, [polygon], 1)
             crop[~mask.astype(bool)] = 255
-        return output
-
-    worker_count = min(4, len(boxes))
-    if worker_count <= 1:
-        return [crop_one(box_info) for box_info in boxes]
-    with ThreadPoolExecutor(
-        max_workers=worker_count,
-        thread_name_prefix="layout-region",
-    ) as executor:
-        return list(executor.map(crop_one, boxes))
+        outputs.append(output)
+    return outputs
 
 
 def _to_pil(image: np.ndarray | Image.Image) -> Image.Image:
