@@ -55,19 +55,37 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--model", type=Path, default=DEFAULT_MODEL)
     parser.add_argument("--cache-dir", type=Path, default=DEFAULT_CACHE_ROOT)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--cache-length", type=int, default=1024)
     parser.add_argument("--block-size", type=int, default=128)
     parser.add_argument("--position", type=int, default=768)
+    parser.add_argument(
+        "--min-position",
+        type=int,
+        default=None,
+        help=(
+            "Linearly spread batch-row positions from this value through "
+            "--position. Omit for a uniform-length batch."
+        ),
+    )
     parser.add_argument("--warmup", type=int, default=20)
     parser.add_argument("--repeats", type=int, default=300)
     parser.add_argument("--seed", type=int, default=7)
     args = parser.parse_args(argv)
+    if args.batch_size <= 0:
+        parser.error("--batch-size must be positive")
     if args.cache_length <= 0:
         parser.error("--cache-length must be positive")
     if args.block_size <= 0 or args.cache_length % args.block_size:
         parser.error("--block-size must evenly divide --cache-length")
     if not 0 <= args.position < args.cache_length:
         parser.error("--position must be inside the selected cache capacity")
+    if args.min_position is not None and not (
+        0 <= args.min_position <= args.position
+    ):
+        parser.error(
+            "--min-position must be between zero and --position"
+        )
     if args.warmup < 0 or args.repeats <= 0:
         parser.error("--warmup must be non-negative and --repeats positive")
     return args
@@ -113,6 +131,7 @@ def _capture(
 def _timed_replay(
     graph: torch.npu.NPUGraph,
     *,
+    batch_size: int,
     warmup: int,
     repeats: int,
 ) -> dict[str, float]:
@@ -130,8 +149,24 @@ def _timed_replay(
     return {
         "total_s": total_s,
         "mean_ms": total_s * 1000.0 / repeats,
-        "raw_tokens_per_s": repeats / total_s,
+        "decode_steps_per_s": repeats / total_s,
+        "raw_tokens_per_s": repeats * batch_size / total_s,
     }
+
+
+def _batch_positions(args: argparse.Namespace) -> torch.Tensor:
+    if args.min_position is None or args.batch_size == 1:
+        return torch.full(
+            (args.batch_size,),
+            args.position,
+            dtype=torch.int64,
+        )
+    return torch.linspace(
+        args.min_position,
+        args.position,
+        steps=args.batch_size,
+        dtype=torch.float64,
+    ).round().to(torch.int64)
 
 
 @torch.inference_mode()
@@ -171,7 +206,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         backend="torchair",
         device=device,
         cache_root=args.cache_dir,
-        batch_size=1,
+        batch_size=args.batch_size,
         cache_length=args.cache_length,
         dtype=dtype,
         model_dir=args.model,
@@ -182,7 +217,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     dense_cache, paged_cache = _allocate_matching_caches(
         config.text_config,
-        batch_size=1,
+        batch_size=args.batch_size,
         cache_length=args.cache_length,
         block_size=args.block_size,
         device=device,
@@ -190,13 +225,22 @@ def main(argv: Sequence[str] | None = None) -> int:
         seed=args.seed + 1000 + args.position,
     )
     _cast_paged_cache_to_nd(paged_cache)
-    input_ids = torch.tensor([[17]], device=device, dtype=torch.int64)
-    cache_position = torch.tensor(
-        [args.position],
+    input_ids = (
+        torch.arange(
+            args.batch_size,
+            device=device,
+            dtype=torch.int64,
+        )
+        .add(17)
+        .remainder(config.text_config.vocab_size)
+        .view(args.batch_size, 1)
+    )
+    cache_position = _batch_positions(args).to(device)
+    rope_deltas = torch.zeros(
+        (args.batch_size, 1),
         device=device,
         dtype=torch.int64,
     )
-    rope_deltas = torch.zeros((1, 1), device=device, dtype=torch.int64)
     paged_args = (
         input_ids,
         cache_position,
@@ -227,7 +271,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         cache_update_mode="scatter_pa_inplace",
         optimization=optimization,
         native_fia=True,
-        fixed_actual_kv_length=args.position + 1,
+        fixed_actual_kv_lengths=tuple(
+            int(position) + 1 for position in cache_position.cpu().tolist()
+        ),
     ).eval()
     captured_stage = DecodeAndArgmax(paged_stage).eval()
     graph, graph_output, capture_s = _capture(
@@ -269,6 +315,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     paged_timing = _timed_replay(
         graph,
+        batch_size=args.batch_size,
         warmup=args.warmup,
         repeats=args.repeats,
     )
@@ -288,11 +335,21 @@ def main(argv: Sequence[str] | None = None) -> int:
             "model_config": str(args.model / "config.json"),
             "random_weights": True,
             "seed": args.seed,
-            "batch_size": 1,
+            "batch_size": args.batch_size,
             "cache_length": args.cache_length,
             "block_size": args.block_size,
-            "cache_position": args.position,
-            "actual_kv_length": args.position + 1,
+            "cache_positions": [
+                int(position) for position in cache_position.cpu().tolist()
+            ],
+            "actual_kv_lengths": [
+                int(position) + 1
+                for position in cache_position.cpu().tolist()
+            ],
+            "position_pattern": (
+                "uniform"
+                if args.min_position is None
+                else "linearly_staggered"
+            ),
             "paged_cache_layout": "PA_NZ",
             "paged_cache_update": "npu_scatter_pa_kv_cache",
             "paged_attention": "npu_fused_infer_attention_score_v2",
@@ -333,7 +390,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "argmax_matches": int(
                 (paged_tokens == incre_tokens).sum().cpu()
             ),
-            "argmax_total": 1,
+            "argmax_total": args.batch_size,
             "written_kv": cache_delta,
             "first_layer_written_kv": first_layer_delta,
             "input_page_pool_change": page_pool_change,
