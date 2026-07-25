@@ -10,6 +10,7 @@ from types import MethodType
 from typing import Any
 
 import numpy as np
+import pyspng
 import torch
 import yaml
 from PIL import Image
@@ -112,12 +113,19 @@ def _decode_rgb(path: Path) -> tuple[np.ndarray, dict[str, float | int]]:
     started = time.perf_counter()
     compressed = path.read_bytes()
     read_finished = time.perf_counter()
-    encoded = torch.frombuffer(bytearray(compressed), dtype=torch.uint8)
-    image = (
-        decode_image(encoded, mode=ImageReadMode.RGB)
-        .permute(1, 2, 0)
-        .numpy()
-    )
+    if compressed.startswith(b"\x89PNG\r\n\x1a\n"):
+        image = pyspng.load(compressed)
+        if image.ndim == 2:
+            image = np.repeat(image[:, :, None], 3, axis=2)
+        elif image.ndim == 3 and image.shape[2] == 4:
+            image = np.ascontiguousarray(image[:, :, :3])
+    else:
+        encoded = torch.frombuffer(bytearray(compressed), dtype=torch.uint8)
+        image = (
+            decode_image(encoded, mode=ImageReadMode.RGB)
+            .permute(1, 2, 0)
+            .numpy()
+        )
     decode_finished = time.perf_counter()
     if image.ndim != 3 or image.shape[2] != 3 or image.dtype != np.uint8:
         raise RuntimeError(
