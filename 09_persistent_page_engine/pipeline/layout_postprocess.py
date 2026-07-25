@@ -712,6 +712,8 @@ def _merge_images(
     images: list[np.ndarray],
     aligns: list[str],
 ) -> np.ndarray:
+    if len(images) == 1:
+        return images[0]
     pil_images = [_to_pil(image) for image in images]
     x_offsets = [0] * len(pil_images)
     merged_width = pil_images[0].width
