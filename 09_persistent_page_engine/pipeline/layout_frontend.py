@@ -227,6 +227,14 @@ class OwnedLayoutFrontend:
                 _mask_to_box_capture_friendly
             )
             self.model.forward = _NpuGraphCoreForward(self.model.forward)
+            capture_height = int(self.processor.size["height"])
+            capture_width = int(self.processor.size["width"])
+            capture_input = torch.zeros(
+                (1, 3, capture_height, capture_width),
+                device=self.device,
+                dtype=self.model_dtype,
+            )
+            self.model(pixel_values=capture_input)
         self.postprocessor = LayoutPostprocessor(
             self.labels,
             threshold=threshold,
