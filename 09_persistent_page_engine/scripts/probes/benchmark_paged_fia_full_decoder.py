@@ -71,6 +71,10 @@ CACHE_UPDATE_MODES = (
     "scatter_pa",
     "scatter_pa_inplace",
 )
+PAGED_METADATA_MODES = (
+    "dynamic_tensor",
+    "fixed_bucket_mask",
+)
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -88,6 +92,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help=(
             "Paged-cache writer inside the compiled decoder. "
             "scatter_pa uses torch_npu.npu_scatter_pa_kv_cache."
+        ),
+    )
+    parser.add_argument(
+        "--paged-metadata",
+        choices=PAGED_METADATA_MODES,
+        default="dynamic_tensor",
+        help=(
+            "Represent the valid KV prefix either as TorchAir tensor metadata "
+            "or as a fixed host-list bucket plus a runtime attention mask."
         ),
     )
     parser.add_argument(
@@ -285,6 +298,7 @@ def _paged_decode_attention(
     cache_update_metadata: torch.Tensor,
     actual_seq_qlen: torch.Tensor,
     actual_seq_kvlen: torch.Tensor,
+    attention_mask: torch.Tensor | None,
     block_table: torch.Tensor,
     block_size: int,
     cache_update_mode: str,
@@ -399,6 +413,7 @@ def _paged_decode_attention(
             num_key_value_heads=int(attention.num_key_value_heads),
             input_layout="BNSD",
             softmax_scale=float(attention.scaling),
+            atten_mask=attention_mask,
             actual_seq_qlen=[1] * batch_size,
             actual_seq_kvlen=list(fixed_actual_kv_lengths),
             block_table=block_table,
@@ -415,6 +430,7 @@ def _paged_decode_attention(
             num_key_value_heads=int(attention.num_key_value_heads),
             input_layout="BNSD",
             softmax_scale=float(attention.scaling),
+            atten_mask=attention_mask,
             actual_seq_qlen=actual_seq_qlen,
             actual_seq_kvlen=actual_seq_kvlen,
             block_table=block_table,
@@ -465,6 +481,10 @@ class PagedFIATextDecodeStage(nn.Module):
             if fixed_actual_kv_lengths is not None
             else None
         )
+        if self.native_fia and self.fixed_actual_kv_lengths is None:
+            raise ValueError(
+                "native FIA requires fixed per-row KV bucket lengths"
+            )
 
     def forward(
         self,
@@ -517,6 +537,20 @@ class PagedFIATextDecodeStage(nn.Module):
             dtype=torch.int64,
         )
         actual_seq_kvlen = cache_position + 1
+        attention_mask = None
+        if self.native_fia:
+            bucket_length = max(self.fixed_actual_kv_lengths)
+            logical_positions = torch.arange(
+                bucket_length,
+                dtype=torch.int64,
+                device=inputs_embeds.device,
+            ).view(1, 1, 1, bucket_length)
+            attention_mask = logical_positions >= actual_seq_kvlen.view(
+                batch_size,
+                1,
+                1,
+                1,
+            )
 
         hidden_states = inputs_embeds
         residual: torch.Tensor | None = None
@@ -550,6 +584,7 @@ class PagedFIATextDecodeStage(nn.Module):
                 cache_update_metadata,
                 actual_seq_qlen,
                 actual_seq_kvlen,
+                attention_mask,
                 block_table,
                 self.block_size,
                 self.cache_update_mode,
@@ -826,6 +861,7 @@ def _compile_paged_stage(
     cache_length: int,
     block_size: int,
     cache_update_mode: str,
+    metadata_mode: str,
     single_stream: bool,
 ) -> tuple[Callable[..., torch.Tensor], dict[str, Any]]:
     torchair, CompilerConfig = import_torchair()
@@ -837,6 +873,7 @@ def _compile_paged_stage(
         / (
             f"paged_fia_v2_{OPTIMIZATION}_b{batch_size}_"
             f"k{cache_length}_block{block_size}_{cache_update_mode}_"
+            f"{metadata_mode}_"
             f"{stream_mode}_"
             f"src{_script_hash()}"
         )
@@ -856,6 +893,7 @@ def _compile_paged_stage(
         "api": "torchair.inference.cache_compile",
         "dynamic": False,
         "cache_update_mode": cache_update_mode,
+        "metadata_mode": metadata_mode,
         "single_stream": bool(single_stream),
         "ge_enable_single_stream": bool(single_stream),
     }
@@ -1001,6 +1039,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         block_size=args.block_size,
         cache_update_mode=args.paged_cache_update,
         optimization=optimization,
+        native_fia=args.paged_metadata == "fixed_bucket_mask",
+        fixed_actual_kv_lengths=(
+            [args.cache_length] * args.batch_size
+            if args.paged_metadata == "fixed_bucket_mask"
+            else None
+        ),
     ).eval()
     paged_fn, paged_compile = _compile_paged_stage(
         paged_stage,
@@ -1009,6 +1053,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         cache_length=args.cache_length,
         block_size=args.block_size,
         cache_update_mode=args.paged_cache_update,
+        metadata_mode=args.paged_metadata,
         single_stream=args.paged_single_stream,
     )
     _warm_dense, warm_paged = _allocate_matching_caches(
@@ -1245,6 +1290,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                     "npu_scatter_nd_update_"
                 )
             ),
+            "paged_metadata": args.paged_metadata,
             "paged_cache_update": args.paged_cache_update,
             "paged_metadata_scope": (
                 "once_per_decode_step_before_18_layer_loop"
