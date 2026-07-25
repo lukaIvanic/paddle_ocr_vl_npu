@@ -9,6 +9,7 @@ to the fixed v1.6 configuration exercised by this project.
 from __future__ import annotations
 
 import math
+import time
 from concurrent.futures import Executor
 from typing import Any
 
@@ -454,7 +455,10 @@ class LayoutPostprocessor:
         self,
         prediction: dict[str, Any],
         image_size: tuple[int, int],
+        *,
+        timing: dict[str, float] | None = None,
     ) -> list[dict[str, Any]]:
+        started = time.perf_counter() if timing is not None else 0.0
         boxes = prediction["boxes"].detach().cpu().numpy()
         scores = prediction["scores"].detach().cpu().numpy()
         labels = prediction["labels"].detach().cpu().numpy()
@@ -476,14 +480,26 @@ class LayoutPostprocessor:
         polygons = [
             np.asarray(points) for points in prediction["polygon_points"]
         ]
-        return self._apply(formatted, polygons, image_size)
+        if timing is not None:
+            timing["layout_structural_format_cpu_s"] = (
+                time.perf_counter() - started
+            )
+        return self._apply(
+            formatted,
+            polygons,
+            image_size,
+            timing=timing,
+        )
 
     def _apply(
         self,
         boxes: np.ndarray,
         polygons: list[np.ndarray],
         image_size: tuple[int, int],
+        *,
+        timing: dict[str, float] | None = None,
     ) -> list[dict[str, Any]]:
+        started = time.perf_counter() if timing is not None else 0.0
         boxes[:, 2:6] = np.round(boxes[:, 2:6]).astype(int)
         keep = (boxes[:, 1] > self.threshold) & (boxes[:, 0] > -1)
         boxes = boxes[keep]
@@ -492,11 +508,21 @@ class LayoutPostprocessor:
             for polygon, selected in zip(polygons, keep)
             if selected
         ]
+        if timing is not None:
+            timing["layout_structural_threshold_cpu_s"] = (
+                time.perf_counter() - started
+            )
 
+        started = time.perf_counter() if timing is not None else 0.0
         selected_indices = _nms(boxes[:, :6])
         boxes = np.asarray(boxes[selected_indices])
         polygons = [polygons[index] for index in selected_indices]
+        if timing is not None:
+            timing["layout_structural_nms_cpu_s"] = (
+                time.perf_counter() - started
+            )
 
+        started = time.perf_counter() if timing is not None else 0.0
         if len(boxes) > 1:
             width, height = image_size
             area_threshold = 0.82 if width > height else 0.93
@@ -520,7 +546,12 @@ class LayoutPostprocessor:
             if filtered_boxes:
                 boxes = np.asarray(filtered_boxes)
                 polygons = filtered_polygons
+        if timing is not None:
+            timing["layout_structural_page_image_filter_cpu_s"] = (
+                time.perf_counter() - started
+            )
 
+        started = time.perf_counter() if timing is not None else 0.0
         keep = np.ones(len(boxes), dtype=bool)
         formula_index = self.labels.index("display_formula")
         classes = boxes[:, 0]
@@ -540,11 +571,21 @@ class LayoutPostprocessor:
             for polygon, selected in zip(polygons, keep)
             if selected
         ]
+        if timing is not None:
+            timing["layout_structural_containment_cpu_s"] = (
+                time.perf_counter() - started
+            )
 
+        started = time.perf_counter() if timing is not None else 0.0
         sorted_indices = np.argsort(boxes[:, 6])
         boxes = boxes[sorted_indices, :6]
         polygons = [polygons[index] for index in sorted_indices]
+        if timing is not None:
+            timing["layout_structural_sort_cpu_s"] = (
+                time.perf_counter() - started
+            )
 
+        started = time.perf_counter() if timing is not None else 0.0
         normalized: list[np.ndarray] = []
         for box, polygon in zip(boxes, polygons):
             normalized.append(
@@ -554,7 +595,12 @@ class LayoutPostprocessor:
                     normalized[-1] if normalized else None,
                 )
             )
+        if timing is not None:
+            timing["layout_structural_polygon_normalize_cpu_s"] = (
+                time.perf_counter() - started
+            )
 
+        started = time.perf_counter() if timing is not None else 0.0
         width, height = image_size
         results: list[dict[str, Any]] = []
         for index, (box, polygon) in enumerate(zip(boxes, normalized)):
@@ -575,7 +621,19 @@ class LayoutPostprocessor:
                     "polygon_points": polygon,
                 }
             )
+        if timing is not None:
+            timing["layout_structural_result_build_cpu_s"] = (
+                time.perf_counter() - started
+            )
+
+        started = time.perf_counter() if timing is not None else 0.0
         results = _filter_detector_boxes(results)
+        if timing is not None:
+            timing["layout_structural_overlap_filter_cpu_s"] = (
+                time.perf_counter() - started
+            )
+
+        started = time.perf_counter() if timing is not None else 0.0
         next_order = 1
         for result in results:
             if result["label"] in SKIP_ORDER_LABELS:
@@ -583,6 +641,10 @@ class LayoutPostprocessor:
             else:
                 result["order"] = next_order
                 next_order += 1
+        if timing is not None:
+            timing["layout_structural_order_cpu_s"] = (
+                time.perf_counter() - started
+            )
         return results
 
 

@@ -370,7 +370,11 @@ class OwnedLayoutFrontend:
                 / 1000.0
             )
         postprocessor_started = time.perf_counter()
-        boxes = self.postprocessor(predictions[0], (width, height))
+        boxes = self.postprocessor(
+            predictions[0],
+            (width, height),
+            timing=timing if self.device_stage_timing else None,
+        )
         timing["layout_structural_postprocess_cpu_s"] = (
             time.perf_counter() - postprocessor_started
         )
