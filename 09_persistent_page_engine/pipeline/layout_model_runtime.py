@@ -288,6 +288,52 @@ def _full_border_contour(box: Any) -> np.ndarray:
     )
 
 
+def _extract_custom_vertices_vectorized(
+    _processor: Any,
+    polygon: Any,
+    sharp_angle_thresh: float = 45,
+) -> list[tuple[Any, Any]]:
+    """Preserve PP-DocLayoutV3's vertex rule without its Python point loop."""
+
+    points = np.asarray(polygon)
+    if len(points) == 0:
+        return []
+    previous = np.roll(points, 1, axis=0)
+    following = np.roll(points, -1, axis=0)
+    vector_1 = previous - points
+    vector_2 = following - points
+    cross_products = (
+        vector_1[:, 1] * vector_2[:, 0]
+        - vector_1[:, 0] * vector_2[:, 1]
+    )
+    selected = cross_products < 0
+    if not np.any(selected):
+        return []
+
+    output = points[selected].astype(np.float64, copy=True)
+    selected_vector_1 = vector_1[selected]
+    selected_vector_2 = vector_2[selected]
+    norm_1 = np.linalg.norm(selected_vector_1, axis=1)
+    norm_2 = np.linalg.norm(selected_vector_2, axis=1)
+    angle_cos = np.clip(
+        np.sum(selected_vector_1 * selected_vector_2, axis=1)
+        / (norm_1 * norm_2),
+        -1.0,
+        1.0,
+    )
+    angles = np.degrees(np.arccos(angle_cos))
+    sharp = np.abs(angles - sharp_angle_thresh) < 1
+    if np.any(sharp):
+        direction = (
+            selected_vector_1[sharp] / norm_1[sharp, None]
+            + selected_vector_2[sharp] / norm_2[sharp, None]
+        )
+        direction /= np.linalg.norm(direction, axis=1)[:, None]
+        step_size = (norm_1[sharp] + norm_2[sharp]) / 2
+        output[sharp] += direction * step_size[:, None]
+    return [tuple(point) for point in output]
+
+
 class _MaskRectangleFastPath:
     """Skip contour extraction when it is guaranteed to normalize to the box."""
 
