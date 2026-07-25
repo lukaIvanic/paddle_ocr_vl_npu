@@ -112,7 +112,7 @@ class OwnedLayoutFrontend:
         model_dir: Path,
         device: torch.device,
         *,
-        threshold: float = 0.5,
+        threshold: float = 0.3,
         timeline: TimelineRecorder | None = None,
         graph_capture: bool = True,
     ) -> None:
@@ -234,7 +234,7 @@ class OwnedLayoutFrontend:
         predictions = _post_process_selected_masks_only(
             self.processor,
             outputs,
-            threshold=0.5,
+            threshold=self.postprocessor.threshold,
             target_sizes=[[height, width]],
         )
         boxes = self.postprocessor(predictions[0], (width, height))
