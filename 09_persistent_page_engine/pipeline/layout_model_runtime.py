@@ -806,9 +806,7 @@ def _post_process_selected_masks_only(
                 0,
                 selected_queries,
             )
-            selected_masks = (
-                selected_masks.sigmoid() > threshold
-            ).to(torch.uint8)
+            selected_masks = selected_masks.sigmoid() > threshold
             cpu_masks = selected_masks.detach().cpu()
             result["polygon_points"] = (
                 processor._extract_polygon_points_by_masks(
