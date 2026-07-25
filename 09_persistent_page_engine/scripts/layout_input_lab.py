@@ -81,6 +81,15 @@ def current_paddlex_tensor(processor: Any, encoded: bytes) -> torch.Tensor:
     return processor(images=[image], return_tensors="pt")["pixel_values"]
 
 
+def opencv_tensor_view(processor: Any, encoded: bytes) -> torch.Tensor:
+    # Preserve the current BGR NumPy page for PaddleX's downstream crop path,
+    # but avoid the full-resolution NumPy -> PIL -> Torch conversion. The CHW
+    # tensor is a non-contiguous view; TorchVision resize accepts that directly.
+    bgr = opencv_bgr(encoded)
+    bgr_chw = torch.from_numpy(bgr).permute(2, 0, 1)
+    return processor(images=[bgr_chw], return_tensors="pt")["pixel_values"]
+
+
 def native_torch_tensor(processor: Any, encoded: bytes) -> torch.Tensor:
     # The processor accepts native CHW tensors. Its resize and rescale are
     # channel-independent, so preserve PaddleX's effective BGR model input by
@@ -92,6 +101,7 @@ def native_torch_tensor(processor: Any, encoded: bytes) -> torch.Tensor:
 
 PATHS: dict[str, Callable[[Any, bytes], torch.Tensor]] = {
     "current_paddlex": current_paddlex_tensor,
+    "opencv_tensor_view": opencv_tensor_view,
     "native_torch": native_torch_tensor,
 }
 
@@ -103,25 +113,51 @@ def validate(
     page_results: list[dict[str, Any]] = []
     for index, encoded in enumerate(encoded_pages):
         reference = current_paddlex_tensor(processor, encoded)
-        candidate = native_torch_tensor(processor, encoded)
-        delta = (candidate - reference).abs()
+        candidates = {
+            name: path(processor, encoded)
+            for name, path in PATHS.items()
+            if name != "current_paddlex"
+        }
         page_results.append(
             {
                 "page_index": index,
                 "shape": list(reference.shape),
                 "dtype": str(reference.dtype),
-                "exact": bool(torch.equal(candidate, reference)),
-                "max_abs": float(delta.max().item()),
-                "mean_abs": float(delta.mean().item()),
+                "candidates": {
+                    name: {
+                        "exact": bool(torch.equal(candidate, reference)),
+                        "max_abs": float((candidate - reference).abs().max().item()),
+                        "mean_abs": float(
+                            (candidate - reference).abs().mean().item()
+                        ),
+                    }
+                    for name, candidate in candidates.items()
+                },
             }
         )
+    names = [name for name in PATHS if name != "current_paddlex"]
     return {
-        "all_exact": all(row["exact"] for row in page_results),
-        "max_abs": max((row["max_abs"] for row in page_results), default=0.0),
-        "mean_abs_max": max(
-            (row["mean_abs"] for row in page_results),
-            default=0.0,
-        ),
+        name: {
+            "all_exact": all(
+                row["candidates"][name]["exact"] for row in page_results
+            ),
+            "max_abs": max(
+                (
+                    row["candidates"][name]["max_abs"]
+                    for row in page_results
+                ),
+                default=0.0,
+            ),
+            "mean_abs_max": max(
+                (
+                    row["candidates"][name]["mean_abs"]
+                    for row in page_results
+                ),
+                default=0.0,
+            ),
+        }
+        for name in names
+    } | {
         "pages": page_results,
     }
 
@@ -209,6 +245,10 @@ def main(argv: Sequence[str] | None = None) -> None:
             "current_paddlex": (
                 "JPEG -> OpenCV BGR HWC NumPy -> PIL -> processor CHW "
                 "resize/rescale"
+            ),
+            "opencv_tensor_view": (
+                "JPEG -> OpenCV BGR HWC NumPy -> zero-copy Torch CHW view "
+                "-> processor resize/rescale"
             ),
             "native_torch": (
                 "JPEG -> TorchVision RGB CHW torch -> processor resize/rescale "
