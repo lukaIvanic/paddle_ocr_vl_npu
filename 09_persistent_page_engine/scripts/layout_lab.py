@@ -41,6 +41,10 @@ DEFAULT_DATASET_JSON = Path("/workspace/datasets/OmniDocBench/OmniDocBench.json"
 DEFAULT_IMAGES_DIR = Path("/workspace/datasets/OmniDocBench/images")
 DEFAULT_LAYOUT_MODEL = Path("/workspace/models/PP-DocLayoutV3_safetensors")
 DEFAULT_PADDLEOCR_SOURCE = Path("/workspace/repos/vllm_paddle_ocr/PaddleOCR")
+DEFAULT_LAYOUT_TORCHAIR_CACHE = (
+    REPO_ROOT
+    / ".runtime_cache/09_persistent_page_engine_layout_torchair"
+)
 _REQUEST_ID = re.compile(r"^page_(\d+)_block_(\d+)$")
 
 
@@ -199,6 +203,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "open/read/frombuffer/cv2.imdecode equivalent with split timings."
         ),
     )
+    parser.add_argument(
+        "--layout-backend",
+        choices=("eager", "torchair"),
+        default="eager",
+    )
+    parser.add_argument(
+        "--layout-torchair-cache-dir",
+        type=Path,
+        default=DEFAULT_LAYOUT_TORCHAIR_CACHE,
+    )
     args = parser.parse_args(argv)
     if args.offset < 0 or args.limit <= 0:
         parser.error("--offset must be non-negative and --limit positive")
@@ -353,7 +367,13 @@ def main(argv: Sequence[str] | None = None) -> None:
     if auto_parallel.multi_device_inference:
         raise ValueError("layout lab requires one selected NPU")
     layout_optimizations = install_layout_runtime_optimizations(
-        auto_parallel._pipeline
+        auto_parallel._pipeline,
+        backend=args.layout_backend,
+        torchair_cache_dir=(
+            args.layout_torchair_cache_dir.expanduser().resolve()
+            if args.layout_backend == "torchair"
+            else None
+        ),
     )
     setup_s = time.perf_counter() - setup_started
 
