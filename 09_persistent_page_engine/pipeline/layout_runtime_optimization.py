@@ -12,8 +12,10 @@ import torch
 import torch.nn.functional as F
 
 
-def _integer_rectangle(box: Any) -> np.ndarray:
-    x_min, y_min, x_max, y_max = np.asarray(box).astype(np.int32)
+def _rounded_rectangle(box: Any) -> np.ndarray:
+    x_min, y_min, x_max, y_max = np.round(
+        np.asarray(box)
+    ).astype(np.int32)
     return np.array(
         [
             [x_min, y_min],
@@ -87,14 +89,41 @@ class _MaskRectangleFastPath:
         ):
             return False
 
-        # The extracted contour ends at width-1/height-1 whereas PaddleX's box
-        # rectangle ends at width/height. Its auto-mode normalizes to the box
-        # only when their overlap is at least 0.95.
-        overlap = (
-            max(box_width - 1, 0)
-            * max(box_height - 1, 0)
-            / (box_width * box_height)
+        # Transformers truncates the detector box before mask extraction, but
+        # PaddleX rounds it before final polygon normalization. Model the two
+        # coordinate systems explicitly. The extracted full-border contour
+        # ends one pixel before the truncated box's x_max/y_max.
+        contour_x_min = int(x_min)
+        contour_y_min = int(y_min)
+        contour_x_max = int(x_max - 1)
+        contour_y_max = int(y_max - 1)
+        (
+            final_x_min,
+            final_y_min,
+            final_x_max,
+            final_y_max,
+        ) = np.round(box).astype(np.int32)
+        intersection_width = max(
+            0,
+            min(contour_x_max, int(final_x_max))
+            - max(contour_x_min, int(final_x_min)),
         )
+        intersection_height = max(
+            0,
+            min(contour_y_max, int(final_y_max))
+            - max(contour_y_min, int(final_y_min)),
+        )
+        intersection = intersection_width * intersection_height
+        contour_area = max(0, contour_x_max - contour_x_min) * max(
+            0,
+            contour_y_max - contour_y_min,
+        )
+        final_area = max(0, int(final_x_max) - int(final_x_min)) * max(
+            0,
+            int(final_y_max) - int(final_y_min),
+        )
+        union = contour_area + final_area - intersection
+        overlap = intersection / union if union else 0.0
         return overlap >= 0.95
 
     def __call__(
@@ -144,9 +173,10 @@ class _MaskRectangleFastPath:
                     convert_polygon_to_quad,
                 )
 
-                rectangle = _integer_rectangle(box)
+                rounded_box = np.round(box)
+                rectangle = _rounded_rectangle(box)
                 normalized = _normalize_layout_polygon(
-                    box=box,
+                    box=rounded_box,
                     polygon=reference_polygon,
                     layout_shape_mode="auto",
                 )
