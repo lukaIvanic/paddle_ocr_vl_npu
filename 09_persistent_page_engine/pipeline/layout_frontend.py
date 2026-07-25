@@ -375,7 +375,7 @@ class OwnedLayoutFrontend:
             ordinal=ordinal,
             image_path=path,
             image=image,
-            layout_boxes=filtered,
+            layout_boxes=boxes,
             blocks=blocks,
             requests=requests,
             request_block_indices=request_block_indices,
@@ -385,7 +385,7 @@ class OwnedLayoutFrontend:
             timing_s=timing,
             statistics={
                 "raw_layout_boxes": len(boxes),
-                "filtered_layout_boxes": len(filtered),
+                "filtered_layout_boxes": len(boxes),
                 "merged_blocks": len(blocks),
                 "requests": len(requests),
             },
