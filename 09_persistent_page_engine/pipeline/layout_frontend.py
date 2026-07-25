@@ -11,9 +11,9 @@ from types import MethodType
 from typing import Any
 
 import numpy as np
-import pyspng
 import torch
 import yaml
+from kornia_rs.image import Image as KorniaImage
 from PIL import Image
 from torchvision.io import ImageReadMode, decode_image
 
@@ -114,11 +114,7 @@ def _decode_rgb(path: Path) -> tuple[np.ndarray, dict[str, float | int]]:
     compressed = path.read_bytes()
     read_finished = time.perf_counter()
     if compressed.startswith(b"\x89PNG\r\n\x1a\n"):
-        image = pyspng.load(compressed)
-        if image.ndim == 2:
-            image = np.repeat(image[:, :, None], 3, axis=2)
-        elif image.ndim == 3 and image.shape[2] == 4:
-            image = np.ascontiguousarray(image[:, :, :3])
+        image = KorniaImage.decode(compressed, "RGB").data
     else:
         encoded = torch.frombuffer(bytearray(compressed), dtype=torch.uint8)
         image = (

@@ -479,8 +479,8 @@ the final run-boundary fence.
 recognizer. The measured boundary includes image loading, layout preprocessing,
 PP-DocLayoutV3 inference and postprocessing, cropping, prompt routing, and final
 `RecognitionRequest` materialization. It never loads or executes the local OCR
-model. The owned frontend requires `pyspng==0.1.4` for direct RGB PNG decoding;
-JPEG decoding uses the installed TorchVision image backend.
+model. The owned frontend requires `kornia-rs==0.1.14` for direct RGB PNG
+decoding; JPEG decoding uses the installed TorchVision image backend.
 
 The output `requests.jsonl` records request order, page and block identity,
 prompt, pixel profile, crop shape, and an exact hash of the crop pixels. Use
