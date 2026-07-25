@@ -40,6 +40,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--cache-dir", type=Path, required=True)
     parser.add_argument("--warmup-iters", type=int, default=2)
     parser.add_argument("--repeats", type=int, default=10)
+    parser.add_argument(
+        "--attention-implementation",
+        choices=("sdpa", "eager"),
+        default="sdpa",
+    )
     return parser.parse_args()
 
 
@@ -121,6 +126,9 @@ def main() -> None:
         device,
         graph_capture=False,
     )
+    frontend.model.config._attn_implementation = (
+        args.attention_implementation
+    )
     image_rgb, _decode_timing = _decode_rgb(image_path)
     pixel_values = frontend._prepare_pixel_values(image_rgb)
 
@@ -161,6 +169,7 @@ def main() -> None:
         "image": str(image_path),
         "model": str(model_dir),
         "cache_dir": str(cache_dir),
+        "attention_implementation": args.attention_implementation,
         "source_hash": source_hash,
         "first_call_s": first_call_s,
         "warmup_iters": args.warmup_iters,
