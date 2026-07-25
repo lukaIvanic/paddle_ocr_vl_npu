@@ -14,6 +14,8 @@ from collections.abc import Iterable, Sequence
 from pathlib import Path
 from typing import Any, NoReturn
 
+import cv2
+import numpy as np
 import torch
 
 HERE = Path(__file__).resolve().parent
@@ -41,6 +43,99 @@ _REQUEST_ID = re.compile(r"^page_(\d+)_block_(\d+)$")
 
 class _CaptureComplete(Exception):
     pass
+
+
+class _LocalOpenCVImageReader:
+    """Exact local equivalent of PaddleX's BGR OpenCV path, with split timing."""
+
+    def __init__(self, timeline: TimelineRecorder) -> None:
+        self.format = "BGR"
+        self.timeline = timeline
+        self.calls = 0
+        self.path_inputs = 0
+        self.array_inputs = 0
+        self.compressed_bytes = 0
+        self.file_read_ns = 0
+        self.byte_view_ns = 0
+        self.decode_ns = 0
+        self.wall_ns = 0
+
+    def __call__(self, images: Iterable[str | np.ndarray]) -> list[np.ndarray]:
+        outputs: list[np.ndarray] = []
+        for image in images:
+            call_index = self.calls
+            self.calls += 1
+            flow_id = f"page:{call_index}"
+            item_started_ns = time.perf_counter_ns()
+            if isinstance(image, np.ndarray):
+                self.array_inputs += 1
+                outputs.append(image)
+                self.wall_ns += time.perf_counter_ns() - item_started_ns
+                continue
+            if not isinstance(image, str):
+                raise TypeError(
+                    "local OpenCV reader requires a path string or NumPy array, "
+                    f"got {type(image).__name__}"
+                )
+
+            self.path_inputs += 1
+            read_started_ns = time.perf_counter_ns()
+            with open(image, "rb") as handle:
+                compressed = handle.read()
+            read_finished_ns = time.perf_counter_ns()
+            self.file_read_ns += read_finished_ns - read_started_ns
+            self.compressed_bytes += len(compressed)
+            self.timeline.record_span(
+                "Page input",
+                "Read compressed page bytes",
+                read_started_ns,
+                read_finished_ns,
+                flow_id=flow_id,
+                event_type="io",
+                args={"bytes": len(compressed)},
+            )
+
+            view_started_ns = time.perf_counter_ns()
+            encoded = np.frombuffer(compressed, np.uint8)
+            view_finished_ns = time.perf_counter_ns()
+            self.byte_view_ns += view_finished_ns - view_started_ns
+
+            decode_started_ns = time.perf_counter_ns()
+            decoded = cv2.imdecode(encoded, flags=cv2.IMREAD_COLOR)
+            decode_finished_ns = time.perf_counter_ns()
+            self.decode_ns += decode_finished_ns - decode_started_ns
+            self.timeline.record_span(
+                "Page input",
+                "Decode compressed page image",
+                decode_started_ns,
+                decode_finished_ns,
+                flow_id=flow_id,
+                event_type="work",
+                args={
+                    "encoded_bytes": len(compressed),
+                    "width": int(decoded.shape[1]) if decoded is not None else None,
+                    "height": int(decoded.shape[0]) if decoded is not None else None,
+                },
+            )
+            if decoded is None:
+                raise RuntimeError(f"OpenCV failed to decode page image: {image}")
+            outputs.append(decoded)
+            self.wall_ns += time.perf_counter_ns() - item_started_ns
+        return outputs
+
+    def summary(self) -> dict[str, Any]:
+        seconds = lambda value: value / 1_000_000_000
+        return {
+            "implementation": "local_open_read_frombuffer_cv2_imdecode_bgr",
+            "calls": self.calls,
+            "path_inputs": self.path_inputs,
+            "array_inputs": self.array_inputs,
+            "compressed_bytes": self.compressed_bytes,
+            "file_read_s": seconds(self.file_read_ns),
+            "byte_view_s": seconds(self.byte_view_ns),
+            "decode_s": seconds(self.decode_ns),
+            "reader_wall_s": seconds(self.wall_ns),
+        }
 
 
 class _RequestCollector:
@@ -91,6 +186,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--timeline",
         action=argparse.BooleanOptionalAction,
         default=True,
+    )
+    parser.add_argument(
+        "--image-reader",
+        choices=("paddlex", "local-opencv"),
+        default="paddlex",
+        help=(
+            "Use PaddleX's installed image reader, or an exact local "
+            "open/read/frombuffer/cv2.imdecode equivalent with split timings."
+        ),
     )
     args = parser.parse_args(argv)
     if args.offset < 0 or args.limit <= 0:
@@ -256,6 +360,17 @@ def main(argv: Sequence[str] | None = None) -> None:
             "ocr_requests_executed": 0,
         }
     )
+    local_image_reader = None
+    if args.image_reader == "local-opencv":
+        installed_reader = auto_parallel._pipeline.img_reader
+        installed_format = getattr(installed_reader, "format", None)
+        if installed_format != "BGR":
+            raise RuntimeError(
+                "local reader only mirrors PaddleX's BGR path, but the installed "
+                f"reader reports format={installed_format!r}"
+            )
+        local_image_reader = _LocalOpenCVImageReader(timeline)
+        auto_parallel._pipeline.img_reader = local_image_reader
     collector = _RequestCollector(args.max_new_tokens)
     empty_trace = output_dir / ".empty_recognition_trace.jsonl"
     bridge = PaddleXPageBridge(
@@ -327,6 +442,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "paddleocr_source": str(paddleocr_source),
             "device": "npu:0",
             "jit_compile": False,
+            "image_reader": args.image_reader,
             "preprocessor_min_pixels": args.preprocessor_min_pixels,
             "max_new_tokens_passthrough": args.max_new_tokens,
             "recognizer_execution": "replaced_by_request_collector",
@@ -338,6 +454,9 @@ def main(argv: Sequence[str] | None = None) -> None:
         "pages_per_s": len(image_paths) / frontend_wall_s,
         "s_per_page": frontend_wall_s / len(image_paths),
         "request_materialization_s": collector.consume_wall_s,
+        "image_reader_timing": (
+            local_image_reader.summary() if local_image_reader is not None else None
+        ),
         "requests": len(records),
         "requests_per_s": len(records) / frontend_wall_s,
         "requests_per_page": {
