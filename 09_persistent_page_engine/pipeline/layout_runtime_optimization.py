@@ -138,6 +138,118 @@ def _vectorized_nms(
     return selected
 
 
+def _post_process_selected_masks_only(
+    processor: Any,
+    outputs: Any,
+    threshold: float = 0.5,
+    target_sizes: Any = None,
+) -> list[dict[str, Any]]:
+    """Preserve detector results while processing masks after selection."""
+
+    boxes = outputs.pred_boxes
+    logits = outputs.logits
+    order_logits = outputs.order_logits
+    masks = outputs.out_masks
+    if target_sizes is None:
+        raise ValueError("layout postprocessing requires target image sizes")
+    if len(logits) != len(target_sizes):
+        raise ValueError(
+            "target size count must match detector batch dimension"
+        )
+
+    order_seqs = processor._get_order_seqs(order_logits)
+    box_centers, box_dimensions = torch.split(boxes, 2, dim=-1)
+    boxes = torch.cat(
+        [
+            box_centers - 0.5 * box_dimensions,
+            box_centers + 0.5 * box_dimensions,
+        ],
+        dim=-1,
+    )
+    if isinstance(target_sizes, list):
+        image_height, image_width = torch.as_tensor(target_sizes).unbind(1)
+    else:
+        image_height, image_width = target_sizes.unbind(1)
+    scale_factor = torch.stack(
+        [image_width, image_height, image_width, image_height],
+        dim=1,
+    ).to(boxes.device)
+    boxes = boxes * scale_factor[:, None, :]
+
+    query_count = logits.shape[1]
+    class_count = logits.shape[2]
+    scores = torch.sigmoid(logits)
+    scores, flattened_indices = torch.topk(
+        scores.flatten(1),
+        query_count,
+        dim=-1,
+    )
+    labels = flattened_indices % class_count
+    query_indices = flattened_indices // class_count
+
+    results: list[dict[str, Any]] = []
+    for batch_index, target_size in enumerate(target_sizes):
+        kept_positions = torch.nonzero(
+            scores[batch_index] >= threshold,
+            as_tuple=False,
+        ).squeeze(-1)
+        kept_order = order_seqs[batch_index].gather(
+            0,
+            query_indices[batch_index].gather(0, kept_positions),
+        )
+        kept_order, order_indices = torch.sort(kept_order)
+        selected_positions = kept_positions.gather(0, order_indices)
+        selected_queries = query_indices[batch_index].gather(
+            0,
+            selected_positions,
+        )
+
+        selected_scores = scores[batch_index].gather(
+            0,
+            selected_positions,
+        )
+        selected_labels = labels[batch_index].gather(
+            0,
+            selected_positions,
+        )
+        selected_boxes = boxes[batch_index].index_select(
+            0,
+            selected_queries,
+        )
+        selected_masks = masks[batch_index].index_select(
+            0,
+            selected_queries,
+        )
+        selected_masks = (
+            selected_masks.sigmoid() > threshold
+        ).int()
+
+        cpu_boxes = selected_boxes.detach().cpu()
+        cpu_masks = selected_masks.detach().cpu()
+        cpu_scores = selected_scores.detach().cpu()
+        cpu_labels = selected_labels.detach().cpu()
+        cpu_order = kept_order.detach().cpu()
+        polygon_points = processor._extract_polygon_points_by_masks(
+            cpu_boxes.numpy(),
+            cpu_masks.numpy(),
+            [
+                processor.size["width"] / target_size[1],
+                processor.size["height"] / target_size[0],
+            ],
+        )
+        results.append(
+            {
+                "scores": cpu_scores,
+                "labels": cpu_labels,
+                "boxes": cpu_boxes,
+                "polygon_points": polygon_points,
+                "order_seq": cpu_order,
+            }
+        )
+
+    return results
+
+
 def _process_with_tensor_inputs(
     predictor: Any,
     batch_data: Any,
@@ -614,6 +726,10 @@ def install_layout_runtime_optimizations(
         )
 
     predictor.process = MethodType(_process_with_tensor_inputs, predictor)
+    predictor.image_processor.post_process_object_detection = MethodType(
+        _post_process_selected_masks_only,
+        predictor.image_processor,
+    )
 
     from paddlex.inference.models.layout_analysis import (
         processors as layout_processors,
@@ -703,6 +819,7 @@ def install_layout_runtime_optimizations(
 
     return {
         "direct_tensor_preprocessing": True,
+        "filter_masks_before_postprocess": True,
         "final_decoder_heads_only": True,
         "model_backend": backend,
         "model_compiled": compiled,
