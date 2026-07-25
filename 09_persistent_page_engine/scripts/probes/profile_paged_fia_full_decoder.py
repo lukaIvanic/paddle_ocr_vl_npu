@@ -76,6 +76,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default="scatter_nd",
     )
     parser.add_argument(
+        "--paged-metadata",
+        choices=bench.PAGED_METADATA_MODES,
+        default="dynamic_tensor",
+    )
+    parser.add_argument(
         "--paged-single-stream",
         action="store_true",
         help=(
@@ -255,6 +260,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         block_size=args.block_size,
         cache_update_mode=args.paged_cache_update,
         optimization=optimization,
+        native_fia=args.paged_metadata == "fixed_bucket_mask",
+        fixed_actual_kv_lengths=(
+            [args.cache_length] * args.batch_size
+            if args.paged_metadata == "fixed_bucket_mask"
+            else None
+        ),
     ).eval()
     paged_fn, paged_compile = bench._compile_paged_stage(
         paged_stage,
@@ -263,6 +274,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         cache_length=args.cache_length,
         block_size=args.block_size,
         cache_update_mode=args.paged_cache_update,
+        metadata_mode=args.paged_metadata,
         single_stream=args.paged_single_stream,
     )
 
@@ -375,6 +387,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "actual_kv_length": args.position + 1,
             "block_size": args.block_size,
             "paged_cache_update": args.paged_cache_update,
+            "paged_metadata": args.paged_metadata,
             "paged_single_stream": args.paged_single_stream,
             "paged_metadata_scope": (
                 "once_per_decode_step_before_18_layer_loop"
