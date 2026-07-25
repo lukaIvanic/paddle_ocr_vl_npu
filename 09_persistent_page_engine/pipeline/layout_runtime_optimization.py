@@ -2,12 +2,168 @@
 
 from __future__ import annotations
 
+import threading
+import time
 from types import MethodType
 from typing import Any
 
 import numpy as np
 import torch
 import torch.nn.functional as F
+
+
+def _integer_rectangle(box: Any) -> np.ndarray:
+    x_min, y_min, x_max, y_max = np.asarray(box).astype(np.int32)
+    return np.array(
+        [
+            [x_min, y_min],
+            [x_max, y_min],
+            [x_max, y_max],
+            [x_min, y_max],
+        ],
+        dtype=np.float32,
+    )
+
+
+class _MaskRectangleFastPath:
+    """Skip contour extraction when it is guaranteed to normalize to the box."""
+
+    def __init__(self, original: Any) -> None:
+        self.original = original
+        self._lock = threading.Lock()
+        self._calls = 0
+        self._detections = 0
+        self._rectangles = 0
+        self._fallbacks = 0
+        self._wall_ns = 0
+        self._predicate_ns = 0
+        self._fallback_ns = 0
+
+    @staticmethod
+    def _is_full_external_rectangle(
+        box: np.ndarray,
+        mask: np.ndarray,
+        scale_ratio: Any,
+    ) -> bool:
+        x_min, y_min, x_max, y_max = box.astype(np.int32)
+        box_width = int(x_max - x_min)
+        box_height = int(y_max - y_min)
+        if box_width <= 0 or box_height <= 0:
+            return False
+
+        # A full external border survives nearest-neighbour resize as a full
+        # rectangle. RETR_EXTERNAL therefore sees the four box corners even if
+        # there are holes inside the mask.
+        scale_width = float(scale_ratio[0]) / 4.0
+        scale_height = float(scale_ratio[1]) / 4.0
+        mask_height, mask_width = mask.shape
+        x_start, x_end = np.clip(
+            [
+                int(round(x_min * scale_width)),
+                int(round(x_max * scale_width)),
+            ],
+            0,
+            mask_width,
+        )
+        y_start, y_end = np.clip(
+            [
+                int(round(y_min * scale_height)),
+                int(round(y_max * scale_height)),
+            ],
+            0,
+            mask_height,
+        )
+        if x_start >= x_end or y_start >= y_end:
+            return False
+        cropped = mask[y_start:y_end, x_start:x_end]
+        if not (
+            np.all(cropped[0])
+            and np.all(cropped[-1])
+            and np.all(cropped[:, 0])
+            and np.all(cropped[:, -1])
+        ):
+            return False
+
+        # The extracted contour ends at width-1/height-1 whereas PaddleX's box
+        # rectangle ends at width/height. Its auto-mode normalizes to the box
+        # only when their overlap is at least 0.95.
+        overlap = (
+            max(box_width - 1, 0)
+            * max(box_height - 1, 0)
+            / (box_width * box_height)
+        )
+        return overlap >= 0.95
+
+    def __call__(
+        self,
+        boxes: Any,
+        masks: Any,
+        scale_ratio: Any,
+    ) -> list[Any]:
+        started_ns = time.perf_counter_ns()
+        boxes_np = np.asarray(boxes)
+        masks_np = np.asarray(masks)
+        polygons: list[Any] = []
+        rectangles = 0
+        fallbacks = 0
+        predicate_ns = 0
+        fallback_ns = 0
+
+        for index, box in enumerate(boxes_np):
+            predicate_started_ns = time.perf_counter_ns()
+            use_rectangle = self._is_full_external_rectangle(
+                box,
+                masks_np[index],
+                scale_ratio,
+            )
+            predicate_ns += time.perf_counter_ns() - predicate_started_ns
+            if use_rectangle:
+                polygons.append(_integer_rectangle(box))
+                rectangles += 1
+                continue
+
+            fallback_started_ns = time.perf_counter_ns()
+            single = self.original(
+                boxes_np[index : index + 1],
+                masks_np[index : index + 1],
+                scale_ratio,
+            )
+            fallback_ns += time.perf_counter_ns() - fallback_started_ns
+            if len(single) != 1:
+                raise RuntimeError(
+                    "PP-DocLayout mask extractor returned "
+                    f"{len(single)} polygons for one detection"
+                )
+            polygons.append(single[0])
+            fallbacks += 1
+
+        finished_ns = time.perf_counter_ns()
+        with self._lock:
+            self._calls += 1
+            self._detections += len(boxes_np)
+            self._rectangles += rectangles
+            self._fallbacks += fallbacks
+            self._wall_ns += finished_ns - started_ns
+            self._predicate_ns += predicate_ns
+            self._fallback_ns += fallback_ns
+        return polygons
+
+    def snapshot(self) -> dict[str, Any]:
+        with self._lock:
+            return {
+                "calls": self._calls,
+                "detections": self._detections,
+                "rectangle_fast_paths": self._rectangles,
+                "fallbacks": self._fallbacks,
+                "coverage": (
+                    self._rectangles / self._detections
+                    if self._detections
+                    else 0.0
+                ),
+                "wall_s": self._wall_ns / 1_000_000_000,
+                "predicate_s": self._predicate_ns / 1_000_000_000,
+                "fallback_s": self._fallback_ns / 1_000_000_000,
+            }
 
 
 def _pairwise_containment(boxes: np.ndarray) -> np.ndarray:
@@ -594,6 +750,15 @@ def install_layout_runtime_optimizations(
         _post_process_selected_masks_only,
         predictor.image_processor,
     )
+    mask_rectangle_fast_path = None
+    if polygon_mode == "mask":
+        mask_rectangle_fast_path = _MaskRectangleFastPath(
+            predictor.image_processor._extract_polygon_points_by_masks
+        )
+        predictor.image_processor._extract_polygon_points_by_masks = (
+            mask_rectangle_fast_path
+        )
+    predictor._layout_mask_rectangle_fast_path = mask_rectangle_fast_path
 
     from paddlex.inference.models.layout_analysis import (
         processors as layout_processors,

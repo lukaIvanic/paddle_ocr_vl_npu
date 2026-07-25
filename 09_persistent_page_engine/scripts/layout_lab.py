@@ -445,6 +445,16 @@ def main(argv: Sequence[str] | None = None) -> None:
         timeline.write_html(timeline_html)
     layout_mask_guard_path = output_dir / "layout_mask_guard.json"
     layout_mask_guard.write_snapshot(layout_mask_guard_path)
+    mask_rectangle_fast_path = getattr(
+        auto_parallel._pipeline.layout_det_model,
+        "_layout_mask_rectangle_fast_path",
+        None,
+    )
+    mask_rectangle_fast_path_summary = (
+        mask_rectangle_fast_path.snapshot()
+        if mask_rectangle_fast_path is not None
+        else None
+    )
     artifact_write_s = time.perf_counter() - artifact_started
 
     reference = None
@@ -501,6 +511,9 @@ def main(argv: Sequence[str] | None = None) -> None:
         "request_manifest_sha256": requests_sha256,
         "reference_comparison": reference,
         "layout_mask_guard": layout_mask_guard.snapshot(),
+        "layout_mask_rectangle_fast_path": (
+            mask_rectangle_fast_path_summary
+        ),
         "timeline": {
             "enabled": bool(args.timeline),
             "event_count": len(timeline.events()) if args.timeline else 0,
