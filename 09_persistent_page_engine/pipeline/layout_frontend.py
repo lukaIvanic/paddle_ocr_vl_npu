@@ -22,7 +22,6 @@ from .layout_postprocess import (
     LayoutPostprocessor,
     crop_formula_margin,
     crop_layout_regions,
-    filter_overlap_boxes,
     merge_blocks,
 )
 from .layout_output import (
@@ -299,8 +298,7 @@ class OwnedLayoutFrontend:
         preparation_started = time.perf_counter()
         preparation_started_ns = time.perf_counter_ns()
         document_images = gather_document_images(image, boxes)
-        filtered = filter_overlap_boxes({"boxes": boxes})["boxes"]
-        blocks = crop_layout_regions(image, filtered)
+        blocks = crop_layout_regions(image, boxes)
         image_labels = IMAGE_LABELS + ["chart", "seal"]
         blocks = merge_blocks(
             blocks,
