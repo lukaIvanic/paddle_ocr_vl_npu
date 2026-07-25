@@ -32,7 +32,6 @@ SKIP_ORDER_LABELS = {
 }
 
 IMAGE_LABELS = ["image", "header_image", "footer_image"]
-_PERSISTENT_CROP_LABELS = {*IMAGE_LABELS, "chart", "seal"}
 
 LARGE_CONTAINER_LABELS = {
     "chart",
@@ -686,24 +685,14 @@ def crop_layout_regions(
     def crop_one(box_info: dict[str, Any]) -> dict[str, Any]:
         box = box_info["coordinate"]
         x_min, y_min, x_max, y_max = [int(value) for value in box]
-        crop_view = image[y_min:y_max, x_min:x_max]
-        full_rectangle = _is_full_crop_rectangle(box_info)
-        # Request crops become independent PIL images before prepare_page
-        # returns. Visible page artifacts must retain their own NumPy storage.
-        borrow_page_buffer = (
-            full_rectangle
-            and box_info["label"] not in _PERSISTENT_CROP_LABELS
-            and image.strides[0] > 0
-            and image.strides[1:] == (3, 1)
-        )
-        crop = crop_view if borrow_page_buffer else crop_view.copy()
+        crop = image[y_min:y_max, x_min:x_max].copy()
         output = {
             "img": crop,
             "box": box,
             "label": box_info["label"],
             "polygon_points": box_info["polygon_points"],
         }
-        if not full_rectangle:
+        if not _is_full_crop_rectangle(box_info):
             mask = np.zeros(crop.shape[:2], dtype=np.int32)
             polygon = np.asarray(
                 box_info["polygon_points"],
@@ -720,11 +709,7 @@ def crop_layout_regions(
 
 
 def _to_pil(image: np.ndarray | Image.Image) -> Image.Image:
-    return (
-        image
-        if isinstance(image, Image.Image)
-        else Image.fromarray(np.ascontiguousarray(image))
-    )
+    return image if isinstance(image, Image.Image) else Image.fromarray(image)
 
 
 def _merge_images(
