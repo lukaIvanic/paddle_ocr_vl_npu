@@ -33,6 +33,7 @@ from .layout_model_runtime import (
     _MaskRectangleFastPath,
     _NpuGraphCoreForward,
     _decoder_forward_final_heads_only,
+    _extract_custom_vertices_vectorized,
     _mask_to_box_capture_friendly,
     _post_process_selected_masks_only,
 )
@@ -145,6 +146,10 @@ class OwnedLayoutFrontend:
             decoder,
         )
         decoder._layout_emit_masks = True
+        self.processor.extract_custom_vertices = MethodType(
+            _extract_custom_vertices_vectorized,
+            self.processor,
+        )
         self.mask_fast_path = _MaskRectangleFastPath(
             self.processor._extract_polygon_points_by_masks
         )
