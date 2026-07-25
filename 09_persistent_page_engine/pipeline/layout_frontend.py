@@ -137,6 +137,7 @@ class OwnedLayoutFrontend:
             self.model_dir
         )
         self.model.eval().to(self.device)
+        self.model_dtype = next(self.model.parameters()).dtype
 
         decoder = _find_decoder(self.model)
         decoder.forward = MethodType(
@@ -186,18 +187,29 @@ class OwnedLayoutFrontend:
                 args=args or {},
             )
 
-    def _move_inputs(self, inputs: Any) -> Any:
-        inputs = inputs.to(self.device)
-        model_dtype = next(self.model.parameters()).dtype
-        for key in list(inputs.keys()):
-            value = inputs[key]
-            if (
-                torch.is_tensor(value)
-                and value.is_floating_point()
-                and value.dtype != model_dtype
-            ):
-                inputs[key] = value.to(dtype=model_dtype)
-        return inputs
+    def _prepare_pixel_values(self, image_bgr: np.ndarray) -> torch.Tensor:
+        """Run the processor's exact singleton math without batch plumbing."""
+
+        image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+        pixel_values = torch.from_numpy(image_rgb).permute(2, 0, 1).unsqueeze(0)
+        pixel_values = self.processor.resize(
+            image=pixel_values,
+            size=self.processor.size,
+            resample=self.processor.resample,
+            antialias=False,
+        )
+        pixel_values = self.processor.rescale_and_normalize(
+            pixel_values,
+            self.processor.do_rescale,
+            self.processor.rescale_factor,
+            self.processor.do_normalize,
+            self.processor.image_mean,
+            self.processor.image_std,
+        )
+        return pixel_values.to(
+            device=self.device,
+            dtype=self.model_dtype,
+        )
 
     @torch.inference_mode()
     def _detect(
@@ -211,13 +223,7 @@ class OwnedLayoutFrontend:
 
         started = time.perf_counter()
         started_ns = time.perf_counter_ns()
-        image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
-        image_tensor = torch.from_numpy(image_rgb).permute(2, 0, 1)
-        inputs = self.processor(
-            images=[image_tensor],
-            return_tensors="pt",
-        )
-        inputs = self._move_inputs(inputs)
+        inputs = {"pixel_values": self._prepare_pixel_values(image_bgr)}
         timing["layout_preprocess_h2d_s"] = time.perf_counter() - started
         self._span(
             "Layout detection",
