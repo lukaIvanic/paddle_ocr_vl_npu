@@ -368,10 +368,11 @@ class _MaskRectangleFastPath:
         started_ns = time.perf_counter_ns()
         boxes_np = np.asarray(boxes)
         masks_np = np.asarray(masks)
-        polygons: list[Any] = [None] * len(boxes_np)
-        fallback_indices: list[int] = []
+        polygons: list[Any] = []
         rectangles = 0
+        fallbacks = 0
         predicate_ns = 0
+        fallback_ns = 0
 
         for index, box in enumerate(boxes_np):
             predicate_started_ns = time.perf_counter_ns()
@@ -383,39 +384,32 @@ class _MaskRectangleFastPath:
             predicate_ns += time.perf_counter_ns() - predicate_started_ns
 
             if is_candidate:
-                polygons[index] = _full_border_contour(box)
+                polygons.append(_full_border_contour(box))
                 rectangles += 1
                 continue
 
-            fallback_indices.append(index)
-
-        fallback_started_ns = time.perf_counter_ns()
-        if fallback_indices:
-            fallback_polygons = self.original(
-                boxes_np[fallback_indices],
-                masks_np[fallback_indices],
+            fallback_started_ns = time.perf_counter_ns()
+            single = self.original(
+                boxes_np[index : index + 1],
+                masks_np[index : index + 1],
                 scale_ratio,
             )
-            if len(fallback_polygons) != len(fallback_indices):
+            fallback_ns += time.perf_counter_ns() - fallback_started_ns
+            if len(single) != 1:
                 raise RuntimeError(
                     "PP-DocLayout mask extractor returned "
-                    f"{len(fallback_polygons)} polygons for "
-                    f"{len(fallback_indices)} detections"
+                    f"{len(single)} polygons for one detection"
                 )
-            for index, polygon in zip(
-                fallback_indices,
-                fallback_polygons,
-                strict=True,
-            ):
-                polygons[index] = polygon
-        fallback_ns = time.perf_counter_ns() - fallback_started_ns
+            reference_polygon = single[0]
+            polygons.append(reference_polygon)
+            fallbacks += 1
 
         finished_ns = time.perf_counter_ns()
         with self._lock:
             self._calls += 1
             self._detections += len(boxes_np)
             self._rectangles += rectangles
-            self._fallbacks += len(fallback_indices)
+            self._fallbacks += fallbacks
             self._wall_ns += finished_ns - started_ns
             self._predicate_ns += predicate_ns
             self._fallback_ns += fallback_ns
