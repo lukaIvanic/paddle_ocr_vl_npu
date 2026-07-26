@@ -97,6 +97,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="Vision self-attention implementation inside the normal Experiment 09 path.",
     )
     parser.add_argument(
+        "--vision-promptfa-align-128",
+        action="store_true",
+        help=(
+            "Pad every PromptFA vision sequence to a 128-token multiple; "
+            "required by the masked 310P PromptFA path."
+        ),
+    )
+    parser.add_argument(
         "--vision-buckets",
         default=",".join(str(bucket) for bucket in OPTIMIZED_VISION_BUCKETS),
         help="Strictly increasing comma-separated B=1 vision padding shapes.",
@@ -186,6 +194,7 @@ def main() -> None:
         torchair_cache_dir=args.torchair_cache_dir.expanduser().resolve(),
         vision_backend=args.vision_backend,
         vision_attention=args.vision_attention,
+        vision_promptfa_align_128=args.vision_promptfa_align_128,
         vision_buckets=vision_buckets,
         vision_torchair_cache_dir=args.vision_torchair_cache_dir.expanduser().resolve(),
         vision_padding=args.vision_padding,

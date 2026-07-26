@@ -64,8 +64,10 @@ from utils.metrics import per_second
 from ..model.vision_prefill import (
     PreparedVisionPrefill,
     VISION_ATTENTION_CHOICES,
+    VISION_PROMPT_FA_310P_SEQ_ALIGNMENT,
+    align_vision_buckets,
+    align_vision_seq_len,
     get_vision_prompt_fa_layout,
-    parse_vision_buckets,
 )
 from .vision_router import BatchedVisionGraphRuntime, select_profiled_vision_route
 
@@ -407,6 +409,7 @@ class ContinuousRecognizer:
         vision_buckets: str | Iterable[int] = OPTIMIZED_VISION_BUCKETS,
         vision_torchair_cache_dir: Path | None = None,
         vision_padding: str = "auto",
+        vision_promptfa_align_128: bool = False,
         vision_packing: str = DEFAULT_VISION_PACKING,
         vision_pack_target: int = DEFAULT_VISION_PACK_TARGET,
         vision_router_lookahead: int = DEFAULT_VISION_ROUTER_LOOKAHEAD,
@@ -454,10 +457,30 @@ class ContinuousRecognizer:
                 "vision attention must be one of "
                 f"{VISION_ATTENTION_CHOICES}, got {vision_attention!r}"
             )
-        self.vision_buckets = parse_vision_buckets(vision_buckets)
+        self.vision_promptfa_align_128 = bool(vision_promptfa_align_128)
+        if (
+            self.vision_promptfa_align_128
+            and self.vision_attention != "prompt_flash_attention"
+        ):
+            raise ValueError(
+                "vision_promptfa_align_128 requires "
+                "vision_attention='prompt_flash_attention'"
+            )
+        self.vision_seq_alignment = (
+            VISION_PROMPT_FA_310P_SEQ_ALIGNMENT
+            if self.vision_promptfa_align_128
+            else 1
+        )
+        self.vision_buckets = align_vision_buckets(
+            vision_buckets,
+            self.vision_seq_alignment,
+        )
         self.vision_padding = str(vision_padding)
         self.vision_packing = str(vision_packing)
-        self.vision_pack_target = int(vision_pack_target)
+        self.vision_pack_target = align_vision_seq_len(
+            int(vision_pack_target),
+            self.vision_seq_alignment,
+        )
         self.vision_router_lookahead = int(vision_router_lookahead)
         if self.vision_packing not in VISION_PACKING_CHOICES:
             raise ValueError(
@@ -579,6 +602,7 @@ class ContinuousRecognizer:
                 else torchair_cache_dir.parent / f"{torchair_cache_dir.name}_vision"
             ),
             vision_padding=self.vision_padding,
+            vision_seq_alignment=self.vision_seq_alignment,
             text_backend=self.text_backend,
             text_buckets=self.text_buckets,
             text_cache_root=(
@@ -2503,6 +2527,8 @@ class ContinuousRecognizer:
             "vision_prefill": self.vision_prefill.metadata,
             "vision_backend": self.vision_backend,
             "vision_attention": vision_attention,
+            "vision_promptfa_align_128": self.vision_promptfa_align_128,
+            "vision_sequence_alignment": self.vision_seq_alignment,
             "vision_packing": {
                 "mode": self.vision_packing,
                 "target": self.vision_pack_target,

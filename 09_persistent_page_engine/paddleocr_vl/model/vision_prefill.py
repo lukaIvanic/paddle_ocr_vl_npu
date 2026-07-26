@@ -44,6 +44,7 @@ VISION_PROMPT_FA_LAYOUT_CHOICES = ("bnsd", "bsnd", "bsh")
 VISION_PROMPT_FA_MASK_SPARSE_MODE_ENV = (
     "PADDLE_OCR_VL_VISION_PROMPT_FA_MASK_SPARSE_MODE"
 )
+VISION_PROMPT_FA_310P_SEQ_ALIGNMENT = 128
 VISION_SOFTMAX_DTYPE_ENV = "PADDLE_OCR_VL_VISION_SOFTMAX_DTYPE"
 SOFTMAX_DTYPE_CHOICES = ("fp32", "model")
 
@@ -95,6 +96,28 @@ def prompt_flash_attention_call_head_dim(head_dim: int) -> int:
     """Return the smallest PromptFA-compatible head dimension."""
     head_dim = int(head_dim)
     return ((head_dim + 15) // 16) * 16
+
+
+def align_vision_seq_len(seq_len: int, alignment: int) -> int:
+    """Round a physical vision sequence up to its runtime alignment."""
+    seq_len = int(seq_len)
+    alignment = int(alignment)
+    if seq_len <= 0:
+        raise ValueError(f"vision sequence length must be positive, got {seq_len}")
+    if alignment <= 0:
+        raise ValueError(f"vision sequence alignment must be positive, got {alignment}")
+    return ((seq_len + alignment - 1) // alignment) * alignment
+
+
+def align_vision_buckets(
+    buckets: str | Iterable[int],
+    alignment: int,
+) -> tuple[int, ...]:
+    """Normalize configured buckets to the physical PromptFA alignment."""
+    parsed = parse_vision_buckets(buckets)
+    return tuple(
+        sorted({align_vision_seq_len(bucket, alignment) for bucket in parsed})
+    )
 
 
 def get_vision_softmax_dtype_mode() -> str:
@@ -1052,6 +1075,7 @@ class VisionPrefillRuntime:
         model_dir: Path,
         attention_impl: str = "manual",
         padding: str = "auto",
+        seq_alignment: int = 1,
     ):
         self.model = model
         self.backend = str(backend)
@@ -1061,7 +1085,18 @@ class VisionPrefillRuntime:
                 "vision attention must be one of "
                 f"{VISION_ATTENTION_CHOICES}, got {attention_impl!r}"
             )
-        self.buckets = parse_vision_buckets(buckets)
+        self.seq_alignment = int(seq_alignment)
+        if self.seq_alignment <= 0:
+            raise ValueError(
+                "vision sequence alignment must be positive, "
+                f"got {self.seq_alignment}"
+            )
+        if self.seq_alignment != 1 and self.attention_impl != "prompt_flash_attention":
+            raise ValueError(
+                "vision sequence alignment is only supported with "
+                "prompt_flash_attention"
+            )
+        self.buckets = align_vision_buckets(buckets, self.seq_alignment)
         self.requested_padding = str(padding)
         if self.requested_padding not in VISION_PADDING_CHOICES:
             raise ValueError(
@@ -1113,6 +1148,7 @@ class VisionPrefillRuntime:
                 else None
             ),
             "buckets": list(self.buckets),
+            "sequence_alignment": self.seq_alignment,
             "requested_padding": self.requested_padding,
             "padding": self.padding,
             "overflow": (
@@ -1237,16 +1273,26 @@ class VisionPrefillRuntime:
             else None
         )
         if bucket is None:
+            physical_seq_len = align_vision_seq_len(
+                real_seq_len,
+                self.seq_alignment,
+            )
             return {
                 "execution": (
                     "eager_overflow"
                     if self.padding == "bucket"
-                    else "eager"
+                    else (
+                        "eager_padded"
+                        if physical_seq_len != real_seq_len
+                        else "eager"
+                    )
                 ),
                 "real_vision_tokens": real_seq_len,
-                "physical_vision_tokens": real_seq_len,
-                "padding_vision_tokens": 0,
-                "useful_token_fraction": 1.0,
+                "physical_vision_tokens": physical_seq_len,
+                "padding_vision_tokens": physical_seq_len - real_seq_len,
+                "useful_token_fraction": (
+                    float(real_seq_len) / float(physical_seq_len)
+                ),
                 "bucket": None,
             }
         return {
