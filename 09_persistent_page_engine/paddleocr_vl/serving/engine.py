@@ -487,7 +487,10 @@ class ContinuousRecognizer:
                 "vision_packing must be one of "
                 f"{VISION_PACKING_CHOICES}, got {vision_packing!r}"
             )
-        if self.vision_pack_target not in self.vision_buckets:
+        if (
+            self.vision_packing != "off"
+            and self.vision_pack_target not in self.vision_buckets
+        ):
             raise ValueError(
                 "vision_pack_target must be one of the configured vision buckets: "
                 f"target={self.vision_pack_target} buckets={self.vision_buckets}"

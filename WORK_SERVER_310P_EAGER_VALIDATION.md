@@ -789,6 +789,10 @@ request without eager overflow, and avoid compiling the complete default
 ladder. A sixth graph improves physical-token efficiency by only roughly
 one to one-and-a-half percentage points and is deliberately excluded.
 
+Keep vision packing off for all Phase 6 lanes. The five vision values above
+are independent B=1 compilation buckets, not pack targets, so do not pass
+`--vision-packing` or `--vision-pack-target` to `run_offline_e2e.py`.
+
 ### Cache preparation
 
 Pull current `main` before starting. Preserve the existing Phase 5 B4 decode
