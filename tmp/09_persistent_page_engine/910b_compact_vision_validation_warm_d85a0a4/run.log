@@ -1,0 +1,13 @@
+Loading weights:   0%|          | 0/858 [00:00<?, ?it/s]Loading weights:  59%|█████▊    | 504/858 [00:00<00:00, 5036.87it/s]Loading weights: 100%|██████████| 858/858 [00:00<00:00, 5176.27it/s]
+[W726 17:04:59.192882826 TensorFactories.cpp:340] Warning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (function operator())
+page_completed=page_0000_page-d1561665-5359-42fe-920c-d6e3bff81953 recognized_regions=27 latency_s=5.754349
+page_completed=page_0001_page-9a25d716-f3a8-42e6-9a4d-e5e49a71ab41 recognized_regions=15 latency_s=3.352900
+page_completed=page_0002_docstructbench_llm-raw-scihub-o.O-j.ergon.2004.09.009.pdf_13 recognized_regions=22 latency_s=3.219274
+page_completed=page_0003_jiaocaineedrop_jiaocai_needrop_en_1308 recognized_regions=13 latency_s=2.543512
+page_completed=page_0004_notes_1ba14cb325bc448f7201b20502ecf2b5_9 recognized_regions=15 latency_s=2.594760
+page_completed=page_0005_yanbaopptmerge_3f514841b9bba3e68710fde7af9562d36a424736a356ece18bb5eea86b43ada5.pdf_15 recognized_regions=8 latency_s=2.286790
+page_completed=page_0006_book_zh_GB12082006_extracted_page_8 recognized_regions=50 latency_s=4.846678
+page_completed=page_0007_PPT_PresentationSpecification_page_025 recognized_regions=14 latency_s=1.433714
+output=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_compact_vision_validation_warm_d85a0a4/output/run.json
+pages=8 layout_regions=167 recognized_regions=164 partial_pages=0
+run_wall_s=14.400603 decode_wall_s=1.602733 raw_decode_tok_per_s=1644.6906917242577 effective_decode_tok_per_s=1526.1431835954227 e2e_output_tok_per_s=181.2424149038094

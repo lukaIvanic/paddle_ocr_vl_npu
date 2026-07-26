@@ -1,0 +1,49 @@
+that
+
+\[\begin{align*}AB&=\left[\begin{array}{cc}2&3\\1&4\end{array}\right]\begin{
+
+When an attempt is made to form the product $BA$, we discover that the dimensions are not compatible in this order because the rows of $B$ are three
+
+If it happens that AB = BA, we say that A and B commute. Most often, even when AB and BA are both defined, the products are
+
+\[A B=B A\]
+
+We now discuss how to use matrices to represent a linear system of equations. The linear equations in (3) can be written as a matrix product. The coefficients
+
+\[a_{kj}\]
+
+\[M\times N\]
+
+\[x_{i}\]
+
+\[N\times1\]
+
+\[b_{k}\]
+
+\[M\times1\]
+
+(8)
+
+\[A X=\left[\begin{array}{c c c c c c}a_{11}&a_{12}&\cdots&a_{
+
+The matrix multiplication \(AX = B\) in (8) is reminiscent of the dot product for ordinary vectors, because each element \(b_k\)
+
+\[A X=B\]
+
+\[b_{k}\]
+
+Example 3.6. Express the system of linear equations (5) in Example 3.4 as a matrix product. Use matrix multiplication to verify that
+
+\[[4\quad3\quad3]\]
+
+\[\begin{bmatrix}0.125&0.200&0.400\\ 0.375&0
+
+(9)
+
+To verify that [4 3 3]' is the solution of (5), we must show that \(A\begin{bmatrix}4 & 3
+
+\[[4\quad3\quad3]^{\prime}\]
+
+\[A\begin{bmatrix}4&3&3\end{bmatrix}^{\prime}=\]
+
+\[\begin{bmatrix}0.125&0.200&0.400\\ 0.375&0

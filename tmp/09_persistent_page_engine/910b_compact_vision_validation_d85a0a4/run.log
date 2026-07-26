@@ -1,0 +1,182 @@
+Loading weights:   0%|          | 0/858 [00:00<?, ?it/s]Loading weights:  55%|█████▌    | 474/858 [00:00<00:00, 4735.51it/s]Loading weights: 100%|██████████| 858/858 [00:00<00:00, 4853.43it/s]
+[W726 16:57:27.842644298 TensorFactories.cpp:340] Warning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (function operator())
+...start compile Ascend C operator AddLayerNorm. kernel name is te_addlayernorm_baf468e9712d9debe84186e43ec31bd6fa0f48a5be656713335a907ad0d94991
+[2026-07-26 16:59:15] [WARNING] [ascend910b] cube_te In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm.cpp:16:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_special_kernel.h:19:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_base.h:21:
+/usr/local/Ascend/cann-9.0.0/aarch64-linux/asc/../tikcpp/tikcfw/impl/dav_c220/kernel_operator_reg_others_impl.h:16:9: warning: impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use "#include "basic_api/kernel_operator_intf.h"" and use public functions or variables defined in interface headers files. [-W#pragma-messages]
+#pragma message("impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use \"#include \"basic_api/kernel_operator_intf.h\"\" and use public functions or variables defined in interface headers files.")
+        ^
+1 warning generated.
+
+[2026-07-26 16:59:15] [WARNING] [ascend910b] vec_te In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm.cpp:16:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_special_kernel.h:19:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_base.h:21:
+/usr/local/Ascend/cann-9.0.0/aarch64-linux/asc/../tikcpp/tikcfw/impl/dav_c220/kernel_operator_reg_others_impl.h:16:9: warning: impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use "#include "basic_api/kernel_operator_intf.h"" and use public functions or variables defined in interface headers files. [-W#pragma-messages]
+#pragma message("impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use \"#include \"basic_api/kernel_operator_intf.h\"\" and use public functions or variables defined in interface headers files.")
+        ^
+1 warning generated.
+
+[2026-07-26 16:59:22] [WARNING] [ascend910b] 0_te In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm.cpp:16:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_special_kernel.h:19:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_base.h:21:
+/usr/local/Ascend/cann-9.0.0/aarch64-linux/asc/../tikcpp/tikcfw/impl/dav_c220/kernel_operator_reg_others_impl.h:16:9: warning: impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use "#include "basic_api/kernel_operator_intf.h"" and use public functions or variables defined in interface headers files. [-W#pragma-messages]
+#pragma message("impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use \"#include \"basic_api/kernel_operator_intf.h\"\" and use public functions or variables defined in interface headers files.")
+        ^
+1 warning generated.
+
+.[2026-07-26 16:59:26] [WARNING] [ascend910b] 0_te In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm.cpp:16:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_special_kernel.h:19:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_base.h:21:
+/usr/local/Ascend/cann-9.0.0/aarch64-linux/asc/../tikcpp/tikcfw/impl/dav_c220/kernel_operator_reg_others_impl.h:16:9: warning: impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use "#include "basic_api/kernel_operator_intf.h"" and use public functions or variables defined in interface headers files. [-W#pragma-messages]
+#pragma message("impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use \"#include \"basic_api/kernel_operator_intf.h\"\" and use public functions or variables defined in interface headers files.")
+        ^
+1 warning generated.
+
+[2026-07-26 16:59:30] [WARNING] [ascend910b] baf468e9712d9debe84186e43ec31bd6fa0f48a5be656713335a907ad0d94991_te In file included from /workspace/repos/paddle_ocr_vl_npu/kernel_meta/kernel_meta_17555066651321639401/kernel_meta/te_addlayernorm_baf468e9712d9debe84186e43ec31bd6fa0f48a5be656713335a907ad0d94991_481104_kernel.cpp:6:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm.cpp:16:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_special_kernel.h:19:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_base.h:21:
+/usr/local/Ascend/cann-9.0.0/aarch64-linux/asc/../tikcpp/tikcfw/impl/dav_c220/kernel_operator_reg_others_impl.h:16:9: warning: impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use "#include "basic_api/kernel_operator_intf.h"" and use public functions or variables defined in interface headers files. [-W#pragma-messages]
+#pragma message("impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use \"#include \"basic_api/kernel_operator_intf.h\"\" and use public functions or variables defined in interface headers files.")
+        ^
+1 warning generated.
+
+..start compile Ascend C operator AddLayerNorm. kernel name is te_addlayernorm_efbcf56247632bfdedce056347afa12fcc3e85b61a79472dcf83bb44ec1e19b5
+[2026-07-26 16:59:52] [WARNING] [ascend910b] cube_te In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm.cpp:16:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_special_kernel.h:19:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_base.h:21:
+/usr/local/Ascend/cann-9.0.0/aarch64-linux/asc/../tikcpp/tikcfw/impl/dav_c220/kernel_operator_reg_others_impl.h:16:9: warning: impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use "#include "basic_api/kernel_operator_intf.h"" and use public functions or variables defined in interface headers files. [-W#pragma-messages]
+#pragma message("impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use \"#include \"basic_api/kernel_operator_intf.h\"\" and use public functions or variables defined in interface headers files.")
+        ^
+1 warning generated.
+
+[2026-07-26 16:59:53] [WARNING] [ascend910b] vec_te In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm.cpp:16:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_special_kernel.h:19:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_base.h:21:
+/usr/local/Ascend/cann-9.0.0/aarch64-linux/asc/../tikcpp/tikcfw/impl/dav_c220/kernel_operator_reg_others_impl.h:16:9: warning: impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use "#include "basic_api/kernel_operator_intf.h"" and use public functions or variables defined in interface headers files. [-W#pragma-messages]
+#pragma message("impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use \"#include \"basic_api/kernel_operator_intf.h\"\" and use public functions or variables defined in interface headers files.")
+        ^
+1 warning generated.
+
+.[2026-07-26 16:59:59] [WARNING] [ascend910b] 0_te In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm.cpp:16:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_special_kernel.h:19:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_base.h:21:
+/usr/local/Ascend/cann-9.0.0/aarch64-linux/asc/../tikcpp/tikcfw/impl/dav_c220/kernel_operator_reg_others_impl.h:16:9: warning: impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use "#include "basic_api/kernel_operator_intf.h"" and use public functions or variables defined in interface headers files. [-W#pragma-messages]
+#pragma message("impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use \"#include \"basic_api/kernel_operator_intf.h\"\" and use public functions or variables defined in interface headers files.")
+        ^
+1 warning generated.
+
+[2026-07-26 17:00:03] [WARNING] [ascend910b] 0_te In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm.cpp:16:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_special_kernel.h:19:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_base.h:21:
+/usr/local/Ascend/cann-9.0.0/aarch64-linux/asc/../tikcpp/tikcfw/impl/dav_c220/kernel_operator_reg_others_impl.h:16:9: warning: impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use "#include "basic_api/kernel_operator_intf.h"" and use public functions or variables defined in interface headers files. [-W#pragma-messages]
+#pragma message("impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use \"#include \"basic_api/kernel_operator_intf.h\"\" and use public functions or variables defined in interface headers files.")
+        ^
+1 warning generated.
+
+.[2026-07-26 17:00:07] [WARNING] [ascend910b] efbcf56247632bfdedce056347afa12fcc3e85b61a79472dcf83bb44ec1e19b5_te In file included from /workspace/repos/paddle_ocr_vl_npu/kernel_meta/kernel_meta_17555066651321639401/kernel_meta/te_addlayernorm_efbcf56247632bfdedce056347afa12fcc3e85b61a79472dcf83bb44ec1e19b5_481102_kernel.cpp:6:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm.cpp:16:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_special_kernel.h:19:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_base.h:21:
+/usr/local/Ascend/cann-9.0.0/aarch64-linux/asc/../tikcpp/tikcfw/impl/dav_c220/kernel_operator_reg_others_impl.h:16:9: warning: impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use "#include "basic_api/kernel_operator_intf.h"" and use public functions or variables defined in interface headers files. [-W#pragma-messages]
+#pragma message("impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use \"#include \"basic_api/kernel_operator_intf.h\"\" and use public functions or variables defined in interface headers files.")
+        ^
+1 warning generated.
+
+.start compile Ascend C operator AddLayerNorm. kernel name is te_addlayernorm_f23cdad01d250ca4e33ed2ae6f9737d1e1a9897dfa0a80f681e317ec646ca5ef
+[2026-07-26 17:00:32] [WARNING] [ascend910b] cube_te In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm.cpp:16:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_special_kernel.h:19:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_base.h:21:
+/usr/local/Ascend/cann-9.0.0/aarch64-linux/asc/../tikcpp/tikcfw/impl/dav_c220/kernel_operator_reg_others_impl.h:16:9: warning: impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use "#include "basic_api/kernel_operator_intf.h"" and use public functions or variables defined in interface headers files. [-W#pragma-messages]
+#pragma message("impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use \"#include \"basic_api/kernel_operator_intf.h\"\" and use public functions or variables defined in interface headers files.")
+        ^
+1 warning generated.
+
+[2026-07-26 17:00:32] [WARNING] [ascend910b] vec_te In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm.cpp:16:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_special_kernel.h:19:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_base.h:21:
+/usr/local/Ascend/cann-9.0.0/aarch64-linux/asc/../tikcpp/tikcfw/impl/dav_c220/kernel_operator_reg_others_impl.h:16:9: warning: impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use "#include "basic_api/kernel_operator_intf.h"" and use public functions or variables defined in interface headers files. [-W#pragma-messages]
+#pragma message("impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use \"#include \"basic_api/kernel_operator_intf.h\"\" and use public functions or variables defined in interface headers files.")
+        ^
+1 warning generated.
+
+[2026-07-26 17:00:38] [WARNING] [ascend910b] 0_te In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm.cpp:16:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_special_kernel.h:19:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_base.h:21:
+/usr/local/Ascend/cann-9.0.0/aarch64-linux/asc/../tikcpp/tikcfw/impl/dav_c220/kernel_operator_reg_others_impl.h:16:9: warning: impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use "#include "basic_api/kernel_operator_intf.h"" and use public functions or variables defined in interface headers files. [-W#pragma-messages]
+#pragma message("impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use \"#include \"basic_api/kernel_operator_intf.h\"\" and use public functions or variables defined in interface headers files.")
+        ^
+1 warning generated.
+
+.[2026-07-26 17:00:42] [WARNING] [ascend910b] 0_te In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm.cpp:16:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_special_kernel.h:19:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_base.h:21:
+/usr/local/Ascend/cann-9.0.0/aarch64-linux/asc/../tikcpp/tikcfw/impl/dav_c220/kernel_operator_reg_others_impl.h:16:9: warning: impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use "#include "basic_api/kernel_operator_intf.h"" and use public functions or variables defined in interface headers files. [-W#pragma-messages]
+#pragma message("impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use \"#include \"basic_api/kernel_operator_intf.h\"\" and use public functions or variables defined in interface headers files.")
+        ^
+1 warning generated.
+
+[2026-07-26 17:00:46] [WARNING] [ascend910b] f23cdad01d250ca4e33ed2ae6f9737d1e1a9897dfa0a80f681e317ec646ca5ef_te In file included from /workspace/repos/paddle_ocr_vl_npu/kernel_meta/kernel_meta_17555066651321639401/kernel_meta/te_addlayernorm_f23cdad01d250ca4e33ed2ae6f9737d1e1a9897dfa0a80f681e317ec646ca5ef_481102_kernel.cpp:6:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm.cpp:16:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_special_kernel.h:19:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_base.h:21:
+/usr/local/Ascend/cann-9.0.0/aarch64-linux/asc/../tikcpp/tikcfw/impl/dav_c220/kernel_operator_reg_others_impl.h:16:9: warning: impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use "#include "basic_api/kernel_operator_intf.h"" and use public functions or variables defined in interface headers files. [-W#pragma-messages]
+#pragma message("impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use \"#include \"basic_api/kernel_operator_intf.h\"\" and use public functions or variables defined in interface headers files.")
+        ^
+1 warning generated.
+
+..start compile Ascend C operator MatMulV3. kernel name is te_matmulv3_97f7bccd99dc28c85e7815da081b9a3b75ec11f7be18785c5cb8079e11fa4116
+start compile Ascend C operator AddLayerNorm. kernel name is te_addlayernorm_a0db9a96d43ca2c0f25c95bfd7e52608adbfb8ac33e70cf54317614483f69690
+[2026-07-26 17:01:08] [WARNING] [ascend910b] cube_te In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm.cpp:16:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_special_kernel.h:19:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_base.h:21:
+/usr/local/Ascend/cann-9.0.0/aarch64-linux/asc/../tikcpp/tikcfw/impl/dav_c220/kernel_operator_reg_others_impl.h:16:9: warning: impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use "#include "basic_api/kernel_operator_intf.h"" and use public functions or variables defined in interface headers files. [-W#pragma-messages]
+#pragma message("impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use \"#include \"basic_api/kernel_operator_intf.h\"\" and use public functions or variables defined in interface headers files.")
+        ^
+1 warning generated.
+
+[2026-07-26 17:01:08] [WARNING] [ascend910b] vec_te In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm.cpp:16:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_special_kernel.h:19:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_base.h:21:
+/usr/local/Ascend/cann-9.0.0/aarch64-linux/asc/../tikcpp/tikcfw/impl/dav_c220/kernel_operator_reg_others_impl.h:16:9: warning: impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use "#include "basic_api/kernel_operator_intf.h"" and use public functions or variables defined in interface headers files. [-W#pragma-messages]
+#pragma message("impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use \"#include \"basic_api/kernel_operator_intf.h\"\" and use public functions or variables defined in interface headers files.")
+        ^
+1 warning generated.
+
+.[2026-07-26 17:01:14] [WARNING] [ascend910b] 0_te In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm.cpp:16:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_special_kernel.h:19:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_base.h:21:
+/usr/local/Ascend/cann-9.0.0/aarch64-linux/asc/../tikcpp/tikcfw/impl/dav_c220/kernel_operator_reg_others_impl.h:16:9: warning: impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use "#include "basic_api/kernel_operator_intf.h"" and use public functions or variables defined in interface headers files. [-W#pragma-messages]
+#pragma message("impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use \"#include \"basic_api/kernel_operator_intf.h\"\" and use public functions or variables defined in interface headers files.")
+        ^
+1 warning generated.
+
+[2026-07-26 17:01:18] [WARNING] [ascend910b] 0_te In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm.cpp:16:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_special_kernel.h:19:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_base.h:21:
+/usr/local/Ascend/cann-9.0.0/aarch64-linux/asc/../tikcpp/tikcfw/impl/dav_c220/kernel_operator_reg_others_impl.h:16:9: warning: impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use "#include "basic_api/kernel_operator_intf.h"" and use public functions or variables defined in interface headers files. [-W#pragma-messages]
+#pragma message("impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use \"#include \"basic_api/kernel_operator_intf.h\"\" and use public functions or variables defined in interface headers files.")
+        ^
+1 warning generated.
+
+.[2026-07-26 17:01:22] [WARNING] [ascend910b] a0db9a96d43ca2c0f25c95bfd7e52608adbfb8ac33e70cf54317614483f69690_te In file included from /workspace/repos/paddle_ocr_vl_npu/kernel_meta/kernel_meta_17555066651321639401/kernel_meta/te_addlayernorm_a0db9a96d43ca2c0f25c95bfd7e52608adbfb8ac33e70cf54317614483f69690_481103_kernel.cpp:6:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm.cpp:16:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_special_kernel.h:19:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_base.h:21:
+/usr/local/Ascend/cann-9.0.0/aarch64-linux/asc/../tikcpp/tikcfw/impl/dav_c220/kernel_operator_reg_others_impl.h:16:9: warning: impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use "#include "basic_api/kernel_operator_intf.h"" and use public functions or variables defined in interface headers files. [-W#pragma-messages]
+#pragma message("impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use \"#include \"basic_api/kernel_operator_intf.h\"\" and use public functions or variables defined in interface headers files.")
+        ^
+1 warning generated.
+
+page_completed=page_0000_page-d1561665-5359-42fe-920c-d6e3bff81953 recognized_regions=27 latency_s=5.247934
+page_completed=page_0001_page-9a25d716-f3a8-42e6-9a4d-e5e49a71ab41 recognized_regions=15 latency_s=3.418496
+page_completed=page_0002_docstructbench_llm-raw-scihub-o.O-j.ergon.2004.09.009.pdf_13 recognized_regions=22 latency_s=3.239413
+page_completed=page_0003_jiaocaineedrop_jiaocai_needrop_en_1308 recognized_regions=13 latency_s=2.510171
+page_completed=page_0004_notes_1ba14cb325bc448f7201b20502ecf2b5_9 recognized_regions=15 latency_s=2.558806
+page_completed=page_0005_yanbaopptmerge_3f514841b9bba3e68710fde7af9562d36a424736a356ece18bb5eea86b43ada5.pdf_15 recognized_regions=8 latency_s=2.255635
+page_completed=page_0006_book_zh_GB12082006_extracted_page_8 recognized_regions=50 latency_s=4.796126
+page_completed=page_0007_PPT_PresentationSpecification_page_025 recognized_regions=14 latency_s=1.424048
+output=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_compact_vision_validation_d85a0a4/output/run.json
+pages=8 layout_regions=167 recognized_regions=164 partial_pages=0
+run_wall_s=13.822295 decode_wall_s=1.641087 raw_decode_tok_per_s=1606.2521673598685 effective_decode_tok_per_s=1490.4752660706517 e2e_output_tok_per_s=188.82536675435543
