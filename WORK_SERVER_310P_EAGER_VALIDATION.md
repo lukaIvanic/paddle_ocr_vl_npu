@@ -731,6 +731,229 @@ batching and decode graph replay produced the material gains.
 Do not use the 910B timings as 310P thresholds. Use them to ensure the same
 metric definitions and to identify whether the 310P bottleneck shape differs.
 
+## Phase 6: compiled prefill characterization
+
+Run this phase only after Phase 5 has established all of the following:
+
+- aligned eager PromptFA completes the full-output page;
+- aligned eager PromptFA works with the persisted B4 TorchAir decode graph;
+- eager-B4 and compiled-B4 decode outputs agree;
+- the exact Phase 5 B4 decode cache path is known.
+
+This phase isolates vision and text-prefill compilation. Do not change the
+eight pages, their order, layout/region policy, 32-token output cap, B4 decode
+arena, KV4096, or aligned PromptFA call. Reuse the already successful Phase 5
+aligned-PromptFA plus TorchAir-B4 result as the baseline; do not rerun it.
+
+### Compact bucket sets
+
+The exact matched 164-region workload has this 128-aligned vision distribution:
+
+```text
+640:81, 768:67, 896:3, 1024:1, 1152:2, 1280:2, 1408:1,
+1920:1, 2560:2, 2944:2, 3200:1, 4992:1
+```
+
+Use exactly five vision graphs:
+
+```text
+640,768,1408,2944,4992
+```
+
+Expected routing for the matched workload is:
+
+```text
+640:81, 768:67, 1408:9, 2944:5, 4992:2
+real vision tokens:     126864
+physical vision tokens: 140672
+useful fraction:        0.9018425842
+```
+
+Use exactly five text-prefill graphs:
+
+```text
+176,208,384,768,1280
+```
+
+Expected routing is:
+
+```text
+176:87, 208:61, 384:9, 768:5, 1280:2
+real text tokens:       33848
+physical text tokens:   37856
+useful fraction:        0.8941251057
+```
+
+These sets were selected from the real region distribution, cover every
+request without eager overflow, and avoid compiling the complete default
+ladder. A sixth graph improves physical-token efficiency by only roughly
+one to one-and-a-half percentage points and is deliberately excluded.
+
+### Cache preparation
+
+Pull current `main` before starting. Preserve the existing Phase 5 B4 decode
+cache and bind its exact recorded path:
+
+```sh
+PHASE5_B4_CACHE="<exact successful Phase 5 B4 cache path>"
+test -d "$PHASE5_B4_CACHE"
+```
+
+Do not construct this path from the new Git commit: the successful cache may
+have been created by the previous commit. Do not copy or rename it.
+
+Create new, hardware-specific prefill cache roots:
+
+```sh
+GIT_COMMIT="$(git rev-parse HEAD)"
+PREFILL_ROOT="$CHAR_ROOT/prefill_compilation"
+VISION_CACHE="$REPO/.runtime_cache/310p_vision_pfa_align128_5bucket_${GIT_COMMIT}"
+TEXT_CACHE="$REPO/.runtime_cache/310p_text_prefill_5bucket_${GIT_COMMIT}"
+mkdir -p "$PREFILL_ROOT"
+```
+
+Both cache roots must be absent before the first corresponding cold process.
+If either already exists, preserve it and choose a suffixed path. Never use a
+910B cache. Record free filesystem space before compilation and cache size/file
+count after every process.
+
+Reuse the exact programmatically constructed eight-page `--image` argument
+array from Phases 3 and 5. Do not retype or reorder paths.
+
+### Lane V: compiled aligned-PromptFA vision, eager text
+
+Start from the successful Phase 5 aligned-PromptFA TorchAir-B4 command. Change
+only the vision execution and output directory:
+
+```text
+--decode-backend torchair
+--torchair-cache-dir "$PHASE5_B4_CACHE"
+--batch-size 4
+--cache-length 4096
+--max-new-tokens 32
+
+--vision-backend torchair
+--vision-attention prompt_flash_attention
+--vision-promptfa-align-128
+--vision-padding bucket
+--vision-buckets 640,768,1408,2944,4992
+--vision-torchair-cache-dir "$VISION_CACHE"
+
+--text-backend raw_eager
+--text-padding none
+
+--output-dir "$PREFILL_ROOT/vision_compiled_text_eager"
+```
+
+This first process creates five vision graphs. Setup compilation/load time is
+reported separately from inference wall. The timed eight-page inference must
+execute all 164 vision requests through compiled graphs with no eager overflow.
+
+### Lane VT-cold: compiled vision and compiled text
+
+Reuse the same vision and decode caches. Change only text execution and output:
+
+```text
+--text-backend torchair
+--text-padding bucket
+--text-buckets 176,208,384,768,1280
+--text-torchair-cache-dir "$TEXT_CACHE"
+--output-dir "$PREFILL_ROOT/vision_text_compiled_cold"
+```
+
+This process must reuse all five vision graphs and create exactly five
+text-prefill graphs.
+
+### Lane VT-warm: persisted full-prefill replay
+
+Launch a fresh process with the exact VT-cold command and the same three cache
+roots, changing only:
+
+```text
+--output-dir "$PREFILL_ROOT/vision_text_compiled_warm"
+```
+
+No new graph shape may be compiled. This lane is the steady warm-cache result.
+
+### Phase 6 correctness gates
+
+Compare ordered tuples of request ID, token IDs, text, and stop reason:
+
+1. Phase 5 aligned-PromptFA TorchAir-B4 baseline versus Lane V.
+2. Lane V versus VT-cold.
+3. VT-cold versus VT-warm.
+
+Exact generated-token, text, and stop-reason parity is expected. Do not use
+intermediate-logit maximum error as a gate. A missing request, changed stop,
+fallback, or token/text mismatch must be preserved and reported with the first
+difference.
+
+All lanes must retain:
+
+```text
+pages=8
+recognized_regions=164
+partial_pages=0
+decode_backend=torchair
+batch_size=4
+vision_attention=prompt_flash_attention
+vision_promptfa_align_128=true
+vision_sequence_alignment=128
+```
+
+Lane V must additionally show:
+
+```text
+vision_backend=torchair
+text_backend=raw_eager
+vision_execution_counts.compiled=164
+no eager/eager_overflow vision execution
+```
+
+VT-cold and VT-warm must additionally show:
+
+```text
+vision_backend=torchair
+text_backend=torchair
+vision_execution_counts.compiled=164
+text_execution_counts.compiled=164
+no eager/eager_overflow prefill execution
+```
+
+Require the observed vision/text bucket counts, real/physical tokens, and useful
+fractions to match the compact-set projections above. Any mismatch means the
+wrong pages, preprocessing profile, or routing policy was used.
+
+### Phase 6 performance report
+
+For the reused Phase 5 baseline, Lane V, VT-cold, and VT-warm, report:
+
+- inference wall and pages/s;
+- vision and text-prefill device seconds;
+- real/physical tokens and useful token/s for both prefill stages;
+- decode wall and raw/effective decode token/s;
+- non-decode remainder (`run_wall - continuous_decode_wall`);
+- setup totals and per-bucket compile/load first-call timings;
+- decode, vision, and text cache paths, sizes, and file counts;
+- output fingerprint and pairwise parity verdicts.
+
+The main comparisons are:
+
+1. Lane V minus Phase 5 baseline: isolated effect of compiled vision.
+2. VT-cold minus Lane V: isolated effect of compiled text prefill.
+3. VT-warm versus VT-cold inference wall: replay stability.
+4. VT-warm versus the Phase 5 manual-attention compiled-B4 lane: total gain
+   from aligned PromptFA plus compiled prefill.
+
+Do not include cold compilation time in inference wall or pages/s. Report it
+separately because it determines deployment startup cost.
+
+If a graph fails, preserve the first causal TorchAir/CANN traceback, cache
+directory, failing bucket, free disk, and expanded command. Stop that dependency
+chain: a vision compile failure blocks VT; a text compile failure still leaves
+Lane V valid. Do not silently remove a bucket, fall back to eager, or substitute
+a different page.
+
 ## Scope of the conclusion
 
 If the dataset audit, eight-page run, and complete-output page all pass, it is
@@ -757,11 +980,21 @@ conclude:
 - the reported 310P timing matrix is a valid relative characterization of
   these specific execution modes.
 
+If Phase 6 also passes, it is fair to conclude:
+
+- five aligned PromptFA vision graph shapes compile and replay on 310P;
+- five text-prefill graph shapes compile and replay on 310P;
+- the matched workload executes without eager prefill overflow;
+- compiled vision, compiled text, and compiled B4 decode agree with their
+  matched eager/compiled controls for the tested requests;
+- a first warm-cache 310P prefill/decode stage breakdown is available.
+
 It is still **not** fair to conclude:
 
 - OCR accuracy matches the reference implementation;
 - the entire 1,651-page pipeline has completed inference;
-- TorchAir vision or text-prefill compilation works;
+- arbitrary TorchAir vision or text-prefill shapes work beyond the Phase 6
+  bucket set;
 - a cache created on 310P is portable to another hardware/software stack;
 - throughput is representative or optimized.
 
@@ -841,6 +1074,22 @@ B4 eager-compiled parity:
 B4 cold-warm parity:
 B1-B4 first difference:
 B4 cache path / size:
+
+Phase 6 compiled prefill:
+compact vision buckets / observed counts:
+compact text buckets / observed counts:
+Phase 5 aligned-PFA B4 baseline:
+vision compiled / text eager:
+vision+text compiled cold:
+vision+text compiled warm:
+vision compile-first total / per bucket:
+text compile-first total / per bucket:
+vision cache path / size:
+text cache path / size:
+baseline-V parity:
+V-VT parity:
+VT cold-warm parity:
+first Phase 6 mismatch:
 
 First generated token IDs/text:
 First blocker or important warning:
