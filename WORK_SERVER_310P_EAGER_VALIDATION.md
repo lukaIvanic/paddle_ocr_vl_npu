@@ -440,6 +440,278 @@ compatibility failure if every structural and EOS check above passes. Report
 the first differing region and both values. Do not hide a mismatch and do not
 reclassify a crash, length cap, missing region, or fallback as numeric drift.
 
+## Phase 5: 310P characterization matrix
+
+Phases 1–4 establish compatibility. This phase characterizes the first useful
+optimized paths in one iteration:
+
+1. eager PromptFlashAttention;
+2. isolated layout frontend throughput with one versus two workers;
+3. cold TorchAir decode graph creation and persisted warm replay;
+4. B1 versus B4 decode batching;
+5. eager-B4 versus compiled-B4 correctness and speed.
+
+Vision and text prefill remain `raw_eager` throughout this phase. Only the
+decode backend is compiled. This separation is mandatory: do not enable
+TorchAir vision or text-prefill buckets yet.
+
+Create:
+
+```sh
+CHAR_ROOT="$OUTPUT_ROOT/characterization"
+GIT_COMMIT="$(git rev-parse HEAD)"
+mkdir -p "$CHAR_ROOT"
+```
+
+Record NPU identity, free HBM, Python/package/CANN versions, Git commit, all
+expanded commands, and exit codes. Sample NPU memory/utilization while each run
+is active if the server already provides a safe read-only monitoring command;
+do not introduce new synchronization or profiler instrumentation into the
+timed process.
+
+### Phase 5A: eager PromptFlashAttention full-output gate
+
+Repeat the Phase 4 complete-output page with only:
+
+```text
+--vision-attention prompt_flash_attention
+```
+
+Keep decode, vision execution, and text execution `raw_eager`; keep B1,
+KV4096, no padding, and the 2,808-token ceiling. Write it below:
+
+```text
+$CHAR_ROOT/full_output_promptfa_eager_b1/
+```
+
+On the 910B reference, PromptFA was byte-identical to manual attention across
+all five regions. It preserved five EOS stops and 81 generated tokens while
+changing:
+
+| Metric | Manual eager | PromptFA eager |
+| --- | ---: | ---: |
+| Page wall | 2.7916 s | 2.5904 s |
+| Vision device total | 0.4943 s | 0.3266 s |
+
+For 310P, all Phase 4 structural/EOS checks remain mandatory. Compare the
+complete-output tokens and text against the manual Phase 4 result. Exact parity
+is expected and is the PromptFA correctness gate.
+
+The current integration intentionally uses the minimal BNSD 310P call contract:
+no `actual_seq_lengths`, no `actual_seq_lengths_kv`, and no explicit
+`num_key_value_heads`. Do not change call arguments on the work server.
+
+If this gate fails or crashes, preserve the first causal native-op traceback
+and skip PromptFA-based lanes below. Continue the layout comparison and use
+manual vision attention for the decode-graph lanes.
+
+### Phase 5B: isolated 32-page layout comparison
+
+Run the committed owned-layout lab on the first 32 OmniDocBench pages with one
+worker:
+
+```sh
+"$PYTHON_BIN" \
+  "$REPO/09_persistent_page_engine/scripts/layout_owned_lab.py" \
+  --dataset-json "$DATASET_JSON" \
+  --images-dir "$IMAGES_DIR" \
+  --layout-model "$LAYOUT_MODEL" \
+  --limit 32 \
+  --workers 1 \
+  --no-timeline \
+  --output-dir "$CHAR_ROOT/layout_w1"
+```
+
+Then run the exact same pages with the decode-prefetch/two-worker mode and
+require an exact request-manifest match:
+
+```sh
+"$PYTHON_BIN" \
+  "$REPO/09_persistent_page_engine/scripts/layout_owned_lab.py" \
+  --dataset-json "$DATASET_JSON" \
+  --images-dir "$IMAGES_DIR" \
+  --layout-model "$LAYOUT_MODEL" \
+  --limit 32 \
+  --workers 2 \
+  --no-timeline \
+  --reference-requests "$CHAR_ROOT/layout_w1/requests.jsonl" \
+  --output-dir "$CHAR_ROOT/layout_w2"
+```
+
+The `workers=2` mode does not batch pages through one detector call. It
+prefetches the next page's CPU file read/image decode while the current page
+continues through the sequential layout path.
+
+Require:
+
+- 32 pages and 510 requests in both lanes;
+- byte-identical `requests.jsonl`;
+- equal request-manifest SHA-256;
+- `reference_comparison.exact == true` in the W2 summary;
+- no PaddleX dependency;
+- the same NPU graph/mask layout route;
+- no inference or OCR recognizer execution.
+
+Report `frontend_wall_s`, pages/s, seconds/page, setup time, request count, and
+all `stage_totals_s`. In particular separate image decode, model device time,
+postprocessing, page preparation, and wait/D2H fields.
+
+The 910B reference was:
+
+| Layout lane | Wall | Pages/s | Seconds/page | Requests |
+| --- | ---: | ---: | ---: | ---: |
+| W1 serial | 4.7166 s | 6.7845 | 0.14739 | 510 |
+| W2 decode prefetch | 3.1290 s | 10.2268 | 0.09778 | 510 |
+
+The W2 request manifest was byte-identical to W1. These numbers are comparison
+context, not 310P pass thresholds.
+
+### Phase 5C: B1 decode graph creation and persisted replay
+
+This is the first TorchAir test. Use the complete-output reference page so
+every request terminates naturally and can be compared with Phase 4.
+
+Choose a new 310P-specific cache root that has never been used on another
+hardware target, for example:
+
+```sh
+B1_CACHE="$REPO/.runtime_cache/310p_decode_b1_k4096_${GIT_COMMIT}"
+```
+
+Do not reuse or copy 910B caches. Confirm the path does not exist before the
+cold run. If it exists from a previous failed attempt, preserve and report it;
+choose a new suffixed path rather than deleting evidence.
+
+Run the Phase 4 command twice with these changes:
+
+```text
+--decode-backend torchair
+--torchair-cache-dir "$B1_CACHE"
+```
+
+Keep manual vision attention, B1, eager/unpadded vision, eager/unpadded text,
+KV4096, and the 2,808-token ceiling. Write the first process to
+`$CHAR_ROOT/decode_b1_cold/` and the second process to
+`$CHAR_ROOT/decode_b1_warm/`, reusing the exact same cache.
+
+Require:
+
+- both runs satisfy all Phase 4 structural and EOS checks;
+- cold and warm compiled results have exact token/text parity with manual
+  eager Phase 4;
+- cold and warm compiled results are byte-identical to each other;
+- `configuration.decode_backend == "torchair"`;
+- vision and text remain `raw_eager` with no padding;
+- `configuration.decode_attention == "increfa"`;
+- `configuration.decode_cache_update == "npu_scatter"`;
+- the warm process reuses the same shape cache;
+- no unexpected second compilation occurs during inference.
+
+Report separately:
+
+- total setup;
+- `compile_wrapper`;
+- `compile_first_call`;
+- inference `run_wall_s`;
+- `continuous_decode_wall_s`;
+- raw and effective decode token/s;
+- cache directory, size, and file count;
+- token/text hashes.
+
+The 910B B1 reference was:
+
+| B1 lane | First graph call | Page wall | Decode wall | Raw slots/s |
+| --- | ---: | ---: | ---: | ---: |
+| Raw eager | none | 2.7916 s | 1.2766 s | 63.45 |
+| TorchAir cold | 13.1517 s | 2.0828 s | 0.5582 s | 145.12 |
+| TorchAir warm | 0.2239 s | 2.1201 s | 0.5919 s | 136.84 |
+
+All three produced identical tokens and text. Compile/load setup is outside the
+reported inference wall and must not be mixed into steady replay throughput.
+
+If the cold B1 graph fails, do not attempt B4 compilation. Preserve the cache,
+complete traceback, and compiler logs. Continue only with eager lanes.
+
+### Phase 5D: matched eight-page performance matrix
+
+Use the exact same eight pages, order, all-region policy, KV4096, and 32-token
+cap from Phase 3. Reuse the successful manual-eager B1 Phase 3 result as the
+baseline; do not rerun it merely to populate a table.
+
+Run these additional lanes:
+
+| Lane | Vision attention | Decode backend | Batch | Decode cache |
+| --- | --- | --- | ---: | --- |
+| PFA eager B1 | PromptFA | `raw_eager` | 1 | none |
+| PFA eager B4 | PromptFA | `raw_eager` | 4 | none |
+| PFA TorchAir B4 cold | PromptFA | `torchair` | 4 | new B4 cache |
+| PFA TorchAir B4 warm | PromptFA | `torchair` | 4 | same B4 cache |
+
+If Phase 5A rejected PromptFA, replace PromptFA with manual attention in all
+four lanes and label the matrix accordingly.
+
+Use a new hardware-specific B4 cache:
+
+```sh
+B4_CACHE="$REPO/.runtime_cache/310p_decode_b4_k4096_${GIT_COMMIT}"
+```
+
+Apply the same cold-cache preservation rule as B1. The cold and warm B4 runs
+must use exactly the same cache path and all other arguments.
+
+For every lane, record:
+
+- setup and compile/load timings;
+- E2E wall, pages/s, and regions/s;
+- layout-region, recognized-region, partial-page, and stop-reason counts;
+- summed vision-prefill and text-prefill device seconds;
+- real and physical vision/text tokens and corresponding device token/s;
+- decode wall, graph calls, raw/effective tokens, raw/effective token/s;
+- active-slot fraction, idle slots, look-ahead slots, and hot-swap admissions;
+- output fingerprint over ordered request ID, token IDs, text, and stop reason;
+- peak observed HBM if available without perturbing execution.
+
+### Matrix correctness comparisons
+
+Do not use one global token-parity rule:
+
+1. Manual-eager B1 versus PromptFA-eager B1 must be compared directly. On
+   910B they were byte-identical across all 164 regions.
+2. PromptFA-eager B4 versus PromptFA-TorchAir B4 cold must be byte-identical.
+3. PromptFA-TorchAir B4 cold versus warm must be byte-identical.
+4. B1 versus B4 may differ numerically. Report the number and first example,
+   but do not fail B4 solely for differing tokens if the two B4 backends agree.
+
+This distinction is evidence-backed: on 910B, manual B1 and PromptFA B1 shared
+one exact fingerprint, while eager B4, cold compiled B4, and warm compiled B4
+shared a second exact fingerprint. The difference therefore came from batch
+execution numerics, not PromptFA and not TorchAir lowering.
+
+All lanes must still have identical page counts, region counts, partial-page
+counts, and stop-reason counts. A crash, missing region, inconsistent
+accounting, B4 eager/compiled mismatch, cold/warm mismatch, or fallback is a
+failure.
+
+### 910B eight-page reference
+
+The exact same 164-region workload produced:
+
+| Lane | Wall | Vision device | Text device | Decode wall | Raw decode/s | Effective decode/s |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Manual eager B1 | 56.7277 s | 7.2434 s | 5.8241 s | 40.5095 s | 64.36 | 60.31 |
+| PFA eager B1 | 55.9988 s | 7.4866 s | 5.7222 s | 39.6292 s | 65.78 | 61.65 |
+| PFA eager B4 | 27.5907 s | 7.4739 s | 5.7885 s | 11.1628 s | 235.78 | 218.85 |
+| PFA TorchAir B4 cold | 19.2247 s | 8.0451 s | 6.1260 s | 1.7411 s | 1511.66 | 1403.11 |
+| PFA TorchAir B4 warm | 17.8821 s | 7.4108 s | 5.6450 s | 1.6395 s | 1605.36 | 1490.08 |
+
+The B4 scheduler executed 658 decode calls with 99.05% active-slot
+utilization, 160 hot-swap admissions, 25 idle slots, and 164 completion
+look-ahead slots. PromptFA was essentially neutral on this mixed corpus;
+batching and decode graph replay produced the material gains.
+
+Do not use the 910B timings as 310P thresholds. Use them to ensure the same
+metric definitions and to identify whether the 310P bottleneck shape differs.
+
 ## Scope of the conclusion
 
 If the dataset audit, eight-page run, and complete-output page all pass, it is
@@ -454,12 +726,24 @@ fair to conclude:
   token cap;
 - the exercised native NPU operations are callable in real inference.
 
-It is **not** yet fair to conclude:
+If the applicable Phase 5 gates also pass, it is additionally fair to
+conclude:
+
+- the committed eager PromptFlashAttention call is compatible with this 310P
+  stack;
+- the layout decode-prefetch mode preserves exact request output;
+- B1 and B4 TorchAir decode graphs can be created and replayed from persisted
+  hardware-specific caches;
+- compiled B4 agrees with eager B4 for the tested workload;
+- the reported 310P timing matrix is a valid relative characterization of
+  these specific execution modes.
+
+It is still **not** fair to conclude:
 
 - OCR accuracy matches the reference implementation;
 - the entire 1,651-page pipeline has completed inference;
-- PromptFlashAttention works;
-- TorchAir compilation works;
+- TorchAir vision or text-prefill compilation works;
+- a cache created on 310P is portable to another hardware/software stack;
 - throughput is representative or optimized.
 
 ## Required report
@@ -513,6 +797,31 @@ Region text parity with 910B:
 Assembled page SHA-256 / parity:
 First mismatch:
 Complete-output run.json:
+
+PromptFA full-output gate: PASS | SKIPPED | FAIL
+PromptFA B1 parity:
+
+Layout W1: wall / pages-s / seconds-page / requests:
+Layout W2: wall / pages-s / seconds-page / requests:
+Layout manifest parity:
+Layout stage totals:
+
+B1 graph cold: compile-first / wall / decode wall / raw-effective tok-s:
+B1 graph warm: compile-first / wall / decode wall / raw-effective tok-s:
+B1 eager-compiled parity:
+B1 cache path / size:
+
+Eight-page matrix:
+manual eager B1:
+PFA eager B1:
+PFA eager B4:
+PFA TorchAir B4 cold:
+PFA TorchAir B4 warm:
+B1 PromptFA parity:
+B4 eager-compiled parity:
+B4 cold-warm parity:
+B1-B4 first difference:
+B4 cache path / size:
 
 First generated token IDs/text:
 First blocker or important warning:
