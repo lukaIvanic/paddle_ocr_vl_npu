@@ -264,7 +264,7 @@ def main() -> None:
             "request_total": "In-memory crop preprocessing through prefill, compiled decode, D2H token transfer, and detokenization.",
             "device_stage_s": "Accelerator event time for vision/text-prefill sub-stages; it is not host wall time.",
             "vision_prefill": "Accelerator event time for the shared vision encoder plus final LayerNorm stage, whether called eagerly or through TorchAir; input preparation is reported separately.",
-            "vision_useful_token_fraction": "Sum of real vision tokens divided by sum of physical bucket tokens; eager and overflow requests have no padding.",
+            "vision_useful_token_fraction": "Sum of real vision tokens divided by all physical vision tokens, including bucket padding and optional PromptFA sequence alignment.",
             "text_prefill": "Accelerator event time for the shared text-transformer stage, including in-place KV cache population, whether called eagerly or through TorchAir.",
             "text_useful_token_fraction": "Sum of real text-prefill tokens divided by sum of physical bucket tokens; eager and overflow requests have no padding.",
             "continuous_decode_wall": "Decode throughput denominator: the larger of exclusive host-control wall time and serialized decode-plus-admission device time, preventing overlapped producer synchronization from understating decode cost.",

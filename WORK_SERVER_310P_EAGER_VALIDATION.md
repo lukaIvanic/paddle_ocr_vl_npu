@@ -475,6 +475,7 @@ Repeat the Phase 4 complete-output page with only:
 
 ```text
 --vision-attention prompt_flash_attention
+--vision-promptfa-align-128
 ```
 
 Keep decode, vision execution, and text execution `raw_eager`; keep B1,
@@ -488,22 +489,32 @@ On the 910B reference, PromptFA was byte-identical to manual attention across
 all five regions. It preserved five EOS stops and 81 generated tokens while
 changing:
 
-| Metric | Manual eager | PromptFA eager |
-| --- | ---: | ---: |
-| Page wall | 2.7916 s | 2.5904 s |
-| Vision device total | 0.4943 s | 0.3266 s |
+| Metric | Manual eager | PromptFA eager | PromptFA aligned repeat |
+| --- | ---: | ---: | ---: |
+| Page wall | 2.7916 s | 2.5904 s | 2.5243 s |
+| Vision device total | 0.4943 s | 0.3266 s | 0.3107 s |
+| Real / physical vision tokens | 7,360 / 7,360 | 7,360 / 7,360 | 7,360 / 7,552 |
 
 For 310P, all Phase 4 structural/EOS checks remain mandatory. Compare the
 complete-output tokens and text against the manual Phase 4 result. Exact parity
 is expected and is the PromptFA correctness gate.
 
-The current integration intentionally uses the minimal BNSD 310P call contract:
+The aligned 910B lane was byte-identical to both the unaligned PromptFA and
+manual reference across every token, text result, and EOS stop. It rounded each
+physical crop length to a 128-token multiple with 97.46% aggregate useful
+vision tokens. The integration retains the minimal BNSD 310P call contract:
 no `actual_seq_lengths`, no `actual_seq_lengths_kv`, and no explicit
-`num_key_value_heads`. Do not change call arguments on the work server.
+`num_key_value_heads`.
 
 If this gate fails or crashes, preserve the first causal native-op traceback
 and skip PromptFA-based lanes below. Continue the layout comparison and use
 manual vision attention for the decode-graph lanes.
+
+If an earlier Phase 5 attempt failed with
+`attention mask must be NULL, when Qs, Kvs is unAlign`, pull the commit that
+introduces `--vision-promptfa-align-128` and rerun Phase 5A plus only the
+previously skipped PromptFA lanes. Do not rerun successful manual-attention
+or layout lanes.
 
 ### Phase 5B: isolated 32-page layout comparison
 
@@ -523,7 +534,7 @@ worker:
 ```
 
 Then run the exact same pages with the decode-prefetch/two-worker mode and
-require an exact request-manifest match:
+compare its request manifest:
 
 ```sh
 "$PYTHON_BIN" \
@@ -545,9 +556,11 @@ continues through the sequential layout path.
 Require:
 
 - 32 pages and 510 requests in both lanes;
-- byte-identical `requests.jsonl`;
-- equal request-manifest SHA-256;
-- `reference_comparison.exact == true` in the W2 summary;
+- identical page, request, label, and reading-order structure;
+- either byte-identical `requests.jsonl`, or only coordinate/crop-size
+  differences of at most one pixel from parallel Kornia resize rounding;
+- report `reference_comparison.exact` honestly and list every tolerated
+  one-pixel difference rather than relabeling it exact;
 - no PaddleX dependency;
 - the same NPU graph/mask layout route;
 - no inference or OCR recognizer execution.
@@ -646,6 +659,12 @@ Run these additional lanes:
 | PFA eager B4 | PromptFA | `raw_eager` | 4 | none |
 | PFA TorchAir B4 cold | PromptFA | `torchair` | 4 | new B4 cache |
 | PFA TorchAir B4 warm | PromptFA | `torchair` | 4 | same B4 cache |
+
+Every PromptFA lane must also include:
+
+```text
+--vision-promptfa-align-128
+```
 
 If Phase 5A rejected PromptFA, replace PromptFA with manual attention in all
 four lanes and label the matrix accordingly.

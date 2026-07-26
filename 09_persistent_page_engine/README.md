@@ -588,6 +588,15 @@ derived from the real dimension 72, and slices the result back to 72 before the
 output projection. Bucket padding uses PromptFA sparse mode 1 so the supplied
 real/dummy-row mask is honored.
 
+Atlas 310P PromptFA rejects a non-null attention mask when the query/key
+sequence length is not 128-aligned. Enable
+`--vision-promptfa-align-128` on that hardware. The option rounds every
+PromptFA physical sequence and configured vision bucket up to a 128-token
+multiple before vision execution; real token counts and useful-token fractions
+remain separately reported. It applies to eager, compiled, singleton, and
+packed vision routes. The default is off, so existing 910B execution and cache
+shapes are unchanged.
+
 The 64-page comparison retained under
 `tmp/09_persistent_page_engine/vision_matrix_uniform64_analysis_22a2f21/`
 found compiled PromptFA fastest overall: 29.52 seconds of vision-tower device

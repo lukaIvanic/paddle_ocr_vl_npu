@@ -1091,7 +1091,10 @@ class VisionPrefillRuntime:
                 "vision sequence alignment must be positive, "
                 f"got {self.seq_alignment}"
             )
-        if self.seq_alignment != 1 and self.attention_impl != "prompt_flash_attention":
+        if (
+            self.seq_alignment != 1
+            and self.attention_impl != "prompt_flash_attention"
+        ):
             raise ValueError(
                 "vision sequence alignment is only supported with "
                 "prompt_flash_attention"
