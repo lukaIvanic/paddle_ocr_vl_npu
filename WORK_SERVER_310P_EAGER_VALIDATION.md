@@ -313,15 +313,145 @@ If the run reports that 4,096 cache positions are insufficient for a specific
 prompt plus 32 generated tokens, report that crop and required capacity. Do not
 raise the cache again or skip the crop in this pass.
 
+## Phase 4: complete-output eager reference page
+
+The 32-token eight-page run validates repeated execution but deliberately
+truncates long regions. Finish the eager validation with one page whose regions
+are allowed to run naturally to EOS.
+
+Use this exact OmniDocBench page:
+
+```text
+PPT_The Right Moves_page_024.png
+```
+
+Resolve it beneath the audited `IMAGES_DIR`; do not use a similarly named copy
+from elsewhere. Run:
+
+```sh
+"$PYTHON_BIN" \
+  "$REPO/09_persistent_page_engine/scripts/run_offline_e2e.py" \
+  --image "$IMAGES_DIR/PPT_The Right Moves_page_024.png" \
+  --layout-model "$LAYOUT_MODEL" \
+  --recognizer-model "$RECOGNIZER_MODEL" \
+  --dtype fp16 \
+  --decode-backend raw_eager \
+  --vision-backend raw_eager \
+  --vision-attention manual \
+  --vision-padding none \
+  --text-backend raw_eager \
+  --text-padding none \
+  --batch-size 1 \
+  --cache-length 4096 \
+  --max-new-tokens 2808 \
+  --no-save-annotated \
+  --output-dir "$OUTPUT_ROOT/full_output_page"
+```
+
+There must be no `--max-regions` argument. Save the fully expanded command to
+`$OUTPUT_ROOT/full_output_page_command.txt` and the complete log to
+`$OUTPUT_ROOT/full_output_page.log`.
+
+The 2,808-token cap is the Experiment 09 full-output ceiling that still fits
+the 4,096-position cache for the retained workload. It is intentionally much
+higher than this page needs. The success condition is natural EOS completion,
+not reaching the cap.
+
+### 910B eager reference
+
+This exact command was validated on a 910B at Git commit `556d5dd`, using
+torch `2.10.0+cpu` and torch-npu `2.10.0`. The observed configuration was:
+
+```text
+decode_backend=raw_eager
+vision_backend=raw_eager
+vision_attention=manual
+vision_padding=none
+text_backend=raw_eager
+text_padding=none
+batch_size=1
+cache_length=4096
+max_new_tokens=2808
+decode_attention=increfa
+decode_cache_update=npu_scatter
+```
+
+The reference completed five layout/recognition regions, all by EOS:
+
+| Region | Label | Input tokens | Generated incl. EOS | Stop | Compact token-ID SHA-256 |
+| --- | --- | ---: | ---: | --- | --- |
+| 001 | `paragraph_title` | 165 | 7 | `eos` | `1fb3a2ba8476f9ef2066d97f95f6a381045e330157f95eae0c91951cfc9f4093` |
+| 002 | `text` | 293 | 14 | `eos` | `9c5236da4551449b97f089ca8091be435fe5e2a90f9631d07ea9febb00e33bd0` |
+| 003 | `text` | 895 | 42 | `eos` | `11a29aa8660a05402678aec730d59c0957fb585c9c83a88227f0248e6c892533` |
+| 004 | `text` | 385 | 15 | `eos` | `da323dee18d6dececca5e525b6387ad2509af1a9fd9dfb19b6b9894a005bdb40` |
+| 005 | `number` | 167 | 3 | `eos` | `4f90f056e19dff68308f911795c3c87c5b7c2ce0571a6a8ba5ac976593e21d72` |
+
+The token-ID hash is over
+`json.dumps(token_ids, separators=(",", ":"))` encoded as UTF-8, with no
+trailing newline. The reference aggregate was:
+
+```text
+pages=1
+layout_regions=5
+recognized_regions=5
+partial_pages=0
+stop_reason_counts={"eos": 5}
+generated_tokens_including_eos=81
+decode_graph_calls=81
+hot_swap_decode_admissions=4
+```
+
+The assembled page text was:
+
+```text
+Subject Support con't.
+
+- ESL subject section courses are credit-granting courses.
+
+These courses focus on the subject content while placing emphasis on subject-related vocabulary, language structures and cultural background in order to support students who are acquiring English at the same time that they are learning the subject.
+
+• Often these subject specific courses are aligned with specific ESL levels.
+```
+
+Including its final newline, that page text has SHA-256:
+
+```text
+ee0eba01a6fa41ca94b5b87a721ed10db8694c2f5f29b203a83e2f3bb355ced9
+```
+
+### Complete-output success checks
+
+The 310P run passes this phase only if:
+
+- exit code is zero and `run.json` parses;
+- exactly one page completes with `partial_pages == 0`;
+- all detected eligible regions have a result;
+- every recognized region has `stop_reason == "eos"`;
+- no region reaches `length_cap`;
+- output text is non-empty and page assembly succeeds;
+- configuration remains raw eager/manual/unpadded exactly as specified;
+- decode reports `increfa` and `npu_scatter`;
+- no TorchAir compilation or CPU/CUDA fallback occurs.
+
+Compare the region count, token IDs, texts, and assembled-page hash with the
+910B reference. Exact parity is strong evidence and should be reported.
+However, a token/text mismatch alone is a diagnostic rather than an automatic
+compatibility failure if every structural and EOS check above passes. Report
+the first differing region and both values. Do not hide a mismatch and do not
+reclassify a crash, length cap, missing region, or fallback as numeric drift.
+
 ## Scope of the conclusion
 
-If both phases pass, it is fair to conclude:
+If the dataset audit, eight-page run, and complete-output page all pass, it is
+fair to conclude:
 
 - the complete OmniDocBench v1.6 image set needed by this checkout is present
   and OpenCV-readable;
 - both local models and their support files load;
 - Experiment 09's eager diagnostic path repeatedly works across diverse real
   pages on this 310P software stack;
+- at least one real page completes naturally by EOS without a short diagnostic
+  token cap;
 - the exercised native NPU operations are callable in real inference.
 
 It is **not** yet fair to conclude:
@@ -373,6 +503,16 @@ Partial pages:
 Run wall time:
 Decode iterations / admissions:
 Configuration backends:
+
+Complete-output eager page: PASS | SKIPPED | FAIL
+Regions / EOS stops / length caps:
+Generated tokens including EOS:
+Decode calls / hot-swap admissions:
+Region token-ID parity with 910B:
+Region text parity with 910B:
+Assembled page SHA-256 / parity:
+First mismatch:
+Complete-output run.json:
 
 First generated token IDs/text:
 First blocker or important warning:
