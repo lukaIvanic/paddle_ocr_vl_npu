@@ -27,14 +27,11 @@ Transformers baseline on the same crop and prompt.
 
 ## Run it
 
-Needs the NPU box. From the container:
+Needs an Ascend NPU. From the repo root:
 
 ```sh
-ssh blue_zone_npu_container
-cd /workspace/repos/paddle_ocr_vl_npu
-source npu-setup
-/usr/local/python3.12.13/bin/python3 02_local_eager_recognition/run_local_recognition.py \
-  --model /workspace/models/PaddleOCR-VL-1.6 \
+python3 02_local_eager_recognition/run_local_recognition.py \
+  --model /path/to/PaddleOCR-VL-1.6 \
   --crop crops/crop_01_text_block_en.png \
   --prompt "OCR:"
 ```
