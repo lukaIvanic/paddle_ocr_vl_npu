@@ -10,6 +10,7 @@ Reports output matching, decode-logit diffs, and steady decode tok/s for:
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import shutil
 import time
@@ -19,25 +20,118 @@ from pathlib import Path
 from typing import Any, Callable
 
 import torch
+import torch_npu  # noqa: F401
 from tokenizers import Tokenizer
 
 from local_modeling_paddleocr_vl import (
     DECODE_ATTENTION,
     DECODE_LINEAR_WEIGHT_FORMAT,
     LocalPaddleOCRVLForConditionalGeneration,
-    _resolve_model_dir,
     cast_decode_linear_weights_to_nz,
 )
-from probe_static_compile import DEFAULT_TORCHAIR_CACHE_DIR, compile_decode_module, maybe_sync
-from run_local_recognition import (
-    NPU_JIT_COMPILE_CHOICES,
-    build_inputs,
-    configure_npu_jit_compile,
-    load_preprocessor_config,
-    parse_dtype,
-    preprocess_image,
-    resolve_device,
-)
+from run_local_recognition import DEFAULT_CROP, DTYPES, build_inputs, preprocess_image
+
+
+DEFAULT_TORCHAIR_CACHE_DIR = Path("outputs") / "torchair_cache"
+
+
+def import_torchair():
+    try:
+        import torchair
+
+        CompilerConfig = torchair.CompilerConfig
+    except Exception as direct_error:
+        try:
+            from torch_npu.dynamo import torchair
+            from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
+
+        except Exception as fallback_error:
+            raise RuntimeError(
+                "TorchAir is unavailable: direct `import torchair` failed with "
+                f"{direct_error!r}, and `from torch_npu.dynamo import torchair` "
+                f"failed with {fallback_error!r}."
+            ) from fallback_error
+
+    if not hasattr(torchair, "inference"):
+        torchair.inference = importlib.import_module(f"{torchair.__name__}.inference")
+    return torchair, CompilerConfig
+
+
+def compile_backend(name: str):
+    if name == "default":
+        return None
+    if name == "torchair":
+        torchair, CompilerConfig = import_torchair()
+        config = CompilerConfig()
+
+        return torchair.get_npu_backend(compiler_config=config)
+    return name
+
+
+def torchair_cache_dir_for_shape(
+    cache_root: Path,
+    *,
+    batch_size: int,
+    cache_length: int,
+    linear_weight_format: str = DECODE_LINEAR_WEIGHT_FORMAT,
+) -> Path:
+    shape_key = f"{linear_weight_format}_{DECODE_ATTENTION}_bs{int(batch_size)}_cache{int(cache_length)}"
+    return cache_root.expanduser().resolve() / shape_key
+
+
+def compile_decode_module(
+    flat_decode: torch.nn.Module,
+    *,
+    backend_name: str,
+    device: torch.device,
+    cache_root: Path,
+    batch_size: int,
+    cache_length: int,
+    linear_weight_format: str = DECODE_LINEAR_WEIGHT_FORMAT,
+) -> tuple[Any, dict[str, Any]]:
+    if backend_name == "torchair":
+        if device.type != "npu":
+            raise ValueError("--backend torchair requires an NPU device.")
+        torchair, CompilerConfig = import_torchair()
+        config = CompilerConfig()
+        shape_cache_dir = torchair_cache_dir_for_shape(
+            cache_root,
+            batch_size=batch_size,
+            cache_length=cache_length,
+            linear_weight_format=linear_weight_format,
+        )
+        shape_cache_dir.mkdir(parents=True, exist_ok=True)
+        compiled_decode = torchair.inference.cache_compile(
+            flat_decode.forward,
+            config=config,
+            dynamic=False,
+            cache_dir=str(shape_cache_dir),
+            ge_cache=True,
+        )
+        return compiled_decode, {
+            "backend": backend_name,
+            "torchair_cache_dir": str(shape_cache_dir),
+            "torchair_ge_cache": True,
+            "compile_api": "torchair.inference.cache_compile",
+            "linear_weight_format": linear_weight_format,
+            "decode_attention": DECODE_ATTENTION,
+        }
+
+    backend = compile_backend(backend_name)
+    compile_kwargs = {"fullgraph": True, "dynamic": False}
+    if backend is not None:
+        compile_kwargs["backend"] = backend
+    return torch.compile(flat_decode, **compile_kwargs), {
+        "backend": backend_name,
+        "compile_api": "torch.compile",
+        "linear_weight_format": linear_weight_format,
+        "decode_attention": DECODE_ATTENTION,
+    }
+
+
+def maybe_sync(device: torch.device) -> None:
+    if device.type == "npu":
+        torch.npu.synchronize()
 
 
 PROFILE_METRIC_CHOICES = ("pipe", "memory", "l2", "memory_access")
@@ -408,15 +502,13 @@ def profile_compiled_decode(
 @torch.inference_mode()
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--model", default="PaddlePaddle/PaddleOCR-VL-1.6")
-    parser.add_argument("--crop", default="crops/crop_01_text_block_en.png")
+    parser.add_argument("--model", type=Path, required=True, help="Path to a local model directory.")
+    parser.add_argument("--crop", type=Path, default=DEFAULT_CROP)
     parser.add_argument("--prompt", default="OCR:")
     parser.add_argument("--max-new-tokens", type=int, default=32)
     parser.add_argument("--cache-length", type=int, default=None)
-    parser.add_argument("--device", default="auto")
-    parser.add_argument("--dtype", default="fp16", choices=["fp16", "float16", "bf16", "bfloat16"])
+    parser.add_argument("--dtype", default="fp16", choices=list(DTYPES))
     parser.add_argument("--backend", default="eager", choices=["eager", "aot_eager", "inductor", "default", "torchair"])
-    parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
     parser.add_argument("--torchair-cache-dir", type=Path, default=DEFAULT_TORCHAIR_CACHE_DIR)
     parser.add_argument("--eos-mode", default="none", choices=EOS_MODE_CHOICES)
     parser.add_argument("--profile-dir", type=Path, default=None, help="Write one post-warmup torch_npu profiler capture for compiled decode.")
@@ -424,18 +516,14 @@ def main() -> None:
     parser.add_argument("--json", action="store_true", help="Print a compact JSON summary instead of human-readable lines.")
     args = parser.parse_args()
 
-    model_dir = _resolve_model_dir(args.model)
-    crop = Path(args.crop)
-    if not crop.exists():
-        crop = Path(__file__).resolve().parents[1] / args.crop
-    device = resolve_device(args.device)
-    dtype = parse_dtype(args.dtype, device)
-    configure_npu_jit_compile(args.npu_jit_compile, device)
+    torch.npu.set_compile_mode(jit_compile=False)
+    device = torch.device("npu:0")
+    dtype = DTYPES[args.dtype]
+    model_dir = args.model
 
-    pre_cfg = load_preprocessor_config(model_dir)
     tokenizer = Tokenizer.from_file(str(model_dir / "tokenizer.json"))
-    pixel_values, image_grid_thw = preprocess_image(crop, pre_cfg)
-    input_ids, attention_mask = build_inputs(tokenizer, image_grid_thw, args.prompt, merge_size=int(pre_cfg["merge_size"]))
+    pixel_values, image_grid_thw = preprocess_image(args.crop)
+    input_ids, attention_mask = build_inputs(tokenizer, image_grid_thw, args.prompt)
     pixel_values = pixel_values.to(device)
     image_grid_thw = image_grid_thw.to(device)
     input_ids = input_ids.to(device)
@@ -584,7 +672,6 @@ def main() -> None:
         "backend": args.backend,
         "device": str(device),
         "dtype": str(dtype),
-        "npu_jit_compile": args.npu_jit_compile,
         "decode_attention": DECODE_ATTENTION,
         "eos_mode": args.eos_mode,
         "eos_token_id": eos_token_id,
@@ -643,7 +730,7 @@ def main() -> None:
         print(json.dumps(summary, indent=2, sort_keys=True, default=json_default))
         return
 
-    print(f"backend={summary['backend']} device={summary['device']} dtype={summary['dtype']} npu_jit_compile={summary['npu_jit_compile']} decode_attention={summary['decode_attention']} eos_mode={summary['eos_mode']}")
+    print(f"backend={summary['backend']} device={summary['device']} dtype={summary['dtype']} decode_attention={summary['decode_attention']} eos_mode={summary['eos_mode']}")
     print("linear_weight_format=" + json.dumps(summary["linear_weight_format"], sort_keys=True))
     print(f"cache_update={summary['cache_update']}")
     print(f"prompt_tokens={summary['prompt_tokens']} generated_tokens={summary['generated_tokens']} requested_decode_steps={summary['requested_decode_steps']} cache_length={summary['cache_length']}")

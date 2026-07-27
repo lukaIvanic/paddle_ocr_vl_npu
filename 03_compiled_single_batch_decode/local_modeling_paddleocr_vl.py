@@ -19,34 +19,6 @@ DECODE_LINEAR_WEIGHT_FALLBACK = "decode_native_fallback"
 DECODE_ATTENTION = "increfa"
 
 
-def _resolve_model_dir(model_id_or_path: str | Path) -> Path:
-    path = Path(model_id_or_path).expanduser()
-    if path.exists():
-        return path
-    try:
-        from huggingface_hub import snapshot_download
-    except Exception as exc:  # pragma: no cover - dependency/environment guard
-        raise RuntimeError("Pass a local model directory or install huggingface_hub.") from exc
-    return Path(
-        snapshot_download(
-            str(model_id_or_path),
-            allow_patterns=[
-                "config.json",
-                "model.safetensors",
-                "tokenizer.json",
-                "tokenizer.model",
-                "tokenizer_config.json",
-                "special_tokens_map.json",
-                "added_tokens.json",
-                "preprocessor_config.json",
-                "processor_config.json",
-                "chat_template.jinja",
-                "generation_config.json",
-            ],
-        )
-    )
-
-
 def _activation(name: str, x: torch.Tensor) -> torch.Tensor:
     if name == "silu":
         return F.silu(x)
@@ -930,12 +902,12 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
     @classmethod
     def from_pretrained(
         cls,
-        model_id_or_path: str | Path = "PaddlePaddle/PaddleOCR-VL-1.6",
+        model_dir: str | Path,
         *,
         dtype: torch.dtype | None = torch.float16,
         device: str | torch.device | None = None,
     ) -> "LocalPaddleOCRVLForConditionalGeneration":
-        model_dir = _resolve_model_dir(model_id_or_path)
+        model_dir = Path(model_dir)
         config = PaddleOCRVLConfig()
         model = cls(config)
         if dtype is not None:

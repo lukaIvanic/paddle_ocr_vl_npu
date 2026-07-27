@@ -1,41 +1,50 @@
 #!/usr/bin/env python3
-"""Run PaddleOCR-VL recognition without importing Transformers."""
+"""Run PaddleOCR-VL recognition with a static KV cache, without importing Transformers."""
 
 from __future__ import annotations
 
 import argparse
-import json
 import math
-import sys
 import time
 from pathlib import Path
 
 import numpy as np
 import torch
+import torch_npu  # noqa: F401
 from PIL import Image
 from tokenizers import Tokenizer
 
-from local_modeling_paddleocr_vl import (
-    DECODE_ATTENTION,
-    LocalPaddleOCRVLForConditionalGeneration,
-    _resolve_model_dir,
-)
+from local_modeling_paddleocr_vl import DECODE_ATTENTION, LocalPaddleOCRVLForConditionalGeneration
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_CROP = REPO_ROOT / "crops" / "crop_01_text_block_en.png"
 
 IMAGE_TOKEN = "<|IMAGE_PLACEHOLDER|>"
 IMAGE_START = "<|IMAGE_START|>"
 IMAGE_END = "<|IMAGE_END|>"
 BOS = "<|begin_of_sentence|>"
-NPU_JIT_COMPILE_CHOICES = ("default", "off", "on")
+
+DTYPES = {
+    "fp16": torch.float16,
+    "float16": torch.float16,
+    "bf16": torch.bfloat16,
+    "bfloat16": torch.bfloat16,
+}
+
+# Preprocessing constants from
+# https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6/blob/main/preprocessor_config.json
+# (verified against the checkpoint copy, 2026-07-27).
+PATCH_SIZE = 14
+MERGE_SIZE = 2
+MIN_PIXELS = 112896
+MAX_PIXELS = 1003520
+IMAGE_MEAN = 0.5
+IMAGE_STD = 0.5
+RESAMPLE = Image.Resampling.BICUBIC
 
 
-def smart_resize(
-    height: int,
-    width: int,
-    factor: int,
-    min_pixels: int,
-    max_pixels: int,
-) -> tuple[int, int]:
+def smart_resize(height: int, width: int) -> tuple[int, int]:
+    factor = PATCH_SIZE * MERGE_SIZE
     if height < factor:
         width = round((width * factor) / height)
         height = factor
@@ -46,198 +55,72 @@ def smart_resize(
         raise ValueError(f"absolute aspect ratio must be smaller than 200, got {max(height, width) / min(height, width)}")
     h_bar = round(height / factor) * factor
     w_bar = round(width / factor) * factor
-    if h_bar * w_bar > max_pixels:
-        beta = math.sqrt((height * width) / max_pixels)
+    if h_bar * w_bar > MAX_PIXELS:
+        beta = math.sqrt((height * width) / MAX_PIXELS)
         h_bar = math.floor(height / beta / factor) * factor
         w_bar = math.floor(width / beta / factor) * factor
-    elif h_bar * w_bar < min_pixels:
-        beta = math.sqrt(min_pixels / (height * width))
+    elif h_bar * w_bar < MIN_PIXELS:
+        beta = math.sqrt(MIN_PIXELS / (height * width))
         h_bar = math.ceil(height * beta / factor) * factor
         w_bar = math.ceil(width * beta / factor) * factor
     return h_bar, w_bar
 
 
-def load_preprocessor_config(model_dir: Path) -> dict:
-    defaults = {
-        "do_convert_rgb": True,
-        "do_normalize": True,
-        "do_rescale": True,
-        "do_resize": True,
-        "image_mean": [0.5, 0.5, 0.5],
-        "image_std": [0.5, 0.5, 0.5],
-        "max_pixels": 1003520,
-        "merge_size": 2,
-        "min_pixels": 112896,
-        "patch_size": 14,
-        "resample": 3,
-        "rescale_factor": 1.0 / 255.0,
-        "temporal_patch_size": 1,
-    }
-    path = model_dir / "preprocessor_config.json"
-    if path.exists():
-        defaults.update(json.loads(path.read_text(encoding="utf-8")))
-    return defaults
-
-
-def preprocess_image(image_path: Path, cfg: dict) -> tuple[torch.Tensor, torch.Tensor]:
-    image = Image.open(image_path)
-    if cfg["do_convert_rgb"]:
-        image = image.convert("RGB")
+def preprocess_image(image_path: Path) -> tuple[torch.Tensor, torch.Tensor]:
+    image = Image.open(image_path).convert("RGB")
     width, height = image.size
-    patch_size = int(cfg["patch_size"])
-    merge_size = int(cfg["merge_size"])
-    temporal_patch_size = int(cfg["temporal_patch_size"])
-    if temporal_patch_size != 1:
-        raise ValueError(f"temporal_patch_size must be 1 for this recognizer path, got {temporal_patch_size}")
+    resized_height, resized_width = smart_resize(height, width)
+    image = image.resize((resized_width, resized_height), resample=RESAMPLE)
 
-    resized_height, resized_width = height, width
-    if cfg["do_resize"]:
-        resized_height, resized_width = smart_resize(
-            height,
-            width,
-            factor=patch_size * merge_size,
-            min_pixels=int(cfg["min_pixels"]),
-            max_pixels=int(cfg["max_pixels"]),
-        )
-        resample = Image.Resampling(int(cfg["resample"]))
-        image = image.resize((resized_width, resized_height), resample=resample)
+    array = np.asarray(image).astype(np.float32) / 255.0
+    array = (array - IMAGE_MEAN) / IMAGE_STD
 
-    array = np.asarray(image)
-    if cfg["do_rescale"]:
-        array = array.astype(np.float32) * float(cfg["rescale_factor"])
-    else:
-        array = array.astype(np.float32)
-    if cfg["do_normalize"]:
-        mean = np.array(cfg["image_mean"], dtype=np.float32)
-        std = np.array(cfg["image_std"], dtype=np.float32)
-        array = (array - mean) / std
-
-    patches = array.transpose(2, 0, 1)[None, ...]
-    channel = patches.shape[1]
-    grid_t = patches.shape[0] // temporal_patch_size
-    grid_h = resized_height // patch_size
-    grid_w = resized_width // patch_size
-    patches = patches.reshape(
-        grid_t,
-        temporal_patch_size,
-        channel,
-        grid_h,
-        patch_size,
-        grid_w,
-        patch_size,
-    )
-    patches = patches.transpose(0, 3, 5, 2, 1, 4, 6)
-    flatten_patches = patches.reshape(grid_t * grid_h * grid_w, channel, patch_size, patch_size)
-    return torch.from_numpy(flatten_patches), torch.tensor([[grid_t, grid_h, grid_w]], dtype=torch.long)
+    grid_h = resized_height // PATCH_SIZE
+    grid_w = resized_width // PATCH_SIZE
+    patches = array.transpose(2, 0, 1)
+    patches = patches.reshape(3, grid_h, PATCH_SIZE, grid_w, PATCH_SIZE)
+    patches = patches.transpose(1, 3, 0, 2, 4)
+    flatten_patches = patches.reshape(grid_h * grid_w, 3, PATCH_SIZE, PATCH_SIZE)
+    return torch.from_numpy(flatten_patches), torch.tensor([[1, grid_h, grid_w]], dtype=torch.long)
 
 
-def build_inputs(
-    tokenizer: Tokenizer,
-    image_grid_thw: torch.Tensor,
-    prompt: str,
-    merge_size: int,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    image_token_count = int(image_grid_thw[0].prod().item()) // merge_size // merge_size
-    text = build_paddleocr_vl_prompt(prompt, image_token_count=image_token_count)
+def build_inputs(tokenizer: Tokenizer, image_grid_thw: torch.Tensor, prompt: str) -> tuple[torch.Tensor, torch.Tensor]:
+    # Mirrors PaddleOCR-VL's chat_template.jinja plus the processor's
+    # image-token expansion.
+    image_token_count = int(image_grid_thw[0].prod().item()) // (MERGE_SIZE * MERGE_SIZE)
+    text = f"{BOS}User: {IMAGE_START}{IMAGE_TOKEN * image_token_count}{IMAGE_END}{prompt}\nAssistant:\n"
     ids = tokenizer.encode(text).ids
     input_ids = torch.tensor([ids], dtype=torch.long)
-    attention_mask = torch.ones_like(input_ids)
-    return input_ids, attention_mask
-
-
-def build_paddleocr_vl_prompt(prompt: str, *, image_token_count: int) -> str:
-    """Mirror PaddleOCR-VL's chat_template.jinja plus processor image-token expansion."""
-    template = f"{BOS}User: {IMAGE_START}{IMAGE_TOKEN}{IMAGE_END}{prompt}\nAssistant:\n"
-    placeholder = "<|placeholder|>"
-    return template.replace(IMAGE_TOKEN, placeholder * int(image_token_count), 1).replace(placeholder, IMAGE_TOKEN)
-
-
-def parse_dtype(name: str, _device: torch.device) -> torch.dtype:
-    if name in {"fp16", "float16"}:
-        return torch.float16
-    if name in {"bf16", "bfloat16"}:
-        return torch.bfloat16
-    raise ValueError(f"unsupported dtype: {name}")
-
-
-def npu_is_available() -> bool:
-    try:
-        import torch_npu  # noqa: F401
-    except ModuleNotFoundError:
-        return False
-    except Exception as exc:
-        raise RuntimeError(f"torch_npu is installed but failed to initialize: {exc.__class__.__name__}: {exc}") from exc
-    return hasattr(torch, "npu") and torch.npu.is_available()
-
-
-def resolve_device(name: str) -> torch.device:
-    if name == "auto":
-        if torch.cuda.is_available():
-            return torch.device("cuda")
-        if npu_is_available():
-            return torch.device("npu:0")
-        if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
-            return torch.device("mps")
-        return torch.device("cpu")
-    if name.startswith("npu"):
-        try:
-            import torch_npu  # noqa: F401
-        except ImportError as exc:
-            raise RuntimeError("NPU device requested, but torch_npu is not importable in this environment.") from exc
-    return torch.device(name)
-
-
-def configure_npu_jit_compile(mode: str, device: torch.device, *, verbose: bool = True) -> None:
-    if mode not in NPU_JIT_COMPILE_CHOICES:
-        raise ValueError(f"unsupported npu_jit_compile={mode!r}")
-    if mode == "default" or device.type != "npu":
-        return
-    try:
-        import torch_npu  # noqa: F401
-
-        requested = mode == "on"
-        torch.npu.set_compile_mode(jit_compile=requested)
-        if verbose:
-            print(f"[npu] set torch.npu compile mode: jit_compile={requested}", file=sys.stderr, flush=True)
-    except Exception as exc:
-        raise RuntimeError(f"failed to set NPU jit_compile={mode}: {exc.__class__.__name__}: {exc}") from exc
+    return input_ids, torch.ones_like(input_ids)
 
 
 @torch.inference_mode()
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--model", default="PaddlePaddle/PaddleOCR-VL-1.6", help="Hub model id or local model directory.")
-    parser.add_argument("--crop", default="crops/crop_01_text_block_en.png", help="Path to a recognition crop.")
+    parser.add_argument("--model", type=Path, required=True, help="Path to a local model directory.")
+    parser.add_argument("--crop", type=Path, default=DEFAULT_CROP, help="Path to a recognition crop.")
     parser.add_argument("--prompt", default="OCR:", help="Recognition prompt, e.g. OCR:, Table Recognition:, Formula Recognition:.")
-    parser.add_argument("--max-new-tokens", type=int, default=96)
-    parser.add_argument("--device", default="auto")
-    parser.add_argument("--dtype", default="fp16", choices=["fp16", "float16", "bf16", "bfloat16"])
-    parser.add_argument("--npu-jit-compile", default="off", choices=NPU_JIT_COMPILE_CHOICES)
-    parser.add_argument("--static", action="store_true", help="Use the experiment-3 static KV cache decode path.")
+    parser.add_argument("--max-new-tokens", type=int, default=512)
+    parser.add_argument("--dtype", default="fp16", choices=list(DTYPES))
+    parser.add_argument("--static", action="store_true", help="Use the static KV cache decode path.")
     parser.add_argument("--cache-length", type=int, default=None, help="Static KV cache length; defaults to input length + max new tokens.")
     args = parser.parse_args()
 
-    model_dir = _resolve_model_dir(args.model)
-    crop = Path(args.crop)
-    if not crop.exists():
-        crop = Path(__file__).resolve().parents[1] / args.crop
-    device = resolve_device(args.device)
-    dtype = parse_dtype(args.dtype, device)
-    configure_npu_jit_compile(args.npu_jit_compile, device)
+    torch.npu.set_compile_mode(jit_compile=False)
+    device = torch.device("npu:0")
+    dtype = DTYPES[args.dtype]
 
-    pre_cfg = load_preprocessor_config(model_dir)
-    tokenizer = Tokenizer.from_file(str(model_dir / "tokenizer.json"))
-    pixel_values, image_grid_thw = preprocess_image(crop, pre_cfg)
-    input_ids, attention_mask = build_inputs(tokenizer, image_grid_thw, args.prompt, merge_size=int(pre_cfg["merge_size"]))
+    tokenizer = Tokenizer.from_file(str(args.model / "tokenizer.json"))
+    pixel_values, image_grid_thw = preprocess_image(args.crop)
+    input_ids, attention_mask = build_inputs(tokenizer, image_grid_thw, args.prompt)
 
-    model = LocalPaddleOCRVLForConditionalGeneration.from_pretrained(model_dir, dtype=dtype, device=device)
+    model = LocalPaddleOCRVLForConditionalGeneration.from_pretrained(args.model, dtype=dtype, device=device)
     pixel_values = pixel_values.to(device)
     image_grid_thw = image_grid_thw.to(device)
     input_ids = input_ids.to(device)
     attention_mask = attention_mask.to(device)
 
-    if device.type == "cuda":
-        torch.cuda.synchronize()
+    torch.npu.synchronize()
     start = time.perf_counter()
     if args.static:
         new_ids = model.generate_ids_static(
@@ -256,8 +139,7 @@ def main() -> None:
             image_grid_thw=image_grid_thw,
             max_new_tokens=args.max_new_tokens,
         )
-    if device.type == "cuda":
-        torch.cuda.synchronize()
+    torch.npu.synchronize()
     elapsed = time.perf_counter() - start
 
     generated = new_ids[0].detach().cpu().tolist()
