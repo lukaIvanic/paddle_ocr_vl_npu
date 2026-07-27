@@ -12,11 +12,12 @@ Transformers baseline on the same crop and prompt.
 
 ## Files
 
-- `local_modeling_paddleocr_vl.py` — faithful replica of the upstream
-  `modeling_paddleocr_vl.py` (vision encoder, adaptive projector, ERNIE
-  decoder, mrope, greedy loop), structured to stay diffable against it.
-  A few branches the runner never hits (text-only inputs, batch > 1) are
-  kept on purpose because they mirror upstream semantics.
+- `local_modeling_paddleocr_vl.py` — a replica of and drop-in replacement
+  for the Transformers `modeling_paddleocr_vl.py`: the full model (vision
+  encoder, adaptive projector, ERNIE decoder, mrope, greedy loop) in plain
+  PyTorch. Intentionally not cleaned up or optimized — it stays close to
+  the upstream source, dead branches and all, so it can be diffed against
+  it and trusted as the baseline that later experiments develop from.
 - `config.py` — the pinned architecture, hardcoded. Nothing is read from
   `config.json`; values are verified against the checkpoint (see the file
   docstring). Wrong checkpoints fail loudly at weight load.
