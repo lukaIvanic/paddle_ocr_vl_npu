@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="560" viewBox="0 0 1600 560" role="img" aria-labelledby="t d">
+  <title id="t">Recognition request state machine</title>
+  <desc id="d">A crop request moves from CPU preparation through prefill ownership, ready state, decode-slot residency, completion, and page assembly.</desc><rect x="0" y="0" width="2000" height="1000" fill="#fff"/>
+  <style>
+    text{font-family:Arial,sans-serif;fill:#172033}.h{font-size:25px;font-weight:700}.n{font-size:17px;font-weight:700}.s{font-size:14px}.box{stroke:#40516b;stroke-width:2;rx:14}.cpu{fill:#edf3f8}.npu{fill:#fff0d9}.ready{fill:#e7f6ec}.done{fill:#f3eaff}.a{stroke:#1d7b86;stroke-width:4;fill:none;marker-end:url(#m)}.lease{stroke:#805ad5;stroke-width:3;stroke-dasharray:8 7;fill:none;marker-end:url(#p)}
+  </style>
+  <defs>
+    <marker id="m" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L0 6L9 3z" fill="#1d7b86"/></marker>
+    <marker id="p" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L0 6L9 3z" fill="#805ad5"/></marker>
+  </defs>
+  <text x="40" y="44" class="h">One crop request: identity stays stable while ownership changes</text>
+  <text x="40" y="72" class="s">Page identity and crop identity travel with the request; compute storage is leased only for the phase that owns it.</text>
+  <rect x="42" y="150" width="205" height="116" class="box cpu"/>
+  <text x="66" y="187" class="n">Created</text><text x="66" y="216" class="s">crop · prompt · IDs</text><text x="66" y="240" class="s">owned by page bridge</text>
+  <rect x="306" y="150" width="205" height="116" class="box cpu"/>
+  <text x="330" y="187" class="n">CPU prepared</text><text x="330" y="216" class="s">pinned tensor contract</text><text x="330" y="240" class="s">owned by prep queue</text>
+  <rect x="570" y="150" width="205" height="116" class="box npu"/>
+  <text x="594" y="187" class="n">Prefill in flight</text><text x="594" y="216" class="s">vision + text prefill</text><text x="594" y="240" class="s">owns one pool row</text>
+  <rect x="834" y="150" width="205" height="116" class="box ready"/>
+  <text x="858" y="187" class="n">Decode ready</text><text x="858" y="216" class="s">first token known</text><text x="858" y="240" class="s">waiting in reservoir</text>
+  <rect x="1098" y="150" width="205" height="116" class="box npu"/>
+  <text x="1122" y="187" class="n">Decode resident</text><text x="1122" y="216" class="s">stable arena slot</text><text x="1122" y="240" class="s">slot epoch is active</text>
+  <rect x="1362" y="150" width="196" height="116" class="box done"/>
+  <text x="1386" y="187" class="n">Completed</text><text x="1386" y="216" class="s">tokens + text + timing</text><text x="1386" y="240" class="s">returned to page owner</text>
+  <path d="M247 208H306M511 208H570M775 208H834M1039 208H1098M1303 208H1362" class="a"/>
+  <text x="253" y="191" class="s">worker</text><text x="520" y="191" class="s">H2D</text><text x="787" y="191" class="s">yield</text><text x="1047" y="191" class="s">admit</text><text x="1310" y="191" class="s">retire</text>
+  <path d="M673 266V386H1200V266" class="lease"/>
+  <text x="765" y="421" class="n">Storage transition at admission</text>
+  <text x="765" y="448" class="s">full fixed KV row: prefill pool → stable decode slot</text>
+  <text x="765" y="474" class="s">after the copy is enqueued, the prefill-pool lease can be released</text>
+</svg>

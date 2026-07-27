@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="670" viewBox="0 0 1600 670" role="img" aria-labelledby="t d">
+  <title id="t">Asynchronous sampled-token control loop</title>
+  <desc id="d">Decode step N writes device token state, a copy stream transfers it into one row of a two-row pinned host ring, the compute stream launches N plus 1, and the host retires N with slot epoch checks.</desc><rect x="0" y="0" width="2000" height="1000" fill="#fff"/>
+  <style>
+    text{font-family:Arial,sans-serif;fill:#172033}.h{font-size:25px;font-weight:700}.n{font-size:18px;font-weight:700}.s{font-size:14px}.lane{stroke:#40516b;stroke-width:2;rx:16}.host{fill:#edf3f8}.compute{fill:#fff0d9}.copy{fill:#f3eaff}.card{fill:#fff;stroke:#40516b;stroke-width:2;rx:11}.a{stroke:#1d7b86;stroke-width:4;fill:none;marker-end:url(#m)}.event{stroke:#805ad5;stroke-width:3;stroke-dasharray:8 7;fill:none;marker-end:url(#p)}
+  </style>
+  <defs><marker id="m" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L0 6L9 3z" fill="#1d7b86"/></marker><marker id="p" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L0 6L9 3z" fill="#805ad5"/></marker></defs>
+  <text x="40" y="44" class="h">Decode token control: one step of device work stays ahead of host retirement</text>
+  <text x="40" y="72" class="s">The pinned ring has two [B] rows and the scheduled-copy queue depth is one.</text>
+  <rect x="32" y="112" width="1536" height="138" class="lane compute"/><text x="58" y="147" class="n">NPU compute stream</text>
+  <rect x="252" y="162" width="292" height="60" class="card"/><text x="278" y="200" class="n">compiled decode iteration N</text>
+  <rect x="858" y="162" width="292" height="60" class="card"/><text x="884" y="200" class="n">compiled decode iteration N+1</text>
+  <rect x="32" y="276" width="1536" height="138" class="lane copy"/><text x="58" y="311" class="n">NPU token-copy stream</text>
+  <rect x="550" y="326" width="280" height="60" class="card"/><text x="576" y="364" class="n">copy sampled tokens N to host row r</text>
+  <rect x="32" y="440" width="1536" height="182" class="lane host"/><text x="58" y="475" class="n">Host scheduler</text>
+  <rect x="104" y="504" width="292" height="76" class="card"/><text x="130" y="537" class="n">schedule D2H for N</text><text x="130" y="562" class="s">record epochs for every slot</text>
+  <rect x="614" y="504" width="292" height="76" class="card"/><text x="640" y="537" class="n">launch N+1 without waiting</text><text x="640" y="562" class="s">device consumes next-token state</text>
+  <rect x="1122" y="504" width="360" height="76" class="card"/><text x="1148" y="537" class="n">resolve N · retire · refill</text><text x="1148" y="562" class="s">discard tokens whose slot epoch changed</text>
+  <path d="M396 504V414H690V386" class="event"/>
+  <path d="M830 356H1010V222" class="event"/>
+  <path d="M906 542H1122" class="a"/>
+  <path d="M760 504V420H1004V222" class="a"/>
+  <text x="424" y="478" class="s">copy event</text><text x="930" y="399" class="s">pinned ring row ready</text>
+</svg>

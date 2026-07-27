@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="630" viewBox="0 0 1600 630" role="img" aria-labelledby="t d">
+  <title id="t">Decode admission</title>
+  <desc id="d">A decode-ready request copies its full private prefill KV row plus four small control values into one stable decode arena row, then releases the prefill lease.</desc><rect x="0" y="0" width="2000" height="1000" fill="#fff"/>
+  <style>
+    text{font-family:Arial,sans-serif;fill:#172033}.h{font-size:25px;font-weight:700}.n{font-size:18px;font-weight:700}.s{font-size:14px}.zone{fill:#edf3f8;stroke:#40516b;stroke-width:2;rx:18}.pool{fill:#e7f6ec}.arena{fill:#fff0d9}.card{fill:#fff;stroke:#40516b;stroke-width:2;rx:12}.slot{fill:#dceafe;stroke:#40516b;stroke-width:3;rx:12}.a{stroke:#1d7b86;stroke-width:4;fill:none;marker-end:url(#m)}.small{stroke:#805ad5;stroke-width:3;fill:none;marker-end:url(#p)}
+  </style>
+  <defs><marker id="m" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L0 6L9 3z" fill="#1d7b86"/></marker><marker id="p" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L0 6L9 3z" fill="#805ad5"/></marker></defs>
+  <text x="40" y="44" class="h">Decode admission: one explicit storage boundary</text>
+  <text x="40" y="72" class="s">The request changes physical storage once. Its selected decode row remains stable until retirement.</text>
+  <rect x="32" y="108" width="480" height="472" class="zone pool"/>
+  <text x="58" y="146" class="n">Decode-ready request in prefill pool</text>
+  <rect x="76" y="190" width="392" height="122" class="card"/><text x="101" y="225" class="n">Private fixed KV row</text><text x="101" y="254" class="s">36 tensors: 18 layers × K/V</text><text x="101" y="281" class="s">physical copy includes the complete K4096 row</text>
+  <rect x="76" y="354" width="392" height="164" class="card"/><text x="101" y="389" class="n">Request control state</text><text x="101" y="418" class="s">first sampled token [1]</text><text x="101" y="445" class="s">cache_position scalar</text><text x="101" y="472" class="s">rope_delta [1] · active=true</text><text x="101" y="499" class="s">request identity remains host-owned</text>
+  <rect x="584" y="108" width="416" height="472" class="zone"/>
+  <text x="610" y="146" class="n">Admission transaction</text>
+  <rect x="628" y="194" width="328" height="108" class="card"/><text x="653" y="229" class="n">torch._foreach_copy_</text><text x="653" y="258" class="s">one batched launch across all KV tensors</text><text x="653" y="283" class="s">source and destination are contiguous row views</text>
+  <rect x="628" y="350" width="328" height="126" class="card"/><text x="653" y="385" class="n">Small state writes</text><text x="653" y="414" class="s">token · position · rope · active mask</text><text x="653" y="442" class="s">increment slot epoch</text>
+  <text x="652" y="525" class="s">Then enqueue release of the source pool lease.</text>
+  <rect x="1072" y="108" width="496" height="472" class="zone arena"/>
+  <text x="1098" y="146" class="n">Persistent decode arena [B, …]</text>
+  <rect x="1118" y="190" width="404" height="90" class="card"/><text x="1144" y="225" class="n">slot 0 · another request</text><text x="1144" y="252" class="s">unchanged by this admission</text>
+  <rect x="1118" y="308" width="404" height="126" class="slot"/><text x="1144" y="344" class="n">slot 1 · newly admitted request</text><text x="1144" y="373" class="s">full KV row + four control tensors</text><text x="1144" y="401" class="s">stable storage address for every decode step</text>
+  <rect x="1118" y="462" width="404" height="76" class="card"/><text x="1144" y="508" class="n">slots 2…B−1 · existing or inactive</text>
+  <path d="M512 253H584M1000 253H1072" class="a"/>
+  <path d="M512 435H584M1000 435H1072" class="small"/>
+</svg>

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="700" viewBox="0 0 1600 700" role="img" aria-labelledby="t d">
+  <title id="t">Zero-once prefill KV pool</title>
+  <desc id="d">A fixed arena of private B1 KV rows is zeroed once, leased to prefill requests, copied during decode admission, and returned only after an NPU release event.</desc><rect x="0" y="0" width="2000" height="1000" fill="#fff"/>
+  <style>
+    text{font-family:Arial,sans-serif;fill:#172033}.h{font-size:25px;font-weight:700}.n{font-size:18px;font-weight:700}.s{font-size:14px}.zone{stroke:#40516b;stroke-width:2;rx:18}.meta{fill:#edf3f8}.pool{fill:#e7f6ec}.decode{fill:#fff0d9}.card{fill:#fff;stroke:#40516b;stroke-width:2;rx:12}.used{fill:#dceafe;stroke:#40516b;stroke-width:2;rx:10}.free{fill:#fff;stroke:#8290a3;stroke-width:2;rx:10}.a{stroke:#1d7b86;stroke-width:4;fill:none;marker-end:url(#m)}.event{stroke:#805ad5;stroke-width:3;stroke-dasharray:8 7;fill:none;marker-end:url(#p)}
+  </style>
+  <defs><marker id="m" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L0 6L9 3z" fill="#1d7b86"/></marker><marker id="p" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L0 6L9 3z" fill="#805ad5"/></marker></defs>
+  <text x="40" y="44" class="h">Prefill KV ownership: allocate once, lease private rows, reuse safely</text>
+  <text x="40" y="72" class="s">For B32 and CPU pending 32, capacity is 4B + pending = 160 rows; each K4096 fp16 row is about 72 MiB.</text>
+  <rect x="32" y="112" width="318" height="526" class="zone meta"/>
+  <text x="58" y="150" class="n">Pool controller</text>
+  <rect x="70" y="190" width="242" height="88" class="card"/><text x="92" y="224" class="n">Setup</text><text x="92" y="251" class="s">allocate and zero all rows once</text>
+  <rect x="70" y="316" width="242" height="134" class="card"/><text x="92" y="350" class="n">Lease metadata</text><text x="92" y="379" class="s">free list · generations</text><text x="92" y="406" class="s">active rows · high-water</text><text x="92" y="433" class="s">acquire / reuse / release counts</text>
+  <rect x="70" y="492" width="242" height="108" class="card"/><text x="92" y="526" class="n">Safety check</text><text x="92" y="553" class="s">wait on prior release event</text><text x="92" y="578" class="s">before a reused row is written</text>
+  <rect x="404" y="112" width="674" height="526" class="zone pool"/>
+  <text x="430" y="150" class="n">Contiguous prefill arena — every request owns one complete B1 row</text>
+  <rect x="448" y="196" width="586" height="76" class="used"/><text x="474" y="229" class="n">row 0 · request 81 · generation 6</text><text x="474" y="253" class="s">18 layers × K/V × [1, 2, 4096, 128]</text>
+  <rect x="448" y="292" width="586" height="76" class="used"/><text x="474" y="325" class="n">row 1 · request 144 · generation 4</text><text x="474" y="349" class="s">valid prefix + semantically hidden stale tail</text>
+  <rect x="448" y="388" width="586" height="76" class="free"/><text x="474" y="434" class="n">row 2 · free after recorded event completes</text>
+  <rect x="448" y="484" width="586" height="76" class="free"/><text x="474" y="530" class="n">… remaining rows up to capacity 160</text>
+  <text x="448" y="598" class="s">Stale finite values are allowed: the real cache position and attention mask make the unused tail invisible.</text>
+  <rect x="1132" y="112" width="436" height="526" class="zone decode"/>
+  <text x="1158" y="150" class="n">Admission and release</text>
+  <rect x="1172" y="200" width="356" height="112" class="card"/><text x="1196" y="234" class="n">1 · full-row KV copy</text><text x="1196" y="261" class="s">pool row → selected decode row</text><text x="1196" y="287" class="s">one foreach copy across 36 tensors</text>
+  <rect x="1172" y="354" width="356" height="96" class="card"/><text x="1196" y="388" class="n">2 · record release event</text><text x="1196" y="416" class="s">on the stream that consumed the row</text>
+  <rect x="1172" y="492" width="356" height="96" class="card"/><text x="1196" y="526" class="n">3 · return lease</text><text x="1196" y="554" class="s">generation protects later reuse</text>
+  <path d="M350 375H404M1078 255H1132" class="a"/>
+  <path d="M1350 312V354M1350 450V492" class="event"/>
+</svg>

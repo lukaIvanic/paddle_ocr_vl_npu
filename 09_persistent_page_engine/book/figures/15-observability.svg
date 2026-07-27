@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="710" viewBox="0 0 1600 710" role="img" aria-labelledby="t d">
+  <title id="t">Experiment 09 observability model</title>
+  <desc id="d">The timeline separates host work, waits, queues, NPU streams, decode-slot residence, and background output writes, while flow identifiers connect one crop across lanes.</desc><rect x="0" y="0" width="2000" height="1000" fill="#fff"/>
+  <style>
+    text{font-family:Arial,sans-serif;fill:#172033}.h{font-size:25px;font-weight:700}.n{font-size:16px;font-weight:700}.s{font-size:13px}.axis{stroke:#40516b;stroke-width:2}.row{fill:#f7f9fb;stroke:#cad2dd;stroke-width:1}.cpu{fill:#b9d5ea}.wait{fill:#efb4ad}.npu{fill:#f3c980}.io{fill:#cdb9ef}.write{fill:#a8d9b7}.slot{fill:#8ecbd0}.flow{stroke:#805ad5;stroke-width:3;stroke-dasharray:7 6;fill:none;marker-end:url(#p)}
+  </style>
+  <defs><marker id="p" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L0 6L9 3z" fill="#805ad5"/></marker></defs>
+  <text x="40" y="44" class="h">Timeline semantics: lanes explain concurrency; flow IDs explain causality</text>
+  <text x="40" y="72" class="s">Durations are recorded at their real boundary. Instrumentation does not add a global device synchronize.</text>
+  <line x1="306" y1="114" x2="1548" y2="114" class="axis"/>
+  <text x="306" y="103" class="s">earlier</text><text x="1505" y="103" class="s">later</text>
+  <rect x="32" y="132" width="1516" height="72" class="row"/><text x="54" y="175" class="n">Page producer thread</text><rect x="328" y="146" width="210" height="42" rx="7" class="cpu"/><text x="348" y="173" class="s">layout page P</text><rect x="560" y="146" width="122" height="42" rx="7" class="wait"/><text x="580" y="173" class="s">queue wait</text><rect x="700" y="146" width="210" height="42" rx="7" class="cpu"/><text x="720" y="173" class="s">layout page P+1</text>
+  <rect x="32" y="214" width="1516" height="72" class="row"/><text x="54" y="257" class="n">CPU prepare worker</text><rect x="430" y="228" width="270" height="42" rx="7" class="cpu"/><text x="452" y="255" class="s">crop preprocessing + MRoPE</text><rect x="724" y="228" width="226" height="42" rx="7" class="cpu"/><text x="746" y="255" class="s">prepare next crop</text>
+  <rect x="32" y="296" width="1516" height="72" class="row"/><text x="54" y="339" class="n">Prefill H2D stream</text><rect x="650" y="310" width="146" height="42" rx="7" class="io"/><text x="672" y="337" class="s">crop H2D</text><rect x="920" y="310" width="146" height="42" rx="7" class="io"/><text x="942" y="337" class="s">next H2D</text>
+  <rect x="32" y="378" width="1516" height="72" class="row"/><text x="54" y="421" class="n">NPU compute stream</text><rect x="760" y="392" width="270" height="42" rx="7" class="npu"/><text x="782" y="419" class="s">vision + text prefill group</text><rect x="1044" y="392" width="172" height="42" rx="7" class="npu"/><text x="1066" y="419" class="s">decode iterations</text>
+  <rect x="32" y="460" width="1516" height="72" class="row"/><text x="54" y="503" class="n">Decode slot 7</text><rect x="992" y="474" width="286" height="42" rx="7" class="slot"/><text x="1014" y="501" class="s">request resident until EOS</text>
+  <rect x="32" y="542" width="1516" height="72" class="row"/><text x="54" y="585" class="n">Artifact writer</text><rect x="1288" y="556" width="206" height="42" rx="7" class="write"/><text x="1310" y="583" class="s">page artifacts</text>
+  <path d="M565 270C600 296 628 305 650 310M796 352C820 374 842 386 868 392M930 434C950 450 970 462 992 474M1278 516C1284 531 1288 542 1314 556" class="flow"/>
+  <text x="1144" y="668" class="s">purple dashed line: one crop’s flow_id across independently timed lanes</text>
+</svg>

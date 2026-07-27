@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="680" viewBox="0 0 1600 680" role="img" aria-labelledby="t d">
+  <title id="t">Profile-guided vision routing</title>
+  <desc id="d">The vision router observes a bounded ready lookahead, enumerates only cached graph choices, prices padding using measured physical throughput, and dispatches a group without violating oldest-request progress.</desc><rect x="0" y="0" width="2000" height="1000" fill="#fff"/>
+  <style>
+    text{font-family:Arial,sans-serif;fill:#172033}.h{font-size:25px;font-weight:700}.n{font-size:18px;font-weight:700}.s{font-size:14px}.zone{stroke:#40516b;stroke-width:2;rx:18}.host{fill:#edf3f8}.graph{fill:#fff0d9}.card{fill:#fff;stroke:#40516b;stroke-width:2;rx:12}.best{fill:#e7f6ec;stroke:#237a52;stroke-width:3;rx:12}.a{stroke:#1d7b86;stroke-width:4;fill:none;marker-end:url(#m)}.guard{stroke:#bf4b4b;stroke-width:3;stroke-dasharray:8 7;fill:none}
+  </style>
+  <defs><marker id="m" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L0 6L9 3z" fill="#1d7b86"/></marker></defs>
+  <text x="40" y="44" class="h">Vision routing: choose the cheapest cached physical execution</text>
+  <text x="40" y="72" class="s">Routing is a host-side decision over already-ready crops; it never waits for a hypothetical better future crop.</text>
+  <rect x="32" y="108" width="390" height="518" class="zone host"/>
+  <text x="58" y="145" class="n">Visible request window</text>
+  <rect x="64" y="182" width="310" height="68" class="card"/><text x="86" y="212" class="n">Oldest crop: T=706</text><text x="86" y="235" class="s">must be included in a selected candidate</text>
+  <rect x="64" y="270" width="310" height="68" class="card"/><text x="86" y="300" class="n">Later crops</text><text x="86" y="323" class="s">T=311 · 842 · 126 · 690 · …</text>
+  <rect x="64" y="375" width="310" height="112" class="card"/><text x="86" y="407" class="n">Bounded lookahead</text><text x="86" y="434" class="s">currently prepared and eligible only</text><text x="86" y="458" class="s">no page boundary in model scheduling</text>
+  <rect x="64" y="526" width="310" height="64" class="card"/><text x="86" y="565" class="n">Fairness guard: oldest progresses</text>
+  <rect x="478" y="108" width="558" height="518" class="zone host"/>
+  <text x="504" y="145" class="n">Candidate enumeration and pricing</text>
+  <rect x="514" y="182" width="222" height="106" class="card"/><text x="536" y="214" class="n">B1 graph</text><text x="536" y="241" class="s">one crop, one bucket</text><text x="536" y="264" class="s">low grouping overhead</text>
+  <rect x="770" y="182" width="222" height="106" class="card"/><text x="792" y="214" class="n">B2 / B4 graphs</text><text x="792" y="241" class="s">several packed lanes</text><text x="792" y="264" class="s">only cached shapes count</text>
+  <rect x="514" y="332" width="478" height="164" class="card"/><text x="536" y="366" class="n">Estimate candidate completion time</text><text x="536" y="397" class="s">physical tokens = batch × selected bucket length</text><text x="536" y="424" class="s">useful tokens = sum of crop lengths assigned to lanes</text><text x="536" y="451" class="s">price with measured graph throughput and fixed overhead</text><text x="536" y="478" class="s">reject candidates that omit the oldest visible crop</text>
+  <rect x="628" y="532" width="250" height="64" class="best"/><text x="655" y="571" class="n">lowest estimated wall time</text>
+  <rect x="1092" y="108" width="476" height="518" class="zone graph"/>
+  <text x="1118" y="145" class="n">Dispatch one production group</text>
+  <rect x="1128" y="182" width="404" height="92" class="best"/><text x="1150" y="216" class="n">Selected compiled graph</text><text x="1150" y="244" class="s">example: B2 × 1024 physical tokens</text>
+  <rect x="1128" y="316" width="404" height="116" class="card"/><text x="1150" y="350" class="n">Per-lane packed segments</text><text x="1150" y="378" class="s">segment metadata isolates crops</text><text x="1150" y="404" class="s">dummy rows are stripped after the tower</text>
+  <rect x="1128" y="478" width="404" height="112" class="card"/><text x="1150" y="512" class="n">Fallback boundary</text><text x="1150" y="540" class="s">unrepresented shapes execute eagerly</text><text x="1150" y="566" class="s">the shape ladder remains a replaceable policy</text>
+  <path d="M422 356H478M1036 356H1092" class="a"/>
+  <path d="M52 512H386" class="guard"/>
+</svg>

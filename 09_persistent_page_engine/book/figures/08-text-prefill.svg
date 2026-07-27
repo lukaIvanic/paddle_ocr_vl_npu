@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="690" viewBox="0 0 1600 690" role="img" aria-labelledby="t d">
+  <title id="t">Packed text prefill</title>
+  <desc id="d">Text prompts within one vision production group are packed into a block-diagonal causal prefill, executed once, and redistributed into private per-request KV pool rows.</desc><rect x="0" y="0" width="2000" height="1000" fill="#fff"/>
+  <style>
+    text{font-family:Arial,sans-serif;fill:#172033}.h{font-size:25px;font-weight:700}.n{font-size:18px;font-weight:700}.s{font-size:14px}.zone{stroke:#40516b;stroke-width:2;rx:18}.cpu{fill:#edf3f8}.npu{fill:#fff0d9}.pool{fill:#e7f6ec}.card{fill:#fff;stroke:#40516b;stroke-width:2;rx:12}.a{stroke:#1d7b86;stroke-width:4;fill:none;marker-end:url(#m)}.cut{stroke:#805ad5;stroke-width:3;stroke-dasharray:8 7;fill:none}
+  </style>
+  <defs><marker id="m" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L0 6L9 3z" fill="#1d7b86"/></marker></defs>
+  <text x="40" y="44" class="h">Text prefill: share one graph call, preserve independent causal histories</text>
+  <text x="40" y="72" class="s">Packing is local to one vision production group; prompts above the largest pack bucket run individually.</text>
+  <rect x="32" y="110" width="410" height="526" class="zone cpu"/>
+  <text x="58" y="147" class="n">Independent multimodal prompts</text>
+  <rect x="70" y="188" width="330" height="68" class="card"/><text x="92" y="218" class="n">A · length 126</text><text x="92" y="241" class="s">own IDs, MRoPE positions, image spans</text>
+  <rect x="70" y="278" width="330" height="68" class="card"/><text x="92" y="308" class="n">B · length 311</text><text x="92" y="331" class="s">no attention to A</text>
+  <rect x="70" y="368" width="330" height="68" class="card"/><text x="92" y="398" class="n">C · length 487</text><text x="92" y="421" class="s">no attention to A or B</text>
+  <rect x="70" y="486" width="330" height="110" class="card"/><text x="92" y="520" class="n">Best-fit decreasing</text><text x="92" y="548" class="s">target: one registered pack bucket</text><text x="92" y="574" class="s">member count is explicitly bounded</text>
+  <rect x="494" y="110" width="600" height="526" class="zone npu"/>
+  <text x="520" y="147" class="n">One packed static text-prefill graph</text>
+  <rect x="535" y="188" width="518" height="120" class="card"/><text x="560" y="222" class="n">Packed sequence buffer</text><text x="560" y="251" class="s">A | B | C | padding → one selected physical bucket</text><line x1="702" y1="196" x2="702" y2="300" class="cut"/><line x1="862" y1="196" x2="862" y2="300" class="cut"/>
+  <rect x="535" y="350" width="518" height="152" class="card"/><text x="560" y="384" class="n">Block-diagonal causal attention</text><text x="560" y="413" class="s">each segment sees only its own earlier tokens</text><text x="560" y="441" class="s">MRoPE restarts at each segment boundary</text><text x="560" y="469" class="s">18 decoder layers produce logits and scratch K/V</text>
+  <rect x="650" y="542" width="288" height="62" class="card"/><text x="680" y="580" class="n">first-token argmax per segment</text>
+  <rect x="1146" y="110" width="422" height="526" class="zone pool"/>
+  <text x="1172" y="147" class="n">Redistribute valid prefixes</text>
+  <rect x="1186" y="202" width="340" height="80" class="card"/><text x="1210" y="235" class="n">Pool row for A</text><text x="1210" y="260" class="s">copy only A's valid scratch prefix</text>
+  <rect x="1186" y="314" width="340" height="80" class="card"/><text x="1210" y="347" class="n">Pool row for B</text><text x="1210" y="372" class="s">exclusive B1 ownership</text>
+  <rect x="1186" y="426" width="340" height="80" class="card"/><text x="1210" y="459" class="n">Pool row for C</text><text x="1210" y="484" class="s">real cache position hides stale tail</text>
+  <rect x="1186" y="546" width="340" height="58" class="card"/><text x="1210" y="582" class="n">three decode-ready requests</text>
+  <path d="M442 354H494M1094 354H1146" class="a"/>
+</svg>
