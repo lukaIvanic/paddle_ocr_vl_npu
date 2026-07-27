@@ -2,93 +2,100 @@
 
 ## Operating Lanes
 
-First classify where you are running from actual machine state, not from memory:
+`CLAUDE.md` is the current orientation for this repo and holds the full lane
+model, verified machine facts, and evidence conventions. Read it first. This file
+holds the deeper per-experiment history behind the design.
 
-- Work/NPU lane: Ascend NPU tooling is present, such as `npu-smi` or `torch_npu`.
-- Vast/CUDA lane: a rented Vast.ai GPU box, usually under `/workspace`, where `nvidia-smi` works but Ascend NPU tooling does not.
-- Authoring lane: Luka's local code-editing checkout. It may have no accelerator tools at all.
+The short version:
 
-The work/NPU lane is pull-only. Its job is to set up the environment, pull the repo, run scripts, inspect outputs, debug failures, and summarize exact findings. Do not edit tracked files, commit, push, or create branches from the work/NPU lane. If a code change seems necessary, report the minimal proposed change, the command that failed, and the relevant logs instead of applying it.
+- **Local authoring** — Luka's Mac checkout, no accelerator. Edits tracked files,
+  commits, pushes, and drives the 910B container over SSH. It must not present
+  unrun local code as validated inference.
+- **Blue-zone 910B container** (`ssh blue_zone_npu_container`) — the real
+  validation lane, reachable from local. Pull-only for source: edit locally,
+  push, `git pull` there, run. Never hand-edit tracked files on the container.
+- **310P work server** — Atlas 310P devices, not reachable from local and
+  pull-only from GitHub. Driven by a self-contained written handoff brief; its
+  agent runs and reports, and Luka relays the report back manually. That agent
+  must not edit tracked files, commit, push, or create branches. If a code change
+  is needed, report the minimal proposed change, the failing command, and the
+  relevant logs instead of applying it.
 
-The Vast/CUDA lane is for dependency bring-up, CUDA smoke tests, model-loading checks, and quick debugging. It should not be confused with the work/NPU lane. CUDA results are smoke-test evidence only; they are not NPU or Ascend performance evidence. Do not commit or push from Vast unless Luka explicitly designates that specific instance as the authoring lane.
+Historical runbooks below use `$WORK_SERVER_REPO` for the work-server checkout
+root (`/home/lukaiv/paddle_ocr_vl_npu`); resolve it with
+`WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"` rather than hardcoding a
+path. Those runbooks were written on 310P — re-verify before trusting any of
+them on 910B.
 
-The authoring lane may edit tracked files, prepare scripts, manage crops/docs, commit, and sync with GitHub. If it has no accelerator, it should not present unrun local code as validated inference.
+There is no CUDA lane. The Vast.ai GPU rental described in earlier revisions of
+this file is retired, and its runbooks have been removed.
 
-## Project Direction
+## Domain Distinctions
 
-This folder is a standalone research workspace for PaddleOCR-VL on Ascend/NPU, with a near-term focus on the `PaddleOCR-VL-1.6-0.9B` recognition VLM.
+Current direction lives in `CLAUDE.md`, not here — it changes. These
+distinctions do not:
 
-The current target is an offline full-page path built incrementally from the
-local recognizer: real PP-DocLayoutV3 inference, explicit page/crop/request
-boundaries, and a persistent PaddleOCR-VL engine. Experiment 08 uses sequential
-B=1 vision and text prefill with static TorchAir buckets, followed by a
-persistent compiled decode arena. Finished requests are hot-swapped between
-decode iterations by copying the next ready request's valid KV prefix into the
-freed slot. It does not yet overlap prefill with decode. The standalone
-`09_persistent_page_engine/scripts/run_offline_e2e.py` page assembler remains
-diagnostic. The production full-page path owns the fixed PaddleOCR-VL 1.6
-layout, crop, prompt, page assembly, JSON, and Markdown contract directly; it
-does not import PaddleX or PaddleOCR. It feeds all prepared crops through one
-run-scoped recognition schedule in
-`09_persistent_page_engine/scripts/run_omnidocbench.py`.
-The full benchmark also installs the narrow
-`09_persistent_page_engine/pipeline/layout_mask_guard.py` compatibility guard. The recognition model
-is available as a Transformers/PyTorch model at:
-
-```text
-PaddlePaddle/PaddleOCR-VL-1.6
-```
-
-Concurrent Experiment 08 processes must use distinct values for
-`--torchair-cache-dir`, `--vision-torchair-cache-dir`, and
-`--text-torchair-cache-dir`. Sequential runs may reuse a completed cache, but
-simultaneous TorchAir writers can invalidate each other's cache directories.
-
-It loads through `AutoProcessor` and `AutoModelForImageTextToText` / `PaddleOCRVLForConditionalGeneration`. Architecturally, it is a native-resolution vision encoder plus adaptive MLP projector plus ERNIE-4.5-0.3B decoder-only multimodal LM. Visual embeddings replace `<image>` token embeddings before decoder inference; there is no encoder-decoder cross-attention block.
-
-Keep the distinction clear:
-
-- `PaddleOCR-VL-1.6-0.9B` is the VLM recognition component.
-- Full `PaddleOCR-VL-1.6` page parsing is layout analysis plus recognition plus merge/postprocess.
-- For v1.6, the full PaddleOCR/PaddleX pipeline uses `PP-DocLayoutV3` plus `PaddleOCR-VL-1.6-0.9B`.
-- Recognizer-only runs are valid for element-level crops and prompts such as `OCR:`, `Table Recognition:`, `Formula Recognition:`, `Chart Recognition:`, `Spotting:`, and `Seal Recognition:`.
-- Recognizer-only runs are not proof of full page-parser quality or throughput.
+- `PaddleOCR-VL-1.6-0.9B` is the VLM recognition component. Upstream it is
+  `PaddlePaddle/PaddleOCR-VL-1.6`, loaded through `AutoProcessor` and
+  `AutoModelForImageTextToText` / `PaddleOCRVLForConditionalGeneration`.
+- Full `PaddleOCR-VL-1.6` page parsing is layout analysis plus recognition plus
+  merge/postprocess. For v1.6 that is `PP-DocLayoutV3` plus the 0.9B recognizer.
+- Recognizer-only runs are valid for element-level crops and prompts such as
+  `OCR:`, `Table Recognition:`, `Formula Recognition:`, `Chart Recognition:`,
+  `Spotting:`, and `Seal Recognition:`.
+- Recognizer-only runs are **not** proof of full page-parser quality or
+  throughput.
 
 Known implementation surfaces:
 
-- Official PaddleOCR/PaddleX provides the full parser pipeline and Paddle-facing configs.
-- Hugging Face Transformers provides the core recognizer/VLM directly as `PaddlePaddle/PaddleOCR-VL-1.6`.
-- Huawei Ascend public guidance currently points to PaddleOCR client/pipeline plus vLLM VLM service, or a two-container full API service, rather than direct local NPU inference.
+- Official PaddleOCR/PaddleX provides the full parser pipeline and Paddle-facing
+  configs. This repo no longer imports either; experiment 09 owns the page
+  contract directly.
+- Hugging Face Transformers provides the core recognizer/VLM directly.
+- Huawei Ascend public guidance currently points to PaddleOCR client/pipeline
+  plus vLLM VLM service, or a two-container full API service, rather than direct
+  local NPU inference. Treat direct Transformers-on-NPU work as an experiment
+  until validated.
 
-## Current Local Artifacts
+## Experiment Ladder
 
-This folder currently contains:
+Each numbered directory is a rung, kept as the evidence for how the current
+design was reached. **09 is the active one**; 01–08 are historical and are not
+maintained against current behavior.
+
+- `01_transformers_recognition_baseline/`: minimal Transformers recognizer smoke.
+- `02_local_eager_recognition/`: the recognizer reimplemented in local PyTorch
+  with no Transformers imports. Everything since is derived from this.
+- `03_compiled_single_batch_decode/`: static KV-cache decode, TorchAir compile.
+- `04_batched_fixed_cohort_decode/`: batched decode plus the first vLLM-style
+  hot-swap scheduler probe.
+- `05_full_recognizer_optimizations/`: whole-recognizer stage timing and the
+  100-crop queue benchmark. Where the vision-attention work happened.
+- `06_full_page_pipeline_e2e/`: first end-to-end page pipeline.
+- `07_vision_prefill_optimization/`: vision prefill bucketing and PromptFA work.
+  Has its own `README.md`.
+- `08_offline_e2e_b1/`: first persistent offline system — sequential bucketed
+  compiled vision/text prefill into one continuous compiled decode schedule.
+  Has its own `README.md`; read it before interpreting its throughput or parity.
+- `09_persistent_page_engine/`: **active.** The persistent page engine. Has its
+  own `README.md`, which is authoritative over anything said here.
+
+Supporting artifacts:
 
 - `crops/`: eight OmniDocBench region crops, not full pages.
 - `crops/manifest.json`: source image, category, bbox, suggested prompt, and ground truth for each crop.
 - `crops/create_omnidocbench_recognition_crops.py`: reproducible crop generator.
 - `crops/create_omnidocbench_hotswap_crops.py`: reproducible generator for the larger queue/hot-swap crop set.
 - `crops/hotswap_*.png`, `crops/hotswap_100_manifest.json`, `crops/hotswap_100_summary.json`, and `crops/hotswap_100_contact_sheet.jpg`: 100 additional OmniDocBench region crops for batch sizing and future vLLM-style slot hot-swapping tests. Use the hot-swap manifest explicitly; the default tiny smoke manifest remains `crops/manifest.json`.
-- `01_transformers_recognition_baseline/run_transformers_recognition.py`: minimal Transformers recognizer smoke script. It uses the slow image processor by default so it matches the source-backed local preprocessing path; pass `--use-fast` only when deliberately comparing to the fast HF image processor.
-- `02_local_eager_recognition/config.py`: dependency-free dataclass mirror of the PaddleOCR-VL config fields needed for inference.
-- `02_local_eager_recognition/local_modeling_paddleocr_vl.py`: local PyTorch implementation of the recognition VLM with no Transformers imports.
-- `02_local_eager_recognition/run_local_recognition.py`: local recognizer runner using `tokenizers`, local image preprocessing, and the local model.
-- `03_compiled_single_batch_decode/`: single-batch decode optimization lane, copied from the local eager implementation and extended with static KV cache decode, TorchAir cache compile, profiler hooks, and flat `torch.compile(fullgraph=True, dynamic=False)` probes.
-- `04_batched_fixed_cohort_decode/`: batch-decode scheduler lane. It keeps prefill sequential and padding-free for real crops, benchmarks true fixed-cohort batched static decode, and can also prefill an NPU-resident ready KV bank then hot-swap finished items into fixed compiled decode slots.
-- `08_offline_e2e_b1/`: first persistent offline system. It can use either its
-  compact diagnostic page frontend or official PaddleX v1.6 page assembly. It
-  sends prepared crops through sequential bucketed compiled vision/text prefill
-  and one continuous compiled decode schedule. Stable slots are refilled in
-  place without compacting active rows.
-  It reports raw slots, effective tokens, idle slots, completion look-ahead,
-  active-slot utilization, KV-copy traffic, and setup/page/request/device timing.
-  Read its README before interpreting throughput or output parity.
 - `refs/`: small architecture reference artifacts.
 - `refs/PaddleOCR`: ignored sparse reference checkout of the official PaddleOCR repo.
 
 Keep `refs/PaddleOCR/` ignored. It is reference material, not project source.
 
-## Local Smoke Commands
+## Smoke Commands
+
+Crop generation runs anywhere. Everything that touches the model needs an NPU, so
+run it on the 910B container after `source npu-setup`.
 
 Regenerate the crops from the parent repo's restored OmniDocBench copy:
 
@@ -102,6 +109,12 @@ Run the core recognition model on one crop with Transformers:
 ```sh
 python3 01_transformers_recognition_baseline/run_transformers_recognition.py
 ```
+
+This runner uses the **slow** image processor by default, deliberately: the local
+preprocessing path follows the slow PaddleOCR-VL image processor source, and the
+HF fast processor has small resize rounding differences, so it is not the parity
+target. Pass `--use-fast` only when comparing against the fast processor on
+purpose.
 
 For another crop:
 
@@ -120,8 +133,7 @@ python3 02_local_eager_recognition/run_local_recognition.py \
 ```
 
 All experiment CLIs default to `--dtype fp16`. `bf16` remains an explicit
-override for CUDA parity checks, but `fp32` is intentionally not a supported
-run mode.
+override, but `fp32` is intentionally not a supported run mode.
 
 In the compiled-decode experiments, the bench/probe scripts request
 FRACTAL_NZ text-decoder and `lm_head` weights before compile. Runtimes such as
@@ -182,17 +194,10 @@ The decode mask is still built on device from each row's `cache_position`, so a
 slot swap resets the row cache, next token, `cache_position`, and `rope_deltas`;
 no text/image padding is introduced.
 
-Experiment 4 can also run a CUDA debug version of hot-swap with
-`--backend raw_eager --device cuda`. In this repo, `--backend eager` means
-`torch.compile(..., backend="eager", fullgraph=True, dynamic=False)`;
-`raw_eager` is true uncompiled Python/PyTorch execution. Use `raw_eager` for
-CUDA hot-swap debugging because the non-NPU static-cache update contains
-host-side per-row indexing that should not be sent through Dynamo. CUDA uses
-manual PyTorch static-decode attention and a synchronous token-consume path
-instead of NPU IncreFA, TorchAir, and the NPU overlap copy stream. Treat CUDA
-hot-swap as a scheduler and `generated_ids` bookkeeping check only; it is not
-an Ascend throughput result and does not validate NPU-specific
-IncreFA/scatter behavior.
+Backend vocabulary, repo-wide: `--backend eager` means
+`torch.compile(..., backend="eager", fullgraph=True, dynamic=False)`, while
+`raw_eager` is true uncompiled Python/PyTorch execution. They are not synonyms,
+and `raw_eager` is the correctness control, not a competing production path.
 
 Recommended NPU run order for experiment 4:
 
@@ -200,7 +205,7 @@ For the current hot-swap bottleneck investigation, prefer the committed matrix
 runner instead of ad hoc shell snippets:
 
 ```sh
-cd /home/lukaiv/paddle_ocr_vl_npu/04_batched_fixed_cohort_decode
+cd "$WORK_SERVER_REPO"/04_batched_fixed_cohort_decode
 bash run_npu_hotswap_bottleneck_matrix.sh
 ```
 
@@ -227,7 +232,7 @@ decode on the real OmniDocBench crops in `crops/`.
 Run the committed NPU stage-timing harness instead of writing ad hoc snippets:
 
 ```sh
-cd /home/lukaiv/paddle_ocr_vl_npu/05_full_recognizer_optimizations
+cd "$WORK_SERVER_REPO"/05_full_recognizer_optimizations
 bash run_npu_stage_timing.sh
 ```
 
@@ -302,12 +307,12 @@ device-to-host syncs inside vision/projector shape loops.
 For the data and code flow, read
 `05_full_recognizer_optimizations/QUEUE_BENCHMARK_FLOW.md` before debugging the
 queue benchmark. It documents the object shapes, timing buckets, hard checks,
-and the exact NPU-vs-CUDA decode differences. Do not reverse engineer this
+and the decode-path differences. Do not reverse engineer this
 script by writing helper snippets unless the committed runner fails to print the
 needed field.
 
 ```sh
-cd /home/lukaiv/paddle_ocr_vl_npu/05_full_recognizer_optimizations
+cd "$WORK_SERVER_REPO"/05_full_recognizer_optimizations
 bash run_npu_recognizer_queue_benchmark.sh
 ```
 
@@ -385,51 +390,6 @@ Use the clearer `PIPELINE_STAGE_TIMING_SUMMARY_S` names when summarizing:
 `vision_prefill`, `text_prefill`, and `text_decode`. The older
 `READY_STAGE_SUMMARY_S` remains available for detailed substage debugging.
 
-On the Vast/CUDA lane, use the CUDA runner for a smoke/algorithmic benchmark.
-This is not an NPU throughput result. The CUDA runner defaults to `NUM_ITEMS=8`,
-`DEVICE=cuda:0`, `DECODE_SCHEDULE=hotswap`, and `DECODE_BACKEND=raw_eager`
-because CUDA uses the manual attention/per-row-KV fallback instead of TorchAir,
-IncreFA, and NPU `scatter_update_`.
-
-```sh
-cd /workspace
-if [ ! -d /workspace/paddle_ocr_vl_npu_queue_cuda/.git ]; then
-  git clone https://github.com/lukaIvanic/paddle_ocr_vl_npu.git /workspace/paddle_ocr_vl_npu_queue_cuda
-fi
-cd /workspace/paddle_ocr_vl_npu_queue_cuda
-git pull --ff-only origin main
-cd /workspace/paddle_ocr_vl_npu_queue_cuda/05_full_recognizer_optimizations
-PYTHON_BIN=/workspace/venvs/paddle_ocr_vl/bin/python \
-bash run_cuda_recognizer_queue_benchmark.sh
-```
-
-For a larger CUDA-only smoke run, override only the item count and cache length
-if needed:
-
-```sh
-NUM_ITEMS=100 CACHE_LENGTH=1536 \
-PYTHON_BIN=/workspace/venvs/paddle_ocr_vl/bin/python \
-bash run_cuda_recognizer_queue_benchmark.sh
-```
-
-To sanity-check CUDA higher hot-swap active batches:
-
-```sh
-ACTIVE_BATCH_SIZE=4 NUM_ITEMS=8 CACHE_LENGTH=1024 \
-PYTHON_BIN=/workspace/venvs/paddle_ocr_vl/bin/python \
-bash run_cuda_recognizer_queue_benchmark.sh
-
-ACTIVE_BATCH_SIZE=8 NUM_ITEMS=8 CACHE_LENGTH=1024 \
-PYTHON_BIN=/workspace/venvs/paddle_ocr_vl/bin/python \
-bash run_cuda_recognizer_queue_benchmark.sh
-```
-
-On the current Vast box, keep the checkout clean by using a fresh clone such as
-`/workspace/paddle_ocr_vl_npu_queue_cuda` if an older checkout is dirty. The
-runner defaults to `MODEL=PaddlePaddle/PaddleOCR-VL-1.6`, sets
-`HF_HOME=/workspace/.hf_home` when that cache exists, and disables Xet so it can
-reuse the already-downloaded Hugging Face snapshot.
-
 Paste back the printed `QUEUE_BENCHMARK_SUMMARY`, `CACHE_PREFLIGHT`,
 `PHASE_TIMING_S`, `PIPELINE_STAGE_TIMING_SUMMARY_S`, `DECODE_QUEUE_DETAILS`,
 `THROUGHPUT`, `DECODE_SUMMARY`, `CORRECTNESS`, `READY_STAGE_SUMMARY_S`,
@@ -444,7 +404,7 @@ transfer, patch/position embeddings, post layernorm, the adaptive MLP projector,
 text prefill, and decode are outside the profiler window.
 
 ```sh
-cd /home/lukaiv/paddle_ocr_vl_npu/05_full_recognizer_optimizations
+cd "$WORK_SERVER_REPO"/05_full_recognizer_optimizations
 bash run_npu_vision_profile.sh
 ```
 
@@ -480,7 +440,7 @@ If prompt flash attention diverges from manual attention, run the committed
 single-layer call-contract probe next:
 
 ```sh
-cd /home/lukaiv/paddle_ocr_vl_npu/05_full_recognizer_optimizations
+cd "$WORK_SERVER_REPO"/05_full_recognizer_optimizations
 bash run_npu_vision_prompt_fa_probe.sh
 ```
 
@@ -503,7 +463,7 @@ If the minimal PromptFlashAttention integration still fails full-encoder
 validation, run the layout sweep:
 
 ```sh
-cd /home/lukaiv/paddle_ocr_vl_npu/05_full_recognizer_optimizations
+cd "$WORK_SERVER_REPO"/05_full_recognizer_optimizations
 bash run_npu_vision_prompt_fa_layout_sweep.sh
 ```
 
@@ -605,14 +565,12 @@ Read the timing fields carefully:
   target item 0 or any other completed item. If `token_ids.invalid_count` is
   nonzero, debug output-history writes before interpreting OCR text mismatches
   as model failures.
-- If CUDA/Vast raw eager passes hot-swap but NPU still mismatches, use the
-  experiment-4 diagnostic flags only for isolation, not as serving knobs:
-  `--diagnostic-verify-swap-copies`, `--diagnostic-swap-copy-mode clone`, and
-  `--diagnostic-sync-finished-flags`. On NPU, `--backend raw_eager` removes
-  TorchAir compile but still uses the NPU IncreFA and scatter-update decode
-  path; there is no `--diagnostic-decode-attention` flag in experiment 4. Use
-  CUDA raw eager as the manual-attention scheduler/bookkeeping comparison, not
-  as an NPU attention validation.
+- To isolate a hot-swap mismatch, use the experiment-4 diagnostic flags only for
+  isolation, not as serving knobs: `--diagnostic-verify-swap-copies`,
+  `--diagnostic-swap-copy-mode clone`, and `--diagnostic-sync-finished-flags`.
+  `--backend raw_eager` removes TorchAir compile but still uses the NPU IncreFA
+  and scatter-update decode path; there is no `--diagnostic-decode-attention`
+  flag in experiment 4.
 - `step_timing_summary.swap` versus `step_timing_summary.no_swap` shows whether
   slot replacement is expensive. Watch `npu_swap_ms`, `host_swap_s`, and
   `host_wait_prev_flag_s`. CPU timings show realized cadence and may attribute
@@ -640,12 +598,6 @@ Read the timing fields carefully:
   if decode sums are similar but wall time diverges, the gap is scheduler/copy
   overhead rather than the compiled decode graph.
 
-On the Vast/CUDA smoke box on 2026-06-08, the local model matched Transformers
-eager bf16 exactly for next-token logits on all eight crops when using the slow
-HF/source-matched processor path. The local processor intentionally follows the
-slow PaddleOCR-VL image processor source; the HF fast processor has small resize
-rounding differences and is not the exact parity target.
-
 Run single-batch static-cache decode:
 
 ```sh
@@ -670,87 +622,63 @@ Benchmark compiled static decode:
 python3 03_compiled_single_batch_decode/bench_static_compile.py \
   --crop crops/crop_01_text_block_en.png \
   --prompt "OCR:" \
-  --backend inductor
+  --backend torchair --device npu
 ```
 
-Use `--backend inductor` on CUDA for stronger local codegen smoke. Use
-`--backend torchair --device npu` on the work/NPU lane for the real Ascend
-check. CUDA fullgraph/static passing is only a
-structural compile-compatibility filter; it does not prove TorchAir/NPU lowering
-will succeed or that NPU throughput is good.
-
-Vast/CUDA smoke on 2026-06-08 for `crop_01`, 32 generated tokens, 31 measured
-decode steps, bf16:
-
-- `backend=eager`: all output IDs matched; static-eager-vs-compiled decode logits
-  matched exactly; compiled decode measured about 56 tok/s.
-- `backend=inductor`: all output IDs matched; static-eager-vs-compiled decode
-  logits differed numerically (`max_abs` about 0.226, `mean_abs` about 0.0338)
-  but argmax output matched; compiled decode measured about 139 tok/s after a
-  roughly 24.6s first compile call.
+A `fullgraph`/static compile pass is only a structural compile-compatibility
+filter. It does not prove TorchAir/NPU lowering will succeed, or that NPU
+throughput is good.
 
 ## Hardware Rules
 
-Always apply the lane rules at the top of this file before deciding what to do.
+Always apply the lane rules in `CLAUDE.md` before deciding what to do.
 
-The authoring checkout may have no accelerator attached. That is fine for editing code, preparing crops, committing, and pushing, but not for claiming inference validation.
+The local authoring checkout has no accelerator. That is fine for editing code, preparing crops, committing, and pushing, but not for claiming inference validation.
 
-The work/NPU lane is the real validation lane. When an Ascend target is available, do not silently fall back to CPU or CUDA for NPU experiments. If the NPU path fails, inspect the environment and summarize the blocker. Do not patch tracked files from the work/NPU lane.
+Ascend NPU is the only validation target. When an Ascend device is available, do not silently fall back to CPU for an NPU experiment. If the NPU path fails, inspect the environment and summarize the blocker rather than routing around it.
 
-The Vast/CUDA lane is only for dependency bring-up, model-load smoke tests, and quick debugging. Do not describe Vast results as NPU or Ascend throughput. If a result comes from CUDA, label it as CUDA/Vast.
+910B and 310P are different chips with different operator constraints. Label every result with the chip it ran on, and never carry a 910B result over to 310P or the reverse without rerunning it. The 310P-specific operator constraints established so far are recorded in the experiment sections below.
 
 For Huawei Ascend NPU, current public PaddleOCR guidance says local direct inference is not the supported path; the official route is PaddleOCR client/pipeline plus a vLLM VLM service, or the two-container full API service. Treat direct Transformers-on-NPU work as an experiment until validated.
 
-## Vast/CUDA Notes
+## Blue-Zone 910B Setup
 
-This section applies only in the Vast/CUDA lane. Work/NPU agents should not treat these commands as their setup instructions.
+Full verified machine facts — device inventory, model and dataset paths,
+interpreter table, TorchAir cache locations — are in `CLAUDE.md`. The two things
+that bite most often:
 
-The Vast/CUDA lane is useful for checking whether the Transformers recognizer loads, preprocesses, and generates on a crop before sending scripts to the NPU lane.
-
-Keep bulky model caches and generated outputs out of Git.
-
-Known-good CUDA smoke setup on the Vast RTX 3060 instance `40080612`:
-
-```sh
-python3 -m venv /workspace/venvs/paddle_ocr_vl
-/workspace/venvs/paddle_ocr_vl/bin/python -m pip install -U pip setuptools wheel
-/workspace/venvs/paddle_ocr_vl/bin/python -m pip install \
-  --extra-index-url https://download.pytorch.org/whl/cu124 \
-  torch==2.6.0+cu124 torchvision==0.21.0+cu124 \
-  transformers==5.0.0 accelerate==1.13.0 safetensors==0.7.0 \
-  sentencepiece==0.2.1 protobuf==7.35.0 tiktoken==0.13.0 \
-  einops==0.8.2 opencv-python==4.13.0.92 pillow==12.2.0
-```
-
-Run the recognizer with Xet disabled on that box. The default Xet downloader
-stalled during the first model-weight download, while normal Hub HTTP completed:
+Always `source npu-setup` (at `/usr/local/bin/npu-setup`, on PATH) before running
+anything. It sources CANN and ATB, sets `TORCH_DEVICE_BACKEND_AUTOLOAD=0`, and
+selects a free device into `ASCEND_RT_VISIBLE_DEVICES` via `npu-status
+--last-free`. Non-interactive SSH does not read `~/.bashrc`, so without it
+`npu-smi` fails on `libc_sec.so` and `import torch_npu` fails outright:
 
 ```sh
-HF_HOME=/workspace/.hf_home \
-HF_HUB_DISABLE_XET=1 \
-HF_XET_DISABLE=1 \
-/workspace/venvs/paddle_ocr_vl/bin/python 01_transformers_recognition_baseline/run_transformers_recognition.py \
-  --crop crops/crop_01_text_block_en.png \
-  --max-new-tokens 96
+ssh blue_zone_npu_container 'cd /workspace/repos/paddle_ocr_vl_npu && source npu-setup && <command>'
 ```
 
-On 2026-06-08, `transformers==5.10.2` failed with `torch==2.6.0+cu124`
-because it expected `torch.float8_e8m0fnu`. Keep the CUDA smoke environment on
-`transformers==5.0.0` unless PyTorch is upgraded deliberately.
+The box is shared: 8 × Ascend 910B2, one process per device. Let `npu-setup` pick
+the device, do not terminate other users' processes, and give concurrent runs
+distinct TorchAir cache directories.
+
+Keep bulky model caches out of Git. Run evidence under `tmp/` is the deliberate
+exception; see the evidence conventions in `CLAUDE.md`.
 
 ## Git / Public Repo Hygiene
 
 This folder is intended to become a public GitHub repo. Avoid committing:
 
-- credentials, SSH keys, tokens, Vast instance metadata that exposes secrets;
+- credentials, SSH keys, tokens, or server metadata that exposes secrets;
 - model weights or Hugging Face cache directories;
 - generated benchmark dumps, profiler traces, or large logs;
 - private parent-repo artifacts outside this subproject.
 
 Small reproducible scripts, notes, crop examples, manifests, and concise result summaries are fine.
 
-Only the authoring lane should commit and push. The work/NPU lane should only pull from `origin`, run, and report. The Vast/CUDA lane should normally run and report too, unless Luka explicitly asks to use it for authoring.
+Only the local authoring lane commits and pushes. The 910B container and the 310P work server pull from `origin`, run, and report.
+
+Run evidence under `tmp/` is force-added past `.gitignore` on purpose, so that a result stays paired with the exact commit and command that produced it.
 
 ## Style
 
-Keep notes short, concrete, and source-backed. Prefer small scripts that can be run on local CPU/CUDA first and then moved to Ascend. When a result is a smoke test, call it a smoke test.
+Keep notes short, concrete, and source-backed. When a result is a smoke test, call it a smoke test, and say which chip it ran on.
