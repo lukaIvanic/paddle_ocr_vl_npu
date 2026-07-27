@@ -143,8 +143,7 @@ class PaddleOCRRMSNorm(nn.Module):
 class PaddleOCRRotaryEmbedding(nn.Module):
     def __init__(self, config: PaddleOCRTextConfig):
         super().__init__()
-        rope = config.rope_parameters or {}
-        self.base = float(rope.get("rope_theta", 500000.0))
+        self.base = float(config.rope_theta)
         self.dim = int(config.head_dim)
         self.register_buffer("inv_freq", self._compute_inv_freq(), persistent=False)
         self.attention_scaling = 1.0
@@ -186,7 +185,7 @@ class PaddleOCRAttention(nn.Module):
         self.num_key_value_heads = config.num_key_value_heads
         self.num_key_value_groups = config.num_attention_heads // config.num_key_value_heads
         self.scaling = config.head_dim**-0.5
-        self.mrope_section = list((config.rope_parameters or {})["mrope_section"])
+        self.mrope_section = list(config.mrope_section)
         self.q_proj = nn.Linear(config.hidden_size, config.num_attention_heads * config.head_dim, bias=config.use_bias)
         self.k_proj = nn.Linear(config.hidden_size, config.num_key_value_heads * config.head_dim, bias=config.use_bias)
         self.v_proj = nn.Linear(config.hidden_size, config.num_key_value_heads * config.head_dim, bias=config.use_bias)
@@ -264,7 +263,7 @@ class PaddleOCRTextModel(nn.Module):
     def __init__(self, config: PaddleOCRTextConfig):
         super().__init__()
         self.config = config
-        self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, config.pad_token_id)
+        self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size)
         self.layers = nn.ModuleList([PaddleOCRDecoderLayer(config, layer_idx) for layer_idx in range(config.num_hidden_layers)])
         self.norm = PaddleOCRRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.rotary_emb = PaddleOCRRotaryEmbedding(config)
@@ -545,7 +544,7 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
         device: str | torch.device | None = None,
     ) -> "LocalPaddleOCRVLForConditionalGeneration":
         model_dir = _resolve_model_dir(model_id_or_path)
-        config = PaddleOCRVLConfig.from_model_dir(model_dir)
+        config = PaddleOCRVLConfig()
         model = cls(config)
         if dtype is not None:
             model = model.to(dtype=dtype)
