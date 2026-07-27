@@ -31,8 +31,9 @@ DTYPES = {
     "bfloat16": torch.bfloat16,
 }
 
-# Preprocessing constants, verified against the checkpoint's
-# preprocessor_config.json on the blue-zone box (2026-07-27).
+# Preprocessing constants from
+# https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6/blob/main/preprocessor_config.json
+# (verified against the checkpoint copy, 2026-07-27).
 PATCH_SIZE = 14
 MERGE_SIZE = 2
 MIN_PIXELS = 112896

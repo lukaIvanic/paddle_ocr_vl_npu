@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Hardcoded PaddleOCR-VL-1.6 architecture config.
 
-Values verified against the checkpoint's config.json on the blue-zone box
-(2026-07-27). The checkpoint is pinned; nothing is read from disk.
+Values from
+https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6/blob/main/config.json
+(verified against the checkpoint copy, 2026-07-27). The checkpoint is
+pinned; nothing is read from disk.
 """
 
 from __future__ import annotations

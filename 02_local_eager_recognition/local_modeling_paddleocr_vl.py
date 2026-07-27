@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Local PaddleOCR-VL recognizer implementation without Transformers imports."""
+"""Faithful eager replica of the upstream PaddleOCR-VL model, no Transformers imports.
+
+Correctness reference for the whole experiment ladder; kept diffable against
+the upstream modeling_paddleocr_vl.py and deliberately not optimized. See
+README.md in this directory.
+"""
 
 from __future__ import annotations
 
