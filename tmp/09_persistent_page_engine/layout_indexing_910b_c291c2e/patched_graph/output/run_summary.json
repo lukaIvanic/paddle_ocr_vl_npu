@@ -1,0 +1,127 @@
+{
+  "implementation": "owned_pp_doclayout_v3_frontend",
+  "paddlex_dependency": false,
+  "dataset_json": "/workspace/datasets/OmniDocBench/OmniDocBench.json",
+  "dataset_sha256": "a45cd84b04ad8b793e775089640e6b681209abea33ead54c1828ddca35fae496",
+  "images_dir": "/workspace/datasets/OmniDocBench/images",
+  "offset": 0,
+  "count": 1,
+  "images": [
+    "page-d1561665-5359-42fe-920c-d6e3bff81953.png"
+  ],
+  "layout_model": "/workspace/models/PP-DocLayoutV3_safetensors",
+  "layout_model_backend": "transformers_npugraph",
+  "device": "npu:0",
+  "graph_capture": true,
+  "npu_indexput_compat": true,
+  "workers": 1,
+  "worker_strategy": "serial",
+  "setup_s": 2.8268909349571913,
+  "setup_by_worker_s": [
+    2.815045264083892
+  ],
+  "npu_memory_allocated_bytes": {
+    "before_setup": 0,
+    "after_setup": 1498457600,
+    "setup_delta": 1498457600
+  },
+  "frontend_wall_s": 0.27563333499711007,
+  "pages_per_s": 3.628008201585939,
+  "s_per_page": 0.27563333499711007,
+  "stage_totals_s": {
+    "file_read_s": 0.00048082799185067415,
+    "image_decode_s": 0.09085429389961064,
+    "layout_device_mask_postprocess_s": 0.0003685800135135651,
+    "layout_device_metadata_postprocess_s": 0.025320100784301757,
+    "layout_mask_polygon_cpu_s": 0.06766885006800294,
+    "layout_mask_wait_and_d2h_s": 0.00019104406237602234,
+    "layout_metadata_wait_and_d2h_s": 0.0014395850012078881,
+    "layout_model_device_s": 0.022808719635009765,
+    "layout_model_submit_s": 0.0005058880196884274,
+    "layout_postprocess_s": 0.12397999700624496,
+    "layout_preprocess_h2d_s": 0.03415194107219577,
+    "layout_structural_containment_cpu_s": 0.0005364189855754375,
+    "layout_structural_format_cpu_s": 0.0001432819990441203,
+    "layout_structural_nms_cpu_s": 0.000683262012898922,
+    "layout_structural_order_cpu_s": 6.480957381427288e-06,
+    "layout_structural_overlap_filter_cpu_s": 0.0003976660082116723,
+    "layout_structural_page_image_filter_cpu_s": 5.872105248272419e-05,
+    "layout_structural_polygon_normalize_cpu_s": 0.003428019001148641,
+    "layout_structural_postprocess_cpu_s": 0.006699873949401081,
+    "layout_structural_result_build_cpu_s": 0.0008162040030583739,
+    "layout_structural_sort_cpu_s": 0.00018741306848824024,
+    "layout_structural_threshold_cpu_s": 0.00035180593840777874,
+    "page_preparation_s": 0.025039755972102284,
+    "page_total_s": 0.2753181488951668
+  },
+  "requests": 15,
+  "requests_per_page": {
+    "min": 15,
+    "mean": 15.0,
+    "max": 15
+  },
+  "prompt_counts": {
+    "Formula Recognition:": 4,
+    "OCR:": 11
+  },
+  "crop_pixels": 1348242,
+  "crop_bytes": 4044726,
+  "request_manifest": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/layout_indexing_910b_c291c2e/patched_graph/output/requests.jsonl",
+  "request_manifest_sha256": "bd2f28a28d5cc2ae97ebcf91c453c5ac9647d92635de233d346a5513972014b5",
+  "reference_comparison": {
+    "path": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/layout_indexput_patch_910b_f7edd1b/baseline_eager/output/requests.jsonl",
+    "sha256": "bd2f28a28d5cc2ae97ebcf91c453c5ac9647d92635de233d346a5513972014b5",
+    "exact": true
+  },
+  "layout_mask_rectangle_fast_path": {
+    "calls": 1,
+    "detections": 27,
+    "rectangle_fast_paths": 20,
+    "fallbacks": 7,
+    "coverage": 0.7407407407407407,
+    "wall_s": 0.067581009,
+    "predicate_s": 0.000957695,
+    "fallback_s": 0.066344888
+  },
+  "page_statistics": [
+    {
+      "page": "page-d1561665-5359-42fe-920c-d6e3bff81953.png",
+      "raw_layout_boxes": 15,
+      "filtered_layout_boxes": 15,
+      "merged_blocks": 15,
+      "requests": 15,
+      "timing_s": {
+        "file_read_s": 0.00048082799185067415,
+        "image_decode_s": 0.09085429389961064,
+        "layout_preprocess_h2d_s": 0.03415194107219577,
+        "layout_model_submit_s": 0.0005058880196884274,
+        "layout_metadata_wait_and_d2h_s": 0.0014395850012078881,
+        "layout_mask_wait_and_d2h_s": 0.00019104406237602234,
+        "layout_mask_polygon_cpu_s": 0.06766885006800294,
+        "layout_model_device_s": 0.022808719635009765,
+        "layout_device_metadata_postprocess_s": 0.025320100784301757,
+        "layout_device_mask_postprocess_s": 0.0003685800135135651,
+        "layout_structural_format_cpu_s": 0.0001432819990441203,
+        "layout_structural_threshold_cpu_s": 0.00035180593840777874,
+        "layout_structural_nms_cpu_s": 0.000683262012898922,
+        "layout_structural_page_image_filter_cpu_s": 5.872105248272419e-05,
+        "layout_structural_containment_cpu_s": 0.0005364189855754375,
+        "layout_structural_sort_cpu_s": 0.00018741306848824024,
+        "layout_structural_polygon_normalize_cpu_s": 0.003428019001148641,
+        "layout_structural_result_build_cpu_s": 0.0008162040030583739,
+        "layout_structural_overlap_filter_cpu_s": 0.0003976660082116723,
+        "layout_structural_order_cpu_s": 6.480957381427288e-06,
+        "layout_structural_postprocess_cpu_s": 0.006699873949401081,
+        "layout_postprocess_s": 0.12397999700624496,
+        "page_preparation_s": 0.025039755972102284,
+        "page_total_s": 0.2753181488951668
+      }
+    }
+  ],
+  "timeline": {
+    "enabled": false,
+    "event_count": 0,
+    "trace_json": null,
+    "html": null
+  }
+}

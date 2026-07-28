@@ -1,0 +1,1 @@
+{"device": "npu:0", "mode": "capture_constructor", "spatial_shapes": [[100, 100], [50, 50], [25, 25]], "torch": "2.10.0+cpu", "torch_npu": "2.10.0", "verdict": "PASS"}

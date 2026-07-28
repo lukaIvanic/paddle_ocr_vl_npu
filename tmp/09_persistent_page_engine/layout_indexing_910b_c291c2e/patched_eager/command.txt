@@ -1,0 +1,3 @@
+git_commit=c291c2e80086b888d762c2a3a6b0e8eb334508e9
+device=5
+mode=eager

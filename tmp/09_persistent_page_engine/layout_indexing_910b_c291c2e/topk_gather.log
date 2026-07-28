@@ -1,0 +1,1 @@
+{"device": "npu:0", "mode": "gather", "shape": [2, 3, 4], "torch": "2.10.0+cpu", "torch_npu": "2.10.0", "verdict": "PASS"}
