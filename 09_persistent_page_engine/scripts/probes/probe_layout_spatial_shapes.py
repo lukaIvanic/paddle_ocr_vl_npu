@@ -18,7 +18,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--mode",
-        choices=("legacy_indexput", "single_constructor"),
+        choices=(
+            "legacy_indexput",
+            "single_constructor",
+            "capture_constructor",
+        ),
         required=True,
     )
     parser.add_argument("--device", default="npu:0")
@@ -34,6 +38,29 @@ def main(argv: Sequence[str] | None = None) -> None:
         raise RuntimeError("NPU is not available")
     torch.npu.set_compile_mode(jit_compile=False)
 
+    def single_constructor() -> torch.Tensor:
+        return torch.stack(
+            [
+                torch.stack(
+                    (
+                        torch.full(
+                            (),
+                            height,
+                            device=device,
+                            dtype=torch.long,
+                        ),
+                        torch.full(
+                            (),
+                            width,
+                            device=device,
+                            dtype=torch.long,
+                        ),
+                    )
+                )
+                for height, width in SPATIAL_SHAPES
+            ]
+        )
+
     if args.mode == "legacy_indexput":
         result = torch.empty(
             (len(SPATIAL_SHAPES), 2),
@@ -43,12 +70,17 @@ def main(argv: Sequence[str] | None = None) -> None:
         for level, (height, width) in enumerate(SPATIAL_SHAPES):
             result[level, 0] = height
             result[level, 1] = width
+    elif args.mode == "single_constructor":
+        result = single_constructor()
     else:
-        result = torch.tensor(
-            SPATIAL_SHAPES,
-            device=device,
-            dtype=torch.long,
-        )
+        warmup = single_constructor()
+        torch.npu.synchronize()
+        graph = torch.npu.NPUGraph()
+        with torch.npu.graph(graph):
+            result = single_constructor()
+        torch.npu.synchronize()
+        graph.replay()
+        del warmup
 
     torch.npu.synchronize()
     actual = result.cpu().tolist()

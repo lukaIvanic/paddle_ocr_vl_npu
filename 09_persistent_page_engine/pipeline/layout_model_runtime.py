@@ -1084,10 +1084,26 @@ def _pp_doclayout_v3_model_forward_without_indexput(
 
     # Compatibility change: construct the complete tensor once. The upstream
     # forward performs two scalar device assignments per feature level here.
-    spatial_shapes = torch.tensor(
-        spatial_shapes_list,
-        device=device,
-        dtype=torch.long,
+    spatial_shapes = torch.stack(
+        [
+            torch.stack(
+                (
+                    torch.full(
+                        (),
+                        source_height,
+                        device=device,
+                        dtype=torch.long,
+                    ),
+                    torch.full(
+                        (),
+                        source_width,
+                        device=device,
+                        dtype=torch.long,
+                    ),
+                )
+            )
+            for source_height, source_width in spatial_shapes_list
+        ]
     )
     source_flatten_tensor = torch.cat(source_flatten, 1)
     level_start_index = torch.cat(
