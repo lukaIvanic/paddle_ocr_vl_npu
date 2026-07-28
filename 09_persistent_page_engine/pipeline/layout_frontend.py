@@ -198,7 +198,12 @@ class OwnedLayoutFrontend:
         self.model_dir = model_dir.expanduser().resolve()
         self.device = device
         self.timeline = timeline
-        self.device_stage_timing = bool(device_stage_timing)
+        self.device_stage_timing = bool(
+            device_stage_timing and self.device.type == "npu"
+        )
+        self.graph_capture = bool(
+            graph_capture and self.device.type == "npu"
+        )
         self.labels = _load_layout_labels(self.model_dir)
 
         setup_started = time.perf_counter()
@@ -228,7 +233,7 @@ class OwnedLayoutFrontend:
             self.processor._extract_polygon_points_by_masks
         )
         self.processor._extract_polygon_points_by_masks = self.mask_fast_path
-        if graph_capture:
+        if self.graph_capture:
             from transformers.models.pp_doclayout_v3 import (
                 modeling_pp_doclayout_v3,
             )
@@ -253,9 +258,9 @@ class OwnedLayoutFrontend:
             max_workers=4,
             thread_name_prefix="layout-crop",
         )
-        torch.npu.synchronize()
+        if self.device.type == "npu":
+            torch.npu.synchronize()
         self.setup_s = time.perf_counter() - setup_started
-        self.graph_capture = bool(graph_capture)
 
     def _span(
         self,

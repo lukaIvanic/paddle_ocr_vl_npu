@@ -488,6 +488,8 @@ class OwnedPageEngine:
             completion_order=completion_order,
             frontend={
                 "implementation": "owned_no_paddlex",
+                "device": str(self.frontend.device),
+                "graph_capture": self.frontend.graph_capture,
                 "setup_s": self.frontend.setup_s,
                 "stage_s": dict(sorted(frontend_stage_s.items())),
                 "statistics": dict(sorted(frontend_statistics.items())),

@@ -57,6 +57,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--image", type=Path, action="append", required=True)
     parser.add_argument("--layout-model", type=Path, default=Path("/workspace/models/PP-DocLayoutV3_safetensors"))
+    parser.add_argument(
+        "--layout-device",
+        default="npu",
+        choices=("npu", "cpu"),
+        help=(
+            "Run PP-DocLayoutV3 on NPU or CPU while keeping recognition on "
+            "npu:0. CPU is the 310P IndexPut compatibility path."
+        ),
+    )
     parser.add_argument("--recognizer-model", default=DEFAULT_RECOGNIZER)
     parser.add_argument("--dtype", default="fp16", choices=("fp16", "float16", "bf16", "bfloat16"))
     parser.add_argument("--layout-threshold", type=float, default=0.3)
@@ -179,11 +188,18 @@ def main() -> None:
     import torch_npu  # noqa: F401
 
     device = torch.device("npu:0")
+    layout_device = torch.device(
+        "cpu" if args.layout_device == "cpu" else "npu:0"
+    )
     if not torch.npu.is_available():
         raise RuntimeError("Experiment 09 requires an available NPU")
     torch.npu.set_compile_mode(jit_compile=False)
     npu_runtime_init_s = time.perf_counter() - npu_started
-    layout = PPDocLayoutV3Runtime(args.layout_model, device, threshold=args.layout_threshold)
+    layout = PPDocLayoutV3Runtime(
+        args.layout_model,
+        layout_device,
+        threshold=args.layout_threshold,
+    )
     recognizer = ContinuousRecognizer(
         model=args.recognizer_model,
         dtype=args.dtype,
@@ -229,6 +245,7 @@ def main() -> None:
     configuration = {
         **recognizer.configuration(),
         "layout_model": str(args.layout_model.expanduser().resolve()),
+        "layout_device": str(layout_device),
         "layout_threshold": float(args.layout_threshold),
         "layout_runtime": "transformers.AutoModelForObjectDetection",
         "layout_source": "real_pp_doclayout_v3_inference",

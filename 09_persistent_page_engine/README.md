@@ -130,6 +130,16 @@ the owned layout frontend and page engine for the complete page-to-Markdown
 path. A runtime assertion fails the run if any `paddlex` module was imported;
 the summary records the same audit.
 
+Both page runners accept `--layout-device npu|cpu`. The default remains `npu`.
+The CPU option moves only PP-DocLayoutV3 inference and its preprocessing off the
+NPU; the PaddleOCR-VL recognizer, vision/text prefills, KV cache, and decode
+remain on logical `npu:0`. This is the functional compatibility path for 310P
+software stacks whose operator package cannot execute the layout model's
+IndexPut signature. The owned CPU layout path disables NPU graph capture and
+NPU event timing automatically, and records `layout_device`,
+`layout_frontend.device`, and `layout_frontend.graph_capture` in the run
+summary.
+
 The full-benchmark runner installs a narrow PP-DocLayoutV3 mask guard.
 Transformers can otherwise call OpenCV with a zero-width mask crop when a thin,
 positive-size detection collapses after scaling and rounding. Valid detections
@@ -535,9 +545,11 @@ source npu-setup
   --recognizer-model /workspace/models/PaddleOCR-VL-1.6
 ```
 
-Experiment 09 always uses the logical device `npu:0` selected by `npu-setup`
-and always calls `torch.npu.set_compile_mode(jit_compile=False)`. There is no
-device-resolution or JIT-mode option in this experiment.
+Experiment 09 recognition always uses the logical device `npu:0` selected by
+`npu-setup` and always calls
+`torch.npu.set_compile_mode(jit_compile=False)`. Layout also uses `npu:0` by
+default; pass `--layout-device cpu` only for the explicit compatibility path
+described above.
 
 For a repeatable one-page validation, use `scripts/run_npu_smoke.sh`. Environment
 overrides remain available for deliberate controls, including `BATCH_SIZE`,

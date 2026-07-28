@@ -9,6 +9,32 @@ Prove that the real Experiment 09 pipeline runs on this 310P software stack,
 identify which production optimizations work, and measure their approximate
 effect on a small representative workload.
 
+## Current layout IndexPut compatibility route
+
+For this validation, keep every PaddleOCR-VL recognition stage on `npu:0` but
+run PP-DocLayoutV3 on CPU by passing:
+
+```text
+--layout-device cpu
+```
+
+This is a device-boundary workaround for the current environment's missing NPU
+IndexPut implementation. It does not change layout model code, recognition
+model code, crops, prompts, scheduling, or OCR execution. The production summary
+must show:
+
+```text
+configuration.device = "npu:0"
+configuration.layout_device = "cpu"
+layout_frontend.device = "cpu"
+layout_frontend.graph_capture = false
+```
+
+Do not use the standalone Transformers one-crop example as the production
+recognizer gate: that helper constructs MRoPE after moving its metadata tensors
+to NPU. Experiment 09's serving preparation constructs MRoPE on CPU and copies
+the completed tensor to NPU.
+
 ## Immediate standalone IndexPut probe
 
 Run this section by itself when Luka asks for the 310P advanced-indexing
@@ -744,6 +770,7 @@ PRODUCTION_BASE=(
   --dataset-json "$DATASET_JSON"
   --images-dir "$IMAGES_DIR"
   --layout-model "$LAYOUT_MODEL"
+  --layout-device cpu
   --recognizer-model "$RECOGNIZER_MODEL"
   --dtype fp16
   --cache-length 4096
@@ -1439,6 +1466,7 @@ run_and_record phase8_layout_w1 \
   --dataset-json "$DATASET_JSON" \
   --images-dir "$IMAGES_DIR" \
   --layout-model "$LAYOUT_MODEL" \
+  --device cpu \
   --offset 0 \
   --limit 32 \
   --workers 1 \
@@ -1455,6 +1483,7 @@ run_and_record phase8_layout_w2 \
   --dataset-json "$DATASET_JSON" \
   --images-dir "$IMAGES_DIR" \
   --layout-model "$LAYOUT_MODEL" \
+  --device cpu \
   --offset 0 \
   --limit 32 \
   --workers 2 \

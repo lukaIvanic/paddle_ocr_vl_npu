@@ -72,6 +72,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--dataset-json", type=Path, default=DEFAULT_DATASET_JSON)
     parser.add_argument("--images-dir", type=Path, default=DEFAULT_IMAGES_DIR)
     parser.add_argument("--layout-model", type=Path, default=DEFAULT_LAYOUT_MODEL)
+    parser.add_argument(
+        "--layout-device",
+        default="npu",
+        choices=("npu", "cpu"),
+        help=(
+            "Run PP-DocLayoutV3 on the selected NPU or on CPU. CPU layout "
+            "keeps recognition on NPU and is the compatibility path for "
+            "310P environments without the required IndexPut kernel."
+        ),
+    )
     parser.add_argument("--recognizer-model", type=Path, default=DEFAULT_RECOGNIZER_MODEL)
     parser.add_argument(
         "--dtype",
@@ -497,6 +507,7 @@ def main() -> None:
         "count": args.limit,
         "images": [path.name for path in image_paths],
         "pipeline": "owned_paddleocr_vl_v1.6",
+        "layout_device": args.layout_device,
         "page_preprocessing_mode": (
             "all_before_recognition"
             if args.preprocess_all_pages_first
@@ -519,9 +530,12 @@ def main() -> None:
 
     setup_started = time.perf_counter()
     timeline = TimelineRecorder(enabled=args.timeline)
+    layout_device = torch.device(
+        "cpu" if args.layout_device == "cpu" else "npu:0"
+    )
     layout_frontend = OwnedLayoutFrontend(
         layout_model,
-        torch.device("npu:0"),
+        layout_device,
         timeline=timeline,
     )
 
@@ -654,6 +668,7 @@ def main() -> None:
             "layout_model": str(layout_model),
             "recognizer_model": str(recognizer_model),
             "device": "npu:0",
+            "layout_device": str(layout_device),
             "dtype": args.dtype,
             "batch_size": args.batch_size,
             "cache_length": args.cache_length,

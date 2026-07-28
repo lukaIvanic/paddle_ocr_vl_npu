@@ -55,6 +55,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         type=Path,
         default=DEFAULT_LAYOUT_MODEL,
     )
+    parser.add_argument(
+        "--device",
+        default="npu",
+        choices=("npu", "cpu"),
+        help=(
+            "Run layout on NPU or CPU. CPU disables NPU graph capture and "
+            "device-event timing."
+        ),
+    )
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--limit", type=int, default=32)
     parser.add_argument("--workers", type=int, choices=(1, 2), default=1)
@@ -154,12 +163,13 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
 
     install_layout_mask_guard()
-    import torch_npu  # noqa: F401
+    device = torch.device("cpu" if args.device == "cpu" else "npu:0")
+    if device.type == "npu":
+        import torch_npu  # noqa: F401
 
-    if not torch.npu.is_available():
-        raise RuntimeError("owned layout lab requires an NPU")
-    torch.npu.set_compile_mode(jit_compile=False)
-    device = torch.device("npu:0")
+        if not torch.npu.is_available():
+            raise RuntimeError("owned layout lab requires an NPU")
+        torch.npu.set_compile_mode(jit_compile=False)
     timeline = TimelineRecorder(enabled=args.timeline)
     timeline.reset(
         {
@@ -171,17 +181,25 @@ def main(argv: Sequence[str] | None = None) -> None:
         }
     )
 
-    memory_before_setup = int(torch.npu.memory_allocated(device))
+    memory_before_setup = (
+        int(torch.npu.memory_allocated(device))
+        if device.type == "npu"
+        else 0
+    )
     setup_started = time.perf_counter()
     frontend = OwnedLayoutFrontend(
         model_dir,
         device,
         timeline=timeline,
-        graph_capture=True,
-        device_stage_timing=True,
+        graph_capture=device.type == "npu",
+        device_stage_timing=device.type == "npu",
     )
     setup_s = time.perf_counter() - setup_started
-    memory_after_setup = int(torch.npu.memory_allocated(device))
+    memory_after_setup = (
+        int(torch.npu.memory_allocated(device))
+        if device.type == "npu"
+        else 0
+    )
 
     def page_record(page: Any) -> tuple[
         int,
@@ -306,7 +324,12 @@ def main(argv: Sequence[str] | None = None) -> None:
         "count": len(image_paths),
         "images": [path.name for path in image_paths],
         "layout_model": str(model_dir),
-        "layout_model_backend": "transformers_npugraph",
+        "layout_model_backend": (
+            "transformers_npugraph"
+            if device.type == "npu"
+            else "transformers_cpu"
+        ),
+        "device": str(device),
         "workers": args.workers,
         "worker_strategy": (
             "serial" if args.workers == 1 else "one_page_decode_prefetch"
