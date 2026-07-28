@@ -1,0 +1,3 @@
+git_commit=f7edd1b508ea93c21cf15f72533f0ad4e4be102a
+device=5
+command=/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python 09_persistent_page_engine/scripts/layout_owned_lab.py --device npu --no-graph-capture --layout-indexput-compat --offset 0 --limit 1 --workers 1 --no-timeline --reference-requests tmp/09_persistent_page_engine/layout_indexput_patch_910b_f7edd1b/baseline_eager/output/requests.jsonl --output-dir tmp/09_persistent_page_engine/layout_indexput_patch_910b_f7edd1b/patched_eager/output

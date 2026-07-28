@@ -1,0 +1,45 @@
+Loading weights:   0%|          | 0/858 [00:00<?, ?it/s]Loading weights:  60%|█████▉    | 511/858 [00:00<00:00, 5088.17it/s]Loading weights: 100%|██████████| 858/858 [00:00<00:00, 5261.29it/s]
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/pipeline/layout_model_runtime.py:1455: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  self.pixel_values = torch.empty_like(pixel_values)
+Traceback (most recent call last):
+  File "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/layout_owned_lab.py", line 408, in <module>
+    main()
+  File "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/layout_owned_lab.py", line 205, in main
+    frontend = OwnedLayoutFrontend(
+               ^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/pipeline/layout_frontend.py", line 259, in __init__
+    self.model(pixel_values=capture_input)
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/pipeline/layout_model_runtime.py", line 1471, in __call__
+    self.output = self.eager_forward(
+                  ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/transformers/utils/generic.py", line 876, in wrapper
+    output = func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/transformers/models/pp_doclayout_v3/modeling_pp_doclayout_v3.py", line 2026, in forward
+    outputs = self.model(
+              ^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/pipeline/layout_model_runtime.py", line 1087, in _pp_doclayout_v3_model_forward_without_indexput
+    spatial_shapes = torch.tensor(
+                     ^^^^^^^^^^^^^
+RuntimeError: copy_between_host_and_device_opapi:../torch_npu/csrc/aten/ops/op_api/CopyKernelOpApi.cpp:55 NPU function error: aclrtMemcpy, error code is 107030
+[ERROR] 2026-07-28-18:14:01 (PID:572043, Device:0, RankID:-1) ERR00100 PTA call acl api failed.
+EE9999: Inner Error!
+EE9999[PID: 572043] 2026-07-28-18:14:01.099.179 (EE9999):  Not allow to synchronize captured-stream, stream_id=6.[FUNC:StreamSynchronize][FILE:api_error.cc][LINE:1016]
+        TraceBack (most recent call last):
+       rtStreamSynchronize execution failed, reason=stream is captured[FUNC:FuncErrorReason][FILE:error_message_manage.cc][LINE:65]
+       synchronize stream failed, runtime result = 107027[FUNC:ReportCallError][FILE:log_inner.cpp][LINE:148]
+       rtMemcpy execution failed, reason=the current capture mode does not support this operation[FUNC:FuncErrorReason][FILE:error_message_manage.cc][LINE:65]
+       synchronized memcpy failed, kind = 1, runtime result = 107030[FUNC:ReportCallError][FILE:log_inner.cpp][LINE:148]
+

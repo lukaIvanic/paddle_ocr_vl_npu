@@ -1,0 +1,127 @@
+Loading weights:   0%|          | 0/858 [00:00<?, ?it/s]Loading weights:  59%|█████▉    | 510/858 [00:00<00:00, 5099.19it/s]Loading weights: 100%|██████████| 858/858 [00:00<00:00, 5386.06it/s]
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/pipeline/layout_frontend.py:305: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  return pixel_values.to(
+{
+  "implementation": "owned_pp_doclayout_v3_frontend",
+  "paddlex_dependency": false,
+  "dataset_json": "/workspace/datasets/OmniDocBench/OmniDocBench.json",
+  "dataset_sha256": "a45cd84b04ad8b793e775089640e6b681209abea33ead54c1828ddca35fae496",
+  "images_dir": "/workspace/datasets/OmniDocBench/images",
+  "offset": 0,
+  "count": 1,
+  "images": [
+    "page-d1561665-5359-42fe-920c-d6e3bff81953.png"
+  ],
+  "layout_model": "/workspace/models/PP-DocLayoutV3_safetensors",
+  "layout_model_backend": "transformers_npugraph",
+  "device": "npu:0",
+  "graph_capture": false,
+  "npu_indexput_compat": false,
+  "workers": 1,
+  "worker_strategy": "serial",
+  "setup_s": 2.0648266030475497,
+  "setup_by_worker_s": [
+    2.0526277660392225
+  ],
+  "npu_memory_allocated_bytes": {
+    "before_setup": 0,
+    "after_setup": 136682496,
+    "setup_delta": 136682496
+  },
+  "frontend_wall_s": 0.8123156249057502,
+  "pages_per_s": 1.2310485842446108,
+  "s_per_page": 0.8123156249057502,
+  "stage_totals_s": {
+    "file_read_s": 0.0004996090428903699,
+    "image_decode_s": 0.09180639998521656,
+    "layout_device_mask_postprocess_s": 0.00032868000864982606,
+    "layout_device_metadata_postprocess_s": 0.028006120681762694,
+    "layout_mask_polygon_cpu_s": 0.06291059905197471,
+    "layout_mask_wait_and_d2h_s": 0.0006434110691770911,
+    "layout_metadata_wait_and_d2h_s": 0.0018480410799384117,
+    "layout_model_device_s": 0.44709796142578123,
+    "layout_model_submit_s": 0.44399027596227825,
+    "layout_postprocess_s": 0.10283906804397702,
+    "layout_preprocess_h2d_s": 0.14135980303399265,
+    "layout_structural_containment_cpu_s": 0.0005216290010139346,
+    "layout_structural_format_cpu_s": 0.00013324304018169641,
+    "layout_structural_nms_cpu_s": 0.0009001550497487187,
+    "layout_structural_order_cpu_s": 6.040092557668686e-06,
+    "layout_structural_overlap_filter_cpu_s": 0.00036465597804635763,
+    "layout_structural_page_image_filter_cpu_s": 6.164098158478737e-05,
+    "layout_structural_polygon_normalize_cpu_s": 0.0034381779842078686,
+    "layout_structural_postprocess_cpu_s": 0.006455669994466007,
+    "layout_structural_result_build_cpu_s": 0.0007514230674132705,
+    "layout_structural_sort_cpu_s": 2.9441085644066334e-05,
+    "layout_structural_threshold_cpu_s": 0.00013092206791043282,
+    "page_preparation_s": 0.03088582493364811,
+    "page_total_s": 0.8116789150517434
+  },
+  "requests": 15,
+  "requests_per_page": {
+    "min": 15,
+    "mean": 15.0,
+    "max": 15
+  },
+  "prompt_counts": {
+    "Formula Recognition:": 4,
+    "OCR:": 11
+  },
+  "crop_pixels": 1348242,
+  "crop_bytes": 4044726,
+  "request_manifest": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/layout_indexput_patch_910b_f7edd1b/baseline_eager/output/requests.jsonl",
+  "request_manifest_sha256": "bd2f28a28d5cc2ae97ebcf91c453c5ac9647d92635de233d346a5513972014b5",
+  "reference_comparison": null,
+  "layout_mask_rectangle_fast_path": {
+    "calls": 1,
+    "detections": 27,
+    "rectangle_fast_paths": 20,
+    "fallbacks": 7,
+    "coverage": 0.7407407407407407,
+    "wall_s": 0.062816877,
+    "predicate_s": 0.000856375,
+    "fallback_s": 0.061697408
+  },
+  "page_statistics": [
+    {
+      "page": "page-d1561665-5359-42fe-920c-d6e3bff81953.png",
+      "raw_layout_boxes": 15,
+      "filtered_layout_boxes": 15,
+      "merged_blocks": 15,
+      "requests": 15,
+      "timing_s": {
+        "file_read_s": 0.0004996090428903699,
+        "image_decode_s": 0.09180639998521656,
+        "layout_preprocess_h2d_s": 0.14135980303399265,
+        "layout_model_submit_s": 0.44399027596227825,
+        "layout_metadata_wait_and_d2h_s": 0.0018480410799384117,
+        "layout_mask_wait_and_d2h_s": 0.0006434110691770911,
+        "layout_mask_polygon_cpu_s": 0.06291059905197471,
+        "layout_model_device_s": 0.44709796142578123,
+        "layout_device_metadata_postprocess_s": 0.028006120681762694,
+        "layout_device_mask_postprocess_s": 0.00032868000864982606,
+        "layout_structural_format_cpu_s": 0.00013324304018169641,
+        "layout_structural_threshold_cpu_s": 0.00013092206791043282,
+        "layout_structural_nms_cpu_s": 0.0009001550497487187,
+        "layout_structural_page_image_filter_cpu_s": 6.164098158478737e-05,
+        "layout_structural_containment_cpu_s": 0.0005216290010139346,
+        "layout_structural_sort_cpu_s": 2.9441085644066334e-05,
+        "layout_structural_polygon_normalize_cpu_s": 0.0034381779842078686,
+        "layout_structural_result_build_cpu_s": 0.0007514230674132705,
+        "layout_structural_overlap_filter_cpu_s": 0.00036465597804635763,
+        "layout_structural_order_cpu_s": 6.040092557668686e-06,
+        "layout_structural_postprocess_cpu_s": 0.006455669994466007,
+        "layout_postprocess_s": 0.10283906804397702,
+        "page_preparation_s": 0.03088582493364811,
+        "page_total_s": 0.8116789150517434
+      }
+    }
+  ],
+  "timeline": {
+    "enabled": false,
+    "event_count": 0,
+    "trace_json": null,
+    "html": null
+  }
+}
+summary=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/layout_indexput_patch_910b_f7edd1b/baseline_eager/output/run_summary.json

@@ -1,0 +1,131 @@
+Loading weights:   0%|          | 0/858 [00:00<?, ?it/s]Loading weights:  62%|██████▏   | 531/858 [00:00<00:00, 5296.56it/s]Loading weights: 100%|██████████| 858/858 [00:00<00:00, 5316.42it/s]
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/pipeline/layout_frontend.py:305: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  return pixel_values.to(
+{
+  "implementation": "owned_pp_doclayout_v3_frontend",
+  "paddlex_dependency": false,
+  "dataset_json": "/workspace/datasets/OmniDocBench/OmniDocBench.json",
+  "dataset_sha256": "a45cd84b04ad8b793e775089640e6b681209abea33ead54c1828ddca35fae496",
+  "images_dir": "/workspace/datasets/OmniDocBench/images",
+  "offset": 0,
+  "count": 1,
+  "images": [
+    "page-d1561665-5359-42fe-920c-d6e3bff81953.png"
+  ],
+  "layout_model": "/workspace/models/PP-DocLayoutV3_safetensors",
+  "layout_model_backend": "transformers_npugraph",
+  "device": "npu:0",
+  "graph_capture": false,
+  "npu_indexput_compat": true,
+  "workers": 1,
+  "worker_strategy": "serial",
+  "setup_s": 2.0054924349533394,
+  "setup_by_worker_s": [
+    1.992364251986146
+  ],
+  "npu_memory_allocated_bytes": {
+    "before_setup": 0,
+    "after_setup": 136682496,
+    "setup_delta": 136682496
+  },
+  "frontend_wall_s": 0.895375226973556,
+  "pages_per_s": 1.1168501985252424,
+  "s_per_page": 0.895375226973556,
+  "stage_totals_s": {
+    "file_read_s": 0.0004747780039906502,
+    "image_decode_s": 0.09208217507693917,
+    "layout_device_mask_postprocess_s": 0.0003276000022888184,
+    "layout_device_metadata_postprocess_s": 0.02668992042541504,
+    "layout_mask_polygon_cpu_s": 0.08921016589738429,
+    "layout_mask_wait_and_d2h_s": 0.0004880880005657673,
+    "layout_metadata_wait_and_d2h_s": 0.0020415750332176685,
+    "layout_model_device_s": 0.5249146118164062,
+    "layout_model_submit_s": 0.5157992369495332,
+    "layout_postprocess_s": 0.13287782797124237,
+    "layout_preprocess_h2d_s": 0.14285591803491116,
+    "layout_structural_containment_cpu_s": 0.0003321249969303608,
+    "layout_structural_format_cpu_s": 0.00016302301082760096,
+    "layout_structural_nms_cpu_s": 0.0006856319960206747,
+    "layout_structural_order_cpu_s": 5.589914508163929e-06,
+    "layout_structural_overlap_filter_cpu_s": 0.00034652603790163994,
+    "layout_structural_page_image_filter_cpu_s": 5.7591008953750134e-05,
+    "layout_structural_polygon_normalize_cpu_s": 0.003129902994260192,
+    "layout_structural_postprocess_cpu_s": 0.005612154956907034,
+    "layout_structural_result_build_cpu_s": 0.0006892819656059146,
+    "layout_structural_sort_cpu_s": 2.855097409337759e-05,
+    "layout_structural_threshold_cpu_s": 0.0001314419787377119,
+    "page_preparation_s": 0.010393886943347752,
+    "page_total_s": 0.8947982270037755
+  },
+  "requests": 15,
+  "requests_per_page": {
+    "min": 15,
+    "mean": 15.0,
+    "max": 15
+  },
+  "prompt_counts": {
+    "Formula Recognition:": 4,
+    "OCR:": 11
+  },
+  "crop_pixels": 1348242,
+  "crop_bytes": 4044726,
+  "request_manifest": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/layout_indexput_patch_910b_f7edd1b/patched_eager/output/requests.jsonl",
+  "request_manifest_sha256": "bd2f28a28d5cc2ae97ebcf91c453c5ac9647d92635de233d346a5513972014b5",
+  "reference_comparison": {
+    "path": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/layout_indexput_patch_910b_f7edd1b/baseline_eager/output/requests.jsonl",
+    "sha256": "bd2f28a28d5cc2ae97ebcf91c453c5ac9647d92635de233d346a5513972014b5",
+    "exact": true
+  },
+  "layout_mask_rectangle_fast_path": {
+    "calls": 1,
+    "detections": 27,
+    "rectangle_fast_paths": 20,
+    "fallbacks": 7,
+    "coverage": 0.7407407407407407,
+    "wall_s": 0.089122795,
+    "predicate_s": 0.000939328,
+    "fallback_s": 0.087902724
+  },
+  "page_statistics": [
+    {
+      "page": "page-d1561665-5359-42fe-920c-d6e3bff81953.png",
+      "raw_layout_boxes": 15,
+      "filtered_layout_boxes": 15,
+      "merged_blocks": 15,
+      "requests": 15,
+      "timing_s": {
+        "file_read_s": 0.0004747780039906502,
+        "image_decode_s": 0.09208217507693917,
+        "layout_preprocess_h2d_s": 0.14285591803491116,
+        "layout_model_submit_s": 0.5157992369495332,
+        "layout_metadata_wait_and_d2h_s": 0.0020415750332176685,
+        "layout_mask_wait_and_d2h_s": 0.0004880880005657673,
+        "layout_mask_polygon_cpu_s": 0.08921016589738429,
+        "layout_model_device_s": 0.5249146118164062,
+        "layout_device_metadata_postprocess_s": 0.02668992042541504,
+        "layout_device_mask_postprocess_s": 0.0003276000022888184,
+        "layout_structural_format_cpu_s": 0.00016302301082760096,
+        "layout_structural_threshold_cpu_s": 0.0001314419787377119,
+        "layout_structural_nms_cpu_s": 0.0006856319960206747,
+        "layout_structural_page_image_filter_cpu_s": 5.7591008953750134e-05,
+        "layout_structural_containment_cpu_s": 0.0003321249969303608,
+        "layout_structural_sort_cpu_s": 2.855097409337759e-05,
+        "layout_structural_polygon_normalize_cpu_s": 0.003129902994260192,
+        "layout_structural_result_build_cpu_s": 0.0006892819656059146,
+        "layout_structural_overlap_filter_cpu_s": 0.00034652603790163994,
+        "layout_structural_order_cpu_s": 5.589914508163929e-06,
+        "layout_structural_postprocess_cpu_s": 0.005612154956907034,
+        "layout_postprocess_s": 0.13287782797124237,
+        "page_preparation_s": 0.010393886943347752,
+        "page_total_s": 0.8947982270037755
+      }
+    }
+  ],
+  "timeline": {
+    "enabled": false,
+    "event_count": 0,
+    "trace_json": null,
+    "html": null
+  }
+}
+summary=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/layout_indexput_patch_910b_f7edd1b/patched_eager/output/run_summary.json
