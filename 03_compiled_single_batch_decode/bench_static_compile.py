@@ -12,10 +12,10 @@ One run measures the same crop through four decode configurations and prints:
 
 Correctness rides along: all lanes must produce identical token ids, and the
 compiled graph is walked in lockstep with the uncompiled flat module to bound
-per-step logit drift. The fixed-cache lanes stop at EOS (checked without a
-blocking host sync); the eager lane always runs the full step count, so when
-EOS fires inside the token budget only the EOS-trimmed matches are expected
-to hold.
+per-step logit drift. The eager lane is the modeling file's own generate loop,
+unmodified; the fixed-cache lanes run a fixed number of decode steps with no
+EOS stop, so their rates are pure per-step cost. EOS-aware decode scheduling
+is experiment 04's subject, not this one.
 
 Reading map, top to bottom: decode lanes, TorchAir compile, correctness
 helpers, profiler capture, then main() runs the lanes in ladder order.
@@ -24,6 +24,7 @@ helpers, profiler capture, then main() runs the lanes in ladder order.
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import shutil
 import time
@@ -34,8 +35,15 @@ from typing import Any, Callable
 
 import torch
 import torch_npu  # noqa: F401  (must precede torchair: it registers the module)
-import torchair
-import torchair.inference
+
+try:
+    import torchair
+    import torchair.inference
+except ModuleNotFoundError:  # some torch_npu builds only vendor torchair internally
+    from torch_npu.dynamo import torchair
+
+    importlib.import_module(f"{torchair.__name__}.inference")
+
 from tokenizers import Tokenizer
 
 from local_modeling_paddleocr_vl import (
@@ -78,51 +86,6 @@ def json_default(value: Any) -> Any:
 class DecodeLoopResult:
     ids: torch.Tensor
     decode_calls: int
-    eos_detected: bool
-    eos_step: int | None
-
-
-@torch.inference_mode()
-def eager_decode_loop(
-    model: LocalPaddleOCRVLForConditionalGeneration,
-    input_ids: torch.Tensor,
-    attention_mask: torch.Tensor,
-    pixel_values: torch.Tensor,
-    image_grid_thw: torch.Tensor,
-    *,
-    max_new_tokens: int,
-) -> torch.Tensor:
-    """Reference decode: growing KV cache, one model.forward per token,
-    fixed step count (no EOS stop) so the measured rate is per-step cost."""
-    outputs = model.forward(
-        input_ids=input_ids,
-        attention_mask=attention_mask,
-        pixel_values=pixel_values,
-        image_grid_thw=image_grid_thw,
-        use_cache=True,
-        logits_to_keep=1,
-    )
-    past = outputs.past_key_values
-    rope_deltas = outputs.rope_deltas
-    next_token = torch.argmax(outputs.logits[:, -1, :].float(), dim=-1, keepdim=True)
-    generated = [next_token]
-    current_attention_mask = torch.cat([attention_mask, torch.ones_like(next_token)], dim=1)
-    for _ in range(max(0, int(max_new_tokens) - 1)):
-        outputs = model.forward(
-            input_ids=next_token,
-            attention_mask=current_attention_mask,
-            pixel_values=None,
-            image_grid_thw=None,
-            past_key_values=past,
-            use_cache=True,
-            rope_deltas=rope_deltas,
-            logits_to_keep=1,
-        )
-        past = outputs.past_key_values
-        next_token = torch.argmax(outputs.logits[:, -1, :].float(), dim=-1, keepdim=True)
-        generated.append(next_token)
-        current_attention_mask = torch.cat([current_attention_mask, torch.ones_like(next_token)], dim=1)
-    return torch.cat(generated, dim=1)
 
 
 @torch.inference_mode()
@@ -156,61 +119,21 @@ def fixed_cache_decode_loop(
     next_token: torch.Tensor,
     *,
     max_new_tokens: int,
-    eos_token_id: int,
 ) -> DecodeLoopResult:
-    """Decode against the fixed cache with `decode_fn` (the flat module, or
-    its compiled graph).
-
-    Stops at EOS without a blocking host sync: each step's EOS flag is copied
-    to pinned CPU memory on a second stream and checked one step later, so the
-    check overlaps the next decode step (queue-depth-1)."""
+    """Decode a fixed number of steps against the fixed cache with
+    `decode_fn` (the flat module, or its compiled graph). No EOS stop:
+    the fixed step count keeps the measured rate a pure per-step cost."""
     generated = [next_token]
     cache_position = prefill.next_cache_position
     flat_cache = prefill.cache.flat_tensors()
-    max_decode_calls = max(0, int(max_new_tokens) - 1)
     decode_calls = 0
-    eos_detected = False
-    eos_step = None
-    cpu_flags = torch.zeros((max(1, max_decode_calls),), dtype=torch.bool, pin_memory=True)
-    copy_stream = torch.npu.Stream(device=next_token.device)
-    pending_event = None
-    pending_step = None
-
-    for step in range(max_decode_calls):
+    for _ in range(max(0, int(max_new_tokens) - 1)):
         logits = decode_fn(next_token, cache_position, prefill.rope_deltas, *flat_cache)
         next_token = torch.argmax(logits[:, -1, :].float(), dim=-1, keepdim=True)
         generated.append(next_token)
         cache_position = cache_position + 1
         decode_calls += 1
-
-        hit_eos = (next_token.reshape(-1) == int(eos_token_id)).all()
-        eos_ready = torch.npu.current_stream().record_event()
-        copy_done = torch.npu.Event()
-        with torch.npu.stream(copy_stream):
-            copy_stream.wait_event(eos_ready)
-            cpu_flags[step : step + 1].copy_(hit_eos.reshape(1), non_blocking=True)
-            copy_done.record(copy_stream)
-        if pending_event is not None:
-            pending_event.synchronize()
-            if bool(cpu_flags[pending_step].item()):
-                eos_detected = True
-                eos_step = int(pending_step)
-                break
-        pending_event = copy_done
-        pending_step = int(step)
-
-    if not eos_detected and pending_event is not None:
-        pending_event.synchronize()
-        if bool(cpu_flags[pending_step].item()):
-            eos_detected = True
-            eos_step = int(pending_step)
-
-    return DecodeLoopResult(
-        ids=torch.cat(generated, dim=1),
-        decode_calls=decode_calls,
-        eos_detected=eos_detected,
-        eos_step=eos_step,
-    )
+    return DecodeLoopResult(ids=torch.cat(generated, dim=1), decode_calls=decode_calls)
 
 
 # ---------------------------------------------------------------------------
@@ -286,7 +209,6 @@ def run_compiled_lane(
             prefill,
             next_token,
             max_new_tokens=max_new_tokens,
-            eos_token_id=eos_token_id,
         ),
     )
     loop_summary = decode_loop_summary(result, eos_token_id=eos_token_id)
@@ -324,8 +246,6 @@ def decode_loop_summary(result: DecodeLoopResult, *, eos_token_id: int) -> dict[
         "trimmed_new_tokens": int(trimmed.shape[1]),
         "decode_calls": int(result.decode_calls),
         "effective_decode_calls": max(0, int(trimmed.shape[1]) - 1),
-        "eos_detected": bool(result.eos_detected),
-        "eos_step": None if result.eos_step is None else int(result.eos_step),
     }
 
 
@@ -408,7 +328,6 @@ def profile_compiled_decode(
             warm_prefill,
             warm_next_token,
             max_new_tokens=max_new_tokens,
-            eos_token_id=eos_token_id,
         ),
     )
 
@@ -435,7 +354,6 @@ def profile_compiled_decode(
                 prof_prefill,
                 prof_next_token,
                 max_new_tokens=max_new_tokens,
-                eos_token_id=eos_token_id,
             )
         torch.npu.synchronize()
         profiler.step()
@@ -496,17 +414,18 @@ def main() -> None:
     def new_prefill():
         return make_prefill(model, input_ids, attention_mask, pixel_values, image_grid_thw, cache_length=cache_length)
 
-    # Lane 1: eager, growing KV cache.
+    # Lane 1: the exp02 eager path, exactly as the modeling file implements
+    # it (growing KV cache; its generate loop stops at EOS on the host).
     eager_ids, eager_decode_s = timed(
-        lambda: eager_decode_loop(
-            model,
-            input_ids,
-            attention_mask,
-            pixel_values,
-            image_grid_thw,
+        lambda: model.generate_ids(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            pixel_values=pixel_values,
+            image_grid_thw=image_grid_thw,
             max_new_tokens=args.max_new_tokens,
         ),
     )
+    eager_decode_calls = max(0, int(eager_ids.shape[1]) - 1)
 
     # Lane 2: eager, preallocated fixed KV cache.
     fixed_prefill, fixed_next_token = new_prefill()
@@ -516,7 +435,6 @@ def main() -> None:
             fixed_prefill,
             fixed_next_token,
             max_new_tokens=args.max_new_tokens,
-            eos_token_id=eos_token_id,
         ),
     )
     fixed_loop_summary = decode_loop_summary(fixed_result, eos_token_id=eos_token_id)
@@ -606,7 +524,7 @@ def main() -> None:
         )
 
     ladder = [
-        ("eager", tok_per_s(decode_steps, eager_decode_s)),
+        ("eager", tok_per_s(eager_decode_calls, eager_decode_s)),
         ("eager_fixed_cache", tok_per_s(fixed_result.decode_calls, fixed_decode_s)),
         ("compiled_native", native_lane["tok_per_s_raw"]),
     ]
@@ -632,7 +550,8 @@ def main() -> None:
         "lanes": {
             "eager": {
                 "decode_s": float(eager_decode_s),
-                "tok_per_s_raw": tok_per_s(decode_steps, eager_decode_s),
+                "decode_calls": int(eager_decode_calls),
+                "tok_per_s_raw": tok_per_s(eager_decode_calls, eager_decode_s),
             },
             "eager_fixed_cache": {
                 "decode_s": float(fixed_decode_s),
