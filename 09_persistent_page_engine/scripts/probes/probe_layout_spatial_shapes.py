@@ -73,11 +73,17 @@ def main(argv: Sequence[str] | None = None) -> None:
     elif args.mode == "single_constructor":
         result = single_constructor()
     else:
-        warmup = single_constructor()
+        # The production graph wrapper performs one eager warm-up before
+        # capture. Build and retain the fixed shape tensor there, then verify
+        # that a captured operation can consume it without reconstructing it
+        # from Python scalars on the captured stream.
+        cached_spatial_shapes = single_constructor()
+        zero = torch.zeros_like(cached_spatial_shapes)
+        warmup = cached_spatial_shapes + zero
         torch.npu.synchronize()
         graph = torch.npu.NPUGraph()
         with torch.npu.graph(graph):
-            result = single_constructor()
+            result = cached_spatial_shapes + zero
         torch.npu.synchronize()
         graph.replay()
         del warmup

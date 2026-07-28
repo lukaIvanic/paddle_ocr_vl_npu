@@ -958,18 +958,22 @@ def _find_pp_doclayout_v3_core(model: Any) -> Any:
 
 
 def _install_pp_doclayout_v3_npu_indexput_compat(model: Any) -> bool:
-    """Replace two NPU scalar writes in Transformers' inference-only forward.
+    """Replace unsupported NPU indexing in Transformers' inference forward.
 
     Transformers 5.5.4 builds ``spatial_shapes`` by allocating an NPU tensor
     and assigning each height and width through ``Tensor.__setitem__``. That
     lowers to IndexPut even though the values are static Python shape metadata.
     Atlas 310P stacks without the required IndexPut kernel fail before detector
-    decoding starts.
+    decoding starts. The same forward later selects top-k memory rows through
+    tensor-valued advanced indexing, which also lowers through an unsupported
+    indexing path on those stacks.
 
     The owned forward below keeps every detector tensor and operation on the
-    original device. It changes only metadata construction: collect the Python
-    ``(height, width)`` pairs first, then materialize the finished NPU tensor in
-    one operation.
+    original device. It changes only the indexing forms:
+
+    - cache the fixed shape-metadata tensor during eager warm-up, outside graph
+      capture;
+    - select top-k memory rows with the equivalent ``gather`` operation.
     """
 
     import inspect
@@ -980,6 +984,7 @@ def _install_pp_doclayout_v3_npu_indexput_compat(model: Any) -> bool:
         "spatial_shapes = torch.empty((len(sources), 2)",
         "spatial_shapes[level, 0] = height",
         "spatial_shapes[level, 1] = width",
+        "target = output_memory[batch_ind, topk_ind]",
     )
     missing = [
         fragment for fragment in expected_fragments if fragment not in source
@@ -987,7 +992,7 @@ def _install_pp_doclayout_v3_npu_indexput_compat(model: Any) -> bool:
     if missing:
         raise RuntimeError(
             "unsupported PP-DocLayoutV3 Transformers forward; expected "
-            f"IndexPut fragments are missing: {missing}"
+            f"indexing fragments are missing: {missing}"
         )
     core.forward = MethodType(
         _pp_doclayout_v3_model_forward_without_indexput,
@@ -1004,7 +1009,7 @@ def _pp_doclayout_v3_model_forward_without_indexput(
     labels: list[dict[str, torch.Tensor]] | None = None,
     **kwargs: Any,
 ) -> Any:
-    """Transformers 5.5.4 PP-DocLayoutV3 inference without scalar IndexPut."""
+    """Transformers 5.5.4 PP-DocLayoutV3 inference without unsupported indexing."""
 
     from transformers.models.pp_doclayout_v3 import (
         modeling_pp_doclayout_v3,
@@ -1082,29 +1087,35 @@ def _pp_doclayout_v3_model_forward_without_indexput(
         spatial_shapes_list.append((source_height, source_width))
         source_flatten.append(source.flatten(2).transpose(1, 2))
 
-    # Compatibility change: construct the complete tensor once. The upstream
-    # forward performs two scalar device assignments per feature level here.
-    spatial_shapes = torch.stack(
-        [
-            torch.stack(
-                (
-                    torch.full(
-                        (),
-                        source_height,
-                        device=device,
-                        dtype=torch.long,
-                    ),
-                    torch.full(
-                        (),
-                        source_width,
-                        device=device,
-                        dtype=torch.long,
-                    ),
-                )
-            )
-            for source_height, source_width in spatial_shapes_list
-        ]
+    # Compatibility change: construct this fixed-shape metadata during eager
+    # graph warm-up, retain it on the module, and reuse it during capture and
+    # replay. Creating a device tensor from Python scalars inside ACLGraph
+    # capture is unsupported on some 310P stacks.
+    spatial_shapes_signature = tuple(spatial_shapes_list)
+    spatial_shapes = getattr(
+        model,
+        "_npu_indexput_spatial_shapes",
+        None,
     )
+    if (
+        spatial_shapes is None
+        or getattr(
+            model,
+            "_npu_indexput_spatial_shapes_signature",
+            None,
+        )
+        != spatial_shapes_signature
+        or spatial_shapes.device != device
+    ):
+        spatial_shapes = torch.tensor(
+            spatial_shapes_signature,
+            device=device,
+            dtype=torch.long,
+        )
+        model._npu_indexput_spatial_shapes = spatial_shapes
+        model._npu_indexput_spatial_shapes_signature = (
+            spatial_shapes_signature
+        )
     source_flatten_tensor = torch.cat(source_flatten, 1)
     level_start_index = torch.cat(
         (
@@ -1166,11 +1177,15 @@ def _pp_doclayout_v3_model_forward_without_indexput(
         ),
     )
 
-    batch_indices = torch.arange(
-        memory.shape[0],
-        device=output_memory.device,
-    ).unsqueeze(1)
-    target = output_memory[batch_indices, topk_indices]
+    output_memory_gather_index = topk_indices.unsqueeze(-1).repeat(
+        1,
+        1,
+        output_memory.shape[-1],
+    )
+    target = output_memory.gather(
+        dim=1,
+        index=output_memory_gather_index,
+    )
     out_query = model.decoder_norm(target)
     mask_query_embed = model.mask_query_head(out_query)
     batch_size, mask_dim, _ = mask_query_embed.shape
@@ -1189,11 +1204,7 @@ def _pp_doclayout_v3_model_forward_without_indexput(
     else:
         target = output_memory.gather(
             dim=1,
-            index=topk_indices.unsqueeze(-1).repeat(
-                1,
-                1,
-                output_memory.shape[-1],
-            ),
+            index=output_memory_gather_index,
         )
         target = target.detach()
 

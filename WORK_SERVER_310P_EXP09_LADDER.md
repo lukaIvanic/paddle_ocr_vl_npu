@@ -38,17 +38,27 @@ the completed tensor to NPU.
 ## Targeted NPU layout IndexPut compatibility check
 
 Run this section separately after the existing Phase 1-7 results are preserved.
-Do not change those completed runs. Pull `main`, confirm the checked-out commit
-contains `043b957`, and restore the exact `PYTHON_BIN`, `LAYOUT_MODEL`,
-`DATASET_JSON`, and `IMAGES_DIR` values already selected in Phase 0.
+Do not change those completed runs. Pull `main` and restore the exact
+`PYTHON_BIN`, `LAYOUT_MODEL`, `DATASET_JSON`, and `IMAGES_DIR` values already
+selected in Phase 0.
 
-The patch changes one operation in Transformers 5.5.4 PP-DocLayoutV3 inference:
-upstream allocates `spatial_shapes` on NPU and fills it through
-`spatial_shapes[level, 0/1] = value`; the owned forward constructs the complete
-device tensor with `full` and `stack`. It does not move layout computation to
-CPU.
+The first report established two facts:
 
-First isolate the two constructors without loading either model:
+- legacy scalar IndexPut and the eager replacement constructor both ran;
+- constructing the replacement with `torch.full` inside ACLGraph capture
+  failed with "captured stream not allowed";
+- the real eager model then reached a second unsupported indexing form at
+  `target = output_memory[batch_ind, topk_ind]`.
+
+The revised patch keeps all layout computation on NPU. It caches the fixed
+`spatial_shapes` tensor during the graph wrapper's eager warm-up and reuses it
+inside capture, so no Python-scalar device construction occurs on the captured
+stream. It also replaces the tensor-valued advanced-index read with the
+equivalent dimension-1 `gather`.
+
+Preserve the first report. Do not rerun its passing legacy or eager-constructor
+probes. First isolate the two revised graph-sensitive forms without loading
+either model:
 
 ```sh
 LAYOUT_PATCH_ROOT="$REPO/tmp/09_persistent_page_engine/310p_layout_indexput_patch"
@@ -78,34 +88,28 @@ run_targeted_layout() {
   return "$status"
 }
 
-set +e
-"$PYTHON_BIN" \
-  "$REPO/09_persistent_page_engine/scripts/probes/probe_layout_spatial_shapes.py" \
-  --mode legacy_indexput \
-  >"$LAYOUT_PATCH_ROOT/legacy_indexput.log" 2>&1
-LEGACY_STATUS=$?
-set -e
-printf '%s\n' "$LEGACY_STATUS" \
-  >"$LAYOUT_PATCH_ROOT/legacy_indexput.exit_code"
-
-"$PYTHON_BIN" \
-  "$REPO/09_persistent_page_engine/scripts/probes/probe_layout_spatial_shapes.py" \
-  --mode single_constructor \
-  >"$LAYOUT_PATCH_ROOT/single_constructor.log" 2>&1
-
 "$PYTHON_BIN" \
   "$REPO/09_persistent_page_engine/scripts/probes/probe_layout_spatial_shapes.py" \
   --mode capture_constructor \
   >"$LAYOUT_PATCH_ROOT/capture_constructor.log" 2>&1
 
-cat "$LAYOUT_PATCH_ROOT/legacy_indexput.log"
-cat "$LAYOUT_PATCH_ROOT/single_constructor.log"
+"$PYTHON_BIN" \
+  "$REPO/09_persistent_page_engine/scripts/probes/probe_layout_topk_gather.py" \
+  --mode gather \
+  >"$LAYOUT_PATCH_ROOT/topk_gather.log" 2>&1
+
+"$PYTHON_BIN" \
+  "$REPO/09_persistent_page_engine/scripts/probes/probe_layout_topk_gather.py" \
+  --mode capture_gather \
+  >"$LAYOUT_PATCH_ROOT/topk_capture_gather.log" 2>&1
+
 cat "$LAYOUT_PATCH_ROOT/capture_constructor.log"
+cat "$LAYOUT_PATCH_ROOT/topk_gather.log"
+cat "$LAYOUT_PATCH_ROOT/topk_capture_gather.log"
 ```
 
-Both replacement modes must print `"verdict": "PASS"`. The legacy mode is
-diagnostic: preserve whether it passes or fails and its complete causal
-traceback.
+All three revised probes must print `"verdict": "PASS"`. Stop at the first
+failure and preserve its complete causal traceback.
 
 Then run exactly one real page through the patched layout model, first eager:
 
@@ -127,7 +131,8 @@ run_targeted_layout layout_indexput_patch_eager \
 ```
 
 Stop if eager fails. Preserve the first new causal traceback; do not add another
-model patch. If eager passes, run the same page with production graph capture:
+model patch locally. If eager passes, run the same page with production graph
+capture:
 
 ```sh
 run_targeted_layout layout_indexput_patch_graph \

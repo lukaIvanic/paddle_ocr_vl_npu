@@ -131,11 +131,12 @@ path. A runtime assertion fails the run if any `paddlex` module was imported;
 the summary records the same audit.
 
 Both page runners accept `--layout-device npu|cpu`. The default remains `npu`.
-On NPU, the owned runtime replaces Transformers 5.5.4's scalar indexed writes
-into `spatial_shapes` with one graph-capture-safe device construction. The
-height/width metadata and all detector computation remain on NPU; only the
-unsupported IndexPut expression changes. The summary records this as
-`layout_frontend.npu_indexput_compat`.
+On NPU, the owned runtime replaces two unsupported Transformers 5.5.4 indexing
+forms. Fixed `spatial_shapes` metadata is cached on NPU during the eager graph
+warm-up instead of being filled by scalar indexed writes, and top-k memory rows
+are selected with the equivalent dimension-1 `gather` instead of tensor-valued
+advanced indexing. All detector computation remains on NPU. The summary records
+this as `layout_frontend.npu_indexput_compat`.
 
 The CPU option remains the fallback while that NPU compatibility path is being
 validated on 310P. It moves only PP-DocLayoutV3 inference and preprocessing off
