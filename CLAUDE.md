@@ -91,7 +91,7 @@ and cannot push to GitHub — it only pulls. Work with it by writing a
 self-contained handoff brief, which Luka carries over; an agent there pulls the
 pushed commit, runs, and Luka relays the report back manually. Existing briefs:
 [WORK_SERVER_310P_EAGER_SMOKE.md](WORK_SERVER_310P_EAGER_SMOKE.md) and
-[WORK_SERVER_310P_EAGER_VALIDATION.md](WORK_SERVER_310P_EAGER_VALIDATION.md).
+[WORK_SERVER_310P_EXP09_LADDER.md](WORK_SERVER_310P_EXP09_LADDER.md).
 
 A brief must assume nothing: it states its own constraints, resolves its own
 paths, names every required check, and specifies the exact report format. 310P is

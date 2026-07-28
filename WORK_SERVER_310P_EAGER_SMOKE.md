@@ -1,7 +1,7 @@
 # Work-server 310P eager smoke handoff
 
 > **Replacement-server note:** do not start from this historical brief. Use
-> `WORK_SERVER_310P_EAGER_VALIDATION.md`, which now contains the canonical
+> `WORK_SERVER_310P_EXP09_LADDER.md`, which contains the canonical
 > bootstrap-to-production ladder and validates the real Experiment 09
 > CPU-MRoPE serving path. This file is retained only for its focused diagnostic
 > procedures, including Phase 4A IndexPut triage when explicitly referenced.
