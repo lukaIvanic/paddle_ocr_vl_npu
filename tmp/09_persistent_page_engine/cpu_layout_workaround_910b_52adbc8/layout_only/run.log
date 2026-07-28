@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/layout_owned_lab.py", line 25, in <module>
+    from pipeline.layout_frontend import OwnedLayoutFrontend
+  File "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/pipeline/layout_frontend.py", line 16, in <module>
+    from kornia_rs.image import Image as KorniaImage
+ModuleNotFoundError: No module named 'kornia_rs'

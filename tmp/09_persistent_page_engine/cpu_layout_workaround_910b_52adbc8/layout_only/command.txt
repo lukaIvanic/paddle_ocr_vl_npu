@@ -1,0 +1,4 @@
+git_commit=52adbc86b0c204edc56c78052f198f7d01b39c56
+hostname=liteserver-c001-4
+ASCEND_RT_VISIBLE_DEVICES=2
+command=/usr/local/python3.12.13/bin/python3 09_persistent_page_engine/scripts/layout_owned_lab.py --device cpu --limit 1 --workers 1 --no-timeline --output-dir tmp/09_persistent_page_engine/cpu_layout_workaround_910b_52adbc8/layout_only/output

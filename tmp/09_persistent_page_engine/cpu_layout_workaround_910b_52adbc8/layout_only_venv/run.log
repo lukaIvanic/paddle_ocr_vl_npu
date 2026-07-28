@@ -1,0 +1,97 @@
+Loading weights:   0%|          | 0/858 [00:00<?, ?it/s]Loading weights:  50%|█████     | 429/858 [00:00<00:00, 4268.05it/s]Loading weights: 100%|██████████| 858/858 [00:00<00:00, 4428.37it/s]
+{
+  "implementation": "owned_pp_doclayout_v3_frontend",
+  "paddlex_dependency": false,
+  "dataset_json": "/workspace/datasets/OmniDocBench/OmniDocBench.json",
+  "dataset_sha256": "a45cd84b04ad8b793e775089640e6b681209abea33ead54c1828ddca35fae496",
+  "images_dir": "/workspace/datasets/OmniDocBench/images",
+  "offset": 0,
+  "count": 1,
+  "images": [
+    "page-d1561665-5359-42fe-920c-d6e3bff81953.png"
+  ],
+  "layout_model": "/workspace/models/PP-DocLayoutV3_safetensors",
+  "layout_model_backend": "transformers_cpu",
+  "device": "cpu",
+  "workers": 1,
+  "worker_strategy": "serial",
+  "setup_s": 1.192239893018268,
+  "setup_by_worker_s": [
+    1.1802437090082094
+  ],
+  "npu_memory_allocated_bytes": {
+    "before_setup": 0,
+    "after_setup": 0,
+    "setup_delta": 0
+  },
+  "frontend_wall_s": 4.597719561075792,
+  "pages_per_s": 0.21749912901734622,
+  "s_per_page": 4.597719561075792,
+  "stage_totals_s": {
+    "file_read_s": 0.0009788470342755318,
+    "image_decode_s": 0.0926690649939701,
+    "layout_mask_polygon_cpu_s": 0.039341259049251676,
+    "layout_mask_wait_and_d2h_s": 1.3780081644654274e-05,
+    "layout_metadata_wait_and_d2h_s": 2.9349932447075844e-05,
+    "layout_model_submit_s": 4.398669398971833,
+    "layout_postprocess_s": 0.054937634035013616,
+    "layout_preprocess_h2d_s": 0.029199665994383395,
+    "layout_structural_postprocess_cpu_s": 0.006497389986179769,
+    "page_preparation_s": 0.011516836006194353,
+    "page_total_s": 4.596503311069682
+  },
+  "requests": 15,
+  "requests_per_page": {
+    "min": 15,
+    "mean": 15.0,
+    "max": 15
+  },
+  "prompt_counts": {
+    "Formula Recognition:": 4,
+    "OCR:": 11
+  },
+  "crop_pixels": 1348941,
+  "crop_bytes": 4046823,
+  "request_manifest": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/cpu_layout_workaround_910b_52adbc8/layout_only_venv/output/requests.jsonl",
+  "request_manifest_sha256": "2f4df36c4b4b455b5d16bd9b32d0bb9178bebde54d8068e2bd5436eb633f6fbc",
+  "reference_comparison": null,
+  "layout_mask_rectangle_fast_path": {
+    "calls": 1,
+    "detections": 27,
+    "rectangle_fast_paths": 20,
+    "fallbacks": 7,
+    "coverage": 0.7407407407407407,
+    "wall_s": 0.039244077,
+    "predicate_s": 0.000973274,
+    "fallback_s": 0.037990336
+  },
+  "page_statistics": [
+    {
+      "page": "page-d1561665-5359-42fe-920c-d6e3bff81953.png",
+      "raw_layout_boxes": 15,
+      "filtered_layout_boxes": 15,
+      "merged_blocks": 15,
+      "requests": 15,
+      "timing_s": {
+        "file_read_s": 0.0009788470342755318,
+        "image_decode_s": 0.0926690649939701,
+        "layout_preprocess_h2d_s": 0.029199665994383395,
+        "layout_model_submit_s": 4.398669398971833,
+        "layout_metadata_wait_and_d2h_s": 2.9349932447075844e-05,
+        "layout_mask_wait_and_d2h_s": 1.3780081644654274e-05,
+        "layout_mask_polygon_cpu_s": 0.039341259049251676,
+        "layout_structural_postprocess_cpu_s": 0.006497389986179769,
+        "layout_postprocess_s": 0.054937634035013616,
+        "page_preparation_s": 0.011516836006194353,
+        "page_total_s": 4.596503311069682
+      }
+    }
+  ],
+  "timeline": {
+    "enabled": false,
+    "event_count": 0,
+    "trace_json": null,
+    "html": null
+  }
+}
+summary=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/cpu_layout_workaround_910b_52adbc8/layout_only_venv/output/run_summary.json

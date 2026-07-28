@@ -1,0 +1,5 @@
+git_commit=52adbc86b0c204edc56c78052f198f7d01b39c56
+hostname=liteserver-c001-4
+ASCEND_RT_VISIBLE_DEVICES=2
+python=/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python
+command=/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python 09_persistent_page_engine/scripts/run_omnidocbench.py --layout-device cpu --limit 1 --batch-size 16 --cache-length 8192 --max-new-tokens 8 --vision-backend raw_eager --vision-attention manual --vision-padding none --vision-packing off --text-packing off --no-timeline --output-dir tmp/09_persistent_page_engine/cpu_layout_workaround_910b_52adbc8/production_split/output
