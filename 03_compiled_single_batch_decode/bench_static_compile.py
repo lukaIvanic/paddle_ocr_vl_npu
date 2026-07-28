@@ -2,9 +2,9 @@
 """Benchmark experiment-3 static-cache compiled decode.
 
 Reports output matching, decode-logit diffs, and a steady decode tok/s ladder:
-- dynamic_eager: growing KV cache, uncompiled (the exp02 reference loop)
-- static_eager: fixed KV cache + flat decode module, uncompiled
-- compiled_native: static decode compiled (fullgraph, static shapes), native weights
+- eager: growing KV cache, uncompiled (the exp02 reference loop)
+- eager_fixed_cache: preallocated KV cache + flat decode module, uncompiled
+- compiled_native: TorchAir static-compiled decode graph, native weights
 - compiled_nz: same graph with FRACTAL_NZ decode linear weights; reported as
   unavailable (with the runtime's reason) when the format cast falls back,
   e.g. on torch-npu runtimes that disable internal formats
@@ -60,17 +60,6 @@ def import_torchair():
     return torchair, CompilerConfig
 
 
-def compile_backend(name: str):
-    if name == "default":
-        return None
-    if name == "torchair":
-        torchair, CompilerConfig = import_torchair()
-        config = CompilerConfig()
-
-        return torchair.get_npu_backend(compiler_config=config)
-    return name
-
-
 def torchair_cache_dir_for_shape(
     cache_root: Path,
     *,
@@ -85,48 +74,35 @@ def torchair_cache_dir_for_shape(
 def compile_decode_module(
     flat_decode: torch.nn.Module,
     *,
-    backend_name: str,
     device: torch.device,
     cache_root: Path,
     batch_size: int,
     cache_length: int,
     linear_weight_format: str = DECODE_LINEAR_WEIGHT_FORMAT,
 ) -> tuple[Any, dict[str, Any]]:
-    if backend_name == "torchair":
-        if device.type != "npu":
-            raise ValueError("--backend torchair requires an NPU device.")
-        torchair, CompilerConfig = import_torchair()
-        config = CompilerConfig()
-        shape_cache_dir = torchair_cache_dir_for_shape(
-            cache_root,
-            batch_size=batch_size,
-            cache_length=cache_length,
-            linear_weight_format=linear_weight_format,
-        )
-        shape_cache_dir.mkdir(parents=True, exist_ok=True)
-        compiled_decode = torchair.inference.cache_compile(
-            flat_decode.forward,
-            config=config,
-            dynamic=False,
-            cache_dir=str(shape_cache_dir),
-            ge_cache=True,
-        )
-        return compiled_decode, {
-            "backend": backend_name,
-            "torchair_cache_dir": str(shape_cache_dir),
-            "torchair_ge_cache": True,
-            "compile_api": "torchair.inference.cache_compile",
-            "linear_weight_format": linear_weight_format,
-            "decode_attention": DECODE_ATTENTION,
-        }
-
-    backend = compile_backend(backend_name)
-    compile_kwargs = {"fullgraph": True, "dynamic": False}
-    if backend is not None:
-        compile_kwargs["backend"] = backend
-    return torch.compile(flat_decode, **compile_kwargs), {
-        "backend": backend_name,
-        "compile_api": "torch.compile",
+    if device.type != "npu":
+        raise ValueError("TorchAir compile requires an NPU device.")
+    torchair, CompilerConfig = import_torchair()
+    config = CompilerConfig()
+    shape_cache_dir = torchair_cache_dir_for_shape(
+        cache_root,
+        batch_size=batch_size,
+        cache_length=cache_length,
+        linear_weight_format=linear_weight_format,
+    )
+    shape_cache_dir.mkdir(parents=True, exist_ok=True)
+    compiled_decode = torchair.inference.cache_compile(
+        flat_decode.forward,
+        config=config,
+        dynamic=False,
+        cache_dir=str(shape_cache_dir),
+        ge_cache=True,
+    )
+    return compiled_decode, {
+        "backend": "torchair",
+        "torchair_cache_dir": str(shape_cache_dir),
+        "torchair_ge_cache": True,
+        "compile_api": "torchair.inference.cache_compile",
         "linear_weight_format": linear_weight_format,
         "decode_attention": DECODE_ATTENTION,
     }
@@ -192,7 +168,7 @@ def decode_loop_summary(result: DecodeLoopResult, *, eos_token_id: int) -> dict[
 
 
 @torch.inference_mode()
-def dynamic_decode_loop(
+def eager_decode_loop(
     model: LocalPaddleOCRVLForConditionalGeneration,
     input_ids: torch.Tensor,
     attention_mask: torch.Tensor,
@@ -233,7 +209,7 @@ def dynamic_decode_loop(
 
 
 @torch.inference_mode()
-def static_flat_decode_loop(
+def fixed_cache_decode_loop(
     decode_fn: Callable,
     prefill,
     next_token: torch.Tensor,
@@ -305,7 +281,7 @@ def static_flat_decode_loop(
 
 
 @torch.inference_mode()
-def make_static_prefill(
+def make_prefill(
     model: LocalPaddleOCRVLForConditionalGeneration,
     input_ids: torch.Tensor,
     attention_mask: torch.Tensor,
@@ -327,7 +303,7 @@ def make_static_prefill(
 
 
 @torch.inference_mode()
-def compare_static_logits(
+def compare_decode_logits(
     eager_decode: Callable,
     compiled_decode: Callable,
     eager_prefill,
@@ -389,9 +365,9 @@ def npu_profiler_config(metric: str):
     )
 
 
-def make_profile_run_dir(root: Path, *, backend: str, eos_mode: str, max_new_tokens: int) -> Path:
+def make_profile_run_dir(root: Path, *, eos_mode: str, max_new_tokens: int) -> Path:
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
-    return root / f"bench_static_compile_{timestamp}_{backend}_{DECODE_ATTENTION}_{eos_mode}_{max_new_tokens}tok"
+    return root / f"bench_static_compile_{timestamp}_torchair_{DECODE_ATTENTION}_{eos_mode}_{max_new_tokens}tok"
 
 
 @torch.inference_mode()
@@ -409,10 +385,6 @@ def profile_compiled_decode(
     device: torch.device,
     linear_weight_format: str,
 ) -> dict[str, Any]:
-    if device.type != "npu":
-        raise ValueError("--profile-dir requires --device npu:0; torch_npu profiler is NPU-only.")
-    if args.backend != "torchair":
-        raise ValueError("--profile-dir requires --backend torchair so the profile captures compiled NPU decode.")
     if int(args.max_new_tokens) >= 16:
         raise ValueError("--profile-dir requires --max-new-tokens < 16 to keep profiler JSON bounded.")
 
@@ -420,14 +392,13 @@ def profile_compiled_decode(
 
     profile_dir = make_profile_run_dir(
         args.profile_dir.expanduser().resolve(),
-        backend=args.backend,
         eos_mode=args.eos_mode,
         max_new_tokens=int(args.max_new_tokens),
     )
     shutil.rmtree(profile_dir, ignore_errors=True)
     profile_dir.mkdir(parents=True, exist_ok=True)
 
-    warm_prefill, warm_next_token = make_static_prefill(
+    warm_prefill, warm_next_token = make_prefill(
         model,
         input_ids,
         attention_mask,
@@ -437,7 +408,7 @@ def profile_compiled_decode(
     )
     _profile_warmup_result, profile_warmup_s = timed(
         device,
-        lambda: static_flat_decode_loop(
+        lambda: fixed_cache_decode_loop(
             compiled_decode,
             warm_prefill,
             warm_next_token,
@@ -447,7 +418,7 @@ def profile_compiled_decode(
         ),
     )
 
-    prof_prefill, prof_next_token = make_static_prefill(
+    prof_prefill, prof_next_token = make_prefill(
         model,
         input_ids,
         attention_mask,
@@ -468,7 +439,7 @@ def profile_compiled_decode(
         with_stack=True,
     ) as profiler:
         with torch.profiler.record_function("paddle_ocr_vl.compiled_decode_profile"):
-            profile_result = static_flat_decode_loop(
+            profile_result = fixed_cache_decode_loop(
                 compiled_decode,
                 prof_prefill,
                 prof_next_token,
@@ -521,7 +492,6 @@ def run_compiled_lane(
     compile_start = time.perf_counter()
     compiled_decode, compile_meta = compile_decode_module(
         flat_decode,
-        backend_name=args.backend,
         device=device,
         cache_root=args.torchair_cache_dir,
         batch_size=int(input_ids.shape[0]),
@@ -531,7 +501,7 @@ def run_compiled_lane(
     maybe_sync(device)
     compile_wrapper_s = time.perf_counter() - compile_start
 
-    warm_prefill, warm_next_token = make_static_prefill(
+    warm_prefill, warm_next_token = make_prefill(
         model,
         input_ids,
         attention_mask,
@@ -544,7 +514,7 @@ def run_compiled_lane(
         lambda: compiled_decode(warm_next_token, warm_prefill.next_cache_position, warm_prefill.rope_deltas, *warm_prefill.cache.flat_tensors()),
     )
 
-    prefill, next_token = make_static_prefill(
+    prefill, next_token = make_prefill(
         model,
         input_ids,
         attention_mask,
@@ -554,7 +524,7 @@ def run_compiled_lane(
     )
     result, decode_s = timed(
         device,
-        lambda: static_flat_decode_loop(
+        lambda: fixed_cache_decode_loop(
             compiled_decode,
             prefill,
             next_token,
@@ -586,7 +556,6 @@ def main() -> None:
     parser.add_argument("--max-new-tokens", type=int, default=32)
     parser.add_argument("--cache-length", type=int, default=None)
     parser.add_argument("--dtype", default="fp16", choices=list(DTYPES))
-    parser.add_argument("--backend", default="torchair", choices=["eager", "aot_eager", "inductor", "default", "torchair"])
     parser.add_argument("--torchair-cache-dir", type=Path, default=DEFAULT_TORCHAIR_CACHE_DIR)
     parser.add_argument("--eos-mode", default="overlap_event_flags", choices=EOS_MODE_CHOICES)
     parser.add_argument("--profile-dir", type=Path, default=None, help="Write one post-warmup torch_npu profiler capture for compiled decode.")
@@ -613,10 +582,10 @@ def main() -> None:
     eos_token_id = int(model.config.eos_token_id)
     flat_decode = model.make_flat_static_decode_module().eval()
 
-    # Lane 1: dynamic eager decode with a growing KV cache (exp02 reference).
-    dynamic_ids, dynamic_decode_s = timed(
+    # Lane 1: eager decode with a growing KV cache (exp02 reference).
+    eager_ids, eager_decode_s = timed(
         device,
-        lambda: dynamic_decode_loop(
+        lambda: eager_decode_loop(
             model,
             input_ids,
             attention_mask,
@@ -626,8 +595,8 @@ def main() -> None:
         ),
     )
 
-    # Lane 2: static eager decode, fixed KV cache, uncompiled flat module.
-    static_prefill, static_next_token = make_static_prefill(
+    # Lane 2: eager decode with a preallocated fixed KV cache, uncompiled.
+    fixed_prefill, fixed_next_token = make_prefill(
         model,
         input_ids,
         attention_mask,
@@ -635,19 +604,19 @@ def main() -> None:
         image_grid_thw,
         cache_length=cache_length,
     )
-    static_result, static_decode_s = timed(
+    fixed_result, fixed_decode_s = timed(
         device,
-        lambda: static_flat_decode_loop(
+        lambda: fixed_cache_decode_loop(
             flat_decode,
-            static_prefill,
-            static_next_token,
+            fixed_prefill,
+            fixed_next_token,
             max_new_tokens=args.max_new_tokens,
             eos_mode=args.eos_mode,
             eos_token_id=eos_token_id,
         ),
     )
-    static_ids = static_result.ids
-    static_loop_summary = decode_loop_summary(static_result, eos_token_id=eos_token_id)
+    fixed_ids = fixed_result.ids
+    fixed_loop_summary = decode_loop_summary(fixed_result, eos_token_id=eos_token_id)
 
     # Lane 3: compiled static decode with native-format weights.
     compiled_native, native_lane = run_compiled_lane(
@@ -665,7 +634,7 @@ def main() -> None:
     )
 
     # Lockstep logit comparison: static eager vs compiled native.
-    compare_eager_prefill, compare_eager_next = make_static_prefill(
+    compare_eager_prefill, compare_eager_next = make_prefill(
         model,
         input_ids,
         attention_mask,
@@ -673,7 +642,7 @@ def main() -> None:
         image_grid_thw,
         cache_length=cache_length,
     )
-    compare_compiled_prefill, compare_compiled_next = make_static_prefill(
+    compare_compiled_prefill, compare_compiled_next = make_prefill(
         model,
         input_ids,
         attention_mask,
@@ -681,7 +650,7 @@ def main() -> None:
         image_grid_thw,
         cache_length=cache_length,
     )
-    compare_static_ids, compare_compiled_ids, max_abs, mean_abs, compared_steps = compare_static_logits(
+    compare_fixed_ids, compare_compiled_ids, max_abs, mean_abs, compared_steps = compare_decode_logits(
         flat_decode,
         compiled_native,
         compare_eager_prefill,
@@ -737,17 +706,17 @@ def main() -> None:
         )
 
     native_ids = native_lane["ids"]
-    dynamic_trimmed_ids = trim_after_first_eos(dynamic_ids, eos_token_id)
-    static_trimmed_ids = trim_after_first_eos(static_ids, eos_token_id)
+    eager_trimmed_ids = trim_after_first_eos(eager_ids, eos_token_id)
+    fixed_trimmed_ids = trim_after_first_eos(fixed_ids, eos_token_id)
     native_trimmed_ids = trim_after_first_eos(native_ids, eos_token_id)
     matches = {
-        "dynamic_vs_static_eager": bool(torch.equal(dynamic_ids, static_ids)),
-        "dynamic_vs_compiled_native": bool(torch.equal(dynamic_ids, native_ids)),
-        "static_eager_vs_compiled_native": bool(torch.equal(static_ids, native_ids)),
-        "compare_loop_static_vs_compiled_native": bool(torch.equal(compare_static_ids, compare_compiled_ids)),
-        "dynamic_vs_static_eager_trimmed": bool(torch.equal(dynamic_trimmed_ids, static_trimmed_ids)),
-        "dynamic_vs_compiled_native_trimmed": bool(torch.equal(dynamic_trimmed_ids, native_trimmed_ids)),
-        "static_eager_vs_compiled_native_trimmed": bool(torch.equal(static_trimmed_ids, native_trimmed_ids)),
+        "eager_vs_fixed_cache": bool(torch.equal(eager_ids, fixed_ids)),
+        "eager_vs_compiled_native": bool(torch.equal(eager_ids, native_ids)),
+        "fixed_cache_vs_compiled_native": bool(torch.equal(fixed_ids, native_ids)),
+        "compare_loop_fixed_cache_vs_compiled_native": bool(torch.equal(compare_fixed_ids, compare_compiled_ids)),
+        "eager_vs_fixed_cache_trimmed": bool(torch.equal(eager_trimmed_ids, fixed_trimmed_ids)),
+        "eager_vs_compiled_native_trimmed": bool(torch.equal(eager_trimmed_ids, native_trimmed_ids)),
+        "fixed_cache_vs_compiled_native_trimmed": bool(torch.equal(fixed_trimmed_ids, native_trimmed_ids)),
     }
     if nz_lane is not None:
         nz_ids = nz_lane["ids"]
@@ -757,8 +726,8 @@ def main() -> None:
         )
 
     ladder = [
-        ("dynamic_eager", tok_per_s(decode_steps, dynamic_decode_s)),
-        ("static_eager", tok_per_s(static_result.decode_calls, static_decode_s)),
+        ("eager", tok_per_s(decode_steps, eager_decode_s)),
+        ("eager_fixed_cache", tok_per_s(fixed_result.decode_calls, fixed_decode_s)),
         ("compiled_native", native_lane["tok_per_s_raw"]),
     ]
     if nz_lane is not None:
@@ -768,7 +737,7 @@ def main() -> None:
         return {key: value for key, value in lane.items() if key != "ids"}
 
     summary = {
-        "backend": args.backend,
+        "backend": "torchair",
         "device": str(device),
         "dtype": str(dtype),
         "decode_attention": DECODE_ATTENTION,
@@ -782,28 +751,28 @@ def main() -> None:
         "requested_decode_steps": int(decode_steps),
         "cache_length": int(cache_length),
         "lanes": {
-            "dynamic_eager": {
-                "decode_s": float(dynamic_decode_s),
-                "tok_per_s_raw": tok_per_s(decode_steps, dynamic_decode_s),
+            "eager": {
+                "decode_s": float(eager_decode_s),
+                "tok_per_s_raw": tok_per_s(decode_steps, eager_decode_s),
             },
-            "static_eager": {
-                "decode_s": float(static_decode_s),
-                "loop": static_loop_summary,
-                "tok_per_s_raw": tok_per_s(static_result.decode_calls, static_decode_s),
-                "tok_per_s_effective": tok_per_s(static_loop_summary["effective_decode_calls"], static_decode_s),
+            "eager_fixed_cache": {
+                "decode_s": float(fixed_decode_s),
+                "loop": fixed_loop_summary,
+                "tok_per_s_raw": tok_per_s(fixed_result.decode_calls, fixed_decode_s),
+                "tok_per_s_effective": tok_per_s(fixed_loop_summary["effective_decode_calls"], fixed_decode_s),
             },
             "compiled_native": lane_summary(native_lane),
         },
         "matches": matches,
-        "logit_diff_static_eager_vs_compiled_native_decode": {
+        "logit_diff_fixed_cache_vs_compiled_native_decode": {
             "steps": int(compared_steps),
             "max_abs": float(max_abs),
             "mean_abs": float(mean_abs),
         },
         "tok_per_s_ladder": {name: value for name, value in ladder},
         "texts": {
-            "dynamic": tokenizer.decode(dynamic_ids[0].detach().cpu().tolist(), skip_special_tokens=True),
-            "static_eager": tokenizer.decode(static_ids[0].detach().cpu().tolist(), skip_special_tokens=True),
+            "eager": tokenizer.decode(eager_ids[0].detach().cpu().tolist(), skip_special_tokens=True),
+            "eager_fixed_cache": tokenizer.decode(fixed_ids[0].detach().cpu().tolist(), skip_special_tokens=True),
             "compiled_native": tokenizer.decode(native_ids[0].detach().cpu().tolist(), skip_special_tokens=True),
         },
     }
@@ -820,7 +789,7 @@ def main() -> None:
     print(f"backend={summary['backend']} device={summary['device']} dtype={summary['dtype']} decode_attention={summary['decode_attention']} eos_mode={summary['eos_mode']}")
     print(f"prompt_tokens={summary['prompt_tokens']} generated_tokens={summary['generated_tokens']} requested_decode_steps={summary['requested_decode_steps']} cache_length={summary['cache_length']}")
     print("matches=" + json.dumps(matches, sort_keys=True))
-    print("logit_diff_static_eager_vs_compiled_native_decode=" + json.dumps(summary["logit_diff_static_eager_vs_compiled_native_decode"], sort_keys=True))
+    print("logit_diff_fixed_cache_vs_compiled_native_decode=" + json.dumps(summary["logit_diff_fixed_cache_vs_compiled_native_decode"], sort_keys=True))
     print("compile_s=" + json.dumps({"wrapper": native_lane["compile_wrapper_s"], "first_call": native_lane["compile_first_call_s"]}, sort_keys=True))
     print("tok_per_s ladder:")
     for name, value in ladder:
