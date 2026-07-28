@@ -9,6 +9,172 @@ Prove that the real Experiment 09 pipeline runs on this 310P software stack,
 identify which production optimizations work, and measure their approximate
 effect on a small representative workload.
 
+## Immediate standalone IndexPut probe
+
+Run this section by itself when Luka asks for the 310P advanced-indexing
+environment probe. Do not load either model, run the Experiment 09 pipeline,
+compile a graph, install or replace packages, or change source code. The point
+is to test one bare NPU operation and preserve enough environment evidence for
+Luka to compare separately.
+
+First read `CLAUDE.md` and `AGENTS.md`, pull the current `main`, activate the
+machine's intended NPU environment, and select the exact Python interpreter
+that is meant to run Experiment 09:
+
+```sh
+git status --short --branch
+git pull --ff-only origin main
+
+REPO="$(git rev-parse --show-toplevel)"
+OUTPUT_ROOT="$REPO/tmp/09_persistent_page_engine/310p_indexput_probe"
+mkdir -p "$OUTPUT_ROOT"
+
+PYTHON_BIN="$(command -v python)"
+test -x "$PYTHON_BIN"
+```
+
+Record the software and resolved runtime paths. Missing optional files or
+package-manager commands are evidence, not a reason to abort this collection:
+
+```sh
+{
+  printf 'git_commit='
+  git rev-parse HEAD
+  printf 'hostname='
+  hostname
+  printf 'python_bin=%s\n' "$PYTHON_BIN"
+  "$PYTHON_BIN" - <<'PY'
+import os
+import platform
+import sys
+
+import torch
+import torch_npu
+
+print("platform:", platform.platform())
+print("python:", sys.version.replace("\n", " "))
+print("python_executable:", sys.executable)
+print("torch:", torch.__version__)
+print("torch_file:", torch.__file__)
+print("torch_npu:", getattr(torch_npu, "__version__", "<missing>"))
+print("torch_npu_file:", torch_npu.__file__)
+print("npu_available:", torch.npu.is_available())
+print("npu_count:", torch.npu.device_count())
+if torch.npu.is_available() and torch.npu.device_count():
+    print("npu_0_name:", torch.npu.get_device_name(0))
+for name in (
+    "ASCEND_HOME_PATH",
+    "ASCEND_OPP_PATH",
+    "ASCEND_AICPU_PATH",
+    "LD_LIBRARY_PATH",
+    "PYTHONPATH",
+):
+    print(f"{name}={os.environ.get(name, '')}")
+PY
+
+  printf '\nresolved_paths:\n'
+  for name in ASCEND_HOME_PATH ASCEND_OPP_PATH ASCEND_AICPU_PATH; do
+    eval "value=\${$name:-}"
+    printf '%s=%s\n' "$name" "$value"
+    test -n "$value" && readlink -f "$value" || true
+  done
+
+  printf '\npython_packages:\n'
+  "$PYTHON_BIN" -m pip show torch torch-npu 2>&1 || true
+
+  printf '\nascend_version_files:\n'
+  for file in \
+    /usr/local/Ascend/driver/version.info \
+    /usr/local/Ascend/firmware/version.info \
+    "${ASCEND_HOME_PATH:-}/version.cfg" \
+    "${ASCEND_HOME_PATH:-}/version.info" \
+    "${ASCEND_OPP_PATH:-}/version.info"; do
+    test -f "$file" || continue
+    printf '\n--- %s ---\n' "$file"
+    cat "$file"
+  done
+
+  printf '\ninstalled_ascend_packages:\n'
+  command -v rpm >/dev/null &&
+    rpm -qa | sort | grep -Ei 'ascend|cann|torch.npu' || true
+  command -v dpkg-query >/dev/null &&
+    dpkg-query -W 2>/dev/null | sort |
+      grep -Ei 'ascend|cann|torch.npu' || true
+
+  printf '\nnpu_smi:\n'
+  command -v npu-smi >/dev/null && npu-smi info || true
+} >"$OUTPUT_ROOT/environment.txt" 2>&1
+```
+
+Now run the exact minimal operation. The CPU execution is only a semantic
+control; the NPU execution is the result of interest. The explicit synchronize
+ensures an asynchronously reported kernel failure is captured inside this
+probe:
+
+```sh
+set +e
+"$PYTHON_BIN" - <<'PY' \
+  >"$OUTPUT_ROOT/indexput_minimal_reproducer.txt" 2>&1
+import traceback
+
+import torch
+import torch_npu
+
+
+def run(device: str) -> torch.Tensor:
+    destination = torch.zeros(
+        (16, 16, 16), dtype=torch.float16, device=device
+    )
+    source = torch.ones(
+        (1, 16, 16), dtype=torch.float16, device=device
+    )
+    destination[[5]] = source
+    if device.startswith("npu"):
+        torch.npu.synchronize()
+    return destination.cpu()
+
+
+cpu_result = run("cpu")
+assert int(torch.count_nonzero(cpu_result).item()) == 16 * 16
+print("CPU_CONTROL: PASS")
+
+torch.npu.set_device(0)
+torch.npu.set_compile_mode(jit_compile=False)
+try:
+    npu_result = run("npu:0")
+    torch.testing.assert_close(npu_result, cpu_result, rtol=0, atol=0)
+    print("NPU_INDEXPUT: PASS")
+except Exception:
+    print("NPU_INDEXPUT: FAIL")
+    traceback.print_exc()
+    raise
+PY
+PROBE_EXIT_CODE=$?
+set -e
+printf '%s\n' "$PROBE_EXIT_CODE" \
+  >"$OUTPUT_ROOT/indexput_minimal_reproducer_exit_code.txt"
+```
+
+Stop after this probe. Do not attempt a workaround. Report:
+
+```text
+310P STANDALONE INDEXPUT PROBE
+
+Git commit:
+Python executable:
+CPU control: PASS | FAIL
+NPU IndexPut: PASS | FAIL
+Probe exit code:
+First causal NPU error:
+Artifact paths:
+```
+
+Include the complete contents of `environment.txt`,
+`indexput_minimal_reproducer.txt`, and
+`indexput_minimal_reproducer_exit_code.txt`. In particular, do not omit an
+`aclnnIndexPutImpl`, `IndexPutV2`, missing operator binary, or dispatcher
+message.
+
 The required runner is:
 
 ```text
