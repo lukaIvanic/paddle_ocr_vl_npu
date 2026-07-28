@@ -71,6 +71,21 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--reference-requests", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument(
+        "--graph-capture",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Capture the fixed detector core when layout runs on NPU.",
+    )
+    parser.add_argument(
+        "--layout-indexput-compat",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Build PP-DocLayoutV3 spatial-shape metadata without NPU "
+            "scalar IndexPut writes."
+        ),
+    )
+    parser.add_argument(
         "--timeline",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -191,8 +206,9 @@ def main(argv: Sequence[str] | None = None) -> None:
         model_dir,
         device,
         timeline=timeline,
-        graph_capture=device.type == "npu",
+        graph_capture=device.type == "npu" and args.graph_capture,
         device_stage_timing=device.type == "npu",
+        npu_indexput_compat=args.layout_indexput_compat,
     )
     setup_s = time.perf_counter() - setup_started
     memory_after_setup = (
@@ -330,6 +346,8 @@ def main(argv: Sequence[str] | None = None) -> None:
             else "transformers_cpu"
         ),
         "device": str(device),
+        "graph_capture": bool(frontend.graph_capture),
+        "npu_indexput_compat": bool(frontend.npu_indexput_compat),
         "workers": args.workers,
         "worker_strategy": (
             "serial" if args.workers == 1 else "one_page_decode_prefetch"

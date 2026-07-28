@@ -5,6 +5,7 @@ from __future__ import annotations
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
+from types import MethodType
 from typing import Any
 
 import cv2
@@ -931,6 +932,325 @@ def _process_with_tensor_inputs(
         "input_img": [data["ori_img"] for data in datas],
         "boxes": boxes,
     }
+
+
+def _find_pp_doclayout_v3_core(model: Any) -> Any:
+    """Find the Transformers PP-DocLayoutV3 module that owns the detector core."""
+
+    candidates = (
+        model,
+        getattr(model, "model", None),
+        getattr(getattr(model, "model", None), "model", None),
+    )
+    required = (
+        "backbone",
+        "encoder",
+        "decoder",
+        "decoder_input_proj",
+        "enc_output",
+    )
+    for candidate in candidates:
+        if candidate is not None and all(
+            hasattr(candidate, name) for name in required
+        ):
+            return candidate
+    raise RuntimeError("PP-DocLayoutV3 detector core was not found")
+
+
+def _install_pp_doclayout_v3_npu_indexput_compat(model: Any) -> bool:
+    """Replace two NPU scalar writes in Transformers' inference-only forward.
+
+    Transformers 5.5.4 builds ``spatial_shapes`` by allocating an NPU tensor
+    and assigning each height and width through ``Tensor.__setitem__``. That
+    lowers to IndexPut even though the values are static Python shape metadata.
+    Atlas 310P stacks without the required IndexPut kernel fail before detector
+    decoding starts.
+
+    The owned forward below keeps every detector tensor and operation on the
+    original device. It changes only metadata construction: collect the Python
+    ``(height, width)`` pairs first, then materialize the finished NPU tensor in
+    one operation.
+    """
+
+    import inspect
+
+    core = _find_pp_doclayout_v3_core(model)
+    source = inspect.getsource(type(core).forward)
+    expected_fragments = (
+        "spatial_shapes = torch.empty((len(sources), 2)",
+        "spatial_shapes[level, 0] = height",
+        "spatial_shapes[level, 1] = width",
+    )
+    missing = [
+        fragment for fragment in expected_fragments if fragment not in source
+    ]
+    if missing:
+        raise RuntimeError(
+            "unsupported PP-DocLayoutV3 Transformers forward; expected "
+            f"IndexPut fragments are missing: {missing}"
+        )
+    core.forward = MethodType(
+        _pp_doclayout_v3_model_forward_without_indexput,
+        core,
+    )
+    return True
+
+
+def _pp_doclayout_v3_model_forward_without_indexput(
+    model: Any,
+    pixel_values: torch.Tensor,
+    pixel_mask: torch.Tensor | None = None,
+    encoder_outputs: Any = None,
+    labels: list[dict[str, torch.Tensor]] | None = None,
+    **kwargs: Any,
+) -> Any:
+    """Transformers 5.5.4 PP-DocLayoutV3 inference without scalar IndexPut."""
+
+    from transformers.models.pp_doclayout_v3 import (
+        modeling_pp_doclayout_v3,
+    )
+
+    batch_size, _, height, width = pixel_values.shape
+    device = pixel_values.device
+
+    if pixel_mask is None:
+        pixel_mask = torch.ones(
+            (batch_size, height, width),
+            device=device,
+        )
+
+    features = model.backbone(pixel_values, pixel_mask)
+    x4_feat = features.pop(0)
+    proj_feats = [
+        model.encoder_input_proj[level](source)
+        for level, (source, _) in enumerate(features)
+    ]
+
+    if encoder_outputs is None:
+        encoder_outputs = model.encoder(
+            proj_feats,
+            x4_feat,
+            **kwargs,
+        )
+    elif not isinstance(
+        encoder_outputs,
+        modeling_pp_doclayout_v3.PPDocLayoutV3HybridEncoderOutput,
+    ):
+        encoder_outputs = (
+            modeling_pp_doclayout_v3.PPDocLayoutV3HybridEncoderOutput(
+                last_hidden_state=encoder_outputs[0],
+                hidden_states=(
+                    encoder_outputs[1]
+                    if len(encoder_outputs) > 1
+                    else None
+                ),
+                attentions=(
+                    encoder_outputs[2]
+                    if len(encoder_outputs) > 2
+                    else None
+                ),
+                mask_feat=encoder_outputs[-1],
+            )
+        )
+
+    sources = [
+        model.decoder_input_proj[level](source)
+        for level, source in enumerate(
+            encoder_outputs.last_hidden_state
+        )
+    ]
+    if model.config.num_feature_levels > len(sources):
+        original_source_count = len(sources)
+        final_encoder_source = encoder_outputs.last_hidden_state[-1]
+        sources.append(
+            model.decoder_input_proj[original_source_count](
+                final_encoder_source
+            )
+        )
+        for index in range(
+            original_source_count + 1,
+            model.config.num_feature_levels,
+        ):
+            sources.append(
+                model.decoder_input_proj[index](final_encoder_source)
+            )
+
+    source_flatten = []
+    spatial_shapes_list: list[tuple[int, int]] = []
+    for source in sources:
+        source_height, source_width = source.shape[-2:]
+        spatial_shapes_list.append((source_height, source_width))
+        source_flatten.append(source.flatten(2).transpose(1, 2))
+
+    # Compatibility change: construct the complete tensor once. The upstream
+    # forward performs two scalar device assignments per feature level here.
+    spatial_shapes = torch.tensor(
+        spatial_shapes_list,
+        device=device,
+        dtype=torch.long,
+    )
+    source_flatten_tensor = torch.cat(source_flatten, 1)
+    level_start_index = torch.cat(
+        (
+            spatial_shapes.new_zeros((1,)),
+            spatial_shapes.prod(1).cumsum(0)[:-1],
+        )
+    )
+
+    if model.training and model.config.num_denoising > 0 and labels is not None:
+        (
+            denoising_class,
+            denoising_bbox_unact,
+            attention_mask,
+            denoising_meta_values,
+        ) = modeling_pp_doclayout_v3.get_contrastive_denoising_training_group(
+            targets=labels,
+            num_classes=model.config.num_labels,
+            num_queries=model.config.num_queries,
+            class_embed=model.denoising_class_embed,
+            num_denoising_queries=model.config.num_denoising,
+            label_noise_ratio=model.config.label_noise_ratio,
+            box_noise_scale=model.config.box_noise_scale,
+        )
+    else:
+        denoising_class = None
+        denoising_bbox_unact = None
+        attention_mask = None
+        denoising_meta_values = None
+
+    batch_size = len(source_flatten_tensor)
+    dtype = source_flatten_tensor.dtype
+
+    if model.training or model.config.anchor_image_size is None:
+        anchors, valid_mask = model.generate_anchors(
+            tuple(spatial_shapes_list),
+            device=device,
+            dtype=dtype,
+        )
+    else:
+        anchors = model.anchors.to(device, dtype)
+        valid_mask = model.valid_mask.to(device, dtype)
+
+    memory = valid_mask.to(source_flatten_tensor.dtype) * source_flatten_tensor
+    output_memory = model.enc_output(memory)
+    enc_outputs_class = model.enc_score_head(output_memory)
+    enc_outputs_coord_logits = model.enc_bbox_head(output_memory) + anchors
+
+    _, topk_indices = torch.topk(
+        enc_outputs_class.max(-1).values,
+        model.config.num_queries,
+        dim=1,
+    )
+    reference_points_unact = enc_outputs_coord_logits.gather(
+        dim=1,
+        index=topk_indices.unsqueeze(-1).repeat(
+            1,
+            1,
+            enc_outputs_coord_logits.shape[-1],
+        ),
+    )
+
+    batch_indices = torch.arange(
+        memory.shape[0],
+        device=output_memory.device,
+    ).unsqueeze(1)
+    target = output_memory[batch_indices, topk_indices]
+    out_query = model.decoder_norm(target)
+    mask_query_embed = model.mask_query_head(out_query)
+    batch_size, mask_dim, _ = mask_query_embed.shape
+    enc_topk_bboxes = torch.sigmoid(reference_points_unact)
+    enc_topk_logits = enc_outputs_class.gather(
+        dim=1,
+        index=topk_indices.unsqueeze(-1).repeat(
+            1,
+            1,
+            enc_outputs_class.shape[-1],
+        ),
+    )
+
+    if model.config.learn_initial_query:
+        target = model.weight_embedding.tile([batch_size, 1, 1])
+    else:
+        target = output_memory.gather(
+            dim=1,
+            index=topk_indices.unsqueeze(-1).repeat(
+                1,
+                1,
+                output_memory.shape[-1],
+            ),
+        )
+        target = target.detach()
+
+    if denoising_class is not None:
+        target = torch.concat([denoising_class, target], 1)
+
+    if model.mask_enhanced:
+        _, _, mask_height, mask_width = encoder_outputs.mask_feat.shape
+        enc_out_masks = torch.bmm(
+            mask_query_embed,
+            encoder_outputs.mask_feat.flatten(start_dim=2),
+        ).reshape(batch_size, mask_dim, mask_height, mask_width)
+        reference_points = (
+            modeling_pp_doclayout_v3.mask_to_box_coordinate(
+                enc_out_masks > 0,
+                dtype=reference_points_unact.dtype,
+            )
+        )
+        reference_points_unact = (
+            modeling_pp_doclayout_v3.inverse_sigmoid(reference_points)
+        )
+
+    if denoising_bbox_unact is not None:
+        reference_points_unact = torch.concat(
+            [denoising_bbox_unact, reference_points_unact],
+            1,
+        )
+
+    initial_reference_points = reference_points_unact.detach()
+    decoder_outputs = model.decoder(
+        inputs_embeds=target,
+        encoder_hidden_states=source_flatten_tensor,
+        encoder_attention_mask=attention_mask,
+        reference_points=initial_reference_points,
+        spatial_shapes=spatial_shapes,
+        spatial_shapes_list=spatial_shapes_list,
+        level_start_index=level_start_index,
+        order_head=model.decoder_order_head,
+        global_pointer=model.decoder_global_pointer,
+        mask_query_head=model.mask_query_head,
+        norm=model.decoder_norm,
+        mask_feat=encoder_outputs.mask_feat,
+        **kwargs,
+    )
+
+    return modeling_pp_doclayout_v3.PPDocLayoutV3ModelOutput(
+        last_hidden_state=decoder_outputs.last_hidden_state,
+        intermediate_hidden_states=(
+            decoder_outputs.intermediate_hidden_states
+        ),
+        intermediate_logits=decoder_outputs.intermediate_logits,
+        intermediate_reference_points=(
+            decoder_outputs.intermediate_reference_points
+        ),
+        intermediate_predicted_corners=(
+            decoder_outputs.intermediate_predicted_corners
+        ),
+        initial_reference_points=decoder_outputs.initial_reference_points,
+        decoder_hidden_states=decoder_outputs.hidden_states,
+        decoder_attentions=decoder_outputs.attentions,
+        cross_attentions=decoder_outputs.cross_attentions,
+        out_order_logits=decoder_outputs.decoder_out_order_logits,
+        out_masks=decoder_outputs.decoder_out_masks,
+        encoder_last_hidden_state=encoder_outputs.last_hidden_state,
+        encoder_hidden_states=encoder_outputs.hidden_states,
+        encoder_attentions=encoder_outputs.attentions,
+        init_reference_points=initial_reference_points,
+        enc_topk_logits=enc_topk_logits,
+        enc_topk_bboxes=enc_topk_bboxes,
+        enc_outputs_class=enc_outputs_class,
+        enc_outputs_coord_logits=enc_outputs_coord_logits,
+        denoising_meta_values=denoising_meta_values,
+    )
 
 
 def _decoder_forward_final_heads_only(

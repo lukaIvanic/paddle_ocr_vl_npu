@@ -37,6 +37,7 @@ from .layout_model_runtime import (
     _decoder_forward_final_heads_only,
     _extract_custom_vertices_vectorized,
     _extract_polygon_points_by_masks_owned,
+    _install_pp_doclayout_v3_npu_indexput_compat,
     _mask_to_box_capture_friendly,
     _post_process_selected_masks_only,
 )
@@ -188,6 +189,7 @@ class OwnedLayoutFrontend:
         timeline: TimelineRecorder | None = None,
         graph_capture: bool = True,
         device_stage_timing: bool = False,
+        npu_indexput_compat: bool = True,
     ) -> None:
         from transformers import AutoImageProcessor, AutoModelForObjectDetection
 
@@ -214,6 +216,11 @@ class OwnedLayoutFrontend:
         )
         self.model.eval().to(self.device)
         self.model_dtype = next(self.model.parameters()).dtype
+        self.npu_indexput_compat = bool(
+            npu_indexput_compat and self.device.type == "npu"
+        )
+        if self.npu_indexput_compat:
+            _install_pp_doclayout_v3_npu_indexput_compat(self.model)
 
         decoder = _find_decoder(self.model)
         decoder.forward = MethodType(
