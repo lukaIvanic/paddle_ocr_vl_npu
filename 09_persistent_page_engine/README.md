@@ -131,14 +131,19 @@ path. A runtime assertion fails the run if any `paddlex` module was imported;
 the summary records the same audit.
 
 Both page runners accept `--layout-device npu|cpu`. The default remains `npu`.
-The CPU option moves only PP-DocLayoutV3 inference and its preprocessing off the
-NPU; the PaddleOCR-VL recognizer, vision/text prefills, KV cache, and decode
-remain on logical `npu:0`. This is the functional compatibility path for 310P
-software stacks whose operator package cannot execute the layout model's
-IndexPut signature. The owned CPU layout path disables NPU graph capture and
-NPU event timing automatically, and records `layout_device`,
-`layout_frontend.device`, and `layout_frontend.graph_capture` in the run
-summary.
+On NPU, the owned runtime replaces Transformers 5.5.4's scalar indexed writes
+into `spatial_shapes` with one graph-capture-safe device construction. The
+height/width metadata and all detector computation remain on NPU; only the
+unsupported IndexPut expression changes. The summary records this as
+`layout_frontend.npu_indexput_compat`.
+
+The CPU option remains the fallback while that NPU compatibility path is being
+validated on 310P. It moves only PP-DocLayoutV3 inference and preprocessing off
+the NPU; the PaddleOCR-VL recognizer, vision/text prefills, KV cache, and decode
+remain on logical `npu:0`. CPU layout disables NPU graph capture and NPU event
+timing automatically. The summary records `layout_device`,
+`layout_frontend.device`, `layout_frontend.graph_capture`, and
+`layout_frontend.npu_indexput_compat`.
 
 The full-benchmark runner installs a narrow PP-DocLayoutV3 mask guard.
 Transformers can otherwise call OpenCV with a zero-width mask crop when a thin,

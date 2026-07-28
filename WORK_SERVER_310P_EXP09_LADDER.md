@@ -35,6 +35,122 @@ recognizer gate: that helper constructs MRoPE after moving its metadata tensors
 to NPU. Experiment 09's serving preparation constructs MRoPE on CPU and copies
 the completed tensor to NPU.
 
+## Targeted NPU layout IndexPut compatibility check
+
+Run this section separately after the existing Phase 1-7 results are preserved.
+Do not change those completed runs. Pull `main`, confirm the checked-out commit
+contains `043b957`, and restore the exact `PYTHON_BIN`, `LAYOUT_MODEL`,
+`DATASET_JSON`, and `IMAGES_DIR` values already selected in Phase 0.
+
+The patch changes one operation in Transformers 5.5.4 PP-DocLayoutV3 inference:
+upstream allocates `spatial_shapes` on NPU and fills it through
+`spatial_shapes[level, 0/1] = value`; the owned forward constructs the complete
+device tensor with `full` and `stack`. It does not move layout computation to
+CPU.
+
+First isolate the two constructors without loading either model:
+
+```sh
+LAYOUT_PATCH_ROOT="$REPO/tmp/09_persistent_page_engine/310p_layout_indexput_patch"
+mkdir -p "$LAYOUT_PATCH_ROOT"
+
+run_targeted_layout() {
+  local run_name="$1"
+  shift
+  local evidence_dir="$OUTPUT_ROOT/$run_name"
+  mkdir -p "$evidence_dir"
+  {
+    printf '#!/usr/bin/env bash\n'
+    printf '%q ' "$@"
+    printf '\n'
+  } >"$evidence_dir/command.sh"
+  chmod +x "$evidence_dir/command.sh"
+
+  local status
+  if "$@" >"$evidence_dir/run.log" 2>&1; then
+    status=0
+  else
+    status=$?
+  fi
+  printf '%s\n' "$status" >"$evidence_dir/exit_code.txt"
+  printf 'run=%s exit_code=%s log=%s\n' \
+    "$run_name" "$status" "$evidence_dir/run.log"
+  return "$status"
+}
+
+set +e
+"$PYTHON_BIN" \
+  "$REPO/09_persistent_page_engine/scripts/probes/probe_layout_spatial_shapes.py" \
+  --mode legacy_indexput \
+  >"$LAYOUT_PATCH_ROOT/legacy_indexput.log" 2>&1
+LEGACY_STATUS=$?
+set -e
+printf '%s\n' "$LEGACY_STATUS" \
+  >"$LAYOUT_PATCH_ROOT/legacy_indexput.exit_code"
+
+"$PYTHON_BIN" \
+  "$REPO/09_persistent_page_engine/scripts/probes/probe_layout_spatial_shapes.py" \
+  --mode single_constructor \
+  >"$LAYOUT_PATCH_ROOT/single_constructor.log" 2>&1
+
+"$PYTHON_BIN" \
+  "$REPO/09_persistent_page_engine/scripts/probes/probe_layout_spatial_shapes.py" \
+  --mode capture_constructor \
+  >"$LAYOUT_PATCH_ROOT/capture_constructor.log" 2>&1
+
+cat "$LAYOUT_PATCH_ROOT/legacy_indexput.log"
+cat "$LAYOUT_PATCH_ROOT/single_constructor.log"
+cat "$LAYOUT_PATCH_ROOT/capture_constructor.log"
+```
+
+Both replacement modes must print `"verdict": "PASS"`. The legacy mode is
+diagnostic: preserve whether it passes or fails and its complete causal
+traceback.
+
+Then run exactly one real page through the patched layout model, first eager:
+
+```sh
+run_targeted_layout layout_indexput_patch_eager \
+  "$PYTHON_BIN" \
+  "$REPO/09_persistent_page_engine/scripts/layout_owned_lab.py" \
+  --dataset-json "$DATASET_JSON" \
+  --images-dir "$IMAGES_DIR" \
+  --layout-model "$LAYOUT_MODEL" \
+  --device npu \
+  --layout-indexput-compat \
+  --no-graph-capture \
+  --offset 0 \
+  --limit 1 \
+  --workers 1 \
+  --no-timeline \
+  --output-dir "$OUTPUT_ROOT/layout_indexput_patch_eager/output"
+```
+
+Stop if eager fails. Preserve the first new causal traceback; do not add another
+model patch. If eager passes, run the same page with production graph capture:
+
+```sh
+run_targeted_layout layout_indexput_patch_graph \
+  "$PYTHON_BIN" \
+  "$REPO/09_persistent_page_engine/scripts/layout_owned_lab.py" \
+  --dataset-json "$DATASET_JSON" \
+  --images-dir "$IMAGES_DIR" \
+  --layout-model "$LAYOUT_MODEL" \
+  --device npu \
+  --layout-indexput-compat \
+  --graph-capture \
+  --offset 0 \
+  --limit 1 \
+  --workers 1 \
+  --no-timeline \
+  --output-dir "$OUTPUT_ROOT/layout_indexput_patch_graph/output"
+```
+
+For each model run report exit code, request count, request-manifest SHA256,
+raw/filtered boxes, page wall, detector device time, and
+`npu_indexput_compat`. Do not run multiple pages or change the production
+ladder to NPU layout yet. Wait for Luka to compare the targeted result first.
+
 ## Immediate standalone IndexPut probe
 
 Run this section by itself when Luka asks for the 310P advanced-indexing
