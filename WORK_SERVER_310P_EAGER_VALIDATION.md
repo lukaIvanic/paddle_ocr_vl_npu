@@ -1,39 +1,91 @@
-# Work-server 310P eager validation handoff
+# Work-server 310P Experiment 09 bootstrap and production ladder
 
-This is the second one-way execution brief for the AI agent operating on
-Luka's work server. Read `AGENTS.md` and
-`WORK_SERVER_310P_EAGER_SMOKE.md` first. The first five-phase smoke has already
-been reported as passing.
+This is the canonical one-way execution brief for the AI agent operating on
+Luka's replacement 310P work server. Read `CLAUDE.md` and `AGENTS.md` first.
+Do **not** execute `WORK_SERVER_310P_EAGER_SMOKE.md` from the beginning: that
+older brief contains a one-crop helper gate that is not representative of the
+Experiment 09 serving preparation path. This document supersedes it for a new
+server.
 
-The work-server checkout remains a pull-only NPU validation lane. Do not edit
+The work-server checkout is a pull-only NPU validation lane. Do not edit
 tracked files, commit, push, or create branches.
+
+## Why the replacement server exposed IndexPut
+
+The old smoke's one-crop command invokes `paddleocr_vl.model.example`. That
+helper moves `input_ids` and `attention_mask` to NPU before generation, then
+`get_rope_index()` performs this boolean advanced-index assignment on NPU:
+
+```python
+position_ids[:, batch_idx, attention_mask[batch_idx] == 1] = llm_positions
+```
+
+It therefore exercises NPU `aten::index_put_` / `IndexPutV2`. The real
+Experiment 09 serving path does not prepare MRoPE that way. In
+`ContinuousRecognizer._prepare_cpu`, it computes `position_ids` and
+`rope_deltas` while the inputs are still CPU tensors, pins the completed
+tensors when possible, and transfers them to NPU once with the rest of the
+recognition inputs.
+
+An IndexPut failure in the old one-crop helper is useful environment evidence,
+but it is not an Experiment 09 compatibility gate. Do not patch the model to
+make that helper pass. The first real gate on this server is Phase 0 below.
+
+## Known old-server progress
+
+These milestones were manually relayed from the previous 310P server. They are
+historical targets, not evidence for the replacement server:
+
+- the full 1,651-image dataset audit passed after eight malformed local images
+  were replaced with canonical OpenDataLab copies;
+- the real eager Experiment 09 path passed, including one complete page whose
+  17 structural checks passed and whose regions stopped naturally by EOS;
+- layout on the first 32 pages measured about 4.8 pages/s with one worker and
+  7.54 pages/s with two workers;
+- the matched eight-page workload measured roughly 100 s for eager B1, 64 s
+  for eager B4, 51 s for TorchAir B4, and about 40 s after aligned
+  PromptFlashAttention;
+- eager and compiled B4 outputs matched exactly in the reported comparison.
+
+No raw 310P logs, `run.json`, or cache archives from that server are committed,
+and its compiled graphs are not portable. Re-establish the gates on this
+server. Phase 6 (compiled vision and text prefill) and the production
+`run_omnidocbench.py` runner were not proven on the old 310P server.
 
 ## Objective
 
-Answer two questions that the tiny first smoke did not:
+Ladder the replacement server from a real eager Experiment 09 smoke to the
+complete production pipeline:
 
-1. Is the complete OmniDocBench v1.6 dataset required by Experiment 09 present
-   and readable?
-2. Can the eager Experiment 09 diagnostic pipeline process a small,
-   shape-diverse cross-page workload with all detected regions, rather than
-   only two regions from one page?
+1. establish the exact NPU software environment and local artifacts;
+2. validate the real CPU-MRoPE serving preparation path;
+3. audit OmniDocBench and reproduce the eager compatibility gates;
+4. reproduce aligned PromptFA and B1/B4 TorchAir decode;
+5. compile and validate vision and text prefill;
+6. enter the owned production `run_omnidocbench.py` path;
+7. scale deliberately through 8, 32, and 256 pages before attempting all
+   1,651 pages.
 
-This remains a compatibility test, not a throughput benchmark.
+Phases 0–4 are compatibility checks. Phase 5 onward adds controlled performance
+characterization. Do not skip a dependency merely because it passed on the old
+server.
 
 ## Constraints
 
-- Discover and reuse the exact Python, NPU activation, recognizer model, layout
-  model, dataset JSON, and images directory that passed the first handoff.
+- Discover the exact Python, NPU activation, recognizer model, layout model,
+  dataset JSON, and images directory on this replacement server.
 - Do not assume Blue Zone paths.
 - Run `git pull --ff-only origin main` and record the new Git commit.
 - Use only a free Atlas 310P device. Do not terminate other users' processes.
 - Do not install or replace packages.
-- Do not invoke TorchAir, `torch.compile`, cached graphs, or performance
-  compilation.
-- Keep vision attention on the manual implementation.
-- Do not reduce the recognizer's `min_pixels`.
-- Do not cap the number of regions. Every eligible region detected on each
-  selected page must enter recognition.
+- Phases 0–4 must not invoke TorchAir, `torch.compile`, cached graphs, or
+  performance compilation. Later phases enable them only where specified.
+- Keep vision attention manual until the explicit aligned-PromptFA gate in
+  Phase 5.
+- Keep the model's default recognition `min_pixels` through the faithful
+  production stability run. Reduced `min_pixels` begins only in Phase 11.
+- Do not cap the number of regions except for the explicitly partial two-region
+  Phase 0 plumbing smoke. Every later eligible region must enter recognition.
 - Put all logs and outputs below
   `tmp/09_persistent_page_engine/310p_eager_validation/`.
 
@@ -45,6 +97,103 @@ REPO="$(git rev-parse --show-toplevel)"
 OUTPUT_ROOT="$REPO/tmp/09_persistent_page_engine/310p_eager_validation"
 mkdir -p "$OUTPUT_ROOT"
 ```
+
+## Phase 0: replacement-server bootstrap and real serving-path smoke
+
+This phase replaces the old `paddleocr_vl.model.example` one-crop gate.
+
+### Phase 0A: environment and artifact identity
+
+Start from the clone and pull current `main`:
+
+```sh
+git status --short --branch
+git pull --ff-only origin main
+REPO="$(git rev-parse --show-toplevel)"
+OUTPUT_ROOT="$REPO/tmp/09_persistent_page_engine/310p_eager_validation"
+mkdir -p "$OUTPUT_ROOT/bootstrap"
+git rev-parse HEAD
+```
+
+If tracked local changes prevent the pull, stop and report them. Do not discard
+them. Use the server's intended NPU activation command if one exists, inspect it
+before sourcing it, and select one free physical 310P device without terminating
+other users' processes.
+
+Discover and export:
+
+```sh
+PYTHON_BIN="<absolute compatible Python>"
+RECOGNIZER_MODEL="<absolute PaddleOCR-VL-1.6 model directory>"
+LAYOUT_MODEL="<absolute PP-DocLayoutV3_safetensors directory>"
+DATASET_JSON="<absolute OmniDocBench.json>"
+IMAGES_DIR="<absolute OmniDocBench images directory>"
+```
+
+The chosen interpreter must import `torch`, `torch_npu`, Transformers,
+tokenizers, safetensors, torchvision, Pillow, NumPy, OpenCV, Shapely, YAML, and
+`kornia_rs`, and must pass a basic tensor operation on logical `npu:0`.
+Record the exact executable, package paths and versions, NPU product, driver,
+firmware, resolved CANN root, and resolved OPP path in:
+
+```text
+$OUTPUT_ROOT/bootstrap/environment.txt
+```
+
+Do not install or replace anything during this phase. If a dependency or
+artifact is missing, report it precisely and stop.
+
+Verify that the reference page exists:
+
+```sh
+REFERENCE_PAGE="$IMAGES_DIR/PPT_The Right Moves_page_024.png"
+test -f "$REFERENCE_PAGE"
+```
+
+### Phase 0B: real eager Experiment 09 smoke
+
+Run the serving engine through `run_offline_e2e.py`, not the one-crop helper:
+
+```sh
+"$PYTHON_BIN" \
+  "$REPO/09_persistent_page_engine/scripts/run_offline_e2e.py" \
+  --image "$REFERENCE_PAGE" \
+  --layout-model "$LAYOUT_MODEL" \
+  --recognizer-model "$RECOGNIZER_MODEL" \
+  --dtype fp16 \
+  --decode-backend raw_eager \
+  --vision-backend raw_eager \
+  --vision-attention manual \
+  --vision-padding none \
+  --text-backend raw_eager \
+  --text-padding none \
+  --batch-size 1 \
+  --cache-length 4096 \
+  --max-new-tokens 8 \
+  --max-regions 2 \
+  --no-save-annotated \
+  --output-dir "$OUTPUT_ROOT/bootstrap/real_eager_smoke"
+```
+
+Save the expanded command, complete log, and exit code beside the output.
+This is deliberately partial-page and token-capped. It succeeds only if:
+
+- the process exits zero and `run.json` parses;
+- the NPU model loads and at least one real region produces token IDs/text;
+- the configuration records raw-eager decode, vision, and text;
+- no CPU/CUDA fallback or TorchAir compilation occurs;
+- the log contains no NPU IndexPut failure.
+
+Inspect the source path as part of the report: confirm that
+`ContinuousRecognizer._prepare_cpu` called `get_rope_index` before the prepared
+inputs were transferred to NPU. Do not add synchronization or source
+instrumentation merely to prove this.
+
+If this real serving-path smoke passes, the old helper's IndexPut result is not
+a blocker; continue to Phase 1. If this command itself fails at IndexPut,
+execute only Phase 4A of `WORK_SERVER_310P_EAGER_SMOKE.md`, return that
+diagnostic report, and stop. For any other failure, preserve the first causal
+traceback and classify it before continuing.
 
 ## Phase 1: audit the entire dataset
 
@@ -958,6 +1107,334 @@ chain: a vision compile failure blocks VT; a text compile failure still leaves
 Lane V valid. Do not silently remove a bucket, fall back to eager, or substitute
 a different page.
 
+## Phase 7: enter the actual owned production runner
+
+Phases 0–6 use `run_offline_e2e.py` for controlled backend comparisons. This
+phase crosses the real production boundary:
+
+```text
+run_omnidocbench.py
+  -> OwnedLayoutFrontend
+  -> bounded page producer
+  -> ContinuousRecognizer
+  -> compiled vision/text/decode
+  -> page assembly and ordered artifact writer
+```
+
+Do not enable vision or text packing yet. The first goal is proving the owned
+runner itself with the graph caches already validated in Phases 5 and 6.
+
+Bind the exact successful cache roots rather than reconstructing their names:
+
+```sh
+PRODUCTION_ROOT="$OUTPUT_ROOT/production_ladder"
+DECODE_B4_CACHE="<successful Phase 5 B4 cache>"
+VISION_COMPACT_CACHE="<successful Phase 6 vision cache>"
+TEXT_COMPACT_CACHE="<successful Phase 6 text cache>"
+mkdir -p "$PRODUCTION_ROOT"
+test -d "$DECODE_B4_CACHE"
+test -d "$VISION_COMPACT_CACHE"
+test -d "$TEXT_COMPACT_CACHE"
+```
+
+Run the first eight contiguous OmniDocBench pages:
+
+```sh
+"$PYTHON_BIN" \
+  "$REPO/09_persistent_page_engine/scripts/run_omnidocbench.py" \
+  --dataset-json "$DATASET_JSON" \
+  --images-dir "$IMAGES_DIR" \
+  --layout-model "$LAYOUT_MODEL" \
+  --recognizer-model "$RECOGNIZER_MODEL" \
+  --offset 0 \
+  --limit 8 \
+  --dtype fp16 \
+  --batch-size 4 \
+  --cache-length 4096 \
+  --max-new-tokens 32 \
+  --vision-backend torchair \
+  --vision-attention prompt_flash_attention \
+  --vision-promptfa-align-128 \
+  --vision-padding bucket \
+  --vision-buckets 640,768,1408,2944,4992 \
+  --vision-packing off \
+  --text-padding bucket \
+  --text-buckets 176,208,384,768,1280 \
+  --text-packing off \
+  --torchair-cache-dir "$DECODE_B4_CACHE" \
+  --vision-torchair-cache-dir "$VISION_COMPACT_CACHE" \
+  --text-torchair-cache-dir "$TEXT_COMPACT_CACHE" \
+  --output-dir "$PRODUCTION_ROOT/eight_pages_b4"
+```
+
+`run_omnidocbench.py` deliberately does not expose `--decode-backend` or
+`--text-backend`: both are TorchAir in the production runner. Do not invent
+those flags.
+
+This is a different eight-page set from the uniformly distributed Phase 3
+sample, so do not compare token fingerprints or wall time directly. Require:
+
+- `run_summary.json`, `page_regions.jsonl`, eight Markdown predictions, and
+  the timeline artifacts all exist;
+- `result_count == prediction_count == 8`;
+- every page completes exactly once and page accounting is consistent;
+- no PaddleX module is loaded;
+- aligned PromptFA, TorchAir vision/text, TorchAir B4 decode, and KV4096 are
+  recorded;
+- all three cache roots are the intended 310P roots;
+- no new graph compilation occurs for shapes already covered by Phase 6;
+- any `eager_overflow` vision or text requests are counted and reported,
+  including their exact real sequence lengths.
+
+An eager overflow is not a compatibility failure in this first production
+gate. It identifies a missing bucket to consider before a longer run. Do not
+silently add a large bucket matrix during this process.
+
+Repeat the exact command in a fresh process with the same caches and output
+directory suffix `_warm`. Require exact cold/warm output parity and no new graph
+creation on the warm process. Report setup separately from `pipeline_e2e_s`.
+
+Stop and return a checkpoint report after Phase 7 on the first replacement-
+server pass. Do not launch the 256-page or full-corpus stages merely because
+the eight-page gate succeeded.
+
+## Phase 8: expand to 32 pages without changing execution policy
+
+Run this phase only after Luka reviews the Phase 7 artifacts.
+
+Repeat the warm Phase 7 command with:
+
+```text
+--limit 32
+--no-timeline
+--output-dir "$PRODUCTION_ROOT/thirty_two_pages_b4"
+```
+
+Keep B4, KV4096, the 32-token cap, default `min_pixels`, compact buckets, and
+packing off. This isolates scale and page-frontend behavior from optimization
+changes.
+
+Report:
+
+- pages, requests, regions, stop reasons, and partial-page count;
+- setup, pipeline E2E, pages/s, and completion-time distribution;
+- layout stage totals;
+- real/physical vision and text tokens and useful fractions;
+- vision/text execution counts, bucket counts, and all eager-overflow lengths;
+- decode calls, admissions, raw/effective decode token/s, and active-slot
+  fraction;
+- peak HBM and cache filesystem free space;
+- output fingerprint.
+
+If the compact buckets leave overflows, choose at most one additional vision
+bucket and one additional text bucket for the next pass: the smallest bucket in
+each stage that covers that stage's observed maximum overflow. Do not compile
+the full default ladder speculatively. Record every newly compiled shape and
+its cache growth.
+
+## Phase 9: establish the 310P production decode size
+
+The old server proved B4 only. The 910B production default of B32 is not a 310P
+fact. Test larger shapes separately after the 32-page B4 baseline.
+
+Approximate fp16 KV-only allocation at KV4096 is:
+
+```text
+B4:   1.69 GiB
+B16:  6.75 GiB
+B32: 13.50 GiB
+```
+
+That excludes model weights, vision workspaces, graph state, and temporary
+compiler memory. Prove B16 before attempting B32.
+
+Create a fresh hardware-specific B16 decode cache:
+
+```sh
+DECODE_B16_CACHE="$REPO/.runtime_cache/310p_decode_b16_k4096_$(git rev-parse --short HEAD)"
+test ! -e "$DECODE_B16_CACHE"
+```
+
+Repeat the 32-page Phase 8 command with only:
+
+```text
+--batch-size 16
+--torchair-cache-dir "$DECODE_B16_CACHE"
+--output-dir "$PRODUCTION_ROOT/thirty_two_pages_b16_cold"
+```
+
+Then repeat in a fresh process with the same cache and `_warm` output suffix.
+Cold/warm B16 outputs must match exactly. B4 and B16 tokens may differ
+numerically; that difference is diagnostic, while missing pages/regions,
+changed stop accounting, or cold/warm mismatch is a failure.
+
+Before and during the cold run, record free HBM and cache filesystem space. If
+B16 fails, preserve the failure and retain B4. If B16 passes and its observed
+peak leaves enough headroom for approximately another 6.75 GiB of KV plus
+compiler transients, repeat the same cold/warm protocol once for B32 with a
+fresh `DECODE_B32_CACHE`. Do not attempt B32 without that headroom.
+
+Select the largest passing size only if it improves 32-page E2E over the
+smaller stable lane. Otherwise retain the faster smaller lane. Do not compile
+B8 as an extra sweep point unless B16 fails for capacity and there is a concrete
+reason to expect B8 to improve over B4.
+
+## Phase 10: 256-page stability run
+
+Run only after Phases 8 and 9 establish one selected decode shape and warm
+cache. Start with the same faithful configuration:
+
+- default recognition `min_pixels`;
+- aligned PromptFA;
+- compiled singleton vision and text;
+- vision and text packing off;
+- KV4096 and `max_new_tokens=2808`, so regions can terminate naturally;
+- the selected B4/B16/B32 warm decode cache;
+- `--no-timeline`.
+
+Use:
+
+```text
+--offset 0
+--limit 256
+--output-dir "$PRODUCTION_ROOT/two_hundred_fifty_six_pages_faithful"
+```
+
+Expand only the vision/text bucket tails already observed in Phase 8. An
+unexpected tail may run eagerly and be reported; do not restart a nearly
+complete 256-page run solely to eliminate one overflow.
+
+The gate is stability and complete accounting, not a target pages/s. Require
+256 emitted pages, 256 Markdown files, zero partial pages, consistent request
+counts, no cache corruption, no fallback, and no missing artifact writes.
+Report the complete stage/token/decode breakdown and the distribution of page
+completion times, not only average pages/s.
+
+## Phase 11: optional optimization characterization on 310P
+
+Do not conflate this with proving the pipeline. Run it only after the faithful
+256-page lane passes.
+
+The known 910B candidate is:
+
+```text
+preprocessor min_pixels = 28224 (model default / 4)
+vision packing = greedy or profile-guided
+vision pack target = 1920
+vision router lookahead = 32
+text packing = production_group
+text pack buckets = 128,256,512,1024
+```
+
+It is not yet a validated 310P profile. In particular, the current
+`profile_guided` router contains measured 910B2 graph timings and requires warm
+B2x3072 and B4x1024 batched-vision caches. Do not label that router optimal on
+310P or copy its 910B caches.
+
+Characterize changes cumulatively on the same first 32 pages:
+
+1. faithful Phase 8/9 baseline;
+2. `--preprocessor-min-pixels 28224`;
+3. add `--vision-packing greedy --vision-pack-target 1920`;
+4. add `--text-packing production_group`.
+
+For greedy vision packing, `1920` must be present in `--vision-buckets` and have
+a warm 310P singleton graph. For text packing, use a new 310P packed-text cache
+and require cold/warm parity. Compare output fingerprints at each step, while
+treating min-pixels output changes as expected rather than compilation drift.
+
+Only consider `profile_guided` after separately compiling and timing its two
+batched shapes on 310P and replacing the 910B routing assumption with measured
+310P evidence through the local authoring lane. The work-server agent must not
+edit that profile.
+
+Promote an optimized configuration to a 256-page comparison only if its 32-page
+warm replay is structurally correct and materially faster. Report both the
+faithful and optimized results; do not overwrite the faithful baseline.
+
+## Phase 12: full OmniDocBench v1.6 execution
+
+Attempt all 1,651 pages only after a selected configuration has completed the
+256-page stability gate.
+
+### Phase 12A: short-cap full-corpus structural inventory
+
+The production default `max_new_tokens=2808` was sized against a retained
+256-page maximum prompt of 1,289 tokens. It has not been proven against the
+entire corpus. First use the exact successful 256-page configuration with:
+
+```text
+--offset 0
+--limit 1651
+--max-new-tokens 32
+--no-timeline
+--output-dir "$PRODUCTION_ROOT/full_1651_structural_cap32"
+```
+
+Before launch, record:
+
+- Git commit and expanded command;
+- hardware/software fingerprint;
+- all cache roots, sizes, file counts, and free filesystem space;
+- free HBM and confirmation that no other process owns the selected NPU;
+- expected 1,651-page input manifest.
+
+Run under a durable terminal/session mechanism already available on the server.
+Do not introduce a new dependency. Preserve incremental stdout so progress can
+be inspected without interrupting the process.
+
+This inventory is expected to length-cap many regions. Its gates are structural:
+
+- exit code zero;
+- `result_count == prediction_count == 1651`;
+- exactly 1,651 Markdown predictions with no duplicate/missing page;
+- consistent recognition/decode accounting;
+- no unexpected compilation, cache corruption, CPU/CUDA fallback, or PaddleX
+  import;
+- a recorded full-corpus maximum `input_tokens` and the request that produced
+  it.
+
+Before the natural-output run, verify:
+
+```text
+max_input_tokens + 2808 - 1 <= selected_cache_length
+```
+
+For KV4096, this requires `max_input_tokens <= 1289`. If the full corpus exceeds
+that, do not launch with KV4096/max2808. Choose a larger cache and a decode batch
+size that fits measured HBM, create a new hardware-specific decode graph, and
+validate it on the worst-prompt page plus the 32-page production gate first.
+Do not reduce the output cap merely to satisfy the inequality without discussing
+the resulting OCR truncation.
+
+### Phase 12B: natural-output full run
+
+Use the now-validated cache/batch configuration and repeat Phase 12A, changing
+only:
+
+```text
+--max-new-tokens 2808
+--output-dir "$PRODUCTION_ROOT/full_1651_natural"
+```
+
+Completion requires:
+
+- exit code zero;
+- `result_count == prediction_count == 1651`;
+- exactly 1,651 Markdown predictions with no duplicate/missing page;
+- zero partial pages and complete page/request accounting;
+- no region stopped because the static cache capacity was exceeded;
+- no unexpected compilation, cache corruption, CPU/CUDA fallback, or PaddleX
+  import;
+- final `run_summary.json`, `page_regions.jsonl`, compact command record, log,
+  exit code, and cache inventory.
+
+Report total wall time, pages/s, stage totals, total real/physical
+vision-prefill tokens, total real/physical text-prefill tokens, generated
+tokens, decode rates/utilization, stop reasons, overflows, and completion-time
+distribution. A full inference pass is not an OmniDocBench accuracy score; run
+the benchmark evaluator only as a separately specified next step.
+
 ## Scope of the conclusion
 
 If the dataset audit, eight-page run, and complete-output page all pass, it is
@@ -993,14 +1470,30 @@ If Phase 6 also passes, it is fair to conclude:
   matched eager/compiled controls for the tested requests;
 - a first warm-cache 310P prefill/decode stage breakdown is available.
 
+If Phase 7 also passes, it is fair to conclude that the actual owned production
+runner—not only the diagnostic runner—can load the validated 310P graphs,
+stream pages through the self-contained layout frontend, assemble outputs, and
+write ordered artifacts.
+
+If Phases 8–10 pass, it is fair to conclude that the selected faithful
+configuration is stable for the first 256 pages and that its chosen decode
+batch size is supported and measured on this 310P stack.
+
+Only a successful Phase 12 permits the claim that this checkout completed
+inference for all 1,651 OmniDocBench v1.6 pages. It still does not constitute an
+accuracy score.
+
 It is still **not** fair to conclude:
 
 - OCR accuracy matches the reference implementation;
-- the entire 1,651-page pipeline has completed inference;
+- the entire 1,651-page pipeline has completed inference unless Phase 12
+  actually finishes;
 - arbitrary TorchAir vision or text-prefill shapes work beyond the Phase 6
   bucket set;
 - a cache created on 310P is portable to another hardware/software stack;
-- throughput is representative or optimized.
+- throughput is representative or optimized before the larger production
+  gates;
+- the 910B2 profile-guided vision policy is optimal for 310P.
 
 ## Required report
 
@@ -1008,12 +1501,16 @@ Write `$OUTPUT_ROOT/agent_report.md` and end your response to Luka with the same
 concise block:
 
 ```text
-310P EAGER VALIDATION: PASS | PARTIAL | FAIL
+310P EXP09 LADDER: PASS | PARTIAL | FAIL
 
 Git commit:
 Host / NPU:
 Python:
 torch / torch_npu / CANN:
+
+Replacement-server bootstrap: PASS | FAIL
+Real serving-path eager smoke: PASS | FAIL
+IndexPut in real serving path: YES | NO
 
 Initial dataset audit: PASS | FAIL
 Annotations:
@@ -1094,6 +1591,47 @@ baseline-V parity:
 V-VT parity:
 VT cold-warm parity:
 first Phase 6 mismatch:
+
+Phase 7 owned production runner:
+eight-page cold / warm:
+result / prediction counts:
+production output parity:
+vision / text eager overflows:
+timeline and summary paths:
+
+Phase 8 32-page B4:
+wall / pages-s / requests:
+stage totals:
+vision / text real-physical tokens:
+decode raw-effective tok-s / active fraction:
+overflow lengths:
+
+Phase 9 production decode size:
+B16 cold / warm:
+B32 cold / warm or reason skipped:
+selected batch size:
+selected decode cache:
+selection reason:
+
+Phase 10 faithful 256-page:
+status / wall / pages-s:
+pages / predictions / partial:
+stage and token totals:
+first failure or accounting mismatch:
+
+Phase 11 optional 310P optimization:
+tested cumulative lanes:
+selected configuration:
+faithful vs optimized 32-page:
+faithful vs optimized 256-page:
+
+Phase 12 full 1,651-page:
+structural cap32 status / max input tokens:
+natural status / wall / pages-s:
+natural pages / predictions / partial:
+stage and token totals:
+stop reasons / overflows:
+full run summary:
 
 First generated token IDs/text:
 First blocker or important warning:

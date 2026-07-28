@@ -1,8 +1,15 @@
 # Work-server 310P eager smoke handoff
 
-This file is an execution brief for the AI agent operating on Luka's work
-server. Read `AGENTS.md` first, then follow this brief. The work-server checkout
-is a pull-only NPU validation lane: do not edit tracked files, commit, push, or
+> **Replacement-server note:** do not start from this historical brief. Use
+> `WORK_SERVER_310P_EAGER_VALIDATION.md`, which now contains the canonical
+> bootstrap-to-production ladder and validates the real Experiment 09
+> CPU-MRoPE serving path. This file is retained only for its focused diagnostic
+> procedures, including Phase 4A IndexPut triage when explicitly referenced.
+
+This historical file is an execution brief for focused diagnostics on Luka's
+work server. Read `AGENTS.md` first and follow only a phase explicitly
+referenced by the canonical validation ladder. The work-server checkout is a
+pull-only NPU validation lane: do not edit tracked files, commit, push, or
 create branches.
 
 ## Objective
