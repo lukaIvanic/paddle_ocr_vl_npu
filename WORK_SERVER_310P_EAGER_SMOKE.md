@@ -170,6 +170,199 @@ crop, produces token IDs, and decodes text without CPU/CUDA fallback.
 If this fails, stop before full-page inference. Report the first causal
 traceback, not only the last wrapper exception.
 
+### Phase 4A: IndexPut regression triage
+
+Run this subsection only if Phase 4 fails at the MRoPE assignment resembling:
+
+```python
+position_ids[:, batch_idx, attention_mask[batch_idx] == 1] = (
+    llm_positions.to(position_ids.device)
+)
+```
+
+That expression is boolean advanced-index assignment. On NPU it dispatches
+through PyTorch's `aten::index_put_` and the torch-npu/CANN IndexPut
+implementation. The same Experiment 09 source previously completed on another
+310P server, and the relevant source lines have not recently changed, so treat
+this first as an environment/operator regression rather than changing model
+code.
+
+Do not install packages, switch CANN installations, or edit tracked files.
+Collect the evidence below, write it under:
+
+```text
+$OUTPUT_ROOT/indexput_triage/
+```
+
+Then stop. Do not continue to Phase 5.
+
+First preserve the exact source and environment identity:
+
+```sh
+mkdir -p "$OUTPUT_ROOT/indexput_triage"
+
+{
+  git status --short --branch
+  git rev-parse HEAD
+  git blame -L 60,61 \
+    09_persistent_page_engine/paddleocr_vl/model/example.py
+  git blame -L 194,194 \
+    09_persistent_page_engine/paddleocr_vl/model/modeling.py
+  hostname
+  uname -a
+  npu-smi info
+  "$PYTHON_BIN" -m pip show torch torch-npu
+  printf 'ASCEND_HOME_PATH=%s\n' "${ASCEND_HOME_PATH:-}"
+  printf 'ASCEND_OPP_PATH=%s\n' "${ASCEND_OPP_PATH:-}"
+  printf 'ASCEND_AICPU_PATH=%s\n' "${ASCEND_AICPU_PATH:-}"
+  printf 'ASCEND_RT_VISIBLE_DEVICES=%s\n' \
+    "${ASCEND_RT_VISIBLE_DEVICES:-}"
+  readlink -f "${ASCEND_HOME_PATH:-/usr/local/Ascend/ascend-toolkit/latest}"
+  if [ -n "${ASCEND_OPP_PATH:-}" ]; then
+    readlink -f "$ASCEND_OPP_PATH"
+  fi
+} >"$OUTPUT_ROOT/indexput_triage/environment.txt" 2>&1
+```
+
+Also run this exact Python fingerprint with the chosen interpreter:
+
+```sh
+"$PYTHON_BIN" - \
+  >"$OUTPUT_ROOT/indexput_triage/python_environment.txt" 2>&1 <<'PY'
+import importlib.metadata
+import os
+import platform
+import sys
+
+import torch
+import torch_npu
+
+print("sys.executable:", sys.executable)
+print("sys.version:", sys.version)
+print("platform:", platform.platform())
+print("torch:", torch.__version__)
+print("torch file:", torch.__file__)
+print("torch_npu:", torch_npu.__version__)
+try:
+    distribution_version = importlib.metadata.version("torch-npu")
+except importlib.metadata.PackageNotFoundError:
+    distribution_version = "<distribution metadata not found>"
+print("torch_npu distribution:", distribution_version)
+print("torch_npu file:", torch_npu.__file__)
+print("device count:", torch.npu.device_count())
+print("device 0:", torch.npu.get_device_name(0))
+for name in (
+    "ASCEND_HOME_PATH",
+    "ASCEND_OPP_PATH",
+    "ASCEND_AICPU_PATH",
+    "ASCEND_RT_VISIBLE_DEVICES",
+    "LD_LIBRARY_PATH",
+):
+    print(f"{name}={os.environ.get(name, '')}")
+PY
+```
+
+Save the complete original Phase 4 log. In the report, quote the first causal
+IndexPut error, including any ACLNN operator name, missing `IndexPutV2` binary,
+tensor dtype/shape, or dispatch message. Do not report only the final wrapper
+exception.
+
+Finally, run this isolated CPU-control/NPU reproducer. It deliberately removes
+the model, processor, and image from the experiment while retaining the
+advanced-index assignment pattern:
+
+```sh
+if "$PYTHON_BIN" - \
+  >"$OUTPUT_ROOT/indexput_triage/minimal_reproducer.txt" 2>&1 <<'PY'
+import traceback
+
+import torch
+import torch_npu
+
+
+def assignment(device: str):
+    seq_len = 32
+    position_ids = torch.ones(
+        (3, 1, seq_len), dtype=torch.int64, device=device
+    )
+    attention_mask = torch.ones(
+        (1, seq_len), dtype=torch.int64, device=device
+    )
+    llm_positions = (
+        torch.arange(seq_len, dtype=torch.int64, device=device)
+        .view(1, -1)
+        .expand(3, -1)
+        .contiguous()
+    )
+    position_ids[:, 0, attention_mask[0] == 1] = llm_positions
+    if device.startswith("npu"):
+        torch.npu.synchronize()
+    return position_ids.cpu()
+
+
+cpu_result = assignment("cpu")
+print("CPU_CONTROL: PASS", tuple(cpu_result.shape), cpu_result.dtype)
+
+torch.npu.set_device(0)
+torch.npu.set_compile_mode(jit_compile=False)
+try:
+    npu_result = assignment("npu:0")
+    torch.testing.assert_close(npu_result, cpu_result, rtol=0, atol=0)
+    print("NPU_INDEXPUT: PASS")
+except Exception:
+    print("NPU_INDEXPUT: FAIL")
+    traceback.print_exc()
+    raise
+PY
+then
+  INDEXPUT_REPRO_EXIT_CODE=0
+else
+  INDEXPUT_REPRO_EXIT_CODE=$?
+fi
+printf '%s\n' "$INDEXPUT_REPRO_EXIT_CODE" \
+  >"$OUTPUT_ROOT/indexput_triage/minimal_reproducer_exit_code.txt"
+```
+
+Interpret the result narrowly:
+
+- CPU passes and NPU fails: the boundary is NPU IndexPut dispatch/runtime, not
+  MRoPE mathematics.
+- An `aclnnIndexPutImpl` or `IndexPutV2` message points at the torch-npu,
+  installed OPP package, and exact 310P SoC support boundary.
+- A PyTorch dispatcher/schema error points first at the exact
+  PyTorch/torch-npu build pairing.
+- If the reproducer passes but Phase 4 fails, retain the complete Phase 4
+  traceback and report the real tensor shapes/dtypes; the failure is more
+  specific than basic IndexPut availability.
+
+Append this block to `agent_report.md`:
+
+```text
+310P INDEXPUT TRIAGE: REPRODUCED | NOT REPRODUCED | NOT RUN
+
+Git commit:
+Host / exact NPU product:
+Python executable:
+torch version / path:
+torch_npu version / path:
+CANN home / resolved target:
+OPP path / resolved target:
+Driver / firmware:
+
+Phase 4 first causal error:
+CPU control: PASS | FAIL
+Standalone NPU IndexPut: PASS | FAIL
+Standalone reproducer exit code:
+Suspected compatibility boundary:
+Artifact paths:
+```
+
+This phase is diagnostic only. A likely permanent code-side workaround is to
+compute MRoPE position IDs on CPU and transfer the completed tensor once, which
+is already how the normal serving preparation path is structured. Do not make
+that change on the work server; return the evidence so it can be authored and
+reviewed in the local lane if needed.
+
 ## Phase 5: tiny full-page Experiment 09 eager smoke
 
 Only after Phase 4 succeeds and the layout model plus full-page image exist,
