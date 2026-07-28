@@ -9,72 +9,85 @@ Prove that the real Experiment 09 pipeline runs on this 310P software stack,
 identify which production optimizations work, and measure their approximate
 effect on a small representative workload.
 
-## Current layout IndexPut compatibility route
+## Current 310P layout route: eager NPU
 
-For this validation, keep every PaddleOCR-VL recognition stage on `npu:0` but
-run PP-DocLayoutV3 on CPU by passing:
+The goal is NPU layout inference, not ACLGraph compatibility. Use:
 
 ```text
---layout-device cpu
+--layout-device npu
+--no-layout-graph-capture
 ```
 
-This is a device-boundary workaround for the current environment's missing NPU
-IndexPut implementation. It does not change layout model code, recognition
-model code, crops, prompts, scheduling, or OCR execution. The production summary
-must show:
+This keeps PP-DocLayoutV3 and the complete PaddleOCR-VL recognizer on logical
+`npu:0`. It disables only ACLGraph capture for the layout detector. TorchAir
+compilation for vision/text/decode is independent and remains enabled in the
+later production phases.
+
+Previous targeted results on this server established:
+
+- eager scalar shape construction passed;
+- eager top-k `gather` passed;
+- ACLGraph capture failed with ACL error 107027 because capture rejects
+  otherwise-supported dynamic metadata operations such as
+  `unsqueeze(-1).repeat(...)`.
+
+Do not run either capture probe again, do not enable layout graph capture, and
+do not treat capture failure as an eager-NPU failure.
+
+The production summary for every Phase 1-7 run must show:
 
 ```text
 configuration.device = "npu:0"
-configuration.layout_device = "cpu"
-layout_frontend.device = "cpu"
+configuration.layout_device = "npu:0"
+configuration.layout_graph_capture = false
+layout_frontend.device = "npu:0"
 layout_frontend.graph_capture = false
+layout_frontend.npu_indexput_compat = true
 ```
 
-Do not use the standalone Transformers one-crop example as the production
-recognizer gate: that helper constructs MRoPE after moving its metadata tensors
-to NPU. Experiment 09's serving preparation constructs MRoPE on CPU and copies
-the completed tensor to NPU.
+## Gate: one real page on eager NPU layout
 
-## Targeted NPU layout IndexPut compatibility check
+Preserve all earlier CPU-layout and probe artifacts. Pull `main`, activate the
+same NPU environment, and restore the exact `PYTHON_BIN`, `LAYOUT_MODEL`,
+`DATASET_JSON`, and `IMAGES_DIR` values already selected in Phase 0.
+If this is a fresh shell and those variables are absent, perform only the
+Phase 0 path discovery and environment checks first, then return to this gate.
 
-Run this section separately after the existing Phase 1-7 results are preserved.
-Do not change those completed runs. Pull `main` and restore the exact
-`PYTHON_BIN`, `LAYOUT_MODEL`, `DATASET_JSON`, and `IMAGES_DIR` values already
-selected in Phase 0.
-
-The first report established two facts:
-
-- legacy scalar IndexPut and the eager replacement constructor both ran;
-- constructing the replacement with `torch.full` inside ACLGraph capture
-  failed with "captured stream not allowed";
-- the real eager model then reached a second unsupported indexing form at
-  `target = output_memory[batch_ind, topk_ind]`.
-
-The revised patch keeps all layout computation on NPU. It caches the fixed
-`spatial_shapes` tensor during the graph wrapper's eager warm-up and reuses it
-inside capture, so no Python-scalar device construction occurs on the captured
-stream. It also replaces the tensor-valued advanced-index read with the
-equivalent dimension-1 `gather`.
-
-Preserve the first report. Do not rerun its passing legacy or eager-constructor
-probes. First isolate the two revised graph-sensitive forms without loading
-either model:
+Use a new evidence root so no previous result is overwritten:
 
 ```sh
-LAYOUT_PATCH_ROOT="$REPO/tmp/09_persistent_page_engine/310p_layout_indexput_patch"
-mkdir -p "$LAYOUT_PATCH_ROOT"
+REPO="$(git rev-parse --show-toplevel)"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+LAYOUT_GATE_ROOT="$REPO/tmp/09_persistent_page_engine/310p_layout_eager_npu_$COMMIT_SHORT"
+mkdir -p "$LAYOUT_GATE_ROOT"
 
 run_targeted_layout() {
   local run_name="$1"
   shift
-  local evidence_dir="$OUTPUT_ROOT/$run_name"
+  local evidence_dir="$LAYOUT_GATE_ROOT/$run_name"
   mkdir -p "$evidence_dir"
   {
     printf '#!/usr/bin/env bash\n'
+    printf '# git_commit=%s\n' "$(git rev-parse HEAD)"
+    printf '# hostname=%s\n' "$(hostname)"
+    printf '# ASCEND_RT_VISIBLE_DEVICES=%s\n' \
+      "${ASCEND_RT_VISIBLE_DEVICES:-}"
     printf '%q ' "$@"
     printf '\n'
   } >"$evidence_dir/command.sh"
   chmod +x "$evidence_dir/command.sh"
+
+  local monitor_pid=
+  if command -v npu-smi >/dev/null 2>&1; then
+    (
+      while true; do
+        date --iso-8601=ns 2>/dev/null || date
+        npu-smi info
+        sleep 1
+      done
+    ) >"$evidence_dir/npu_smi_1s.log" 2>&1 &
+    monitor_pid=$!
+  fi
 
   local status
   if "$@" >"$evidence_dir/run.log" 2>&1; then
@@ -82,39 +95,40 @@ run_targeted_layout() {
   else
     status=$?
   fi
+  if test -n "$monitor_pid"; then
+    kill "$monitor_pid" 2>/dev/null || true
+    wait "$monitor_pid" 2>/dev/null || true
+  fi
   printf '%s\n' "$status" >"$evidence_dir/exit_code.txt"
   printf 'run=%s exit_code=%s log=%s\n' \
     "$run_name" "$status" "$evidence_dir/run.log"
   return "$status"
 }
-
-"$PYTHON_BIN" \
-  "$REPO/09_persistent_page_engine/scripts/probes/probe_layout_spatial_shapes.py" \
-  --mode capture_constructor \
-  >"$LAYOUT_PATCH_ROOT/capture_constructor.log" 2>&1
-
-"$PYTHON_BIN" \
-  "$REPO/09_persistent_page_engine/scripts/probes/probe_layout_topk_gather.py" \
-  --mode gather \
-  >"$LAYOUT_PATCH_ROOT/topk_gather.log" 2>&1
-
-"$PYTHON_BIN" \
-  "$REPO/09_persistent_page_engine/scripts/probes/probe_layout_topk_gather.py" \
-  --mode capture_gather \
-  >"$LAYOUT_PATCH_ROOT/topk_capture_gather.log" 2>&1
-
-cat "$LAYOUT_PATCH_ROOT/capture_constructor.log"
-cat "$LAYOUT_PATCH_ROOT/topk_gather.log"
-cat "$LAYOUT_PATCH_ROOT/topk_capture_gather.log"
 ```
 
-All three revised probes must print `"verdict": "PASS"`. Stop at the first
-failure and preserve its complete causal traceback.
-
-Then run exactly one real page through the patched layout model, first eager:
+Run the first dataset page once on CPU as the same-machine semantic and timing
+control:
 
 ```sh
-run_targeted_layout layout_indexput_patch_eager \
+run_targeted_layout layout_cpu_w1 \
+  "$PYTHON_BIN" \
+  "$REPO/09_persistent_page_engine/scripts/layout_owned_lab.py" \
+  --dataset-json "$DATASET_JSON" \
+  --images-dir "$IMAGES_DIR" \
+  --layout-model "$LAYOUT_MODEL" \
+  --device cpu \
+  --no-graph-capture \
+  --offset 0 \
+  --limit 1 \
+  --workers 1 \
+  --no-timeline \
+  --output-dir "$LAYOUT_GATE_ROOT/layout_cpu_w1/output"
+```
+
+Then run exactly the same real page with eager NPU layout:
+
+```sh
+run_targeted_layout layout_npu_eager_w1 \
   "$PYTHON_BIN" \
   "$REPO/09_persistent_page_engine/scripts/layout_owned_lab.py" \
   --dataset-json "$DATASET_JSON" \
@@ -127,36 +141,36 @@ run_targeted_layout layout_indexput_patch_eager \
   --limit 1 \
   --workers 1 \
   --no-timeline \
-  --output-dir "$OUTPUT_ROOT/layout_indexput_patch_eager/output"
+  --output-dir "$LAYOUT_GATE_ROOT/layout_npu_eager_w1/output"
 ```
 
-Stop if eager fails. Preserve the first new causal traceback; do not add another
-model patch locally. If eager passes, run the same page with production graph
-capture:
+The gate passes when the NPU process exits 0, emits a valid
+`run_summary.json` and `requests.jsonl`, reports nonzero raw/filtered boxes and
+requests, and has no NPU indexing or native-operator traceback. Compare CPU and
+NPU request count, prompt sequence, crop sizes, and manifest SHA256. Exact
+manifest equality is preferred but not mandatory: a one-pixel crop-size or
+crop-boundary difference is acceptable if request count, order, prompts, and
+layout structure remain coherent. Record every difference rather than hiding
+it.
 
-```sh
-run_targeted_layout layout_indexput_patch_graph \
-  "$PYTHON_BIN" \
-  "$REPO/09_persistent_page_engine/scripts/layout_owned_lab.py" \
-  --dataset-json "$DATASET_JSON" \
-  --images-dir "$IMAGES_DIR" \
-  --layout-model "$LAYOUT_MODEL" \
-  --device npu \
-  --layout-indexput-compat \
-  --graph-capture \
-  --offset 0 \
-  --limit 1 \
-  --workers 1 \
-  --no-timeline \
-  --output-dir "$OUTPUT_ROOT/layout_indexput_patch_graph/output"
-```
+Report for CPU and NPU:
 
-For each model run report exit code, request count, request-manifest SHA256,
-raw/filtered boxes, page wall, detector device time, and
-`npu_indexput_compat`. Do not run multiple pages or change the production
-ladder to NPU layout yet. Wait for Luka to compare the targeted result first.
+- setup time separately from measured frontend wall;
+- page wall and pages/s;
+- raw/filtered boxes, requests, and manifest SHA256;
+- file read, image decode, preprocessing/H2D, detector submit/device time,
+  postprocessing, and page-preparation stage totals;
+- NPU/CPU speedup as `cpu_frontend_wall_s / npu_frontend_wall_s`.
+
+If eager NPU fails, stop and preserve the first causal traceback. If it passes,
+continue through Phases 0-8 below using eager NPU layout. ACLGraph capture is
+out of scope.
 
 ## Immediate standalone IndexPut probe
+
+Do not execute this historical diagnostic section during the eager-NPU layout
+rerun. Skip directly to **Scope and stopping point** below. It remains here only
+so the earlier environment comparison stays reproducible.
 
 Run this section by itself when Luka asks for the 310P advanced-indexing
 environment probe. Do not load either model, run the Experiment 09 pipeline,
@@ -391,7 +405,7 @@ Keep these mechanisms distinct:
 |---|---|---|
 | NPU runtime | `torch_npu`, CANN, native operators | real `npu:0` tensor operation and production run |
 | TorchAir compiler | resolved by the repository helper, not `torch.backends` | `cache_compile` preflight, cache creation, fresh-process replay |
-| Layout | owned PaddleX-free frontend | summary, request manifest, no loaded PaddleX modules |
+| Layout | owned PaddleX-free eager NPU frontend | CPU/NPU control, summary, request manifest, no loaded PaddleX modules |
 | Vision attention | manual versus 128-aligned PromptFA | same-page output comparison and vision device time |
 | Vision execution | eager smoke, then TorchAir | trace execution counts, cache replay, useful/physical tokens/s |
 | Text prefill | production TorchAir path | trace execution counts, cache replay, useful/physical tokens/s |
@@ -442,7 +456,8 @@ git status --short --branch
 git pull --ff-only origin main
 
 REPO="$(git rev-parse --show-toplevel)"
-OUTPUT_ROOT="$REPO/tmp/09_persistent_page_engine/310p_exp09_ladder"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+OUTPUT_ROOT="$REPO/tmp/09_persistent_page_engine/310p_exp09_npu_layout_eager_$COMMIT_SHORT"
 mkdir -p "$OUTPUT_ROOT" "$REPO/.runtime_cache"
 
 PYTHON_BIN="<absolute compatible Python>"
@@ -583,16 +598,36 @@ run_and_record() {
   mkdir -p "$evidence_dir"
   {
     printf '#!/usr/bin/env bash\n'
+    printf '# git_commit=%s\n' "$(git rev-parse HEAD)"
+    printf '# hostname=%s\n' "$(hostname)"
+    printf '# ASCEND_RT_VISIBLE_DEVICES=%s\n' \
+      "${ASCEND_RT_VISIBLE_DEVICES:-}"
     printf '%q ' "$@"
     printf '\n'
   } >"$evidence_dir/command.sh"
   chmod +x "$evidence_dir/command.sh"
+
+  local monitor_pid=
+  if command -v npu-smi >/dev/null 2>&1; then
+    (
+      while true; do
+        date --iso-8601=ns 2>/dev/null || date
+        npu-smi info
+        sleep 1
+      done
+    ) >"$evidence_dir/npu_smi_1s.log" 2>&1 &
+    monitor_pid=$!
+  fi
 
   local status
   if "$@" >"$evidence_dir/run.log" 2>&1; then
     status=0
   else
     status=$?
+  fi
+  if test -n "$monitor_pid"; then
+    kill "$monitor_pid" 2>/dev/null || true
+    wait "$monitor_pid" 2>/dev/null || true
   fi
   printf '%s\n' "$status" >"$evidence_dir/exit_code.txt"
   printf 'run=%s exit_code=%s log=%s\n' \
@@ -686,6 +721,12 @@ for root, summary, trace in zip(roots, summaries, traces, strict=True):
     assert summary["paddlex_runtime_dependency"] is False
     assert summary["loaded_paddlex_modules"] == []
     assert configuration["batch_size"] == expected_batch
+    assert configuration["device"] == "npu:0"
+    assert configuration["layout_device"] == "npu:0"
+    assert configuration["layout_graph_capture"] is False
+    assert summary["layout_frontend"]["device"] == "npu:0"
+    assert summary["layout_frontend"]["graph_capture"] is False
+    assert summary["layout_frontend"]["npu_indexput_compat"] is True
     assert configuration["vision_packing"] == expected_vision_packing
     assert configuration["text_packing"] == expected_text_packing
     assert configuration["preprocessor_min_pixels"] == expected_min_pixels
@@ -757,6 +798,163 @@ if first != second:
     print("first_difference:", differences[0])
 else:
     print("PRODUCTION_OUTPUT_COMPARISON: EXACT")
+PY
+}
+```
+
+Use this extractor on every successful production output. It reports
+throughput from the actual measured device-stage and decode-control times; do
+not infer token rates from E2E wall:
+
+```sh
+write_run_metrics() {
+  local run_root="$1"
+  local output_path="$2"
+  "$PYTHON_BIN" - "$run_root" >"$output_path" <<'PY'
+import json
+import math
+import statistics
+import sys
+from collections import Counter
+from pathlib import Path
+
+root = Path(sys.argv[1])
+summary = json.loads((root / "run_summary.json").read_text(encoding="utf-8"))
+recognition = summary["recognition"]
+stage = recognition["device_stage_s"]
+trace = [
+    json.loads(line)
+    for line in (root / "recognition_trace.jsonl")
+    .read_text(encoding="utf-8")
+    .splitlines()
+    if line.strip()
+]
+
+def rate(tokens, seconds):
+    return float(tokens) / float(seconds) if seconds else None
+
+def quantile(values, fraction):
+    values = sorted(float(value) for value in values)
+    if not values:
+        return None
+    index = min(len(values) - 1, math.ceil(fraction * len(values)) - 1)
+    return values[max(index, 0)]
+
+def distribution(values):
+    values = [float(value) for value in values]
+    return {
+        "count": len(values),
+        "min": min(values) if values else None,
+        "mean": statistics.fmean(values) if values else None,
+        "p50": quantile(values, 0.50),
+        "p95": quantile(values, 0.95),
+        "max": max(values) if values else None,
+    }
+
+vision_s = float(stage.get("vision_prefill", 0.0))
+text_s = float(stage.get("text_prefill", 0.0))
+decode_s = float(recognition["decode_wall_s"])
+real_vision = int(recognition["real_vision_tokens"])
+physical_vision = int(recognition["physical_vision_tokens"])
+real_text = int(recognition["real_text_tokens"])
+physical_text = int(recognition["physical_text_tokens"])
+raw_decode = int(recognition["raw_decode_token_slots"])
+effective_decode = int(recognition["effective_decode_tokens"])
+
+result = {
+    "run_root": str(root.resolve()),
+    "configuration": {
+        "layout_device": summary["configuration"]["layout_device"],
+        "layout_graph_capture": summary["configuration"][
+            "layout_graph_capture"
+        ],
+        "batch_size": summary["configuration"]["batch_size"],
+        "cache_length": summary["configuration"]["cache_length"],
+        "min_pixels": summary["configuration"][
+            "effective_global_min_pixels"
+        ],
+        "vision_backend": summary["configuration"]["vision_backend"],
+        "vision_attention": summary["configuration"]["vision_attention"],
+        "vision_packing": summary["configuration"]["vision_packing"],
+        "text_packing": summary["configuration"]["text_packing"],
+    },
+    "e2e": {
+        "pages": summary["result_count"],
+        "requests": recognition["requests"],
+        "wall_s": summary["pipeline_e2e_s"],
+        "pages_per_s": summary["pages_per_s"],
+        "s_per_page": summary["s_per_page"],
+        "setup_s": summary["setup_s"],
+    },
+    "layout": {
+        "device": summary["layout_frontend"]["device"],
+        "graph_capture": summary["layout_frontend"]["graph_capture"],
+        "npu_indexput_compat": summary["layout_frontend"][
+            "npu_indexput_compat"
+        ],
+        "stage_s": summary["layout_frontend"]["stage_s"],
+        "statistics": summary["layout_frontend"]["statistics"],
+    },
+    "vision_prefill": {
+        "real_tokens": real_vision,
+        "physical_tokens": physical_vision,
+        "padding_tokens": physical_vision - real_vision,
+        "device_s": vision_s,
+        "effective_real_tok_per_s": rate(real_vision, vision_s),
+        "raw_physical_tok_per_s": rate(physical_vision, vision_s),
+        "useful_fraction": recognition["vision_useful_token_fraction"],
+        "execution_counts": dict(
+            sorted(Counter(row["vision"]["execution"] for row in trace).items())
+        ),
+        "physical_tokens_per_request": distribution(
+            row["vision"]["physical_vision_tokens"] for row in trace
+        ),
+    },
+    "text_prefill": {
+        "real_tokens": real_text,
+        "physical_tokens": physical_text,
+        "padding_tokens": physical_text - real_text,
+        "device_s": text_s,
+        "effective_real_tok_per_s": rate(real_text, text_s),
+        "raw_physical_tok_per_s": rate(physical_text, text_s),
+        "useful_fraction": recognition["text_useful_token_fraction"],
+        "execution_counts": dict(
+            sorted(
+                Counter(
+                    row["text_prefill"]["execution"] for row in trace
+                ).items()
+            )
+        ),
+        "physical_tokens_per_request": distribution(
+            row["text_prefill"]["physical_text_tokens"] for row in trace
+        ),
+    },
+    "decode": {
+        "generated_tokens_including_eos": recognition[
+            "generated_tokens_including_eos"
+        ],
+        "effective_tokens": effective_decode,
+        "raw_physical_token_slots": raw_decode,
+        "decode_wall_s": decode_s,
+        "effective_tok_per_s": rate(effective_decode, decode_s),
+        "raw_physical_tok_per_s": rate(raw_decode, decode_s),
+        "useful_fraction": recognition["decode_useful_token_fraction"],
+        "graph_calls": recognition["decode_graph_calls"],
+        "active_slots": recognition["active_decode_token_slots"],
+        "idle_slots": recognition["idle_decode_token_slots"],
+        "lookahead_slots": recognition["lookahead_decode_token_slots"],
+        "generated_tokens_per_request": distribution(
+            row["generated_tokens_including_eos"] for row in trace
+        ),
+        "stop_reasons": recognition["stop_reason_counts"],
+    },
+    "packing": {
+        "vision": recognition["vision_packing"],
+        "text": recognition["text_packing"],
+    },
+    "all_device_stage_s": stage,
+}
+print(json.dumps(result, indent=2, sort_keys=True))
 PY
 }
 ```
@@ -891,7 +1089,8 @@ PRODUCTION_BASE=(
   --dataset-json "$DATASET_JSON"
   --images-dir "$IMAGES_DIR"
   --layout-model "$LAYOUT_MODEL"
-  --layout-device cpu
+  --layout-device npu
+  --no-layout-graph-capture
   --recognizer-model "$RECOGNIZER_MODEL"
   --dtype fp16
   --cache-length 4096
@@ -990,6 +1189,8 @@ Require:
 - first process creates the expected B4/K4096 decode and compact text caches;
 - replay creates no new graph shapes;
 - no NPU `IndexPut` failure.
+- layout configuration reports eager `npu:0`, graph capture false, and
+  `npu_indexput_compat=true`.
 
 Length-cap stop reasons are expected because this is only an eight-token smoke.
 Do not use its wall time as a throughput result.
@@ -1574,52 +1775,78 @@ production profile-guided policy on 310P: unsupported until calibrated
 
 Do not edit the profile on the work server.
 
-## Phase 8: isolated owned-layout method check
+## Phase 8: isolated CPU versus eager-NPU layout throughput
 
-This is the only 32-page task. It does not load the OCR recognizer.
+This is the only 32-page task. It does not load the OCR recognizer. Its primary
+comparison is CPU W1 versus eager-NPU W1 on the same pages; setup time is
+reported separately and excluded from steady frontend throughput.
 
-One worker:
+CPU W1 control:
 
 ```sh
-run_and_record phase8_layout_w1 \
+run_and_record phase8_layout_cpu_w1 \
   "$PYTHON_BIN" \
   "$REPO/09_persistent_page_engine/scripts/layout_owned_lab.py" \
   --dataset-json "$DATASET_JSON" \
   --images-dir "$IMAGES_DIR" \
   --layout-model "$LAYOUT_MODEL" \
   --device cpu \
+  --no-graph-capture \
   --offset 0 \
   --limit 32 \
   --workers 1 \
   --no-timeline \
-  --output-dir "$OUTPUT_ROOT/phase8_layout_w1/output"
+  --output-dir "$OUTPUT_ROOT/phase8_layout_cpu_w1/output"
 ```
 
-Two workers:
+Eager-NPU W1:
 
 ```sh
-run_and_record phase8_layout_w2 \
+run_and_record phase8_layout_npu_w1 \
   "$PYTHON_BIN" \
   "$REPO/09_persistent_page_engine/scripts/layout_owned_lab.py" \
   --dataset-json "$DATASET_JSON" \
   --images-dir "$IMAGES_DIR" \
   --layout-model "$LAYOUT_MODEL" \
-  --device cpu \
+  --device npu \
+  --layout-indexput-compat \
+  --no-graph-capture \
+  --offset 0 \
+  --limit 32 \
+  --workers 1 \
+  --no-timeline \
+  --output-dir "$OUTPUT_ROOT/phase8_layout_npu_w1/output"
+```
+
+Only if eager-NPU W1 succeeds, run eager-NPU W2:
+
+```sh
+run_and_record phase8_layout_npu_w2 \
+  "$PYTHON_BIN" \
+  "$REPO/09_persistent_page_engine/scripts/layout_owned_lab.py" \
+  --dataset-json "$DATASET_JSON" \
+  --images-dir "$IMAGES_DIR" \
+  --layout-model "$LAYOUT_MODEL" \
+  --device npu \
+  --layout-indexput-compat \
+  --no-graph-capture \
   --offset 0 \
   --limit 32 \
   --workers 2 \
   --no-timeline \
-  --reference-requests "$OUTPUT_ROOT/phase8_layout_w1/output/requests.jsonl" \
-  --output-dir "$OUTPUT_ROOT/phase8_layout_w2/output"
+  --reference-requests \
+    "$OUTPUT_ROOT/phase8_layout_npu_w1/output/requests.jsonl" \
+  --output-dir "$OUTPUT_ROOT/phase8_layout_npu_w2/output"
 ```
 
-W2 overlaps the next page's CPU image decode. It does not batch two pages
-through one detector call and is not a production-runner `--workers` switch.
-
-The W2 command exits 2 when request-manifest bytes differ. If so, preserve its
-output and compare records field-by-field. Report pages/s, stage totals,
-request counts, manifest hash/equality, and any tolerated one-pixel resize
-difference.
+W2 overlaps next-page decode/preprocessing but never batches two pages through
+one detector call; it is not a production-runner switch. Report for every
+lane: setup time, frontend wall, pages/s, seconds/page, request count, manifest
+hash, and all stage totals. For CPU W1 versus NPU W1, report exact manifest
+equality plus prompt/order/crop-size differences, detector time, total
+frontend speedup, and the percentage of frontend time remaining in image
+decode, preprocessing/H2D, detector execution, postprocessing, and page
+preparation.
 
 ## Artifact interpretation
 
@@ -1633,6 +1860,7 @@ For every production lane:
 - `page_regions.jsonl` is the compact page/region manifest;
 - `timeline_trace.json` and `timeline.html` contain synchronization-neutral
   host/device spans and waits;
+- `npu_smi_1s.log` samples device utilization and HBM during the command;
 - `predictions/` contains one Markdown result per page;
 - `vision_route_plan.json` records the route selected in that run.
 
@@ -1640,6 +1868,45 @@ Separate setup/compile/load time from `pipeline_e2e_s`. Use the replay process
 for steady-state comparisons. A cache directory merely existing is not replay
 proof; compare inventories and logs and confirm the replay did not create a
 new graph shape.
+
+After all successful production runs, generate one mechanically derived metrics
+file beside every production summary:
+
+```sh
+while IFS= read -r summary_path; do
+  run_root="$(dirname "$summary_path")"
+  test -f "$run_root/recognition_trace.jsonl" || continue
+  write_run_metrics \
+    "$run_root" \
+    "$run_root/metrics_report.json"
+done < <(
+  find "$OUTPUT_ROOT" -path '*/output/run_summary.json' -print | sort
+)
+```
+
+Use replay/warm-cache runs for performance comparisons. First/compile runs are
+correctness and cache-creation evidence, not steady-state throughput. For each
+phase report:
+
+- pages, crops/requests, E2E wall, pages/s, and seconds/page;
+- layout device, capture state, layout wall/stages, boxes, and request count;
+- vision real/physical/padding tokens, useful fraction, transformer device
+  time, effective real tok/s, raw physical tok/s, route counts, and overflows;
+- text real/physical/padding tokens, useful fraction, transformer device time,
+  effective real tok/s, raw physical tok/s, route counts, and overflows;
+- decode generated/effective/raw token slots, decode-control wall, effective
+  tok/s, raw physical tok/s, useful/active fraction, graph calls, admissions,
+  stop reasons, and generated-length distribution;
+- packing group/call counts, fill fractions, KV redistribution bytes/time;
+- peak HBM and representative AI Core utilization from `npu_smi_1s.log`;
+- absolute and percentage change in E2E and each affected major stage versus
+  the immediately preceding replay.
+
+The earlier successful Phase 1-7 CPU-layout outputs are the direct
+same-hardware control. Preserve their paths and, where the phase configuration
+matches, add CPU-layout versus eager-NPU-layout E2E, pages/s, layout-stage, and
+OCR-stage deltas. Do not compare unlike batch sizes, packing modes, or
+min-pixels settings.
 
 ## Stop condition and required report
 
@@ -1665,11 +1932,18 @@ TorchAir resolver route / module:
 CANN / driver / firmware:
 Model and dataset paths:
 
+Eager-NPU layout gate:
+CPU one-page wall / detector / requests / hash:
+NPU one-page wall / detector / requests / hash:
+CPU-to-NPU speedup:
+manifest exact or precise tolerated differences:
+
 Phase 0 environment and TorchAir preflight:
 
 Phase 1 real production smoke:
 first / replay:
 page / crop / prediction counts:
+layout device / graph capture / compatibility patch:
 decode and text cache replay:
 IndexPut status:
 
@@ -1682,56 +1956,74 @@ vision device time:
 
 Phase 3 compiled production B4:
 first / replay wall:
-pages/s:
+pages/s / seconds-page:
 page / request / prediction counts:
 vision/text routes and overflows:
-vision useful / physical tokens/s:
-text useful / physical tokens/s:
-decode raw / effective tokens/s:
+vision real / physical / padding tokens:
+vision effective / raw-physical tokens/s:
+text real / physical / padding tokens:
+text effective / raw-physical tokens/s:
+decode generated / effective / raw slots:
+decode effective / raw-physical tokens/s:
 active-slot fraction:
+layout and other major stage times:
 peak HBM:
+AI Core utilization:
 output parity:
 timeline / trace / cache evidence:
+same-config CPU-layout replay and NPU-layout delta:
 
 Phase 4 decode arenas:
 B4:
 B16:
 B32 or exact reason skipped:
 selected batch and cache:
+per-candidate E2E / pages-s / decode rates / useful fraction / HBM:
 
 Phase 5 greedy vision packing:
 groups / calls / fill:
-vision tokens and device time:
+vision real / physical / padding tokens and device time:
+vision effective / raw-physical tokens/s:
 wall / pages-s:
+change versus Phase 4:
 output parity:
 
 Phase 6 packed text:
 groups / calls:
 KV redistribution:
-text tokens and device time:
+text real / physical / padding tokens and device time:
+text effective / raw-physical tokens/s:
 wall / pages-s:
+change versus Phase 5:
 output parity:
 
 Phase 7 min_pixels 28224:
 vision/text token reduction:
-stage times:
+vision/text effective and raw-physical tokens/s:
+all major stage times:
 wall / pages-s:
+change versus Phase 6:
 output parity:
 
 Profile-guided status:
 
 Phase 8 layout:
-W1 wall / pages-s:
-W2 wall / pages-s:
+CPU W1 setup / wall / pages-s / seconds-page:
+NPU W1 setup / wall / pages-s / seconds-page:
+NPU W2 setup / wall / pages-s / seconds-page:
+CPU-to-NPU W1 speedup:
+stage totals and percentages:
 manifest comparison:
 
 Best stable production configuration:
 Best replay wall / pages-s:
 Major stage breakdown:
-Vision useful / physical tokens/s:
-Text useful / physical tokens/s:
-Decode raw / effective tokens/s:
+Vision real / physical tokens and effective / raw-physical tokens/s:
+Text real / physical tokens and effective / raw-physical tokens/s:
+Decode effective / raw slots and effective / raw-physical tokens/s:
+Decode useful fraction / graph calls / length distribution:
 Peak HBM:
+AI Core utilization:
 
 First blocker or warning:
 Exact command records:

@@ -138,6 +138,12 @@ are selected with the equivalent dimension-1 `gather` instead of tensor-valued
 advanced indexing. All detector computation remains on NPU. The summary records
 this as `layout_frontend.npu_indexput_compat`.
 
+The production runner also accepts
+`--layout-graph-capture/--no-layout-graph-capture`. Disabling capture leaves
+the complete layout model on NPU and changes only its execution mode; this is
+the intended 310P compatibility route when eager operators work but ACLGraph
+capture rejects them.
+
 The CPU option remains the fallback while that NPU compatibility path is being
 validated on 310P. It moves only PP-DocLayoutV3 inference and preprocessing off
 the NPU; the PaddleOCR-VL recognizer, vision/text prefills, KV cache, and decode

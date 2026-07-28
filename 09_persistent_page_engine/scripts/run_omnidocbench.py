@@ -82,6 +82,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "310P environments without the required IndexPut kernel."
         ),
     )
+    parser.add_argument(
+        "--layout-graph-capture",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Capture the fixed PP-DocLayoutV3 detector core when layout runs "
+            "on NPU. Disable this for eager NPU layout on stacks whose "
+            "ACLGraph capture rejects otherwise-supported eager operators."
+        ),
+    )
     parser.add_argument("--recognizer-model", type=Path, default=DEFAULT_RECOGNIZER_MODEL)
     parser.add_argument(
         "--dtype",
@@ -508,6 +518,7 @@ def main() -> None:
         "images": [path.name for path in image_paths],
         "pipeline": "owned_paddleocr_vl_v1.6",
         "layout_device": args.layout_device,
+        "layout_graph_capture": args.layout_graph_capture,
         "page_preprocessing_mode": (
             "all_before_recognition"
             if args.preprocess_all_pages_first
@@ -537,6 +548,7 @@ def main() -> None:
         layout_model,
         layout_device,
         timeline=timeline,
+        graph_capture=args.layout_graph_capture,
     )
 
     recognizer = ContinuousRecognizer(
@@ -669,6 +681,7 @@ def main() -> None:
             "recognizer_model": str(recognizer_model),
             "device": "npu:0",
             "layout_device": str(layout_device),
+            "layout_graph_capture": layout_frontend.graph_capture,
             "dtype": args.dtype,
             "batch_size": args.batch_size,
             "cache_length": args.cache_length,
