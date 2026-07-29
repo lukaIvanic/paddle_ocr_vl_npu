@@ -1,0 +1,111 @@
+{
+  "schema_version": 2,
+  "status": "completed",
+  "purpose": "exact production 27-layer vision PromptFA format/alignment experiment using synthetic shape inputs",
+  "boundary": "VisionPrefillStage: 27 x (LayerNorm1 + Q/K/V + RoPE + PromptFA + out projection + residual + LayerNorm2 + FC1/GELU/FC2 + residual) + post-LayerNorm",
+  "production_stage": true,
+  "synthetic_shape_inputs": true,
+  "attention": {
+    "implementation": "prompt_flash_attention",
+    "input_layout": "BNSD",
+    "mask_sparse_mode": 1,
+    "model_head_dim": 72,
+    "promptfa_call_head_dim": 80,
+    "attention_mask_all_false": true
+  },
+  "shape": {
+    "batch_size": 1,
+    "sequence_length": 512,
+    "hidden_size": 1152,
+    "source_intermediate_size": 4304,
+    "candidate_intermediate_size": 4304,
+    "layers": 27,
+    "linear_calls_per_layer": 6,
+    "linear_calls_per_full_stack": 162
+  },
+  "requested": {
+    "weight_format": "native",
+    "execution": "raw_eager"
+  },
+  "weight_format": {
+    "requested": "native",
+    "target_format": "unchanged",
+    "target_format_code": null,
+    "linear_weight_count": 162,
+    "before_format_histogram": {
+      "2": 162
+    },
+    "converted_count": 0,
+    "status": "ready",
+    "failures": [],
+    "after_format_histogram": {
+      "2": 162
+    },
+    "all_after_are_nz": false,
+    "runtime_gate": {
+      "torch_npu_allow_internal_format_enabled_before_npu_allocation": false,
+      "mm_bmm_format_nd": true,
+      "manual_cast_after_model_load": false
+    }
+  },
+  "setup_s_through_format_preparation": 11.380612371955067,
+  "environment": {
+    "commit": "e447c8e3d7c7aceba4348f99dc10698ce1393a88",
+    "device": "npu:0",
+    "device_name": "Ascend910B2",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "npu_smi": "+------------------------------------------------------------------------------------------------+\n| npu-smi 25.0.rc1.1               Version: 25.0.rc1.1                                           |\n+---------------------------+---------------+----------------------------------------------------+\n| NPU   Name                | Health        | Power(W)    Temp(C)           Hugepages-Usage(page)|\n| Chip                      | Bus-Id        | AICore(%)   Memory-Usage(MB)  HBM-Usage(MB)        |\n+===========================+===============+====================================================+\n| 0     910B2               | OK            | 107.0       47                0    / 0             |\n| 0                         | 0000:C1:00.0  | 0           0    / 0          3407 / 65536         |\n+===========================+===============+====================================================+\n| 1     910B2               | OK            | 101.7       47                0    / 0             |\n| 0                         | 0000:01:00.0  | 0           0    / 0          3409 / 65536         |\n+===========================+===============+====================================================+\n| 2     910B2               | OK            | 103.1       46                0    / 0             |\n| 0                         | 0000:C2:00.0  | 0           0    / 0          3411 / 65536         |\n+===========================+===============+====================================================+\n| 3     910B2               | OK            | 101.3       47                0    / 0             |\n| 0                         | 0000:02:00.0  | 0           0    / 0          54359/ 65536         |\n+===========================+===============+====================================================+\n| 4     910B2               | OK            | 101.3       47                0    / 0             |\n| 0                         | 0000:81:00.0  | 0           0    / 0          54372/ 65536         |\n+===========================+===============+====================================================+\n| 5     910B2               | OK            | 109.0       45                0    / 0             |\n| 0                         | 0000:41:00.0  | 0           0    / 0          7242 / 65536         |\n+===========================+===============+====================================================+\n| 6     910B2               | OK            | 101.4       48                0    / 0             |\n| 0                         | 0000:82:00.0  | 0           0    / 0          54371/ 65536         |\n+===========================+===============+====================================================+\n| 7     910B2               | OK            | 101.9       47                0    / 0             |\n| 0                         | 0000:42:00.0  | 0           0    / 0          54365/ 65536         |\n+===========================+===============+====================================================+\n+---------------------------+---------------+----------------------------------------------------+\n| NPU     Chip              | Process id    | Process name             | Process memory(MB)      |\n+===========================+===============+====================================================+\n| No running processes found in NPU 0                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 1                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 2                                                            |\n+===========================+===============+====================================================+\n| 3       0                 | 2804329       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 4       0                 | 2804375       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 5       0                 | 82344         |                          | 3871                    |\n+===========================+===============+====================================================+\n| 6       0                 | 2804478       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 7       0                 | 2804586       |                          | 51013                   |\n+===========================+===============+====================================================+\n"
+  },
+  "compile": {
+    "api": null,
+    "cache_dir": null,
+    "cache_existed_before": null
+  },
+  "linear_flops_per_full_stack_call": 420936155136,
+  "measurements": {
+    "samples": 2,
+    "calls_per_sample": 1,
+    "total_measured_full_stack_calls": 2,
+    "device_event_per_call_ms": {
+      "samples": [
+        39.47998046875,
+        39.75988006591797
+      ],
+      "mean": 39.619930267333984,
+      "median": 39.619930267333984,
+      "p05": 39.493975448608396,
+      "p95": 39.745885086059566
+    },
+    "synchronized_wall_per_call_ms": {
+      "samples": [
+        41.97564395144582,
+        39.96937989722937
+      ],
+      "mean": 40.972511924337596,
+      "median": 40.972511924337596,
+      "p05": 40.069693099940196,
+      "p95": 41.875330748734996
+    },
+    "physical_tokens_per_s_device_median": 12922.78902424359,
+    "physical_tokens_per_s_wall_median": 12496.182829734511,
+    "linear_tflop_per_s_device_median": 10.624353760739838
+  },
+  "numerics": {
+    "raw_candidate_vs_native_4304": {
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "left_finite": true,
+      "right_finite": true,
+      "same_shape": true
+    },
+    "measured_output_vs_raw_candidate": {
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "left_finite": true,
+      "right_finite": true,
+      "same_shape": true
+    },
+    "measured_output_finite": true
+  }
+}
