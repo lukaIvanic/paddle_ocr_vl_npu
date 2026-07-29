@@ -96,6 +96,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--model-dtype",
+        choices=("fp32", "fp16"),
+        default="fp32",
+        help="Layout-model inference dtype; FP16 is an NPU experiment.",
+    )
+    parser.add_argument(
         "--timeline",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -107,6 +113,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error(
             "--model-backend owned requires --no-graph-capture"
         )
+    if args.model_dtype == "fp16" and args.device != "npu":
+        parser.error("--model-dtype fp16 currently requires --device npu")
     return args
 
 
@@ -225,6 +233,11 @@ def main(argv: Sequence[str] | None = None) -> None:
         device_stage_timing=device.type == "npu",
         npu_indexput_compat=args.layout_indexput_compat,
         model_backend=args.model_backend,
+        model_dtype=(
+            torch.float16
+            if args.model_dtype == "fp16"
+            else torch.float32
+        ),
     )
     setup_s = time.perf_counter() - setup_started
     memory_after_setup = (
@@ -361,6 +374,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             f"{'npugraph' if frontend.graph_capture else 'eager'}_"
             f"{device.type}"
         ),
+        "layout_model_dtype": str(frontend.model_dtype),
         "device": str(device),
         "graph_capture": bool(frontend.graph_capture),
         "npu_indexput_compat": bool(frontend.npu_indexput_compat),

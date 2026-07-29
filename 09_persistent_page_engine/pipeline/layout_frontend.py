@@ -191,6 +191,7 @@ class OwnedLayoutFrontend:
         device_stage_timing: bool = False,
         npu_indexput_compat: bool = True,
         model_backend: str = "transformers",
+        model_dtype: torch.dtype | None = None,
     ) -> None:
         from transformers import AutoImageProcessor
 
@@ -239,7 +240,10 @@ class OwnedLayoutFrontend:
                     self.model_dir
                 )
             )
-        self.model.eval().to(self.device)
+        self.model.eval().to(
+            device=self.device,
+            dtype=model_dtype,
+        )
         self.model_dtype = next(self.model.parameters()).dtype
         self.npu_indexput_compat = bool(
             npu_indexput_compat
