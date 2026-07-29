@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Profile the production compiled PromptFA vision graph at B1 x S512.
+"""Profile one production compiled PromptFA B1 vision graph.
 
-The experiment deliberately has one shape and one graph boundary:
+The experiment deliberately has one selected shape and one graph boundary:
 
-    VisionPrefillRuntime.compiled[512](
+    VisionPrefillRuntime.compiled[sequence_length](
         prefix_hidden_states,
         rope_cos,
         rope_sin,
@@ -49,29 +49,46 @@ from vision_lab import DEFAULT_MODEL, _environment  # noqa: E402
 
 
 BATCH_SIZE = 1
-SEQUENCE_LENGTH = 512
-PHYSICAL_TOKENS = BATCH_SIZE * SEQUENCE_LENGTH
+SUPPORTED_SEQUENCE_LENGTHS = (512, 2048)
 DEFAULT_CACHE_ROOT = (
     REPO_ROOT / ".runtime_cache/09_persistent_page_engine_vision_torchair"
 )
-DEFAULT_OUTPUT_DIR = (
-    REPO_ROOT
-    / "tmp/09_persistent_page_engine/vision_lab"
-    / "vision_s512_npu_profile"
+DEFAULT_OUTPUT_ROOT = (
+    REPO_ROOT / "tmp/09_persistent_page_engine/vision_lab"
 )
-DEFAULT_PROFILE_DIR = (
-    REPO_ROOT
-    / ".runtime_cache/09_persistent_page_engine_profiles"
-    / "vision_s512_npu_profile"
+DEFAULT_PROFILE_ROOT = (
+    REPO_ROOT / ".runtime_cache/09_persistent_page_engine_profiles"
 )
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--sequence-length",
+        type=int,
+        choices=SUPPORTED_SEQUENCE_LENGTHS,
+        required=True,
+    )
     parser.add_argument("--model", type=Path, default=DEFAULT_MODEL)
     parser.add_argument("--cache-dir", type=Path, default=DEFAULT_CACHE_ROOT)
-    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
-    parser.add_argument("--profile-dir", type=Path, default=DEFAULT_PROFILE_DIR)
+    parser.add_argument("--output-dir", type=Path)
+    parser.add_argument("--profile-dir", type=Path)
+    parser.add_argument(
+        "--allow-compile-if-missing",
+        action="store_true",
+        help=(
+            "Permit cache preparation to compile the selected graph. "
+            "The final profiler run should omit this flag."
+        ),
+    )
+    parser.add_argument(
+        "--prepare-cache-only",
+        action="store_true",
+        help=(
+            "Load or compile the selected graph, write cache_preparation.json, "
+            "and exit before throughput measurement or profiling."
+        ),
+    )
     parser.add_argument("--warmup", type=int, default=3)
     parser.add_argument("--control-repeats", type=int, default=20)
     parser.add_argument("--profile-warmup-steps", type=int, default=1)
@@ -115,15 +132,19 @@ def _duration_summary(samples_ms: Sequence[float]) -> dict[str, Any]:
     }
 
 
-def _replay_summary(samples_ms: Sequence[float]) -> dict[str, Any]:
+def _replay_summary(
+    samples_ms: Sequence[float],
+    *,
+    physical_tokens: int,
+) -> dict[str, Any]:
     summary = _duration_summary(samples_ms)
     mean_ms = float(summary["mean_ms"])
     median_ms = float(summary["median_ms"])
     summary.update(
         {
-            "physical_tokens_per_s_mean": PHYSICAL_TOKENS
+            "physical_tokens_per_s_mean": physical_tokens
             / (mean_ms / 1000.0),
-            "physical_tokens_per_s_median": PHYSICAL_TOKENS
+            "physical_tokens_per_s_median": physical_tokens
             / (median_ms / 1000.0),
         }
     )
@@ -133,10 +154,18 @@ def _replay_summary(samples_ms: Sequence[float]) -> dict[str, Any]:
 def _measurement_summary(
     device_ms: Sequence[float],
     synchronized_wall_ms: Sequence[float],
+    *,
+    physical_tokens: int,
 ) -> dict[str, Any]:
     return {
-        "device_event": _replay_summary(device_ms),
-        "synchronized_host_wall": _replay_summary(synchronized_wall_ms),
+        "device_event": _replay_summary(
+            device_ms,
+            physical_tokens=physical_tokens,
+        ),
+        "synchronized_host_wall": _replay_summary(
+            synchronized_wall_ms,
+            physical_tokens=physical_tokens,
+        ),
     }
 
 
@@ -146,6 +175,7 @@ def _run_measured(
     *,
     device: torch.device,
     repeats: int,
+    physical_tokens: int,
 ) -> tuple[dict[str, Any], torch.Tensor]:
     device_ms: list[float] = []
     synchronized_wall_ms: list[float] = []
@@ -163,7 +193,14 @@ def _run_measured(
         )
     if output is None:
         raise RuntimeError("measurement produced no output")
-    return _measurement_summary(device_ms, synchronized_wall_ms), output
+    return (
+        _measurement_summary(
+            device_ms,
+            synchronized_wall_ms,
+            physical_tokens=physical_tokens,
+        ),
+        output,
+    )
 
 
 def _cache_populated(path: Path) -> bool:
@@ -224,24 +261,41 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     device = torch.device("npu:0")
     if not torch.npu.is_available():
-        raise RuntimeError("the S512 profiler requires an NPU")
+        raise RuntimeError("the B1 vision profiler requires an NPU")
     torch.npu.set_compile_mode(jit_compile=False)
     dtype = torch.float16
+    sequence_length = int(args.sequence_length)
+    physical_tokens = BATCH_SIZE * sequence_length
     model_dir = args.model.expanduser().resolve()
     cache_root = args.cache_dir.expanduser().resolve()
-    output_dir = args.output_dir.expanduser().resolve()
-    profile_dir = args.profile_dir.expanduser().resolve()
+    output_dir = (
+        args.output_dir
+        if args.output_dir is not None
+        else DEFAULT_OUTPUT_ROOT
+        / f"vision_s{sequence_length}_npu_profile"
+    ).expanduser().resolve()
+    profile_dir = (
+        args.profile_dir
+        if args.profile_dir is not None
+        else DEFAULT_PROFILE_ROOT
+        / f"vision_s{sequence_length}_npu_profile"
+    ).expanduser().resolve()
     if output_dir.exists() and any(output_dir.iterdir()):
         raise RuntimeError(
             f"output directory already exists and is non-empty: {output_dir}"
         )
-    if profile_dir.exists() and any(profile_dir.iterdir()):
+    if (
+        not args.prepare_cache_only
+        and profile_dir.exists()
+        and any(profile_dir.iterdir())
+    ):
         raise RuntimeError(
             f"profile directory already exists and is non-empty: {profile_dir}"
         )
     output_dir.mkdir(parents=True, exist_ok=True)
-    shutil.rmtree(profile_dir, ignore_errors=True)
-    profile_dir.mkdir(parents=True, exist_ok=True)
+    if not args.prepare_cache_only:
+        shutil.rmtree(profile_dir, ignore_errors=True)
+        profile_dir.mkdir(parents=True, exist_ok=True)
 
     synchronize(device)
     setup_started = time.perf_counter()
@@ -256,22 +310,24 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     exact_cache_dir = vision_cache_dir_for_bucket(
         cache_root,
-        bucket=SEQUENCE_LENGTH,
+        bucket=sequence_length,
         dtype=dtype,
         device=device,
         model_dir=model_dir,
         attention_impl="prompt_flash_attention",
         head_dim=head_dim,
     )
-    if not _cache_populated(exact_cache_dir):
+    cache_existed_before_run = _cache_populated(exact_cache_dir)
+    if not cache_existed_before_run and not args.allow_compile_if_missing:
         raise RuntimeError(
-            "the exact production B1xS512 cache is absent; refusing to compile "
-            f"during a profiling run: {exact_cache_dir}"
+            f"the exact production B1xS{sequence_length} cache is absent; "
+            "refusing to compile "
+            f"without --allow-compile-if-missing: {exact_cache_dir}"
         )
     runtime = VisionPrefillRuntime(
         model,
         backend="torchair",
-        buckets=(SEQUENCE_LENGTH,),
+        buckets=(sequence_length,),
         cache_root=cache_root,
         device=device,
         dtype=dtype,
@@ -279,22 +335,68 @@ def main(argv: Sequence[str] | None = None) -> None:
         attention_impl="prompt_flash_attention",
         padding="bucket",
     )
-    run = runtime.compiled[SEQUENCE_LENGTH]
+    run = runtime.compiled[sequence_length]
     setup_s = time.perf_counter() - setup_started
+    cache_populated_after_setup = _cache_populated(exact_cache_dir)
+    if not cache_populated_after_setup:
+        raise RuntimeError(
+            "VisionPrefillRuntime returned without populating its exact cache: "
+            f"{exact_cache_dir}"
+        )
+    if args.prepare_cache_only:
+        preparation = {
+            "schema_version": 1,
+            "purpose": (
+                f"prepare the exact B1xS{sequence_length} compiled PromptFA "
+                "vision cache outside the profiler run"
+            ),
+            "shape": {
+                "batch_size": BATCH_SIZE,
+                "sequence_length": sequence_length,
+                "physical_tokens_per_replay": physical_tokens,
+                "hidden_size": hidden_size,
+                "head_dim": head_dim,
+            },
+            "cache_dir": str(exact_cache_dir),
+            "cache_existed_before_run": cache_existed_before_run,
+            "compile_was_permitted": bool(args.allow_compile_if_missing),
+            "cache_populated_after_setup": cache_populated_after_setup,
+            "setup_s": setup_s,
+            "runtime_metadata": runtime.metadata,
+            "environment": _environment(device),
+        }
+        preparation_path = output_dir / "cache_preparation.json"
+        preparation_path.write_text(
+            json.dumps(preparation, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        print(
+            json.dumps(
+                {
+                    "cache_preparation": str(preparation_path),
+                    "cache_dir": str(exact_cache_dir),
+                    "cache_existed_before_run": cache_existed_before_run,
+                    "setup_s": setup_s,
+                },
+                indent=2,
+            ),
+            flush=True,
+        )
+        return
 
     inputs = (
         torch.zeros(
-            (BATCH_SIZE, SEQUENCE_LENGTH, hidden_size),
+            (BATCH_SIZE, sequence_length, hidden_size),
             device=device,
             dtype=dtype,
         ),
         torch.ones(
-            (BATCH_SIZE, SEQUENCE_LENGTH, head_dim),
+            (BATCH_SIZE, sequence_length, head_dim),
             device=device,
             dtype=torch.float32,
         ),
         torch.zeros(
-            (BATCH_SIZE, SEQUENCE_LENGTH, head_dim),
+            (BATCH_SIZE, sequence_length, head_dim),
             device=device,
             dtype=torch.float32,
         ),
@@ -302,8 +404,8 @@ def main(argv: Sequence[str] | None = None) -> None:
             (
                 BATCH_SIZE,
                 1,
-                SEQUENCE_LENGTH,
-                SEQUENCE_LENGTH,
+                sequence_length,
+                sequence_length,
             ),
             device=device,
             dtype=torch.bool,
@@ -313,7 +415,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         warm_output = run(*inputs)
         if tuple(warm_output.shape[:2]) != (
             BATCH_SIZE,
-            SEQUENCE_LENGTH,
+            sequence_length,
         ):
             raise RuntimeError(
                 "cached graph returned the wrong warmup shape: "
@@ -326,6 +428,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         inputs,
         device=device,
         repeats=args.control_repeats,
+        physical_tokens=physical_tokens,
     )
 
     schedule = npu_prof.schedule(
@@ -370,10 +473,11 @@ def main(argv: Sequence[str] | None = None) -> None:
                 if is_warmup
                 else step - args.profile_warmup_steps
             )
-            with torch.profiler.record_function(
-                "paddleocr_vl.vision_prefill.B1.S512."
+            profile_label = (
+                f"paddleocr_vl.vision_prefill.B1.S{sequence_length}."
                 f"{phase}.step{phase_step}"
-            ):
+            )
+            with torch.profiler.record_function(profile_label):
                 timeline = DeviceTimeline(device)
                 wall_started = time.perf_counter()
                 profiled_output = timeline.measure(
@@ -405,6 +509,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     profiled = _measurement_summary(
         profiled_device_ms,
         profiled_wall_ms,
+        physical_tokens=physical_tokens,
     )
 
     post_profile, output = _run_measured(
@@ -412,8 +517,9 @@ def main(argv: Sequence[str] | None = None) -> None:
         inputs,
         device=device,
         repeats=args.control_repeats,
+        physical_tokens=physical_tokens,
     )
-    if tuple(output.shape[:2]) != (BATCH_SIZE, SEQUENCE_LENGTH):
+    if tuple(output.shape[:2]) != (BATCH_SIZE, sequence_length):
         raise RuntimeError(
             "cached graph returned the wrong output shape: "
             f"{tuple(output.shape)}"
@@ -426,7 +532,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         float(pre_device["median_ms"])
         + float(post_device["median_ms"])
     ) / 2.0
-    control_center_tok_s = PHYSICAL_TOKENS / (
+    control_center_tok_s = physical_tokens / (
         control_center_device_ms / 1000.0
     )
     slowdown = _ratio(
@@ -437,33 +543,37 @@ def main(argv: Sequence[str] | None = None) -> None:
     summary = {
         "schema_version": 1,
         "purpose": (
-            "B1xS512 production compiled PromptFA vision-prefill NPU "
+            f"B1xS{sequence_length} production compiled PromptFA "
+            "vision-prefill NPU "
             "bottleneck profile"
         ),
         "shape": {
             "batch_size": BATCH_SIZE,
-            "sequence_length": SEQUENCE_LENGTH,
-            "physical_tokens_per_replay": PHYSICAL_TOKENS,
+            "sequence_length": sequence_length,
+            "physical_tokens_per_replay": physical_tokens,
             "hidden_size": hidden_size,
             "head_dim": head_dim,
         },
         "boundary": (
-            "VisionPrefillRuntime.compiled[512]: vision encoder layers plus "
+            f"VisionPrefillRuntime.compiled[{sequence_length}]: vision "
+            "encoder layers plus "
             "post LayerNorm; patch embedding, projector, text prefill, and "
             "decode excluded"
         ),
         "attention": "prompt_flash_attention",
         "backend": "torchair.inference.cache_compile",
-        "cache_only": True,
+        "cache_only": cache_existed_before_run,
         "cache_dir": str(exact_cache_dir),
-        "cache_existed_before_run": True,
+        "cache_existed_before_run": cache_existed_before_run,
+        "compile_was_permitted": bool(args.allow_compile_if_missing),
+        "cache_populated_after_setup": cache_populated_after_setup,
         "setup_s": setup_s,
         "warmup_steps_outside_profiler": args.warmup,
         "control_repeats_each_side": args.control_repeats,
         "profile_active_steps": args.profile_steps,
         "profiler_step_contract": (
             "one profiler.step after exactly one synchronized compiled "
-            "B1xS512 graph replay"
+            f"B1xS{sequence_length} graph replay"
         ),
         "profiler": {
             "activities": ["CPU", "NPU"],
@@ -479,6 +589,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "scheduled_warmup_measurement": _measurement_summary(
                 profile_warmup_device_ms,
                 profile_warmup_wall_ms,
+                physical_tokens=physical_tokens,
             ),
             "profiler_step_ms": _duration_summary(profiler_step_ms),
             "throughput_measurement": False,
