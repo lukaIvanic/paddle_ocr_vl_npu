@@ -74,6 +74,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--profile-dir", type=Path, default=DEFAULT_PROFILE_DIR)
     parser.add_argument("--warmup", type=int, default=3)
     parser.add_argument("--control-repeats", type=int, default=20)
+    parser.add_argument("--profile-warmup-steps", type=int, default=1)
     parser.add_argument("--profile-steps", type=int, default=5)
     parser.add_argument("--parser-topn", type=int, default=30)
     args = parser.parse_args(argv)
@@ -81,6 +82,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("--warmup must be non-negative")
     if args.control_repeats <= 0:
         parser.error("--control-repeats must be positive")
+    if args.profile_warmup_steps <= 0:
+        parser.error("--profile-warmup-steps must be positive")
     if args.profile_steps <= 0:
         parser.error("--profile-steps must be positive")
     if args.parser_topn <= 0:
@@ -327,11 +330,15 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     schedule = npu_prof.schedule(
         wait=0,
-        warmup=0,
+        warmup=args.profile_warmup_steps,
         active=args.profile_steps,
         repeat=1,
     )
     profiler_step_ms: list[float] = []
+    profile_warmup_device_ms: list[float] = []
+    profile_warmup_wall_ms: list[float] = []
+    profiled_device_ms: list[float] = []
+    profiled_wall_ms: list[float] = []
     synchronize(device)
     profile_wall_started = time.perf_counter()
     with npu_prof.profile(
@@ -351,12 +358,21 @@ def main(argv: Sequence[str] | None = None) -> None:
         with_modules=True,
         with_flops=False,
     ) as profiler:
-        profiled_device_ms: list[float] = []
-        profiled_wall_ms: list[float] = []
         profiled_output: torch.Tensor | None = None
-        for step in range(args.profile_steps):
+        total_profile_loop_steps = (
+            args.profile_warmup_steps + args.profile_steps
+        )
+        for step in range(total_profile_loop_steps):
+            is_warmup = step < args.profile_warmup_steps
+            phase = "warmup" if is_warmup else "active"
+            phase_step = (
+                step
+                if is_warmup
+                else step - args.profile_warmup_steps
+            )
             with torch.profiler.record_function(
-                f"paddleocr_vl.vision_prefill.B1.S512.step{step}"
+                "paddleocr_vl.vision_prefill.B1.S512."
+                f"{phase}.step{phase_step}"
             ):
                 timeline = DeviceTimeline(device)
                 wall_started = time.perf_counter()
@@ -365,12 +381,18 @@ def main(argv: Sequence[str] | None = None) -> None:
                     lambda: run(*inputs),
                 )
                 spans = timeline.resolve_spans()
-                profiled_wall_ms.append(
-                    (time.perf_counter() - wall_started) * 1000.0
-                )
-                profiled_device_ms.append(
+                wall_ms = (
+                    time.perf_counter() - wall_started
+                ) * 1000.0
+                device_ms = (
                     float(spans["graph_replay"]["seconds"]) * 1000.0
                 )
+                if is_warmup:
+                    profile_warmup_wall_ms.append(wall_ms)
+                    profile_warmup_device_ms.append(device_ms)
+                else:
+                    profiled_wall_ms.append(wall_ms)
+                    profiled_device_ms.append(device_ms)
             step_started = time.perf_counter()
             profiler.step()
             profiler_step_ms.append(
@@ -453,6 +475,11 @@ def main(argv: Sequence[str] | None = None) -> None:
             "with_modules": True,
             "profile_dir": str(profile_dir),
             "context_wall_s": profile_context_wall_s,
+            "scheduled_warmup_steps": args.profile_warmup_steps,
+            "scheduled_warmup_measurement": _measurement_summary(
+                profile_warmup_device_ms,
+                profile_warmup_wall_ms,
+            ),
             "profiler_step_ms": _duration_summary(profiler_step_ms),
             "throughput_measurement": False,
         },
