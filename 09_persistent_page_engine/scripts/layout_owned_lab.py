@@ -86,6 +86,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--model-backend",
+        choices=("transformers", "owned"),
+        default="transformers",
+        help=(
+            "Use the Transformers oracle or the project-owned eager "
+            "PP-DocLayoutV3 model. The owned backend requires "
+            "--no-graph-capture."
+        ),
+    )
+    parser.add_argument(
         "--timeline",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -93,6 +103,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     args = parser.parse_args(argv)
     if args.offset < 0 or args.limit <= 0:
         parser.error("--offset must be non-negative and --limit positive")
+    if args.model_backend == "owned" and args.graph_capture:
+        parser.error(
+            "--model-backend owned requires --no-graph-capture"
+        )
     return args
 
 
@@ -193,6 +207,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "workers": args.workers,
             "paddlex_imported": False,
             "ocr_requests_executed": 0,
+            "model_backend": args.model_backend,
         }
     )
 
@@ -209,6 +224,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         graph_capture=device.type == "npu" and args.graph_capture,
         device_stage_timing=device.type == "npu",
         npu_indexput_compat=args.layout_indexput_compat,
+        model_backend=args.model_backend,
     )
     setup_s = time.perf_counter() - setup_started
     memory_after_setup = (
@@ -341,9 +357,9 @@ def main(argv: Sequence[str] | None = None) -> None:
         "images": [path.name for path in image_paths],
         "layout_model": str(model_dir),
         "layout_model_backend": (
-            "transformers_npugraph"
-            if device.type == "npu"
-            else "transformers_cpu"
+            f"{args.model_backend}_"
+            f"{'npugraph' if frontend.graph_capture else 'eager'}_"
+            f"{device.type}"
         ),
         "device": str(device),
         "graph_capture": bool(frontend.graph_capture),

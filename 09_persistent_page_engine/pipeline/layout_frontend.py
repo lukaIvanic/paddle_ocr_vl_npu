@@ -190,14 +190,26 @@ class OwnedLayoutFrontend:
         graph_capture: bool = True,
         device_stage_timing: bool = False,
         npu_indexput_compat: bool = True,
+        model_backend: str = "transformers",
     ) -> None:
-        from transformers import AutoImageProcessor, AutoModelForObjectDetection
+        from transformers import AutoImageProcessor
+
+        if model_backend not in {"transformers", "owned"}:
+            raise ValueError(
+                f"unsupported layout model backend: {model_backend!r}"
+            )
+        if model_backend == "owned" and graph_capture:
+            raise ValueError(
+                "the owned PP-DocLayoutV3 model is eager-only; disable "
+                "layout graph capture"
+            )
 
         # The frontend submits one 800x800 detector resize at a time. Letting
         # PyTorch fan each resize across all 192 host CPUs costs more in thread
         # scheduling than it saves in image work.
         torch.set_num_threads(min(64, len(os.sched_getaffinity(0))))
         self.model_dir = model_dir.expanduser().resolve()
+        self.model_backend = model_backend
         self.device = device
         self.timeline = timeline
         self.device_stage_timing = bool(
@@ -211,23 +223,39 @@ class OwnedLayoutFrontend:
         setup_started = time.perf_counter()
         self.processor = AutoImageProcessor.from_pretrained(self.model_dir)
         self._normalization_divisor = _normalization_divisor(self.processor)
-        self.model = AutoModelForObjectDetection.from_pretrained(
-            self.model_dir
-        )
+        if self.model_backend == "transformers":
+            from transformers import AutoModelForObjectDetection
+
+            self.model = AutoModelForObjectDetection.from_pretrained(
+                self.model_dir
+            )
+        else:
+            from .owned_layout_model import (
+                OwnedPPDocLayoutV3ForObjectDetection,
+            )
+
+            self.model = (
+                OwnedPPDocLayoutV3ForObjectDetection.from_pretrained(
+                    self.model_dir
+                )
+            )
         self.model.eval().to(self.device)
         self.model_dtype = next(self.model.parameters()).dtype
         self.npu_indexput_compat = bool(
-            npu_indexput_compat and self.device.type == "npu"
+            npu_indexput_compat
+            and self.device.type == "npu"
+            and self.model_backend == "transformers"
         )
         if self.npu_indexput_compat:
             _install_pp_doclayout_v3_npu_indexput_compat(self.model)
 
-        decoder = _find_decoder(self.model)
-        decoder.forward = MethodType(
-            _decoder_forward_final_heads_only,
-            decoder,
-        )
-        decoder._layout_emit_masks = True
+        if self.model_backend == "transformers":
+            decoder = _find_decoder(self.model)
+            decoder.forward = MethodType(
+                _decoder_forward_final_heads_only,
+                decoder,
+            )
+            decoder._layout_emit_masks = True
         self.processor.extract_custom_vertices = MethodType(
             _extract_custom_vertices_vectorized,
             self.processor,
