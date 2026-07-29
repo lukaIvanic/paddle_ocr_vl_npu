@@ -46,7 +46,6 @@ from paddleocr_vl.model.modeling import (  # noqa: E402
 )
 from paddleocr_vl.model.vision_prefill import (  # noqa: E402
     VisionPrefillStage,
-    _activation,
     apply_rotary_pos_emb_vision,
     get_vision_prompt_fa_layout,
     get_vision_prompt_fa_mask_sparse_mode,
@@ -169,15 +168,6 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error(
             "joint rotary implementations require "
             "--attention-head-padding weights"
-        )
-    if (
-        args.rotary_implementation == "joint_inplace_partial"
-        and args.execution == "torchair"
-    ):
-        parser.error(
-            "joint_inplace_partial is currently an eager preflight only; "
-            "the installed TorchAir auto-converter does not map its string "
-            "rotary_mode attribute to the GE integer mode"
         )
     if args.warmup < 0:
         parser.error("--warmup must be non-negative")
@@ -647,33 +637,26 @@ def _inplace_partial_rope_inputs(
     rope_sin: torch.Tensor,
     *,
     dtype: torch.dtype,
-) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-    """Prepare the 64+16 factor segments once, outside the layer loop."""
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Prepare full interleaved FP16 factors once, outside the layer loop."""
 
-    cos_interleaved = _half_to_interleaved(rope_cos).to(dtype)
-    sin_interleaved = _half_to_interleaved(rope_sin).to(dtype)
-    tokens = math.prod(cos_interleaved.shape[:-1])
     return (
-        cos_interleaved[..., :64].contiguous().view(tokens, 1, 1, 64),
-        sin_interleaved[..., :64].contiguous().view(tokens, 1, 1, 64),
-        cos_interleaved[..., 64:].contiguous().view(tokens, 1, 1, 16),
-        sin_interleaved[..., 64:].contiguous().view(tokens, 1, 1, 16),
+        _half_to_interleaved(rope_cos).to(dtype).unsqueeze(-2),
+        _half_to_interleaved(rope_sin).to(dtype).unsqueeze(-2),
     )
 
 
 class InplacePartialWeightPaddedVisionPrefillStage(
     WeightPaddedVisionPrefillStage
 ):
-    """910B D80 stage using two valid interleaved partial-RoPE slices."""
+    """910B D80 stage using one interleaved in-place QK RoPE call."""
 
-    def _attention_with_rope_segments(
+    def _attention(
         self,
         attention: nn.Module,
         hidden_states: torch.Tensor,
-        rope_cos_0_64: torch.Tensor,
-        rope_sin_0_64: torch.Tensor,
-        rope_cos_64_80: torch.Tensor,
-        rope_sin_64_80: torch.Tensor,
+        rope_cos: torch.Tensor,
+        rope_sin: torch.Tensor,
         attention_mask: torch.Tensor,
     ) -> torch.Tensor:
         batch_size, sequence_length, _hidden = hidden_states.shape
@@ -687,41 +670,30 @@ class InplacePartialWeightPaddedVisionPrefillStage(
             dim=-1,
         ).contiguous()
         qk_states = qk_states.view(
-            batch_size * sequence_length,
-            1,
-            2 * num_heads,
-            padded_head_dim,
-        )
-        torch.ops._C_ascend.inplace_partial_rotary_mul(
-            qk_states,
-            rope_cos_0_64,
-            rope_sin_0_64,
-            "interleave",
-            [0, 64],
-        )
-        torch.ops._C_ascend.inplace_partial_rotary_mul(
-            qk_states,
-            rope_cos_64_80,
-            rope_sin_64_80,
-            "interleave",
-            [64, 80],
-        )
-        qk_states = qk_states.view(
             batch_size,
             sequence_length,
             2 * num_heads,
             padded_head_dim,
         )
-        query_states = (
-            qk_states[:, :, :num_heads]
-            .transpose(1, 2)
+        torch.ops._C_ascend.inplace_partial_rotary_mul(
+            qk_states,
+            rope_cos,
+            rope_sin,
+            "interleave",
+            [0, padded_head_dim],
+        )
+        qk_bnsd = (
+            qk_states.view(
+                batch_size,
+                sequence_length,
+                2,
+                num_heads,
+                padded_head_dim,
+            )
+            .permute(2, 0, 3, 1, 4)
             .contiguous()
         )
-        key_states = (
-            qk_states[:, :, num_heads:]
-            .transpose(1, 2)
-            .contiguous()
-        )
+        query_states, key_states = qk_bnsd.unbind(0)
         value_states = (
             attention.v_proj(hidden_states)
             .view(
@@ -752,35 +724,41 @@ class InplacePartialWeightPaddedVisionPrefillStage(
         )
         return attention.out_proj(attention_output)
 
-    def forward(
-        self,
-        prefix_hidden_states: torch.Tensor,
-        rope_cos_0_64: torch.Tensor,
-        rope_sin_0_64: torch.Tensor,
-        rope_cos_64_80: torch.Tensor,
-        rope_sin_64_80: torch.Tensor,
-        attention_mask: torch.Tensor,
-    ) -> torch.Tensor:
-        hidden_states = prefix_hidden_states
-        for encoder_layer in self.transformer.encoder.layers:
-            attention_input = encoder_layer.layer_norm1(hidden_states)
-            hidden_states = hidden_states + self._attention_with_rope_segments(
-                encoder_layer.self_attn,
-                attention_input,
-                rope_cos_0_64,
-                rope_sin_0_64,
-                rope_cos_64_80,
-                rope_sin_64_80,
-                attention_mask,
-            )
-            mlp_input = encoder_layer.layer_norm2(hidden_states)
-            hidden_states = hidden_states + encoder_layer.mlp.fc2(
-                _activation(
-                    encoder_layer.mlp.hidden_act,
-                    encoder_layer.mlp.fc1(mlp_input),
-                )
-            )
-        return self.transformer.post_layernorm(hidden_states)
+
+def _register_inplace_partial_torchair_converter() -> None:
+    """Override the generated converter's invalid string GE mode mapping."""
+
+    from torchair._ge_concrete_graph.fx2ge_converter import (
+        register_fx_node_ge_converter,
+    )
+    from torchair.ge import custom_op
+
+    inplace_rope = (
+        torch.ops._C_ascend.inplace_partial_rotary_mul.default
+    )
+
+    @register_fx_node_ge_converter(inplace_rope)
+    def _convert_inplace_partial_rotary_mul(
+        x: Any,
+        r1: Any,
+        r2: Any,
+        rotary_mode: str,
+        partial_slice: Sequence[int],
+    ) -> None:
+        modes = {
+            "half": 0,
+            "interleave": 1,
+            "quarter": 2,
+            "interleave-half": 3,
+        }
+        custom_op(
+            "InplacePartialRotaryMul",
+            x,
+            r1,
+            r2,
+            modes[rotary_mode],
+            partial_slice,
+        )
 
 
 def _linear_modules(stage: nn.Module) -> list[tuple[str, nn.Linear]]:
@@ -1340,6 +1318,8 @@ def main(argv: Sequence[str] | None = None) -> None:
             raise RuntimeError(
                 "_C_ascend::inplace_partial_rotary_mul is not registered"
             )
+        if args.execution == "torchair":
+            _register_inplace_partial_torchair_converter()
     internal_format_gate_enabled = False
     if args.weight_format == "fractal_nz":
         # torch-npu 2.10 defaults this runtime gate to disabled. It must be
@@ -1532,15 +1512,19 @@ def main(argv: Sequence[str] | None = None) -> None:
             )
             rotary_metadata.update(
                 {
-                    "qk_layout": "contiguous_joint_t1nd_interleaved",
+                    "qk_layout": "contiguous_joint_bsnd_interleaved",
                     "math": (
-                        "two in-place interleaved partial slices after "
+                        "one in-place interleaved D80 slice after "
                         "one-time Q/K weight and factor permutation"
                     ),
                     "operator": (
                         "_C_ascend::inplace_partial_rotary_mul"
                     ),
-                    "partial_slices": [[0, 64], [64, 80]],
+                    "partial_slices": [[0, 80]],
+                    "factor_dtype": str(dtype),
+                    "explicit_torchair_converter": (
+                        args.execution == "torchair"
+                    ),
                 }
             )
         attention_padding_metadata.update(
