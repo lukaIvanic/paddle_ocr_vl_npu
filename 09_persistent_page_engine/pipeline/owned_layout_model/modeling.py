@@ -860,8 +860,8 @@ class PPDocLayoutV3SinePositionEmbedding(nn.Module):
         pos_dim = self.embed_dim // 4
         omega = torch.arange(pos_dim, device=device).to(dtype) / pos_dim
         omega = 1.0 / (self.temperature**omega)
-        out_w = grid_w.flatten()[..., None] @ omega[None]
-        out_h = grid_h.flatten()[..., None] @ omega[None]
+        out_w = grid_w.flatten()[..., None] * omega[None]
+        out_h = grid_h.flatten()[..., None] * omega[None]
         return torch.concat(
             [
                 out_h.sin(),
