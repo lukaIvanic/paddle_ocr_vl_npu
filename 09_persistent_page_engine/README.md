@@ -484,9 +484,11 @@ FC1/GELU/FC2, and post-LayerNorm. Physical token throughput therefore measures
 the same vision-transformer graph used by a real crop rather than an
 attention-free MatMul surrogate.
 
-The bounded matrix compares S512 and S2048 at the native 4304-wide MLP and the
-mathematically equivalent zero-extended 4352-wide MLP, with native and requested
-FRACTAL_NZ Linear weights. For FRACTAL_NZ, the lab enables torch-npu's
+The bounded matrix compares B1xS512, B4xS512, and B1xS2048 at the native
+4304-wide MLP and the mathematically equivalent zero-extended 4352-wide MLP,
+with native and requested FRACTAL_NZ Linear weights. Physical throughput uses
+all `batch_size * sequence_length` tokens in each replay. For FRACTAL_NZ, the
+lab enables torch-npu's
 `allow_internal_format` runtime gate before the first NPU allocation, casts all
 162 Linear weights after model loading, and verifies that every observed weight
 has format code 29. It never silently times a native-format fallback. Timed

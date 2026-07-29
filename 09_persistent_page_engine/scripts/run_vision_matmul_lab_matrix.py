@@ -25,11 +25,22 @@ DEFAULT_PROFILE_ROOT = (
     REPO_ROOT
     / ".runtime_cache/09_persistent_page_engine_vision_matmul_profiles"
 )
+SHAPES = {
+    "b1s512": (1, 512),
+    "b4s512": (4, 512),
+    "b1s2048": (1, 2048),
+}
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--name", required=True)
+    parser.add_argument(
+        "--shape",
+        action="append",
+        choices=tuple(SHAPES),
+        help="Repeat to run a subset; default runs all bounded shapes.",
+    )
     parser.add_argument("--model", type=Path, default=DEFAULT_MODEL)
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     parser.add_argument("--cache-dir", type=Path, default=DEFAULT_CACHE_ROOT)
@@ -85,17 +96,22 @@ def main(argv: Sequence[str] | None = None) -> None:
         )
     output_root.mkdir(parents=True, exist_ok=True)
     cases: list[dict[str, Any]] = []
-    for sequence_length in (512, 2048):
+    requested_shapes = args.shape or list(SHAPES)
+    for shape_name in requested_shapes:
+        batch_size, sequence_length = SHAPES[shape_name]
         for intermediate_size in (4304, 4352):
             for weight_format in ("native", "fractal_nz"):
                 case_name = (
-                    f"s{sequence_length}_i{intermediate_size}_{weight_format}"
+                    f"b{batch_size}_s{sequence_length}_"
+                    f"i{intermediate_size}_{weight_format}"
                 )
                 case_output = output_root / case_name
                 case_profile = profile_root / case_name
                 command = [
                     sys.executable,
                     str(HERE / "vision_matmul_lab.py"),
+                    "--batch-size",
+                    str(batch_size),
                     "--sequence-length",
                     str(sequence_length),
                     "--intermediate-size",
@@ -167,6 +183,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         "status": "completed",
         "execution": args.execution,
         "profiled": bool(args.profile),
+        "shapes": requested_shapes,
         "cases": cases,
     }
     matrix_path = output_root / "matrix_summary.json"

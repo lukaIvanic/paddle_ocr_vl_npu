@@ -65,6 +65,7 @@ DEFAULT_PROFILE_ROOT = (
     / ".runtime_cache/09_persistent_page_engine_vision_matmul_profiles"
 )
 SEQUENCE_LENGTHS = (512, 2048)
+BATCH_SIZES = (1, 4)
 INTERMEDIATE_SIZES = (4304, 4352)
 WEIGHT_FORMATS = ("native", "fractal_nz")
 EXECUTIONS = ("raw_eager", "torchair")
@@ -78,6 +79,12 @@ StageInputs = tuple[
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        choices=BATCH_SIZES,
+        default=1,
+    )
     parser.add_argument(
         "--sequence-length",
         type=int,
@@ -125,6 +132,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--profile-steps", type=int, default=3)
     parser.add_argument("--parser-topn", type=int, default=200)
     args = parser.parse_args(argv)
+    if args.batch_size == 4 and args.sequence_length != 512:
+        parser.error("B4 is intentionally bounded to S512 in this experiment")
     if args.warmup < 0:
         parser.error("--warmup must be non-negative")
     if args.samples <= 0 or args.calls_per_sample <= 0:
@@ -346,7 +355,7 @@ def _measure(
     device: torch.device,
     samples: int,
     calls_per_sample: int,
-    sequence_length: int,
+    physical_tokens_per_call: int,
     flops_per_call: int,
 ) -> tuple[dict[str, Any], torch.Tensor]:
     device_block_ms: list[float] = []
@@ -385,10 +394,10 @@ def _measure(
             "device_event_per_call_ms": device,
             "synchronized_wall_per_call_ms": wall,
             "physical_tokens_per_s_device_median": (
-                sequence_length / device_median_s
+                physical_tokens_per_call / device_median_s
             ),
             "physical_tokens_per_s_wall_median": (
-                sequence_length / wall_median_s
+                physical_tokens_per_call / wall_median_s
             ),
             "linear_tflop_per_s_device_median": (
                 flops_per_call / device_median_s / 1e12
@@ -415,6 +424,7 @@ def _cache_dir(
     root: Path,
     *,
     sequence_length: int,
+    batch_size: int,
     intermediate_size: int,
     weight_format: str,
     dtype: torch.dtype,
@@ -432,6 +442,7 @@ def _cache_dir(
                 f"{get_vision_prompt_fa_mask_sparse_mode()}"
             ),
             f"seq{sequence_length}",
+            f"batch{batch_size}",
             f"intermediate{intermediate_size}",
             f"weights{weight_format}",
             f"dtype{cache_key_part(dtype)}",
@@ -661,6 +672,7 @@ def _parse_profile(
 
 def _linear_flops_per_call(
     *,
+    batch_size: int,
     sequence_length: int,
     hidden_size: int,
     intermediate_size: int,
@@ -671,7 +683,7 @@ def _linear_flops_per_call(
         4 * 2 * hidden_size * hidden_size
         + 4 * hidden_size * intermediate_size
     )
-    return sequence_length * layers * per_token_per_layer
+    return batch_size * sequence_length * layers * per_token_per_layer
 
 
 def _synthetic_grid(sequence_length: int) -> torch.Tensor:
@@ -682,6 +694,21 @@ def _synthetic_grid(sequence_length: int) -> torch.Tensor:
         [[1, height, sequence_length // height]],
         dtype=torch.int64,
     )
+
+
+def _batch_inputs(
+    inputs: StageInputs,
+    *,
+    batch_size: int,
+) -> StageInputs:
+    if batch_size == 1:
+        return inputs
+    return tuple(
+        tensor.repeat(batch_size, 1, 1, 1)
+        if tensor.ndim == 4
+        else tensor.repeat(batch_size, 1, 1)
+        for tensor in inputs
+    )  # type: ignore[return-value]
 
 
 @torch.inference_mode()
@@ -703,13 +730,14 @@ def main(argv: Sequence[str] | None = None) -> None:
     dtype = torch.float16
     model_dir = args.model.expanduser().resolve()
     sequence_length = int(args.sequence_length)
+    batch_size = int(args.batch_size)
     intermediate_size = int(args.intermediate_size)
     output_dir = (
         args.output_dir
         if args.output_dir is not None
         else DEFAULT_OUTPUT_ROOT
         / (
-            f"s{sequence_length}_i{intermediate_size}_"
+            f"b{batch_size}_s{sequence_length}_i{intermediate_size}_"
             f"{args.weight_format}_{args.execution}"
         )
     ).expanduser().resolve()
@@ -718,7 +746,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         if args.profile_dir is not None
         else DEFAULT_PROFILE_ROOT
         / (
-            f"s{sequence_length}_i{intermediate_size}_"
+            f"b{batch_size}_s{sequence_length}_i{intermediate_size}_"
             f"{args.weight_format}_{args.execution}"
         )
     ).expanduser().resolve()
@@ -760,11 +788,14 @@ def main(argv: Sequence[str] | None = None) -> None:
         physical_seq_len=sequence_length,
         execution=args.execution,
     )
-    inputs: StageInputs = (
-        prepared.prefix_hidden_states,
-        prepared.rope_cos,
-        prepared.rope_sin,
-        prepared.attention_mask,
+    inputs = _batch_inputs(
+        (
+            prepared.prefix_hidden_states,
+            prepared.rope_cos,
+            prepared.rope_sin,
+            prepared.attention_mask,
+        ),
+        batch_size=batch_size,
     )
 
     reference_stage = VisionPrefillStage(
@@ -825,8 +856,9 @@ def main(argv: Sequence[str] | None = None) -> None:
             "attention_mask_all_false": True,
         },
         "shape": {
-            "batch_size": 1,
+            "batch_size": batch_size,
             "sequence_length": sequence_length,
+            "physical_tokens_per_call": batch_size * sequence_length,
             "hidden_size": hidden_size,
             "source_intermediate_size": source_intermediate,
             "candidate_intermediate_size": intermediate_size,
@@ -866,6 +898,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     cache_dir = _cache_dir(
         args.cache_dir,
         sequence_length=sequence_length,
+        batch_size=batch_size,
         intermediate_size=intermediate_size,
         weight_format=args.weight_format,
         dtype=dtype,
@@ -893,6 +926,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     del warm_output
 
     flops_per_call = _linear_flops_per_call(
+        batch_size=batch_size,
         sequence_length=sequence_length,
         hidden_size=hidden_size,
         intermediate_size=intermediate_size,
@@ -904,7 +938,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         device=device,
         samples=args.samples,
         calls_per_sample=args.calls_per_sample,
-        sequence_length=sequence_length,
+        physical_tokens_per_call=batch_size * sequence_length,
         flops_per_call=flops_per_call,
     )
     summary.update(
@@ -929,7 +963,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     if args.profile:
         label = (
             "paddleocr_vl.vision_matmul_lab."
-            f"S{sequence_length}.I{intermediate_size}."
+            f"B{batch_size}.S{sequence_length}.I{intermediate_size}."
             f"{args.weight_format}.{args.execution}"
         )
         summary["profiler"] = _profile(
