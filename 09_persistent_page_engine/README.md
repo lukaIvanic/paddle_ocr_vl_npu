@@ -506,6 +506,21 @@ not the throughput result.
   --profile
 ```
 
+`--attention-head-padding weights` is the controlled alternative to the
+production default `runtime`. It zero-extends every attention Q/K/V projection
+once from 1152 to `16 * 80 = 1280` outputs, inserts the eight zero channels in
+each head's two-half RoPE layout, supplies neutral 80-wide RoPE inputs, and
+zero-extends `out_proj` to 1280 input columns. The compiled graph therefore has
+no per-layer Q/K/V `PadV3` or PromptFA-output 80-to-72 slice.
+
+On Ascend 910B2 at B1xS2048 with the 4352-wide MLP and native ND weights, this
+changed the full 27-layer stage from 30.1408 ms / 67,947.7 physical tok/s to
+25.7301 ms / 79,595.5 tok/s. It removed 189 kernels per replay and reduced
+latency by 14.6%, despite the 11.1% larger attention projection MatMuls. The
+raw full-stage comparison remained finite with mean absolute difference
+0.00268. Evidence is under
+`tmp/09_persistent_page_engine/vision_matmul_lab/head80_weight_*`.
+
 The owned runner prepares pages sequentially on one background producer. Each
 page enters a one-page bounded queue as soon as layout detection, cropping, and
 prompt preparation finish. The recognizer can therefore start consuming that
