@@ -1,0 +1,25 @@
+cache_only_preflight b1=10 batched=0 skipped_b1=0 skipped_batched=5
+/workspace/repos/paddle_ocr_vl_npu_bench_4789067/09_persistent_page_engine/paddleocr_vl/model/vision_prefill.py:1215: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  warm_sin = torch.zeros_like(warm_cos)
+benchmark=b1_s128
+benchmark=b1_s256
+benchmark=b1_s384
+benchmark=b1_s512
+benchmark=b1_s640
+benchmark=b1_s768
+benchmark=b1_s1408
+benchmark=b1_s1920
+benchmark=b1_s2944
+benchmark=b1_s4992
+output=/workspace/repos/paddle_ocr_vl_npu_bench_4789067/tmp/09_persistent_page_engine/vision_lab/910b_saturation_4789067/b1_length_profile.json
+shape | kind | median_ms | p95_ms | raw_physical_tok_s
+B1xS128 | production_b1 | 11.134420394897461 | 11.172237300872803 | 11495.883526964564
+B1xS256 | production_b1 | 12.705349922180176 | 12.731789112091064 | 20148.99247702669
+B1xS384 | production_b1 | 15.285969734191895 | 15.564036989212036 | 25121.07551417316
+B1xS512 | production_b1 | 16.54680061340332 | 17.253058433532715 | 30942.537591543056
+B1xS640 | production_b1 | 18.1735200881958 | 18.25352659225464 | 35216.0724446387
+B1xS768 | production_b1 | 19.744529724121094 | 19.760970306396484 | 38896.8494428999
+B1xS1408 | production_b1 | 27.835009574890137 | 28.105886936187744 | 50583.77997721804
+B1xS1920 | production_b1 | 30.108019828796387 | 30.303268623352054 | 63770.38446625585
+B1xS2944 | production_b1 | 45.866960525512695 | 45.9429744720459 | 64185.635286699486
+B1xS4992 | production_b1 | 83.17011260986328 | 83.4775707244873 | 60021.56115161964

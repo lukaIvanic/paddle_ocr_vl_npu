@@ -1,0 +1,2075 @@
+{
+  "schema_version": 1,
+  "created_at_unix_s": 1785317261.19167,
+  "execution": "torchair_static",
+  "attention": "prompt_flash_attention",
+  "packing_policy": "first_fit_decreasing_within_each_batch_row",
+  "corpus": "/workspace/repos/paddle_ocr_vl_npu_bench_4789067/tmp/09_persistent_page_engine/vision_lab/910b_saturation_4789067/saturation_synthetic_corpus.json",
+  "variant": "synthetic_repeat",
+  "shapes": [
+    [
+      1,
+      512
+    ],
+    [
+      2,
+      512
+    ],
+    [
+      4,
+      512
+    ],
+    [
+      1,
+      1024
+    ],
+    [
+      2,
+      1024
+    ],
+    [
+      4,
+      1024
+    ],
+    [
+      1,
+      4096
+    ],
+    [
+      2,
+      2048
+    ]
+  ],
+  "warmup": 3,
+  "repeats": 10,
+  "setup_s": 10.570029194932431,
+  "compile_metadata": {
+    "b1_s512": {
+      "batch_size": 1,
+      "sequence_length": 512,
+      "cache_dir": "/dev/shm/vision_saturation_4789067/encoder_postln_promptfa_b1_s512_dtypefloat16_layoutbnsd_sparse1_modeinference_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcbbde0bc1a063",
+      "cache_existed_before_run": false,
+      "compile_wrapper_s": 0.0005791699513792992,
+      "compile_first_call_s": 30.648051175056025
+    },
+    "b2_s512": {
+      "batch_size": 2,
+      "sequence_length": 512,
+      "cache_dir": "/dev/shm/vision_saturation_4789067/encoder_postln_promptfa_b2_s512_dtypefloat16_layoutbnsd_sparse1_modeinference_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcbbde0bc1a063",
+      "cache_existed_before_run": false,
+      "compile_wrapper_s": 0.0005419399822130799,
+      "compile_first_call_s": 53.52643240906764
+    },
+    "b4_s512": {
+      "batch_size": 4,
+      "sequence_length": 512,
+      "cache_dir": "/dev/shm/vision_saturation_4789067/encoder_postln_promptfa_b4_s512_dtypefloat16_layoutbnsd_sparse1_modeinference_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcbbde0bc1a063",
+      "cache_existed_before_run": false,
+      "compile_wrapper_s": 0.0004166369326412678,
+      "compile_first_call_s": 54.44449959299527
+    },
+    "b1_s1024": {
+      "batch_size": 1,
+      "sequence_length": 1024,
+      "cache_dir": "/dev/shm/vision_saturation_4789067/encoder_postln_promptfa_b1_s1024_dtypefloat16_layoutbnsd_sparse1_modeinference_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcbbde0bc1a063",
+      "cache_existed_before_run": true,
+      "compile_wrapper_s": 0.0004421180346980691,
+      "compile_first_call_s": 25.69824908999726
+    },
+    "b2_s1024": {
+      "batch_size": 2,
+      "sequence_length": 1024,
+      "cache_dir": "/dev/shm/vision_saturation_4789067/encoder_postln_promptfa_b2_s1024_dtypefloat16_layoutbnsd_sparse1_modeinference_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcbbde0bc1a063",
+      "cache_existed_before_run": true,
+      "compile_wrapper_s": 0.00040293706115335226,
+      "compile_first_call_s": 24.510331310913898
+    },
+    "b4_s1024": {
+      "batch_size": 4,
+      "sequence_length": 1024,
+      "cache_dir": "/dev/shm/vision_saturation_4789067/encoder_postln_promptfa_b4_s1024_dtypefloat16_layoutbnsd_sparse1_modeinference_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcbbde0bc1a063",
+      "cache_existed_before_run": true,
+      "compile_wrapper_s": 0.0005269490648061037,
+      "compile_first_call_s": 25.087279935949482
+    },
+    "b1_s4096": {
+      "batch_size": 1,
+      "sequence_length": 4096,
+      "cache_dir": "/dev/shm/vision_saturation_4789067/encoder_postln_promptfa_b1_s4096_dtypefloat16_layoutbnsd_sparse1_modeinference_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcbbde0bc1a063",
+      "cache_existed_before_run": true,
+      "compile_wrapper_s": 0.00043553696013987064,
+      "compile_first_call_s": 0.7773811030201614
+    },
+    "b2_s2048": {
+      "batch_size": 2,
+      "sequence_length": 2048,
+      "cache_dir": "/dev/shm/vision_saturation_4789067/encoder_postln_promptfa_b2_s2048_dtypefloat16_layoutbnsd_sparse1_modeinference_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcbbde0bc1a063",
+      "cache_existed_before_run": true,
+      "compile_wrapper_s": 0.00036299601197242737,
+      "compile_first_call_s": 0.7513745200121775
+    }
+  },
+  "new_graphs_compiled": 3,
+  "environment": {
+    "commit": "47890673ee60090851d372329079355d9250f5c5",
+    "device": "npu:0",
+    "device_name": "Ascend910B2",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "npu_smi": "+------------------------------------------------------------------------------------------------+\n| npu-smi 25.0.rc1.1               Version: 25.0.rc1.1                                           |\n+---------------------------+---------------+----------------------------------------------------+\n| NPU   Name                | Health        | Power(W)    Temp(C)           Hugepages-Usage(page)|\n| Chip                      | Bus-Id        | AICore(%)   Memory-Usage(MB)  HBM-Usage(MB)        |\n+===========================+===============+====================================================+\n| 0     910B2               | OK            | 107.0       47                0    / 0             |\n| 0                         | 0000:C1:00.0  | 0           0    / 0          3407 / 65536         |\n+===========================+===============+====================================================+\n| 1     910B2               | OK            | 102.1       47                0    / 0             |\n| 0                         | 0000:01:00.0  | 0           0    / 0          3467 / 65536         |\n+===========================+===============+====================================================+\n| 2     910B2               | OK            | 103.4       48                0    / 0             |\n| 0                         | 0000:C2:00.0  | 0           0    / 0          3411 / 65536         |\n+===========================+===============+====================================================+\n| 3     910B2               | OK            | 101.5       47                0    / 0             |\n| 0                         | 0000:02:00.0  | 0           0    / 0          54360/ 65536         |\n+===========================+===============+====================================================+\n| 4     910B2               | OK            | 101.7       48                0    / 0             |\n| 0                         | 0000:81:00.0  | 0           0    / 0          54372/ 65536         |\n+===========================+===============+====================================================+\n| 5     910B2               | OK            | 109.9       47                0    / 0             |\n| 0                         | 0000:41:00.0  | 0           0    / 0          7422 / 65536         |\n+===========================+===============+====================================================+\n| 6     910B2               | OK            | 101.8       48                0    / 0             |\n| 0                         | 0000:82:00.0  | 0           0    / 0          54372/ 65536         |\n+===========================+===============+====================================================+\n| 7     910B2               | OK            | 102.4       47                0    / 0             |\n| 0                         | 0000:42:00.0  | 0           0    / 0          54366/ 65536         |\n+===========================+===============+====================================================+\n+---------------------------+---------------+----------------------------------------------------+\n| NPU     Chip              | Process id    | Process name             | Process memory(MB)      |\n+===========================+===============+====================================================+\n| No running processes found in NPU 0                                                            |\n+===========================+===============+====================================================+\n| 1       0                 | 3922418       |                          | 112                     |\n+===========================+===============+====================================================+\n| No running processes found in NPU 2                                                            |\n+===========================+===============+====================================================+\n| 3       0                 | 2804329       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 4       0                 | 2804375       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 5       0                 | 3931017       |                          | 4053                    |\n+===========================+===============+====================================================+\n| 6       0                 | 2804478       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 7       0                 | 2804586       |                          | 51013                   |\n+===========================+===============+====================================================+\n"
+  },
+  "results": {
+    "default": [
+      {
+        "name": "b1_s512",
+        "batch_size": 1,
+        "sequence_length": 512,
+        "physical_tokens_per_full_call": 512,
+        "supported": true,
+        "target_batches": 4,
+        "packed_rows": 4,
+        "packable_crops": 4,
+        "passthrough_crops": 12,
+        "excluded_overflow_crops": 0,
+        "excluded_overflow_tokens": 0,
+        "target_batch_metrics": {
+          "tower_s": 0.06353088216781616,
+          "real_tokens": 2048,
+          "physical_tokens": 2048,
+          "padding_tokens": 0,
+          "raw_physical_tokens_per_s": 32236.290920535772,
+          "effective_real_tokens_per_s": 32236.290920535772,
+          "real_token_fraction": 1.0,
+          "call_ms_mean": 15.88272054195404,
+          "call_ms_p50": 15.88400502204895,
+          "call_ms_p95": 15.88489475250244,
+          "peak_allocated_bytes_delta": 8945664
+        },
+        "in_scope_corpus_projection": {
+          "tower_s": 0.8542801497459411,
+          "real_tokens": 30720,
+          "physical_tokens": 30720,
+          "padding_tokens": 0,
+          "raw_physical_tokens_per_s": 35960.100453154606,
+          "effective_real_tokens_per_s": 35960.100453154606,
+          "real_token_fraction": 1.0,
+          "passthrough_tower_s": 0.790749267578125
+        },
+        "padding_audit": {
+          "passed": true,
+          "dummy_rows": 0,
+          "max_case_padding_tokens": 0
+        },
+        "cases": [
+          {
+            "case_index": 0,
+            "tower_ms": 15.877860069274902,
+            "tower_ms_samples": [
+              15.886400222778322,
+              15.876219749450682,
+              15.880880355834963,
+              15.868960380554201,
+              15.89013957977295,
+              15.853879928588867,
+              15.876620292663574,
+              15.884440422058107,
+              15.88825988769531,
+              15.87279987335205
+            ],
+            "real_tokens": 512,
+            "physical_tokens": 512,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 8945664
+          },
+          {
+            "case_index": 1,
+            "tower_ms": 15.883780002593994,
+            "tower_ms_samples": [
+              15.876959800720215,
+              15.885780334472656,
+              15.887499809265137,
+              15.890979766845705,
+              15.883000373840332,
+              15.897480010986328,
+              15.87831974029541,
+              15.895359992980955,
+              15.866640090942383,
+              15.87578010559082
+            ],
+            "real_tokens": 512,
+            "physical_tokens": 512,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 8945664
+          },
+          {
+            "case_index": 2,
+            "tower_ms": 15.885012054443358,
+            "tower_ms_samples": [
+              15.874939918518065,
+              15.920240402221678,
+              15.872879981994627,
+              15.88963985443115,
+              15.890239715576172,
+              15.863300323486328,
+              15.89840030670166,
+              15.865799903869629,
+              15.910400390625,
+              15.864279747009276
+            ],
+            "real_tokens": 512,
+            "physical_tokens": 512,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 8945664
+          },
+          {
+            "case_index": 3,
+            "tower_ms": 15.884230041503907,
+            "tower_ms_samples": [
+              15.875320434570312,
+              15.880499839782715,
+              15.886580467224121,
+              15.875980377197264,
+              15.880599975585938,
+              15.895819664001463,
+              15.906100273132326,
+              15.879799842834473,
+              15.889579772949219,
+              15.87201976776123
+            ],
+            "real_tokens": 512,
+            "physical_tokens": 512,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 8945664
+          }
+        ]
+      },
+      {
+        "name": "b2_s512",
+        "batch_size": 2,
+        "sequence_length": 512,
+        "physical_tokens_per_full_call": 1024,
+        "supported": true,
+        "target_batches": 2,
+        "packed_rows": 4,
+        "packable_crops": 4,
+        "passthrough_crops": 12,
+        "excluded_overflow_crops": 0,
+        "excluded_overflow_tokens": 0,
+        "target_batch_metrics": {
+          "tower_s": 0.041154701995849606,
+          "real_tokens": 2048,
+          "physical_tokens": 2048,
+          "padding_tokens": 0,
+          "raw_physical_tokens_per_s": 49763.45109257596,
+          "effective_real_tokens_per_s": 49763.45109257596,
+          "real_token_fraction": 1.0,
+          "call_ms_mean": 20.577350997924803,
+          "call_ms_p50": 20.577350997924803,
+          "call_ms_p95": 20.578851490020753,
+          "peak_allocated_bytes_delta": 13375488
+        },
+        "in_scope_corpus_projection": {
+          "tower_s": 0.8319039695739746,
+          "real_tokens": 30720,
+          "physical_tokens": 30720,
+          "padding_tokens": 0,
+          "raw_physical_tokens_per_s": 36927.33912032176,
+          "effective_real_tokens_per_s": 36927.33912032176,
+          "real_token_fraction": 1.0,
+          "passthrough_tower_s": 0.790749267578125
+        },
+        "padding_audit": {
+          "passed": true,
+          "dummy_rows": 0,
+          "max_case_padding_tokens": 0
+        },
+        "cases": [
+          {
+            "case_index": 0,
+            "tower_ms": 20.575683784484863,
+            "tower_ms_samples": [
+              20.581220626831055,
+              20.559499740600586,
+              20.567459106445312,
+              20.595659255981445,
+              20.56446075439453,
+              20.57115936279297,
+              20.57971954345703,
+              20.57741928100586,
+              20.578840255737305,
+              20.58139991760254
+            ],
+            "real_tokens": 1024,
+            "physical_tokens": 1024,
+            "real_rows": 2,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 13375488
+          },
+          {
+            "case_index": 1,
+            "tower_ms": 20.579018211364748,
+            "tower_ms_samples": [
+              20.578540802001953,
+              20.58732032775879,
+              20.575000762939453,
+              20.572839736938477,
+              20.57621955871582,
+              20.563859939575195,
+              20.58843994140625,
+              20.58526039123535,
+              20.585599899291992,
+              20.57710075378418
+            ],
+            "real_tokens": 1024,
+            "physical_tokens": 1024,
+            "real_rows": 2,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 13375488
+          }
+        ]
+      },
+      {
+        "name": "b4_s512",
+        "batch_size": 4,
+        "sequence_length": 512,
+        "physical_tokens_per_full_call": 2048,
+        "supported": true,
+        "target_batches": 1,
+        "packed_rows": 4,
+        "packable_crops": 4,
+        "passthrough_crops": 12,
+        "excluded_overflow_crops": 0,
+        "excluded_overflow_tokens": 0,
+        "target_batch_metrics": {
+          "tower_s": 0.027061157989501955,
+          "real_tokens": 2048,
+          "physical_tokens": 2048,
+          "padding_tokens": 0,
+          "raw_physical_tokens_per_s": 75680.4273044966,
+          "effective_real_tokens_per_s": 75680.4273044966,
+          "real_token_fraction": 1.0,
+          "call_ms_mean": 27.061157989501954,
+          "call_ms_p50": 27.061157989501954,
+          "call_ms_p95": 27.061157989501954,
+          "peak_allocated_bytes_delta": 25722368
+        },
+        "in_scope_corpus_projection": {
+          "tower_s": 0.817810425567627,
+          "real_tokens": 30720,
+          "physical_tokens": 30720,
+          "padding_tokens": 0,
+          "raw_physical_tokens_per_s": 37563.717751186436,
+          "effective_real_tokens_per_s": 37563.717751186436,
+          "real_token_fraction": 1.0,
+          "passthrough_tower_s": 0.790749267578125
+        },
+        "padding_audit": {
+          "passed": true,
+          "dummy_rows": 0,
+          "max_case_padding_tokens": 0
+        },
+        "cases": [
+          {
+            "case_index": 0,
+            "tower_ms": 27.061157989501954,
+            "tower_ms_samples": [
+              27.043439865112305,
+              27.047060012817383,
+              27.228580474853516,
+              27.02910041809082,
+              26.99456024169922,
+              27.094280242919922,
+              27.01565933227539,
+              27.110219955444336,
+              27.069459915161133,
+              26.979219436645508
+            ],
+            "real_tokens": 2048,
+            "physical_tokens": 2048,
+            "real_rows": 4,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 25722368
+          }
+        ]
+      },
+      {
+        "name": "b1_s1024",
+        "batch_size": 1,
+        "sequence_length": 1024,
+        "physical_tokens_per_full_call": 1024,
+        "supported": true,
+        "target_batches": 6,
+        "packed_rows": 6,
+        "packable_crops": 8,
+        "passthrough_crops": 8,
+        "excluded_overflow_crops": 0,
+        "excluded_overflow_tokens": 0,
+        "target_batch_metrics": {
+          "tower_s": 0.13045436820983886,
+          "real_tokens": 6144,
+          "physical_tokens": 6144,
+          "padding_tokens": 0,
+          "raw_physical_tokens_per_s": 47096.928100692145,
+          "effective_real_tokens_per_s": 47096.928100692145,
+          "real_token_fraction": 1.0,
+          "call_ms_mean": 21.74239470163981,
+          "call_ms_p50": 21.748805141448976,
+          "call_ms_p95": 21.753475666046143,
+          "peak_allocated_bytes_delta": 15931904
+        },
+        "in_scope_corpus_projection": {
+          "tower_s": 0.6206386104583741,
+          "real_tokens": 30720,
+          "physical_tokens": 30720,
+          "padding_tokens": 0,
+          "raw_physical_tokens_per_s": 49497.40393578104,
+          "effective_real_tokens_per_s": 49497.40393578104,
+          "real_token_fraction": 1.0,
+          "passthrough_tower_s": 0.49018424224853513
+        },
+        "padding_audit": {
+          "passed": true,
+          "dummy_rows": 0,
+          "max_case_padding_tokens": 0
+        },
+        "cases": [
+          {
+            "case_index": 0,
+            "tower_ms": 21.749270248413087,
+            "tower_ms_samples": [
+              21.749160766601562,
+              21.69378089904785,
+              21.69655990600586,
+              21.796180725097656,
+              21.715139389038086,
+              21.798580169677734,
+              21.692520141601562,
+              21.74332046508789,
+              21.887439727783203,
+              21.720020294189453
+            ],
+            "real_tokens": 1024,
+            "physical_tokens": 1024,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 14446592
+          },
+          {
+            "case_index": 1,
+            "tower_ms": 21.748340034484862,
+            "tower_ms_samples": [
+              21.738340377807617,
+              21.823699951171875,
+              21.73271942138672,
+              21.799020767211914,
+              21.708620071411133,
+              21.72801971435547,
+              21.762479782104492,
+              21.719499588012695,
+              21.708459854125977,
+              21.762540817260742
+            ],
+            "real_tokens": 1024,
+            "physical_tokens": 1024,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 14446592
+          },
+          {
+            "case_index": 2,
+            "tower_ms": 21.7498498916626,
+            "tower_ms_samples": [
+              21.710479736328125,
+              21.91275978088379,
+              21.722780227661133,
+              21.720659255981445,
+              21.776859283447266,
+              21.719860076904297,
+              21.715280532836914,
+              21.825220108032227,
+              21.704299926757812,
+              21.69029998779297
+            ],
+            "real_tokens": 1024,
+            "physical_tokens": 1024,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 14446592
+          },
+          {
+            "case_index": 3,
+            "tower_ms": 21.754684257507325,
+            "tower_ms_samples": [
+              21.7460994720459,
+              21.714000701904297,
+              21.926700592041016,
+              21.718059539794922,
+              21.714000701904297,
+              21.846200942993164,
+              21.73535919189453,
+              21.730100631713867,
+              21.70359992980957,
+              21.71272087097168
+            ],
+            "real_tokens": 1024,
+            "physical_tokens": 1024,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 14446592
+          },
+          {
+            "case_index": 4,
+            "tower_ms": 21.726453971862792,
+            "tower_ms_samples": [
+              21.76021957397461,
+              21.708499908447266,
+              21.732540130615234,
+              21.741060256958008,
+              21.716020584106445,
+              21.739479064941406,
+              21.72089958190918,
+              21.699920654296875,
+              21.7149600982666,
+              21.730939865112305
+            ],
+            "real_tokens": 1024,
+            "physical_tokens": 1024,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 15931904
+          },
+          {
+            "case_index": 5,
+            "tower_ms": 21.725769805908204,
+            "tower_ms_samples": [
+              21.731719970703125,
+              21.718399047851562,
+              21.733400344848633,
+              21.726900100708008,
+              21.72831916809082,
+              21.71031951904297,
+              21.730100631713867,
+              21.740419387817383,
+              21.710439682006836,
+              21.727680206298828
+            ],
+            "real_tokens": 1024,
+            "physical_tokens": 1024,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 15931904
+          }
+        ]
+      },
+      {
+        "name": "b2_s1024",
+        "batch_size": 2,
+        "sequence_length": 1024,
+        "physical_tokens_per_full_call": 2048,
+        "supported": true,
+        "target_batches": 3,
+        "packed_rows": 6,
+        "packable_crops": 8,
+        "passthrough_crops": 8,
+        "excluded_overflow_crops": 0,
+        "excluded_overflow_tokens": 0,
+        "target_batch_metrics": {
+          "tower_s": 0.08724360790252686,
+          "real_tokens": 6144,
+          "physical_tokens": 6144,
+          "padding_tokens": 0,
+          "raw_physical_tokens_per_s": 70423.4974654464,
+          "effective_real_tokens_per_s": 70423.4974654464,
+          "real_token_fraction": 1.0,
+          "call_ms_mean": 29.081202634175618,
+          "call_ms_p50": 29.092094230651856,
+          "call_ms_p95": 29.098665599822997,
+          "peak_allocated_bytes_delta": 28058624
+        },
+        "in_scope_corpus_projection": {
+          "tower_s": 0.577427850151062,
+          "real_tokens": 30720,
+          "physical_tokens": 30720,
+          "padding_tokens": 0,
+          "raw_physical_tokens_per_s": 53201.45190773753,
+          "effective_real_tokens_per_s": 53201.45190773753,
+          "real_token_fraction": 1.0,
+          "passthrough_tower_s": 0.49018424224853513
+        },
+        "padding_audit": {
+          "passed": true,
+          "dummy_rows": 0,
+          "max_case_padding_tokens": 0
+        },
+        "cases": [
+          {
+            "case_index": 0,
+            "tower_ms": 29.052117919921876,
+            "tower_ms_samples": [
+              29.034860610961914,
+              29.018339157104492,
+              29.02519989013672,
+              29.028499603271484,
+              29.116159439086914,
+              29.057199478149414,
+              29.026920318603516,
+              29.118520736694336,
+              29.0506591796875,
+              29.04482078552246
+            ],
+            "real_tokens": 2048,
+            "physical_tokens": 2048,
+            "real_rows": 2,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 27027456
+          },
+          {
+            "case_index": 1,
+            "tower_ms": 29.092094230651856,
+            "tower_ms_samples": [
+              29.1919002532959,
+              29.05746078491211,
+              29.044200897216797,
+              29.165019989013672,
+              29.05076026916504,
+              29.04758071899414,
+              29.052919387817383,
+              29.175460815429688,
+              29.054759979248047,
+              29.08087921142578
+            ],
+            "real_tokens": 2048,
+            "physical_tokens": 2048,
+            "real_rows": 2,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 27027456
+          },
+          {
+            "case_index": 2,
+            "tower_ms": 29.099395751953125,
+            "tower_ms_samples": [
+              29.058399200439453,
+              29.048259735107422,
+              29.24888038635254,
+              29.050920486450195,
+              29.0403995513916,
+              29.180419921875,
+              29.03849983215332,
+              29.06529998779297,
+              29.227659225463867,
+              29.035219192504883
+            ],
+            "real_tokens": 2048,
+            "physical_tokens": 2048,
+            "real_rows": 2,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 28058624
+          }
+        ]
+      },
+      {
+        "name": "b4_s1024",
+        "batch_size": 4,
+        "sequence_length": 1024,
+        "physical_tokens_per_full_call": 4096,
+        "supported": true,
+        "target_batches": 2,
+        "packed_rows": 6,
+        "packable_crops": 8,
+        "passthrough_crops": 8,
+        "excluded_overflow_crops": 0,
+        "excluded_overflow_tokens": 0,
+        "target_batch_metrics": {
+          "tower_s": 0.09347379760742187,
+          "real_tokens": 6144,
+          "physical_tokens": 8192,
+          "padding_tokens": 2048,
+          "raw_physical_tokens_per_s": 87639.53332040027,
+          "effective_real_tokens_per_s": 65729.6499903002,
+          "real_token_fraction": 0.75,
+          "call_ms_mean": 46.736898803710936,
+          "call_ms_p50": 46.736898803710936,
+          "call_ms_p95": 46.764337158203126,
+          "peak_allocated_bytes_delta": 53722112
+        },
+        "in_scope_corpus_projection": {
+          "tower_s": 0.583658039855957,
+          "real_tokens": 30720,
+          "physical_tokens": 32768,
+          "padding_tokens": 2048,
+          "raw_physical_tokens_per_s": 56142.463158884835,
+          "effective_real_tokens_per_s": 52633.55921145453,
+          "real_token_fraction": 0.9375,
+          "passthrough_tower_s": 0.49018424224853513
+        },
+        "padding_audit": {
+          "passed": true,
+          "dummy_rows": 2,
+          "max_case_padding_tokens": 2048
+        },
+        "cases": [
+          {
+            "case_index": 0,
+            "tower_ms": 46.76738586425781,
+            "tower_ms_samples": [
+              46.77362060546875,
+              46.74531936645508,
+              46.76251983642578,
+              46.76089859008789,
+              46.77730178833008,
+              46.77544021606445,
+              46.771018981933594,
+              46.77777862548828,
+              46.768341064453125,
+              46.761619567871094
+            ],
+            "real_tokens": 4096,
+            "physical_tokens": 4096,
+            "real_rows": 4,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 53722112
+          },
+          {
+            "case_index": 1,
+            "tower_ms": 46.70641174316406,
+            "tower_ms_samples": [
+              46.388240814208984,
+              46.734718322753906,
+              46.73889923095703,
+              46.7376594543457,
+              46.75659942626953,
+              46.753780364990234,
+              46.73154067993164,
+              46.74557876586914,
+              46.756038665771484,
+              46.72106170654297
+            ],
+            "real_tokens": 2048,
+            "physical_tokens": 4096,
+            "real_rows": 2,
+            "dummy_rows": 2,
+            "peak_allocated_bytes_delta": 50106880
+          }
+        ]
+      },
+      {
+        "name": "b1_s4096",
+        "batch_size": 1,
+        "sequence_length": 4096,
+        "physical_tokens_per_full_call": 4096,
+        "supported": true,
+        "target_batches": 8,
+        "packed_rows": 8,
+        "packable_crops": 16,
+        "passthrough_crops": 0,
+        "excluded_overflow_crops": 0,
+        "excluded_overflow_tokens": 0,
+        "target_batch_metrics": {
+          "tower_s": 0.5098034236907959,
+          "real_tokens": 30720,
+          "physical_tokens": 32768,
+          "padding_tokens": 2048,
+          "raw_physical_tokens_per_s": 64275.75507981352,
+          "effective_real_tokens_per_s": 60258.520387325174,
+          "real_token_fraction": 0.9375,
+          "call_ms_mean": 63.72542796134949,
+          "call_ms_p50": 63.7299144744873,
+          "call_ms_p95": 63.75182847976685,
+          "peak_allocated_bytes_delta": 85865472
+        },
+        "in_scope_corpus_projection": {
+          "tower_s": 0.5098034236907959,
+          "real_tokens": 30720,
+          "physical_tokens": 32768,
+          "padding_tokens": 2048,
+          "raw_physical_tokens_per_s": 64275.75507981352,
+          "effective_real_tokens_per_s": 60258.520387325174,
+          "real_token_fraction": 0.9375,
+          "passthrough_tower_s": 0.0
+        },
+        "padding_audit": {
+          "passed": true,
+          "dummy_rows": 0,
+          "max_case_padding_tokens": 2048
+        },
+        "cases": [
+          {
+            "case_index": 0,
+            "tower_ms": 63.753535461425784,
+            "tower_ms_samples": [
+              63.733081817626946,
+              63.72084045410156,
+              63.73817825317382,
+              63.70785903930665,
+              63.73455810546876,
+              63.81719970703124,
+              63.80352020263672,
+              63.81029891967774,
+              63.768138885498054,
+              63.70167922973632
+            ],
+            "real_tokens": 4096,
+            "physical_tokens": 4096,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 83349504
+          },
+          {
+            "case_index": 1,
+            "tower_ms": 63.715565872192386,
+            "tower_ms_samples": [
+              63.74488067626953,
+              63.75357818603515,
+              63.72642135620117,
+              63.68758010864258,
+              63.6997184753418,
+              63.695159912109375,
+              63.72201919555665,
+              63.6895408630371,
+              63.7165412902832,
+              63.720218658447266
+            ],
+            "real_tokens": 4096,
+            "physical_tokens": 4096,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 83349504
+          },
+          {
+            "case_index": 2,
+            "tower_ms": 63.731981658935545,
+            "tower_ms_samples": [
+              63.723041534423835,
+              63.71063995361329,
+              63.712318420410156,
+              63.72175979614257,
+              63.74777984619141,
+              63.660320281982415,
+              63.730499267578125,
+              63.73791885375976,
+              63.88167953491211,
+              63.6938591003418
+            ],
+            "real_tokens": 4096,
+            "physical_tokens": 4096,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 83349504
+          },
+          {
+            "case_index": 3,
+            "tower_ms": 63.727847290039065,
+            "tower_ms_samples": [
+              63.76531982421875,
+              63.80321884155274,
+              63.724098205566406,
+              63.77349853515625,
+              63.72243881225587,
+              63.66542053222657,
+              63.7083396911621,
+              63.69097900390624,
+              63.70996093750001,
+              63.7151985168457
+            ],
+            "real_tokens": 4096,
+            "physical_tokens": 4096,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 83349504
+          },
+          {
+            "case_index": 4,
+            "tower_ms": 63.748658370971675,
+            "tower_ms_samples": [
+              63.727638244628906,
+              63.67218017578124,
+              63.72090148925781,
+              63.76483917236328,
+              63.75584030151367,
+              63.67198181152344,
+              63.86880111694336,
+              63.73627853393554,
+              63.79204177856445,
+              63.77608108520508
+            ],
+            "real_tokens": 4096,
+            "physical_tokens": 4096,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 83337728
+          },
+          {
+            "case_index": 5,
+            "tower_ms": 63.67916831970214,
+            "tower_ms_samples": [
+              63.70000076293945,
+              63.675941467285156,
+              63.680179595947266,
+              63.677120208740234,
+              63.67136001586913,
+              63.701141357421875,
+              63.67572021484374,
+              63.662361145019524,
+              63.67416000366211,
+              63.67369842529297
+            ],
+            "real_tokens": 4096,
+            "physical_tokens": 4096,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 83337728
+          },
+          {
+            "case_index": 6,
+            "tower_ms": 63.740716552734376,
+            "tower_ms_samples": [
+              63.7759017944336,
+              63.65966033935547,
+              63.75183868408203,
+              63.70800018310546,
+              63.74142074584961,
+              63.766521453857415,
+              63.708541870117195,
+              63.727340698242195,
+              63.7188606262207,
+              63.84907913208007
+            ],
+            "real_tokens": 4096,
+            "physical_tokens": 4096,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 85865472
+          },
+          {
+            "case_index": 7,
+            "tower_ms": 63.70595016479492,
+            "tower_ms_samples": [
+              63.447898864746094,
+              63.75914001464844,
+              63.715858459472656,
+              63.78319931030274,
+              63.72043991088867,
+              63.7506217956543,
+              63.81167984008788,
+              63.712921142578125,
+              63.6963005065918,
+              63.661441802978516
+            ],
+            "real_tokens": 2048,
+            "physical_tokens": 4096,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 79885312
+          }
+        ]
+      },
+      {
+        "name": "b2_s2048",
+        "batch_size": 2,
+        "sequence_length": 2048,
+        "physical_tokens_per_full_call": 4096,
+        "supported": true,
+        "target_batches": 4,
+        "packed_rows": 7,
+        "packable_crops": 12,
+        "passthrough_crops": 4,
+        "excluded_overflow_crops": 0,
+        "excluded_overflow_tokens": 0,
+        "target_batch_metrics": {
+          "tower_s": 0.20727105293273926,
+          "real_tokens": 14336,
+          "physical_tokens": 16384,
+          "padding_tokens": 2048,
+          "raw_physical_tokens_per_s": 79046.25256724445,
+          "effective_real_tokens_per_s": 69165.47099633889,
+          "real_token_fraction": 0.875,
+          "call_ms_mean": 51.81776323318481,
+          "call_ms_p50": 51.81759910583496,
+          "call_ms_p95": 51.82981531143189,
+          "peak_allocated_bytes_delta": 62802944
+        },
+        "in_scope_corpus_projection": {
+          "tower_s": 0.49363679084777834,
+          "real_tokens": 30720,
+          "physical_tokens": 32768,
+          "padding_tokens": 2048,
+          "raw_physical_tokens_per_s": 66380.78969706412,
+          "effective_real_tokens_per_s": 62231.99034099761,
+          "real_token_fraction": 0.9375,
+          "passthrough_tower_s": 0.28636573791503905
+        },
+        "padding_audit": {
+          "passed": true,
+          "dummy_rows": 1,
+          "max_case_padding_tokens": 2048
+        },
+        "cases": [
+          {
+            "case_index": 0,
+            "tower_ms": 51.821296310424806,
+            "tower_ms_samples": [
+              51.762298583984375,
+              51.80236053466797,
+              51.77220153808594,
+              51.825618743896484,
+              51.82400131225586,
+              51.8353385925293,
+              51.80192184448242,
+              51.842201232910156,
+              51.77289962768555,
+              51.97412109375
+            ],
+            "real_tokens": 4096,
+            "physical_tokens": 4096,
+            "real_rows": 2,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 61160448
+          },
+          {
+            "case_index": 1,
+            "tower_ms": 51.81390190124512,
+            "tower_ms_samples": [
+              51.840660095214844,
+              51.95478057861328,
+              51.78620147705078,
+              51.80231857299805,
+              51.76696014404297,
+              51.82188034057617,
+              51.78276062011719,
+              51.79787826538086,
+              51.77735900878906,
+              51.80821990966797
+            ],
+            "real_tokens": 4096,
+            "physical_tokens": 4096,
+            "real_rows": 2,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 61160448
+          },
+          {
+            "case_index": 2,
+            "tower_ms": 51.80453605651856,
+            "tower_ms_samples": [
+              51.79056167602539,
+              51.784698486328125,
+              51.79914093017578,
+              51.77033996582031,
+              51.79460144042969,
+              51.864601135253906,
+              51.77048110961914,
+              51.864498138427734,
+              51.785438537597656,
+              51.82099914550781
+            ],
+            "real_tokens": 4096,
+            "physical_tokens": 4096,
+            "real_rows": 2,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 62802944
+          },
+          {
+            "case_index": 3,
+            "tower_ms": 51.83131866455078,
+            "tower_ms_samples": [
+              51.79528045654297,
+              51.83116149902344,
+              51.79726028442383,
+              51.79048156738281,
+              51.952640533447266,
+              51.82284164428711,
+              51.79999923706055,
+              51.852821350097656,
+              51.77857971191406,
+              51.892120361328125
+            ],
+            "real_tokens": 2048,
+            "physical_tokens": 4096,
+            "real_rows": 1,
+            "dummy_rows": 1,
+            "peak_allocated_bytes_delta": 61365760
+          }
+        ]
+      }
+    ],
+    "synthetic_repeat": [
+      {
+        "name": "b1_s512",
+        "batch_size": 1,
+        "sequence_length": 512,
+        "physical_tokens_per_full_call": 512,
+        "supported": true,
+        "target_batches": 4,
+        "packed_rows": 4,
+        "packable_crops": 4,
+        "passthrough_crops": 12,
+        "excluded_overflow_crops": 0,
+        "excluded_overflow_tokens": 0,
+        "target_batch_metrics": {
+          "tower_s": 0.06376057186126709,
+          "real_tokens": 2048,
+          "physical_tokens": 2048,
+          "padding_tokens": 0,
+          "raw_physical_tokens_per_s": 32120.163609199175,
+          "effective_real_tokens_per_s": 32120.163609199175,
+          "real_token_fraction": 1.0,
+          "call_ms_mean": 15.940142965316772,
+          "call_ms_p50": 15.940507984161378,
+          "call_ms_p95": 15.945892748832701,
+          "peak_allocated_bytes_delta": 8945664
+        },
+        "in_scope_corpus_projection": {
+          "tower_s": 0.6840341772079468,
+          "real_tokens": 30720,
+          "physical_tokens": 30720,
+          "padding_tokens": 0,
+          "raw_physical_tokens_per_s": 44910.03669639902,
+          "effective_real_tokens_per_s": 44910.03669639902,
+          "real_token_fraction": 1.0,
+          "passthrough_tower_s": 0.6202736053466796
+        },
+        "padding_audit": {
+          "passed": true,
+          "dummy_rows": 0,
+          "max_case_padding_tokens": 0
+        },
+        "cases": [
+          {
+            "case_index": 0,
+            "tower_ms": 15.946445941925049,
+            "tower_ms_samples": [
+              15.925740242004393,
+              15.931340217590334,
+              16.048160552978516,
+              15.927419662475586,
+              15.932239532470703,
+              15.950779914855957,
+              15.942879676818848,
+              15.943819999694824,
+              15.912919998168944,
+              15.949159622192381
+            ],
+            "real_tokens": 512,
+            "physical_tokens": 512,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 8945664
+          },
+          {
+            "case_index": 1,
+            "tower_ms": 15.942757987976075,
+            "tower_ms_samples": [
+              15.952759742736816,
+              15.9385404586792,
+              15.937239646911621,
+              15.949560165405273,
+              15.939299583435059,
+              15.945839881896973,
+              15.938899993896486,
+              15.935640335083008,
+              15.953140258789064,
+              15.936659812927246
+            ],
+            "real_tokens": 512,
+            "physical_tokens": 512,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 8945664
+          },
+          {
+            "case_index": 2,
+            "tower_ms": 15.933109951019286,
+            "tower_ms_samples": [
+              15.944660186767576,
+              15.941760063171387,
+              15.92319965362549,
+              15.923859596252441,
+              15.942700386047365,
+              15.937439918518065,
+              15.939339637756348,
+              15.932299613952635,
+              15.917420387268066,
+              15.928420066833496
+            ],
+            "real_tokens": 512,
+            "physical_tokens": 512,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 8945664
+          },
+          {
+            "case_index": 3,
+            "tower_ms": 15.93825798034668,
+            "tower_ms_samples": [
+              15.932040214538576,
+              15.928859710693358,
+              15.93336009979248,
+              15.94219970703125,
+              15.956899642944336,
+              15.930279731750488,
+              15.933219909667969,
+              15.931400299072266,
+              15.951680183410645,
+              15.94264030456543
+            ],
+            "real_tokens": 512,
+            "physical_tokens": 512,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 8945664
+          }
+        ]
+      },
+      {
+        "name": "b2_s512",
+        "batch_size": 2,
+        "sequence_length": 512,
+        "physical_tokens_per_full_call": 1024,
+        "supported": true,
+        "target_batches": 2,
+        "packed_rows": 4,
+        "packable_crops": 4,
+        "passthrough_crops": 12,
+        "excluded_overflow_crops": 0,
+        "excluded_overflow_tokens": 0,
+        "target_batch_metrics": {
+          "tower_s": 0.04122188377380371,
+          "real_tokens": 2048,
+          "physical_tokens": 2048,
+          "padding_tokens": 0,
+          "raw_physical_tokens_per_s": 49682.34860973271,
+          "effective_real_tokens_per_s": 49682.34860973271,
+          "real_token_fraction": 1.0,
+          "call_ms_mean": 20.610941886901855,
+          "call_ms_p50": 20.610941886901855,
+          "call_ms_p95": 20.611539440155028,
+          "peak_allocated_bytes_delta": 13375488
+        },
+        "in_scope_corpus_projection": {
+          "tower_s": 0.6614954891204834,
+          "real_tokens": 30720,
+          "physical_tokens": 30720,
+          "padding_tokens": 0,
+          "raw_physical_tokens_per_s": 46440.225980746975,
+          "effective_real_tokens_per_s": 46440.225980746975,
+          "real_token_fraction": 1.0,
+          "passthrough_tower_s": 0.6202736053466796
+        },
+        "padding_audit": {
+          "passed": true,
+          "dummy_rows": 0,
+          "max_case_padding_tokens": 0
+        },
+        "cases": [
+          {
+            "case_index": 0,
+            "tower_ms": 20.611605834960937,
+            "tower_ms_samples": [
+              20.62175941467285,
+              20.594240188598633,
+              20.60733985900879,
+              20.630420684814453,
+              20.606199264526367,
+              20.61050033569336,
+              20.621639251708984,
+              20.60881996154785,
+              20.611539840698242,
+              20.603599548339844
+            ],
+            "real_tokens": 1024,
+            "physical_tokens": 1024,
+            "real_rows": 2,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 13375488
+          },
+          {
+            "case_index": 1,
+            "tower_ms": 20.610277938842774,
+            "tower_ms_samples": [
+              20.5987606048584,
+              20.598779678344727,
+              20.598520278930664,
+              20.603660583496094,
+              20.604360580444336,
+              20.591459274291992,
+              20.603679656982422,
+              20.618179321289062,
+              20.599279403686523,
+              20.686100006103516
+            ],
+            "real_tokens": 1024,
+            "physical_tokens": 1024,
+            "real_rows": 2,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 13375488
+          }
+        ]
+      },
+      {
+        "name": "b4_s512",
+        "batch_size": 4,
+        "sequence_length": 512,
+        "physical_tokens_per_full_call": 2048,
+        "supported": true,
+        "target_batches": 1,
+        "packed_rows": 4,
+        "packable_crops": 4,
+        "passthrough_crops": 12,
+        "excluded_overflow_crops": 0,
+        "excluded_overflow_tokens": 0,
+        "target_batch_metrics": {
+          "tower_s": 0.02711223392486572,
+          "real_tokens": 2048,
+          "physical_tokens": 2048,
+          "padding_tokens": 0,
+          "raw_physical_tokens_per_s": 75537.85518653617,
+          "effective_real_tokens_per_s": 75537.85518653617,
+          "real_token_fraction": 1.0,
+          "call_ms_mean": 27.112233924865723,
+          "call_ms_p50": 27.112233924865723,
+          "call_ms_p95": 27.112233924865723,
+          "peak_allocated_bytes_delta": 25722368
+        },
+        "in_scope_corpus_projection": {
+          "tower_s": 0.6473858392715454,
+          "real_tokens": 30720,
+          "physical_tokens": 30720,
+          "padding_tokens": 0,
+          "raw_physical_tokens_per_s": 47452.38177369914,
+          "effective_real_tokens_per_s": 47452.38177369914,
+          "real_token_fraction": 1.0,
+          "passthrough_tower_s": 0.6202736053466796
+        },
+        "padding_audit": {
+          "passed": true,
+          "dummy_rows": 0,
+          "max_case_padding_tokens": 0
+        },
+        "cases": [
+          {
+            "case_index": 0,
+            "tower_ms": 27.112233924865723,
+            "tower_ms_samples": [
+              27.07200050354004,
+              27.08761978149414,
+              27.05500030517578,
+              27.225679397583008,
+              27.10614013671875,
+              27.096939086914062,
+              27.08683967590332,
+              27.09592056274414,
+              27.100139617919922,
+              27.196060180664062
+            ],
+            "real_tokens": 2048,
+            "physical_tokens": 2048,
+            "real_rows": 4,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 25722368
+          }
+        ]
+      },
+      {
+        "name": "b1_s1024",
+        "batch_size": 1,
+        "sequence_length": 1024,
+        "physical_tokens_per_full_call": 1024,
+        "supported": true,
+        "target_batches": 6,
+        "packed_rows": 6,
+        "packable_crops": 8,
+        "passthrough_crops": 8,
+        "excluded_overflow_crops": 0,
+        "excluded_overflow_tokens": 0,
+        "target_batch_metrics": {
+          "tower_s": 0.13048340167999267,
+          "real_tokens": 6144,
+          "physical_tokens": 6144,
+          "padding_tokens": 0,
+          "raw_physical_tokens_per_s": 47086.44870454871,
+          "effective_real_tokens_per_s": 47086.44870454871,
+          "real_token_fraction": 1.0,
+          "call_ms_mean": 21.747233613332114,
+          "call_ms_p50": 21.74785385131836,
+          "call_ms_p95": 21.760166978836057,
+          "peak_allocated_bytes_delta": 15931904
+        },
+        "in_scope_corpus_projection": {
+          "tower_s": 0.5822171091079712,
+          "real_tokens": 30720,
+          "physical_tokens": 30720,
+          "padding_tokens": 0,
+          "raw_physical_tokens_per_s": 52763.82215401888,
+          "effective_real_tokens_per_s": 52763.82215401888,
+          "real_token_fraction": 1.0,
+          "passthrough_tower_s": 0.4517337074279785
+        },
+        "padding_audit": {
+          "passed": true,
+          "dummy_rows": 0,
+          "max_case_padding_tokens": 0
+        },
+        "cases": [
+          {
+            "case_index": 0,
+            "tower_ms": 21.731843757629395,
+            "tower_ms_samples": [
+              21.719379425048828,
+              21.70631980895996,
+              21.693519592285156,
+              21.725980758666992,
+              21.72127914428711,
+              21.695640563964844,
+              21.867300033569336,
+              21.71381950378418,
+              21.739179611206055,
+              21.736019134521484
+            ],
+            "real_tokens": 1024,
+            "physical_tokens": 1024,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 14446592
+          },
+          {
+            "case_index": 1,
+            "tower_ms": 21.74565773010254,
+            "tower_ms_samples": [
+              21.73625946044922,
+              21.74098014831543,
+              21.712139129638672,
+              21.739919662475586,
+              21.7185001373291,
+              21.71731948852539,
+              21.8675594329834,
+              21.721960067749023,
+              21.739919662475586,
+              21.762020111083984
+            ],
+            "real_tokens": 1024,
+            "physical_tokens": 1024,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 14446592
+          },
+          {
+            "case_index": 2,
+            "tower_ms": 21.75711612701416,
+            "tower_ms_samples": [
+              21.754100799560547,
+              21.73664093017578,
+              21.734479904174805,
+              21.735679626464844,
+              21.73543930053711,
+              21.7425594329834,
+              21.72410011291504,
+              21.73862075805664,
+              21.7331600189209,
+              21.93638038635254
+            ],
+            "real_tokens": 1024,
+            "physical_tokens": 1024,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 14446592
+          },
+          {
+            "case_index": 3,
+            "tower_ms": 21.73755016326904,
+            "tower_ms_samples": [
+              21.738779067993164,
+              21.753080368041992,
+              21.74134063720703,
+              21.72085952758789,
+              21.759700775146484,
+              21.73982048034668,
+              21.69972038269043,
+              21.742259979248047,
+              21.7539005279541,
+              21.72603988647461
+            ],
+            "real_tokens": 1024,
+            "physical_tokens": 1024,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 14446592
+          },
+          {
+            "case_index": 4,
+            "tower_ms": 21.76118392944336,
+            "tower_ms_samples": [
+              21.86985969543457,
+              21.74608039855957,
+              21.743959426879883,
+              21.758739471435547,
+              21.760480880737305,
+              21.7479190826416,
+              21.754640579223633,
+              21.7397403717041,
+              21.743139266967773,
+              21.74728012084961
+            ],
+            "real_tokens": 1024,
+            "physical_tokens": 1024,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 15931904
+          },
+          {
+            "case_index": 5,
+            "tower_ms": 21.75004997253418,
+            "tower_ms_samples": [
+              21.769859313964844,
+              21.740520477294922,
+              21.754980087280273,
+              21.753999710083008,
+              21.73225975036621,
+              21.7602596282959,
+              21.752399444580078,
+              21.736940383911133,
+              21.764039993286133,
+              21.735240936279297
+            ],
+            "real_tokens": 1024,
+            "physical_tokens": 1024,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 15931904
+          }
+        ]
+      },
+      {
+        "name": "b2_s1024",
+        "batch_size": 2,
+        "sequence_length": 1024,
+        "physical_tokens_per_full_call": 2048,
+        "supported": true,
+        "target_batches": 3,
+        "packed_rows": 6,
+        "packable_crops": 8,
+        "passthrough_crops": 8,
+        "excluded_overflow_crops": 0,
+        "excluded_overflow_tokens": 0,
+        "target_batch_metrics": {
+          "tower_s": 0.08722117233276368,
+          "real_tokens": 6144,
+          "physical_tokens": 6144,
+          "padding_tokens": 0,
+          "raw_physical_tokens_per_s": 70441.61223331865,
+          "effective_real_tokens_per_s": 70441.61223331865,
+          "real_token_fraction": 1.0,
+          "call_ms_mean": 29.073724110921223,
+          "call_ms_p50": 29.067648124694824,
+          "call_ms_p95": 29.091917438507082,
+          "peak_allocated_bytes_delta": 28058624
+        },
+        "in_scope_corpus_projection": {
+          "tower_s": 0.5389548797607422,
+          "real_tokens": 30720,
+          "physical_tokens": 30720,
+          "padding_tokens": 0,
+          "raw_physical_tokens_per_s": 56999.20559887593,
+          "effective_real_tokens_per_s": 56999.20559887593,
+          "real_token_fraction": 1.0,
+          "passthrough_tower_s": 0.4517337074279785
+        },
+        "padding_audit": {
+          "passed": true,
+          "dummy_rows": 0,
+          "max_case_padding_tokens": 0
+        },
+        "cases": [
+          {
+            "case_index": 0,
+            "tower_ms": 29.094614028930664,
+            "tower_ms_samples": [
+              29.0362606048584,
+              29.053640365600586,
+              29.04170036315918,
+              29.290739059448242,
+              29.07830047607422,
+              29.05467987060547,
+              29.07461929321289,
+              29.100919723510742,
+              29.059480667114258,
+              29.155799865722656
+            ],
+            "real_tokens": 2048,
+            "physical_tokens": 2048,
+            "real_rows": 2,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 27027456
+          },
+          {
+            "case_index": 1,
+            "tower_ms": 29.067648124694824,
+            "tower_ms_samples": [
+              29.06955909729004,
+              29.06097984313965,
+              29.045339584350586,
+              29.105100631713867,
+              29.05385971069336,
+              29.05624008178711,
+              29.099660873413086,
+              29.063560485839844,
+              29.053680419921875,
+              29.068500518798828
+            ],
+            "real_tokens": 2048,
+            "physical_tokens": 2048,
+            "real_rows": 2,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 27027456
+          },
+          {
+            "case_index": 2,
+            "tower_ms": 29.058910179138184,
+            "tower_ms_samples": [
+              29.066879272460938,
+              29.07379913330078,
+              29.07345962524414,
+              29.04446029663086,
+              29.049720764160156,
+              29.053020477294922,
+              29.05898094177246,
+              29.0522403717041,
+              29.065040588378906,
+              29.05150032043457
+            ],
+            "real_tokens": 2048,
+            "physical_tokens": 2048,
+            "real_rows": 2,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 28058624
+          }
+        ]
+      },
+      {
+        "name": "b4_s1024",
+        "batch_size": 4,
+        "sequence_length": 1024,
+        "physical_tokens_per_full_call": 4096,
+        "supported": true,
+        "target_batches": 2,
+        "packed_rows": 6,
+        "packable_crops": 8,
+        "passthrough_crops": 8,
+        "excluded_overflow_crops": 0,
+        "excluded_overflow_tokens": 0,
+        "target_batch_metrics": {
+          "tower_s": 0.09339990196228026,
+          "real_tokens": 6144,
+          "physical_tokens": 8192,
+          "padding_tokens": 2048,
+          "raw_physical_tokens_per_s": 87708.87150725657,
+          "effective_real_tokens_per_s": 65781.65363044242,
+          "real_token_fraction": 0.75,
+          "call_ms_mean": 46.699950981140134,
+          "call_ms_p50": 46.699950981140134,
+          "call_ms_p95": 46.710366535186765,
+          "peak_allocated_bytes_delta": 53722112
+        },
+        "in_scope_corpus_projection": {
+          "tower_s": 0.5451336093902588,
+          "real_tokens": 30720,
+          "physical_tokens": 32768,
+          "padding_tokens": 2048,
+          "raw_physical_tokens_per_s": 60110.034376070784,
+          "effective_real_tokens_per_s": 56353.157227566364,
+          "real_token_fraction": 0.9375,
+          "passthrough_tower_s": 0.4517337074279785
+        },
+        "padding_audit": {
+          "passed": true,
+          "dummy_rows": 2,
+          "max_case_padding_tokens": 2048
+        },
+        "cases": [
+          {
+            "case_index": 0,
+            "tower_ms": 46.711523818969724,
+            "tower_ms_samples": [
+              46.68769836425781,
+              46.672821044921875,
+              46.69181823730469,
+              46.699100494384766,
+              46.67499923706055,
+              46.81351852416992,
+              46.72800064086914,
+              46.69015884399414,
+              46.71242141723633,
+              46.74470138549805
+            ],
+            "real_tokens": 4096,
+            "physical_tokens": 4096,
+            "real_rows": 4,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 53722112
+          },
+          {
+            "case_index": 1,
+            "tower_ms": 46.688378143310544,
+            "tower_ms_samples": [
+              46.708099365234375,
+              46.66600036621094,
+              46.69456100463867,
+              46.66482162475586,
+              46.675941467285156,
+              46.692138671875,
+              46.71712112426758,
+              46.7158203125,
+              46.679298400878906,
+              46.669979095458984
+            ],
+            "real_tokens": 2048,
+            "physical_tokens": 4096,
+            "real_rows": 2,
+            "dummy_rows": 2,
+            "peak_allocated_bytes_delta": 50106880
+          }
+        ]
+      },
+      {
+        "name": "b1_s4096",
+        "batch_size": 1,
+        "sequence_length": 4096,
+        "physical_tokens_per_full_call": 4096,
+        "supported": true,
+        "target_batches": 8,
+        "packed_rows": 8,
+        "packable_crops": 16,
+        "passthrough_crops": 0,
+        "excluded_overflow_crops": 0,
+        "excluded_overflow_tokens": 0,
+        "target_batch_metrics": {
+          "tower_s": 0.5093234676361084,
+          "real_tokens": 30720,
+          "physical_tokens": 32768,
+          "padding_tokens": 2048,
+          "raw_physical_tokens_per_s": 64336.32471734338,
+          "effective_real_tokens_per_s": 60315.30442250942,
+          "real_token_fraction": 0.9375,
+          "call_ms_mean": 63.66543345451355,
+          "call_ms_p50": 63.6592336654663,
+          "call_ms_p95": 63.69641090393066,
+          "peak_allocated_bytes_delta": 85865472
+        },
+        "in_scope_corpus_projection": {
+          "tower_s": 0.5093234676361084,
+          "real_tokens": 30720,
+          "physical_tokens": 32768,
+          "padding_tokens": 2048,
+          "raw_physical_tokens_per_s": 64336.32471734338,
+          "effective_real_tokens_per_s": 60315.30442250942,
+          "real_token_fraction": 0.9375,
+          "passthrough_tower_s": 0.0
+        },
+        "padding_audit": {
+          "passed": true,
+          "dummy_rows": 0,
+          "max_case_padding_tokens": 2048
+        },
+        "cases": [
+          {
+            "case_index": 0,
+            "tower_ms": 63.64994812011719,
+            "tower_ms_samples": [
+              63.6291389465332,
+              63.65467834472656,
+              63.64443969726563,
+              63.64453887939453,
+              63.65587997436524,
+              63.64110183715821,
+              63.64371871948242,
+              63.6726417541504,
+              63.639541625976555,
+              63.67380142211915
+            ],
+            "real_tokens": 4096,
+            "physical_tokens": 4096,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 83349504
+          },
+          {
+            "case_index": 1,
+            "tower_ms": 63.65377006530762,
+            "tower_ms_samples": [
+              63.64590072631836,
+              63.665019989013665,
+              63.64664077758789,
+              63.65367889404297,
+              63.62704086303711,
+              63.64685821533203,
+              63.672760009765625,
+              63.66749954223633,
+              63.669380187988274,
+              63.642921447753906
+            ],
+            "real_tokens": 4096,
+            "physical_tokens": 4096,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 83349504
+          },
+          {
+            "case_index": 2,
+            "tower_ms": 63.700880432128905,
+            "tower_ms_samples": [
+              63.642681121826165,
+              63.65996170043946,
+              63.636821746826165,
+              63.67771911621094,
+              63.76287841796875,
+              63.75312042236328,
+              63.67734146118165,
+              63.67655944824219,
+              63.666141510009766,
+              63.8555793762207
+            ],
+            "real_tokens": 4096,
+            "physical_tokens": 4096,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 83349504
+          },
+          {
+            "case_index": 3,
+            "tower_ms": 63.664697265624994,
+            "tower_ms_samples": [
+              63.70978164672851,
+              63.692039489746094,
+              63.64023971557617,
+              63.65557861328125,
+              63.65409851074219,
+              63.64833831787109,
+              63.66881942749024,
+              63.68505859374999,
+              63.64577865600586,
+              63.64723968505859
+            ],
+            "real_tokens": 4096,
+            "physical_tokens": 4096,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 83349504
+          },
+          {
+            "case_index": 4,
+            "tower_ms": 63.651597595214845,
+            "tower_ms_samples": [
+              63.711360931396484,
+              63.63933944702148,
+              63.64339828491211,
+              63.64979934692383,
+              63.62575912475586,
+              63.672401428222656,
+              63.62310028076172,
+              63.671638488769524,
+              63.63011932373047,
+              63.649059295654304
+            ],
+            "real_tokens": 4096,
+            "physical_tokens": 4096,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 83337728
+          },
+          {
+            "case_index": 5,
+            "tower_ms": 63.66562194824219,
+            "tower_ms_samples": [
+              63.64358139038086,
+              63.794761657714844,
+              63.68016052246094,
+              63.655559539794915,
+              63.719600677490234,
+              63.62337875366212,
+              63.65953826904297,
+              63.63338088989258,
+              63.60559844970703,
+              63.64065933227539
+            ],
+            "real_tokens": 4096,
+            "physical_tokens": 4096,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 83337728
+          },
+          {
+            "case_index": 6,
+            "tower_ms": 63.648841857910156,
+            "tower_ms_samples": [
+              63.65718078613282,
+              63.64709854125977,
+              63.64311981201172,
+              63.645858764648445,
+              63.63768005371094,
+              63.68484115600585,
+              63.64051818847656,
+              63.65914154052735,
+              63.62754058837891,
+              63.64543914794922
+            ],
+            "real_tokens": 4096,
+            "physical_tokens": 4096,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 85865472
+          },
+          {
+            "case_index": 7,
+            "tower_ms": 63.6881103515625,
+            "tower_ms_samples": [
+              63.7290382385254,
+              63.67372131347657,
+              63.66146087646485,
+              63.75617980957031,
+              63.86621856689453,
+              63.85811996459962,
+              63.59672164916992,
+              63.581520080566406,
+              63.55876159667968,
+              63.59936141967773
+            ],
+            "real_tokens": 2048,
+            "physical_tokens": 4096,
+            "real_rows": 1,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 79885312
+          }
+        ]
+      },
+      {
+        "name": "b2_s2048",
+        "batch_size": 2,
+        "sequence_length": 2048,
+        "physical_tokens_per_full_call": 4096,
+        "supported": true,
+        "target_batches": 4,
+        "packed_rows": 7,
+        "packable_crops": 12,
+        "passthrough_crops": 4,
+        "excluded_overflow_crops": 0,
+        "excluded_overflow_tokens": 0,
+        "target_batch_metrics": {
+          "tower_s": 0.20701454010009765,
+          "real_tokens": 14336,
+          "physical_tokens": 16384,
+          "padding_tokens": 2048,
+          "raw_physical_tokens_per_s": 79144.19920493435,
+          "effective_real_tokens_per_s": 69251.17430431757,
+          "real_token_fraction": 0.875,
+          "call_ms_mean": 51.753635025024415,
+          "call_ms_p50": 51.75111713409424,
+          "call_ms_p95": 51.76250894546509,
+          "peak_allocated_bytes_delta": 62802944
+        },
+        "in_scope_corpus_projection": {
+          "tower_s": 0.4916812271118164,
+          "real_tokens": 30720,
+          "physical_tokens": 32768,
+          "padding_tokens": 2048,
+          "raw_physical_tokens_per_s": 66644.80601076115,
+          "effective_real_tokens_per_s": 62479.50563508858,
+          "real_token_fraction": 0.9375,
+          "passthrough_tower_s": 0.28466668701171877
+        },
+        "padding_audit": {
+          "passed": true,
+          "dummy_rows": 1,
+          "max_case_padding_tokens": 2048
+        },
+        "cases": [
+          {
+            "case_index": 0,
+            "tower_ms": 51.749477767944335,
+            "tower_ms_samples": [
+              51.77354049682617,
+              51.72787857055664,
+              51.759639739990234,
+              51.76203918457031,
+              51.74209976196289,
+              51.73311996459961,
+              51.775718688964844,
+              51.752620697021484,
+              51.7541618347168,
+              51.713958740234375
+            ],
+            "real_tokens": 4096,
+            "physical_tokens": 4096,
+            "real_rows": 2,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 61160448
+          },
+          {
+            "case_index": 1,
+            "tower_ms": 51.764229965209964,
+            "tower_ms_samples": [
+              51.81439971923828,
+              51.71189880371094,
+              51.73273849487305,
+              51.76424026489258,
+              51.76652145385742,
+              51.72420120239258,
+              51.75912094116211,
+              51.72333908081055,
+              51.92509841918945,
+              51.720741271972656
+            ],
+            "real_tokens": 4096,
+            "physical_tokens": 4096,
+            "real_rows": 2,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 61160448
+          },
+          {
+            "case_index": 2,
+            "tower_ms": 51.74807586669922,
+            "tower_ms_samples": [
+              51.78342056274414,
+              51.7648811340332,
+              51.7411994934082,
+              51.714378356933594,
+              51.8083381652832,
+              51.708839416503906,
+              51.74570083618164,
+              51.71406173706055,
+              51.7800407409668,
+              51.71989822387695
+            ],
+            "real_tokens": 4096,
+            "physical_tokens": 4096,
+            "real_rows": 2,
+            "dummy_rows": 0,
+            "peak_allocated_bytes_delta": 62802944
+          },
+          {
+            "case_index": 3,
+            "tower_ms": 51.75275650024414,
+            "tower_ms_samples": [
+              51.79518127441406,
+              51.71194076538086,
+              51.782798767089844,
+              51.75749969482422,
+              51.74956130981445,
+              51.73802185058594,
+              51.76177978515625,
+              51.743858337402344,
+              51.75490188598633,
+              51.73202133178711
+            ],
+            "real_tokens": 2048,
+            "physical_tokens": 4096,
+            "real_rows": 1,
+            "dummy_rows": 1,
+            "peak_allocated_bytes_delta": 61365760
+          }
+        ]
+      }
+    ]
+  }
+}
