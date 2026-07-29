@@ -521,6 +521,20 @@ raw full-stage comparison remained finite with mean absolute difference
 0.00268. Evidence is under
 `tmp/09_persistent_page_engine/vision_matmul_lab/head80_weight_*`.
 
+The follow-up full-stage RoPE comparison keeps that D80 graph and applies the
+same FP32 half-RoPE formula once to one contiguous QK tensor. On the same
+B1xS2048 shape, the joint path reproduced at 24.31 ms / 84.2k physical tok/s,
+versus a 25.55 ms / 80.1k warm control: 4.84% lower latency and 5.09% higher
+throughput, with exact raw D80 output parity. The complete-graph profile halves
+the RoPE slice/multiply/add/cast/negate families, removes the QKV split, and
+leaves all 27 PromptFA and 162 Linear calls unchanged.
+
+A 910B-only interleaved `_C_ascend::inplace_partial_rotary_mul` lane also
+compiled through an explicit TorchAir converter, but regressed to 187.10 ms
+per full replay and is rejected. The production stage is unchanged pending a
+real-crop/E2E gate. The full table and profile comparison are under
+`tmp/09_persistent_page_engine/vision_matmul_lab/rope_full27_comparison_e12cfe8/`.
+
 The owned runner prepares pages sequentially on one background producer. Each
 page enters a one-page bounded queue as soon as layout detection, cropping, and
 prompt preparation finish. The recognizer can therefore start consuming that

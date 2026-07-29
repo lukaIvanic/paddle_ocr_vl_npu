@@ -1,0 +1,171 @@
+{
+  "schema_version": 3,
+  "status": "completed",
+  "purpose": "exact production 27-layer vision PromptFA format/alignment experiment using synthetic shape inputs",
+  "boundary": "VisionPrefillStage: 27 x (LayerNorm1 + Q/K/V + RoPE + PromptFA + out projection + residual + LayerNorm2 + FC1/GELU/FC2 + residual) + post-LayerNorm",
+  "production_stage": true,
+  "synthetic_shape_inputs": true,
+  "attention": {
+    "implementation": "prompt_flash_attention",
+    "input_layout": "BNSD",
+    "mask_sparse_mode": 1,
+    "model_head_dim": 72,
+    "promptfa_call_head_dim": 80,
+    "attention_mask_all_false": true,
+    "head_padding": {
+      "mode": "weights",
+      "real_head_dim": 72,
+      "padded_head_dim": 80,
+      "runtime_pad_operations_per_layer": 0,
+      "runtime_slice_operations_per_layer": 0,
+      "num_heads": 16,
+      "hidden_size": 1152,
+      "padded_attention_size": 1280
+    },
+    "rotary": {
+      "implementation": "joint_inplace_partial",
+      "custom_op_enabled": true,
+      "portable_to_310p": false,
+      "interleaved_qk_layers": 27,
+      "interleaved_qk_parameter_tensors": 108,
+      "qk_layout": "contiguous_joint_bsnd_interleaved",
+      "math": "one in-place interleaved D80 slice after one-time Q/K weight and factor permutation",
+      "operator": "_C_ascend::inplace_partial_rotary_mul",
+      "partial_slices": [
+        [
+          0,
+          80
+        ]
+      ],
+      "factor_dtype": "torch.float16",
+      "explicit_torchair_converter": true
+    }
+  },
+  "shape": {
+    "batch_size": 1,
+    "sequence_length": 2048,
+    "physical_tokens_per_call": 2048,
+    "hidden_size": 1152,
+    "source_intermediate_size": 4304,
+    "candidate_intermediate_size": 4352,
+    "layers": 27,
+    "linear_calls_per_layer": 6,
+    "linear_calls_per_full_stack": 162
+  },
+  "requested": {
+    "weight_format": "native",
+    "attention_head_padding": "weights",
+    "rotary_implementation": "joint_inplace_partial",
+    "execution": "torchair"
+  },
+  "weight_format": {
+    "requested": "native",
+    "target_format": "unchanged",
+    "target_format_code": null,
+    "linear_weight_count": 162,
+    "before_format_histogram": {
+      "2": 162
+    },
+    "converted_count": 0,
+    "status": "ready",
+    "failures": [],
+    "after_format_histogram": {
+      "2": 162
+    },
+    "all_after_are_nz": false,
+    "runtime_gate": {
+      "torch_npu_allow_internal_format_enabled_before_npu_allocation": false,
+      "mm_bmm_format_nd": true,
+      "manual_cast_after_model_load": false
+    }
+  },
+  "setup_s_through_format_preparation": 12.220848012017086,
+  "environment": {
+    "commit": "3a98867fad49e06f979f42f15f696fe0cfc3019c",
+    "device": "npu:0",
+    "device_name": "Ascend910B2",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "npu_smi": "+------------------------------------------------------------------------------------------------+\n| npu-smi 25.0.rc1.1               Version: 25.0.rc1.1                                           |\n+---------------------------+---------------+----------------------------------------------------+\n| NPU   Name                | Health        | Power(W)    Temp(C)           Hugepages-Usage(page)|\n| Chip                      | Bus-Id        | AICore(%)   Memory-Usage(MB)  HBM-Usage(MB)        |\n+===========================+===============+====================================================+\n| 0     910B2               | OK            | 108.4       48                0    / 0             |\n| 0                         | 0000:C1:00.0  | 0           0    / 0          3420 / 65536         |\n+===========================+===============+====================================================+\n| 1     910B2               | OK            | 102.8       49                0    / 0             |\n| 0                         | 0000:01:00.0  | 0           0    / 0          3414 / 65536         |\n+===========================+===============+====================================================+\n| 2     910B2               | OK            | 104.0       48                0    / 0             |\n| 0                         | 0000:C2:00.0  | 0           0    / 0          3410 / 65536         |\n+===========================+===============+====================================================+\n| 3     910B2               | OK            | 101.9       48                0    / 0             |\n| 0                         | 0000:02:00.0  | 0           0    / 0          54360/ 65536         |\n+===========================+===============+====================================================+\n| 4     910B2               | OK            | 102.4       49                0    / 0             |\n| 0                         | 0000:81:00.0  | 0           0    / 0          54372/ 65536         |\n+===========================+===============+====================================================+\n| 5     910B2               | OK            | 110.3       48                0    / 0             |\n| 0                         | 0000:41:00.0  | 0           0    / 0          7249 / 65536         |\n+===========================+===============+====================================================+\n| 6     910B2               | OK            | 102.5       49                0    / 0             |\n| 0                         | 0000:82:00.0  | 0           0    / 0          54372/ 65536         |\n+===========================+===============+====================================================+\n| 7     910B2               | OK            | 102.7       50                0    / 0             |\n| 0                         | 0000:42:00.0  | 0           0    / 0          54365/ 65536         |\n+===========================+===============+====================================================+\n+---------------------------+---------------+----------------------------------------------------+\n| NPU     Chip              | Process id    | Process name             | Process memory(MB)      |\n+===========================+===============+====================================================+\n| No running processes found in NPU 0                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 1                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 2                                                            |\n+===========================+===============+====================================================+\n| 3       0                 | 2804329       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 4       0                 | 2804375       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 5       0                 | 250551        |                          | 3879                    |\n+===========================+===============+====================================================+\n| 6       0                 | 2804478       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 7       0                 | 2804586       |                          | 51013                   |\n+===========================+===============+====================================================+\n"
+  },
+  "compile": {
+    "api": "torchair.inference.cache_compile",
+    "dynamic": false,
+    "fullgraph": true,
+    "ge_cache": true,
+    "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_lab/vision_pfa_b1_s2048_i4352_native_hpweights_ropejoint_inplace_partial_80bc09d8915c6bed",
+    "cache_existed_before": false,
+    "compile_was_permitted": true,
+    "wrapper_s": 0.00041935802437365055,
+    "first_call_s": 36.17998629400972
+  },
+  "linear_flops_per_full_stack_call": 1761205026816,
+  "measurements": {
+    "samples": 10,
+    "calls_per_sample": 5,
+    "total_measured_full_stack_calls": 50,
+    "device_event_per_call_ms": {
+      "samples": [
+        186.23275146484374,
+        186.2185791015625,
+        186.20938720703126,
+        187.035400390625,
+        187.8796630859375,
+        187.16016845703126,
+        187.2122314453125,
+        187.09591064453124,
+        187.1131103515625,
+        187.12130126953124
+      ],
+      "mean": 186.92785034179687,
+      "median": 187.10451049804686,
+      "p05": 186.21352355957032,
+      "p95": 187.57931884765625
+    },
+    "synchronized_wall_per_call_ms": {
+      "samples": [
+        186.51010780595243,
+        186.2712737871334,
+        186.2570775905624,
+        187.08104360848665,
+        187.95617441646755,
+        187.27495879866183,
+        187.27081480901688,
+        187.14606878347695,
+        187.17214919161052,
+        187.1849054004997
+      ],
+      "mean": 187.01245741918683,
+      "median": 187.15910898754373,
+      "p05": 186.26346587901935,
+      "p95": 187.64962738845497
+    },
+    "physical_tokens_per_s_device_median": 10945.754298218153,
+    "physical_tokens_per_s_wall_median": 10942.561177379315,
+    "linear_tflop_per_s_device_median": 9.412947994294264
+  },
+  "numerics": {
+    "raw_candidate_vs_native_4304": {
+      "max_abs": 0.634765625,
+      "mean_abs": 0.0028719473630189896,
+      "left_finite": true,
+      "right_finite": true,
+      "same_shape": true
+    },
+    "raw_candidate_vs_weight_padded_manual": {
+      "max_abs": 0.908203125,
+      "mean_abs": 0.00293120089918375,
+      "left_finite": true,
+      "right_finite": true,
+      "same_shape": true
+    },
+    "measured_output_vs_raw_candidate": {
+      "max_abs": 1.669921875,
+      "mean_abs": 0.0035068534780293703,
+      "left_finite": true,
+      "right_finite": true,
+      "same_shape": true
+    },
+    "measured_output_finite": true
+  }
+}
