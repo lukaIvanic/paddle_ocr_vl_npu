@@ -122,9 +122,10 @@ class PPDocLayoutV3GlobalPointer(nn.Module):
             self.head_size,
         )
         queries, keys = torch.unbind(self.dropout(projected), dim=2)
-        logits = (queries @ keys.transpose(-2, -1)) / math.sqrt(
-            self.head_size
-        )
+        logits = torch.bmm(
+            queries,
+            keys.transpose(1, 2),
+        ) / math.sqrt(self.head_size)
         mask = torch.tril(
             torch.ones(
                 sequence_length,
