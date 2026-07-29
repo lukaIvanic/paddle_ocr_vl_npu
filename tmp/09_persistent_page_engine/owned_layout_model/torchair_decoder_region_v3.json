@@ -1,0 +1,120 @@
+{
+  "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/layout_torchair_owned_decoder_b1_800_v3",
+  "compiled_device_s": 0.005075588480631511,
+  "diff": {
+    "intermediate_hidden_states": {
+      "allclose_atol_1e_3_rtol_1e_3": true,
+      "max_abs": 0.00048065185546875,
+      "mean_abs": 3.227173692721408e-06
+    },
+    "intermediate_logits": {
+      "allclose_atol_1e_3_rtol_1e_3": true,
+      "max_abs": 0.0004634857177734375,
+      "mean_abs": 5.050150775787188e-06
+    },
+    "intermediate_reference_points": {
+      "allclose_atol_1e_3_rtol_1e_3": true,
+      "max_abs": 2.0965933799743652e-05,
+      "mean_abs": 2.5402783876415924e-07
+    },
+    "last_hidden_state": {
+      "allclose_atol_1e_3_rtol_1e_3": true,
+      "max_abs": 0.00048065185546875,
+      "mean_abs": 3.227173692721408e-06
+    },
+    "order_logits": {
+      "allclose_atol_1e_3_rtol_1e_3": false,
+      "max_abs": 0.6143646240234375,
+      "mean_abs": 0.002890574047341943
+    },
+    "out_masks": {
+      "allclose_atol_1e_3_rtol_1e_3": false,
+      "max_abs": 0.7138671875,
+      "mean_abs": 0.00035789250978268683
+    }
+  },
+  "eager_device_s": 0.013962117513020834,
+  "first_call_s": 65.10731104400475,
+  "image": "/workspace/datasets/OmniDocBench/images/page-d1561665-5359-42fe-920c-d6e3bff81953.png",
+  "input_dtypes": [
+    "torch.float32",
+    "torch.float32",
+    "torch.float32",
+    "torch.int64",
+    "torch.int64",
+    "torch.float32"
+  ],
+  "input_shapes": [
+    [
+      1,
+      300,
+      256
+    ],
+    [
+      1,
+      13125,
+      256
+    ],
+    [
+      1,
+      300,
+      4
+    ],
+    [
+      3,
+      2
+    ],
+    [
+      3
+    ],
+    [
+      1,
+      32,
+      200,
+      200
+    ]
+  ],
+  "model": "/workspace/models/PP-DocLayoutV3_safetensors",
+  "output_shapes": {
+    "intermediate_hidden_states": [
+      1,
+      1,
+      300,
+      256
+    ],
+    "intermediate_logits": [
+      1,
+      1,
+      300,
+      25
+    ],
+    "intermediate_reference_points": [
+      1,
+      1,
+      300,
+      4
+    ],
+    "last_hidden_state": [
+      1,
+      300,
+      256
+    ],
+    "order_logits": [
+      1,
+      1,
+      300,
+      300
+    ],
+    "out_masks": [
+      1,
+      1,
+      300,
+      200,
+      200
+    ]
+  },
+  "region": "decoder",
+  "repeats": 30,
+  "speedup": 2.7508371819938504,
+  "warmup_iters": 2
+}
