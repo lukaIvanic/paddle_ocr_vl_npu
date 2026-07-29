@@ -1,0 +1,315 @@
+{
+  "schema_version": 1,
+  "purpose": "B1xS512 production compiled PromptFA vision-prefill NPU bottleneck profile",
+  "shape": {
+    "batch_size": 1,
+    "sequence_length": 512,
+    "physical_tokens_per_replay": 512,
+    "hidden_size": 1152,
+    "head_dim": 72
+  },
+  "boundary": "VisionPrefillRuntime.compiled[512]: vision encoder layers plus post LayerNorm; patch embedding, projector, text prefill, and decode excluded",
+  "attention": "prompt_flash_attention",
+  "backend": "torchair.inference.cache_compile",
+  "cache_only": true,
+  "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/910b_h2h_4789067/vision/encoder_postln_promptfa_d80_bnsd_sparse1_modeinference_softmaxfp32_bs1_seq512_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcbbde0bc1a063",
+  "cache_existed_before_run": true,
+  "setup_s": 15.806500702048652,
+  "warmup_steps_outside_profiler": 3,
+  "control_repeats_each_side": 20,
+  "profile_active_steps": 5,
+  "profiler_step_contract": "one profiler.step after exactly one synchronized compiled B1xS512 graph replay",
+  "profiler": {
+    "activities": [
+      "CPU",
+      "NPU"
+    ],
+    "level": "Level1",
+    "aic_metric": "PipeUtilization",
+    "record_shapes": true,
+    "profile_memory": false,
+    "with_stack": true,
+    "with_modules": true,
+    "profile_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_profiles/vision_s512_npu_profile_910b_7d1f778",
+    "context_wall_s": 7.0206396309658885,
+    "scheduled_warmup_steps": 1,
+    "scheduled_warmup_measurement": {
+      "device_event": {
+        "samples_ms": [
+          16.58414077758789
+        ],
+        "mean_ms": 16.58414077758789,
+        "median_ms": 16.58414077758789,
+        "p05_ms": 16.58414077758789,
+        "p95_ms": 16.58414077758789,
+        "physical_tokens_per_s_mean": 30872.868656055194,
+        "physical_tokens_per_s_median": 30872.868656055194
+      },
+      "synchronized_host_wall": {
+        "samples_ms": [
+          17.16349204070866
+        ],
+        "mean_ms": 17.16349204070866,
+        "median_ms": 17.16349204070866,
+        "p05_ms": 17.16349204070866,
+        "p95_ms": 17.16349204070866,
+        "physical_tokens_per_s_mean": 29830.759310845937,
+        "physical_tokens_per_s_median": 29830.759310845937
+      }
+    },
+    "profiler_step_ms": {
+      "samples_ms": [
+        1.4744049403816462,
+        0.20779401529580355,
+        0.17169304192066193,
+        0.1613730564713478,
+        0.16428297385573387,
+        6796.6348240152
+      ],
+      "mean_ms": 1133.1357286738541,
+      "median_ms": 0.18974352860823274,
+      "p05_ms": 0.16210053581744432,
+      "p95_ms": 5097.8447192464955
+    },
+    "throughput_measurement": false
+  },
+  "measurements": {
+    "pre_profile_control": {
+      "device_event": {
+        "samples_ms": [
+          15.69384002685547,
+          15.844639778137209,
+          16.12116050720215,
+          16.042299270629883,
+          15.997220039367676,
+          15.912899971008299,
+          16.48889923095703,
+          15.88539981842041,
+          15.95174026489258,
+          16.157699584960938,
+          16.235240936279297,
+          16.001380920410156,
+          15.9964599609375,
+          15.9683198928833,
+          15.94960021972656,
+          15.939559936523438,
+          15.93667984008789,
+          16.796419143676758,
+          15.918100357055664,
+          15.91059970855713
+        ],
+        "mean_ms": 16.037407970428468,
+        "median_ms": 15.96003007888794,
+        "p05_ms": 15.837099790573122,
+        "p95_ms": 16.504275226593016,
+        "physical_tokens_per_s_mean": 31925.358570666893,
+        "physical_tokens_per_s_median": 32080.14004167059
+      },
+      "synchronized_host_wall": {
+        "samples_ms": [
+          17.23321294412017,
+          16.153534990735352,
+          16.420320025645196,
+          16.305936966091394,
+          16.257236944511533,
+          16.24063600320369,
+          16.852546017616987,
+          16.140343970619142,
+          16.219555982388556,
+          17.43062597233802,
+          16.59006206318736,
+          16.251055989414454,
+          16.240326105616987,
+          16.205325024202466,
+          16.22700598090887,
+          16.17274503223598,
+          16.20601594913751,
+          18.33321200683713,
+          16.148015041835606,
+          16.13960391841829
+        ],
+        "mean_ms": 16.488365846453235,
+        "median_ms": 16.24048105441034,
+        "p05_ms": 16.1403069680091,
+        "p95_ms": 17.47575527406298,
+        "physical_tokens_per_s_mean": 31052.197941746595,
+        "physical_tokens_per_s_median": 31526.15974149109
+      }
+    },
+    "profiled_diagnostic": {
+      "device_event": {
+        "samples_ms": [
+          17.131460189819336,
+          16.883520126342773,
+          16.774080276489258,
+          16.77396011352539,
+          16.75149917602539
+        ],
+        "mean_ms": 16.86290397644043,
+        "median_ms": 16.774080276489258,
+        "p05_ms": 16.75599136352539,
+        "p95_ms": 17.081872177124023,
+        "physical_tokens_per_s_mean": 30362.504626446764,
+        "physical_tokens_per_s_median": 30523.283039107962
+      },
+      "synchronized_host_wall": {
+        "samples_ms": [
+          18.144478905014694,
+          17.806092044338584,
+          17.646659980528057,
+          17.66075100749731,
+          17.63917994685471
+        ],
+        "mean_ms": 17.77943237684667,
+        "median_ms": 17.66075100749731,
+        "p05_ms": 17.64067595358938,
+        "p95_ms": 18.076801532879472,
+        "physical_tokens_per_s_mean": 28797.319798957917,
+        "physical_tokens_per_s_median": 28990.839618465074
+      }
+    },
+    "post_profile_control": {
+      "device_event": {
+        "samples_ms": [
+          16.34588050842285,
+          15.783920288085938,
+          15.752459526062013,
+          15.741479873657225,
+          15.76401996612549,
+          15.759440422058107,
+          15.745800018310549,
+          15.722080230712889,
+          15.769579887390137,
+          15.77180004119873,
+          15.767680168151855,
+          15.721739768981932,
+          15.736459732055664,
+          15.742980003356934,
+          15.76572036743164,
+          15.74470043182373,
+          15.758779525756834,
+          15.711899757385254,
+          15.755860328674316,
+          15.722940444946289
+        ],
+        "mean_ms": 15.779261064529418,
+        "median_ms": 15.754159927368164,
+        "p05_ms": 15.721247768402097,
+        "p95_ms": 15.812018299102784,
+        "physical_tokens_per_s_mean": 32447.653784684324,
+        "physical_tokens_per_s_median": 32499.352701793534
+      },
+      "synchronized_host_wall": {
+        "samples_ms": [
+          16.92417694721371,
+          15.951031004078686,
+          15.934391063638031,
+          15.903190011158586,
+          15.93092002440244,
+          15.917039941996336,
+          15.910109970718622,
+          15.890319948084652,
+          15.959411044605076,
+          15.958371921442449,
+          15.93263098038733,
+          15.887950081378222,
+          15.911750961095095,
+          15.90535999275744,
+          15.926911029964685,
+          15.923710074275732,
+          15.930810943245888,
+          15.86471893824637,
+          15.911569935269654,
+          15.889809932559729
+        ],
+        "mean_ms": 15.968209237325937,
+        "median_ms": 15.920375008136034,
+        "p05_ms": 15.886788524221629,
+        "p95_ms": 16.007649339735508,
+        "physical_tokens_per_s_mean": 32063.70810843285,
+        "physical_tokens_per_s_median": 32160.046464881936
+      }
+    },
+    "control_center_device_median_ms": 15.857095003128052,
+    "control_center_physical_tokens_per_s": 32288.38572884884,
+    "profiled_device_slowdown_ratio": 1.0578280746366415,
+    "profiled_device_slowdown_pct": 5.782807463664152,
+    "post_vs_pre_device_median_ratio": 0.9871008920094642
+  },
+  "output": {
+    "shape": [
+      1,
+      512,
+      1152
+    ],
+    "finite": true
+  },
+  "runtime_metadata": {
+    "backend": "torchair",
+    "enabled": true,
+    "boundary": "vision_encoder_layers_plus_post_layernorm",
+    "attention": "prompt_flash_attention",
+    "prompt_flash_attention_layout": "bnsd",
+    "prompt_flash_attention_mask_sparse_mode": 1,
+    "vision_head_dim": 72,
+    "prompt_flash_attention_call_head_dim": 80,
+    "buckets": [
+      512
+    ],
+    "sequence_alignment": 1,
+    "requested_padding": "bucket",
+    "padding": "bucket",
+    "overflow": "eager_same_stage_unpadded",
+    "compile_api": "torchair.inference.cache_compile",
+    "dynamic": false,
+    "fullgraph": true,
+    "torchair_ge_cache": true,
+    "compile_wrapper_total_s": 8.988205809146166e-05,
+    "compile_first_call_total_s": 4.712382199941203,
+    "per_bucket": {
+      "512": {
+        "compile_wrapper_s": 8.988205809146166e-05,
+        "compile_first_call_s": 4.712382199941203,
+        "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/910b_h2h_4789067/vision/encoder_postln_promptfa_d80_bnsd_sparse1_modeinference_softmaxfp32_bs1_seq512_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcbbde0bc1a063"
+      }
+    },
+    "cache_key_fields": {
+      "dtype": "torch.float16",
+      "model_config_hash": "6d2211febbe9",
+      "torch": "2.10.0+cpu",
+      "torch_npu": "2.10.0",
+      "torchair": "unknown",
+      "vision_source_hash": "bbde0bc1a063",
+      "attention": "prompt_flash_attention",
+      "prompt_flash_attention_layout": "bnsd",
+      "prompt_flash_attention_mask_sparse_mode": 1,
+      "softmax_dtype": "fp32",
+      "execution_mode": "inference"
+    }
+  },
+  "environment": {
+    "commit": "7d1f77892b1107f500410c724a887b372cd2f6a5",
+    "device": "npu:0",
+    "device_name": "Ascend910B2",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "npu_smi": "+------------------------------------------------------------------------------------------------+\n| npu-smi 25.0.rc1.1               Version: 25.0.rc1.1                                           |\n+---------------------------+---------------+----------------------------------------------------+\n| NPU   Name                | Health        | Power(W)    Temp(C)           Hugepages-Usage(page)|\n| Chip                      | Bus-Id        | AICore(%)   Memory-Usage(MB)  HBM-Usage(MB)        |\n+===========================+===============+====================================================+\n| 0     910B2               | OK            | 107.6       47                0    / 0             |\n| 0                         | 0000:C1:00.0  | 0           0    / 0          3407 / 65536         |\n+===========================+===============+====================================================+\n| 1     910B2               | OK            | 102.4       47                0    / 0             |\n| 0                         | 0000:01:00.0  | 0           0    / 0          3409 / 65536         |\n+===========================+===============+====================================================+\n| 2     910B2               | OK            | 103.5       47                0    / 0             |\n| 0                         | 0000:C2:00.0  | 0           0    / 0          3410 / 65536         |\n+===========================+===============+====================================================+\n| 3     910B2               | OK            | 101.8       47                0    / 0             |\n| 0                         | 0000:02:00.0  | 0           0    / 0          54360/ 65536         |\n+===========================+===============+====================================================+\n| 4     910B2               | OK            | 101.7       48                0    / 0             |\n| 0                         | 0000:81:00.0  | 0           0    / 0          54372/ 65536         |\n+===========================+===============+====================================================+\n| 5     910B2               | OK            | 109.4       47                0    / 0             |\n| 0                         | 0000:41:00.0  | 0           0    / 0          7241 / 65536         |\n+===========================+===============+====================================================+\n| 6     910B2               | OK            | 101.8       48                0    / 0             |\n| 0                         | 0000:82:00.0  | 0           0    / 0          54372/ 65536         |\n+===========================+===============+====================================================+\n| 7     910B2               | OK            | 102.5       47                0    / 0             |\n| 0                         | 0000:42:00.0  | 0           0    / 0          54365/ 65536         |\n+===========================+===============+====================================================+\n+---------------------------+---------------+----------------------------------------------------+\n| NPU     Chip              | Process id    | Process name             | Process memory(MB)      |\n+===========================+===============+====================================================+\n| No running processes found in NPU 0                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 1                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 2                                                            |\n+===========================+===============+====================================================+\n| 3       0                 | 2804329       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 4       0                 | 2804375       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 5       0                 | 4020902       |                          | 3871                    |\n+===========================+===============+====================================================+\n| 6       0                 | 2804478       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 7       0                 | 2804586       |                          | 51013                   |\n+===========================+===============+====================================================+\n"
+  },
+  "parsed_profile": {
+    "command": [
+      "/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python",
+      "/workspace/repos/paddle_ocr_vl_npu/07_vision_prefill_optimization/parse_static_visual_encoder_profile.py",
+      "--profile-dir",
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_profiles/vision_s512_npu_profile_910b_7d1f778",
+      "--topn",
+      "30",
+      "--skip-trace"
+    ],
+    "stdout": "{\n  \"parsed_json\": \"/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_profiles/vision_s512_npu_profile_910b_7d1f778/parsed_profile_summary.json\",\n  \"parsed_md\": \"/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_profiles/vision_s512_npu_profile_910b_7d1f778/parsed_profile_summary.md\",\n  \"runs\": 1\n}\n",
+    "stderr": "",
+    "parsed_json": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_profiles/vision_s512_npu_profile_910b_7d1f778/parsed_profile_summary.json",
+    "parsed_markdown": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_profiles/vision_s512_npu_profile_910b_7d1f778/parsed_profile_summary.md",
+    "copied_parsed_json": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_lab/vision_s512_npu_profile_910b_7d1f778/parsed_profile_summary.json",
+    "copied_parsed_markdown": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_lab/vision_s512_npu_profile_910b_7d1f778/parsed_profile_summary.md"
+  }
+}
