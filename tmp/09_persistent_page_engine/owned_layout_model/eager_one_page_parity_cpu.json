@@ -1,0 +1,140 @@
+{
+  "device": "cpu",
+  "image": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_003.png",
+  "input_shape": [
+    1,
+    3,
+    800,
+    800
+  ],
+  "model": "/workspace/models/PP-DocLayoutV3_safetensors",
+  "oracle_forward_s": 2.3087171780643985,
+  "oracle_setup_s": 0.8084022689145058,
+  "outputs": {
+    "logits": {
+      "dtype": "torch.float32",
+      "exact": false,
+      "max_abs": 1.7994937896728516,
+      "max_rel": 0.2829456627368927,
+      "mean_abs": 0.003729478921741247,
+      "mean_rel": 0.0005326754762791097,
+      "rmse": 0.05594858154654503,
+      "shape": [
+        1,
+        300,
+        25
+      ]
+    },
+    "order_logits": {
+      "dtype": "torch.float32",
+      "exact": false,
+      "max_abs": 3081.5341796875,
+      "max_rel": 1301.15283203125,
+      "mean_abs": 9.327726364135742,
+      "mean_rel": 0.045119185000658035,
+      "rmse": 126.28836059570312,
+      "shape": [
+        1,
+        300,
+        300
+      ]
+    },
+    "out_masks": {
+      "dtype": "torch.float32",
+      "exact": false,
+      "max_abs": 710.5652465820312,
+      "max_rel": 940714.3125,
+      "mean_abs": 0.09930826723575592,
+      "mean_rel": 0.11566624045372009,
+      "rmse": 2.2773666381835938,
+      "shape": [
+        1,
+        300,
+        200,
+        200
+      ]
+    },
+    "pred_boxes": {
+      "dtype": "torch.float32",
+      "exact": false,
+      "max_abs": 0.7145622372627258,
+      "max_rel": 4.779334545135498,
+      "mean_abs": 0.0018323439871892333,
+      "mean_rel": 0.010215441696345806,
+      "rmse": 0.030695993453264236,
+      "shape": [
+        1,
+        300,
+        4
+      ]
+    }
+  },
+  "owned_forward_s": 2.3616233080392703,
+  "owned_load_report": {
+    "allowed_missing": [
+      "model.decoder.bbox_embed.layers.0.bias",
+      "model.decoder.bbox_embed.layers.0.weight",
+      "model.decoder.bbox_embed.layers.1.bias",
+      "model.decoder.bbox_embed.layers.1.weight",
+      "model.decoder.bbox_embed.layers.2.bias",
+      "model.decoder.bbox_embed.layers.2.weight",
+      "model.decoder.class_embed.bias",
+      "model.decoder.class_embed.weight",
+      "model.decoder_input_proj.0.1.num_batches_tracked",
+      "model.decoder_input_proj.1.1.num_batches_tracked",
+      "model.decoder_input_proj.2.1.num_batches_tracked",
+      "model.encoder.downsample_convs.0.norm.num_batches_tracked",
+      "model.encoder.downsample_convs.1.norm.num_batches_tracked",
+      "model.encoder.encoder_mask_lateral.normalization.num_batches_tracked",
+      "model.encoder.encoder_mask_output.base_conv.normalization.num_batches_tracked",
+      "model.encoder.fpn_blocks.0.bottlenecks.0.conv1.norm.num_batches_tracked",
+      "model.encoder.fpn_blocks.0.bottlenecks.0.conv2.norm.num_batches_tracked",
+      "model.encoder.fpn_blocks.0.bottlenecks.1.conv1.norm.num_batches_tracked",
+      "model.encoder.fpn_blocks.0.bottlenecks.1.conv2.norm.num_batches_tracked",
+      "model.encoder.fpn_blocks.0.bottlenecks.2.conv1.norm.num_batches_tracked",
+      "model.encoder.fpn_blocks.0.bottlenecks.2.conv2.norm.num_batches_tracked",
+      "model.encoder.fpn_blocks.0.conv1.norm.num_batches_tracked",
+      "model.encoder.fpn_blocks.0.conv2.norm.num_batches_tracked",
+      "model.encoder.fpn_blocks.1.bottlenecks.0.conv1.norm.num_batches_tracked",
+      "model.encoder.fpn_blocks.1.bottlenecks.0.conv2.norm.num_batches_tracked",
+      "model.encoder.fpn_blocks.1.bottlenecks.1.conv1.norm.num_batches_tracked",
+      "model.encoder.fpn_blocks.1.bottlenecks.1.conv2.norm.num_batches_tracked",
+      "model.encoder.fpn_blocks.1.bottlenecks.2.conv1.norm.num_batches_tracked",
+      "model.encoder.fpn_blocks.1.bottlenecks.2.conv2.norm.num_batches_tracked",
+      "model.encoder.fpn_blocks.1.conv1.norm.num_batches_tracked",
+      "model.encoder.fpn_blocks.1.conv2.norm.num_batches_tracked",
+      "model.encoder.lateral_convs.0.norm.num_batches_tracked",
+      "model.encoder.lateral_convs.1.norm.num_batches_tracked",
+      "model.encoder.mask_feature_head.output_conv.normalization.num_batches_tracked",
+      "model.encoder.mask_feature_head.scale_heads.0.layers.0.normalization.num_batches_tracked",
+      "model.encoder.mask_feature_head.scale_heads.1.layers.0.normalization.num_batches_tracked",
+      "model.encoder.mask_feature_head.scale_heads.2.layers.0.normalization.num_batches_tracked",
+      "model.encoder.mask_feature_head.scale_heads.2.layers.2.normalization.num_batches_tracked",
+      "model.encoder.pan_blocks.0.bottlenecks.0.conv1.norm.num_batches_tracked",
+      "model.encoder.pan_blocks.0.bottlenecks.0.conv2.norm.num_batches_tracked",
+      "model.encoder.pan_blocks.0.bottlenecks.1.conv1.norm.num_batches_tracked",
+      "model.encoder.pan_blocks.0.bottlenecks.1.conv2.norm.num_batches_tracked",
+      "model.encoder.pan_blocks.0.bottlenecks.2.conv1.norm.num_batches_tracked",
+      "model.encoder.pan_blocks.0.bottlenecks.2.conv2.norm.num_batches_tracked",
+      "model.encoder.pan_blocks.0.conv1.norm.num_batches_tracked",
+      "model.encoder.pan_blocks.0.conv2.norm.num_batches_tracked",
+      "model.encoder.pan_blocks.1.bottlenecks.0.conv1.norm.num_batches_tracked",
+      "model.encoder.pan_blocks.1.bottlenecks.0.conv2.norm.num_batches_tracked",
+      "model.encoder.pan_blocks.1.bottlenecks.1.conv1.norm.num_batches_tracked",
+      "model.encoder.pan_blocks.1.bottlenecks.1.conv2.norm.num_batches_tracked",
+      "model.encoder.pan_blocks.1.bottlenecks.2.conv1.norm.num_batches_tracked",
+      "model.encoder.pan_blocks.1.bottlenecks.2.conv2.norm.num_batches_tracked",
+      "model.encoder.pan_blocks.1.conv1.norm.num_batches_tracked",
+      "model.encoder.pan_blocks.1.conv2.norm.num_batches_tracked",
+      "model.encoder_input_proj.0.1.num_batches_tracked",
+      "model.encoder_input_proj.1.1.num_batches_tracked",
+      "model.encoder_input_proj.2.1.num_batches_tracked"
+    ],
+    "checkpoint": "/workspace/models/PP-DocLayoutV3_safetensors/model.safetensors",
+    "checkpoint_elements": 33288957,
+    "checkpoint_tensors": 858,
+    "model_parameters": 33175165,
+    "unexpected": []
+  },
+  "owned_setup_s": 0.7530164580093697
+}

@@ -1,0 +1,839 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PaddleOCR-VL pipeline timeline</title>
+<style>
+:root {
+  color-scheme: light;
+  --surface-1: #fcfcfb;
+  --surface-2: #f3f2ef;
+  --line: #dedcd6;
+  --line-soft: #ecebe7;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #8a8880;
+  --cat-layout: #008300;
+  --cat-cpu: #1baf7a;
+  --cat-io: #4a3aa7;
+  --cat-vision: #eda100;
+  --cat-textpre: #eb6834;
+  --cat-decode: #2a78d6;
+  --cat-assembly: #e87ba4;
+  --cat-control: #7d8896;
+  --wait-fill: #d8d6d0;
+  --wait-ink: #a19e96;
+  --scope-ink: #8a8880;
+  --select: #d03b3b;
+  --marker: #b5b2aa;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --surface-2: #232322;
+    --line: #3a3a37;
+    --line-soft: #2b2b29;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #8b8a81;
+    --cat-layout: #008300;
+    --cat-cpu: #199e70;
+    --cat-io: #9085e9;
+    --cat-vision: #c98500;
+    --cat-textpre: #d95926;
+    --cat-decode: #3987e5;
+    --cat-assembly: #d55181;
+    --cat-control: #6f7a88;
+    --wait-fill: #33332f;
+    --wait-ink: #5c5b54;
+    --scope-ink: #8b8a81;
+    --select: #e66767;
+    --marker: #55544e;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-1: #1a1a19;
+  --surface-2: #232322;
+  --line: #3a3a37;
+  --line-soft: #2b2b29;
+  --text-primary: #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted: #8b8a81;
+  --cat-layout: #008300;
+  --cat-cpu: #199e70;
+  --cat-io: #9085e9;
+  --cat-vision: #c98500;
+  --cat-textpre: #d95926;
+  --cat-decode: #3987e5;
+  --cat-assembly: #d55181;
+  --cat-control: #6f7a88;
+  --wait-fill: #33332f;
+  --wait-ink: #5c5b54;
+  --scope-ink: #8b8a81;
+  --select: #e66767;
+  --marker: #55544e;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--surface-1);
+  color: var(--text-primary);
+  font: 13px/1.45 system-ui, -apple-system, sans-serif;
+}
+main { max-width: 1900px; margin: 0 auto; padding: 14px 16px 24px; }
+header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
+h1 { font-size: 16px; font-weight: 600; margin: 0; letter-spacing: .01em; }
+#meta { display: flex; gap: 12px; flex-wrap: wrap; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+#meta b { color: var(--text-primary); font-weight: 600; }
+#controls { margin-left: auto; display: flex; gap: 6px; }
+button {
+  font: inherit; color: var(--text-primary); background: var(--surface-2);
+  border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; cursor: pointer;
+}
+button:hover { border-color: var(--text-muted); }
+#legend { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; color: var(--text-secondary); margin: 6px 0 10px; font-size: 12px; }
+#legend .chip { display: inline-flex; align-items: center; gap: 5px; }
+#legend .sw { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+#legend .sw.frame { background: transparent; border: 1.5px dashed var(--scope-ink); }
+#minimap-wrap { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin-bottom: 8px; background: var(--surface-2); }
+#minimap { display: block; width: 100%; height: 64px; cursor: crosshair; }
+#chart-wrap { position: relative; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface-1); }
+#chart { display: block; width: 100%; touch-action: none; }
+#tooltip {
+  position: absolute; display: none; pointer-events: none; z-index: 3;
+  max-width: 460px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 7px;
+  background: var(--surface-1); color: var(--text-primary);
+  box-shadow: 0 6px 24px rgba(0,0,0,.25); font-size: 12px;
+}
+#tooltip .tt-title { font-weight: 600; margin-bottom: 2px; }
+#tooltip .tt-sub { color: var(--text-secondary); }
+#tooltip .tt-args { color: var(--text-muted); margin-top: 4px; white-space: pre-wrap; overflow-wrap: anywhere; }
+#detail {
+  margin-top: 10px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface-2); padding: 10px 12px; display: none;
+}
+#detail h2 { font-size: 13px; font-weight: 600; margin: 0 0 6px; }
+#detail table { border-collapse: collapse; font-variant-numeric: tabular-nums; width: 100%; }
+#detail td { padding: 1.5px 12px 1.5px 0; color: var(--text-secondary); vertical-align: baseline; }
+#detail td:first-child { color: var(--text-primary); white-space: nowrap; }
+#detail td.num { text-align: right; white-space: nowrap; }
+#detail .dot { display: inline-block; width: 9px; height: 9px; border-radius: 2.5px; margin-right: 6px; vertical-align: baseline; }
+#detail .bar-track { position: relative; height: 14px; background: var(--surface-1); border: 1px solid var(--line-soft); border-radius: 4px; overflow: hidden; margin: 6px 0 8px; }
+#detail .bar-track div { position: absolute; top: 0; bottom: 0; }
+.hint { color: var(--text-muted); margin-top: 8px; font-size: 12px; }
+#drop {
+  display: none; margin: 40px auto; max-width: 520px; text-align: center;
+  border: 2px dashed var(--line); border-radius: 12px; padding: 48px 24px; color: var(--text-secondary);
+}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>PaddleOCR-VL pipeline timeline</h1>
+    <div id="meta"></div>
+    <div id="controls">
+      <button id="fit" type="button" title="Reset zoom (double-click chart)">Fit</button>
+      <button id="theme" type="button" title="Toggle light/dark">Theme</button>
+    </div>
+  </header>
+  <div id="legend"></div>
+  <div id="minimap-wrap"><canvas id="minimap"></canvas></div>
+  <div id="chart-wrap">
+    <canvas id="chart"></canvas>
+    <div id="tooltip"></div>
+  </div>
+  <div id="detail"></div>
+  <div class="hint">Scroll: zoom at cursor &nbsp;·&nbsp; drag: pan &nbsp;·&nbsp; minimap: brush a window &nbsp;·&nbsp; click a span: follow that crop or page &nbsp;·&nbsp; Esc / double-click: reset</div>
+  <div id="drop">No trace is embedded in this file.<br>Drop a <code>timeline_trace.json</code> here to view it.</div>
+</main>
+<script>
+"use strict";
+const EMBEDDED = {"schema_version":2,"clock":"nanoseconds relative to one process-wide perf_counter_ns origin","device_clock_note":"device-event spans use event-relative offsets anchored at host enqueue; they are resolved only at synchronization points already present in the pipeline","metadata":{"kind":"owned_layout_frontend_lab","pages":1,"workers":1,"paddlex_imported":false,"ocr_requests_executed":0,"model_backend":"transformers"},"duration_ns":2962843156,"rows":["Page input","Layout detection","Layout postprocess","Crop / page preparation"],"events":[{"id":6,"kind":"span","row":"Page input","name":"Owned page frontend","start_ns":2087733133,"end_ns":2962843156,"duration_ns":875110023,"flow_id":"page:0","flow_ids":[],"event_type":"scope","clock":"host_monotonic","track":"host","lane":null,"thread":"MainThread","args":{"requests":15}},{"id":1,"kind":"span","row":"Page input","name":"Owned page read and decode","start_ns":2087733393,"end_ns":2180298746,"duration_ns":92565353,"flow_id":"page:0","flow_ids":[],"event_type":"io","clock":"host_monotonic","track":"host","lane":null,"thread":"MainThread","args":{"bytes":443653,"width":1653,"height":2339}},{"id":2,"kind":"span","row":"Layout detection","name":"Owned layout preprocessing and H2D","start_ns":2180661762,"end_ns":2325211989,"duration_ns":144550227,"flow_id":"page:0","flow_ids":[],"event_type":"work","clock":"host_monotonic","track":"host","lane":null,"thread":"MainThread","args":{}},{"id":3,"kind":"span","row":"Layout detection","name":"Owned PP-DocLayoutV3 inference","start_ns":2325277720,"end_ns":2818781497,"duration_ns":493503777,"flow_id":"page:0","flow_ids":[],"event_type":"work","clock":"host_monotonic","track":"host","lane":null,"thread":"MainThread","args":{}},{"id":4,"kind":"span","row":"Layout postprocess","name":"Owned detector postprocessing","start_ns":2818846498,"end_ns":2952213275,"duration_ns":133366777,"flow_id":"page:0","flow_ids":[],"event_type":"work","clock":"host_monotonic","track":"host","lane":null,"thread":"MainThread","args":{"boxes":15}},{"id":5,"kind":"span","row":"Crop / page preparation","name":"Owned filter, crop, merge, and request build","start_ns":2952370738,"end_ns":2962804015,"duration_ns":10433277,"flow_id":"page:0","flow_ids":[],"event_type":"work","clock":"host_monotonic","track":"host","lane":null,"thread":"MainThread","args":{"requests":15}}]};
+
+/* ---------- category model ---------- */
+
+const CATEGORIES = [
+  { key: "layout",   label: "Page & layout",   cssVar: "--cat-layout" },
+  { key: "cpu",      label: "CPU preprocess",  cssVar: "--cat-cpu" },
+  { key: "io",       label: "Transfers",       cssVar: "--cat-io" },
+  { key: "vision",   label: "Vision prefill",  cssVar: "--cat-vision" },
+  { key: "textpre",  label: "Text prefill",    cssVar: "--cat-textpre" },
+  { key: "decode",   label: "Decode",          cssVar: "--cat-decode" },
+  { key: "assembly", label: "Results",         cssVar: "--cat-assembly" },
+  { key: "control",  label: "Scheduler",       cssVar: "--cat-control" },
+];
+const ROW_CATEGORY = {
+  "Page input": "layout", "Layout detection": "layout", "Layout postprocess": "layout",
+  "Crop / page preparation": "layout",
+  "CPU preprocessing": "cpu", "CPU MRoPE": "cpu",
+  "H2D / D2H transfer": "io", "Decode admission": "io",
+  "Vision prefill": "vision", "Text prefill": "textpre",
+  "Text decode": "decode", "Decode request residency": "decode",
+  "Result assembly": "assembly", "Artifacts / tracing": "assembly",
+  "Pipeline": "control", "Decode control / wait": "control",
+  "Decode ready wait": "control", "CPU / queue wait": "cpu",
+};
+const QUEUE_META = {
+  "cpu-prep":      { label: "CPU prep queue",   category: "cpu" },
+  "prefill-ready": { label: "Prefill handoff",  category: "cpu" },
+  "ready-queue":   { label: "Decode ready buffer", category: "decode" },
+};
+
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const catColor = key => css((CATEGORIES.find(c => c.key === key) || CATEGORIES[7]).cssVar);
+const categoryOf = ev => ROW_CATEGORY[ev.row] || "control";
+
+const fmtDur = ns => {
+  const s = ns / 1e9;
+  if (s < 1e-6) return (ns) + " ns";
+  if (s < 1e-3) return (s * 1e6).toFixed(1) + " µs";
+  if (s < 1) return (s * 1e3).toFixed(2) + " ms";
+  return s.toFixed(3) + " s";
+};
+const fmtTime = ns => (ns / 1e9).toFixed(4) + " s";
+const escapeHtml = v => String(v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+/* ---------- model building ---------- */
+
+function buildModel(trace) {
+  const events = trace.events;
+  const spans = events.filter(e => e.event_type !== "instant" && e.event_type !== "counter" && e.duration_ns > 0);
+  const instants = events.filter(e => e.event_type === "instant");
+
+  const track = t => spans.filter(e => (e.track || "host") === t);
+  const hostSpans = track("host");
+  const deviceSpans = track("device");
+  const queueSpans = track("queue");
+  const slotSpans = track("slot");
+
+  /* host threads → flame layout by containment */
+  const threads = new Map();
+  for (const ev of hostSpans) {
+    if (!threads.has(ev.thread)) threads.set(ev.thread, []);
+    threads.get(ev.thread).push(ev);
+  }
+  const EPS = 20_000; // ns of forgiveness for float-derived retroactive spans
+  const flames = [];
+  for (const [thread, list] of threads) {
+    list.sort((a, b) => a.start_ns - b.start_ns || b.duration_ns - a.duration_ns);
+    const stack = [];
+    let maxDepth = 0;
+    for (const ev of list) {
+      while (stack.length && ev.start_ns >= stack[stack.length - 1].end_ns - EPS) stack.pop();
+      ev._depth = stack.length;
+      maxDepth = Math.max(maxDepth, ev._depth);
+      stack.push(ev);
+    }
+    flames.push({ thread, spans: list, maxDepth: Math.min(maxDepth, 9) });
+  }
+  const isMain = f => f.spans.some(e => e.name === "Full PaddleOCR-VL page run");
+  flames.sort((a, b) => (isMain(b) - isMain(a)) || a.spans[0].start_ns - b.spans[0].start_ns);
+  for (const f of flames) {
+    f.label = isMain(f) ? "Main thread"
+      : /cpu-prepare/.test(f.thread) ? "CPU prepare worker" : f.thread;
+  }
+
+  /* device lanes */
+  const deviceLanes = [];
+  for (const lane of ["prefill", "decode"]) {
+    const list = deviceSpans.filter(e => e.lane === lane).sort((a, b) => a.start_ns - b.start_ns);
+    if (list.length) {
+      deviceLanes.push({
+        lane,
+        label: lane === "prefill" ? "NPU · prefill" : "NPU · decode",
+        spans: list,
+      });
+    }
+  }
+
+  /* decode slots */
+  const slotCount = slotSpans.reduce((m, e) => Math.max(m, (typeof e.lane === "number" ? e.lane : -1) + 1), 0)
+    || (trace.metadata && trace.metadata.decode_batch_size) || 0;
+  const slots = [];
+  for (let i = 0; i < slotCount; i++) {
+    slots.push(slotSpans.filter(e => e.lane === i).sort((a, b) => a.start_ns - b.start_ns));
+  }
+
+  /* queue depth step series */
+  const queues = [];
+  for (const lane of Object.keys(QUEUE_META)) {
+    const list = queueSpans.filter(e => e.lane === lane);
+    if (!list.length) continue;
+    const edges = [];
+    for (const ev of list) { edges.push([ev.start_ns, 1]); edges.push([ev.end_ns, -1]); }
+    edges.sort((a, b) => a[0] - b[0]);
+    const series = [];
+    let depth = 0;
+    for (const [t, d] of edges) { depth += d; series.push([t, depth]); }
+    queues.push({
+      lane, ...QUEUE_META[lane], spans: list, series,
+      maxDepth: series.reduce((m, p) => Math.max(m, p[1]), 0),
+    });
+  }
+
+  const pageMarks = instants
+    .filter(e => e.name === "Page completed")
+    .map(e => ({ t: e.start_ns, flow: e.flow_id }))
+    .sort((a, b) => a.t - b.t);
+
+  return {
+    trace, duration: Math.max(trace.duration_ns, 1),
+    spans, instants, flames, deviceLanes, slots, queues, pageMarks,
+  };
+}
+
+/* ---------- lane geometry ---------- */
+
+const GUTTER = 200, PAD_R = 10, RULER_H = 26;
+const FLAME_ROW = 19, DEVICE_H = 24, SLOT_H = 9, QUEUE_H = 34, GROUP_HEAD = 21, GROUP_GAP = 7;
+
+function layoutGroups(model) {
+  const groups = [];
+  let y = RULER_H + 4;
+  const push = g => { groups.push(g); y = g.y1 + GROUP_GAP; };
+  for (const flame of model.flames) {
+    const rows = flame.maxDepth + 1;
+    push({ kind: "flame", label: flame.label, ref: flame, y0: y, yBody: y + GROUP_HEAD, y1: y + GROUP_HEAD + rows * FLAME_ROW });
+  }
+  for (const laneObj of model.deviceLanes) {
+    push({ kind: "device", label: laneObj.label, ref: laneObj, y0: y, yBody: y + GROUP_HEAD, y1: y + GROUP_HEAD + DEVICE_H });
+  }
+  if (model.slots.length) {
+    push({ kind: "slots", label: "Decode slots", ref: model.slots, y0: y, yBody: y + GROUP_HEAD, y1: y + GROUP_HEAD + model.slots.length * SLOT_H });
+  }
+  for (const q of model.queues) {
+    push({ kind: "queue", label: q.label, ref: q, y0: y, yBody: y + GROUP_HEAD, y1: y + GROUP_HEAD + QUEUE_H });
+  }
+  return { groups, height: y + 4 };
+}
+
+/* ---------- viewer ---------- */
+
+function startViewer(trace) {
+  const model = buildModel(trace);
+  const { groups, height } = layoutGroups(model);
+  const chart = document.getElementById("chart");
+  const wrap = document.getElementById("chart-wrap");
+  const minimap = document.getElementById("minimap");
+  const tooltip = document.getElementById("tooltip");
+  const detail = document.getElementById("detail");
+  const ctx = chart.getContext("2d");
+  const mctx = minimap.getContext("2d");
+
+  let view0 = 0, view1 = model.duration;
+  let selected = null;   // flow id
+  let hoverEv = null;
+  let drag = null, brush = null;
+
+  /* meta line */
+  const crops = new Set(model.spans.filter(e => e.flow_id && /^page_\d+_block_/.test(e.flow_id)).map(e => e.flow_id)).size;
+  const meta = model.trace.metadata || {};
+  const npuBusy = coverage(model.deviceLanes.flatMap(l => l.spans), 0, model.duration) / model.duration;
+  document.getElementById("meta").innerHTML = [
+    `<span><b>${(model.duration / 1e9).toFixed(2)} s</b> wall</span>`,
+    meta.pages ? `<span><b>${meta.pages}</b> pages</span>` : "",
+    crops ? `<span><b>${crops}</b> crops</span>` : "",
+    `<span><b>${model.trace.events.length.toLocaleString()}</b> events</span>`,
+    meta.decode_batch_size ? `<span>decode B=<b>${meta.decode_batch_size}</b></span>` : "",
+    `<span>NPU busy <b>${Math.round(npuBusy * 100)}%</b> of run</span>`,
+  ].filter(Boolean).join("");
+
+  /* legend */
+  document.getElementById("legend").innerHTML =
+    CATEGORIES.map(c => `<span class="chip"><span class="sw" style="background:var(${c.cssVar})"></span>${c.label}</span>`).join("") +
+    `<span class="chip"><span class="sw" id="legend-wait"></span>waiting</span>` +
+    `<span class="chip"><span class="sw frame"></span>enclosing scope</span>`;
+
+  /* hatch pattern for waits */
+  let hatch = null;
+  function makeHatch() {
+    const p = document.createElement("canvas");
+    p.width = p.height = 7;
+    const g = p.getContext("2d");
+    g.fillStyle = css("--wait-fill"); g.fillRect(0, 0, 7, 7);
+    g.strokeStyle = css("--wait-ink"); g.lineWidth = 1.1;
+    g.beginPath(); g.moveTo(-2, 9); g.lineTo(9, -2); g.stroke();
+    hatch = ctx.createPattern(p, "repeat");
+    const sw = document.getElementById("legend-wait");
+    if (sw) { sw.style.background = `url(${p.toDataURL()})`; }
+  }
+
+  const xOf = (t, w) => GUTTER + (t - view0) / (view1 - view0) * (w - GUTTER - PAD_R);
+  const tOf = (x, w) => view0 + (x - GUTTER) / (w - GUTTER - PAD_R) * (view1 - view0);
+
+  function coverage(spans, t0, t1) {
+    /* union length of [start,end] clipped to [t0,t1]; spans need not be sorted */
+    const iv = spans
+      .map(e => [Math.max(e.start_ns, t0), Math.min(e.end_ns, t1)])
+      .filter(([a, b]) => b > a)
+      .sort((a, b) => a[0] - b[0]);
+    let total = 0, curA = -1, curB = -1;
+    for (const [a, b] of iv) {
+      if (a > curB) { total += curB - curA; curA = a; curB = b; }
+      else curB = Math.max(curB, b);
+    }
+    if (curB > curA) total += curB - curA;
+    return Math.max(0, total);
+  }
+
+  function selectionState(ev) {
+    if (!selected) return "none";
+    const inFlows = ev.flow_ids && ev.flow_ids.includes(selected);
+    if (ev.flow_id === selected) return "primary";
+    if (inFlows) {
+      return (ev.flow_id && ev.flow_id.startsWith("decode-iteration")) ? "secondary" : "primary";
+    }
+    return "dim";
+  }
+
+  /* ---------- drawing ---------- */
+
+  let hits = [];
+  function drawSpanRow(w, spans, y, h, opts) {
+    /* spans sorted by start; render with culling + sub-pixel coalescing */
+    let lo = 0, hi = spans.length;
+    while (lo < hi) { const mid = (lo + hi) >> 1; (spans[mid].end_ns < view0 ? lo = mid + 1 : hi = mid); }
+    let lastX = -1e9;
+    for (let i = lo; i < spans.length; i++) {
+      const ev = spans[i];
+      if (ev.start_ns > view1) break;
+      if (opts.depth !== undefined && ev._depth !== opts.depth) continue;
+      let x = Math.max(xOf(ev.start_ns, w), GUTTER - 4);
+      let x2 = Math.min(xOf(ev.end_ns, w), w + 4);
+      const ew = Math.max(x2 - x, 0.6);
+      if (x + ew <= lastX + 0.45) continue;   /* fully under an already painted pixel */
+      lastX = Math.max(lastX, x + ew);
+      const state = selectionState(ev);
+      const scope = ev.event_type === "scope";
+      const wait = ev.event_type === "wait";
+      ctx.globalAlpha = state === "dim" ? 0.22 : 1;
+      if (scope) {
+        ctx.strokeStyle = state === "primary" ? css("--select") : css("--scope-ink");
+        ctx.setLineDash([3, 2.5]);
+        ctx.strokeRect(x + 0.5, y + 0.5, Math.max(ew - 1, 1), h - 1);
+        ctx.setLineDash([]);
+      } else {
+        ctx.fillStyle = wait ? hatch : catColor(categoryOf(ev));
+        const gap = ew > 2.2 ? 0.8 : 0;       /* surface gap between adjacent marks */
+        ctx.fillRect(x + gap, y + 1, Math.max(ew - 2 * gap, 0.6), h - 2);
+        if (state === "primary") {
+          ctx.strokeStyle = css("--select"); ctx.lineWidth = 1.6;
+          ctx.strokeRect(x + 0.8, y + 1.3, Math.max(ew - 1.6, 1), h - 2.6);
+          ctx.lineWidth = 1;
+        } else if (state === "secondary") {
+          ctx.fillStyle = css("--select");
+          ctx.fillRect(x + gap, y + h - 3.4, Math.max(ew - 2 * gap, 0.6), 2.2);
+        }
+      }
+      if (ew > 46 && h >= 12) {
+        ctx.save();
+        ctx.beginPath(); ctx.rect(Math.max(x + 3, GUTTER), y, ew - 6, h); ctx.clip();
+        ctx.fillStyle = scope ? css("--scope-ink") : (wait ? css("--text-secondary") : "#ffffff");
+        if (!scope && !wait) {  /* keep label legible on light fills */
+          const cat = categoryOf(ev);
+          if (cat === "vision" || cat === "cpu" || cat === "assembly") ctx.fillStyle = "rgba(0,0,0,.78)";
+        }
+        ctx.font = scope ? "italic 11px system-ui" : "11px system-ui";
+        const lx = Math.max(x + 4, GUTTER + 3);
+        const avail = x + ew - 4 - lx;
+        let label = ev.name;
+        if (ctx.measureText(label).width > avail) {
+          while (label.length > 3 && ctx.measureText(label + "…").width > avail) {
+            label = label.slice(0, -1);
+          }
+          label = label.length > 3 ? label + "…" : "";
+        }
+        if (label) ctx.fillText(label, lx, y + h / 2 + 0.5);
+        ctx.font = "11px system-ui";
+        ctx.restore();
+      }
+      ctx.globalAlpha = 1;
+      if (ew >= 0.6) hits.push({ x, y, w: Math.max(ew, 3), h, ev });
+    }
+  }
+
+  function draw() {
+    const w = chart.clientWidth, hAll = chart.clientHeight;
+    ctx.clearRect(0, 0, w, hAll);
+    hits = [];
+    ctx.font = "11px system-ui";
+    ctx.textBaseline = "middle";
+
+    /* ruler */
+    const winS = (view1 - view0) / 1e9;
+    const rough = winS / Math.max(4, (w - GUTTER) / 130);
+    const pow = Math.pow(10, Math.floor(Math.log10(rough)));
+    const step = ([1, 2, 5, 10].find(v => v * pow >= rough) || 10) * pow;
+    ctx.fillStyle = css("--text-muted");
+    ctx.strokeStyle = css("--line-soft");
+    ctx.textAlign = "center";
+    for (let t = Math.ceil(view0 / 1e9 / step) * step; t * 1e9 <= view1; t += step) {
+      const x = xOf(t * 1e9, w);
+      ctx.beginPath(); ctx.moveTo(x, RULER_H - 6); ctx.lineTo(x, hAll); ctx.stroke();
+      ctx.fillText(step >= 1 ? t.toFixed(0) + " s" : step >= 0.001 ? (t * 1e3).toFixed(step >= 0.01 ? 0 : 1) + " ms" : (t * 1e6).toFixed(0) + " µs", x, 11);
+    }
+    ctx.textAlign = "left";
+
+    /* page boundary marks */
+    ctx.strokeStyle = css("--marker");
+    ctx.setLineDash([2, 4]);
+    for (const m of model.pageMarks) {
+      if (m.t < view0 || m.t > view1) continue;
+      const x = xOf(m.t, w);
+      ctx.beginPath(); ctx.moveTo(x, RULER_H); ctx.lineTo(x, hAll - 2); ctx.stroke();
+      ctx.fillStyle = css("--text-muted");
+      ctx.fillText((m.flow || "").replace("page:", "p"), x + 3, RULER_H + 7);
+    }
+    ctx.setLineDash([]);
+
+    /* groups */
+    for (const g of groups) {
+      /* header */
+      ctx.fillStyle = css("--surface-2");
+      ctx.fillRect(0, g.y0, w, GROUP_HEAD - 3);
+      ctx.fillStyle = css("--text-primary");
+      ctx.font = "600 11.5px system-ui";
+      ctx.fillText(g.label, 10, g.y0 + (GROUP_HEAD - 3) / 2);
+      ctx.font = "11px system-ui";
+      const util = groupUtilization(g);
+      if (util != null) {
+        ctx.fillStyle = css("--text-secondary");
+        ctx.textAlign = "right";
+        ctx.fillText(util, GUTTER - 10, g.y0 + (GROUP_HEAD - 3) / 2);
+        ctx.textAlign = "left";
+      }
+      ctx.strokeStyle = css("--line-soft");
+      ctx.beginPath(); ctx.moveTo(0, g.y1 + 3.5); ctx.lineTo(w, g.y1 + 3.5); ctx.stroke();
+
+      if (g.kind === "flame") {
+        for (let d = 0; d <= g.ref.maxDepth; d++) {
+          drawSpanRow(w, g.ref.spans, g.yBody + d * FLAME_ROW, FLAME_ROW - 1, { depth: d });
+        }
+      } else if (g.kind === "device") {
+        drawSpanRow(w, g.ref.spans, g.yBody, DEVICE_H - 2, {});
+      } else if (g.kind === "slots") {
+        ctx.fillStyle = css("--text-muted");
+        for (let i = 0; i < g.ref.length; i++) {
+          const y = g.yBody + i * SLOT_H;
+          if (SLOT_H >= 9 && (i % 4 === 0)) { ctx.font = "9px system-ui"; ctx.fillText(String(i), GUTTER - 16, y + SLOT_H / 2); ctx.font = "11px system-ui"; ctx.fillStyle = css("--text-muted"); }
+          drawSpanRow(w, g.ref[i], y, SLOT_H - 1, {});
+        }
+      } else if (g.kind === "queue") {
+        drawQueue(w, g);
+      }
+    }
+
+    /* gutter divider */
+    ctx.strokeStyle = css("--line");
+    ctx.beginPath(); ctx.moveTo(GUTTER - 0.5, 0); ctx.lineTo(GUTTER - 0.5, hAll); ctx.stroke();
+
+    drawMinimap();
+  }
+
+  function groupUtilization(g) {
+    const win = view1 - view0;
+    if (win <= 0) return null;
+    if (g.kind === "flame") {
+      const busy = coverage(g.ref.spans.filter(e => e.event_type === "work" || e.event_type === "io"), view0, view1);
+      return "busy " + Math.round(busy / win * 100) + "%";
+    }
+    if (g.kind === "device") {
+      return "busy " + Math.round(coverage(g.ref.spans, view0, view1) / win * 100) + "%";
+    }
+    if (g.kind === "slots") {
+      let total = 0;
+      for (const laneSpans of g.ref) total += coverage(laneSpans, view0, view1);
+      return "occupancy " + Math.round(total / (win * g.ref.length) * 100) + "%";
+    }
+    if (g.kind === "queue") {
+      let inView = 0, maxD = 0;
+      for (const [t, d] of g.ref.series) { if (t >= view0 && t <= view1) { maxD = Math.max(maxD, d); inView++; } }
+      return "peak " + (inView ? maxD : "–");
+    }
+    return null;
+  }
+
+  function drawQueue(w, g) {
+    const q = g.ref, h = QUEUE_H - 6, yBase = g.yBody + h;
+    const peak = Math.max(q.maxDepth, 1);
+    const color = catColor(q.category);
+    /* depth entering the viewport, then the visible step points */
+    let depth = 0;
+    const pts = [];
+    for (const [t, d] of q.series) {
+      if (t < view0) { depth = d; continue; }
+      if (t > view1) break;
+      pts.push([xOf(t, w), d]);
+    }
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(GUTTER, yBase);
+    ctx.lineTo(GUTTER, yBase - (depth / peak) * h);
+    for (const [x, d] of pts) {
+      ctx.lineTo(x, yBase - (depth / peak) * h);
+      ctx.lineTo(x, yBase - (d / peak) * h);
+      depth = d;
+    }
+    const xEnd = xOf(view1, w);
+    ctx.lineTo(xEnd, yBase - (depth / peak) * h);
+    ctx.lineTo(xEnd, yBase);
+    ctx.closePath(); ctx.fill();
+    ctx.globalAlpha = 1;
+    /* selected crop's own residence in this queue */
+    if (selected) {
+      for (const ev of q.spans) {
+        if (selectionState(ev) !== "primary") continue;
+        const x = xOf(Math.max(ev.start_ns, view0), w), x2 = xOf(Math.min(ev.end_ns, view1), w);
+        if (x2 < GUTTER) continue;
+        ctx.fillStyle = css("--select");
+        ctx.fillRect(x, yBase + 1.5, Math.max(x2 - x, 2), 2.5);
+        hits.push({ x, y: g.yBody, w: Math.max(x2 - x, 3), h, ev });
+      }
+    }
+    ctx.fillStyle = css("--text-muted");
+    ctx.font = "9.5px system-ui";
+    ctx.fillText("0–" + q.maxDepth, GUTTER - 34, yBase - h / 2);
+    ctx.font = "11px system-ui";
+  }
+
+  /* ---------- minimap ---------- */
+
+  const MM_BUCKETS = 1400;
+  const mmBands = [];
+  {
+    const bands = [
+      { label: "host", spans: model.flames.length ? model.flames[0].spans.filter(e => e.event_type === "work" || e.event_type === "io") : [], cat: "layout" },
+      { label: "prefill", spans: (model.deviceLanes.find(l => l.lane === "prefill") || { spans: [] }).spans, cat: "vision" },
+      { label: "decode", spans: (model.deviceLanes.find(l => l.lane === "decode") || { spans: [] }).spans, cat: "decode" },
+    ];
+    for (const b of bands) {
+      const acc = new Float32Array(MM_BUCKETS);
+      const bw = model.duration / MM_BUCKETS;
+      for (const ev of b.spans) {
+        const i0 = Math.max(0, Math.floor(ev.start_ns / bw));
+        const i1 = Math.min(MM_BUCKETS - 1, Math.floor(ev.end_ns / bw));
+        for (let i = i0; i <= i1; i++) {
+          const a = Math.max(ev.start_ns, i * bw), z = Math.min(ev.end_ns, (i + 1) * bw);
+          acc[i] += Math.max(0, z - a) / bw;
+        }
+      }
+      mmBands.push({ acc, cat: b.cat });
+    }
+  }
+
+  function drawMinimap() {
+    const w = minimap.clientWidth, h = minimap.clientHeight;
+    mctx.clearRect(0, 0, w, h);
+    const bandH = h / mmBands.length;
+    mmBands.forEach((band, bi) => {
+      mctx.fillStyle = catColor(band.cat);
+      const y1 = (bi + 1) * bandH - 1;
+      for (let i = 0; i < MM_BUCKETS; i++) {
+        const v = Math.min(band.acc[i], 1);
+        if (v <= 0.003) continue;
+        const x = i / MM_BUCKETS * w;
+        mctx.globalAlpha = 0.25 + v * 0.75;
+        mctx.fillRect(x, y1 - v * (bandH - 3), w / MM_BUCKETS + 0.5, v * (bandH - 3));
+      }
+    });
+    mctx.globalAlpha = 1;
+    for (const m of model.pageMarks) {
+      mctx.strokeStyle = css("--marker");
+      const x = m.t / model.duration * w;
+      mctx.beginPath(); mctx.moveTo(x, 0); mctx.lineTo(x, h); mctx.stroke();
+    }
+    /* brush window */
+    const x0 = view0 / model.duration * w, x1 = view1 / model.duration * w;
+    mctx.fillStyle = css("--text-muted");
+    mctx.globalAlpha = 0.14;
+    mctx.fillRect(0, 0, x0, h); mctx.fillRect(x1, 0, w - x1, h);
+    mctx.globalAlpha = 1;
+    mctx.strokeStyle = css("--text-secondary");
+    mctx.strokeRect(x0 + 0.5, 0.5, Math.max(x1 - x0 - 1, 1), h - 1);
+  }
+
+  /* ---------- interaction ---------- */
+
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    const w = wrap.clientWidth;
+    chart.style.height = height + "px";
+    chart.width = Math.round(w * dpr); chart.height = Math.round(height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    minimap.width = Math.round(minimap.clientWidth * dpr);
+    minimap.height = Math.round(minimap.clientHeight * dpr);
+    mctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    makeHatch();
+    draw();
+  }
+
+  function clampView() {
+    const span = Math.max(view1 - view0, 1000);
+    view0 = Math.max(0, Math.min(view0, model.duration - span));
+    view1 = view0 + span;
+  }
+
+  function hitAt(x, y) {
+    for (let i = hits.length - 1; i >= 0; i--) {
+      const q = hits[i];
+      if (x >= q.x && x <= q.x + q.w && y >= q.y && y <= q.y + q.h) return q.ev;
+    }
+    return null;
+  }
+
+  chart.addEventListener("wheel", e => {
+    e.preventDefault();
+    const rect = chart.getBoundingClientRect();
+    const px = e.clientX - rect.left;
+    const w = chart.clientWidth;
+    const ratio = Math.min(1, Math.max(0, (px - GUTTER) / (w - GUTTER - PAD_R)));
+    const anchor = view0 + ratio * (view1 - view0);
+    const factor = Math.exp((e.deltaY > 0 ? 1 : -1) * Math.min(Math.abs(e.deltaY), 60) / 120);
+    let span = (view1 - view0) * factor;
+    span = Math.max(model.duration / 2e5, Math.min(model.duration, span));
+    view0 = anchor - ratio * span; view1 = view0 + span;
+    clampView(); draw();
+  }, { passive: false });
+
+  chart.addEventListener("mousedown", e => {
+    const rect = chart.getBoundingClientRect();
+    drag = { x: e.clientX - rect.left, v0: view0, v1: view1, moved: false };
+  });
+  window.addEventListener("mousemove", e => {
+    const rect = chart.getBoundingClientRect();
+    const x = e.clientX - rect.left, y = e.clientY - rect.top;
+    if (drag) {
+      const dx = x - drag.x;
+      if (Math.abs(dx) > 3) drag.moved = true;
+      const span = drag.v1 - drag.v0;
+      const dt = -dx / (chart.clientWidth - GUTTER - PAD_R) * span;
+      view0 = drag.v0 + dt; view1 = drag.v1 + dt;
+      clampView(); draw();
+      return;
+    }
+    if (e.target !== chart) { tooltip.style.display = "none"; return; }
+    hoverEv = hitAt(x, y);
+    if (hoverEv) {
+      const ev = hoverEv;
+      const argText = Object.entries(ev.args || {})
+        .filter(([k]) => k !== "request_ids")
+        .map(([k, v]) => `${k} = ${typeof v === "object" ? JSON.stringify(v) : v}`).join("\n");
+      tooltip.innerHTML =
+        `<div class="tt-title">${escapeHtml(ev.name)}</div>` +
+        `<div class="tt-sub">${escapeHtml(ev.row)} · <b>${fmtDur(ev.duration_ns)}</b> @ ${fmtTime(ev.start_ns)}` +
+        (ev.clock === "device_event_reconstructed" ? " · device clock" : "") + `</div>` +
+        (ev.flow_id ? `<div class="tt-sub">flow: ${escapeHtml(ev.flow_id)}</div>` : "") +
+        (argText ? `<div class="tt-args">${escapeHtml(argText)}</div>` : "");
+      tooltip.style.display = "block";
+      const tw = tooltip.offsetWidth, th = tooltip.offsetHeight;
+      tooltip.style.left = Math.min(chart.clientWidth - tw - 6, x + 14) + "px";
+      tooltip.style.top = Math.max(2, Math.min(chart.clientHeight - th - 4, y + 14)) + "px";
+    } else tooltip.style.display = "none";
+  });
+  window.addEventListener("mouseup", e => {
+    if (drag && !drag.moved) {
+      const rect = chart.getBoundingClientRect();
+      const ev = hitAt(e.clientX - rect.left, e.clientY - rect.top);
+      select(ev && ev.flow_id && !ev.flow_id.startsWith("decode-iteration") ? ev.flow_id : null);
+    }
+    drag = null; brush = null;
+  });
+  chart.addEventListener("dblclick", () => { view0 = 0; view1 = model.duration; draw(); });
+  chart.addEventListener("mouseleave", () => { tooltip.style.display = "none"; });
+  window.addEventListener("keydown", e => { if (e.key === "Escape") select(null); });
+
+  minimap.addEventListener("mousedown", e => {
+    const rect = minimap.getBoundingClientRect();
+    const t = (e.clientX - rect.left) / minimap.clientWidth * model.duration;
+    if (t >= view0 && t <= view1 && (view1 - view0) < model.duration) {
+      brush = { mode: "move", grab: t - view0 };
+    } else {
+      brush = { mode: "new", t0: t };
+      view0 = t; view1 = t;
+    }
+    e.preventDefault();
+  });
+  window.addEventListener("mousemove", e => {
+    if (!brush) return;
+    const rect = minimap.getBoundingClientRect();
+    const t = Math.max(0, Math.min(model.duration, (e.clientX - rect.left) / minimap.clientWidth * model.duration));
+    if (brush.mode === "move") {
+      const span = view1 - view0;
+      view0 = Math.max(0, Math.min(model.duration - span, t - brush.grab));
+      view1 = view0 + span;
+    } else {
+      view0 = Math.min(brush.t0, t); view1 = Math.max(brush.t0, t);
+      if (view1 - view0 < model.duration / 2e5) view1 = view0 + model.duration / 2e5;
+    }
+    draw();
+  });
+
+  document.getElementById("fit").onclick = () => { view0 = 0; view1 = model.duration; draw(); };
+  document.getElementById("theme").onclick = () => {
+    const root = document.documentElement;
+    const dark = root.dataset.theme ? root.dataset.theme === "dark"
+      : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = dark ? "light" : "dark";
+    makeHatch(); draw();
+  };
+
+  /* ---------- selection detail ---------- */
+
+  function select(flow) {
+    selected = flow;
+    if (!flow) { detail.style.display = "none"; draw(); return; }
+    const evs = model.trace.events
+      .filter(e => e.flow_id === flow || (e.flow_ids || []).includes(flow))
+      .filter(e => !(e.flow_id || "").startsWith("decode-iteration"))
+      .sort((a, b) => a.start_ns - b.start_ns);
+    const spansOnly = evs.filter(e => e.event_type !== "instant" && e.event_type !== "counter" && e.duration_ns > 0);
+    if (!spansOnly.length) { detail.style.display = "none"; draw(); return; }
+    const first = spansOnly[0].start_ns, last = spansOnly.reduce((m, e) => Math.max(m, e.end_ns), 0);
+    const rows = spansOnly.map(ev => {
+      const cat = categoryOf(ev);
+      return `<tr><td><span class="dot" style="background:${ev.event_type === "wait" ? "var(--wait-ink)" : `var(${(CATEGORIES.find(c => c.key === cat) || CATEGORIES[7]).cssVar})`}"></span>${escapeHtml(ev.name)}${ev.event_type === "wait" ? " <span style='color:var(--text-muted)'>(wait)</span>" : ev.event_type === "scope" ? " <span style='color:var(--text-muted)'>(scope)</span>" : ""}</td>` +
+        `<td class="num">${fmtDur(ev.duration_ns)}</td>` +
+        `<td class="num">${fmtTime(ev.start_ns)} → ${fmtTime(ev.end_ns)}</td></tr>`;
+    }).join("");
+    const barSegs = spansOnly
+      .filter(e => e.event_type !== "scope")
+      .map(ev => {
+        const l = (ev.start_ns - first) / Math.max(last - first, 1) * 100;
+        const wPct = (ev.duration_ns) / Math.max(last - first, 1) * 100;
+        const color = ev.event_type === "wait" ? "var(--wait-ink)" : `var(${(CATEGORIES.find(c => c.key === categoryOf(ev)) || CATEGORIES[7]).cssVar})`;
+        return `<div title="${escapeHtml(ev.name)}" style="left:${l}%;width:${Math.max(wPct, 0.35)}%;background:${color};opacity:${ev.event_type === "wait" ? 0.55 : 0.95}"></div>`;
+      }).join("");
+    detail.innerHTML =
+      `<h2>${escapeHtml(flow)} · end-to-end ${fmtDur(last - first)}</h2>` +
+      `<div class="bar-track">${barSegs}</div>` +
+      `<table>${rows}</table>`;
+    detail.style.display = "block";
+    draw();
+  }
+
+  new ResizeObserver(resize).observe(wrap);
+  resize();
+}
+
+/* ---------- bootstrapping (embedded payload or drag-and-drop for dev) ---------- */
+
+if (EMBEDDED && EMBEDDED.events) {
+  startViewer(EMBEDDED);
+} else {
+  const drop = document.getElementById("drop");
+  drop.style.display = "block";
+  const load = file => file.text().then(t => { drop.style.display = "none"; startViewer(JSON.parse(t)); });
+  document.body.addEventListener("dragover", e => e.preventDefault());
+  document.body.addEventListener("drop", e => {
+    e.preventDefault();
+    if (e.dataTransfer.files[0]) load(e.dataTransfer.files[0]);
+  });
+}
+</script>
+</body>
+</html>

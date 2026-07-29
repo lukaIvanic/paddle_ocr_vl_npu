@@ -1,0 +1,123 @@
+{
+  "implementation": "owned_pp_doclayout_v3_frontend",
+  "paddlex_dependency": false,
+  "dataset_json": "/workspace/datasets/OmniDocBench/OmniDocBench.json",
+  "dataset_sha256": "a45cd84b04ad8b793e775089640e6b681209abea33ead54c1828ddca35fae496",
+  "images_dir": "/workspace/datasets/OmniDocBench/images",
+  "offset": 0,
+  "count": 1,
+  "images": [
+    "page-d1561665-5359-42fe-920c-d6e3bff81953.png"
+  ],
+  "layout_model": "/workspace/models/PP-DocLayoutV3_safetensors",
+  "layout_model_backend": "transformers_eager_npu",
+  "device": "npu:0",
+  "graph_capture": false,
+  "npu_indexput_compat": true,
+  "workers": 1,
+  "worker_strategy": "serial",
+  "setup_s": 2.0872627540957183,
+  "setup_by_worker_s": [
+    2.074290863936767
+  ],
+  "npu_memory_allocated_bytes": {
+    "before_setup": 0,
+    "after_setup": 136682496,
+    "setup_delta": 136682496
+  },
+  "frontend_wall_s": 0.8756835330277681,
+  "pages_per_s": 1.141965061901295,
+  "s_per_page": 0.8756835330277681,
+  "stage_totals_s": {
+    "file_read_s": 0.0004447869723662734,
+    "image_decode_s": 0.09206036501564085,
+    "layout_device_mask_postprocess_s": 0.000328900009393692,
+    "layout_device_metadata_postprocess_s": 0.027678720474243163,
+    "layout_mask_polygon_cpu_s": 0.09314939298201352,
+    "layout_mask_wait_and_d2h_s": 0.0005199289880692959,
+    "layout_metadata_wait_and_d2h_s": 0.0020784250227734447,
+    "layout_model_device_s": 0.4966270751953125,
+    "layout_model_submit_s": 0.4934974469942972,
+    "layout_postprocess_s": 0.13336288696154952,
+    "layout_preprocess_h2d_s": 0.14453044603578746,
+    "layout_structural_containment_cpu_s": 0.0006393910152837634,
+    "layout_structural_format_cpu_s": 0.0003619359340518713,
+    "layout_structural_nms_cpu_s": 0.0009065349586308002,
+    "layout_structural_order_cpu_s": 7.180962711572647e-06,
+    "layout_structural_overlap_filter_cpu_s": 0.00035516603384166956,
+    "layout_structural_page_image_filter_cpu_s": 6.614101585000753e-05,
+    "layout_structural_polygon_normalize_cpu_s": 0.0037117130123078823,
+    "layout_structural_postprocess_cpu_s": 0.0069402080262079835,
+    "layout_structural_result_build_cpu_s": 0.0006759909447282553,
+    "layout_structural_sort_cpu_s": 2.9081013053655624e-05,
+    "layout_structural_threshold_cpu_s": 0.00013773306272923946,
+    "page_preparation_s": 0.01042913703713566,
+    "page_total_s": 0.8751058130292222
+  },
+  "requests": 15,
+  "requests_per_page": {
+    "min": 15,
+    "mean": 15.0,
+    "max": 15
+  },
+  "prompt_counts": {
+    "Formula Recognition:": 4,
+    "OCR:": 11
+  },
+  "crop_pixels": 1348242,
+  "crop_bytes": 4044726,
+  "request_manifest": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/owned_layout_model/oracle_eager_page0/requests.jsonl",
+  "request_manifest_sha256": "bd2f28a28d5cc2ae97ebcf91c453c5ac9647d92635de233d346a5513972014b5",
+  "reference_comparison": null,
+  "layout_mask_rectangle_fast_path": {
+    "calls": 1,
+    "detections": 27,
+    "rectangle_fast_paths": 20,
+    "fallbacks": 7,
+    "coverage": 0.7407407407407407,
+    "wall_s": 0.093016301,
+    "predicate_s": 0.000953366,
+    "fallback_s": 0.09178353
+  },
+  "page_statistics": [
+    {
+      "page": "page-d1561665-5359-42fe-920c-d6e3bff81953.png",
+      "raw_layout_boxes": 15,
+      "filtered_layout_boxes": 15,
+      "merged_blocks": 15,
+      "requests": 15,
+      "timing_s": {
+        "file_read_s": 0.0004447869723662734,
+        "image_decode_s": 0.09206036501564085,
+        "layout_preprocess_h2d_s": 0.14453044603578746,
+        "layout_model_submit_s": 0.4934974469942972,
+        "layout_metadata_wait_and_d2h_s": 0.0020784250227734447,
+        "layout_mask_wait_and_d2h_s": 0.0005199289880692959,
+        "layout_mask_polygon_cpu_s": 0.09314939298201352,
+        "layout_model_device_s": 0.4966270751953125,
+        "layout_device_metadata_postprocess_s": 0.027678720474243163,
+        "layout_device_mask_postprocess_s": 0.000328900009393692,
+        "layout_structural_format_cpu_s": 0.0003619359340518713,
+        "layout_structural_threshold_cpu_s": 0.00013773306272923946,
+        "layout_structural_nms_cpu_s": 0.0009065349586308002,
+        "layout_structural_page_image_filter_cpu_s": 6.614101585000753e-05,
+        "layout_structural_containment_cpu_s": 0.0006393910152837634,
+        "layout_structural_sort_cpu_s": 2.9081013053655624e-05,
+        "layout_structural_polygon_normalize_cpu_s": 0.0037117130123078823,
+        "layout_structural_result_build_cpu_s": 0.0006759909447282553,
+        "layout_structural_overlap_filter_cpu_s": 0.00035516603384166956,
+        "layout_structural_order_cpu_s": 7.180962711572647e-06,
+        "layout_structural_postprocess_cpu_s": 0.0069402080262079835,
+        "layout_postprocess_s": 0.13336288696154952,
+        "page_preparation_s": 0.01042913703713566,
+        "page_total_s": 0.8751058130292222
+      }
+    }
+  ],
+  "timeline": {
+    "enabled": true,
+    "event_count": 6,
+    "trace_json": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/owned_layout_model/oracle_eager_page0/timeline_trace.json",
+    "html": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/owned_layout_model/oracle_eager_page0/timeline.html"
+  }
+}
