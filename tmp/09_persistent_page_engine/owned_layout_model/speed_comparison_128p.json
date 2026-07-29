@@ -1,0 +1,187 @@
+{
+  "comparison": {
+    "frontend_wall_owned_vs_transformers_percent": -1.124272898968559,
+    "pages_per_s_owned_vs_transformers_percent": 1.110740337060423,
+    "warm_model_device_owned_vs_transformers_percent": -1.1230829930349517
+  },
+  "execution": "eager_npu_no_graph_capture",
+  "manifest_diffs": {
+    "owned_r1_vs_transformers_r1": {
+      "candidate_records": 2082,
+      "field_counts": {
+        "crop_nbytes": 7,
+        "crop_sha256": 8,
+        "crop_size": 7
+      },
+      "mismatched_percent": 0.38424591738712777,
+      "mismatched_records": 8,
+      "reference_records": 2082
+    },
+    "owned_r2_vs_transformers_r1": {
+      "candidate_records": 2082,
+      "field_counts": {
+        "crop_nbytes": 7,
+        "crop_sha256": 8,
+        "crop_size": 7
+      },
+      "mismatched_percent": 0.38424591738712777,
+      "mismatched_records": 8,
+      "reference_records": 2082
+    }
+  },
+  "means": {
+    "owned_frontend_wall_s": 16.15460701903794,
+    "owned_pages_per_s": 7.923478690951342,
+    "owned_setup_s": 1.5336854709894396,
+    "owned_warm_model_device_s": 6.317033327102662,
+    "transformers_frontend_wall_s": 16.33829403098207,
+    "transformers_pages_per_s": 7.836436232726431,
+    "transformers_setup_s": 2.1351092570112087,
+    "transformers_warm_model_device_s": 6.388784681320191
+  },
+  "pages": 128,
+  "physical_npu": 5,
+  "runs": {
+    "owned_r1": {
+      "backend": "owned_eager_npu",
+      "first_page_model_device_ms": 489.6003112792969,
+      "frontend_wall_s": 16.19196379405912,
+      "manifest_sha256": "61f3f96f154ffe677960df98e2875f837d4200ad3d8cd4312e0473e2083d4cb3",
+      "model_device_all": {
+        "count": 128,
+        "max_ms": 489.6003112792969,
+        "mean_ms": 53.62714424729347,
+        "median_ms": 50.30171012878418,
+        "min_ms": 48.33811950683594,
+        "p95_ms": 51.13454208374023,
+        "total_s": 6.864274463653564
+      },
+      "model_device_warm_excluding_first": {
+        "count": 127,
+        "max_ms": 52.77471923828125,
+        "mean_ms": 50.19428466436431,
+        "median_ms": 50.30073928833008,
+        "min_ms": 48.33811950683594,
+        "p95_ms": 51.11242637634278,
+        "total_s": 6.374674152374268
+      },
+      "pages_per_s": 7.905156016156829,
+      "requests": 2082,
+      "setup_s": 1.4353217339375988,
+      "stage_totals_s": {
+        "file_read_s": 0.08294439339078963,
+        "image_decode_s": 4.907090917928144,
+        "layout_model_device_s": 6.8642744636535635,
+        "layout_postprocess_s": 2.1843543858267367,
+        "layout_preprocess_h2d_s": 1.0437472673365846,
+        "page_preparation_s": 0.978290116880089
+      }
+    },
+    "owned_r2": {
+      "backend": "owned_eager_npu",
+      "first_page_model_device_ms": 493.8409118652344,
+      "frontend_wall_s": 16.11725024401676,
+      "manifest_sha256": "61f3f96f154ffe677960df98e2875f837d4200ad3d8cd4312e0473e2083d4cb3",
+      "model_device_all": {
+        "count": 128,
+        "max_ms": 493.8409118652344,
+        "mean_ms": 52.75963604450226,
+        "median_ms": 49.21903991699219,
+        "min_ms": 47.69015884399414,
+        "p95_ms": 50.313962364196776,
+        "total_s": 6.7532334136962895
+      },
+      "model_device_warm_excluding_first": {
+        "count": 127,
+        "max_ms": 55.74811935424805,
+        "mean_ms": 49.286555132527994,
+        "median_ms": 49.21583938598633,
+        "min_ms": 47.69015884399414,
+        "p95_ms": 50.28207206726074,
+        "total_s": 6.259392501831055
+      },
+      "pages_per_s": 7.941801365745854,
+      "requests": 2082,
+      "setup_s": 1.6320492080412805,
+      "stage_totals_s": {
+        "file_read_s": 0.08175278431735933,
+        "image_decode_s": 4.928788210381754,
+        "layout_model_device_s": 6.753233413696293,
+        "layout_postprocess_s": 2.182868924573995,
+        "layout_preprocess_h2d_s": 1.0619644180405885,
+        "page_preparation_s": 0.9716861350461841
+      }
+    },
+    "transformers_r1": {
+      "backend": "transformers_eager_npu",
+      "first_page_model_device_ms": 497.9176940917969,
+      "frontend_wall_s": 16.072050416027196,
+      "manifest_sha256": "0305b5dd75ab65afdd28f22c678a1ca7f93c461b1af128f142c45f8375a1e2bc",
+      "model_device_all": {
+        "count": 128,
+        "max_ms": 497.9176940917969,
+        "mean_ms": 52.91616612672806,
+        "median_ms": 49.536720275878906,
+        "min_ms": 48.123939514160156,
+        "p95_ms": 50.41672496795655,
+        "total_s": 6.773269264221192
+      },
+      "model_device_warm_excluding_first": {
+        "count": 127,
+        "max_ms": 52.96242141723633,
+        "mean_ms": 49.412217087633024,
+        "median_ms": 49.524200439453125,
+        "min_ms": 48.123939514160156,
+        "p95_ms": 50.27943878173828,
+        "total_s": 6.275351570129395
+      },
+      "pages_per_s": 7.964136291680446,
+      "requests": 2082,
+      "setup_s": 2.109524501953274,
+      "stage_totals_s": {
+        "file_read_s": 0.15834638464730233,
+        "image_decode_s": 4.892472501494922,
+        "layout_model_device_s": 6.773269264221189,
+        "layout_postprocess_s": 2.1648931541712955,
+        "layout_preprocess_h2d_s": 0.9824626045301557,
+        "page_preparation_s": 0.9757267627865076
+      }
+    },
+    "transformers_r2": {
+      "backend": "transformers_eager_npu",
+      "first_page_model_device_ms": 550.3136596679688,
+      "frontend_wall_s": 16.604537645936944,
+      "manifest_sha256": "0305b5dd75ab65afdd28f22c678a1ca7f93c461b1af128f142c45f8375a1e2bc",
+      "model_device_all": {
+        "count": 128,
+        "max_ms": 550.3136596679688,
+        "mean_ms": 55.09790197014809,
+        "median_ms": 51.41410064697266,
+        "min_ms": 39.953678131103516,
+        "p95_ms": 52.51069946289062,
+        "total_s": 7.052531452178955
+      },
+      "model_device_warm_excluding_first": {
+        "count": 127,
+        "max_ms": 59.51818084716797,
+        "mean_ms": 51.198565295362094,
+        "median_ms": 51.408660888671875,
+        "min_ms": 39.953678131103516,
+        "p95_ms": 52.42562103271485,
+        "total_s": 6.5022177925109865
+      },
+      "pages_per_s": 7.708736173772416,
+      "requests": 2082,
+      "setup_s": 2.1606940120691434,
+      "stage_totals_s": {
+        "file_read_s": 0.08671541721560061,
+        "image_decode_s": 4.986983448266983,
+        "layout_model_device_s": 7.052531452178958,
+        "layout_postprocess_s": 2.2838874380104244,
+        "layout_preprocess_h2d_s": 1.0593064954737201,
+        "page_preparation_s": 0.9995797992451116
+      }
+    }
+  },
+  "workers": 1
+}
