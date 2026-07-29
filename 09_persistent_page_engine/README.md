@@ -474,6 +474,34 @@ real/physical packed tokens, and fill fraction. The timeline shows one
 `Packed vision transformer` device span with every member crop as a flow ID,
 while downstream spans retain their individual crop IDs.
 
+### Vision MatMul format/alignment lab
+
+`scripts/vision_matmul_lab.py` isolates the vision encoder's Linear workload
+without reducing it to a one-layer microbenchmark. The measured boundary keeps
+all 27 layers, both LayerNorm/residual paths, Q/K/V/output projections,
+FC1/GELU/FC2, and post-LayerNorm. Attention alone becomes the token-local
+surrogate `out_proj((Q + K + V) / 3)`, so all 162 production Linear calls remain
+live while attention cannot dominate the result. This is a performance lab,
+not an OCR inference path.
+
+The bounded matrix compares S512 and S2048 at the native 4304-wide MLP and the
+mathematically equivalent zero-extended 4352-wide MLP, with native and requested
+FRACTAL_NZ Linear weights. A FRACTAL_NZ case is reported as unsupported rather
+than silently timed under the native format if the installed runtime cannot
+materialize format code 29. Timed samples contain multiple complete stack
+replays inside one NPU-event interval. The optional profiler records MatMulV2
+versus MatMulV3 dispatch, TransData cost, input formats, and cube utilization;
+its perturbed wall time is not the throughput result.
+
+```sh
+/usr/local/python3.12.13/bin/python3 \
+  09_persistent_page_engine/scripts/run_vision_matmul_lab_matrix.py \
+  --name 910b_compiled \
+  --execution torchair \
+  --allow-compile-if-missing \
+  --profile
+```
+
 The owned runner prepares pages sequentially on one background producer. Each
 page enters a one-page bounded queue as soon as layout detection, cropping, and
 prompt preparation finish. The recognizer can therefore start consuming that
