@@ -1286,31 +1286,34 @@ def mask_to_box_coordinate(mask: Tensor, dtype: torch.dtype) -> Tensor:
     y_coords = y_coords.to(dtype)
     x_masked = x_coords * mask
     x_max = x_masked.flatten(start_dim=-2).max(dim=-1).values + 1
-    maximum = torch.tensor(
-        torch.finfo(dtype).max,
-        device=mask.device,
-        dtype=dtype,
-    )
     x_min = (
-        torch.where(mask, x_masked, maximum)
+        torch.where(
+            mask,
+            x_masked,
+            torch.full_like(x_masked, torch.finfo(dtype).max),
+        )
         .flatten(start_dim=-2)
-        .min(dim=-1)
-        .values
     )
+    # TorchAir on the deployed stack has no aten.min.dim converter. This is
+    # exactly equivalent and uses the supported max reduction.
+    x_min = -(-x_min).max(dim=-1).values
     y_masked = y_coords * mask
     y_max = y_masked.flatten(start_dim=-2).max(dim=-1).values + 1
     y_min = (
-        torch.where(mask, y_masked, maximum)
+        torch.where(
+            mask,
+            y_masked,
+            torch.full_like(y_masked, torch.finfo(dtype).max),
+        )
         .flatten(start_dim=-2)
-        .min(dim=-1)
-        .values
     )
+    y_min = -(-y_min).max(dim=-1).values
     boxes = torch.stack([x_min, y_min, x_max, y_max], dim=-1)
-    boxes = boxes * torch.any(mask, dim=(-2, -1)).unsqueeze(-1)
-    normalizer = torch.tensor(
-        [width, height, width, height],
-        device=mask.device,
-        dtype=dtype,
+    boxes = boxes * mask.flatten(start_dim=-2).any(dim=-1).unsqueeze(-1)
+    device_width = x_coords[-1, -1] + 1
+    device_height = y_coords[-1, -1] + 1
+    normalizer = torch.stack(
+        [device_width, device_height, device_width, device_height]
     )
     x_min, y_min, x_max, y_max = (boxes / normalizer).unbind(dim=-1)
     return torch.stack(
