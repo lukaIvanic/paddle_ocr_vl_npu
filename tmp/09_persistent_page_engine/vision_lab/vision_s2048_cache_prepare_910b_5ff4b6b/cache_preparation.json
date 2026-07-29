@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "purpose": "prepare the exact B1xS2048 compiled PromptFA vision cache outside the profiler run",
+  "shape": {
+    "batch_size": 1,
+    "sequence_length": 2048,
+    "physical_tokens_per_replay": 2048,
+    "hidden_size": 1152,
+    "head_dim": 72
+  },
+  "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/910b_h2h_4789067/vision/encoder_postln_promptfa_d80_bnsd_sparse1_modeinference_softmaxfp32_bs1_seq2048_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcbbde0bc1a063",
+  "cache_existed_before_run": false,
+  "compile_was_permitted": true,
+  "cache_populated_after_setup": true,
+  "setup_s": 41.74868229799904,
+  "runtime_metadata": {
+    "backend": "torchair",
+    "enabled": true,
+    "boundary": "vision_encoder_layers_plus_post_layernorm",
+    "attention": "prompt_flash_attention",
+    "prompt_flash_attention_layout": "bnsd",
+    "prompt_flash_attention_mask_sparse_mode": 1,
+    "vision_head_dim": 72,
+    "prompt_flash_attention_call_head_dim": 80,
+    "buckets": [
+      2048
+    ],
+    "sequence_alignment": 1,
+    "requested_padding": "bucket",
+    "padding": "bucket",
+    "overflow": "eager_same_stage_unpadded",
+    "compile_api": "torchair.inference.cache_compile",
+    "dynamic": false,
+    "fullgraph": true,
+    "torchair_ge_cache": true,
+    "compile_wrapper_total_s": 8.487096056342125e-05,
+    "compile_first_call_total_s": 30.63303598004859,
+    "per_bucket": {
+      "2048": {
+        "compile_wrapper_s": 8.487096056342125e-05,
+        "compile_first_call_s": 30.63303598004859,
+        "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/910b_h2h_4789067/vision/encoder_postln_promptfa_d80_bnsd_sparse1_modeinference_softmaxfp32_bs1_seq2048_dtypefloat16_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcbbde0bc1a063"
+      }
+    },
+    "cache_key_fields": {
+      "dtype": "torch.float16",
+      "model_config_hash": "6d2211febbe9",
+      "torch": "2.10.0+cpu",
+      "torch_npu": "2.10.0",
+      "torchair": "unknown",
+      "vision_source_hash": "bbde0bc1a063",
+      "attention": "prompt_flash_attention",
+      "prompt_flash_attention_layout": "bnsd",
+      "prompt_flash_attention_mask_sparse_mode": 1,
+      "softmax_dtype": "fp32",
+      "execution_mode": "inference"
+    }
+  },
+  "environment": {
+    "commit": "5ff4b6b986928e056e4f772da9f6770d1619646d",
+    "device": "npu:0",
+    "device_name": "Ascend910B2",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "npu_smi": "+------------------------------------------------------------------------------------------------+\n| npu-smi 25.0.rc1.1               Version: 25.0.rc1.1                                           |\n+---------------------------+---------------+----------------------------------------------------+\n| NPU   Name                | Health        | Power(W)    Temp(C)           Hugepages-Usage(page)|\n| Chip                      | Bus-Id        | AICore(%)   Memory-Usage(MB)  HBM-Usage(MB)        |\n+===========================+===============+====================================================+\n| 0     910B2               | OK            | 108.0       48                0    / 0             |\n| 0                         | 0000:C1:00.0  | 0           0    / 0          3407 / 65536         |\n+===========================+===============+====================================================+\n| 1     910B2               | OK            | 102.3       47                0    / 0             |\n| 0                         | 0000:01:00.0  | 0           0    / 0          3409 / 65536         |\n+===========================+===============+====================================================+\n| 2     910B2               | OK            | 103.7       47                0    / 0             |\n| 0                         | 0000:C2:00.0  | 0           0    / 0          3411 / 65536         |\n+===========================+===============+====================================================+\n| 3     910B2               | OK            | 101.7       47                0    / 0             |\n| 0                         | 0000:02:00.0  | 0           0    / 0          54359/ 65536         |\n+===========================+===============+====================================================+\n| 4     910B2               | OK            | 102.3       48                0    / 0             |\n| 0                         | 0000:81:00.0  | 0           0    / 0          54372/ 65536         |\n+===========================+===============+====================================================+\n| 5     910B2               | OK            | 109.4       47                0    / 0             |\n| 0                         | 0000:41:00.0  | 0           0    / 0          7237 / 65536         |\n+===========================+===============+====================================================+\n| 6     910B2               | OK            | 102.0       49                0    / 0             |\n| 0                         | 0000:82:00.0  | 0           0    / 0          54372/ 65536         |\n+===========================+===============+====================================================+\n| 7     910B2               | OK            | 102.0       48                0    / 0             |\n| 0                         | 0000:42:00.0  | 0           0    / 0          54365/ 65536         |\n+===========================+===============+====================================================+\n+---------------------------+---------------+----------------------------------------------------+\n| NPU     Chip              | Process id    | Process name             | Process memory(MB)      |\n+===========================+===============+====================================================+\n| No running processes found in NPU 0                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 1                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 2                                                            |\n+===========================+===============+====================================================+\n| 3       0                 | 2804329       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 4       0                 | 2804375       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 5       0                 | 4051291       |                          | 3867                    |\n+===========================+===============+====================================================+\n| 6       0                 | 2804478       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 7       0                 | 2804586       |                          | 51013                   |\n+===========================+===============+====================================================+\n"
+  }
+}
