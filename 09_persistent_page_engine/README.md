@@ -520,6 +520,44 @@ request manifest includes order, page/block identity, prompt, pixel profile,
 crop shape, and exact crop-pixel hash. The first 32 OmniDocBench pages produce
 the same 510-request hash as the retired PaddleX oracle.
 
+### Project-owned eager detector
+
+The layout lab can replace the Transformers model implementation with the
+project-owned eager implementation under
+`pipeline/owned_layout_model/`. The owned boundary includes the HGNetV2-L
+backbone, hybrid encoder, deformable decoder, mask/order/class/box heads,
+checkpoint configuration, and strict safetensors loading. It intentionally
+does not include the image processor yet: preprocessing and detector
+postprocessing still come from Transformers.
+
+This route is eager-only. It does not use TorchAir, `torch.compile`, or NPU
+graph capture:
+
+```sh
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
+  09_persistent_page_engine/scripts/layout_owned_lab.py \
+  --model-backend owned \
+  --no-graph-capture \
+  --limit 8 \
+  --output-dir \
+    tmp/09_persistent_page_engine/owned_layout_model/owned_eager_8p
+```
+
+The strict loader accounts for all 858 tensors and 33,288,957 stored tensor
+elements in the official checkpoint. The only non-stored model keys are the
+known tied decoder-head aliases and PyTorch batch counters. On the first eight
+OmniDocBench pages, the owned NPU eager model produced 122
+`RecognitionRequest` records byte-for-byte identical to the Transformers NPU
+eager oracle, including crop pixels and order. The evidence is under
+`tmp/09_persistent_page_engine/owned_layout_model/`.
+
+`scripts/layout_model_parity.py` is the narrower raw-output probe. It loads the
+two model implementations sequentially, runs the same processor tensor through
+each, and records differences for logits, boxes, order logits, and masks. The
+request-manifest comparison remains the acceptance gate because detector query
+selection can amplify small internal numerical differences while preserving
+the exact selected page regions.
+
 The lab also enables NPU-event stage timing around the detector graph and the
 device metadata/mask postprocess tails. The corresponding
 `layout_model_device_s`, `layout_device_metadata_postprocess_s`, and
@@ -718,6 +756,9 @@ reverse.
 
 - `pipeline/layout_frontend.py`: owned PP-DocLayoutV3 model loading, sequential
   page inference, and exact page-to-request materialization.
+- `pipeline/owned_layout_model/`: independent eager PP-DocLayoutV3 model,
+  HGNetV2-L backbone, configuration, and strict safetensors loader. It has no
+  Transformers model dependency.
 - `pipeline/layout_model_runtime.py`: captured NPU model forward and selected
   mask postprocessing.
 - `pipeline/layout_postprocess.py`: fixed v1.6 detector geometry, filtering,
