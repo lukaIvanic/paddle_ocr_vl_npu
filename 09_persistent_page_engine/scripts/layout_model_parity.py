@@ -102,11 +102,13 @@ def main() -> None:
     image_path = args.image.expanduser().resolve()
     output_path = args.output.expanduser().resolve()
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    device = torch.device("npu:0" if args.device == "npu" else "cpu")
-    if device.type == "npu":
+    if args.device == "npu":
         import torch_npu  # noqa: F401
 
+        device = torch.device("npu:0")
         torch.npu.set_compile_mode(jit_compile=False)
+    else:
+        device = torch.device("cpu")
 
     from transformers import AutoImageProcessor, AutoModelForObjectDetection
 
