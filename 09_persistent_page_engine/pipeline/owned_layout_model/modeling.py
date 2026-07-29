@@ -1709,7 +1709,10 @@ class OwnedPPDocLayoutV3ForObjectDetection(nn.Module):
         incompatible = model.load_state_dict(checkpoint, strict=False)
         actual_missing = set(incompatible.missing_keys)
         actual_unexpected = set(incompatible.unexpected_keys)
-        if actual_missing != missing or actual_unexpected != unexpected:
+        if (
+            actual_missing - allowed_missing
+            or actual_unexpected
+        ):
             raise RuntimeError(
                 "owned PP-DocLayoutV3 loader coverage changed during load: "
                 f"missing={sorted(actual_missing)}, "
