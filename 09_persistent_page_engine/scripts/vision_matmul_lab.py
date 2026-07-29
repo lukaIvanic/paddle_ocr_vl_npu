@@ -80,6 +80,7 @@ ROTARY_IMPLEMENTATIONS = (
     "joint_inplace_partial",
 )
 LEGACY_SEPARATE_MANUAL_SOURCE_HASH = "b4144440d15e"
+JOINT_MANUAL_SOURCE_HASH = "25d9a2dd1d39"
 StageInputs = tuple[torch.Tensor, ...]
 
 
@@ -1017,6 +1018,15 @@ def _cache_dir(
         key_parts.append(
             f"src{LEGACY_SEPARATE_MANUAL_SOURCE_HASH}"
         )
+    elif rotary_implementation == "joint_manual":
+        # The joint-manual implementation is unchanged from commit 95bd2ca;
+        # unrelated native-lane converter work must not discard its warm graph.
+        key_parts.extend(
+            [
+                f"rotary{cache_key_part(rotary_implementation)}",
+                f"src{JOINT_MANUAL_SOURCE_HASH}",
+            ]
+        )
     else:
         key_parts.extend(
             [
@@ -1554,7 +1564,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         ),
     }
     summary: dict[str, Any] = {
-        "schema_version": 3,
+        "schema_version": 4,
         "status": format_metadata["status"],
         "purpose": (
             "exact production 27-layer vision PromptFA format/alignment "
