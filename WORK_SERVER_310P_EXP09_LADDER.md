@@ -9,29 +9,29 @@ Prove that the real Experiment 09 pipeline runs on this 310P software stack,
 identify which production optimizations work, and measure their approximate
 effect on a small representative workload.
 
-## Current requested task: run Phase 10 only
+## Current requested task: run Phase 11 only
 
-Phases 0-8 have already passed on this server, and Phase 9 has already
-produced the isolated 310P vision-throughput results. For the current task, do
-not rerun the production pipeline, layout lab, dataset validation, attention
-correctness check, decode ladder, packing ladder, or Phase 9 matrix. Read their
-retained instructions and artifacts only as context.
+Phases 0-10 have already run or have retained instructions and evidence. For
+the current task, do not rerun the production pipeline, layout lab, dataset
+validation, attention correctness check, decode ladder, packing ladder,
+earlier saturation matrix, or native B1 profiler. Read their retained
+instructions and artifacts only as context.
 
 Pull current `main`, reuse the exact Python/model/NPU environment that passed
-the earlier ladder, and execute only **Phase 10: native NPU profiler comparison
-at B1xS512 and B1xS2048** below. Phase 10 loads only the PaddleOCR-VL
-recognizer and does not need OmniDocBench images, the layout model, text
-prefill, or decode.
+the earlier ladder, and execute only **Phase 11: production-PromptFA vision
+weight-format and MLP-alignment matrix** below. Phase 11 loads only the
+PaddleOCR-VL recognizer and does not need OmniDocBench images, the layout
+model, text prefill, or decode.
 
 The current question is deliberately narrow:
 
-> Where does compiled PromptFA `VisionPrefillStage` time go at B1xS512 versus
-> B1xS2048 on 310P, how much does the native profiler perturb each replay, and
-> how do the kernel mix and physical throughput compare with the exact 910B2
-> profiles?
+> On 310P, how do native ND and preformatted FRACTAL_NZ Linear weights compare
+> at B1xS512, B4xS512, and B1xS2048; does zero-extending the vision MLP from
+> 4304 to the 256-aligned width 4352 help; and does 310P remain on MatMulV2
+> across all twelve production-PromptFA graph variants?
 
 Do not optimize source code, change production routing, or update the pinned
-910B2 routing table during this task.
+310P/910B2 routing tables during this task.
 
 ## Current 310P layout route: eager NPU
 
@@ -398,8 +398,8 @@ Experiment 09 validation.
 - Do not edit source code, install packages, or invent fallback implementations.
 
 For the already-completed production-validation task, the stopping point was
-the layout check and report. For the current task, skip Phases 0-8 and stop
-after Phase 9 and its dedicated report.
+the layout check and report. Phase 9 and Phase 10 are also retained historical
+tasks. For the current task, skip Phases 0-10 and stop after Phase 11.
 
 ## What the previous 310P server established
 
@@ -1872,9 +1872,10 @@ preparation.
 
 ### Purpose and strict measurement boundary
 
-This is the only phase to run for the current request. It answers whether the
-310P vision transformer is underfilled at small sequence lengths and whether
-true graph batching closes part of the measured 910B2/310P gap.
+This retained historical phase answered whether the 310P vision transformer
+was underfilled at small sequence lengths and whether true graph batching
+closed part of the measured 910B2/310P gap. Do not execute it for the current
+Phase 11 task.
 
 Measure **raw physical vision-transformer tokens/s only**:
 
@@ -2783,8 +2784,9 @@ decimal places. Do not substitute effective tok/s.
 
 ### 10.0 Purpose, boundary, and reference contract
 
-This is the only phase to execute for the current request. It captures two
-already-warmed compiled PromptFA graphs with the native `torch_npu` profiler:
+This retained historical phase captures two already-warmed compiled PromptFA
+graphs with the native `torch_npu` profiler. Do not execute it for the current
+Phase 11 task:
 
 ```text
 B1xS512
@@ -3753,11 +3755,660 @@ Inspect the staged paths before committing. Ensure `.runtime_cache` and raw
 `trace_view.json` data are not staged. Then commit and push the compact
 evidence on `main`, and report the commit hash.
 
+## Phase 11: PromptFA Linear-weight format and MLP-alignment matrix
+
+### 11.0 Scope and exact experiment
+
+This is the only phase to execute for the current request. Run exactly these
+three production `VisionPrefillStage` shapes:
+
+```text
+B1xS512
+B4xS512
+B1xS2048
+```
+
+For each shape, run exactly four compiled variants:
+
+```text
+native 4304-wide MLP
+FRACTAL_NZ 4304-wide MLP
+native 4352-wide zero-extended MLP
+FRACTAL_NZ 4352-wide zero-extended MLP
+```
+
+That is exactly 12 graph cases. Do not add sequence lengths, batch sizes,
+attention implementations, dtypes, eager performance lanes, quantization, or
+full-page OCR.
+
+The timed boundary is the real production `VisionPrefillStage`:
+
+```text
+27 x (
+  LayerNorm1 + Q/K/V + RoPE +
+  npu_prompt_flash_attention + output projection + residual +
+  LayerNorm2 + FC1/GELU/FC2 + residual
+) + post-LayerNorm
+```
+
+It uses real PromptFA with the production head-dimension padding from 72 to 80.
+It excludes patch embedding, projector, image/layout work, text prefill, and
+decode. Inputs are synthetic but have exact production shapes and dtypes.
+
+Physical throughput is:
+
+```text
+physical tokens per replay = batch_size * sequence_length
+physical tok/s = physical tokens per replay / NPU-event replay time
+```
+
+Thus B4xS512 and B1xS2048 both process 2048 physical tokens per replay, but
+their attention work is not equivalent: B4xS512 performs four independent
+512-token attentions.
+
+The 4352 variant does not change model semantics. Each layer's FC1 is extended
+from `[4304, 1152]` to `[4352, 1152]` with 48 zero rows; FC2 is extended from
+`[1152, 4304]` to `[1152, 4352]` with 48 zero columns. GELU(0)=0.
+
+The FRACTAL_NZ variant must:
+
+1. set `torch.npu.config.allow_internal_format = True` before the first NPU
+   allocation;
+2. load/pad the model;
+3. explicitly cast all 162 vision-stage Linear weights to format code 29;
+4. verify all 162 weights are actually format 29;
+5. never silently time an ND fallback.
+
+The committed 910B2 references below are comparison data only. Do not use
+them as expected 310P performance:
+
+| Shape | MLP | weights | 910B2 median ms | 910B2 physical tok/s | V2 / V3 |
+|---|---:|---|---:|---:|---:|
+| B1xS512 | 4304 | native ND | 15.7241 | 32,561.5 | 486 / 0 |
+| B1xS512 | 4304 | FRACTAL_NZ | 14.1214 | 36,257.0 | 486 / 0 |
+| B1xS512 | 4352 | native ND | 14.0940 | 36,327.6 | 486 / 0 |
+| B1xS512 | 4352 | FRACTAL_NZ | 13.5761 | 37,713.2 | 486 / 0 |
+| B4xS512 | 4304 | native ND | 27.3093 | 74,992.7 | 324 / 162 |
+| B4xS512 | 4304 | FRACTAL_NZ | 27.1850 | 75,335.6 | 486 / 0 |
+| B4xS512 | 4352 | native ND | 26.1087 | 78,441.4 | 324 / 162 |
+| B4xS512 | 4352 | FRACTAL_NZ | 26.6486 | 76,852.0 | 486 / 0 |
+| B1xS2048 | 4304 | native ND | 31.4757 | 65,066.0 | 324 / 162 |
+| B1xS2048 | 4304 | FRACTAL_NZ | 31.2482 | 65,539.8 | 486 / 0 |
+| B1xS2048 | 4352 | native ND | 30.1408 | 67,947.7 | 324 / 162 |
+| B1xS2048 | 4352 | FRACTAL_NZ | 30.5553 | 67,026.1 | 486 / 0 |
+
+Read the committed JSON mechanically for the final comparison; the rounded
+table is only a human sanity check.
+
+### 11.1 Pull and recover the proven environment
+
+Start from the repository. Do not discard or overwrite any local work:
+
+```sh
+git status --short --branch
+git pull --ff-only origin main
+
+REPO="$(git rev-parse --show-toplevel)"
+cd "$REPO"
+COMMIT="$(git rev-parse HEAD)"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+PHASE11_REL="tmp/09_persistent_page_engine/310p_promptfa_formats_$COMMIT_SHORT"
+PHASE11_ROOT="$REPO/$PHASE11_REL"
+RAW_PROFILE_ROOT="$REPO/.runtime_cache/310p_promptfa_formats_$COMMIT_SHORT"
+MATRIX_SCRIPT="$REPO/09_persistent_page_engine/scripts/run_vision_matmul_lab_matrix.py"
+LAB_SCRIPT="$REPO/09_persistent_page_engine/scripts/vision_matmul_lab.py"
+REFERENCE_B1="$REPO/tmp/09_persistent_page_engine/vision_matmul_lab/910b_promptfa_internal_formats_e447c8e"
+REFERENCE_B4="$REPO/tmp/09_persistent_page_engine/vision_matmul_lab/910b_promptfa_b4s512_internal_formats_16dac71"
+
+test -f "$MATRIX_SCRIPT"
+test -f "$LAB_SCRIPT"
+test -f "$REFERENCE_B1/matrix_summary.json"
+test -f "$REFERENCE_B4/matrix_summary.json"
+test ! -e "$PHASE11_ROOT"
+test ! -e "$RAW_PROFILE_ROOT"
+mkdir -p "$PHASE11_ROOT" "$RAW_PROFILE_ROOT"
+```
+
+Recover the exact Python and recognizer model from the latest retained
+successful Phase 7 command. Do not guess a virtual environment or model path:
+
+```sh
+PHASE7_COMMAND="$(
+  python3 - "$REPO" <<'PY'
+import sys
+from pathlib import Path
+
+repo = Path(sys.argv[1]).resolve()
+matches = list(
+    repo.glob(
+        "tmp/09_persistent_page_engine/"
+        "310p_exp09_npu_layout_eager_*/"
+        "phase7_min_pixels_28224_replay/command.sh"
+    )
+)
+if not matches:
+    raise SystemExit("no retained successful Phase 7 command.sh was found")
+print(max(matches, key=lambda path: path.stat().st_mtime))
+PY
+)"
+test -f "$PHASE7_COMMAND"
+
+eval "$(
+  python3 - "$PHASE7_COMMAND" <<'PY'
+import shlex
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1]).resolve()
+lines = [
+    line.strip()
+    for line in path.read_text(encoding="utf-8").splitlines()
+    if line.strip() and not line.lstrip().startswith("#")
+]
+if len(lines) != 1:
+    raise SystemExit(f"expected one command in {path}, found {len(lines)}")
+tokens = shlex.split(lines[0])
+
+def option(name):
+    try:
+        return tokens[tokens.index(name) + 1]
+    except (ValueError, IndexError) as exc:
+        raise SystemExit(f"{name} missing from {path}") from exc
+
+print(f"PYTHON_BIN={shlex.quote(tokens[0])}")
+print(f"RECOGNIZER_MODEL={shlex.quote(option('--recognizer-model'))}")
+PY
+)"
+
+test -x "$PYTHON_BIN"
+test -f "$RECOGNIZER_MODEL/config.json"
+printf 'python=%s\nmodel=%s\n' "$PYTHON_BIN" "$RECOGNIZER_MODEL"
+```
+
+Activate the exact CANN/torch-npu environment used by the successful previous
+phases. Keep one free physical 310P exposed as logical `npu:0`. Never terminate
+another user's process. Stop if no NPU is free.
+
+Record the environment before running:
+
+```sh
+{
+  printf 'git_commit=%s\n' "$COMMIT"
+  printf 'git_status_begin\n'
+  git status --short --branch
+  printf 'git_status_end\n'
+  printf 'hostname=%s\n' "$(hostname)"
+  printf 'ASCEND_RT_VISIBLE_DEVICES=%s\n' \
+    "${ASCEND_RT_VISIBLE_DEVICES:-}"
+  printf 'python=%s\n' "$PYTHON_BIN"
+  printf 'recognizer_model=%s\n' "$RECOGNIZER_MODEL"
+  printf 'reference_b1=%s\n' "$REFERENCE_B1"
+  printf 'reference_b4=%s\n' "$REFERENCE_B4"
+} >"$PHASE11_ROOT/provenance.txt"
+
+df -h "$REPO" "$REPO/.runtime_cache" >"$PHASE11_ROOT/disk_before.txt"
+npu-smi info >"$PHASE11_ROOT/npu_before.txt" 2>&1
+```
+
+### 11.2 Required internal-format preflight
+
+Run this exact probe before compiling graphs:
+
+```sh
+PYTHONPATH="$REPO/09_persistent_page_engine" \
+"$PYTHON_BIN" - >"$PHASE11_ROOT/internal_format_preflight.txt" 2>&1 <<'PY'
+import json
+import platform
+import sys
+
+import torch
+import torch_npu
+import torch.nn.functional as F
+
+from paddleocr_vl.model.compile_utils import import_torchair
+
+torchair, CompilerConfig = import_torchair()
+assert callable(torchair.inference.cache_compile)
+assert torch.npu.is_available()
+
+# This must happen before torch.npu.set_device or any NPU tensor allocation.
+torch.npu.config.allow_internal_format = True
+torch.npu.set_device(0)
+torch.npu.set_compile_mode(jit_compile=False)
+
+x = torch.randn((512, 1152), dtype=torch.float16, device="npu:0")
+w_nd = torch.randn((4304, 1152), dtype=torch.float16, device="npu:0")
+before = int(torch_npu.get_npu_format(w_nd))
+w_nz = torch_npu.npu_format_cast(w_nd, 29)
+after = int(torch_npu.get_npu_format(w_nz))
+y = F.linear(x, w_nz)
+torch.npu.synchronize()
+
+assert before == 2, before
+assert after == 29, after
+assert tuple(y.shape) == (512, 4304)
+assert bool(torch.isfinite(y.float()).all().cpu().item())
+
+print("platform:", platform.platform())
+print("python:", sys.version.replace("\n", " "))
+print("python_executable:", sys.executable)
+print("torch:", torch.__version__)
+print("torch_npu:", getattr(torch_npu, "__version__", "<missing>"))
+print("torchair_module:", torchair.__name__)
+print("torchair_file:", getattr(torchair, "__file__", "<namespace>"))
+print("npu_name:", torch.npu.get_device_name(0))
+print("mm_bmm_format_nd:", torch.npu.get_mm_bmm_format_nd())
+print("weight_format_before:", before)
+print("weight_format_after:", after)
+print("output_shape:", list(y.shape))
+print("PHASE11_INTERNAL_FORMAT: PASS")
+PY
+
+cat "$PHASE11_ROOT/internal_format_preflight.txt"
+test "$(tail -n 1 "$PHASE11_ROOT/internal_format_preflight.txt")" = \
+  "PHASE11_INTERNAL_FORMAT: PASS"
+```
+
+If format code 29 is not observed, stop and report the exact warning and first
+causal traceback. Do not remove the NZ lanes, set a private environment
+variable, or relabel ND as NZ.
+
+### 11.3 Run the twelve-case compiled PromptFA matrix
+
+The runner creates a distinct persistent cache key for every batch, sequence,
+MLP width, and weight format. Run all cases serially in one command:
+
+```sh
+{
+  printf '#!/usr/bin/env bash\n'
+  printf '# git_commit=%s\n' "$COMMIT"
+  printf '# hostname=%s\n' "$(hostname)"
+  printf '# ASCEND_RT_VISIBLE_DEVICES=%s\n' \
+    "${ASCEND_RT_VISIBLE_DEVICES:-}"
+  printf '%q ' \
+    "$PYTHON_BIN" "$MATRIX_SCRIPT" \
+    --name "310p_promptfa_internal_formats_$COMMIT_SHORT" \
+    --model "$RECOGNIZER_MODEL" \
+    --output-root "$PHASE11_ROOT/results" \
+    --cache-dir "$RAW_PROFILE_ROOT/graphs" \
+    --profile-root "$RAW_PROFILE_ROOT/profiles" \
+    --execution torchair \
+    --allow-compile-if-missing \
+    --profile \
+    --warmup 3 \
+    --samples 10 \
+    --calls-per-sample 5
+  printf '\n'
+} >"$PHASE11_ROOT/command.sh"
+chmod +x "$PHASE11_ROOT/command.sh"
+
+(
+  while true; do
+    date --iso-8601=ns 2>/dev/null || date
+    npu-smi info
+    sleep 1
+  done
+) >"$PHASE11_ROOT/npu_smi_1s.log" 2>&1 &
+MONITOR_PID=$!
+
+set +e
+"$PHASE11_ROOT/command.sh" >"$PHASE11_ROOT/run.log" 2>&1
+STATUS=$?
+set -e
+kill "$MONITOR_PID" 2>/dev/null || true
+wait "$MONITOR_PID" 2>/dev/null || true
+printf '%s\n' "$STATUS" >"$PHASE11_ROOT/exit_code.txt"
+test "$STATUS" -eq 0
+```
+
+Do not run cases concurrently. Do not point this experiment at a production
+vision cache. Do not rerun a failure into the same output/cache directories.
+If one case fails, preserve everything and report the failed case plus the
+first causal error.
+
+The authoritative matrix should be:
+
+```sh
+MATRIX_ROOT="$PHASE11_ROOT/results/310p_promptfa_internal_formats_$COMMIT_SHORT"
+MATRIX_JSON="$MATRIX_ROOT/matrix_summary.json"
+test -f "$MATRIX_JSON"
+```
+
+### 11.4 Validate format, shape, PromptFA, and measurement contracts
+
+```sh
+"$PYTHON_BIN" - \
+  "$MATRIX_JSON" \
+  "$PHASE11_ROOT/matrix_validation.txt" <<'PY'
+import json
+import sys
+from collections import Counter
+from pathlib import Path
+
+matrix_path = Path(sys.argv[1]).resolve()
+output_path = Path(sys.argv[2]).resolve()
+payload = json.loads(matrix_path.read_text(encoding="utf-8"))
+
+assert payload["status"] == "completed"
+assert payload["execution"] == "torchair"
+assert payload["profiled"] is True
+assert payload["shapes"] == ["b1s512", "b4s512", "b1s2048"]
+assert len(payload["cases"]) == 12
+
+shape_counts = Counter()
+rows = []
+for case in payload["cases"]:
+    assert case["exit_code"] == 0, case["case"]
+    result = case["result"]
+    assert result["status"] == "completed", case["case"]
+    shape = result["shape"]
+    key = (shape["batch_size"], shape["sequence_length"])
+    shape_counts[key] += 1
+    assert shape["physical_tokens_per_call"] == key[0] * key[1]
+    assert shape["candidate_intermediate_size"] in (4304, 4352)
+    assert result["numerics"]["measured_output_finite"] is True
+    assert result["numerics"]["raw_candidate_vs_native_4304"][
+        "left_finite"
+    ]
+    assert result["numerics"]["raw_candidate_vs_native_4304"][
+        "right_finite"
+    ]
+
+    requested = result["requested"]["weight_format"]
+    formats = result["weight_format"]["after_format_histogram"]
+    if requested == "fractal_nz":
+        assert formats == {"29": 162}, (case["case"], formats)
+        assert result["weight_format"]["all_after_are_nz"] is True
+        assert result["weight_format"]["runtime_gate"][
+            "torch_npu_allow_internal_format_enabled_before_npu_allocation"
+        ] is True
+    else:
+        assert formats == {"2": 162}, (case["case"], formats)
+
+    dispatch = result["dispatch"]["counts"]
+    rows.append(
+        (
+            case["case"],
+            result["device_median_ms"],
+            result["physical_tokens_per_s"],
+            dispatch.get("MatMulV2", 0),
+            dispatch.get("MatMulV3", 0),
+            result["transdata"]["count"],
+            result["numerics"]["measured_output_vs_raw_candidate"][
+                "mean_abs"
+            ],
+            result["numerics"]["measured_output_vs_raw_candidate"][
+                "max_abs"
+            ],
+        )
+    )
+
+assert shape_counts == {(1, 512): 4, (4, 512): 4, (1, 2048): 4}
+lines = [
+    "case | median_ms | physical_tok_s | MatMulV2 | MatMulV3 | "
+    "TransData | compiled_mean_abs | compiled_max_abs"
+]
+lines.extend(" | ".join(map(str, row)) for row in rows)
+lines.append("PHASE11_MATRIX_CONTRACTS: PASS")
+output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+print(output_path.read_text(encoding="utf-8"), end="")
+PY
+```
+
+Do not impose a small max-absolute correctness gate. The vision output is an
+intermediate decoder input, and compiled numerical noise may have isolated
+larger maxima. Report mean/max absolute error, require finite values, and flag
+only a qualitatively large mean error or non-finite output.
+
+### 11.5 Generate the exact 910B2-versus-310P comparison
+
+```sh
+"$PYTHON_BIN" - \
+  "$REFERENCE_B1/matrix_summary.json" \
+  "$REFERENCE_B4/matrix_summary.json" \
+  "$MATRIX_JSON" \
+  "$PHASE11_ROOT/comparison.json" \
+  "$PHASE11_ROOT/comparison.md" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+ref_b1_path, ref_b4_path, target_path, out_json, out_md = map(
+    Path, sys.argv[1:]
+)
+
+def load(path):
+    return json.loads(path.read_text(encoding="utf-8"))
+
+def keyed(*matrices):
+    rows = {}
+    for matrix in matrices:
+        for case in matrix["cases"]:
+            result = case["result"]
+            shape = result["shape"]
+            key = (
+                int(shape["batch_size"]),
+                int(shape["sequence_length"]),
+                int(shape["candidate_intermediate_size"]),
+                str(result["requested"]["weight_format"]),
+            )
+            rows[key] = {
+                "case": case["case"],
+                "median_ms": float(result["device_median_ms"]),
+                "physical_tok_s": float(result["physical_tokens_per_s"]),
+                "dispatch": result["dispatch"]["counts"],
+                "matmul_duration_us": result["dispatch"]["duration_us"],
+                "transdata_count": int(result["transdata"]["count"]),
+                "format_histogram": result["weight_format"][
+                    "after_format_histogram"
+                ],
+            }
+    return rows
+
+reference = keyed(load(ref_b1_path), load(ref_b4_path))
+target = keyed(load(target_path))
+assert set(reference) == set(target), (
+    sorted(set(reference) - set(target)),
+    sorted(set(target) - set(reference)),
+)
+
+rows = []
+for key in sorted(reference):
+    ref = reference[key]
+    current = target[key]
+    rows.append(
+        {
+            "batch_size": key[0],
+            "sequence_length": key[1],
+            "intermediate_size": key[2],
+            "weight_format": key[3],
+            "910b2": ref,
+            "310p": current,
+            "910b2_over_310p_physical_tok_s": (
+                ref["physical_tok_s"] / current["physical_tok_s"]
+            ),
+        }
+    )
+
+def lookup(device_rows, batch, seq, intermediate, weight_format):
+    return device_rows[(batch, seq, intermediate, weight_format)]
+
+effects = {}
+for name, device_rows in (("910b2", reference), ("310p", target)):
+    effects[name] = {}
+    for batch, seq in ((1, 512), (4, 512), (1, 2048)):
+        baseline = lookup(device_rows, batch, seq, 4304, "native")
+        effects[name][f"b{batch}s{seq}"] = {
+            "nz_4304_speedup": (
+                lookup(
+                    device_rows, batch, seq, 4304, "fractal_nz"
+                )["physical_tok_s"]
+                / baseline["physical_tok_s"]
+            ),
+            "aligned_4352_native_speedup": (
+                lookup(device_rows, batch, seq, 4352, "native")[
+                    "physical_tok_s"
+                ]
+                / baseline["physical_tok_s"]
+            ),
+            "aligned_4352_nz_speedup": (
+                lookup(
+                    device_rows, batch, seq, 4352, "fractal_nz"
+                )["physical_tok_s"]
+                / baseline["physical_tok_s"]
+            ),
+        }
+
+payload = {"rows": rows, "within_device_effects": effects}
+out_json.write_text(
+    json.dumps(payload, indent=2, sort_keys=True) + "\n",
+    encoding="utf-8",
+)
+
+lines = [
+    "# Production-PromptFA vision format/alignment comparison",
+    "",
+    "| Shape | MLP | weights | 910B2 tok/s | 310P tok/s | "
+    "910B2/310P | 310P V2/V3 |",
+    "|---|---:|---|---:|---:|---:|---:|",
+]
+for row in rows:
+    shape = f"B{row['batch_size']}xS{row['sequence_length']}"
+    dispatch = row["310p"]["dispatch"]
+    lines.append(
+        f"| {shape} | {row['intermediate_size']} | "
+        f"{row['weight_format']} | "
+        f"{row['910b2']['physical_tok_s']:.1f} | "
+        f"{row['310p']['physical_tok_s']:.1f} | "
+        f"{row['910b2_over_310p_physical_tok_s']:.3f}x | "
+        f"{dispatch.get('MatMulV2', 0)}/"
+        f"{dispatch.get('MatMulV3', 0)} |"
+    )
+
+lines.extend(["", "## Within-device speedups over 4304 native", ""])
+for device in ("910b2", "310p"):
+    lines.append(f"### {device}")
+    for shape, values in effects[device].items():
+        lines.append(
+            f"- {shape}: 4304 NZ {values['nz_4304_speedup']:.4f}x; "
+            f"4352 ND {values['aligned_4352_native_speedup']:.4f}x; "
+            f"4352 NZ {values['aligned_4352_nz_speedup']:.4f}x"
+        )
+    lines.append("")
+
+out_md.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+print(out_md.read_text(encoding="utf-8"), end="")
+PY
+```
+
+### 11.6 Interpretation rules and required report
+
+Use the following rules:
+
+- Headline only unprofiled NPU-event physical tok/s.
+- Profiler output diagnoses dispatch and formats; it is not the throughput
+  timing.
+- Confirm the profiler's MatMul signatures show the requested weight format.
+- Aggregate all MatMul variants, but separately report V2/V3 counts and times.
+- Report TransData even if it is zero.
+- Do not assume that NZ must win. On 910B2, NZ helps B1xS512 but suppresses
+  profitable MatMulV3 dispatch at the two larger flattened workloads.
+- 310P was previously observed to remain on MatMulV2. If Phase 11 confirms
+  that, explain whether NZ then helps consistently.
+- Compare B4xS512 with both B1xS512 and B1xS2048. The former measures batching
+  scaling; the latter holds physical tokens per call equal while changing
+  attention decomposition.
+- Do not modify production routing or integrate a winner during this phase.
+
+Write:
+
+```text
+$PHASE11_ROOT/agent_report.md
+```
+
+Use this exact skeleton:
+
+```text
+310P PROMPTFA INTERNAL-FORMAT MATRIX: PASS | PARTIAL | FAIL
+
+Git commit:
+Host / exact physical 310P:
+Logical NPU:
+Python:
+torch:
+torch_npu:
+TorchAir resolver:
+CANN / driver / firmware:
+Recognizer model:
+
+Boundary:
+attention / layout / head-dim padding:
+dtype:
+warmup / samples / calls per sample:
+physical-token definition:
+included:
+excluded:
+
+Internal-format preflight:
+ND format code:
+NZ format code:
+F.linear finite:
+allow_internal_format set before first NPU allocation:
+
+Matrix completion:
+completed cases / expected cases:
+new graph count:
+failed or retried cases:
+compilation during timing:
+
+Results table:
+shape | MLP width | weight format | median graph ms | physical tok/s |
+MatMulV2 count/time | MatMulV3 count/time | TransData count/time |
+mean/max compiled-vs-eager difference
+
+Within 310P:
+B1xS512 NZ speedup at 4304:
+B1xS512 4352-ND speedup:
+B1xS512 4352-NZ speedup:
+B4xS512 NZ speedup at 4304:
+B4xS512 4352-ND speedup:
+B4xS512 4352-NZ speedup:
+B1xS2048 NZ speedup at 4304:
+B1xS2048 4352-ND speedup:
+B1xS2048 4352-NZ speedup:
+B4xS512 / B1xS512 physical-throughput scaling:
+B4xS512 / B1xS2048 comparison at equal 2048 physical tokens:
+
+Versus 910B2:
+complete twelve-row comparison table:
+shape-by-shape throughput ratios:
+does 310P ever dispatch MatMulV3:
+does NZ help 310P more consistently than 910B2:
+does 4352 alignment help independently of NZ:
+
+Conclusion:
+best 310P configuration for each shape:
+single global weight-format recommendation, if supported by all shapes:
+whether a sequence-dependent policy would require duplicated weights:
+single best next production experiment, without implementing it:
+
+First blocker or warning:
+Exact command:
+Matrix JSON:
+Comparison JSON / Markdown:
+Raw profiler root:
+All artifact paths:
+```
+
+The work server is pull-only. Do not commit or push from it. Keep the raw graph
+caches and profiler trees under `.runtime_cache`, keep compact results under
+`tmp/`, and send Luka the report plus exact artifact paths manually.
+
 ## Artifact interpretation
 
-For the current Phase 10-only task, stop at Phase 10.8 after committing its
-compact evidence. The remaining sections are retained for the earlier
-full-ladder workflow and are not additional current work.
+For the current Phase 11-only task, stop after Phase 11.6 and report. The
+remaining sections are retained for earlier workflows and are not additional
+current work.
 
 For every production lane:
 
@@ -3820,8 +4471,8 @@ min-pixels settings.
 ## Stop condition and required report
 
 For the earlier production-validation task, stop after Phase 8. For the
-current isolated-vision task, skip Phases 0-8 and stop after Phase 9. Do not
-start any OCR page workload.
+earlier isolated-vision saturation task, stop after Phase 9. The current task
+is governed by Phase 11.6 above. Do not start any OCR page workload.
 
 Write:
 
