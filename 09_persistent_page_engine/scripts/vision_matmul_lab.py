@@ -24,6 +24,7 @@ from typing import Any, Callable, Sequence
 
 import torch
 from torch import nn
+from torch.nn import functional as F
 
 HERE = Path(__file__).resolve().parent
 EXPERIMENT_ROOT = HERE.parent
@@ -44,10 +45,12 @@ from paddleocr_vl.model.modeling import (  # noqa: E402
 )
 from paddleocr_vl.model.vision_prefill import (  # noqa: E402
     VisionPrefillStage,
+    apply_rotary_pos_emb_vision,
     get_vision_prompt_fa_layout,
     get_vision_prompt_fa_mask_sparse_mode,
     prepare_vision_prefill,
     prompt_flash_attention_call_head_dim,
+    vision_prompt_flash_attention_bnsd,
 )
 from utils.timing import DeviceTimeline, synchronize  # noqa: E402
 from vision_lab import DEFAULT_MODEL, _environment  # noqa: E402
@@ -69,6 +72,7 @@ BATCH_SIZES = (1, 4)
 INTERMEDIATE_SIZES = (4304, 4352)
 WEIGHT_FORMATS = ("native", "fractal_nz")
 EXECUTIONS = ("raw_eager", "torchair")
+ATTENTION_HEAD_PADDING_CHOICES = ("runtime", "weights")
 StageInputs = tuple[
     torch.Tensor,
     torch.Tensor,
@@ -106,6 +110,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--execution",
         choices=EXECUTIONS,
         default="torchair",
+    )
+    parser.add_argument(
+        "--attention-head-padding",
+        choices=ATTENTION_HEAD_PADDING_CHOICES,
+        default="runtime",
+        help=(
+            "runtime uses per-layer 72->80 pads and 80->72 slicing; "
+            "weights zero-extends attention projections once to native "
+            "80-wide heads."
+        ),
     )
     parser.add_argument("--model", type=Path, default=DEFAULT_MODEL)
     parser.add_argument("--cache-dir", type=Path, default=DEFAULT_CACHE_ROOT)
@@ -202,6 +216,241 @@ def _zero_extend_model_mlp(
         )
         layer.mlp.fc1 = fc1
         layer.mlp.fc2 = fc2
+
+
+def _copy_real_head_rows(
+    destination: torch.Tensor,
+    source: torch.Tensor,
+    *,
+    num_heads: int,
+    real_head_dim: int,
+    padded_head_dim: int,
+) -> None:
+    half = real_head_dim // 2
+    padded_half = padded_head_dim // 2
+    for head in range(num_heads):
+        source_start = head * real_head_dim
+        destination_start = head * padded_head_dim
+        destination[
+            destination_start : destination_start + half
+        ].copy_(source[source_start : source_start + half])
+        destination[
+            destination_start
+            + padded_half : destination_start
+            + padded_half
+            + half
+        ].copy_(
+            source[
+                source_start + half : source_start + real_head_dim
+            ]
+        )
+
+
+def _copy_real_head_columns(
+    destination: torch.Tensor,
+    source: torch.Tensor,
+    *,
+    num_heads: int,
+    real_head_dim: int,
+    padded_head_dim: int,
+) -> None:
+    half = real_head_dim // 2
+    padded_half = padded_head_dim // 2
+    for head in range(num_heads):
+        source_start = head * real_head_dim
+        destination_start = head * padded_head_dim
+        destination[
+            :,
+            destination_start : destination_start + half,
+        ].copy_(source[:, source_start : source_start + half])
+        destination[
+            :,
+            destination_start
+            + padded_half : destination_start
+            + padded_half
+            + half,
+        ].copy_(
+            source[
+                :,
+                source_start + half : source_start + real_head_dim,
+            ]
+        )
+
+
+def _weight_padded_attention(
+    attention: nn.Module,
+) -> dict[str, int]:
+    num_heads = int(attention.num_heads)
+    real_head_dim = int(attention.head_dim)
+    padded_head_dim = prompt_flash_attention_call_head_dim(real_head_dim)
+    if padded_head_dim == real_head_dim:
+        raise ValueError("attention head is already PromptFA-aligned")
+    hidden_size = num_heads * real_head_dim
+    padded_size = num_heads * padded_head_dim
+    device = attention.q_proj.weight.device
+    dtype = attention.q_proj.weight.dtype
+
+    for name in ("q_proj", "k_proj", "v_proj"):
+        source = getattr(attention, name)
+        replacement = nn.Linear(
+            int(source.in_features),
+            padded_size,
+            bias=source.bias is not None,
+            device=device,
+            dtype=dtype,
+        )
+        with torch.no_grad():
+            replacement.weight.zero_()
+            _copy_real_head_rows(
+                replacement.weight,
+                source.weight,
+                num_heads=num_heads,
+                real_head_dim=real_head_dim,
+                padded_head_dim=padded_head_dim,
+            )
+            if replacement.bias is not None:
+                replacement.bias.zero_()
+                _copy_real_head_rows(
+                    replacement.bias,
+                    source.bias,
+                    num_heads=num_heads,
+                    real_head_dim=real_head_dim,
+                    padded_head_dim=padded_head_dim,
+                )
+        setattr(attention, name, replacement)
+
+    source_out = attention.out_proj
+    replacement_out = nn.Linear(
+        padded_size,
+        int(source_out.out_features),
+        bias=source_out.bias is not None,
+        device=device,
+        dtype=dtype,
+    )
+    with torch.no_grad():
+        replacement_out.weight.zero_()
+        _copy_real_head_columns(
+            replacement_out.weight,
+            source_out.weight,
+            num_heads=num_heads,
+            real_head_dim=real_head_dim,
+            padded_head_dim=padded_head_dim,
+        )
+        if replacement_out.bias is not None:
+            replacement_out.bias.copy_(source_out.bias)
+    attention.out_proj = replacement_out
+    attention._weight_padded_head_dim = padded_head_dim
+    return {
+        "num_heads": num_heads,
+        "real_head_dim": real_head_dim,
+        "padded_head_dim": padded_head_dim,
+        "hidden_size": hidden_size,
+        "padded_attention_size": padded_size,
+    }
+
+
+def _weight_pad_model_attention(model: nn.Module) -> dict[str, int]:
+    metadata: dict[str, int] | None = None
+    for layer in model.visual.vision_model.encoder.layers:
+        current = _weight_padded_attention(layer.self_attn)
+        if metadata is not None and current != metadata:
+            raise RuntimeError("vision attention dimensions differ by layer")
+        metadata = current
+    if metadata is None:
+        raise RuntimeError("vision model has no encoder layers")
+    return metadata
+
+
+def _weight_pad_rope(
+    value: torch.Tensor,
+    *,
+    padded_head_dim: int,
+    fill_value: float,
+) -> torch.Tensor:
+    real_head_dim = int(value.shape[-1])
+    half = real_head_dim // 2
+    padded_half = padded_head_dim // 2
+    padded = torch.full(
+        (*value.shape[:-1], padded_head_dim),
+        fill_value,
+        dtype=value.dtype,
+        device=value.device,
+    )
+    padded[..., :half].copy_(value[..., :half])
+    padded[..., padded_half : padded_half + half].copy_(
+        value[..., half:]
+    )
+    return padded.contiguous()
+
+
+class WeightPaddedVisionPrefillStage(VisionPrefillStage):
+    """Production stage with PromptFA head padding encoded in Linear weights."""
+
+    def _attention(
+        self,
+        attention: nn.Module,
+        hidden_states: torch.Tensor,
+        rope_cos: torch.Tensor,
+        rope_sin: torch.Tensor,
+        attention_mask: torch.Tensor,
+    ) -> torch.Tensor:
+        batch_size, sequence_length, _hidden = hidden_states.shape
+        num_heads = int(attention.num_heads)
+        padded_head_dim = int(attention._weight_padded_head_dim)
+        qkv = torch.cat(
+            [
+                attention.q_proj(hidden_states),
+                attention.k_proj(hidden_states),
+                attention.v_proj(hidden_states),
+            ],
+            dim=-1,
+        )
+        query_states, key_states, value_states = qkv.chunk(3, dim=-1)
+        query_states = query_states.view(
+            batch_size,
+            sequence_length,
+            num_heads,
+            padded_head_dim,
+        )
+        key_states = key_states.view(
+            batch_size,
+            sequence_length,
+            num_heads,
+            padded_head_dim,
+        )
+        value_states = value_states.view(
+            batch_size,
+            sequence_length,
+            num_heads,
+            padded_head_dim,
+        )
+        query_states, key_states = apply_rotary_pos_emb_vision(
+            query_states,
+            key_states,
+            rope_cos,
+            rope_sin,
+        )
+        query_states = query_states.transpose(1, 2).contiguous()
+        key_states = key_states.transpose(1, 2).contiguous()
+        value_states = value_states.transpose(1, 2).contiguous()
+        attention_output = vision_prompt_flash_attention_bnsd(
+            query_states,
+            key_states,
+            value_states,
+            num_heads=num_heads,
+            scale=float(attention.scaling),
+            atten_mask=attention_mask,
+        )
+        attention_output = (
+            attention_output.transpose(1, 2)
+            .contiguous()
+            .view(
+                batch_size,
+                sequence_length,
+                num_heads * padded_head_dim,
+            )
+        )
+        return attention.out_proj(attention_output)
 
 
 def _linear_modules(stage: nn.Module) -> list[tuple[str, nn.Linear]]:
@@ -427,6 +676,7 @@ def _cache_dir(
     batch_size: int,
     intermediate_size: int,
     weight_format: str,
+    attention_head_padding: str,
     dtype: torch.dtype,
     device: torch.device,
     model_dir: Path,
@@ -445,6 +695,7 @@ def _cache_dir(
             f"batch{batch_size}",
             f"intermediate{intermediate_size}",
             f"weights{weight_format}",
+            f"headpadding{attention_head_padding}",
             f"dtype{cache_key_part(dtype)}",
             f"mode{cache_key_part(TORCHAIR_EXECUTION_MODE)}",
             f"model{short_file_hash(model_dir / 'config.json')}",
@@ -675,12 +926,13 @@ def _linear_flops_per_call(
     batch_size: int,
     sequence_length: int,
     hidden_size: int,
+    attention_projection_size: int,
     intermediate_size: int,
     layers: int,
 ) -> int:
-    # Four hidden->hidden projections and the two MLP projections per layer.
+    # Four attention projections and the two MLP projections per layer.
     per_token_per_layer = (
-        4 * 2 * hidden_size * hidden_size
+        4 * 2 * hidden_size * attention_projection_size
         + 4 * hidden_size * intermediate_size
     )
     return batch_size * sequence_length * layers * per_token_per_layer
@@ -738,7 +990,8 @@ def main(argv: Sequence[str] | None = None) -> None:
         else DEFAULT_OUTPUT_ROOT
         / (
             f"b{batch_size}_s{sequence_length}_i{intermediate_size}_"
-            f"{args.weight_format}_{args.execution}"
+            f"{args.weight_format}_{args.attention_head_padding}_"
+            f"{args.execution}"
         )
     ).expanduser().resolve()
     profile_dir = (
@@ -747,7 +1000,8 @@ def main(argv: Sequence[str] | None = None) -> None:
         else DEFAULT_PROFILE_ROOT
         / (
             f"b{batch_size}_s{sequence_length}_i{intermediate_size}_"
-            f"{args.weight_format}_{args.execution}"
+            f"{args.weight_format}_{args.attention_head_padding}_"
+            f"{args.execution}"
         )
     ).expanduser().resolve()
     if output_dir.exists() and any(output_dir.iterdir()):
@@ -810,10 +1064,55 @@ def main(argv: Sequence[str] | None = None) -> None:
             model,
             target_intermediate=intermediate_size,
         )
-    candidate_stage = VisionPrefillStage(
-        model,
-        attention_impl="prompt_flash_attention",
-    ).eval()
+    attention_padding_metadata: dict[str, Any] = {
+        "mode": args.attention_head_padding,
+        "real_head_dim": int(
+            config.hidden_size // config.num_attention_heads
+        ),
+        "padded_head_dim": prompt_flash_attention_call_head_dim(
+            int(config.hidden_size // config.num_attention_heads)
+        ),
+        "runtime_pad_operations_per_layer": 3,
+        "runtime_slice_operations_per_layer": 1,
+    }
+    candidate_inputs = inputs
+    if args.attention_head_padding == "weights":
+        attention_padding_metadata.update(
+            _weight_pad_model_attention(model)
+        )
+        candidate_inputs = (
+            inputs[0],
+            _weight_pad_rope(
+                inputs[1],
+                padded_head_dim=int(
+                    attention_padding_metadata["padded_head_dim"]
+                ),
+                fill_value=1.0,
+            ),
+            _weight_pad_rope(
+                inputs[2],
+                padded_head_dim=int(
+                    attention_padding_metadata["padded_head_dim"]
+                ),
+                fill_value=0.0,
+            ),
+            inputs[3],
+        )
+        candidate_stage = WeightPaddedVisionPrefillStage(
+            model,
+            attention_impl="prompt_flash_attention",
+        ).eval()
+        attention_padding_metadata.update(
+            {
+                "runtime_pad_operations_per_layer": 0,
+                "runtime_slice_operations_per_layer": 0,
+            }
+        )
+    else:
+        candidate_stage = VisionPrefillStage(
+            model,
+            attention_impl="prompt_flash_attention",
+        ).eval()
 
     format_metadata = _prepare_weight_format(
         candidate_stage,
@@ -830,7 +1129,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         ),
     }
     summary: dict[str, Any] = {
-        "schema_version": 2,
+        "schema_version": 3,
         "status": format_metadata["status"],
         "purpose": (
             "exact production 27-layer vision PromptFA format/alignment "
@@ -854,6 +1153,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                 int(config.hidden_size // config.num_attention_heads)
             ),
             "attention_mask_all_false": True,
+            "head_padding": attention_padding_metadata,
         },
         "shape": {
             "batch_size": batch_size,
@@ -868,6 +1168,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         },
         "requested": {
             "weight_format": args.weight_format,
+            "attention_head_padding": args.attention_head_padding,
             "execution": args.execution,
         },
         "weight_format": format_metadata,
@@ -889,7 +1190,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         return
 
     synchronize(device)
-    raw_candidate_output = candidate_stage(*inputs)
+    raw_candidate_output = candidate_stage(*candidate_inputs)
     synchronize(device)
     raw_candidate_vs_native = _diff(
         raw_candidate_output,
@@ -901,6 +1202,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         batch_size=batch_size,
         intermediate_size=intermediate_size,
         weight_format=args.weight_format,
+        attention_head_padding=args.attention_head_padding,
         dtype=dtype,
         device=device,
         model_dir=model_dir,
@@ -911,7 +1213,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             cache_dir=cache_dir,
             allow_missing=bool(args.allow_compile_if_missing),
             device=device,
-            example=inputs,
+            example=candidate_inputs,
         )
     else:
         run = candidate_stage
@@ -921,7 +1223,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "cache_existed_before": None,
         }
     for _ in range(args.warmup):
-        warm_output = run(*inputs)
+        warm_output = run(*candidate_inputs)
     synchronize(device)
     del warm_output
 
@@ -929,12 +1231,18 @@ def main(argv: Sequence[str] | None = None) -> None:
         batch_size=batch_size,
         sequence_length=sequence_length,
         hidden_size=hidden_size,
+        attention_projection_size=int(
+            attention_padding_metadata.get(
+                "padded_attention_size",
+                hidden_size,
+            )
+        ),
         intermediate_size=intermediate_size,
         layers=layers,
     )
     measurements, output = _measure(
         run,
-        inputs,
+        candidate_inputs,
         device=device,
         samples=args.samples,
         calls_per_sample=args.calls_per_sample,
@@ -964,11 +1272,12 @@ def main(argv: Sequence[str] | None = None) -> None:
         label = (
             "paddleocr_vl.vision_matmul_lab."
             f"B{batch_size}.S{sequence_length}.I{intermediate_size}."
-            f"{args.weight_format}.{args.execution}"
+            f"{args.weight_format}.{args.attention_head_padding}."
+            f"{args.execution}"
         )
         summary["profiler"] = _profile(
             run,
-            inputs,
+            candidate_inputs,
             profile_dir=profile_dir,
             warmup_steps=args.profile_warmup_steps,
             active_steps=args.profile_steps,
