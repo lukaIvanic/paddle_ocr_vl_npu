@@ -9,6 +9,27 @@ Prove that the real Experiment 09 pipeline runs on this 310P software stack,
 identify which production optimizations work, and measure their approximate
 effect on a small representative workload.
 
+## Current requested task: run Phase 9 only
+
+Phases 0-8 have already passed on this server. For the current task, do not
+rerun the production pipeline, layout lab, dataset validation, attention
+correctness check, decode ladder, or packing ladder. Read their retained
+instructions and artifacts only as context.
+
+Pull current `main`, reuse the exact Python/model/NPU environment that passed
+the earlier ladder, and execute only **Phase 9: isolated 310P vision
+saturation matrix** below. Phase 9 loads only the PaddleOCR-VL recognizer and
+does not need OmniDocBench images, the layout model, text prefill, or decode.
+
+The current question is deliberately narrow:
+
+> How does raw physical vision-transformer throughput on 310P change with
+> packed row length and true graph batch size, and how does that scaling
+> compare shape-for-shape with the measured 910B2 matrix?
+
+Do not optimize source code, change production routing, or update the pinned
+910B2 routing table during this task.
+
 ## Current 310P layout route: eager NPU
 
 The goal is NPU layout inference, not ACLGraph compatibility. Use:
@@ -373,7 +394,9 @@ Experiment 09 validation.
 - Do not use the 910B2 profile-guided vision-routing table on 310P.
 - Do not edit source code, install packages, or invent fallback implementations.
 
-Stop after the layout check and write the required report.
+For the already-completed production-validation task, the stopping point was
+the layout check and report. For the current task, skip Phases 0-8 and stop
+after Phase 9 and its dedicated report.
 
 ## What the previous 310P server established
 
@@ -1761,19 +1784,13 @@ Do not evaluate accuracy in this ladder.
 ## Profile-guided batched vision status
 
 Do not enable production `--vision-packing profile_guided`. Its hard-coded
-route timings are calibrated for Ascend 910B2, not 310P, and its production
-policy expects B2x3072 and B4x1024 batched graph caches.
+route timings are calibrated for Ascend 910B2, not 310P.
 
-Record:
-
-```text
-batched graph mechanism: present in the repository
-310P graph execution: not tested by this ladder
-310P route timings: not measured
-production profile-guided policy on 310P: unsupported until calibrated
-```
-
-Do not edit the profile on the work server.
+Phase 9 below measures isolated 310P graph throughput. It does **not** validate
+the production router, choose a new routing policy, or authorize editing the
+pinned profile. Even after Phase 9 succeeds, production profile-guided routing
+remains disabled until Luka explicitly asks for the measured 310P table to be
+integrated and validated end to end.
 
 ## Phase 8: isolated CPU versus eager-NPU layout throughput
 
@@ -1848,6 +1865,917 @@ frontend speedup, and the percentage of frontend time remaining in image
 decode, preprocessing/H2D, detector execution, postprocessing, and page
 preparation.
 
+## Phase 9: isolated 310P vision saturation matrix
+
+### Purpose and strict measurement boundary
+
+This is the only phase to run for the current request. It answers whether the
+310P vision transformer is underfilled at small sequence lengths and whether
+true graph batching closes part of the measured 910B2/310P gap.
+
+Measure **raw physical vision-transformer tokens/s only**:
+
+```text
+physical tokens per graph call = batch size * static sequence length
+raw physical tokens/s = physical tokens / NPU device-event graph time
+```
+
+The timed region is `VisionPrefillStage` only. It includes the compiled vision
+transformer and excludes:
+
+- model loading and graph compilation;
+- cache loading and first-call setup;
+- image loading, resizing, patch embedding, and input materialization;
+- the projector;
+- layout, text prefill, decode, and page assembly;
+- packing usefulness and effective/real-token throughput.
+
+The generic lab JSON also contains effective-token fields because other
+experiments use them. Ignore those fields in this phase. Do not headline them,
+average them into physical throughput, or use them to choose a winner.
+
+The test has two views:
+
+1. a production-B1 length sweep over already-compiled Phase 7 graphs;
+2. a controlled compiled-PromptFA batch/context matrix:
+
+   ```text
+   fixed S=512:   B1x512,  B2x512,  B4x512
+   fixed S=1024:  B1x1024, B2x1024, B4x1024
+   fixed physical tokens/call=4096:
+                  B1x4096, B2x2048, B4x1024
+   ```
+
+`B4x1024` belongs to both comparisons, so the complete matrix contains exactly
+eight unique graph shapes. Do not add more shapes in this iteration.
+
+All sequence lengths are multiples of 128. That is deliberate: Atlas 310P
+PromptFA rejected a non-null attention mask for unaligned Q/K lengths during
+the earlier ladder. The lab has no `--vision-promptfa-align-128` option because
+the static `S` itself supplies the alignment. Do not remove the attention
+mask, alter the operator call, or patch source if a graph fails.
+
+### 9.0 Pull, reuse the proven environment, and discover retained paths
+
+Read `CLAUDE.md`, `AGENTS.md`, and this Phase 9 section. Then:
+
+```sh
+git status --short --branch
+git pull --ff-only origin main
+
+REPO="$(git rev-parse --show-toplevel)"
+COMMIT="$(git rev-parse HEAD)"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+PHASE9_ROOT="$REPO/tmp/09_persistent_page_engine/310p_vision_saturation_$COMMIT_SHORT"
+REFERENCE_ROOT="$REPO/tmp/09_persistent_page_engine/vision_lab/910b_saturation_4789067"
+REFERENCE_B1="$REFERENCE_ROOT/b1_length_profile.json"
+REFERENCE_MATRIX="$REFERENCE_ROOT/graph_saturation_matrix.json"
+SYNTHETIC_CORPUS="$REFERENCE_ROOT/saturation_synthetic_corpus.json"
+
+mkdir -p "$PHASE9_ROOT" "$REPO/.runtime_cache"
+test -f "$REFERENCE_B1"
+test -f "$REFERENCE_MATRIX"
+test -f "$SYNTHETIC_CORPUS"
+```
+
+Do not rerun Phases 0-8. Recover the exact Python, recognizer model, and
+production B1 vision-cache path from the latest successful Phase 7 command
+record. This avoids guessing paths or accidentally selecting a different
+environment:
+
+```sh
+PHASE7_COMMAND="$(
+  python3 - "$REPO" <<'PY'
+import sys
+from pathlib import Path
+
+repo = Path(sys.argv[1]).resolve()
+matches = list(
+    repo.glob(
+        "tmp/09_persistent_page_engine/"
+        "310p_exp09_npu_layout_eager_*/"
+        "phase7_min_pixels_28224_replay/command.sh"
+    )
+)
+if not matches:
+    raise SystemExit("no retained successful Phase 7 command.sh was found")
+selected = max(matches, key=lambda path: path.stat().st_mtime)
+print(selected)
+PY
+)"
+test -f "$PHASE7_COMMAND"
+printf 'phase7_command=%s\n' "$PHASE7_COMMAND"
+
+eval "$(
+  python3 - "$PHASE7_COMMAND" <<'PY'
+import shlex
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1]).resolve()
+lines = [
+    line.strip()
+    for line in path.read_text(encoding="utf-8").splitlines()
+    if line.strip() and not line.lstrip().startswith("#")
+]
+if len(lines) != 1:
+    raise SystemExit(f"expected one command line in {path}, found {len(lines)}")
+tokens = shlex.split(lines[0])
+
+
+def option(name: str) -> str:
+    try:
+        return tokens[tokens.index(name) + 1]
+    except (ValueError, IndexError) as exc:
+        raise SystemExit(f"{name} missing from {path}") from exc
+
+
+print(f"PYTHON_BIN={shlex.quote(tokens[0])}")
+print(f"RECOGNIZER_MODEL={shlex.quote(option('--recognizer-model'))}")
+print(
+    "PRODUCTION_VISION_CACHE="
+    f"{shlex.quote(option('--vision-torchair-cache-dir'))}"
+)
+PY
+)"
+
+test -x "$PYTHON_BIN"
+test -f "$RECOGNIZER_MODEL/config.json"
+test -d "$PRODUCTION_VISION_CACHE"
+printf 'python=%s\nmodel=%s\nproduction_b1_cache=%s\n' \
+  "$PYTHON_BIN" "$RECOGNIZER_MODEL" "$PRODUCTION_VISION_CACHE"
+```
+
+Activate the same CANN/torch-npu environment used for the successful ladder
+before running the next command. Keep the same free physical 310P exposed as
+logical `npu:0`. Do not terminate another user's process. If no NPU is free,
+stop and report that fact.
+
+Run the exact resolver and device check:
+
+```sh
+PYTHONPATH="$REPO/09_persistent_page_engine" \
+"$PYTHON_BIN" - \
+  >"$PHASE9_ROOT/environment_preflight.txt" 2>&1 <<'PY'
+import json
+import platform
+import sys
+
+import torch
+import torch_npu
+
+from paddleocr_vl.model.compile_utils import import_torchair
+
+torchair, CompilerConfig = import_torchair()
+assert callable(torchair.inference.cache_compile)
+assert torch.npu.is_available()
+torch.npu.set_device(0)
+torch.npu.set_compile_mode(jit_compile=False)
+x = torch.arange(128, dtype=torch.float16, device="npu:0")
+torch.npu.synchronize()
+
+print("platform:", platform.platform())
+print("python:", sys.version.replace("\n", " "))
+print("python_executable:", sys.executable)
+print("torch:", torch.__version__)
+print("torch_npu:", getattr(torch_npu, "__version__", "<missing>"))
+print("torchair_module:", torchair.__name__)
+print("torchair_file:", getattr(torchair, "__file__", "<namespace>"))
+print("npu_name:", torch.npu.get_device_name(0))
+print("tensor_sum:", float(x.float().sum().cpu().item()))
+print("PHASE9_ENVIRONMENT: PASS")
+PY
+
+tail -n 1 "$PHASE9_ROOT/environment_preflight.txt"
+test "$(tail -n 1 "$PHASE9_ROOT/environment_preflight.txt")" = \
+  "PHASE9_ENVIRONMENT: PASS"
+df -h "$REPO" "$REPO/.runtime_cache" >"$PHASE9_ROOT/disk_before.txt"
+npu-smi info >"$PHASE9_ROOT/npu_before.txt" 2>&1
+```
+
+Record the provenance:
+
+```sh
+{
+  printf 'git_commit=%s\n' "$COMMIT"
+  printf 'git_status_begin\n'
+  git status --short --branch
+  printf 'git_status_end\n'
+  printf 'hostname=%s\n' "$(hostname)"
+  printf 'ASCEND_RT_VISIBLE_DEVICES=%s\n' \
+    "${ASCEND_RT_VISIBLE_DEVICES:-}"
+  printf 'python=%s\n' "$PYTHON_BIN"
+  printf 'recognizer_model=%s\n' "$RECOGNIZER_MODEL"
+  printf 'production_b1_cache=%s\n' "$PRODUCTION_VISION_CACHE"
+  printf 'reference_b1=%s\n' "$REFERENCE_B1"
+  printf 'reference_matrix=%s\n' "$REFERENCE_MATRIX"
+} >"$PHASE9_ROOT/provenance.txt"
+```
+
+### 9.1 Recording helper
+
+Define this helper in the active shell. It records the expanded command,
+complete log, exit code, and one-second NPU/HBM samples. The utilization log is
+supporting evidence only: these graph calls are tens of milliseconds, so a
+one-second sample can miss peaks. Batch/length throughput scaling is the
+primary saturation evidence.
+
+```sh
+run_phase9() {
+  local run_name="$1"
+  shift
+  local evidence_dir="$PHASE9_ROOT/$run_name"
+  mkdir -p "$evidence_dir"
+  {
+    printf '#!/usr/bin/env bash\n'
+    printf '# git_commit=%s\n' "$(git rev-parse HEAD)"
+    printf '# hostname=%s\n' "$(hostname)"
+    printf '# ASCEND_RT_VISIBLE_DEVICES=%s\n' \
+      "${ASCEND_RT_VISIBLE_DEVICES:-}"
+    printf '%q ' "$@"
+    printf '\n'
+  } >"$evidence_dir/command.sh"
+  chmod +x "$evidence_dir/command.sh"
+
+  local monitor_pid=
+  if command -v npu-smi >/dev/null 2>&1; then
+    (
+      while true; do
+        date --iso-8601=ns 2>/dev/null || date
+        npu-smi info
+        sleep 1
+      done
+    ) >"$evidence_dir/npu_smi_1s.log" 2>&1 &
+    monitor_pid=$!
+  fi
+
+  local status
+  if "$@" >"$evidence_dir/run.log" 2>&1; then
+    status=0
+  else
+    status=$?
+  fi
+  if test -n "$monitor_pid"; then
+    kill "$monitor_pid" 2>/dev/null || true
+    wait "$monitor_pid" 2>/dev/null || true
+  fi
+  printf '%s\n' "$status" >"$evidence_dir/exit_code.txt"
+  printf 'run=%s exit_code=%s log=%s\n' \
+    "$run_name" "$status" "$evidence_dir/run.log"
+  return "$status"
+}
+
+record_phase9_cache() {
+  local cache_root="$1"
+  local output="$2"
+  {
+    printf 'cache_root=%s\n' "$cache_root"
+    if test -d "$cache_root"; then
+      find "$cache_root" -type f -printf '%P\t%s\n' | sort
+      printf 'file_count='
+      find "$cache_root" -type f | wc -l
+      du -sh "$cache_root"
+    else
+      printf 'missing\n'
+    fi
+  } >"$output"
+}
+```
+
+### 9.2 Production-B1 length sweep: reuse only
+
+This lane must reuse the successful Phase 7 singleton cache. It must not
+compile new B1 graphs. The requested buckets exactly match the 910B2 reference:
+
+```text
+128,256,384,512,640,768,1408,1920,2944,4992
+```
+
+Use an intentionally empty batched-cache discovery directory so this command
+profiles only production B1 graphs:
+
+```sh
+EMPTY_BATCHED_DISCOVERY="$PHASE9_ROOT/empty_batched_cache_discovery"
+mkdir -p "$EMPTY_BATCHED_DISCOVERY"
+test -z "$(find "$EMPTY_BATCHED_DISCOVERY" -mindepth 1 -print -quit)"
+
+record_phase9_cache \
+  "$PRODUCTION_VISION_CACHE" \
+  "$PHASE9_ROOT/b1_cache_before.txt"
+
+run_phase9 b1_length_profile \
+  "$PYTHON_BIN" \
+  "$REPO/09_persistent_page_engine/scripts/vision_lab_cached_profile.py" \
+  --model "$RECOGNIZER_MODEL" \
+  --b1-cache-dir "$PRODUCTION_VISION_CACHE" \
+  --b1-buckets 128,256,384,512,640,768,1408,1920,2944,4992 \
+  --batched-cache-dir "$EMPTY_BATCHED_DISCOVERY" \
+  --warmup 3 \
+  --repeats 20 \
+  --output "$PHASE9_ROOT/b1_length_profile/result.json"
+
+record_phase9_cache \
+  "$PRODUCTION_VISION_CACHE" \
+  "$PHASE9_ROOT/b1_cache_after.txt"
+```
+
+Validate:
+
+```sh
+"$PYTHON_BIN" - \
+  "$PHASE9_ROOT/b1_length_profile/result.json" \
+  >"$PHASE9_ROOT/b1_length_profile/validation.txt" 2>&1 <<'PY'
+import json
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1]).resolve()
+payload = json.loads(path.read_text(encoding="utf-8"))
+expected = [128, 256, 384, 512, 640, 768, 1408, 1920, 2944, 4992]
+graphs = payload["graphs"]
+actual = [int(row["sequence_length"]) for row in graphs]
+assert actual == expected, (actual, expected)
+assert all(int(row["batch_size"]) == 1 for row in graphs)
+assert all(int(row["physical_tokens"]) == int(row["sequence_length"]) for row in graphs)
+assert all(float(row["raw_physical_tokens_per_s_median"]) > 0 for row in graphs)
+assert not payload["skipped_b1"], payload["skipped_b1"]
+print("PHASE9_B1_LENGTH_PROFILE: PASS")
+PY
+
+cat "$PHASE9_ROOT/b1_length_profile/validation.txt"
+```
+
+The cache inventories should have the same graph-directory set before and
+after. Cache metadata files may update timestamps; do not use timestamps as
+proof of compilation. The script's preflight must find all ten compatible
+graphs.
+
+If this lane fails only because no compatible retained B1 cache is found,
+preserve the exact expected cache paths from `skipped_b1`, mark the B1 sweep
+`PARTIAL`, and continue to the independent batch/context matrix. Do **not**
+compile the ten production B1 buckets just for this phase. If it fails with an
+NPU runtime/native-op error or leaves the device unhealthy, stop the phase.
+
+### 9.3 Controlled compiled-PromptFA matrix
+
+The tracked synthetic corpus contains four valid near-square crops at each of
+512, 1024, 2048, and 4096 vision tokens. Its `default` and
+`synthetic_repeat` corpora are intentionally identical. They provide two
+independent timed passes through every graph; the difference between those
+passes is the repeatability check.
+
+Do not interpret the corpus's packing efficiency. Only read:
+
+```text
+results.<corpus>.<shape>.target_batch_metrics.raw_physical_tokens_per_s
+```
+
+Create one persistent 310P-only cache. Never copy the committed 910B2 cache:
+
+```sh
+MATRIX_CACHE="$REPO/.runtime_cache/310p_vision_saturation_matrix_$COMMIT_SHORT"
+
+if test -e "$MATRIX_CACHE"; then
+  if find "$PHASE9_ROOT" -path '*/matrix_*/exit_code.txt' -print -quit |
+    grep -q .; then
+    printf 'resuming existing Phase 9 cache: %s\n' "$MATRIX_CACHE"
+  else
+    printf 'unexpected pre-existing matrix cache: %s\n' "$MATRIX_CACHE"
+    exit 1
+  fi
+else
+  mkdir -p "$MATRIX_CACHE"
+fi
+
+record_phase9_cache \
+  "$MATRIX_CACHE" \
+  "$PHASE9_ROOT/matrix_cache_before.txt"
+
+MATRIX_COMMON=(
+  "$PYTHON_BIN"
+  "$REPO/09_persistent_page_engine/scripts/vision_lab_batched_packed.py"
+  --corpus "$SYNTHETIC_CORPUS"
+  --model "$RECOGNIZER_MODEL"
+  --variant synthetic_repeat
+  --cache-dir "$MATRIX_CACHE"
+  --warmup 3
+  --repeats 10
+)
+```
+
+Compile/measure three failure-isolated groups. Run them sequentially on the
+same physical NPU.
+
+#### Group A: fixed S=512
+
+```sh
+run_phase9 matrix_s512_first \
+  "${MATRIX_COMMON[@]}" \
+  --shape 1x512 \
+  --shape 2x512 \
+  --shape 4x512 \
+  --output "$PHASE9_ROOT/matrix_s512_first/result.json"
+
+record_phase9_cache \
+  "$MATRIX_CACHE" \
+  "$PHASE9_ROOT/matrix_cache_after_s512.txt"
+```
+
+#### Group B: fixed S=1024
+
+```sh
+run_phase9 matrix_s1024_first \
+  "${MATRIX_COMMON[@]}" \
+  --shape 1x1024 \
+  --shape 2x1024 \
+  --shape 4x1024 \
+  --output "$PHASE9_ROOT/matrix_s1024_first/result.json"
+
+record_phase9_cache \
+  "$MATRIX_CACHE" \
+  "$PHASE9_ROOT/matrix_cache_after_s1024.txt"
+```
+
+#### Group C: fixed 4096 physical tokens per graph call
+
+`B4x1024` must reuse the graph created by Group B. The only new Group C shapes
+should be `B1x4096` and `B2x2048`.
+
+```sh
+run_phase9 matrix_fixed4096_first \
+  "${MATRIX_COMMON[@]}" \
+  --shape 1x4096 \
+  --shape 2x2048 \
+  --shape 4x1024 \
+  --output "$PHASE9_ROOT/matrix_fixed4096_first/result.json"
+
+record_phase9_cache \
+  "$MATRIX_CACHE" \
+  "$PHASE9_ROOT/matrix_cache_after_fixed4096.txt"
+```
+
+For a failed group, preserve the log and first causal traceback. The last
+`load_or_compile=b..._s...` line identifies the shape. Do not patch the model,
+change attention, drop the mask, alter dtype, or substitute eager execution.
+If the process exits cleanly and the NPU remains healthy, continue the other
+independent groups so Luka gets the broadest compatibility map. If the device
+runtime is unhealthy, stop immediately.
+
+### 9.4 One all-shape warm-cache replay
+
+Run this only if all three groups succeeded. It is the authoritative 310P
+matrix used by the comparison script:
+
+```sh
+run_phase9 matrix_all_replay \
+  "${MATRIX_COMMON[@]}" \
+  --shape 1x512 \
+  --shape 2x512 \
+  --shape 4x512 \
+  --shape 1x1024 \
+  --shape 2x1024 \
+  --shape 4x1024 \
+  --shape 1x4096 \
+  --shape 2x2048 \
+  --output "$PHASE9_ROOT/matrix_all_replay/result.json"
+
+record_phase9_cache \
+  "$MATRIX_CACHE" \
+  "$PHASE9_ROOT/matrix_cache_after_replay.txt"
+```
+
+Validate physical-token accounting, both identical corpus passes, all eight
+shapes, and warm-cache discovery:
+
+```sh
+"$PYTHON_BIN" - \
+  "$PHASE9_ROOT/matrix_all_replay/result.json" \
+  >"$PHASE9_ROOT/matrix_all_replay/validation.txt" 2>&1 <<'PY'
+import json
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1]).resolve()
+payload = json.loads(path.read_text(encoding="utf-8"))
+expected = {
+    "b1_s512": (1, 512),
+    "b2_s512": (2, 512),
+    "b4_s512": (4, 512),
+    "b1_s1024": (1, 1024),
+    "b2_s1024": (2, 1024),
+    "b4_s1024": (4, 1024),
+    "b1_s4096": (1, 4096),
+    "b2_s2048": (2, 2048),
+}
+assert set(payload["results"]) == {"default", "synthetic_repeat"}
+for corpus_name, rows in payload["results"].items():
+    by_name = {row["name"]: row for row in rows}
+    assert set(by_name) == set(expected), (corpus_name, sorted(by_name))
+    for name, (batch, sequence) in expected.items():
+        row = by_name[name]
+        assert row["supported"] is True, (corpus_name, name, row.get("failure"))
+        assert int(row["batch_size"]) == batch
+        assert int(row["sequence_length"]) == sequence
+        assert int(row["physical_tokens_per_full_call"]) == batch * sequence
+        metrics = row["target_batch_metrics"]
+        assert int(metrics["physical_tokens"]) % (batch * sequence) == 0
+        assert float(metrics["raw_physical_tokens_per_s"]) > 0
+
+assert payload["new_graphs_compiled"] == 0, payload["compile_metadata"]
+assert all(
+    row["cache_existed_before_run"]
+    for row in payload["compile_metadata"].values()
+)
+print("PHASE9_MATRIX_REPLAY: PASS")
+PY
+
+cat "$PHASE9_ROOT/matrix_all_replay/validation.txt"
+```
+
+The `new_graphs_compiled == 0` check is based on compatible cache discovery.
+Also compare the before/after cache inventories and inspect the log for
+unexpected new graph directories. `compile_first_call_s` is cache
+load/initialization evidence, not throughput.
+
+### 9.5 Mechanical 910B2 versus 310P comparison
+
+The committed 910B2 references were measured with:
+
+```text
+source commit: 47890673ee60090851d372329079355d9250f5c5
+device: Ascend910B2, physical NPU 5
+torch: 2.10.0+cpu
+torch_npu: 2.10.0
+attention: compiled PromptFA
+timing: NPU device events around VisionPrefillStage only
+B1 sweep: warmup 3, repeats 20
+matrix: warmup 3, repeats 10, two identical corpus passes
+```
+
+The relevant vision-lab source files are unchanged between that source commit
+and the commit that added these instructions. The JSON references, not this
+rounded table, are authoritative:
+
+| 910B2 shape | Raw physical tok/s |
+|---|---:|
+| B1x512 | 32,178 |
+| B2x512 | 49,723 |
+| B4x512 | 75,609 |
+| B1x1024 | 47,092 |
+| B2x1024 | 70,433 |
+| B4x1024 | 87,674 |
+| B1x4096 | 64,306 |
+| B2x2048 | 79,095 |
+
+Generate the exact comparison mechanically:
+
+```sh
+"$PYTHON_BIN" - \
+  "$REFERENCE_B1" \
+  "$REFERENCE_MATRIX" \
+  "$PHASE9_ROOT/b1_length_profile/result.json" \
+  "$PHASE9_ROOT/matrix_all_replay/result.json" \
+  "$PHASE9_ROOT/phase9_comparison.json" \
+  "$PHASE9_ROOT/phase9_comparison.md" <<'PY'
+import json
+import statistics
+import sys
+from pathlib import Path
+
+(
+    reference_b1_path,
+    reference_matrix_path,
+    target_b1_path,
+    target_matrix_path,
+    output_json_path,
+    output_md_path,
+) = map(Path, sys.argv[1:])
+
+
+def load(path: Path):
+    return json.loads(path.resolve().read_text(encoding="utf-8"))
+
+
+def b1_rows(payload):
+    result = {}
+    for row in payload["graphs"]:
+        assert int(row["batch_size"]) == 1
+        sequence = int(row["sequence_length"])
+        result[sequence] = {
+            "median_ms": float(row["median_ms"]),
+            "raw_physical_tok_s": float(
+                row["raw_physical_tokens_per_s_median"]
+            ),
+        }
+    return result
+
+
+def matrix_rows(payload):
+    by_shape = {}
+    for corpus_name, rows in payload["results"].items():
+        for row in rows:
+            assert row["supported"] is True
+            batch = int(row["batch_size"])
+            sequence = int(row["sequence_length"])
+            shape = f"B{batch}x{sequence}"
+            physical = int(row["physical_tokens_per_full_call"])
+            assert physical == batch * sequence
+            rate = float(
+                row["target_batch_metrics"][
+                    "raw_physical_tokens_per_s"
+                ]
+            )
+            by_shape.setdefault(shape, []).append(rate)
+    result = {}
+    for shape, values in by_shape.items():
+        assert len(values) == 2, (shape, values)
+        mean = statistics.mean(values)
+        spread_pct = 100.0 * (max(values) - min(values)) / mean
+        result[shape] = {
+            "per_pass_raw_physical_tok_s": values,
+            "raw_physical_tok_s": mean,
+            "duplicate_spread_pct": spread_pct,
+        }
+    return result
+
+
+reference_b1 = b1_rows(load(reference_b1_path))
+target_b1 = b1_rows(load(target_b1_path))
+reference_matrix = matrix_rows(load(reference_matrix_path))
+target_matrix = matrix_rows(load(target_matrix_path))
+
+b1_order = [128, 256, 384, 512, 640, 768, 1408, 1920, 2944, 4992]
+matrix_order = [
+    "B1x512",
+    "B2x512",
+    "B4x512",
+    "B1x1024",
+    "B2x1024",
+    "B4x1024",
+    "B1x4096",
+    "B2x2048",
+]
+assert set(b1_order) == set(reference_b1) == set(target_b1)
+assert set(matrix_order) == set(reference_matrix) == set(target_matrix)
+
+b1_comparison = []
+for sequence in b1_order:
+    r910 = reference_b1[sequence]["raw_physical_tok_s"]
+    r310 = target_b1[sequence]["raw_physical_tok_s"]
+    b1_comparison.append(
+        {
+            "shape": f"B1x{sequence}",
+            "910b2_raw_physical_tok_s": r910,
+            "310p_raw_physical_tok_s": r310,
+            "ratio_910b2_over_310p": r910 / r310,
+        }
+    )
+
+matrix_comparison = []
+for shape in matrix_order:
+    r910 = reference_matrix[shape]["raw_physical_tok_s"]
+    r310 = target_matrix[shape]["raw_physical_tok_s"]
+    matrix_comparison.append(
+        {
+            "shape": shape,
+            "910b2_raw_physical_tok_s": r910,
+            "310p_raw_physical_tok_s": r310,
+            "ratio_910b2_over_310p": r910 / r310,
+            "910b2_duplicate_spread_pct": reference_matrix[shape][
+                "duplicate_spread_pct"
+            ],
+            "310p_duplicate_spread_pct": target_matrix[shape][
+                "duplicate_spread_pct"
+            ],
+        }
+    )
+
+
+def scaling(rows, numerator, denominator):
+    return (
+        rows[numerator]["raw_physical_tok_s"]
+        / rows[denominator]["raw_physical_tok_s"]
+    )
+
+
+scaling_summary = {
+    "s512": {
+        "910b2_b2_over_b1": scaling(reference_matrix, "B2x512", "B1x512"),
+        "910b2_b4_over_b1": scaling(reference_matrix, "B4x512", "B1x512"),
+        "310p_b2_over_b1": scaling(target_matrix, "B2x512", "B1x512"),
+        "310p_b4_over_b1": scaling(target_matrix, "B4x512", "B1x512"),
+    },
+    "s1024": {
+        "910b2_b2_over_b1": scaling(reference_matrix, "B2x1024", "B1x1024"),
+        "910b2_b4_over_b1": scaling(reference_matrix, "B4x1024", "B1x1024"),
+        "310p_b2_over_b1": scaling(target_matrix, "B2x1024", "B1x1024"),
+        "310p_b4_over_b1": scaling(target_matrix, "B4x1024", "B1x1024"),
+    },
+    "fixed_4096_physical_tokens": {
+        "910b2_b2x2048_over_b1x4096": scaling(
+            reference_matrix, "B2x2048", "B1x4096"
+        ),
+        "910b2_b4x1024_over_b1x4096": scaling(
+            reference_matrix, "B4x1024", "B1x4096"
+        ),
+        "310p_b2x2048_over_b1x4096": scaling(
+            target_matrix, "B2x2048", "B1x4096"
+        ),
+        "310p_b4x1024_over_b1x4096": scaling(
+            target_matrix, "B4x1024", "B1x4096"
+        ),
+    },
+}
+
+payload = {
+    "metric": "raw physical VisionPrefillStage tokens/s",
+    "b1_length_comparison": b1_comparison,
+    "matrix_comparison": matrix_comparison,
+    "batch_scaling": scaling_summary,
+}
+output_json_path.resolve().write_text(
+    json.dumps(payload, indent=2, sort_keys=True) + "\n",
+    encoding="utf-8",
+)
+
+lines = [
+    "# Phase 9: 310P versus 910B2 raw physical vision throughput",
+    "",
+    "Only device-event time around VisionPrefillStage is compared.",
+    "Compilation, embeddings, projector, and effective-token rates are excluded.",
+    "",
+    "## Production B1 length sweep",
+    "",
+    "| Shape | 910B2 physical tok/s | 310P physical tok/s | 910B2 / 310P |",
+    "|---|---:|---:|---:|",
+]
+for row in b1_comparison:
+    lines.append(
+        f"| {row['shape']} | "
+        f"{row['910b2_raw_physical_tok_s']:.1f} | "
+        f"{row['310p_raw_physical_tok_s']:.1f} | "
+        f"{row['ratio_910b2_over_310p']:.3f}x |"
+    )
+
+lines.extend(
+    [
+        "",
+        "## Controlled batch/context matrix",
+        "",
+        "| Shape | 910B2 physical tok/s | 310P physical tok/s | "
+        "910B2 / 310P | 310P duplicate spread |",
+        "|---|---:|---:|---:|---:|",
+    ]
+)
+for row in matrix_comparison:
+    lines.append(
+        f"| {row['shape']} | "
+        f"{row['910b2_raw_physical_tok_s']:.1f} | "
+        f"{row['310p_raw_physical_tok_s']:.1f} | "
+        f"{row['ratio_910b2_over_310p']:.3f}x | "
+        f"{row['310p_duplicate_spread_pct']:.3f}% |"
+    )
+
+lines.extend(["", "## Scaling ratios", ""])
+for section, values in scaling_summary.items():
+    lines.append(f"### {section}")
+    lines.append("")
+    for name, value in values.items():
+        lines.append(f"- {name}: {value:.4f}x")
+    lines.append("")
+
+output_md_path.resolve().write_text(
+    "\n".join(lines).rstrip() + "\n",
+    encoding="utf-8",
+)
+print("PHASE9_COMPARISON: PASS")
+PY
+
+cat "$PHASE9_ROOT/phase9_comparison.md"
+```
+
+### 9.6 Interpretation rules
+
+Answer from measured scaling, not from one utilization sample:
+
+- `B4/B1` at fixed `S=512` quantifies small-context underfill.
+- `B4/B1` at fixed `S=1024` shows whether batching still helps after each row
+  contains more work.
+- `B1x4096`, `B2x2048`, and `B4x1024` all execute 4096 physical tokens per
+  graph call, but they do not perform equal attention FLOPs. The comparison
+  deliberately shows whether one long packed row or several shorter
+  independent rows produces higher physical token throughput.
+- If 310P throughput rises strongly from B1 to B4, the production B1/small-row
+  regime is underfilled.
+- If the shape-for-shape 910B2/310P ratio shrinks materially at B4, batching
+  closes part of the original platform gap.
+- If the ratio remains roughly constant across B1/B2/B4, the absolute
+  platform/kernel difference persists even after better filling the 310P.
+- Do not call either chip “fully saturated” from this matrix alone. Say
+  “throughput plateaued over the tested shapes” when that is what the numbers
+  show.
+
+The B1 length curve separately shows where increasing one row stops improving
+physical tok/s. Report the peak tested B1 length and whether throughput falls
+at 4992.
+
+### 9.7 Phase 9 stop conditions and dedicated report
+
+Stop after the comparison. Do not:
+
+- run OmniDocBench pages;
+- run the production recognizer pipeline;
+- modify `PINNED_910B2_PROFILE`;
+- enable profile-guided routing in production;
+- compile additional shapes;
+- turn an unsupported compiled graph into an eager test;
+- patch PromptFA, model code, masks, or cache logic;
+- install or replace packages.
+
+Write:
+
+```text
+$PHASE9_ROOT/agent_report.md
+```
+
+Use this exact skeleton:
+
+```text
+310P VISION SATURATION MATRIX: PASS | PARTIAL | FAIL
+
+Git commit:
+Host / exact physical 310P:
+Logical NPU:
+Python:
+torch:
+torch_npu:
+TorchAir resolver route:
+CANN / driver / firmware:
+Recognizer model:
+
+Measurement boundary:
+attention / execution / dtype:
+timing source:
+included:
+excluded:
+metric reported: raw physical VisionPrefillStage tokens/s
+
+Production B1 cache:
+cache source Phase 7 command:
+compatible B1 graphs found:
+new B1 graphs compiled: MUST BE ZERO
+
+B1 length sweep:
+shape | median graph ms | 310P physical tok/s | 910B2 physical tok/s | ratio
+peak B1 shape and physical tok/s:
+does throughput fall at 4992:
+
+Controlled matrix cache:
+new shapes compiled:
+warm replay cache status:
+
+Fixed S=512:
+B1x512:
+B2x512:
+B4x512:
+B2/B1 scaling:
+B4/B1 scaling:
+
+Fixed S=1024:
+B1x1024:
+B2x1024:
+B4x1024:
+B2/B1 scaling:
+B4/B1 scaling:
+
+Fixed 4096 physical tokens/call:
+B1x4096:
+B2x2048:
+B4x1024:
+B2x2048 / B1x4096:
+B4x1024 / B1x4096:
+
+Shape-for-shape 910B2 / 310P ratios:
+maximum duplicate-pass spread:
+unsupported shapes or native errors:
+
+Conclusion:
+Is small-context B1 underfilled on 310P:
+Does batching close part of the 910B2/310P gap:
+Does the absolute gap persist at the best tested 310P shape:
+What the matrix does NOT prove:
+
+First causal warning or blocker:
+Exact command records:
+Cache inventories:
+JSON and Markdown comparison paths:
+All artifact paths:
+```
+
+Include the complete `phase9_comparison.md` table in the report. Report raw
+physical tok/s to at least one decimal place and ratios to at least three
+decimal places. Do not substitute effective tok/s.
+
 ## Artifact interpretation
 
 For every production lane:
@@ -1910,7 +2838,9 @@ min-pixels settings.
 
 ## Stop condition and required report
 
-Stop after Phase 8. Do not start a larger OCR workload.
+For the earlier production-validation task, stop after Phase 8. For the
+current isolated-vision task, skip Phases 0-8 and stop after Phase 9. Do not
+start any OCR page workload.
 
 Write:
 
@@ -2014,6 +2944,19 @@ NPU W2 setup / wall / pages-s / seconds-page:
 CPU-to-NPU W1 speedup:
 stage totals and percentages:
 manifest comparison:
+
+Phase 9 isolated vision saturation:
+production B1 cache reuse / compatible graph count:
+B1 length-curve peak:
+fixed-S512 B1 / B2 / B4 raw physical tok/s:
+fixed-S1024 B1 / B2 / B4 raw physical tok/s:
+fixed-4096-token B1x4096 / B2x2048 / B4x1024:
+310P B2/B1 and B4/B1 scaling:
+shape-for-shape 910B2 / 310P ratios:
+maximum duplicate-pass spread:
+unsupported compiled shapes:
+small-context underfill conclusion:
+scope limitation:
 
 Best stable production configuration:
 Best replay wall / pages-s:
