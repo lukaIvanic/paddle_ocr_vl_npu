@@ -570,7 +570,9 @@ class PPDocLayoutV3SelfAttention(nn.Module):
         self.k_proj = nn.Linear(hidden_size, hidden_size, bias=bias)
         self.v_proj = nn.Linear(hidden_size, hidden_size, bias=bias)
         self.q_proj = nn.Linear(hidden_size, hidden_size, bias=bias)
-        self.o_proj = nn.Linear(hidden_size, hidden_size, bias=bias)
+        # Keep the checkpoint's original ``out_proj`` spelling. Newer
+        # Transformers releases rename this key during loading.
+        self.out_proj = nn.Linear(hidden_size, hidden_size, bias=bias)
 
     def forward(
         self,
@@ -600,7 +602,7 @@ class PPDocLayoutV3SelfAttention(nn.Module):
             scaling=self.scaling,
         )
         output = output.reshape(*input_shape, -1).contiguous()
-        return self.o_proj(output), weights
+        return self.out_proj(output), weights
 
 
 class PPDocLayoutV3ConvNormLayer(nn.Module):
@@ -650,12 +652,21 @@ class PPDocLayoutV3EncoderLayer(nn.Module):
             eps=config.layer_norm_eps,
         )
         self.dropout = config.dropout
-        self.mlp = PPDocLayoutV3MLP(
-            config,
+        # These projections intentionally remain direct children. The
+        # published checkpoint predates Transformers' later ``mlp.fc*`` key
+        # migration.
+        self.fc1 = nn.Linear(
             self.hidden_size,
             config.encoder_ffn_dim,
-            config.encoder_activation_function,
         )
+        self.fc2 = nn.Linear(
+            config.encoder_ffn_dim,
+            self.hidden_size,
+        )
+        self.activation_fn = _activation_function(
+            config.encoder_activation_function
+        )
+        self.activation_dropout = config.activation_dropout
         self.final_layer_norm = nn.LayerNorm(
             self.hidden_size,
             eps=config.layer_norm_eps,
@@ -686,7 +697,19 @@ class PPDocLayoutV3EncoderLayer(nn.Module):
         if self.normalize_before:
             hidden_states = self.final_layer_norm(hidden_states)
         residual = hidden_states
-        hidden_states = residual + self.mlp(hidden_states)
+        hidden_states = self.activation_fn(self.fc1(hidden_states))
+        hidden_states = F.dropout(
+            hidden_states,
+            p=self.activation_dropout,
+            training=self.training,
+        )
+        hidden_states = self.fc2(hidden_states)
+        hidden_states = F.dropout(
+            hidden_states,
+            p=self.dropout,
+            training=self.training,
+        )
+        hidden_states = residual + hidden_states
         if not self.normalize_before:
             hidden_states = self.final_layer_norm(hidden_states)
         return hidden_states
@@ -875,7 +898,8 @@ class PPDocLayoutV3HybridEncoder(nn.Module):
         self.out_strides = self.feat_strides
         self.num_fpn_stages = len(self.in_channels) - 1
         self.num_pan_stages = len(self.in_channels) - 1
-        self.aifi = nn.ModuleList(
+        # ``encoder`` is the key path in the official safetensors checkpoint.
+        self.encoder = nn.ModuleList(
             [
                 PPDocLayoutV3AIFILayer(config)
                 for _ in self.encode_proj_layers
@@ -940,7 +964,7 @@ class PPDocLayoutV3HybridEncoder(nn.Module):
             for index, projected_index in enumerate(
                 self.encode_proj_layers
             ):
-                feature_maps[projected_index] = self.aifi[index](
+                feature_maps[projected_index] = self.encoder[index](
                     feature_maps[projected_index]
                 )
 
@@ -1023,12 +1047,18 @@ class PPDocLayoutV3DecoderLayer(nn.Module):
             self.hidden_size,
             eps=config.layer_norm_eps,
         )
-        self.mlp = PPDocLayoutV3MLP(
-            config,
+        self.fc1 = nn.Linear(
             self.hidden_size,
             config.decoder_ffn_dim,
-            config.decoder_activation_function,
         )
+        self.fc2 = nn.Linear(
+            config.decoder_ffn_dim,
+            self.hidden_size,
+        )
+        self.activation_fn = _activation_function(
+            config.decoder_activation_function
+        )
+        self.activation_dropout = config.activation_dropout
         self.final_layer_norm = nn.LayerNorm(
             self.hidden_size,
             eps=config.layer_norm_eps,
@@ -1078,7 +1108,19 @@ class PPDocLayoutV3DecoderLayer(nn.Module):
             residual + hidden_states
         )
         residual = hidden_states
-        return self.final_layer_norm(residual + self.mlp(hidden_states))
+        hidden_states = self.activation_fn(self.fc1(hidden_states))
+        hidden_states = F.dropout(
+            hidden_states,
+            p=self.activation_dropout,
+            training=self.training,
+        )
+        hidden_states = self.fc2(hidden_states)
+        hidden_states = F.dropout(
+            hidden_states,
+            p=self.dropout,
+            training=self.training,
+        )
+        return self.final_layer_norm(residual + hidden_states)
 
 
 def inverse_sigmoid(hidden_state: Tensor, eps: float = 1e-5) -> Tensor:
