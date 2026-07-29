@@ -1,16 +1,11 @@
 #!/usr/bin/env python3
-"""Full-stack PaddleOCR-VL vision MatMul format/alignment laboratory.
+"""Production PromptFA PaddleOCR-VL vision format/alignment laboratory.
 
-The measured boundary preserves all 27 vision encoder layers, including both
-LayerNorms, residuals, Q/K/V/output projections, FC1/GELU/FC2, and the final
-post-LayerNorm.  Only attention itself is replaced by a cheap token-local
-surrogate:
-
-    out_proj((q_proj(x) + k_proj(x) + v_proj(x)) / 3)
-
-This keeps every production Linear weight and its surrounding operations in the
-graph while removing attention as a competing bottleneck.  It is a performance
-laboratory, not an OCR-correctness path.
+The measured boundary is the exact production ``VisionPrefillStage``: all 27
+vision encoder layers, RoPE, PromptFA (including the 72 -> 80 head-dimension
+padding), LayerNorms, residuals, Q/K/V/output projections, FC1/GELU/FC2, and
+the final post-LayerNorm.  Only the synthetic shape inputs distinguish this
+laboratory from a real crop's vision-transformer call.
 """
 
 from __future__ import annotations
@@ -29,7 +24,6 @@ from typing import Any, Callable, Sequence
 
 import torch
 from torch import nn
-from torch.nn import functional as F
 
 HERE = Path(__file__).resolve().parent
 EXPERIMENT_ROOT = HERE.parent
@@ -48,7 +42,13 @@ from paddleocr_vl.model.compile_utils import (  # noqa: E402
 from paddleocr_vl.model.modeling import (  # noqa: E402
     LocalPaddleOCRVLForConditionalGeneration,
 )
-from paddleocr_vl.model.vision_prefill import _activation  # noqa: E402
+from paddleocr_vl.model.vision_prefill import (  # noqa: E402
+    VisionPrefillStage,
+    get_vision_prompt_fa_layout,
+    get_vision_prompt_fa_mask_sparse_mode,
+    prepare_vision_prefill,
+    prompt_flash_attention_call_head_dim,
+)
 from utils.timing import DeviceTimeline, synchronize  # noqa: E402
 from vision_lab import DEFAULT_MODEL, _environment  # noqa: E402
 
@@ -68,6 +68,12 @@ SEQUENCE_LENGTHS = (512, 2048)
 INTERMEDIATE_SIZES = (4304, 4352)
 WEIGHT_FORMATS = ("native", "fractal_nz")
 EXECUTIONS = ("raw_eager", "torchair")
+StageInputs = tuple[
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+]
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -128,67 +134,6 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     return args
 
 
-class VisionMatmulLayer(nn.Module):
-    """One real vision block with attention replaced by a Linear-only surrogate."""
-
-    def __init__(self, source: nn.Module, *, intermediate_size: int):
-        super().__init__()
-        self.layer_norm1 = source.layer_norm1
-        self.q_proj = source.self_attn.q_proj
-        self.k_proj = source.self_attn.k_proj
-        self.v_proj = source.self_attn.v_proj
-        self.out_proj = source.self_attn.out_proj
-        self.layer_norm2 = source.layer_norm2
-        self.hidden_act = str(source.mlp.hidden_act)
-        source_intermediate = int(source.mlp.fc1.out_features)
-        if intermediate_size == source_intermediate:
-            self.fc1 = source.mlp.fc1
-            self.fc2 = source.mlp.fc2
-        else:
-            self.fc1, self.fc2 = _zero_extended_mlp(
-                source.mlp.fc1,
-                source.mlp.fc2,
-                target_intermediate=intermediate_size,
-            )
-
-    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
-        attention_input = self.layer_norm1(hidden_states)
-        q = self.q_proj(attention_input)
-        k = self.k_proj(attention_input)
-        v = self.v_proj(attention_input)
-        surrogate = (q + k + v) * (1.0 / 3.0)
-        hidden_states = hidden_states + self.out_proj(surrogate)
-        mlp_input = self.layer_norm2(hidden_states)
-        hidden_states = hidden_states + self.fc2(
-            _activation(self.hidden_act, self.fc1(mlp_input))
-        )
-        return hidden_states
-
-
-class VisionMatmulStack(nn.Module):
-    """All 27 real vision blocks plus the production post-LayerNorm."""
-
-    def __init__(self, model: nn.Module, *, intermediate_size: int):
-        super().__init__()
-        transformer = model.visual.vision_model
-        source_layers = transformer.encoder.layers
-        self.layers = nn.ModuleList(
-            [
-                VisionMatmulLayer(
-                    layer,
-                    intermediate_size=intermediate_size,
-                )
-                for layer in source_layers
-            ]
-        )
-        self.post_layernorm = transformer.post_layernorm
-
-    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
-        for layer in self.layers:
-            hidden_states = layer(hidden_states)
-        return self.post_layernorm(hidden_states)
-
-
 def _zero_extended_mlp(
     source_fc1: nn.Linear,
     source_fc2: nn.Linear,
@@ -235,13 +180,28 @@ def _zero_extended_mlp(
     return fc1, fc2
 
 
+def _zero_extend_model_mlp(
+    model: nn.Module,
+    *,
+    target_intermediate: int,
+) -> None:
+    for layer in model.visual.vision_model.encoder.layers:
+        fc1, fc2 = _zero_extended_mlp(
+            layer.mlp.fc1,
+            layer.mlp.fc2,
+            target_intermediate=target_intermediate,
+        )
+        layer.mlp.fc1 = fc1
+        layer.mlp.fc2 = fc2
+
+
 def _linear_modules(stage: nn.Module) -> list[tuple[str, nn.Linear]]:
     modules = [
         (name, module)
         for name, module in stage.named_modules()
         if isinstance(module, nn.Linear)
     ]
-    expected = len(stage.layers) * 6
+    expected = len(stage.transformer.encoder.layers) * 6
     if len(modules) != expected:
         raise RuntimeError(
             f"expected {expected} Linear modules, found {len(modules)}"
@@ -367,21 +327,21 @@ def _sample_summary(values: Sequence[float]) -> dict[str, Any]:
 
 
 def _repeat(
-    run: Callable[[torch.Tensor], torch.Tensor],
-    hidden_states: torch.Tensor,
+    run: Callable[..., torch.Tensor],
+    inputs: StageInputs,
     calls: int,
 ) -> torch.Tensor:
     output: torch.Tensor | None = None
     for _ in range(calls):
-        output = run(hidden_states)
+        output = run(*inputs)
     if output is None:
         raise AssertionError("repeat count must be positive")
     return output
 
 
 def _measure(
-    run: Callable[[torch.Tensor], torch.Tensor],
-    hidden_states: torch.Tensor,
+    run: Callable[..., torch.Tensor],
+    inputs: StageInputs,
     *,
     device: torch.device,
     samples: int,
@@ -397,7 +357,7 @@ def _measure(
         wall_started = time.perf_counter()
         output = timeline.measure(
             "full_stack_replays",
-            lambda: _repeat(run, hidden_states, calls_per_sample),
+            lambda: _repeat(run, inputs, calls_per_sample),
         )
         spans = timeline.resolve_spans()
         wall_block_ms.append((time.perf_counter() - wall_started) * 1000.0)
@@ -463,9 +423,14 @@ def _cache_dir(
 ) -> Path:
     key = "_".join(
         [
-            "vision_matmul_stack",
+            "vision_promptfa_stack",
             "layers27",
-            "attention_surrogate_qkvmean",
+            "attention_prompt_flash_attention",
+            f"pfalayout{cache_key_part(get_vision_prompt_fa_layout())}",
+            (
+                "pfasparse"
+                f"{get_vision_prompt_fa_mask_sparse_mode()}"
+            ),
             f"seq{sequence_length}",
             f"intermediate{intermediate_size}",
             f"weights{weight_format}",
@@ -491,8 +456,8 @@ def _compile(
     cache_dir: Path,
     allow_missing: bool,
     device: torch.device,
-    example: torch.Tensor,
-) -> tuple[Callable[[torch.Tensor], torch.Tensor], dict[str, Any]]:
+    example: StageInputs,
+) -> tuple[Callable[..., torch.Tensor], dict[str, Any]]:
     existed = _cache_populated(cache_dir)
     if not existed and not allow_missing:
         raise RuntimeError(
@@ -514,7 +479,7 @@ def _compile(
     wrapper_s = time.perf_counter() - wrapper_started
     synchronize(device)
     first_started = time.perf_counter()
-    first_output = compiled(example)
+    first_output = compiled(*example)
     synchronize(device)
     first_call_s = time.perf_counter() - first_started
     del first_output
@@ -546,8 +511,8 @@ def _profiler_config() -> Any:
 
 
 def _profile(
-    run: Callable[[torch.Tensor], torch.Tensor],
-    hidden_states: torch.Tensor,
+    run: Callable[..., torch.Tensor],
+    inputs: StageInputs,
     *,
     profile_dir: Path,
     warmup_steps: int,
@@ -589,7 +554,7 @@ def _profile(
         for step in range(warmup_steps + active_steps):
             phase = "warmup" if step < warmup_steps else "active"
             with torch.profiler.record_function(f"{label}.{phase}.step{step}"):
-                output = run(hidden_states)
+                output = run(*inputs)
                 torch.npu.synchronize()
             profiler.step()
     torch.npu.synchronize()
@@ -709,11 +674,28 @@ def _linear_flops_per_call(
     return sequence_length * layers * per_token_per_layer
 
 
+def _synthetic_grid(sequence_length: int) -> torch.Tensor:
+    height = math.isqrt(sequence_length)
+    while sequence_length % height:
+        height -= 1
+    return torch.tensor(
+        [[1, height, sequence_length // height]],
+        dtype=torch.int64,
+    )
+
+
 @torch.inference_mode()
 def main(argv: Sequence[str] | None = None) -> None:
     args = parse_args(argv)
     import torch_npu
 
+    internal_format_gate_enabled = False
+    if args.weight_format == "fractal_nz":
+        # torch-npu 2.10 defaults this runtime gate to disabled. It must be
+        # enabled before the first NPU allocation; otherwise npu_format_cast
+        # warns and leaves the tensor in ND even though CANN supports format 29.
+        torch.npu.config.allow_internal_format = True
+        internal_format_gate_enabled = True
     device = torch.device("npu:0")
     if not torch.npu.is_available():
         raise RuntimeError("vision MatMul lab requires an NPU")
@@ -763,47 +745,85 @@ def main(argv: Sequence[str] | None = None) -> None:
             f"layers={layers}"
         )
     torch.manual_seed(20260729)
-    hidden_states = (
+    prefix_hidden_states = (
         torch.randn(
-            (1, sequence_length, hidden_size),
+            (sequence_length, hidden_size),
             dtype=dtype,
             device="cpu",
         )
         * 0.02
     ).to(device)
-
-    reference_stage = VisionMatmulStack(
+    prepared = prepare_vision_prefill(
         model,
-        intermediate_size=source_intermediate,
+        prefix_hidden_states,
+        _synthetic_grid(sequence_length),
+        physical_seq_len=sequence_length,
+        execution=args.execution,
+    )
+    inputs: StageInputs = (
+        prepared.prefix_hidden_states,
+        prepared.rope_cos,
+        prepared.rope_sin,
+        prepared.attention_mask,
+    )
+
+    reference_stage = VisionPrefillStage(
+        model,
+        attention_impl="prompt_flash_attention",
     ).eval()
     synchronize(device)
-    reference_output = reference_stage(hidden_states)
+    reference_output = reference_stage(*inputs)
     synchronize(device)
-    if intermediate_size == source_intermediate:
-        candidate_stage = reference_stage
-    else:
-        candidate_stage = VisionMatmulStack(
+    if intermediate_size != source_intermediate:
+        _zero_extend_model_mlp(
             model,
-            intermediate_size=intermediate_size,
-        ).eval()
+            target_intermediate=intermediate_size,
+        )
+    candidate_stage = VisionPrefillStage(
+        model,
+        attention_impl="prompt_flash_attention",
+    ).eval()
 
     format_metadata = _prepare_weight_format(
         candidate_stage,
         requested=args.weight_format,
         torch_npu=torch_npu,
     )
+    format_metadata["runtime_gate"] = {
+        "torch_npu_allow_internal_format_enabled_before_npu_allocation": (
+            internal_format_gate_enabled
+        ),
+        "mm_bmm_format_nd": bool(torch.npu.get_mm_bmm_format_nd()),
+        "manual_cast_after_model_load": (
+            args.weight_format == "fractal_nz"
+        ),
+    }
     summary: dict[str, Any] = {
-        "schema_version": 1,
+        "schema_version": 2,
         "status": format_metadata["status"],
         "purpose": (
-            "full 27-layer vision MatMul format/alignment experiment with "
-            "attention replaced by a Q/K/V-dependent token-local surrogate"
+            "exact production 27-layer vision PromptFA format/alignment "
+            "experiment using synthetic shape inputs"
         ),
         "boundary": (
-            "27 x (LayerNorm1 + Q/K/V/out Linear surrogate + residual + "
-            "LayerNorm2 + FC1/GELU/FC2 + residual) + post-LayerNorm"
+            "VisionPrefillStage: 27 x (LayerNorm1 + Q/K/V + RoPE + "
+            "PromptFA + out projection + residual + LayerNorm2 + "
+            "FC1/GELU/FC2 + residual) + post-LayerNorm"
         ),
-        "not_an_ocr_path": True,
+        "production_stage": True,
+        "synthetic_shape_inputs": True,
+        "attention": {
+            "implementation": "prompt_flash_attention",
+            "input_layout": get_vision_prompt_fa_layout().upper(),
+            "mask_sparse_mode": get_vision_prompt_fa_mask_sparse_mode(),
+            "model_head_dim": int(
+                config.hidden_size // config.num_attention_heads
+            ),
+            "promptfa_call_head_dim": prompt_flash_attention_call_head_dim(
+                int(config.hidden_size // config.num_attention_heads)
+            ),
+            "attention_mask_all_false": True,
+        },
         "shape": {
             "batch_size": 1,
             "sequence_length": sequence_length,
@@ -837,7 +857,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         return
 
     synchronize(device)
-    raw_candidate_output = candidate_stage(hidden_states)
+    raw_candidate_output = candidate_stage(*inputs)
     synchronize(device)
     raw_candidate_vs_native = _diff(
         raw_candidate_output,
@@ -858,7 +878,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             cache_dir=cache_dir,
             allow_missing=bool(args.allow_compile_if_missing),
             device=device,
-            example=hidden_states,
+            example=inputs,
         )
     else:
         run = candidate_stage
@@ -868,7 +888,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "cache_existed_before": None,
         }
     for _ in range(args.warmup):
-        warm_output = run(hidden_states)
+        warm_output = run(*inputs)
     synchronize(device)
     del warm_output
 
@@ -880,7 +900,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     measurements, output = _measure(
         run,
-        hidden_states,
+        inputs,
         device=device,
         samples=args.samples,
         calls_per_sample=args.calls_per_sample,
@@ -914,7 +934,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         )
         summary["profiler"] = _profile(
             run,
-            hidden_states,
+            inputs,
             profile_dir=profile_dir,
             warmup_steps=args.profile_warmup_steps,
             active_steps=args.profile_steps,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the bounded S512/S2048, native/NZ, 4304/4352 MatMul matrix."""
+"""Run the bounded production-PromptFA vision format/alignment matrix."""
 
 from __future__ import annotations
 

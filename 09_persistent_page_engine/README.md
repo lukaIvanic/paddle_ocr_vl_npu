@@ -476,22 +476,24 @@ while downstream spans retain their individual crop IDs.
 
 ### Vision MatMul format/alignment lab
 
-`scripts/vision_matmul_lab.py` isolates the vision encoder's Linear workload
-without reducing it to a one-layer microbenchmark. The measured boundary keeps
-all 27 layers, both LayerNorm/residual paths, Q/K/V/output projections,
-FC1/GELU/FC2, and post-LayerNorm. Attention alone becomes the token-local
-surrogate `out_proj((Q + K + V) / 3)`, so all 162 production Linear calls remain
-live while attention cannot dominate the result. This is a performance lab,
-not an OCR inference path.
+`scripts/vision_matmul_lab.py` measures the exact production
+`VisionPrefillStage` with synthetic shape inputs. The boundary keeps all 27
+layers, both LayerNorm/residual paths, Q/K/V/output projections, RoPE, real
+PromptFA (including the production 72-to-80 head-dimension padding),
+FC1/GELU/FC2, and post-LayerNorm. Physical token throughput therefore measures
+the same vision-transformer graph used by a real crop rather than an
+attention-free MatMul surrogate.
 
 The bounded matrix compares S512 and S2048 at the native 4304-wide MLP and the
 mathematically equivalent zero-extended 4352-wide MLP, with native and requested
-FRACTAL_NZ Linear weights. A FRACTAL_NZ case is reported as unsupported rather
-than silently timed under the native format if the installed runtime cannot
-materialize format code 29. Timed samples contain multiple complete stack
-replays inside one NPU-event interval. The optional profiler records MatMulV2
-versus MatMulV3 dispatch, TransData cost, input formats, and cube utilization;
-its perturbed wall time is not the throughput result.
+FRACTAL_NZ Linear weights. For FRACTAL_NZ, the lab enables torch-npu's
+`allow_internal_format` runtime gate before the first NPU allocation, casts all
+162 Linear weights after model loading, and verifies that every observed weight
+has format code 29. It never silently times a native-format fallback. Timed
+samples contain multiple complete production-stage replays inside one NPU-event
+interval. The optional profiler records MatMulV2 versus MatMulV3 dispatch,
+TransData cost, input formats, and cube utilization; its perturbed wall time is
+not the throughput result.
 
 ```sh
 /usr/local/python3.12.13/bin/python3 \
