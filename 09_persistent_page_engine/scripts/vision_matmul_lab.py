@@ -46,6 +46,7 @@ from paddleocr_vl.model.modeling import (  # noqa: E402
 )
 from paddleocr_vl.model.vision_prefill import (  # noqa: E402
     VisionPrefillStage,
+    _activation,
     apply_rotary_pos_emb_vision,
     get_vision_prompt_fa_layout,
     get_vision_prompt_fa_mask_sparse_mode,
@@ -74,12 +75,13 @@ INTERMEDIATE_SIZES = (4304, 4352)
 WEIGHT_FORMATS = ("native", "fractal_nz")
 EXECUTIONS = ("raw_eager", "torchair")
 ATTENTION_HEAD_PADDING_CHOICES = ("runtime", "weights")
-StageInputs = tuple[
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
-]
+ROTARY_IMPLEMENTATIONS = (
+    "separate_manual",
+    "joint_manual",
+    "joint_inplace_partial",
+)
+LEGACY_SEPARATE_MANUAL_SOURCE_HASH = "b4144440d15e"
+StageInputs = tuple[torch.Tensor, ...]
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -122,6 +124,17 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "80-wide heads."
         ),
     )
+    parser.add_argument(
+        "--rotary-implementation",
+        choices=ROTARY_IMPLEMENTATIONS,
+        default="separate_manual",
+        help=(
+            "separate_manual is the existing production-like D80 control; "
+            "joint_manual applies identical FP32 math to one contiguous QK "
+            "tensor; joint_inplace_partial uses the 910B-only vLLM-Ascend "
+            "custom operator after a one-time half-to-interleave permutation."
+        ),
+    )
     parser.add_argument("--model", type=Path, default=DEFAULT_MODEL)
     parser.add_argument("--cache-dir", type=Path, default=DEFAULT_CACHE_ROOT)
     parser.add_argument("--output-dir", type=Path)
@@ -149,6 +162,23 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     args = parser.parse_args(argv)
     if args.batch_size == 4 and args.sequence_length != 512:
         parser.error("B4 is intentionally bounded to S512 in this experiment")
+    if (
+        args.rotary_implementation != "separate_manual"
+        and args.attention_head_padding != "weights"
+    ):
+        parser.error(
+            "joint rotary implementations require "
+            "--attention-head-padding weights"
+        )
+    if (
+        args.rotary_implementation == "joint_inplace_partial"
+        and args.execution == "torchair"
+    ):
+        parser.error(
+            "joint_inplace_partial is currently an eager preflight only; "
+            "the installed TorchAir auto-converter does not map its string "
+            "rotary_mode attribute to the GE integer mode"
+        )
     if args.warmup < 0:
         parser.error("--warmup must be non-negative")
     if args.samples <= 0 or args.calls_per_sample <= 0:
@@ -454,6 +484,305 @@ class WeightPaddedVisionPrefillStage(VisionPrefillStage):
         return attention.out_proj(attention_output)
 
 
+def _apply_joint_manual_rotary(
+    qk: torch.Tensor,
+    rope_cos: torch.Tensor,
+    rope_sin: torch.Tensor,
+) -> torch.Tensor:
+    """Apply the existing FP32 half-RoPE formula once to adjacent Q and K."""
+
+    original_dtype = qk.dtype
+    qk_fp32 = qk.float()
+    cos_fp32 = rope_cos.unsqueeze(-2).float()
+    sin_fp32 = rope_sin.unsqueeze(-2).float()
+    half = qk_fp32.shape[-1] // 2
+    rotated_half = torch.cat(
+        (-qk_fp32[..., half:], qk_fp32[..., :half]),
+        dim=-1,
+    )
+    return (
+        qk_fp32 * cos_fp32 + rotated_half * sin_fp32
+    ).to(original_dtype)
+
+
+class JointManualWeightPaddedVisionPrefillStage(
+    WeightPaddedVisionPrefillStage
+):
+    """D80 stage applying the exact manual formula to one contiguous QK."""
+
+    def _attention(
+        self,
+        attention: nn.Module,
+        hidden_states: torch.Tensor,
+        rope_cos: torch.Tensor,
+        rope_sin: torch.Tensor,
+        attention_mask: torch.Tensor,
+    ) -> torch.Tensor:
+        batch_size, sequence_length, _hidden = hidden_states.shape
+        num_heads = int(attention.num_heads)
+        padded_head_dim = int(attention._weight_padded_head_dim)
+        qk_states = torch.cat(
+            (
+                attention.q_proj(hidden_states),
+                attention.k_proj(hidden_states),
+            ),
+            dim=-1,
+        ).view(
+            batch_size,
+            sequence_length,
+            2 * num_heads,
+            padded_head_dim,
+        )
+        value_states = attention.v_proj(hidden_states).view(
+            batch_size,
+            sequence_length,
+            num_heads,
+            padded_head_dim,
+        )
+        qk_states = _apply_joint_manual_rotary(
+            qk_states,
+            rope_cos,
+            rope_sin,
+        )
+        qk_bnsd = (
+            qk_states.view(
+                batch_size,
+                sequence_length,
+                2,
+                num_heads,
+                padded_head_dim,
+            )
+            .permute(2, 0, 3, 1, 4)
+            .contiguous()
+        )
+        query_states, key_states = qk_bnsd.unbind(0)
+        value_states = value_states.transpose(1, 2).contiguous()
+        attention_output = vision_prompt_flash_attention_bnsd(
+            query_states,
+            key_states,
+            value_states,
+            num_heads=num_heads,
+            scale=float(attention.scaling),
+            atten_mask=attention_mask,
+        )
+        attention_output = (
+            attention_output.transpose(1, 2)
+            .contiguous()
+            .view(
+                batch_size,
+                sequence_length,
+                num_heads * padded_head_dim,
+            )
+        )
+        return attention.out_proj(attention_output)
+
+
+def _half_to_interleaved(value: torch.Tensor) -> torch.Tensor:
+    """Permute [..., A..., B...] into [..., A0, B0, A1, B1, ...]."""
+
+    half = value.shape[-1] // 2
+    first = value[..., :half]
+    second = value[..., half:]
+    return torch.stack((first, second), dim=-1).flatten(-2).contiguous()
+
+
+def _interleave_weight_padded_qk(model: nn.Module) -> dict[str, int]:
+    """Permanently put padded Q/K projection rows in interleaved RoPE order."""
+
+    layer_count = 0
+    tensor_count = 0
+    for layer in model.visual.vision_model.encoder.layers:
+        attention = layer.self_attn
+        num_heads = int(attention.num_heads)
+        padded_head_dim = int(attention._weight_padded_head_dim)
+        if padded_head_dim != 80:
+            raise ValueError(
+                "the current in-place comparison is pinned to D80, got "
+                f"{padded_head_dim}"
+            )
+        for projection_name in ("q_proj", "k_proj"):
+            projection = getattr(attention, projection_name)
+            with torch.no_grad():
+                weight = projection.weight.view(
+                    num_heads,
+                    padded_head_dim,
+                    *projection.weight.shape[1:],
+                )
+                interleaved_weight = torch.stack(
+                    (
+                        weight[:, : padded_head_dim // 2],
+                        weight[:, padded_head_dim // 2 :],
+                    ),
+                    dim=2,
+                ).reshape_as(weight)
+                projection.weight.copy_(
+                    interleaved_weight.reshape_as(projection.weight)
+                )
+                tensor_count += 1
+                if projection.bias is not None:
+                    bias = projection.bias.view(
+                        num_heads,
+                        padded_head_dim,
+                    )
+                    interleaved_bias = torch.stack(
+                        (
+                            bias[:, : padded_head_dim // 2],
+                            bias[:, padded_head_dim // 2 :],
+                        ),
+                        dim=2,
+                    ).reshape_as(bias)
+                    projection.bias.copy_(
+                        interleaved_bias.reshape_as(projection.bias)
+                    )
+                    tensor_count += 1
+        layer_count += 1
+    return {
+        "interleaved_qk_layers": layer_count,
+        "interleaved_qk_parameter_tensors": tensor_count,
+    }
+
+
+def _inplace_partial_rope_inputs(
+    rope_cos: torch.Tensor,
+    rope_sin: torch.Tensor,
+    *,
+    dtype: torch.dtype,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Prepare the 64+16 factor segments once, outside the layer loop."""
+
+    cos_interleaved = _half_to_interleaved(rope_cos).to(dtype)
+    sin_interleaved = _half_to_interleaved(rope_sin).to(dtype)
+    tokens = math.prod(cos_interleaved.shape[:-1])
+    return (
+        cos_interleaved[..., :64].contiguous().view(tokens, 1, 1, 64),
+        sin_interleaved[..., :64].contiguous().view(tokens, 1, 1, 64),
+        cos_interleaved[..., 64:].contiguous().view(tokens, 1, 1, 16),
+        sin_interleaved[..., 64:].contiguous().view(tokens, 1, 1, 16),
+    )
+
+
+class InplacePartialWeightPaddedVisionPrefillStage(
+    WeightPaddedVisionPrefillStage
+):
+    """910B D80 stage using two valid interleaved partial-RoPE slices."""
+
+    def _attention_with_rope_segments(
+        self,
+        attention: nn.Module,
+        hidden_states: torch.Tensor,
+        rope_cos_0_64: torch.Tensor,
+        rope_sin_0_64: torch.Tensor,
+        rope_cos_64_80: torch.Tensor,
+        rope_sin_64_80: torch.Tensor,
+        attention_mask: torch.Tensor,
+    ) -> torch.Tensor:
+        batch_size, sequence_length, _hidden = hidden_states.shape
+        num_heads = int(attention.num_heads)
+        padded_head_dim = int(attention._weight_padded_head_dim)
+        qk_states = torch.cat(
+            (
+                attention.q_proj(hidden_states),
+                attention.k_proj(hidden_states),
+            ),
+            dim=-1,
+        ).contiguous()
+        qk_states = qk_states.view(
+            batch_size * sequence_length,
+            1,
+            2 * num_heads,
+            padded_head_dim,
+        )
+        torch.ops._C_ascend.inplace_partial_rotary_mul(
+            qk_states,
+            rope_cos_0_64,
+            rope_sin_0_64,
+            "interleave",
+            [0, 64],
+        )
+        torch.ops._C_ascend.inplace_partial_rotary_mul(
+            qk_states,
+            rope_cos_64_80,
+            rope_sin_64_80,
+            "interleave",
+            [64, 80],
+        )
+        qk_states = qk_states.view(
+            batch_size,
+            sequence_length,
+            2 * num_heads,
+            padded_head_dim,
+        )
+        query_states = (
+            qk_states[:, :, :num_heads]
+            .transpose(1, 2)
+            .contiguous()
+        )
+        key_states = (
+            qk_states[:, :, num_heads:]
+            .transpose(1, 2)
+            .contiguous()
+        )
+        value_states = (
+            attention.v_proj(hidden_states)
+            .view(
+                batch_size,
+                sequence_length,
+                num_heads,
+                padded_head_dim,
+            )
+            .transpose(1, 2)
+            .contiguous()
+        )
+        attention_output = vision_prompt_flash_attention_bnsd(
+            query_states,
+            key_states,
+            value_states,
+            num_heads=num_heads,
+            scale=float(attention.scaling),
+            atten_mask=attention_mask,
+        )
+        attention_output = (
+            attention_output.transpose(1, 2)
+            .contiguous()
+            .view(
+                batch_size,
+                sequence_length,
+                num_heads * padded_head_dim,
+            )
+        )
+        return attention.out_proj(attention_output)
+
+    def forward(
+        self,
+        prefix_hidden_states: torch.Tensor,
+        rope_cos_0_64: torch.Tensor,
+        rope_sin_0_64: torch.Tensor,
+        rope_cos_64_80: torch.Tensor,
+        rope_sin_64_80: torch.Tensor,
+        attention_mask: torch.Tensor,
+    ) -> torch.Tensor:
+        hidden_states = prefix_hidden_states
+        for encoder_layer in self.transformer.encoder.layers:
+            attention_input = encoder_layer.layer_norm1(hidden_states)
+            hidden_states = hidden_states + self._attention_with_rope_segments(
+                encoder_layer.self_attn,
+                attention_input,
+                rope_cos_0_64,
+                rope_sin_0_64,
+                rope_cos_64_80,
+                rope_sin_64_80,
+                attention_mask,
+            )
+            mlp_input = encoder_layer.layer_norm2(hidden_states)
+            hidden_states = hidden_states + encoder_layer.mlp.fc2(
+                _activation(
+                    encoder_layer.mlp.hidden_act,
+                    encoder_layer.mlp.fc1(mlp_input),
+                )
+            )
+        return self.transformer.post_layernorm(hidden_states)
+
+
 def _linear_modules(stage: nn.Module) -> list[tuple[str, nn.Linear]]:
     modules = [
         (name, module)
@@ -678,40 +1007,60 @@ def _cache_dir(
     intermediate_size: int,
     weight_format: str,
     attention_head_padding: str,
+    rotary_implementation: str,
     dtype: torch.dtype,
     device: torch.device,
     model_dir: Path,
 ) -> Path:
-    key = "_".join(
-        [
-            "vision_promptfa_stack",
-            "layers27",
-            "attention_prompt_flash_attention",
-            f"pfalayout{cache_key_part(get_vision_prompt_fa_layout())}",
-            (
-                "pfasparse"
-                f"{get_vision_prompt_fa_mask_sparse_mode()}"
-            ),
-            f"seq{sequence_length}",
-            f"batch{batch_size}",
-            f"intermediate{intermediate_size}",
-            f"weights{weight_format}",
-            f"headpadding{attention_head_padding}",
-            f"dtype{cache_key_part(dtype)}",
-            f"mode{cache_key_part(TORCHAIR_EXECUTION_MODE)}",
-            f"model{short_file_hash(model_dir / 'config.json')}",
-            f"torch{cache_key_part(torch.__version__)}",
-            f"torchnpu{torch_npu_version_label(device)}",
-            f"torchair{torchair_version_label(device)}",
-            f"src{short_file_hash(Path(__file__).resolve())}",
-        ]
-    )
+    key_parts = [
+        "vision_promptfa_stack",
+        "layers27",
+        "attention_prompt_flash_attention",
+        f"pfalayout{cache_key_part(get_vision_prompt_fa_layout())}",
+        (
+            "pfasparse"
+            f"{get_vision_prompt_fa_mask_sparse_mode()}"
+        ),
+        f"seq{sequence_length}",
+        f"batch{batch_size}",
+        f"intermediate{intermediate_size}",
+        f"weights{weight_format}",
+        f"headpadding{attention_head_padding}",
+        f"dtype{cache_key_part(dtype)}",
+        f"mode{cache_key_part(TORCHAIR_EXECUTION_MODE)}",
+        f"model{short_file_hash(model_dir / 'config.json')}",
+        f"torch{cache_key_part(torch.__version__)}",
+        f"torchnpu{torch_npu_version_label(device)}",
+        f"torchair{torchair_version_label(device)}",
+    ]
+    if rotary_implementation == "separate_manual":
+        # This implementation is byte-for-byte the already measured control.
+        # Preserve its warm graph identity while making every new lane explicit.
+        key_parts.append(
+            f"src{LEGACY_SEPARATE_MANUAL_SOURCE_HASH}"
+        )
+    else:
+        key_parts.extend(
+            [
+                f"rotary{cache_key_part(rotary_implementation)}",
+                f"src{short_file_hash(Path(__file__).resolve())}",
+            ]
+        )
+    key = "_".join(key_parts)
     digest = hashlib.sha256(key.encode("utf-8")).hexdigest()[:16]
     compact = (
         f"vision_pfa_b{batch_size}_s{sequence_length}_"
         f"i{intermediate_size}_{weight_format}_"
-        f"hp{attention_head_padding}_{digest}"
+        f"hp{attention_head_padding}_"
+        f"rope{cache_key_part(rotary_implementation)}_{digest}"
     )
+    if rotary_implementation == "separate_manual":
+        # Retain the exact legacy directory name as well as its key.
+        compact = (
+            f"vision_pfa_b{batch_size}_s{sequence_length}_"
+            f"i{intermediate_size}_{weight_format}_"
+            f"hp{attention_head_padding}_{digest}"
+        )
     return root.expanduser().resolve() / compact
 
 
@@ -975,6 +1324,22 @@ def main(argv: Sequence[str] | None = None) -> None:
     args = parse_args(argv)
     import torch_npu
 
+    custom_op_enabled: bool | None = None
+    if args.rotary_implementation == "joint_inplace_partial":
+        from vllm_ascend.utils import enable_custom_op
+
+        custom_op_enabled = bool(enable_custom_op())
+        if not custom_op_enabled:
+            raise RuntimeError(
+                "vLLM-Ascend custom operators could not be registered"
+            )
+        if not hasattr(
+            torch.ops._C_ascend,
+            "inplace_partial_rotary_mul",
+        ):
+            raise RuntimeError(
+                "_C_ascend::inplace_partial_rotary_mul is not registered"
+            )
     internal_format_gate_enabled = False
     if args.weight_format == "fractal_nz":
         # torch-npu 2.10 defaults this runtime gate to disabled. It must be
@@ -998,7 +1363,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         / (
             f"b{batch_size}_s{sequence_length}_i{intermediate_size}_"
             f"{args.weight_format}_{args.attention_head_padding}_"
-            f"{args.execution}"
+            f"{args.rotary_implementation}_{args.execution}"
         )
     ).expanduser().resolve()
     profile_dir = (
@@ -1008,7 +1373,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         / (
             f"b{batch_size}_s{sequence_length}_i{intermediate_size}_"
             f"{args.weight_format}_{args.attention_head_padding}_"
-            f"{args.execution}"
+            f"{args.rotary_implementation}_{args.execution}"
         )
     ).expanduser().resolve()
     if output_dir.exists() and any(output_dir.iterdir()):
@@ -1083,32 +1448,101 @@ def main(argv: Sequence[str] | None = None) -> None:
         "runtime_slice_operations_per_layer": 1,
     }
     candidate_inputs = inputs
+    weight_padded_manual_output: torch.Tensor | None = None
+    rotary_metadata: dict[str, Any] = {
+        "implementation": args.rotary_implementation,
+        "custom_op_enabled": custom_op_enabled,
+        "portable_to_310p": (
+            args.rotary_implementation != "joint_inplace_partial"
+        ),
+    }
     if args.attention_head_padding == "weights":
         attention_padding_metadata.update(
             _weight_pad_model_attention(model)
         )
-        candidate_inputs = (
+        padded_rope_cos = _weight_pad_rope(
+            inputs[1],
+            padded_head_dim=int(
+                attention_padding_metadata["padded_head_dim"]
+            ),
+            fill_value=1.0,
+        )
+        padded_rope_sin = _weight_pad_rope(
+            inputs[2],
+            padded_head_dim=int(
+                attention_padding_metadata["padded_head_dim"]
+            ),
+            fill_value=0.0,
+        )
+        manual_inputs: StageInputs = (
             inputs[0],
-            _weight_pad_rope(
-                inputs[1],
-                padded_head_dim=int(
-                    attention_padding_metadata["padded_head_dim"]
-                ),
-                fill_value=1.0,
-            ),
-            _weight_pad_rope(
-                inputs[2],
-                padded_head_dim=int(
-                    attention_padding_metadata["padded_head_dim"]
-                ),
-                fill_value=0.0,
-            ),
+            padded_rope_cos,
+            padded_rope_sin,
             inputs[3],
         )
-        candidate_stage = WeightPaddedVisionPrefillStage(
+        weight_padded_manual_stage = WeightPaddedVisionPrefillStage(
             model,
             attention_impl="prompt_flash_attention",
         ).eval()
+        synchronize(device)
+        weight_padded_manual_output = weight_padded_manual_stage(
+            *manual_inputs
+        )
+        synchronize(device)
+        if args.rotary_implementation == "separate_manual":
+            candidate_inputs = manual_inputs
+            candidate_stage = weight_padded_manual_stage
+            rotary_metadata.update(
+                {
+                    "qk_layout": "separate_bsnd",
+                    "math": "separate FP32 half-RoPE",
+                    "operator": "ordinary PyTorch operations",
+                }
+            )
+        elif args.rotary_implementation == "joint_manual":
+            candidate_inputs = manual_inputs
+            candidate_stage = JointManualWeightPaddedVisionPrefillStage(
+                model,
+                attention_impl="prompt_flash_attention",
+            ).eval()
+            rotary_metadata.update(
+                {
+                    "qk_layout": "contiguous_joint_bsnd",
+                    "math": "joint FP32 half-RoPE",
+                    "operator": "ordinary PyTorch operations",
+                }
+            )
+        else:
+            rotary_metadata.update(_interleave_weight_padded_qk(model))
+            rope_segments = _inplace_partial_rope_inputs(
+                padded_rope_cos,
+                padded_rope_sin,
+                dtype=dtype,
+            )
+            candidate_inputs = (
+                inputs[0],
+                *rope_segments,
+                inputs[3],
+            )
+            candidate_stage = (
+                InplacePartialWeightPaddedVisionPrefillStage(
+                    model,
+                    attention_impl="prompt_flash_attention",
+                ).eval()
+            )
+            rotary_metadata.update(
+                {
+                    "qk_layout": "contiguous_joint_t1nd_interleaved",
+                    "math": (
+                        "two in-place interleaved partial slices after "
+                        "one-time Q/K weight and factor permutation"
+                    ),
+                    "operator": (
+                        "_C_ascend::inplace_partial_rotary_mul"
+                    ),
+                    "partial_slices": [[0, 64], [64, 80]],
+                }
+            )
         attention_padding_metadata.update(
             {
                 "runtime_pad_operations_per_layer": 0,
@@ -1161,6 +1595,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             ),
             "attention_mask_all_false": True,
             "head_padding": attention_padding_metadata,
+            "rotary": rotary_metadata,
         },
         "shape": {
             "batch_size": batch_size,
@@ -1176,6 +1611,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         "requested": {
             "weight_format": args.weight_format,
             "attention_head_padding": args.attention_head_padding,
+            "rotary_implementation": args.rotary_implementation,
             "execution": args.execution,
         },
         "weight_format": format_metadata,
@@ -1203,6 +1639,14 @@ def main(argv: Sequence[str] | None = None) -> None:
         raw_candidate_output,
         reference_output,
     )
+    raw_candidate_vs_weight_padded_manual = (
+        _diff(
+            raw_candidate_output,
+            weight_padded_manual_output,
+        )
+        if weight_padded_manual_output is not None
+        else None
+    )
     cache_dir = _cache_dir(
         args.cache_dir,
         sequence_length=sequence_length,
@@ -1210,6 +1654,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         intermediate_size=intermediate_size,
         weight_format=args.weight_format,
         attention_head_padding=args.attention_head_padding,
+        rotary_implementation=args.rotary_implementation,
         dtype=dtype,
         device=device,
         model_dir=model_dir,
@@ -1264,6 +1709,9 @@ def main(argv: Sequence[str] | None = None) -> None:
             "measurements": measurements,
             "numerics": {
                 "raw_candidate_vs_native_4304": raw_candidate_vs_native,
+                "raw_candidate_vs_weight_padded_manual": (
+                    raw_candidate_vs_weight_padded_manual
+                ),
                 "measured_output_vs_raw_candidate": _diff(
                     output,
                     raw_candidate_output,
@@ -1280,6 +1728,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "paddleocr_vl.vision_matmul_lab."
             f"B{batch_size}.S{sequence_length}.I{intermediate_size}."
             f"{args.weight_format}.{args.attention_head_padding}."
+            f"{args.rotary_implementation}."
             f"{args.execution}"
         )
         summary["profiler"] = _profile(
