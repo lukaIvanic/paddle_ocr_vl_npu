@@ -9,23 +9,26 @@ Prove that the real Experiment 09 pipeline runs on this 310P software stack,
 identify which production optimizations work, and measure their approximate
 effect on a small representative workload.
 
-## Current requested task: run Phase 9 only
+## Current requested task: run Phase 10 only
 
-Phases 0-8 have already passed on this server. For the current task, do not
-rerun the production pipeline, layout lab, dataset validation, attention
-correctness check, decode ladder, or packing ladder. Read their retained
-instructions and artifacts only as context.
+Phases 0-8 have already passed on this server, and Phase 9 has already
+produced the isolated 310P vision-throughput results. For the current task, do
+not rerun the production pipeline, layout lab, dataset validation, attention
+correctness check, decode ladder, packing ladder, or Phase 9 matrix. Read their
+retained instructions and artifacts only as context.
 
 Pull current `main`, reuse the exact Python/model/NPU environment that passed
-the earlier ladder, and execute only **Phase 9: isolated 310P vision
-saturation matrix** below. Phase 9 loads only the PaddleOCR-VL recognizer and
-does not need OmniDocBench images, the layout model, text prefill, or decode.
+the earlier ladder, and execute only **Phase 10: native NPU profiler comparison
+at B1xS512 and B1xS2048** below. Phase 10 loads only the PaddleOCR-VL
+recognizer and does not need OmniDocBench images, the layout model, text
+prefill, or decode.
 
 The current question is deliberately narrow:
 
-> How does raw physical vision-transformer throughput on 310P change with
-> packed row length and true graph batch size, and how does that scaling
-> compare shape-for-shape with the measured 910B2 matrix?
+> Where does compiled PromptFA `VisionPrefillStage` time go at B1xS512 versus
+> B1xS2048 on 310P, how much does the native profiler perturb each replay, and
+> how do the kernel mix and physical throughput compare with the exact 910B2
+> profiles?
 
 Do not optimize source code, change production routing, or update the pinned
 910B2 routing table during this task.
@@ -2776,7 +2779,985 @@ Include the complete `phase9_comparison.md` table in the report. Report raw
 physical tok/s to at least one decimal place and ratios to at least three
 decimal places. Do not substitute effective tok/s.
 
+## Phase 10: native B1 vision profiles at S512 and S2048
+
+### 10.0 Purpose, boundary, and reference contract
+
+This is the only phase to execute for the current request. It captures two
+already-warmed compiled PromptFA graphs with the native `torch_npu` profiler:
+
+```text
+B1xS512
+B1xS2048
+```
+
+The exact graph boundary is:
+
+```text
+VisionPrefillRuntime.compiled[sequence_length](
+    prefix_hidden_states,
+    rope_cos,
+    rope_sin,
+    attention_mask,
+)
+```
+
+It includes all 27 vision encoder layers plus final post-LayerNorm. It excludes
+patch embedding, image preprocessing, projector, text prefill, decode, layout,
+page assembly, model loading, graph compilation, and cache first-call setup.
+Inputs are synthetic device tensors with the exact production shapes and
+dtypes. This phase measures raw physical transformer tokens only.
+
+Every final profiler lane uses the same protocol:
+
+```text
+outside-profiler graph warmup: 3 replays
+unprofiled control before capture: 20 NPU-event replays
+profiler-scheduled warmup: 1 replay
+profiler-active capture: 5 replays
+unprofiled control after capture: 20 NPU-event replays
+profiler: CPU + NPU, Level1, PipeUtilization
+record_shapes: true
+with_stack: true
+with_modules: true
+```
+
+Use the mean of the before/after control medians as the physical-throughput
+reference. The profiled replay is diagnostic only because collection perturbs
+execution. Do not use profiler wall time or `profiler.step()` time as
+throughput.
+
+The committed 910B2 references are:
+
+```text
+S512:
+  tmp/09_persistent_page_engine/vision_lab/
+  vision_s512_npu_profile_910b_7d1f778/
+
+S2048:
+  tmp/09_persistent_page_engine/vision_lab/
+  vision_s2048_npu_profile_910b_5ff4b6b/
+```
+
+Both used physical NPU 5 (`Ascend910B2`), `torch==2.10.0+cpu`,
+`torch_npu==2.10.0`, FP16 compiled PromptFA, head dimension 72 padded to 80,
+and the same `vision_prefill.py` source hash. The source commits differ only
+because the profiler harness was generalized before the S2048 capture.
+
+The authoritative JSON values are:
+
+| Shape | control ms | physical tok/s | profiled ms | profiler overhead | kernel ms | kernels/replay | weighted cube |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| B1xS512 | 15.857095 | 32,288.386 | 16.774080 | 5.7828% | 15.583124 | 1,055 | 91.7560% |
+| B1xS2048 | 31.648320 | 64,711.176 | 32.393841 | 2.3556% | 31.267644 | 1,055 | 94.5412% |
+
+The 910B2 kernel mix, per replay, was:
+
+| Kernel family | S512 ms / share | S2048 ms / share |
+|---|---:|---:|
+| all MatMul variants | 4.9613 / 31.84% | 7.9175 / 25.32% |
+| PromptFlashAttention | 1.7098 / 10.97% | 7.6396 / 24.43% |
+| StridedSliceD | 2.0222 / 12.98% | 3.7378 / 11.95% |
+| Transpose | 2.0078 / 12.88% | 3.7261 / 11.92% |
+| PadV3 | 0.9227 / 5.92% | 1.3291 / 4.25% |
+
+Do not type these rounded numbers into the final comparison. Read the committed
+JSON mechanically.
+
+### 10.1 Pull and recover the proven 310P paths
+
+Start in the repository and leave all earlier artifacts untouched:
+
+```sh
+git status --short --branch
+git pull --ff-only origin main
+
+REPO="$(git rev-parse --show-toplevel)"
+cd "$REPO"
+COMMIT="$(git rev-parse HEAD)"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+PHASE10_REL="tmp/09_persistent_page_engine/310p_vision_profiles_$COMMIT_SHORT"
+PHASE10_ROOT="$REPO/$PHASE10_REL"
+RAW_PROFILE_ROOT="$REPO/.runtime_cache/310p_vision_profiles_$COMMIT_SHORT"
+PROFILER_SCRIPT="$REPO/09_persistent_page_engine/scripts/profile_vision_prefill_b1.py"
+REFERENCE_S512="$REPO/tmp/09_persistent_page_engine/vision_lab/vision_s512_npu_profile_910b_7d1f778"
+REFERENCE_S2048="$REPO/tmp/09_persistent_page_engine/vision_lab/vision_s2048_npu_profile_910b_5ff4b6b"
+
+test -f "$PROFILER_SCRIPT"
+test -f "$REFERENCE_S512/run_summary.json"
+test -f "$REFERENCE_S512/parsed_profile_summary.json"
+test -f "$REFERENCE_S2048/run_summary.json"
+test -f "$REFERENCE_S2048/parsed_profile_summary.json"
+test ! -e "$PHASE10_ROOT"
+test ! -e "$RAW_PROFILE_ROOT"
+mkdir -p "$PHASE10_ROOT/evidence" "$PHASE10_ROOT/results" "$RAW_PROFILE_ROOT"
+```
+
+Recover the exact Python, recognizer model, and production B1 cache from the
+latest successful Phase 7 command. Do not guess paths:
+
+```sh
+PHASE7_COMMAND="$(
+  python3 - "$REPO" <<'PY'
+import sys
+from pathlib import Path
+
+repo = Path(sys.argv[1]).resolve()
+matches = list(
+    repo.glob(
+        "tmp/09_persistent_page_engine/"
+        "310p_exp09_npu_layout_eager_*/"
+        "phase7_min_pixels_28224_replay/command.sh"
+    )
+)
+if not matches:
+    raise SystemExit("no retained successful Phase 7 command.sh was found")
+print(max(matches, key=lambda path: path.stat().st_mtime))
+PY
+)"
+test -f "$PHASE7_COMMAND"
+
+eval "$(
+  python3 - "$PHASE7_COMMAND" <<'PY'
+import shlex
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1]).resolve()
+lines = [
+    line.strip()
+    for line in path.read_text(encoding="utf-8").splitlines()
+    if line.strip() and not line.lstrip().startswith("#")
+]
+if len(lines) != 1:
+    raise SystemExit(f"expected one command in {path}, found {len(lines)}")
+tokens = shlex.split(lines[0])
+
+
+def option(name):
+    try:
+        return tokens[tokens.index(name) + 1]
+    except (ValueError, IndexError) as exc:
+        raise SystemExit(f"{name} missing from {path}") from exc
+
+
+print(f"PYTHON_BIN={shlex.quote(tokens[0])}")
+print(f"RECOGNIZER_MODEL={shlex.quote(option('--recognizer-model'))}")
+print(
+    "PRODUCTION_VISION_CACHE="
+    f"{shlex.quote(option('--vision-torchair-cache-dir'))}"
+)
+PY
+)"
+
+test -x "$PYTHON_BIN"
+test -f "$RECOGNIZER_MODEL/config.json"
+test -d "$PRODUCTION_VISION_CACHE"
+printf 'python=%s\nmodel=%s\ncache=%s\n' \
+  "$PYTHON_BIN" "$RECOGNIZER_MODEL" "$PRODUCTION_VISION_CACHE"
+```
+
+Activate the same CANN/torch-npu environment used for the successful Phase 9
+runs. Keep one free physical 310P exposed as logical `npu:0`. Do not kill or
+reuse another user's process. If no NPU is free, stop.
+
+Run this exact preflight:
+
+```sh
+PYTHONPATH="$REPO/09_persistent_page_engine" \
+"$PYTHON_BIN" - >"$PHASE10_ROOT/environment_preflight.txt" 2>&1 <<'PY'
+import platform
+import sys
+
+import torch
+import torch_npu
+import torch_npu.profiler as npu_prof
+
+from paddleocr_vl.model.compile_utils import import_torchair
+
+torchair, CompilerConfig = import_torchair()
+assert callable(torchair.inference.cache_compile)
+assert torch.npu.is_available()
+torch.npu.set_device(0)
+torch.npu.set_compile_mode(jit_compile=False)
+assert npu_prof.ProfilerActivity.CPU is not None
+assert npu_prof.ProfilerActivity.NPU is not None
+assert npu_prof.AiCMetrics.PipeUtilization is not None
+x = torch.arange(128, dtype=torch.float16, device="npu:0")
+torch.npu.synchronize()
+
+print("platform:", platform.platform())
+print("python:", sys.version.replace("\n", " "))
+print("python_executable:", sys.executable)
+print("torch:", torch.__version__)
+print("torch_npu:", getattr(torch_npu, "__version__", "<missing>"))
+print("torchair_module:", torchair.__name__)
+print("torchair_file:", getattr(torchair, "__file__", "<namespace>"))
+print("npu_name:", torch.npu.get_device_name(0))
+print("tensor_sum:", float(x.float().sum().cpu().item()))
+print("PHASE10_ENVIRONMENT: PASS")
+PY
+
+tail -n 1 "$PHASE10_ROOT/environment_preflight.txt"
+test "$(tail -n 1 "$PHASE10_ROOT/environment_preflight.txt")" = \
+  "PHASE10_ENVIRONMENT: PASS"
+df -h "$REPO" "$REPO/.runtime_cache" >"$PHASE10_ROOT/disk_before.txt"
+npu-smi info >"$PHASE10_ROOT/npu_before.txt" 2>&1
+```
+
+Record provenance:
+
+```sh
+{
+  printf 'git_commit=%s\n' "$COMMIT"
+  printf 'git_status_begin\n'
+  git status --short --branch
+  printf 'git_status_end\n'
+  printf 'hostname=%s\n' "$(hostname)"
+  printf 'ASCEND_RT_VISIBLE_DEVICES=%s\n' \
+    "${ASCEND_RT_VISIBLE_DEVICES:-}"
+  printf 'python=%s\n' "$PYTHON_BIN"
+  printf 'recognizer_model=%s\n' "$RECOGNIZER_MODEL"
+  printf 'production_vision_cache=%s\n' "$PRODUCTION_VISION_CACHE"
+  printf 'reference_s512=%s\n' "$REFERENCE_S512"
+  printf 'reference_s2048=%s\n' "$REFERENCE_S2048"
+} >"$PHASE10_ROOT/provenance.txt"
+```
+
+### 10.2 Recording helper
+
+Define this helper in the same shell. Its one-second `npu-smi` samples are
+supporting evidence only; a 16-32 ms replay can fall between samples.
+
+```sh
+run_phase10() {
+  local run_name="$1"
+  shift
+  local evidence_dir="$PHASE10_ROOT/evidence/$run_name"
+  mkdir -p "$evidence_dir"
+  {
+    printf '#!/usr/bin/env bash\n'
+    printf '# git_commit=%s\n' "$(git rev-parse HEAD)"
+    printf '# hostname=%s\n' "$(hostname)"
+    printf '# ASCEND_RT_VISIBLE_DEVICES=%s\n' \
+      "${ASCEND_RT_VISIBLE_DEVICES:-}"
+    printf '%q ' "$@"
+    printf '\n'
+  } >"$evidence_dir/command.sh"
+  chmod +x "$evidence_dir/command.sh"
+
+  local monitor_pid=
+  if command -v npu-smi >/dev/null 2>&1; then
+    (
+      while true; do
+        date --iso-8601=ns 2>/dev/null || date
+        npu-smi info
+        sleep 1
+      done
+    ) >"$evidence_dir/npu_smi_1s.log" 2>&1 &
+    monitor_pid=$!
+  fi
+
+  local status
+  if "$@" >"$evidence_dir/run.log" 2>&1; then
+    status=0
+  else
+    status=$?
+  fi
+  if test -n "$monitor_pid"; then
+    kill "$monitor_pid" 2>/dev/null || true
+    wait "$monitor_pid" 2>/dev/null || true
+  fi
+  printf '%s\n' "$status" >"$evidence_dir/exit_code.txt"
+  printf 'run=%s exit_code=%s log=%s\n' \
+    "$run_name" "$status" "$evidence_dir/run.log"
+  return "$status"
+}
+```
+
+### 10.3 Prepare the exact caches outside profiling
+
+Phase 9's production B1 sweep already required a compatible S512 graph.
+Verify it without permitting compilation:
+
+```sh
+run_phase10 cache_prepare_s512 \
+  "$PYTHON_BIN" "$PROFILER_SCRIPT" \
+  --sequence-length 512 \
+  --model "$RECOGNIZER_MODEL" \
+  --cache-dir "$PRODUCTION_VISION_CACHE" \
+  --prepare-cache-only \
+  --output-dir "$PHASE10_ROOT/results/cache_prepare_s512"
+```
+
+The S2048 profile needs a B1xS2048 graph. Phase 9's B2xS2048 matrix graph is a
+different static shape and cache key; it cannot satisfy this test. Permit at
+most this one new B1 graph:
+
+```sh
+run_phase10 cache_prepare_s2048 \
+  "$PYTHON_BIN" "$PROFILER_SCRIPT" \
+  --sequence-length 2048 \
+  --model "$RECOGNIZER_MODEL" \
+  --cache-dir "$PRODUCTION_VISION_CACHE" \
+  --allow-compile-if-missing \
+  --prepare-cache-only \
+  --output-dir "$PHASE10_ROOT/results/cache_prepare_s2048"
+```
+
+Compilation or cache loading occurs before either profiler lane. Validate:
+
+```sh
+"$PYTHON_BIN" - \
+  "$PHASE10_ROOT/results/cache_prepare_s512/cache_preparation.json" \
+  "$PHASE10_ROOT/results/cache_prepare_s2048/cache_preparation.json" \
+  >"$PHASE10_ROOT/cache_validation.txt" 2>&1 <<'PY'
+import json
+import sys
+from pathlib import Path
+
+s512 = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+s2048 = json.loads(Path(sys.argv[2]).read_text(encoding="utf-8"))
+
+assert s512["shape"]["batch_size"] == 1
+assert s512["shape"]["sequence_length"] == 512
+assert s512["cache_existed_before_run"] is True
+assert s512["compile_was_permitted"] is False
+assert s512["cache_populated_after_setup"] is True
+
+assert s2048["shape"]["batch_size"] == 1
+assert s2048["shape"]["sequence_length"] == 2048
+assert s2048["compile_was_permitted"] is True
+assert s2048["cache_populated_after_setup"] is True
+
+assert s512["environment"]["commit"] == s2048["environment"]["commit"]
+assert s512["environment"]["device_name"] == s2048["environment"]["device_name"]
+assert s512["environment"]["torch"] == s2048["environment"]["torch"]
+assert s512["environment"]["torch_npu"] == s2048["environment"]["torch_npu"]
+print("s2048_cache_existed_before_run:", s2048["cache_existed_before_run"])
+print("s2048_setup_s:", s2048["setup_s"])
+print("PHASE10_CACHE_PREPARATION: PASS")
+PY
+
+cat "$PHASE10_ROOT/cache_validation.txt"
+```
+
+If S512 is missing, stop: that means the wrong Phase 7 cache or incompatible
+source/environment was selected. If S2048 compilation fails, preserve the
+first causal traceback and stop. Do not change attention, mask, dtype, source,
+or static shape.
+
+### 10.4 Run both final cache-only profiles
+
+The following commands deliberately omit `--allow-compile-if-missing`. Both
+must report:
+
+```text
+cache_only = true
+cache_existed_before_run = true
+compile_was_permitted = false
+```
+
+Run S512:
+
+```sh
+run_phase10 profile_s512 \
+  "$PYTHON_BIN" "$PROFILER_SCRIPT" \
+  --sequence-length 512 \
+  --model "$RECOGNIZER_MODEL" \
+  --cache-dir "$PRODUCTION_VISION_CACHE" \
+  --warmup 3 \
+  --control-repeats 20 \
+  --profile-warmup-steps 1 \
+  --profile-steps 5 \
+  --parser-topn 30 \
+  --output-dir "$PHASE10_ROOT/results/profile_s512" \
+  --profile-dir "$RAW_PROFILE_ROOT/s512"
+```
+
+Then run S2048 on the same physical 310P:
+
+```sh
+run_phase10 profile_s2048 \
+  "$PYTHON_BIN" "$PROFILER_SCRIPT" \
+  --sequence-length 2048 \
+  --model "$RECOGNIZER_MODEL" \
+  --cache-dir "$PRODUCTION_VISION_CACHE" \
+  --warmup 3 \
+  --control-repeats 20 \
+  --profile-warmup-steps 1 \
+  --profile-steps 5 \
+  --parser-topn 30 \
+  --output-dir "$PHASE10_ROOT/results/profile_s2048" \
+  --profile-dir "$RAW_PROFILE_ROOT/s2048"
+```
+
+Do not rerun a failed profile into the same directories. Preserve the raw
+trace and complete log, diagnose the first causal error, and report it.
+
+### 10.5 Validate the profiler contracts
+
+```sh
+"$PYTHON_BIN" - \
+  "$PHASE10_ROOT/results/profile_s512" \
+  "$PHASE10_ROOT/results/profile_s2048" \
+  >"$PHASE10_ROOT/profile_validation.txt" 2>&1 <<'PY'
+import json
+import sys
+from pathlib import Path
+
+roots = [Path(sys.argv[1]).resolve(), Path(sys.argv[2]).resolve()]
+expected_lengths = [512, 2048]
+summaries = []
+
+for root, sequence_length in zip(roots, expected_lengths):
+    summary = json.loads(
+        (root / "run_summary.json").read_text(encoding="utf-8")
+    )
+    parsed = json.loads(
+        (root / "parsed_profile_summary.json").read_text(encoding="utf-8")
+    )
+    assert summary["shape"]["batch_size"] == 1
+    assert summary["shape"]["sequence_length"] == sequence_length
+    assert summary["shape"]["physical_tokens_per_replay"] == sequence_length
+    assert summary["attention"] == "prompt_flash_attention"
+    assert summary["cache_only"] is True
+    assert summary["cache_existed_before_run"] is True
+    assert summary["compile_was_permitted"] is False
+    assert summary["cache_populated_after_setup"] is True
+    assert summary["profiler"]["level"] == "Level1"
+    assert summary["profiler"]["aic_metric"] == "PipeUtilization"
+    assert summary["profiler"]["scheduled_warmup_steps"] == 1
+    assert summary["profile_active_steps"] == 5
+    assert len(
+        summary["measurements"]["pre_profile_control"]["device_event"][
+            "samples_ms"
+        ]
+    ) == 20
+    assert len(
+        summary["measurements"]["profiled_diagnostic"]["device_event"][
+            "samples_ms"
+        ]
+    ) == 5
+    assert len(
+        summary["measurements"]["post_profile_control"]["device_event"][
+            "samples_ms"
+        ]
+    ) == 20
+    assert summary["output"]["shape"][:2] == [1, sequence_length]
+    assert summary["output"]["finite"] is True
+    assert len(parsed["runs"]) == 1
+    run = parsed["runs"][0]
+    kernel = run["kernel_details"]
+    assert kernel["row_count"] > 0
+    names = {
+        row["name"].strip()
+        for row in kernel["top_kernel_types"]
+    }
+    assert "PromptFlashAttention" in names
+    assert any(name.startswith("MatMul") for name in names)
+    trace_path = Path(run["files"]["trace_view"])
+    assert trace_path.is_file(), trace_path
+    summaries.append(summary)
+
+for field in ("commit", "device_name", "torch", "torch_npu"):
+    assert (
+        summaries[0]["environment"][field]
+        == summaries[1]["environment"][field]
+    ), field
+
+print(
+    "s512_control_tok_s:",
+    summaries[0]["measurements"]["control_center_physical_tokens_per_s"],
+)
+print(
+    "s2048_control_tok_s:",
+    summaries[1]["measurements"]["control_center_physical_tokens_per_s"],
+)
+print("PHASE10_PROFILE_CONTRACTS: PASS")
+PY
+
+cat "$PHASE10_ROOT/profile_validation.txt"
+```
+
+### 10.6 Generate the four-way comparison mechanically
+
+This comparison reads both committed 910B2 profiles and both new 310P
+profiles. It aggregates every MatMul variant together because GE may select
+`MatMulV2` at one sequence length and `MatMulV3` at another.
+
+```sh
+"$PYTHON_BIN" - \
+  "$REFERENCE_S512" \
+  "$REFERENCE_S2048" \
+  "$PHASE10_ROOT/results/profile_s512" \
+  "$PHASE10_ROOT/results/profile_s2048" \
+  "$PHASE10_ROOT/profile_comparison.json" \
+  "$PHASE10_ROOT/profile_comparison.md" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+(
+    reference_s512,
+    reference_s2048,
+    target_s512,
+    target_s2048,
+    output_json,
+    output_md,
+) = map(Path, sys.argv[1:])
+
+
+def load(root):
+    return (
+        json.loads((root / "run_summary.json").read_text(encoding="utf-8")),
+        json.loads(
+            (root / "parsed_profile_summary.json").read_text(encoding="utf-8")
+        ),
+    )
+
+
+def aggregate_profile(summary, parsed):
+    run = parsed["runs"][0]
+    kernel = run["kernel_details"]
+    active_steps = int(summary["profile_active_steps"])
+    groups = {}
+    for row in kernel["top_kernel_types"]:
+        name = row["name"].strip()
+        bucket = groups.setdefault(
+            name,
+            {"count": 0, "duration_us": 0.0, "aicore_time_us": 0.0},
+        )
+        bucket["count"] += int(row["count"])
+        bucket["duration_us"] += float(row["duration_us"])
+        bucket["aicore_time_us"] += float(row["aicore_time_us"])
+
+    def family(prefix):
+        rows = [
+            value
+            for name, value in groups.items()
+            if name.startswith(prefix)
+        ]
+        return {
+            "count_per_replay": sum(row["count"] for row in rows)
+            / active_steps,
+            "ms_per_replay": sum(row["duration_us"] for row in rows)
+            / active_steps
+            / 1000.0,
+        }
+
+    def exact(*names):
+        rows = [groups[name] for name in names if name in groups]
+        return {
+            "count_per_replay": sum(row["count"] for row in rows)
+            / active_steps,
+            "ms_per_replay": sum(row["duration_us"] for row in rows)
+            / active_steps
+            / 1000.0,
+        }
+
+    total_ms = float(kernel["total_duration_us"]) / active_steps / 1000.0
+    categories = {
+        "matmul_all": family("MatMul"),
+        "prompt_flash_attention": exact("PromptFlashAttention"),
+        "strided_slice": exact("StridedSliceD"),
+        "transpose": exact("Transpose"),
+        "pad": exact("PadV3"),
+        "add_layernorm": exact("AddLayerNorm"),
+        "concat": exact("ConcatV2D"),
+        "gelu": exact("Gelu"),
+        "rotary_elementwise": exact("Mul", "Add", "Cast", "Neg"),
+    }
+    for values in categories.values():
+        values["share_pct"] = (
+            100.0 * values["ms_per_replay"] / total_ms
+            if total_ms
+            else None
+        )
+
+    measurement = summary["measurements"]
+    pre = measurement["pre_profile_control"]["device_event"]
+    post = measurement["post_profile_control"]["device_event"]
+    profiled = measurement["profiled_diagnostic"]["device_event"]
+    pre_median = float(pre["median_ms"])
+    post_median = float(post["median_ms"])
+    return {
+        "shape": summary["shape"],
+        "environment": {
+            key: summary["environment"][key]
+            for key in ("commit", "device_name", "torch", "torch_npu")
+        },
+        "control_center_ms": float(
+            measurement["control_center_device_median_ms"]
+        ),
+        "control_physical_tok_s": float(
+            measurement["control_center_physical_tokens_per_s"]
+        ),
+        "pre_control_ms": pre_median,
+        "post_control_ms": post_median,
+        "pre_post_drift_pct": (
+            100.0 * (post_median - pre_median)
+            / ((pre_median + post_median) / 2.0)
+        ),
+        "profiled_ms": float(profiled["median_ms"]),
+        "profiled_physical_tok_s": float(
+            profiled["physical_tokens_per_s_median"]
+        ),
+        "profiler_slowdown_pct": float(
+            measurement["profiled_device_slowdown_pct"]
+        ),
+        "kernel_ms_per_replay": total_ms,
+        "kernels_per_replay": float(kernel["row_count"]) / active_steps,
+        "aicore_ms_per_replay": float(
+            kernel["total_aicore_time_us"]
+        )
+        / active_steps
+        / 1000.0,
+        "weighted_cube_utilization_pct": float(
+            kernel["weighted_cube_utilization_pct"]
+        ),
+        "categories": categories,
+    }
+
+
+profiles = {
+    "910b2": {
+        "s512": aggregate_profile(*load(reference_s512)),
+        "s2048": aggregate_profile(*load(reference_s2048)),
+    },
+    "310p": {
+        "s512": aggregate_profile(*load(target_s512)),
+        "s2048": aggregate_profile(*load(target_s2048)),
+    },
+}
+
+
+def ratio(numerator, denominator):
+    return numerator / denominator
+
+
+comparison = {}
+for device, rows in profiles.items():
+    s512 = rows["s512"]
+    s2048 = rows["s2048"]
+    comparison[device] = {
+        "s2048_over_s512_physical_throughput": ratio(
+            s2048["control_physical_tok_s"],
+            s512["control_physical_tok_s"],
+        ),
+        "s2048_over_s512_control_time": ratio(
+            s2048["control_center_ms"],
+            s512["control_center_ms"],
+        ),
+        "s2048_over_s512_kernel_time": ratio(
+            s2048["kernel_ms_per_replay"],
+            s512["kernel_ms_per_replay"],
+        ),
+        "category_time_ratios": {
+            category: ratio(
+                s2048["categories"][category]["ms_per_replay"],
+                s512["categories"][category]["ms_per_replay"],
+            )
+            for category in s512["categories"]
+            if s512["categories"][category]["ms_per_replay"] > 0
+        },
+    }
+
+cross_device = {}
+for length in ("s512", "s2048"):
+    reference = profiles["910b2"][length]
+    target = profiles["310p"][length]
+    cross_device[length] = {
+        "910b2_over_310p_physical_throughput": ratio(
+            reference["control_physical_tok_s"],
+            target["control_physical_tok_s"],
+        ),
+        "310p_over_910b2_control_time": ratio(
+            target["control_center_ms"],
+            reference["control_center_ms"],
+        ),
+        "310p_over_910b2_kernel_time": ratio(
+            target["kernel_ms_per_replay"],
+            reference["kernel_ms_per_replay"],
+        ),
+    }
+
+payload = {
+    "metric": "raw physical VisionPrefillStage tokens/s",
+    "profiles": profiles,
+    "within_device_scaling": comparison,
+    "cross_device": cross_device,
+}
+output_json.write_text(
+    json.dumps(payload, indent=2, sort_keys=True) + "\n",
+    encoding="utf-8",
+)
+
+lines = [
+    "# B1 compiled PromptFA profiler comparison",
+    "",
+    "Throughput uses the center of pre/post unprofiled NPU-event medians.",
+    "Profiled values are diagnostic and include native-profiler perturbation.",
+    "",
+    "## Throughput and profiler overhead",
+    "",
+    "| Device | Shape | control ms | physical tok/s | profiled ms | "
+    "profiler overhead | pre/post drift |",
+    "|---|---|---:|---:|---:|---:|---:|",
+]
+for device in ("910b2", "310p"):
+    for length in ("s512", "s2048"):
+        row = profiles[device][length]
+        lines.append(
+            f"| {device} | {length} | {row['control_center_ms']:.6f} | "
+            f"{row['control_physical_tok_s']:.1f} | "
+            f"{row['profiled_ms']:.6f} | "
+            f"{row['profiler_slowdown_pct']:.3f}% | "
+            f"{row['pre_post_drift_pct']:.3f}% |"
+        )
+
+lines.extend(
+    [
+        "",
+        "## Kernel totals",
+        "",
+        "| Device | Shape | kernel ms | kernels/replay | AI Core ms | "
+        "weighted cube |",
+        "|---|---|---:|---:|---:|---:|",
+    ]
+)
+for device in ("910b2", "310p"):
+    for length in ("s512", "s2048"):
+        row = profiles[device][length]
+        lines.append(
+            f"| {device} | {length} | "
+            f"{row['kernel_ms_per_replay']:.6f} | "
+            f"{row['kernels_per_replay']:.1f} | "
+            f"{row['aicore_ms_per_replay']:.6f} | "
+            f"{row['weighted_cube_utilization_pct']:.3f}% |"
+        )
+
+for device in ("910b2", "310p"):
+    lines.extend(
+        [
+            "",
+            f"## {device} kernel-family mix",
+            "",
+            "| Family | S512 ms / share | S2048 ms / share | "
+            "S2048/S512 time |",
+            "|---|---:|---:|---:|",
+        ]
+    )
+    for category in profiles[device]["s512"]["categories"]:
+        small = profiles[device]["s512"]["categories"][category]
+        large = profiles[device]["s2048"]["categories"][category]
+        time_ratio = (
+            large["ms_per_replay"] / small["ms_per_replay"]
+            if small["ms_per_replay"] > 0
+            else float("nan")
+        )
+        lines.append(
+            f"| {category} | {small['ms_per_replay']:.6f} / "
+            f"{small['share_pct']:.3f}% | "
+            f"{large['ms_per_replay']:.6f} / "
+            f"{large['share_pct']:.3f}% | {time_ratio:.3f}x |"
+        )
+
+lines.extend(["", "## Scaling summary", ""])
+for device, values in comparison.items():
+    lines.append(
+        f"- {device} S2048/S512 physical throughput: "
+        f"{values['s2048_over_s512_physical_throughput']:.4f}x"
+    )
+    lines.append(
+        f"- {device} S2048/S512 control time: "
+        f"{values['s2048_over_s512_control_time']:.4f}x"
+    )
+for length, values in cross_device.items():
+    lines.append(
+        f"- {length} 910B2/310P physical throughput: "
+        f"{values['910b2_over_310p_physical_throughput']:.4f}x"
+    )
+
+output_md.write_text(
+    "\n".join(lines).rstrip() + "\n",
+    encoding="utf-8",
+)
+print("PHASE10_COMPARISON: PASS")
+PY
+
+cat "$PHASE10_ROOT/profile_comparison.md"
+```
+
+### 10.7 Interpretation rules
+
+Use these rules in the report:
+
+- Compare devices with `control_physical_tok_s`, never profiled wall time.
+- Report profiler slowdown separately for every shape and device. Do not
+  assume the S512 overhead also applies to S2048.
+- S2048 contains 4x as many physical tokens as S512. Report both the replay
+  time ratio and throughput ratio.
+- PromptFA's attention work grows faster than linearly with sequence length.
+  Report the measured PromptFA time ratio and share shift; do not explain the
+  whole graph using token count alone.
+- Aggregate `MatMulV2`, `MatMulV3`, and any other `MatMul*` type. A GE kernel
+  selection change is evidence, not a missing operation.
+- Kernel count per replay indicates graph fragmentation. If it is unchanged
+  while tokens grow 4x, say that fixed per-kernel overhead is better amortized;
+  do not call that proof of launch-bound execution by itself.
+- Weighted cube utilization applies only to cube-capable profiled kernels. It
+  does not measure vector kernels, data movement, or whole-graph occupancy.
+- `aicore_time` and vector-core time can overlap inside mixed kernels such as
+  PromptFA; do not sum them as mutually exclusive wall time.
+- One-second `npu-smi` utilization cannot resolve a 16-100 ms graph replay.
+- If 310P uses a materially different kernel decomposition, report the exact
+  operator types and shapes instead of forcing the 910B2 interpretation.
+- Do not optimize or patch anything during this phase. The goal is diagnosis.
+
+The central questions to answer are:
+
+1. What is exact 310P physical tok/s at S512 and S2048?
+2. Does S2048 approximately double throughput as on 910B2, or scale
+   differently?
+3. Which kernel families grow sublinearly, linearly, or superlinearly?
+4. Does PromptFA become a much larger fraction at S2048?
+5. Are 310P matmuls well utilized while layout/rotary/padding dominates, or is
+   the bottleneck qualitatively different from 910B2?
+6. Is the 910B2/310P gap smaller, equal, or larger at S2048 than S512?
+
+### 10.8 Stop, report, and preserve evidence
+
+Stop after the comparison. Do not run more sequence lengths, more profiler
+metrics, model pages, eager attention, batch sizes above one, or optimization
+experiments.
+
+Write:
+
+```text
+$PHASE10_ROOT/agent_report.md
+```
+
+Use this exact skeleton:
+
+```text
+310P B1 VISION PROFILER: PASS | PARTIAL | FAIL
+
+Git commit:
+Host / exact physical 310P:
+Logical NPU:
+Python:
+torch:
+torch_npu:
+TorchAir resolver route:
+CANN / driver / firmware:
+Recognizer model:
+
+Measurement boundary:
+attention / execution / dtype:
+outside warmup / control repeats / profiler warmup / active steps:
+profiler level / metric:
+included:
+excluded:
+
+Cache preparation:
+S512 cache existed before:
+S2048 cache existed before:
+S2048 preparation setup seconds:
+new graph count:
+compilation during final profiles: MUST BE ZERO
+
+S512:
+pre-control median ms / physical tok/s:
+profiled median ms / physical tok/s:
+post-control median ms / physical tok/s:
+control-center median ms / physical tok/s:
+profiler overhead:
+pre/post drift:
+kernel ms / kernels per replay:
+AI Core ms / weighted cube:
+top kernel families with ms and share:
+
+S2048:
+pre-control median ms / physical tok/s:
+profiled median ms / physical tok/s:
+post-control median ms / physical tok/s:
+control-center median ms / physical tok/s:
+profiler overhead:
+pre/post drift:
+kernel ms / kernels per replay:
+AI Core ms / weighted cube:
+top kernel families with ms and share:
+
+310P S2048/S512:
+replay-time ratio:
+physical-throughput ratio:
+kernel-time ratio:
+PromptFA time ratio / share change:
+all-MatMul time ratio / share change:
+slice / transpose / pad time ratios:
+kernel-count change:
+
+910B2 reference:
+S512 control ms / physical tok/s:
+S2048 control ms / physical tok/s:
+S2048/S512 physical-throughput ratio:
+
+Shape-for-shape:
+S512 910B2/310P throughput ratio:
+S2048 910B2/310P throughput ratio:
+does the platform gap change with sequence length:
+
+Conclusion:
+dominant S512 bottleneck on 310P:
+dominant S2048 bottleneck on 310P:
+same or different from 910B2:
+is short-sequence B1 underfilled:
+single best next profiling/optimization direction, without implementing it:
+
+First blocker or warning:
+Exact command records:
+Summary artifact paths:
+Raw profiler paths:
+```
+
+Keep the raw native profiler trees under `.runtime_cache`; do not add them to
+Git. Preserve and commit only the compact Phase 10 evidence:
+
+```sh
+git add -f -- \
+  "$PHASE10_REL/environment_preflight.txt" \
+  "$PHASE10_REL/disk_before.txt" \
+  "$PHASE10_REL/npu_before.txt" \
+  "$PHASE10_REL/provenance.txt" \
+  "$PHASE10_REL/cache_validation.txt" \
+  "$PHASE10_REL/profile_validation.txt" \
+  "$PHASE10_REL/profile_comparison.json" \
+  "$PHASE10_REL/profile_comparison.md" \
+  "$PHASE10_REL/agent_report.md" \
+  "$PHASE10_REL/results/cache_prepare_s512/cache_preparation.json" \
+  "$PHASE10_REL/results/cache_prepare_s2048/cache_preparation.json" \
+  "$PHASE10_REL/results/profile_s512/run_summary.json" \
+  "$PHASE10_REL/results/profile_s512/parsed_profile_summary.json" \
+  "$PHASE10_REL/results/profile_s512/parsed_profile_summary.md" \
+  "$PHASE10_REL/results/profile_s2048/run_summary.json" \
+  "$PHASE10_REL/results/profile_s2048/parsed_profile_summary.json" \
+  "$PHASE10_REL/results/profile_s2048/parsed_profile_summary.md" \
+  "$PHASE10_REL/evidence"
+
+git diff --cached --check
+git diff --cached --stat
+```
+
+Inspect the staged paths before committing. Ensure `.runtime_cache` and raw
+`trace_view.json` data are not staged. Then commit and push the compact
+evidence on `main`, and report the commit hash.
+
 ## Artifact interpretation
+
+For the current Phase 10-only task, stop at Phase 10.8 after committing its
+compact evidence. The remaining sections are retained for the earlier
+full-ladder workflow and are not additional current work.
 
 For every production lane:
 
