@@ -11,6 +11,7 @@ laboratory from a real crop's vision-transformer call.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import shutil
@@ -705,7 +706,13 @@ def _cache_dir(
             f"src{short_file_hash(Path(__file__).resolve())}",
         ]
     )
-    return root.expanduser().resolve() / key
+    digest = hashlib.sha256(key.encode("utf-8")).hexdigest()[:16]
+    compact = (
+        f"vision_pfa_b{batch_size}_s{sequence_length}_"
+        f"i{intermediate_size}_{weight_format}_"
+        f"hp{attention_head_padding}_{digest}"
+    )
+    return root.expanduser().resolve() / compact
 
 
 def _cache_populated(path: Path) -> bool:
