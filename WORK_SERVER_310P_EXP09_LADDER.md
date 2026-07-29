@@ -9,29 +9,34 @@ Prove that the real Experiment 09 pipeline runs on this 310P software stack,
 identify which production optimizations work, and measure their approximate
 effect on a small representative workload.
 
-## Current requested task: run Phase 11 only
+## Current requested task: run Phase 12 only
 
-Phases 0-10 have already run or have retained instructions and evidence. For
+Phases 0-11 have already run or have retained instructions and evidence. For
 the current task, do not rerun the production pipeline, layout lab, dataset
 validation, attention correctness check, decode ladder, packing ladder,
-earlier saturation matrix, or native B1 profiler. Read their retained
-instructions and artifacts only as context.
+saturation matrices, native B1 profiler, or Phase 11 format/alignment matrix.
+Read their retained instructions and artifacts only as context.
 
 Pull current `main`, reuse the exact Python/model/NPU environment that passed
-the earlier ladder, and execute only **Phase 11: production-PromptFA vision
-weight-format and MLP-alignment matrix** below. Phase 11 loads only the
-PaddleOCR-VL recognizer and does not need OmniDocBench images, the layout
-model, text prefill, or decode.
+the earlier ladder, and execute only **Phase 12: full-stack joint-QK manual
+RoPE A/B** below. Phase 12 loads only the PaddleOCR-VL recognizer and does not
+need OmniDocBench images, the layout model, text prefill, or decode.
 
 The current question is deliberately narrow:
 
-> On 310P, how do native ND and preformatted FRACTAL_NZ Linear weights compare
-> at B1xS512, B4xS512, and B1xS2048; does zero-extending the vision MLP from
-> 4304 to the 256-aligned width 4352 help; and does 310P remain on MatMulV2
-> across all twelve production-PromptFA graph variants?
+> On 310P, does applying the existing FP32 half-RoPE formula once to a
+> contiguous QK tensor improve the complete 27-layer compiled-PromptFA vision
+> stage over applying the same formula separately to Q and K?
 
-Do not optimize source code, change production routing, or update the pinned
-310P/910B2 routing tables during this task.
+Hold everything else fixed: B1xS2048, 4352-wide zero-extended MLP, D80
+weight-padded attention, explicit FRACTAL_NZ Linear weights, fp16, real
+PromptFA, and TorchAir `cache_compile`. Time the complete 27-layer stage with
+NPU events, then use the full-stage profiles to explain the difference.
+
+Do not run `joint_inplace_partial`: that is a 910B-only custom-op experiment,
+is unsupported on 310P, and was already rejected on 910B for performance. Do
+not optimize source code, change production routing, or update pinned routing
+tables during this task.
 
 ## Current 310P layout route: eager NPU
 
@@ -399,7 +404,7 @@ Experiment 09 validation.
 
 For the already-completed production-validation task, the stopping point was
 the layout check and report. Phase 9 and Phase 10 are also retained historical
-tasks. For the current task, skip Phases 0-10 and stop after Phase 11.
+tasks. For the current task, skip Phases 0-11 and stop after Phase 12.
 
 ## What the previous 310P server established
 
@@ -1875,7 +1880,7 @@ preparation.
 This retained historical phase answered whether the 310P vision transformer
 was underfilled at small sequence lengths and whether true graph batching
 closed part of the measured 910B2/310P gap. Do not execute it for the current
-Phase 11 task.
+Phase 12 task.
 
 Measure **raw physical vision-transformer tokens/s only**:
 
@@ -2786,7 +2791,7 @@ decimal places. Do not substitute effective tok/s.
 
 This retained historical phase captures two already-warmed compiled PromptFA
 graphs with the native `torch_npu` profiler. Do not execute it for the current
-Phase 11 task:
+Phase 12 task:
 
 ```text
 B1xS512
@@ -4404,9 +4409,671 @@ The work server is pull-only. Do not commit or push from it. Keep the raw graph
 caches and profiler trees under `.runtime_cache`, keep compact results under
 `tmp/`, and send Luka the report plus exact artifact paths manually.
 
+## Phase 12: full-stack joint-QK manual RoPE A/B
+
+### 12.0 Scope, controlled variables, and reference
+
+This is the only phase to execute for the current request. Run exactly two
+compiled variants:
+
+```text
+control:   --rotary-implementation separate_manual
+candidate: --rotary-implementation joint_manual
+```
+
+Every other argument must be identical:
+
+```text
+batch size:                  1
+sequence length:             2048
+vision layers:               all 27
+vision hidden size:          1152
+vision MLP width:            4352 (zero-extended from 4304)
+attention head padding:      weights (D72 -> D80 once in weights)
+Linear weight format:        FRACTAL_NZ
+attention:                   real PromptFlashAttention
+execution:                   TorchAir cache_compile
+dtype:                       fp16
+warmup:                      3 complete replays
+measurement:                 10 samples x 5 complete replays
+profile:                     1 warmup + 3 active complete replays
+physical tokens per replay:  2048
+```
+
+The timed boundary is the complete compiled vision-transformer stack:
+
+```text
+27 x (
+  LayerNorm1 + Q/K/V + FP32 RoPE +
+  npu_prompt_flash_attention + output projection + residual +
+  LayerNorm2 + FC1/GELU/FC2 + residual
+) + post-LayerNorm
+```
+
+It excludes model loading, weight preparation, graph compilation, patch
+embedding, projector, layout, text prefill, and decode. Do not report setup,
+first-call, or profiler wall time as replay latency.
+
+The candidate does not change the math. It concatenates Q and K, applies the
+same existing FP32 half-RoPE formula once, and performs one combined Q/K
+layout conversion. It should reduce RoPE-related slicing, arithmetic, concat,
+transpose, and split work while leaving all PromptFA and Linear work
+unchanged.
+
+The committed 910B2 full-stack reference used the same B1xS2048, 27-layer,
+4352-wide, D80 weight-padded PromptFA graph, but native ND Linear weights:
+
+| 910B2 lane | median ms | physical tok/s |
+|---|---:|---:|
+| separate manual, warm control | 25.5523 | 80,149.2 |
+| joint-QK manual | 24.3146 | 84,229.1 |
+
+On 910B2, joint manual reduced latency by 4.84% and increased physical
+throughput by 5.09%. Its raw D80 output was exactly equal to the separate
+manual D80 reference. These numbers are context, not an expected 310P
+result. The 310P A/B intentionally uses FRACTAL_NZ because that is the
+production-relevant 310P weight representation; judge the optimization by
+the within-310P A/B. FRACTAL_NZ may select a different eager MatMul kernel
+than the native-D80 reference, so on 310P use the separate lane's
+raw-versus-reference error as the calibrated numerical floor rather than
+requiring zero error from either NZ lane.
+
+### 12.1 Pull and recover the proven environment
+
+Start from the repository. Do not discard, overwrite, stash, or clean any
+local work:
+
+```sh
+git status --short --branch
+git pull --ff-only origin main
+
+REPO="$(git rev-parse --show-toplevel)"
+cd "$REPO"
+COMMIT="$(git rev-parse HEAD)"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+PHASE12_REL="tmp/09_persistent_page_engine/310p_joint_rope_$COMMIT_SHORT"
+PHASE12_ROOT="$REPO/$PHASE12_REL"
+CACHE_ROOT="$REPO/.runtime_cache/310p_joint_rope_$COMMIT_SHORT"
+LAB_SCRIPT="$REPO/09_persistent_page_engine/scripts/vision_matmul_lab.py"
+
+test -f "$LAB_SCRIPT"
+test ! -e "$PHASE12_ROOT"
+test ! -e "$CACHE_ROOT"
+mkdir -p "$PHASE12_ROOT" "$CACHE_ROOT/graphs" "$CACHE_ROOT/profiles"
+```
+
+Recover the exact Python and recognizer model from the latest retained
+successful Phase 7 command. Do not guess a venv or model path:
+
+```sh
+PHASE7_COMMAND="$(
+  python3 - "$REPO" <<'PY'
+import sys
+from pathlib import Path
+
+repo = Path(sys.argv[1]).resolve()
+matches = list(
+    repo.glob(
+        "tmp/09_persistent_page_engine/"
+        "310p_exp09_npu_layout_eager_*/"
+        "phase7_min_pixels_28224_replay/command.sh"
+    )
+)
+if not matches:
+    raise SystemExit("no retained successful Phase 7 command.sh was found")
+print(max(matches, key=lambda path: path.stat().st_mtime))
+PY
+)"
+test -f "$PHASE7_COMMAND"
+
+eval "$(
+  python3 - "$PHASE7_COMMAND" <<'PY'
+import shlex
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1]).resolve()
+lines = [
+    line.strip()
+    for line in path.read_text(encoding="utf-8").splitlines()
+    if line.strip() and not line.lstrip().startswith("#")
+]
+if len(lines) != 1:
+    raise SystemExit(f"expected one command in {path}, found {len(lines)}")
+tokens = shlex.split(lines[0])
+
+def option(name):
+    try:
+        return tokens[tokens.index(name) + 1]
+    except (ValueError, IndexError) as exc:
+        raise SystemExit(f"{name} missing from {path}") from exc
+
+print(f"PYTHON_BIN={shlex.quote(tokens[0])}")
+print(f"RECOGNIZER_MODEL={shlex.quote(option('--recognizer-model'))}")
+PY
+)"
+
+test -x "$PYTHON_BIN"
+test -f "$RECOGNIZER_MODEL/config.json"
+printf 'python=%s\nmodel=%s\n' "$PYTHON_BIN" "$RECOGNIZER_MODEL"
+```
+
+Activate the exact CANN/torch-npu environment used by the successful previous
+phases. Keep one free physical 310P exposed as logical `npu:0`. Never
+terminate another user's process. Stop if no NPU is free.
+
+Record the environment and check disk before compiling:
+
+```sh
+{
+  printf 'git_commit=%s\n' "$COMMIT"
+  printf 'git_status_begin\n'
+  git status --short --branch
+  printf 'git_status_end\n'
+  printf 'hostname=%s\n' "$(hostname)"
+  printf 'ASCEND_RT_VISIBLE_DEVICES=%s\n' \
+    "${ASCEND_RT_VISIBLE_DEVICES:-}"
+  printf 'python=%s\n' "$PYTHON_BIN"
+  printf 'recognizer_model=%s\n' "$RECOGNIZER_MODEL"
+  printf 'lab_script=%s\n' "$LAB_SCRIPT"
+} >"$PHASE12_ROOT/provenance.txt"
+
+df -h "$REPO" "$REPO/.runtime_cache" >"$PHASE12_ROOT/disk_before.txt"
+npu-smi info >"$PHASE12_ROOT/npu_before.txt" 2>&1
+
+CACHE_FREE_KIB="$(df -Pk "$CACHE_ROOT" | awk 'NR == 2 {print $4}')"
+test -n "$CACHE_FREE_KIB"
+if test "$CACHE_FREE_KIB" -lt 20971520; then
+  printf 'insufficient cache free space: %s KiB\n' "$CACHE_FREE_KIB" \
+    >"$PHASE12_ROOT/disk_blocker.txt"
+  exit 1
+fi
+
+"$PYTHON_BIN" "$LAB_SCRIPT" --help \
+  >"$PHASE12_ROOT/lab_help.txt" 2>&1
+grep -q 'joint_manual' "$PHASE12_ROOT/lab_help.txt"
+grep -q 'attention-head-padding' "$PHASE12_ROOT/lab_help.txt"
+```
+
+If the cache filesystem has less than 20 GiB free, stop and report that
+before compiling. Do not redirect compiler state to an unrecorded location.
+
+### 12.2 Narrow TorchAir, PromptFA, and FRACTAL_NZ preflight
+
+This phase relies on the already-proven Phase 11 mechanism, but verify that
+the current shell exposes the required facilities before loading the full
+model:
+
+```sh
+PYTHONPATH="$REPO/09_persistent_page_engine" \
+"$PYTHON_BIN" - >"$PHASE12_ROOT/preflight.txt" 2>&1 <<'PY'
+import platform
+import sys
+
+import torch
+import torch_npu
+
+from paddleocr_vl.model.compile_utils import import_torchair
+
+torchair, CompilerConfig = import_torchair()
+assert callable(torchair.inference.cache_compile)
+assert callable(torch_npu.npu_prompt_flash_attention)
+assert torch.npu.is_available()
+
+# Must be set before the first NPU allocation.
+torch.npu.config.allow_internal_format = True
+torch.npu.set_device(0)
+torch.npu.set_compile_mode(jit_compile=False)
+
+w_nd = torch.randn((1280, 1152), dtype=torch.float16, device="npu:0")
+w_nz = torch_npu.npu_format_cast(w_nd, 29)
+torch.npu.synchronize()
+assert int(torch_npu.get_npu_format(w_nd)) == 2
+assert int(torch_npu.get_npu_format(w_nz)) == 29
+
+print("platform:", platform.platform())
+print("python:", sys.version.replace("\n", " "))
+print("python_executable:", sys.executable)
+print("torch:", torch.__version__)
+print("torch_npu:", getattr(torch_npu, "__version__", "<missing>"))
+print("torchair_module:", torchair.__name__)
+print("torchair_file:", getattr(torchair, "__file__", "<namespace>"))
+print("npu_name:", torch.npu.get_device_name(0))
+print("weight_format_nd:", int(torch_npu.get_npu_format(w_nd)))
+print("weight_format_nz:", int(torch_npu.get_npu_format(w_nz)))
+print("PHASE12_PREFLIGHT: PASS")
+PY
+
+cat "$PHASE12_ROOT/preflight.txt"
+test "$(tail -n 1 "$PHASE12_ROOT/preflight.txt")" = \
+  "PHASE12_PREFLIGHT: PASS"
+```
+
+If format code 29 is unavailable, PromptFA is unavailable, or TorchAir does
+not resolve, stop and report the first causal traceback. Do not fall back to
+native ND, manual attention, eager execution, or a different Python.
+
+### 12.3 Run the two full-stage graphs serially
+
+Write exact replayable commands:
+
+```sh
+write_case_command() {
+  case_name="$1"
+  rotary="$2"
+  case_root="$PHASE12_ROOT/$case_name"
+  mkdir -p "$case_root"
+  {
+    printf '#!/usr/bin/env bash\n'
+    printf '# git_commit=%s\n' "$COMMIT"
+    printf '# hostname=%s\n' "$(hostname)"
+    printf '# ASCEND_RT_VISIBLE_DEVICES=%s\n' \
+      "${ASCEND_RT_VISIBLE_DEVICES:-}"
+    printf '%q ' \
+      "$PYTHON_BIN" "$LAB_SCRIPT" \
+      --batch-size 1 \
+      --sequence-length 2048 \
+      --intermediate-size 4352 \
+      --weight-format fractal_nz \
+      --attention-head-padding weights \
+      --rotary-implementation "$rotary" \
+      --execution torchair \
+      --model "$RECOGNIZER_MODEL" \
+      --cache-dir "$CACHE_ROOT/graphs" \
+      --output-dir "$case_root/result" \
+      --profile-dir "$CACHE_ROOT/profiles/$case_name" \
+      --allow-compile-if-missing \
+      --warmup 3 \
+      --samples 10 \
+      --calls-per-sample 5 \
+      --profile \
+      --profile-warmup-steps 1 \
+      --profile-steps 3 \
+      --parser-topn 200
+    printf '\n'
+  } >"$case_root/command.sh"
+  chmod +x "$case_root/command.sh"
+}
+
+write_case_command separate_manual separate_manual
+write_case_command joint_manual joint_manual
+```
+
+Run the control first and candidate second, never concurrently:
+
+```sh
+(
+  while true; do
+    date --iso-8601=ns 2>/dev/null || date
+    npu-smi info
+    sleep 1
+  done
+) >"$PHASE12_ROOT/npu_smi_1s.log" 2>&1 &
+MONITOR_PID=$!
+
+STATUS=0
+for case_name in separate_manual joint_manual; do
+  case_root="$PHASE12_ROOT/$case_name"
+  set +e
+  "$case_root/command.sh" >"$case_root/run.log" 2>&1
+  CASE_STATUS=$?
+  set -e
+  printf '%s\n' "$CASE_STATUS" >"$case_root/exit_code.txt"
+  if test "$CASE_STATUS" -ne 0; then
+    STATUS="$CASE_STATUS"
+    break
+  fi
+done
+
+kill "$MONITOR_PID" 2>/dev/null || true
+wait "$MONITOR_PID" 2>/dev/null || true
+printf '%s\n' "$STATUS" >"$PHASE12_ROOT/exit_code.txt"
+test "$STATUS" -eq 0
+```
+
+Do not rerun a failed case into the same output, profile, or graph-cache
+directory. Preserve it and report the first causal error. Do not run the
+candidate if the control fails.
+
+This phase may create at most two new graphs: one control graph and one joint
+manual graph. The profiler replays the same graph and must not create another
+shape.
+
+### 12.4 Validate the experiment contract and derive the A/B
+
+Run the exact validator/comparison below:
+
+```sh
+"$PYTHON_BIN" - \
+  "$PHASE12_ROOT/separate_manual/result/run_summary.json" \
+  "$PHASE12_ROOT/joint_manual/result/run_summary.json" \
+  "$PHASE12_ROOT/comparison.json" \
+  "$PHASE12_ROOT/comparison.md" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+control_path, candidate_path, out_json, out_md = map(Path, sys.argv[1:])
+control = json.loads(control_path.read_text(encoding="utf-8"))
+candidate = json.loads(candidate_path.read_text(encoding="utf-8"))
+
+def validate(name, payload, summary_path):
+    assert payload["status"] == "completed", (name, payload["status"])
+    shape = payload["shape"]
+    assert shape["batch_size"] == 1
+    assert shape["sequence_length"] == 2048
+    assert shape["physical_tokens_per_call"] == 2048
+    assert shape["candidate_intermediate_size"] == 4352
+    assert shape["layers"] == 27
+    assert shape["linear_calls_per_full_stack"] == 162
+
+    assert payload["requested"]["execution"] == "torchair"
+    assert payload["requested"]["weight_format"] == "fractal_nz"
+    assert payload["requested"]["attention_head_padding"] == "weights"
+    assert payload["attention"]["implementation"] == \
+        "prompt_flash_attention"
+    assert payload["attention"]["promptfa_call_head_dim"] == 80
+    assert payload["weight_format"]["after_format_histogram"] == {"29": 162}
+    assert payload["weight_format"]["all_after_are_nz"] is True
+
+    assert payload["measurements"]["samples"] == 10
+    assert payload["measurements"]["calls_per_sample"] == 5
+    assert payload["measurements"][
+        "total_measured_full_stack_calls"
+    ] == 50
+
+    numeric = payload["numerics"]
+    assert numeric["measured_output_finite"] is True
+    raw = numeric["raw_candidate_vs_weight_padded_manual"]
+    assert raw["left_finite"] and raw["right_finite"]
+    assert raw["same_shape"]
+
+    assert payload["compile"]["api"] == \
+        "torchair.inference.cache_compile"
+    assert "parsed_profile" in payload
+    local_parsed = summary_path.parent / "parsed_profile_summary.json"
+    assert local_parsed.is_file(), local_parsed
+    return local_parsed
+
+control_profile = validate("separate_manual", control, control_path)
+candidate_profile = validate("joint_manual", candidate, candidate_path)
+assert control["requested"]["rotary_implementation"] == "separate_manual"
+assert candidate["requested"]["rotary_implementation"] == "joint_manual"
+control_raw = control["numerics"][
+    "raw_candidate_vs_weight_padded_manual"
+]
+candidate_raw = candidate["numerics"][
+    "raw_candidate_vs_weight_padded_manual"
+]
+assert candidate_raw["mean_abs"] <= max(
+    0.05,
+    2.0 * control_raw["mean_abs"],
+), (control_raw, candidate_raw)
+
+def timing(payload):
+    measurements = payload["measurements"]
+    return {
+        "median_ms": measurements[
+            "device_event_per_call_ms"
+        ]["median"],
+        "mean_ms": measurements[
+            "device_event_per_call_ms"
+        ]["mean"],
+        "p05_ms": measurements[
+            "device_event_per_call_ms"
+        ]["p05"],
+        "p95_ms": measurements[
+            "device_event_per_call_ms"
+        ]["p95"],
+        "physical_tok_s": measurements[
+            "physical_tokens_per_s_device_median"
+        ],
+        "samples_ms": measurements[
+            "device_event_per_call_ms"
+        ]["samples"],
+    }
+
+def profile_types(path):
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert len(payload["runs"]) == 1
+    rows = payload["runs"][0]["kernel_details"]["top_kernel_types"]
+    result = {}
+    for row in rows:
+        result[row["name"]] = {
+            "count_total": int(row["count"]),
+            "count_per_replay": float(row["count"]) / 3.0,
+            "duration_us_total": float(row["duration_us"]),
+            "duration_us_per_replay": float(row["duration_us"]) / 3.0,
+        }
+    return result
+
+control_timing = timing(control)
+candidate_timing = timing(candidate)
+control_types = profile_types(control_profile)
+candidate_types = profile_types(candidate_profile)
+
+latency_ratio = candidate_timing["median_ms"] / control_timing["median_ms"]
+throughput_ratio = (
+    candidate_timing["physical_tok_s"]
+    / control_timing["physical_tok_s"]
+)
+
+op_names = [
+    "PromptFlashAttention",
+    "MatMulV2",
+    "MatMulV3",
+    "StridedSliceD",
+    "Transpose",
+    "Mul",
+    "ConcatV2D",
+    "Add",
+    "Cast",
+    "Neg",
+    "SplitVD",
+]
+op_comparison = {}
+for op in op_names:
+    empty = {
+        "count_total": 0,
+        "count_per_replay": 0.0,
+        "duration_us_total": 0.0,
+        "duration_us_per_replay": 0.0,
+    }
+    op_comparison[op] = {
+        "control": control_types.get(op, empty),
+        "joint": candidate_types.get(op, empty),
+    }
+
+result = {
+    "control": control_timing,
+    "joint": candidate_timing,
+    "joint_latency_change_pct": (latency_ratio - 1.0) * 100.0,
+    "joint_throughput_change_pct": (throughput_ratio - 1.0) * 100.0,
+    "raw_vs_native_d80_control": control_raw,
+    "raw_vs_native_d80_joint": candidate_raw,
+    "numerics_verdict": "within calibrated separate-NZ floor",
+    "operator_comparison": op_comparison,
+}
+out_json.write_text(
+    json.dumps(result, indent=2, sort_keys=True) + "\n",
+    encoding="utf-8",
+)
+
+lines = [
+    "# 310P full-stack joint-QK manual RoPE A/B",
+    "",
+    "| lane | median ms | physical tok/s | raw-vs-D80 mean/max abs |",
+    "|---|---:|---:|---|",
+    (
+        f"| separate manual | {control_timing['median_ms']:.4f} | "
+        f"{control_timing['physical_tok_s']:.1f} | "
+        f"{control_raw['mean_abs']:.6f} / "
+        f"{control_raw['max_abs']:.6f} |"
+    ),
+    (
+        f"| joint manual | {candidate_timing['median_ms']:.4f} | "
+        f"{candidate_timing['physical_tok_s']:.1f} | "
+        f"{candidate_raw['mean_abs']:.6f} / "
+        f"{candidate_raw['max_abs']:.6f} |"
+    ),
+    "",
+    (
+        "Joint latency change: "
+        f"{result['joint_latency_change_pct']:+.3f}%"
+    ),
+    (
+        "Joint physical-throughput change: "
+        f"{result['joint_throughput_change_pct']:+.3f}%"
+    ),
+    "",
+    "| kernel type | control count/replay | joint count/replay | "
+    "control us/replay | joint us/replay |",
+    "|---|---:|---:|---:|---:|",
+]
+for op, values in op_comparison.items():
+    before = values["control"]
+    after = values["joint"]
+    lines.append(
+        f"| {op} | {before['count_per_replay']:.1f} | "
+        f"{after['count_per_replay']:.1f} | "
+        f"{before['duration_us_per_replay']:.1f} | "
+        f"{after['duration_us_per_replay']:.1f} |"
+    )
+lines.append("")
+lines.append("PHASE12_CONTRACTS: PASS")
+out_md.write_text("\n".join(lines) + "\n", encoding="utf-8")
+print(out_md.read_text(encoding="utf-8"), end="")
+PY
+
+test "$(tail -n 1 "$PHASE12_ROOT/comparison.md")" = \
+  "PHASE12_CONTRACTS: PASS"
+```
+
+If the operator names emitted by this 310P stack differ from the names in the
+table, do not call the missing rows zero work. Inspect both
+`parsed_profile_summary.json` files and report the actual corresponding
+kernel names. The validator's correctness and timing contracts remain valid.
+
+### 12.5 Interpretation and required report
+
+Use these rules:
+
+- Headline only unprofiled NPU-event replay time and physical tok/s from the
+  ten-by-five measurement. Profiler timing is diagnostic only.
+- Treat the within-310P separate-versus-joint ratio as the answer. Do not
+  directly compare absolute 310P FRACTAL_NZ throughput with the 910B2 native
+  ND throughput as if weight format were controlled.
+- Use the separate NZ lane's raw-versus-native-D80 error as the calibrated
+  floor. Require finite output and require the joint lane's mean absolute
+  error to remain within the validator's generous floor. Do not impose a
+  small max-absolute gate. Report both lanes' raw-versus-D80 and
+  compiled-versus-raw mean/max errors.
+- Confirm PromptFA count and all 162 Linear calls are unchanged. The intended
+  win is fewer RoPE/layout operators, not different attention or MatMul work.
+- Report all ten per-sample replay values. A median gain smaller than 2% is
+  too small to justify production integration from this test; report it as
+  inconclusive rather than adding more cases.
+- Do not run more shapes. Do not run B4, S512, eager attention, manual
+  attention, native ND weights, runtime head padding, or the native in-place
+  RoPE operator.
+- Do not integrate the candidate into production in this phase.
+
+Write:
+
+```text
+$PHASE12_ROOT/agent_report.md
+```
+
+Use this exact skeleton:
+
+```text
+310P FULL-STACK JOINT-QK ROPE: PASS | PARTIAL | FAIL
+
+Git commit:
+Host / exact physical 310P:
+Logical NPU:
+Python:
+torch:
+torch_npu:
+TorchAir resolver:
+CANN / driver / firmware:
+Recognizer model:
+
+Fixed boundary:
+batch / sequence / physical tokens:
+layers / hidden / MLP:
+head padding / call head dim:
+attention:
+weight format:
+dtype:
+warmup / samples / calls per sample:
+included:
+excluded:
+
+Control separate-manual:
+median / mean / p05 / p95 replay ms:
+all ten sample values:
+physical tok/s:
+compile cache / first-call evidence:
+raw-vs-D80 mean / max abs:
+compiled-vs-raw mean / max abs:
+
+Candidate joint-manual:
+median / mean / p05 / p95 replay ms:
+all ten sample values:
+physical tok/s:
+compile cache / first-call evidence:
+raw-vs-D80 mean / max abs:
+compiled-vs-raw mean / max abs:
+
+Within-310P A/B:
+joint latency change:
+joint physical-throughput change:
+
+Full-stage profile, counts and duration per replay:
+kernel | separate count/time | joint count/time
+PromptFlashAttention:
+MatMulV2:
+MatMulV3:
+StridedSlice:
+Transpose:
+Mul:
+Concat:
+Add:
+Cast:
+Neg:
+Split:
+other materially changed kernels:
+total profiled kernel duration:
+
+Structural check:
+PromptFA unchanged:
+all Linear work unchanged:
+RoPE/layout work removed:
+unexpected graph changes:
+
+910B2 contextual result:
+310P result:
+Does portable joint-QK manual help 310P:
+Should it proceed to real-crop/E2E production validation:
+
+First blocker or warning:
+Exact command records:
+Comparison JSON / Markdown:
+Parsed profile summaries:
+Raw profile roots:
+Graph cache:
+All artifact paths:
+```
+
+The work server is pull-only. Do not edit tracked files, create a branch,
+commit, or push. Keep graph caches and raw profiler trees under
+`.runtime_cache`; keep the compact commands, logs, summaries, comparison, and
+report under `tmp/`. Send Luka the report and exact artifact paths manually.
+
 ## Artifact interpretation
 
-For the current Phase 11-only task, stop after Phase 11.6 and report. The
+For the current Phase 12-only task, stop after Phase 12.5 and report. The
 remaining sections are retained for earlier workflows and are not additional
 current work.
 
@@ -4472,7 +5139,7 @@ min-pixels settings.
 
 For the earlier production-validation task, stop after Phase 8. For the
 earlier isolated-vision saturation task, stop after Phase 9. The current task
-is governed by Phase 11.6 above. Do not start any OCR page workload.
+is governed by Phase 12.5 above. Do not start any OCR page workload.
 
 Write:
 
