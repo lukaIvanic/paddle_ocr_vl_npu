@@ -40,6 +40,12 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_LAYOUT_MODEL,
     )
     parser.add_argument("--cache-dir", type=Path, required=True)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument(
+        "--model-backend",
+        choices=("transformers", "owned"),
+        default="transformers",
+    )
     parser.add_argument("--warmup-iters", type=int, default=2)
     parser.add_argument("--repeats", type=int, default=10)
     parser.add_argument(
@@ -188,13 +194,14 @@ def main() -> None:
     # detector input and spatial feature shapes are fixed in this probe.
     os.environ["TRANSFORMERS_DISABLE_TORCH_CHECK"] = "1"
     device = torch.device("npu:0")
-    from transformers.models.pp_doclayout_v3 import (
-        modeling_pp_doclayout_v3,
-    )
+    if args.model_backend == "transformers":
+        from transformers.models.pp_doclayout_v3 import (
+            modeling_pp_doclayout_v3,
+        )
 
-    modeling_pp_doclayout_v3.mask_to_box_coordinate = (
-        _mask_to_box_capture_friendly
-    )
+        modeling_pp_doclayout_v3.mask_to_box_coordinate = (
+            _mask_to_box_capture_friendly
+        )
     model_dir = args.layout_model.expanduser().resolve()
     image_path = args.image.expanduser().resolve()
     cache_dir = args.cache_dir.expanduser().resolve()
@@ -204,10 +211,12 @@ def main() -> None:
         model_dir,
         device,
         graph_capture=False,
+        model_backend=args.model_backend,
     )
-    frontend.model.config._attn_implementation = (
-        args.attention_implementation
-    )
+    if args.model_backend == "transformers":
+        frontend.model.config._attn_implementation = (
+            args.attention_implementation
+        )
     image_rgb, _decode_timing = _decode_rgb(image_path)
     pixel_values = frontend._prepare_pixel_values(image_rgb)
 
@@ -252,12 +261,25 @@ def main() -> None:
         repeats=args.repeats,
     )
 
+    source_paths = [EXPERIMENT_ROOT / "pipeline/layout_model_runtime.py"]
+    if args.model_backend == "owned":
+        source_paths.extend(
+            [
+                EXPERIMENT_ROOT
+                / "pipeline/owned_layout_model/modeling.py",
+                EXPERIMENT_ROOT
+                / "pipeline/owned_layout_model/hgnet_v2.py",
+                EXPERIMENT_ROOT
+                / "pipeline/owned_layout_model/config.py",
+            ]
+        )
     source_hash = hashlib.sha256(
-        (EXPERIMENT_ROOT / "pipeline/layout_model_runtime.py").read_bytes()
+        b"".join(path.read_bytes() for path in source_paths)
     ).hexdigest()
     result = {
         "image": str(image_path),
         "model": str(model_dir),
+        "model_backend": args.model_backend,
         "cache_dir": str(cache_dir),
         "attention_implementation": args.attention_implementation,
         "source_hash": source_hash,
@@ -273,6 +295,13 @@ def main() -> None:
         ),
         "diff": _diff(compiled_reference, eager_reference),
     }
+    if args.output is not None:
+        output_path = args.output.expanduser().resolve()
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(
+            json.dumps(result, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
     print(json.dumps(result, indent=2, sort_keys=True), flush=True)
 
 
