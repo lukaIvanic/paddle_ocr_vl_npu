@@ -539,9 +539,28 @@ def eager_attention_forward(
 ) -> tuple[Tensor, Tensor]:
     if scaling is None:
         scaling = query.size(-1) ** -0.5
-    attention_weights = (
-        torch.matmul(query, key.transpose(2, 3)) * scaling
+    batch_size, num_heads, query_length, head_dim = query.shape
+    key_length = key.shape[2]
+    query_bmm = query.reshape(
+        batch_size * num_heads,
+        query_length,
+        head_dim,
     )
+    key_bmm = key.reshape(
+        batch_size * num_heads,
+        key_length,
+        head_dim,
+    )
+    attention_weights = torch.bmm(
+        query_bmm,
+        key_bmm.transpose(1, 2),
+    ).reshape(
+        batch_size,
+        num_heads,
+        query_length,
+        key_length,
+    )
+    attention_weights = attention_weights * scaling
     if attention_mask is not None:
         attention_weights = attention_weights + attention_mask
     attention_weights = F.softmax(attention_weights, dim=-1)
@@ -550,7 +569,24 @@ def eager_attention_forward(
         p=dropout,
         training=module.training,
     )
-    output = torch.matmul(attention_weights, value)
+    value_bmm = value.reshape(
+        batch_size * num_heads,
+        key_length,
+        head_dim,
+    )
+    output = torch.bmm(
+        attention_weights.reshape(
+            batch_size * num_heads,
+            query_length,
+            key_length,
+        ),
+        value_bmm,
+    ).reshape(
+        batch_size,
+        num_heads,
+        query_length,
+        head_dim,
+    )
     return output.transpose(1, 2).contiguous(), attention_weights
 
 
