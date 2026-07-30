@@ -9,30 +9,30 @@ Prove that the real Experiment 09 pipeline runs on this 310P software stack,
 identify which production optimizations work, and measure their approximate
 effect on a small representative workload.
 
-## Current requested task: run Phase 18 only
+## Current requested task: run Phase 19 only
 
-Phases 0-17 have already run or retain historical instructions and evidence.
-Do not rerun the production pipeline, page workloads, layout lab, saturation
-matrices, native profiles, text prefill, or decode. Go directly to
-**Phase 18: 310P-only PromptFA approximate-softmax experiment** at the end of
-this document.
+Phases 0-18 have already run, are in progress elsewhere, or retain historical
+instructions and evidence. Do not rerun the performance ladder, vision
+matrices, native profiles, text prefill, decode, or PromptFA experiments. Go
+directly to **Phase 19: page-nine layout binary-resolution failure** at the end
+of this document.
 
-Phase 17's public-operator measurements remain useful, but its compiled
-`sparse_mode=0` lanes are superseded: they inherited the public PromptFA
-default `next_tokens=0`, which can impose a causal/right-window restriction.
-Commit `532331a` fixes the complete vision wrapper to pass both
-`pre_tokens=2147483647` and `next_tokens=2147483647`, and gives corrected
-sparse-zero graphs a new cache identity.
+The reported production boundary is unusually sharp:
 
-The current question is:
+- `--offset 0 --limit 8` succeeds;
+- `--offset 0 --limit 9` fails;
+- `--offset 8 --limit 1` also fails.
 
-> Does CANN 9's hidden 310P-only `innerPrecise=4` PromptFA mode materially
-> reduce the vector-softmax bottleneck in the real compiled 27-layer vision
-> stage, while keeping finite and acceptably close final encoder outputs?
+This makes page index 8 (the ninth dataset page) the primary reproducer. The
+current question is:
 
-Test only the matched mode-1/mode-4 lanes prescribed in Phase 18. Do not test
-ATB, FIA, another attention implementation, layout variants, mask rewrites,
-or production OCR in this phase. Do not modify model source.
+> What exact page-9 stage, operator, kernel/binary lookup, file, and software
+> component fails, and why does that path differ from a passing page?
+
+This is an investigation phase, not a workaround phase. Do not modify
+production model code, change operator expressions, install packages, delete
+operator/compiler caches, retry downloads, or fall back to CPU as a proposed
+solution. Preserve the first causal error and all relevant CANN logs.
 
 ## Current 310P layout route: eager NPU
 
@@ -8527,3 +8527,779 @@ Do not claim OCR accuracy from synthetic-shape encoder outputs. The next step
 after a favorable Phase 18 result is one small real-crop/final-token parity
 test, then production integration. Do not perform that next step in this
 phase.
+
+## Phase 19: page-nine layout binary-resolution failure
+
+### 19.0 Purpose and current evidence
+
+Run this phase only. The known boundary is:
+
+```text
+offset 0, limit 8: PASS
+offset 0, limit 9: FAIL
+offset 8, limit 1: FAIL
+```
+
+Dataset indexing is zero-based, so "page 9" below means `page_index=8`.
+The single-page reproducer is the primary case. Do not spend time running the
+first eight pages or loading the PaddleOCR-VL recognizer.
+
+The production layout path uses:
+
+```text
+OwnedLayoutFrontend
+model_backend=transformers
+device=npu:0
+graph_capture=false
+npu_indexput_compat=true
+```
+
+The detector input itself is always resized to fixed
+`1 x 3 x 800 x 800`. Page content first creates variable NPU shapes in
+postprocessing:
+
+```text
+sigmoid/topk
+  -> threshold/nonzero
+  -> reading-order gathers
+  -> metadata gathers/index_select
+  -> selected-mask index_select
+  -> selected-mask sigmoid/threshold
+  -> D2H
+```
+
+Therefore, do not accept "the layout model failed" as sufficient. Determine
+whether the failure is:
+
+1. image read/decode or CPU resize;
+2. model/setup binary loading;
+3. fixed-shape detector forward;
+4. variable-shape metadata selection;
+5. variable-shape mask selection/threshold;
+6. D2H synchronization;
+7. CPU polygon/structural postprocessing.
+
+The phase is complete only when the first failing stage, Python call site,
+CANN error code, CANN operator/kernel name, requested binary or library path
+(if one exists), and installed-package/OPP evidence are all reported.
+
+### 19.1 Restrictions
+
+- Do not modify production source or installed packages.
+- Do not add a model workaround.
+- Do not enable ACLGraph or TorchAir.
+- Do not load the OCR recognizer.
+- Do not delete or invalidate any existing cache.
+- Do not download a binary, model, wheel, CANN package, or operator package.
+- Do not restart the server or NPU.
+- Do not use `pkill` or `killall`.
+- Do not repeatedly run the nine-page production pipeline.
+- CPU is a diagnostic control only, never the proposed solution.
+- A profiler is not the first tool here. CANN's operator profiler assumes a
+  working application. First use synchronous execution, CANN plog, and file
+  lookup tracing to localize the load failure.
+
+### 19.2 Pull and preflight
+
+Read `CLAUDE.md` and `AGENTS.md`, then:
+
+```sh
+git status --short --branch
+git pull --ff-only origin main
+
+REPO="$(git rev-parse --show-toplevel)"
+COMMIT="$(git rev-parse HEAD)"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+PYTHON_BIN="${PYTHON_BIN:-$(command -v python)}"
+
+test -x "$PYTHON_BIN"
+test -f \
+  "$REPO/09_persistent_page_engine/scripts/probes/probe_layout_page_failure.py"
+```
+
+Activate exactly the same NPU environment used by the successful eight-page
+run. Reuse its already-resolved paths:
+
+```sh
+test -f "$DATASET_JSON"
+test -d "$IMAGES_DIR"
+test -d "$LAYOUT_MODEL"
+```
+
+The recognizer model is deliberately irrelevant to this phase.
+
+Create separate compact and heavyweight roots:
+
+```sh
+OUTPUT_ROOT="$REPO/tmp/09_persistent_page_engine/310p_phase19_page9_$COMMIT_SHORT"
+RAW_ROOT="$REPO/.runtime_cache/310p_phase19_page9_$COMMIT_SHORT"
+test ! -e "$OUTPUT_ROOT"
+test ! -e "$RAW_ROOT"
+mkdir -p "$OUTPUT_ROOT" "$RAW_ROOT"
+```
+
+`OUTPUT_ROOT` contains commands, ordinary logs, summaries, and compact error
+extracts that may be committed. `RAW_ROOT` contains verbose CANN logs and
+strace output and must remain ignored.
+
+Capture the unmodified environment:
+
+```sh
+{
+  printf 'commit=%s\n' "$COMMIT"
+  printf 'hostname=%s\n' "$(hostname)"
+  printf 'python=%s\n' "$PYTHON_BIN"
+  printf 'date=%s\n' "$(date --iso-8601=seconds 2>/dev/null || date)"
+  env | sort
+  "$PYTHON_BIN" - <<'PY'
+import json
+import os
+import platform
+import sys
+
+import torch
+import torch_npu
+import torchvision
+import transformers
+
+print(json.dumps({
+    "python": sys.version,
+    "platform": platform.platform(),
+    "torch": torch.__version__,
+    "torch_npu": torch_npu.__version__,
+    "torchvision": torchvision.__version__,
+    "transformers": transformers.__version__,
+    "npu_available": torch.npu.is_available(),
+    "npu_name": torch.npu.get_device_name(0),
+    "ASCEND_HOME_PATH": os.environ.get("ASCEND_HOME_PATH"),
+    "ASCEND_OPP_PATH": os.environ.get("ASCEND_OPP_PATH"),
+    "LD_LIBRARY_PATH": os.environ.get("LD_LIBRARY_PATH"),
+}, indent=2, sort_keys=True))
+PY
+  command -v npu-smi >/dev/null 2>&1 && npu-smi info
+  command -v msprof >/dev/null 2>&1 && msprof --version || true
+  command -v strace >/dev/null 2>&1 && strace --version | head -n 1 || true
+  df -h "$REPO" "$RAW_ROOT"
+  if command -v dpkg-query >/dev/null 2>&1; then
+    dpkg-query -W 2>/dev/null \
+      | grep -Ei 'ascend|cann|torch|driver|firmware' || true
+  fi
+  if command -v rpm >/dev/null 2>&1; then
+    rpm -qa 2>/dev/null \
+      | grep -Ei 'ascend|cann|torch|driver|firmware' || true
+  fi
+} >"$OUTPUT_ROOT/environment.txt" 2>&1
+```
+
+Record the installed CANN/OPP roots without recursively copying them:
+
+```sh
+{
+  for root in \
+    "${ASCEND_HOME_PATH:-}" \
+    "${ASCEND_OPP_PATH:-}" \
+    /usr/local/Ascend/ascend-toolkit/latest \
+    /usr/local/Ascend/cann \
+    /usr/local/Ascend/cann-9.0.0; do
+    test -n "$root" || continue
+    if test -e "$root"; then
+      printf '\nroot=%s\n' "$root"
+      readlink -f "$root" || true
+      ls -ld "$root"
+    fi
+  done
+  find /usr/local/Ascend -maxdepth 4 \
+    \( -name 'version.info' -o -name 'ascend_toolkit_install.info' \) \
+    -type f -print 2>/dev/null \
+    | sort
+} >"$OUTPUT_ROOT/cann_roots.txt" 2>&1
+```
+
+### 19.3 Identify and validate the exact page
+
+Record the annotation, basename, file type, bytes, dimensions, and SHA256 for
+page indices 0, 7, and 8:
+
+```sh
+"$PYTHON_BIN" - \
+  "$DATASET_JSON" "$IMAGES_DIR" \
+  >"$OUTPUT_ROOT/page_identity.json" <<'PY'
+import hashlib
+import json
+import pathlib
+import sys
+
+dataset = pathlib.Path(sys.argv[1])
+images = pathlib.Path(sys.argv[2])
+pages = json.loads(dataset.read_text(encoding="utf-8"))
+result = []
+for index in (0, 7, 8):
+    annotation = pages[index]
+    source = pathlib.Path(annotation["page_info"]["image_path"])
+    path = images / source.name
+    data = path.read_bytes()
+    result.append({
+        "page_index": index,
+        "annotation_image_path": str(source),
+        "resolved_path": str(path.resolve()),
+        "exists": path.is_file(),
+        "bytes": len(data),
+        "sha256": hashlib.sha256(data).hexdigest(),
+        "magic_hex": data[:16].hex(),
+        "page_info": annotation["page_info"],
+    })
+print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
+PY
+
+while read -r image; do
+  file "$image"
+done < <(
+  "$PYTHON_BIN" - "$OUTPUT_ROOT/page_identity.json" <<'PY'
+import json
+import sys
+for row in json.load(open(sys.argv[1])):
+    print(row["resolved_path"])
+PY
+) >"$OUTPUT_ROOT/page_file_types.txt"
+```
+
+Do not rename or "repair" page 9. If CPU decode fails, that is the root cause
+branch and the NPU model should not be blamed.
+
+### 19.4 Stage-isolation runner
+
+Use the committed probe. It records and `fsync`s one JSON line before and
+after every meaningful stage, then synchronizes the NPU after each operator
+group. This changes timing but not the mathematical path; this phase is about
+localization, not performance.
+
+```sh
+run_page_probe() {
+  local name="$1"
+  local page_index="$2"
+  local device="$3"
+  local backend="$4"
+  local debug="$5"
+  local lane="$OUTPUT_ROOT/$name"
+  local raw="$RAW_ROOT/$name"
+  local result="$lane/result"
+  mkdir -p "$lane" "$raw/cann_logs" "$raw/ascend_work"
+  test ! -e "$result"
+
+  local -a debug_env=(
+    PYTHONUNBUFFERED=1
+    PYTHONFAULTHANDLER=1
+    TORCH_NPU_COMPACT_ERROR_OUTPUT=0
+    ASCEND_PROCESS_LOG_PATH="$raw/cann_logs"
+    ASCEND_WORK_PATH="$raw/ascend_work"
+    ASCEND_GLOBAL_EVENT_ENABLE=1
+    ASCEND_LOG_DEVICE_FLUSH_TIMEOUT=10000
+  )
+  if test "$debug" = 1; then
+    debug_env+=(
+      ASCEND_LAUNCH_BLOCKING=1
+      ASCEND_GLOBAL_LOG_LEVEL=0
+      ASCEND_MODULE_LOG_LEVEL=RUNTIME=0:ASCENDCL=0:OP=0:TBE=0
+      TORCH_SHOW_CPP_STACKTRACES=1
+    )
+  fi
+
+  local -a command=(
+    "$PYTHON_BIN"
+    "$REPO/09_persistent_page_engine/scripts/probes/probe_layout_page_failure.py"
+    --dataset-json "$DATASET_JSON"
+    --images-dir "$IMAGES_DIR"
+    --layout-model "$LAYOUT_MODEL"
+    --page-index "$page_index"
+    --device "$device"
+    --model-backend "$backend"
+    --layout-indexput-compat
+    --output-dir "$result"
+  )
+
+  {
+    printf '#!/usr/bin/env bash\n'
+    printf '# commit=%s\n' "$COMMIT"
+    printf '%q ' env "${debug_env[@]}" "${command[@]}"
+    printf '\n'
+  } >"$lane/command.sh"
+  chmod +x "$lane/command.sh"
+
+  printf '[phase19] START %s %s\n' \
+    "$name" "$(date --iso-8601=seconds 2>/dev/null || date)" \
+    | tee -a "$OUTPUT_ROOT/progress.log"
+  set -o pipefail
+  if env "${debug_env[@]}" "${command[@]}" \
+    > >(tee "$lane/run.log") 2>&1; then
+    status=0
+  else
+    status=$?
+  fi
+  printf '%s\n' "$status" >"$lane/exit_code.txt"
+  find "$raw" -type f -printf '%s %p\n' 2>/dev/null \
+    | sort -n >"$lane/raw_file_manifest.txt"
+  printf '[phase19] END %s exit=%s %s\n' \
+    "$name" "$status" \
+    "$(date --iso-8601=seconds 2>/dev/null || date)" \
+    | tee -a "$OUTPUT_ROOT/progress.log"
+  return 0
+}
+```
+
+Run fresh processes in this exact order:
+
+```sh
+run_page_probe cpu_page8_control 8 cpu transformers 0
+run_page_probe npu_page0_control 0 npu transformers 0
+run_page_probe npu_page7_control 7 npu transformers 0
+run_page_probe npu_page8_normal 8 npu transformers 0
+run_page_probe npu_page8_sync_debug 8 npu transformers 1
+run_page_probe npu_page8_owned_sync_debug 8 npu owned 1
+```
+
+Interpretation:
+
+- CPU page 8 must prove the file, processor, and model are structurally usable.
+- NPU pages 0 and 7 prove the same process and fixed model work on controls.
+- Normal NPU page 8 preserves the original behavior.
+- Synchronous-debug NPU page 8 pins an asynchronous device error to the
+  correct Python/operator call and captures debug plog.
+- The owned-backend lane uses the same weights and postprocessing but removes
+  the Transformers model implementation. It is diagnostic only:
+  - Transformers fails, owned passes: inspect Transformers-only model math or
+    compatibility patch.
+  - both fail at the same postprocess stage: inspect the shared
+    variable-shape postprocess/operator package.
+  - both fail in fixed forward but at different operators: report both;
+    do not infer one common cause.
+
+Do not reject the investigation if the owned backend has small numerical or
+box-count differences. It is a boundary probe, not the production oracle.
+
+If `npu_page8_normal` unexpectedly passes, run that same lane in three new
+fresh processes (`normal_repeat_1..3`). Do not loop indefinitely. Report the
+failure frequency and whether process state or a prior page is required.
+
+Run the exact committed layout frontend once as a non-instrumented
+reproduction. This must remain layout-only; it must not load the recognizer:
+
+```sh
+EXACT_LANE="$OUTPUT_ROOT/exact_layout_frontend_page8"
+EXACT_RAW="$RAW_ROOT/exact_layout_frontend_page8"
+mkdir -p \
+  "$EXACT_LANE" \
+  "$EXACT_RAW/cann_logs" \
+  "$EXACT_RAW/ascend_work"
+
+EXACT_COMMAND=(
+  "$PYTHON_BIN"
+  "$REPO/09_persistent_page_engine/scripts/layout_owned_lab.py"
+  --dataset-json "$DATASET_JSON"
+  --images-dir "$IMAGES_DIR"
+  --layout-model "$LAYOUT_MODEL"
+  --device npu
+  --model-backend transformers
+  --layout-indexput-compat
+  --no-graph-capture
+  --offset 8
+  --limit 1
+  --workers 1
+  --no-timeline
+  --output-dir "$EXACT_LANE/output"
+)
+
+{
+  printf '#!/usr/bin/env bash\n'
+  printf '# commit=%s\n' "$COMMIT"
+  printf '%q ' env \
+    PYTHONUNBUFFERED=1 \
+    PYTHONFAULTHANDLER=1 \
+    TORCH_NPU_COMPACT_ERROR_OUTPUT=0 \
+    ASCEND_LAUNCH_BLOCKING=1 \
+    ASCEND_GLOBAL_LOG_LEVEL=0 \
+    ASCEND_MODULE_LOG_LEVEL=RUNTIME=0:ASCENDCL=0:OP=0:TBE=0 \
+    ASCEND_PROCESS_LOG_PATH="$EXACT_RAW/cann_logs" \
+    ASCEND_WORK_PATH="$EXACT_RAW/ascend_work" \
+    ASCEND_GLOBAL_EVENT_ENABLE=1 \
+    ASCEND_LOG_DEVICE_FLUSH_TIMEOUT=10000 \
+    "${EXACT_COMMAND[@]}"
+  printf '\n'
+} >"$EXACT_LANE/command.sh"
+chmod +x "$EXACT_LANE/command.sh"
+
+set -o pipefail
+if env \
+  PYTHONUNBUFFERED=1 \
+  PYTHONFAULTHANDLER=1 \
+  TORCH_NPU_COMPACT_ERROR_OUTPUT=0 \
+  ASCEND_LAUNCH_BLOCKING=1 \
+  ASCEND_GLOBAL_LOG_LEVEL=0 \
+  ASCEND_MODULE_LOG_LEVEL=RUNTIME=0:ASCENDCL=0:OP=0:TBE=0 \
+  ASCEND_PROCESS_LOG_PATH="$EXACT_RAW/cann_logs" \
+  ASCEND_WORK_PATH="$EXACT_RAW/ascend_work" \
+  ASCEND_GLOBAL_EVENT_ENABLE=1 \
+  ASCEND_LOG_DEVICE_FLUSH_TIMEOUT=10000 \
+  "${EXACT_COMMAND[@]}" \
+  > >(tee "$EXACT_LANE/run.log") 2>&1; then
+  status=0
+else
+  status=$?
+fi
+printf '%s\n' "$status" >"$EXACT_LANE/exit_code.txt"
+```
+
+The exact lane and staged probe must fail compatibly. If they fail at
+apparently different boundaries, explain whether ordinary asynchronous
+reporting accounts for it. Do not proceed to a fix until that discrepancy is
+understood.
+
+### 19.5 Mechanical stage table and error extraction
+
+Generate a table from whatever each process managed to flush:
+
+```sh
+"$PYTHON_BIN" - "$OUTPUT_ROOT" >"$OUTPUT_ROOT/stage_matrix.md" <<'PY'
+import json
+import pathlib
+import sys
+
+root = pathlib.Path(sys.argv[1])
+names = (
+    "cpu_page8_control",
+    "npu_page0_control",
+    "npu_page7_control",
+    "npu_page8_normal",
+    "npu_page8_sync_debug",
+    "npu_page8_owned_sync_debug",
+)
+print("| lane | exit | summary status | last stage | exception |")
+print("|---|---:|---|---|---|")
+for name in names:
+    lane = root / name
+    exit_path = lane / "exit_code.txt"
+    summary_path = lane / "result" / "summary.json"
+    exit_code = exit_path.read_text().strip() if exit_path.exists() else "?"
+    if summary_path.exists():
+        summary = json.load(open(summary_path))
+        failure = summary.get("failure") or {}
+        exception = (
+            f"{failure.get('exception_type', '')}: "
+            f"{failure.get('exception', '')}"
+        ).replace("|", "\\|").replace("\n", " ")
+        print(
+            f"| {name} | {exit_code} | {summary['status']} "
+            f"| {summary['last_stage']} | {exception} |"
+        )
+    else:
+        print(f"| {name} | {exit_code} | no summary | process-level | |")
+PY
+cat "$OUTPUT_ROOT/stage_matrix.md"
+```
+
+Extract error context from Python logs and raw CANN logs without discarding the
+full raw evidence:
+
+```sh
+{
+  rg -n -i -C 8 \
+    'error|failed|failure|exception|binary|kernel|tiling|op type|optype|soc|not support|not found|dlopen|load.*so|ACL_ERROR|EZ[0-9]{5}|507[0-9]{3}|107[0-9]{3}' \
+    "$OUTPUT_ROOT/npu_page8_normal/run.log" \
+    "$OUTPUT_ROOT/npu_page8_sync_debug/run.log" \
+    "$OUTPUT_ROOT/npu_page8_owned_sync_debug/run.log" \
+    "$RAW_ROOT/npu_page8_sync_debug" \
+    "$RAW_ROOT/npu_page8_owned_sync_debug" \
+    2>/dev/null || true
+} >"$OUTPUT_ROOT/page8_error_extract.txt"
+```
+
+Read the full synchronized Python traceback and enough surrounding plog to
+answer all of the following:
+
+```text
+first failing probe stage:
+exact Python source file and line:
+PyTorch op or torch_npu API:
+CANN op type / kernel name:
+ACL / PTA / runtime error code:
+SoC version requested:
+input shapes, dtypes, formats, and important attrs:
+binary/library path requested:
+does that path exist:
+was selection missing, loading rejected, or execution rejected:
+```
+
+Do not report only the last `torch.npu.synchronize()` frame. The reason for
+`ASCEND_LAUNCH_BLOCKING=1` is to reveal the enqueue call that caused it.
+
+### 19.6 File-resolution trace, conditional on a binary/load error
+
+Run this section only when the traceback or plog actually refers to pulling,
+selecting, opening, or loading a binary/kernel/library. If `strace` is absent,
+record that fact and continue with plog/OPP inspection; do not install it.
+
+Trace a passing and failing process so ordinary missing locale/Python files can
+be subtracted:
+
+```sh
+if command -v strace >/dev/null 2>&1; then
+  run_strace() {
+    local name="$1"
+    local page_index="$2"
+    local lane="$OUTPUT_ROOT/$name"
+    local raw="$RAW_ROOT/$name"
+    mkdir -p "$lane" "$raw/cann_logs" "$raw/ascend_work" "$raw/strace"
+    test ! -e "$lane/result"
+
+    set -o pipefail
+    if strace -ff -s 1024 -e trace=file \
+      -o "$raw/strace/file" \
+      env \
+        PYTHONUNBUFFERED=1 \
+        PYTHONFAULTHANDLER=1 \
+        TORCH_NPU_COMPACT_ERROR_OUTPUT=0 \
+        ASCEND_LAUNCH_BLOCKING=1 \
+        ASCEND_GLOBAL_LOG_LEVEL=3 \
+        ASCEND_PROCESS_LOG_PATH="$raw/cann_logs" \
+        ASCEND_WORK_PATH="$raw/ascend_work" \
+        "$PYTHON_BIN" \
+        "$REPO/09_persistent_page_engine/scripts/probes/probe_layout_page_failure.py" \
+        --dataset-json "$DATASET_JSON" \
+        --images-dir "$IMAGES_DIR" \
+        --layout-model "$LAYOUT_MODEL" \
+        --page-index "$page_index" \
+        --device npu \
+        --model-backend transformers \
+        --layout-indexput-compat \
+        --output-dir "$lane/result" \
+        > >(tee "$lane/run.log") 2>&1; then
+      status=0
+    else
+      status=$?
+    fi
+    printf '%s\n' "$status" >"$lane/exit_code.txt"
+    rg -n -i \
+      'ENOENT|EACCES|\.so([.0-9]*)?[\" ]|\.o[\" ]|kernel|opp|binary|tiling|op_impl|op_proto' \
+      "$raw/strace" \
+      >"$lane/file_trace_interesting.txt" 2>/dev/null || true
+  }
+
+  run_strace strace_page0_control 0
+  run_strace strace_page8_failure 8
+else
+  printf 'strace unavailable; not installed\n' \
+    >"$OUTPUT_ROOT/strace_unavailable.txt"
+fi
+```
+
+Compare the two filtered traces. An `ENOENT` is causal only if:
+
+1. it is unique to, or immediately precedes the page-8 failure;
+2. plog or the runtime error references the same operator/path; and
+3. it is not followed by a successful fallback open.
+
+Do not call every Python import probe or locale lookup a missing NPU binary.
+
+If the error names an ordinary shared library, and only then, inspect the
+actual implicated file/plugin:
+
+```sh
+file /exact/path/to/implicated.so
+sha256sum /exact/path/to/implicated.so
+ldd /exact/path/to/implicated.so
+readelf -d /exact/path/to/implicated.so
+```
+
+Save this output under `$OUTPUT_ROOT/implicated_library.txt`. Never run `ldd`
+over every shared library in CANN.
+
+### 19.7 Installed OPP/kernel audit
+
+After obtaining the exact operator/kernel name from plog, search the installed
+operator package narrowly. Substitute the exact value; do not guess:
+
+```sh
+OP_NAME='REPLACE_WITH_EXACT_CANN_OP_OR_KERNEL_NAME'
+test "$OP_NAME" != REPLACE_WITH_EXACT_CANN_OP_OR_KERNEL_NAME
+
+{
+  printf 'operator=%s\n' "$OP_NAME"
+  printf 'ASCEND_OPP_PATH=%s\n' "${ASCEND_OPP_PATH:-}"
+  for root in \
+    "${ASCEND_OPP_PATH:-}" \
+    "${ASCEND_HOME_PATH:-}/opp" \
+    /usr/local/Ascend/ascend-toolkit/latest/opp \
+    /usr/local/Ascend/cann-9.0.0/opp; do
+    test -d "$root" || continue
+    printf '\nroot=%s\n' "$root"
+    find "$root" -type f \
+      \( -iname "*${OP_NAME}*" -o -iname '*ops-info*.json' \) \
+      -print 2>/dev/null | sort
+  done
+} >"$OUTPUT_ROOT/implicated_op_files.txt" 2>&1
+```
+
+Then use `rg -n -i -C 4 "$OP_NAME"` only inside the relevant metadata/config
+directories found above. Record:
+
+- whether the op is registered for the exact 310P SoC;
+- supported dtype, format, shape, and attribute constraints;
+- selector/tiling implementation path;
+- selected `.o`/kernel binary path, if plog exposes one;
+- whether the binary exists and is readable;
+- file architecture and SHA256;
+- owning CANN/operator package if package-manager metadata can identify it.
+
+If the error is numeric, search the installed runtime headers for the exact
+code and save the matching enum/description:
+
+```sh
+ERROR_CODE='REPLACE_WITH_EXACT_ERROR_CODE'
+rg -n -C 3 "$ERROR_CODE" \
+  /usr/local/Ascend/*/include \
+  /usr/local/Ascend/*/runtime/include \
+  2>/dev/null \
+  >"$OUTPUT_ROOT/error_code_header_matches.txt" || true
+```
+
+Distinguish these failure classes explicitly:
+
+```text
+operator not registered
+binary selector not registered
+kernel not registered
+no binary variant for SoC/shape/dtype/format/attrs
+binary file absent
+binary file present but unreadable
+plugin/shared-library dependency missing
+binary incompatible with runtime/driver/SoC
+tiling failure
+kernel launch/execution failure mislabeled as load failure
+```
+
+### 19.8 One additional synchronization fallback
+
+Only if `ASCEND_LAUNCH_BLOCKING=1` still produces an unrelated asynchronous
+stack, repeat the single page-8 probe once with:
+
+```text
+TASK_QUEUE_ENABLE=0
+ASCEND_LAUNCH_BLOCKING=1
+```
+
+Record this as a diagnostic-only change. Do not use it for performance or call
+it a solution.
+
+### 19.9 Source mapping
+
+Map the observed stage back to the committed code:
+
+```text
+page decode / CPU resize / H2D:
+  pipeline/layout_frontend.py
+
+fixed detector forward and 310P IndexPut compatibility:
+  pipeline/layout_frontend.py
+  pipeline/layout_model_runtime.py
+
+project-owned comparison model:
+  pipeline/owned_layout_model/
+
+variable score/box/mask selection:
+  pipeline/layout_model_runtime.py
+  _post_process_selected_masks_only
+
+stage-isolation probe:
+  scripts/probes/probe_layout_page_failure.py
+```
+
+Quote exact file/line locations from the checked-out commit in the report.
+
+### 19.10 Stopping condition and report
+
+Stop after root-cause evidence is collected. Do not implement a fix in this
+phase, even if it looks easy. Luka wants to discuss the diagnosis first.
+
+Write `$OUTPUT_ROOT/agent_report.md`:
+
+```text
+310P PHASE 19 PAGE-9 LAYOUT FAILURE: ROOT CAUSE FOUND | BOUNDED | UNRESOLVED
+
+Git commit:
+Host / exact NPU:
+Python / torch / torch_npu / torchvision / Transformers / CANN:
+
+Reproducer:
+- page index / annotation path / resolved path / SHA256:
+- offset 0 limit 8 status:
+- offset 8 limit 1 status:
+- deterministic across fresh processes:
+
+Control matrix:
+| lane | exit | last passed stage | first failing stage | key result |
+
+Exact failure:
+- Python source and line:
+- torch/torch_npu operation:
+- CANN op and kernel:
+- error code and official/local meaning:
+- input shapes / dtype / format / attrs:
+- requested SoC and binary/library path:
+
+Binary/package audit:
+- file exists:
+- readable:
+- architecture/hash:
+- owning package and version:
+- plugin dependencies:
+- OPP registration/selector support for 310P:
+
+Passing-page versus page-9 difference:
+- original image size/format:
+- fixed model input shape:
+- selected detection count:
+- first NPU shape that differs:
+- file lookup unique to failing process:
+
+Transformers versus owned backend:
+- result:
+- boundary this proves:
+
+Root-cause statement:
+- confirmed facts:
+- strongest inference:
+- remaining uncertainty:
+- confidence:
+
+Potential fixes to discuss (do not implement):
+1.
+2.
+
+Evidence:
+- stage_matrix.md
+- page8_error_extract.txt
+- synchronized traceback:
+- compact CANN log excerpt:
+- strace comparison, if available:
+- OPP/kernel audit:
+- raw verbose evidence root:
+```
+
+The root-cause statement must be specific. Examples of insufficient reports:
+
+```text
+"page 9 is incompatible"
+"the layout model cannot pull a binary"
+"CANN has an issue"
+"an NPU op failed"
+```
+
+If no exact binary path is ever requested, say that plainly. The original
+wording may describe an operator-selector or kernel-registration failure
+rather than a filesystem download/load attempt.
+
+Do not edit tracked files, create a branch, commit, or push from the 310P work
+server. Keep both evidence roots local to that server. Paste back
+`agent_report.md`, `stage_matrix.md`, the compact error extract, and the exact
+paths to the full raw evidence. Inspect file sizes and redact only
+credentials/tokens—not technical paths, operator names, shapes, or error
+codes.
