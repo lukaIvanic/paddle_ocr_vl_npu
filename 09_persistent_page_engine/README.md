@@ -549,6 +549,15 @@ writes its exact command, contract, log, and ordinary lab summary under
 Large normalized execution tables and SQLite databases remain beside the raw
 captures under `.runtime_cache/`; only compact JSON, CSV, and Markdown reports
 should be copied into `tmp/` for retention.
+
+The suite prints flushed, timestamped lane transitions and a heartbeat every
+15 seconds by default. Each heartbeat includes elapsed time and the current
+lane-log size; `--progress-interval-s` changes the interval. For a remotely
+followable run, redirect the suite's output to a separate driver log and use
+`tail -f` on that file. Child output is written incrementally to
+`<suite>/<metric>/run.log`, and `suite_summary.json` is checkpointed after
+every successful metric lane.
+
 The combined analysis contains:
 
 - every `kernel_details.csv` execution in normalized CSV and SQLite form;

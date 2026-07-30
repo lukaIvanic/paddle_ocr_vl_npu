@@ -11,7 +11,9 @@ separate process because CANN exposes one PMU family per normal capture.
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import json
+import os
 import shlex
 import shutil
 import subprocess
@@ -83,11 +85,28 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--calls-per-sample", type=int, default=5)
     parser.add_argument("--profile-warmup-steps", type=int, default=1)
     parser.add_argument("--profile-steps", type=int, default=3)
-    return parser.parse_args(argv)
+    parser.add_argument(
+        "--progress-interval-s",
+        type=float,
+        default=15.0,
+        help="Seconds between flushed subprocess heartbeat messages.",
+    )
+    args = parser.parse_args(argv)
+    if args.progress_interval_s <= 0:
+        parser.error("--progress-interval-s must be positive")
+    return args
 
 
 def _command_text(command: list[str]) -> str:
     return shlex.join(command) + "\n"
+
+
+def _utc_now() -> str:
+    return dt.datetime.now(dt.timezone.utc).isoformat()
+
+
+def _progress(message: str) -> None:
+    print(f"[vision-profile {_utc_now()}] {message}", flush=True)
 
 
 def _disk_usage(path: Path) -> dict[str, int]:
@@ -158,29 +177,64 @@ def _run_logged(
     command: list[str],
     *,
     log_path: Path,
+    label: str,
+    progress_interval_s: float,
 ) -> float:
     started = time.perf_counter()
+    _progress(f"{label}: starting; subprocess log={log_path}")
     with log_path.open("w", encoding="utf-8") as log:
-        completed = subprocess.run(
+        process = subprocess.Popen(
             command,
             cwd=REPO_ROOT,
             stdout=log,
             stderr=subprocess.STDOUT,
             text=True,
-            check=False,
+            env={**os.environ, "PYTHONUNBUFFERED": "1"},
         )
+        try:
+            while True:
+                try:
+                    returncode = process.wait(timeout=progress_interval_s)
+                    break
+                except subprocess.TimeoutExpired:
+                    elapsed_s = time.perf_counter() - started
+                    log.flush()
+                    log_bytes = log_path.stat().st_size
+                    _progress(
+                        f"{label}: running; elapsed_s={elapsed_s:.1f}; "
+                        f"subprocess_log_bytes={log_bytes}"
+                    )
+        except BaseException:
+            if process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait()
+            raise
     wall_s = time.perf_counter() - started
-    if completed.returncode:
-        raise RuntimeError(
-            f"command failed with exit {completed.returncode}; "
+    if returncode:
+        _progress(
+            f"{label}: failed; exit={returncode}; elapsed_s={wall_s:.1f}; "
             f"see {log_path}"
         )
+        raise RuntimeError(
+            f"command failed with exit {returncode}; "
+            f"see {log_path}"
+        )
+    _progress(f"{label}: completed; elapsed_s={wall_s:.1f}")
     return wall_s
 
 
 def main(argv: Sequence[str] | None = None) -> None:
     args = parse_args(argv)
+    _progress(
+        "preflight: checking requested profiler metrics "
+        f"{', '.join(args.metrics)}"
+    )
     metric_support = _profile_metric_support(args.metrics)
+    _progress("preflight: requested profiler metrics are supported")
     output_root = (args.output_root / args.name).expanduser().resolve()
     profile_root = (args.profile_root / args.name).expanduser().resolve()
     if output_root.exists() and any(output_root.iterdir()):
@@ -194,6 +248,10 @@ def main(argv: Sequence[str] | None = None) -> None:
         )
     output_root.mkdir(parents=True)
     profile_root.mkdir(parents=True)
+    _progress(
+        f"suite initialized: name={args.name}; "
+        f"output_root={output_root}; raw_root={profile_root}"
+    )
 
     suite: dict[str, object] = {
         "schema_version": 1,
@@ -207,9 +265,10 @@ def main(argv: Sequence[str] | None = None) -> None:
         "raw_profile_disk_before": _disk_usage(profile_root),
         "lanes": {},
     }
+    summary_path = output_root / "suite_summary.json"
     lane_profiles: list[tuple[str, Path]] = []
     contract_path: Path | None = None
-    for metric in args.metrics:
+    for lane_index, metric in enumerate(args.metrics, start=1):
         lane_output = output_root / metric
         lane_result = lane_output / "result"
         lane_profile = profile_root / metric
@@ -261,14 +320,20 @@ def main(argv: Sequence[str] | None = None) -> None:
             _command_text(command),
             encoding="utf-8",
         )
+        lane_log = lane_output / "run.log"
+        lane_label = f"lane {lane_index}/{len(args.metrics)} {metric}"
         wall_s = _run_logged(
             command,
-            log_path=lane_output / "run.log",
+            log_path=lane_log,
+            label=lane_label,
+            progress_interval_s=args.progress_interval_s,
         )
-        summary_path = lane_result / "run_summary.json"
-        if not summary_path.exists():
-            raise RuntimeError(f"lab did not write {summary_path}")
-        lane_summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        lane_summary_path = lane_result / "run_summary.json"
+        if not lane_summary_path.exists():
+            raise RuntimeError(f"lab did not write {lane_summary_path}")
+        lane_summary = json.loads(
+            lane_summary_path.read_text(encoding="utf-8")
+        )
         if lane_summary.get("status") != "completed":
             raise RuntimeError(
                 f"{metric} lane status is {lane_summary.get('status')!r}"
@@ -283,7 +348,8 @@ def main(argv: Sequence[str] | None = None) -> None:
             "output_dir": str(lane_output),
             "result_dir": str(lane_result),
             "profile_dir": str(lane_profile),
-            "run_summary": str(summary_path),
+            "subprocess_log": str(lane_log),
+            "run_summary": str(lane_summary_path),
             "device_median_ms": lane_summary["measurements"][
                 "device_event_per_call_ms"
             ]["median"],
@@ -291,9 +357,16 @@ def main(argv: Sequence[str] | None = None) -> None:
                 "physical_tokens_per_s_device_median"
             ],
         }
-        (output_root / "suite_summary.json").write_text(
+        summary_path.write_text(
             json.dumps(suite, indent=2) + "\n",
             encoding="utf-8",
+        )
+        _progress(
+            f"{lane_label}: checkpoint saved to {summary_path}; "
+            f"device_median_ms="
+            f"{suite['lanes'][metric]['device_median_ms']:.6f}; "
+            f"physical_tokens_per_s="
+            f"{suite['lanes'][metric]['physical_tokens_per_s']:.3f}"
         )
 
     if contract_path is None:
@@ -314,9 +387,12 @@ def main(argv: Sequence[str] | None = None) -> None:
         _command_text(analyze_command),
         encoding="utf-8",
     )
+    analyze_log = output_root / "analyze.log"
     suite["combined_analysis_wall_s"] = _run_logged(
         analyze_command,
-        log_path=output_root / "analyze.log",
+        log_path=analyze_log,
+        label="combined analysis",
+        progress_interval_s=args.progress_interval_s,
     )
     combined_output.mkdir()
     for name in (
@@ -334,9 +410,13 @@ def main(argv: Sequence[str] | None = None) -> None:
         combined_output / "profile_report.md"
     )
     suite["raw_profile_disk_after"] = _disk_usage(profile_root)
-    (output_root / "suite_summary.json").write_text(
+    summary_path.write_text(
         json.dumps(suite, indent=2) + "\n",
         encoding="utf-8",
+    )
+    _progress(
+        f"suite completed: summary={summary_path}; "
+        f"report={suite['combined_report']}"
     )
     print(json.dumps(suite, indent=2), flush=True)
 

@@ -9,38 +9,27 @@ Prove that the real Experiment 09 pipeline runs on this 310P software stack,
 identify which production optimizations work, and measure their approximate
 effect on a small representative workload.
 
-## Current requested task: run Phase 14 only
+## Current requested task: run Phase 15 only
 
-Phases 0-13 have already run or have retained instructions and evidence. For
+Phases 0-14 have already run or have retained instructions and evidence. For
 the current task, do not rerun the production pipeline, layout lab, dataset
-validation, attention correctness check, decode ladder, packing ladder,
-saturation matrices, native B1 profiler, Phase 11 format/alignment matrix, or
-Phase 12 RoPE comparison. Phase 13's single native B1xS2048 lane is now a
-retained predecessor and may supply a warm graph cache, but its result alone
-does not complete the current task.
+validation, saturation matrices, earlier native profiles, the six-lane Phase
+14 matrix, page workloads, text prefill, or decode.
 
-Pull current `main`, reuse the exact Python/model/NPU environment that passed
-the earlier ladder, and execute only **Phase 14: six-lane native-ND versus
-padded-NZ MatMul comparison** below. Phase 14 loads only the PaddleOCR-VL
-recognizer and does not need OmniDocBench images, the layout model, text
-prefill, or decode.
+Pull the pushed `codex/910b-profiler-analysis` branch, recover the exact
+Python/model/NPU environment and compatible padded-NZ graph cache used by
+Phase 14, and execute only **Phase 15: B1xS2048 compiled full-stack
+multi-metric profiling** below.
 
-The current questions are deliberately narrow:
+The current question is deliberately narrow:
 
-> At B1xS512, B4xS512, and B1xS2048, how much does changing the native
-> 4304-wide ND graph to the zero-extended 4352-wide FRACTAL_NZ graph change
-> absolute MatMul time, MatMul-only TFLOP/s, and complete-stage time on 310P?
-> How do all six lanes compare shape-for-shape with fresh 910B2 references?
+> For the optimized B1xS2048, 4352-wide FRACTAL_NZ graph on this 310P, where
+> does the complete 27-layer vision-stage time go across MatMul, PromptFA,
+> layout/vector operations, and overlapping Cube/MTE pipelines?
 
-Hold everything else fixed: all 27 layers, production runtime D72-to-D80
-PromptFA padding, separate manual RoPE, fp16, real PromptFA, and TorchAir
-`cache_compile`. Each shape has exactly two lanes: native 4304/ND and
-zero-extended 4352/FRACTAL_NZ.
-
-Do not run additional shapes, standalone Linears, separate 4304-NZ or
-4352-ND attribution lanes, attention weight-padding, RoPE variants, eager
-lanes, page workloads, or routing experiments. Do not optimize source code,
-change production routing, or update pinned routing tables during this task.
+Run only the portable `pipe` and `memory` PMU lanes. Do not request 910B-only
+`l2`, `memory_access`, `Occupancy`, or `MemoryDetail`; do not run the direct
+eager `msprof op` surrogate; and do not modify or optimize model source.
 
 ## Current 310P layout route: eager NPU
 
@@ -6367,9 +6356,385 @@ commit, or push. Keep graph caches and raw profiler trees under
 `.runtime_cache`; keep commands, logs, summaries, comparison, and report under
 `tmp/`.
 
+## Phase 15: B1xS2048 compiled full-stack multi-metric profile
+
+### 15.0 Scope and expected configuration
+
+This is the only phase to execute for the current task. It runs the real
+compiled 27-layer `VisionPrefillStage`, not a standalone Linear:
+
+```text
+batch x sequence:             B1 x S2048
+physical tokens:              2048
+hidden size:                  1152
+MLP width:                    4352, zero-extended
+Linear weights:               FRACTAL_NZ
+attention head padding:       runtime D72 -> D80 -> D72
+attention:                    PromptFlashAttention
+RoPE:                         separate_manual
+execution:                    TorchAir cache_compile
+dtype:                        fp16
+warmup:                       3 full-stage replays
+measurement:                  10 samples x 5 replays
+profile per metric:           1 warmup + 3 active replays
+expected MatMuls per replay:  162
+metrics:                      pipe, memory
+```
+
+Do not run `l2`, `memory_access`, `Occupancy`, or `MemoryDetail` on 310P.
+Do not run `run_vision_msprof_op.py`: its directly observable target is an
+eager diagnostic surrogate, while this phase is about the actual compiled
+full stack.
+
+The matched 910B2 references for this exact configuration are:
+
+```text
+full-stage device median:       30.606900 ms
+physical throughput:            66,913.016 tok/s
+profile span per replay:         30.841417 ms
+MatMul duration per replay:       7.348947 ms
+MatMul-only throughput:          230.778 TFLOP/s
+MatMul stage share:               23.83%
+PromptFA stage share:             24.82%
+StridedSliceD stage share:        12.39%
+Transpose stage share:            11.81%
+PadV3 stage share:                 4.71%
+intra-replay device gaps:         ~0.30 ms
+```
+
+These are comparison values, not expected 310P results.
+
+### 15.1 Pull the profiler branch and recover the proven environment
+
+The work server remains pull-only. Do not discard, stash, clean, or overwrite
+local evidence:
+
+```sh
+test -z "$(git status --porcelain --untracked-files=no)" || {
+  printf 'tracked worktree changes exist; stop without modifying them\n'
+  git status --short --branch
+  exit 1
+}
+
+git fetch origin codex/910b-profiler-analysis
+git switch --detach origin/codex/910b-profiler-analysis
+
+REPO="$(git rev-parse --show-toplevel)"
+cd "$REPO"
+COMMIT="$(git rev-parse HEAD)"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+
+SUITE_SCRIPT="$REPO/09_persistent_page_engine/scripts/run_vision_matmul_profile_suite.py"
+test -f "$SUITE_SCRIPT"
+"${PYTHON_BIN:-python3}" "$SUITE_SCRIPT" --help |
+  grep -q -- '--progress-interval-s'
+```
+
+Recover the exact interpreter, recognizer model, and graph-cache root recorded
+by the latest successful Phase 14 run:
+
+```sh
+PHASE14_ENV="$(
+  find "$REPO/tmp/09_persistent_page_engine" \
+    -path '*/310p_matmul_matrix_*/environment.txt' \
+    -type f -print |
+  sort |
+  tail -n 1
+)"
+test -f "$PHASE14_ENV"
+
+PYTHON_BIN="$(
+  awk -F= '$1 == "python" {sub(/^python=/, ""); print; exit}' \
+    "$PHASE14_ENV"
+)"
+RECOGNIZER_MODEL="$(
+  awk -F= '$1 == "recognizer_model" {
+    sub(/^recognizer_model=/, ""); print; exit
+  }' "$PHASE14_ENV"
+)"
+GRAPH_CACHE_ROOT="$(
+  awk -F= '$1 == "graph_cache_root" {
+    sub(/^graph_cache_root=/, ""); print; exit
+  }' "$PHASE14_ENV"
+)"
+
+test -x "$PYTHON_BIN"
+test -f "$RECOGNIZER_MODEL/config.json"
+test -d "$GRAPH_CACHE_ROOT"
+```
+
+Activate the same CANN/torch-npu environment that passed Phase 14 and expose
+one free full physical 310P as logical `npu:0`. Never terminate another user's
+process. Stop if no device is free. Then verify the active environment:
+
+```sh
+"$PYTHON_BIN" - <<'PY'
+import torch
+import torch_npu
+import torch_npu.profiler as npu_prof
+
+assert torch.npu.is_available()
+print("torch=" + torch.__version__)
+print("torch_npu=" + getattr(torch_npu, "__version__", "<missing>"))
+print("device=" + torch.npu.get_device_name(0))
+print(
+    "supported_ai_core_metrics="
+    + repr(npu_prof.supported_ai_core_metrics())
+)
+PY
+```
+
+The reported supported metrics must include PipeUtilization and Memory. If
+either is absent, stop and report the exact capability list.
+
+### 15.2 Prepare durable paths and monitoring
+
+Use a fresh run name. The driver log deliberately lives outside the suite
+output directory because the runner rejects an already-nonempty suite path:
+
+```sh
+RUN_STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+RUN_NAME="310p_b1s2048_i4352_nz_multimetric_${COMMIT_SHORT}_${RUN_STAMP}"
+DRIVER_ROOT="$REPO/tmp/09_persistent_page_engine/vision_profile_driver/$RUN_NAME"
+DRIVER_LOG="$DRIVER_ROOT/driver.log"
+EXIT_CODE_FILE="$DRIVER_ROOT/exit_code.txt"
+COMMAND_FILE="$DRIVER_ROOT/command.sh"
+NPU_LOG="$DRIVER_ROOT/npu_smi_1s.log"
+
+SUITE_ROOT="$REPO/tmp/09_persistent_page_engine/vision_matmul_profile_suite/$RUN_NAME"
+RAW_ROOT="$REPO/.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/$RUN_NAME"
+
+test ! -e "$DRIVER_ROOT"
+test ! -e "$SUITE_ROOT"
+test ! -e "$RAW_ROOT"
+mkdir -p "$DRIVER_ROOT"
+
+df -h "$REPO" "$GRAPH_CACHE_ROOT" >"$DRIVER_ROOT/disk_before.txt"
+npu-smi info >"$DRIVER_ROOT/npu_before.txt" 2>&1
+
+{
+  printf '#!/usr/bin/env bash\n'
+  printf '# git_commit=%s\n' "$COMMIT"
+  printf '# hostname=%s\n' "$(hostname)"
+  printf '# ASCEND_RT_VISIBLE_DEVICES=%s\n' \
+    "${ASCEND_RT_VISIBLE_DEVICES:-}"
+  printf '%q ' \
+    "$PYTHON_BIN" "$SUITE_SCRIPT" \
+    --name "$RUN_NAME" \
+    --model "$RECOGNIZER_MODEL" \
+    --cache-dir "$GRAPH_CACHE_ROOT" \
+    --output-root \
+      "$REPO/tmp/09_persistent_page_engine/vision_matmul_profile_suite" \
+    --profile-root \
+      "$REPO/.runtime_cache/09_persistent_page_engine_vision_matmul_profiles" \
+    --metrics pipe memory \
+    --allow-compile-if-missing \
+    --warmup 3 \
+    --samples 10 \
+    --calls-per-sample 5 \
+    --profile-warmup-steps 1 \
+    --profile-steps 3 \
+    --progress-interval-s 15
+  printf '\n'
+} >"$COMMAND_FILE"
+chmod +x "$COMMAND_FILE"
+
+(
+  while true; do
+    date --iso-8601=ns 2>/dev/null || date
+    npu-smi info
+    sleep 1
+  done
+) >"$NPU_LOG" 2>&1 &
+MONITOR_PID=$!
+trap 'kill "$MONITOR_PID" 2>/dev/null || true' EXIT
+```
+
+### 15.3 Run the main command with a followable driver log
+
+The main command must be redirected exactly as follows. `PYTHONUNBUFFERED=1`
+and the runner's flushed progress messages make `driver.log` useful while the
+job is still running:
+
+```sh
+set +e
+PYTHONUNBUFFERED=1 "$COMMAND_FILE" >"$DRIVER_LOG" 2>&1
+PROFILE_EXIT=$?
+set -e
+printf '%s\n' "$PROFILE_EXIT" >"$EXIT_CODE_FILE"
+
+kill "$MONITOR_PID" 2>/dev/null || true
+wait "$MONITOR_PID" 2>/dev/null || true
+trap - EXIT
+
+test "$PROFILE_EXIT" -eq 0
+```
+
+Luka can follow progress from another shell:
+
+```sh
+tail -n 100 -f \
+  "$REPO/tmp/09_persistent_page_engine/vision_profile_driver/$RUN_NAME/driver.log"
+```
+
+The driver log prints:
+
+- metric preflight start/pass;
+- suite output and raw roots;
+- `lane 1/2 pipe` and `lane 2/2 memory` start/completion;
+- a 15-second elapsed-time heartbeat and the current subprocess-log size;
+- each completed lane's checkpoint path, device median, and physical tok/s;
+- combined-analysis start/completion and final report path.
+
+Each lane also writes its child output incrementally to
+`$SUITE_ROOT/<metric>/run.log`. `suite_summary.json` is rewritten after every
+successful lane, so a later failure does not erase earlier lane results.
+
+If the command fails, do not delete anything and do not rerun with the same
+name. Report:
+
+```sh
+tail -n 200 "$DRIVER_LOG"
+find "$SUITE_ROOT" -maxdepth 3 -type f \
+  \( -name 'run.log' -o -name 'run_summary.json' \
+     -o -name 'suite_summary.json' \) -print
+```
+
+Then stop.
+
+### 15.4 Validate and report
+
+After a successful command, run this mechanical validation:
+
+```sh
+"$PYTHON_BIN" - \
+  "$SUITE_ROOT/suite_summary.json" \
+  "$SUITE_ROOT/combined_profile/profile_analysis.json" \
+  "$DRIVER_ROOT/validation.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+suite_path, analysis_path, output_path = map(Path, sys.argv[1:])
+suite = json.loads(suite_path.read_text(encoding="utf-8"))
+analysis = json.loads(analysis_path.read_text(encoding="utf-8"))
+
+assert suite["metrics"] == ["pipe", "memory"]
+assert set(suite["lanes"]) == {"pipe", "memory"}
+for name in ("pipe", "memory"):
+    lane = suite["lanes"][name]
+    assert lane["device_median_ms"] > 0
+    assert lane["physical_tokens_per_s"] > 0
+    assert Path(lane["run_summary"]).is_file()
+
+dims = analysis["contract_dims"]
+assert dims["batch_size"] == 1
+assert dims["sequence_length"] == 2048
+assert dims["hidden_size"] == 1152
+assert dims["intermediate_size"] == 4352
+assert dims["layers"] == 27
+assert dims["linear_calls_per_full_stack"] == 162
+assert dims["head_padding_mode"] == "runtime"
+
+families = {lane["metric_family"]: lane for lane in analysis["lanes"]}
+assert set(families) == {"pipe", "memory"}
+for name, lane in families.items():
+    assert lane["mapping"]["status"] == "validated"
+    assert lane["matmul_count"] == 486
+    assert len(lane["replays"]) == 3
+    assert all(replay["matmul_count"] == 162 for replay in lane["replays"])
+
+result = {
+    "status": "passed",
+    "suite": str(suite_path),
+    "analysis": str(analysis_path),
+    "metrics": sorted(families),
+    "device_median_ms": {
+        name: suite["lanes"][name]["device_median_ms"]
+        for name in ("pipe", "memory")
+    },
+    "physical_tokens_per_s": {
+        name: suite["lanes"][name]["physical_tokens_per_s"]
+        for name in ("pipe", "memory")
+    },
+}
+output_path.write_text(
+    json.dumps(result, indent=2) + "\n",
+    encoding="utf-8",
+)
+print(json.dumps(result, indent=2))
+PY
+```
+
+Write the final report at:
+
+```text
+$DRIVER_ROOT/agent_report.md
+```
+
+Use this exact compact skeleton:
+
+```text
+310P PHASE 15 MULTI-METRIC VISION PROFILE: PASS | PARTIAL | FAIL
+
+Git commit:
+Host / exact physical NPU:
+Python / torch / torch_npu:
+CANN / driver / firmware:
+ASCEND_RT_VISIBLE_DEVICES:
+Model:
+Graph cache and whether it replayed or compiled:
+Supported profiler metrics:
+
+Driver log / exit code:
+Suite summary:
+Combined JSON / Markdown:
+Raw profiler root:
+NPU monitor:
+
+Pipe lane:
+- device median / physical tok/s
+- profile span / replay and intra-replay gap
+- total kernels / MatMuls per replay
+- MatMul duration / replay and MatMul-only TFLOP/s
+- PromptFA / MatMul / StridedSliceD / Transpose / PadV3 ms and stage share
+- remaining dominant operator families
+- per-role q/k/v/out/fc1/fc2 duration and TFLOP/s
+- MAC / MTE1 / MTE2 / FixPipe overlapping ratios
+- Block Dim distribution
+
+Memory lane:
+- device median / physical tok/s
+- main-memory and L1/L2 bandwidth fields exactly as exported
+- fields that are zero, missing, or unavailable
+
+Matched 910B2 comparison:
+- full-stage 910B2/310P ratio
+- physical-token-throughput ratio
+- MatMul-only-TFLOP/s ratio
+- whether 310P's extra deficit is MatMul, PromptFA, or vector/layout work
+
+Validation:
+- exact B1xS2048/4352-NZ contract
+- 27 layers / 162 MatMuls per replay / 3 replays per lane
+- mapping status
+
+Interpretation:
+- single best-supported bottleneck conclusion
+- do not add overlapping MAC/MTE ratios
+- do not describe bandwidth counters as unique tensor bytes
+
+First blocker or warning:
+All artifact paths:
+```
+
+Stop after Phase 15 and send the report plus exact artifact paths to Luka.
+Do not edit tracked files, create a branch, commit, push, or start another
+shape or page workload.
+
 ## Artifact interpretation
 
-For the current Phase 14-only task, stop after Phase 14.4 and report. The
+For the current Phase 15-only task, stop after Phase 15.4 and report. The
 remaining sections are retained for earlier workflows and are not additional
 current work.
 
@@ -6435,7 +6800,7 @@ min-pixels settings.
 
 For the earlier production-validation task, stop after Phase 8. For the
 earlier isolated-vision saturation task, stop after Phase 9. The current task
-is governed by Phase 14.4 above. Do not start any OCR page workload.
+is governed by Phase 15.4 above. Do not start any OCR page workload.
 
 Write:
 
