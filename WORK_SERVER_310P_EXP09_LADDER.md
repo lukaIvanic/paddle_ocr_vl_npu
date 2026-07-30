@@ -9,7 +9,7 @@ Prove that the real Experiment 09 pipeline runs on this 310P software stack,
 identify which production optimizations work, and measure their approximate
 effect on a small representative workload.
 
-## Current requested task: run Phase 26 only
+## Current requested task: run Phase 27 only
 
 Phases 0-21 have already run, are in progress elsewhere, are superseded, or
 retain historical instructions and evidence. Do not rerun the performance
@@ -23,8 +23,9 @@ failure in the isolated compiled Gather. Phase 24 moved the final gather out
 of the graph, but the normal asynchronous run still failed with GatherV2;
 Phase 25 proved the compiled graph completes and the external eager GatherV2
 fails. The final-token selection now uses one-token slices plus concatenation,
-with no GatherV2. Go directly to **Phase 26: quick slice-and-concat page-nine
-E2E** at the end of this document.
+with no GatherV2. Phase 26 proved that exact page 9 passes. Go directly to
+**Phase 27: warm-cache 8-page reproduction and 32-page extension** at the end
+of this document.
 
 The reported production boundary is unusually sharp:
 
@@ -11488,3 +11489,173 @@ evidence:
 
 Success requires one completed page, normal accounting, and no GatherV2 DDR
 out-of-range error. Do not run more pages or implement another change.
+
+## Phase 27: warm-cache 8-page reproduction and 32-page extension
+
+Run the current best production configuration first on pages 0-7, then on
+pages 0-31. These are normal E2E measurements with the Phase-26
+slice-and-concat fix. Do not compile experimental graphs, change routing,
+profile, or introduce diagnostics.
+
+The historical eight-page Phase-7 anchor at commit `4789067` was:
+
+```text
+pipeline E2E:             25.69 s
+throughput:               0.3114 pages/s
+recognition requests:     122
+vision real / physical:   58,368 / 68,864 tokens
+vision device time:       10.338 s
+text real / physical:     16,178 / 22,528 tokens
+text device time:         1.445 s
+decode wall:              4.66 s
+decode effective / raw:   7,330 / 14,144 tokens
+layout:                   1.42 s
+```
+
+This is a reproduction target, not a hard timing assertion. Report meaningful
+differences rather than forcing agreement.
+
+### 27.1 Pull and establish the exact command
+
+```sh
+cd /workspace/repos/paddle_ocr_vl_npu
+git status --short --branch
+git pull --ff-only origin main
+
+REPO="$(git rev-parse --show-toplevel)"
+COMMIT="$(git rev-parse HEAD)"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+PYTHON_BIN="${PYTHON_BIN:-$(command -v python)}"
+PHASE26_ROOT="$REPO/tmp/09_persistent_page_engine/310p_phase26_slice_concat_33a0407"
+PHASE26_COMMAND="$PHASE26_ROOT/command.sh"
+
+test -x "$PYTHON_BIN"
+test -f "$PHASE26_COMMAND"
+grep -q -- '--batch-size 32' "$PHASE26_COMMAND"
+grep -q -- '--preprocessor-min-pixels 28224' "$PHASE26_COMMAND"
+grep -q -- '--text-packing production_group' "$PHASE26_COMMAND"
+grep -q -- '--vision-packing greedy' "$PHASE26_COMMAND"
+grep -q -- '--vision-promptfa-align-128' "$PHASE26_COMMAND"
+grep -q -- '--layout-device npu' "$PHASE26_COMMAND"
+grep -q -- '--no-layout-graph-capture' "$PHASE26_COMMAND"
+```
+
+The Phase-26 command is the argument authority. Preserve every model, dataset,
+cache, bucket, packing, PromptFA, decode, layout, and min-pixels option.
+Change only `--offset`, `--limit`, and `--output-dir`.
+
+Unset the earlier diagnostic variable:
+
+```sh
+unset PADDLE_OCR_VL_PACKED_GATHER_SYNC_DIAGNOSTIC
+```
+
+Confirm no unrelated process occupies the selected NPU. Never use `pkill` or
+`killall`.
+
+### 27.2 Run pages 0-7
+
+```sh
+OUTPUT_ROOT="$REPO/tmp/09_persistent_page_engine/310p_phase27_scale_$COMMIT_SHORT"
+RUN8="$OUTPUT_ROOT/pages_8"
+RUN32="$OUTPUT_ROOT/pages_32"
+test ! -e "$OUTPUT_ROOT"
+mkdir -p "$RUN8" "$RUN32"
+```
+
+Create `$RUN8/command.sh` from the exact Phase-26 command with:
+
+```text
+--offset 0
+--limit 8
+--output-dir <RUN8>/output
+```
+
+Before running, verify:
+
+```sh
+grep -q -- '--offset 0' "$RUN8/command.sh"
+grep -q -- '--limit 8' "$RUN8/command.sh"
+grep -q -- '--batch-size 32' "$RUN8/command.sh"
+```
+
+Run:
+
+```sh
+set -o pipefail
+bash "$RUN8/command.sh" 2>&1 | tee "$RUN8/run.log"
+printf '%s\n' "${PIPESTATUS[0]}" > "$RUN8/exit_code.txt"
+```
+
+Require exit zero, 8 results, 8 predictions, normal accounting, and no AICore
+exception. Compare its predictions or recognition token IDs against the
+historical Phase-7 replay if that artifact is still present. The final-token
+selection is mathematically identical, so same-environment parity is expected.
+
+If the eight-page run fails, stop and report. Do not start 32 pages.
+
+### 27.3 Run pages 0-31
+
+Create `$RUN32/command.sh` from the same Phase-26 command with:
+
+```text
+--offset 0
+--limit 32
+--output-dir <RUN32>/output
+```
+
+Verify:
+
+```sh
+grep -q -- '--offset 0' "$RUN32/command.sh"
+grep -q -- '--limit 32' "$RUN32/command.sh"
+grep -q -- '--batch-size 32' "$RUN32/command.sh"
+```
+
+Then:
+
+```sh
+set -o pipefail
+bash "$RUN32/command.sh" 2>&1 | tee "$RUN32/run.log"
+printf '%s\n' "${PIPESTATUS[0]}" > "$RUN32/exit_code.txt"
+```
+
+Require exit zero, 32 results, 32 predictions, normal accounting, all
+recognition requests accounted for, and no AICore exception.
+
+### 27.4 Compact comparison
+
+Read both `run_summary.json` files and report:
+
+| Metric | Historical 8 pages | Current 8 pages | Current 32 pages |
+| --- | ---: | ---: | ---: |
+| setup seconds | — | | |
+| pipeline E2E seconds | 25.69 | | |
+| pages/s | 0.3114 | | |
+| pages / recognition requests | 8 / 122 | | |
+| layout seconds | 1.42 | | |
+| vision real / physical tokens | 58,368 / 68,864 | | |
+| vision device seconds | 10.338 | | |
+| effective / physical vision tokens/s | 5,646 / 6,661 | | |
+| text real / physical tokens | 16,178 / 22,528 | | |
+| text device seconds | 1.445 | | |
+| effective / physical text tokens/s | 11,198 / 15,593 | | |
+| decode effective / raw slots | 7,330 / 14,144 | | |
+| decode wall seconds | 4.66 | | |
+| effective / raw decode tokens/s | 1,574 / 3,036 | | |
+| vision packing groups / fill | | | |
+| text packing calls / fill | | | |
+| stop reasons | | | |
+
+Use stage values from the summaries, not inferred wall-clock subtraction.
+Also state whether the current eight-page prediction/token comparison with the
+historical replay is exact, unavailable, or different.
+
+Write:
+
+```text
+$OUTPUT_ROOT/agent_report.md
+```
+
+Paste back `agent_report.md`, the compact table, both exit codes, and both
+summary paths. Do not paste full logs unless there is a failure.
