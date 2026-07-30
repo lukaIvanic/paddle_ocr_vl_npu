@@ -9,27 +9,39 @@ Prove that the real Experiment 09 pipeline runs on this 310P software stack,
 identify which production optimizations work, and measure their approximate
 effect on a small representative workload.
 
-## Current requested task: run Phase 15 only
+## Current requested task: run Phases 15 and 16 only
 
 Phases 0-14 have already run or have retained instructions and evidence. For
 the current task, do not rerun the production pipeline, layout lab, dataset
 validation, saturation matrices, earlier native profiles, the six-lane Phase
 14 matrix, page workloads, text prefill, or decode.
 
-Pull the pushed `codex/910b-profiler-analysis` branch, recover the exact
-Python/model/NPU environment and compatible padded-NZ graph cache used by
-Phase 14, and execute only **Phase 15: B1xS2048 compiled full-stack
-multi-metric profiling** below.
+Pull `main`, recover the exact Python/model/NPU environment and compatible
+padded-NZ graph cache used by Phase 14, and execute:
 
-The current question is deliberately narrow:
+1. **Phase 15: B1xS2048 compiled full-stack multi-metric profiling**; then
+2. **Phase 16: production-matched square MatMulV2 deep profiling**.
+
+If an already-completed Phase 15 artifact passes every Phase 15.4 validation
+at the currently checked-out commit, reuse it as Phase 16's compiled reference
+instead of rerunning Phase 15. Do not reuse an artifact merely because its
+directory exists.
+
+The current questions are deliberately narrow:
 
 > For the optimized B1xS2048, 4352-wide FRACTAL_NZ graph on this 310P, where
 > does the complete 27-layer vision-stage time go across MatMul, PromptFA,
 > layout/vector operations, and overlapping Cube/MTE pipelines?
 
-Run only the portable `pipe` and `memory` PMU lanes. Do not request 910B-only
-`l2`, `memory_access`, `Occupancy`, or `MemoryDetail`; do not run the direct
-eager `msprof op` surrogate; and do not modify or optimize model source.
+> For its production-matched 2048x1152 by 1152x1152 square projection, are
+> all 310P AI Cores launched, how well balanced are they, and where are the
+> wait, transfer, L1/L0, arithmetic, and conflict costs?
+
+Phase 15 uses the portable compiled full-stack `pipe` and `memory` PMU lanes.
+Phase 16 uses the portable direct-kernel `PipeUtilization`,
+`ArithmeticUtilization`, `Memory`, `MemoryL0`, `MemoryUB`, and
+`ResourceConflictRatio` captures. Never request 910B-only `Occupancy` or
+`MemoryDetail` on 310P. Do not modify or optimize model source.
 
 ## Current 310P layout route: eager NPU
 
@@ -396,8 +408,9 @@ Experiment 09 validation.
 - Do not edit source code, install packages, or invent fallback implementations.
 
 For the already-completed production-validation task, the stopping point was
-the layout check and report. Phases 9-12 are also retained historical tasks.
-For the current task, skip Phases 0-13 and stop after Phase 14.
+the layout check and report. Phases 9-14 are retained historical tasks and are
+not the current assignment. The current stopping point is stated at the top
+of this file and in Phases 15-16.
 
 ## What the previous 310P server established
 
@@ -5065,9 +5078,8 @@ All artifact paths:
 ### 13.0 Purpose and immutable experiment contract
 
 This retained predecessor reproduced the historical 910B2 MatMul-only
-calculation on 310P without changing the graph. Do not execute Phase 13 for
-the current task; Phase 14 below supersedes it with the paired six-lane
-matrix:
+calculation on 310P without changing the graph. Do not execute Phase 13;
+Phase 14 superseded it with the paired six-lane matrix:
 
 ```text
 batch:                       1
@@ -5586,7 +5598,8 @@ report under `tmp/`. Send Luka the report and exact artifact paths manually.
 
 ### 14.0 Purpose, scope, and exact 910B2 references
 
-This is the only phase to execute for the current task. Run exactly these six
+This was the only phase in the earlier six-lane task. It is retained as
+provenance for the graph/cache that Phases 15-16 reuse. Do not rerun these six
 complete 27-layer vision-stage lanes:
 
 | Label | Batch | Sequence | Physical tokens | MLP | Weight format |
@@ -6360,8 +6373,8 @@ commit, or push. Keep graph caches and raw profiler trees under
 
 ### 15.0 Scope and expected configuration
 
-This is the only phase to execute for the current task. It runs the real
-compiled 27-layer `VisionPrefillStage`, not a standalone Linear:
+This is the first phase of the current task. It runs the real compiled
+27-layer `VisionPrefillStage`, not a standalone Linear:
 
 ```text
 batch x sequence:             B1 x S2048
@@ -6382,9 +6395,10 @@ metrics:                      pipe, memory
 ```
 
 Do not run `l2`, `memory_access`, `Occupancy`, or `MemoryDetail` on 310P.
-Do not run `run_vision_msprof_op.py`: its directly observable target is an
-eager diagnostic surrogate, while this phase is about the actual compiled
-full stack.
+Do not run `run_vision_msprof_op.py` during Phase 15: its directly observable
+target is a diagnostic kernel replay, while this phase establishes the actual
+compiled full-stack reference. Phase 16 deliberately runs that second tier
+only after matching it back to this reference.
 
 The matched 910B2 references for this exact configuration are:
 
@@ -6404,7 +6418,7 @@ intra-replay device gaps:         ~0.30 ms
 
 These are comparison values, not expected 310P results.
 
-### 15.1 Pull the profiler branch and recover the proven environment
+### 15.1 Pull `main` and recover the proven environment
 
 The work server remains pull-only. Do not discard, stash, clean, or overwrite
 local evidence:
@@ -6416,8 +6430,8 @@ test -z "$(git status --porcelain --untracked-files=no)" || {
   exit 1
 }
 
-git fetch origin codex/910b-profiler-analysis
-git switch --detach origin/codex/910b-profiler-analysis
+git fetch origin main
+git switch --detach origin/main
 
 REPO="$(git rev-parse --show-toplevel)"
 cd "$REPO"
@@ -6728,15 +6742,728 @@ First blocker or warning:
 All artifact paths:
 ```
 
-Stop after Phase 15 and send the report plus exact artifact paths to Luka.
-Do not edit tracked files, create a branch, commit, push, or start another
-shape or page workload.
+After Phase 15 passes, continue directly to Phase 16. Do not edit tracked
+files, create a branch, commit, push, or start another shape or page workload.
+
+## Phase 16: production-matched square MatMulV2 deep profile
+
+### 16.0 Purpose and evidence boundary
+
+Phase 15 answers where the complete compiled 27-layer vision stage spends
+time. Phase 16 asks why one representative production MatMul behaves as it
+does. It directly replays the square attention/output projection:
+
+```text
+logical operation:   [2048, 1152] x [1152, 1152]^T + [1152]
+activation:          fp16 ND
+weight:              fp16 FRACTAL_NZ, materialized before the selected launch
+bias:                fp16 ND
+output:              fp16 ND
+production roles:    q_proj, k_proj, v_proj, out_proj
+selected op family:  MatMulV2
+```
+
+This direct target is deliberately limited to the square projection. Do not
+pretend it represents FC1 or FC2: their eager dispatch can differ from the
+compiled graph, so their production timings and TFLOP/s remain Phase 15
+full-stack evidence.
+
+The direct replay becomes interpretable only if
+`analyze_vision_msprof_op.py` matches its shape, dtype, formats, MatMulV2
+dispatch, and Block Dim back to Phase 15's compiled
+`vision_linear_executions.csv`. If that validation fails, preserve the
+artifacts and stop. Do not weaken the validator, change the kernel-name filter,
+or substitute a different eager operator.
+
+Run these six metrics sequentially:
+
+```text
+PipeUtilization
+ArithmeticUtilization
+Memory
+MemoryL0
+MemoryUB
+ResourceConflictRatio
+```
+
+Do not request `Occupancy` or `MemoryDetail`: the 310P runtime does not support
+those metric families. Consequently:
+
+- Block Dim proves the number of configured logical task blocks, not physical
+  core residency by itself.
+- Count the nonzero per-block/per-core rows exported by the portable metrics,
+  but label this as sampled block/core participation, not `Occupancy`.
+- Do not report the 910B `Occupancy`-only composite cycle score or L2 detail as
+  if it had been measured on 310P.
+
+This is profiling and analysis only. Do not change tiling, source, formats,
+padding, model code, or runtime settings based on the result.
+
+### 16.1 Matched 910B2 reference
+
+These values came from the same direct target on 910B2 at CANN 9.0.0,
+torch 2.10.0+cpu, and torch_npu 2.10.0. They are comparison anchors, not 310P
+pass thresholds:
+
+```text
+captured op:
+  MatMulV2_NDNZ_ND_ND_FP16_FP16_FP16_false_true_all_197328
+Block Dim:                         24
+OpBasic task duration:            29.440 us
+compiled q_proj mean:             23.504 us
+compiled k_proj mean:             23.122 us
+compiled v_proj mean:             23.266 us
+compiled out_proj mean:           29.153 us
+
+PipeUtilization, mean across 24 rows:
+  Cube ratio:                      61.46%
+  MTE1 ratio:                      41.05%
+  MTE2 ratio:                      78.25%
+  Scalar ratio:                    33.86%
+  FixPipe ratio:                    9.17%
+  Scalar stalled by MTE1:         18.20 us
+
+ArithmeticUtilization:
+  Cube FP16 ratio:                 61.38%
+  recorded Cube FP instructions:  60 per row
+  recorded Cube INT instructions:  0
+
+Memory, mean across 24 rows:
+  GM->L1 bandwidth usage:          37.41%
+  core-visible read data:       2,881.25 KiB per row
+  core-visible write data:        192.00 KiB per row
+  L1 read bandwidth:               98.66 GB/s per row
+  L1 write bandwidth:              98.76 GB/s per row
+  main-memory read field:          98.60 GB/s per row
+  main-memory write field:          6.57 GB/s per row
+
+MemoryL0, mean across 24 rows:
+  L0A read / write:               132.22 / 66.11 GB/s
+  L0B read / write:               528.89 / 36.36 GB/s
+  L0C Cube read / write:          251.22 / 264.44 GB/s
+
+MemoryUB:
+  Vector/Scalar UB read/write:      0 for this pure Cube MatMul
+
+ResourceConflictRatio, mean across 24 rows:
+  Cube wait ratio:                 84.71%
+  MTE1 wait ratio:                 78.19%
+  MTE2 wait ratio:                  9.99%
+  Vector/UB conflict ratios:        0
+  aic_time mean:                   28.041 us
+  aic_time population CV:           1.87%
+```
+
+Ratios can overlap; never sum them. The bandwidth fields are profiler-local
+path counters, not whole-card bandwidth. “Core-visible read data” counts
+requests made from each execution block into GM-addressed space; it is not a
+count of unique tensor bytes and is not automatically physical HBM traffic.
+
+The 910B exact tiling key was `197328`, but `baseM/baseN/baseK`,
+`singleCoreM/N/K`, and buffer depths were not present in the profiler CSVs or
+ELF metadata. Do not infer those values from instruction counts. Record the
+310P kernel suffix/tiling key, but report the exact tiling tuple as unavailable
+unless a CANN artifact explicitly names the fields and values.
+
+### 16.2 Recover and validate the Phase 15 compiled reference
+
+Keep using the exact activated environment and logical `npu:0` from Phase 15.
+Set `PHASE15_SUITE_SUMMARY` to the successful Phase 15
+`suite_summary.json`. If this is a fresh shell, choose it from the Phase 15
+report manually; do not blindly use the newest directory.
+
+```sh
+test -f "$PHASE15_SUITE_SUMMARY"
+
+REFERENCE_DIR="$(
+  "$PYTHON_BIN" - "$PHASE15_SUITE_SUMMARY" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+summary_path = Path(sys.argv[1]).resolve()
+summary = json.loads(summary_path.read_text(encoding="utf-8"))
+assert summary["metrics"] == ["pipe", "memory"]
+assert set(summary["lanes"]) == {"pipe", "memory"}
+reference = Path(summary["combined_analysis_cache"]).resolve()
+assert reference.is_dir()
+assert (reference / "vision_linear_executions.csv").is_file()
+print(reference)
+PY
+)"
+
+test -f "$REFERENCE_DIR/vision_linear_executions.csv"
+test -f "$REFERENCE_DIR/profile_analysis.json"
+```
+
+Verify the reference contract mechanically:
+
+```sh
+"$PYTHON_BIN" - "$REFERENCE_DIR/profile_analysis.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+analysis = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+dims = analysis["contract_dims"]
+assert dims["batch_size"] == 1
+assert dims["sequence_length"] == 2048
+assert dims["hidden_size"] == 1152
+assert dims["intermediate_size"] == 4352
+assert dims["layers"] == 27
+assert dims["linear_calls_per_full_stack"] == 162
+assert dims["head_padding_mode"] == "runtime"
+
+families = {lane["metric_family"]: lane for lane in analysis["lanes"]}
+assert set(families) == {"pipe", "memory"}
+for lane in families.values():
+    assert lane["mapping"]["status"] == "validated"
+    assert lane["matmul_count"] == 486
+    assert len(lane["replays"]) == 3
+    assert all(replay["matmul_count"] == 162 for replay in lane["replays"])
+
+print("PHASE16_REFERENCE_CONTRACT: PASS")
+PY
+```
+
+Then record exact capabilities and versions:
+
+```sh
+PHASE16_STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+PHASE16_BASE="310p_square_matmul_deep_${COMMIT_SHORT}_${PHASE16_STAMP}"
+PHASE16_DRIVER="$REPO/tmp/09_persistent_page_engine/vision_msprof_driver/$PHASE16_BASE"
+PHASE16_LOG="$PHASE16_DRIVER/driver.log"
+PHASE16_NPU_LOG="$PHASE16_DRIVER/npu_smi_1s.log"
+mkdir -p "$PHASE16_DRIVER"
+
+{
+  printf 'git_commit=%s\n' "$COMMIT"
+  printf 'hostname=%s\n' "$(hostname)"
+  printf 'python=%s\n' "$PYTHON_BIN"
+  printf 'reference_dir=%s\n' "$REFERENCE_DIR"
+  printf 'ASCEND_RT_VISIBLE_DEVICES=%s\n' \
+    "${ASCEND_RT_VISIBLE_DEVICES:-}"
+  "$PYTHON_BIN" - <<'PY'
+import platform
+import sys
+import torch
+import torch_npu
+import torch_npu.profiler as npu_prof
+
+assert torch.npu.is_available()
+supported = [str(item) for item in npu_prof.supported_ai_core_metrics()]
+required = [
+    "PipeUtilization",
+    "ArithmeticUtilization",
+    "Memory",
+    "MemoryL0",
+    "MemoryUB",
+    "ResourceConflictRatio",
+]
+missing = [
+    name
+    for name in required
+    if not any(item == name or item.endswith("." + name) for item in supported)
+]
+print("python_version=" + sys.version.replace("\n", " "))
+print("platform=" + platform.platform())
+print("torch=" + torch.__version__)
+print("torch_npu=" + getattr(torch_npu, "__version__", "<missing>"))
+print("device=" + torch.npu.get_device_name(0))
+print("soc=" + str(torch_npu.npu.get_soc_version()))
+print("supported_ai_core_metrics=" + repr(supported))
+assert not missing, f"required profiler metrics are missing: {missing}"
+PY
+  command -v msprof
+  msprof --version 2>&1 || true
+  npu-smi info
+  df -h "$REPO" "$REFERENCE_DIR"
+} >"$PHASE16_DRIVER/environment.txt" 2>&1
+
+cat "$PHASE16_DRIVER/environment.txt"
+```
+
+The capability list must contain all six requested metrics. If one is absent,
+stop before any capture and report the exact list. Do not replace an
+unsupported metric with `Occupancy`, `MemoryDetail`, or a similarly named
+PyTorch profiler mode.
+
+### 16.3 Run all six captures sequentially
+
+The checked-in runner owns command records, stdout/stderr, target summaries,
+and raw/evidence separation:
+
+```sh
+RUNNER="$REPO/09_persistent_page_engine/scripts/run_vision_msprof_op.py"
+ANALYZER="$REPO/09_persistent_page_engine/scripts/analyze_vision_msprof_op.py"
+test -f "$RUNNER"
+test -f "$ANALYZER"
+
+CAPTURE_EVIDENCE_ROOT="$REPO/tmp/09_persistent_page_engine/vision_msprof_op"
+CAPTURE_RAW_ROOT="$REPO/.runtime_cache/09_persistent_page_engine_vision_msprof_op"
+
+METRICS=(
+  PipeUtilization
+  ArithmeticUtilization
+  Memory
+  MemoryL0
+  MemoryUB
+  ResourceConflictRatio
+)
+
+for metric in "${METRICS[@]}"; do
+  case "$metric" in
+    PipeUtilization) suffix=pipe ;;
+    ArithmeticUtilization) suffix=arithmetic ;;
+    Memory) suffix=memory ;;
+    MemoryL0) suffix=memoryl0 ;;
+    MemoryUB) suffix=memoryub ;;
+    ResourceConflictRatio) suffix=conflict ;;
+    *) printf 'unhandled metric: %s\n' "$metric"; exit 1 ;;
+  esac
+  test ! -e "$CAPTURE_EVIDENCE_ROOT/${PHASE16_BASE}_${suffix}"
+  test ! -e "$CAPTURE_RAW_ROOT/${PHASE16_BASE}_${suffix}"
+done
+```
+
+Start a low-overhead NPU monitor and execute the captures. The outer driver
+log is intentionally followable; each successful capture also writes its own
+command, target summary, and msprof logs.
+
+```sh
+(
+  while true; do
+    date --iso-8601=ns 2>/dev/null || date
+    npu-smi info
+    sleep 1
+  done
+) >"$PHASE16_NPU_LOG" 2>&1 &
+PHASE16_MONITOR_PID=$!
+trap 'kill "$PHASE16_MONITOR_PID" 2>/dev/null || true' EXIT
+
+set +e
+(
+  set -euo pipefail
+  for metric in "${METRICS[@]}"; do
+    case "$metric" in
+      PipeUtilization) suffix=pipe ;;
+      ArithmeticUtilization) suffix=arithmetic ;;
+      Memory) suffix=memory ;;
+      MemoryL0) suffix=memoryl0 ;;
+      MemoryUB) suffix=memoryub ;;
+      ResourceConflictRatio) suffix=conflict ;;
+    esac
+    run_name="${PHASE16_BASE}_${suffix}"
+    printf '\n[%s] capture start metric=%s run=%s\n' \
+      "$(date --iso-8601=seconds 2>/dev/null || date)" \
+      "$metric" "$run_name"
+    PYTHONUNBUFFERED=1 "$PYTHON_BIN" "$RUNNER" \
+      --run-name "$run_name" \
+      --metric "$metric" \
+      --msprof-warm-up 5 \
+      --python "$PYTHON_BIN" \
+      --evidence-root "$CAPTURE_EVIDENCE_ROOT" \
+      --raw-root "$CAPTURE_RAW_ROOT"
+    printf '[%s] capture completed metric=%s run=%s\n' \
+      "$(date --iso-8601=seconds 2>/dev/null || date)" \
+      "$metric" "$run_name"
+  done
+) >"$PHASE16_LOG" 2>&1
+PHASE16_CAPTURE_EXIT=$?
+set -e
+printf '%s\n' "$PHASE16_CAPTURE_EXIT" \
+  >"$PHASE16_DRIVER/capture_exit_code.txt"
+
+kill "$PHASE16_MONITOR_PID" 2>/dev/null || true
+wait "$PHASE16_MONITOR_PID" 2>/dev/null || true
+trap - EXIT
+
+test "$PHASE16_CAPTURE_EXIT" -eq 0
+```
+
+Luka can follow this from another shell:
+
+```sh
+tail -n 100 -f \
+  "$REPO/tmp/09_persistent_page_engine/vision_msprof_driver/$PHASE16_BASE/driver.log"
+```
+
+Expected time is roughly tens of seconds per metric, not a graph-compilation
+run. If any capture fails, preserve all completed captures and report the
+first failure plus:
+
+```sh
+tail -n 240 "$PHASE16_LOG"
+find "$CAPTURE_EVIDENCE_ROOT" -maxdepth 4 \
+  -path "*${PHASE16_BASE}*" -type f -print | sort
+```
+
+Do not delete or rerun a successful metric merely because a later one failed.
+Use a new `PHASE16_BASE` for any approved retry.
+
+### 16.4 Validate every capture against the compiled graph
+
+```sh
+for metric in "${METRICS[@]}"; do
+  case "$metric" in
+    PipeUtilization) suffix=pipe ;;
+    ArithmeticUtilization) suffix=arithmetic ;;
+    Memory) suffix=memory ;;
+    MemoryL0) suffix=memoryl0 ;;
+    MemoryUB) suffix=memoryub ;;
+    ResourceConflictRatio) suffix=conflict ;;
+  esac
+  run_name="${PHASE16_BASE}_${suffix}"
+  capture_dir="$CAPTURE_EVIDENCE_ROOT/$run_name"
+  raw_dir="$CAPTURE_RAW_ROOT/$run_name"
+  output_dir="$capture_dir/analysis"
+
+  printf '[%s] validation start metric=%s\n' \
+    "$(date --iso-8601=seconds 2>/dev/null || date)" "$metric"
+  "$PYTHON_BIN" "$ANALYZER" \
+    --capture-dir "$capture_dir" \
+    --raw-dir "$raw_dir" \
+    --reference-dir "$REFERENCE_DIR" \
+    --output-dir "$output_dir"
+  printf '[%s] validation completed metric=%s report=%s\n' \
+    "$(date --iso-8601=seconds 2>/dev/null || date)" \
+    "$metric" "$output_dir/report.md"
+done | tee "$PHASE16_DRIVER/validation.log"
+```
+
+Run this cross-capture contract check:
+
+```sh
+"$PYTHON_BIN" - \
+  "$CAPTURE_EVIDENCE_ROOT" \
+  "$PHASE16_BASE" \
+  "$PHASE16_DRIVER/validation.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1]).resolve()
+base = sys.argv[2]
+output = Path(sys.argv[3]).resolve()
+captures = {
+    "PipeUtilization": "pipe",
+    "ArithmeticUtilization": "arithmetic",
+    "Memory": "memory",
+    "MemoryL0": "memoryl0",
+    "MemoryUB": "memoryub",
+    "ResourceConflictRatio": "conflict",
+}
+
+dispatches = {}
+for expected_metric, suffix in captures.items():
+    path = root / f"{base}_{suffix}" / "analysis" / "analysis.json"
+    assert path.is_file(), path
+    analysis = json.loads(path.read_text(encoding="utf-8"))
+    assert analysis["status"] == "passed", path
+    assert analysis["capture_metric"] == expected_metric
+    role = analysis["roles"]["square"]
+    validation = role["validation"]
+    assert validation["status"] == "passed"
+    assert not validation["errors"]
+    observed = validation["observed_dispatch"]
+    reference = validation["reference_contract"]
+    assert observed["operator_name"].startswith("MatMulV2_")
+    assert observed["operator_core_type"] == "cube"
+    assert observed["block_dim"] == reference["block_dim"]
+    assert reference["input_shapes"] == [
+        [2048, 1152],
+        [72, 72, 16, 16],
+        [1152],
+    ]
+    assert reference["input_formats"] == ["ND", "FRACTAL_NZ", "ND"]
+    assert reference["output_shapes"] == [[2048, 1152]]
+    assert reference["output_formats"] == ["ND"]
+    assert reference["flops"] == 5435817984
+    dispatches[expected_metric] = {
+        "analysis": str(path),
+        "operator_name": observed["operator_name"],
+        "block_dim": observed["block_dim"],
+        "device_id": observed["device_id"],
+        "current_freq": observed["current_freq"],
+        "metric_records": analysis["metric_records"],
+    }
+
+names = {item["operator_name"] for item in dispatches.values()}
+block_dims = {item["block_dim"] for item in dispatches.values()}
+assert len(names) == 1, names
+assert len(block_dims) == 1, block_dims
+
+result = {
+    "status": "passed",
+    "operator_name": next(iter(names)),
+    "block_dim": next(iter(block_dims)),
+    "captures": dispatches,
+}
+output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+print(json.dumps(result, indent=2))
+PY
+```
+
+The validation must pass before interpreting timing or counters. A different
+310P tiling-key suffix from 910B is expected and is not a failure. A different
+operator family, tensor format, shape, or mismatch with the 310P compiled
+reference is a failure.
+
+### 16.5 Build a durable field-level summary
+
+The analyzer preserves missing values and numeric zero separately. Generate
+one field-level JSON across all six normalized CSVs:
+
+```sh
+"$PYTHON_BIN" - \
+  "$CAPTURE_EVIDENCE_ROOT" \
+  "$PHASE16_BASE" \
+  "$PHASE16_DRIVER/metric_summary.json" <<'PY'
+import csv
+import json
+import math
+import statistics
+import sys
+from collections import defaultdict
+from pathlib import Path
+
+root = Path(sys.argv[1]).resolve()
+base = sys.argv[2]
+output = Path(sys.argv[3]).resolve()
+captures = {
+    "PipeUtilization": "pipe",
+    "ArithmeticUtilization": "arithmetic",
+    "Memory": "memory",
+    "MemoryL0": "memoryl0",
+    "MemoryUB": "memoryub",
+    "ResourceConflictRatio": "conflict",
+}
+
+result = {"schema_version": 1, "captures": {}}
+for capture_metric, suffix in captures.items():
+    csv_path = (
+        root / f"{base}_{suffix}" / "analysis" / "metric_records.csv"
+    )
+    assert csv_path.is_file(), csv_path
+    fields = defaultdict(
+        lambda: {
+            "values": [],
+            "record_count": 0,
+            "missing_count": 0,
+            "zero_count": 0,
+            "core_ids": set(),
+        }
+    )
+    with csv_path.open(newline="", encoding="utf-8") as handle:
+        for row in csv.DictReader(handle):
+            key = (row["category"], row["metric"], row["unit"])
+            item = fields[key]
+            item["record_count"] += 1
+            if row["core_id"]:
+                item["core_ids"].add(row["core_id"])
+            if row["is_missing"].lower() == "true":
+                item["missing_count"] += 1
+                continue
+            text = row["numeric_value"]
+            if not text:
+                item["missing_count"] += 1
+                continue
+            value = float(text)
+            if not math.isfinite(value):
+                item["missing_count"] += 1
+                continue
+            item["values"].append(value)
+            if value == 0.0:
+                item["zero_count"] += 1
+
+    capture_out = []
+    for (category, metric, unit), item in sorted(fields.items()):
+        values = item.pop("values")
+        core_ids = sorted(item.pop("core_ids"))
+        entry = {
+            **item,
+            "category": category,
+            "metric": metric,
+            "unit": unit,
+            "sampled_core_ids": core_ids,
+            "sampled_core_count": len(core_ids),
+        }
+        if values:
+            mean = statistics.fmean(values)
+            stddev = statistics.pstdev(values)
+            entry.update(
+                {
+                    "mean": mean,
+                    "min": min(values),
+                    "max": max(values),
+                    "population_stddev": stddev,
+                    "population_cv": (
+                        stddev / abs(mean) if mean != 0 else None
+                    ),
+                }
+            )
+        capture_out.append(entry)
+    result["captures"][capture_metric] = {
+        "metric_records_csv": str(csv_path),
+        "fields": capture_out,
+    }
+
+output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+print("PHASE16_METRIC_SUMMARY: PASS")
+print(output)
+PY
+```
+
+This generic summary intentionally retains the exact field names exported by
+the 310P CANN version. Do not silently rename `mac` to `cube`, fill missing
+fields with zero, or divide/add counters until the field semantics are clear.
+
+### 16.6 Analysis questions the stronger agent must answer
+
+The agent may inspect any generated CSV/JSON, `visualize_data.bin`, captured
+ELF, installed CANN manifest, or operator-package metadata read-only. It may
+write additional analysis scripts and notes under `$PHASE16_DRIVER`. It must
+not edit tracked files or begin an optimization experiment.
+
+Answer all of the following:
+
+1. **Dispatch and format**
+   - Exact 310P MatMulV2 kernel name and suffix/tiling key.
+   - Block Dim and number of distinct nonzero sampled block/core rows.
+   - ND/FRACTAL_NZ/ND contract and whether the compiled Phase 15 graph has any
+     explicit `TransData` around its MatMuls.
+   - Never attribute the direct target's one-time `npu_format_cast` to the
+     selected MatMul; the runner materializes NZ before profiling it.
+
+2. **Per-block balance**
+   - Mean, min, max, population standard deviation, CV, and max/min for
+     `aic_time` or the closest documented per-block duration.
+   - Whether instruction counts and core-visible read/write quantities are
+     equal across sampled rows.
+   - Separate configured blocks, sampled rows, and physical-core occupancy.
+
+3. **Arithmetic and pipeline**
+   - Cube/MAC, MTE1, MTE2, Scalar, and FixPipe active ratios and times.
+   - Cube FP16 versus integer instruction/FLOP counters.
+   - Cube/MAC, MTE1, MTE2, and MTE3 wait ratios.
+   - Explicitly state that active and wait ratios can overlap and are not a
+     wall-time partition.
+
+4. **Memory hierarchy**
+   - GM->L1 usage, L1 read/write, main-memory fields, and core-visible
+     read/write quantities.
+   - L0A/L0B/L0C read/write bandwidth.
+   - UB traffic/conflicts, with missing-versus-zero counts.
+   - Do not multiply a per-row “main memory” field by Block Dim and call it HBM
+     bandwidth. Do not call repeated per-core requests unique tensor bytes.
+
+5. **310P versus 910B2**
+   - Shape-for-shape ratios for OpBasic duration and each comparable field.
+   - Whether 310P's much lower square-MatMul TFLOP/s is best explained by:
+     fewer configured cores, lower Cube issue, MTE2/GM->L1 feeding, MTE1/L0
+     feeding, wait/dependency structure, tail/imbalance, or a combination.
+   - Compare directionally rather than treating different product-local
+     bandwidth numbers as a common whole-card denominator.
+
+6. **Tiling**
+   - Search the captured and installed CANN metadata for explicit
+     `baseM/baseN/baseK`, `singleCore*`, `step*`, and buffer-depth values.
+   - If only the tiling key is observable, say exactly that. Do not reverse
+     engineer a confident tiling tuple from counts alone.
+   - Explain whether IBShare/pure-Cube optimization appears applicable as a
+     hypothesis only. Do not enable it.
+
+7. **Evidence quality**
+   - Compare direct OpBasic duration with Phase 15 compiled q/k/v/out
+     durations, but keep direct kernel replay and compiled graph timing
+     separate.
+   - Flag any implausible counter, including zero active bandwidth with
+     nonzero activity or a bandwidth above a physically meaningful range.
+   - Prefer “counter unavailable/inconsistent” over inventing a correction.
+
+### 16.7 Required report and stop condition
+
+Write:
+
+```text
+$PHASE16_DRIVER/agent_report.md
+```
+
+Use this structure:
+
+```text
+310P PHASE 16 SQUARE MATMUL DEEP PROFILE: PASS | PARTIAL | FAIL
+
+Git commit:
+Host / exact NPU:
+Python / torch / torch_npu:
+CANN / ops packages / driver / firmware / msprof:
+ASCEND_RT_VISIBLE_DEVICES:
+Supported metric families:
+Phase 15 compiled reference:
+
+Dispatch:
+- exact operator name / tiling-key suffix
+- Block Dim
+- configured blocks / sampled rows / physical occupancy evidence
+- tensor shapes, dtypes, and formats
+- explicit TransData evidence
+
+Direct duration versus compiled production:
+- OpBasic and visualize duration
+- Phase 15 q/k/v/out durations
+- why direct and compiled timings differ
+
+Per-block balance:
+- aic_time mean/min/max/stddev/CV/max-min
+- instruction/work-count balance
+
+Pipe and arithmetic:
+- Cube/MAC, MTE1, MTE2, Scalar, FixPipe active ratios
+- FP16/INT instruction and FLOP counters
+- wait ratios
+
+Memory hierarchy:
+- core-visible read/write quantities
+- GM->L1 and L1/main-memory fields
+- L0A/L0B/L0C fields
+- UB traffic/conflicts
+- missing, zero, and implausible fields
+
+310P versus matched 910B2:
+- duration ratio
+- active/wait-ratio comparison
+- GM/L1/L0 comparison with scope caveats
+- best-supported explanation for the TFLOP/s gap
+
+Tiling and advanced-template evidence:
+- observable tiling key
+- exact tiling fields found, or explicit unavailable verdict
+- IBShare/pure-Cube applicability as hypothesis only
+
+Full-stack connection:
+- what Phase 16 explains about Phase 15
+- what remains attributable to PromptFA/vector/layout work
+
+First blocker or warning:
+Validation JSON:
+Metric summary JSON:
+Driver/NPU logs:
+Six evidence directories:
+Six raw profiler directories:
+All additional analysis artifacts:
+```
+
+Stop after Phase 16. Do not start a new shape, alter the model, tune tiling,
+enable another template, create a branch, commit, or push. Send Luka the
+report and exact artifact paths manually.
 
 ## Artifact interpretation
 
-For the current Phase 15-only task, stop after Phase 15.4 and report. The
-remaining sections are retained for earlier workflows and are not additional
-current work.
+For the current task, execute Phase 15 and then Phase 16. If Phase 15 is
+already present, reuse it only after the Phase 15.4 validation passes. Stop
+after Phase 16.7. The remaining sections are retained for earlier workflows
+and are not additional current work.
 
 For every production lane:
 
@@ -6800,7 +7527,7 @@ min-pixels settings.
 
 For the earlier production-validation task, stop after Phase 8. For the
 earlier isolated-vision saturation task, stop after Phase 9. The current task
-is governed by Phase 15.4 above. Do not start any OCR page workload.
+is governed by Phases 15 and 16 above. Do not start any OCR page workload.
 
 Write:
 
