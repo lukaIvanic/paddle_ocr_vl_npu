@@ -82,6 +82,7 @@ ROTARY_IMPLEMENTATIONS = (
     "joint_inplace_partial",
 )
 PROFILE_METRIC_CHOICES = ("pipe", "memory", "l2", "memory_access")
+MSPROF_TARGET_NAME = "vision_msprof_target"
 LEGACY_SEPARATE_MANUAL_SOURCE_HASH = "b4144440d15e"
 JOINT_MANUAL_SOURCE_HASH = "25d9a2dd1d39"
 StageInputs = tuple[torch.Tensor, ...]
@@ -171,6 +172,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--profile-warmup-steps", type=int, default=1)
     parser.add_argument("--profile-steps", type=int, default=3)
     parser.add_argument("--parser-topn", type=int, default=200)
+    parser.add_argument(
+        "--emit-msprof-target",
+        action="store_true",
+        help=(
+            "After ordinary timing, emit exactly one warm compiled replay "
+            f"inside the MSTX range {MSPROF_TARGET_NAME!r}. Intended only "
+            "for the dedicated msprof-op runner."
+        ),
+    )
     args = parser.parse_args(argv)
     if args.batch_size == 4 and args.sequence_length != 512:
         parser.error("B4 is intentionally bounded to S512 in this experiment")
@@ -188,6 +198,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("--samples and --calls-per-sample must be positive")
     if args.profile_warmup_steps <= 0 or args.profile_steps <= 0:
         parser.error("profiler step counts must be positive")
+    if args.emit_msprof_target and args.execution != "torchair":
+        parser.error("--emit-msprof-target requires --execution torchair")
     return args
 
 
@@ -977,6 +989,39 @@ def _measure(
     )
 
 
+def _emit_msprof_target(
+    run: Callable[..., torch.Tensor],
+    inputs: StageInputs,
+    *,
+    device: torch.device,
+    torch_npu: Any,
+) -> dict[str, Any]:
+    """Emit one stream-scoped warm graph replay for targeted ``msprof op``."""
+    current_stream = torch.npu.current_stream(device)
+    range_id = torch_npu.npu.mstx.range_start(
+        MSPROF_TARGET_NAME,
+        current_stream,
+    )
+    output: torch.Tensor | None = None
+    try:
+        output = run(*inputs)
+    finally:
+        # msprof's selected range must cover completion of the one replay,
+        # not merely asynchronous host submission.
+        current_stream.synchronize()
+        torch_npu.npu.mstx.range_end(range_id)
+    del output
+    return {
+        "name": MSPROF_TARGET_NAME,
+        "replays": 1,
+        "execution": "warm_compiled_graph",
+        "stream": str(current_stream),
+        "synchronized_before_range_end": True,
+        "throughput_measurement": False,
+        "intended_consumer": "msprof op --mstx=on --mstx-include",
+    }
+
+
 def _diff(left: torch.Tensor, right: torch.Tensor) -> dict[str, Any]:
     left32 = left.float()
     right32 = right.float()
@@ -1259,7 +1304,10 @@ def _parse_profile(
     shutil.copyfile(source_json, destination_json)
     shutil.copyfile(source_md, destination_md)
     parsed = json.loads(destination_json.read_text(encoding="utf-8"))
-    detailed_output_dir = output_dir / "detailed_profile"
+    # Full normalized rows and SQLite are analysis cache, not compact run
+    # evidence. Keep them beside the heavyweight raw profile so tmp/ remains
+    # reviewable and Git-friendly.
+    detailed_output_dir = profile_dir / "normalized_analysis"
     detailed_command = [
         sys.executable,
         str(HERE / "analyze_vision_matmul_profile.py"),
@@ -1278,6 +1326,34 @@ def _parse_profile(
     )
     detailed_json = detailed_output_dir / "profile_analysis.json"
     detailed = json.loads(detailed_json.read_text(encoding="utf-8"))
+    compact_detailed_dir = output_dir / "detailed_profile"
+    compact_detailed_dir.mkdir(parents=True, exist_ok=True)
+    for name in (
+        "profile_manifest.json",
+        "profile_analysis.json",
+        "vision_layer_summary.csv",
+        "profile_report.md",
+    ):
+        shutil.copyfile(
+            detailed_output_dir / name,
+            compact_detailed_dir / name,
+        )
+    detailed_lane = detailed["lanes"][0]
+    compact_detailed = {
+        "schema_version": detailed["schema_version"],
+        "contract_dims": detailed["contract_dims"],
+        "cross_lane_validation": detailed["cross_lane_validation"],
+        "warnings": detailed["warnings"],
+        "lane": {
+            "metric_family": detailed_lane["metric_family"],
+            "kernel_count": detailed_lane["kernel_count"],
+            "matmul_count": detailed_lane["matmul_count"],
+            "mapping": detailed_lane["mapping"],
+            "full_layer_mapping": detailed_lane["full_layer_mapping"],
+            "matmul": detailed_lane["matmul"],
+            "vision_role_summary": detailed_lane["vision_role_summary"],
+        },
+    }
     dispatch: Counter[str] = Counter()
     dispatch_duration_us: Counter[str] = Counter()
     transdata_count = 0
@@ -1324,10 +1400,12 @@ def _parse_profile(
             "stdout": detailed_completed.stdout,
             "stderr": detailed_completed.stderr,
             "analysis_json": str(detailed_json),
+            "analysis_cache_dir": str(detailed_output_dir),
+            "compact_report_dir": str(compact_detailed_dir),
             "report_markdown": str(
-                detailed_output_dir / "profile_report.md"
+                compact_detailed_dir / "profile_report.md"
             ),
-            "summary": detailed,
+            "summary": compact_detailed,
         },
         "dispatch": {
             "counts": dict(dispatch),
@@ -1750,6 +1828,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "rotary_implementation": args.rotary_implementation,
             "execution": args.execution,
             "profile_metric": args.profile_metric,
+            "emit_msprof_target": bool(args.emit_msprof_target),
         },
         "weight_format": format_metadata,
         "setup_s_through_format_preparation": time.perf_counter()
@@ -1859,6 +1938,13 @@ def main(argv: Sequence[str] | None = None) -> None:
             },
         }
     )
+    if args.emit_msprof_target:
+        summary["msprof_target"] = _emit_msprof_target(
+            run,
+            candidate_inputs,
+            device=device,
+            torch_npu=torch_npu,
+        )
 
     if args.profile:
         profile_contract_path = output_dir / "profile_contract.json"
@@ -1873,6 +1959,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "weight_format": summary["weight_format"],
             "attention": summary["attention"],
             "compile": summary["compile"],
+            "unprofiled_measurements": summary["measurements"],
             "linear_flops_per_full_stack_call": flops_per_call,
             "profile": {
                 "metric": args.profile_metric,

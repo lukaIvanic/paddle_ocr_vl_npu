@@ -227,12 +227,13 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     if contract_path is None:
         raise AssertionError("no profile lanes were selected")
+    combined_cache = profile_root / "combined_analysis"
     combined_output = output_root / "combined_profile"
     analyze_command = [
         sys.executable,
         str(ANALYZER),
         "--output-dir",
-        str(combined_output),
+        str(combined_cache),
         "--contract",
         str(contract_path),
     ]
@@ -246,6 +247,15 @@ def main(argv: Sequence[str] | None = None) -> None:
         analyze_command,
         log_path=output_root / "analyze.log",
     )
+    combined_output.mkdir()
+    for name in (
+        "profile_manifest.json",
+        "profile_analysis.json",
+        "vision_layer_summary.csv",
+        "profile_report.md",
+    ):
+        shutil.copyfile(combined_cache / name, combined_output / name)
+    suite["combined_analysis_cache"] = str(combined_cache)
     suite["combined_analysis"] = str(
         combined_output / "profile_analysis.json"
     )

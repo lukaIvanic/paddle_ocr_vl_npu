@@ -26,8 +26,28 @@ from pathlib import Path
 from typing import Any, Iterable, Sequence
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 ROLES = ("q_proj", "k_proj", "v_proj", "out_proj", "fc1", "fc2")
+PREFIX_TYPES = ("Data", "LayerNormV3")
+LAYER0_TYPES = (
+    "MatMulV2", "MatMulV2", "MatMulV2", "ConcatV2D", "SplitVD", "Cast",
+    "StridedSliceD", "StridedSliceD", "Neg", "ConcatV2D", "Cast",
+    "StridedSliceD", "StridedSliceD", "Neg", "ConcatV2D", "Mul", "Mul",
+    "Mul", "Add", "Mul", "Add", "Transpose", "Transpose", "Transpose",
+    "memset", "PadV3", "memset", "PadV3", "memset", "PadV3",
+    "PromptFlashAttention", "StridedSliceD", "Transpose", "MatMulV2",
+    "AddLayerNorm", "MatMulV2", "Gelu", "MatMulV2", "AddLayerNorm",
+)
+LATER_LAYER_TYPES = (
+    "MatMulV2", "MatMulV2", "MatMulV2", "ConcatV2D", "SplitVD",
+    "Transpose", "memset", "PadV3", "Cast", "StridedSliceD",
+    "StridedSliceD", "Neg", "ConcatV2D", "Mul", "Mul", "Add",
+    "Transpose", "memset", "PadV3", "Cast", "StridedSliceD",
+    "StridedSliceD", "Neg", "ConcatV2D", "Mul", "Mul", "Add",
+    "Transpose", "memset", "PadV3", "PromptFlashAttention",
+    "StridedSliceD", "Transpose", "MatMulV2", "AddLayerNorm", "MatMulV2",
+    "Gelu", "MatMulV2", "AddLayerNorm",
+)
 OUTPUT_FILES = (
     "profile_manifest.json",
     "profile_analysis.json",
@@ -344,6 +364,9 @@ def _read_lane(metric: str, profile_dir: Path) -> tuple[
                     "layer": None,
                     "role": None,
                     "mapping_status": None,
+                    "layer_kernel_ordinal": None,
+                    "layer_component": None,
+                    "full_mapping_status": None,
                 }
                 for field in CANONICAL_ALIASES:
                     header = resolved[field]
@@ -579,6 +602,251 @@ def _assign_replays_to_all_rows(
         replay_offset += len(groups)
 
 
+def _ordered_replay_rows(
+    rows: Sequence[dict[str, Any]],
+) -> dict[int, list[dict[str, Any]]]:
+    grouped = _group(
+        [row for row in rows if row["replay_id"] is not None],
+        lambda row: int(row["replay_id"]),
+    )
+    return {
+        replay_id: sorted(
+            group,
+            key=lambda row: (
+                row["start_us"] if row["start_us"] is not None else math.inf,
+                row["source_row"],
+            ),
+        )
+        for replay_id, group in sorted(grouped.items())
+    }
+
+
+def _kernel_signature(row: dict[str, Any]) -> list[Any]:
+    return [
+        row.get("type"),
+        row.get("accelerator_core"),
+        row.get("block_dim"),
+        row.get("mix_block_dim"),
+        row.get("input_shapes"),
+        row.get("input_dtypes"),
+        row.get("input_formats"),
+        row.get("output_shapes"),
+        row.get("output_dtypes"),
+        row.get("output_formats"),
+    ]
+
+
+def _signature_hash(rows: Sequence[dict[str, Any]]) -> str:
+    payload = _json([_kernel_signature(row) for row in rows]).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _layer_component(ordinal: int) -> str:
+    if ordinal == 0:
+        return "q_proj"
+    if ordinal == 1:
+        return "k_proj"
+    if ordinal == 2:
+        return "v_proj"
+    if 3 <= ordinal <= 29:
+        return "attention_prepare_rope_pad"
+    if ordinal == 30:
+        return "prompt_flash_attention"
+    if ordinal in (31, 32):
+        return "attention_output_transform"
+    if ordinal == 33:
+        return "out_proj"
+    if ordinal == 34:
+        return "attention_residual_norm"
+    if ordinal == 35:
+        return "fc1"
+    if ordinal == 36:
+        return "gelu"
+    if ordinal == 37:
+        return "fc2"
+    if ordinal == 38:
+        return "mlp_residual_norm"
+    raise AssertionError(f"unexpected layer kernel ordinal {ordinal}")
+
+
+def _map_full_layers(
+    rows: list[dict[str, Any]],
+    linear_mapping: dict[str, Any],
+    dims: dict[str, Any],
+) -> dict[str, Any]:
+    if linear_mapping["status"] != "validated":
+        return {
+            "status": "unavailable",
+            "reason": "full-layer mapping requires validated linear anchors",
+            "replays": [],
+        }
+    expected_layers = int(dims["layers"])
+    if expected_layers != 27:
+        return {
+            "status": "unavailable",
+            "reason": f"no validated full-layer fixture for {expected_layers} layers",
+            "replays": [],
+        }
+    layer_width = len(LAYER0_TYPES)
+    expected_total = len(PREFIX_TYPES) + expected_layers * layer_width
+    replays = _ordered_replay_rows(rows)
+    failures: list[dict[str, Any]] = []
+    validated: list[dict[str, Any]] = []
+    for replay_id, group in replays.items():
+        if len(group) != expected_total:
+            failures.append({
+                "replay_id": replay_id,
+                "reason": "kernel_count",
+                "observed": len(group),
+                "expected": expected_total,
+            })
+            continue
+        prefix = group[:len(PREFIX_TYPES)]
+        if tuple(row["type"] for row in prefix) != PREFIX_TYPES:
+            failures.append({
+                "replay_id": replay_id,
+                "reason": "prefix_signature",
+                "observed": [row["type"] for row in prefix],
+            })
+            continue
+        layer_hashes: list[str] = []
+        replay_failed = False
+        for layer in range(expected_layers):
+            start = len(PREFIX_TYPES) + layer * layer_width
+            segment = group[start:start + layer_width]
+            expected_types = LAYER0_TYPES if layer == 0 else LATER_LAYER_TYPES
+            observed_types = tuple(row["type"] for row in segment)
+            if observed_types != expected_types:
+                failures.append({
+                    "replay_id": replay_id,
+                    "layer": layer,
+                    "reason": "layer_signature",
+                    "observed": list(observed_types),
+                    "expected": list(expected_types),
+                })
+                replay_failed = True
+                break
+            linear_anchors = {
+                0: "q_proj",
+                1: "k_proj",
+                2: "v_proj",
+                33: "out_proj",
+                35: "fc1",
+                37: "fc2",
+            }
+            for ordinal, role in linear_anchors.items():
+                anchor = segment[ordinal]
+                if (
+                    anchor["mapping_status"] != "validated"
+                    or anchor["layer"] != layer
+                    or anchor["role"] != role
+                ):
+                    failures.append({
+                        "replay_id": replay_id,
+                        "layer": layer,
+                        "ordinal": ordinal,
+                        "reason": "linear_anchor",
+                        "observed_layer": anchor["layer"],
+                        "observed_role": anchor["role"],
+                        "expected_role": role,
+                    })
+                    replay_failed = True
+                    break
+            if replay_failed:
+                break
+            layer_hashes.append(_signature_hash(segment))
+        if replay_failed:
+            continue
+        if len(set(layer_hashes[1:])) != 1:
+            failures.append({
+                "replay_id": replay_id,
+                "reason": "later_layer_hashes_differ",
+                "hashes": layer_hashes[1:],
+            })
+            continue
+        validated.append({
+            "replay_id": replay_id,
+            "kernel_count": len(group),
+            "signature_sha256": _signature_hash(group),
+            "prefix_sha256": _signature_hash(prefix),
+            "layer0_sha256": layer_hashes[0],
+            "later_layer_sha256": layer_hashes[1],
+        })
+    if failures or len(validated) != len(replays):
+        return {
+            "status": "failed",
+            "reason": "full replay does not match the validated 27x39 fixture",
+            "expected_kernel_count": expected_total,
+            "replays": validated,
+            "failures": failures[:20],
+        }
+    for replay_id, group in replays.items():
+        for row in group[:len(PREFIX_TYPES)]:
+            row["full_mapping_status"] = "validated"
+            row["layer_component"] = "graph_prefix"
+        for layer in range(expected_layers):
+            start = len(PREFIX_TYPES) + layer * layer_width
+            for ordinal, row in enumerate(group[start:start + layer_width]):
+                row["layer"] = layer
+                row["layer_kernel_ordinal"] = ordinal
+                row["layer_component"] = _layer_component(ordinal)
+                row["full_mapping_status"] = "validated"
+    return {
+        "status": "validated",
+        "method": "paddleocr_vl_27x39_fixture_v1",
+        "reason": None,
+        "prefix_kernel_count": len(PREFIX_TYPES),
+        "layer_kernel_count": layer_width,
+        "layer_count": expected_layers,
+        "suffix_kernel_count": 0,
+        "replays": validated,
+        "failures": [],
+    }
+
+
+def _cross_lane_validation(
+    lane_analyses: Sequence[dict[str, Any]],
+) -> dict[str, Any]:
+    signatures: list[dict[str, Any]] = []
+    for lane in lane_analyses:
+        mapping = lane["full_layer_mapping"]
+        for replay in mapping.get("replays", []):
+            signatures.append({
+                "lane": lane["metric_family"],
+                "replay_id": replay["replay_id"],
+                "kernel_count": replay["kernel_count"],
+                "signature_sha256": replay["signature_sha256"],
+            })
+    if len(lane_analyses) == 1:
+        return {
+            "status": "single_lane",
+            "reason": "cross-lane comparison requires at least two lanes",
+            "replays": signatures,
+        }
+    if any(
+        lane["full_layer_mapping"]["status"] != "validated"
+        for lane in lane_analyses
+    ):
+        return {
+            "status": "failed",
+            "reason": "at least one lane lacks a validated full-layer mapping",
+            "replays": signatures,
+        }
+    hashes = {item["signature_sha256"] for item in signatures}
+    counts = {item["kernel_count"] for item in signatures}
+    return {
+        "status": "validated" if len(hashes) == 1 and len(counts) == 1 else "failed",
+        "reason": (
+            None
+            if len(hashes) == 1 and len(counts) == 1
+            else "full replay signatures differ across lanes"
+        ),
+        "canonical_signature_sha256": next(iter(hashes)) if len(hashes) == 1 else None,
+        "kernel_count": next(iter(counts)) if len(counts) == 1 else None,
+        "replays": signatures,
+    }
+
+
 def _metric_summary(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
     headers = sorted({header for row in rows for header in row["metrics"]})
     result: dict[str, Any] = {}
@@ -586,9 +854,15 @@ def _metric_summary(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
         values = [_finite_number(row["metrics"].get(header)) for row in rows]
         summary = _stats(values)
         if summary["available"]:
-            summary["duration_weighted_mean"] = _weighted(
-                (value, row["duration_us"]) for value, row in zip(values, rows)
-            )
+            lowered = header.lower()
+            if any(
+                token in lowered
+                for token in ("ratio", "rate", "bw(", "utilization", "(%)")
+            ):
+                summary["duration_weighted_mean"] = _weighted(
+                    (value, row["duration_us"])
+                    for value, row in zip(values, rows)
+                )
             result[header] = summary
     return result
 
@@ -647,14 +921,20 @@ def _aggregate_group(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
     for name, aliases in PMU_ALIASES.items():
         values = [_pmu(row, aliases) for row in rows]
         result[name] = _stats(values)
-        result[name]["duration_weighted_mean"] = _weighted(
-            (value, row["duration_us"]) for value, row in zip(values, rows)
-        )
+        if name.endswith("_ratio") or name.endswith("_pct"):
+            result[name]["duration_weighted_mean"] = _weighted(
+                (value, row["duration_us"])
+                for value, row in zip(values, rows)
+            )
+    result["numeric_pmu"] = _metric_summary(rows)
     return result
 
 
 def _lane_analysis(
-    metric: str, rows: list[dict[str, Any]], mapping: dict[str, Any]
+    metric: str,
+    rows: list[dict[str, Any]],
+    mapping: dict[str, Any],
+    full_mapping: dict[str, Any],
 ) -> dict[str, Any]:
     kernel_types: dict[str, Any] = {}
     for kernel_type, group in sorted(
@@ -681,9 +961,26 @@ def _lane_analysis(
         role: _aggregate_group(group)
         for role, group in sorted(_group(mapped, lambda row: row["role"]).items())
     }
+    full_mapped = [
+        row
+        for row in rows
+        if row["full_mapping_status"] == "validated"
+        and row["layer"] is not None
+    ]
     layer_summary = {
-        str(layer): _aggregate_group(group)
-        for layer, group in sorted(_group(mapped, lambda row: row["layer"]).items())
+        str(layer): {
+            "full": _aggregate_group(group),
+            "linears": _aggregate_group(
+                [
+                    row
+                    for row in group
+                    if row["mapping_status"] == "validated"
+                ]
+            ),
+        }
+        for layer, group in sorted(
+            _group(full_mapped, lambda row: row["layer"]).items()
+        )
     }
     blocks = Counter(
         (row["block_dim"], row["mix_block_dim"], row["accelerator_core"])
@@ -695,6 +992,7 @@ def _lane_analysis(
         "kernel_count": len(rows),
         "matmul_count": len(matmuls),
         "mapping": mapping,
+        "full_layer_mapping": full_mapping,
         "total_interval": _interval_summary(rows),
         "replays": replays,
         "kernel_type_totals": kernel_types,
@@ -749,7 +1047,8 @@ def _flat_kernel_rows(rows: Sequence[dict[str, Any]]) -> tuple[list[str], list[d
         "mix_block_dim", "input_shapes", "input_dtypes", "input_formats",
         "output_shapes", "output_dtypes", "output_formats", "context_id",
         "is_matmul", "matmul_flops", "matmul_tflops", "matmul_ordinal",
-        "layer", "role", "mapping_status", "metrics_json", "raw_json",
+        "layer", "role", "mapping_status", "layer_kernel_ordinal",
+        "layer_component", "full_mapping_status", "metrics_json", "raw_json",
     ] + [f"metric:{header}" for header in dynamic]
     flattened = []
     for row in rows:
@@ -783,32 +1082,85 @@ def _linear_rows(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
 
 def _layer_rows(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
     output = []
-    mapped = [row for row in rows if row["mapping_status"] == "validated"]
+    mapped = [
+        row
+        for row in rows
+        if row["full_mapping_status"] == "validated"
+        and row["layer"] is not None
+    ]
     for (lane, layer), group in sorted(
         _group(mapped, lambda row: (row["lane"], row["layer"])).items()
     ):
-        aggregate = _aggregate_group(group)
+        linear_group = [
+            row for row in group if row["mapping_status"] == "validated"
+        ]
+        full_aggregate = _aggregate_group(group)
+        linear_aggregate = _aggregate_group(linear_group)
+        replay_count = len({row["replay_id"] for row in group})
         item = {
             "lane": lane,
             "layer": layer,
-            "replay_count": len({row["replay_id"] for row in group}),
-            "linear_count": len(group),
-            "duration_sum_us": aggregate["duration_us"]["sum"],
-            "duration_mean_us": aggregate["duration_us"]["mean"],
-            "matmul_flops": aggregate["matmul_flops"],
-            "matmul_tflops": aggregate["matmul_tflops"],
+            "replay_count": replay_count,
+            "kernel_count": len(group),
+            "linear_count": len(linear_group),
+            "full_duration_sum_us": full_aggregate["duration_us"]["sum"],
+            "full_duration_per_replay_us": (
+                full_aggregate["duration_us"]["sum"] / replay_count
+                if replay_count else None
+            ),
+            "linear_duration_sum_us": linear_aggregate["duration_us"]["sum"],
+            "linear_duration_per_replay_us": (
+                linear_aggregate["duration_us"]["sum"] / replay_count
+                if replay_count else None
+            ),
+            # Compatibility aliases for the original linear-only table.
+            "duration_sum_us": linear_aggregate["duration_us"]["sum"],
+            "duration_mean_us": linear_aggregate["duration_us"]["mean"],
+            "matmul_flops": linear_aggregate["matmul_flops"],
+            "matmul_tflops": linear_aggregate["matmul_tflops"],
         }
         for role in ROLES:
-            role_rows = [row for row in group if row["role"] == role]
+            role_rows = [row for row in linear_group if row["role"] == role]
             item[f"{role}_duration_sum_us"] = _stats(
                 row["duration_us"] for row in role_rows
             )["sum"]
+        for component, component_rows in sorted(
+            _group(group, lambda row: row["layer_component"]).items()
+        ):
+            component_sum = _stats(
+                row["duration_us"] for row in component_rows
+            )["sum"]
+            item[f"component:{component}:duration_per_replay_us"] = (
+                component_sum / replay_count if replay_count else None
+            )
         for name in PMU_ALIASES:
-            item[f"{name}_mean"] = aggregate[name]["mean"]
-            item[f"{name}_duration_weighted_mean"] = aggregate[name][
+            item[f"{name}_mean"] = linear_aggregate[name]["mean"]
+            item[f"{name}_duration_weighted_mean"] = linear_aggregate[name].get(
                 "duration_weighted_mean"
-            ]
+            )
         output.append(item)
+    return output
+
+
+def _metric_rows(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
+    output: list[dict[str, Any]] = []
+    for row in rows:
+        for metric, raw_value in sorted(row["metrics"].items()):
+            value = _finite_number(raw_value)
+            if value is None:
+                continue
+            unit_match = re.search(r"\(([^()]*)\)\s*$", metric)
+            output.append({
+                "execution_id": row["execution_id"],
+                "lane": row["lane"],
+                "replay_id": row["replay_id"],
+                "layer": row["layer"],
+                "role": row["role"],
+                "kernel_type": row["type"],
+                "metric": metric,
+                "value": value,
+                "unit": unit_match.group(1) if unit_match else None,
+            })
     return output
 
 
@@ -818,6 +1170,7 @@ def _create_database(
     kernels: Sequence[dict[str, Any]],
     linears: Sequence[dict[str, Any]],
     layers: Sequence[dict[str, Any]],
+    metrics: Sequence[dict[str, Any]],
     inventories: Sequence[dict[str, Any]],
 ) -> None:
     if path.exists():
@@ -855,6 +1208,11 @@ def _create_database(
     create_and_insert("vision_linear_executions", linear_fields, linears)
     layer_fields = list(layers[0]) if layers else ["lane", "layer"]
     create_and_insert("vision_layer_summary", layer_fields, layers)
+    metric_fields = [
+        "execution_id", "lane", "replay_id", "layer", "role",
+        "kernel_type", "metric", "value", "unit",
+    ]
+    create_and_insert("kernel_metrics", metric_fields, metrics)
     schema_rows = []
     db_rows = []
     for inventory in inventories:
@@ -888,6 +1246,12 @@ def _create_database(
     )
     connection.execute("CREATE INDEX kernel_lane_replay ON kernel_executions(lane, replay_id)")
     connection.execute("CREATE INDEX linear_lane_layer ON vision_linear_executions(lane, layer)")
+    connection.execute(
+        "CREATE INDEX metric_lane_name ON kernel_metrics(lane, metric)"
+    )
+    connection.execute(
+        "CREATE INDEX metric_execution ON kernel_metrics(lane, execution_id)"
+    )
     connection.commit()
     connection.close()
 
@@ -900,7 +1264,87 @@ def _fmt(value: Any, digits: int = 3) -> str:
     return str(value)
 
 
+def _pmu_value(
+    aggregate: dict[str, Any],
+    metric: str,
+    statistic: str = "mean",
+) -> float | None:
+    summary = aggregate.get("numeric_pmu", {}).get(metric, {})
+    value = summary.get(statistic)
+    return float(value) if isinstance(value, (int, float)) else None
+
+
+def _l2_hit_rate(
+    aggregate: dict[str, Any],
+    *,
+    hit_metric: str,
+    miss_metric: str,
+) -> float | None:
+    hits = _pmu_value(aggregate, hit_metric, "sum")
+    misses = _pmu_value(aggregate, miss_metric, "sum")
+    if hits is None or misses is None or hits + misses <= 0:
+        return None
+    return 100.0 * hits / (hits + misses)
+
+
+def _unique_linear_io_kib(
+    role: str,
+    dims: dict[str, Any],
+) -> tuple[float, float]:
+    batch = int(dims["batch_size"])
+    sequence = int(dims["sequence_length"])
+    hidden = int(dims["hidden_size"])
+    intermediate = int(dims["intermediate_size"])
+    elements_per_token = batch * sequence
+    bytes_per_element = 2  # Exact profiler contract is FLOAT16.
+    if role in {"q_proj", "k_proj", "v_proj", "out_proj"}:
+        input_elements = (
+            elements_per_token * hidden + hidden * hidden + hidden
+        )
+        output_elements = elements_per_token * hidden
+    elif role == "fc1":
+        input_elements = (
+            elements_per_token * hidden
+            + hidden * intermediate
+            + intermediate
+        )
+        output_elements = elements_per_token * intermediate
+    elif role == "fc2":
+        input_elements = (
+            elements_per_token * intermediate
+            + intermediate * hidden
+            + hidden
+        )
+        output_elements = elements_per_token * hidden
+    else:
+        raise ValueError(f"unknown linear role {role}")
+    return (
+        input_elements * bytes_per_element / 1024.0,
+        output_elements * bytes_per_element / 1024.0,
+    )
+
+
+def _coefficient_of_variation(values: Iterable[float | None]) -> float | None:
+    finite = [float(value) for value in values if value is not None]
+    if len(finite) < 2 or statistics.mean(finite) == 0:
+        return None
+    return 100.0 * statistics.pstdev(finite) / statistics.mean(finite)
+
+
 def _report(analysis: dict[str, Any], manifest: dict[str, Any]) -> str:
+    contract = manifest.get("contract") or {}
+    environment = contract.get("environment") or {}
+    shape = contract.get("shape") or {}
+    requested = contract.get("requested") or {}
+    compile_info = contract.get("compile") or {}
+    weight_format = contract.get("weight_format") or {}
+    unprofiled = contract.get("unprofiled_measurements") or {}
+    unprofiled_median = (
+        (unprofiled.get("device_event_per_call_ms") or {}).get("median")
+    )
+    unprofiled_tokens = unprofiled.get(
+        "physical_tokens_per_s_device_median"
+    )
     lines = [
         "# Vision MatMul profiler analysis",
         "",
@@ -910,22 +1354,63 @@ def _report(analysis: dict[str, Any], manifest: dict[str, Any]) -> str:
         "execution-to-PMU association. Separate metric lanes are separate "
         "captures and are never interpreted as simultaneous samples.",
         "",
+        "## Capture provenance",
+        "",
+        f"- Commit: `{environment.get('commit', 'unavailable')}`",
+        f"- Host/device: `{environment.get('hostname', 'unavailable')}` / "
+        f"`{environment.get('device_name', 'unavailable')}` / physical "
+        f"`{environment.get('ascend_rt_visible_devices', 'unavailable')}`",
+        f"- Torch / torch_npu / CANN: `{environment.get('torch', 'unavailable')}` / "
+        f"`{environment.get('torch_npu', 'unavailable')}` / "
+        f"`{environment.get('ascend_home_path', 'unavailable')}`",
+        f"- Shape: `B{shape.get('batch_size', '?')} x "
+        f"S{shape.get('sequence_length', '?')}`, H"
+        f"`{shape.get('hidden_size', '?')}`, I"
+        f"`{shape.get('candidate_intermediate_size', '?')}`, "
+        f"{shape.get('layers', '?')} layers",
+        f"- Execution: `{requested.get('execution', 'unavailable')}`, "
+        f"attention padding `{requested.get('attention_head_padding', 'unavailable')}`, "
+        f"RoPE `{requested.get('rotary_implementation', 'unavailable')}`",
+        f"- Weight format request/status: "
+        f"`{requested.get('weight_format', 'unavailable')}` / "
+        f"`{weight_format.get('status', 'unavailable')}`",
+        f"- Compile API/cache: `{compile_info.get('api', 'unavailable')}` / "
+        f"`{compile_info.get('cache_dir', 'unavailable')}`",
+        f"- Unprofiled device-event baseline: "
+        f"`{_fmt(unprofiled_median)} ms`, "
+        f"`{_fmt(unprofiled_tokens)} physical tok/s`",
+        "",
         "## Lane summary",
         "",
         "| metric lane | kernels | MatMuls | mapping | span / replay | "
-        "MatMul duration / replay | dense MatMul TFLOP/s |",
-        "|---|---:|---:|---|---:|---:|---:|",
+        "MatMul duration / replay | MatMul share | kernel-local TFLOP/s | "
+        "stage-effective TFLOP/s |",
+        "|---|---:|---:|---|---:|---:|---:|---:|---:|",
     ]
     for lane in analysis["lanes"]:
         replay_count = max(1, len(lane["replays"]))
         span = _stats(item["span_us"] for item in lane["replays"])["mean"]
         duration = lane["matmul"]["duration_us"]["sum"]
         per_replay = duration / replay_count if duration is not None else None
+        matmul_share = (
+            100.0 * per_replay / span
+            if per_replay is not None and span else None
+        )
+        flops_per_replay = (
+            lane["matmul"]["matmul_flops"] / replay_count
+            if lane["matmul"]["matmul_flops"] is not None else None
+        )
+        stage_effective_tflops = (
+            flops_per_replay / (span * 1e6)
+            if flops_per_replay is not None and span else None
+        )
         lines.append(
             f"| `{lane['metric_family']}` | {lane['kernel_count']} | "
             f"{lane['matmul_count']} | {lane['mapping']['status']} | "
             f"{_fmt(span)} us | {_fmt(per_replay)} us | "
-            f"{_fmt(lane['matmul']['matmul_tflops'])} |"
+            f"{_fmt(matmul_share)}% | "
+            f"{_fmt(lane['matmul']['matmul_tflops'])} | "
+            f"{_fmt(stage_effective_tflops)} |"
         )
     lines.extend([
         "",
@@ -947,6 +1432,30 @@ def _report(analysis: dict[str, Any], manifest: dict[str, Any]) -> str:
             lines.append(
                 f"  First mismatch: `{_json(mapping['mismatches'][0])}`"
             )
+    lines.extend([
+        "",
+        "## Full-layer and cross-lane validation",
+        "",
+    ])
+    for lane in analysis["lanes"]:
+        mapping = lane["full_layer_mapping"]
+        lines.append(
+            f"- `{lane['metric_family']}` full graph: "
+            f"**{mapping['status']}**, method "
+            f"`{mapping.get('method') or 'unavailable'}`"
+            + (f" — {mapping['reason']}" if mapping.get("reason") else "")
+        )
+    cross_lane = analysis["cross_lane_validation"]
+    lines.append(
+        f"- Cross-lane complete-kernel signature: "
+        f"**{cross_lane['status']}**"
+        + (
+            f", SHA-256 `{cross_lane['canonical_signature_sha256']}`"
+            if cross_lane.get("canonical_signature_sha256")
+            else ""
+        )
+        + (f" — {cross_lane['reason']}" if cross_lane.get("reason") else "")
+    )
     lines.extend(["", "## Per-role summary", ""])
     for lane in analysis["lanes"]:
         if not lane["vision_role_summary"]:
@@ -957,7 +1466,7 @@ def _report(analysis: dict[str, Any], manifest: dict[str, Any]) -> str:
             "| role | count | duration (us mean) | duration / replay (us) | "
             "TFLOP/s | AICore (us mean) | "
             "MAC (us mean) | MTE1 | MTE2 | FixPipe | "
-            "AI-core active occupancy |",
+            "exported AI-core-time ratio (%) |",
             "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
         ])
         replay_count = max(
@@ -990,7 +1499,254 @@ def _report(analysis: dict[str, Any], manifest: dict[str, Any]) -> str:
                 f"{_fmt(item['cube_utilization_pct']['mean'])} |"
             )
         lines.append("")
+
+    primary_lane = next(
+        (
+            lane
+            for lane in analysis["lanes"]
+            if lane["metric_family"] == "pipe"
+        ),
+        analysis["lanes"][0],
+    )
+    primary_replays = max(1, len(primary_lane["replays"]))
+    primary_span = _stats(
+        item["span_us"] for item in primary_lane["replays"]
+    )["mean"]
     lines.extend([
+        "## Whole-stage kernel-time composition",
+        "",
+        f"Timing composition uses the `{primary_lane['metric_family']}` lane. "
+        "Counts and durations below are normalized to one full-stack replay.",
+        "",
+        "| kernel type | count / replay | duration / replay (us) | "
+        "share of replay span |",
+        "|---|---:|---:|---:|",
+    ])
+    top_kernel_types = sorted(
+        primary_lane["kernel_type_totals"].items(),
+        key=lambda item: item[1]["duration_us"]["sum"] or 0.0,
+        reverse=True,
+    )[:16]
+    for kernel_type, item in top_kernel_types:
+        duration_per_replay = (
+            item["duration_us"]["sum"] / primary_replays
+            if item["duration_us"]["sum"] is not None else None
+        )
+        share = (
+            100.0 * duration_per_replay / primary_span
+            if duration_per_replay is not None and primary_span else None
+        )
+        lines.append(
+            f"| {kernel_type} | {_fmt(item['count'] / primary_replays)} | "
+            f"{_fmt(duration_per_replay)} | {_fmt(share)}% |"
+        )
+
+    if primary_lane["full_layer_mapping"]["status"] == "validated":
+        lines.extend([
+            "",
+            "## Per-layer full-stage timing",
+            "",
+            "Every row covers the complete 39-kernel layer region, not only "
+            "its six Linear kernels.",
+            "",
+            "| layer | full layer / replay (us) | MatMul / replay (us) | "
+            "MatMul share |",
+            "|---:|---:|---:|---:|",
+        ])
+        full_values: list[float | None] = []
+        linear_values: list[float | None] = []
+        for layer in range(int(analysis["contract_dims"]["layers"])):
+            item = primary_lane["vision_layer_summary"].get(str(layer))
+            if not item:
+                continue
+            full_sum = item["full"]["duration_us"]["sum"]
+            linear_sum = item["linears"]["duration_us"]["sum"]
+            full_per_replay = (
+                full_sum / primary_replays if full_sum is not None else None
+            )
+            linear_per_replay = (
+                linear_sum / primary_replays
+                if linear_sum is not None else None
+            )
+            full_values.append(full_per_replay)
+            linear_values.append(linear_per_replay)
+            share = (
+                100.0 * linear_per_replay / full_per_replay
+                if linear_per_replay is not None and full_per_replay else None
+            )
+            lines.append(
+                f"| {layer} | {_fmt(full_per_replay)} | "
+                f"{_fmt(linear_per_replay)} | {_fmt(share)}% |"
+            )
+        lines.extend([
+            "",
+            f"Full-layer duration CV: "
+            f"`{_fmt(_coefficient_of_variation(full_values))}%`; "
+            f"MatMul-duration CV: "
+            f"`{_fmt(_coefficient_of_variation(linear_values))}%`.",
+        ])
+
+    memory_lane = next(
+        (
+            lane
+            for lane in analysis["lanes"]
+            if lane["metric_family"] == "memory"
+        ),
+        None,
+    )
+    if memory_lane is not None:
+        lines.extend([
+            "",
+            "## Memory bandwidth-rate diagnostics",
+            "",
+            "These are PMU rates normalized to AI-core cycles. They are not "
+            "whole-card HBM bandwidth. In this capture the L2 bandwidth "
+            "columns are zero even though the separate L2 lane records cache "
+            "events, so zero L2 bandwidth is treated as unpopulated.",
+            "",
+            "| role | L1 read | L1 write | main-memory read | "
+            "main-memory write |",
+            "|---|---:|---:|---:|---:|",
+        ])
+        for role in ROLES:
+            item = memory_lane["vision_role_summary"].get(role)
+            if not item:
+                continue
+            lines.append(
+                f"| {role} | "
+                f"{_fmt(_pmu_value(item, 'aic_l1_read_bw(GB/s)'))} GB/s | "
+                f"{_fmt(_pmu_value(item, 'aic_l1_write_bw(GB/s)'))} GB/s | "
+                f"{_fmt(_pmu_value(item, 'aic_main_mem_read_bw(GB/s)'))} GB/s | "
+                f"{_fmt(_pmu_value(item, 'aic_main_mem_write_bw(GB/s)'))} GB/s |"
+            )
+
+    l2_lane = next(
+        (
+            lane
+            for lane in analysis["lanes"]
+            if lane["metric_family"] == "l2"
+        ),
+        None,
+    )
+    if l2_lane is not None:
+        lines.extend([
+            "",
+            "## L2 event diagnostics",
+            "",
+            "Hit rates are `hit / (hit + miss_allocate)` over raw event "
+            "counts. R0/R1 are hardware read channels, not semantic labels "
+            "for activations and weights, and event counts are not bytes.",
+            "",
+            "| role | R0 read hit | R1 read hit | write hit |",
+            "|---|---:|---:|---:|",
+        ])
+        for role in ROLES:
+            item = l2_lane["vision_role_summary"].get(role)
+            if not item:
+                continue
+            r0 = _l2_hit_rate(
+                item,
+                hit_metric="aic_r0_read_cache_hit",
+                miss_metric="aic_r0_read_cache_miss_allocate",
+            )
+            r1 = _l2_hit_rate(
+                item,
+                hit_metric="aic_r1_read_cache_hit",
+                miss_metric="aic_r1_read_cache_miss_allocate",
+            )
+            write = _l2_hit_rate(
+                item,
+                hit_metric="aic_write_cache_hit",
+                miss_metric="aic_write_cache_miss_allocate",
+            )
+            lines.append(
+                f"| {role} | {_fmt(r0)}% | {_fmt(r1)}% | {_fmt(write)}% |"
+            )
+
+    memory_access_lane = next(
+        (
+            lane
+            for lane in analysis["lanes"]
+            if lane["metric_family"] == "memory_access"
+        ),
+        None,
+    )
+    if memory_access_lane is not None:
+        lines.extend([
+            "",
+            "## MemoryAccess traffic diagnostics",
+            "",
+            "The unique-read baseline is the FP16 activation + physical "
+            "FRACTAL_NZ weight + bias tensor size for one Linear call. "
+            "Reported access volume is task-level logical memory traffic; it "
+            "must not be treated as off-chip HBM bytes without accounting for "
+            "cache service and the msprof metric semantics.",
+            "",
+            "| role | reported read / op | reported write / op | GM->L1 | "
+            "L0C->GM | unique read | read amplification | FLOP / reported byte |",
+            "|---|---:|---:|---:|---:|---:|---:|---:|",
+        ])
+        total_read_kib = 0.0
+        total_write_kib = 0.0
+        total_flops = 0.0
+        layers = int(analysis["contract_dims"]["layers"])
+        for role in ROLES:
+            item = memory_access_lane["vision_role_summary"].get(role)
+            if not item:
+                continue
+            read_kib = _pmu_value(
+                item, "aic_read_main_memory_datas(KB)"
+            )
+            write_kib = _pmu_value(
+                item, "aic_write_main_memory_datas(KB)"
+            )
+            gm_l1_kib = _pmu_value(item, "aic_GM_to_L1_datas(KB)")
+            l0c_gm_kib = _pmu_value(item, "aic_L0C_to_GM_datas(KB)")
+            unique_read_kib, _ = _unique_linear_io_kib(
+                role, analysis["contract_dims"]
+            )
+            amplification = (
+                read_kib / unique_read_kib
+                if read_kib is not None and unique_read_kib else None
+            )
+            flops_per_op = (
+                item["matmul_flops"] / item["count"]
+                if item["matmul_flops"] is not None and item["count"] else None
+            )
+            intensity = (
+                flops_per_op / ((read_kib + write_kib) * 1024.0)
+                if flops_per_op is not None
+                and read_kib is not None
+                and write_kib is not None
+                and read_kib + write_kib > 0
+                else None
+            )
+            if read_kib is not None:
+                total_read_kib += read_kib * layers
+            if write_kib is not None:
+                total_write_kib += write_kib * layers
+            if flops_per_op is not None:
+                total_flops += flops_per_op * layers
+            lines.append(
+                f"| {role} | {_fmt(read_kib)} KiB | "
+                f"{_fmt(write_kib)} KiB | {_fmt(gm_l1_kib)} KiB | "
+                f"{_fmt(l0c_gm_kib)} KiB | {_fmt(unique_read_kib)} KiB | "
+                f"{_fmt(amplification)}x | {_fmt(intensity)} |"
+            )
+        total_intensity = (
+            total_flops / ((total_read_kib + total_write_kib) * 1024.0)
+            if total_read_kib + total_write_kib > 0 else None
+        )
+        lines.extend([
+            "",
+            f"Across all 162 Linear calls in one replay: reported read "
+            f"`{_fmt(total_read_kib / 1024.0)} MiB`, reported write "
+            f"`{_fmt(total_write_kib / 1024.0)} MiB`, and "
+            f"`{_fmt(total_intensity)} FLOP/reported-byte`.",
+        ])
+
+    lines.extend([
+        "",
         "## Interpretation warnings",
         "",
     ])
@@ -1044,8 +1800,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         "records or hardware counters are required for that claim.",
         "On the observed CANN 9 whole-graph export, cube_utilization(%) is "
         "100 * aicore_time / kernel Duration (within export rounding). It is "
-        "AI-core active-time occupancy, not achieved MAC utilization and not "
-        "a percentage of peak FLOP/s.",
+        "an exported AI-core-time ratio that can exceed 100%, not physical "
+        "occupancy, achieved MAC utilization, or a percentage of peak FLOP/s.",
         "Profiler README semantics define aicore_time as average task time on "
         "AI Core derived from total cycles / Block Num. Generated CANN "
         "documentation warns that this value is inaccurate on Atlas 300V and "
@@ -1055,6 +1811,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         "Dense MatMul FLOPs are inferred as 2*M*K*N from activation and output "
         "shapes. This is a physical-work estimate, not an algorithmic FLOP "
         "claim for fused or sparse kernels.",
+        "The full-layer fixture is intentionally fail-closed and applies only "
+        "to the exact validated 2-prefix + 27x39-kernel PaddleOCR-VL graph. "
+        "A changed graph emits no non-linear layer labels.",
+        "The first kernel's Wait Time in a replay can include the gap since "
+        "the prior replay; replay wait totals are not internal graph stall "
+        "time without timestamp decomposition.",
+        "Profiler databases are schema-inventoried only. TASK, CANN_API, "
+        "PYTORCH_API, and compiled-node relationships are not silently joined.",
         "Missing PMU fields are represented as null/unavailable, never zero.",
     ]
     lane_names: set[str] = set()
@@ -1070,18 +1834,30 @@ def main(argv: Sequence[str] | None = None) -> int:
         lane_rows.append((metric, rows))
         inventories.append(inventory)
         warnings.extend(lane_warnings)
+    for execution_id, row in enumerate(all_rows):
+        row["execution_id"] = execution_id
     lane_analyses = []
     for metric, rows in lane_rows:
         mapping = _map_vision_linears(rows, dims)
-        lane_analyses.append(_lane_analysis(metric, rows, mapping))
+        full_mapping = _map_full_layers(rows, mapping, dims)
+        lane_analyses.append(
+            _lane_analysis(metric, rows, mapping, full_mapping)
+        )
         if mapping["status"] != "validated":
             warnings.append(
                 f"{metric}: vision layer/role mapping is {mapping['status']}; "
                 "no unvalidated ordinal labels were emitted."
             )
+        if full_mapping["status"] != "validated":
+            warnings.append(
+                f"{metric}: full 27-layer mapping is "
+                f"{full_mapping['status']}; non-linear kernels remain "
+                "unlabeled."
+            )
     kernel_fields, flat_kernels = _flat_kernel_rows(all_rows)
     linears = _linear_rows(all_rows)
     layers = _layer_rows(all_rows)
+    metrics = _metric_rows(all_rows)
     _write_csv(output_dir / "kernel_executions.csv", kernel_fields, flat_kernels)
     linear_fields = list(linears[0]) if linears else [
         "execution_id", "lane", "replay_id", "layer", "role"
@@ -1095,6 +1871,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         flat_kernels,
         linears,
         layers,
+        metrics,
         inventories,
     )
     warnings = list(dict.fromkeys(warnings))
@@ -1102,6 +1879,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "schema_version": SCHEMA_VERSION,
         "contract_dims": dims,
         "lanes": lane_analyses,
+        "cross_lane_validation": _cross_lane_validation(lane_analyses),
         "warnings": warnings,
     }
     manifest = {
