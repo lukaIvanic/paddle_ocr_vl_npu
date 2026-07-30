@@ -81,7 +81,16 @@ ROTARY_IMPLEMENTATIONS = (
     "joint_manual",
     "joint_inplace_partial",
 )
-PROFILE_METRIC_CHOICES = ("pipe", "memory", "l2", "memory_access")
+PROFILE_METRIC_CHOICES = (
+    "pipe",
+    "arithmetic",
+    "memory",
+    "memory_l0",
+    "memory_ub",
+    "resource_conflict",
+    "l2",
+    "memory_access",
+)
 LEGACY_SEPARATE_MANUAL_SOURCE_HASH = "b4144440d15e"
 JOINT_MANUAL_SOURCE_HASH = "25d9a2dd1d39"
 StageInputs = tuple[torch.Tensor, ...]
@@ -1116,18 +1125,73 @@ def _compile(
     }
 
 
+def _profile_metric_value(metric: str) -> Any:
+    import torch_npu.profiler as npu_prof
+
+    return {
+        "pipe": npu_prof.AiCMetrics.PipeUtilization,
+        "arithmetic": npu_prof.AiCMetrics.ArithmeticUtilization,
+        "memory": npu_prof.AiCMetrics.Memory,
+        "memory_l0": npu_prof.AiCMetrics.MemoryL0,
+        "memory_ub": npu_prof.AiCMetrics.MemoryUB,
+        "resource_conflict": npu_prof.AiCMetrics.ResourceConflictRatio,
+        "l2": npu_prof.AiCMetrics.L2Cache,
+        "memory_access": npu_prof.AiCMetrics.MemoryAccess,
+    }[metric]
+
+
+def _profile_metric_support(metric: str) -> dict[str, Any]:
+    """Check the current product/runtime instead of inferring from its name."""
+    import torch_npu.profiler as npu_prof
+
+    requested = _profile_metric_value(metric)
+    query = getattr(npu_prof, "supported_ai_core_metrics", None)
+    if query is None:
+        return {
+            "checked": False,
+            "supported": None,
+            "reason": "torch_npu does not expose supported_ai_core_metrics",
+            "requested": str(requested),
+            "available": None,
+        }
+    try:
+        available = query()
+    except Exception as exc:
+        return {
+            "checked": False,
+            "supported": None,
+            "reason": f"runtime capability query failed: {exc!r}",
+            "requested": str(requested),
+            "available": None,
+        }
+    values = (
+        list(available)
+        if isinstance(available, (set, frozenset, list, tuple))
+        else [available]
+    )
+    supported = requested in values
+    result = {
+        "checked": True,
+        "supported": supported,
+        "reason": "runtime capability query",
+        "requested": str(requested),
+        "available": sorted(str(item) for item in values),
+    }
+    if not supported:
+        raise RuntimeError(
+            f"profile metric {metric!r} ({requested}) is unsupported by "
+            "this NPU/runtime; supported metrics: "
+            f"{', '.join(result['available']) or '<none>'}"
+        )
+    return result
+
+
 def _profiler_config(metric: str) -> Any:
     import torch_npu.profiler as npu_prof
 
-    metrics = {
-        "pipe": npu_prof.AiCMetrics.PipeUtilization,
-        "memory": npu_prof.AiCMetrics.Memory,
-        "l2": npu_prof.AiCMetrics.L2Cache,
-        "memory_access": npu_prof.AiCMetrics.MemoryAccess,
-    }
     return npu_prof._ExperimentalConfig(
         profiler_level=npu_prof.ProfilerLevel.Level1,
-        aic_metrics=metrics[metric],
+        aic_metrics=_profile_metric_value(metric),
         # AiCMetrics.L2Cache is the per-kernel PMU lane. The separate
         # l2_cache=True switch emits the legacy l2_cache.csv path and is not
         # needed for this cross-lane task analysis.
@@ -1174,6 +1238,7 @@ def _profile(
 ) -> dict[str, Any]:
     import torch_npu.profiler as npu_prof
 
+    metric_support = _profile_metric_support(metric)
     if profile_dir.exists() and any(profile_dir.iterdir()):
         raise RuntimeError(
             f"profile directory already exists and is non-empty: {profile_dir}"
@@ -1219,6 +1284,7 @@ def _profile(
         "context_wall_s": time.perf_counter() - context_started,
         "throughput_measurement": False,
         "metric": metric,
+        "metric_support": metric_support,
         "profiler_level": "Level1",
         "capabilities": _profiler_capabilities(),
     }

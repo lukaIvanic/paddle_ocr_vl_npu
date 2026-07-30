@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Deep-profile the three unique optimized vision Linear shapes with msprof.
+"""Deep-profile the observable production-equivalent square Linear with msprof.
 
 The full compiled 27-layer graph is measured separately by
-``run_vision_matmul_profile_suite.py``.  This second-tier runner gives
-``msprof op`` one TorchAir-compiled MatMulV2 at a time, using the same FP16
-shapes, ND activations, FRACTAL_NZ weights, and bias as the optimized
-production graph. The resulting per-core and memory-path mechanics are
-accepted only after the analyzer matches dispatch metadata back to that graph
-reference.
+``run_vision_matmul_profile_suite.py``. This second-tier runner exposes the
+square Q/K/V/output projection as one directly observable MatMulV2 with the
+same FP16 shape, ND activation, FRACTAL_NZ weight, bias, and Block Dim as the
+optimized graph. FC1/FC2 remain in the full-graph profiler because eager
+dispatch differs and ``msprof op`` cannot see inside the cached TorchAir graph.
+The analyzer must still match this target back to the full-graph reference.
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ HERE = Path(__file__).resolve().parent
 EXPERIMENT_ROOT = HERE.parent
 REPO_ROOT = EXPERIMENT_ROOT.parent
 TARGET_SCRIPT = HERE / "vision_msprof_linear_target.py"
-ROLES = ("square", "fc1", "fc2")
+ROLES = ("square",)
 # PipeUtilization and Memory are the portable base tier. Huawei documents
 # Occupancy and MemoryDetail only for Atlas A2/A3 products, so those deeper
 # families are optional extensions rather than assumptions of this runner.
@@ -87,10 +87,6 @@ DEFAULT_EVIDENCE_ROOT = (
 DEFAULT_RAW_ROOT = (
     REPO_ROOT / ".runtime_cache/09_persistent_page_engine_vision_msprof_op"
 )
-DEFAULT_TARGET_CACHE_ROOT = (
-    REPO_ROOT
-    / ".runtime_cache/09_persistent_page_engine_vision_msprof_torchair"
-)
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -102,7 +98,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         nargs="+",
         choices=ROLES,
         default=list(ROLES),
-        help="Unique production Linear shapes to capture.",
+        help="Production-equivalent direct Linear shape to capture.",
     )
     parser.add_argument(
         "--msprof-warm-up",
@@ -114,19 +110,6 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--msprof", default="msprof")
     parser.add_argument("--evidence-root", type=Path, default=DEFAULT_EVIDENCE_ROOT)
     parser.add_argument("--raw-root", type=Path, default=DEFAULT_RAW_ROOT)
-    parser.add_argument(
-        "--target-cache-root",
-        type=Path,
-        default=DEFAULT_TARGET_CACHE_ROOT,
-    )
-    parser.add_argument(
-        "--allow-compile-if-missing",
-        action="store_true",
-        help=(
-            "Prepare a missing one-Linear TorchAir cache before starting "
-            "msprof. Compilation never occurs inside the msprof capture."
-        ),
-    )
     args = parser.parse_args(argv)
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", args.run_name):
         parser.error("--run-name must contain only A-Z, a-z, 0-9, _, ., or -")
@@ -262,91 +245,6 @@ def _environment() -> dict[str, str | None]:
     return {name: os.environ.get(name) for name in names}
 
 
-def _prepare_target_cache(
-    *,
-    role: str,
-    args: argparse.Namespace,
-    python: str,
-    role_evidence: Path,
-) -> dict[str, Any]:
-    prepare_dir = role_evidence / "cache_prepare"
-    prepare_dir.mkdir()
-    application_dir = prepare_dir / "application"
-    command = [
-        python,
-        str(TARGET_SCRIPT),
-        "--role",
-        role,
-        "--output-dir",
-        str(application_dir),
-        "--cache-root",
-        str(args.target_cache_root.expanduser().resolve()),
-        "--prepare-cache-only",
-    ]
-    if args.allow_compile_if_missing:
-        command.append("--allow-compile-if-missing")
-    _write_json(
-        prepare_dir / "command.json",
-        {
-            "argv": command,
-            "shell_escaped": shlex.join(command),
-            "cwd": str(REPO_ROOT),
-        },
-    )
-    wall_started = time.perf_counter()
-    completed = subprocess.run(
-        command,
-        cwd=REPO_ROOT,
-        env={**os.environ, "PYTHONUNBUFFERED": "1"},
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        check=False,
-    )
-    wall_s = time.perf_counter() - wall_started
-    (prepare_dir / "stdout.log").write_text(
-        completed.stdout,
-        encoding="utf-8",
-    )
-    (prepare_dir / "stderr.log").write_text(
-        completed.stderr,
-        encoding="utf-8",
-    )
-    summary_path = application_dir / "target_summary.json"
-    summary = (
-        json.loads(summary_path.read_text(encoding="utf-8"))
-        if summary_path.is_file()
-        else None
-    )
-    errors = []
-    if completed.returncode != 0:
-        errors.append(
-            f"cache preparation exited with status {completed.returncode}"
-        )
-    if summary is None:
-        errors.append("cache preparation did not write target_summary.json")
-    elif summary.get("status") != "cache_ready":
-        errors.append(
-            "cache preparation status is not cache_ready: "
-            f"{summary.get('status')!r}"
-        )
-    result = {
-        "status": "failed" if errors else "cache_ready",
-        "returncode": completed.returncode,
-        "wall_s": wall_s,
-        "command": command,
-        "summary_path": (
-            str(summary_path) if summary_path.is_file() else None
-        ),
-        "target": summary,
-        "errors": errors,
-    }
-    _write_json(prepare_dir / "prepare_manifest.json", result)
-    if errors:
-        raise RuntimeError(f"{role}: {'; '.join(errors)}")
-    return result
-
-
 def _run_role(
     *,
     role: str,
@@ -359,12 +257,6 @@ def _run_role(
     role_evidence = evidence_dir / role
     role_raw = raw_dir / role
     _empty_or_create(role_evidence, f"{role} evidence directory")
-    cache_preparation = _prepare_target_cache(
-        role=role,
-        args=args,
-        python=python,
-        role_evidence=role_evidence,
-    )
     _empty_or_create(
         role_raw,
         f"{role} raw profiler directory",
@@ -387,8 +279,6 @@ def _run_role(
         role,
         "--output-dir",
         str(application_dir),
-        "--cache-root",
-        str(args.target_cache_root.expanduser().resolve()),
     ]
     command_record = {
         "argv": command,
@@ -462,7 +352,6 @@ def _run_role(
             ),
         },
         "raw_artifacts": artifact_summary,
-        "cache_preparation": cache_preparation,
         "target": target_summary,
         "errors": errors,
         "validation_state": (
@@ -514,10 +403,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         "environment": _environment(),
         "metric": args.metric,
         "metric_support": METRIC_SUPPORT[args.metric],
-        "target_cache_root": str(
-            args.target_cache_root.expanduser().resolve()
-        ),
-        "allow_compile_if_missing": bool(args.allow_compile_if_missing),
         "roles": args.roles,
         "paths": {
             "evidence": str(evidence_dir),

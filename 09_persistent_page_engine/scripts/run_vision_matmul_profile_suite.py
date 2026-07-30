@@ -39,7 +39,16 @@ DEFAULT_PROFILE_ROOT = (
 DEFAULT_OUTPUT_ROOT = (
     REPO_ROOT / "tmp/09_persistent_page_engine/vision_matmul_profile_suite"
 )
-METRICS = ("pipe", "memory", "l2", "memory_access")
+METRICS = (
+    "pipe",
+    "arithmetic",
+    "memory",
+    "memory_l0",
+    "memory_ub",
+    "resource_conflict",
+    "l2",
+    "memory_access",
+)
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -49,7 +58,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--metrics",
         nargs="+",
         choices=METRICS,
-        default=["pipe", "memory", "l2"],
+        default=["pipe", "memory"],
+        help=(
+            "AI Core metric lanes. pipe+memory is the cross-product portable "
+            "base. Add l2/memory_access only when the runtime capability "
+            "query reports them as supported."
+        ),
     )
     parser.add_argument("--model", type=Path, default=DEFAULT_MODEL)
     parser.add_argument("--cache-dir", type=Path, default=DEFAULT_CACHE_ROOT)
@@ -85,6 +99,61 @@ def _disk_usage(path: Path) -> dict[str, int]:
     }
 
 
+def _profile_metric_support(metrics: Sequence[str]) -> dict[str, object]:
+    """Fail before model load when this product rejects a requested PMU lane."""
+    import torch_npu.profiler as npu_prof
+
+    metric_values = {
+        "pipe": npu_prof.AiCMetrics.PipeUtilization,
+        "arithmetic": npu_prof.AiCMetrics.ArithmeticUtilization,
+        "memory": npu_prof.AiCMetrics.Memory,
+        "memory_l0": npu_prof.AiCMetrics.MemoryL0,
+        "memory_ub": npu_prof.AiCMetrics.MemoryUB,
+        "resource_conflict": npu_prof.AiCMetrics.ResourceConflictRatio,
+        "l2": npu_prof.AiCMetrics.L2Cache,
+        "memory_access": npu_prof.AiCMetrics.MemoryAccess,
+    }
+    query = getattr(npu_prof, "supported_ai_core_metrics", None)
+    if query is None:
+        return {
+            "checked": False,
+            "reason": "torch_npu does not expose supported_ai_core_metrics",
+            "requested": [str(metric_values[name]) for name in metrics],
+            "available": None,
+        }
+    try:
+        available_raw = query()
+    except Exception as exc:
+        return {
+            "checked": False,
+            "reason": f"runtime capability query failed: {exc!r}",
+            "requested": [str(metric_values[name]) for name in metrics],
+            "available": None,
+        }
+    available = (
+        list(available_raw)
+        if isinstance(available_raw, (set, frozenset, list, tuple))
+        else [available_raw]
+    )
+    unsupported = [
+        name for name in metrics if metric_values[name] not in available
+    ]
+    result: dict[str, object] = {
+        "checked": True,
+        "reason": "runtime capability query",
+        "requested": [str(metric_values[name]) for name in metrics],
+        "available": sorted(str(item) for item in available),
+        "unsupported": unsupported,
+    }
+    if unsupported:
+        raise RuntimeError(
+            "requested profiler metric lanes are unsupported by this "
+            f"NPU/runtime: {', '.join(unsupported)}; supported metrics: "
+            f"{', '.join(result['available']) or '<none>'}"
+        )
+    return result
+
+
 def _run_logged(
     command: list[str],
     *,
@@ -111,6 +180,7 @@ def _run_logged(
 
 def main(argv: Sequence[str] | None = None) -> None:
     args = parse_args(argv)
+    metric_support = _profile_metric_support(args.metrics)
     output_root = (args.output_root / args.name).expanduser().resolve()
     profile_root = (args.profile_root / args.name).expanduser().resolve()
     if output_root.exists() and any(output_root.iterdir()):
@@ -133,6 +203,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "B1xS2048 full 27-layer vision stack"
         ),
         "metrics": list(args.metrics),
+        "metric_support": metric_support,
         "raw_profile_disk_before": _disk_usage(profile_root),
         "lanes": {},
     }

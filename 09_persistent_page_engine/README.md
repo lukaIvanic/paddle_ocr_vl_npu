@@ -518,11 +518,29 @@ process; the unprofiled NPU-event measurement remains the throughput result.
 ```sh
 source npu-setup
 
-/usr/local/python3.12.13/bin/python3 \
+PYTHON=/usr/local/python3.12.13/bin/python3
+MODEL=/workspace/models/PaddleOCR-VL-1.6
+
+"$PYTHON" \
   09_persistent_page_engine/scripts/run_vision_matmul_profile_suite.py \
   --name 910b_b1s2048_i4352_nz \
+  --model "$MODEL" \
   --metrics pipe memory memory_access l2
 ```
+
+`PYTHON` and `MODEL` are the only environment-specific paths in that command.
+On another server, point them at that server's prepared Python environment and
+PaddleOCR-VL checkpoint. The runner, source paths, cache layout, raw/evidence
+split, and analyzer command remain unchanged.
+
+The runtime is the authority for available PMU families:
+`torch_npu.profiler.supported_ai_core_metrics()` is checked before model load
+and again before each capture. The cross-product default is `pipe memory`.
+Huawei's product matrix lists `arithmetic`, `pipe`, `memory`, `memory_l0`,
+`memory_ub`, and `resource_conflict` for Atlas inference products such as
+310P; `l2` and `memory_access` are A2/A3 additions. Unsupported requested
+lanes fail before a graph is compiled or profiled rather than producing an
+empty or zero-valued report.
 
 Raw profiler output stays under
 `.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/`. Each lane
@@ -547,7 +565,7 @@ The combined analysis contains:
 The analyzer can also be rerun later without another NPU execution:
 
 ```sh
-/usr/local/python3.12.13/bin/python3 \
+"$PYTHON" \
   09_persistent_page_engine/scripts/analyze_vision_matmul_profile.py \
   --contract <lane-result>/profile_contract.json \
   --lane pipe=<raw-pipe-profile> \
@@ -563,9 +581,64 @@ On the observed CANN 9 application export, `cube_utilization(%)` is
 100%, not physical-core occupancy, achieved MAC utilization, or peak-FLOP
 utilization. MAC, MTE1, MTE2, FixPipe, and Vector ratios overlap and must not
 be added. Whole-graph captures establish which kernels and layers matter;
-targeted `msprof op` Occupancy,
-MemoryDetail, or Roofline replays are the separate second tier for physical
-core balance and a single selected kernel's mechanics.
+targeted `msprof op` replays are the separate second tier for a single
+selected kernel's mechanics. `Occupancy` supplies physical-core balance and
+`MemoryDetail` supplies deeper active-pipe memory instrumentation, but Huawei
+documents both only for Atlas A2/A3 products.
+
+`scripts/run_vision_msprof_op.py` implements that second tier without MSTX,
+private APIs, injected libraries, or a hard-coded CANN installation path.
+The tested CANN 9 `msprof op` path emitted no data when MSTX targeted the
+compiled TorchAir replay. A second bounded test confirmed that even a
+one-Linear cached TorchAir graph exposes only setup kernels to `msprof op`,
+not its inner MatMulV2. The permanent direct target is therefore deliberately
+limited to the square Q/K/V/output-projection shape: its eager call was
+validated against the compiled graph as the same MatMulV2, FP16
+ND/FRACTAL_NZ/ND contract, dimensions, and Block Dim. FC1 and FC2 remain in
+the full-graph profiler; their eager dispatch differs, so no convenient but
+non-representative surrogate is retained.
+
+```sh
+source npu-setup
+
+"$PYTHON" \
+  09_persistent_page_engine/scripts/run_vision_msprof_op.py \
+  --run-name vision_square_pipe \
+  --metric PipeUtilization
+
+"$PYTHON" \
+  09_persistent_page_engine/scripts/run_vision_msprof_op.py \
+  --run-name vision_square_memory \
+  --metric Memory
+```
+
+Those two commands are the portable base for 910B and 310P. The same runner
+also accepts `ArithmeticUtilization`, `MemoryL0`, `MemoryUB`, and
+`ResourceConflictRatio`. On A2/A3 products such as 910B, add `Occupancy` or
+`MemoryDetail` when physical-core balance or active-pipe memory detail is
+needed. Huawei documents those two families as unsupported on Atlas inference
+products such as 310P, so the work-server workflow does not request them.
+
+These captures are never substitutes for full-stack timing. Before
+interpretation, `scripts/analyze_vision_msprof_op.py` matches MatMulV2,
+shape-derived FLOPs, formats, Block Dim, and dtype back to the normalized
+full-graph reference:
+
+```sh
+"$PYTHON" \
+  09_persistent_page_engine/scripts/analyze_vision_msprof_op.py \
+  --capture-dir tmp/09_persistent_page_engine/vision_msprof_op/<capture> \
+  --raw-dir .runtime_cache/09_persistent_page_engine_vision_msprof_op/<capture> \
+  --reference-dir .runtime_cache/09_persistent_page_engine_vision_matmul_profiles/<analysis> \
+  --output-dir tmp/09_persistent_page_engine/vision_msprof_op/<capture>/analysis
+```
+
+The runner discovers `msprof` on `PATH`; paths are repository-relative; the
+analyzer is standard-library-only; and binary caches are neither required nor
+transferred. The method moves to the work server by changing only `PYTHON`
+and the full-graph suite's `MODEL` value. Metric support is selected by
+product/runtime capability. Missing fields remain missing, and an unsupported
+family is never reported as measured zero.
 
 ```sh
 /usr/local/python3.12.13/bin/python3 \
