@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib
 import json
 import math
 import os
@@ -91,6 +92,7 @@ PROFILE_METRIC_CHOICES = (
     "l2",
     "memory_access",
 )
+PROMPTFA_INNER_PRECISE_CHOICES = (1, 4)
 LEGACY_SEPARATE_MANUAL_SOURCE_HASH = "b4144440d15e"
 JOINT_MANUAL_SOURCE_HASH = "25d9a2dd1d39"
 StageInputs = tuple[torch.Tensor, ...]
@@ -134,6 +136,18 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "runtime uses per-layer 72->80 pads and 80->72 slicing; "
             "weights zero-extends attention projections once to native "
             "80-wide heads."
+        ),
+    )
+    parser.add_argument(
+        "--promptfa-inner-precise",
+        type=int,
+        choices=PROMPTFA_INNER_PRECISE_CHOICES,
+        default=1,
+        help=(
+            "1 is the installed high-performance PromptFA control. "
+            "4 is CANN's experimental 310P-only approximate mode, lowered "
+            "through a project-side TorchAir converter so the softmax "
+            "running state uses FP16. Mode 4 requires --execution torchair."
         ),
     )
     parser.add_argument(
@@ -190,6 +204,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error(
             "joint rotary implementations require "
             "--attention-head-padding weights"
+        )
+    if args.promptfa_inner_precise == 4 and args.execution != "torchair":
+        parser.error(
+            "--promptfa-inner-precise 4 requires --execution torchair"
         )
     if args.warmup < 0:
         parser.error("--warmup must be non-negative")
@@ -783,6 +801,100 @@ def _register_inplace_partial_torchair_converter() -> None:
         )
 
 
+def _register_promptfa_inner_precise_converter(
+    requested_inner_precise: int,
+) -> None:
+    """Lower public PromptFA with CANN's selected GE precision attribute.
+
+    The installed torch_npu operator schema does not expose ``inner_precise``,
+    although its stock TorchAir converter and the GE PromptFlashAttention
+    operator do.  Keep eager execution on the public mode-1 path, then replace
+    only this process's converter before compiling the experimental graph.
+    This avoids patching torch_npu or changing the global production wrapper.
+    """
+
+    if requested_inner_precise == 1:
+        return
+    if requested_inner_precise not in PROMPTFA_INNER_PRECISE_CHOICES:
+        raise ValueError(
+            "unsupported PromptFA innerPrecise value: "
+            f"{requested_inner_precise}"
+        )
+
+    # TorchAir loads stock converters lazily. Import the stock registration
+    # first so it cannot overwrite the experiment's converter later.
+    importlib.import_module(
+        "torchair._ge_concrete_graph.ge_converter.custom.flash_attention"
+    )
+    from torchair._ge_concrete_graph.fx2ge_converter import (
+        register_fx_node_ge_converter,
+    )
+
+    promptfa_op = torch.ops.npu.npu_prompt_flash_attention.default
+    stock_converter = getattr(promptfa_op, "_ge_converter", None)
+    if stock_converter is None:
+        raise RuntimeError(
+            "TorchAir did not register the stock PromptFA converter"
+        )
+    stock_implementation = getattr(
+        stock_converter,
+        "__wrapped__",
+        stock_converter,
+    )
+
+    @register_fx_node_ge_converter(promptfa_op)
+    def _convert_promptfa_with_selected_inner_precise(
+        query: Any,
+        key: Any,
+        value: Any,
+        *,
+        padding_mask: Any = None,
+        atten_mask: Any = None,
+        pse_shift: Any = None,
+        actual_seq_lengths: Any = None,
+        deq_scale1: Any = None,
+        quant_scale1: Any = None,
+        deq_scale2: Any = None,
+        quant_scale2: Any = None,
+        quant_offset2: Any = None,
+        num_heads: int = 1,
+        scale_value: float = 1.0,
+        pre_tokens: int = 2147473647,
+        next_tokens: int = 0,
+        input_layout: str = "BSH",
+        num_key_value_heads: int = 0,
+        actual_seq_lengths_kv: Any = None,
+        sparse_mode: int = 0,
+        inner_precise: int = 1,
+        meta_outputs: Any = None,
+    ) -> Any:
+        del inner_precise
+        return stock_implementation(
+            query,
+            key,
+            value,
+            padding_mask=padding_mask,
+            atten_mask=atten_mask,
+            pse_shift=pse_shift,
+            actual_seq_lengths=actual_seq_lengths,
+            deq_scale1=deq_scale1,
+            quant_scale1=quant_scale1,
+            deq_scale2=deq_scale2,
+            quant_scale2=quant_scale2,
+            quant_offset2=quant_offset2,
+            num_heads=num_heads,
+            scale_value=scale_value,
+            pre_tokens=pre_tokens,
+            next_tokens=next_tokens,
+            input_layout=input_layout,
+            num_key_value_heads=num_key_value_heads,
+            actual_seq_lengths_kv=actual_seq_lengths_kv,
+            sparse_mode=sparse_mode,
+            inner_precise=requested_inner_precise,
+            meta_outputs=meta_outputs,
+        )
+
+
 def _linear_modules(stage: nn.Module) -> list[tuple[str, nn.Linear]]:
     modules = [
         (name, module)
@@ -1007,6 +1119,7 @@ def _cache_dir(
     intermediate_size: int,
     weight_format: str,
     attention_head_padding: str,
+    promptfa_inner_precise: int,
     rotary_implementation: str,
     dtype: torch.dtype,
     device: torch.device,
@@ -1033,6 +1146,8 @@ def _cache_dir(
         f"torchnpu{torch_npu_version_label(device)}",
         f"torchair{torchair_version_label(device)}",
     ]
+    if promptfa_inner_precise != 1:
+        key_parts.append(f"pfainnerprecise{promptfa_inner_precise}")
     if rotary_implementation == "separate_manual":
         # This implementation is byte-for-byte the already measured control.
         # Preserve its warm graph identity while making every new lane explicit.
@@ -1061,15 +1176,24 @@ def _cache_dir(
         f"vision_pfa_b{batch_size}_s{sequence_length}_"
         f"i{intermediate_size}_{weight_format}_"
         f"hp{attention_head_padding}_"
+        f"ip{promptfa_inner_precise}_"
         f"rope{cache_key_part(rotary_implementation)}_{digest}"
     )
     if rotary_implementation == "separate_manual":
-        # Retain the exact legacy directory name as well as its key.
-        compact = (
-            f"vision_pfa_b{batch_size}_s{sequence_length}_"
-            f"i{intermediate_size}_{weight_format}_"
-            f"hp{attention_head_padding}_{digest}"
-        )
+        if promptfa_inner_precise == 1:
+            # Retain the exact legacy directory name as well as its key.
+            compact = (
+                f"vision_pfa_b{batch_size}_s{sequence_length}_"
+                f"i{intermediate_size}_{weight_format}_"
+                f"hp{attention_head_padding}_{digest}"
+            )
+        else:
+            compact = (
+                f"vision_pfa_b{batch_size}_s{sequence_length}_"
+                f"i{intermediate_size}_{weight_format}_"
+                f"hp{attention_head_padding}_"
+                f"ip{promptfa_inner_precise}_{digest}"
+            )
     return root.expanduser().resolve() / compact
 
 
@@ -1084,6 +1208,7 @@ def _compile(
     allow_missing: bool,
     device: torch.device,
     example: StageInputs,
+    promptfa_inner_precise: int,
 ) -> tuple[Callable[..., torch.Tensor], dict[str, Any]]:
     existed = _cache_populated(cache_dir)
     if not existed and not allow_missing:
@@ -1093,6 +1218,7 @@ def _compile(
         )
     cache_dir.mkdir(parents=True, exist_ok=True)
     torchair, CompilerConfig = import_torchair()
+    _register_promptfa_inner_precise_converter(promptfa_inner_precise)
     synchronize(device)
     wrapper_started = time.perf_counter()
     compiled = torchair.inference.cache_compile(
@@ -1822,6 +1948,15 @@ def main(argv: Sequence[str] | None = None) -> None:
             "implementation": "prompt_flash_attention",
             "input_layout": get_vision_prompt_fa_layout().upper(),
             "mask_sparse_mode": get_vision_prompt_fa_mask_sparse_mode(),
+            "inner_precise": int(args.promptfa_inner_precise),
+            "inner_precise_semantics": (
+                "installed high-performance control"
+                if args.promptfa_inner_precise == 1
+                else (
+                    "experimental CANN 310P-only approximate mode with "
+                    "FP16 softmax running state"
+                )
+            ),
             "model_head_dim": int(
                 config.hidden_size // config.num_attention_heads
             ),
@@ -1846,6 +1981,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         "requested": {
             "weight_format": args.weight_format,
             "attention_head_padding": args.attention_head_padding,
+            "promptfa_inner_precise": args.promptfa_inner_precise,
             "rotary_implementation": args.rotary_implementation,
             "execution": args.execution,
             "profile_metric": args.profile_metric,
@@ -1890,6 +2026,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         intermediate_size=intermediate_size,
         weight_format=args.weight_format,
         attention_head_padding=args.attention_head_padding,
+        promptfa_inner_precise=args.promptfa_inner_precise,
         rotary_implementation=args.rotary_implementation,
         dtype=dtype,
         device=device,
@@ -1902,6 +2039,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             allow_missing=bool(args.allow_compile_if_missing),
             device=device,
             example=candidate_inputs,
+            promptfa_inner_precise=args.promptfa_inner_precise,
         )
     else:
         run = candidate_stage
