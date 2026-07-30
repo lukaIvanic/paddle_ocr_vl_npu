@@ -1,0 +1,1267 @@
+{
+  "schema_version": 2,
+  "generated_at_utc": "2026-07-30T14:02:06.397195+00:00",
+  "command": [
+    "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/analyze_vision_matmul_profile.py",
+    "--lane",
+    "pipe=/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/vision_attention_compare_910b_7c64b7e/promptfa_b4s512_pipe",
+    "--output-dir",
+    "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/vision_attention_compare_910b_7c64b7e/promptfa_b4s512_pipe/normalized_analysis",
+    "--contract",
+    "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_attention_compare_910b_7c64b7e/promptfa_b4s512_pipe/results/profile_contract.json"
+  ],
+  "canonical_execution_source": "ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+  "contract": {
+    "schema_version": 1,
+    "command": [
+      "/usr/local/python3.12.13/bin/python3",
+      "09_persistent_page_engine/scripts/vision_matmul_lab.py",
+      "--batch-size",
+      "4",
+      "--sequence-length",
+      "512",
+      "--intermediate-size",
+      "4352",
+      "--weight-format",
+      "fractal_nz",
+      "--attention-head-padding",
+      "weights",
+      "--attention-implementation",
+      "prompt_flash_attention",
+      "--rotary-implementation",
+      "separate_manual",
+      "--execution",
+      "torchair",
+      "--allow-compile-if-missing",
+      "--warmup",
+      "3",
+      "--samples",
+      "10",
+      "--calls-per-sample",
+      "5",
+      "--profile",
+      "--profile-metric",
+      "pipe",
+      "--profile-warmup-steps",
+      "1",
+      "--profile-steps",
+      "3",
+      "--output-dir",
+      "tmp/09_persistent_page_engine/vision_attention_compare_910b_7c64b7e/promptfa_b4s512_pipe/results",
+      "--profile-dir",
+      ".runtime_cache/09_persistent_page_engine_vision_matmul_profiles/vision_attention_compare_910b_7c64b7e/promptfa_b4s512_pipe"
+    ],
+    "purpose": "exact production 27-layer vision attention comparison using synthetic shape inputs",
+    "boundary": "VisionPrefillStage: 27 x (LayerNorm1 + Q/K/V + RoPE + selected attention core + out projection + residual + LayerNorm2 + FC1/GELU/FC2 + residual) + post-LayerNorm",
+    "environment": {
+      "commit": "7c64b7e93a0224039a36a8c123987b9b290b58ca",
+      "device": "npu:0",
+      "device_name": "Ascend910B2",
+      "torch": "2.10.0+cpu",
+      "torch_npu": "2.10.0",
+      "npu_smi": "+------------------------------------------------------------------------------------------------+\n| npu-smi 25.0.rc1.1               Version: 25.0.rc1.1                                           |\n+---------------------------+---------------+----------------------------------------------------+\n| NPU   Name                | Health        | Power(W)    Temp(C)           Hugepages-Usage(page)|\n| Chip                      | Bus-Id        | AICore(%)   Memory-Usage(MB)  HBM-Usage(MB)        |\n+===========================+===============+====================================================+\n| 0     910B2               | OK            | 108.2       47                0    / 0             |\n| 0                         | 0000:C1:00.0  | 0           0    / 0          3415 / 65536         |\n+===========================+===============+====================================================+\n| 1     910B2               | OK            | 123.0       48                0    / 0             |\n| 0                         | 0000:01:00.0  | 0           0    / 0          7935 / 65536         |\n+===========================+===============+====================================================+\n| 2     910B2               | OK            | 103.7       49                0    / 0             |\n| 0                         | 0000:C2:00.0  | 0           0    / 0          3413 / 65536         |\n+===========================+===============+====================================================+\n| 3     910B2               | OK            | 101.8       48                0    / 0             |\n| 0                         | 0000:02:00.0  | 0           0    / 0          54505/ 65536         |\n+===========================+===============+====================================================+\n| 4     910B2               | OK            | 101.9       49                0    / 0             |\n| 0                         | 0000:81:00.0  | 0           0    / 0          54372/ 65536         |\n+===========================+===============+====================================================+\n| 5     910B2               | OK            | 101.4       48                0    / 0             |\n| 0                         | 0000:41:00.0  | 0           0    / 0          7251 / 65536         |\n+===========================+===============+====================================================+\n| 6     910B2               | OK            | 102.1       49                0    / 0             |\n| 0                         | 0000:82:00.0  | 0           0    / 0          54372/ 65536         |\n+===========================+===============+====================================================+\n| 7     910B2               | OK            | 102.7       48                0    / 0             |\n| 0                         | 0000:42:00.0  | 0           0    / 0          54366/ 65536         |\n+===========================+===============+====================================================+\n+---------------------------+---------------+----------------------------------------------------+\n| NPU     Chip              | Process id    | Process name             | Process memory(MB)      |\n+===========================+===============+====================================================+\n| No running processes found in NPU 0                                                            |\n+===========================+===============+====================================================+\n| 1       0                 | 2004249       |                          | 4577                    |\n+===========================+===============+====================================================+\n| No running processes found in NPU 2                                                            |\n+===========================+===============+====================================================+\n| 3       0                 | 2804329       |                          | 51009                   |\n+===========================+===============+====================================================+\n| 4       0                 | 2804375       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 5       0                 | 2003832       |                          | 3879                    |\n+===========================+===============+====================================================+\n| 6       0                 | 2804478       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 7       0                 | 2804586       |                          | 51013                   |\n+===========================+===============+====================================================+\n",
+      "hostname": "liteserver-c001-4",
+      "ascend_rt_visible_devices": "5",
+      "npu_visible_devices": null,
+      "ascend_home_path": "/usr/local/Ascend/cann-9.0.0",
+      "ascend_toolkit_home": "/usr/local/Ascend/cann-9.0.0"
+    },
+    "shape": {
+      "batch_size": 4,
+      "sequence_length": 512,
+      "physical_tokens_per_call": 2048,
+      "hidden_size": 1152,
+      "source_intermediate_size": 4304,
+      "candidate_intermediate_size": 4352,
+      "layers": 27,
+      "linear_calls_per_layer": 6,
+      "linear_calls_per_full_stack": 162
+    },
+    "requested": {
+      "weight_format": "fractal_nz",
+      "attention_head_padding": "weights",
+      "attention_implementation": "prompt_flash_attention",
+      "promptfa_inner_precise": 1,
+      "rotary_implementation": "separate_manual",
+      "execution": "torchair",
+      "profile_metric": "pipe"
+    },
+    "weight_format": {
+      "requested": "fractal_nz",
+      "target_format": "FRACTAL_NZ",
+      "target_format_code": 29,
+      "linear_weight_count": 162,
+      "before_format_histogram": {
+        "2": 162
+      },
+      "converted_count": 162,
+      "status": "ready",
+      "failures": [],
+      "after_format_histogram": {
+        "29": 162
+      },
+      "all_after_are_nz": true,
+      "runtime_gate": {
+        "torch_npu_allow_internal_format_enabled_before_npu_allocation": true,
+        "mm_bmm_format_nd": true,
+        "manual_cast_after_model_load": true
+      }
+    },
+    "attention": {
+      "implementation": "prompt_flash_attention",
+      "core": "PromptFlashAttention",
+      "input_layout": "BNSD",
+      "mask_sparse_mode": 1,
+      "pre_tokens": 2147483647,
+      "next_tokens": 2147483647,
+      "inner_precise": 1,
+      "inner_precise_semantics": "installed high-performance control",
+      "model_head_dim": 72,
+      "promptfa_call_head_dim": 80,
+      "attention_mask_all_false": true,
+      "materializes_score_tensor": false,
+      "head_padding": {
+        "mode": "weights",
+        "real_head_dim": 72,
+        "padded_head_dim": 80,
+        "runtime_pad_operations_per_layer": 0,
+        "runtime_slice_operations_per_layer": 0,
+        "num_heads": 16,
+        "hidden_size": 1152,
+        "padded_attention_size": 1280
+      },
+      "rotary": {
+        "implementation": "separate_manual",
+        "custom_op_enabled": null,
+        "portable_to_310p": true,
+        "qk_layout": "separate_bsnd",
+        "math": "separate FP32 half-RoPE",
+        "operator": "ordinary PyTorch operations"
+      }
+    },
+    "compile": {
+      "api": "torchair.inference.cache_compile",
+      "dynamic": false,
+      "fullgraph": true,
+      "ge_cache": true,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_lab/vision_pfa_b4_s512_i4352_fractal_nz_hpweights_8147c443b95ab6d6",
+      "cache_existed_before": false,
+      "compile_was_permitted": true,
+      "wrapper_s": 0.0003875570837408304,
+      "first_call_s": 30.640804212074727
+    },
+    "unprofiled_measurements": {
+      "samples": 10,
+      "calls_per_sample": 5,
+      "total_measured_full_stack_calls": 50,
+      "device_event_per_call_ms": {
+        "samples": [
+          22.203404235839844,
+          22.263955688476564,
+          22.323635864257813,
+          22.28468475341797,
+          22.282496643066406,
+          22.274783325195312,
+          22.27776336669922,
+          22.292160034179688,
+          22.270448303222658,
+          22.293820190429688
+        ],
+        "mean": 22.276715240478516,
+        "median": 22.280130004882814,
+        "p05": 22.23065238952637,
+        "p95": 22.310218811035156
+      },
+      "synchronized_wall_per_call_ms": {
+        "samples": [
+          22.77735099196434,
+          22.31712741777301,
+          22.38030838780105,
+          22.34372580423951,
+          22.3440018016845,
+          22.340393578633666,
+          22.334743617102504,
+          22.354381997138262,
+          22.33170960098505,
+          22.348017804324627
+        ],
+        "mean": 22.387176100164652,
+        "median": 22.343863802962005,
+        "p05": 22.323689400218427,
+        "p95": 22.59868182009086
+      },
+      "physical_tokens_per_s_device_median": 91920.46902559228,
+      "physical_tokens_per_s_wall_median": 91658.27441753865,
+      "linear_tflop_per_s_device_median": 79.04823833747926
+    },
+    "linear_flops_per_full_stack_call": 1761205026816,
+    "profile": {
+      "metric": "pipe",
+      "warmup_steps": 1,
+      "active_steps": 3,
+      "throughput_measurement": false
+    }
+  },
+  "contract_dims": {
+    "batch_size": 4,
+    "sequence_length": 512,
+    "hidden_size": 1152,
+    "intermediate_size": 4352,
+    "layers": 27,
+    "linear_calls_per_layer": 6,
+    "linear_calls_per_full_stack": 162,
+    "head_padding_mode": "weights",
+    "real_head_dim": 72,
+    "padded_head_dim": 80
+  },
+  "sources": [
+    {
+      "metric_family": "pipe",
+      "profile_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/vision_attention_compare_910b_7c64b7e/promptfa_b4s512_pipe",
+      "kernel_csvs": [
+        {
+          "path": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/vision_attention_compare_910b_7c64b7e/promptfa_b4s512_pipe/liteserver-c001-4_759972_20260730140153552_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+          "size_bytes": 821453,
+          "sha256": "0eaae37cf3ea66f9deccd03869c315a9e5804f7b487b621553a95156263427b6",
+          "columns": [
+            "Step Id",
+            "Device_id",
+            "Model ID",
+            "Task ID",
+            "Stream ID",
+            "Name",
+            "Type",
+            "OP State",
+            "Accelerator Core",
+            "Start Time(us)",
+            "Duration(us)",
+            "Wait Time(us)",
+            "Block Num",
+            "Mix Block Num",
+            "HF32 Eligible",
+            "Input Shapes",
+            "Input Data Types",
+            "Input Formats",
+            "Output Shapes",
+            "Output Data Types",
+            "Output Formats",
+            "Context ID",
+            "aicore_time(us)",
+            "aic_total_cycles",
+            "aic_mac_time(us)",
+            "aic_mac_ratio",
+            "aic_scalar_time(us)",
+            "aic_scalar_ratio",
+            "aic_mte1_time(us)",
+            "aic_mte1_ratio",
+            "aic_mte2_time(us)",
+            "aic_mte2_ratio",
+            "aic_fixpipe_time(us)",
+            "aic_fixpipe_ratio",
+            "aic_icache_miss_rate",
+            "aiv_time(us)",
+            "aiv_total_cycles",
+            "aiv_vec_time(us)",
+            "aiv_vec_ratio",
+            "aiv_scalar_time(us)",
+            "aiv_scalar_ratio",
+            "aiv_mte2_time(us)",
+            "aiv_mte2_ratio",
+            "aiv_mte3_time(us)",
+            "aiv_mte3_ratio",
+            "aiv_icache_miss_rate",
+            "cube_utilization(%)"
+          ],
+          "canonical_column_resolution": {
+            "step_id": "Step Id",
+            "device_id": "Device_id",
+            "model_id": "Model ID",
+            "task_id": "Task ID",
+            "stream_id": "Stream ID",
+            "name": "Name",
+            "type": "Type",
+            "op_state": "OP State",
+            "accelerator_core": "Accelerator Core",
+            "start_us": "Start Time(us)",
+            "duration_us": "Duration(us)",
+            "wait_us": "Wait Time(us)",
+            "block_dim": "Block Num",
+            "mix_block_dim": "Mix Block Num",
+            "input_shapes": "Input Shapes",
+            "input_dtypes": "Input Data Types",
+            "input_formats": "Input Formats",
+            "output_shapes": "Output Shapes",
+            "output_dtypes": "Output Data Types",
+            "output_formats": "Output Formats",
+            "context_id": "Context ID"
+          },
+          "dynamic_columns": [
+            "HF32 Eligible",
+            "aicore_time(us)",
+            "aic_total_cycles",
+            "aic_mac_time(us)",
+            "aic_mac_ratio",
+            "aic_scalar_time(us)",
+            "aic_scalar_ratio",
+            "aic_mte1_time(us)",
+            "aic_mte1_ratio",
+            "aic_mte2_time(us)",
+            "aic_mte2_ratio",
+            "aic_fixpipe_time(us)",
+            "aic_fixpipe_ratio",
+            "aic_icache_miss_rate",
+            "aiv_time(us)",
+            "aiv_total_cycles",
+            "aiv_vec_time(us)",
+            "aiv_vec_ratio",
+            "aiv_scalar_time(us)",
+            "aiv_scalar_ratio",
+            "aiv_mte2_time(us)",
+            "aiv_mte2_ratio",
+            "aiv_mte3_time(us)",
+            "aiv_mte3_ratio",
+            "aiv_icache_miss_rate",
+            "cube_utilization(%)"
+          ]
+        }
+      ],
+      "profiler_databases": [
+        {
+          "path": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/vision_attention_compare_910b_7c64b7e/promptfa_b4s512_pipe/liteserver-c001-4_759972_20260730140153552_ascend_pt/ASCEND_PROFILER_OUTPUT/analysis.db",
+          "tables": [
+            {
+              "name": "StepTraceTime",
+              "create_sql": "CREATE TABLE StepTraceTime (deviceId INTEGER, step TEXT, computing NUMERIC, communication_not_overlapped NUMERIC, overlapped NUMERIC, communication NUMERIC, free NUMERIC, stage NUMERIC, bubble NUMERIC, communication_not_overlapped_and_exclude_receive NUMERIC, preparing NUMERIC)",
+              "columns": [
+                {
+                  "ordinal": 0,
+                  "name": "deviceId",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 1,
+                  "name": "step",
+                  "type": "TEXT",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 2,
+                  "name": "computing",
+                  "type": "NUMERIC",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 3,
+                  "name": "communication_not_overlapped",
+                  "type": "NUMERIC",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 4,
+                  "name": "overlapped",
+                  "type": "NUMERIC",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 5,
+                  "name": "communication",
+                  "type": "NUMERIC",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 6,
+                  "name": "free",
+                  "type": "NUMERIC",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 7,
+                  "name": "stage",
+                  "type": "NUMERIC",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 8,
+                  "name": "bubble",
+                  "type": "NUMERIC",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 9,
+                  "name": "communication_not_overlapped_and_exclude_receive",
+                  "type": "NUMERIC",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 10,
+                  "name": "preparing",
+                  "type": "NUMERIC",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "path": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/vision_attention_compare_910b_7c64b7e/promptfa_b4s512_pipe/liteserver-c001-4_759972_20260730140153552_ascend_pt/ASCEND_PROFILER_OUTPUT/ascend_pytorch_profiler.db",
+          "tables": [
+            {
+              "name": "AICORE_FREQ",
+              "create_sql": "CREATE TABLE AICORE_FREQ (deviceId INTEGER, timestampNs NUMERIC, freq INTEGER)",
+              "columns": [
+                {
+                  "ordinal": 0,
+                  "name": "deviceId",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 1,
+                  "name": "timestampNs",
+                  "type": "NUMERIC",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 2,
+                  "name": "freq",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                }
+              ]
+            },
+            {
+              "name": "CANN_API",
+              "create_sql": "CREATE TABLE CANN_API (startNs INTEGER, endNs INTEGER, type INTEGER, globalTid INTEGER, connectionId INTEGER PRIMARY KEY, name INTEGER)",
+              "columns": [
+                {
+                  "ordinal": 0,
+                  "name": "startNs",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 1,
+                  "name": "endNs",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 2,
+                  "name": "type",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 3,
+                  "name": "globalTid",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 4,
+                  "name": "connectionId",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": true
+                },
+                {
+                  "ordinal": 5,
+                  "name": "name",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                }
+              ]
+            },
+            {
+              "name": "COMPUTE_TASK_INFO",
+              "create_sql": "CREATE TABLE COMPUTE_TASK_INFO (name INTEGER, globalTaskId INTEGER PRIMARY KEY, blockNum INTEGER, mixBlockNum INTEGER, taskType INTEGER, opType INTEGER, inputFormats INTEGER, inputDataTypes INTEGER, inputShapes INTEGER, outputFormats INTEGER, outputDataTypes INTEGER, outputShapes INTEGER, attrInfo INTEGER, opState INTEGER, hf32Eligible INTEGER)",
+              "columns": [
+                {
+                  "ordinal": 0,
+                  "name": "name",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 1,
+                  "name": "globalTaskId",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": true
+                },
+                {
+                  "ordinal": 2,
+                  "name": "blockNum",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 3,
+                  "name": "mixBlockNum",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 4,
+                  "name": "taskType",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 5,
+                  "name": "opType",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 6,
+                  "name": "inputFormats",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 7,
+                  "name": "inputDataTypes",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 8,
+                  "name": "inputShapes",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 9,
+                  "name": "outputFormats",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 10,
+                  "name": "outputDataTypes",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 11,
+                  "name": "outputShapes",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 12,
+                  "name": "attrInfo",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 13,
+                  "name": "opState",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 14,
+                  "name": "hf32Eligible",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                }
+              ]
+            },
+            {
+              "name": "CONNECTION_IDS",
+              "create_sql": "CREATE TABLE CONNECTION_IDS (id INTEGER, connectionId INTEGER)",
+              "columns": [
+                {
+                  "ordinal": 0,
+                  "name": "id",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 1,
+                  "name": "connectionId",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                }
+              ]
+            },
+            {
+              "name": "ENUM_API_TYPE",
+              "create_sql": "CREATE TABLE ENUM_API_TYPE (id INTEGER PRIMARY KEY, name TEXT)",
+              "columns": [
+                {
+                  "ordinal": 0,
+                  "name": "id",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": true
+                },
+                {
+                  "ordinal": 1,
+                  "name": "name",
+                  "type": "TEXT",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                }
+              ]
+            },
+            {
+              "name": "ENUM_HCCL_DATA_TYPE",
+              "create_sql": "CREATE TABLE ENUM_HCCL_DATA_TYPE (id INTEGER PRIMARY KEY, name TEXT)",
+              "columns": [
+                {
+                  "ordinal": 0,
+                  "name": "id",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": true
+                },
+                {
+                  "ordinal": 1,
+                  "name": "name",
+                  "type": "TEXT",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                }
+              ]
+            },
+            {
+              "name": "ENUM_HCCL_LINK_TYPE",
+              "create_sql": "CREATE TABLE ENUM_HCCL_LINK_TYPE (id INTEGER PRIMARY KEY, name TEXT)",
+              "columns": [
+                {
+                  "ordinal": 0,
+                  "name": "id",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": true
+                },
+                {
+                  "ordinal": 1,
+                  "name": "name",
+                  "type": "TEXT",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                }
+              ]
+            },
+            {
+              "name": "ENUM_HCCL_RDMA_TYPE",
+              "create_sql": "CREATE TABLE ENUM_HCCL_RDMA_TYPE (id INTEGER PRIMARY KEY, name TEXT)",
+              "columns": [
+                {
+                  "ordinal": 0,
+                  "name": "id",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": true
+                },
+                {
+                  "ordinal": 1,
+                  "name": "name",
+                  "type": "TEXT",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                }
+              ]
+            },
+            {
+              "name": "ENUM_HCCL_TRANSPORT_TYPE",
+              "create_sql": "CREATE TABLE ENUM_HCCL_TRANSPORT_TYPE (id INTEGER PRIMARY KEY, name TEXT)",
+              "columns": [
+                {
+                  "ordinal": 0,
+                  "name": "id",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": true
+                },
+                {
+                  "ordinal": 1,
+                  "name": "name",
+                  "type": "TEXT",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                }
+              ]
+            },
+            {
+              "name": "ENUM_MEMCPY_OPERATION",
+              "create_sql": "CREATE TABLE ENUM_MEMCPY_OPERATION (id INTEGER PRIMARY KEY, name TEXT)",
+              "columns": [
+                {
+                  "ordinal": 0,
+                  "name": "id",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": true
+                },
+                {
+                  "ordinal": 1,
+                  "name": "name",
+                  "type": "TEXT",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                }
+              ]
+            },
+            {
+              "name": "ENUM_MODULE",
+              "create_sql": "CREATE TABLE ENUM_MODULE (id INTEGER PRIMARY KEY, name TEXT)",
+              "columns": [
+                {
+                  "ordinal": 0,
+                  "name": "id",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": true
+                },
+                {
+                  "ordinal": 1,
+                  "name": "name",
+                  "type": "TEXT",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                }
+              ]
+            },
+            {
+              "name": "ENUM_MSTX_EVENT_TYPE",
+              "create_sql": "CREATE TABLE ENUM_MSTX_EVENT_TYPE (id INTEGER PRIMARY KEY, name TEXT)",
+              "columns": [
+                {
+                  "ordinal": 0,
+                  "name": "id",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": true
+                },
+                {
+                  "ordinal": 1,
+                  "name": "name",
+                  "type": "TEXT",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                }
+              ]
+            },
+            {
+              "name": "HOST_INFO",
+              "create_sql": "CREATE TABLE HOST_INFO (hostUid TEXT, hostName TEXT)",
+              "columns": [
+                {
+                  "ordinal": 0,
+                  "name": "hostUid",
+                  "type": "TEXT",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 1,
+                  "name": "hostName",
+                  "type": "TEXT",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                }
+              ]
+            },
+            {
+              "name": "META_DATA",
+              "create_sql": "CREATE TABLE META_DATA (name TEXT, value TEXT)",
+              "columns": [
+                {
+                  "ordinal": 0,
+                  "name": "name",
+                  "type": "TEXT",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 1,
+                  "name": "value",
+                  "type": "TEXT",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                }
+              ]
+            },
+            {
+              "name": "NPU_INFO",
+              "create_sql": "CREATE TABLE NPU_INFO (id INTEGER, name TEXT)",
+              "columns": [
+                {
+                  "ordinal": 0,
+                  "name": "id",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 1,
+                  "name": "name",
+                  "type": "TEXT",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                }
+              ]
+            },
+            {
+              "name": "PYTORCH_API",
+              "create_sql": "CREATE TABLE PYTORCH_API (startNs TEXT, endNs TEXT, globalTid INTEGER, connectionId INTEGER, name INTEGER, sequenceNumber INTEGER, fwdThreadId INTEGER, inputDtypes INTEGER, inputShapes INTEGER, callchainId INTEGER, type INTEGER)",
+              "columns": [
+                {
+                  "ordinal": 0,
+                  "name": "startNs",
+                  "type": "TEXT",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 1,
+                  "name": "endNs",
+                  "type": "TEXT",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 2,
+                  "name": "globalTid",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 3,
+                  "name": "connectionId",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 4,
+                  "name": "name",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 5,
+                  "name": "sequenceNumber",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 6,
+                  "name": "fwdThreadId",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 7,
+                  "name": "inputDtypes",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 8,
+                  "name": "inputShapes",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 9,
+                  "name": "callchainId",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 10,
+                  "name": "type",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                }
+              ]
+            },
+            {
+              "name": "PYTORCH_CALLCHAINS",
+              "create_sql": "CREATE TABLE PYTORCH_CALLCHAINS (id INTEGER, stack INTEGER, stackDepth INTEGER)",
+              "columns": [
+                {
+                  "ordinal": 0,
+                  "name": "id",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 1,
+                  "name": "stack",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 2,
+                  "name": "stackDepth",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                }
+              ]
+            },
+            {
+              "name": "RANK_DEVICE_MAP",
+              "create_sql": "CREATE TABLE RANK_DEVICE_MAP (rankId INTEGER, deviceId INTEGER)",
+              "columns": [
+                {
+                  "ordinal": 0,
+                  "name": "rankId",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 1,
+                  "name": "deviceId",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                }
+              ]
+            },
+            {
+              "name": "SESSION_TIME_INFO",
+              "create_sql": "CREATE TABLE SESSION_TIME_INFO (startTimeNs INTEGER, endTimeNs INTEGER)",
+              "columns": [
+                {
+                  "ordinal": 0,
+                  "name": "startTimeNs",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 1,
+                  "name": "endTimeNs",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                }
+              ]
+            },
+            {
+              "name": "STEP_TIME",
+              "create_sql": "CREATE TABLE STEP_TIME (id INTEGER, startNs INTEGER, endNs INTEGER)",
+              "columns": [
+                {
+                  "ordinal": 0,
+                  "name": "id",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 1,
+                  "name": "startNs",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 2,
+                  "name": "endNs",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                }
+              ]
+            },
+            {
+              "name": "STRING_IDS",
+              "create_sql": "CREATE TABLE STRING_IDS (id INTEGER PRIMARY KEY, value TEXT)",
+              "columns": [
+                {
+                  "ordinal": 0,
+                  "name": "id",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": true
+                },
+                {
+                  "ordinal": 1,
+                  "name": "value",
+                  "type": "TEXT",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                }
+              ]
+            },
+            {
+              "name": "TASK",
+              "create_sql": "CREATE TABLE TASK (startNs INTEGER, endNs INTEGER, deviceId INTEGER, connectionId INTEGER, globalTaskId INTEGER, globalPid INTEGER, taskType INTEGER, contextId INTEGER, streamId INTEGER, taskId INTEGER, modelId INTEGER)",
+              "columns": [
+                {
+                  "ordinal": 0,
+                  "name": "startNs",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 1,
+                  "name": "endNs",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 2,
+                  "name": "deviceId",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 3,
+                  "name": "connectionId",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 4,
+                  "name": "globalTaskId",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 5,
+                  "name": "globalPid",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 6,
+                  "name": "taskType",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 7,
+                  "name": "contextId",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 8,
+                  "name": "streamId",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 9,
+                  "name": "taskId",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 10,
+                  "name": "modelId",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                }
+              ]
+            },
+            {
+              "name": "TASK_PMU_INFO",
+              "create_sql": "CREATE TABLE TASK_PMU_INFO (globalTaskId INTEGER, name INTEGER, value NUMERIC)",
+              "columns": [
+                {
+                  "ordinal": 0,
+                  "name": "globalTaskId",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 1,
+                  "name": "name",
+                  "type": "INTEGER",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                },
+                {
+                  "ordinal": 2,
+                  "name": "value",
+                  "type": "NUMERIC",
+                  "not_null": false,
+                  "default": null,
+                  "primary_key": false
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    "profile_manifest.json",
+    "profile_analysis.json",
+    "kernel_executions.csv",
+    "vision_linear_executions.csv",
+    "vision_layer_summary.csv",
+    "profile.sqlite",
+    "profile_report.md"
+  ],
+  "notes": [
+    "Profiler databases are schema-inventoried but are not implicitly joined to kernel_details.csv.",
+    "Metric lanes are separate captures and may expose different dynamic PMU columns."
+  ]
+}

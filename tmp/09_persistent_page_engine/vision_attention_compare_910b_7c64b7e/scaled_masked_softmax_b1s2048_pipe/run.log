@@ -1,0 +1,188 @@
+..[2026-07-30 14:03:59] [INFO] [762929] profiler.py: Start parsing profiling data in sync mode at: /workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/vision_attention_compare_910b_7c64b7e/scaled_masked_softmax_b1s2048_pipe/liteserver-c001-4_761725_20260730140358649_ascend_pt
+|/-\[2026-07-30 14:04:02] [INFO] [762955] profiler.py: CANN profiling data parsed in a total time of 0:00:03.034015
+|[2026-07-30 14:04:04] [INFO] [762929] profiler.py: All profiling data parsed in a total time of 0:00:05.096747
+{
+  "summary": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_attention_compare_910b_7c64b7e/scaled_masked_softmax_b1s2048_pipe/results/run_summary.json",
+  "status": "completed",
+  "shape": {
+    "batch_size": 1,
+    "sequence_length": 2048,
+    "physical_tokens_per_call": 2048,
+    "hidden_size": 1152,
+    "source_intermediate_size": 4304,
+    "candidate_intermediate_size": 4352,
+    "layers": 27,
+    "linear_calls_per_layer": 6,
+    "linear_calls_per_full_stack": 162
+  },
+  "weight_format": {
+    "requested": "fractal_nz",
+    "target_format": "FRACTAL_NZ",
+    "target_format_code": 29,
+    "linear_weight_count": 162,
+    "before_format_histogram": {
+      "2": 162
+    },
+    "converted_count": 162,
+    "status": "ready",
+    "failures": [],
+    "after_format_histogram": {
+      "29": 162
+    },
+    "all_after_are_nz": true,
+    "runtime_gate": {
+      "torch_npu_allow_internal_format_enabled_before_npu_allocation": true,
+      "mm_bmm_format_nd": true,
+      "manual_cast_after_model_load": true
+    }
+  },
+  "device_median_ms": 30.92182159423828,
+  "physical_tokens_per_s": 66231.54440492624,
+  "linear_tflop_per_s": 56.95670358385899,
+  "dispatch": {
+    "counts": {
+      "MatMulV2": 486,
+      "AttentionBatchMatMul": 162
+    },
+    "duration_us": {
+      "MatMulV2": 21819.3,
+      "AttentionBatchMatMul": 10074.479999999996
+    }
+  },
+  "matmul_only": {
+    "active_profiled_full_stack_calls": 3,
+    "matmul_kernels_per_full_stack_call": 162,
+    "observed_matmul_kernel_count": 486,
+    "total_matmul_kernel_duration_us": 21819.3,
+    "matmul_kernel_duration_per_full_stack_call_ms": 7.2730999999999995,
+    "linear_flops_per_full_stack_call": 1761205026816,
+    "matmul_only_linear_tflop_per_s": 242.1532808315574
+  },
+  "attention_components": {
+    "source_csv": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/vision_attention_compare_910b_7c64b7e/scaled_masked_softmax_b1s2048_pipe/liteserver-c001-4_761725_20260730140358649_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+    "active_full_stack_calls": 3,
+    "layers": 27,
+    "total_kernel_duration_per_full_stack_ms": 31.08796666666664,
+    "components": {
+      "attention_av_matmul": {
+        "kernel_count": 81,
+        "duration_us": 4688.260000000001,
+        "aic_mac_us": 2685.695,
+        "aic_scalar_us": 510.4439999999999,
+        "aic_mte1_us": 2825.64,
+        "aic_mte2_us": 3580.5769999999984,
+        "aic_mte3_us": 0.0,
+        "aic_fixpipe_us": 796.2900000000004,
+        "aiv_vec_us": 0.0,
+        "aiv_scalar_us": 0.0,
+        "aiv_mte2_us": 0.0,
+        "aiv_mte3_us": 0.0,
+        "kernel_count_per_full_stack": 27.0,
+        "duration_per_full_stack_ms": 1.5627533333333339,
+        "duration_per_layer_us": 57.87975308641977
+      },
+      "attention_qk_matmul": {
+        "kernel_count": 81,
+        "duration_us": 5386.219999999997,
+        "aic_mac_us": 2715.7360000000003,
+        "aic_scalar_us": 194.296,
+        "aic_mte1_us": 1354.2990000000007,
+        "aic_mte2_us": 286.8279999999999,
+        "aic_mte3_us": 0.0,
+        "aic_fixpipe_us": 4456.356,
+        "aiv_vec_us": 0.0,
+        "aiv_scalar_us": 0.0,
+        "aiv_mte2_us": 0.0,
+        "aiv_mte3_us": 0.0,
+        "kernel_count_per_full_stack": 27.0,
+        "duration_per_full_stack_ms": 1.7954066666666657,
+        "duration_per_layer_us": 66.4965432098765
+      },
+      "linear_projection_and_mlp": {
+        "kernel_count": 486,
+        "duration_us": 21819.3,
+        "aic_mac_us": 16008.812000000004,
+        "aic_scalar_us": 902.9980000000002,
+        "aic_mte1_us": 10110.111999999994,
+        "aic_mte2_us": 17304.283000000003,
+        "aic_mte3_us": 0.0,
+        "aic_fixpipe_us": 5730.957999999998,
+        "aiv_vec_us": 0.0,
+        "aiv_scalar_us": 0.0,
+        "aiv_mte2_us": 0.0,
+        "aiv_mte3_us": 0.0,
+        "kernel_count_per_full_stack": 162.0,
+        "duration_per_full_stack_ms": 7.2730999999999995,
+        "duration_per_layer_us": 269.37407407407403
+      },
+      "other": {
+        "kernel_count": 1707,
+        "duration_us": 27888.62000000001,
+        "aic_mac_us": 0.0,
+        "aic_scalar_us": 0.0,
+        "aic_mte1_us": 0.0,
+        "aic_mte2_us": 0.0,
+        "aic_mte3_us": 0.0,
+        "aic_fixpipe_us": 0.0,
+        "aiv_vec_us": 5599.665999999931,
+        "aiv_scalar_us": 1623.4500000000005,
+        "aiv_mte2_us": 9573.973,
+        "aiv_mte3_us": 7876.128999999982,
+        "kernel_count_per_full_stack": 569.0,
+        "duration_per_full_stack_ms": 9.29620666666667,
+        "duration_per_layer_us": 344.3039506172841
+      },
+      "scaled_masked_softmax": {
+        "kernel_count": 81,
+        "duration_us": 27866.98,
+        "aic_mac_us": 0.0,
+        "aic_scalar_us": 0.0,
+        "aic_mte1_us": 0.0,
+        "aic_mte2_us": 0.0,
+        "aic_mte3_us": 0.0,
+        "aic_fixpipe_us": 0.0,
+        "aiv_vec_us": 22351.389999999992,
+        "aiv_scalar_us": 3175.322999999999,
+        "aiv_mte2_us": 3554.003,
+        "aiv_mte3_us": 2086.5239999999994,
+        "kernel_count_per_full_stack": 27.0,
+        "duration_per_full_stack_ms": 9.288993333333334,
+        "duration_per_layer_us": 344.0367901234568
+      },
+      "transdata": {
+        "kernel_count": 243,
+        "duration_us": 1856.0199999999973,
+        "aic_mac_us": 0.0,
+        "aic_scalar_us": 0.0,
+        "aic_mte1_us": 0.0,
+        "aic_mte2_us": 0.0,
+        "aic_mte3_us": 0.0,
+        "aic_fixpipe_us": 0.0,
+        "aiv_vec_us": 161.0880000000001,
+        "aiv_scalar_us": 59.24499999999998,
+        "aiv_mte2_us": 639.424,
+        "aiv_mte3_us": 436.48799999999983,
+        "kernel_count_per_full_stack": 81.0,
+        "duration_per_full_stack_ms": 0.6186733333333324,
+        "duration_per_layer_us": 22.913827160493792
+      },
+      "transpose": {
+        "kernel_count": 324,
+        "duration_us": 3758.5,
+        "aic_mac_us": 0.0,
+        "aic_scalar_us": 0.0,
+        "aic_mte1_us": 0.0,
+        "aic_mte2_us": 0.0,
+        "aic_mte3_us": 0.0,
+        "aic_fixpipe_us": 0.0,
+        "aiv_vec_us": 135.26300000000055,
+        "aiv_scalar_us": 126.46200000000009,
+        "aiv_mte2_us": 1102.7489999999996,
+        "aiv_mte3_us": 630.4390000000001,
+        "kernel_count_per_full_stack": 108.0,
+        "duration_per_full_stack_ms": 1.2528333333333332,
+        "duration_per_layer_us": 46.401234567901234
+      }
+    }
+  }
+}

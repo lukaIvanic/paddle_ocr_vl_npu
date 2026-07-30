@@ -1,0 +1,4 @@
+commit=7c64b7e93a0224039a36a8c123987b9b290b58ca
+hostname=liteserver-c001-4
+ASCEND_RT_VISIBLE_DEVICES=5
+command=/usr/local/python3.12.13/bin/python3 -u 09_persistent_page_engine/scripts/vision_matmul_lab.py --batch-size 1 --sequence-length 2048 --intermediate-size 4352 --weight-format fractal_nz --attention-head-padding weights --attention-implementation prompt_flash_attention --rotary-implementation separate_manual --execution torchair --allow-compile-if-missing --warmup 3 --samples 10 --calls-per-sample 5 --profile --profile-metric pipe --profile-warmup-steps 1 --profile-steps 3 --output-dir tmp/09_persistent_page_engine/vision_attention_compare_910b_7c64b7e/promptfa_b1s2048_pipe/results --profile-dir .runtime_cache/09_persistent_page_engine_vision_matmul_profiles/vision_attention_compare_910b_7c64b7e/promptfa_b1s2048_pipe

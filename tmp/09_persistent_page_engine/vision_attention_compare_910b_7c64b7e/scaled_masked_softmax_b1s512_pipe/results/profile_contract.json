@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "command": [
+    "/usr/local/python3.12.13/bin/python3",
+    "09_persistent_page_engine/scripts/vision_matmul_lab.py",
+    "--batch-size",
+    "1",
+    "--sequence-length",
+    "512",
+    "--intermediate-size",
+    "4352",
+    "--weight-format",
+    "fractal_nz",
+    "--attention-head-padding",
+    "weights",
+    "--attention-implementation",
+    "scaled_masked_softmax",
+    "--rotary-implementation",
+    "separate_manual",
+    "--execution",
+    "torchair",
+    "--allow-compile-if-missing",
+    "--warmup",
+    "3",
+    "--samples",
+    "10",
+    "--calls-per-sample",
+    "5",
+    "--profile",
+    "--profile-metric",
+    "pipe",
+    "--profile-warmup-steps",
+    "1",
+    "--profile-steps",
+    "3",
+    "--output-dir",
+    "tmp/09_persistent_page_engine/vision_attention_compare_910b_7c64b7e/scaled_masked_softmax_b1s512_pipe/results",
+    "--profile-dir",
+    ".runtime_cache/09_persistent_page_engine_vision_matmul_profiles/vision_attention_compare_910b_7c64b7e/scaled_masked_softmax_b1s512_pipe"
+  ],
+  "purpose": "exact production 27-layer vision attention comparison using synthetic shape inputs",
+  "boundary": "VisionPrefillStage: 27 x (LayerNorm1 + Q/K/V + RoPE + selected attention core + out projection + residual + LayerNorm2 + FC1/GELU/FC2 + residual) + post-LayerNorm",
+  "environment": {
+    "commit": "7c64b7e93a0224039a36a8c123987b9b290b58ca",
+    "device": "npu:0",
+    "device_name": "Ascend910B2",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "npu_smi": "+------------------------------------------------------------------------------------------------+\n| npu-smi 25.0.rc1.1               Version: 25.0.rc1.1                                           |\n+---------------------------+---------------+----------------------------------------------------+\n| NPU   Name                | Health        | Power(W)    Temp(C)           Hugepages-Usage(page)|\n| Chip                      | Bus-Id        | AICore(%)   Memory-Usage(MB)  HBM-Usage(MB)        |\n+===========================+===============+====================================================+\n| 0     910B2               | OK            | 108.4       48                0    / 0             |\n| 0                         | 0000:C1:00.0  | 0           0    / 0          3416 / 65536         |\n+===========================+===============+====================================================+\n| 1     910B2               | OK            | 111.1       49                0    / 0             |\n| 0                         | 0000:01:00.0  | 0           0    / 0          3465 / 65536         |\n+===========================+===============+====================================================+\n| 2     910B2               | OK            | 104.3       49                0    / 0             |\n| 0                         | 0000:C2:00.0  | 0           0    / 0          3413 / 65536         |\n+===========================+===============+====================================================+\n| 3     910B2               | OK            | 102.3       48                0    / 0             |\n| 0                         | 0000:02:00.0  | 0           0    / 0          54504/ 65536         |\n+===========================+===============+====================================================+\n| 4     910B2               | OK            | 102.4       49                0    / 0             |\n| 0                         | 0000:81:00.0  | 0           0    / 0          54372/ 65536         |\n+===========================+===============+====================================================+\n| 5     910B2               | OK            | 101.9       48                0    / 0             |\n| 0                         | 0000:41:00.0  | 0           0    / 0          7243 / 65536         |\n+===========================+===============+====================================================+\n| 6     910B2               | OK            | 102.5       49                0    / 0             |\n| 0                         | 0000:82:00.0  | 0           0    / 0          54372/ 65536         |\n+===========================+===============+====================================================+\n| 7     910B2               | OK            | 103.0       49                0    / 0             |\n| 0                         | 0000:42:00.0  | 0           0    / 0          54365/ 65536         |\n+===========================+===============+====================================================+\n+---------------------------+---------------+----------------------------------------------------+\n| NPU     Chip              | Process id    | Process name             | Process memory(MB)      |\n+===========================+===============+====================================================+\n| No running processes found in NPU 0                                                            |\n+===========================+===============+====================================================+\n| 1       0                 | 1989699       |                          | 108                     |\n+===========================+===============+====================================================+\n| No running processes found in NPU 2                                                            |\n+===========================+===============+====================================================+\n| 3       0                 | 2804329       |                          | 51009                   |\n+===========================+===============+====================================================+\n| 4       0                 | 2804375       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 5       0                 | 1989158       |                          | 3871                    |\n+===========================+===============+====================================================+\n| 6       0                 | 2804478       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 7       0                 | 2804586       |                          | 51013                   |\n+===========================+===============+====================================================+\n",
+    "hostname": "liteserver-c001-4",
+    "ascend_rt_visible_devices": "5",
+    "npu_visible_devices": null,
+    "ascend_home_path": "/usr/local/Ascend/cann-9.0.0",
+    "ascend_toolkit_home": "/usr/local/Ascend/cann-9.0.0"
+  },
+  "shape": {
+    "batch_size": 1,
+    "sequence_length": 512,
+    "physical_tokens_per_call": 512,
+    "hidden_size": 1152,
+    "source_intermediate_size": 4304,
+    "candidate_intermediate_size": 4352,
+    "layers": 27,
+    "linear_calls_per_layer": 6,
+    "linear_calls_per_full_stack": 162
+  },
+  "requested": {
+    "weight_format": "fractal_nz",
+    "attention_head_padding": "weights",
+    "attention_implementation": "scaled_masked_softmax",
+    "promptfa_inner_precise": 1,
+    "rotary_implementation": "separate_manual",
+    "execution": "torchair",
+    "profile_metric": "pipe"
+  },
+  "weight_format": {
+    "requested": "fractal_nz",
+    "target_format": "FRACTAL_NZ",
+    "target_format_code": 29,
+    "linear_weight_count": 162,
+    "before_format_histogram": {
+      "2": 162
+    },
+    "converted_count": 162,
+    "status": "ready",
+    "failures": [],
+    "after_format_histogram": {
+      "29": 162
+    },
+    "all_after_are_nz": true,
+    "runtime_gate": {
+      "torch_npu_allow_internal_format_enabled_before_npu_allocation": true,
+      "mm_bmm_format_nd": true,
+      "manual_cast_after_model_load": true
+    }
+  },
+  "attention": {
+    "implementation": "scaled_masked_softmax",
+    "core": "BatchMatMul(QK) -> ScaledMaskedSoftmax -> BatchMatMul(AV)",
+    "input_layout": "BNSD scores with flattened BH batch matmuls",
+    "mask_sparse_mode": null,
+    "pre_tokens": null,
+    "next_tokens": null,
+    "inner_precise": null,
+    "inner_precise_semantics": null,
+    "model_head_dim": 72,
+    "promptfa_call_head_dim": 80,
+    "attention_mask_all_false": true,
+    "materializes_score_tensor": true,
+    "head_padding": {
+      "mode": "weights",
+      "real_head_dim": 72,
+      "padded_head_dim": 80,
+      "runtime_pad_operations_per_layer": 0,
+      "runtime_slice_operations_per_layer": 0,
+      "num_heads": 16,
+      "hidden_size": 1152,
+      "padded_attention_size": 1280
+    },
+    "rotary": {
+      "implementation": "separate_manual",
+      "custom_op_enabled": null,
+      "portable_to_310p": true,
+      "qk_layout": "separate_bsnd",
+      "math": "separate FP32 half-RoPE",
+      "operator": "ordinary PyTorch operations"
+    }
+  },
+  "compile": {
+    "api": "torchair.inference.cache_compile",
+    "dynamic": false,
+    "fullgraph": true,
+    "ge_cache": true,
+    "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_lab/vision_scaled_masked_softmax_b1_s512_i4352_fractal_nz_hpweights_ip1_ropeseparate_manual_d68f554d5cfc1e2f",
+    "cache_existed_before": true,
+    "compile_was_permitted": true,
+    "wrapper_s": 0.00041899713687598705,
+    "first_call_s": 0.6901528700254858
+  },
+  "unprofiled_measurements": {
+    "samples": 10,
+    "calls_per_sample": 5,
+    "total_measured_full_stack_calls": 50,
+    "device_event_per_call_ms": {
+      "samples": [
+        11.108795928955079,
+        11.192215728759766,
+        11.149136352539063,
+        11.16083221435547,
+        11.161611938476563,
+        11.161959838867187,
+        11.153980255126953,
+        11.150567626953125,
+        11.155767822265625,
+        11.134236145019532
+      ],
+      "mean": 11.152910385131836,
+      "median": 11.154874038696288,
+      "p05": 11.120244026184084,
+      "p95": 11.178600578308107
+    },
+    "synchronized_wall_per_call_ms": {
+      "samples": [
+        11.44209261983633,
+        11.25387940555811,
+        11.20345238596201,
+        11.226478777825832,
+        11.219406826421618,
+        11.221408797428012,
+        11.209842609241605,
+        11.205518431961536,
+        11.208232631906867,
+        11.189920175820589
+      ],
+      "mean": 11.238023266196251,
+      "median": 11.214624717831612,
+      "p05": 11.196009670384228,
+      "p95": 11.357396673411131
+    },
+    "physical_tokens_per_s_device_median": 45899.21842450848,
+    "physical_tokens_per_s_wall_median": 45654.67083226634,
+    "linear_tflop_per_s_device_median": 39.47164756648921
+  },
+  "linear_flops_per_full_stack_call": 440301256704,
+  "profile": {
+    "metric": "pipe",
+    "warmup_steps": 1,
+    "active_steps": 3,
+    "throughput_measurement": false
+  }
+}

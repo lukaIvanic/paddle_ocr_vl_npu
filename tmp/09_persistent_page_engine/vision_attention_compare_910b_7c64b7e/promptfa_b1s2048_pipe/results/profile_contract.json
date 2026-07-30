@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "command": [
+    "/usr/local/python3.12.13/bin/python3",
+    "09_persistent_page_engine/scripts/vision_matmul_lab.py",
+    "--batch-size",
+    "1",
+    "--sequence-length",
+    "2048",
+    "--intermediate-size",
+    "4352",
+    "--weight-format",
+    "fractal_nz",
+    "--attention-head-padding",
+    "weights",
+    "--attention-implementation",
+    "prompt_flash_attention",
+    "--rotary-implementation",
+    "separate_manual",
+    "--execution",
+    "torchair",
+    "--allow-compile-if-missing",
+    "--warmup",
+    "3",
+    "--samples",
+    "10",
+    "--calls-per-sample",
+    "5",
+    "--profile",
+    "--profile-metric",
+    "pipe",
+    "--profile-warmup-steps",
+    "1",
+    "--profile-steps",
+    "3",
+    "--output-dir",
+    "tmp/09_persistent_page_engine/vision_attention_compare_910b_7c64b7e/promptfa_b1s2048_pipe/results",
+    "--profile-dir",
+    ".runtime_cache/09_persistent_page_engine_vision_matmul_profiles/vision_attention_compare_910b_7c64b7e/promptfa_b1s2048_pipe"
+  ],
+  "purpose": "exact production 27-layer vision attention comparison using synthetic shape inputs",
+  "boundary": "VisionPrefillStage: 27 x (LayerNorm1 + Q/K/V + RoPE + selected attention core + out projection + residual + LayerNorm2 + FC1/GELU/FC2 + residual) + post-LayerNorm",
+  "environment": {
+    "commit": "7c64b7e93a0224039a36a8c123987b9b290b58ca",
+    "device": "npu:0",
+    "device_name": "Ascend910B2",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "npu_smi": "+------------------------------------------------------------------------------------------------+\n| npu-smi 25.0.rc1.1               Version: 25.0.rc1.1                                           |\n+---------------------------+---------------+----------------------------------------------------+\n| NPU   Name                | Health        | Power(W)    Temp(C)           Hugepages-Usage(page)|\n| Chip                      | Bus-Id        | AICore(%)   Memory-Usage(MB)  HBM-Usage(MB)        |\n+===========================+===============+====================================================+\n| 0     910B2               | OK            | 107.8       48                0    / 0             |\n| 0                         | 0000:C1:00.0  | 0           0    / 0          3415 / 65536         |\n+===========================+===============+====================================================+\n| 1     910B2               | OK            | 102.3       48                0    / 0             |\n| 0                         | 0000:01:00.0  | 0           0    / 0          3411 / 65536         |\n+===========================+===============+====================================================+\n| 2     910B2               | OK            | 103.8       48                0    / 0             |\n| 0                         | 0000:C2:00.0  | 0           0    / 0          3413 / 65536         |\n+===========================+===============+====================================================+\n| 3     910B2               | OK            | 101.6       47                0    / 0             |\n| 0                         | 0000:02:00.0  | 0           0    / 0          54504/ 65536         |\n+===========================+===============+====================================================+\n| 4     910B2               | OK            | 101.8       48                0    / 0             |\n| 0                         | 0000:81:00.0  | 0           0    / 0          54372/ 65536         |\n+===========================+===============+====================================================+\n| 5     910B2               | OK            | 101.2       46                0    / 0             |\n| 0                         | 0000:41:00.0  | 0           0    / 0          7251 / 65536         |\n+===========================+===============+====================================================+\n| 6     910B2               | OK            | 102.0       48                0    / 0             |\n| 0                         | 0000:82:00.0  | 0           0    / 0          54372/ 65536         |\n+===========================+===============+====================================================+\n| 7     910B2               | OK            | 102.4       48                0    / 0             |\n| 0                         | 0000:42:00.0  | 0           0    / 0          54365/ 65536         |\n+===========================+===============+====================================================+\n+---------------------------+---------------+----------------------------------------------------+\n| NPU     Chip              | Process id    | Process name             | Process memory(MB)      |\n+===========================+===============+====================================================+\n| No running processes found in NPU 0                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 1                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 2                                                            |\n+===========================+===============+====================================================+\n| 3       0                 | 2804329       |                          | 51009                   |\n+===========================+===============+====================================================+\n| 4       0                 | 2804375       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 5       0                 | 2009427       |                          | 3879                    |\n+===========================+===============+====================================================+\n| 6       0                 | 2804478       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 7       0                 | 2804586       |                          | 51013                   |\n+===========================+===============+====================================================+\n",
+    "hostname": "liteserver-c001-4",
+    "ascend_rt_visible_devices": "5",
+    "npu_visible_devices": null,
+    "ascend_home_path": "/usr/local/Ascend/cann-9.0.0",
+    "ascend_toolkit_home": "/usr/local/Ascend/cann-9.0.0"
+  },
+  "shape": {
+    "batch_size": 1,
+    "sequence_length": 2048,
+    "physical_tokens_per_call": 2048,
+    "hidden_size": 1152,
+    "source_intermediate_size": 4304,
+    "candidate_intermediate_size": 4352,
+    "layers": 27,
+    "linear_calls_per_layer": 6,
+    "linear_calls_per_full_stack": 162
+  },
+  "requested": {
+    "weight_format": "fractal_nz",
+    "attention_head_padding": "weights",
+    "attention_implementation": "prompt_flash_attention",
+    "promptfa_inner_precise": 1,
+    "rotary_implementation": "separate_manual",
+    "execution": "torchair",
+    "profile_metric": "pipe"
+  },
+  "weight_format": {
+    "requested": "fractal_nz",
+    "target_format": "FRACTAL_NZ",
+    "target_format_code": 29,
+    "linear_weight_count": 162,
+    "before_format_histogram": {
+      "2": 162
+    },
+    "converted_count": 162,
+    "status": "ready",
+    "failures": [],
+    "after_format_histogram": {
+      "29": 162
+    },
+    "all_after_are_nz": true,
+    "runtime_gate": {
+      "torch_npu_allow_internal_format_enabled_before_npu_allocation": true,
+      "mm_bmm_format_nd": true,
+      "manual_cast_after_model_load": true
+    }
+  },
+  "attention": {
+    "implementation": "prompt_flash_attention",
+    "core": "PromptFlashAttention",
+    "input_layout": "BNSD",
+    "mask_sparse_mode": 1,
+    "pre_tokens": 2147483647,
+    "next_tokens": 2147483647,
+    "inner_precise": 1,
+    "inner_precise_semantics": "installed high-performance control",
+    "model_head_dim": 72,
+    "promptfa_call_head_dim": 80,
+    "attention_mask_all_false": true,
+    "materializes_score_tensor": false,
+    "head_padding": {
+      "mode": "weights",
+      "real_head_dim": 72,
+      "padded_head_dim": 80,
+      "runtime_pad_operations_per_layer": 0,
+      "runtime_slice_operations_per_layer": 0,
+      "num_heads": 16,
+      "hidden_size": 1152,
+      "padded_attention_size": 1280
+    },
+    "rotary": {
+      "implementation": "separate_manual",
+      "custom_op_enabled": null,
+      "portable_to_310p": true,
+      "qk_layout": "separate_bsnd",
+      "math": "separate FP32 half-RoPE",
+      "operator": "ordinary PyTorch operations"
+    }
+  },
+  "compile": {
+    "api": "torchair.inference.cache_compile",
+    "dynamic": false,
+    "fullgraph": true,
+    "ge_cache": true,
+    "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_lab/vision_pfa_b1_s2048_i4352_fractal_nz_hpweights_57f5149e44aa4fe4",
+    "cache_existed_before": false,
+    "compile_was_permitted": true,
+    "wrapper_s": 0.0006478310097008944,
+    "first_call_s": 24.683865339960903
+  },
+  "unprofiled_measurements": {
+    "samples": 10,
+    "calls_per_sample": 5,
+    "total_measured_full_stack_calls": 50,
+    "device_event_per_call_ms": {
+      "samples": [
+        25.942633056640624,
+        25.937594604492187,
+        25.986138916015626,
+        26.141476440429688,
+        26.006832885742188,
+        26.05876770019531,
+        26.028396606445312,
+        26.018692016601562,
+        26.027816772460938,
+        25.986126708984376
+      ],
+      "mean": 26.013447570800782,
+      "median": 26.012762451171874,
+      "p05": 25.939861907958985,
+      "p95": 26.10425750732422
+    },
+    "synchronized_wall_per_call_ms": {
+      "samples": [
+        26.597246015444398,
+        26.098629599437118,
+        26.07704121619463,
+        26.24824997037649,
+        26.07173495925963,
+        26.152742374688387,
+        26.094795390963554,
+        26.078485185280442,
+        26.090913405641913,
+        26.061915000900626
+      ],
+      "mean": 26.15717531181872,
+      "median": 26.092854398302734,
+      "p05": 26.066333982162178,
+      "p95": 26.44019779516384
+    },
+    "physical_tokens_per_s_device_median": 78730.58479829918,
+    "physical_tokens_per_s_wall_median": 78488.92147779802,
+    "linear_tflop_per_s_device_median": 67.705420757289
+  },
+  "linear_flops_per_full_stack_call": 1761205026816,
+  "profile": {
+    "metric": "pipe",
+    "warmup_steps": 1,
+    "active_steps": 3,
+    "throughput_measurement": false
+  }
+}

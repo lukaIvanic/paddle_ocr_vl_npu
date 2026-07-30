@@ -1,0 +1,2924 @@
+{
+  "schema_version": 5,
+  "status": "completed",
+  "purpose": "exact production 27-layer vision attention comparison using synthetic shape inputs",
+  "boundary": "VisionPrefillStage: 27 x (LayerNorm1 + Q/K/V + RoPE + selected attention core + out projection + residual + LayerNorm2 + FC1/GELU/FC2 + residual) + post-LayerNorm",
+  "production_stage": true,
+  "synthetic_shape_inputs": true,
+  "attention": {
+    "implementation": "prompt_flash_attention",
+    "core": "PromptFlashAttention",
+    "input_layout": "BNSD",
+    "mask_sparse_mode": 1,
+    "pre_tokens": 2147483647,
+    "next_tokens": 2147483647,
+    "inner_precise": 1,
+    "inner_precise_semantics": "installed high-performance control",
+    "model_head_dim": 72,
+    "promptfa_call_head_dim": 80,
+    "attention_mask_all_false": true,
+    "materializes_score_tensor": false,
+    "head_padding": {
+      "mode": "weights",
+      "real_head_dim": 72,
+      "padded_head_dim": 80,
+      "runtime_pad_operations_per_layer": 0,
+      "runtime_slice_operations_per_layer": 0,
+      "num_heads": 16,
+      "hidden_size": 1152,
+      "padded_attention_size": 1280
+    },
+    "rotary": {
+      "implementation": "separate_manual",
+      "custom_op_enabled": null,
+      "portable_to_310p": true,
+      "qk_layout": "separate_bsnd",
+      "math": "separate FP32 half-RoPE",
+      "operator": "ordinary PyTorch operations"
+    }
+  },
+  "shape": {
+    "batch_size": 4,
+    "sequence_length": 512,
+    "physical_tokens_per_call": 2048,
+    "hidden_size": 1152,
+    "source_intermediate_size": 4304,
+    "candidate_intermediate_size": 4352,
+    "layers": 27,
+    "linear_calls_per_layer": 6,
+    "linear_calls_per_full_stack": 162
+  },
+  "requested": {
+    "weight_format": "fractal_nz",
+    "attention_head_padding": "weights",
+    "attention_implementation": "prompt_flash_attention",
+    "promptfa_inner_precise": 1,
+    "rotary_implementation": "separate_manual",
+    "execution": "torchair",
+    "profile_metric": "pipe"
+  },
+  "weight_format": {
+    "requested": "fractal_nz",
+    "target_format": "FRACTAL_NZ",
+    "target_format_code": 29,
+    "linear_weight_count": 162,
+    "before_format_histogram": {
+      "2": 162
+    },
+    "converted_count": 162,
+    "status": "ready",
+    "failures": [],
+    "after_format_histogram": {
+      "29": 162
+    },
+    "all_after_are_nz": true,
+    "runtime_gate": {
+      "torch_npu_allow_internal_format_enabled_before_npu_allocation": true,
+      "mm_bmm_format_nd": true,
+      "manual_cast_after_model_load": true
+    }
+  },
+  "setup_s_through_format_preparation": 22.206349011976272,
+  "environment": {
+    "commit": "7c64b7e93a0224039a36a8c123987b9b290b58ca",
+    "device": "npu:0",
+    "device_name": "Ascend910B2",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "npu_smi": "+------------------------------------------------------------------------------------------------+\n| npu-smi 25.0.rc1.1               Version: 25.0.rc1.1                                           |\n+---------------------------+---------------+----------------------------------------------------+\n| NPU   Name                | Health        | Power(W)    Temp(C)           Hugepages-Usage(page)|\n| Chip                      | Bus-Id        | AICore(%)   Memory-Usage(MB)  HBM-Usage(MB)        |\n+===========================+===============+====================================================+\n| 0     910B2               | OK            | 108.2       47                0    / 0             |\n| 0                         | 0000:C1:00.0  | 0           0    / 0          3415 / 65536         |\n+===========================+===============+====================================================+\n| 1     910B2               | OK            | 123.0       48                0    / 0             |\n| 0                         | 0000:01:00.0  | 0           0    / 0          7935 / 65536         |\n+===========================+===============+====================================================+\n| 2     910B2               | OK            | 103.7       49                0    / 0             |\n| 0                         | 0000:C2:00.0  | 0           0    / 0          3413 / 65536         |\n+===========================+===============+====================================================+\n| 3     910B2               | OK            | 101.8       48                0    / 0             |\n| 0                         | 0000:02:00.0  | 0           0    / 0          54505/ 65536         |\n+===========================+===============+====================================================+\n| 4     910B2               | OK            | 101.9       49                0    / 0             |\n| 0                         | 0000:81:00.0  | 0           0    / 0          54372/ 65536         |\n+===========================+===============+====================================================+\n| 5     910B2               | OK            | 101.4       48                0    / 0             |\n| 0                         | 0000:41:00.0  | 0           0    / 0          7251 / 65536         |\n+===========================+===============+====================================================+\n| 6     910B2               | OK            | 102.1       49                0    / 0             |\n| 0                         | 0000:82:00.0  | 0           0    / 0          54372/ 65536         |\n+===========================+===============+====================================================+\n| 7     910B2               | OK            | 102.7       48                0    / 0             |\n| 0                         | 0000:42:00.0  | 0           0    / 0          54366/ 65536         |\n+===========================+===============+====================================================+\n+---------------------------+---------------+----------------------------------------------------+\n| NPU     Chip              | Process id    | Process name             | Process memory(MB)      |\n+===========================+===============+====================================================+\n| No running processes found in NPU 0                                                            |\n+===========================+===============+====================================================+\n| 1       0                 | 2004249       |                          | 4577                    |\n+===========================+===============+====================================================+\n| No running processes found in NPU 2                                                            |\n+===========================+===============+====================================================+\n| 3       0                 | 2804329       |                          | 51009                   |\n+===========================+===============+====================================================+\n| 4       0                 | 2804375       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 5       0                 | 2003832       |                          | 3879                    |\n+===========================+===============+====================================================+\n| 6       0                 | 2804478       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 7       0                 | 2804586       |                          | 51013                   |\n+===========================+===============+====================================================+\n",
+    "hostname": "liteserver-c001-4",
+    "ascend_rt_visible_devices": "5",
+    "npu_visible_devices": null,
+    "ascend_home_path": "/usr/local/Ascend/cann-9.0.0",
+    "ascend_toolkit_home": "/usr/local/Ascend/cann-9.0.0"
+  },
+  "compile": {
+    "api": "torchair.inference.cache_compile",
+    "dynamic": false,
+    "fullgraph": true,
+    "ge_cache": true,
+    "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_lab/vision_pfa_b4_s512_i4352_fractal_nz_hpweights_8147c443b95ab6d6",
+    "cache_existed_before": false,
+    "compile_was_permitted": true,
+    "wrapper_s": 0.0003875570837408304,
+    "first_call_s": 30.640804212074727
+  },
+  "linear_flops_per_full_stack_call": 1761205026816,
+  "measurements": {
+    "samples": 10,
+    "calls_per_sample": 5,
+    "total_measured_full_stack_calls": 50,
+    "device_event_per_call_ms": {
+      "samples": [
+        22.203404235839844,
+        22.263955688476564,
+        22.323635864257813,
+        22.28468475341797,
+        22.282496643066406,
+        22.274783325195312,
+        22.27776336669922,
+        22.292160034179688,
+        22.270448303222658,
+        22.293820190429688
+      ],
+      "mean": 22.276715240478516,
+      "median": 22.280130004882814,
+      "p05": 22.23065238952637,
+      "p95": 22.310218811035156
+    },
+    "synchronized_wall_per_call_ms": {
+      "samples": [
+        22.77735099196434,
+        22.31712741777301,
+        22.38030838780105,
+        22.34372580423951,
+        22.3440018016845,
+        22.340393578633666,
+        22.334743617102504,
+        22.354381997138262,
+        22.33170960098505,
+        22.348017804324627
+      ],
+      "mean": 22.387176100164652,
+      "median": 22.343863802962005,
+      "p05": 22.323689400218427,
+      "p95": 22.59868182009086
+    },
+    "physical_tokens_per_s_device_median": 91920.46902559228,
+    "physical_tokens_per_s_wall_median": 91658.27441753865,
+    "linear_tflop_per_s_device_median": 79.04823833747926
+  },
+  "numerics": {
+    "raw_candidate_vs_native_4304": {
+      "max_abs": 0.4921875,
+      "mean_abs": 0.008443206548690796,
+      "left_finite": true,
+      "right_finite": true,
+      "same_shape": true
+    },
+    "raw_candidate_vs_weight_padded_manual": {
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "left_finite": true,
+      "right_finite": true,
+      "same_shape": true
+    },
+    "measured_output_vs_raw_candidate": {
+      "max_abs": 0.634765625,
+      "mean_abs": 0.004358393140137196,
+      "left_finite": true,
+      "right_finite": true,
+      "same_shape": true
+    },
+    "measured_output_finite": true
+  },
+  "profiler": {
+    "profile_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/vision_attention_compare_910b_7c64b7e/promptfa_b4s512_pipe",
+    "scheduled_warmup_steps": 1,
+    "active_steps": 3,
+    "context_wall_s": 6.138339036144316,
+    "throughput_measurement": false,
+    "metric": "pipe",
+    "metric_support": {
+      "checked": true,
+      "supported": true,
+      "reason": "runtime capability query",
+      "requested": "ACL_AICORE_PIPE_UTILIZATION",
+      "available": [
+        "ACL_AICORE_ARITHMETIC_UTILIZATION",
+        "ACL_AICORE_L0B_AND_WIDTH",
+        "ACL_AICORE_L2_CACHE",
+        "ACL_AICORE_MEMORY_ACCESS",
+        "ACL_AICORE_MEMORY_BANDWIDTH",
+        "ACL_AICORE_MEMORY_UB",
+        "ACL_AICORE_NONE",
+        "ACL_AICORE_PIPE_UTILIZATION",
+        "ACL_AICORE_RESOURCE_CONFLICT_RATIO"
+      ]
+    },
+    "profiler_level": "Level1",
+    "capabilities": {
+      "supported_activities": [
+        "ProfilerActivity.CPU",
+        "ProfilerActivity.NPU"
+      ],
+      "supported_profiler_level": [
+        "Level0",
+        "Level1",
+        "Level2",
+        "Level_none"
+      ],
+      "supported_ai_core_metrics": [
+        "ACL_AICORE_ARITHMETIC_UTILIZATION",
+        "ACL_AICORE_L0B_AND_WIDTH",
+        "ACL_AICORE_L2_CACHE",
+        "ACL_AICORE_MEMORY_ACCESS",
+        "ACL_AICORE_MEMORY_BANDWIDTH",
+        "ACL_AICORE_MEMORY_UB",
+        "ACL_AICORE_NONE",
+        "ACL_AICORE_PIPE_UTILIZATION",
+        "ACL_AICORE_RESOURCE_CONFLICT_RATIO"
+      ],
+      "supported_export_type": [
+        "db",
+        "text"
+      ]
+    }
+  },
+  "parsed_profile": {
+    "command": [
+      "/usr/local/python3.12.13/bin/python3",
+      "/workspace/repos/paddle_ocr_vl_npu/07_vision_prefill_optimization/parse_static_visual_encoder_profile.py",
+      "--profile-dir",
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/vision_attention_compare_910b_7c64b7e/promptfa_b4s512_pipe",
+      "--topn",
+      "200",
+      "--skip-trace"
+    ],
+    "stdout": "{\n  \"parsed_json\": \"/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/vision_attention_compare_910b_7c64b7e/promptfa_b4s512_pipe/parsed_profile_summary.json\",\n  \"parsed_md\": \"/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/vision_attention_compare_910b_7c64b7e/promptfa_b4s512_pipe/parsed_profile_summary.md\",\n  \"runs\": 1\n}\n",
+    "stderr": "",
+    "parsed_json": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_attention_compare_910b_7c64b7e/promptfa_b4s512_pipe/results/parsed_profile_summary.json",
+    "parsed_markdown": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_attention_compare_910b_7c64b7e/promptfa_b4s512_pipe/results/parsed_profile_summary.md",
+    "detailed_analysis": {
+      "command": [
+        "/usr/local/python3.12.13/bin/python3",
+        "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/analyze_vision_matmul_profile.py",
+        "--lane",
+        "pipe=/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/vision_attention_compare_910b_7c64b7e/promptfa_b4s512_pipe",
+        "--output-dir",
+        "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/vision_attention_compare_910b_7c64b7e/promptfa_b4s512_pipe/normalized_analysis",
+        "--contract",
+        "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_attention_compare_910b_7c64b7e/promptfa_b4s512_pipe/results/profile_contract.json"
+      ],
+      "stdout": "{\n  \"output_dir\": \"/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/vision_attention_compare_910b_7c64b7e/promptfa_b4s512_pipe/normalized_analysis\",\n  \"lanes\": [\n    {\n      \"metric\": \"pipe\",\n      \"kernels\": 2598,\n      \"mapping\": \"validated\"\n    }\n  ],\n  \"outputs\": [\n    \"profile_manifest.json\",\n    \"profile_analysis.json\",\n    \"kernel_executions.csv\",\n    \"vision_linear_executions.csv\",\n    \"vision_layer_summary.csv\",\n    \"profile.sqlite\",\n    \"profile_report.md\"\n  ]\n}\n",
+      "stderr": "",
+      "analysis_json": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/vision_attention_compare_910b_7c64b7e/promptfa_b4s512_pipe/normalized_analysis/profile_analysis.json",
+      "analysis_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/vision_attention_compare_910b_7c64b7e/promptfa_b4s512_pipe/normalized_analysis",
+      "compact_report_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_attention_compare_910b_7c64b7e/promptfa_b4s512_pipe/results/detailed_profile",
+      "report_markdown": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_attention_compare_910b_7c64b7e/promptfa_b4s512_pipe/results/detailed_profile/profile_report.md",
+      "summary": {
+        "schema_version": 2,
+        "contract_dims": {
+          "batch_size": 4,
+          "sequence_length": 512,
+          "hidden_size": 1152,
+          "intermediate_size": 4352,
+          "layers": 27,
+          "linear_calls_per_layer": 6,
+          "linear_calls_per_full_stack": 162,
+          "head_padding_mode": "weights",
+          "real_head_dim": 72,
+          "padded_head_dim": 80
+        },
+        "cross_lane_validation": {
+          "status": "single_lane",
+          "reason": "cross-lane comparison requires at least two lanes",
+          "replays": []
+        },
+        "warnings": [
+          "Pipe-utilization ratios overlap in time. Do not add MAC, MTE, Scalar, FixPipe, or Cube ratios as if they partition kernel duration.",
+          "Block Num/Block Dim is a configured logical block count, not proof that the same number of physical AI Cores were active. Per-core records or hardware counters are required for that claim.",
+          "On the observed CANN 9 whole-graph export, cube_utilization(%) is 100 * aicore_time / kernel Duration (within export rounding). It is an exported AI-core-time ratio that can exceed 100%, not physical occupancy, achieved MAC utilization, or a percentage of peak FLOP/s.",
+          "Profiler README semantics define aicore_time as average task time on AI Core derived from total cycles / Block Num. Generated CANN documentation warns that this value is inaccurate on Atlas 300V and Atlas 300I Pro; keep it unavailable or diagnostic on those products.",
+          "Profiler captures perturb execution. Use unprofiled device-event timings for throughput claims and profiler data for diagnosis.",
+          "Dense MatMul FLOPs are inferred as 2*M*K*N from activation and output shapes. This is a physical-work estimate, not an algorithmic FLOP claim for fused or sparse kernels.",
+          "The full-layer fixture is intentionally fail-closed and applies only to the exact validated 2-prefix + 27x39-kernel PaddleOCR-VL graph. A changed graph emits no non-linear layer labels.",
+          "The first kernel's Wait Time in a replay can include the gap since the prior replay; replay wait totals are not internal graph stall time without timestamp decomposition.",
+          "Profiler databases are schema-inventoried only. TASK, CANN_API, PYTORCH_API, and compiled-node relationships are not silently joined.",
+          "Missing PMU fields are represented as null/unavailable, never zero.",
+          "pipe: full 27-layer mapping is failed; non-linear kernels remain unlabeled."
+        ],
+        "lane": {
+          "metric_family": "pipe",
+          "kernel_count": 2598,
+          "matmul_count": 486,
+          "mapping": {
+            "status": "validated",
+            "method": "step_id",
+            "reason": null,
+            "expected_matmuls_per_replay": 162,
+            "observed_replay_count": 3,
+            "replays": [
+              "source0:step1",
+              "source0:step2",
+              "source0:step3"
+            ],
+            "shape_contract": {
+              "hidden_size": 1152,
+              "intermediate_size": 4352,
+              "attention_projection_width": 1280,
+              "roles": [
+                "q_proj",
+                "k_proj",
+                "v_proj",
+                "out_proj",
+                "fc1",
+                "fc2"
+              ]
+            },
+            "mismatches": []
+          },
+          "full_layer_mapping": {
+            "status": "failed",
+            "reason": "full replay does not match the validated 27x39 fixture",
+            "expected_kernel_count": 1055,
+            "replays": [],
+            "failures": [
+              {
+                "replay_id": 0,
+                "reason": "kernel_count",
+                "observed": 866,
+                "expected": 1055
+              },
+              {
+                "replay_id": 1,
+                "reason": "kernel_count",
+                "observed": 866,
+                "expected": 1055
+              },
+              {
+                "replay_id": 2,
+                "reason": "kernel_count",
+                "observed": 866,
+                "expected": 1055
+              }
+            ]
+          },
+          "matmul": {
+            "count": 486,
+            "duration_us": {
+              "available": true,
+              "count": 486,
+              "sum": 24107.88,
+              "mean": 49.604691358024695,
+              "min": 26.1,
+              "max": 94.2
+            },
+            "wait_us": {
+              "available": true,
+              "count": 486,
+              "sum": 24.900000000000002,
+              "mean": 0.051234567901234575,
+              "min": 0.0,
+              "max": 0.26
+            },
+            "matmul_flops": 5283615080448,
+            "matmul_tflops": 219.16547952155062,
+            "aicore_time_us": {
+              "available": true,
+              "count": 486,
+              "sum": 22874.647,
+              "mean": 47.067174897119344,
+              "min": 25.124,
+              "max": 91.53
+            },
+            "mac_time_us": {
+              "available": true,
+              "count": 486,
+              "sum": 16034.744,
+              "mean": 32.99330041152263,
+              "min": 17.353,
+              "max": 59.299
+            },
+            "mac_ratio": {
+              "available": true,
+              "count": 486,
+              "sum": 343.964,
+              "mean": 0.7077448559670781,
+              "min": 0.45,
+              "max": 0.826,
+              "duration_weighted_mean": 0.7018245834971801
+            },
+            "mte1_time_us": {
+              "available": true,
+              "count": 486,
+              "sum": 10152.274,
+              "mean": 20.889452674897118,
+              "min": 8.892,
+              "max": 43.149
+            },
+            "mte1_ratio": {
+              "available": true,
+              "count": 486,
+              "sum": 203.543,
+              "mean": 0.4188127572016461,
+              "min": 0.232,
+              "max": 0.544,
+              "duration_weighted_mean": 0.4447205702036015
+            },
+            "mte2_time_us": {
+              "available": true,
+              "count": 486,
+              "sum": 19346.819,
+              "mean": 39.808269547325104,
+              "min": 20.98,
+              "max": 83.099
+            },
+            "mte2_ratio": {
+              "available": true,
+              "count": 486,
+              "sum": 407.122,
+              "mean": 0.8376995884773663,
+              "min": 0.744,
+              "max": 0.911,
+              "duration_weighted_mean": 0.8452378765781147
+            },
+            "mte3_time_us": {
+              "available": false,
+              "count": 0,
+              "sum": null,
+              "mean": null,
+              "min": null,
+              "max": null
+            },
+            "mte3_ratio": {
+              "available": false,
+              "count": 0,
+              "sum": null,
+              "mean": null,
+              "min": null,
+              "max": null,
+              "duration_weighted_mean": null
+            },
+            "fixpipe_time_us": {
+              "available": true,
+              "count": 486,
+              "sum": 6347.737,
+              "mean": 13.061187242798354,
+              "min": 7.744,
+              "max": 32.384
+            },
+            "fixpipe_ratio": {
+              "available": true,
+              "count": 486,
+              "sum": 141.339,
+              "mean": 0.29082098765432096,
+              "min": 0.127,
+              "max": 0.396,
+              "duration_weighted_mean": 0.27827374202957705
+            },
+            "cube_utilization_pct": {
+              "available": true,
+              "count": 486,
+              "sum": 42457.182,
+              "mean": 87.36045679012346,
+              "min": 72.973,
+              "max": 108.798,
+              "duration_weighted_mean": 90.370676424472
+            },
+            "numeric_pmu": {
+              "aic_fixpipe_ratio": {
+                "available": true,
+                "count": 486,
+                "sum": 141.339,
+                "mean": 0.29082098765432096,
+                "min": 0.127,
+                "max": 0.396,
+                "duration_weighted_mean": 0.27827374202957705
+              },
+              "aic_fixpipe_time(us)": {
+                "available": true,
+                "count": 486,
+                "sum": 6347.737,
+                "mean": 13.061187242798354,
+                "min": 7.744,
+                "max": 32.384
+              },
+              "aic_icache_miss_rate": {
+                "available": true,
+                "count": 486,
+                "sum": 16.825,
+                "mean": 0.03461934156378601,
+                "min": 0.0,
+                "max": 0.098,
+                "duration_weighted_mean": 0.03486834180359285
+              },
+              "aic_mac_ratio": {
+                "available": true,
+                "count": 486,
+                "sum": 343.964,
+                "mean": 0.7077448559670781,
+                "min": 0.45,
+                "max": 0.826,
+                "duration_weighted_mean": 0.7018245834971801
+              },
+              "aic_mac_time(us)": {
+                "available": true,
+                "count": 486,
+                "sum": 16034.744,
+                "mean": 32.99330041152263,
+                "min": 17.353,
+                "max": 59.299
+              },
+              "aic_mte1_ratio": {
+                "available": true,
+                "count": 486,
+                "sum": 203.543,
+                "mean": 0.4188127572016461,
+                "min": 0.232,
+                "max": 0.544,
+                "duration_weighted_mean": 0.4447205702036015
+              },
+              "aic_mte1_time(us)": {
+                "available": true,
+                "count": 486,
+                "sum": 10152.274,
+                "mean": 20.889452674897118,
+                "min": 8.892,
+                "max": 43.149
+              },
+              "aic_mte2_ratio": {
+                "available": true,
+                "count": 486,
+                "sum": 407.122,
+                "mean": 0.8376995884773663,
+                "min": 0.744,
+                "max": 0.911,
+                "duration_weighted_mean": 0.8452378765781147
+              },
+              "aic_mte2_time(us)": {
+                "available": true,
+                "count": 486,
+                "sum": 19346.819,
+                "mean": 39.808269547325104,
+                "min": 20.98,
+                "max": 83.099
+              },
+              "aic_scalar_ratio": {
+                "available": true,
+                "count": 486,
+                "sum": 20.376,
+                "mean": 0.04192592592592593,
+                "min": 0.022,
+                "max": 0.105,
+                "duration_weighted_mean": 0.03887443939491984
+              },
+              "aic_scalar_time(us)": {
+                "available": true,
+                "count": 486,
+                "sum": 889.656,
+                "mean": 1.8305679012345677,
+                "min": 0.853,
+                "max": 4.846
+              },
+              "aic_total_cycles": {
+                "available": true,
+                "count": 486,
+                "sum": 941174937.0,
+                "mean": 1936573.9444444445,
+                "min": 904447.0,
+                "max": 3954117.0
+              },
+              "aicore_time(us)": {
+                "available": true,
+                "count": 486,
+                "sum": 22874.647,
+                "mean": 47.067174897119344,
+                "min": 25.124,
+                "max": 91.53
+              },
+              "aiv_icache_miss_rate": {
+                "available": true,
+                "count": 486,
+                "sum": 0.0,
+                "mean": 0.0,
+                "min": 0.0,
+                "max": 0.0,
+                "duration_weighted_mean": 0.0
+              },
+              "aiv_mte2_ratio": {
+                "available": true,
+                "count": 486,
+                "sum": 0.0,
+                "mean": 0.0,
+                "min": 0.0,
+                "max": 0.0,
+                "duration_weighted_mean": 0.0
+              },
+              "aiv_mte2_time(us)": {
+                "available": true,
+                "count": 486,
+                "sum": 0.0,
+                "mean": 0.0,
+                "min": 0.0,
+                "max": 0.0
+              },
+              "aiv_mte3_ratio": {
+                "available": true,
+                "count": 486,
+                "sum": 0.0,
+                "mean": 0.0,
+                "min": 0.0,
+                "max": 0.0,
+                "duration_weighted_mean": 0.0
+              },
+              "aiv_mte3_time(us)": {
+                "available": true,
+                "count": 486,
+                "sum": 0.0,
+                "mean": 0.0,
+                "min": 0.0,
+                "max": 0.0
+              },
+              "aiv_scalar_ratio": {
+                "available": true,
+                "count": 486,
+                "sum": 0.0,
+                "mean": 0.0,
+                "min": 0.0,
+                "max": 0.0,
+                "duration_weighted_mean": 0.0
+              },
+              "aiv_scalar_time(us)": {
+                "available": true,
+                "count": 486,
+                "sum": 0.0,
+                "mean": 0.0,
+                "min": 0.0,
+                "max": 0.0
+              },
+              "aiv_time(us)": {
+                "available": true,
+                "count": 486,
+                "sum": 0.0,
+                "mean": 0.0,
+                "min": 0.0,
+                "max": 0.0
+              },
+              "aiv_total_cycles": {
+                "available": true,
+                "count": 486,
+                "sum": 0.0,
+                "mean": 0.0,
+                "min": 0.0,
+                "max": 0.0
+              },
+              "aiv_vec_ratio": {
+                "available": true,
+                "count": 486,
+                "sum": 0.0,
+                "mean": 0.0,
+                "min": 0.0,
+                "max": 0.0,
+                "duration_weighted_mean": 0.0
+              },
+              "aiv_vec_time(us)": {
+                "available": true,
+                "count": 486,
+                "sum": 0.0,
+                "mean": 0.0,
+                "min": 0.0,
+                "max": 0.0
+              },
+              "cube_utilization(%)": {
+                "available": true,
+                "count": 486,
+                "sum": 42457.182,
+                "mean": 87.36045679012346,
+                "min": 72.973,
+                "max": 108.798,
+                "duration_weighted_mean": 90.370676424472
+              }
+            }
+          },
+          "vision_role_summary": {
+            "fc1": {
+              "count": 81,
+              "duration_us": {
+                "available": true,
+                "count": 81,
+                "sum": 6901.12,
+                "mean": 85.19901234567901,
+                "min": 79.26,
+                "max": 87.44
+              },
+              "wait_us": {
+                "available": true,
+                "count": 81,
+                "sum": 4.41,
+                "mean": 0.05444444444444445,
+                "min": 0.0,
+                "max": 0.25
+              },
+              "matmul_flops": 1663360303104,
+              "matmul_tflops": 241.0275872762682,
+              "aicore_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 6389.832,
+                "mean": 78.88681481481481,
+                "min": 73.951,
+                "max": 82.761
+              },
+              "mac_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 4776.955,
+                "mean": 58.97475308641975,
+                "min": 58.903,
+                "max": 59.025
+              },
+              "mac_ratio": {
+                "available": true,
+                "count": 81,
+                "sum": 60.628,
+                "mean": 0.7484938271604938,
+                "min": 0.713,
+                "max": 0.797,
+                "duration_weighted_mean": 0.7484130228136882
+              },
+              "mte1_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 3205.565,
+                "mean": 39.574876543209875,
+                "min": 39.424,
+                "max": 39.748
+              },
+              "mte1_ratio": {
+                "available": true,
+                "count": 81,
+                "sum": 40.682,
+                "mean": 0.502246913580247,
+                "min": 0.479,
+                "max": 0.535,
+                "duration_weighted_mean": 0.5021967593665956
+              },
+              "mte2_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 5180.622,
+                "mean": 63.9582962962963,
+                "min": 57.969,
+                "max": 68.582
+              },
+              "mte2_ratio": {
+                "available": true,
+                "count": 81,
+                "sum": 65.635,
+                "mean": 0.8103086419753087,
+                "min": 0.772,
+                "max": 0.831,
+                "duration_weighted_mean": 0.8103336559862746
+              },
+              "mte3_time_us": {
+                "available": false,
+                "count": 0,
+                "sum": null,
+                "mean": null,
+                "min": null,
+                "max": null
+              },
+              "mte3_ratio": {
+                "available": false,
+                "count": 0,
+                "sum": null,
+                "mean": null,
+                "min": null,
+                "max": null,
+                "duration_weighted_mean": null
+              },
+              "fixpipe_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 2419.239,
+                "mean": 29.86714814814815,
+                "min": 26.999,
+                "max": 32.384
+              },
+              "fixpipe_ratio": {
+                "available": true,
+                "count": 81,
+                "sum": 30.653,
+                "mean": 0.3784320987654321,
+                "min": 0.358,
+                "max": 0.396,
+                "duration_weighted_mean": 0.37848299116665124
+              },
+              "cube_utilization_pct": {
+                "available": true,
+                "count": 81,
+                "sum": 7502.343,
+                "mean": 92.62151851851851,
+                "min": 85.91,
+                "max": 99.439,
+                "duration_weighted_mean": 92.59129672574886
+              },
+              "numeric_pmu": {
+                "aic_fixpipe_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 30.653,
+                  "mean": 0.3784320987654321,
+                  "min": 0.358,
+                  "max": 0.396,
+                  "duration_weighted_mean": 0.37848299116665124
+                },
+                "aic_fixpipe_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 2419.239,
+                  "mean": 29.86714814814815,
+                  "min": 26.999,
+                  "max": 32.384
+                },
+                "aic_icache_miss_rate": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 2.477,
+                  "mean": 0.030580246913580245,
+                  "min": 0.029,
+                  "max": 0.032,
+                  "duration_weighted_mean": 0.030580076857089862
+                },
+                "aic_mac_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 60.628,
+                  "mean": 0.7484938271604938,
+                  "min": 0.713,
+                  "max": 0.797,
+                  "duration_weighted_mean": 0.7484130228136882
+                },
+                "aic_mac_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 4776.955,
+                  "mean": 58.97475308641975,
+                  "min": 58.903,
+                  "max": 59.025
+                },
+                "aic_mte1_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 40.682,
+                  "mean": 0.502246913580247,
+                  "min": 0.479,
+                  "max": 0.535,
+                  "duration_weighted_mean": 0.5021967593665956
+                },
+                "aic_mte1_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 3205.565,
+                  "mean": 39.574876543209875,
+                  "min": 39.424,
+                  "max": 39.748
+                },
+                "aic_mte2_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 65.635,
+                  "mean": 0.8103086419753087,
+                  "min": 0.772,
+                  "max": 0.831,
+                  "duration_weighted_mean": 0.8103336559862746
+                },
+                "aic_mte2_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 5180.622,
+                  "mean": 63.9582962962963,
+                  "min": 57.969,
+                  "max": 68.582
+                },
+                "aic_scalar_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 3.064,
+                  "mean": 0.03782716049382716,
+                  "min": 0.035,
+                  "max": 0.061,
+                  "duration_weighted_mean": 0.037828172818325144
+                },
+                "aic_scalar_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 241.49099999999999,
+                  "mean": 2.98137037037037,
+                  "min": 2.888,
+                  "max": 4.846
+                },
+                "aic_total_cycles": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 276040880.0,
+                  "mean": 3407912.098765432,
+                  "min": 3194699.0,
+                  "max": 3575288.0
+                },
+                "aicore_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 6389.832,
+                  "mean": 78.88681481481481,
+                  "min": 73.951,
+                  "max": 82.761
+                },
+                "aiv_icache_miss_rate": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_mte2_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_mte2_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_mte3_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_mte3_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_scalar_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_scalar_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_total_cycles": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_vec_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_vec_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "cube_utilization(%)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 7502.343,
+                  "mean": 92.62151851851851,
+                  "min": 85.91,
+                  "max": 99.439,
+                  "duration_weighted_mean": 92.59129672574886
+                }
+              }
+            },
+            "fc2": {
+              "count": 81,
+              "duration_us": {
+                "available": true,
+                "count": 81,
+                "sum": 7359.9400000000005,
+                "mean": 90.86345679012346,
+                "min": 83.62,
+                "max": 94.2
+              },
+              "wait_us": {
+                "available": true,
+                "count": 81,
+                "sum": 4.1000000000000005,
+                "mean": 0.05061728395061729,
+                "min": 0.0,
+                "max": 0.26
+              },
+              "matmul_flops": 1663360303104,
+              "matmul_tflops": 226.00188358926837,
+              "aicore_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 7041.513,
+                "mean": 86.93225925925925,
+                "min": 78.916,
+                "max": 91.53
+              },
+              "mac_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 4792.908,
+                "mean": 59.171703703703706,
+                "min": 58.997,
+                "max": 59.299
+              },
+              "mac_ratio": {
+                "available": true,
+                "count": 81,
+                "sum": 55.229,
+                "mean": 0.6818395061728395,
+                "min": 0.647,
+                "max": 0.748,
+                "duration_weighted_mean": 0.6814407862020614
+              },
+              "mte1_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 3474.546,
+                "mean": 42.895629629629624,
+                "min": 42.652,
+                "max": 43.149
+              },
+              "mte1_ratio": {
+                "available": true,
+                "count": 81,
+                "sum": 40.042,
+                "mean": 0.4943456790123457,
+                "min": 0.468,
+                "max": 0.544,
+                "duration_weighted_mean": 0.4940392204284274
+              },
+              "mte2_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 6329.43,
+                "mean": 78.14111111111112,
+                "min": 69.601,
+                "max": 83.099
+              },
+              "mte2_ratio": {
+                "available": true,
+                "count": 81,
+                "sum": 72.789,
+                "mean": 0.8986296296296297,
+                "min": 0.871,
+                "max": 0.911,
+                "duration_weighted_mean": 0.8987303728019522
+              },
+              "mte3_time_us": {
+                "available": false,
+                "count": 0,
+                "sum": null,
+                "mean": null,
+                "min": null,
+                "max": null
+              },
+              "mte3_ratio": {
+                "available": false,
+                "count": 0,
+                "sum": null,
+                "mean": null,
+                "min": null,
+                "max": null,
+                "duration_weighted_mean": null
+              },
+              "fixpipe_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 1037.317,
+                "mean": 12.806382716049383,
+                "min": 10.45,
+                "max": 14.534
+              },
+              "fixpipe_ratio": {
+                "available": true,
+                "count": 81,
+                "sum": 11.913,
+                "mean": 0.14707407407407408,
+                "min": 0.127,
+                "max": 0.165,
+                "duration_weighted_mean": 0.14710828077402804
+              },
+              "cube_utilization_pct": {
+                "available": true,
+                "count": 81,
+                "sum": 7751.068,
+                "mean": 95.6921975308642,
+                "min": 87.295,
+                "max": 100.8,
+                "duration_weighted_mean": 95.6734349573502
+              },
+              "numeric_pmu": {
+                "aic_fixpipe_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 11.913,
+                  "mean": 0.14707407407407408,
+                  "min": 0.127,
+                  "max": 0.165,
+                  "duration_weighted_mean": 0.14710828077402804
+                },
+                "aic_fixpipe_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 1037.317,
+                  "mean": 12.806382716049383,
+                  "min": 10.45,
+                  "max": 14.534
+                },
+                "aic_icache_miss_rate": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 2.331,
+                  "mean": 0.028777777777777777,
+                  "min": 0.027,
+                  "max": 0.03,
+                  "duration_weighted_mean": 0.028782011809878882
+                },
+                "aic_mac_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 55.229,
+                  "mean": 0.6818395061728395,
+                  "min": 0.647,
+                  "max": 0.748,
+                  "duration_weighted_mean": 0.6814407862020614
+                },
+                "aic_mac_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 4792.908,
+                  "mean": 59.171703703703706,
+                  "min": 58.997,
+                  "max": 59.299
+                },
+                "aic_mte1_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 40.042,
+                  "mean": 0.4943456790123457,
+                  "min": 0.468,
+                  "max": 0.544,
+                  "duration_weighted_mean": 0.4940392204284274
+                },
+                "aic_mte1_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 3474.546,
+                  "mean": 42.895629629629624,
+                  "min": 42.652,
+                  "max": 43.149
+                },
+                "aic_mte2_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 72.789,
+                  "mean": 0.8986296296296297,
+                  "min": 0.871,
+                  "max": 0.911,
+                  "duration_weighted_mean": 0.8987303728019522
+                },
+                "aic_mte2_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 6329.43,
+                  "mean": 78.14111111111112,
+                  "min": 69.601,
+                  "max": 83.099
+                },
+                "aic_scalar_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 2.7840000000000003,
+                  "mean": 0.03437037037037037,
+                  "min": 0.032,
+                  "max": 0.054,
+                  "duration_weighted_mean": 0.03436988073272336
+                },
+                "aic_scalar_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 242.023,
+                  "mean": 2.9879382716049383,
+                  "min": 2.885,
+                  "max": 4.683
+                },
+                "aic_total_cycles": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 304193268.0,
+                  "mean": 3755472.4444444445,
+                  "min": 3409156.0,
+                  "max": 3954117.0
+                },
+                "aicore_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 7041.513,
+                  "mean": 86.93225925925925,
+                  "min": 78.916,
+                  "max": 91.53
+                },
+                "aiv_icache_miss_rate": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_mte2_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_mte2_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_mte3_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_mte3_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_scalar_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_scalar_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_total_cycles": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_vec_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_vec_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "cube_utilization(%)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 7751.068,
+                  "mean": 95.6921975308642,
+                  "min": 87.295,
+                  "max": 100.8,
+                  "duration_weighted_mean": 95.6734349573502
+                }
+              }
+            },
+            "k_proj": {
+              "count": 81,
+              "duration_us": {
+                "available": true,
+                "count": 81,
+                "sum": 2158.72,
+                "mean": 26.65086419753086,
+                "min": 26.1,
+                "max": 28.38
+              },
+              "wait_us": {
+                "available": true,
+                "count": 81,
+                "sum": 4.17,
+                "mean": 0.05148148148148148,
+                "min": 0.0,
+                "max": 0.2
+              },
+              "matmul_flops": 489223618560,
+              "matmul_tflops": 226.62671331159206,
+              "aicore_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 2082.792,
+                "mean": 25.71348148148148,
+                "min": 25.124,
+                "max": 26.975
+              },
+              "mac_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 1684.034,
+                "mean": 20.790543209876546,
+                "min": 20.727,
+                "max": 20.833
+              },
+              "mac_ratio": {
+                "available": true,
+                "count": 81,
+                "sum": 65.511,
+                "mean": 0.8087777777777777,
+                "min": 0.77,
+                "max": 0.826,
+                "duration_weighted_mean": 0.8086327916543137
+              },
+              "mte1_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 915.54,
+                "mean": 11.302962962962962,
+                "min": 11.187,
+                "max": 11.378
+              },
+              "mte1_ratio": {
+                "available": true,
+                "count": 81,
+                "sum": 35.619,
+                "mean": 0.43974074074074077,
+                "min": 0.416,
+                "max": 0.451,
+                "duration_weighted_mean": 0.43965428587311006
+              },
+              "mte2_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 1731.487,
+                "mean": 21.376382716049385,
+                "min": 20.98,
+                "max": 22.112
+              },
+              "mte2_ratio": {
+                "available": true,
+                "count": 81,
+                "sum": 67.35,
+                "mean": 0.8314814814814814,
+                "min": 0.811,
+                "max": 0.848,
+                "duration_weighted_mean": 0.8314017565965017
+              },
+              "mte3_time_us": {
+                "available": false,
+                "count": 0,
+                "sum": null,
+                "mean": null,
+                "min": null,
+                "max": null
+              },
+              "mte3_ratio": {
+                "available": false,
+                "count": 0,
+                "sum": null,
+                "mean": null,
+                "min": null,
+                "max": null,
+                "duration_weighted_mean": null
+              },
+              "fixpipe_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 641.605,
+                "mean": 7.92104938271605,
+                "min": 7.744,
+                "max": 8.252
+              },
+              "fixpipe_ratio": {
+                "available": true,
+                "count": 81,
+                "sum": 24.959,
+                "mean": 0.3081358024691358,
+                "min": 0.29,
+                "max": 0.318,
+                "duration_weighted_mean": 0.3080734416691373
+              },
+              "cube_utilization_pct": {
+                "available": true,
+                "count": 81,
+                "sum": 6513.327,
+                "mean": 80.41144444444444,
+                "min": 77.696,
+                "max": 84.417,
+                "duration_weighted_mean": 80.40209782648978
+              },
+              "numeric_pmu": {
+                "aic_fixpipe_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 24.959,
+                  "mean": 0.3081358024691358,
+                  "min": 0.29,
+                  "max": 0.318,
+                  "duration_weighted_mean": 0.3080734416691373
+                },
+                "aic_fixpipe_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 641.605,
+                  "mean": 7.92104938271605,
+                  "min": 7.744,
+                  "max": 8.252
+                },
+                "aic_icache_miss_rate": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.787,
+                  "mean": 0.009716049382716049,
+                  "min": 0.009,
+                  "max": 0.01,
+                  "duration_weighted_mean": 0.009715572190927958
+                },
+                "aic_mac_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 65.511,
+                  "mean": 0.8087777777777777,
+                  "min": 0.77,
+                  "max": 0.826,
+                  "duration_weighted_mean": 0.8086327916543137
+                },
+                "aic_mac_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 1684.034,
+                  "mean": 20.790543209876546,
+                  "min": 20.727,
+                  "max": 20.833
+                },
+                "aic_mte1_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 35.619,
+                  "mean": 0.43974074074074077,
+                  "min": 0.416,
+                  "max": 0.451,
+                  "duration_weighted_mean": 0.43965428587311006
+                },
+                "aic_mte1_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 915.54,
+                  "mean": 11.302962962962962,
+                  "min": 11.187,
+                  "max": 11.378
+                },
+                "aic_mte2_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 67.35,
+                  "mean": 0.8314814814814814,
+                  "min": 0.811,
+                  "max": 0.848,
+                  "duration_weighted_mean": 0.8314017565965017
+                },
+                "aic_mte2_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 1731.487,
+                  "mean": 21.376382716049385,
+                  "min": 20.98,
+                  "max": 22.112
+                },
+                "aic_scalar_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 4.505,
+                  "mean": 0.05561728395061728,
+                  "min": 0.048,
+                  "max": 0.07,
+                  "duration_weighted_mean": 0.055686286317817975
+                },
+                "aic_scalar_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 115.921,
+                  "mean": 1.4311234567901234,
+                  "min": 1.207,
+                  "max": 1.822
+                },
+                "aic_total_cycles": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 74980372.0,
+                  "mean": 925683.6049382716,
+                  "min": 904447.0,
+                  "max": 971109.0
+                },
+                "aicore_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 2082.792,
+                  "mean": 25.71348148148148,
+                  "min": 25.124,
+                  "max": 26.975
+                },
+                "aiv_icache_miss_rate": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_mte2_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_mte2_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_mte3_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_mte3_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_scalar_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_scalar_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_total_cycles": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_vec_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_vec_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "cube_utilization(%)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 6513.327,
+                  "mean": 80.41144444444444,
+                  "min": 77.696,
+                  "max": 84.417,
+                  "duration_weighted_mean": 80.40209782648978
+                }
+              }
+            },
+            "out_proj": {
+              "count": 81,
+              "duration_us": {
+                "available": true,
+                "count": 81,
+                "sum": 3049.38,
+                "mean": 37.64666666666667,
+                "min": 32.88,
+                "max": 40.18
+              },
+              "wait_us": {
+                "available": true,
+                "count": 81,
+                "sum": 4.6000000000000005,
+                "mean": 0.05679012345679013,
+                "min": 0.0,
+                "max": 0.24
+              },
+              "matmul_flops": 489223618560,
+              "matmul_tflops": 160.4337991854082,
+              "aicore_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 2914.184,
+                "mean": 35.97758024691358,
+                "min": 31.332,
+                "max": 38.819
+              },
+              "mac_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 1409.955,
+                "mean": 17.40685185185185,
+                "min": 17.353,
+                "max": 17.483
+              },
+              "mac_ratio": {
+                "available": true,
+                "count": 81,
+                "sum": 39.339,
+                "mean": 0.48566666666666664,
+                "min": 0.45,
+                "max": 0.555,
+                "duration_weighted_mean": 0.48430651476693626
+              },
+              "mte1_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 726.126,
+                "mean": 8.964518518518519,
+                "min": 8.892,
+                "max": 9.072
+              },
+              "mte1_ratio": {
+                "available": true,
+                "count": 81,
+                "sum": 20.262999999999998,
+                "mean": 0.2501604938271605,
+                "min": 0.232,
+                "max": 0.288,
+                "duration_weighted_mean": 0.24942386977024839
+              },
+              "mte2_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 2445.076,
+                "mean": 30.186123456790124,
+                "min": 25.134,
+                "max": 33.319
+              },
+              "mte2_ratio": {
+                "available": true,
+                "count": 81,
+                "sum": 67.879,
+                "mean": 0.8380123456790124,
+                "min": 0.797,
+                "max": 0.858,
+                "duration_weighted_mean": 0.8387625091002106
+              },
+              "mte3_time_us": {
+                "available": false,
+                "count": 0,
+                "sum": null,
+                "mean": null,
+                "min": null,
+                "max": null
+              },
+              "mte3_ratio": {
+                "available": false,
+                "count": 0,
+                "sum": null,
+                "mean": null,
+                "min": null,
+                "max": null,
+                "duration_weighted_mean": null
+              },
+              "fixpipe_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 953.098,
+                "mean": 11.76664197530864,
+                "min": 8.475,
+                "max": 13.647
+              },
+              "fixpipe_ratio": {
+                "available": true,
+                "count": 81,
+                "sum": 26.437,
+                "mean": 0.32638271604938274,
+                "min": 0.253,
+                "max": 0.361,
+                "duration_weighted_mean": 0.32670873423450014
+              },
+              "cube_utilization_pct": {
+                "available": true,
+                "count": 81,
+                "sum": 7743.128,
+                "mean": 95.59417283950617,
+                "min": 82.999,
+                "max": 108.798,
+                "duration_weighted_mean": 95.56650261364605
+              },
+              "numeric_pmu": {
+                "aic_fixpipe_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 26.437,
+                  "mean": 0.32638271604938274,
+                  "min": 0.253,
+                  "max": 0.361,
+                  "duration_weighted_mean": 0.32670873423450014
+                },
+                "aic_fixpipe_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 953.098,
+                  "mean": 11.76664197530864,
+                  "min": 8.475,
+                  "max": 13.647
+                },
+                "aic_icache_miss_rate": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 7.647,
+                  "mean": 0.09440740740740741,
+                  "min": 0.09,
+                  "max": 0.098,
+                  "duration_weighted_mean": 0.09443182548583647
+                },
+                "aic_mac_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 39.339,
+                  "mean": 0.48566666666666664,
+                  "min": 0.45,
+                  "max": 0.555,
+                  "duration_weighted_mean": 0.48430651476693626
+                },
+                "aic_mac_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 1409.955,
+                  "mean": 17.40685185185185,
+                  "min": 17.353,
+                  "max": 17.483
+                },
+                "aic_mte1_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 20.262999999999998,
+                  "mean": 0.2501604938271605,
+                  "min": 0.232,
+                  "max": 0.288,
+                  "duration_weighted_mean": 0.24942386977024839
+                },
+                "aic_mte1_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 726.126,
+                  "mean": 8.964518518518519,
+                  "min": 8.892,
+                  "max": 9.072
+                },
+                "aic_mte2_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 67.879,
+                  "mean": 0.8380123456790124,
+                  "min": 0.797,
+                  "max": 0.858,
+                  "duration_weighted_mean": 0.8387625091002106
+                },
+                "aic_mte2_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 2445.076,
+                  "mean": 30.186123456790124,
+                  "min": 25.134,
+                  "max": 33.319
+                },
+                "aic_scalar_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 1.996,
+                  "mean": 0.024641975308641977,
+                  "min": 0.022,
+                  "max": 0.031,
+                  "duration_weighted_mean": 0.02456921734910047
+                },
+                "aic_scalar_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 71.468,
+                  "mean": 0.882320987654321,
+                  "min": 0.853,
+                  "max": 1.091
+                },
+                "aic_total_cycles": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 125892827.0,
+                  "mean": 1554232.4320987654,
+                  "min": 1353530.0,
+                  "max": 1676994.0
+                },
+                "aicore_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 2914.184,
+                  "mean": 35.97758024691358,
+                  "min": 31.332,
+                  "max": 38.819
+                },
+                "aiv_icache_miss_rate": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_mte2_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_mte2_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_mte3_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_mte3_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_scalar_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_scalar_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_total_cycles": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_vec_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_vec_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "cube_utilization(%)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 7743.128,
+                  "mean": 95.59417283950617,
+                  "min": 82.999,
+                  "max": 108.798,
+                  "duration_weighted_mean": 95.56650261364605
+                }
+              }
+            },
+            "q_proj": {
+              "count": 81,
+              "duration_us": {
+                "available": true,
+                "count": 81,
+                "sum": 2459.58,
+                "mean": 30.365185185185183,
+                "min": 28.54,
+                "max": 32.4
+              },
+              "wait_us": {
+                "available": true,
+                "count": 81,
+                "sum": 4.32,
+                "mean": 0.05333333333333334,
+                "min": 0.0,
+                "max": 0.22
+              },
+              "matmul_flops": 489223618560,
+              "matmul_tflops": 198.90534910838437,
+              "aicore_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 2346.117,
+                "mean": 28.96440740740741,
+                "min": 27.096,
+                "max": 31.305
+              },
+              "mac_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 1685.457,
+                "mean": 20.808111111111113,
+                "min": 20.738,
+                "max": 20.871
+              },
+              "mac_ratio": {
+                "available": true,
+                "count": 81,
+                "sum": 58.239,
+                "mean": 0.719,
+                "min": 0.665,
+                "max": 0.767,
+                "duration_weighted_mean": 0.7188316867107393
+              },
+              "mte1_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 914.591,
+                "mean": 11.291246913580247,
+                "min": 11.201,
+                "max": 11.4
+              },
+              "mte1_ratio": {
+                "available": true,
+                "count": 81,
+                "sum": 31.601,
+                "mean": 0.3901358024691358,
+                "min": 0.362,
+                "max": 0.418,
+                "duration_weighted_mean": 0.39004678847608126
+              },
+              "mte2_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 1902.647,
+                "mean": 23.48946913580247,
+                "min": 21.133,
+                "max": 25.077
+              },
+              "mte2_ratio": {
+                "available": true,
+                "count": 81,
+                "sum": 65.67699999999999,
+                "mean": 0.8108271604938271,
+                "min": 0.744,
+                "max": 0.832,
+                "duration_weighted_mean": 0.8107406955659097
+              },
+              "mte3_time_us": {
+                "available": false,
+                "count": 0,
+                "sum": null,
+                "mean": null,
+                "min": null,
+                "max": null
+              },
+              "mte3_ratio": {
+                "available": false,
+                "count": 0,
+                "sum": null,
+                "mean": null,
+                "min": null,
+                "max": null,
+                "duration_weighted_mean": null
+              },
+              "fixpipe_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 654.585,
+                "mean": 8.081296296296296,
+                "min": 7.779,
+                "max": 8.458
+              },
+              "fixpipe_ratio": {
+                "available": true,
+                "count": 81,
+                "sum": 22.613,
+                "mean": 0.27917283950617283,
+                "min": 0.258,
+                "max": 0.294,
+                "duration_weighted_mean": 0.2791282658014783
+              },
+              "cube_utilization_pct": {
+                "available": true,
+                "count": 81,
+                "sum": 6441.567,
+                "mean": 79.52551851851852,
+                "min": 72.973,
+                "max": 86.349,
+                "duration_weighted_mean": 79.48901211588971
+              },
+              "numeric_pmu": {
+                "aic_fixpipe_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 22.613,
+                  "mean": 0.27917283950617283,
+                  "min": 0.258,
+                  "max": 0.294,
+                  "duration_weighted_mean": 0.2791282658014783
+                },
+                "aic_fixpipe_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 654.585,
+                  "mean": 8.081296296296296,
+                  "min": 7.779,
+                  "max": 8.458
+                },
+                "aic_icache_miss_rate": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 3.5829999999999997,
+                  "mean": 0.04423456790123456,
+                  "min": 0.042,
+                  "max": 0.046,
+                  "duration_weighted_mean": 0.044234958814106475
+                },
+                "aic_mac_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 58.239,
+                  "mean": 0.719,
+                  "min": 0.665,
+                  "max": 0.767,
+                  "duration_weighted_mean": 0.7188316867107393
+                },
+                "aic_mac_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 1685.457,
+                  "mean": 20.808111111111113,
+                  "min": 20.738,
+                  "max": 20.871
+                },
+                "aic_mte1_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 31.601,
+                  "mean": 0.3901358024691358,
+                  "min": 0.362,
+                  "max": 0.418,
+                  "duration_weighted_mean": 0.39004678847608126
+                },
+                "aic_mte1_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 914.591,
+                  "mean": 11.291246913580247,
+                  "min": 11.201,
+                  "max": 11.4
+                },
+                "aic_mte2_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 65.67699999999999,
+                  "mean": 0.8108271604938271,
+                  "min": 0.744,
+                  "max": 0.832,
+                  "duration_weighted_mean": 0.8107406955659097
+                },
+                "aic_mte2_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 1902.647,
+                  "mean": 23.48946913580247,
+                  "min": 21.133,
+                  "max": 25.077
+                },
+                "aic_scalar_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 3.323,
+                  "mean": 0.04102469135802469,
+                  "min": 0.036,
+                  "max": 0.105,
+                  "duration_weighted_mean": 0.04113552720383155
+                },
+                "aic_scalar_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 96.454,
+                  "mean": 1.1907901234567901,
+                  "min": 1.085,
+                  "max": 3.253
+                },
+                "aic_total_cycles": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 84460142.0,
+                  "mean": 1042717.8024691358,
+                  "min": 975444.0,
+                  "max": 1126974.0
+                },
+                "aicore_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 2346.117,
+                  "mean": 28.96440740740741,
+                  "min": 27.096,
+                  "max": 31.305
+                },
+                "aiv_icache_miss_rate": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_mte2_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_mte2_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_mte3_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_mte3_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_scalar_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_scalar_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_total_cycles": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_vec_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_vec_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "cube_utilization(%)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 6441.567,
+                  "mean": 79.52551851851852,
+                  "min": 72.973,
+                  "max": 86.349,
+                  "duration_weighted_mean": 79.48901211588971
+                }
+              }
+            },
+            "v_proj": {
+              "count": 81,
+              "duration_us": {
+                "available": true,
+                "count": 81,
+                "sum": 2179.14,
+                "mean": 26.90296296296296,
+                "min": 26.28,
+                "max": 28.62
+              },
+              "wait_us": {
+                "available": true,
+                "count": 81,
+                "sum": 3.3,
+                "mean": 0.04074074074074074,
+                "min": 0.0,
+                "max": 0.19
+              },
+              "matmul_flops": 489223618560,
+              "matmul_tflops": 224.5030693576365,
+              "aicore_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 2100.209,
+                "mean": 25.928506172839505,
+                "min": 25.24,
+                "max": 27.105
+              },
+              "mac_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 1685.435,
+                "mean": 20.80783950617284,
+                "min": 20.735,
+                "max": 20.864
+              },
+              "mac_ratio": {
+                "available": true,
+                "count": 81,
+                "sum": 65.018,
+                "mean": 0.8026913580246914,
+                "min": 0.767,
+                "max": 0.824,
+                "duration_weighted_mean": 0.8025097240195674
+              },
+              "mte1_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 915.906,
+                "mean": 11.307481481481481,
+                "min": 11.21,
+                "max": 11.392
+              },
+              "mte1_ratio": {
+                "available": true,
+                "count": 81,
+                "sum": 35.336,
+                "mean": 0.4362469135802469,
+                "min": 0.414,
+                "max": 0.45,
+                "duration_weighted_mean": 0.4361450296906119
+              },
+              "mte2_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 1757.557,
+                "mean": 21.698234567901235,
+                "min": 21.297,
+                "max": 22.372
+              },
+              "mte2_ratio": {
+                "available": true,
+                "count": 81,
+                "sum": 67.792,
+                "mean": 0.8369382716049383,
+                "min": 0.81,
+                "max": 0.858,
+                "duration_weighted_mean": 0.836812256211166
+              },
+              "mte3_time_us": {
+                "available": false,
+                "count": 0,
+                "sum": null,
+                "mean": null,
+                "min": null,
+                "max": null
+              },
+              "mte3_ratio": {
+                "available": false,
+                "count": 0,
+                "sum": null,
+                "mean": null,
+                "min": null,
+                "max": null,
+                "duration_weighted_mean": null
+              },
+              "fixpipe_time_us": {
+                "available": true,
+                "count": 81,
+                "sum": 641.893,
+                "mean": 7.924604938271606,
+                "min": 7.786,
+                "max": 8.545
+              },
+              "fixpipe_ratio": {
+                "available": true,
+                "count": 81,
+                "sum": 24.764,
+                "mean": 0.3057283950617284,
+                "min": 0.29,
+                "max": 0.322,
+                "duration_weighted_mean": 0.30566353699165727
+              },
+              "cube_utilization_pct": {
+                "available": true,
+                "count": 81,
+                "sum": 6505.749,
+                "mean": 80.31788888888889,
+                "min": 78.599,
+                "max": 82.678,
+                "duration_weighted_mean": 80.31482577530586
+              },
+              "numeric_pmu": {
+                "aic_fixpipe_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 24.764,
+                  "mean": 0.3057283950617284,
+                  "min": 0.29,
+                  "max": 0.322,
+                  "duration_weighted_mean": 0.30566353699165727
+                },
+                "aic_fixpipe_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 641.893,
+                  "mean": 7.924604938271606,
+                  "min": 7.786,
+                  "max": 8.545
+                },
+                "aic_icache_miss_rate": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aic_mac_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 65.018,
+                  "mean": 0.8026913580246914,
+                  "min": 0.767,
+                  "max": 0.824,
+                  "duration_weighted_mean": 0.8025097240195674
+                },
+                "aic_mac_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 1685.435,
+                  "mean": 20.80783950617284,
+                  "min": 20.735,
+                  "max": 20.864
+                },
+                "aic_mte1_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 35.336,
+                  "mean": 0.4362469135802469,
+                  "min": 0.414,
+                  "max": 0.45,
+                  "duration_weighted_mean": 0.4361450296906119
+                },
+                "aic_mte1_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 915.906,
+                  "mean": 11.307481481481481,
+                  "min": 11.21,
+                  "max": 11.392
+                },
+                "aic_mte2_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 67.792,
+                  "mean": 0.8369382716049383,
+                  "min": 0.81,
+                  "max": 0.858,
+                  "duration_weighted_mean": 0.836812256211166
+                },
+                "aic_mte2_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 1757.557,
+                  "mean": 21.698234567901235,
+                  "min": 21.297,
+                  "max": 22.372
+                },
+                "aic_scalar_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 4.704,
+                  "mean": 0.05807407407407407,
+                  "min": 0.048,
+                  "max": 0.081,
+                  "duration_weighted_mean": 0.05821342364418991
+                },
+                "aic_scalar_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 122.299,
+                  "mean": 1.5098641975308642,
+                  "min": 1.229,
+                  "max": 2.15
+                },
+                "aic_total_cycles": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 75607448.0,
+                  "mean": 933425.2839506173,
+                  "min": 908655.0,
+                  "max": 975787.0
+                },
+                "aicore_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 2100.209,
+                  "mean": 25.928506172839505,
+                  "min": 25.24,
+                  "max": 27.105
+                },
+                "aiv_icache_miss_rate": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_mte2_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_mte2_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_mte3_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_mte3_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_scalar_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_scalar_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_total_cycles": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "aiv_vec_ratio": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0,
+                  "duration_weighted_mean": 0.0
+                },
+                "aiv_vec_time(us)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 0.0,
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "cube_utilization(%)": {
+                  "available": true,
+                  "count": 81,
+                  "sum": 6505.749,
+                  "mean": 80.31788888888889,
+                  "min": 78.599,
+                  "max": 82.678,
+                  "duration_weighted_mean": 80.31482577530586
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "dispatch": {
+      "counts": {
+        "MatMulV2": 486
+      },
+      "duration_us": {
+        "MatMulV2": 24107.879999999994
+      }
+    },
+    "transdata": {
+      "count": 0,
+      "duration_us": 0.0
+    },
+    "weighted_cube_utilization_pct": 90.96925951026255,
+    "matmul_shape_format_signatures": [
+      {
+        "name": "MatMulV2 | \"2048,4352;272,72,16,16;1152\" -> \"2048,1152\" | ND;FRACTAL_NZ;ND -> ND",
+        "count": 81,
+        "duration_us": 7359.939999999998,
+        "wait_us": 4.099999999999998,
+        "aicore_time_us": 7041.512999999999,
+        "kernel_name_samples": [
+          "MatMulV2_5",
+          "MatMulV2_11",
+          "MatMulV2_17",
+          "MatMulV2_23"
+        ],
+        "input_shape_samples": [
+          "\"2048,4352;272,72,16,16;1152\""
+        ],
+        "output_shape_samples": [
+          "\"2048,1152\""
+        ],
+        "input_format_samples": [
+          "ND;FRACTAL_NZ;ND"
+        ],
+        "output_format_samples": [
+          "ND"
+        ],
+        "input_dtype_samples": [
+          "FLOAT16;FLOAT16;FLOAT16"
+        ]
+      },
+      {
+        "name": "MatMulV2 | \"2048,1152;72,272,16,16;4352\" -> \"2048,4352\" | ND;FRACTAL_NZ;ND -> ND",
+        "count": 81,
+        "duration_us": 6901.120000000002,
+        "wait_us": 4.409999999999998,
+        "aicore_time_us": 6389.832000000002,
+        "kernel_name_samples": [
+          "MatMulV2_4",
+          "MatMulV2_10",
+          "MatMulV2_16",
+          "MatMulV2_22"
+        ],
+        "input_shape_samples": [
+          "\"2048,1152;72,272,16,16;4352\""
+        ],
+        "output_shape_samples": [
+          "\"2048,4352\""
+        ],
+        "input_format_samples": [
+          "ND;FRACTAL_NZ;ND"
+        ],
+        "output_format_samples": [
+          "ND"
+        ],
+        "input_dtype_samples": [
+          "FLOAT16;FLOAT16;FLOAT16"
+        ]
+      },
+      {
+        "name": "MatMulV2 | \"2048,1152;72,80,16,16;1280\" -> \"2048,1280\" | ND;FRACTAL_NZ;ND -> ND",
+        "count": 243,
+        "duration_us": 6797.440000000005,
+        "wait_us": 11.789999999999988,
+        "aicore_time_us": 6529.1179999999995,
+        "kernel_name_samples": [
+          "MatMulV2",
+          "MatMulV2_1",
+          "MatMulV2_2",
+          "MatMulV2_6"
+        ],
+        "input_shape_samples": [
+          "\"2048,1152;72,80,16,16;1280\""
+        ],
+        "output_shape_samples": [
+          "\"2048,1280\""
+        ],
+        "input_format_samples": [
+          "ND;FRACTAL_NZ;ND"
+        ],
+        "output_format_samples": [
+          "ND"
+        ],
+        "input_dtype_samples": [
+          "FLOAT16;FLOAT16;FLOAT16"
+        ]
+      },
+      {
+        "name": "MatMulV2 | \"2048,1280;80,72,16,16;1152\" -> \"2048,1152\" | ND;FRACTAL_NZ;ND -> ND",
+        "count": 81,
+        "duration_us": 3049.379999999999,
+        "wait_us": 4.6,
+        "aicore_time_us": 2914.1839999999993,
+        "kernel_name_samples": [
+          "MatMulV2_3",
+          "MatMulV2_9",
+          "MatMulV2_15",
+          "MatMulV2_21"
+        ],
+        "input_shape_samples": [
+          "\"2048,1280;80,72,16,16;1152\""
+        ],
+        "output_shape_samples": [
+          "\"2048,1152\""
+        ],
+        "input_format_samples": [
+          "ND;FRACTAL_NZ;ND"
+        ],
+        "output_format_samples": [
+          "ND"
+        ],
+        "input_dtype_samples": [
+          "FLOAT16;FLOAT16;FLOAT16"
+        ]
+      }
+    ],
+    "attention_components": {
+      "source_csv": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/vision_attention_compare_910b_7c64b7e/promptfa_b4s512_pipe/liteserver-c001-4_759972_20260730140153552_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "active_full_stack_calls": 3,
+      "layers": 27,
+      "total_kernel_duration_per_full_stack_ms": 22.353173333333327,
+      "components": {
+        "linear_projection_and_mlp": {
+          "kernel_count": 486,
+          "duration_us": 24107.879999999994,
+          "aic_mac_us": 16034.744000000008,
+          "aic_scalar_us": 889.6560000000004,
+          "aic_mte1_us": 10152.274000000003,
+          "aic_mte2_us": 19346.818999999996,
+          "aic_mte3_us": 0.0,
+          "aic_fixpipe_us": 6347.737,
+          "aiv_vec_us": 0.0,
+          "aiv_scalar_us": 0.0,
+          "aiv_mte2_us": 0.0,
+          "aiv_mte3_us": 0.0,
+          "kernel_count_per_full_stack": 162.0,
+          "duration_per_full_stack_ms": 8.035959999999998,
+          "duration_per_layer_us": 297.62814814814806
+        },
+        "other": {
+          "kernel_count": 1707,
+          "duration_us": 28905.66000000005,
+          "aic_mac_us": 0.0,
+          "aic_scalar_us": 0.0,
+          "aic_mte1_us": 0.0,
+          "aic_mte2_us": 0.0,
+          "aic_mte3_us": 0.0,
+          "aic_fixpipe_us": 0.0,
+          "aiv_vec_us": 5600.91999999994,
+          "aiv_scalar_us": 1701.5510000000024,
+          "aiv_mte2_us": 10151.936000000012,
+          "aiv_mte3_us": 7914.3289999999915,
+          "kernel_count_per_full_stack": 569.0,
+          "duration_per_full_stack_ms": 9.635220000000018,
+          "duration_per_layer_us": 356.86000000000064
+        },
+        "prompt_flash_attention": {
+          "kernel_count": 81,
+          "duration_us": 8614.139999999998,
+          "aic_mac_us": 1330.6309999999996,
+          "aic_scalar_us": 6784.228,
+          "aic_mte1_us": 1048.8459999999993,
+          "aic_mte2_us": 1727.3920000000003,
+          "aic_mte3_us": 0.0,
+          "aic_fixpipe_us": 1183.7939999999996,
+          "aiv_vec_us": 3417.222999999998,
+          "aiv_scalar_us": 2529.111,
+          "aiv_mte2_us": 1092.246,
+          "aiv_mte3_us": 800.6279999999999,
+          "kernel_count_per_full_stack": 27.0,
+          "duration_per_full_stack_ms": 2.8713799999999994,
+          "duration_per_layer_us": 106.34740740740737
+        },
+        "transpose": {
+          "kernel_count": 324,
+          "duration_us": 5431.84,
+          "aic_mac_us": 0.0,
+          "aic_scalar_us": 0.0,
+          "aic_mte1_us": 0.0,
+          "aic_mte2_us": 0.0,
+          "aic_mte3_us": 0.0,
+          "aic_fixpipe_us": 0.0,
+          "aiv_vec_us": 7.442999999999962,
+          "aiv_scalar_us": 83.22700000000007,
+          "aiv_mte2_us": 1958.603999999998,
+          "aiv_mte3_us": 892.7469999999997,
+          "kernel_count_per_full_stack": 108.0,
+          "duration_per_full_stack_ms": 1.8106133333333334,
+          "duration_per_layer_us": 67.05975308641976
+        }
+      }
+    },
+    "matmul_only": {
+      "active_profiled_full_stack_calls": 3,
+      "matmul_kernels_per_full_stack_call": 162,
+      "observed_matmul_kernel_count": 486,
+      "total_matmul_kernel_duration_us": 24107.879999999994,
+      "matmul_kernel_duration_per_full_stack_call_ms": 8.035959999999998,
+      "linear_flops_per_full_stack_call": 1761205026816,
+      "matmul_only_linear_tflop_per_s": 219.16547952155068
+    }
+  }
+}
