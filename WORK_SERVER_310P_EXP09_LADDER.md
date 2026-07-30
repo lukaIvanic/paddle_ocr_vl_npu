@@ -9,15 +9,18 @@ Prove that the real Experiment 09 pipeline runs on this 310P software stack,
 identify which production optimizations work, and measure their approximate
 effect on a small representative workload.
 
-## Current requested task: run Phase 22 only
+## Current requested task: run Phase 23 only
 
 Phases 0-21 have already run, are in progress elsewhere, are superseded, or
 retain historical instructions and evidence. Do not rerun the performance
 ladder, vision matrices, native profiles, text prefill, decode, PromptFA
 experiments, or the superseded standalone-layout Phase 19. Phase 21 proved the
 page-index-8 failure occurs inside packed text graph call 7, before KV
-redistribution. Go directly to **Phase 22: isolate the packed final-token
-GatherV2** at the end of this document.
+redistribution. Phase 22 reconstructed the exact indices and proved both eager
+Gather lanes, but its TorchAir lanes never executed because the old probe
+passed a free function to `cache_compile`. That probe defect is fixed. Go
+directly to **Phase 23: execute the missing compiled GatherV2 lanes** at the
+end of this document.
 
 The reported production boundary is unusually sharp:
 
@@ -10704,3 +10707,496 @@ Evidence:
 Paste back `agent_report.md`, `call_matrix.txt`, `lane_matrix.txt`, each
 `summary.json`, and the compact Phase-21 Gather extract. Include raw CANN log
 paths but do not paste enormous plogs.
+
+## Phase 23: execute the missing compiled GatherV2 lanes
+
+### 23.0 Purpose and stopping boundary
+
+Run this phase only. Do not rerun page 9, layout, vision prefill, packed text
+prefill, decode, or the Phase-22 eager lanes.
+
+Phase 22 already proved:
+
+```text
+control call 6:
+  hidden shape = (1, 512, 1024)
+  indices = [302, 375, 428, 0, ...]
+  eager = exact pass
+
+failed call 7:
+  hidden shape = (1, 512, 1024)
+  segment lengths = [133, 109, 69, 58, 58, 51]
+  indices = [132, 241, 310, 368, 426, 477, 0, ...]
+  all indices are in bounds
+  eager = exact pass
+```
+
+The old TorchAir lanes did not test anything: `cache_compile` rejected the
+probe's free function with `Only method can be cached now`. Commit `66e61ab`
+replaced it with the bound method `GatherLastTokensStage.forward`.
+
+This phase answers only:
+
+> Does the exact call-7 index vector fail in a standalone compiled GatherV2
+> graph on 310P, after the same-shape call-6 control compiled and passed?
+
+Stop after that answer. Do not modify the packed transformer or introduce a
+workaround in this phase. Do not edit tracked source, commit, or push from the
+work server.
+
+For comparison, the committed 910B evidence at `5af97ef` shows:
+
+```text
+control call 6 compiled: exact pass, max_abs_error=0
+exact 310P call-7 vector compiled: exact pass, max_abs_error=0
+```
+
+Those are hardware controls, not proof of 310P behavior.
+
+### 23.1 Pull and preflight
+
+Use the same activated Python/CANN environment and the same physical 310P used
+for Phases 21 and 22.
+
+```sh
+cd "$(git rev-parse --show-toplevel)"
+REPO="$(git rev-parse --show-toplevel)"
+
+git status --short --branch
+git pull --ff-only origin main
+
+COMMIT="$(git rev-parse HEAD)"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+PYTHON_BIN="${PYTHON_BIN:-$(command -v python)}"
+PROBE="$REPO/09_persistent_page_engine/scripts/probes/probe_packed_last_token_gather.py"
+TRACE="$REPO/tmp/09_persistent_page_engine/310p_phase21_kv_copy_62db002/graph_only/diagnostic/events.jsonl"
+
+test -x "$PYTHON_BIN"
+test -f "$PROBE"
+test -f "$TRACE"
+git merge-base --is-ancestor 66e61ab "$COMMIT"
+grep -q 'class GatherLastTokensStage' "$PROBE"
+grep -q 'cache_compile(' "$PROBE"
+grep -q 'stage.forward' "$PROBE"
+"$PYTHON_BIN" "$PROBE" --help
+```
+
+Do not continue if the Phase-21 trace is missing. Do not reconstruct it from
+the prose report; the exact JSONL is the input authority.
+
+Confirm the device is free of unrelated work. Never use `pkill` or `killall`.
+Record:
+
+```sh
+OUTPUT_ROOT="$REPO/tmp/09_persistent_page_engine/310p_phase23_compiled_gather_$COMMIT_SHORT"
+RAW_ROOT="$REPO/.runtime_cache/310p_phase23_compiled_gather_$COMMIT_SHORT"
+test ! -e "$OUTPUT_ROOT"
+test ! -e "$RAW_ROOT"
+mkdir -p "$OUTPUT_ROOT" "$RAW_ROOT"
+
+{
+  printf 'commit=%s\n' "$COMMIT"
+  printf 'host=%s\n' "$(hostname)"
+  printf 'python=%s\n' "$PYTHON_BIN"
+  printf 'date=%s\n' "$(date --iso-8601=seconds 2>/dev/null || date)"
+  "$PYTHON_BIN" - <<'PY'
+import json
+import sys
+import torch
+import torch_npu
+
+print(json.dumps({
+    "python": sys.version,
+    "torch": torch.__version__,
+    "torch_npu": torch_npu.__version__,
+    "npu_available": torch.npu.is_available(),
+    "npu_name": torch.npu.get_device_name(0),
+}, indent=2))
+PY
+  npu-smi info
+  df -h "$REPO"
+} 2>&1 | tee "$OUTPUT_ROOT/preflight.log"
+```
+
+### 23.2 Re-analyze the unchanged Phase-21 trace
+
+Run analyze mode once with the fixed probe:
+
+```sh
+"$PYTHON_BIN" "$PROBE" \
+  --mode analyze \
+  --trace "$TRACE" \
+  --output "$OUTPUT_ROOT/call_analysis.json" \
+  2>&1 | tee "$OUTPUT_ROOT/analyze.log"
+```
+
+Assert the exact decision inputs before touching the NPU:
+
+```sh
+"$PYTHON_BIN" - "$OUTPUT_ROOT/call_analysis.json" <<'PY' \
+  | tee "$OUTPUT_ROOT/analysis_assertions.txt"
+import json
+import sys
+
+analysis = json.load(open(sys.argv[1], encoding="utf-8"))
+calls = {int(call["graph_call"]): call for call in analysis["calls"]}
+control = calls[6]
+failed = calls[7]
+
+assert analysis["failed_call"] == 7, analysis["failed_call"]
+assert analysis["control_call"] == 6, analysis["control_call"]
+assert analysis["control_same_static_shape"] is True
+
+assert control["physical_seq_len"] == 512
+assert control["hidden_size"] == 1024
+assert control["max_members"] == 32
+assert control["dtype"] == "torch.float16"
+assert control["segment_lengths"] == [303, 73, 53]
+assert control["active_last_token_indices"] == [302, 375, 428]
+
+assert failed["physical_seq_len"] == 512
+assert failed["hidden_size"] == 1024
+assert failed["max_members"] == 32
+assert failed["dtype"] == "torch.float16"
+assert failed["segment_lengths"] == [133, 109, 69, 58, 58, 51]
+assert failed["segment_offsets"] == [0, 133, 242, 311, 369, 427]
+assert failed["active_last_token_indices"] == [
+    132, 241, 310, 368, 426, 477
+]
+assert failed["indices_in_bounds"] is True
+assert failed["offsets_match_lengths"] is True
+assert failed["last_index_hits_physical_boundary"] is False
+
+print("PHASE23_ANALYSIS_CONTRACT: PASS")
+PY
+```
+
+Proceed only if the final line is:
+
+```text
+PHASE23_ANALYSIS_CONTRACT: PASS
+```
+
+### 23.3 Configure the two compiled lanes
+
+Use one fresh shared cache. The control process compiles the graph; the failed
+process must load the same graph with different index values.
+
+```sh
+GATHER_CACHE="$RAW_ROOT/shared_torchair_cache"
+test ! -e "$GATHER_CACHE"
+mkdir -p "$GATHER_CACHE"
+
+export PYTHONFAULTHANDLER=1
+export ASCEND_LAUNCH_BLOCKING=1
+export TORCH_NPU_COMPACT_ERROR_OUTPUT=0
+export ASCEND_GLOBAL_LOG_LEVEL=0
+export ASCEND_MODULE_LOG_LEVEL='RUNTIME=0:ASCENDCL=0:OP=0:TBE=0'
+export ASCEND_GLOBAL_EVENT_ENABLE=1
+export ASCEND_LOG_DEVICE_FLUSH_TIMEOUT=10000
+
+printf '[phase23] ready %s\n' \
+  "$(date --iso-8601=seconds 2>/dev/null || date)" \
+  | tee "$OUTPUT_ROOT/progress.log"
+```
+
+Define:
+
+```sh
+run_compiled_gather() {
+  lane_name="$1"
+  selection="$2"
+
+  lane_out="$OUTPUT_ROOT/$lane_name"
+  lane_raw="$RAW_ROOT/$lane_name"
+  test ! -e "$lane_out"
+  test ! -e "$lane_raw"
+  mkdir -p "$lane_out" "$lane_raw/cann"
+
+  export ASCEND_PROCESS_LOG_PATH="$lane_raw/cann"
+  export ASCEND_WORK_PATH="$lane_raw"
+
+  command=(
+    "$PYTHON_BIN" "$PROBE"
+    --mode run
+    --trace "$TRACE"
+    --output "$lane_out/summary.json"
+    --selection "$selection"
+    --backend torchair
+    --cache-dir "$GATHER_CACHE"
+    --index-variant recorded
+    --device npu:0
+  )
+
+  {
+    printf '#!/usr/bin/env bash\n'
+    printf '# commit=%s\n' "$COMMIT"
+    printf '%q ' "${command[@]}"
+    printf '\n'
+  } > "$lane_out/command.sh"
+
+  printf '[phase23] START %s %s\n' \
+    "$lane_name" \
+    "$(date --iso-8601=seconds 2>/dev/null || date)" \
+    | tee -a "$OUTPUT_ROOT/progress.log"
+
+  set +e
+  set -o pipefail
+  "${command[@]}" 2>&1 | tee "$lane_out/run.log"
+  lane_exit="${PIPESTATUS[0]}"
+  set -e
+  printf '%s\n' "$lane_exit" > "$lane_out/exit_code.txt"
+
+  printf '[phase23] END %s exit=%s %s\n' \
+    "$lane_name" \
+    "$lane_exit" \
+    "$(date --iso-8601=seconds 2>/dev/null || date)" \
+    | tee -a "$OUTPUT_ROOT/progress.log"
+
+  find "$lane_raw" -type f -printf '%s %p\n' 2>/dev/null \
+    | sort -n > "$lane_out/raw_file_manifest.txt"
+  return 0
+}
+```
+
+Progress is visible while it runs:
+
+```sh
+tail -f "$OUTPUT_ROOT/progress.log"
+tail -f "$OUTPUT_ROOT/control_torchair/run.log"
+tail -f "$OUTPUT_ROOT/failed_torchair/run.log"
+```
+
+### 23.4 Run control, then exact failed indices
+
+Run the same-shape control first:
+
+```sh
+run_compiled_gather control_torchair control
+cat "$OUTPUT_ROOT/control_torchair/summary.json"
+
+"$PYTHON_BIN" - \
+  "$OUTPUT_ROOT/control_torchair/summary.json" \
+  "$OUTPUT_ROOT/control_torchair/exit_code.txt" <<'PY' \
+  | tee "$OUTPUT_ROOT/control_assertions.txt"
+import json
+import sys
+
+summary = json.load(open(sys.argv[1], encoding="utf-8"))
+exit_code = int(open(sys.argv[2], encoding="utf-8").read().strip())
+assert exit_code == 0, exit_code
+assert summary["status"] == "passed", summary["status"]
+assert summary["selection"] == "control"
+assert summary["graph_call"] == 6
+assert summary["cache_was_warm"] is False
+assert summary["exact"] is True
+assert summary["max_abs_error"] == 0.0
+print("PHASE23_CONTROL_CONTRACT: PASS")
+PY
+```
+
+The control must have:
+
+```text
+exit_code = 0
+status = passed
+exact = true
+max_abs_error = 0
+cache_was_warm = false
+```
+
+If the control fails, stop. Do not run call 7 against an unvalidated or
+partially written cache. Report whether failure occurred during the all-zero
+warm call or the target call.
+
+If the control passes, inventory the compiled cache:
+
+```sh
+find "$GATHER_CACHE" -type f -printf \
+  '%p\t%s\t%TY-%Tm-%TdT%TH:%TM:%TS\n' \
+  | sort > "$OUTPUT_ROOT/cache_after_control.txt"
+```
+
+Then run the exact call-7 vector in a fresh process:
+
+```sh
+run_compiled_gather failed_torchair failed
+cat "$OUTPUT_ROOT/failed_torchair/summary.json"
+
+"$PYTHON_BIN" - "$OUTPUT_ROOT/failed_torchair/summary.json" <<'PY' \
+  | tee "$OUTPUT_ROOT/failed_metadata_assertions.txt"
+import json
+import sys
+
+summary = json.load(open(sys.argv[1], encoding="utf-8"))
+call = summary["call"]
+assert summary["selection"] == "failed"
+assert summary["graph_call"] == 7
+assert summary["cache_was_warm"] is True
+assert call["physical_seq_len"] == 512
+assert call["segment_lengths"] == [133, 109, 69, 58, 58, 51]
+assert summary["effective_last_token_indices"][:6] == [
+    132, 241, 310, 368, 426, 477
+]
+assert all(
+    index == 0
+    for index in summary["effective_last_token_indices"][6:]
+)
+print("PHASE23_FAILED_METADATA_CONTRACT: PASS")
+PY
+```
+
+Its `summary.json` must show:
+
+```text
+graph_call = 7
+physical_seq_len = 512
+segment_lengths = [133, 109, 69, 58, 58, 51]
+effective_last_token_indices = [132, 241, 310, 368, 426, 477, 0, ...]
+cache_was_warm = true
+```
+
+If and only if `failed_torchair` exited zero and passed exactly, repeat only
+that lane once in one more fresh process:
+
+```sh
+if "$PYTHON_BIN" - \
+  "$OUTPUT_ROOT/failed_torchair/summary.json" \
+  "$OUTPUT_ROOT/failed_torchair/exit_code.txt" <<'PY'
+import json
+import sys
+
+summary = json.load(open(sys.argv[1], encoding="utf-8"))
+exit_code = int(open(sys.argv[2], encoding="utf-8").read().strip())
+raise SystemExit(
+    0
+    if (
+        exit_code == 0
+        and summary.get("status") == "passed"
+        and summary.get("exact") is True
+        and summary.get("max_abs_error") == 0.0
+    )
+    else 1
+)
+PY
+then
+  run_compiled_gather failed_torchair_repeat failed
+  cat "$OUTPUT_ROOT/failed_torchair_repeat/summary.json"
+fi
+```
+
+Do not repeat a failing lane. Do not run a value sweep, boundary-minus-one,
+other shapes, eager, or the complete OCR pipeline.
+
+### 23.5 Compact report and decision
+
+Create:
+
+```sh
+"$PYTHON_BIN" - "$OUTPUT_ROOT" > "$OUTPUT_ROOT/lane_matrix.txt" <<'PY'
+import json
+import pathlib
+import sys
+
+root = pathlib.Path(sys.argv[1])
+for name in (
+    "control_torchair",
+    "failed_torchair",
+    "failed_torchair_repeat",
+):
+    lane = root / name
+    if not lane.exists():
+        continue
+    summary_path = lane / "summary.json"
+    exit_path = lane / "exit_code.txt"
+    summary = (
+        json.load(open(summary_path, encoding="utf-8"))
+        if summary_path.exists()
+        else {}
+    )
+    print(
+        name,
+        "exit=" + (
+            exit_path.read_text().strip()
+            if exit_path.exists()
+            else "missing"
+        ),
+        "status=" + str(summary.get("status")),
+        "cache_warm=" + str(summary.get("cache_was_warm")),
+        "warm_s=" + str(summary.get("warm_call_s")),
+        "target_s=" + str(summary.get("target_call_s")),
+        "exact=" + str(summary.get("exact")),
+        "max_abs=" + str(summary.get("max_abs_error")),
+        "exception=" + str(summary.get("exception")),
+    )
+PY
+cat "$OUTPUT_ROOT/lane_matrix.txt"
+```
+
+Use this decision table:
+
+| Observation | Conclusion and next step |
+| --- | --- |
+| control compiled Gather fails | standalone compiled shape is unsupported or the probe/cache environment is invalid; inspect that failure before call 7 |
+| control passes, call 7 fails with the Phase-21 GatherV2 kernel/error | exact index values trigger a 310P compiled GatherV2 bug; the smallest fix is to move final-token selection outside the graph |
+| control passes, call 7 fails with a different operator | do not attribute Phase 21 to GatherV2 yet; report the new causal operator |
+| control and call 7 pass exactly, including repeat | standalone compiled Gather is exonerated; the failure requires the full packed transformer's memory plan, aliasing, scratch reuse, or earlier corruption |
+| all-zero warm call passes but target call fails | index-value-dependent compiled behavior |
+| all-zero warm call itself fails | static compiled graph/kernel or cache problem, not call-7 values |
+
+Write:
+
+```text
+$OUTPUT_ROOT/agent_report.md
+```
+
+Use:
+
+```text
+310P PHASE 23 FIXED COMPILED GATHER: REPRODUCED | NOT REPRODUCED | CONTROL FAILED
+
+Commit / host / exact NPU / software:
+Phase-21 trace:
+Probe contract:
+- bound method present:
+- analysis assertions:
+
+Control compiled lane:
+- exit/status:
+- warm versus target status:
+- cache_was_warm:
+- exact/max_abs:
+- CANN operator/error/kernel, if any:
+
+Exact call-7 compiled lane:
+- exit/status:
+- exact segment lengths:
+- exact active indices:
+- cache_was_warm:
+- warm versus target status:
+- exact/max_abs:
+- CANN operator/error/kernel, if any:
+
+Repeat lane, if run:
+
+Classification:
+What is proven:
+What remains unknown:
+Next experiment:
+
+Evidence:
+- preflight.log:
+- call_analysis.json:
+- analysis_assertions.txt:
+- control_assertions.txt:
+- failed_metadata_assertions.txt:
+- progress.log:
+- lane_matrix.txt:
+- each command.sh / run.log / summary.json / exit_code.txt:
+- cache_after_control.txt:
+- raw CANN roots:
+```
+
+Paste back `agent_report.md`, `lane_matrix.txt`, both primary
+`summary.json` files, and the relevant compact CANN error extract if a lane
+fails. Do not paste enormous plogs.
