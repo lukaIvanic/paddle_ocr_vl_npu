@@ -11,12 +11,14 @@ laboratory from a real crop's vision-transformer call.
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import importlib
 import json
 import math
 import os
 import platform
+import re
 import shutil
 import statistics
 import subprocess
@@ -76,6 +78,10 @@ BATCH_SIZES = (1, 4)
 INTERMEDIATE_SIZES = (4304, 4352)
 WEIGHT_FORMATS = ("native", "fractal_nz")
 EXECUTIONS = ("raw_eager", "torchair")
+ATTENTION_IMPLEMENTATIONS = (
+    "prompt_flash_attention",
+    "scaled_masked_softmax",
+)
 ATTENTION_HEAD_PADDING_CHOICES = ("runtime", "weights")
 ROTARY_IMPLEMENTATIONS = (
     "separate_manual",
@@ -127,6 +133,17 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--execution",
         choices=EXECUTIONS,
         default="torchair",
+    )
+    parser.add_argument(
+        "--attention-implementation",
+        choices=ATTENTION_IMPLEMENTATIONS,
+        default="prompt_flash_attention",
+        help=(
+            "prompt_flash_attention is the production control. "
+            "scaled_masked_softmax materializes QK scores, applies the "
+            "310P-supported fused scale+bool-mask+softmax operator, then "
+            "runs the AV batch matmul."
+        ),
     )
     parser.add_argument(
         "--attention-head-padding",
@@ -197,6 +214,26 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     args = parser.parse_args(argv)
     if args.batch_size == 4 and args.sequence_length != 512:
         parser.error("B4 is intentionally bounded to S512 in this experiment")
+    if (
+        args.attention_implementation == "scaled_masked_softmax"
+        and (
+            args.attention_head_padding != "weights"
+            or args.rotary_implementation != "separate_manual"
+        )
+    ):
+        parser.error(
+            "scaled_masked_softmax is intentionally compared only with "
+            "--attention-head-padding weights and "
+            "--rotary-implementation separate_manual"
+        )
+    if (
+        args.attention_implementation != "prompt_flash_attention"
+        and args.promptfa_inner_precise != 1
+    ):
+        parser.error(
+            "--promptfa-inner-precise only applies to "
+            "prompt_flash_attention"
+        )
     if (
         args.rotary_implementation != "separate_manual"
         and args.attention_head_padding != "weights"
@@ -501,6 +538,134 @@ class WeightPaddedVisionPrefillStage(VisionPrefillStage):
             num_heads=num_heads,
             scale=float(attention.scaling),
             atten_mask=attention_mask,
+        )
+        attention_output = (
+            attention_output.transpose(1, 2)
+            .contiguous()
+            .view(
+                batch_size,
+                sequence_length,
+                num_heads * padded_head_dim,
+            )
+        )
+        return attention.out_proj(attention_output)
+
+
+class ScaledMaskedSoftmaxWeightPaddedVisionPrefillStage(
+    WeightPaddedVisionPrefillStage
+):
+    """Full vision stack with materialized attention around one fused softmax.
+
+    Q/K/V projection, D80 weight padding, RoPE, output projection, MLP, and all
+    residual/normalization work are identical to the optimized PromptFA
+    control. Only the attention core changes:
+
+        QK^T -> npu_scaled_masked_softmax(scale, bool mask) -> AV
+
+    Keeping this as a lab-only stage prevents an unmeasured alternative from
+    becoming a production execution choice.
+    """
+
+    def _attention(
+        self,
+        attention: nn.Module,
+        hidden_states: torch.Tensor,
+        rope_cos: torch.Tensor,
+        rope_sin: torch.Tensor,
+        attention_mask: torch.Tensor,
+    ) -> torch.Tensor:
+        import torch_npu
+
+        batch_size, sequence_length, _hidden = hidden_states.shape
+        num_heads = int(attention.num_heads)
+        padded_head_dim = int(attention._weight_padded_head_dim)
+        qkv = torch.cat(
+            [
+                attention.q_proj(hidden_states),
+                attention.k_proj(hidden_states),
+                attention.v_proj(hidden_states),
+            ],
+            dim=-1,
+        )
+        query_states, key_states, value_states = qkv.chunk(3, dim=-1)
+        query_states = query_states.view(
+            batch_size,
+            sequence_length,
+            num_heads,
+            padded_head_dim,
+        )
+        key_states = key_states.view(
+            batch_size,
+            sequence_length,
+            num_heads,
+            padded_head_dim,
+        )
+        value_states = value_states.view(
+            batch_size,
+            sequence_length,
+            num_heads,
+            padded_head_dim,
+        )
+        query_states, key_states = apply_rotary_pos_emb_vision(
+            query_states,
+            key_states,
+            rope_cos,
+            rope_sin,
+        )
+        query_bh = (
+            query_states.transpose(1, 2)
+            .contiguous()
+            .view(
+                batch_size * num_heads,
+                sequence_length,
+                padded_head_dim,
+            )
+        )
+        key_bh = (
+            key_states.transpose(1, 2)
+            .contiguous()
+            .view(
+                batch_size * num_heads,
+                sequence_length,
+                padded_head_dim,
+            )
+        )
+        value_bh = (
+            value_states.transpose(1, 2)
+            .contiguous()
+            .view(
+                batch_size * num_heads,
+                sequence_length,
+                padded_head_dim,
+            )
+        )
+        scores = torch.bmm(
+            query_bh,
+            key_bh.transpose(1, 2),
+        ).view(
+            batch_size,
+            num_heads,
+            sequence_length,
+            sequence_length,
+        )
+        probabilities = torch_npu.npu_scaled_masked_softmax(
+            scores,
+            attention_mask.to(torch.bool).contiguous(),
+            float(attention.scaling),
+            False,
+        )
+        attention_output = torch.bmm(
+            probabilities.view(
+                batch_size * num_heads,
+                sequence_length,
+                sequence_length,
+            ),
+            value_bh,
+        ).view(
+            batch_size,
+            num_heads,
+            sequence_length,
+            padded_head_dim,
         )
         attention_output = (
             attention_output.transpose(1, 2)
@@ -895,6 +1060,40 @@ def _register_promptfa_inner_precise_converter(
         )
 
 
+def _register_scaled_masked_softmax_torchair_converter() -> None:
+    """Lower torch_npu's public fused softmax to its raw GE operator.
+
+    torch_npu 2.10 exposes the eager operator and TorchAir ships the generated
+    GE API, but this stack does not register an FX converter for the public
+    torch op. Keep the missing glue in the experiment rather than patching the
+    installed environment.
+    """
+
+    from torchair._ge_concrete_graph import ge_apis as ge
+    from torchair._ge_concrete_graph.fx2ge_converter import (
+        register_fx_node_ge_converter,
+    )
+    from torchair.ge._ge_graph import Tensor, TensorSpec
+
+    op = torch.ops.npu.npu_scaled_masked_softmax.default
+
+    @register_fx_node_ge_converter(op)
+    def _convert_scaled_masked_softmax(
+        x: Tensor,
+        mask: Tensor,
+        scale: float = 1.0,
+        fixed_triu_mask: bool = False,
+        meta_outputs: TensorSpec | None = None,
+    ) -> Tensor:
+        del meta_outputs
+        return ge.ScaledMaskedSoftmax(
+            x,
+            mask,
+            scale=float(scale),
+            fixed_triu_mask=bool(fixed_triu_mask),
+        )
+
+
 def _linear_modules(stage: nn.Module) -> list[tuple[str, nn.Linear]]:
     modules = [
         (name, module)
@@ -1114,6 +1313,7 @@ def _diff(left: torch.Tensor, right: torch.Tensor) -> dict[str, Any]:
 def _cache_dir(
     root: Path,
     *,
+    attention_implementation: str,
     sequence_length: int,
     batch_size: int,
     intermediate_size: int,
@@ -1125,15 +1325,7 @@ def _cache_dir(
     device: torch.device,
     model_dir: Path,
 ) -> Path:
-    key_parts = [
-        "vision_promptfa_stack",
-        "layers27",
-        "attention_prompt_flash_attention",
-        f"pfalayout{cache_key_part(get_vision_prompt_fa_layout())}",
-        (
-            "pfasparse"
-            f"{get_vision_prompt_fa_mask_sparse_mode()}"
-        ),
+    common_key_parts = [
         f"seq{sequence_length}",
         f"batch{batch_size}",
         f"intermediate{intermediate_size}",
@@ -1146,13 +1338,32 @@ def _cache_dir(
         f"torchnpu{torch_npu_version_label(device)}",
         f"torchair{torchair_version_label(device)}",
     ]
-    if get_vision_prompt_fa_mask_sparse_mode() == 0:
-        # The previous sparse-0 experiment inherited next_tokens=0 from the
-        # public op. Keep its potentially causal graph out of the corrected
-        # bidirectional cache identity.
-        key_parts.append("pfawindowfull")
-    if promptfa_inner_precise != 1:
-        key_parts.append(f"pfainnerprecise{promptfa_inner_precise}")
+    if attention_implementation == "prompt_flash_attention":
+        key_parts = [
+            "vision_promptfa_stack",
+            "layers27",
+            "attention_prompt_flash_attention",
+            f"pfalayout{cache_key_part(get_vision_prompt_fa_layout())}",
+            "pfasparse" f"{get_vision_prompt_fa_mask_sparse_mode()}",
+            *common_key_parts,
+        ]
+        if get_vision_prompt_fa_mask_sparse_mode() == 0:
+            # The previous sparse-0 experiment inherited next_tokens=0 from
+            # the public op. Keep its potentially causal graph out of the
+            # corrected bidirectional cache identity.
+            key_parts.append("pfawindowfull")
+        if promptfa_inner_precise != 1:
+            key_parts.append(f"pfainnerprecise{promptfa_inner_precise}")
+    else:
+        key_parts = [
+            "vision_attention_stack",
+            "layers27",
+            f"attention_{cache_key_part(attention_implementation)}",
+            *common_key_parts,
+            "scaledmasksoftmax_scale_in_op",
+            "scaledmasksoftmax_explicit_bool_mask",
+            "src" + short_file_hash(Path(__file__).resolve()),
+        ]
     if rotary_implementation == "separate_manual":
         # This implementation is byte-for-byte the already measured control.
         # Preserve its warm graph identity while making every new lane explicit.
@@ -1178,13 +1389,17 @@ def _cache_dir(
     key = "_".join(key_parts)
     digest = hashlib.sha256(key.encode("utf-8")).hexdigest()[:16]
     compact = (
-        f"vision_pfa_b{batch_size}_s{sequence_length}_"
+        f"vision_{cache_key_part(attention_implementation)}_"
+        f"b{batch_size}_s{sequence_length}_"
         f"i{intermediate_size}_{weight_format}_"
         f"hp{attention_head_padding}_"
         f"ip{promptfa_inner_precise}_"
         f"rope{cache_key_part(rotary_implementation)}_{digest}"
     )
-    if rotary_implementation == "separate_manual":
+    if (
+        attention_implementation == "prompt_flash_attention"
+        and rotary_implementation == "separate_manual"
+    ):
         if promptfa_inner_precise == 1:
             # Retain the exact legacy directory name as well as its key.
             compact = (
@@ -1213,6 +1428,7 @@ def _compile(
     allow_missing: bool,
     device: torch.device,
     example: StageInputs,
+    attention_implementation: str,
     promptfa_inner_precise: int,
 ) -> tuple[Callable[..., torch.Tensor], dict[str, Any]]:
     existed = _cache_populated(cache_dir)
@@ -1223,7 +1439,14 @@ def _compile(
         )
     cache_dir.mkdir(parents=True, exist_ok=True)
     torchair, CompilerConfig = import_torchair()
-    _register_promptfa_inner_precise_converter(promptfa_inner_precise)
+    if attention_implementation == "prompt_flash_attention":
+        _register_promptfa_inner_precise_converter(promptfa_inner_precise)
+    elif attention_implementation == "scaled_masked_softmax":
+        _register_scaled_masked_softmax_torchair_converter()
+    else:
+        raise ValueError(
+            f"unknown attention implementation: {attention_implementation}"
+        )
     synchronize(device)
     wrapper_started = time.perf_counter()
     compiled = torchair.inference.cache_compile(
@@ -1425,6 +1648,7 @@ def _parse_profile(
     profile_dir: Path,
     output_dir: Path,
     *,
+    attention_implementation: str,
     metric: str,
     contract_path: Path,
     topn: int,
@@ -1456,56 +1680,84 @@ def _parse_profile(
     shutil.copyfile(source_json, destination_json)
     shutil.copyfile(source_md, destination_md)
     parsed = json.loads(destination_json.read_text(encoding="utf-8"))
-    # Full normalized rows and SQLite are analysis cache, not compact run
-    # evidence. Keep them beside the heavyweight raw profile so tmp/ remains
-    # reviewable and Git-friendly.
-    detailed_output_dir = profile_dir / "normalized_analysis"
-    detailed_command = [
-        sys.executable,
-        str(HERE / "analyze_vision_matmul_profile.py"),
-        "--lane",
-        f"{metric}={profile_dir}",
-        "--output-dir",
-        str(detailed_output_dir),
-        "--contract",
-        str(contract_path),
-    ]
-    detailed_completed = subprocess.run(
-        detailed_command,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    detailed_json = detailed_output_dir / "profile_analysis.json"
-    detailed = json.loads(detailed_json.read_text(encoding="utf-8"))
-    compact_detailed_dir = output_dir / "detailed_profile"
-    compact_detailed_dir.mkdir(parents=True, exist_ok=True)
-    for name in (
-        "profile_manifest.json",
-        "profile_analysis.json",
-        "vision_layer_summary.csv",
-        "profile_report.md",
-    ):
-        shutil.copyfile(
-            detailed_output_dir / name,
-            compact_detailed_dir / name,
+    # The detailed layer mapper encodes PromptFA's exact kernel sequence.
+    # Preserve that richer report for the control, but do not pretend that its
+    # ordinal map applies to a deliberately different attention graph.
+    detailed_result: dict[str, Any]
+    if attention_implementation == "prompt_flash_attention":
+        detailed_output_dir = profile_dir / "normalized_analysis"
+        detailed_command = [
+            sys.executable,
+            str(HERE / "analyze_vision_matmul_profile.py"),
+            "--lane",
+            f"{metric}={profile_dir}",
+            "--output-dir",
+            str(detailed_output_dir),
+            "--contract",
+            str(contract_path),
+        ]
+        detailed_completed = subprocess.run(
+            detailed_command,
+            check=True,
+            capture_output=True,
+            text=True,
         )
-    detailed_lane = detailed["lanes"][0]
-    compact_detailed = {
-        "schema_version": detailed["schema_version"],
-        "contract_dims": detailed["contract_dims"],
-        "cross_lane_validation": detailed["cross_lane_validation"],
-        "warnings": detailed["warnings"],
-        "lane": {
-            "metric_family": detailed_lane["metric_family"],
-            "kernel_count": detailed_lane["kernel_count"],
-            "matmul_count": detailed_lane["matmul_count"],
-            "mapping": detailed_lane["mapping"],
-            "full_layer_mapping": detailed_lane["full_layer_mapping"],
-            "matmul": detailed_lane["matmul"],
-            "vision_role_summary": detailed_lane["vision_role_summary"],
-        },
-    }
+        detailed_json = detailed_output_dir / "profile_analysis.json"
+        detailed = json.loads(detailed_json.read_text(encoding="utf-8"))
+        compact_detailed_dir = output_dir / "detailed_profile"
+        compact_detailed_dir.mkdir(parents=True, exist_ok=True)
+        for name in (
+            "profile_manifest.json",
+            "profile_analysis.json",
+            "vision_layer_summary.csv",
+            "profile_report.md",
+        ):
+            shutil.copyfile(
+                detailed_output_dir / name,
+                compact_detailed_dir / name,
+            )
+        detailed_lane = detailed["lanes"][0]
+        detailed_result = {
+            "command": detailed_command,
+            "stdout": detailed_completed.stdout,
+            "stderr": detailed_completed.stderr,
+            "analysis_json": str(detailed_json),
+            "analysis_cache_dir": str(detailed_output_dir),
+            "compact_report_dir": str(compact_detailed_dir),
+            "report_markdown": str(
+                compact_detailed_dir / "profile_report.md"
+            ),
+            "summary": {
+                "schema_version": detailed["schema_version"],
+                "contract_dims": detailed["contract_dims"],
+                "cross_lane_validation": detailed[
+                    "cross_lane_validation"
+                ],
+                "warnings": detailed["warnings"],
+                "lane": {
+                    "metric_family": detailed_lane["metric_family"],
+                    "kernel_count": detailed_lane["kernel_count"],
+                    "matmul_count": detailed_lane["matmul_count"],
+                    "mapping": detailed_lane["mapping"],
+                    "full_layer_mapping": detailed_lane[
+                        "full_layer_mapping"
+                    ],
+                    "matmul": detailed_lane["matmul"],
+                    "vision_role_summary": detailed_lane[
+                        "vision_role_summary"
+                    ],
+                },
+            },
+        }
+    else:
+        detailed_result = {
+            "skipped": True,
+            "reason": (
+                "the detailed ordinal mapper is pinned to PromptFA's kernel "
+                "sequence; component attribution below reads raw profiler "
+                "rows and is valid for both graphs"
+            ),
+        }
     dispatch: Counter[str] = Counter()
     dispatch_duration_us: Counter[str] = Counter()
     transdata_count = 0
@@ -1520,7 +1772,10 @@ def _parse_profile(
             lowered = name.lower()
             count = int(row.get("count", 0))
             duration = float(row.get("duration_us", 0.0))
-            if "matmulv2" in lowered:
+            if "batchmatmul" in lowered or lowered.startswith("bmm"):
+                dispatch["AttentionBatchMatMul"] += count
+                dispatch_duration_us["AttentionBatchMatMul"] += duration
+            elif "matmulv2" in lowered:
                 dispatch["MatMulV2"] += count
                 dispatch_duration_us["MatMulV2"] += duration
             elif "matmulv3" in lowered:
@@ -1547,18 +1802,7 @@ def _parse_profile(
         "stderr": completed.stderr,
         "parsed_json": str(destination_json),
         "parsed_markdown": str(destination_md),
-        "detailed_analysis": {
-            "command": detailed_command,
-            "stdout": detailed_completed.stdout,
-            "stderr": detailed_completed.stderr,
-            "analysis_json": str(detailed_json),
-            "analysis_cache_dir": str(detailed_output_dir),
-            "compact_report_dir": str(compact_detailed_dir),
-            "report_markdown": str(
-                compact_detailed_dir / "profile_report.md"
-            ),
-            "summary": compact_detailed,
-        },
+        "detailed_analysis": detailed_result,
         "dispatch": {
             "counts": dict(dispatch),
             "duration_us": dict(dispatch_duration_us),
@@ -1576,6 +1820,147 @@ def _parse_profile(
     }
 
 
+def _profile_float(row: dict[str, str], *names: str) -> float:
+    for name in names:
+        value = str(row.get(name, "")).strip().rstrip("\t")
+        if not value:
+            continue
+        try:
+            return float(value)
+        except ValueError:
+            continue
+    return 0.0
+
+
+def _profile_shapes(raw: str | None) -> list[list[int]]:
+    if not raw:
+        return []
+    return [
+        [int(value) for value in re.findall(r"-?\d+", group)]
+        for group in str(raw).strip().strip('"').split(";")
+        if re.search(r"\d", group)
+    ]
+
+
+def _attention_kernel_component(row: dict[str, str]) -> str:
+    name = f"{row.get('Name', '')} {row.get('Type', '')}".lower()
+    if "promptflashattention" in name:
+        return "prompt_flash_attention"
+    if "scaledmaskedsoftmax" in name:
+        return "scaled_masked_softmax"
+    if "transdata" in name:
+        return "transdata"
+    if "transpose" in name:
+        return "transpose"
+    if "matmul" not in name and "bmm" not in name:
+        return "other"
+
+    inputs = _profile_shapes(row.get("Input Shapes"))
+    outputs = _profile_shapes(row.get("Output Shapes"))
+    if len(inputs) >= 2 and outputs:
+        left = inputs[0]
+        right = inputs[1]
+        output = outputs[0]
+        if (
+            len(left) >= 2
+            and len(right) >= 2
+            and len(output) >= 2
+            and left[-2] == left[-1] == right[-2] == output[-2]
+            and right[-1] == output[-1]
+        ):
+            return "attention_av_matmul"
+        if (
+            len(left) >= 2
+            and len(right) >= 2
+            and len(output) >= 2
+            and left[-2] == output[-2] == output[-1]
+            and left[-1] == right[-2]
+            and right[-1] == output[-1]
+        ):
+            return "attention_qk_matmul"
+    return "linear_projection_and_mlp"
+
+
+def _attention_component_profile_metrics(
+    profile_dir: Path,
+    *,
+    active_full_stack_calls: int,
+    layers: int,
+) -> dict[str, Any]:
+    paths = sorted(profile_dir.rglob("kernel_details.csv"))
+    if len(paths) != 1:
+        raise RuntimeError(
+            "expected exactly one kernel_details.csv in profile, found "
+            f"{len(paths)} under {profile_dir}"
+        )
+    component_rows: dict[str, dict[str, Any]] = {}
+    pipe_columns = {
+        "aic_mac_us": ("aic_mac_time(us)", "mac_time(us)"),
+        "aic_scalar_us": ("aic_scalar_time(us)",),
+        "aic_mte1_us": ("aic_mte1_time(us)", "mte1_time(us)"),
+        "aic_mte2_us": ("aic_mte2_time(us)", "mte2_time(us)"),
+        "aic_mte3_us": ("aic_mte3_time(us)", "mte3_time(us)"),
+        "aic_fixpipe_us": ("aic_fixpipe_time(us)", "fixpipe_time(us)"),
+        "aiv_vec_us": ("aiv_vec_time(us)", "vec_time(us)"),
+        "aiv_scalar_us": ("aiv_scalar_time(us)",),
+        "aiv_mte2_us": ("aiv_mte2_time(us)",),
+        "aiv_mte3_us": ("aiv_mte3_time(us)",),
+    }
+    total_duration_us = 0.0
+    with paths[0].open(
+        "r",
+        encoding="utf-8-sig",
+        newline="",
+    ) as handle:
+        for row in csv.DictReader(handle):
+            duration_us = max(
+                _profile_float(row, "Duration(us)"),
+                _profile_float(row, "Task Duration(us)"),
+            )
+            total_duration_us += duration_us
+            component = _attention_kernel_component(row)
+            bucket = component_rows.setdefault(
+                component,
+                {
+                    "kernel_count": 0,
+                    "duration_us": 0.0,
+                    **{key: 0.0 for key in pipe_columns},
+                },
+            )
+            bucket["kernel_count"] += 1
+            bucket["duration_us"] += duration_us
+            for key, columns in pipe_columns.items():
+                bucket[key] += _profile_float(row, *columns)
+
+    components: dict[str, Any] = {}
+    for name, values in sorted(component_rows.items()):
+        components[name] = {
+            **values,
+            "kernel_count_per_full_stack": (
+                values["kernel_count"] / active_full_stack_calls
+            ),
+            "duration_per_full_stack_ms": (
+                values["duration_us"]
+                / active_full_stack_calls
+                / 1000.0
+            ),
+            "duration_per_layer_us": (
+                values["duration_us"]
+                / active_full_stack_calls
+                / layers
+            ),
+        }
+    return {
+        "source_csv": str(paths[0]),
+        "active_full_stack_calls": active_full_stack_calls,
+        "layers": layers,
+        "total_kernel_duration_per_full_stack_ms": (
+            total_duration_us / active_full_stack_calls / 1000.0
+        ),
+        "components": components,
+    }
+
+
 def _matmul_only_profile_metrics(
     parsed_profile: dict[str, Any],
     *,
@@ -1583,10 +1968,11 @@ def _matmul_only_profile_metrics(
     matmul_kernels_per_full_stack_call: int,
     linear_flops_per_full_stack_call: int,
 ) -> dict[str, Any]:
-    dispatch = parsed_profile.get("dispatch", {})
-    counts = dispatch.get("counts", {})
-    durations = dispatch.get("duration_us", {})
-    observed_kernel_count = sum(int(value) for value in counts.values())
+    components = parsed_profile.get(
+        "attention_components", {}
+    ).get("components", {})
+    linears = components.get("linear_projection_and_mlp", {})
+    observed_kernel_count = int(linears.get("kernel_count", 0))
     expected_kernel_count = (
         active_full_stack_calls * matmul_kernels_per_full_stack_call
     )
@@ -1596,7 +1982,7 @@ def _matmul_only_profile_metrics(
             f"contract: observed={observed_kernel_count}, "
             f"expected={expected_kernel_count}"
         )
-    total_duration_us = sum(float(value) for value in durations.values())
+    total_duration_us = float(linears.get("duration_us", 0.0))
     if total_duration_us <= 0.0:
         raise RuntimeError("profile contains no positive MatMul duration")
     duration_per_call_ms = (
@@ -1712,6 +2098,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         / (
             f"b{batch_size}_s{sequence_length}_i{intermediate_size}_"
             f"{args.weight_format}_{args.attention_head_padding}_"
+            f"{args.attention_implementation}_"
             f"{args.rotary_implementation}_{args.execution}"
         )
     ).expanduser().resolve()
@@ -1722,6 +2109,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         / (
             f"b{batch_size}_s{sequence_length}_i{intermediate_size}_"
             f"{args.weight_format}_{args.attention_head_padding}_"
+            f"{args.attention_implementation}_"
             f"{args.rotary_implementation}_{args.execution}"
             f"_{args.profile_metric}"
         )
@@ -1841,7 +2229,18 @@ def main(argv: Sequence[str] | None = None) -> None:
         synchronize(device)
         if args.rotary_implementation == "separate_manual":
             candidate_inputs = manual_inputs
-            candidate_stage = weight_padded_manual_stage
+            if (
+                args.attention_implementation
+                == "scaled_masked_softmax"
+            ):
+                candidate_stage = (
+                    ScaledMaskedSoftmaxWeightPaddedVisionPrefillStage(
+                        model,
+                        attention_impl="prompt_flash_attention",
+                    ).eval()
+                )
+            else:
+                candidate_stage = weight_padded_manual_stage
             rotary_metadata.update(
                 {
                     "qk_layout": "separate_bsnd",
@@ -1904,6 +2303,10 @@ def main(argv: Sequence[str] | None = None) -> None:
             }
         )
     else:
+        if args.attention_implementation != "prompt_flash_attention":
+            raise AssertionError(
+                "scaled_masked_softmax requires weight-padded attention"
+            )
         candidate_stage = VisionPrefillStage(
             model,
             attention_impl="prompt_flash_attention",
@@ -1936,28 +2339,66 @@ def main(argv: Sequence[str] | None = None) -> None:
         }
     )
     summary: dict[str, Any] = {
-        "schema_version": 4,
+        "schema_version": 5,
         "status": format_metadata["status"],
         "purpose": (
-            "exact production 27-layer vision PromptFA format/alignment "
-            "experiment using synthetic shape inputs"
+            "exact production 27-layer vision attention comparison using "
+            "synthetic shape inputs"
         ),
         "boundary": (
             "VisionPrefillStage: 27 x (LayerNorm1 + Q/K/V + RoPE + "
-            "PromptFA + out projection + residual + LayerNorm2 + "
+            "selected attention core + out projection + residual + "
+            "LayerNorm2 + "
             "FC1/GELU/FC2 + residual) + post-LayerNorm"
         ),
         "production_stage": True,
         "synthetic_shape_inputs": True,
         "attention": {
-            "implementation": "prompt_flash_attention",
-            "input_layout": get_vision_prompt_fa_layout().upper(),
-            "mask_sparse_mode": get_vision_prompt_fa_mask_sparse_mode(),
-            "pre_tokens": (1 << 31) - 1,
-            "next_tokens": (1 << 31) - 1,
-            "inner_precise": int(args.promptfa_inner_precise),
+            "implementation": args.attention_implementation,
+            "core": (
+                "PromptFlashAttention"
+                if args.attention_implementation
+                == "prompt_flash_attention"
+                else (
+                    "BatchMatMul(QK) -> ScaledMaskedSoftmax -> "
+                    "BatchMatMul(AV)"
+                )
+            ),
+            "input_layout": (
+                get_vision_prompt_fa_layout().upper()
+                if args.attention_implementation
+                == "prompt_flash_attention"
+                else "BNSD scores with flattened BH batch matmuls"
+            ),
+            "mask_sparse_mode": (
+                get_vision_prompt_fa_mask_sparse_mode()
+                if args.attention_implementation
+                == "prompt_flash_attention"
+                else None
+            ),
+            "pre_tokens": (
+                (1 << 31) - 1
+                if args.attention_implementation
+                == "prompt_flash_attention"
+                else None
+            ),
+            "next_tokens": (
+                (1 << 31) - 1
+                if args.attention_implementation
+                == "prompt_flash_attention"
+                else None
+            ),
+            "inner_precise": (
+                int(args.promptfa_inner_precise)
+                if args.attention_implementation
+                == "prompt_flash_attention"
+                else None
+            ),
             "inner_precise_semantics": (
-                "installed high-performance control"
+                None
+                if args.attention_implementation
+                != "prompt_flash_attention"
+                else "installed high-performance control"
                 if args.promptfa_inner_precise == 1
                 else (
                     "experimental CANN 310P-only approximate mode with "
@@ -1971,6 +2412,10 @@ def main(argv: Sequence[str] | None = None) -> None:
                 int(config.hidden_size // config.num_attention_heads)
             ),
             "attention_mask_all_false": True,
+            "materializes_score_tensor": (
+                args.attention_implementation
+                == "scaled_masked_softmax"
+            ),
             "head_padding": attention_padding_metadata,
             "rotary": rotary_metadata,
         },
@@ -1988,6 +2433,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         "requested": {
             "weight_format": args.weight_format,
             "attention_head_padding": args.attention_head_padding,
+            "attention_implementation": args.attention_implementation,
             "promptfa_inner_precise": args.promptfa_inner_precise,
             "rotary_implementation": args.rotary_implementation,
             "execution": args.execution,
@@ -2028,6 +2474,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     cache_dir = _cache_dir(
         args.cache_dir,
+        attention_implementation=args.attention_implementation,
         sequence_length=sequence_length,
         batch_size=batch_size,
         intermediate_size=intermediate_size,
@@ -2046,6 +2493,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             allow_missing=bool(args.allow_compile_if_missing),
             device=device,
             example=candidate_inputs,
+            attention_implementation=args.attention_implementation,
             promptfa_inner_precise=args.promptfa_inner_precise,
         )
     else:
@@ -2133,6 +2581,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "paddleocr_vl.vision_matmul_lab."
             f"B{batch_size}.S{sequence_length}.I{intermediate_size}."
             f"{args.weight_format}.{args.attention_head_padding}."
+            f"{args.attention_implementation}."
             f"{args.rotary_implementation}."
             f"{args.execution}"
         )
@@ -2148,9 +2597,17 @@ def main(argv: Sequence[str] | None = None) -> None:
         parsed_profile = _parse_profile(
             profile_dir,
             output_dir,
+            attention_implementation=args.attention_implementation,
             metric=args.profile_metric,
             contract_path=profile_contract_path,
             topn=args.parser_topn,
+        )
+        parsed_profile["attention_components"] = (
+            _attention_component_profile_metrics(
+                profile_dir,
+                active_full_stack_calls=args.profile_steps,
+                layers=layers,
+            )
         )
         parsed_profile["matmul_only"] = _matmul_only_profile_metrics(
             parsed_profile,
@@ -2186,6 +2643,9 @@ def main(argv: Sequence[str] | None = None) -> None:
                 "matmul_only": summary.get("parsed_profile", {}).get(
                     "matmul_only"
                 ),
+                "attention_components": summary.get(
+                    "parsed_profile", {}
+                ).get("attention_components"),
             },
             indent=2,
         ),
