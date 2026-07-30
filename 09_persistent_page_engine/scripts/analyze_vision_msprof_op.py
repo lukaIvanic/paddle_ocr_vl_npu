@@ -31,12 +31,16 @@ from typing import Any, Iterable, Mapping, Sequence
 
 DIRECT_ROLE_MAP: dict[str, tuple[str, ...]] = {
     "square": ("q_proj", "k_proj", "v_proj", "out_proj"),
-    "fc1": ("fc1",),
-    "fc2": ("fc2",),
 }
-REFERENCE_ROLES = tuple(
-    role for roles in DIRECT_ROLE_MAP.values() for role in roles
+REFERENCE_ROLES = (
+    "q_proj",
+    "k_proj",
+    "v_proj",
+    "out_proj",
+    "fc1",
+    "fc2",
 )
+ND_FORMAT_CODE = 2
 FRAME_HEADER = struct.Struct("<QBBBB")
 OCCUPANCY_RECORD_TYPE = 0x0C
 HUAWEI_26_SCORE_THRESHOLD = 0.6
@@ -535,6 +539,52 @@ def _normalize_dtype(value: Any) -> str:
         "float32": "float32",
     }
     return aliases.get(text, text)
+
+
+def _kernel_name_contract(
+    value: Any,
+    *,
+    expected_operator: str,
+) -> dict[str, str] | None:
+    """Decode the format/dtype fields exported in a MatMul kernel name.
+
+    CANN 9 ``OpBasicInfo.csv`` does not export tensor-shape columns for
+    ``msprof op``. The shape is therefore fail-closed through the direct
+    target's fixed launch contract and the full-graph reference. The captured
+    CSV does export formats and dtypes in the selected kernel name, which are
+    independently checked here.
+    """
+
+    text = str(value or "")
+    prefix = f"{expected_operator}_"
+    if not text.startswith(prefix):
+        return None
+    fields = text[len(prefix) :].split("_")
+    if len(fields) < 6:
+        return None
+    return {
+        "input_format_pair": fields[0],
+        "bias_format": fields[1],
+        "output_format": fields[2],
+        "activation_dtype": fields[3],
+        "weight_dtype": fields[4],
+        "output_dtype": fields[5],
+    }
+
+
+def _kernel_format_token(value: Any) -> str:
+    normalized = str(value).strip().upper()
+    return "NZ" if normalized == "FRACTAL_NZ" else normalized
+
+
+def _kernel_dtype_token(value: Any) -> str:
+    normalized = _normalize_dtype(value)
+    aliases = {
+        "float16": "FP16",
+        "bfloat16": "BF16",
+        "float32": "FP32",
+    }
+    return aliases.get(normalized, normalized.upper())
 
 
 def _load_reference(reference_root: Path) -> dict[str, Any]:
@@ -1502,6 +1552,28 @@ def _validate_role(
     _check(
         checks,
         errors,
+        name="target.activation_format_code",
+        actual=observed.get("activation_format_code"),
+        expected=ND_FORMAT_CODE,
+        note=(
+            "format code 2 is the observed torch_npu ND code in the "
+            "validated production-equivalent square artifact"
+        ),
+    )
+    _check(
+        checks,
+        errors,
+        name="target.output_format_code",
+        actual=observed.get("output_format_code"),
+        expected=ND_FORMAT_CODE,
+        note=(
+            "format code 2 is the observed torch_npu ND code in the "
+            "validated production-equivalent square artifact"
+        ),
+    )
+    _check(
+        checks,
+        errors,
         name="target.output_shape",
         actual=observed.get("output_shape"),
         expected=[m, n],
@@ -1587,8 +1659,61 @@ def _validate_role(
         expected=True,
         note=f"reference operator type is {operator_type}",
     )
+    kernel_contract = _kernel_name_contract(
+        op_name,
+        expected_operator=operator_type,
+    )
+    expected_kernel_contract = {
+        "input_format_pair": (
+            _kernel_format_token(input_formats[0])
+            + _kernel_format_token(input_formats[1])
+        ),
+        "bias_format": _kernel_format_token(input_formats[-1]),
+        "output_format": _kernel_format_token(output_formats[0]),
+        "activation_dtype": _kernel_dtype_token(input_dtypes[0]),
+        "weight_dtype": _kernel_dtype_token(input_dtypes[1]),
+        "output_dtype": _kernel_dtype_token(output_dtypes[0]),
+    }
+    _check(
+        checks,
+        errors,
+        name="dispatch.kernel_name_tensor_contract",
+        actual=kernel_contract,
+        expected=expected_kernel_contract,
+        note=(
+            "OpBasicInfo exposes captured formats and dtypes in the selected "
+            "MatMul kernel name"
+        ),
+    )
+    _check(
+        checks,
+        errors,
+        name="dispatch.shape_contract",
+        actual={
+            "activation": [m, k],
+            "weight_fractal_nz": list(input_shapes[1]),
+            "bias": [n],
+            "output": observed.get("output_shape"),
+        },
+        expected={
+            "activation": list(input_shapes[0]),
+            "weight_fractal_nz": [
+                math.ceil(k / 16),
+                math.ceil(n / 16),
+                16,
+                16,
+            ],
+            "bias": list(input_shapes[-1]),
+            "output": list(output_shapes[0]),
+        },
+        note=(
+            "CANN 9 OpBasicInfo has no shape columns; the captured process "
+            "contains only two identical MatMulV2 launches and its target "
+            "summary is checked against the compiled reference"
+        ),
+    )
     op_block = _to_number(op_basic.get("Block Dim"))
-    _check_when_available(
+    _check(
         checks,
         errors,
         name="dispatch.block_dim",
