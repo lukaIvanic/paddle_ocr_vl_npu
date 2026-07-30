@@ -1265,6 +1265,54 @@ def _parse_profile(
     }
 
 
+def _matmul_only_profile_metrics(
+    parsed_profile: dict[str, Any],
+    *,
+    active_full_stack_calls: int,
+    matmul_kernels_per_full_stack_call: int,
+    linear_flops_per_full_stack_call: int,
+) -> dict[str, Any]:
+    dispatch = parsed_profile.get("dispatch", {})
+    counts = dispatch.get("counts", {})
+    durations = dispatch.get("duration_us", {})
+    observed_kernel_count = sum(int(value) for value in counts.values())
+    expected_kernel_count = (
+        active_full_stack_calls * matmul_kernels_per_full_stack_call
+    )
+    if observed_kernel_count != expected_kernel_count:
+        raise RuntimeError(
+            "profiled MatMul kernel count does not match the full-stack "
+            f"contract: observed={observed_kernel_count}, "
+            f"expected={expected_kernel_count}"
+        )
+    total_duration_us = sum(float(value) for value in durations.values())
+    if total_duration_us <= 0.0:
+        raise RuntimeError("profile contains no positive MatMul duration")
+    duration_per_call_ms = (
+        total_duration_us / active_full_stack_calls / 1000.0
+    )
+    return {
+        "active_profiled_full_stack_calls": active_full_stack_calls,
+        "matmul_kernels_per_full_stack_call": (
+            matmul_kernels_per_full_stack_call
+        ),
+        "observed_matmul_kernel_count": observed_kernel_count,
+        "total_matmul_kernel_duration_us": total_duration_us,
+        "matmul_kernel_duration_per_full_stack_call_ms": (
+            duration_per_call_ms
+        ),
+        "linear_flops_per_full_stack_call": (
+            linear_flops_per_full_stack_call
+        ),
+        "matmul_only_linear_tflop_per_s": (
+            linear_flops_per_full_stack_call
+            * active_full_stack_calls
+            / total_duration_us
+            / 1e6
+        ),
+    }
+
+
 def _linear_flops_per_call(
     *,
     batch_size: int,
@@ -1733,11 +1781,18 @@ def main(argv: Sequence[str] | None = None) -> None:
             active_steps=args.profile_steps,
             label=label,
         )
-        summary["parsed_profile"] = _parse_profile(
+        parsed_profile = _parse_profile(
             profile_dir,
             output_dir,
             topn=args.parser_topn,
         )
+        parsed_profile["matmul_only"] = _matmul_only_profile_metrics(
+            parsed_profile,
+            active_full_stack_calls=args.profile_steps,
+            matmul_kernels_per_full_stack_call=layers * 6,
+            linear_flops_per_full_stack_call=flops_per_call,
+        )
+        summary["parsed_profile"] = parsed_profile
 
     summary_path.write_text(
         json.dumps(summary, indent=2) + "\n",
@@ -1761,6 +1816,9 @@ def main(argv: Sequence[str] | None = None) -> None:
                 ],
                 "dispatch": summary.get("parsed_profile", {}).get(
                     "dispatch"
+                ),
+                "matmul_only": summary.get("parsed_profile", {}).get(
+                    "matmul_only"
                 ),
             },
             indent=2,

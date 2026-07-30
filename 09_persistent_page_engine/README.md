@@ -497,6 +497,15 @@ interval. The optional profiler records MatMulV2 versus MatMulV3 dispatch,
 TransData cost, input formats, and cube utilization; its perturbed wall time is
 not the throughput result.
 
+When profiling is enabled, `parsed_profile.matmul_only` also records the
+strict MatMul-only aggregate. It verifies exactly 162 Linear MatMul kernels
+per profiled full-stack replay, divides the known Q/K/V/output and FC1/FC2
+FLOP count by only their summed kernel duration, and reports both
+`matmul_kernel_duration_per_full_stack_call_ms` and
+`matmul_only_linear_tflop_per_s`. This is intentionally distinct from
+`measurements.linear_tflop_per_s_device_median`, whose denominator is the
+complete 27-layer vision-transformer replay.
+
 ```sh
 /usr/local/python3.12.13/bin/python3 \
   09_persistent_page_engine/scripts/run_vision_matmul_lab_matrix.py \

@@ -81,6 +81,7 @@ def _compact(summary: dict[str, Any]) -> dict[str, Any]:
         "weighted_cube_utilization_pct": parsed.get(
             "weighted_cube_utilization_pct"
         ),
+        "matmul_only": parsed.get("matmul_only"),
         "numerics": summary.get("numerics"),
     }
 
