@@ -11493,9 +11493,10 @@ out-of-range error. Do not run more pages or implement another change.
 ## Phase 27: warm-cache 8-page reproduction and 32-page extension
 
 Run the current best production configuration first on pages 0-7, then on
-pages 0-31. These are normal E2E measurements with the Phase-26
-slice-and-concat fix. Do not compile experimental graphs, change routing,
-profile, or introduce diagnostics.
+pages 0-31. Finish layout and crop preparation for every selected page before
+starting OCR by adding `--preprocess-all-pages-first`. This removes concurrent
+layout work from the OCR interval. Do not compile experimental graphs, change
+routing, profile, or introduce diagnostics.
 
 The historical eight-page Phase-7 anchor at commit `4789067` was:
 
@@ -11512,8 +11513,12 @@ decode effective / raw:   7,330 / 14,144 tokens
 layout:                   1.42 s
 ```
 
-This is a reproduction target, not a hard timing assertion. Report meaningful
-differences rather than forcing agreement.
+The historical anchor used the streaming frontend, so its total E2E and
+pages/s are context rather than a direct layout-first comparison. Report
+meaningful differences rather than forcing agreement. For the new runs,
+report OCR-only wall and pages/s from
+`recognition.run_scoped_scheduler_wall_s`; `pipeline_e2e_s` still includes
+the layout-first phase.
 
 ### 27.1 Pull and establish the exact command
 
@@ -11542,7 +11547,12 @@ grep -q -- '--no-layout-graph-capture' "$PHASE26_COMMAND"
 
 The Phase-26 command is the argument authority. Preserve every model, dataset,
 cache, bucket, packing, PromptFA, decode, layout, and min-pixels option.
-Change only `--offset`, `--limit`, and `--output-dir`.
+Change only `--offset`, `--limit`, and `--output-dir`, and add exactly one
+option:
+
+```text
+--preprocess-all-pages-first
+```
 
 Unset the earlier diagnostic variable:
 
@@ -11568,6 +11578,7 @@ Create `$RUN8/command.sh` from the exact Phase-26 command with:
 ```text
 --offset 0
 --limit 8
+--preprocess-all-pages-first
 --output-dir <RUN8>/output
 ```
 
@@ -11577,6 +11588,7 @@ Before running, verify:
 grep -q -- '--offset 0' "$RUN8/command.sh"
 grep -q -- '--limit 8' "$RUN8/command.sh"
 grep -q -- '--batch-size 32' "$RUN8/command.sh"
+grep -q -- '--preprocess-all-pages-first' "$RUN8/command.sh"
 ```
 
 Run:
@@ -11588,9 +11600,11 @@ printf '%s\n' "${PIPESTATUS[0]}" > "$RUN8/exit_code.txt"
 ```
 
 Require exit zero, 8 results, 8 predictions, normal accounting, and no AICore
-exception. Compare its predictions or recognition token IDs against the
-historical Phase-7 replay if that artifact is still present. The final-token
-selection is mathematically identical, so same-environment parity is expected.
+exception. Require
+`page_preprocessing_mode == "all_before_recognition"` in `run_summary.json`.
+Compare its predictions or recognition token IDs against the historical
+Phase-7 replay if that artifact is still present. The final-token selection is
+mathematically identical, so same-environment parity is expected.
 
 If the eight-page run fails, stop and report. Do not start 32 pages.
 
@@ -11601,6 +11615,7 @@ Create `$RUN32/command.sh` from the same Phase-26 command with:
 ```text
 --offset 0
 --limit 32
+--preprocess-all-pages-first
 --output-dir <RUN32>/output
 ```
 
@@ -11610,6 +11625,7 @@ Verify:
 grep -q -- '--offset 0' "$RUN32/command.sh"
 grep -q -- '--limit 32' "$RUN32/command.sh"
 grep -q -- '--batch-size 32' "$RUN32/command.sh"
+grep -q -- '--preprocess-all-pages-first' "$RUN32/command.sh"
 ```
 
 Then:
@@ -11621,7 +11637,8 @@ printf '%s\n' "${PIPESTATUS[0]}" > "$RUN32/exit_code.txt"
 ```
 
 Require exit zero, 32 results, 32 predictions, normal accounting, all
-recognition requests accounted for, and no AICore exception.
+recognition requests accounted for, no AICore exception, and
+`page_preprocessing_mode == "all_before_recognition"`.
 
 ### 27.4 Compact comparison
 
@@ -11631,7 +11648,9 @@ Read both `run_summary.json` files and report:
 | --- | ---: | ---: | ---: |
 | setup seconds | — | | |
 | pipeline E2E seconds | 25.69 | | |
-| pages/s | 0.3114 | | |
+| total-pipeline pages/s | 0.3114 | | |
+| OCR scheduler wall seconds | — | | |
+| OCR-only pages/s | — | | |
 | pages / recognition requests | 8 / 122 | | |
 | layout seconds | 1.42 | | |
 | vision real / physical tokens | 58,368 / 68,864 | | |
@@ -11648,6 +11667,16 @@ Read both `run_summary.json` files and report:
 | stop reasons | | | |
 
 Use stage values from the summaries, not inferred wall-clock subtraction.
+Calculate OCR-only pages/s as:
+
+```text
+page_count / recognition.run_scoped_scheduler_wall_s
+```
+
+Do not use `recognition.wall_s` as OCR-only time: in layout-first mode that
+field spans both page preparation and recognition. The scheduler wall begins
+when the recognizer is actually invoked.
+
 Also state whether the current eight-page prediction/token comparison with the
 historical replay is exact, unavailable, or different.
 
