@@ -118,7 +118,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             f"expected {FRACTAL_NZ}, got {weight_format}"
         )
 
+    # The first identical launch pays one-time eager dispatch/kernel setup.
+    # msprof selects this MatMulV2 and applies its own replay warm-ups; the
+    # second launch below provides a warm event-timed representativeness check.
+    warmup_result = F.linear(activation, weight, bias)
     torch.npu.synchronize()
+    del warmup_result
     start_event = torch_npu.npu.Event(enable_timing=True)
     end_event = torch_npu.npu.Event(enable_timing=True)
     wall_started = time.perf_counter()
@@ -155,6 +160,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             "output_shape": list(result.shape),
             "output_dtype": str(result.dtype),
             "output_finite": bool(torch.isfinite(result_cpu.float()).all()),
+            "identical_warmup_launches_before_measurement": 1,
+            "msprof_selected_launch": (
+                "first MatMulV2; same tensors and operator as timed launch"
+            ),
             "device_event_ms": device_ms,
             "host_wall_ms": wall_ms,
             "kernel_local_tflop_per_s_estimate": (
