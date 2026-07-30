@@ -190,25 +190,25 @@ def analyze_events(
             }
         )
 
+    if not calls:
+        raise RuntimeError("trace has no packed graph calls")
     failed_calls = [
         call for call in calls if call["status"] == "failed"
     ]
-    if not failed_calls:
-        raise RuntimeError("trace has no packed_graph_sync_failed call")
-    failed = failed_calls[-1]
+    target = failed_calls[-1] if failed_calls else calls[-1]
     passing_before = [
         call
         for call in calls
         if call["status"] == "passed"
-        and call["graph_call"] < failed["graph_call"]
+        and call["graph_call"] < target["graph_call"]
     ]
     same_shape = [
         call
         for call in passing_before
-        if call.get("physical_seq_len") == failed.get("physical_seq_len")
-        and call.get("hidden_size") == failed.get("hidden_size")
-        and call.get("max_members") == failed.get("max_members")
-        and call.get("dtype") == failed.get("dtype")
+        if call.get("physical_seq_len") == target.get("physical_seq_len")
+        and call.get("hidden_size") == target.get("hidden_size")
+        and call.get("max_members") == target.get("max_members")
+        and call.get("dtype") == target.get("dtype")
     ]
     control = (
         same_shape[-1]
@@ -228,29 +228,35 @@ def analyze_events(
             "last_active_index",
             "last_index_hits_physical_boundary",
         ):
-            if failed.get(name) != control.get(name):
+            if target.get(name) != control.get(name):
                 differing_fields[name] = {
                     "control": control.get(name),
-                    "failed": failed.get(name),
+                    "target": target.get(name),
                 }
     return {
         "trace_path": str(trace_path.expanduser().resolve()),
         "event_count": len(events),
         "graph_call_count": len(calls),
         "calls": calls,
-        "failed_call": failed["graph_call"],
+        "failed_call": (
+            failed_calls[-1]["graph_call"] if failed_calls else None
+        ),
+        "default_target_call": target["graph_call"],
         "control_call": (
             control["graph_call"] if control is not None else None
         ),
         "control_same_static_shape": (
             control is not None
             and control.get("physical_seq_len")
-            == failed.get("physical_seq_len")
-            and control.get("hidden_size") == failed.get("hidden_size")
-            and control.get("max_members") == failed.get("max_members")
-            and control.get("dtype") == failed.get("dtype")
+            == target.get("physical_seq_len")
+            and control.get("hidden_size") == target.get("hidden_size")
+            and control.get("max_members") == target.get("max_members")
+            and control.get("dtype") == target.get("dtype")
         ),
-        "failed_vs_control": differing_fields,
+        "target_vs_control": differing_fields,
+        "failed_vs_control": (
+            differing_fields if failed_calls else None
+        ),
     }
 
 
