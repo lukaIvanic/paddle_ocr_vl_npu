@@ -10311,6 +10311,10 @@ Run mode constructs only:
 torch.index_select(hidden_states, 1, last_token_indices)
 ```
 
+TorchAir receives this operation through
+`GatherLastTokensStage.forward`, a bound `torch.nn.Module` method as required
+by `torchair.inference.cache_compile`. Do not replace it with a free function.
+
 It first runs the same graph shape with all-zero indices. It then runs the
 recorded indices and synchronizes. This separates static-shape support from
 value-specific failure.

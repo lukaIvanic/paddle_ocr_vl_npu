@@ -40,6 +40,17 @@ def gather_last_tokens(
     return torch.index_select(hidden_states, 1, indices)
 
 
+class GatherLastTokensStage(torch.nn.Module):
+    """Bound-method wrapper required by TorchAir cache_compile."""
+
+    def forward(
+        self,
+        hidden_states: torch.Tensor,
+        indices: torch.Tensor,
+    ) -> torch.Tensor:
+        return gather_last_tokens(hidden_states, indices)
+
+
 def load_events(path: Path) -> list[dict[str, Any]]:
     resolved = path.expanduser().resolve()
     events = []
@@ -405,7 +416,8 @@ def run_lane(args: argparse.Namespace) -> None:
     )
     warm_indices = torch.zeros_like(target_indices)
 
-    executable = gather_last_tokens
+    stage = GatherLastTokensStage().eval()
+    executable = stage.forward
     cache_was_warm = None
     if args.backend == "torchair":
         if args.cache_dir is None:
@@ -420,7 +432,7 @@ def run_lane(args: argparse.Namespace) -> None:
         summary["cache_was_warm"] = cache_was_warm
         write_json(output_path, summary)
         executable = torchair.inference.cache_compile(
-            gather_last_tokens,
+            stage.forward,
             config=CompilerConfig(),
             dynamic=False,
             cache_dir=str(cache_dir),
