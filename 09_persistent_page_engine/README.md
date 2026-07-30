@@ -521,14 +521,16 @@ source npu-setup
 /usr/local/python3.12.13/bin/python3 \
   09_persistent_page_engine/scripts/run_vision_matmul_profile_suite.py \
   --name 910b_b1s2048_i4352_nz \
-  --metrics pipe memory l2
+  --metrics pipe memory memory_access l2
 ```
 
 Raw profiler output stays under
 `.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/`. Each lane
-writes its exact command, contract, log, ordinary lab summary, and detailed
-analysis under
+writes its exact command, contract, log, and ordinary lab summary under
 `tmp/09_persistent_page_engine/vision_matmul_profile_suite/<name>/`.
+Large normalized execution tables and SQLite databases remain beside the raw
+captures under `.runtime_cache/`; only compact JSON, CSV, and Markdown reports
+should be copied into `tmp/` for retention.
 The combined analysis contains:
 
 - every `kernel_details.csv` execution in normalized CSV and SQLite form;
@@ -557,10 +559,11 @@ The analyzer can also be rerun later without another NPU execution:
 Interpretation is deliberately conservative. `Block Num` is configured task
 parallelism, not proof of balanced useful work on that many physical cores.
 On the observed CANN 9 application export, `cube_utilization(%)` is
-`aicore_time / task duration`, so it is AI-Core active-time occupancy rather
-than achieved MAC or peak-FLOP utilization. MAC, MTE1, MTE2, FixPipe, and
-Vector ratios overlap and must not be added. Whole-graph captures establish
-which kernels and layers matter; targeted `msprof op` Occupancy,
+`aicore_time / task duration`. It is an exported time ratio that can exceed
+100%, not physical-core occupancy, achieved MAC utilization, or peak-FLOP
+utilization. MAC, MTE1, MTE2, FixPipe, and Vector ratios overlap and must not
+be added. Whole-graph captures establish which kernels and layers matter;
+targeted `msprof op` Occupancy,
 MemoryDetail, or Roofline replays are the separate second tier for physical
 core balance and a single selected kernel's mechanics.
 

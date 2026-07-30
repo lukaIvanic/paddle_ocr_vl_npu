@@ -996,12 +996,20 @@ def _emit_msprof_target(
     device: torch.device,
     torch_npu: Any,
 ) -> dict[str, Any]:
-    """Emit one stream-scoped warm graph replay for targeted ``msprof op``."""
+    """Emit one process-scoped warm graph replay for targeted ``msprof op``."""
     current_stream = torch.npu.current_stream(device)
+    # msprof-op documents support for the process-level mstxRangeStartA /
+    # mstxRangeEnd pair.  The stream-scoped torch-npu extension is useful to
+    # the PyTorch profiler, but is not an msprof-op selection primitive.
+    current_stream.synchronize()
     range_id = torch_npu.npu.mstx.range_start(
         MSPROF_TARGET_NAME,
-        current_stream,
     )
+    if not isinstance(range_id, int) or range_id == 0:
+        raise RuntimeError(
+            "torch_npu MSTX range_start failed; targeted msprof capture "
+            f"cannot be trusted (returned {range_id!r})"
+        )
     output: torch.Tensor | None = None
     try:
         output = run(*inputs)
@@ -1016,6 +1024,9 @@ def _emit_msprof_target(
         "replays": 1,
         "execution": "warm_compiled_graph",
         "stream": str(current_stream),
+        "scope": "process",
+        "range_id": range_id,
+        "synchronized_before_range_start": True,
         "synchronized_before_range_end": True,
         "throughput_measurement": False,
         "intended_consumer": "msprof op --mstx=on --mstx-include",
