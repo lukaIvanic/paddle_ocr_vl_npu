@@ -622,8 +622,11 @@ def _ordered_replay_rows(
 
 
 def _kernel_signature(row: dict[str, Any]) -> list[Any]:
+    kernel_type = str(row.get("type") or "")
+    if "memset" in kernel_type.lower():
+        kernel_type = "memset"
     return [
-        row.get("type"),
+        kernel_type,
         row.get("accelerator_core"),
         row.get("block_dim"),
         row.get("mix_block_dim"),
@@ -634,6 +637,11 @@ def _kernel_signature(row: dict[str, Any]) -> list[Any]:
         row.get("output_dtypes"),
         row.get("output_formats"),
     ]
+
+
+def _fixture_type(row: dict[str, Any]) -> str:
+    kernel_type = str(row.get("type") or "")
+    return "memset" if "memset" in kernel_type.lower() else kernel_type
 
 
 def _signature_hash(rows: Sequence[dict[str, Any]]) -> str:
@@ -702,11 +710,11 @@ def _map_full_layers(
             })
             continue
         prefix = group[:len(PREFIX_TYPES)]
-        if tuple(row["type"] for row in prefix) != PREFIX_TYPES:
+        if tuple(_fixture_type(row) for row in prefix) != PREFIX_TYPES:
             failures.append({
                 "replay_id": replay_id,
                 "reason": "prefix_signature",
-                "observed": [row["type"] for row in prefix],
+                "observed": [_fixture_type(row) for row in prefix],
             })
             continue
         layer_hashes: list[str] = []
@@ -715,7 +723,7 @@ def _map_full_layers(
             start = len(PREFIX_TYPES) + layer * layer_width
             segment = group[start:start + layer_width]
             expected_types = LAYER0_TYPES if layer == 0 else LATER_LAYER_TYPES
-            observed_types = tuple(row["type"] for row in segment)
+            observed_types = tuple(_fixture_type(row) for row in segment)
             if observed_types != expected_types:
                 failures.append({
                     "replay_id": replay_id,
