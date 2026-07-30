@@ -93,6 +93,21 @@ def block_mask(
     )
 
 
+def key_padding_mask(
+    *,
+    sequence_lengths: list[int],
+    padded_length: int,
+    device: torch.device,
+) -> torch.Tensor:
+    positions = torch.arange(padded_length, device=device)
+    valid_lengths = torch.tensor(
+        sequence_lengths, device=device
+    ).view(-1, 1, 1, 1)
+    return (positions.view(1, 1, 1, -1) >= valid_lengths).expand(
+        -1, 1, padded_length, -1
+    ).contiguous()
+
+
 def promptfa(
     q: torch.Tensor,
     k: torch.Tensor,
@@ -300,11 +315,16 @@ def main() -> None:
         head_dim=args.head_dim,
         device=device,
     )
+    ragged_mask = key_padding_mask(
+        sequence_lengths=ragged_lengths,
+        padded_length=512,
+        device=device,
+    )
     ragged_lanes = {
-        "sparse0_padded": lambda: promptfa(
+        "sparse0_padding_mask": lambda: promptfa(
             *ragged_qkv,
             heads=args.heads,
-            atten_mask=None,
+            atten_mask=ragged_mask,
             sparse_mode=0,
         ),
         "sparse0_actual_lengths": lambda: promptfa(
@@ -333,7 +353,7 @@ def main() -> None:
     for batch_index, valid_length in enumerate(ragged_lengths):
         valid_comparisons.append(
             compare(
-                ragged_outputs["sparse0_padded"][
+                ragged_outputs["sparse0_padding_mask"][
                     batch_index, :, :valid_length
                 ],
                 ragged_outputs["sparse0_actual_lengths"][
