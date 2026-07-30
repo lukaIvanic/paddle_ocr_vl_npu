@@ -211,56 +211,62 @@ def main() -> None:
     measurements: list[Measurement] = []
     comparisons: dict[str, dict[str, float | bool]] = {}
 
-    # Dense B4xS512: no mask and an all-false mask are mathematically equal.
-    dense_batch, dense_s = 4, 512
-    dense_qkv = make_qkv(
-        batch=dense_batch,
-        heads=args.heads,
-        sequence_length=dense_s,
-        head_dim=args.head_dim,
-        device=device,
-    )
-    dense_mask = all_false_mask(
-        batch=dense_batch, sequence_length=dense_s, device=device
-    )
-    dense_outputs: dict[str, torch.Tensor] = {}
-    dense_lanes = {
-        "sparse0_no_mask": lambda: promptfa(
-            *dense_qkv,
-            heads=args.heads,
-            atten_mask=None,
-            sparse_mode=0,
-        ),
-        "sparse0_all_false_mask": lambda: promptfa(
-            *dense_qkv,
-            heads=args.heads,
-            atten_mask=dense_mask,
-            sparse_mode=0,
-        ),
-        "sparse1_all_false_mask": lambda: promptfa(
-            *dense_qkv,
-            heads=args.heads,
-            atten_mask=dense_mask,
-            sparse_mode=1,
-        ),
-    }
-    for lane_name, call in dense_lanes.items():
-        measurement, output = measure(
-            case_name="dense_b4_s512",
-            lane_name=lane_name,
+    # Dense attention: no mask and an all-false mask are mathematically equal.
+    # Include short sequences because that is where padding and launch overhead
+    # most strongly shape the production routing decision.
+    dense_cases = ((1, 128), (4, 128), (1, 512), (4, 512), (1, 2048))
+    for dense_batch, dense_s in dense_cases:
+        case_name = f"dense_b{dense_batch}_s{dense_s}"
+        dense_qkv = make_qkv(
             batch=dense_batch,
+            heads=args.heads,
             sequence_length=dense_s,
-            call=call,
-            warmup=args.warmup,
-            iterations=args.iterations,
-            repeats=args.repeats,
+            head_dim=args.head_dim,
+            device=device,
         )
-        measurements.append(measurement)
-        dense_outputs[lane_name] = output
-    for lane_name in dense_outputs:
-        comparisons[f"dense/{lane_name}_vs_sparse0_no_mask"] = compare(
-            dense_outputs["sparse0_no_mask"], dense_outputs[lane_name]
+        dense_mask = all_false_mask(
+            batch=dense_batch, sequence_length=dense_s, device=device
         )
+        dense_outputs: dict[str, torch.Tensor] = {}
+        dense_lanes = {
+            "sparse0_no_mask": lambda: promptfa(
+                *dense_qkv,
+                heads=args.heads,
+                atten_mask=None,
+                sparse_mode=0,
+            ),
+            "sparse0_all_false_mask": lambda: promptfa(
+                *dense_qkv,
+                heads=args.heads,
+                atten_mask=dense_mask,
+                sparse_mode=0,
+            ),
+            "sparse1_all_false_mask": lambda: promptfa(
+                *dense_qkv,
+                heads=args.heads,
+                atten_mask=dense_mask,
+                sparse_mode=1,
+            ),
+        }
+        for lane_name, call in dense_lanes.items():
+            measurement, output = measure(
+                case_name=case_name,
+                lane_name=lane_name,
+                batch=dense_batch,
+                sequence_length=dense_s,
+                call=call,
+                warmup=args.warmup,
+                iterations=args.iterations,
+                repeats=args.repeats,
+            )
+            measurements.append(measurement)
+            dense_outputs[lane_name] = output
+        for lane_name in dense_outputs:
+            comparisons[
+                f"{case_name}/{lane_name}_vs_sparse0_no_mask"
+            ] = compare(
+                dense_outputs["sparse0_no_mask"], dense_outputs[lane_name]
+            )
 
     # Packed B1: sparse mode 0 and 1 receive the identical complete block mask.
     packed_cases = {
