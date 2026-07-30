@@ -55,7 +55,6 @@ from paddleocr_vl.model.vision_prefill import (  # noqa: E402
     prompt_flash_attention_call_head_dim,
     vision_prompt_flash_attention_bnsd,
 )
-from profiling.mstx_bridge import MstxBridge  # noqa: E402
 from utils.timing import DeviceTimeline, synchronize  # noqa: E402
 from vision_lab import DEFAULT_MODEL, _environment  # noqa: E402
 
@@ -83,7 +82,6 @@ ROTARY_IMPLEMENTATIONS = (
     "joint_inplace_partial",
 )
 PROFILE_METRIC_CHOICES = ("pipe", "memory", "l2", "memory_access")
-MSPROF_TARGET_NAME = "vision_msprof_target"
 LEGACY_SEPARATE_MANUAL_SOURCE_HASH = "b4144440d15e"
 JOINT_MANUAL_SOURCE_HASH = "25d9a2dd1d39"
 StageInputs = tuple[torch.Tensor, ...]
@@ -173,15 +171,6 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--profile-warmup-steps", type=int, default=1)
     parser.add_argument("--profile-steps", type=int, default=3)
     parser.add_argument("--parser-topn", type=int, default=200)
-    parser.add_argument(
-        "--emit-msprof-target",
-        action="store_true",
-        help=(
-            "After ordinary timing, emit exactly one warm compiled replay "
-            f"inside the MSTX range {MSPROF_TARGET_NAME!r}. Intended only "
-            "for the dedicated msprof-op runner."
-        ),
-    )
     args = parser.parse_args(argv)
     if args.batch_size == 4 and args.sequence_length != 512:
         parser.error("B4 is intentionally bounded to S512 in this experiment")
@@ -199,8 +188,6 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("--samples and --calls-per-sample must be positive")
     if args.profile_warmup_steps <= 0 or args.profile_steps <= 0:
         parser.error("profiler step counts must be positive")
-    if args.emit_msprof_target and args.execution != "torchair":
-        parser.error("--emit-msprof-target requires --execution torchair")
     return args
 
 
@@ -988,49 +975,6 @@ def _measure(
         },
         output,
     )
-
-
-def _emit_msprof_target(
-    run: Callable[..., torch.Tensor],
-    inputs: StageInputs,
-    *,
-    device: torch.device,
-) -> dict[str, Any]:
-    """Emit one warm graph replay through CANN's public MSTX C API."""
-    current_stream = torch.npu.current_stream(device)
-    current_stream.synchronize()
-    bridge = MstxBridge(
-        REPO_ROOT / ".runtime_cache/09_persistent_page_engine_mstx_bridge"
-    )
-    range_id = bridge.range_start(MSPROF_TARGET_NAME)
-    if range_id == 0:
-        raise RuntimeError(
-            "CANN MSTX range_start returned zero; targeted msprof capture "
-            "cannot be trusted"
-        )
-    output: torch.Tensor | None = None
-    try:
-        output = run(*inputs)
-    finally:
-        # msprof's selected range must cover completion of the one replay,
-        # not merely asynchronous host submission.
-        current_stream.synchronize()
-        bridge.range_end(range_id)
-    del output
-    return {
-        "name": MSPROF_TARGET_NAME,
-        "replays": 1,
-        "execution": "warm_compiled_graph",
-        "stream": str(current_stream),
-        "scope": "process",
-        "range_id": range_id,
-        "bridge": str(bridge.path),
-        "injection_path": os.environ.get("MSTX_INJECTION_PATH"),
-        "synchronized_before_range_start": True,
-        "synchronized_before_range_end": True,
-        "throughput_measurement": False,
-        "intended_consumer": "msprof op --mstx=on --mstx-include",
-    }
 
 
 def _diff(left: torch.Tensor, right: torch.Tensor) -> dict[str, Any]:
@@ -1839,7 +1783,6 @@ def main(argv: Sequence[str] | None = None) -> None:
             "rotary_implementation": args.rotary_implementation,
             "execution": args.execution,
             "profile_metric": args.profile_metric,
-            "emit_msprof_target": bool(args.emit_msprof_target),
         },
         "weight_format": format_metadata,
         "setup_s_through_format_preparation": time.perf_counter()
@@ -1949,13 +1892,6 @@ def main(argv: Sequence[str] | None = None) -> None:
             },
         }
     )
-    if args.emit_msprof_target:
-        summary["msprof_target"] = _emit_msprof_target(
-            run,
-            candidate_inputs,
-            device=device,
-        )
-
     if args.profile:
         profile_contract_path = output_dir / "profile_contract.json"
         profile_contract = {
