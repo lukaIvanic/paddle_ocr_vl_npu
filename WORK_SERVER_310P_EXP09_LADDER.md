@@ -9,13 +9,13 @@ Prove that the real Experiment 09 pipeline runs on this 310P software stack,
 identify which production optimizations work, and measure their approximate
 effect on a small representative workload.
 
-## Current requested task: run Phase 19 only
+## Current requested task: run Phase 20 only
 
-Phases 0-18 have already run, are in progress elsewhere, or retain historical
-instructions and evidence. Do not rerun the performance ladder, vision
-matrices, native profiles, text prefill, decode, or PromptFA experiments. Go
-directly to **Phase 19: page-nine layout binary-resolution failure** at the end
-of this document.
+Phases 0-19 have already run, are in progress elsewhere, are superseded, or
+retain historical instructions and evidence. Do not rerun the performance
+ladder, vision matrices, native profiles, text prefill, decode, PromptFA
+experiments, or the superseded standalone-layout Phase 19. Go directly to
+**Phase 20: integrated OCR page-nine failure** at the end of this document.
 
 The reported production boundary is unusually sharp:
 
@@ -23,11 +23,12 @@ The reported production boundary is unusually sharp:
 - `--offset 0 --limit 9` fails;
 - `--offset 8 --limit 1` also fails.
 
-This makes page index 8 (the ninth dataset page) the primary reproducer. The
-current question is:
+This makes page index 8 (the ninth dataset page) the primary reproducer, but
+the standalone layout frontend succeeds on that page. The current question is:
 
-> What exact page-9 stage, operator, kernel/binary lookup, file, and software
-> component fails, and why does that path differ from a passing page?
+> What exact integrated layout-plus-recognition stage, operator, graph route,
+> kernel/binary lookup, file, and software component fails, and why does that
+> path differ from both a passing page and standalone page-9 layout?
 
 This is an investigation phase, not a workaround phase. Do not modify
 production model code, change operator expressions, install packages, delete
@@ -8530,6 +8531,12 @@ phase.
 
 ## Phase 19: page-nine layout binary-resolution failure
 
+> **Superseded; do not run.** This phase was drafted before clarifying that
+> page index 8 passes in `layout_owned_lab.py` and fails only when the complete
+> OCR pipeline is constructed and run. Its standalone probe remains a useful
+> control, but it is not the reproducer or primary investigation boundary.
+> Follow Phase 20 instead.
+
 ### 19.0 Purpose and current evidence
 
 Run this phase only. The known boundary is:
@@ -9303,3 +9310,428 @@ server. Keep both evidence roots local to that server. Paste back
 paths to the full raw evidence. Inspect file sizes and redact only
 credentials/tokens—not technical paths, operator names, shapes, or error
 codes.
+
+## Phase 20: integrated OCR page-nine failure
+
+### 20.0 Correction and exact investigation boundary
+
+Run this phase only. Phase 19 made the wrong assumption that page index 8
+failed in the standalone layout frontend. The corrected evidence is:
+
+```text
+standalone layout, offset 8, limit 1: PASS
+complete OCR pipeline, offset 0, limit 8: PASS
+complete OCR pipeline, offset 0, limit 9: FAIL
+complete OCR pipeline, offset 8, limit 1: FAIL
+```
+
+Do not investigate `layout_owned_lab.py` as though it were the failing
+application. Its page-index-8 output is a control and a request manifest.
+
+The production ordering also matters. `run_omnidocbench.py` constructs
+`OwnedLayoutFrontend`, then the complete `ContinuousRecognizer`, then
+`OwnedPageEngine`. In `OwnedPageEngine.run`, page preparation runs on a
+dedicated layout stream, and `layout_stream.synchronize()` completes before
+the prepared page enters the OCR request source. Therefore, for
+`--offset 8 --limit 1`, there is no next-page layout inference executing
+concurrently with OCR. The one-page failure must be separated into:
+
+1. layout fails only when the already-constructed recognizer and its device
+   state are resident;
+2. layout succeeds, then one of page index 8's crop requests fails in
+   recognition;
+3. a delayed asynchronous error is attributed to the wrong Python call.
+
+Cross-page layout/OCR overlap remains a possible additional problem for the
+nine-page streaming run, but it cannot be the necessary cause if the
+single-page integrated reproducer fails in the same way.
+
+### 20.1 Restrictions
+
+- Do not edit tracked source, create a branch, commit, or push.
+- Do not reinstall Python/CANN packages or download another model/operator
+  package.
+- Do not delete or replace TorchAir, ACLGraph, OPP, or model caches.
+- Do not apply a model workaround or CPU fallback.
+- Do not run a performance sweep or compile new shapes deliberately.
+- Do not call the problem a layout failure unless the synchronized traceback
+  and partial artifacts show that `prepare_page` did not finish.
+- Preserve the first causal error. A later shutdown/accounting exception is
+  not the root cause.
+
+Use the exact environment and Python established by the preceding phases.
+Confirm `git status --short` before starting, but do not clean unrelated
+server-local evidence.
+
+### 20.2 Recover the existing evidence before rerunning
+
+First locate the exact successful and failing production runs already made.
+Do not reconstruct their commands from memory:
+
+```sh
+cd /workspace/repos/paddle_ocr_vl_npu
+REPO=$PWD
+RAW_ROOT="$REPO/.runtime_cache/phase20_integrated_page9"
+OUTPUT_ROOT="$REPO/tmp/09_persistent_page_engine/phase20_integrated_page9"
+mkdir -p "$RAW_ROOT" "$OUTPUT_ROOT"
+
+find "$REPO/tmp" -type f \
+  \( -name 'command.sh' -o -name 'command.txt' -o -name 'run.log' \
+     -o -name 'manifest.json' -o -name 'run_summary.json' \) \
+  -print > "$OUTPUT_ROOT/candidate_artifacts.txt"
+
+rg -n --fixed-strings -- '--offset 8' "$REPO/tmp" \
+  > "$OUTPUT_ROOT/offset8_hits.txt" || true
+rg -n --fixed-strings -- '--limit 8' "$REPO/tmp" \
+  > "$OUTPUT_ROOT/limit8_hits.txt" || true
+rg -n --fixed-strings -- '--limit 9' "$REPO/tmp" \
+  > "$OUTPUT_ROOT/limit9_hits.txt" || true
+```
+
+Identify these three exact run roots:
+
+```text
+A: passing complete pipeline, offset 0 / limit 8
+B: failing complete pipeline, offset 0 / limit 9
+C: failing complete pipeline, offset 8 / limit 1
+```
+
+For each, copy its exact command text, commit, device, environment versions,
+cache paths, layout flags, vision route, packing settings, text route, decode
+batch/cache length, and output path into:
+
+```text
+$OUTPUT_ROOT/existing_run_matrix.md
+```
+
+Diff the commands argument by argument. Any difference beyond offset, limit,
+and output directory must be reported before treating the runs as a valid
+boundary.
+
+Read the complete failing log from its first error onward. Also inspect every
+partial artifact that exists:
+
+```text
+manifest.json
+timeline_trace.json
+timeline.html
+recognition_trace.jsonl
+layout_mask_guard.json
+page_regions.jsonl
+predictions/
+```
+
+`run_omnidocbench.py` writes the mask-guard snapshot and timeline from a
+`finally` block, even when the integrated run aborts. The recognition trace is
+flushed after every completed crop. A missing final `run_summary.json` is
+expected on failure.
+
+### 20.3 Establish the request manifest and last completed work
+
+Use the already-passing standalone layout result for page index 8, or rerun
+only that existing layout command if its artifacts are missing. Its
+`requests.jsonl` is the expected ordered crop manifest. Do not run the
+Phase-19 staged probe unless standalone layout unexpectedly stops passing.
+
+Create `$OUTPUT_ROOT/existing_failure_analysis.json` and
+`existing_failure_analysis.md` by comparing:
+
+- all expected page-index-8 requests in standalone `requests.jsonl`;
+- all completed requests in the failing integrated
+  `recognition_trace.jsonl`;
+- the last 100 timeline events ordered by host start/end time;
+- the last event for each `flow_id`;
+- the producer thread and main-thread traceback.
+
+The first request without a final recognition trace is only a candidate.
+Prefill, decode, and result completion can be interleaved. Use timeline
+`flow_id`, stage name, track, lane, and thread together to identify the last
+submitted and last completed stage.
+
+The analysis must answer, before any new run:
+
+```text
+Did page-index-8 layout finish in the integrated run?
+How many crops did layout produce?
+How many crops entered OCR?
+How many crops completed OCR?
+What was the last completed OCR stage and request?
+Was the first error raised by owned-page-producer or the recognizer/main thread?
+Does the error precede or follow "Prepare owned page" completion?
+```
+
+### 20.4 One exact synchronized production rerun
+
+Use run C's exact saved production command. Change only its output directory
+and add diagnostic environment variables. Do not guess or rewrite its
+performance/graph flags. Reuse its exact warm compiler-cache paths.
+
+Before launching, record:
+
+```sh
+git rev-parse HEAD > "$OUTPUT_ROOT/git_commit.txt"
+git status --short > "$OUTPUT_ROOT/git_status.txt"
+df -h "$REPO" > "$OUTPUT_ROOT/df_before.txt"
+npu-smi info > "$OUTPUT_ROOT/npu_smi_before.txt" 2>&1
+find <each-exact-cache-root-from-command> -maxdepth 3 -type f -printf \
+  '%p\t%s\t%TY-%Tm-%TdT%TH:%TM:%TS\n' \
+  > "$OUTPUT_ROOT/cache_inventory_before.txt"
+```
+
+Use a fresh raw CANN-log directory:
+
+```sh
+RUN_RAW="$RAW_ROOT/synchronized_offset8_limit1"
+RUN_OUT="$OUTPUT_ROOT/synchronized_offset8_limit1"
+mkdir -p "$RUN_RAW/cann" "$RUN_OUT"
+
+export PYTHONFAULTHANDLER=1
+export ASCEND_LAUNCH_BLOCKING=1
+export TORCH_NPU_COMPACT_ERROR_OUTPUT=0
+export ASCEND_PROCESS_LOG_PATH="$RUN_RAW/cann"
+export ASCEND_WORK_PATH="$RUN_RAW"
+export ASCEND_GLOBAL_LOG_LEVEL=0
+export ASCEND_MODULE_LOG_LEVEL='RUNTIME=0:ASCENDCL=0:OP=0:TBE=0'
+export ASCEND_GLOBAL_EVENT_ENABLE=1
+export ASCEND_LOG_DEVICE_FLUSH_TIMEOUT=10000
+```
+
+Run the exact C command with `--output-dir "$RUN_OUT"` and preserve live
+progress:
+
+```sh
+set -o pipefail
+<EXACT SAVED OFFSET-8 LIMIT-1 COMMAND, OUTPUT DIR CHANGED ONLY> \
+  2>&1 | tee "$RUN_OUT/run.log"
+printf '%s\n' "${PIPESTATUS[0]}" > "$RUN_OUT/exit_code.txt"
+```
+
+In another shell, sample NPU state until the process exits:
+
+```sh
+while kill -0 <EXACT_RUN_PID> 2>/dev/null; do
+  printf '\n===== %s =====\n' "$(date -Ins)"
+  npu-smi info
+  sleep 0.5
+done > "$RUN_OUT/npu_smi_monitor.log" 2>&1
+```
+
+Record the run PID rather than matching and killing unrelated Python
+processes. Do not use `pkill` or `killall`.
+
+If launch blocking still reports an obviously delayed unrelated call, repeat
+this one single-page run once with:
+
+```text
+TASK_QUEUE_ENABLE=0
+ASCEND_LAUNCH_BLOCKING=1
+```
+
+Label it diagnostic-only. Do not use it for performance.
+
+### 20.5 Classify the failure before choosing another experiment
+
+#### Branch A: layout does not finish, but standalone layout passes
+
+This means "recognizer already resident" is part of the reproducer; it still
+does not prove simultaneous layout/OCR execution. Record:
+
+- NPU allocated/reserved memory after layout frontend construction;
+- NPU allocated/reserved memory after recognizer construction;
+- NPU memory immediately before page preparation and at failure;
+- exact layout op, input shape, dtype, tensor format, workspace request,
+  error code, and kernel/binary path;
+- whether the same op succeeds in the standalone frontend with the same
+  input and shape.
+
+Then run one boundary control with the exact production command plus
+`--layout-device cpu`. This is diagnostic only. If CPU layout reaches OCR and
+fails at the same OCR stage, layout was not the causal component. If CPU
+layout completes the page, report that recognizer residency changes the NPU
+layout route or resource state; do not present CPU layout as the fix.
+
+#### Branch B: layout finishes and OCR fails
+
+Map the exact failing crop/group to the standalone request manifest and
+timeline. Identify:
+
+```text
+request_id and crop/block index
+crop dimensions and pixel profile
+real and physical vision-token lengths
+vision route: eager/compiled, single/packed/batched, B/S bucket, graph key
+real and physical text-prefill lengths
+text route and graph key
+decode batch/cache shape and graph key
+last successful stage
+first failing torch / torch_npu operation
+CANN op/kernel, shapes, dtypes, formats, attrs, and error code
+```
+
+Compare that route with all routes exercised by the passing first eight
+pages. State whether page index 8 is the first user of a new vision bucket, packed
+group, text bucket, decoder shape, graph artifact, or native operator shape.
+Check cache mtimes before and after: the failing run must not silently compile
+a new graph while being described as warm-cache replay.
+
+If the error mentions loading, pulling, resolving, registering, or selecting
+a binary, do the conditional binary audit in section 20.6. Do not assume the
+word "binary" means a network download.
+
+#### Branch C: single-page integrated run passes under exact synchronization
+
+Only in this case test cross-page behavior. Run the exact nine-page production
+command twice:
+
+```text
+streaming default
+same command plus --preprocess-all-pages-first
+```
+
+Everything else, including caches and route flags, must remain identical.
+
+- layout-first passes, streaming fails: cross-page concurrency or stream/
+  resource interaction is implicated;
+- both fail at the same OCR operation: concurrency is not the root cause;
+- both pass only with launch blocking: timing changes are masking a race, not
+  fixing it.
+
+Do not run this pair if the synchronized single-page reproducer already fails.
+
+### 20.6 Conditional operator/binary audit
+
+Run this section only after an exact failing operation has been identified.
+Extract from CANN logs:
+
+```text
+first error code and its decoded meaning
+operator and kernel name
+SoC/version selected
+input and output shapes
+dtypes and storage formats
+attributes/tiling key/workspace
+requested file or shared library, if an actual path exists
+selector/registration failure text, if no file path exists
+```
+
+Distinguish these cases explicitly:
+
+```text
+no registered operator/kernel variant for the SoC or attributes
+registered variant exists but a binary file is absent
+file exists but is unreadable or has a missing shared-library dependency
+binary is incompatible with driver/runtime/SoC
+tiling/workspace generation failed before launch
+kernel launched and failed during execution
+an earlier asynchronous failure surfaced at a later load/launch call
+```
+
+If and only if an actual file lookup remains ambiguous, run the exact failing
+single-page command once under:
+
+```sh
+strace -ff -tt -e trace=openat,access,statx,readlink \
+  -o "$RUN_RAW/strace" \
+  <EXACT COMMAND>
+```
+
+Compare with a passing integrated page/crop route, filtering only the exact
+operator/kernel/library names. Audit the current `ASCEND_OPP_PATH` and owning
+package; do not copy files into it or alter registration.
+
+Do not start `msprof` while the application still fails. First make the
+application boundary and first causal error deterministic.
+
+### 20.7 Stop and report
+
+Stop after root-cause evidence is collected. Do not implement a fix. Write:
+
+```text
+$OUTPUT_ROOT/agent_report.md
+$OUTPUT_ROOT/existing_run_matrix.md
+$OUTPUT_ROOT/existing_failure_analysis.md
+$OUTPUT_ROOT/error_extract.txt
+```
+
+The report must use this form:
+
+```text
+310P PHASE 20 INTEGRATED PAGE-9 FAILURE: ROOT CAUSE FOUND | BOUNDED | UNRESOLVED
+
+Git commit:
+Host / exact NPU:
+Python / torch / torch_npu / torchvision / Transformers / CANN:
+
+Verified boundary:
+- standalone layout offset 8 / limit 1:
+- full pipeline offset 0 / limit 8:
+- full pipeline offset 0 / limit 9:
+- full pipeline offset 8 / limit 1:
+- commands equivalent except offset/limit/output:
+
+Integrated ordering:
+- recognizer constructed before layout preparation:
+- page-index-8 layout completed before OCR consumed its requests:
+- cross-page overlap required to reproduce: yes/no/unknown
+
+Failure location:
+- traceback thread:
+- page preparation completed:
+- expected crops:
+- crops entering OCR:
+- crops completed:
+- failing request/group:
+- last successful stage:
+- first failing stage:
+- torch / torch_npu call:
+- CANN op/kernel:
+- shape/dtype/format/attrs:
+- error code:
+- graph route/cache key:
+- requested binary/library path, or explicitly none:
+
+Passing-first-8 versus page-index-8 difference:
+- first new crop/shape/bucket/group/operator:
+- warm-cache status:
+
+Recognizer-residency/resource evidence:
+- allocated/reserved memory after frontend:
+- allocated/reserved memory after recognizer:
+- memory/workspace at failure:
+- implicated: yes/no/unknown
+
+Root-cause statement:
+- confirmed facts:
+- strongest inference:
+- remaining uncertainty:
+- confidence:
+
+Potential fixes to discuss (do not implement):
+1.
+2.
+
+Evidence:
+- existing run matrix:
+- existing partial-artifact analysis:
+- synchronized traceback:
+- compact CANN error extract:
+- full raw CANN root:
+- cache inventories:
+- NPU monitor:
+- conditional strace/OPP audit:
+```
+
+An acceptable bounded result identifies whether the failure is before or
+after the layout-to-recognition handoff, plus the exact first failing
+request/stage/operator and evidence path. These are not acceptable:
+
+```text
+"page 9 layout is broken"
+"the model cannot pull a binary"
+"CANN failed somewhere in OCR"
+"limit 9 uses too much memory"
+```
+
+If no exact binary path is requested, say so. Paste back the four compact
+report files and the paths to the raw evidence. Redact credentials only; keep
+operator names, shapes, graph/cache paths, software versions, and error codes.
