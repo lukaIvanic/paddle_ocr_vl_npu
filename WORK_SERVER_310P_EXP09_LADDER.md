@@ -9,7 +9,7 @@ Prove that the real Experiment 09 pipeline runs on this 310P software stack,
 identify which production optimizations work, and measure their approximate
 effect on a small representative workload.
 
-## Current requested task: run Phase 25 only
+## Current requested task: run Phase 26 only
 
 Phases 0-21 have already run, are in progress elsewhere, are superseded, or
 retain historical instructions and evidence. Do not rerun the performance
@@ -21,9 +21,10 @@ Gather lanes, but its TorchAir lanes never executed because the old probe
 passed a free function to `cache_compile`. Phase 23 did not reproduce the
 failure in the isolated compiled Gather. Phase 24 moved the final gather out
 of the graph, but the normal asynchronous run still failed with GatherV2;
-because graph replay and eager gather were synchronized together, that result
-did not identify which side failed. Go directly to **Phase 25: synchronize
-around the eager final gather** at the end of this document.
+Phase 25 proved the compiled graph completes and the external eager GatherV2
+fails. The final-token selection now uses one-token slices plus concatenation,
+with no GatherV2. Go directly to **Phase 26: quick slice-and-concat page-nine
+E2E** at the end of this document.
 
 The reported production boundary is unusually sharp:
 
@@ -11416,3 +11417,74 @@ evidence:
 ```
 
 Do not implement a workaround afterward.
+
+## Phase 26: quick slice-and-concat page-nine E2E
+
+The final-token selection no longer uses `torch.index_select`. Run the exact
+normal Phase-24 page-nine command once to test this narrow workaround.
+
+### 26.1 Pull and verify
+
+```sh
+cd /workspace/repos/paddle_ocr_vl_npu
+git status --short --branch
+git pull --ff-only origin main
+
+REPO="$(git rev-parse --show-toplevel)"
+COMMIT="$(git rev-parse HEAD)"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+SOURCE="$REPO/09_persistent_page_engine/paddleocr_vl/model/text_packed_prefill.py"
+
+grep -A35 'def run_prepared' "$SOURCE" | grep -q 'torch.cat'
+if grep -A35 'def run_prepared' "$SOURCE" | grep -q 'torch.index_select'; then
+  echo "run_prepared still contains GatherV2-producing index_select" >&2
+  exit 1
+fi
+```
+
+Unset the Phase-25 diagnostic variable:
+
+```sh
+unset PADDLE_OCR_VL_PACKED_GATHER_SYNC_DIAGNOSTIC
+```
+
+### 26.2 Run one page and stop
+
+Use the exact normal Phase-24 command, including all production arguments and
+`--offset 8 --limit 1`. Change only:
+
+```sh
+OUTPUT_ROOT="$REPO/tmp/09_persistent_page_engine/310p_phase26_slice_concat_$COMMIT_SHORT"
+```
+
+Save the exact command as `$OUTPUT_ROOT/command.sh`, then:
+
+```sh
+set -o pipefail
+bash "$OUTPUT_ROOT/command.sh" 2>&1 | tee "$OUTPUT_ROOT/run.log"
+printf '%s\n' "${PIPESTATUS[0]}" > "$OUTPUT_ROOT/exit_code.txt"
+
+grep -nE 'AICore|GatherV2|DDR address|completed=|summary=' \
+  "$OUTPUT_ROOT/run.log" \
+  > "$OUTPUT_ROOT/compact_extract.txt" || true
+cat "$OUTPUT_ROOT/compact_extract.txt"
+```
+
+Report:
+
+```text
+310P PHASE 26 SLICE-CONCAT FINAL TOKEN E2E: PASS | FAIL
+
+commit / host / NPU / software:
+exit code:
+page results:
+wall time:
+packed-text graph cache/compile status:
+stop-reason counts:
+GatherV2 or AICore error:
+first causal error, if failed:
+evidence:
+```
+
+Success requires one completed page, normal accounting, and no GatherV2 DDR
+out-of-range error. Do not run more pages or implement another change.
