@@ -9,33 +9,36 @@ Prove that the real Experiment 09 pipeline runs on this 310P software stack,
 identify which production optimizations work, and measure their approximate
 effect on a small representative workload.
 
-## Current requested task: run Phase 13 only
+## Current requested task: run Phase 14 only
 
-Phases 0-12 have already run or have retained instructions and evidence. For
+Phases 0-13 have already run or have retained instructions and evidence. For
 the current task, do not rerun the production pipeline, layout lab, dataset
 validation, attention correctness check, decode ladder, packing ladder,
 saturation matrices, native B1 profiler, Phase 11 format/alignment matrix, or
-Phase 12 RoPE comparison. Read their retained instructions and artifacts only
-as context.
+Phase 12 RoPE comparison. Phase 13's single native B1xS2048 lane is now a
+retained predecessor and may supply a warm graph cache, but its result alone
+does not complete the current task.
 
 Pull current `main`, reuse the exact Python/model/NPU environment that passed
-the earlier ladder, and execute only **Phase 13: B1xS2048 MatMul-only
-throughput** below. Phase 13 loads only the PaddleOCR-VL recognizer and does
-not need OmniDocBench images, the layout model, text prefill, or decode.
+the earlier ladder, and execute only **Phase 14: six-lane native-ND versus
+padded-NZ MatMul comparison** below. Phase 14 loads only the PaddleOCR-VL
+recognizer and does not need OmniDocBench images, the layout model, text
+prefill, or decode.
 
-The current question is deliberately narrow:
+The current questions are deliberately narrow:
 
-> For the exact original B1xS2048 27-layer compiled-PromptFA vision graph, how
-> many FP16-equivalent TFLOP/s do the MatMul kernels themselves achieve on
-> 310P, and how does that compare with the matched 910B2 result?
+> At B1xS512, B4xS512, and B1xS2048, how much does changing the native
+> 4304-wide ND graph to the zero-extended 4352-wide FRACTAL_NZ graph change
+> absolute MatMul time, MatMul-only TFLOP/s, and complete-stage time on 310P?
+> How do all six lanes compare shape-for-shape with fresh 910B2 references?
 
-Hold everything else fixed: B1xS2048, the native 4304-wide MLP, production
-runtime D72-to-D80 PromptFA padding, native ND Linear weights, separate manual
-RoPE, fp16, real PromptFA, and TorchAir `cache_compile`. Time the complete
-27-layer stage with NPU events, but calculate MatMul-only throughput from the
-sum of all profiled MatMul kernel durations.
+Hold everything else fixed: all 27 layers, production runtime D72-to-D80
+PromptFA padding, separate manual RoPE, fp16, real PromptFA, and TorchAir
+`cache_compile`. Each shape has exactly two lanes: native 4304/ND and
+zero-extended 4352/FRACTAL_NZ.
 
-Do not run additional shapes, weight formats, MLP widths, RoPE variants, eager
+Do not run additional shapes, standalone Linears, separate 4304-NZ or
+4352-ND attribution lanes, attention weight-padding, RoPE variants, eager
 lanes, page workloads, or routing experiments. Do not optimize source code,
 change production routing, or update pinned routing tables during this task.
 
@@ -405,7 +408,7 @@ Experiment 09 validation.
 
 For the already-completed production-validation task, the stopping point was
 the layout check and report. Phases 9-12 are also retained historical tasks.
-For the current task, skip Phases 0-12 and stop after Phase 13.
+For the current task, skip Phases 0-13 and stop after Phase 14.
 
 ## What the previous 310P server established
 
@@ -3765,8 +3768,9 @@ evidence on `main`, and report the commit hash.
 
 ### 11.0 Scope and exact experiment
 
-This is the only phase to execute for the current request. Run exactly these
-three production `VisionPrefillStage` shapes:
+This is a retained historical phase. Do not execute it for the current
+Phase 14 request. Its original matrix used these three production
+`VisionPrefillStage` shapes:
 
 ```text
 B1xS512
@@ -4414,8 +4418,8 @@ caches and profiler trees under `.runtime_cache`, keep compact results under
 
 ### 12.0 Scope, controlled variables, and reference
 
-This is the only phase to execute for the current request. Run exactly two
-compiled variants:
+This is a retained historical phase. Do not execute it for the current
+Phase 14 request. Its original comparison used exactly two compiled variants:
 
 ```text
 control:   --rotary-implementation separate_manual
@@ -5071,8 +5075,10 @@ All artifact paths:
 
 ### 13.0 Purpose and immutable experiment contract
 
-This is the only phase to execute for the current task. It reproduces the
-historical 910B2 MatMul-only calculation on 310P without changing the graph:
+This retained predecessor reproduced the historical 910B2 MatMul-only
+calculation on 310P without changing the graph. Do not execute Phase 13 for
+the current task; Phase 14 below supersedes it with the paired six-lane
+matrix:
 
 ```text
 batch:                       1
@@ -5587,9 +5593,783 @@ commit, or push. Keep graph caches and raw profiler trees under
 `.runtime_cache`; keep the compact commands, logs, summaries, comparison, and
 report under `tmp/`. Send Luka the report and exact artifact paths manually.
 
+## Phase 14: six-lane native-ND versus padded-NZ MatMul comparison
+
+### 14.0 Purpose, scope, and exact 910B2 references
+
+This is the only phase to execute for the current task. Run exactly these six
+complete 27-layer vision-stage lanes:
+
+| Label | Batch | Sequence | Physical tokens | MLP | Weight format |
+|---|---:|---:|---:|---:|---|
+| `b1_s512_native_nd` | 1 | 512 | 512 | 4304 | native ND |
+| `b1_s512_padded_nz` | 1 | 512 | 512 | 4352 | FRACTAL_NZ |
+| `b4_s512_native_nd` | 4 | 512 | 2048 | 4304 | native ND |
+| `b4_s512_padded_nz` | 4 | 512 | 2048 | 4352 | FRACTAL_NZ |
+| `b1_s2048_native_nd` | 1 | 2048 | 2048 | 4304 | native ND |
+| `b1_s2048_padded_nz` | 1 | 2048 | 2048 | 4352 | FRACTAL_NZ |
+
+Everything else is immutable:
+
+```text
+vision layers:               all 27
+hidden size:                 1152
+attention projections:       native 1152 outputs
+attention head padding:      runtime D72 -> D80, then D80 -> D72
+RoPE:                        separate_manual
+attention:                   real PromptFlashAttention
+execution:                   TorchAir cache_compile
+dtype:                       fp16
+warmup:                      3 complete full-stack replays
+unprofiled measurement:      10 samples x 5 full-stack replays
+profile:                     1 warmup + 3 active full-stack replays
+Linear MatMuls per replay:   27 x 6 = 162
+profiled MatMuls per lane:   3 x 162 = 486
+```
+
+The 4352 MLP is mathematically equivalent to the original 4304 MLP: FC1 adds
+48 all-zero output rows and FC2 adds 48 all-zero input columns. `GELU(0)=0`.
+It performs 0.726392% more Linear FLOPs. All 162 Linear weights must be
+explicitly format code 29 in an NZ lane; a silent ND fallback invalidates the
+lane.
+
+This comparison intentionally changes MLP alignment and weight format
+together. It answers whether the combined 4352+NZ configuration helps. It
+does **not** attribute the gain separately to padding versus NZ, so do not
+claim that either change alone caused the result.
+
+Fresh matched 910B2 references from commit `fb9ad7b`:
+
+| Shape/config | Full stage ms | Physical tok/s | Linear FLOPs | MatMul ms | MatMul-only TFLOP/s |
+|---|---:|---:|---:|---:|---:|
+| B1xS512 4304 ND | 15.757428 | 32,492.6 | 420,936,155,136 | 4.959353 | 84.877 |
+| B1xS512 4352 NZ | 13.604366 | 37,635.0 | 423,993,802,752 | 2.858633 | 148.320 |
+| B4xS512 4304 ND | 27.347794 | 74,887.2 | 1,683,744,620,544 | 8.004093 | 210.360 |
+| B4xS512 4352 NZ | 26.655551 | 76,832.0 | 1,695,975,211,008 | 7.366140 | 230.239 |
+| B1xS2048 4304 ND | 31.554370 | 64,903.8 | 1,683,744,620,544 | 7.983893 | 210.893 |
+| B1xS2048 4352 NZ | 30.571022 | 66,991.5 | 1,695,975,211,008 | 7.339400 | 231.078 |
+
+The 910B2 paired changes were:
+
+```text
+B1xS512:  full stage -13.664%; MatMul time -42.359%
+B4xS512:  full stage  -2.531%; MatMul time  -7.970%
+B1xS2048: full stage  -3.116%; MatMul time  -8.072%
+```
+
+These are references, not expected 310P results. For a full physical 310P,
+use 70 FP16 TFLOP/s as the published peak denominator. Do not clamp a
+calculated efficiency if it exceeds 100%; instead verify the device exposure,
+clock, FLOP convention, profile duration, and MatMul count and report the
+discrepancy.
+
+Do not run 4304-NZ, 4352-ND, attention weight-padding, joint RoPE, manual
+attention, eager execution, isolated Linear layers, other shapes, layout, OCR
+pages, text prefill, or decode. At most six exact graphs may be created;
+normally only five should be new if the Phase 13 native B1xS2048 cache is
+reusable.
+
+### 14.1 Pull and recover the proven environment
+
+Do not discard, overwrite, stash, or clean any local work:
+
+```sh
+git status --short --branch
+git pull --ff-only origin main
+
+REPO="$(git rev-parse --show-toplevel)"
+cd "$REPO"
+COMMIT="$(git rev-parse HEAD)"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+PHASE14_REL="tmp/09_persistent_page_engine/310p_matmul_matrix_$COMMIT_SHORT"
+PHASE14_ROOT="$REPO/$PHASE14_REL"
+NEW_CACHE_ROOT="$REPO/.runtime_cache/310p_matmul_matrix_$COMMIT_SHORT"
+LAB_SCRIPT="$REPO/09_persistent_page_engine/scripts/vision_matmul_lab.py"
+
+test -f "$LAB_SCRIPT"
+test ! -e "$PHASE14_ROOT"
+test ! -e "$NEW_CACHE_ROOT"
+mkdir -p \
+  "$PHASE14_ROOT/results" \
+  "$PHASE14_ROOT/commands" \
+  "$NEW_CACHE_ROOT/graphs" \
+  "$NEW_CACHE_ROOT/profile"
+```
+
+Recover the exact interpreter and recognizer model from the retained
+successful Phase 7 production command:
+
+```sh
+PHASE7_COMMAND="$(
+  python3 - "$REPO" <<'PY'
+import sys
+from pathlib import Path
+
+repo = Path(sys.argv[1]).resolve()
+matches = list(
+    repo.glob(
+        "tmp/09_persistent_page_engine/"
+        "310p_exp09_npu_layout_eager_*/"
+        "phase7_min_pixels_28224_replay/command.sh"
+    )
+)
+if not matches:
+    raise SystemExit("no retained successful Phase 7 command.sh was found")
+print(max(matches, key=lambda path: path.stat().st_mtime))
+PY
+)"
+test -f "$PHASE7_COMMAND"
+
+eval "$(
+  python3 - "$PHASE7_COMMAND" <<'PY'
+import shlex
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1]).resolve()
+lines = [
+    line.strip()
+    for line in path.read_text(encoding="utf-8").splitlines()
+    if line.strip() and not line.lstrip().startswith("#")
+]
+if len(lines) != 1:
+    raise SystemExit(f"expected one command in {path}, found {len(lines)}")
+tokens = shlex.split(lines[0])
+
+def option(name):
+    try:
+        return tokens[tokens.index(name) + 1]
+    except (ValueError, IndexError) as exc:
+        raise SystemExit(f"{name} missing from {path}") from exc
+
+print(f"PYTHON_BIN={shlex.quote(tokens[0])}")
+print(f"RECOGNIZER_MODEL={shlex.quote(option('--recognizer-model'))}")
+PY
+)"
+
+test -x "$PYTHON_BIN"
+test -f "$RECOGNIZER_MODEL/config.json"
+```
+
+Activate the exact CANN/torch-npu environment used by the successful previous
+phases and expose one free full physical 310P as logical `npu:0`. Never
+terminate another user's process. Stop if no device is free.
+
+Reuse the latest Phase 13 graph root if it exists. The documentation-only
+Phase 14 commit does not alter the graph source hash:
+
+```sh
+PRIOR_PHASE13_CACHE="$(
+  find "$REPO/.runtime_cache" \
+    -maxdepth 1 \
+    -type d \
+    -name '310p_matmul_only_*' \
+    -print |
+  sort |
+  tail -n 1
+)"
+
+if test -n "$PRIOR_PHASE13_CACHE" &&
+   test -d "$PRIOR_PHASE13_CACHE/graphs"; then
+  GRAPH_CACHE_ROOT="$PRIOR_PHASE13_CACHE/graphs"
+  GRAPH_CACHE_ROUTE="reused_phase13"
+else
+  GRAPH_CACHE_ROOT="$NEW_CACHE_ROOT/graphs"
+  GRAPH_CACHE_ROUTE="new_phase14"
+fi
+
+PROFILE_ROOT="$NEW_CACHE_ROOT/profile"
+mkdir -p "$GRAPH_CACHE_ROOT" "$PROFILE_ROOT"
+```
+
+Record the environment and verify free space. Six graphs can be large; require
+at least 60 GiB free on the cache filesystem before starting. If the check
+fails, stop and report rather than redirecting caches outside this repository:
+
+```sh
+{
+  printf 'git_commit=%s\n' "$COMMIT"
+  printf 'git_status_begin\n'
+  git status --short --branch
+  printf 'git_status_end\n'
+  printf 'hostname=%s\n' "$(hostname)"
+  printf 'ASCEND_RT_VISIBLE_DEVICES=%s\n' \
+    "${ASCEND_RT_VISIBLE_DEVICES:-}"
+  printf 'python=%s\n' "$PYTHON_BIN"
+  printf 'recognizer_model=%s\n' "$RECOGNIZER_MODEL"
+  printf 'graph_cache_root=%s\n' "$GRAPH_CACHE_ROOT"
+  printf 'graph_cache_route=%s\n' "$GRAPH_CACHE_ROUTE"
+  "$PYTHON_BIN" - <<'PY'
+import platform
+import sys
+import torch
+import torch_npu
+print("platform=" + platform.platform())
+print("python_version=" + sys.version.replace("\n", " "))
+print("torch=" + torch.__version__)
+print("torch_npu=" + getattr(torch_npu, "__version__", "<missing>"))
+print("npu_available=" + str(torch.npu.is_available()))
+if torch.npu.is_available():
+    print("npu_name=" + torch.npu.get_device_name(0))
+PY
+} >"$PHASE14_ROOT/environment.txt" 2>&1
+
+df -h "$REPO" "$GRAPH_CACHE_ROOT" >"$PHASE14_ROOT/disk_before.txt"
+npu-smi info >"$PHASE14_ROOT/npu_before.txt" 2>&1
+CACHE_FREE_KIB="$(df -Pk "$GRAPH_CACHE_ROOT" | awk 'NR == 2 {print $4}')"
+test -n "$CACHE_FREE_KIB"
+if test "$CACHE_FREE_KIB" -lt 62914560; then
+  printf 'insufficient cache free space: %s KiB\n' "$CACHE_FREE_KIB" \
+    >"$PHASE14_ROOT/disk_blocker.txt"
+  exit 1
+fi
+
+find "$GRAPH_CACHE_ROOT" \
+  -mindepth 1 -maxdepth 1 -type d -print |
+sort >"$PHASE14_ROOT/graph_dirs_before.txt"
+```
+
+### 14.2 Create and run exactly six replayable commands
+
+Create the immutable lane manifest:
+
+```sh
+cat >"$PHASE14_ROOT/lanes.tsv" <<'EOF'
+b1_s512_native_nd 1 512 4304 native
+b1_s512_padded_nz 1 512 4352 fractal_nz
+b4_s512_native_nd 4 512 4304 native
+b4_s512_padded_nz 4 512 4352 fractal_nz
+b1_s2048_native_nd 1 2048 4304 native
+b1_s2048_padded_nz 1 2048 4352 fractal_nz
+EOF
+```
+
+For each lane, create one exact `command.sh`. Do not modify flags between
+lanes:
+
+```sh
+while read -r LABEL BATCH SEQ WIDTH FORMAT; do
+  RESULT_DIR="$PHASE14_ROOT/results/$LABEL"
+  PROFILE_DIR="$PROFILE_ROOT/$LABEL"
+  COMMAND="$PHASE14_ROOT/commands/$LABEL.sh"
+
+  test ! -e "$RESULT_DIR"
+  test ! -e "$PROFILE_DIR"
+
+  {
+    printf '#!/usr/bin/env bash\n'
+    printf '# git_commit=%s\n' "$COMMIT"
+    printf '# hostname=%s\n' "$(hostname)"
+    printf '# ASCEND_RT_VISIBLE_DEVICES=%s\n' \
+      "${ASCEND_RT_VISIBLE_DEVICES:-}"
+    printf '%q ' \
+      "$PYTHON_BIN" "$LAB_SCRIPT" \
+      --batch-size "$BATCH" \
+      --sequence-length "$SEQ" \
+      --intermediate-size "$WIDTH" \
+      --weight-format "$FORMAT" \
+      --attention-head-padding runtime \
+      --rotary-implementation separate_manual \
+      --execution torchair \
+      --model "$RECOGNIZER_MODEL" \
+      --cache-dir "$GRAPH_CACHE_ROOT" \
+      --output-dir "$RESULT_DIR" \
+      --profile-dir "$PROFILE_DIR" \
+      --allow-compile-if-missing \
+      --warmup 3 \
+      --samples 10 \
+      --calls-per-sample 5 \
+      --profile \
+      --profile-warmup-steps 1 \
+      --profile-steps 3 \
+      --parser-topn 200
+    printf '\n'
+  } >"$COMMAND"
+  chmod +x "$COMMAND"
+done <"$PHASE14_ROOT/lanes.tsv"
+```
+
+Start one 1-second NPU monitor and run the six commands sequentially. The
+matrix is sequential so lanes do not contend for the same NPU:
+
+```sh
+(
+  while true; do
+    date --iso-8601=ns 2>/dev/null || date
+    npu-smi info
+    sleep 1
+  done
+) >"$PHASE14_ROOT/npu_smi_1s.log" 2>&1 &
+MONITOR_PID=$!
+trap 'kill "$MONITOR_PID" 2>/dev/null || true' EXIT
+
+for COMMAND in "$PHASE14_ROOT"/commands/*.sh; do
+  LABEL="$(basename "$COMMAND" .sh)"
+  printf 'START %s %s\n' \
+    "$(date --iso-8601=seconds 2>/dev/null || date)" "$LABEL" |
+  tee -a "$PHASE14_ROOT/progress.log"
+
+  set +e
+  "$COMMAND" >"$PHASE14_ROOT/results/$LABEL.log" 2>&1
+  STATUS=$?
+  set -e
+  printf '%s\n' "$STATUS" >"$PHASE14_ROOT/results/$LABEL.exit_code.txt"
+
+  printf 'END %s %s exit=%s\n' \
+    "$(date --iso-8601=seconds 2>/dev/null || date)" \
+    "$LABEL" "$STATUS" |
+  tee -a "$PHASE14_ROOT/progress.log"
+
+  if test "$STATUS" -ne 0; then
+    break
+  fi
+done
+
+kill "$MONITOR_PID" 2>/dev/null || true
+wait "$MONITOR_PID" 2>/dev/null || true
+trap - EXIT
+```
+
+Require all six lanes:
+
+```sh
+while read -r LABEL _; do
+  test "$(cat "$PHASE14_ROOT/results/$LABEL.exit_code.txt")" -eq 0
+  test -f "$PHASE14_ROOT/results/$LABEL/run_summary.json"
+done <"$PHASE14_ROOT/lanes.tsv"
+
+find "$GRAPH_CACHE_ROOT" \
+  -mindepth 1 -maxdepth 1 -type d -print |
+sort >"$PHASE14_ROOT/graph_dirs_after.txt"
+
+comm -13 \
+  "$PHASE14_ROOT/graph_dirs_before.txt" \
+  "$PHASE14_ROOT/graph_dirs_after.txt" \
+  >"$PHASE14_ROOT/new_graph_dirs.txt"
+
+NEW_GRAPH_COUNT="$(wc -l <"$PHASE14_ROOT/new_graph_dirs.txt")"
+test "$NEW_GRAPH_COUNT" -le 6
+```
+
+Do not rerun a failed lane into the same output or profile directory. Preserve
+the first failure, its causal traceback, completed earlier lanes, graph count,
+and NPU monitor. Stop; do not invent a fallback.
+
+### 14.3 Validate every lane and create the comparison
+
+Run this validator exactly:
+
+```sh
+"$PYTHON_BIN" - "$PHASE14_ROOT" <<'PY'
+import json
+import math
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1]).resolve()
+
+expected = {
+    "b1_s512_native_nd": {
+        "batch": 1,
+        "seq": 512,
+        "width": 4304,
+        "format": "native",
+        "format_hist": {"2": 162},
+        "flops": 420_936_155_136,
+    },
+    "b1_s512_padded_nz": {
+        "batch": 1,
+        "seq": 512,
+        "width": 4352,
+        "format": "fractal_nz",
+        "format_hist": {"29": 162},
+        "flops": 423_993_802_752,
+    },
+    "b4_s512_native_nd": {
+        "batch": 4,
+        "seq": 512,
+        "width": 4304,
+        "format": "native",
+        "format_hist": {"2": 162},
+        "flops": 1_683_744_620_544,
+    },
+    "b4_s512_padded_nz": {
+        "batch": 4,
+        "seq": 512,
+        "width": 4352,
+        "format": "fractal_nz",
+        "format_hist": {"29": 162},
+        "flops": 1_695_975_211_008,
+    },
+    "b1_s2048_native_nd": {
+        "batch": 1,
+        "seq": 2048,
+        "width": 4304,
+        "format": "native",
+        "format_hist": {"2": 162},
+        "flops": 1_683_744_620_544,
+    },
+    "b1_s2048_padded_nz": {
+        "batch": 1,
+        "seq": 2048,
+        "width": 4352,
+        "format": "fractal_nz",
+        "format_hist": {"29": 162},
+        "flops": 1_695_975_211_008,
+    },
+}
+
+reference_910b2 = {
+    "b1_s512_native_nd": {
+        "full_stage_ms": 15.757427978515626,
+        "physical_tok_s": 32492.612417336346,
+        "matmul_ms": 4.959353333333338,
+        "matmul_tflop_s": 84.87722629213748,
+    },
+    "b1_s512_padded_nz": {
+        "full_stage_ms": 13.60436553955078,
+        "physical_tok_s": 37634.97816281893,
+        "matmul_ms": 2.8586333333333345,
+        "matmul_tflop_s": 148.3204571247332,
+    },
+    "b4_s512_native_nd": {
+        "full_stage_ms": 27.347793579101562,
+        "physical_tok_s": 74887.21143357706,
+        "matmul_ms": 8.00409333333333,
+        "matmul_tflop_s": 210.36044314125945,
+    },
+    "b4_s512_padded_nz": {
+        "full_stage_ms": 26.655551147460937,
+        "physical_tok_s": 76832.02604479186,
+        "matmul_ms": 7.366139999999987,
+        "matmul_tflop_s": 230.23933987244376,
+    },
+    "b1_s2048_native_nd": {
+        "full_stage_ms": 31.554370117187503,
+        "physical_tok_s": 64903.846674615284,
+        "matmul_ms": 7.9838933333333335,
+        "matmul_tflop_s": 210.89267481997086,
+    },
+    "b1_s2048_padded_nz": {
+        "full_stage_ms": 30.571022033691406,
+        "physical_tok_s": 66991.54505671942,
+        "matmul_ms": 7.339400000000004,
+        "matmul_tflop_s": 231.07818227757025,
+    },
+}
+
+rows = {}
+for label, contract in expected.items():
+    summary_path = root / "results" / label / "run_summary.json"
+    payload = json.loads(summary_path.read_text(encoding="utf-8"))
+
+    assert payload["status"] == "completed"
+    shape = payload["shape"]
+    assert shape["batch_size"] == contract["batch"]
+    assert shape["sequence_length"] == contract["seq"]
+    assert shape["physical_tokens_per_call"] == (
+        contract["batch"] * contract["seq"]
+    )
+    assert shape["hidden_size"] == 1152
+    assert shape["source_intermediate_size"] == 4304
+    assert shape["candidate_intermediate_size"] == contract["width"]
+    assert shape["layers"] == 27
+    assert shape["linear_calls_per_full_stack"] == 162
+
+    requested = payload["requested"]
+    assert requested["execution"] == "torchair"
+    assert requested["weight_format"] == contract["format"]
+    assert requested["attention_head_padding"] == "runtime"
+    assert requested["rotary_implementation"] == "separate_manual"
+    assert payload["attention"]["implementation"] == (
+        "prompt_flash_attention"
+    )
+    assert payload["weight_format"]["after_format_histogram"] == (
+        contract["format_hist"]
+    )
+    assert payload["weight_format"]["linear_weight_count"] == 162
+    if contract["format"] == "fractal_nz":
+        assert payload["weight_format"]["converted_count"] == 162
+        assert payload["weight_format"]["all_after_are_nz"] is True
+    else:
+        assert payload["weight_format"]["converted_count"] == 0
+        assert payload["weight_format"]["all_after_are_nz"] is False
+
+    measurements = payload["measurements"]
+    assert measurements["samples"] == 10
+    assert measurements["calls_per_sample"] == 5
+    assert measurements["total_measured_full_stack_calls"] == 50
+    assert payload["linear_flops_per_full_stack_call"] == contract["flops"]
+
+    profile = payload["parsed_profile"]
+    matmul = profile["matmul_only"]
+    assert matmul["active_profiled_full_stack_calls"] == 3
+    assert matmul["matmul_kernels_per_full_stack_call"] == 162
+    assert matmul["observed_matmul_kernel_count"] == 486
+    assert matmul["linear_flops_per_full_stack_call"] == contract["flops"]
+    dispatch = profile["dispatch"]
+    assert sum(dispatch["counts"].values()) == 486
+    assert math.isclose(
+        sum(dispatch["duration_us"].values()),
+        matmul["total_matmul_kernel_duration_us"],
+        rel_tol=0.0,
+        abs_tol=1e-6,
+    )
+
+    full_ms = float(measurements["device_event_per_call_ms"]["median"])
+    tok_s = float(measurements["physical_tokens_per_s_device_median"])
+    full_tflops = float(
+        measurements["linear_tflop_per_s_device_median"]
+    )
+    matmul_ms = float(
+        matmul["matmul_kernel_duration_per_full_stack_call_ms"]
+    )
+    matmul_tflops = float(matmul["matmul_only_linear_tflop_per_s"])
+    rows[label] = {
+        "shape": {
+            "batch": contract["batch"],
+            "sequence": contract["seq"],
+            "physical_tokens": contract["batch"] * contract["seq"],
+            "mlp_width": contract["width"],
+            "weight_format": contract["format"],
+        },
+        "linear_flops_per_replay": contract["flops"],
+        "full_stage_ms": full_ms,
+        "physical_tok_s": tok_s,
+        "full_stage_linear_tflop_s": full_tflops,
+        "matmul_ms": matmul_ms,
+        "matmul_only_tflop_s": matmul_tflops,
+        "matmul_peak_efficiency_pct_70t": matmul_tflops / 70.0 * 100.0,
+        "matmul_share_of_full_stage_pct": matmul_ms / full_ms * 100.0,
+        "dispatch_counts_three_replays": dispatch["counts"],
+        "dispatch_duration_us_three_replays": dispatch["duration_us"],
+        "weighted_cube_utilization_pct": profile.get(
+            "weighted_cube_utilization_pct"
+        ),
+        "reference_910b2": reference_910b2[label],
+        "ratios_910b2_over_310p": {
+            "physical_tok_s": (
+                reference_910b2[label]["physical_tok_s"] / tok_s
+            ),
+            "matmul_only_tflop_s": (
+                reference_910b2[label]["matmul_tflop_s"]
+                / matmul_tflops
+            ),
+        },
+    }
+
+pairs = {
+    "b1_s512": (
+        "b1_s512_native_nd",
+        "b1_s512_padded_nz",
+    ),
+    "b4_s512": (
+        "b4_s512_native_nd",
+        "b4_s512_padded_nz",
+    ),
+    "b1_s2048": (
+        "b1_s2048_native_nd",
+        "b1_s2048_padded_nz",
+    ),
+}
+
+deltas = {}
+for pair, (native_label, padded_label) in pairs.items():
+    native = rows[native_label]
+    padded = rows[padded_label]
+    deltas[pair] = {
+        "linear_flops_pct": (
+            padded["linear_flops_per_replay"]
+            / native["linear_flops_per_replay"]
+            - 1.0
+        )
+        * 100.0,
+        "full_stage_ms_pct": (
+            padded["full_stage_ms"] / native["full_stage_ms"] - 1.0
+        )
+        * 100.0,
+        "physical_tok_s_pct": (
+            padded["physical_tok_s"] / native["physical_tok_s"] - 1.0
+        )
+        * 100.0,
+        "matmul_ms_pct": (
+            padded["matmul_ms"] / native["matmul_ms"] - 1.0
+        )
+        * 100.0,
+        "matmul_only_tflop_s_pct": (
+            padded["matmul_only_tflop_s"]
+            / native["matmul_only_tflop_s"]
+            - 1.0
+        )
+        * 100.0,
+    }
+    assert math.isclose(
+        deltas[pair]["linear_flops_pct"],
+        0.7263922518159882,
+        rel_tol=0.0,
+        abs_tol=1e-9,
+    )
+
+comparison = {
+    "schema_version": 1,
+    "device": "Ascend310P3",
+    "published_fp16_peak_tflop_s": 70.0,
+    "rows": rows,
+    "padded_4352_nz_vs_native_4304_nd_delta_pct": deltas,
+    "interpretation_limit": (
+        "The paired lane changes MLP alignment and weight format together; "
+        "it does not attribute the gain to either change independently."
+    ),
+}
+(root / "comparison.json").write_text(
+    json.dumps(comparison, indent=2) + "\n",
+    encoding="utf-8",
+)
+
+lines = [
+    "# 310P3 native-ND versus padded-NZ vision MatMul matrix",
+    "",
+    "| lane | full stage ms | physical tok/s | MatMul ms | "
+    "MatMul-only TFLOP/s | peak efficiency | "
+    "910B2/310P MatMul ratio |",
+    "|---|---:|---:|---:|---:|---:|---:|",
+]
+for label, row in rows.items():
+    lines.append(
+        f"| {label} | {row['full_stage_ms']:.6f} | "
+        f"{row['physical_tok_s']:.1f} | {row['matmul_ms']:.6f} | "
+        f"{row['matmul_only_tflop_s']:.3f} | "
+        f"{row['matmul_peak_efficiency_pct_70t']:.3f}% | "
+        f"{row['ratios_910b2_over_310p']['matmul_only_tflop_s']:.3f}x |"
+    )
+lines.extend(
+    [
+        "",
+        "## Padded 4352 NZ versus native 4304 ND",
+        "",
+    ]
+)
+for pair, delta in deltas.items():
+    lines.append(
+        f"- {pair}: full stage {delta['full_stage_ms_pct']:+.3f}%; "
+        f"physical tok/s {delta['physical_tok_s_pct']:+.3f}%; "
+        f"MatMul time {delta['matmul_ms_pct']:+.3f}%; "
+        f"MatMul TFLOP/s {delta['matmul_only_tflop_s_pct']:+.3f}%"
+    )
+lines.extend(
+    [
+        "",
+        "Combined-change caveat: 4352 alignment and FRACTAL_NZ were changed "
+        "together; this matrix does not attribute their effects separately.",
+        "",
+        "PHASE14_CONTRACTS: PASS",
+    ]
+)
+(root / "comparison.md").write_text(
+    "\n".join(lines) + "\n",
+    encoding="utf-8",
+)
+print((root / "comparison.md").read_text(encoding="utf-8"), end="")
+PY
+
+test "$(tail -n 1 "$PHASE14_ROOT/comparison.md")" = \
+  "PHASE14_CONTRACTS: PASS"
+```
+
+If any lane has a MatMul count other than 486, stop. Do not divide by an
+assumed replay count or silently omit an unfamiliar MatMul family. Inspect
+that lane's parsed profile, identify whether the parser omitted a true MatMul
+type, and report the mismatch.
+
+### 14.4 Required report and interpretation questions
+
+Write:
+
+```text
+$PHASE14_ROOT/agent_report.md
+```
+
+Use this exact skeleton:
+
+```text
+310P SIX-LANE VISION MATMUL MATRIX: PASS | PARTIAL | FAIL
+
+Git commit:
+Host / exact physical NPU:
+Logical NPU:
+Python:
+torch:
+torch_npu:
+TorchAir resolver:
+CANN / driver / firmware:
+Recognizer model:
+Graph cache route:
+Graph directories before / after / newly created:
+
+Fixed graph contract:
+layers / hidden:
+attention projection / runtime head padding:
+attention / RoPE:
+execution / dtype:
+warmup / samples / calls per sample:
+profile warmup / active replays:
+MatMul kernels per replay:
+
+Six-lane table:
+For each lane report:
+- full-stage median / mean / p05 / p95 ms
+- all ten per-sample replay values
+- physical tok/s
+- Linear FLOPs per replay
+- MatMulV2 count / total us / per-replay ms
+- MatMulV3 count / total us / per-replay ms
+- any other MatMul families
+- all-MatMul count / total us / per-replay ms
+- MatMul-only TFLOP/s
+- MatMul percent of 70-TFLOP peak
+- MatMul share of full-stage median
+- weighted Cube / MTE / Scalar utilization if present
+- exact 910B2 reference and 910B2/310P ratio
+
+Paired 4352-NZ versus 4304-ND changes:
+B1xS512 full-stage / physical tok/s / MatMul-ms / MatMul-TFLOP deltas:
+B4xS512 full-stage / physical tok/s / MatMul-ms / MatMul-TFLOP deltas:
+B1xS2048 full-stage / physical tok/s / MatMul-ms / MatMul-TFLOP deltas:
+
+Interpretation:
+Does 4352+NZ rescue the underfilled B1xS512 MatMuls:
+Does the gain persist, shrink, or reverse at B4xS512:
+Does B4xS512 MatMul behavior match B1xS2048 at equal B*S=2048:
+Does 310P reproduce the 910B2 pattern:
+Is the earlier ~16.2-TFLOP/s B1xS2048 ND observation reproduced:
+Can the gain be attributed separately to padding or NZ: NO
+
+First blocker or warning:
+Exact command paths:
+Run-summary paths:
+Parsed-profile paths:
+Comparison JSON / Markdown:
+Raw profile root:
+Graph cache:
+NPU monitor:
+All artifact paths:
+```
+
+Do not use high Cube utilization as a substitute for calculated TFLOP/s.
+Report both. Do not call the padded-NZ lane semantically different—the 4352
+MLP is zero-extended and mathematically equivalent—but do explicitly state
+that this experiment changes alignment and weight format together. Stop after
+Phase 14.4 and send the report plus exact artifact paths back to Luka
+manually.
+
+The work server is pull-only. Do not edit tracked files, create a branch,
+commit, or push. Keep graph caches and raw profiler trees under
+`.runtime_cache`; keep commands, logs, summaries, comparison, and report under
+`tmp/`.
+
 ## Artifact interpretation
 
-For the current Phase 13-only task, stop after Phase 13.4 and report. The
+For the current Phase 14-only task, stop after Phase 14.4 and report. The
 remaining sections are retained for earlier workflows and are not additional
 current work.
 
@@ -5655,7 +6435,7 @@ min-pixels settings.
 
 For the earlier production-validation task, stop after Phase 8. For the
 earlier isolated-vision saturation task, stop after Phase 9. The current task
-is governed by Phase 13.4 above. Do not start any OCR page workload.
+is governed by Phase 14.4 above. Do not start any OCR page workload.
 
 Write:
 
