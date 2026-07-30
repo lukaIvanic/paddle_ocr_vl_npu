@@ -6,6 +6,7 @@ packed path does not invalidate the established normal text-prefill caches.
 
 from __future__ import annotations
 
+import os
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -34,6 +35,11 @@ from utils.timing import synchronize
 
 if TYPE_CHECKING:
     from .modeling import LocalPaddleOCRVLForConditionalGeneration
+
+
+PACKED_GATHER_SYNC_DIAGNOSTIC_ENV = (
+    "PADDLE_OCR_VL_PACKED_GATHER_SYNC_DIAGNOSTIC"
+)
 
 
 def packed_text_source_hash() -> str:
@@ -418,11 +424,47 @@ class PackedTextPrefillRuntime:
             prepared.local_positions,
             *scratch_cache.flat_tensors(),
         )
-        return torch.index_select(
+        diagnose_gather = (
+            os.environ.get(PACKED_GATHER_SYNC_DIAGNOSTIC_ENV, "0") == "1"
+        )
+        if diagnose_gather:
+            print(
+                "[packed-gather-sync] compiled_graph_enqueued",
+                flush=True,
+            )
+            try:
+                synchronize(self.device)
+            except BaseException as exception:
+                raise RuntimeError(
+                    "packed text compiled graph synchronization failed "
+                    "before eager final-token gather"
+                ) from exception
+            print(
+                "[packed-gather-sync] compiled_graph_sync_passed",
+                flush=True,
+            )
+        gathered = torch.index_select(
             hidden_states,
             1,
             prepared.last_token_indices,
         )
+        if diagnose_gather:
+            print(
+                "[packed-gather-sync] eager_gather_enqueued",
+                flush=True,
+            )
+            try:
+                synchronize(self.device)
+            except BaseException as exception:
+                raise RuntimeError(
+                    "eager final-token gather synchronization failed "
+                    "after compiled graph completed"
+                ) from exception
+            print(
+                "[packed-gather-sync] eager_gather_sync_passed",
+                flush=True,
+            )
+        return gathered
 
     def redistribute_cache(
         self,

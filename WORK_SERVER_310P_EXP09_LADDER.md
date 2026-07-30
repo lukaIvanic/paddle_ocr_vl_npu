@@ -9,7 +9,7 @@ Prove that the real Experiment 09 pipeline runs on this 310P software stack,
 identify which production optimizations work, and measure their approximate
 effect on a small representative workload.
 
-## Current requested task: run Phase 24 only
+## Current requested task: run Phase 25 only
 
 Phases 0-21 have already run, are in progress elsewhere, are superseded, or
 retain historical instructions and evidence. Do not rerun the performance
@@ -19,10 +19,11 @@ page-index-8 failure occurs inside packed text graph call 7, before KV
 redistribution. Phase 22 reconstructed the exact indices and proved both eager
 Gather lanes, but its TorchAir lanes never executed because the old probe
 passed a free function to `cache_compile`. Phase 23 did not reproduce the
-failure in the isolated compiled Gather. The production packed-text graph now
-returns its full final hidden state and performs only the final-token gather
-eagerly on NPU. Go directly to **Phase 24: quick page-nine E2E validation** at
-the end of this document.
+failure in the isolated compiled Gather. Phase 24 moved the final gather out
+of the graph, but the normal asynchronous run still failed with GatherV2;
+because graph replay and eager gather were synchronized together, that result
+did not identify which side failed. Go directly to **Phase 25: synchronize
+around the eager final gather** at the end of this document.
 
 The reported production boundary is unusually sharp:
 
@@ -11316,3 +11317,102 @@ evidence paths:
 
 Paste back this compact report and, on failure, the smallest relevant error
 extract. Do not implement another workaround or run more pages.
+
+## Phase 25: synchronize around the eager final gather
+
+This is the same one-page Phase-24 E2E command with one diagnostic environment
+variable. It answers whether the AICore exception is already pending when the
+packed transformer graph finishes, or is triggered by the eager
+`torch.index_select` that follows it.
+
+Do not run any other phase or page.
+
+### 25.1 Pull and verify
+
+```sh
+cd /workspace/repos/paddle_ocr_vl_npu
+git status --short --branch
+git pull --ff-only origin main
+
+REPO="$(git rev-parse --show-toplevel)"
+COMMIT="$(git rev-parse HEAD)"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+SOURCE="$REPO/09_persistent_page_engine/paddleocr_vl/model/text_packed_prefill.py"
+
+grep -q 'PADDLE_OCR_VL_PACKED_GATHER_SYNC_DIAGNOSTIC' "$SOURCE"
+grep -q 'compiled graph synchronization failed before eager final-token gather' \
+  "$SOURCE"
+grep -q 'eager final-token gather synchronization failed after compiled graph completed' \
+  "$SOURCE"
+```
+
+Use the exact Phase-24 command and environment. Change only its output
+directory and set:
+
+```sh
+export PADDLE_OCR_VL_PACKED_GATHER_SYNC_DIAGNOSTIC=1
+```
+
+Do not add `ASCEND_LAUNCH_BLOCKING`, a profiler, graph probe, or other
+synchronization.
+
+### 25.2 Run the same page
+
+```sh
+OUTPUT_ROOT="$REPO/tmp/09_persistent_page_engine/310p_phase25_gather_boundary_$COMMIT_SHORT"
+test ! -e "$OUTPUT_ROOT"
+mkdir -p "$OUTPUT_ROOT"
+```
+
+Copy the exact Phase-24 `command.sh`, changing only its output directory.
+Preserve `--offset 8 --limit 1` and every production option. Save the new exact
+command as `$OUTPUT_ROOT/command.sh`, then:
+
+```sh
+set -o pipefail
+bash "$OUTPUT_ROOT/command.sh" 2>&1 | tee "$OUTPUT_ROOT/run.log"
+printf '%s\n' "${PIPESTATUS[0]}" > "$OUTPUT_ROOT/exit_code.txt"
+
+grep -nE \
+  'packed-gather-sync|compiled graph synchronization failed|eager final-token gather synchronization failed|AICore|GatherV2|DDR address' \
+  "$OUTPUT_ROOT/run.log" \
+  > "$OUTPUT_ROOT/boundary_extract.txt" || true
+cat "$OUTPUT_ROOT/boundary_extract.txt"
+```
+
+### 25.3 Interpret and stop
+
+The markers are emitted once per packed-text graph call:
+
+```text
+[packed-gather-sync] compiled_graph_enqueued
+[packed-gather-sync] compiled_graph_sync_passed
+[packed-gather-sync] eager_gather_enqueued
+[packed-gather-sync] eager_gather_sync_passed
+```
+
+Use only this decision:
+
+| Last successful marker / exception | Conclusion |
+| --- | --- |
+| exception says `compiled graph synchronization failed before eager final-token gather` | failure is already inside the full compiled packed transformer graph |
+| `compiled_graph_sync_passed`, then exception says `eager final-token gather synchronization failed after compiled graph completed` | compiled graph completed; the external eager GatherV2 is causal |
+| both sync markers pass for every call and page succeeds | added synchronization avoids the asynchronous/lifetime failure |
+
+Write and paste back:
+
+```text
+310P PHASE 25 PACKED GATHER BOUNDARY: GRAPH | EAGER GATHER | SYNC-SENSITIVE PASS
+
+commit / host / exact NPU / software:
+exit code:
+number of compiled_graph_sync_passed markers:
+number of eager_gather_sync_passed markers:
+last successful marker:
+wrapped RuntimeError:
+underlying AICore operator / kernel / error:
+wall time:
+evidence:
+```
+
+Do not implement a workaround afterward.
