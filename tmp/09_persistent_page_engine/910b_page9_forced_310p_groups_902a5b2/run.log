@@ -1,0 +1,26 @@
+Loading weights:   0%|          | 0/858 [00:00<?, ?it/s]Loading weights:  59%|█████▉    | 508/858 [00:00<00:00, 5078.69it/s]Loading weights: 100%|██████████| 858/858 [00:00<00:00, 5233.47it/s]
+[W730 18:25:14.423576723 TensorFactories.cpp:340] Warning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (function operator())
+Traceback (most recent call last):
+  File "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/probes/probe_text_kv_redistribution_failure.py", line 846, in <module>
+    main()
+  File "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/probes/probe_text_kv_redistribution_failure.py", line 840, in main
+    run_integrated(args, production_argv)
+  File "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/probes/probe_text_kv_redistribution_failure.py", line 501, in run_integrated
+    runpy.run_path(str(PRODUCTION_RUNNER), run_name="__main__")
+  File "<frozen runpy>", line 287, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/run_omnidocbench.py", line 758, in <module>
+    main()
+  File "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/run_omnidocbench.py", line 554, in main
+    recognizer = ContinuousRecognizer(
+                 ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/engine.py", line 655, in __init__
+    BatchedVisionGraphRuntime(
+  File "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/vision_router.py", line 239, in __init__
+    raise RuntimeError(
+RuntimeError: pinned vision profile source mismatch: expected=a2cd9cd7ae53 actual=76b3db23a4ca
+[ERROR] 2026-07-30-18:25:49 (PID:771446, Device:0, RankID:-1) ERR99999 UNKNOWN applicaiton exception

@@ -1,0 +1,13 @@
+{
+  "dataset_json": "/workspace/datasets/OmniDocBench/OmniDocBench.json",
+  "images_dir": "/workspace/datasets/OmniDocBench/images",
+  "offset": 8,
+  "count": 1,
+  "images": [
+    "page-0a262e27-b24d-4429-9b21-90563d4fada7.png"
+  ],
+  "pipeline": "owned_paddleocr_vl_v1.6",
+  "layout_device": "npu",
+  "layout_graph_capture": false,
+  "page_preprocessing_mode": "streaming_one_page_queue"
+}

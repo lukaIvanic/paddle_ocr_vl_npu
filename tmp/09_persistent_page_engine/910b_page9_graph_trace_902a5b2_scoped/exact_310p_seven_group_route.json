@@ -1,0 +1,182 @@
+{
+  "schema_version": 1,
+  "vision_packing": "profile_guided",
+  "groups": [
+    {
+      "request_ids": [
+        "page_000000_block_000000"
+      ],
+      "row_sizes": [
+        1
+      ],
+      "route": {
+        "execution": "compiled",
+        "real_vision_tokens": 184,
+        "physical_vision_tokens": 256,
+        "padding_vision_tokens": 72,
+        "useful_token_fraction": 0.71875,
+        "bucket": 256,
+        "batch_size": 1,
+        "sequence_length": 256,
+        "row_sizes": [
+          1
+        ],
+        "profiled_ms": null,
+        "visible_window_size": 22
+      }
+    },
+    {
+      "request_ids": [
+        "page_000000_block_000001"
+      ],
+      "row_sizes": [
+        1
+      ],
+      "route": {
+        "execution": "compiled",
+        "real_vision_tokens": 180,
+        "physical_vision_tokens": 256,
+        "padding_vision_tokens": 76,
+        "useful_token_fraction": 0.703125,
+        "bucket": 256,
+        "batch_size": 1,
+        "sequence_length": 256,
+        "row_sizes": [
+          1
+        ],
+        "profiled_ms": null,
+        "visible_window_size": 22
+      }
+    },
+    {
+      "request_ids": [
+        "page_000000_block_000002",
+        "page_000000_block_000003",
+        "page_000000_block_000004",
+        "page_000000_block_000005",
+        "page_000000_block_000006"
+      ],
+      "row_sizes": [
+        5
+      ],
+      "route": {
+        "execution": "compiled",
+        "real_vision_tokens": 1628,
+        "physical_vision_tokens": 1920,
+        "padding_vision_tokens": 292,
+        "useful_token_fraction": 0.8479166666666667,
+        "bucket": 1920,
+        "batch_size": 1,
+        "sequence_length": 1920,
+        "row_sizes": [
+          5
+        ],
+        "profiled_ms": null,
+        "visible_window_size": 22
+      }
+    },
+    {
+      "request_ids": [
+        "page_000000_block_000007",
+        "page_000000_block_000008",
+        "page_000000_block_000009",
+        "page_000000_block_000010"
+      ],
+      "row_sizes": [
+        4
+      ],
+      "route": {
+        "execution": "compiled",
+        "real_vision_tokens": 1328,
+        "physical_vision_tokens": 1408,
+        "padding_vision_tokens": 80,
+        "useful_token_fraction": 0.9431818181818182,
+        "bucket": 1408,
+        "batch_size": 1,
+        "sequence_length": 1408,
+        "row_sizes": [
+          4
+        ],
+        "profiled_ms": null,
+        "visible_window_size": 22
+      }
+    },
+    {
+      "request_ids": [
+        "page_000000_block_000011",
+        "page_000000_block_000012"
+      ],
+      "row_sizes": [
+        2
+      ],
+      "route": {
+        "execution": "compiled",
+        "real_vision_tokens": 1280,
+        "physical_vision_tokens": 1408,
+        "padding_vision_tokens": 128,
+        "useful_token_fraction": 0.9090909090909091,
+        "bucket": 1408,
+        "batch_size": 1,
+        "sequence_length": 1408,
+        "row_sizes": [
+          2
+        ],
+        "profiled_ms": null,
+        "visible_window_size": 22
+      }
+    },
+    {
+      "request_ids": [
+        "page_000000_block_000013",
+        "page_000000_block_000014",
+        "page_000000_block_000015"
+      ],
+      "row_sizes": [
+        3
+      ],
+      "route": {
+        "execution": "compiled",
+        "real_vision_tokens": 1560,
+        "physical_vision_tokens": 1920,
+        "padding_vision_tokens": 360,
+        "useful_token_fraction": 0.8125,
+        "bucket": 1920,
+        "batch_size": 1,
+        "sequence_length": 1920,
+        "row_sizes": [
+          3
+        ],
+        "profiled_ms": null,
+        "visible_window_size": 22
+      }
+    },
+    {
+      "request_ids": [
+        "page_000000_block_000016",
+        "page_000000_block_000017",
+        "page_000000_block_000018",
+        "page_000000_block_000019",
+        "page_000000_block_000020",
+        "page_000000_block_000021"
+      ],
+      "row_sizes": [
+        6
+      ],
+      "route": {
+        "execution": "compiled",
+        "real_vision_tokens": 1600,
+        "physical_vision_tokens": 1920,
+        "padding_vision_tokens": 320,
+        "useful_token_fraction": 0.8333333333333334,
+        "bucket": 1920,
+        "batch_size": 1,
+        "sequence_length": 1920,
+        "row_sizes": [
+          6
+        ],
+        "profiled_ms": null,
+        "visible_window_size": 22
+      }
+    }
+  ]
+}

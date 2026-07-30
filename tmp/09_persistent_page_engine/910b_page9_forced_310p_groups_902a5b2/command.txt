@@ -1,0 +1,5 @@
+commit=902a5b21d28539cf088618d91a2cacd495f66e9b
+host=liteserver-c001-4
+python=/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python
+ASCEND_RT_VISIBLE_DEVICES=5
+route_plan=tmp/09_persistent_page_engine/910b_page9_graph_trace_902a5b2_scoped/exact_310p_seven_group_route.json
