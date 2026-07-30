@@ -11688,3 +11688,181 @@ $OUTPUT_ROOT/agent_report.md
 
 Paste back `agent_report.md`, the compact table, both exit codes, and both
 summary paths. Do not paste full logs unless there is a failure.
+
+## Phase 28: identify the exact scheduler blocking boundary
+
+Run this phase only on the 16-page configuration that has been observed to
+stop making progress around page 12. This is a diagnostic replay, not a
+performance benchmark. Do not change the model, caches, packing, layout-first
+frontend, min-pixels, or graph configuration.
+
+Commit `03cfa99` adds structured progress events without adding NPU
+synchronization. Every event is emitted to stderr, flushed immediately, and
+begins with:
+
+```text
+EXP09_SCHEDULER
+```
+
+The relevant boundaries are deliberately paired:
+
+```text
+decode_step_begin                 -> decode_step_end
+token_copy_schedule_begin         -> token_copy_schedule_end
+pending_token_wait_begin          -> pending_token_wait_end
+ready_source_next_begin           -> ready_source_next_end
+prefill_enqueue_begin             -> prefill_enqueue_end
+prefill_finalize_begin            -> prefill_finalize_end
+prefill_h2d_executor_shutdown_begin -> prefill_h2d_executor_shutdown_end
+```
+
+A successful 910B control using the same diagnostics completed 244/244 crops.
+Its iteration 525 emitted the full sequence through `iteration_end`. It later
+entered a normal four-request tail at iteration 855 and drained the last
+request at iteration 1026. Therefore `iteration == 525` or
+`active_count == 4` is not itself a scheduler terminal condition.
+
+### 28.1 Pull and construct the diagnostic command
+
+```sh
+cd /workspace/repos/paddle_ocr_vl_npu
+git status --short --branch
+git pull --ff-only origin main
+
+REPO="$(git rev-parse --show-toplevel)"
+COMMIT="$(git rev-parse HEAD)"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+git merge-base --is-ancestor 03cfa99 "$COMMIT"
+
+PYTHON_BIN="${PYTHON_BIN:-$(command -v python)}"
+test -x "$PYTHON_BIN"
+"$PYTHON_BIN" - <<'PY'
+import kornia_rs
+import torch
+import torch_npu
+print("python_dependencies: PASS")
+print("torch:", torch.__version__)
+print("torch_npu:", torch_npu.__version__)
+PY
+```
+
+Use the exact command that reproduced the 16-page stop. Preserve all existing
+arguments, including `--preprocess-all-pages-first`. Confirm that it contains:
+
+```text
+--offset 0
+--limit 16
+--batch-size 16
+--preprocessor-min-pixels 28224
+--text-packing production_group
+--vision-packing greedy
+--vision-promptfa-align-128
+--layout-device npu
+--no-layout-graph-capture
+--preprocess-all-pages-first
+```
+
+Add only:
+
+```text
+--scheduler-progress
+```
+
+and change `--output-dir` to the new run directory:
+
+```sh
+OUTPUT_ROOT="$REPO/tmp/09_persistent_page_engine/310p_phase28_scheduler_$COMMIT_SHORT"
+test ! -e "$OUTPUT_ROOT"
+mkdir -p "$OUTPUT_ROOT"
+```
+
+Save the fully expanded command as `$OUTPUT_ROOT/command.sh`. Do not use a
+different runner or a reduced isolated model.
+
+### 28.2 Run with a durable live log
+
+Run unbuffered and preserve the actual Python exit code:
+
+```sh
+set -o pipefail
+PYTHONUNBUFFERED=1 bash "$OUTPUT_ROOT/command.sh" 2>&1 \
+  | tee "$OUTPUT_ROOT/run.log"
+printf '%s\n' "${PIPESTATUS[0]}" > "$OUTPUT_ROOT/exit_code.txt"
+```
+
+The log is intentionally live. In a second shell, progress can be inspected
+without touching the process:
+
+```sh
+tail -f "$OUTPUT_ROOT/run.log"
+```
+
+or, for scheduler boundaries only:
+
+```sh
+grep --line-buffered '^EXP09_SCHEDULER ' "$OUTPUT_ROOT/run.log" | tail -n 80
+```
+
+If no new `EXP09_SCHEDULER` event appears for 90 seconds after the scheduler
+has started, treat the run as hung. Do not wait five minutes. Before stopping
+the process, capture:
+
+```sh
+grep '^EXP09_SCHEDULER ' "$OUTPUT_ROOT/run.log" \
+  | tail -n 120 > "$OUTPUT_ROOT/last_scheduler_events.log"
+npu-smi info > "$OUTPUT_ROOT/npu_smi_at_stall.txt" 2>&1 || true
+```
+
+Then terminate only the exact process started by this run. Never use `pkill`
+or `killall`.
+
+### 28.3 Mechanical classification
+
+Do not infer the blocking point from the last progress counter. Use the last
+unmatched paired event:
+
+| Last unmatched event | Classification |
+| --- | --- |
+| `decode_step_begin` | compiled decode invocation/replay did not return |
+| `token_copy_schedule_begin` | sampled-token copy submission blocked |
+| `pending_token_wait_begin` | prior decode/token-copy event never completed |
+| `ready_source_next_begin` | synchronous refill is blocked inside the ready-source generator |
+| `prefill_enqueue_begin` | staged prefill enqueue/H2D path blocked |
+| `prefill_finalize_begin` | prefill device completion or first-token D2H blocked |
+| `prefill_h2d_executor_shutdown_begin` | ready-source exhaustion is blocked draining the H2D executor |
+| `iteration_end` with no following `iteration_begin` | Python control left the iteration loop unexpectedly; inspect the following non-scheduler traceback/log |
+
+If the last unmatched event is `ready_source_next_begin`, inspect the nested
+engine events after it. `refill_ready_queue()` is then the synchronous caller,
+but the nested unmatched event identifies the actual operation that did not
+return.
+
+Repeated adjacent `refill_begin` and `refill_end` events with
+`source_exhausted=true` and `pulled=0` are known harmless zero-work calls.
+They are inefficient but are not a hang.
+
+### 28.4 Compact report
+
+Create `$OUTPUT_ROOT/agent_report.md` containing:
+
+```text
+310P PHASE 28 SCHEDULER BOUNDARY: DECODE | TOKEN_D2H | REFILL_PREFILL | OTHER | PASS
+
+commit / host / exact NPU / software:
+exact command:
+exit code:
+last completed page/result count:
+last iteration:
+active_count / active request IDs and token counts:
+ready_depth / source_exhausted / submitted / completed:
+last 20 EXP09_SCHEDULER events:
+last unmatched begin event:
+mechanical classification:
+NPU utilization/state at stall:
+first causal error, if any:
+evidence paths:
+```
+
+Paste back the report and the literal last 20 `EXP09_SCHEDULER` JSON lines.
+Do not summarize those lines away: their exact event names and snapshots are
+the evidence needed for the next code decision.
