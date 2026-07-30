@@ -9,13 +9,16 @@ Prove that the real Experiment 09 pipeline runs on this 310P software stack,
 identify which production optimizations work, and measure their approximate
 effect on a small representative workload.
 
-## Current requested task: run Phase 20 only
+## Current requested task: run Phase 21 only
 
-Phases 0-19 have already run, are in progress elsewhere, are superseded, or
+Phases 0-20 have already run, are in progress elsewhere, are superseded, or
 retain historical instructions and evidence. Do not rerun the performance
 ladder, vision matrices, native profiles, text prefill, decode, PromptFA
-experiments, or the superseded standalone-layout Phase 19. Go directly to
-**Phase 20: integrated OCR page-nine failure** at the end of this document.
+experiments, or the superseded standalone-layout Phase 19. Phase 20 bounded
+the page-index-8 failure to packed text prefill or its immediately following
+KV redistribution, but did not prove which side failed. Go directly to
+**Phase 21: packed-text graph versus exact KV-copy isolation** at the end of
+this document.
 
 The reported production boundary is unusually sharp:
 
@@ -9735,3 +9738,509 @@ request/stage/operator and evidence path. These are not acceptable:
 If no exact binary path is requested, say so. Paste back the four compact
 report files and the paths to the raw evidence. Redact credentials only; keep
 operator names, shapes, graph/cache paths, software versions, and error codes.
+
+## Phase 21: packed-text graph versus exact KV-copy isolation
+
+### 21.0 Purpose and corrected Phase-20 conclusion
+
+Run this phase only. Phase 20 proved:
+
+```text
+standalone page-index-8 layout: PASS
+integrated page-index-8 run: FAIL
+cross-page layout/OCR overlap required: NO
+failure surfaces at or immediately before packed-text KV redistribution
+AICore error: MTE DDR address out of range
+missing binary/library: NO
+```
+
+Phase 20 did **not** yet prove:
+
+- that the compiled packed-text graph completed successfully;
+- that `GatherV2_216` was lowered from the Python slice-copy rather than being
+  an internal node of the preceding graph;
+- that all packed offsets, lengths, views, storage bounds, formats, and cache
+  lifetimes were valid;
+- that the problem is a CANN implementation defect rather than our runtime
+  metadata or ordering.
+
+This phase resolves those questions with one graph-boundary run, at most one
+per-copy run, and at most three tiny fresh-process replay lanes. It does not
+benchmark performance or implement a fix.
+
+### 21.1 Diagnostic implementation
+
+The committed probe is:
+
+```text
+09_persistent_page_engine/scripts/probes/
+  probe_text_kv_redistribution_failure.py
+```
+
+It executes the real `run_omnidocbench.py` entrypoint with the original
+production arguments. It monkeypatches only diagnostic boundaries before that
+entrypoint is executed. Normal production source and cache identities remain
+unchanged.
+
+Every event is appended and `fsync`ed to `events.jsonl`. This is deliberate:
+the last `copy_before` record must survive even if an AICore exception poisons
+or terminates the process.
+
+The two integrated barrier strategies are:
+
+```text
+graph_only
+  device-wide synchronization immediately after packed graph execution;
+  production redistribute_cache remains byte-for-byte unchanged
+
+full
+  same graph barrier, plus metadata validation, a durable pre-copy record,
+  and device-wide synchronization after every individual KV copy
+```
+
+Replay lanes reconstruct the recorded source/destination shapes, strides,
+storage offsets, dtype, and NPU format with fresh allocations. Each lane must
+run in a fresh process because an AICore exception can poison the runtime.
+
+### 21.2 Pull and preflight
+
+Read `CLAUDE.md` and `AGENTS.md`, then:
+
+```sh
+cd /workspace/repos/paddle_ocr_vl_npu
+git status --short --branch
+git pull --ff-only origin main
+
+REPO="$(git rev-parse --show-toplevel)"
+COMMIT="$(git rev-parse HEAD)"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+PYTHON_BIN="${PYTHON_BIN:-$(command -v python)}"
+PROBE="$REPO/09_persistent_page_engine/scripts/probes/probe_text_kv_redistribution_failure.py"
+
+test -x "$PYTHON_BIN"
+test -f "$PROBE"
+"$PYTHON_BIN" "$PROBE" --help
+
+OUTPUT_ROOT="$REPO/tmp/09_persistent_page_engine/310p_phase21_kv_copy_$COMMIT_SHORT"
+RAW_ROOT="$REPO/.runtime_cache/310p_phase21_kv_copy_$COMMIT_SHORT"
+test ! -e "$OUTPUT_ROOT"
+test ! -e "$RAW_ROOT"
+mkdir -p "$OUTPUT_ROOT" "$RAW_ROOT"
+```
+
+Activate exactly the environment used by the Phase-20 synchronized
+page-index-8 run. Record:
+
+```sh
+{
+  printf 'commit=%s\n' "$COMMIT"
+  printf 'host=%s\n' "$(hostname)"
+  printf 'python=%s\n' "$PYTHON_BIN"
+  printf 'date=%s\n' "$(date --iso-8601=seconds 2>/dev/null || date)"
+  "$PYTHON_BIN" - <<'PY'
+import json
+import sys
+import torch
+import torch_npu
+
+print(json.dumps({
+    "python": sys.version,
+    "torch": torch.__version__,
+    "torch_npu": torch_npu.__version__,
+    "npu_available": torch.npu.is_available(),
+    "npu_name": torch.npu.get_device_name(0),
+}, indent=2))
+PY
+  npu-smi info
+} 2>&1 | tee "$OUTPUT_ROOT/preflight.log"
+```
+
+Do not continue if the intended NPU is occupied by an unrelated process.
+Never use `pkill` or `killall`.
+
+### 21.3 Recover the exact Phase-20 production arguments
+
+Use the exact successful command construction from Phase 20's
+`synchronized_offset8_limit1` run. Do not reconstruct cache roots or
+optimization flags from defaults.
+
+Create a Bash array named `PRODUCTION_ARGS` containing every argument after
+`run_omnidocbench.py`, except remove the old `--output-dir <path>` pair. It
+must still contain:
+
+```text
+--offset 8
+--limit 1
+--layout-device npu
+--no-layout-graph-capture
+the exact Phase-20 dataset, image, and model paths
+the exact vision/text/decode configuration
+the exact four warm cache roots
+```
+
+Record the resulting array unambiguously:
+
+```sh
+{
+  printf '%q ' "$PYTHON_BIN" \
+    "$REPO/09_persistent_page_engine/scripts/run_omnidocbench.py" \
+    "${PRODUCTION_ARGS[@]}"
+  printf '\n'
+} > "$OUTPUT_ROOT/original_production_command_without_output_dir.sh"
+```
+
+Compare it to the Phase-20 saved command before running. The only differences
+may be the wrapper script, diagnostics, and new output directory. Do not
+change packing, buckets, cache length, batch size, min-pixels, or page
+selection.
+
+### 21.4 Run A: graph boundary only
+
+This run proves whether the packed graph itself completes before the original
+redistribution begins.
+
+```sh
+RUN_NAME=graph_only
+RUN_OUT="$OUTPUT_ROOT/$RUN_NAME"
+RUN_RAW="$RAW_ROOT/$RUN_NAME"
+mkdir -p "$RUN_OUT/diagnostic" "$RUN_RAW/cann"
+
+export PYTHONFAULTHANDLER=1
+export ASCEND_LAUNCH_BLOCKING=1
+export TORCH_NPU_COMPACT_ERROR_OUTPUT=0
+export ASCEND_PROCESS_LOG_PATH="$RUN_RAW/cann"
+export ASCEND_WORK_PATH="$RUN_RAW"
+export ASCEND_GLOBAL_LOG_LEVEL=0
+export ASCEND_MODULE_LOG_LEVEL='RUNTIME=0:ASCENDCL=0:OP=0:TBE=0'
+export ASCEND_GLOBAL_EVENT_ENABLE=1
+export ASCEND_LOG_DEVICE_FLUSH_TIMEOUT=10000
+
+{
+  printf '%q ' "$PYTHON_BIN" "$PROBE" \
+    --mode integrated \
+    --integrated-barriers graph_only \
+    --diagnostic-dir "$RUN_OUT/diagnostic" \
+    -- "${PRODUCTION_ARGS[@]}" \
+    --output-dir "$RUN_OUT/pipeline"
+  printf '\n'
+} > "$RUN_OUT/command.sh"
+
+set +e
+set -o pipefail
+"$PYTHON_BIN" "$PROBE" \
+  --mode integrated \
+  --integrated-barriers graph_only \
+  --diagnostic-dir "$RUN_OUT/diagnostic" \
+  -- "${PRODUCTION_ARGS[@]}" \
+  --output-dir "$RUN_OUT/pipeline" \
+  2>&1 | tee "$RUN_OUT/run.log"
+GRAPH_ONLY_EXIT="${PIPESTATUS[0]}"
+set -e
+printf '%s\n' "$GRAPH_ONLY_EXIT" > "$RUN_OUT/exit_code.txt"
+```
+
+Summarize the durable event tail:
+
+```sh
+"$PYTHON_BIN" - "$RUN_OUT/diagnostic/events.jsonl" \
+  > "$RUN_OUT/event_summary.txt" <<'PY'
+import collections
+import json
+import sys
+
+path = sys.argv[1]
+events = [json.loads(line) for line in open(path, encoding="utf-8") if line.strip()]
+counts = collections.Counter(event["event"] for event in events)
+print("records:", len(events))
+print("counts:", json.dumps(counts, indent=2, sort_keys=True))
+print("tail:")
+for event in events[-20:]:
+    print(json.dumps({
+        "sequence": event["sequence"],
+        "event": event["event"],
+        "graph_call": event.get("graph_call"),
+        "exception": event.get("exception"),
+    }, ensure_ascii=False))
+PY
+cat "$RUN_OUT/event_summary.txt"
+```
+
+Interpret and stop/continue exactly as follows:
+
+```text
+packed_graph_sync_failed
+  STOP. The failure is inside the compiled packed graph, before redistribution.
+  Do not run the full-copy probe or replay lanes.
+
+packed_graph_sync_passed, then production fails at original redistribute_cache
+  CONTINUE to Run B. The graph is exonerated and the copy path remains causal.
+
+complete page passes
+  STOP. The explicit graph-to-copy barrier changes the result. This is an
+  ordering/dependency problem, not a demonstrated invalid GatherV2 shape.
+```
+
+### 21.5 Run B: identify the exact member/layer/KV copy
+
+Run this only if Run A records `packed_graph_sync_passed` and the original
+redistribution still fails.
+
+Use a fresh process and fresh CANN-log directory:
+
+```sh
+RUN_NAME=full_per_copy
+RUN_OUT="$OUTPUT_ROOT/$RUN_NAME"
+RUN_RAW="$RAW_ROOT/$RUN_NAME"
+mkdir -p "$RUN_OUT/diagnostic" "$RUN_RAW/cann"
+
+export ASCEND_PROCESS_LOG_PATH="$RUN_RAW/cann"
+export ASCEND_WORK_PATH="$RUN_RAW"
+
+{
+  printf '%q ' "$PYTHON_BIN" "$PROBE" \
+    --mode integrated \
+    --integrated-barriers full \
+    --diagnostic-dir "$RUN_OUT/diagnostic" \
+    -- "${PRODUCTION_ARGS[@]}" \
+    --output-dir "$RUN_OUT/pipeline"
+  printf '\n'
+} > "$RUN_OUT/command.sh"
+
+set +e
+set -o pipefail
+"$PYTHON_BIN" "$PROBE" \
+  --mode integrated \
+  --integrated-barriers full \
+  --diagnostic-dir "$RUN_OUT/diagnostic" \
+  -- "${PRODUCTION_ARGS[@]}" \
+  --output-dir "$RUN_OUT/pipeline" \
+  2>&1 | tee "$RUN_OUT/run.log"
+FULL_EXIT="${PIPESTATUS[0]}"
+set -e
+printf '%s\n' "$FULL_EXIT" > "$RUN_OUT/exit_code.txt"
+```
+
+Each copy record contains:
+
+```text
+graph call and copy ordinal
+member index
+key/value and transformer layer
+segment offset and length
+scratch and destination cache lengths
+base and view shapes/strides/storage offsets
+underlying storage size and calculated highest accessed element
+data/storage pointers and alias status
+contiguity and NPU format
+```
+
+The probe asserts all application-level bounds and cache-storage uniqueness
+before launching the copy.
+
+Summarize it:
+
+```sh
+"$PYTHON_BIN" - "$RUN_OUT/diagnostic/events.jsonl" \
+  > "$RUN_OUT/copy_summary.json" <<'PY'
+import json
+import sys
+
+events = [
+    json.loads(line)
+    for line in open(sys.argv[1], encoding="utf-8")
+    if line.strip()
+]
+before = {
+    event["copy"]["copy_id"]: event
+    for event in events
+    if event["event"] == "copy_before"
+}
+passed = [
+    event["copy"]["copy_id"]
+    for event in events
+    if event["event"] == "copy_sync_passed"
+]
+failed = [
+    event
+    for event in events
+    if event["event"] in {
+        "copy_validation_failed",
+        "copy_enqueue_failed",
+        "copy_sync_failed",
+    }
+]
+candidate = failed[-1] if failed else next(
+    (
+        event
+        for event in reversed(events)
+        if event["event"] == "copy_before"
+        and event["copy"]["copy_id"] not in set(passed)
+    ),
+    None,
+)
+payload = {
+    "event_counts": {
+        name: sum(event["event"] == name for event in events)
+        for name in sorted({event["event"] for event in events})
+    },
+    "passed_copy_count": len(passed),
+    "candidate": candidate,
+    "candidate_before": (
+        before.get(candidate["copy"]["copy_id"])
+        if candidate is not None
+        else None
+    ),
+    "previous_passing_copy": (
+        before.get(passed[-1]) if passed else None
+    ),
+}
+print(json.dumps(payload, ensure_ascii=False, indent=2))
+PY
+cat "$RUN_OUT/copy_summary.json"
+```
+
+Interpret:
+
+```text
+copy_validation_failed
+  STOP. This is our bounds, alias, or tensor-metadata bug, not a CANN bug.
+
+copy_sync_failed with all validations true
+  CONTINUE to the three fresh-process replay lanes.
+
+complete page passes only with per-copy barriers
+  STOP. Queueing/ordering between copies is causal. There is no isolated
+  failing shape to replay; do not pretend the final copy is the culprit.
+```
+
+### 21.6 Fresh-process replay lanes
+
+Run only when Run B identifies one failed or incomplete validated copy.
+All three commands read Run B's durable `events.jsonl`.
+
+The lanes are:
+
+```text
+candidate_current
+  current sliced copy with the exact failing shape/stride/offset
+
+neighbor_current
+  the immediately preceding copy that synchronized successfully
+
+candidate_per_head
+  same candidate, copied one KV head at a time so each view is contiguous
+```
+
+Run each lane in a fresh Python process with a distinct CANN-log directory.
+Do not combine them in one invocation:
+
+```sh
+TRACE="$OUTPUT_ROOT/full_per_copy/diagnostic/events.jsonl"
+
+for LANE in candidate_current neighbor_current candidate_per_head; do
+  LANE_OUT="$OUTPUT_ROOT/replay_$LANE"
+  LANE_RAW="$RAW_ROOT/replay_$LANE"
+  mkdir -p "$LANE_OUT" "$LANE_RAW/cann"
+  export ASCEND_PROCESS_LOG_PATH="$LANE_RAW/cann"
+  export ASCEND_WORK_PATH="$LANE_RAW"
+
+  set +e
+  set -o pipefail
+  "$PYTHON_BIN" "$PROBE" \
+    --mode replay \
+    --diagnostic-dir "$OUTPUT_ROOT/full_per_copy/diagnostic" \
+    --trace "$TRACE" \
+    --replay-lane "$LANE" \
+    --output "$LANE_OUT/summary.json" \
+    2>&1 | tee "$LANE_OUT/run.log"
+  LANE_EXIT="${PIPESTATUS[0]}"
+  set -e
+  printf '%s\n' "$LANE_EXIT" > "$LANE_OUT/exit_code.txt"
+done
+```
+
+Do not reuse an interpreter or interactive Python session between lanes.
+
+### 21.7 Decision table
+
+Use this table exactly:
+
+| Observation | Conclusion |
+| --- | --- |
+| graph sync fails | failure is inside compiled packed text prefill |
+| graph-only page passes | graph-to-redistribution dependency/order bug |
+| full probe catches invalid bound/storage/alias | application/runtime bookkeeping bug |
+| graph-only fails, full passes | asynchronous multi-copy queue/order interaction |
+| candidate fresh copy fails; neighbor passes | shape/stride-specific Torch-NPU/CANN copy defect |
+| candidate and neighbor fresh copies both fail | broader replay/operator limitation; control is not discriminating |
+| candidate fresh copy passes | integrated graph output format/lifetime/allocator/stream state is required |
+| candidate current fails; per-head passes | strided cross-head copy path is causal; per-head copy is a viable fix candidate |
+| candidate per-head also fails | problem is not only the non-contiguous head stride |
+
+The phrase "CANN GatherV2 bug" is allowed only when:
+
+1. Run A proves the packed graph completed;
+2. Run B proves all Python bounds/storage invariants;
+3. `candidate_current` fails from fresh allocations;
+4. the adjacent passing control does not fail.
+
+### 21.8 Report and stopping point
+
+Do not implement a fix. Write:
+
+```text
+$OUTPUT_ROOT/agent_report.md
+```
+
+Use:
+
+```text
+310P PHASE 21 PACKED-TEXT/KV-COPY ISOLATION: ROOT CAUSE FOUND | BOUNDED | INCONCLUSIVE
+
+Commit / host / exact NPU / software:
+Exact production command equivalence:
+
+Run A, graph-only:
+- exit:
+- last graph event:
+- packed graph independently synchronized:
+- original redistribution status:
+- conclusion:
+
+Run B, full per-copy (if run):
+- exit:
+- graph call:
+- pack physical/real length:
+- segment lengths/offsets:
+- passed copy count:
+- failing copy ordinal:
+- member / K-or-V / layer:
+- offset / length:
+- source base/view shape and strides:
+- destination base/view shape and strides:
+- storage offsets and maximum accessed elements:
+- storage sizes:
+- formats and contiguity:
+- all bounds/alias validations:
+- enqueue versus synchronization failure:
+- exact CANN op/error:
+
+Fresh replay:
+| lane | exit | exact result | CANN op/error |
+
+Classification using the Phase-21 decision table:
+
+What is proven:
+What is not proven:
+One proposed next code change to discuss (do not implement):
+
+Evidence:
+- graph-only events/log/CANN root:
+- full-copy events/summary/log/CANN root:
+- each replay summary/log/CANN root:
+```
+
+Paste back `agent_report.md`, Run A's `event_summary.txt`, Run B's
+`copy_summary.json` if produced, and all replay `summary.json` files. Include
+paths to raw CANN evidence. Do not paste enormous plogs unless a compact
+operator/error excerpt is needed.
