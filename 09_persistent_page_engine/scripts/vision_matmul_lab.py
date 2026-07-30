@@ -101,6 +101,10 @@ PROFILE_METRIC_CHOICES = (
 PROMPTFA_INNER_PRECISE_CHOICES = (1, 4)
 LEGACY_SEPARATE_MANUAL_SOURCE_HASH = "b4144440d15e"
 JOINT_MANUAL_SOURCE_HASH = "25d9a2dd1d39"
+# The first compiled fused-manual graph used this source fingerprint. Keep the
+# graph identity stable across parser/report-only edits; bump it deliberately
+# only when the stage or converter math changes.
+SCALED_MASKED_SOFTMAX_GRAPH_REVISION = "a1ec8f3c0323"
 StageInputs = tuple[torch.Tensor, ...]
 
 
@@ -1362,7 +1366,7 @@ def _cache_dir(
             *common_key_parts,
             "scaledmasksoftmax_scale_in_op",
             "scaledmasksoftmax_explicit_bool_mask",
-            "src" + short_file_hash(Path(__file__).resolve()),
+            "src" + SCALED_MASKED_SOFTMAX_GRAPH_REVISION,
         ]
     if rotary_implementation == "separate_manual":
         # This implementation is byte-for-byte the already measured control.
@@ -1857,6 +1861,12 @@ def _attention_kernel_component(row: dict[str, str]) -> str:
 
     inputs = _profile_shapes(row.get("Input Shapes"))
     outputs = _profile_shapes(row.get("Output Shapes"))
+    if "batchmatmul" in name and outputs and len(outputs[0]) >= 2:
+        return (
+            "attention_qk_matmul"
+            if outputs[0][-2] == outputs[0][-1]
+            else "attention_av_matmul"
+        )
     if len(inputs) >= 2 and outputs:
         left = inputs[0]
         right = inputs[1]
