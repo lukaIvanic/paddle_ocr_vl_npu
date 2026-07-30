@@ -506,6 +506,64 @@ FLOP count by only their summed kernel duration, and reports both
 `measurements.linear_tflop_per_s_device_median`, whose denominator is the
 complete 27-layer vision-transformer replay.
 
+#### Detailed multi-metric profiling
+
+`scripts/run_vision_matmul_profile_suite.py` is the repeatable deep-profile
+entry point for the Phase-14 optimized lane: B1xS2048, the mathematically
+zero-extended 4352-wide MLP, all 162 Linear weights in FRACTAL_NZ, runtime
+D72-to-D80 PromptFA padding, separate manual RoPE, and the warm compiled
+27-layer production stage. It captures each AI Core PMU family in a separate
+process; the unprofiled NPU-event measurement remains the throughput result.
+
+```sh
+source npu-setup
+
+/usr/local/python3.12.13/bin/python3 \
+  09_persistent_page_engine/scripts/run_vision_matmul_profile_suite.py \
+  --name 910b_b1s2048_i4352_nz \
+  --metrics pipe memory l2
+```
+
+Raw profiler output stays under
+`.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/`. Each lane
+writes its exact command, contract, log, ordinary lab summary, and detailed
+analysis under
+`tmp/09_persistent_page_engine/vision_matmul_profile_suite/<name>/`.
+The combined analysis contains:
+
+- every `kernel_details.csv` execution in normalized CSV and SQLite form;
+- the raw CSV and profiler-database schema inventory, including unknown PMU
+  columns rather than dropping them;
+- replay spans, kernel overlap/gaps, task and stream IDs, Block/Mix Block
+  counts, shapes, dtypes, and formats;
+- a fail-closed 27-layer mapping. `q_proj`, `k_proj`, `v_proj`, `out_proj`,
+  `fc1`, and `fc2` are labeled only when every replay has exactly 162 MatMuls
+  and the full six-shape motif matches the saved model contract;
+- per-kernel, per-role, and per-layer physical MatMul FLOP/s plus every
+  available Pipe, Memory, or L2 counter.
+
+The analyzer can also be rerun later without another NPU execution:
+
+```sh
+/usr/local/python3.12.13/bin/python3 \
+  09_persistent_page_engine/scripts/analyze_vision_matmul_profile.py \
+  --contract <lane-result>/profile_contract.json \
+  --lane pipe=<raw-pipe-profile> \
+  --lane memory=<raw-memory-profile> \
+  --lane l2=<raw-l2-profile> \
+  --output-dir <new-analysis-dir>
+```
+
+Interpretation is deliberately conservative. `Block Num` is configured task
+parallelism, not proof of balanced useful work on that many physical cores.
+On the observed CANN 9 application export, `cube_utilization(%)` is
+`aicore_time / task duration`, so it is AI-Core active-time occupancy rather
+than achieved MAC or peak-FLOP utilization. MAC, MTE1, MTE2, FixPipe, and
+Vector ratios overlap and must not be added. Whole-graph captures establish
+which kernels and layers matter; targeted `msprof op` Occupancy,
+MemoryDetail, or Roofline replays are the separate second tier for physical
+core balance and a single selected kernel's mechanics.
+
 ```sh
 /usr/local/python3.12.13/bin/python3 \
   09_persistent_page_engine/scripts/run_vision_matmul_lab_matrix.py \

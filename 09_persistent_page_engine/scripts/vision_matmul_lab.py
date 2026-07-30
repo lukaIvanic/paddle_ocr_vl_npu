@@ -14,6 +14,8 @@ import argparse
 import hashlib
 import json
 import math
+import os
+import platform
 import shutil
 import statistics
 import subprocess
@@ -79,6 +81,7 @@ ROTARY_IMPLEMENTATIONS = (
     "joint_manual",
     "joint_inplace_partial",
 )
+PROFILE_METRIC_CHOICES = ("pipe", "memory", "l2", "memory_access")
 LEGACY_SEPARATE_MANUAL_SOURCE_HASH = "b4144440d15e"
 JOINT_MANUAL_SOURCE_HASH = "25d9a2dd1d39"
 StageInputs = tuple[torch.Tensor, ...]
@@ -156,6 +159,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument("--profile", action="store_true")
+    parser.add_argument(
+        "--profile-metric",
+        choices=PROFILE_METRIC_CHOICES,
+        default="pipe",
+        help=(
+            "AI Core PMU family for this capture. Each family requires a "
+            "separate profiler pass."
+        ),
+    )
     parser.add_argument("--profile-warmup-steps", type=int, default=1)
     parser.add_argument("--profile-steps", type=int, default=3)
     parser.add_argument("--parser-topn", type=int, default=200)
@@ -1104,16 +1116,50 @@ def _compile(
     }
 
 
-def _profiler_config() -> Any:
+def _profiler_config(metric: str) -> Any:
     import torch_npu.profiler as npu_prof
 
+    metrics = {
+        "pipe": npu_prof.AiCMetrics.PipeUtilization,
+        "memory": npu_prof.AiCMetrics.Memory,
+        "l2": npu_prof.AiCMetrics.L2Cache,
+        "memory_access": npu_prof.AiCMetrics.MemoryAccess,
+    }
     return npu_prof._ExperimentalConfig(
         profiler_level=npu_prof.ProfilerLevel.Level1,
-        aic_metrics=npu_prof.AiCMetrics.PipeUtilization,
+        aic_metrics=metrics[metric],
+        # AiCMetrics.L2Cache is the per-kernel PMU lane. The separate
+        # l2_cache=True switch emits the legacy l2_cache.csv path and is not
+        # needed for this cross-lane task analysis.
         l2_cache=False,
         export_type=npu_prof.ExportType.Text,
         data_simplification=False,
     )
+
+
+def _profiler_capabilities() -> dict[str, Any]:
+    import torch_npu.profiler as npu_prof
+
+    capabilities: dict[str, Any] = {}
+    for name in (
+        "supported_activities",
+        "supported_profiler_level",
+        "supported_ai_core_metrics",
+        "supported_export_type",
+    ):
+        query = getattr(npu_prof, name, None)
+        if query is None:
+            capabilities[name] = None
+            continue
+        try:
+            value = query()
+            if isinstance(value, (set, frozenset, list, tuple)):
+                capabilities[name] = sorted(str(item) for item in value)
+            else:
+                capabilities[name] = str(value)
+        except Exception as exc:
+            capabilities[name] = {"error": repr(exc)}
+    return capabilities
 
 
 def _profile(
@@ -1121,6 +1167,7 @@ def _profile(
     inputs: StageInputs,
     *,
     profile_dir: Path,
+    metric: str,
     warmup_steps: int,
     active_steps: int,
     label: str,
@@ -1146,7 +1193,7 @@ def _profile(
             npu_prof.ProfilerActivity.NPU,
         ],
         schedule=schedule,
-        experimental_config=_profiler_config(),
+        experimental_config=_profiler_config(metric),
         on_trace_ready=npu_prof.tensorboard_trace_handler(
             str(profile_dir),
             analyse_flag=True,
@@ -1171,6 +1218,9 @@ def _profile(
         "active_steps": active_steps,
         "context_wall_s": time.perf_counter() - context_started,
         "throughput_measurement": False,
+        "metric": metric,
+        "profiler_level": "Level1",
+        "capabilities": _profiler_capabilities(),
     }
 
 
@@ -1178,6 +1228,8 @@ def _parse_profile(
     profile_dir: Path,
     output_dir: Path,
     *,
+    metric: str,
+    contract_path: Path,
     topn: int,
 ) -> dict[str, Any]:
     parser = (
@@ -1207,6 +1259,25 @@ def _parse_profile(
     shutil.copyfile(source_json, destination_json)
     shutil.copyfile(source_md, destination_md)
     parsed = json.loads(destination_json.read_text(encoding="utf-8"))
+    detailed_output_dir = output_dir / "detailed_profile"
+    detailed_command = [
+        sys.executable,
+        str(HERE / "analyze_vision_matmul_profile.py"),
+        "--lane",
+        f"{metric}={profile_dir}",
+        "--output-dir",
+        str(detailed_output_dir),
+        "--contract",
+        str(contract_path),
+    ]
+    detailed_completed = subprocess.run(
+        detailed_command,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    detailed_json = detailed_output_dir / "profile_analysis.json"
+    detailed = json.loads(detailed_json.read_text(encoding="utf-8"))
     dispatch: Counter[str] = Counter()
     dispatch_duration_us: Counter[str] = Counter()
     transdata_count = 0
@@ -1248,6 +1319,16 @@ def _parse_profile(
         "stderr": completed.stderr,
         "parsed_json": str(destination_json),
         "parsed_markdown": str(destination_md),
+        "detailed_analysis": {
+            "command": detailed_command,
+            "stdout": detailed_completed.stdout,
+            "stderr": detailed_completed.stderr,
+            "analysis_json": str(detailed_json),
+            "report_markdown": str(
+                detailed_output_dir / "profile_report.md"
+            ),
+            "summary": detailed,
+        },
         "dispatch": {
             "counts": dict(dispatch),
             "duration_us": dict(dispatch_duration_us),
@@ -1412,6 +1493,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             f"b{batch_size}_s{sequence_length}_i{intermediate_size}_"
             f"{args.weight_format}_{args.attention_head_padding}_"
             f"{args.rotary_implementation}_{args.execution}"
+            f"_{args.profile_metric}"
         )
     ).expanduser().resolve()
     if output_dir.exists() and any(output_dir.iterdir()):
@@ -1611,6 +1693,18 @@ def main(argv: Sequence[str] | None = None) -> None:
             args.weight_format == "fractal_nz"
         ),
     }
+    environment = _environment(device)
+    environment.update(
+        {
+            "hostname": platform.node(),
+            "ascend_rt_visible_devices": os.environ.get(
+                "ASCEND_RT_VISIBLE_DEVICES"
+            ),
+            "npu_visible_devices": os.environ.get("NPU_VISIBLE_DEVICES"),
+            "ascend_home_path": os.environ.get("ASCEND_HOME_PATH"),
+            "ascend_toolkit_home": os.environ.get("ASCEND_TOOLKIT_HOME"),
+        }
+    )
     summary: dict[str, Any] = {
         "schema_version": 4,
         "status": format_metadata["status"],
@@ -1655,11 +1749,12 @@ def main(argv: Sequence[str] | None = None) -> None:
             "attention_head_padding": args.attention_head_padding,
             "rotary_implementation": args.rotary_implementation,
             "execution": args.execution,
+            "profile_metric": args.profile_metric,
         },
         "weight_format": format_metadata,
         "setup_s_through_format_preparation": time.perf_counter()
         - setup_started,
-        "environment": _environment(device),
+        "environment": environment,
     }
     summary_path = output_dir / "run_summary.json"
     if format_metadata["status"] != "ready":
@@ -1766,6 +1861,30 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
 
     if args.profile:
+        profile_contract_path = output_dir / "profile_contract.json"
+        profile_contract = {
+            "schema_version": 1,
+            "command": [sys.executable, *sys.argv],
+            "purpose": summary["purpose"],
+            "boundary": summary["boundary"],
+            "environment": summary["environment"],
+            "shape": summary["shape"],
+            "requested": summary["requested"],
+            "weight_format": summary["weight_format"],
+            "attention": summary["attention"],
+            "compile": summary["compile"],
+            "linear_flops_per_full_stack_call": flops_per_call,
+            "profile": {
+                "metric": args.profile_metric,
+                "warmup_steps": args.profile_warmup_steps,
+                "active_steps": args.profile_steps,
+                "throughput_measurement": False,
+            },
+        }
+        profile_contract_path.write_text(
+            json.dumps(profile_contract, indent=2) + "\n",
+            encoding="utf-8",
+        )
         label = (
             "paddleocr_vl.vision_matmul_lab."
             f"B{batch_size}.S{sequence_length}.I{intermediate_size}."
@@ -1777,6 +1896,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             run,
             candidate_inputs,
             profile_dir=profile_dir,
+            metric=args.profile_metric,
             warmup_steps=args.profile_warmup_steps,
             active_steps=args.profile_steps,
             label=label,
@@ -1784,6 +1904,8 @@ def main(argv: Sequence[str] | None = None) -> None:
         parsed_profile = _parse_profile(
             profile_dir,
             output_dir,
+            metric=args.profile_metric,
+            contract_path=profile_contract_path,
             topn=args.parser_topn,
         )
         parsed_profile["matmul_only"] = _matmul_only_profile_metrics(
