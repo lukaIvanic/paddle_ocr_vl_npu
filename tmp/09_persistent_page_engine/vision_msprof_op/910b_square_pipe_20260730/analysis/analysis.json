@@ -1,0 +1,712 @@
+{
+  "active_mte_bandwidth": {
+    "interpretation": "active-cycle bandwidth for the named MTE path; not a whole-kernel average or whole-card HBM bandwidth",
+    "missing_count": 48,
+    "record_count": 144,
+    "summary": {
+      "Pipe.MTE1.active bw(GB/s)": {
+        "coefficient_of_variation": 0.008038038175181828,
+        "count": 24,
+        "max": 249.153458,
+        "max_min_ratio": 1.0320912760488414,
+        "mean": 246.21611858333333,
+        "min": 241.406418,
+        "missing_count": 0,
+        "population_stddev": 1.9790945605179293,
+        "population_variance": 3.916815279471656,
+        "range": 7.747039999999998,
+        "records": 24,
+        "relative_spread": 0.031464390083697814,
+        "source_paths": [
+          "square/OPPROF_20260730105801_HSXGKDVINFNUMDQY/visualize_data.bin"
+        ],
+        "zero_count": 0
+      },
+      "Pipe.MTE2.active bw(GB/s)": {
+        "coefficient_of_variation": null,
+        "count": 24,
+        "max": 0.0,
+        "max_min_ratio": null,
+        "mean": 0.0,
+        "min": 0.0,
+        "missing_count": 0,
+        "population_stddev": 0.0,
+        "population_variance": 0.0,
+        "range": 0.0,
+        "records": 24,
+        "relative_spread": null,
+        "source_paths": [
+          "square/OPPROF_20260730105801_HSXGKDVINFNUMDQY/visualize_data.bin"
+        ],
+        "zero_count": 24
+      },
+      "Pipe.MTE3.active bw(GB/s)": {
+        "coefficient_of_variation": 0.0,
+        "count": 24,
+        "max": 164794.921875,
+        "max_min_ratio": 1.0,
+        "mean": 164794.921875,
+        "min": 164794.921875,
+        "missing_count": 0,
+        "population_stddev": 0.0,
+        "population_variance": 0.0,
+        "range": 0.0,
+        "records": 24,
+        "relative_spread": 0.0,
+        "source_paths": [
+          "square/OPPROF_20260730105801_HSXGKDVINFNUMDQY/visualize_data.bin"
+        ],
+        "zero_count": 0
+      },
+      "PipeUtilization.aic_mte3_active_bw(GB/s)": {
+        "coefficient_of_variation": 0.0,
+        "count": 24,
+        "max": 164794.921875,
+        "max_min_ratio": 1.0,
+        "mean": 164794.921875,
+        "min": 164794.921875,
+        "missing_count": 0,
+        "population_stddev": 0.0,
+        "population_variance": 0.0,
+        "range": 0.0,
+        "records": 24,
+        "relative_spread": 0.0,
+        "source_paths": [
+          "square/OPPROF_20260730105801_HSXGKDVINFNUMDQY/PipeUtilization.csv"
+        ],
+        "zero_count": 0
+      },
+      "PipeUtilization.aiv_mte2_active_bw(GB/s)": {
+        "coefficient_of_variation": null,
+        "count": 0,
+        "max": null,
+        "max_min_ratio": null,
+        "mean": null,
+        "min": null,
+        "missing_count": 24,
+        "population_stddev": null,
+        "population_variance": null,
+        "range": null,
+        "records": 24,
+        "relative_spread": null,
+        "source_paths": [
+          "square/OPPROF_20260730105801_HSXGKDVINFNUMDQY/PipeUtilization.csv"
+        ],
+        "zero_count": 0
+      },
+      "PipeUtilization.aiv_mte3_active_bw(GB/s)": {
+        "coefficient_of_variation": null,
+        "count": 0,
+        "max": null,
+        "max_min_ratio": null,
+        "mean": null,
+        "min": null,
+        "missing_count": 24,
+        "population_stddev": null,
+        "population_variance": null,
+        "range": null,
+        "records": 24,
+        "relative_spread": null,
+        "source_paths": [
+          "square/OPPROF_20260730105801_HSXGKDVINFNUMDQY/PipeUtilization.csv"
+        ],
+        "zero_count": 0
+      }
+    },
+    "zero_count": 24
+  },
+  "capture": {
+    "suite_roles": [
+      "square"
+    ],
+    "suite_status": "captured_unvalidated",
+    "target_roles": [
+      "square"
+    ]
+  },
+  "capture_metric": "PipeUtilization",
+  "duration_policy": {
+    "diagnostic_only": true,
+    "reason": "kernel replay, direct target event timing, and compiled full-graph execution are different contexts",
+    "used_as_validation_gate": false
+  },
+  "errors": [],
+  "metric_records": {
+    "count": 6609,
+    "missing_count": 1729,
+    "numeric_zero_count": 765,
+    "source_kind_counts": {
+      "metric_csv": 1128,
+      "op_basic_csv": 9,
+      "visualize_json": 5472
+    }
+  },
+  "occupancy": {
+    "metric_semantics": {
+      "cycles": "source per-core cycle counter",
+      "l2_cache_hit_rate": "source per-core percentage",
+      "throughput": "source-defined per-core workload quantity; do not interpret as FLOP/s or bandwidth"
+    },
+    "row_count": 0,
+    "scores": {
+      "algorithm": {
+        "cache_hit_score": "sigmoid(-z)",
+        "flag": "score >= 0.6",
+        "guide_relative_spread": "reported separately; it is not an extra gate in this 26.0.0 source algorithm",
+        "mean": "sum(x) / N",
+        "normal_score": "sigmoid(z)",
+        "source": "Ascend/msopprof 26.0.0 csrc/op_profiling/profiling/device/data_visualize/occupancy.cpp",
+        "source_commit": "4af9e75f0f75b2f7252b40aaf0feb7e721f5f7da",
+        "source_url": "https://gitcode.com/Ascend/msopprof/blob/26.0.0/csrc/op_profiling/profiling/device/data_visualize/occupancy.cpp",
+        "variance": "sum((x - mean)^2) / N",
+        "z_score": "(x - mean) / sqrt(population_variance)",
+        "zero_variance": "no normalization and no flags"
+      },
+      "groups": {}
+    }
+  },
+  "paths": {
+    "capture_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_msprof_op/910b_square_pipe_20260730",
+    "output_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_msprof_op/910b_square_pipe_20260730/analysis",
+    "raw_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_msprof_op/910b_square_pipe_20260730",
+    "reference_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/910b_b1s2048_i4352_nz_4lane_bacc8f6_analysis",
+    "suite_manifest": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_msprof_op/910b_square_pipe_20260730/suite_manifest.json"
+  },
+  "purpose": "portable, fail-closed validation and normalization of direct vision Linear msprof-op captures against a compiled full graph",
+  "reference": {
+    "csv_paths": [
+      "vision_linear_executions.csv"
+    ],
+    "required_production_roles": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "out_proj",
+      "fc1",
+      "fc2"
+    ],
+    "row_count": 1944
+  },
+  "roles": {
+    "square": {
+      "raw": {
+        "metric_record_count": 6609,
+        "occupancy_core_row_count": 0,
+        "op_basic_path": "square/OPPROF_20260730105801_HSXGKDVINFNUMDQY/OpBasicInfo.csv",
+        "other_files": [
+          {
+            "path": "square/OPPROF_20260730105801_HSXGKDVINFNUMDQY/dump/DeviceProf1.bin",
+            "size_bytes": 3072,
+            "suffix": ".bin"
+          },
+          {
+            "path": "square/OPPROF_20260730105801_HSXGKDVINFNUMDQY/dump/DeviceProf10.bin",
+            "size_bytes": 3072,
+            "suffix": ".bin"
+          },
+          {
+            "path": "square/OPPROF_20260730105801_HSXGKDVINFNUMDQY/dump/DeviceProf2.bin",
+            "size_bytes": 3072,
+            "suffix": ".bin"
+          },
+          {
+            "path": "square/OPPROF_20260730105801_HSXGKDVINFNUMDQY/dump/DeviceProf3.bin",
+            "size_bytes": 3072,
+            "suffix": ".bin"
+          },
+          {
+            "path": "square/OPPROF_20260730105801_HSXGKDVINFNUMDQY/dump/DeviceProf4.bin",
+            "size_bytes": 3072,
+            "suffix": ".bin"
+          },
+          {
+            "path": "square/OPPROF_20260730105801_HSXGKDVINFNUMDQY/dump/DeviceProf5.bin",
+            "size_bytes": 3072,
+            "suffix": ".bin"
+          },
+          {
+            "path": "square/OPPROF_20260730105801_HSXGKDVINFNUMDQY/dump/DeviceProf6.bin",
+            "size_bytes": 3072,
+            "suffix": ".bin"
+          },
+          {
+            "path": "square/OPPROF_20260730105801_HSXGKDVINFNUMDQY/dump/DeviceProf7.bin",
+            "size_bytes": 3072,
+            "suffix": ".bin"
+          },
+          {
+            "path": "square/OPPROF_20260730105801_HSXGKDVINFNUMDQY/dump/DeviceProf8.bin",
+            "size_bytes": 3072,
+            "suffix": ".bin"
+          },
+          {
+            "path": "square/OPPROF_20260730105801_HSXGKDVINFNUMDQY/dump/DeviceProf9.bin",
+            "size_bytes": 3072,
+            "suffix": ".bin"
+          },
+          {
+            "path": "square/OPPROF_20260730105801_HSXGKDVINFNUMDQY/dump/L2Cache.bin",
+            "size_bytes": 72,
+            "suffix": ".bin"
+          },
+          {
+            "path": "square/OPPROF_20260730105801_HSXGKDVINFNUMDQY/dump/aicore_binary.o",
+            "size_bytes": 1225224,
+            "suffix": ".o"
+          },
+          {
+            "path": "square/OPPROF_20260730105801_HSXGKDVINFNUMDQY/dump/duration.bin",
+            "size_bytes": 128,
+            "suffix": ".bin"
+          },
+          {
+            "path": "square/OPPROF_20260730105801_HSXGKDVINFNUMDQY/dump/op_basic_info.txt",
+            "size_bytes": 193,
+            "suffix": ".txt"
+          },
+          {
+            "path": "square/OPPROF_20260730105801_HSXGKDVINFNUMDQY/dump/pc_start_addr.txt",
+            "size_bytes": 14,
+            "suffix": ".txt"
+          }
+        ],
+        "record_type_counts": {
+          "0x05": 1,
+          "0x06": 1,
+          "0x07": 1,
+          "0x08": 1,
+          "0x09": 1,
+          "0x0e": 1
+        },
+        "visualize_paths": [
+          "square/OPPROF_20260730105801_HSXGKDVINFNUMDQY/visualize_data.bin"
+        ]
+      },
+      "validation": {
+        "checks": [
+          {
+            "actual": "completed",
+            "diagnostic_only": false,
+            "expected": "completed",
+            "name": "target.status",
+            "passed": true
+          },
+          {
+            "actual": "square",
+            "diagnostic_only": false,
+            "expected": "square",
+            "name": "target.spec.role",
+            "passed": true
+          },
+          {
+            "actual": [
+              "q_proj",
+              "k_proj",
+              "v_proj",
+              "out_proj"
+            ],
+            "diagnostic_only": false,
+            "expected": [
+              "q_proj",
+              "k_proj",
+              "v_proj",
+              "out_proj"
+            ],
+            "name": "target.spec.production_roles",
+            "passed": true
+          },
+          {
+            "actual": 5435817984,
+            "diagnostic_only": false,
+            "expected": 5435817984,
+            "name": "target.spec.flops_formula",
+            "passed": true
+          },
+          {
+            "actual": true,
+            "diagnostic_only": false,
+            "expected": true,
+            "name": "target.output_finite",
+            "passed": true
+          },
+          {
+            "actual": "float16",
+            "diagnostic_only": false,
+            "expected": "float16",
+            "name": "target.output_dtype",
+            "passed": true
+          },
+          {
+            "actual": 29,
+            "diagnostic_only": false,
+            "expected": 29,
+            "name": "target.weight_format_code",
+            "passed": true
+          },
+          {
+            "actual": 2,
+            "diagnostic_only": false,
+            "expected": 2,
+            "name": "target.activation_format_code",
+            "note": "format code 2 is the observed torch_npu ND code in the validated production-equivalent square artifact",
+            "passed": true
+          },
+          {
+            "actual": 2,
+            "diagnostic_only": false,
+            "expected": 2,
+            "name": "target.output_format_code",
+            "note": "format code 2 is the observed torch_npu ND code in the validated production-equivalent square artifact",
+            "passed": true
+          },
+          {
+            "actual": [
+              2048,
+              1152
+            ],
+            "diagnostic_only": false,
+            "expected": [
+              2048,
+              1152
+            ],
+            "name": "target.output_shape",
+            "passed": true
+          },
+          {
+            "actual": [
+              2048,
+              1152
+            ],
+            "diagnostic_only": false,
+            "expected": [
+              2048,
+              1152
+            ],
+            "name": "reference.activation_shape",
+            "passed": true
+          },
+          {
+            "actual": [
+              1152
+            ],
+            "diagnostic_only": false,
+            "expected": [
+              1152
+            ],
+            "name": "reference.bias_shape",
+            "passed": true
+          },
+          {
+            "actual": [
+              2048,
+              1152
+            ],
+            "diagnostic_only": false,
+            "expected": [
+              2048,
+              1152
+            ],
+            "name": "reference.output_shape",
+            "passed": true
+          },
+          {
+            "actual": 5435817984,
+            "diagnostic_only": false,
+            "expected": 5435817984,
+            "name": "reference.flops",
+            "passed": true
+          },
+          {
+            "actual": "ND",
+            "diagnostic_only": false,
+            "expected": "ND",
+            "name": "reference.activation_format",
+            "passed": true
+          },
+          {
+            "actual": "FRACTAL_NZ",
+            "diagnostic_only": false,
+            "expected": "FRACTAL_NZ",
+            "name": "reference.weight_format",
+            "passed": true
+          },
+          {
+            "actual": "ND",
+            "diagnostic_only": false,
+            "expected": "ND",
+            "name": "reference.output_format",
+            "passed": true
+          },
+          {
+            "actual": [
+              "float16",
+              "float16",
+              "float16"
+            ],
+            "diagnostic_only": false,
+            "expected": [
+              "float16",
+              "float16",
+              "float16"
+            ],
+            "name": "reference.input_dtypes",
+            "passed": true
+          },
+          {
+            "actual": [
+              "float16"
+            ],
+            "diagnostic_only": false,
+            "expected": [
+              "float16"
+            ],
+            "name": "reference.output_dtypes",
+            "passed": true
+          },
+          {
+            "actual": true,
+            "diagnostic_only": false,
+            "expected": true,
+            "name": "dispatch.operator_name_prefix",
+            "note": "reference operator type is MatMulV2",
+            "passed": true
+          },
+          {
+            "actual": {
+              "activation_dtype": "FP16",
+              "bias_format": "ND",
+              "input_format_pair": "NDNZ",
+              "output_dtype": "FP16",
+              "output_format": "ND",
+              "weight_dtype": "FP16"
+            },
+            "diagnostic_only": false,
+            "expected": {
+              "activation_dtype": "FP16",
+              "bias_format": "ND",
+              "input_format_pair": "NDNZ",
+              "output_dtype": "FP16",
+              "output_format": "ND",
+              "weight_dtype": "FP16"
+            },
+            "name": "dispatch.kernel_name_tensor_contract",
+            "note": "OpBasicInfo exposes captured formats and dtypes in the selected MatMul kernel name",
+            "passed": true
+          },
+          {
+            "actual": {
+              "activation": [
+                2048,
+                1152
+              ],
+              "bias": [
+                1152
+              ],
+              "output": [
+                2048,
+                1152
+              ],
+              "weight_fractal_nz": [
+                72,
+                72,
+                16,
+                16
+              ]
+            },
+            "diagnostic_only": false,
+            "expected": {
+              "activation": [
+                2048,
+                1152
+              ],
+              "bias": [
+                1152
+              ],
+              "output": [
+                2048,
+                1152
+              ],
+              "weight_fractal_nz": [
+                72,
+                72,
+                16,
+                16
+              ]
+            },
+            "name": "dispatch.shape_contract",
+            "note": "CANN 9 OpBasicInfo has no shape columns; the captured process contains only two identical MatMulV2 launches and its target summary is checked against the compiled reference",
+            "passed": true
+          },
+          {
+            "actual": 24,
+            "diagnostic_only": false,
+            "expected": 24,
+            "name": "dispatch.block_dim",
+            "passed": true
+          },
+          {
+            "actual": 24,
+            "diagnostic_only": false,
+            "expected": 24,
+            "name": "visualize.block_dim",
+            "passed": true
+          },
+          {
+            "actual": "MatMulV2_NDNZ_ND_ND_FP16_FP16_FP16_false_true_all_197328",
+            "diagnostic_only": false,
+            "expected": "MatMulV2_NDNZ_ND_ND_FP16_FP16_FP16_false_true_all_197328",
+            "name": "visualize.operator_name",
+            "passed": true
+          },
+          {
+            "actual": "cube",
+            "diagnostic_only": false,
+            "expected": "cube",
+            "name": "visualize.operator_core_type",
+            "passed": true
+          }
+        ],
+        "duration_diagnostics": {
+          "full_graph_reference_us_by_production_role": {
+            "k_proj": {
+              "count": 324,
+              "max": 25.0,
+              "mean": 23.12246913580247,
+              "median": 23.02,
+              "min": 21.6
+            },
+            "out_proj": {
+              "count": 324,
+              "max": 32.32,
+              "mean": 29.153086419753087,
+              "median": 29.52,
+              "min": 24.86
+            },
+            "q_proj": {
+              "count": 324,
+              "max": 28.32,
+              "mean": 23.503827160493827,
+              "median": 23.25,
+              "min": 21.68
+            },
+            "v_proj": {
+              "count": 324,
+              "max": 24.74,
+              "mean": 23.26567901234568,
+              "median": 23.21,
+              "min": 21.5
+            }
+          },
+          "interpretation": "diagnostic only; msprof kernel replay, direct target event timing, and compiled full-graph timing have different execution contexts",
+          "msprof_op_basic_task_duration_us": 29.440001,
+          "msprof_visualize_duration_us": 29.440000534057617,
+          "target_device_event_us": 815.5199885368347,
+          "target_host_wall_us": 1419.444102793932
+        },
+        "errors": [],
+        "mapped_production_roles": [
+          "q_proj",
+          "k_proj",
+          "v_proj",
+          "out_proj"
+        ],
+        "observed_dispatch": {
+          "block_dim": 24,
+          "current_freq": "1800",
+          "device_id": "5",
+          "mix_block_dim": "NA",
+          "operator_core_type": "cube",
+          "operator_name": "MatMulV2_NDNZ_ND_ND_FP16_FP16_FP16_false_true_all_197328",
+          "pid": "715897",
+          "rated_freq": "1800"
+        },
+        "reference_contract": {
+          "accelerator_core": "AI_CORE",
+          "block_dim": 24,
+          "direct_role": "square",
+          "duration_us_diagnostic_by_role": {
+            "k_proj": {
+              "count": 324,
+              "max": 25.0,
+              "mean": 23.12246913580247,
+              "median": 23.02,
+              "min": 21.6
+            },
+            "out_proj": {
+              "count": 324,
+              "max": 32.32,
+              "mean": 29.153086419753087,
+              "median": 29.52,
+              "min": 24.86
+            },
+            "q_proj": {
+              "count": 324,
+              "max": 28.32,
+              "mean": 23.503827160493827,
+              "median": 23.25,
+              "min": 21.68
+            },
+            "v_proj": {
+              "count": 324,
+              "max": 24.74,
+              "mean": 23.26567901234568,
+              "median": 23.21,
+              "min": 21.5
+            }
+          },
+          "flops": 5435817984,
+          "input_dtypes": [
+            "float16",
+            "float16",
+            "float16"
+          ],
+          "input_formats": [
+            "ND",
+            "FRACTAL_NZ",
+            "ND"
+          ],
+          "input_shapes": [
+            [
+              2048,
+              1152
+            ],
+            [
+              72,
+              72,
+              16,
+              16
+            ],
+            [
+              1152
+            ]
+          ],
+          "operator_type": "MatMulV2",
+          "output_dtypes": [
+            "float16"
+          ],
+          "output_formats": [
+            "ND"
+          ],
+          "output_shapes": [
+            [
+              2048,
+              1152
+            ]
+          ],
+          "production_roles": [
+            "q_proj",
+            "k_proj",
+            "v_proj",
+            "out_proj"
+          ]
+        },
+        "role": "square",
+        "status": "passed",
+        "target_summary": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_msprof_op/910b_square_pipe_20260730/square/application/target_summary.json"
+      }
+    }
+  },
+  "schema_version": 1,
+  "status": "passed",
+  "warnings": []
+}

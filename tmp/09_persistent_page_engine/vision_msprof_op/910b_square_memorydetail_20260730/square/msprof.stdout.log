@@ -1,0 +1,96 @@
+2026-07-30 11:12:58 [WARN]  Currently, the root permission is used, which is unrecommended. Please ensure the security of the execution environment and programs.
+2026-07-30 11:12:58 [INFO]  Op profiling analysis start.
+2026-07-30 11:12:58 [INFO]  Running device task: DeviceProf
+2026-07-30 11:13:13 [INFO]  Kernel TransData_1f7d09915723c246d8ed94ed83374eb7_high_performance_2002221104 skipped: not selected via --kernel-name.
+[INFO] <ProfData> Start profiling on device 5, kernel: MatMulV2_NDNZ_ND_ND_FP16_FP16_FP16_false_true_all_197328
+[INFO] <WarmUp> Warm Up enabled. times:5
+{
+  "schema_version": 2,
+  "status": "completed",
+  "purpose": "production-equivalent square MatMulV2 target for deep msprof-op mechanics; not an end-to-end throughput measurement",
+  "scope": {
+    "supported_direct_roles": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "out_proj"
+    ],
+    "excluded_roles": {
+      "fc1": "eager dispatch is MatMulV3 while production is MatMulV2; compiled MatMulV2 is not visible to msprof op",
+      "fc2": "compiled graph internals are not visible to msprof op; no unvalidated eager surrogate is used"
+    }
+  },
+  "spec": {
+    "role": "square",
+    "m": 2048,
+    "k": 1152,
+    "n": 1152,
+    "production_roles": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "out_proj"
+    ],
+    "flops": 5435817984,
+    "dtype": "torch.float16",
+    "activation_format_expected": "ND",
+    "weight_format_expected": "FRACTAL_NZ",
+    "weight_format_code_expected": 29,
+    "bias": true
+  },
+  "observed": {
+    "activation_format_code": 2,
+    "weight_format_code": 29,
+    "output_format_code": 2,
+    "output_shape": [
+      2048,
+      1152
+    ],
+    "output_dtype": "torch.float16",
+    "output_finite": true,
+    "identical_warmup_launches_before_measurement": 1,
+    "device_event_ms": 0.8925999999046326,
+    "host_wall_ms": 2.1900769788771868,
+    "kernel_local_tflop_per_s_estimate": 6.089870025297754
+  },
+  "environment": {
+    "hostname": "liteserver-c001-4",
+    "python": "3.12.13 (main, May 15 2026, 02:51:13) [GCC 11.4.0]",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "device": "Ascend910B2",
+    "soc_version": "221",
+    "ascend_rt_visible_devices": "5",
+    "cann_root": "/usr/local/Ascend/cann-9.0.0"
+  }
+}
+2026-07-30 11:13:26 [INFO]  Profiling running finished. All task success.
+2026-07-30 11:13:26 [INFO]  Start analyze kernel on device: device5, kernel: MatMulV2_NDNZ_ND_ND_FP16_FP16_FP16_false_true_all_197328, name is: 0
+2026-07-30 11:13:26 [INFO]  Save profiling data with metric [PipeUtilization] success.
+2026-07-30 11:13:26 [INFO]  Save profiling data with metric [ArithmeticUtilization] success.
+2026-07-30 11:13:26 [INFO]  Save profiling data with metric [L2Cache] success.
+2026-07-30 11:13:26 [INFO]  Save profiling data with metric [Memory] success.
+2026-07-30 11:13:26 [INFO]  Save profiling data with metric [ResourceConflictRatio] success.
+2026-07-30 11:13:26 [INFO]  Save profiling data with metric [MemoryL0] success.
+2026-07-30 11:13:26 [INFO]  Save profiling data with metric [MemoryUB] success.
+2026-07-30 11:13:26 [INFO]  Performance Summary Report:
+
+	1) MTE1 bandwidth utilization lower than 80% when active.
+	2) MTE2 bandwidth utilization lower than 80% when active.
+	3) MTE3 bandwidth utilization lower than 80% when active.
+
+2026-07-30 11:13:26 [INFO]  Operator Basic Information:
+
+	Op Name: MatMulV2_NDNZ_ND_ND_FP16_FP16_FP16_false_true_all_197328
+	Op Type: cube
+	Task Duration(us): 29.360001
+	Block Dim: 24
+	Mix Block Dim: 
+	Device Id: 5
+	Pid: 721263
+	Current Freq: 1800
+	Rated Freq: 1800
+
+2026-07-30 11:13:26 [INFO]  Profiling results saved in /workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_msprof_op/910b_square_memorydetail_20260730/square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH
+2026-07-30 11:13:26 [INFO]  Profiling data parse finished.
+2026-07-30 11:13:26 [INFO]  Op profiling finish. Welcome to next use.

@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "status": "captured_unvalidated",
+  "purpose": "portable deep msprof-op capture of the unique production-shaped PaddleOCR-VL vision MatMulV2 kernels",
+  "started_at_utc": "2026-07-30T11:08:47.964351+00:00",
+  "repository": {
+    "root": "/workspace/repos/paddle_ocr_vl_npu",
+    "commit": "e076f68433fdd8e4f6205281994a99bb3c2a395b",
+    "branch": "",
+    "dirty": true
+  },
+  "host": {
+    "hostname": "liteserver-c001-4",
+    "platform": "Linux-5.10.0-136.12.0.86.r1526_92.hce2.aarch64-aarch64-with-glibc2.35",
+    "python": "/usr/local/python3.12.13/bin/python3.12",
+    "msprof": "/usr/local/Ascend/cann-9.0.0/bin/msprof"
+  },
+  "environment": {
+    "ASCEND_RT_VISIBLE_DEVICES": "5",
+    "NPU_VISIBLE_DEVICES": null,
+    "ASCEND_HOME_PATH": "/usr/local/Ascend/cann-9.0.0",
+    "ASCEND_TOOLKIT_HOME": "/usr/local/Ascend/cann-9.0.0",
+    "ASCEND_OPP_PATH": "/usr/local/Ascend/cann-9.0.0/opp"
+  },
+  "metric": "MemoryUB",
+  "metric_support": {
+    "tier": "portable_base",
+    "documented_products": "Atlas inference, training, A2, and A3 products"
+  },
+  "roles": [
+    "square"
+  ],
+  "paths": {
+    "evidence": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_msprof_op/910b_square_memoryub_20260730",
+    "raw": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_msprof_op/910b_square_memoryub_20260730"
+  },
+  "captures": {
+    "square": {
+      "schema_version": 1,
+      "status": "captured_unvalidated",
+      "started_at_utc": "2026-07-30T11:08:47.998520+00:00",
+      "completed_at_utc": "2026-07-30T11:09:11.907823+00:00",
+      "wall_s": 23.907667217077687,
+      "returncode": 0,
+      "command": {
+        "argv": [
+          "/usr/local/Ascend/cann-9.0.0/bin/msprof",
+          "op",
+          "--output=/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_msprof_op/910b_square_memoryub_20260730/square",
+          "--aic-metrics=MemoryUB",
+          "--replay-mode=kernel",
+          "--kernel-name=MatMulV2",
+          "--launch-count=1",
+          "--warm-up=5",
+          "/usr/local/python3.12.13/bin/python3.12",
+          "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/vision_msprof_linear_target.py",
+          "--role",
+          "square",
+          "--output-dir",
+          "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_msprof_op/910b_square_memoryub_20260730/square/application"
+        ],
+        "shell_escaped": "/usr/local/Ascend/cann-9.0.0/bin/msprof op --output=/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_msprof_op/910b_square_memoryub_20260730/square --aic-metrics=MemoryUB --replay-mode=kernel --kernel-name=MatMulV2 --launch-count=1 --warm-up=5 /usr/local/python3.12.13/bin/python3.12 /workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/vision_msprof_linear_target.py --role square --output-dir /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_msprof_op/910b_square_memoryub_20260730/square/application",
+        "cwd": "/workspace/repos/paddle_ocr_vl_npu",
+        "selection": {
+          "role": "square",
+          "kernel_name_prefix": "MatMulV2",
+          "launch_count": 1,
+          "replay_mode": "kernel",
+          "metric": "MemoryUB",
+          "metric_support": {
+            "tier": "portable_base",
+            "documented_products": "Atlas inference, training, A2, and A3 products"
+          },
+          "mstx": false
+        }
+      },
+      "paths": {
+        "evidence": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_msprof_op/910b_square_memoryub_20260730/square",
+        "raw": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_msprof_op/910b_square_memoryub_20260730/square",
+        "target_summary": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_msprof_op/910b_square_memoryub_20260730/square/application/target_summary.json"
+      },
+      "raw_artifacts": {
+        "file_count": 18,
+        "total_bytes": 3206881,
+        "suffix_counts": {
+          ".bin": 13,
+          ".csv": 2,
+          ".o": 1,
+          ".txt": 2
+        },
+        "has_visualize_data": true,
+        "csv_names": [
+          "MemoryUB.csv",
+          "OpBasicInfo.csv"
+        ]
+      },
+      "target": {
+        "schema_version": 2,
+        "status": "completed",
+        "purpose": "production-equivalent square MatMulV2 target for deep msprof-op mechanics; not an end-to-end throughput measurement",
+        "scope": {
+          "supported_direct_roles": [
+            "q_proj",
+            "k_proj",
+            "v_proj",
+            "out_proj"
+          ],
+          "excluded_roles": {
+            "fc1": "eager dispatch is MatMulV3 while production is MatMulV2; compiled MatMulV2 is not visible to msprof op",
+            "fc2": "compiled graph internals are not visible to msprof op; no unvalidated eager surrogate is used"
+          }
+        },
+        "spec": {
+          "role": "square",
+          "m": 2048,
+          "k": 1152,
+          "n": 1152,
+          "production_roles": [
+            "q_proj",
+            "k_proj",
+            "v_proj",
+            "out_proj"
+          ],
+          "flops": 5435817984,
+          "dtype": "torch.float16",
+          "activation_format_expected": "ND",
+          "weight_format_expected": "FRACTAL_NZ",
+          "weight_format_code_expected": 29,
+          "bias": true
+        },
+        "observed": {
+          "activation_format_code": 2,
+          "weight_format_code": 29,
+          "output_format_code": 2,
+          "output_shape": [
+            2048,
+            1152
+          ],
+          "output_dtype": "torch.float16",
+          "output_finite": true,
+          "identical_warmup_launches_before_measurement": 1,
+          "device_event_ms": 1.2408599853515625,
+          "host_wall_ms": 1.9556928891688585,
+          "kernel_local_tflop_per_s_estimate": 4.380686014675471
+        },
+        "environment": {
+          "hostname": "liteserver-c001-4",
+          "python": "3.12.13 (main, May 15 2026, 02:51:13) [GCC 11.4.0]",
+          "torch": "2.10.0+cpu",
+          "torch_npu": "2.10.0",
+          "device": "Ascend910B2",
+          "soc_version": "221",
+          "ascend_rt_visible_devices": "5",
+          "cann_root": "/usr/local/Ascend/cann-9.0.0"
+        }
+      },
+      "errors": [],
+      "validation_state": "capture_only; dispatch/shape/format/block/duration matching must be performed by analyze_vision_msprof_op.py"
+    }
+  },
+  "errors": [],
+  "completed_at_utc": "2026-07-30T11:09:11.909022+00:00",
+  "next_step": "run analyze_vision_msprof_op.py with the validated full-graph reference before interpreting per-core or memory metrics"
+}

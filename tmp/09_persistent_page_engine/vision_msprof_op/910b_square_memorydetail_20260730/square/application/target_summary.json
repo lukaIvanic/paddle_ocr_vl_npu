@@ -1,0 +1,60 @@
+{
+  "schema_version": 2,
+  "status": "completed",
+  "purpose": "production-equivalent square MatMulV2 target for deep msprof-op mechanics; not an end-to-end throughput measurement",
+  "scope": {
+    "supported_direct_roles": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "out_proj"
+    ],
+    "excluded_roles": {
+      "fc1": "eager dispatch is MatMulV3 while production is MatMulV2; compiled MatMulV2 is not visible to msprof op",
+      "fc2": "compiled graph internals are not visible to msprof op; no unvalidated eager surrogate is used"
+    }
+  },
+  "spec": {
+    "role": "square",
+    "m": 2048,
+    "k": 1152,
+    "n": 1152,
+    "production_roles": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "out_proj"
+    ],
+    "flops": 5435817984,
+    "dtype": "torch.float16",
+    "activation_format_expected": "ND",
+    "weight_format_expected": "FRACTAL_NZ",
+    "weight_format_code_expected": 29,
+    "bias": true
+  },
+  "observed": {
+    "activation_format_code": 2,
+    "weight_format_code": 29,
+    "output_format_code": 2,
+    "output_shape": [
+      2048,
+      1152
+    ],
+    "output_dtype": "torch.float16",
+    "output_finite": true,
+    "identical_warmup_launches_before_measurement": 1,
+    "device_event_ms": 0.8925999999046326,
+    "host_wall_ms": 2.1900769788771868,
+    "kernel_local_tflop_per_s_estimate": 6.089870025297754
+  },
+  "environment": {
+    "hostname": "liteserver-c001-4",
+    "python": "3.12.13 (main, May 15 2026, 02:51:13) [GCC 11.4.0]",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "device": "Ascend910B2",
+    "soc_version": "221",
+    "ascend_rt_visible_devices": "5",
+    "cann_root": "/usr/local/Ascend/cann-9.0.0"
+  }
+}

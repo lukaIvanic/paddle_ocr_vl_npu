@@ -1,0 +1,1401 @@
+{
+  "capture_json": [
+    {
+      "path": "square/application/target_summary.json",
+      "size_bytes": 1690,
+      "top_level_keys": [
+        "environment",
+        "observed",
+        "purpose",
+        "schema_version",
+        "scope",
+        "spec",
+        "status"
+      ]
+    },
+    {
+      "path": "square/capture_manifest.json",
+      "size_bytes": 4892,
+      "top_level_keys": [
+        "command",
+        "completed_at_utc",
+        "errors",
+        "paths",
+        "raw_artifacts",
+        "returncode",
+        "schema_version",
+        "started_at_utc",
+        "status",
+        "target",
+        "validation_state",
+        "wall_s"
+      ]
+    },
+    {
+      "path": "square/command.json",
+      "size_bytes": 1695,
+      "top_level_keys": [
+        "argv",
+        "cwd",
+        "selection",
+        "shell_escaped"
+      ]
+    },
+    {
+      "path": "suite_manifest.json",
+      "size_bytes": 7067,
+      "top_level_keys": [
+        "captures",
+        "completed_at_utc",
+        "environment",
+        "errors",
+        "host",
+        "metric",
+        "metric_support",
+        "next_step",
+        "paths",
+        "purpose",
+        "repository",
+        "roles",
+        "schema_version",
+        "started_at_utc",
+        "status"
+      ]
+    }
+  ],
+  "csv_files": [
+    {
+      "headers": [
+        "Op Name",
+        "Op Type",
+        "Task Duration(us)",
+        "Block Dim",
+        "Mix Block Dim",
+        "Device Id",
+        "Pid",
+        "Current Freq",
+        "Rated Freq"
+      ],
+      "kind": "op_basic",
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/OpBasicInfo.csv",
+      "role": "square",
+      "row_count": 1
+    },
+    {
+      "headers": [
+        "block_id",
+        "sub_block_id",
+        "aic_time(us)",
+        "aic_total_cycles",
+        "aic_cube_ratio",
+        "aic_cube_fp16_ratio",
+        "aic_cube_int8_ratio",
+        "aic_cube_fops",
+        "aic_cube_total_instr_number",
+        "aic_cube_fp_instr_number",
+        "aic_cube_int_instr_number",
+        "aiv_time(us)",
+        "aiv_total_cycles",
+        "aiv_vec_ratio",
+        "aiv_vec_fp32_ratio",
+        "aiv_vec_fp16_ratio",
+        "aiv_vec_int32_ratio",
+        "aiv_vec_int16_ratio",
+        "aiv_vec_misc_ratio",
+        "aiv_vec_fops"
+      ],
+      "kind": "metric",
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/ArithmeticUtilization.csv",
+      "role": "square",
+      "row_count": 24
+    },
+    {
+      "headers": [
+        "block_id",
+        "sub_block_id",
+        "aic_time(us)",
+        "aic_total_cycles",
+        "aic_write_cache_hit",
+        "aic_write_cache_miss_allocate",
+        "aic_r0_read_cache_hit",
+        "aic_r0_read_cache_miss_allocate",
+        "aic_r1_read_cache_hit",
+        "aic_r1_read_cache_miss_allocate",
+        "aic_write_hit_rate(%)",
+        "aic_read_hit_rate(%)",
+        "aic_total_hit_rate(%)",
+        "aiv_time(us)",
+        "aiv_total_cycles",
+        "aiv_write_cache_hit",
+        "aiv_write_cache_miss_allocate",
+        "aiv_r0_read_cache_hit",
+        "aiv_r0_read_cache_miss_allocate",
+        "aiv_r1_read_cache_hit",
+        "aiv_r1_read_cache_miss_allocate",
+        "aiv_write_hit_rate(%)",
+        "aiv_read_hit_rate(%)",
+        "aiv_total_hit_rate(%)"
+      ],
+      "kind": "metric",
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/L2Cache.csv",
+      "role": "square",
+      "row_count": 24
+    },
+    {
+      "headers": [
+        "block_id",
+        "sub_block_id",
+        "aic_time(us)",
+        "aic_total_cycles",
+        "aic_l1_read_bw(GB/s)",
+        "aic_l1_write_bw(GB/s)",
+        "aic_main_mem_read_bw(GB/s)",
+        "aic_main_mem_write_bw(GB/s)",
+        "aic_mte1_instructions",
+        "aic_mte1_ratio",
+        "aic_mte2_instructions",
+        "aic_mte2_ratio",
+        "aic_mte3_instructions",
+        "aic_mte3_ratio",
+        "aiv_time(us)",
+        "aiv_total_cycles",
+        "aiv_ub_to_gm_bw(GB/s)",
+        "aiv_gm_to_ub_bw(GB/s)",
+        "aiv_main_mem_read_bw(GB/s)",
+        "aiv_main_mem_write_bw(GB/s)",
+        "aiv_mte2_instructions",
+        "aiv_mte2_ratio",
+        "aiv_mte3_instructions",
+        "aiv_mte3_ratio",
+        "read_main_memory_datas(KB)",
+        "write_main_memory_datas(KB)",
+        "GM_to_L1_datas(KB)",
+        "GM_to_L1_bw_usage_rate(%)",
+        "L1_to_GM_datas(KB)(estimate)",
+        "L1_to_GM_bw_usage_rate(%)(estimate)",
+        "L0C_to_L1_datas(KB)",
+        "L0C_to_L1_bw_usage_rate(%)",
+        "L0C_to_GM_datas(KB)",
+        "L0C_to_GM_bw_usage_rate(%)",
+        "GM_to_UB_datas(KB)",
+        "GM_to_UB_bw_usage_rate(%)",
+        "UB_to_GM_datas(KB)",
+        "UB_to_GM_bw_usage_rate(%)"
+      ],
+      "kind": "metric",
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/Memory.csv",
+      "role": "square",
+      "row_count": 24
+    },
+    {
+      "headers": [
+        "block_id",
+        "sub_block_id",
+        "aic_time(us)",
+        "aic_total_cycles",
+        "aic_l0a_read_bw(GB/s)",
+        "aic_l0a_write_bw(GB/s)",
+        "aic_l0b_read_bw(GB/s)",
+        "aic_l0b_write_bw(GB/s)",
+        "aic_l0c_read_bw_cube(GB/s)",
+        "aic_l0c_write_bw_cube(GB/s)",
+        "aiv_time(us)",
+        "aiv_total_cycles"
+      ],
+      "kind": "metric",
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/MemoryL0.csv",
+      "role": "square",
+      "row_count": 24
+    },
+    {
+      "headers": [
+        "block_id",
+        "sub_block_id",
+        "aic_time(us)",
+        "aic_total_cycles",
+        "aiv_time(us)",
+        "aiv_total_cycles",
+        "aiv_ub_read_bw_vector(GB/s)",
+        "aiv_ub_write_bw_vector(GB/s)",
+        "aiv_ub_read_bw_scalar(GB/s)",
+        "aiv_ub_write_bw_scalar(GB/s)"
+      ],
+      "kind": "metric",
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/MemoryUB.csv",
+      "role": "square",
+      "row_count": 24
+    },
+    {
+      "headers": [
+        "block_id",
+        "sub_block_id",
+        "aic_time(us)",
+        "aic_total_cycles",
+        "aic_cube_time(us)",
+        "aic_cube_ratio",
+        "aic_mte1_time(us)",
+        "aic_mte1_ratio",
+        "aic_mte2_time(us)",
+        "aic_mte2_ratio",
+        "aic_mte3_time(us)",
+        "aic_mte3_ratio",
+        "aic_mte3_active_bw(GB/s)",
+        "aic_fixpipe_time(us)",
+        "aic_fixpipe_ratio",
+        "aic_fixpipe_active_bw(GB/s)",
+        "aic_icache_miss_rate",
+        "aic_scalar_time(us)",
+        "aic_scalar_ratio",
+        "aic_scalar_single_time(us)",
+        "aic_scalar_dual_time(us)",
+        "aic_scalar_mte1_stall_time(us)",
+        "aic_scalar_mte2_stall_time(us)",
+        "aic_scalar_mte3_stall_time(us)",
+        "aic_scalar_cube_stall_time(us)",
+        "aic_scalar_wait_ib_time(us)",
+        "aic_scalar_wait_time(us)",
+        "aiv_time(us)",
+        "aiv_total_cycles",
+        "aiv_vec_time(us)",
+        "aiv_vec_ratio",
+        "aiv_mte2_time(us)",
+        "aiv_mte2_ratio",
+        "aiv_mte2_active_bw(GB/s)",
+        "aiv_mte3_time(us)",
+        "aiv_mte3_ratio",
+        "aiv_mte3_active_bw(GB/s)",
+        "aiv_icache_miss_rate",
+        "aiv_scalar_time(us)",
+        "aiv_scalar_ratio",
+        "aiv_scalar_single_time(us)",
+        "aiv_scalar_dual_time(us)",
+        "aiv_scalar_mte2_stall_time(us)",
+        "aiv_scalar_mte3_stall_time(us)",
+        "aiv_scalar_stall_by_ub_time(us)",
+        "aiv_scalar_vector_stall_time(us)",
+        "aiv_scalar_wait_ib_time(us)",
+        "aiv_scalar_wait_time(us)",
+        "aic_mte1_active_bw(GB/s)",
+        "aic_mte2_active_bw(GB/s)"
+      ],
+      "kind": "metric",
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/PipeUtilization.csv",
+      "role": "square",
+      "row_count": 24
+    },
+    {
+      "headers": [
+        "block_id",
+        "sub_block_id",
+        "aic_time(us)",
+        "aic_total_cycles",
+        "aic_cube_wait_ratio",
+        "aic_mte1_wait_ratio",
+        "aic_mte2_wait_ratio",
+        "aic_mte3_wait_ratio",
+        "aiv_time(us)",
+        "aiv_total_cycles",
+        "aiv_vec_total_cflt_ratio",
+        "aiv_vec_bankgroup_cflt_ratio",
+        "aiv_vec_bank_cflt_ratio",
+        "aiv_vec_resc_cflt_ratio",
+        "aiv_vec_mte_cflt_ratio",
+        "aiv_vec_wait_ratio",
+        "aiv_mte2_wait_ratio",
+        "aiv_mte3_wait_ratio"
+      ],
+      "kind": "metric",
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/ResourceConflictRatio.csv",
+      "role": "square",
+      "row_count": 24
+    }
+  ],
+  "output_schemas": {
+    "core_metrics.csv": [
+      "role",
+      "capture_metric",
+      "source_path",
+      "device",
+      "operator_name",
+      "operator_core_type",
+      "block_dim",
+      "core_id",
+      "subcore_id",
+      "subcore_type",
+      "duration_us",
+      "cycles",
+      "cycles_mean",
+      "cycles_population_stddev",
+      "cycles_z_score",
+      "cycles_sigmoid_score",
+      "cycles_huawei_26_flag",
+      "throughput",
+      "throughput_mean",
+      "throughput_population_stddev",
+      "throughput_z_score",
+      "throughput_sigmoid_score",
+      "throughput_huawei_26_flag",
+      "l2_cache_hit_rate",
+      "l2_cache_hit_rate_mean",
+      "l2_cache_hit_rate_population_stddev",
+      "l2_cache_hit_rate_z_score",
+      "l2_cache_hit_rate_sigmoid_score",
+      "l2_cache_hit_rate_huawei_26_flag",
+      "simt_instructions",
+      "simt_instructions_mean",
+      "simt_instructions_population_stddev",
+      "simt_instructions_z_score",
+      "simt_instructions_sigmoid_score",
+      "simt_instructions_huawei_26_flag",
+      "other_metrics_json"
+    ],
+    "metric_records.csv": [
+      "role",
+      "capture_metric",
+      "source_kind",
+      "source_path",
+      "record_type",
+      "record_index",
+      "core_id",
+      "subcore_id",
+      "subcore_type",
+      "category",
+      "metric",
+      "unit",
+      "raw_value",
+      "numeric_value",
+      "is_missing",
+      "context_json"
+    ]
+  },
+  "parser": {
+    "all_json_blocks_decoded": true,
+    "binary_framing": "<QBBBB followed by payload_length bytes",
+    "block_dim_hardcoded": false,
+    "cann_path_hardcoded": false,
+    "device_hardcoded": false,
+    "implementation": "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/analyze_vision_msprof_op.py",
+    "stdlib_only": true
+  },
+  "raw_inventory": [
+    {
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/ArithmeticUtilization.csv",
+      "size_bytes": 2625,
+      "suffix": ".csv"
+    },
+    {
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/L2Cache.csv",
+      "size_bytes": 3339,
+      "suffix": ".csv"
+    },
+    {
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/Memory.csv",
+      "size_bytes": 6726,
+      "suffix": ".csv"
+    },
+    {
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/MemoryL0.csv",
+      "size_bytes": 2522,
+      "suffix": ".csv"
+    },
+    {
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/MemoryUB.csv",
+      "size_bytes": 1243,
+      "suffix": ".csv"
+    },
+    {
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/OpBasicInfo.csv",
+      "size_bytes": 195,
+      "suffix": ".csv"
+    },
+    {
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/PipeUtilization.csv",
+      "size_bytes": 8917,
+      "suffix": ".csv"
+    },
+    {
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/ResourceConflictRatio.csv",
+      "size_bytes": 2545,
+      "suffix": ".csv"
+    },
+    {
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/dump/DeviceProf1.bin",
+      "size_bytes": 3072,
+      "suffix": ".bin"
+    },
+    {
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/dump/DeviceProf10.bin",
+      "size_bytes": 3072,
+      "suffix": ".bin"
+    },
+    {
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/dump/DeviceProf2.bin",
+      "size_bytes": 3072,
+      "suffix": ".bin"
+    },
+    {
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/dump/DeviceProf3.bin",
+      "size_bytes": 3072,
+      "suffix": ".bin"
+    },
+    {
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/dump/DeviceProf4.bin",
+      "size_bytes": 3072,
+      "suffix": ".bin"
+    },
+    {
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/dump/DeviceProf5.bin",
+      "size_bytes": 3072,
+      "suffix": ".bin"
+    },
+    {
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/dump/DeviceProf6.bin",
+      "size_bytes": 3072,
+      "suffix": ".bin"
+    },
+    {
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/dump/DeviceProf7.bin",
+      "size_bytes": 3072,
+      "suffix": ".bin"
+    },
+    {
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/dump/DeviceProf8.bin",
+      "size_bytes": 3072,
+      "suffix": ".bin"
+    },
+    {
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/dump/DeviceProf9.bin",
+      "size_bytes": 3072,
+      "suffix": ".bin"
+    },
+    {
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/dump/L2Cache.bin",
+      "size_bytes": 72,
+      "suffix": ".bin"
+    },
+    {
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/dump/aicore_binary.o",
+      "size_bytes": 1225224,
+      "suffix": ".o"
+    },
+    {
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/dump/duration.bin",
+      "size_bytes": 128,
+      "suffix": ".bin"
+    },
+    {
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/dump/op_basic_info.txt",
+      "size_bytes": 193,
+      "suffix": ".txt"
+    },
+    {
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/dump/pc_start_addr.txt",
+      "size_bytes": 14,
+      "suffix": ".txt"
+    },
+    {
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/visualize_data.bin",
+      "size_bytes": 3919868,
+      "suffix": ".bin"
+    }
+  ],
+  "reference_csv_files": [
+    {
+      "headers": [
+        "execution_id",
+        "lane",
+        "source_csv",
+        "source_row",
+        "replay_id",
+        "step_id",
+        "task_id",
+        "stream_id",
+        "start_us",
+        "duration_us",
+        "wait_us",
+        "block_dim",
+        "mix_block_dim",
+        "accelerator_core",
+        "name",
+        "type",
+        "input_shapes",
+        "input_formats",
+        "output_shapes",
+        "output_formats",
+        "matmul_ordinal",
+        "layer",
+        "role",
+        "matmul_flops",
+        "matmul_tflops",
+        "metrics_json",
+        "raw_json",
+        "aicore_time_us",
+        "mac_time_us",
+        "mac_ratio",
+        "mte1_time_us",
+        "mte1_ratio",
+        "mte2_time_us",
+        "mte2_ratio",
+        "mte3_time_us",
+        "mte3_ratio",
+        "fixpipe_time_us",
+        "fixpipe_ratio",
+        "cube_utilization_pct"
+      ],
+      "path": "vision_linear_executions.csv",
+      "row_count": 1944
+    }
+  ],
+  "schema_version": 1,
+  "unassigned_raw_files": [],
+  "visualize_data_files": [
+    {
+      "framing": {
+        "header_bytes": 12,
+        "header_fields": "content_size, record_type, padding, version, reserved",
+        "header_struct": "<QBBBB",
+        "length_semantics": "UTF-8 JSON bytes plus the declared trailing NUL padding",
+        "record_boundary": "header_bytes + payload_length"
+      },
+      "path": "square/OPPROF_20260730111258_VPUZMLPNTDBJLMEH/visualize_data.bin",
+      "record_count": 6,
+      "records": [
+        {
+          "declared_padding_bytes": 2,
+          "index": 0,
+          "json_schema": {
+            "paths": [
+              {
+                "path": "$",
+                "types": {
+                  "object": 1
+                }
+              },
+              {
+                "list_count": 1,
+                "list_items_total": 0,
+                "list_length_max": 0,
+                "list_length_min": 0,
+                "path": "$.advice",
+                "types": {
+                  "array": 1
+                }
+              },
+              {
+                "path": "$.block_detail",
+                "types": {
+                  "object": 1
+                }
+              },
+              {
+                "list_count": 1,
+                "list_items_total": 3,
+                "list_length_max": 3,
+                "list_length_min": 3,
+                "path": "$.block_detail.head_name",
+                "types": {
+                  "array": 1
+                }
+              },
+              {
+                "path": "$.block_detail.head_name[]",
+                "types": {
+                  "string": 3
+                }
+              },
+              {
+                "list_count": 1,
+                "list_items_total": 24,
+                "list_length_max": 24,
+                "list_length_min": 24,
+                "path": "$.block_detail.row",
+                "types": {
+                  "array": 1
+                }
+              },
+              {
+                "path": "$.block_detail.row[]",
+                "types": {
+                  "object": 24
+                }
+              },
+              {
+                "list_count": 24,
+                "list_items_total": 72,
+                "list_length_max": 3,
+                "list_length_min": 3,
+                "path": "$.block_detail.row[].value",
+                "types": {
+                  "array": 24
+                }
+              },
+              {
+                "path": "$.block_detail.row[].value[]",
+                "types": {
+                  "string": 72
+                }
+              },
+              {
+                "list_count": 1,
+                "list_items_total": 2,
+                "list_length_max": 2,
+                "list_length_min": 2,
+                "path": "$.block_detail.size",
+                "types": {
+                  "array": 1
+                }
+              },
+              {
+                "path": "$.block_detail.size[]",
+                "types": {
+                  "integer": 2
+                }
+              },
+              {
+                "path": "$.block_dim",
+                "types": {
+                  "string": 1
+                }
+              },
+              {
+                "path": "$.cur_freq",
+                "types": {
+                  "string": 1
+                }
+              },
+              {
+                "path": "$.device_id",
+                "types": {
+                  "string": 1
+                }
+              },
+              {
+                "path": "$.duration",
+                "types": {
+                  "number": 1
+                }
+              },
+              {
+                "path": "$.mix_block_dim",
+                "types": {
+                  "string": 1
+                }
+              },
+              {
+                "path": "$.name",
+                "types": {
+                  "string": 1
+                }
+              },
+              {
+                "path": "$.op_type",
+                "types": {
+                  "string": 1
+                }
+              },
+              {
+                "path": "$.pid",
+                "types": {
+                  "string": 1
+                }
+              },
+              {
+                "path": "$.rated_freq",
+                "types": {
+                  "string": 1
+                }
+              },
+              {
+                "path": "$.soc",
+                "types": {
+                  "string": 1
+                }
+              }
+            ]
+          },
+          "observed_padding_bytes": 2,
+          "offset": 0,
+          "payload_length": 1200,
+          "record_type": 5,
+          "record_type_hex": "0x05",
+          "reserved": 90,
+          "top_level_keys": [
+            "advice",
+            "block_detail",
+            "block_dim",
+            "cur_freq",
+            "device_id",
+            "duration",
+            "mix_block_dim",
+            "name",
+            "op_type",
+            "pid",
+            "rated_freq",
+            "soc"
+          ],
+          "top_level_type": "dict",
+          "version": 90
+        },
+        {
+          "declared_padding_bytes": 1,
+          "index": 1,
+          "json_schema": {
+            "paths": [
+              {
+                "path": "$",
+                "types": {
+                  "object": 1
+                }
+              },
+              {
+                "list_count": 1,
+                "list_items_total": 0,
+                "list_length_max": 0,
+                "list_length_min": 0,
+                "path": "$.advice",
+                "types": {
+                  "array": 1
+                }
+              },
+              {
+                "list_count": 1,
+                "list_items_total": 96,
+                "list_length_max": 96,
+                "list_length_min": 96,
+                "path": "$.subblock_detail",
+                "types": {
+                  "array": 1
+                }
+              },
+              {
+                "path": "$.subblock_detail[]",
+                "types": {
+                  "object": 96
+                }
+              },
+              {
+                "path": "$.subblock_detail[].block_id",
+                "types": {
+                  "string": 96
+                }
+              },
+              {
+                "path": "$.subblock_detail[].block_type",
+                "types": {
+                  "string": 96
+                }
+              },
+              {
+                "path": "$.subblock_detail[].name",
+                "types": {
+                  "string": 96
+                }
+              },
+              {
+                "path": "$.subblock_detail[].origin_value",
+                "types": {
+                  "number": 96
+                }
+              },
+              {
+                "path": "$.subblock_detail[].unit",
+                "types": {
+                  "integer": 96
+                }
+              },
+              {
+                "path": "$.subblock_detail[].value",
+                "types": {
+                  "number": 96
+                }
+              }
+            ]
+          },
+          "observed_padding_bytes": 1,
+          "offset": 1212,
+          "payload_length": 10680,
+          "record_type": 6,
+          "record_type_hex": "0x06",
+          "reserved": 90,
+          "top_level_keys": [
+            "advice",
+            "subblock_detail"
+          ],
+          "top_level_type": "dict",
+          "version": 90
+        },
+        {
+          "declared_padding_bytes": 1,
+          "index": 2,
+          "json_schema": {
+            "paths": [
+              {
+                "path": "$",
+                "types": {
+                  "object": 1
+                }
+              },
+              {
+                "list_count": 1,
+                "list_items_total": 0,
+                "list_length_max": 0,
+                "list_length_min": 0,
+                "path": "$.advice",
+                "types": {
+                  "array": 1
+                }
+              },
+              {
+                "list_count": 1,
+                "list_items_total": 72,
+                "list_length_max": 72,
+                "list_length_min": 72,
+                "path": "$.subblock_detail",
+                "types": {
+                  "array": 1
+                }
+              },
+              {
+                "path": "$.subblock_detail[]",
+                "types": {
+                  "object": 72
+                }
+              },
+              {
+                "path": "$.subblock_detail[].block_id",
+                "types": {
+                  "string": 72
+                }
+              },
+              {
+                "path": "$.subblock_detail[].block_type",
+                "types": {
+                  "string": 72
+                }
+              },
+              {
+                "path": "$.subblock_detail[].name",
+                "types": {
+                  "string": 72
+                }
+              },
+              {
+                "path": "$.subblock_detail[].unit",
+                "types": {
+                  "integer": 72
+                }
+              },
+              {
+                "path": "$.subblock_detail[].value",
+                "types": {
+                  "string": 72
+                }
+              }
+            ]
+          },
+          "observed_padding_bytes": 1,
+          "offset": 11904,
+          "payload_length": 5740,
+          "record_type": 7,
+          "record_type_hex": "0x07",
+          "reserved": 90,
+          "top_level_keys": [
+            "advice",
+            "subblock_detail"
+          ],
+          "top_level_type": "dict",
+          "version": 90
+        },
+        {
+          "declared_padding_bytes": 1,
+          "index": 3,
+          "json_schema": {
+            "paths": [
+              {
+                "path": "$",
+                "types": {
+                  "object": 1
+                }
+              },
+              {
+                "list_count": 1,
+                "list_items_total": 24,
+                "list_length_max": 24,
+                "list_length_min": 24,
+                "path": "$.core_memory_map",
+                "types": {
+                  "array": 1
+                }
+              },
+              {
+                "path": "$.core_memory_map[]",
+                "types": {
+                  "object": 24
+                }
+              },
+              {
+                "path": "$.core_memory_map[].Cube",
+                "types": {
+                  "object": 24
+                }
+              },
+              {
+                "path": "$.core_memory_map[].Cube.cycle",
+                "types": {
+                  "integer": 24
+                }
+              },
+              {
+                "path": "$.core_memory_map[].Cube.ratio",
+                "types": {
+                  "number": 24
+                }
+              },
+              {
+                "path": "$.core_memory_map[].Cube.total_cycles",
+                "types": {
+                  "integer": 24
+                }
+              },
+              {
+                "path": "$.core_memory_map[].L2cache",
+                "types": {
+                  "object": 24
+                }
+              },
+              {
+                "path": "$.core_memory_map[].L2cache.hit",
+                "types": {
+                  "string": 24
+                }
+              },
+              {
+                "path": "$.core_memory_map[].L2cache.hit_ratio",
+                "types": {
+                  "string": 24
+                }
+              },
+              {
+                "path": "$.core_memory_map[].L2cache.miss",
+                "types": {
+                  "string": 24
+                }
+              },
+              {
+                "path": "$.core_memory_map[].L2cache.total_request",
+                "types": {
+                  "string": 24
+                }
+              },
+              {
+                "list_count": 24,
+                "list_items_total": 0,
+                "list_length_max": 0,
+                "list_length_min": 0,
+                "path": "$.core_memory_map[].advice",
+                "types": {
+                  "array": 24
+                }
+              },
+              {
+                "path": "$.core_memory_map[].core_no",
+                "types": {
+                  "string": 24
+                }
+              },
+              {
+                "list_count": 24,
+                "list_items_total": 384,
+                "list_length_max": 16,
+                "list_length_min": 16,
+                "path": "$.core_memory_map[].memory_unit",
+                "types": {
+                  "array": 24
+                }
+              },
+              {
+                "path": "$.core_memory_map[].memory_unit[]",
+                "types": {
+                  "object": 384
+                }
+              },
+              {
+                "path": "$.core_memory_map[].memory_unit[].bandwidth",
+                "types": {
+                  "string": 384
+                }
+              },
+              {
+                "path": "$.core_memory_map[].memory_unit[].bandwidth_suffix",
+                "types": {
+                  "string": 384
+                }
+              },
+              {
+                "path": "$.core_memory_map[].memory_unit[].display",
+                "types": {
+                  "integer": 384
+                }
+              },
+              {
+                "path": "$.core_memory_map[].memory_unit[].memory_path",
+                "types": {
+                  "integer": 384
+                }
+              },
+              {
+                "path": "$.core_memory_map[].memory_unit[].peak_ratio",
+                "types": {
+                  "string": 384
+                }
+              },
+              {
+                "path": "$.core_memory_map[].memory_unit[].request",
+                "types": {
+                  "string": 384
+                }
+              },
+              {
+                "path": "$.core_memory_map[].memory_unit[].request_suffix",
+                "types": {
+                  "string": 384
+                }
+              },
+              {
+                "path": "$.core_memory_map[].op_type",
+                "types": {
+                  "string": 24
+                }
+              },
+              {
+                "path": "$.core_memory_map[].soc",
+                "types": {
+                  "string": 24
+                }
+              }
+            ]
+          },
+          "observed_padding_bytes": 1,
+          "offset": 17656,
+          "payload_length": 56976,
+          "record_type": 8,
+          "record_type_hex": "0x08",
+          "reserved": 90,
+          "top_level_keys": [
+            "core_memory_map"
+          ],
+          "top_level_type": "dict",
+          "version": 90
+        },
+        {
+          "declared_padding_bytes": 1,
+          "index": 4,
+          "json_schema": {
+            "paths": [
+              {
+                "path": "$",
+                "types": {
+                  "object": 1
+                }
+              },
+              {
+                "list_count": 1,
+                "list_items_total": 24,
+                "list_length_max": 24,
+                "list_length_min": 24,
+                "path": "$.table_per_block",
+                "types": {
+                  "array": 1
+                }
+              },
+              {
+                "path": "$.table_per_block[]",
+                "types": {
+                  "object": 24
+                }
+              },
+              {
+                "list_count": 24,
+                "list_items_total": 72,
+                "list_length_max": 3,
+                "list_length_min": 3,
+                "path": "$.table_per_block[].advice",
+                "types": {
+                  "array": 24
+                }
+              },
+              {
+                "path": "$.table_per_block[].advice[]",
+                "types": {
+                  "string": 72
+                }
+              },
+              {
+                "path": "$.table_per_block[].block_id",
+                "types": {
+                  "string": 24
+                }
+              },
+              {
+                "list_count": 24,
+                "list_items_total": 216,
+                "list_length_max": 9,
+                "list_length_min": 9,
+                "path": "$.table_per_block[].table_detail",
+                "types": {
+                  "array": 24
+                }
+              },
+              {
+                "path": "$.table_per_block[].table_detail[]",
+                "types": {
+                  "object": 216
+                }
+              },
+              {
+                "list_count": 216,
+                "list_items_total": 816,
+                "list_length_max": 6,
+                "list_length_min": 3,
+                "path": "$.table_per_block[].table_detail[].header_name",
+                "types": {
+                  "array": 216
+                }
+              },
+              {
+                "path": "$.table_per_block[].table_detail[].header_name[]",
+                "types": {
+                  "string": 816
+                }
+              },
+              {
+                "list_count": 216,
+                "list_items_total": 960,
+                "list_length_max": 9,
+                "list_length_min": 2,
+                "path": "$.table_per_block[].table_detail[].row",
+                "types": {
+                  "array": 216
+                }
+              },
+              {
+                "path": "$.table_per_block[].table_detail[].row[]",
+                "types": {
+                  "object": 960
+                }
+              },
+              {
+                "path": "$.table_per_block[].table_detail[].row[].name",
+                "types": {
+                  "string": 960
+                }
+              },
+              {
+                "list_count": 960,
+                "list_items_total": 2712,
+                "list_length_max": 5,
+                "list_length_min": 2,
+                "path": "$.table_per_block[].table_detail[].row[].value",
+                "types": {
+                  "array": 960
+                }
+              },
+              {
+                "path": "$.table_per_block[].table_detail[].row[].value[]",
+                "types": {
+                  "string": 2712
+                }
+              },
+              {
+                "list_count": 216,
+                "list_items_total": 432,
+                "list_length_max": 2,
+                "list_length_min": 2,
+                "path": "$.table_per_block[].table_detail[].size",
+                "types": {
+                  "array": 216
+                }
+              },
+              {
+                "path": "$.table_per_block[].table_detail[].size[]",
+                "types": {
+                  "integer": 432
+                }
+              },
+              {
+                "path": "$.table_per_block[].table_detail[].table_name",
+                "types": {
+                  "string": 216
+                }
+              },
+              {
+                "path": "$.table_per_block[].table_op_type",
+                "types": {
+                  "string": 24
+                }
+              }
+            ]
+          },
+          "observed_padding_bytes": 1,
+          "offset": 74644,
+          "payload_length": 83308,
+          "record_type": 9,
+          "record_type_hex": "0x09",
+          "reserved": 90,
+          "top_level_keys": [
+            "table_per_block"
+          ],
+          "top_level_type": "dict",
+          "version": 90
+        },
+        {
+          "declared_padding_bytes": 1,
+          "index": 5,
+          "json_schema": {
+            "paths": [
+              {
+                "path": "$",
+                "types": {
+                  "object": 1
+                }
+              },
+              {
+                "list_count": 1,
+                "list_items_total": 16384,
+                "list_length_max": 16384,
+                "list_length_min": 16384,
+                "path": "$.Cacheline Records",
+                "types": {
+                  "array": 1
+                }
+              },
+              {
+                "path": "$.Cacheline Records[]",
+                "types": {
+                  "object": 16384
+                }
+              },
+              {
+                "path": "$.Cacheline Records[].Cacheline Id",
+                "types": {
+                  "integer": 16384
+                }
+              },
+              {
+                "path": "$.Cacheline Records[].Hit",
+                "types": {
+                  "object": 16384
+                }
+              },
+              {
+                "list_count": 16384,
+                "list_items_total": 23621,
+                "list_length_max": 3,
+                "list_length_min": 0,
+                "path": "$.Cacheline Records[].Hit.Address Range",
+                "types": {
+                  "array": 16384
+                }
+              },
+              {
+                "list_count": 23621,
+                "list_items_total": 47242,
+                "list_length_max": 2,
+                "list_length_min": 2,
+                "path": "$.Cacheline Records[].Hit.Address Range[]",
+                "types": {
+                  "array": 23621
+                }
+              },
+              {
+                "path": "$.Cacheline Records[].Hit.Address Range[][]",
+                "types": {
+                  "string": 47242
+                }
+              },
+              {
+                "list_count": 16384,
+                "list_items_total": 32768,
+                "list_length_max": 2,
+                "list_length_min": 2,
+                "path": "$.Cacheline Records[].Hit.Value",
+                "types": {
+                  "array": 16384
+                }
+              },
+              {
+                "path": "$.Cacheline Records[].Hit.Value[]",
+                "types": {
+                  "integer": 16384,
+                  "number": 16384
+                }
+              },
+              {
+                "path": "$.Cacheline Records[].Miss",
+                "types": {
+                  "object": 16384
+                }
+              },
+              {
+                "list_count": 16384,
+                "list_items_total": 23621,
+                "list_length_max": 3,
+                "list_length_min": 0,
+                "path": "$.Cacheline Records[].Miss.Address Range",
+                "types": {
+                  "array": 16384
+                }
+              },
+              {
+                "list_count": 23621,
+                "list_items_total": 47242,
+                "list_length_max": 2,
+                "list_length_min": 2,
+                "path": "$.Cacheline Records[].Miss.Address Range[]",
+                "types": {
+                  "array": 23621
+                }
+              },
+              {
+                "path": "$.Cacheline Records[].Miss.Address Range[][]",
+                "types": {
+                  "string": 47242
+                }
+              },
+              {
+                "list_count": 16384,
+                "list_items_total": 32768,
+                "list_length_max": 2,
+                "list_length_min": 2,
+                "path": "$.Cacheline Records[].Miss.Value",
+                "types": {
+                  "array": 16384
+                }
+              },
+              {
+                "path": "$.Cacheline Records[].Miss.Value[]",
+                "types": {
+                  "integer": 16384,
+                  "number": 16384
+                }
+              }
+            ]
+          },
+          "observed_padding_bytes": 1,
+          "offset": 157964,
+          "payload_length": 3761892,
+          "record_type": 14,
+          "record_type_hex": "0x0e",
+          "reserved": 90,
+          "top_level_keys": [
+            "Cacheline Records"
+          ],
+          "top_level_type": "dict",
+          "version": 90
+        }
+      ],
+      "role": "square",
+      "size_bytes": 3919868
+    }
+  ]
+}

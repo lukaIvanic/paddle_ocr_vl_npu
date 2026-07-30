@@ -1,0 +1,32 @@
+{
+  "argv": [
+    "/usr/local/Ascend/cann-9.0.0/bin/msprof",
+    "op",
+    "--output=/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_msprof_op/910b_square_arithmetic_20260730/square",
+    "--aic-metrics=ArithmeticUtilization",
+    "--replay-mode=kernel",
+    "--kernel-name=MatMulV2",
+    "--launch-count=1",
+    "--warm-up=5",
+    "/usr/local/python3.12.13/bin/python3.12",
+    "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/vision_msprof_linear_target.py",
+    "--role",
+    "square",
+    "--output-dir",
+    "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_msprof_op/910b_square_arithmetic_20260730/square/application"
+  ],
+  "shell_escaped": "/usr/local/Ascend/cann-9.0.0/bin/msprof op --output=/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_msprof_op/910b_square_arithmetic_20260730/square --aic-metrics=ArithmeticUtilization --replay-mode=kernel --kernel-name=MatMulV2 --launch-count=1 --warm-up=5 /usr/local/python3.12.13/bin/python3.12 /workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/vision_msprof_linear_target.py --role square --output-dir /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_msprof_op/910b_square_arithmetic_20260730/square/application",
+  "cwd": "/workspace/repos/paddle_ocr_vl_npu",
+  "selection": {
+    "role": "square",
+    "kernel_name_prefix": "MatMulV2",
+    "launch_count": 1,
+    "replay_mode": "kernel",
+    "metric": "ArithmeticUtilization",
+    "metric_support": {
+      "tier": "portable_base",
+      "documented_products": "Atlas inference, training, A2, and A3 products"
+    },
+    "mstx": false
+  }
+}
