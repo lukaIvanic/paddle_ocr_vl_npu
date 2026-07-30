@@ -55,6 +55,7 @@ from paddleocr_vl.model.vision_prefill import (  # noqa: E402
     prompt_flash_attention_call_head_dim,
     vision_prompt_flash_attention_bnsd,
 )
+from profiling.mstx_bridge import MstxBridge  # noqa: E402
 from utils.timing import DeviceTimeline, synchronize  # noqa: E402
 from vision_lab import DEFAULT_MODEL, _environment  # noqa: E402
 
@@ -994,21 +995,18 @@ def _emit_msprof_target(
     inputs: StageInputs,
     *,
     device: torch.device,
-    torch_npu: Any,
 ) -> dict[str, Any]:
-    """Emit one process-scoped warm graph replay for targeted ``msprof op``."""
+    """Emit one warm graph replay through CANN's public MSTX C API."""
     current_stream = torch.npu.current_stream(device)
-    # msprof-op documents support for the process-level mstxRangeStartA /
-    # mstxRangeEnd pair.  The stream-scoped torch-npu extension is useful to
-    # the PyTorch profiler, but is not an msprof-op selection primitive.
     current_stream.synchronize()
-    range_id = torch_npu.npu.mstx.range_start(
-        MSPROF_TARGET_NAME,
+    bridge = MstxBridge(
+        REPO_ROOT / ".runtime_cache/09_persistent_page_engine_mstx_bridge"
     )
-    if not isinstance(range_id, int) or range_id == 0:
+    range_id = bridge.range_start(MSPROF_TARGET_NAME)
+    if range_id == 0:
         raise RuntimeError(
-            "torch_npu MSTX range_start failed; targeted msprof capture "
-            f"cannot be trusted (returned {range_id!r})"
+            "CANN MSTX range_start returned zero; targeted msprof capture "
+            "cannot be trusted"
         )
     output: torch.Tensor | None = None
     try:
@@ -1017,7 +1015,7 @@ def _emit_msprof_target(
         # msprof's selected range must cover completion of the one replay,
         # not merely asynchronous host submission.
         current_stream.synchronize()
-        torch_npu.npu.mstx.range_end(range_id)
+        bridge.range_end(range_id)
     del output
     return {
         "name": MSPROF_TARGET_NAME,
@@ -1026,6 +1024,8 @@ def _emit_msprof_target(
         "stream": str(current_stream),
         "scope": "process",
         "range_id": range_id,
+        "bridge": str(bridge.path),
+        "injection_path": os.environ.get("MSTX_INJECTION_PATH"),
         "synchronized_before_range_start": True,
         "synchronized_before_range_end": True,
         "throughput_measurement": False,
@@ -1954,7 +1954,6 @@ def main(argv: Sequence[str] | None = None) -> None:
             run,
             candidate_inputs,
             device=device,
-            torch_npu=torch_npu,
         )
 
     if args.profile:

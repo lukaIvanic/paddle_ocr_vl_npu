@@ -147,6 +147,7 @@ def _relevant_environment() -> dict[str, str | None]:
         "ASCEND_TOOLKIT_HOME",
         "ASCEND_OPP_PATH",
         "LD_LIBRARY_PATH",
+        "MSTX_INJECTION_PATH",
     )
     return {name: os.environ.get(name) for name in names}
 
