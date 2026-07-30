@@ -9,29 +9,30 @@ Prove that the real Experiment 09 pipeline runs on this 310P software stack,
 identify which production optimizations work, and measure their approximate
 effect on a small representative workload.
 
-## Current requested task: run Phase 17 only
+## Current requested task: run Phase 18 only
 
-Phases 0-16 have already run or have retained instructions and evidence. For
-the current task, do not rerun the production pipeline, page workloads, layout
-lab, saturation matrices, native profiles, PMU captures, text prefill, or
-decode.
+Phases 0-17 have already run or retain historical instructions and evidence.
+Do not rerun the production pipeline, page workloads, layout lab, saturation
+matrices, native profiles, text prefill, or decode. Go directly to
+**Phase 18: 310P-only PromptFA approximate-softmax experiment** at the end of
+this document.
 
-Pull `main`, recover the exact Python/model/NPU environment and compatible
-padded-NZ graph-cache root used by Phase 14, and execute only:
+Phase 17's public-operator measurements remain useful, but its compiled
+`sparse_mode=0` lanes are superseded: they inherited the public PromptFA
+default `next_tokens=0`, which can impose a causal/right-window restriction.
+Commit `532331a` fixes the complete vision wrapper to pass both
+`pre_tokens=2147483647` and `next_tokens=2147483647`, and gives corrected
+sparse-zero graphs a new cache identity.
 
-1. **Phase 17A:** the PromptFA sparse-mode operator parity/timing probe; then
-2. **Phase 17B:** four matched compiled 27-layer lanes:
-   B1xS2048 and B4xS512, each with sparse mode 0 and sparse mode 1.
+The current question is:
 
-The current question is deliberately narrow:
+> Does CANN 9's hidden 310P-only `innerPrecise=4` PromptFA mode materially
+> reduce the vector-softmax bottleneck in the real compiled 27-layer vision
+> stage, while keeping finite and acceptably close final encoder outputs?
 
-> On the optimized 4352-wide FRACTAL_NZ 310P vision graph, does documented
-> `sparse_mode=0` improve compiled PromptFA throughput relative to mode 1,
-> especially at B1xS2048, while preserving the same attention result?
-
-Do not test ATB, another attention implementation, another shape, layout
-variants, mask rewrites, tiling changes, or production OCR. Do not modify
-model source.
+Test only the matched mode-1/mode-4 lanes prescribed in Phase 18. Do not test
+ATB, FIA, another attention implementation, layout variants, mask rewrites,
+or production OCR in this phase. Do not modify model source.
 
 ## Current 310P layout route: eager NPU
 
@@ -8011,3 +8012,518 @@ Artifact paths:
 
 Do not describe eight-page speed as full-corpus throughput. Do not report an
 alternative runner as production validation.
+
+## Phase 18: 310P-only PromptFA approximate-softmax experiment
+
+### 18.0 What is being tested
+
+CANN 9.0 and 9.1 contain an undocumented x310 PromptFA path selected by
+`innerPrecise=4`. On 310P it:
+
+- keeps the existing PromptFA BMM1 and BMM2 kernels;
+- keeps the explicit boolean attention mask;
+- replaces the normal FP32 online-softmax max/sum state with FP16 state;
+- selects the x310 `SoftmaxFlashV2Tmp<half>` implementation; and
+- is explicitly rejected on 910B.
+
+This directly targets the measured 310P vector-softmax bottleneck. It is not a
+publicly supported precision mode, so both performance and accumulated
+27-layer numerics are mandatory gates.
+
+Current upstream CANN also has a host-tiling unit test stating that 310P
+accepts `APPROXIMATE_COMPUTATION` and reaches the FP16-softmax adjustment
+path. That confirms this is an intentional x310 tiling path, but the test does
+not provide a numerical or performance guarantee.
+
+The public torch_npu PromptFA schema does not expose `inner_precise`.
+`vision_matmul_lab.py` now installs a process-local TorchAir converter only
+when `--promptfa-inner-precise 4` is requested. Eager reference execution
+remains ordinary mode-1 PromptFA; only the compiled candidate graph receives
+GE `inner_precise=4`.
+
+The converter was validated on 910B2 at commit `532331a`: CANN reached
+`prompt_flash_attention_tiling.cpp` and rejected it with exactly:
+
+```text
+not support APPROXIMATE_COMPUTATION when curShortSocName is Atlas A2
+```
+
+Therefore, a different Python/converter error on 310P is a portability bug;
+it is not an expected product rejection.
+
+Keep every other property fixed:
+
+```text
+27 real PaddleOCR-VL vision layers
+FP16
+BNSD PromptFA
+sparse_mode=0
+full explicit boolean mask
+pre_tokens=2147483647
+next_tokens=2147483647
+model head dimension 72, runtime padded to 80
+separate manual RoPE
+MLP intermediate size 4352
+all 162 Linear weights in FRACTAL_NZ
+TorchAir static cache_compile full graph
+```
+
+Do not substitute FIA or ATB. Do not change the layout, mask, packing, RoPE,
+weights, or shapes.
+
+### 18.1 Update and recover the proven environment
+
+Start from the existing clean work-server checkout:
+
+```sh
+cd /path/to/paddle_ocr_vl_npu
+git status --short
+git pull --ff-only origin main
+git status --short
+
+REPO="$(git rev-parse --show-toplevel)"
+COMMIT="$(git rev-parse HEAD)"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+REQUIRED_COMMIT="532331a24a562c7455644b21c9ccc130ecdecf52"
+git merge-base --is-ancestor "$REQUIRED_COMMIT" "$COMMIT" || {
+  printf 'Phase 18 requires commit 532331a or later; got %s\n' "$COMMIT"
+  exit 1
+}
+```
+
+Recover the same variables and NPU environment that passed Phase 14. Do not
+guess a Python executable, create another environment, or redownload the
+model:
+
+```sh
+: "${PYTHON_BIN:?restore the successful Phase 14 Python path}"
+: "${MODEL_DIR:?restore the successful local PaddleOCR-VL model path}"
+test -x "$PYTHON_BIN"
+test -f "$MODEL_DIR/config.json"
+
+"$PYTHON_BIN" - <<'PY'
+import torch
+import torch_npu
+try:
+    import torchair
+except ImportError:
+    from torch_npu.dynamo import torchair
+print("torch", torch.__version__)
+print("torch_npu", torch_npu.__version__)
+print("torchair", torchair.__file__)
+print("device", torch_npu.npu.get_device_name())
+print("promptfa_schema", torch.ops.npu.npu_prompt_flash_attention.default._schema)
+PY
+```
+
+The device name must contain `310`. Confirm that no unrelated process owns the
+selected NPU. Never terminate a process that this phase did not start.
+
+Create one new evidence root:
+
+```sh
+OUTPUT_ROOT="$REPO/tmp/09_persistent_page_engine/310p_phase18_promptfa_inner4_$COMMIT_SHORT"
+CACHE_ROOT="$REPO/.runtime_cache/09_persistent_page_engine_vision_matmul_lab"
+test ! -e "$OUTPUT_ROOT"
+mkdir -p "$OUTPUT_ROOT" "$CACHE_ROOT"
+df -h "$REPO" "$CACHE_ROOT" | tee "$OUTPUT_ROOT/disk_before.txt"
+
+{
+  printf 'commit=%s\n' "$COMMIT"
+  printf 'hostname=%s\n' "$(hostname)"
+  printf 'python=%s\n' "$PYTHON_BIN"
+  printf 'model=%s\n' "$MODEL_DIR"
+  printf 'ASCEND_RT_VISIBLE_DEVICES=%s\n' \
+    "${ASCEND_RT_VISIBLE_DEVICES:-}"
+  "$PYTHON_BIN" - <<'PY'
+import torch
+import torch_npu
+try:
+    import torchair
+except ImportError:
+    from torch_npu.dynamo import torchair
+print("torch=" + torch.__version__)
+print("torch_npu=" + torch_npu.__version__)
+print("torchair=" + str(torchair.__file__))
+print("device=" + torch_npu.npu.get_device_name())
+PY
+  npu-smi info
+} >"$OUTPUT_ROOT/environment.txt" 2>&1
+```
+
+Start one background utilization log for the entire phase:
+
+```sh
+(
+  while true; do
+    date --iso-8601=ns 2>/dev/null || date
+    npu-smi info
+    sleep 1
+  done
+) >"$OUTPUT_ROOT/npu_smi_1s.log" 2>&1 &
+MONITOR_PID=$!
+printf '%s\n' "$MONITOR_PID" >"$OUTPUT_ROOT/npu_monitor.pid"
+
+stop_phase18_monitor() {
+  kill "$MONITOR_PID" 2>/dev/null || true
+  wait "$MONITOR_PID" 2>/dev/null || true
+}
+```
+
+### 18.2 Matched lane runner
+
+Define exactly one runner:
+
+```sh
+run_inner_lane() {
+  inner="$1"
+  batch="$2"
+  seq="$3"
+  lane="b${batch}_s${seq}_inner${inner}"
+  lane_root="$OUTPUT_ROOT/$lane"
+  result_dir="$lane_root/result"
+  test ! -e "$lane_root"
+  mkdir -p "$lane_root"
+
+  {
+    printf '# commit=%s\n' "$COMMIT"
+    printf '# innerPrecise=%s batch=%s sequence_length=%s\n' \
+      "$inner" "$batch" "$seq"
+    printf '%q ' env \
+      PADDLE_OCR_VL_VISION_PROMPT_FA_MASK_SPARSE_MODE=0 \
+      PYTHONUNBUFFERED=1 \
+      "$PYTHON_BIN" \
+      "$REPO/09_persistent_page_engine/scripts/vision_matmul_lab.py" \
+      --model "$MODEL_DIR" \
+      --batch-size "$batch" \
+      --sequence-length "$seq" \
+      --intermediate-size 4352 \
+      --weight-format fractal_nz \
+      --execution torchair \
+      --attention-head-padding runtime \
+      --promptfa-inner-precise "$inner" \
+      --rotary-implementation separate_manual \
+      --cache-dir "$CACHE_ROOT" \
+      --output-dir "$result_dir" \
+      --allow-compile-if-missing \
+      --warmup 3 \
+      --samples 10 \
+      --calls-per-sample 5
+    printf '\n'
+  } >"$lane_root/command.sh"
+  chmod +x "$lane_root/command.sh"
+
+  printf '\n[phase18] START %s %s\n' \
+    "$lane" "$(date --iso-8601=seconds 2>/dev/null || date)" \
+    | tee -a "$OUTPUT_ROOT/progress.log"
+  set -o pipefail
+  if PADDLE_OCR_VL_VISION_PROMPT_FA_MASK_SPARSE_MODE=0 \
+    PYTHONUNBUFFERED=1 \
+    "$PYTHON_BIN" \
+    "$REPO/09_persistent_page_engine/scripts/vision_matmul_lab.py" \
+    --model "$MODEL_DIR" \
+    --batch-size "$batch" \
+    --sequence-length "$seq" \
+    --intermediate-size 4352 \
+    --weight-format fractal_nz \
+    --execution torchair \
+    --attention-head-padding runtime \
+    --promptfa-inner-precise "$inner" \
+    --rotary-implementation separate_manual \
+    --cache-dir "$CACHE_ROOT" \
+    --output-dir "$result_dir" \
+    --allow-compile-if-missing \
+    --warmup 3 \
+    --samples 10 \
+    --calls-per-sample 5 \
+    2>&1 | tee "$lane_root/stdout.log"; then
+    status=0
+  else
+    status=$?
+  fi
+  printf '%s\n' "$status" >"$lane_root/exit_code.txt"
+  printf '[phase18] END %s exit=%s %s\n' \
+    "$lane" "$status" \
+    "$(date --iso-8601=seconds 2>/dev/null || date)" \
+    | tee -a "$OUTPUT_ROOT/progress.log"
+  return "$status"
+}
+```
+
+Each successful lane reports the median of 50 warm full-stack calls. Compile
+and first-call wall time are diagnostics only.
+
+### 18.3 First gate: B1xS512
+
+Run the supported mode first, then mode 4:
+
+```sh
+run_inner_lane 1 1 512 || {
+  stop_phase18_monitor
+  exit 1
+}
+run_inner_lane 4 1 512 || {
+  stop_phase18_monitor
+  exit 1
+}
+```
+
+If mode 4 fails, stop. Preserve its full log and report the first CANN/TorchAir
+error. Do not try FIA or edit installed packages.
+
+Validate the two summaries:
+
+```sh
+"$PYTHON_BIN" - "$OUTPUT_ROOT" "$COMMIT" <<'PY'
+import json
+import pathlib
+import sys
+
+root = pathlib.Path(sys.argv[1])
+commit = sys.argv[2]
+rows = {}
+for inner in (1, 4):
+    path = root / f"b1_s512_inner{inner}" / "result" / "run_summary.json"
+    p = json.load(open(path))
+    assert p["status"] == "completed", (path, p["status"])
+    assert p["environment"]["commit"] == commit
+    assert p["environment"]["device_name"].find("310") >= 0
+    assert p["shape"]["batch_size"] == 1
+    assert p["shape"]["sequence_length"] == 512
+    assert p["shape"]["layers"] == 27
+    assert p["shape"]["linear_calls_per_full_stack"] == 162
+    assert p["shape"]["candidate_intermediate_size"] == 4352
+    assert p["attention"]["input_layout"] == "BNSD"
+    assert p["attention"]["mask_sparse_mode"] == 0
+    assert p["attention"]["pre_tokens"] == 2147483647
+    assert p["attention"]["next_tokens"] == 2147483647
+    assert p["attention"]["inner_precise"] == inner
+    assert p["requested"]["attention_head_padding"] == "runtime"
+    assert p["requested"]["rotary_implementation"] == "separate_manual"
+    assert p["requested"]["execution"] == "torchair"
+    assert p["weight_format"]["all_after_are_nz"]
+    assert p["compile"]["fullgraph"]
+    assert p["compile"]["ge_cache"]
+    assert p["numerics"]["measured_output_finite"]
+    rows[inner] = p
+
+for inner, p in rows.items():
+    diff = p["numerics"]["measured_output_vs_raw_candidate"]
+    print(
+        "inner", inner,
+        "ms", p["measurements"]["device_event_per_call_ms"]["median"],
+        "physical_tok_s",
+        p["measurements"]["physical_tokens_per_s_device_median"],
+        "max_abs", diff["max_abs"],
+        "mean_abs", diff["mean_abs"],
+        "finite", diff["left_finite"] and diff["right_finite"],
+    )
+
+ms1 = rows[1]["measurements"]["device_event_per_call_ms"]["median"]
+ms4 = rows[4]["measurements"]["device_event_per_call_ms"]["median"]
+print("inner4_stage_latency_change_pct", (ms4 / ms1 - 1.0) * 100.0)
+print("inner4_stage_speedup_x", ms1 / ms4)
+print("PHASE18_B1S512_GATE: PASS")
+PY
+```
+
+Do not reject mode 4 solely for a large maximum difference. Report max and
+mean absolute differences separately. Non-finite output is an immediate
+failure; mean absolute difference at or above 1.0 is a prominent warning that
+requires review, not something to hide.
+
+Even if B1xS512 improves only modestly, continue: PromptFA was about 18% of
+that stage, whereas it was about 50% of B1xS2048 on the previous 310P profile.
+
+### 18.4 Long and batched gates
+
+After the B1xS512 gate passes, run:
+
+```sh
+run_inner_lane 1 1 2048 || {
+  stop_phase18_monitor
+  exit 1
+}
+run_inner_lane 4 1 2048 || {
+  stop_phase18_monitor
+  exit 1
+}
+run_inner_lane 1 4 512 || {
+  stop_phase18_monitor
+  exit 1
+}
+run_inner_lane 4 4 512 || {
+  stop_phase18_monitor
+  exit 1
+}
+```
+
+There are six total lanes in this phase and at most six exact graph
+compilations. Do not add shapes or variants.
+
+Stop the monitor after all planned lanes finish, including on a later failure:
+
+```sh
+stop_phase18_monitor
+df -h "$REPO" "$CACHE_ROOT" | tee "$OUTPUT_ROOT/disk_after.txt"
+```
+
+### 18.5 Mechanical comparison
+
+Create the final comparison:
+
+```sh
+"$PYTHON_BIN" - "$OUTPUT_ROOT" "$COMMIT" <<'PY'
+import json
+import pathlib
+import sys
+
+root = pathlib.Path(sys.argv[1])
+commit = sys.argv[2]
+rows = []
+for batch, seq in ((1, 512), (4, 512), (1, 2048)):
+    by_inner = {}
+    for inner in (1, 4):
+        path = (
+            root / f"b{batch}_s{seq}_inner{inner}"
+            / "result" / "run_summary.json"
+        )
+        p = json.load(open(path))
+        assert p["status"] == "completed", path
+        assert p["environment"]["commit"] == commit
+        assert "310" in p["environment"]["device_name"]
+        assert p["shape"]["batch_size"] == batch
+        assert p["shape"]["sequence_length"] == seq
+        assert p["shape"]["physical_tokens_per_call"] == batch * seq
+        assert p["shape"]["layers"] == 27
+        assert p["shape"]["linear_calls_per_full_stack"] == 162
+        assert p["shape"]["candidate_intermediate_size"] == 4352
+        assert p["attention"]["implementation"] == "prompt_flash_attention"
+        assert p["attention"]["input_layout"] == "BNSD"
+        assert p["attention"]["mask_sparse_mode"] == 0
+        assert p["attention"]["pre_tokens"] == 2147483647
+        assert p["attention"]["next_tokens"] == 2147483647
+        assert p["attention"]["inner_precise"] == inner
+        assert p["weight_format"]["all_after_are_nz"]
+        assert p["compile"]["fullgraph"]
+        assert p["compile"]["ge_cache"]
+        assert p["numerics"]["measured_output_finite"]
+        by_inner[inner] = p
+
+    p1 = by_inner[1]
+    p4 = by_inner[4]
+    ms1 = p1["measurements"]["device_event_per_call_ms"]["median"]
+    ms4 = p4["measurements"]["device_event_per_call_ms"]["median"]
+    tps1 = p1["measurements"]["physical_tokens_per_s_device_median"]
+    tps4 = p4["measurements"]["physical_tokens_per_s_device_median"]
+    diff1 = p1["numerics"]["measured_output_vs_raw_candidate"]
+    diff4 = p4["numerics"]["measured_output_vs_raw_candidate"]
+    rows.append({
+        "batch": batch,
+        "sequence_length": seq,
+        "physical_tokens": batch * seq,
+        "inner1_device_median_ms": ms1,
+        "inner4_device_median_ms": ms4,
+        "inner1_physical_tokens_per_s": tps1,
+        "inner4_physical_tokens_per_s": tps4,
+        "inner4_latency_change_percent": (ms4 / ms1 - 1.0) * 100.0,
+        "inner4_throughput_change_percent": (tps4 / tps1 - 1.0) * 100.0,
+        "inner4_stage_speedup_x": ms1 / ms4,
+        "inner1_compiled_vs_eager_max_abs": diff1["max_abs"],
+        "inner1_compiled_vs_eager_mean_abs": diff1["mean_abs"],
+        "inner4_compiled_vs_eager_max_abs": diff4["max_abs"],
+        "inner4_compiled_vs_eager_mean_abs": diff4["mean_abs"],
+        "inner4_finite": (
+            diff4["left_finite"] and diff4["right_finite"]
+        ),
+    })
+
+payload = {
+    "status": "pass",
+    "commit": commit,
+    "fixed_contract": {
+        "sparse_mode": 0,
+        "pre_tokens": 2147483647,
+        "next_tokens": 2147483647,
+        "layout": "BNSD",
+        "intermediate_size": 4352,
+        "weight_format": "FRACTAL_NZ",
+        "head_padding": "runtime 72 to 80",
+        "layers": 27,
+    },
+    "rows": rows,
+}
+(root / "comparison.json").write_text(
+    json.dumps(payload, indent=2, sort_keys=True) + "\n"
+)
+
+lines = [
+    "# 310P PromptFA innerPrecise 1 versus 4",
+    "",
+    "| shape | inner1 ms | inner4 ms | stage speedup | "
+    "inner4 physical tok/s | inner4 max abs | inner4 mean abs |",
+    "|---|---:|---:|---:|---:|---:|---:|",
+]
+for row in rows:
+    lines.append(
+        f"| B{row['batch']}xS{row['sequence_length']} "
+        f"| {row['inner1_device_median_ms']:.4f} "
+        f"| {row['inner4_device_median_ms']:.4f} "
+        f"| {row['inner4_stage_speedup_x']:.4f}x "
+        f"| {row['inner4_physical_tokens_per_s']:.1f} "
+        f"| {row['inner4_compiled_vs_eager_max_abs']:.6g} "
+        f"| {row['inner4_compiled_vs_eager_mean_abs']:.6g} |"
+    )
+lines.extend(["", "PHASE18_CONTRACTS: PASS", ""])
+(root / "comparison.md").write_text("\n".join(lines))
+print("\n".join(lines))
+PY
+```
+
+### 18.6 Report
+
+Write `$OUTPUT_ROOT/agent_report.md` using:
+
+```text
+310P PHASE 18 PROMPTFA APPROXIMATE SOFTMAX: PASS | PARTIAL | FAIL
+
+Git commit:
+Host / exact NPU:
+Python / torch / torch_npu / TorchAir / CANN:
+ASCEND_RT_VISIBLE_DEVICES:
+
+Fixed graph contract:
+- sparse mode / pre_tokens / next_tokens:
+- layout / head dimension / runtime padding:
+- MLP width / weight format:
+- layers / Linear count:
+
+B1xS512:
+- inner1 ms / physical tok/s:
+- inner4 ms / physical tok/s:
+- stage speedup:
+- compiled-vs-eager max abs / mean abs / finite:
+
+B4xS512:
+- same fields:
+
+B1xS2048:
+- same fields:
+
+Did CANN accept innerPrecise=4 on 310P:
+Largest performance gain:
+Numerical warning, if any:
+Does the result justify a production OCR/token-parity test:
+
+First blocker or warning:
+Exact command logs:
+Environment:
+Comparison JSON/Markdown:
+NPU utilization log:
+All result summaries:
+```
+
+Do not claim OCR accuracy from synthetic-shape encoder outputs. The next step
+after a favorable Phase 18 result is one small real-crop/final-token parity
+test, then production integration. Do not perform that next step in this
+phase.
