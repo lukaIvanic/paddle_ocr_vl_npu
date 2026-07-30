@@ -222,6 +222,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--scheduler-progress",
+        action="store_true",
+        help=(
+            "Emit flush-on-write EXP09_SCHEDULER JSON records around decode, "
+            "refill, prefill-generator, event-wait, and drain boundaries. "
+            "This is synchronization-neutral diagnostic logging."
+        ),
+    )
+    parser.add_argument(
         "--preprocess-all-pages-first",
         action="store_true",
         help=(
@@ -584,6 +593,7 @@ def main() -> None:
         preprocessor_min_pixels=args.preprocessor_min_pixels,
         vision_route_plan=vision_route_plan,
         timeline=timeline,
+        scheduler_progress=args.scheduler_progress,
     )
     recognizer_configuration = recognizer.configuration()
     page_engine = OwnedPageEngine(
@@ -614,6 +624,7 @@ def main() -> None:
             "text_pack_buckets": list(text_pack_buckets),
             "layout_frontend": "owned_no_paddlex",
             "page_preprocessing_mode": manifest["page_preprocessing_mode"],
+            "scheduler_progress": bool(args.scheduler_progress),
             "vision_route_plan": (
                 str(vision_route_plan_path)
                 if vision_route_plan_path is not None
@@ -712,6 +723,7 @@ def main() -> None:
             ),
             "cpu_preprocessing": recognizer_configuration["cpu_preprocessing"],
             "page_preprocessing_mode": manifest["page_preprocessing_mode"],
+            "scheduler_progress": bool(args.scheduler_progress),
             "vision_route_plan_input": (
                 str(vision_route_plan_path)
                 if vision_route_plan_path is not None

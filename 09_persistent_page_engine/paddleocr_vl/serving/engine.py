@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import sys
 import time
 import queue
 import threading
@@ -425,6 +427,7 @@ class ContinuousRecognizer:
         preprocessor_min_pixels: int | None = None,
         vision_route_plan: dict[str, Any] | None = None,
         timeline: TimelineRecorder | None = None,
+        scheduler_progress: bool = False,
     ):
         # TorchAir guards tensor dispatch-key sets. Build and warm every graph
         # under the same inference-mode contract used by run(),
@@ -447,6 +450,7 @@ class ContinuousRecognizer:
         self.decode_backend = decode_backend
         self.decode_optimization = DEFAULT_DECODE_OPTIMIZATION
         self.timeline = timeline
+        self.scheduler_progress = bool(scheduler_progress)
         self.batch_size = int(batch_size)
         self.cache_length = int(cache_length)
         self.max_new_tokens = int(max_new_tokens)
@@ -726,6 +730,7 @@ class ContinuousRecognizer:
             decode_fn=self.decode_fn,
             max_new_tokens=self.max_new_tokens,
             timeline=self.timeline,
+            progress=self._emit_scheduler_progress,
         )
         decode_control_setup_s = time.perf_counter() - started
 
@@ -745,6 +750,22 @@ class ContinuousRecognizer:
             "decode_control_setup": float(decode_control_setup_s),
             "recognizer_runtime_total": float(time.perf_counter() - runtime_started),
         }
+
+    def _emit_scheduler_progress(self, event: str, **fields: Any) -> None:
+        if not self.scheduler_progress:
+            return
+        record = {
+            "event": str(event),
+            "monotonic_s": round(time.perf_counter(), 6),
+            "thread": threading.current_thread().name,
+            **fields,
+        }
+        print(
+            "EXP09_SCHEDULER "
+            + json.dumps(record, ensure_ascii=False, separators=(",", ":")),
+            file=sys.stderr,
+            flush=True,
+        )
 
     @torch.inference_mode()
     def run(
@@ -796,6 +817,7 @@ class ContinuousRecognizer:
                 max_workers=1,
                 thread_name_prefix="prefill-h2d",
             )
+            self._emit_scheduler_progress("ready_stream_begin")
             try:
                 if self.vision_packing == "off":
                     groups = self._iter_single_prefill_groups(requests)
@@ -805,17 +827,60 @@ class ContinuousRecognizer:
                     groups = self._iter_profiled_prefill_groups(requests)
                 group_source = iter(groups)
                 try:
+                    self._emit_scheduler_progress(
+                        "prefill_group_source_next_begin",
+                        phase="first",
+                    )
                     first_group = next(group_source)
                 except StopIteration:
+                    self._emit_scheduler_progress(
+                        "prefill_group_source_exhausted",
+                        phase="first",
+                    )
                     drained_normally = True
                     return
+                self._emit_scheduler_progress(
+                    "prefill_group_source_next_end",
+                    phase="first",
+                    group_id=first_group.group_id,
+                    crops=len(first_group.members),
+                    real_vision_tokens=first_group.real_vision_tokens,
+                )
+                self._emit_scheduler_progress(
+                    "prefill_h2d_stage_begin",
+                    group_id=first_group.group_id,
+                    crops=len(first_group.members),
+                )
                 current_staged = self._stage_prefill_group(first_group)
+                self._emit_scheduler_progress(
+                    "prefill_h2d_stage_end",
+                    group_id=first_group.group_id,
+                    crops=len(first_group.members),
+                )
                 while current_staged is not None:
                     try:
+                        self._emit_scheduler_progress(
+                            "prefill_group_source_next_begin",
+                            phase="lookahead",
+                            current_group_id=current_staged.group.group_id,
+                        )
                         next_group = next(group_source)
                     except StopIteration:
+                        self._emit_scheduler_progress(
+                            "prefill_group_source_exhausted",
+                            phase="lookahead",
+                            current_group_id=current_staged.group.group_id,
+                        )
                         next_stage_future = None
                     else:
+                        self._emit_scheduler_progress(
+                            "prefill_group_source_next_end",
+                            phase="lookahead",
+                            current_group_id=current_staged.group.group_id,
+                            group_id=next_group.group_id,
+                            crops=len(next_group.members),
+                            real_vision_tokens=next_group.real_vision_tokens,
+                        )
                         # TorchAir occupies this thread for much of G's device
                         # work. Submit only G+1's H2D on a dedicated host
                         # worker while this thread invokes G's compute chain.
@@ -824,25 +889,83 @@ class ContinuousRecognizer:
                             next_group,
                         )
 
+                    self._emit_scheduler_progress(
+                        "prefill_enqueue_begin",
+                        group_id=current_staged.group.group_id,
+                        crops=len(current_staged.group.members),
+                        real_vision_tokens=current_staged.group.real_vision_tokens,
+                    )
                     final = self._enqueue_staged_prefill_group(current_staged)
+                    self._emit_scheduler_progress(
+                        "prefill_enqueue_end",
+                        group_id=final.group_id,
+                        crops=len(final.members),
+                    )
                     current_staged = None
+                    if next_stage_future is not None:
+                        self._emit_scheduler_progress(
+                            "prefill_lookahead_h2d_wait_begin",
+                            current_group_id=final.group_id,
+                        )
                     next_staged = (
                         None
                         if next_stage_future is None
                         else next_stage_future.result()
                     )
-                    for state in self._finalize_prefill_group(final):
+                    if next_stage_future is not None:
+                        assert next_staged is not None
+                        self._emit_scheduler_progress(
+                            "prefill_lookahead_h2d_wait_end",
+                            current_group_id=final.group_id,
+                            next_group_id=next_staged.group.group_id,
+                        )
+                    self._emit_scheduler_progress(
+                        "prefill_finalize_begin",
+                        group_id=final.group_id,
+                        crops=len(final.members),
+                    )
+                    finalized = self._finalize_prefill_group(final)
+                    self._emit_scheduler_progress(
+                        "prefill_finalize_end",
+                        group_id=final.group_id,
+                        crops=len(finalized),
+                    )
+                    for state in finalized:
+                        self._emit_scheduler_progress(
+                            "ready_state_yield",
+                            group_id=final.group_id,
+                            request_id=state.request_id,
+                        )
                         yield ready_from(state)
+                    self._emit_scheduler_progress(
+                        "prefill_group_yield_complete",
+                        group_id=final.group_id,
+                        crops=len(finalized),
+                    )
                     if next_staged is None:
                         break
                     current_staged = next_staged
                 drained_normally = True
             finally:
+                self._emit_scheduler_progress(
+                    "prefill_h2d_executor_shutdown_begin",
+                    drained_normally=drained_normally,
+                    has_current_staged=current_staged is not None,
+                )
                 h2d_executor.shutdown(wait=True, cancel_futures=True)
+                self._emit_scheduler_progress(
+                    "prefill_h2d_executor_shutdown_end",
+                    drained_normally=drained_normally,
+                    has_current_staged=current_staged is not None,
+                )
                 if drained_normally and current_staged is not None:
                     raise RuntimeError(
                         "ready stream drained with an unused staged prefill"
                     )
+                self._emit_scheduler_progress(
+                    "ready_stream_end",
+                    drained_normally=drained_normally,
+                )
 
         def handle_completion(completion: DecodeCompletion) -> None:
             result = self._result_from_completion(

@@ -470,6 +470,7 @@ class ContinuousDecodeScheduler:
         completion_policy: (
             Callable[[DecodeSlotState, int], str | None] | None
         ) = None,
+        progress: Callable[..., None] | None = None,
     ) -> None:
         self.arena = arena
         self.decode_fn = decode_fn
@@ -479,6 +480,7 @@ class ContinuousDecodeScheduler:
         self.eos_token_id = arena.eos_token_id
         self.timeline = timeline
         self.completion_policy = completion_policy
+        self.progress = progress
         self.copy_stream = None
         self.host_token_ring = None
         if self.device.type == "npu":
@@ -490,6 +492,10 @@ class ContinuousDecodeScheduler:
                 dtype=torch.int64,
                 pin_memory=True,
             )
+
+    def _progress(self, event: str, **fields: Any) -> None:
+        if self.progress is not None:
+            self.progress(event, **fields)
 
     def _completion_reason(
         self,
@@ -615,6 +621,31 @@ class ContinuousDecodeScheduler:
         ready_source_wall_s = 0.0
         completion_callback_wall_s = 0.0
         ready_queued_ns: dict[str, int] = {}
+        refill_sequence = 0
+
+        def progress(event: str, **fields: Any) -> None:
+            if self.progress is None:
+                return
+            active = [
+                {
+                    "slot": index,
+                    "request_id": state.ready.request_id,
+                    "tokens": len(state.token_ids),
+                    "prompt_length": state.ready.prompt_length,
+                }
+                for index, state in enumerate(self.arena.slots)
+                if state is not None
+            ]
+            self._progress(
+                event,
+                active_count=len(active),
+                active=active,
+                ready_depth=len(ready_queue),
+                source_exhausted=source_exhausted,
+                submitted=len(submitted_order),
+                completed=len(completions),
+                **fields,
+            )
 
         def record_completion(completion: DecodeCompletion) -> None:
             nonlocal completion_callback_wall_s
@@ -663,18 +694,40 @@ class ContinuousDecodeScheduler:
                         flow_id=completion.ready.request_id,
                     )
 
-        def refill_ready_queue() -> None:
+        def refill_ready_queue(*, reason: str) -> None:
             nonlocal source_exhausted, ready_source_wall_s
             nonlocal max_ready_queue_depth, ready_source_refill_count
+            nonlocal refill_sequence
+            refill_sequence += 1
+            refill_id = refill_sequence
             pulled = 0
+            progress(
+                "refill_begin",
+                refill_id=refill_id,
+                reason=reason,
+                target_depth=buffer_capacity,
+            )
             while not source_exhausted and len(ready_queue) < buffer_capacity:
                 started = time.perf_counter()
+                progress(
+                    "ready_source_next_begin",
+                    refill_id=refill_id,
+                    reason=reason,
+                    pull_index=pulled,
+                )
                 try:
                     ready = next(ready_source)
                 except StopIteration:
                     source_exhausted = True
                     finished = time.perf_counter()
                     ready_source_wall_s += finished - started
+                    progress(
+                        "ready_source_exhausted",
+                        refill_id=refill_id,
+                        reason=reason,
+                        pull_index=pulled,
+                        wait_s=finished - started,
+                    )
                     if self.timeline is not None:
                         self.timeline.record_span_seconds(
                             "Decode control / wait",
@@ -684,8 +737,26 @@ class ContinuousDecodeScheduler:
                             event_type="scope",
                         )
                     break
+                except BaseException as exc:
+                    progress(
+                        "ready_source_next_error",
+                        refill_id=refill_id,
+                        reason=reason,
+                        pull_index=pulled,
+                        error_type=type(exc).__name__,
+                        error=str(exc),
+                    )
+                    raise
                 finished = time.perf_counter()
                 ready_source_wall_s += finished - started
+                progress(
+                    "ready_source_next_end",
+                    refill_id=refill_id,
+                    reason=reason,
+                    pull_index=pulled,
+                    request_id=ready.request_id,
+                    wait_s=finished - started,
+                )
                 if self.timeline is not None:
                     self.timeline.record_span_seconds(
                         "Decode control / wait",
@@ -713,6 +784,12 @@ class ContinuousDecodeScheduler:
                     )
             if pulled:
                 ready_source_refill_count += 1
+            progress(
+                "refill_end",
+                refill_id=refill_id,
+                reason=reason,
+                pulled=pulled,
+            )
 
         def fill_free_slots(*, hot_swap: bool) -> None:
             nonlocal initial_admissions, hot_swap_admissions
@@ -720,10 +797,16 @@ class ContinuousDecodeScheduler:
             for slot_index in self.arena.free_slot_indices():
                 while True:
                     if not ready_queue and not source_exhausted:
-                        refill_ready_queue()
+                        refill_ready_queue(reason="free_slot_empty_queue")
                     if not ready_queue:
                         break
                     ready = ready_queue.popleft()
+                    progress(
+                        "admission_begin",
+                        hot_swap=hot_swap,
+                        slot=slot_index,
+                        request_id=ready.request_id,
+                    )
                     admitted_ns = time.perf_counter_ns()
                     queued_ns = ready_queued_ns.pop(ready.request_id, admitted_ns)
                     if self.timeline is not None:
@@ -767,6 +850,13 @@ class ContinuousDecodeScheduler:
                         ready,
                         hot_swap=hot_swap,
                     )
+                    progress(
+                        "admission_end",
+                        hot_swap=hot_swap,
+                        slot=slot_index,
+                        request_id=ready.request_id,
+                        useful_prefix_bytes=copied_bytes,
+                    )
                     if hot_swap:
                         hot_swap_admissions += 1
                         hot_swap_kv_bytes += copied_bytes
@@ -775,23 +865,54 @@ class ContinuousDecodeScheduler:
                         initial_kv_bytes += copied_bytes
                     break
 
+        progress("scheduler_device_sync_begin", phase="before_initial_fill")
         synchronize(self.device)
+        progress("scheduler_device_sync_end", phase="before_initial_fill")
         scheduler_started = time.perf_counter()
+        progress(
+            "scheduler_run_begin",
+            buffer_capacity=buffer_capacity,
+            low_watermark=low_watermark,
+        )
         if len(ready_queue) < low_watermark:
-            refill_ready_queue()
+            refill_ready_queue(reason="initial_low_watermark")
+        progress("initial_admission_begin")
         fill_free_slots(hot_swap=False)
-        refill_ready_queue()
+        progress("initial_admission_end")
+        refill_ready_queue(reason="initial_top_up")
         pending: PendingTokenCopy | None = None
         iteration = 0
 
         while self.arena.num_active > 0:
+            progress(
+                "iteration_begin",
+                iteration=iteration,
+                pending_iteration=(
+                    None if pending is None else pending.iteration
+                ),
+            )
+            progress("decode_step_begin", iteration=iteration)
             step = self.arena.step(self.decode_fn, iteration=iteration)
+            progress("decode_step_end", iteration=iteration)
             graph_calls += 1
             active_decode_slots += sum(step.active_slots)
+            progress("token_copy_schedule_begin", iteration=iteration)
             current = self._schedule_token_copy(step, iteration)
+            progress("token_copy_schedule_end", iteration=iteration)
 
             if pending is not None:
+                progress(
+                    "pending_token_wait_begin",
+                    iteration=iteration,
+                    pending_iteration=pending.iteration,
+                )
                 host_tokens, wait_s = self._wait_tokens(pending)
+                progress(
+                    "pending_token_wait_end",
+                    iteration=iteration,
+                    pending_iteration=pending.iteration,
+                    wait_s=wait_s,
+                )
                 d2h_wait_wall_s += wait_s
                 wait_finished = time.perf_counter()
                 if self.timeline is not None:
@@ -805,6 +926,7 @@ class ContinuousDecodeScheduler:
                         args={"iteration": pending.iteration},
                     )
                 started = time.perf_counter()
+                completed_before = len(completions)
                 for slot_index, was_active in enumerate(pending.active_slots):
                     if not was_active:
                         continue
@@ -830,9 +952,17 @@ class ContinuousDecodeScheduler:
                                 iterations_launched=released.iterations_launched,
                             )
                         )
+                progress(
+                    "retire_end",
+                    iteration=iteration,
+                    pending_iteration=pending.iteration,
+                    newly_completed=len(completions) - completed_before,
+                )
+                progress("hot_swap_admission_begin", iteration=iteration)
                 fill_free_slots(hot_swap=True)
+                progress("hot_swap_admission_end", iteration=iteration)
                 if len(ready_queue) < low_watermark:
-                    refill_ready_queue()
+                    refill_ready_queue(reason="steady_low_watermark")
                 finished = time.perf_counter()
                 retire_and_refill_wall_s += finished - started
                 if self.timeline is not None:
@@ -851,8 +981,24 @@ class ContinuousDecodeScheduler:
 
             pending = current
             iteration += 1
+            progress(
+                "iteration_end",
+                iteration=iteration - 1,
+                next_iteration=iteration,
+            )
             if self.arena.num_active == 0:
+                progress(
+                    "final_token_drain_begin",
+                    iteration=iteration,
+                    pending_iteration=pending.iteration,
+                )
                 _ignored, wait_s = self._wait_tokens(pending)
+                progress(
+                    "final_token_drain_end",
+                    iteration=iteration,
+                    pending_iteration=pending.iteration,
+                    wait_s=wait_s,
+                )
                 d2h_wait_wall_s += wait_s
                 wait_finished = time.perf_counter()
                 if self.timeline is not None:
@@ -867,7 +1013,9 @@ class ContinuousDecodeScheduler:
                 pending = None
                 break
 
+        progress("scheduler_device_sync_begin", phase="after_decode_loop")
         synchronize(self.device)
+        progress("scheduler_device_sync_end", phase="after_decode_loop")
         scheduler_wall_s = time.perf_counter() - scheduler_started
         if self.timeline is not None:
             self.timeline.record_span_seconds(
