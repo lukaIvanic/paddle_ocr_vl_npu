@@ -9,7 +9,7 @@ Prove that the real Experiment 09 pipeline runs on this 310P software stack,
 identify which production optimizations work, and measure their approximate
 effect on a small representative workload.
 
-## Current requested task: run Phase 23 only
+## Current requested task: run Phase 24 only
 
 Phases 0-21 have already run, are in progress elsewhere, are superseded, or
 retain historical instructions and evidence. Do not rerun the performance
@@ -18,9 +18,11 @@ experiments, or the superseded standalone-layout Phase 19. Phase 21 proved the
 page-index-8 failure occurs inside packed text graph call 7, before KV
 redistribution. Phase 22 reconstructed the exact indices and proved both eager
 Gather lanes, but its TorchAir lanes never executed because the old probe
-passed a free function to `cache_compile`. That probe defect is fixed. Go
-directly to **Phase 23: execute the missing compiled GatherV2 lanes** at the
-end of this document.
+passed a free function to `cache_compile`. Phase 23 did not reproduce the
+failure in the isolated compiled Gather. The production packed-text graph now
+returns its full final hidden state and performs only the final-token gather
+eagerly on NPU. Go directly to **Phase 24: quick page-nine E2E validation** at
+the end of this document.
 
 The reported production boundary is unusually sharp:
 
@@ -11200,3 +11202,117 @@ Evidence:
 Paste back `agent_report.md`, `lane_matrix.txt`, both primary
 `summary.json` files, and the relevant compact CANN error extract if a lane
 fails. Do not paste enormous plogs.
+
+## Phase 24: quick page-nine E2E validation
+
+Run only the real page at `--offset 8 --limit 1`. This is a production-path
+smoke test of the narrow final-gather change, not another diagnostic phase.
+Do not rerun the eight-page ladder, profiler, Gather probe, or any matrix.
+
+### 24.1 Pull and verify the source boundary
+
+Use the same environment, physical 310P, model, dataset, cache roots, and
+production arguments as the prior Phase-20/21 page-nine reproducer.
+
+```sh
+cd /workspace/repos/paddle_ocr_vl_npu
+git status --short --branch
+git pull --ff-only origin main
+
+REPO="$(git rev-parse --show-toplevel)"
+COMMIT="$(git rev-parse HEAD)"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+PYTHON_BIN="${PYTHON_BIN:-$(command -v python)}"
+SOURCE="$REPO/09_persistent_page_engine/paddleocr_vl/model/text_packed_prefill.py"
+
+test -x "$PYTHON_BIN"
+test -f "$SOURCE"
+grep -A55 'class PackedTextPrefillStage' "$SOURCE" \
+  | grep -q 'return self.text_model.norm(hidden_states)'
+grep -A25 'def run_prepared' "$SOURCE" \
+  | grep -q 'torch.index_select'
+```
+
+The packed-text cache key includes this file's source hash, so the modified
+graph gets its own cache directory automatically. Do not delete or rename any
+existing caches.
+
+### 24.2 Run one normal E2E page
+
+Recover the exact normal production command used for the Phase-20/21
+`--offset 8 --limit 1` reproducer. Keep every model, dataset, packing, bucket,
+PromptFA, decode, layout, min-pixels, cache-length, and cache-root argument
+unchanged. Change only the output directory. Do not use the Phase-21 probe,
+`ASCEND_LAUNCH_BLOCKING`, per-graph synchronization, profiling, or graph
+barriers.
+
+```sh
+OUTPUT_ROOT="$REPO/tmp/09_persistent_page_engine/310p_phase24_eager_final_gather_$COMMIT_SHORT"
+test ! -e "$OUTPUT_ROOT"
+mkdir -p "$OUTPUT_ROOT"
+
+{
+  printf 'commit=%s\n' "$COMMIT"
+  printf 'host=%s\n' "$(hostname)"
+  printf 'python=%s\n' "$PYTHON_BIN"
+  printf 'date=%s\n' "$(date --iso-8601=seconds 2>/dev/null || date)"
+  "$PYTHON_BIN" - <<'PY'
+import json
+import torch
+import torch_npu
+
+print(json.dumps({
+    "torch": torch.__version__,
+    "torch_npu": torch_npu.__version__,
+    "npu": torch.npu.get_device_name(0),
+}, indent=2))
+PY
+} 2>&1 | tee "$OUTPUT_ROOT/preflight.log"
+```
+
+Before running, save the exact reconstructed command as
+`$OUTPUT_ROOT/command.sh`. It must invoke:
+
+```text
+09_persistent_page_engine/scripts/run_omnidocbench.py
+--offset 8
+--limit 1
+--output-dir <the Phase-24 output directory>
+```
+
+Run it normally with progress visible:
+
+```sh
+set -o pipefail
+bash "$OUTPUT_ROOT/command.sh" 2>&1 | tee "$OUTPUT_ROOT/run.log"
+printf '%s\n' "${PIPESTATUS[0]}" > "$OUTPUT_ROOT/exit_code.txt"
+```
+
+### 24.3 Report and stop
+
+Success means:
+
+- process exit code is zero;
+- exactly one page result is emitted;
+- normal end-of-run accounting passes;
+- no AICore exception or `GatherV2_216` DDR out-of-range error appears;
+- the page reaches recognition completion.
+
+Report only:
+
+```text
+310P PHASE 24 EAGER FINAL GATHER E2E: PASS | FAIL
+
+commit / host / exact NPU / software:
+exact command:
+exit code:
+page results:
+wall time:
+packed-text graph compile/cache status:
+final-token gather path verified:
+first causal error, if failed:
+evidence paths:
+```
+
+Paste back this compact report and, on failure, the smallest relevant error
+extract. Do not implement another workaround or run more pages.

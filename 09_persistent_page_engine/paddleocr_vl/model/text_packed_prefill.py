@@ -64,7 +64,6 @@ class PackedTextPrefillStage(TextPrefillStage):
         position_ids: torch.Tensor,
         segment_ids: torch.Tensor,
         local_positions: torch.Tensor,
-        last_token_indices: torch.Tensor,
         *flat_cache_tensors: torch.Tensor,
     ) -> torch.Tensor:
         key_caches = tuple(flat_cache_tensors[: self.num_layers])
@@ -101,8 +100,7 @@ class PackedTextPrefillStage(TextPrefillStage):
                 value_caches[layer_idx],
             )
             hidden_states = layer.apply_blocks(residual, attention_output)
-        hidden_states = self.text_model.norm(hidden_states)
-        return torch.index_select(hidden_states, 1, last_token_indices)
+        return self.text_model.norm(hidden_states)
 
 
 def packed_text_cache_dir_for_bucket(
@@ -224,11 +222,6 @@ class PackedTextPrefillRuntime:
                 device=device,
                 dtype=torch.int64,
             )
-            warm_last_indices = torch.zeros(
-                (self.max_members,),
-                device=device,
-                dtype=torch.int64,
-            )
             scratch_cache = model.allocate_static_cache(
                 batch_size=1,
                 cache_length=bucket,
@@ -243,12 +236,11 @@ class PackedTextPrefillRuntime:
                 warm_positions,
                 warm_segments,
                 warm_local_positions,
-                warm_last_indices,
                 *scratch_cache.flat_tensors(),
             )
             synchronize(device)
             first_call_s = time.perf_counter() - first_call_started
-            expected_shape = (1, self.max_members, hidden_size)
+            expected_shape = (1, bucket, hidden_size)
             if tuple(warm_output.shape) != expected_shape:
                 raise RuntimeError(
                     "packed text graph returned the wrong shape: "
@@ -271,7 +263,6 @@ class PackedTextPrefillRuntime:
                 warm_positions,
                 warm_segments,
                 warm_local_positions,
-                warm_last_indices,
             )
         self.metadata = {
             "enabled": True,
@@ -420,13 +411,17 @@ class PackedTextPrefillRuntime:
         prepared: PreparedPackedTextPrefill,
     ) -> torch.Tensor:
         scratch_cache = self.scratch_caches[prepared.physical_seq_len]
-        return self.compiled[prepared.physical_seq_len](
+        hidden_states = self.compiled[prepared.physical_seq_len](
             prepared.inputs_embeds,
             prepared.position_ids,
             prepared.segment_ids,
             prepared.local_positions,
-            prepared.last_token_indices,
             *scratch_cache.flat_tensors(),
+        )
+        return torch.index_select(
+            hidden_states,
+            1,
+            prepared.last_token_indices,
         )
 
     def redistribute_cache(
