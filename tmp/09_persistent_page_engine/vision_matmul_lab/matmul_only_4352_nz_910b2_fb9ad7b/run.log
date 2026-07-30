@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/vision_matmul_lab.py", line 1831, in <module>
+    main()
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/vision_matmul_lab.py", line 1705, in main
+    run, compile_metadata = _compile(
+                            ^^^^^^^^^
+  File "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/vision_matmul_lab.py", line 1069, in _compile
+    raise RuntimeError(
+RuntimeError: the exact graph cache is missing; pass --allow-compile-if-missing to create it: /workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_lab/vision_pfa_b1_s2048_i4352_fractal_nz_hpruntime_81e3883078692cdc
+[ERROR] 2026-07-30-05:01:27 (PID:675654, Device:0, RankID:-1) ERR99999 UNKNOWN applicaiton exception

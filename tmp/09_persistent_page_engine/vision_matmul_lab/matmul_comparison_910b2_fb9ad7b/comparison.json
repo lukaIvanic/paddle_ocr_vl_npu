@@ -1,0 +1,112 @@
+{
+  "commit": "fb9ad7b87ec9e88733447eb2a89aa541e808681c",
+  "device": "Ascend910B2 physical NPU 5",
+  "fixed": "27 layers, FP16, PromptFA, runtime D72->D80 head padding, separate manual RoPE, TorchAir",
+  "rows": {
+    "B1xS512 native 4304 ND": {
+      "full_stage_ms": 15.757427978515626,
+      "physical_tok_s": 32492.612417336346,
+      "linear_flops": 420936155136,
+      "matmul_ms": 4.959353333333338,
+      "matmul_only_tflop_s": 84.87722629213748,
+      "dispatch_counts_profile_3_replays": {
+        "MatMulV2": 486
+      },
+      "dispatch_duration_us_profile_3_replays": {
+        "MatMulV2": 14878.060000000014
+      }
+    },
+    "B1xS512 padded 4352 NZ": {
+      "full_stage_ms": 13.60436553955078,
+      "physical_tok_s": 37634.97816281893,
+      "linear_flops": 423993802752,
+      "matmul_ms": 2.8586333333333345,
+      "matmul_only_tflop_s": 148.3204571247332,
+      "dispatch_counts_profile_3_replays": {
+        "MatMulV2": 486
+      },
+      "dispatch_duration_us_profile_3_replays": {
+        "MatMulV2": 8575.900000000003
+      }
+    },
+    "B4xS512 native 4304 ND": {
+      "full_stage_ms": 27.347793579101562,
+      "physical_tok_s": 74887.21143357706,
+      "linear_flops": 1683744620544,
+      "matmul_ms": 8.00409333333333,
+      "matmul_only_tflop_s": 210.36044314125945,
+      "dispatch_counts_profile_3_replays": {
+        "MatMulV3": 162,
+        "MatMulV2": 324
+      },
+      "dispatch_duration_us_profile_3_replays": {
+        "MatMulV3": 16142.279999999992,
+        "MatMulV2": 7869.999999999999
+      }
+    },
+    "B4xS512 padded 4352 NZ": {
+      "full_stage_ms": 26.655551147460937,
+      "physical_tok_s": 76832.02604479186,
+      "linear_flops": 1695975211008,
+      "matmul_ms": 7.366139999999987,
+      "matmul_only_tflop_s": 230.23933987244376,
+      "dispatch_counts_profile_3_replays": {
+        "MatMulV2": 486
+      },
+      "dispatch_duration_us_profile_3_replays": {
+        "MatMulV2": 22098.419999999962
+      }
+    },
+    "B1xS2048 native 4304 ND": {
+      "full_stage_ms": 31.554370117187503,
+      "physical_tok_s": 64903.846674615284,
+      "linear_flops": 1683744620544,
+      "matmul_ms": 7.9838933333333335,
+      "matmul_only_tflop_s": 210.89267481997086,
+      "dispatch_counts_profile_3_replays": {
+        "MatMulV3": 162,
+        "MatMulV2": 324
+      },
+      "dispatch_duration_us_profile_3_replays": {
+        "MatMulV3": 16168.780000000002,
+        "MatMulV2": 7782.899999999998
+      }
+    },
+    "B1xS2048 padded 4352 NZ": {
+      "full_stage_ms": 30.571022033691406,
+      "physical_tok_s": 66991.54505671942,
+      "linear_flops": 1695975211008,
+      "matmul_ms": 7.339400000000004,
+      "matmul_only_tflop_s": 231.07818227757025,
+      "dispatch_counts_profile_3_replays": {
+        "MatMulV2": 486
+      },
+      "dispatch_duration_us_profile_3_replays": {
+        "MatMulV2": 22018.20000000001
+      }
+    }
+  },
+  "padded_nz_vs_native_nd_delta_pct": {
+    "B1xS512": {
+      "full_stage_ms": -13.663793621017506,
+      "physical_tok_s": 15.826261303442891,
+      "linear_flops": 0.7263922518159882,
+      "matmul_ms": -42.35874838520617,
+      "matmul_only_tflop_s": 74.74705949300409
+    },
+    "B4xS512": {
+      "full_stage_ms": -2.531255143631106,
+      "physical_tok_s": 2.5969916277892136,
+      "linear_flops": 0.7263922518159882,
+      "matmul_ms": -7.970338510129105,
+      "matmul_only_tflop_s": 9.449921493954738
+    },
+    "B1xS2048": {
+      "full_stage_ms": -3.116360997998413,
+      "physical_tok_s": 3.216601925877316,
+      "linear_flops": 0.7263922518159882,
+      "matmul_ms": -8.072419137196174,
+      "matmul_only_tflop_s": 9.571459736489562
+    }
+  }
+}

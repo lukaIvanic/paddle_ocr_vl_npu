@@ -1,0 +1,59 @@
+.[2026-07-30 05:10:55] [INFO] [683583] profiler.py: Start parsing profiling data in sync mode at: /workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/compare_s512_fb9ad7b_b4_padded_nz/liteserver-c001-4_682738_20260730051054802_ascend_pt
+|/-\[2026-07-30 05:10:58] [INFO] [683609] profiler.py: CANN profiling data parsed in a total time of 0:00:03.031660
+|[2026-07-30 05:11:00] [INFO] [683583] profiler.py: All profiling data parsed in a total time of 0:00:05.199461
+{
+  "summary": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_matmul_lab/compare_s512_fb9ad7b_b4_padded_nz/result/run_summary.json",
+  "status": "completed",
+  "shape": {
+    "batch_size": 4,
+    "sequence_length": 512,
+    "physical_tokens_per_call": 2048,
+    "hidden_size": 1152,
+    "source_intermediate_size": 4304,
+    "candidate_intermediate_size": 4352,
+    "layers": 27,
+    "linear_calls_per_layer": 6,
+    "linear_calls_per_full_stack": 162
+  },
+  "weight_format": {
+    "requested": "fractal_nz",
+    "target_format": "FRACTAL_NZ",
+    "target_format_code": 29,
+    "linear_weight_count": 162,
+    "before_format_histogram": {
+      "2": 162
+    },
+    "converted_count": 162,
+    "status": "ready",
+    "failures": [],
+    "after_format_histogram": {
+      "29": 162
+    },
+    "all_after_are_nz": true,
+    "runtime_gate": {
+      "torch_npu_allow_internal_format_enabled_before_npu_allocation": true,
+      "mm_bmm_format_nd": true,
+      "manual_cast_after_model_load": true
+    }
+  },
+  "device_median_ms": 26.655551147460937,
+  "physical_tokens_per_s": 76832.02604479186,
+  "linear_tflop_per_s": 63.625591593500005,
+  "dispatch": {
+    "counts": {
+      "MatMulV2": 486
+    },
+    "duration_us": {
+      "MatMulV2": 22098.419999999962
+    }
+  },
+  "matmul_only": {
+    "active_profiled_full_stack_calls": 3,
+    "matmul_kernels_per_full_stack_call": 162,
+    "observed_matmul_kernel_count": 486,
+    "total_matmul_kernel_duration_us": 22098.419999999962,
+    "matmul_kernel_duration_per_full_stack_call_ms": 7.366139999999987,
+    "linear_flops_per_full_stack_call": 1695975211008,
+    "matmul_only_linear_tflop_per_s": 230.23933987244376
+  }
+}

@@ -1,0 +1,3 @@
+commit=fb9ad7b87ec9e88733447eb2a89aa541e808681c
+visible_device=5
+device_name=Ascend910B2

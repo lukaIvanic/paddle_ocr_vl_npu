@@ -1,0 +1,279 @@
+{
+  "schema_version": 4,
+  "status": "completed",
+  "purpose": "exact production 27-layer vision PromptFA format/alignment experiment using synthetic shape inputs",
+  "boundary": "VisionPrefillStage: 27 x (LayerNorm1 + Q/K/V + RoPE + PromptFA + out projection + residual + LayerNorm2 + FC1/GELU/FC2 + residual) + post-LayerNorm",
+  "production_stage": true,
+  "synthetic_shape_inputs": true,
+  "attention": {
+    "implementation": "prompt_flash_attention",
+    "input_layout": "BNSD",
+    "mask_sparse_mode": 1,
+    "model_head_dim": 72,
+    "promptfa_call_head_dim": 80,
+    "attention_mask_all_false": true,
+    "head_padding": {
+      "mode": "runtime",
+      "real_head_dim": 72,
+      "padded_head_dim": 80,
+      "runtime_pad_operations_per_layer": 3,
+      "runtime_slice_operations_per_layer": 1
+    },
+    "rotary": {
+      "implementation": "separate_manual",
+      "custom_op_enabled": null,
+      "portable_to_310p": true
+    }
+  },
+  "shape": {
+    "batch_size": 1,
+    "sequence_length": 512,
+    "physical_tokens_per_call": 512,
+    "hidden_size": 1152,
+    "source_intermediate_size": 4304,
+    "candidate_intermediate_size": 4352,
+    "layers": 27,
+    "linear_calls_per_layer": 6,
+    "linear_calls_per_full_stack": 162
+  },
+  "requested": {
+    "weight_format": "fractal_nz",
+    "attention_head_padding": "runtime",
+    "rotary_implementation": "separate_manual",
+    "execution": "torchair"
+  },
+  "weight_format": {
+    "requested": "fractal_nz",
+    "target_format": "FRACTAL_NZ",
+    "target_format_code": 29,
+    "linear_weight_count": 162,
+    "before_format_histogram": {
+      "2": 162
+    },
+    "converted_count": 162,
+    "status": "ready",
+    "failures": [],
+    "after_format_histogram": {
+      "29": 162
+    },
+    "all_after_are_nz": true,
+    "runtime_gate": {
+      "torch_npu_allow_internal_format_enabled_before_npu_allocation": true,
+      "mm_bmm_format_nd": true,
+      "manual_cast_after_model_load": true
+    }
+  },
+  "setup_s_through_format_preparation": 16.21128389192745,
+  "environment": {
+    "commit": "fb9ad7b87ec9e88733447eb2a89aa541e808681c",
+    "device": "npu:0",
+    "device_name": "Ascend910B2",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "npu_smi": "+------------------------------------------------------------------------------------------------+\n| npu-smi 25.0.rc1.1               Version: 25.0.rc1.1                                           |\n+---------------------------+---------------+----------------------------------------------------+\n| NPU   Name                | Health        | Power(W)    Temp(C)           Hugepages-Usage(page)|\n| Chip                      | Bus-Id        | AICore(%)   Memory-Usage(MB)  HBM-Usage(MB)        |\n+===========================+===============+====================================================+\n| 0     910B2               | OK            | 107.5       47                0    / 0             |\n| 0                         | 0000:C1:00.0  | 0           0    / 0          3421 / 65536         |\n+===========================+===============+====================================================+\n| 1     910B2               | OK            | 102.8       48                0    / 0             |\n| 0                         | 0000:01:00.0  | 0           0    / 0          3415 / 65536         |\n+===========================+===============+====================================================+\n| 2     910B2               | OK            | 103.8       48                0    / 0             |\n| 0                         | 0000:C2:00.0  | 0           0    / 0          3411 / 65536         |\n+===========================+===============+====================================================+\n| 3     910B2               | OK            | 101.7       47                0    / 0             |\n| 0                         | 0000:02:00.0  | 0           0    / 0          54359/ 65536         |\n+===========================+===============+====================================================+\n| 4     910B2               | OK            | 102.1       48                0    / 0             |\n| 0                         | 0000:81:00.0  | 0           0    / 0          54371/ 65536         |\n+===========================+===============+====================================================+\n| 5     910B2               | OK            | 101.1       47                0    / 0             |\n| 0                         | 0000:41:00.0  | 0           0    / 0          7242 / 65536         |\n+===========================+===============+====================================================+\n| 6     910B2               | OK            | 102.1       48                0    / 0             |\n| 0                         | 0000:82:00.0  | 0           0    / 0          54372/ 65536         |\n+===========================+===============+====================================================+\n| 7     910B2               | OK            | 102.5       47                0    / 0             |\n| 0                         | 0000:42:00.0  | 0           0    / 0          54365/ 65536         |\n+===========================+===============+====================================================+\n+---------------------------+---------------+----------------------------------------------------+\n| NPU     Chip              | Process id    | Process name             | Process memory(MB)      |\n+===========================+===============+====================================================+\n| No running processes found in NPU 0                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 1                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 2                                                            |\n+===========================+===============+====================================================+\n| 3       0                 | 2804329       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 4       0                 | 2804375       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 5       0                 | 831620        |                          | 3871                    |\n+===========================+===============+====================================================+\n| 6       0                 | 2804478       |                          | 51013                   |\n+===========================+===============+====================================================+\n| 7       0                 | 2804586       |                          | 51013                   |\n+===========================+===============+====================================================+\n"
+  },
+  "compile": {
+    "api": "torchair.inference.cache_compile",
+    "dynamic": false,
+    "fullgraph": true,
+    "ge_cache": true,
+    "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_lab/vision_pfa_b1_s512_i4352_fractal_nz_hpruntime_a181b786cc8574c2",
+    "cache_existed_before": false,
+    "compile_was_permitted": true,
+    "wrapper_s": 0.0004258470144122839,
+    "first_call_s": 26.59669000003487
+  },
+  "linear_flops_per_full_stack_call": 423993802752,
+  "measurements": {
+    "samples": 10,
+    "calls_per_sample": 5,
+    "total_measured_full_stack_calls": 50,
+    "device_event_per_call_ms": {
+      "samples": [
+        13.546359252929687,
+        13.589907836914062,
+        13.656455993652344,
+        13.593048095703125,
+        13.589996337890625,
+        13.6410400390625,
+        13.616651916503907,
+        13.613911437988282,
+        13.613931274414062,
+        13.594819641113281
+      ],
+      "mean": 13.605612182617188,
+      "median": 13.60436553955078,
+      "p05": 13.565956115722656,
+      "p95": 13.649518814086914
+    },
+    "synchronized_wall_per_call_ms": {
+      "samples": [
+        13.846097188070416,
+        13.644433813169599,
+        13.7160690035671,
+        13.642883813008666,
+        13.64277396351099,
+        13.699904829263687,
+        13.667674222961068,
+        13.661908218637109,
+        13.664450170472264,
+        13.650544034317136
+      ],
+      "mean": 13.683673925697803,
+      "median": 13.663179194554687,
+      "p05": 13.642823395784944,
+      "p95": 13.787584505043924
+    },
+    "physical_tokens_per_s_device_median": 37634.97816281893,
+    "physical_tokens_per_s_wall_median": 37472.97702163287,
+    "linear_tflop_per_s_device_median": 31.166010757308744
+  },
+  "numerics": {
+    "raw_candidate_vs_native_4304": {
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "left_finite": true,
+      "right_finite": true,
+      "same_shape": true
+    },
+    "raw_candidate_vs_weight_padded_manual": null,
+    "measured_output_vs_raw_candidate": {
+      "max_abs": 0.25390625,
+      "mean_abs": 0.005105770658701658,
+      "left_finite": true,
+      "right_finite": true,
+      "same_shape": true
+    },
+    "measured_output_finite": true
+  },
+  "profiler": {
+    "profile_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/compare_s512_fb9ad7b_b1_padded_nz",
+    "scheduled_warmup_steps": 1,
+    "active_steps": 3,
+    "context_wall_s": 5.9680858419742435,
+    "throughput_measurement": false
+  },
+  "parsed_profile": {
+    "command": [
+      "/usr/local/python3.12.13/bin/python3",
+      "/workspace/repos/paddle_ocr_vl_npu/07_vision_prefill_optimization/parse_static_visual_encoder_profile.py",
+      "--profile-dir",
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/compare_s512_fb9ad7b_b1_padded_nz",
+      "--topn",
+      "200",
+      "--skip-trace"
+    ],
+    "stdout": "{\n  \"parsed_json\": \"/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/compare_s512_fb9ad7b_b1_padded_nz/parsed_profile_summary.json\",\n  \"parsed_md\": \"/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_profiles/compare_s512_fb9ad7b_b1_padded_nz/parsed_profile_summary.md\",\n  \"runs\": 1\n}\n",
+    "stderr": "",
+    "parsed_json": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_matmul_lab/compare_s512_fb9ad7b_b1_padded_nz/result/parsed_profile_summary.json",
+    "parsed_markdown": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/vision_matmul_lab/compare_s512_fb9ad7b_b1_padded_nz/result/parsed_profile_summary.md",
+    "dispatch": {
+      "counts": {
+        "MatMulV2": 486
+      },
+      "duration_us": {
+        "MatMulV2": 8575.900000000003
+      }
+    },
+    "transdata": {
+      "count": 0,
+      "duration_us": 0.0
+    },
+    "weighted_cube_utilization_pct": 89.74530381347003,
+    "matmul_shape_format_signatures": [
+      {
+        "name": "MatMulV2 | \"512,1152;72,72,16,16;1152\" -> \"512,1152\" | ND;FRACTAL_NZ;ND -> ND",
+        "count": 324,
+        "duration_us": 4119.880000000001,
+        "wait_us": 17.310000000000006,
+        "aicore_time_us": 3648.374999999999,
+        "kernel_name_samples": [
+          "MatMulV2",
+          "MatMulV2_1",
+          "MatMulV2_2",
+          "MatMulV2_3"
+        ],
+        "input_shape_samples": [
+          "\"512,1152;72,72,16,16;1152\""
+        ],
+        "output_shape_samples": [
+          "\"512,1152\""
+        ],
+        "input_format_samples": [
+          "ND;FRACTAL_NZ;ND"
+        ],
+        "output_format_samples": [
+          "ND"
+        ],
+        "input_dtype_samples": [
+          "FLOAT16;FLOAT16;FLOAT16"
+        ]
+      },
+      {
+        "name": "MatMulV2 | \"512,4352;272,72,16,16;1152\" -> \"512,1152\" | ND;FRACTAL_NZ;ND -> ND",
+        "count": 81,
+        "duration_us": 2275.62,
+        "wait_us": 4.64,
+        "aicore_time_us": 2132.649999999999,
+        "kernel_name_samples": [
+          "MatMulV2_5",
+          "MatMulV2_11",
+          "MatMulV2_17",
+          "MatMulV2_23"
+        ],
+        "input_shape_samples": [
+          "\"512,4352;272,72,16,16;1152\""
+        ],
+        "output_shape_samples": [
+          "\"512,1152\""
+        ],
+        "input_format_samples": [
+          "ND;FRACTAL_NZ;ND"
+        ],
+        "output_format_samples": [
+          "ND"
+        ],
+        "input_dtype_samples": [
+          "FLOAT16;FLOAT16;FLOAT16"
+        ]
+      },
+      {
+        "name": "MatMulV2 | \"512,1152;72,272,16,16;4352\" -> \"512,4352\" | ND;FRACTAL_NZ;ND -> ND",
+        "count": 81,
+        "duration_us": 2180.4,
+        "wait_us": 5.010000000000001,
+        "aicore_time_us": 1979.954,
+        "kernel_name_samples": [
+          "MatMulV2_4",
+          "MatMulV2_10",
+          "MatMulV2_16",
+          "MatMulV2_22"
+        ],
+        "input_shape_samples": [
+          "\"512,1152;72,272,16,16;4352\""
+        ],
+        "output_shape_samples": [
+          "\"512,4352\""
+        ],
+        "input_format_samples": [
+          "ND;FRACTAL_NZ;ND"
+        ],
+        "output_format_samples": [
+          "ND"
+        ],
+        "input_dtype_samples": [
+          "FLOAT16;FLOAT16;FLOAT16"
+        ]
+      }
+    ],
+    "matmul_only": {
+      "active_profiled_full_stack_calls": 3,
+      "matmul_kernels_per_full_stack_call": 162,
+      "observed_matmul_kernel_count": 486,
+      "total_matmul_kernel_duration_us": 8575.900000000003,
+      "matmul_kernel_duration_per_full_stack_call_ms": 2.8586333333333345,
+      "linear_flops_per_full_stack_call": 423993802752,
+      "matmul_only_linear_tflop_per_s": 148.3204571247332
+    }
+  }
+}
