@@ -9,39 +9,29 @@ Prove that the real Experiment 09 pipeline runs on this 310P software stack,
 identify which production optimizations work, and measure their approximate
 effect on a small representative workload.
 
-## Current requested task: run Phases 15 and 16 only
+## Current requested task: run Phase 17 only
 
-Phases 0-14 have already run or have retained instructions and evidence. For
-the current task, do not rerun the production pipeline, layout lab, dataset
-validation, saturation matrices, earlier native profiles, the six-lane Phase
-14 matrix, page workloads, text prefill, or decode.
+Phases 0-16 have already run or have retained instructions and evidence. For
+the current task, do not rerun the production pipeline, page workloads, layout
+lab, saturation matrices, native profiles, PMU captures, text prefill, or
+decode.
 
 Pull `main`, recover the exact Python/model/NPU environment and compatible
-padded-NZ graph cache used by Phase 14, and execute:
+padded-NZ graph-cache root used by Phase 14, and execute only:
 
-1. **Phase 15: B1xS2048 compiled full-stack multi-metric profiling**; then
-2. **Phase 16: production-matched square MatMulV2 deep profiling**.
+1. **Phase 17A:** the PromptFA sparse-mode operator parity/timing probe; then
+2. **Phase 17B:** four matched compiled 27-layer lanes:
+   B1xS2048 and B4xS512, each with sparse mode 0 and sparse mode 1.
 
-If an already-completed Phase 15 artifact passes every Phase 15.4 validation
-at the currently checked-out commit, reuse it as Phase 16's compiled reference
-instead of rerunning Phase 15. Do not reuse an artifact merely because its
-directory exists.
+The current question is deliberately narrow:
 
-The current questions are deliberately narrow:
+> On the optimized 4352-wide FRACTAL_NZ 310P vision graph, does documented
+> `sparse_mode=0` improve compiled PromptFA throughput relative to mode 1,
+> especially at B1xS2048, while preserving the same attention result?
 
-> For the optimized B1xS2048, 4352-wide FRACTAL_NZ graph on this 310P, where
-> does the complete 27-layer vision-stage time go across MatMul, PromptFA,
-> layout/vector operations, and overlapping Cube/MTE pipelines?
-
-> For its production-matched 2048x1152 by 1152x1152 square projection, are
-> all 310P AI Cores launched, how well balanced are they, and where are the
-> wait, transfer, L1/L0, arithmetic, and conflict costs?
-
-Phase 15 uses the portable compiled full-stack `pipe` and `memory` PMU lanes.
-Phase 16 uses the portable direct-kernel `PipeUtilization`,
-`ArithmeticUtilization`, `Memory`, `MemoryL0`, `MemoryUB`, and
-`ResourceConflictRatio` captures. Never request 910B-only `Occupancy` or
-`MemoryDetail` on 310P. Do not modify or optimize model source.
+Do not test ATB, another attention implementation, another shape, layout
+variants, mask rewrites, tiling changes, or production OCR. Do not modify
+model source.
 
 ## Current 310P layout route: eager NPU
 
@@ -7454,16 +7444,375 @@ Six raw profiler directories:
 All additional analysis artifacts:
 ```
 
-Stop after Phase 16. Do not start a new shape, alter the model, tune tiling,
-enable another template, create a branch, commit, or push. Send Luka the
-report and exact artifact paths manually.
+The Phase 16 stop condition above is historical and is superseded by the
+current Phase 17 instructions below.
+
+## Phase 17: PromptFA sparse-mode comparison
+
+### 17.0 Scope and 910B reference
+
+This phase tests one public PromptFA control, not a new backend. Keep:
+
+```text
+27 real PaddleOCR-VL vision layers
+FP16
+PromptFA
+BNSD
+model head dimension 72, runtime padded to 80
+manual separate RoPE
+MLP intermediate size 4352
+all 162 Linear weights in FRACTAL_NZ
+TorchAir fullgraph cache_compile
+```
+
+Only `PADDLE_OCR_VL_VISION_PROMPT_FA_MASK_SPARSE_MODE` changes.
+
+The matched 910B2 reference at commit `1fcb56c` is:
+
+| Shape | Physical tokens | sparse 0 | sparse 1 | sparse-0 change |
+|---|---:|---:|---:|---:|
+| B1xS2048 | 2048 | 27.78 ms, 73.73k tok/s | 30.64 ms, 66.84k tok/s | -9.3% latency, +10.3% tok/s |
+| B4xS512 | 2048 | 26.33 ms, 77.77k tok/s | 26.68 ms, 76.75k tok/s | -1.3% latency, +1.3% tok/s |
+
+The B1xS2048 result was repeated twice from warm caches in interleaved order:
+mode 1 measured 30.648 and 30.636 ms; mode 0 measured 27.778 and 27.776 ms.
+Treat that as the cross-platform reference, not as an expected 310P result.
+
+### 17.1 Environment and evidence root
+
+Start from a clean checkout. Do not edit tracked files.
+
+```sh
+cd /path/to/paddle_ocr_vl_npu
+git status --short
+git pull --ff-only origin main
+git status --short
+
+REPO="$(git rev-parse --show-toplevel)"
+COMMIT="$(git rev-parse HEAD)"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+OUTPUT_ROOT="$REPO/tmp/09_persistent_page_engine/310p_phase17_promptfa_sparse_$COMMIT_SHORT"
+mkdir -p "$OUTPUT_ROOT"
+```
+
+Recover the exact Python and model directory already used by successful
+Phases 14-16. Do not guess a system Python or redownload the model.
+
+```sh
+: "${PYTHON_BIN:?restore the successful Phase 14 Python path}"
+: "${MODEL_DIR:?restore the successful local PaddleOCR-VL model path}"
+test -x "$PYTHON_BIN"
+test -f "$MODEL_DIR/config.json"
+
+"$PYTHON_BIN" - <<'PY'
+import torch
+import torch_npu
+import torchair
+print("torch", torch.__version__)
+print("torch_npu", torch_npu.__version__)
+print("torchair", torchair.__file__)
+print("device", torch_npu.npu.get_device_name())
+PY
+```
+
+Use the same logical `npu:0` selection and CANN environment that passed Phase
+14. Confirm no unrelated process owns the selected NPU before continuing.
+Never kill a process not created by this phase.
+
+Record the environment:
+
+```sh
+{
+  printf 'commit=%s\n' "$COMMIT"
+  printf 'hostname=%s\n' "$(hostname)"
+  printf 'python=%s\n' "$PYTHON_BIN"
+  printf 'model=%s\n' "$MODEL_DIR"
+  printf 'ASCEND_RT_VISIBLE_DEVICES=%s\n' "${ASCEND_RT_VISIBLE_DEVICES:-}"
+  "$PYTHON_BIN" - <<'PY'
+import torch
+import torch_npu
+import torchair
+print("torch=" + torch.__version__)
+print("torch_npu=" + torch_npu.__version__)
+print("torchair=" + str(torchair.__file__))
+print("device=" + torch_npu.npu.get_device_name())
+PY
+  npu-smi info
+} >"$OUTPUT_ROOT/environment.txt" 2>&1
+```
+
+### 17.2 Operator parity and timing probe
+
+Run the committed public-operator probe first. This is fast and does not
+compile graphs:
+
+```sh
+PROBE_DIR="$OUTPUT_ROOT/operator_probe"
+mkdir -p "$PROBE_DIR"
+{
+  printf '%q ' \
+    "$PYTHON_BIN" \
+    "$REPO/09_persistent_page_engine/scripts/probes/probe_promptfa_sparse_modes.py" \
+    --device npu:0 \
+    --output "$PROBE_DIR/results.json"
+  printf '\n'
+} >"$PROBE_DIR/command.sh"
+
+set -o pipefail
+"$PYTHON_BIN" \
+  "$REPO/09_persistent_page_engine/scripts/probes/probe_promptfa_sparse_modes.py" \
+  --device npu:0 \
+  --output "$PROBE_DIR/results.json" \
+  2>&1 | tee "$PROBE_DIR/stdout.log"
+```
+
+Validate mechanically:
+
+```sh
+"$PYTHON_BIN" - "$PROBE_DIR/results.json" <<'PY'
+import json
+import sys
+
+p = json.load(open(sys.argv[1]))
+assert "310" in p["environment"]["device_name"], p["environment"]
+assert p["environment"]["head_dim"] == 80
+for name, result in p["comparisons"].items():
+    if name.startswith("ragged/"):
+        continue
+    assert result["exact"], (name, result)
+print("PHASE17_OPERATOR_PARITY: PASS")
+PY
+```
+
+The no-mask lane is only a dense-attention diagnostic. The packed block-mask
+comparison is the relevant correctness check for the production packing
+semantics. The ragged `actual_seq_lengths` lane is diagnostic only: its public
+interface is a Python list and therefore is not a proposed static-graph
+production route.
+
+If mode 0 versus mode 1 is not exact on the dense or packed comparisons, stop
+and report the failing comparison. Do not continue to full-stack compiles.
+
+### 17.3 Four compiled full-stack lanes
+
+Use one shared cache root so an already-compatible mode-1 Phase 14 graph can
+replay. Sparse mode is part of the cache key, so the two mode-0 shapes are
+separate graphs. At most two newly compiled graphs are expected.
+
+```sh
+CACHE_ROOT="$REPO/.runtime_cache/09_persistent_page_engine_vision_matmul_lab"
+mkdir -p "$CACHE_ROOT"
+df -h "$CACHE_ROOT" | tee "$OUTPUT_ROOT/cache_df_before.txt"
+```
+
+Define one runner. It emits live progress and preserves the complete log.
+
+```sh
+run_sparse_lane() {
+  mode="$1"
+  batch="$2"
+  seq="$3"
+  lane="b${batch}_s${seq}_sparse${mode}"
+  lane_root="$OUTPUT_ROOT/$lane"
+  result_dir="$lane_root/result"
+  mkdir -p "$lane_root"
+
+  {
+    printf '# commit=%s\n' "$COMMIT"
+    printf '# sparse_mode=%s batch=%s sequence_length=%s\n' \
+      "$mode" "$batch" "$seq"
+    printf '%q ' env \
+      "PADDLE_OCR_VL_VISION_PROMPT_FA_MASK_SPARSE_MODE=$mode" \
+      "$PYTHON_BIN" \
+      "$REPO/09_persistent_page_engine/scripts/vision_matmul_lab.py" \
+      --model-dir "$MODEL_DIR" \
+      --batch-size "$batch" \
+      --sequence-length "$seq" \
+      --intermediate-size 4352 \
+      --weight-format fractal_nz \
+      --execution torchair \
+      --attention-head-padding runtime \
+      --rotary-implementation separate_manual \
+      --cache-dir "$CACHE_ROOT" \
+      --output-dir "$result_dir" \
+      --allow-compile-if-missing \
+      --warmup 3 \
+      --samples 10 \
+      --calls-per-sample 5
+    printf '\n'
+  } >"$lane_root/command.sh"
+
+  printf '\n[phase17] start %s\n' "$lane"
+  set -o pipefail
+  PADDLE_OCR_VL_VISION_PROMPT_FA_MASK_SPARSE_MODE="$mode" \
+    "$PYTHON_BIN" \
+    "$REPO/09_persistent_page_engine/scripts/vision_matmul_lab.py" \
+    --model-dir "$MODEL_DIR" \
+    --batch-size "$batch" \
+    --sequence-length "$seq" \
+    --intermediate-size 4352 \
+    --weight-format fractal_nz \
+    --execution torchair \
+    --attention-head-padding runtime \
+    --rotary-implementation separate_manual \
+    --cache-dir "$CACHE_ROOT" \
+    --output-dir "$result_dir" \
+    --allow-compile-if-missing \
+    --warmup 3 \
+    --samples 10 \
+    --calls-per-sample 5 \
+    2>&1 | tee "$lane_root/stdout.log"
+  printf '[phase17] done %s\n' "$lane"
+}
+```
+
+Run in interleaved order to reduce thermal or clock drift:
+
+```sh
+run_sparse_lane 1 1 2048
+run_sparse_lane 0 1 2048
+run_sparse_lane 1 4 512
+run_sparse_lane 0 4 512
+```
+
+Do not compare first-call/compile wall times. The reported performance field is
+the median NPU-event time over 50 warm full-stack calls.
+
+### 17.4 Validate and build the report
+
+Generate a mechanical comparison:
+
+```sh
+"$PYTHON_BIN" - "$OUTPUT_ROOT" "$COMMIT" <<'PY'
+import json
+import pathlib
+import sys
+
+root = pathlib.Path(sys.argv[1])
+expected_commit = sys.argv[2]
+rows = []
+commits = set()
+for batch, seq in ((1, 2048), (4, 512)):
+    by_mode = {}
+    for mode in (0, 1):
+        path = root / f"b{batch}_s{seq}_sparse{mode}" / "result" / "run_summary.json"
+        data = json.load(open(path))
+        assert data["status"] == "ready", path
+        assert data["environment"]["commit"] == expected_commit
+        commits.add(data["environment"]["commit"])
+        assert data["shape"]["batch_size"] == batch
+        assert data["shape"]["sequence_length"] == seq
+        assert data["shape"]["physical_tokens_per_call"] == 2048
+        assert data["shape"]["layers"] == 27
+        assert data["shape"]["linear_calls_per_full_stack"] == 162
+        assert data["shape"]["candidate_intermediate_size"] == 4352
+        assert data["requested"]["execution"] == "torchair"
+        assert data["attention"]["implementation"] == "prompt_flash_attention"
+        assert data["attention"]["input_layout"] == "BNSD"
+        assert data["attention"]["mask_sparse_mode"] == mode
+        assert data["attention"]["promptfa_call_head_dim"] == 80
+        assert data["attention"]["attention_mask_all_false"]
+        assert data["weight_format"]["all_after_are_nz"]
+        assert data["compile"]["fullgraph"]
+        assert data["compile"]["ge_cache"]
+        assert data["numerics"]["measured_output_finite"]
+        ms = data["measurements"]["device_event_per_call_ms"]["median"]
+        tps = data["measurements"]["physical_tokens_per_s_device_median"]
+        by_mode[mode] = (ms, tps, path)
+
+    ms0, tps0, path0 = by_mode[0]
+    ms1, tps1, path1 = by_mode[1]
+    rows.append({
+        "batch": batch,
+        "sequence_length": seq,
+        "physical_tokens": 2048,
+        "sparse0_device_median_ms": ms0,
+        "sparse1_device_median_ms": ms1,
+        "sparse0_physical_tokens_per_s": tps0,
+        "sparse1_physical_tokens_per_s": tps1,
+        "sparse0_latency_change_percent": (ms0 / ms1 - 1.0) * 100.0,
+        "sparse0_throughput_change_percent": (tps0 / tps1 - 1.0) * 100.0,
+        "sparse0_summary": str(path0),
+        "sparse1_summary": str(path1),
+    })
+
+assert commits == {expected_commit}, commits
+payload = {"status": "pass", "rows": rows}
+(root / "comparison.json").write_text(
+    json.dumps(payload, indent=2, sort_keys=True) + "\n"
+)
+for row in rows:
+    print(json.dumps(row, sort_keys=True))
+print("PHASE17_FULL_STACK_CONTRACTS: PASS")
+PY
+```
+
+Also verify all four summaries report one identical:
+
+- git commit;
+- device name and software stack;
+- model dimensions;
+- execution, layout, D80 padding, RoPE, and NZ-weight contracts.
+
+Write:
+
+```text
+$OUTPUT_ROOT/agent_report.md
+```
+
+Use this report skeleton:
+
+```text
+310P PHASE 17 PROMPTFA SPARSE MODE: PASS | PARTIAL | FAIL
+
+Git commit:
+Host / exact NPU:
+Python / torch / torch_npu / TorchAir / CANN:
+Cache root:
+Newly compiled graph count:
+
+Operator probe:
+- dense B1xS2048 mode0 no-mask / mode0 mask / mode1 mask device us:
+- packed B1xS2048 mode0 / mode1 device us:
+- dense and packed exact-parity verdict:
+- no-mask diagnostic:
+
+Compiled 27-layer table:
+| shape | physical tokens | sparse0 ms | sparse1 ms | sparse0 raw tok/s | sparse1 raw tok/s | latency delta | throughput delta |
+
+Contract validation:
+- 27 layers / 162 Linears:
+- MLP4352 FRACTAL_NZ:
+- BNSD PromptFA D80:
+- TorchAir fullgraph:
+- finite output:
+
+Shape dependence:
+- B1xS2048 mode0 effect:
+- B4xS512 mode0 effect:
+- whether the 310P effect agrees in direction with 910B2:
+
+Interpretation boundary:
+- mode0 is the documented 310P sparse mode;
+- this phase does not establish production page-level speedup;
+- no ATB, actual-sequence-list production route, alternate layout, or other
+  attention backend was tested.
+
+First blocker or warning:
+Operator results JSON:
+Comparison JSON:
+Four run summaries:
+Four stdout logs:
+```
+
+Stop after Phase 17. Do not start another shape, change mask construction,
+test another attention backend, edit source, create a branch, commit, or push.
+Send Luka the report and exact artifact paths manually.
 
 ## Artifact interpretation
 
-For the current task, execute Phase 15 and then Phase 16. If Phase 15 is
-already present, reuse it only after the Phase 15.4 validation passes. Stop
-after Phase 16.7. The remaining sections are retained for earlier workflows
-and are not additional current work.
+For the current task, execute Phase 17 only. The remaining sections are
+retained for earlier workflows and are not additional current work.
 
 For every production lane:
 
