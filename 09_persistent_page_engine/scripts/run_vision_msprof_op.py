@@ -3,10 +3,11 @@
 
 The full compiled 27-layer graph is measured separately by
 ``run_vision_matmul_profile_suite.py``.  This second-tier runner gives
-``msprof op`` one ordinary MatMulV2 at a time, using the same FP16 shapes,
-ND activations, FRACTAL_NZ weights, and bias as the optimized production
-graph.  The resulting per-core and memory-path mechanics are accepted only
-after the analyzer matches dispatch metadata back to that graph reference.
+``msprof op`` one TorchAir-compiled MatMulV2 at a time, using the same FP16
+shapes, ND activations, FRACTAL_NZ weights, and bias as the optimized
+production graph. The resulting per-core and memory-path mechanics are
+accepted only after the analyzer matches dispatch metadata back to that graph
+reference.
 """
 
 from __future__ import annotations
@@ -33,19 +34,69 @@ EXPERIMENT_ROOT = HERE.parent
 REPO_ROOT = EXPERIMENT_ROOT.parent
 TARGET_SCRIPT = HERE / "vision_msprof_linear_target.py"
 ROLES = ("square", "fc1", "fc2")
-METRICS = ("Occupancy", "MemoryDetail")
+# PipeUtilization and Memory are the portable base tier. Huawei documents
+# Occupancy and MemoryDetail only for Atlas A2/A3 products, so those deeper
+# families are optional extensions rather than assumptions of this runner.
+METRICS = (
+    "PipeUtilization",
+    "ArithmeticUtilization",
+    "Memory",
+    "MemoryL0",
+    "MemoryUB",
+    "ResourceConflictRatio",
+    "Occupancy",
+    "MemoryDetail",
+)
+METRIC_SUPPORT = {
+    "PipeUtilization": {
+        "tier": "portable_base",
+        "documented_products": "Atlas inference, training, A2, and A3 products",
+    },
+    "ArithmeticUtilization": {
+        "tier": "portable_base",
+        "documented_products": "Atlas inference, training, A2, and A3 products",
+    },
+    "Memory": {
+        "tier": "portable_base",
+        "documented_products": "Atlas inference, training, A2, and A3 products",
+    },
+    "MemoryL0": {
+        "tier": "portable_base",
+        "documented_products": "Atlas inference, training, A2, and A3 products",
+    },
+    "MemoryUB": {
+        "tier": "portable_base",
+        "documented_products": "Atlas inference, training, A2, and A3 products",
+    },
+    "ResourceConflictRatio": {
+        "tier": "portable_base",
+        "documented_products": "Atlas inference, training, A2, and A3 products",
+    },
+    "Occupancy": {
+        "tier": "atlas_a2_a3_extension",
+        "documented_products": "Atlas A2 and Atlas A3 training/inference products",
+    },
+    "MemoryDetail": {
+        "tier": "atlas_a2_a3_extension",
+        "documented_products": "Atlas A2 and Atlas A3 training/inference products",
+    },
+}
 DEFAULT_EVIDENCE_ROOT = (
     REPO_ROOT / "tmp/09_persistent_page_engine/vision_msprof_op"
 )
 DEFAULT_RAW_ROOT = (
     REPO_ROOT / ".runtime_cache/09_persistent_page_engine_vision_msprof_op"
 )
+DEFAULT_TARGET_CACHE_ROOT = (
+    REPO_ROOT
+    / ".runtime_cache/09_persistent_page_engine_vision_msprof_torchair"
+)
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run-name", required=True)
-    parser.add_argument("--metric", choices=METRICS, default="Occupancy")
+    parser.add_argument("--metric", choices=METRICS, default="PipeUtilization")
     parser.add_argument(
         "--roles",
         nargs="+",
@@ -63,6 +114,19 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--msprof", default="msprof")
     parser.add_argument("--evidence-root", type=Path, default=DEFAULT_EVIDENCE_ROOT)
     parser.add_argument("--raw-root", type=Path, default=DEFAULT_RAW_ROOT)
+    parser.add_argument(
+        "--target-cache-root",
+        type=Path,
+        default=DEFAULT_TARGET_CACHE_ROOT,
+    )
+    parser.add_argument(
+        "--allow-compile-if-missing",
+        action="store_true",
+        help=(
+            "Prepare a missing one-Linear TorchAir cache before starting "
+            "msprof. Compilation never occurs inside the msprof capture."
+        ),
+    )
     args = parser.parse_args(argv)
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", args.run_name):
         parser.error("--run-name must contain only A-Z, a-z, 0-9, _, ., or -")
@@ -72,10 +136,19 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     return args
 
 
-def _empty_or_create(path: Path, label: str) -> None:
+def _empty_or_create(
+    path: Path,
+    label: str,
+    *,
+    private: bool = False,
+) -> None:
     if path.exists() and any(path.iterdir()):
         raise RuntimeError(f"{label} already exists and is non-empty: {path}")
-    path.mkdir(parents=True, exist_ok=True)
+    path.mkdir(parents=True, exist_ok=True, mode=0o700 if private else 0o755)
+    if private:
+        # Do not depend on the server's umask. msprof requires its output path
+        # to be owned by the caller and not writable by group/other.
+        path.chmod(0o700)
 
 
 def _safe_msprof_output(path: Path) -> None:
@@ -141,6 +214,43 @@ def _artifact_summary(root: Path) -> dict[str, Any]:
     }
 
 
+def _has_csv(summary: dict[str, Any], stem: str) -> bool:
+    prefix = stem.casefold()
+    return any(
+        name.casefold().startswith(prefix)
+        for name in summary["csv_names"]
+    )
+
+
+def _artifact_contract_errors(
+    metric: str,
+    summary: dict[str, Any],
+) -> list[str]:
+    errors: list[str] = []
+    if not _has_csv(summary, "OpBasicInfo"):
+        errors.append("msprof output has no OpBasicInfo CSV")
+    if metric in {
+        "PipeUtilization",
+        "ArithmeticUtilization",
+        "Memory",
+        "MemoryL0",
+        "MemoryUB",
+        "ResourceConflictRatio",
+    } and not _has_csv(summary, metric):
+        errors.append(f"{metric} capture has no {metric} CSV")
+    elif metric == "Occupancy" and not summary["has_visualize_data"]:
+        errors.append("Occupancy capture has no visualize_data.bin")
+    elif metric == "MemoryDetail":
+        for stem in ("PipeUtilization", "Memory", "L2Cache"):
+            if not _has_csv(summary, stem):
+                errors.append(
+                    f"MemoryDetail capture has no {stem} CSV"
+                )
+        if not summary["has_visualize_data"]:
+            errors.append("MemoryDetail capture has no visualize_data.bin")
+    return errors
+
+
 def _environment() -> dict[str, str | None]:
     names = (
         "ASCEND_RT_VISIBLE_DEVICES",
@@ -150,6 +260,91 @@ def _environment() -> dict[str, str | None]:
         "ASCEND_OPP_PATH",
     )
     return {name: os.environ.get(name) for name in names}
+
+
+def _prepare_target_cache(
+    *,
+    role: str,
+    args: argparse.Namespace,
+    python: str,
+    role_evidence: Path,
+) -> dict[str, Any]:
+    prepare_dir = role_evidence / "cache_prepare"
+    prepare_dir.mkdir()
+    application_dir = prepare_dir / "application"
+    command = [
+        python,
+        str(TARGET_SCRIPT),
+        "--role",
+        role,
+        "--output-dir",
+        str(application_dir),
+        "--cache-root",
+        str(args.target_cache_root.expanduser().resolve()),
+        "--prepare-cache-only",
+    ]
+    if args.allow_compile_if_missing:
+        command.append("--allow-compile-if-missing")
+    _write_json(
+        prepare_dir / "command.json",
+        {
+            "argv": command,
+            "shell_escaped": shlex.join(command),
+            "cwd": str(REPO_ROOT),
+        },
+    )
+    wall_started = time.perf_counter()
+    completed = subprocess.run(
+        command,
+        cwd=REPO_ROOT,
+        env={**os.environ, "PYTHONUNBUFFERED": "1"},
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    wall_s = time.perf_counter() - wall_started
+    (prepare_dir / "stdout.log").write_text(
+        completed.stdout,
+        encoding="utf-8",
+    )
+    (prepare_dir / "stderr.log").write_text(
+        completed.stderr,
+        encoding="utf-8",
+    )
+    summary_path = application_dir / "target_summary.json"
+    summary = (
+        json.loads(summary_path.read_text(encoding="utf-8"))
+        if summary_path.is_file()
+        else None
+    )
+    errors = []
+    if completed.returncode != 0:
+        errors.append(
+            f"cache preparation exited with status {completed.returncode}"
+        )
+    if summary is None:
+        errors.append("cache preparation did not write target_summary.json")
+    elif summary.get("status") != "cache_ready":
+        errors.append(
+            "cache preparation status is not cache_ready: "
+            f"{summary.get('status')!r}"
+        )
+    result = {
+        "status": "failed" if errors else "cache_ready",
+        "returncode": completed.returncode,
+        "wall_s": wall_s,
+        "command": command,
+        "summary_path": (
+            str(summary_path) if summary_path.is_file() else None
+        ),
+        "target": summary,
+        "errors": errors,
+    }
+    _write_json(prepare_dir / "prepare_manifest.json", result)
+    if errors:
+        raise RuntimeError(f"{role}: {'; '.join(errors)}")
+    return result
 
 
 def _run_role(
@@ -164,7 +359,17 @@ def _run_role(
     role_evidence = evidence_dir / role
     role_raw = raw_dir / role
     _empty_or_create(role_evidence, f"{role} evidence directory")
-    _empty_or_create(role_raw, f"{role} raw profiler directory")
+    cache_preparation = _prepare_target_cache(
+        role=role,
+        args=args,
+        python=python,
+        role_evidence=role_evidence,
+    )
+    _empty_or_create(
+        role_raw,
+        f"{role} raw profiler directory",
+        private=True,
+    )
     _safe_msprof_output(role_raw)
     application_dir = role_evidence / "application"
     command = [
@@ -182,6 +387,8 @@ def _run_role(
         role,
         "--output-dir",
         str(application_dir),
+        "--cache-root",
+        str(args.target_cache_root.expanduser().resolve()),
     ]
     command_record = {
         "argv": command,
@@ -193,6 +400,7 @@ def _run_role(
             "launch_count": 1,
             "replay_mode": "kernel",
             "metric": args.metric,
+            "metric_support": METRIC_SUPPORT[args.metric],
             "mstx": False,
         },
     }
@@ -227,6 +435,8 @@ def _run_role(
         errors.append(f"msprof exited with status {completed.returncode}")
     if artifact_summary["file_count"] == 0:
         errors.append(f"msprof produced no raw artifacts under {role_raw}")
+    else:
+        errors.extend(_artifact_contract_errors(args.metric, artifact_summary))
     if target_summary is None:
         errors.append("target did not produce target_summary.json")
     elif target_summary.get("status") != "completed":
@@ -252,6 +462,7 @@ def _run_role(
             ),
         },
         "raw_artifacts": artifact_summary,
+        "cache_preparation": cache_preparation,
         "target": target_summary,
         "errors": errors,
         "validation_state": (
@@ -272,7 +483,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     if evidence_dir == raw_dir:
         raise RuntimeError("evidence and raw output directories must differ")
     _empty_or_create(evidence_dir, "suite evidence directory")
-    _empty_or_create(raw_dir, "suite raw profiler directory")
+    _empty_or_create(
+        raw_dir,
+        "suite raw profiler directory",
+        private=True,
+    )
     _safe_msprof_output(raw_dir)
     python = _resolve_executable(args.python, "Python interpreter")
     msprof = _resolve_executable(args.msprof, "msprof")
@@ -298,6 +513,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         },
         "environment": _environment(),
         "metric": args.metric,
+        "metric_support": METRIC_SUPPORT[args.metric],
+        "target_cache_root": str(
+            args.target_cache_root.expanduser().resolve()
+        ),
+        "allow_compile_if_missing": bool(args.allow_compile_if_missing),
         "roles": args.roles,
         "paths": {
             "evidence": str(evidence_dir),
