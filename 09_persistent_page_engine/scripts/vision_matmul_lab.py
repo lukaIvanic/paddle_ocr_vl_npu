@@ -1146,6 +1146,11 @@ def _cache_dir(
         f"torchnpu{torch_npu_version_label(device)}",
         f"torchair{torchair_version_label(device)}",
     ]
+    if get_vision_prompt_fa_mask_sparse_mode() == 0:
+        # The previous sparse-0 experiment inherited next_tokens=0 from the
+        # public op. Keep its potentially causal graph out of the corrected
+        # bidirectional cache identity.
+        key_parts.append("pfawindowfull")
     if promptfa_inner_precise != 1:
         key_parts.append(f"pfainnerprecise{promptfa_inner_precise}")
     if rotary_implementation == "separate_manual":
@@ -1948,6 +1953,8 @@ def main(argv: Sequence[str] | None = None) -> None:
             "implementation": "prompt_flash_attention",
             "input_layout": get_vision_prompt_fa_layout().upper(),
             "mask_sparse_mode": get_vision_prompt_fa_mask_sparse_mode(),
+            "pre_tokens": (1 << 31) - 1,
+            "next_tokens": (1 << 31) - 1,
             "inner_precise": int(args.promptfa_inner_precise),
             "inner_precise_semantics": (
                 "installed high-performance control"

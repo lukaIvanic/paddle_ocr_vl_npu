@@ -45,6 +45,7 @@ VISION_PROMPT_FA_MASK_SPARSE_MODE_ENV = (
     "PADDLE_OCR_VL_VISION_PROMPT_FA_MASK_SPARSE_MODE"
 )
 VISION_PROMPT_FA_310P_SEQ_ALIGNMENT = 128
+VISION_PROMPT_FA_FULL_ATTENTION_TOKENS = (1 << 31) - 1
 VISION_SOFTMAX_DTYPE_ENV = "PADDLE_OCR_VL_VISION_SOFTMAX_DTYPE"
 SOFTMAX_DTYPE_CHOICES = ("fp32", "model")
 
@@ -221,6 +222,8 @@ def vision_prompt_flash_attention_bnsd(
             num_heads=int(num_heads),
             input_layout="BNSD",
             scale_value=float(scale),
+            pre_tokens=VISION_PROMPT_FA_FULL_ATTENTION_TOKENS,
+            next_tokens=VISION_PROMPT_FA_FULL_ATTENTION_TOKENS,
             sparse_mode=sparse_mode,
             **mask_kwargs,
         )
@@ -233,6 +236,8 @@ def vision_prompt_flash_attention_bnsd(
             num_heads=int(num_heads),
             input_layout="BSND",
             scale_value=float(scale),
+            pre_tokens=VISION_PROMPT_FA_FULL_ATTENTION_TOKENS,
+            next_tokens=VISION_PROMPT_FA_FULL_ATTENTION_TOKENS,
             sparse_mode=sparse_mode,
             **mask_kwargs,
         )
@@ -252,6 +257,8 @@ def vision_prompt_flash_attention_bnsd(
         num_heads=int(num_heads),
         input_layout="BSH",
         scale_value=float(scale),
+        pre_tokens=VISION_PROMPT_FA_FULL_ATTENTION_TOKENS,
+        next_tokens=VISION_PROMPT_FA_FULL_ATTENTION_TOKENS,
         sparse_mode=sparse_mode,
         **mask_kwargs,
     )
