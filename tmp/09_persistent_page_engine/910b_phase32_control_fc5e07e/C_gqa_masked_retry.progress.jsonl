@@ -1,0 +1,7 @@
+{"actual_seq_lengths": null, "batch_pattern": "uniform", "batch_size": 1, "cache_length": 4096, "effective_lengths": [1280], "event": "setup_begin", "head_dim": 128, "input_layout": "BNSD", "lane": "gqa_masked", "mask_dtype": "bool", "masked": true, "monotonic_s": 1192796.763531292, "op_num_key_value_heads": 2, "python": "3.12.13", "query_heads": 16, "stored_kv_heads": 2, "target_row": 0, "torch": "2.10.0+cpu", "torch_npu": "2.10.0", "torch_npu_git_version": "94f8a8e6b523d7ba553e1b80d5b5248478391526"}
+{"event": "setup_end", "monotonic_s": 1192797.624711958}
+{"event": "call_begin", "monotonic_s": 1192797.624981323}
+{"event": "call_returned", "monotonic_s": 1192798.057503484}
+{"event": "sync_begin", "monotonic_s": 1192798.057722828}
+{"elapsed_s": 0.4331896819639951, "event": "sync_end", "monotonic_s": 1192798.058253737}
+{"event": "probe_end", "monotonic_s": 1192798.060928002, "output": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_phase32_control_fc5e07e/C_gqa_masked_retry.json", "passed": true}

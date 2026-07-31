@@ -1,0 +1,11 @@
+git_commit=fc5e07eeb458fb7bfff34ae321a429654ac1af3f
+hostname=liteserver-c001-4
+physical_npu=5 logical_npu=0
+python=/usr/local/python3.12.13/bin/python3
+probe=09_persistent_page_engine/scripts/probes/probe_increfa_masked_gqa.py
+common=--cache-length 4096 --effective-length 1280
+A=--lane gqa_nomask --batch-size 1 --batch-pattern uniform
+B=--lane mha_masked --batch-size 1 --batch-pattern uniform
+C=--lane gqa_masked --batch-size 1 --batch-pattern uniform
+D=--lane gqa_masked --batch-size 16 --batch-pattern uniform --target-row 0 --inactive-effective-length 1
+E=--lane gqa_masked --batch-size 16 --batch-pattern mixed --target-row 3 --inactive-effective-length 1

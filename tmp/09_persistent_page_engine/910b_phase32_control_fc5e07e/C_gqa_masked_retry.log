@@ -1,0 +1,43 @@
+INCREFA_GQA {"actual_seq_lengths": null, "batch_pattern": "uniform", "batch_size": 1, "cache_length": 4096, "effective_lengths": [1280], "event": "setup_begin", "head_dim": 128, "input_layout": "BNSD", "lane": "gqa_masked", "mask_dtype": "bool", "masked": true, "monotonic_s": 1192796.763531292, "op_num_key_value_heads": 2, "python": "3.12.13", "query_heads": 16, "stored_kv_heads": 2, "target_row": 0, "torch": "2.10.0+cpu", "torch_npu": "2.10.0", "torch_npu_git_version": "94f8a8e6b523d7ba553e1b80d5b5248478391526"}
+INCREFA_GQA {"event": "setup_end", "monotonic_s": 1192797.624711958}
+INCREFA_GQA {"event": "call_begin", "monotonic_s": 1192797.624981323}
+INCREFA_GQA {"event": "call_returned", "monotonic_s": 1192798.057503484}
+INCREFA_GQA {"event": "sync_begin", "monotonic_s": 1192798.057722828}
+INCREFA_GQA {"elapsed_s": 0.4331896819639951, "event": "sync_end", "monotonic_s": 1192798.058253737}
+INCREFA_GQA {"event": "probe_end", "monotonic_s": 1192798.060928002, "output": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_phase32_control_fc5e07e/C_gqa_masked_retry.json", "passed": true}
+{
+  "schema_version": 1,
+  "kind": "standalone_increfa_masked_gqa_discriminator",
+  "passed": true,
+  "configuration": {
+    "lane": "gqa_masked",
+    "batch_size": 1,
+    "batch_pattern": "uniform",
+    "target_row": 0,
+    "effective_lengths": [
+      1280
+    ],
+    "cache_length": 4096,
+    "query_heads": 16,
+    "stored_kv_heads": 2,
+    "op_num_key_value_heads": 2,
+    "head_dim": 128,
+    "masked": true,
+    "mask_dtype": "bool",
+    "input_layout": "BNSD",
+    "actual_seq_lengths": null,
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "torch_npu_git_version": "94f8a8e6b523d7ba553e1b80d5b5248478391526",
+    "python": "3.12.13"
+  },
+  "elapsed_s": 0.4331896819639951,
+  "output_shape": [
+    1,
+    16,
+    1,
+    128
+  ],
+  "output_abs_mean": 0.0,
+  "progress_jsonl": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_phase32_control_fc5e07e/C_gqa_masked_retry.progress.jsonl"
+}

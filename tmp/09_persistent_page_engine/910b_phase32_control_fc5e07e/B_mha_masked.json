@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "kind": "standalone_increfa_masked_gqa_discriminator",
+  "passed": true,
+  "configuration": {
+    "lane": "mha_masked",
+    "batch_size": 1,
+    "batch_pattern": "uniform",
+    "target_row": 0,
+    "effective_lengths": [
+      1280
+    ],
+    "cache_length": 4096,
+    "query_heads": 16,
+    "stored_kv_heads": 16,
+    "op_num_key_value_heads": 0,
+    "head_dim": 128,
+    "masked": true,
+    "mask_dtype": "bool",
+    "input_layout": "BNSD",
+    "actual_seq_lengths": null,
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "torch_npu_git_version": "94f8a8e6b523d7ba553e1b80d5b5248478391526",
+    "python": "3.12.13"
+  },
+  "elapsed_s": 0.43082856200635433,
+  "output_shape": [
+    1,
+    16,
+    1,
+    128
+  ],
+  "output_abs_mean": 0.0,
+  "progress_jsonl": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_phase32_control_fc5e07e/B_mha_masked.progress.jsonl"
+}
