@@ -1,6 +1,7 @@
 refs/PaddleOCR/
 .venv/
 .idea/
+.DS_Store
 __pycache__/
 *.py[cod]
 AGENTS_NPU.md
@@ -14,6 +15,7 @@ outputs/
 artifacts/
 logs/
 .runtime_cache/
+extra-info/
 tmp/
 kernel_meta/
 ge_check_op.json

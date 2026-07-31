@@ -97,6 +97,18 @@ Keep `refs/PaddleOCR/` ignored. It is reference material, not project source.
 Crop generation runs anywhere. Everything that touches the model needs an NPU, so
 run it on the 910B container after `source npu-setup`.
 
+Two substitutions apply to every `python3` block below (verified 2026-07-27 on
+the blue-zone box, commit `d82bb1d`):
+
+- **Interpreter.** Bare `python3` is `/usr/bin/python3` and has no torch. Use
+  `/usr/local/python3.12.13/bin/python3` — the one `npu-setup` prints.
+- **Model path.** Scripts in `01`–`06` default `--model` to the hub id
+  `PaddlePaddle/PaddleOCR-VL-1.6`. The box has no route to huggingface.co and
+  its HF cache entry is a stub, so the default fails after a ~90 s connect
+  timeout. Always pass `--model /workspace/models/PaddleOCR-VL-1.6` (layout:
+  `/workspace/models/PP-DocLayoutV3_safetensors`). The `09` scripts take
+  `--recognizer-model` / `--layout-model` and require them explicitly.
+
 Regenerate the crops from the parent repo's restored OmniDocBench copy:
 
 ```sh

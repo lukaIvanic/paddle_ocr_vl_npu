@@ -1085,30 +1085,6 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
             next_cache_position=next_cache_position,
         )
 
-    def forward_static_decode(
-        self,
-        input_ids: torch.Tensor,
-        cache: LocalPaddleOCRVLStaticCache,
-        cache_position: torch.Tensor,
-        rope_deltas: torch.Tensor,
-        *,
-        attention_mask: torch.Tensor | None = None,
-        logits_to_keep: int = 0,
-    ) -> LocalModelOutput:
-        inputs_embeds = self.model.embed_tokens(input_ids)
-        hidden_states = self.model.forward_decode_static(
-            inputs_embeds=inputs_embeds,
-            cache_position=cache_position,
-            rope_deltas=rope_deltas,
-            key_caches=cache.key_caches,
-            value_caches=cache.value_caches,
-            cache_length=cache.cache_length,
-            attention_mask=attention_mask,
-        )
-        slice_indices = slice(-logits_to_keep, None) if isinstance(logits_to_keep, int) and logits_to_keep > 0 else slice(None)
-        logits = self.lm_head(hidden_states[:, slice_indices, :])
-        return LocalModelOutput(logits=logits, rope_deltas=rope_deltas)
-
     def forward(
         self,
         input_ids: torch.Tensor,
@@ -1215,26 +1191,21 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
             cache_length=cache_length,
             logits_to_keep=1,
         )
-        cache = outputs.cache
         rope_deltas = outputs.rope_deltas
         cache_position = outputs.next_cache_position
-        next_token = torch.argmax(outputs.logits[:, -1, :].float(), dim=-1, keepdim=True)
-        generated = [next_token]
-        finished = next_token.squeeze(1) == eos_token_id
-        for _ in range(max(0, int(max_new_tokens) - 1)):
-            if bool(finished.all().item()):
-                break
-            outputs_decode = self.forward_static_decode(
-                input_ids=next_token,
-                cache=cache,
-                cache_position=cache_position,
-                rope_deltas=rope_deltas,
-                logits_to_keep=1,
-            )
-            next_token = torch.argmax(outputs_decode.logits[:, -1, :].float(), dim=-1, keepdim=True)
+        flat_decode = self.make_flat_static_decode_module()
+        flat_cache = outputs.cache.flat_tensors()
+        logits = outputs.logits
+        generated = []
+        finished = torch.zeros(logits.shape[0], dtype=torch.bool, device=logits.device)
+        for _ in range(max(0, int(max_new_tokens))):
+            next_token = torch.argmax(logits[:, -1, :].float(), dim=-1, keepdim=True)
             next_token = torch.where(finished.view(-1, 1), torch.full_like(next_token, eos_token_id), next_token)
             generated.append(next_token)
             finished |= next_token.squeeze(1) == eos_token_id
+            if bool(finished.all().item()):
+                break
+            logits = flat_decode(next_token, cache_position, rope_deltas, *flat_cache)
             cache_position = cache_position + 1
         return torch.cat(generated, dim=1)
 
