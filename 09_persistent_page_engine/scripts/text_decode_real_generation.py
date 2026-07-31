@@ -47,6 +47,15 @@ DEFAULT_RECOGNIZER_MODEL = Path("/workspace/models/PaddleOCR-VL-1.6")
 DEFAULT_CACHE_ROOT = (
     REPO_ROOT / ".runtime_cache/09_text_decode_real_generation"
 )
+BOUNDARY_PROGRESS_EVENTS = (
+    "diagnostic_pending_state",
+    "diagnostic_compute_sync_begin",
+    "diagnostic_compute_sync_end",
+    "diagnostic_compute_sync_error",
+    "diagnostic_d2h_sync_begin",
+    "diagnostic_d2h_sync_end",
+    "diagnostic_d2h_sync_error",
+)
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -345,6 +354,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         text_packing="off",
         preprocessor_min_pixels=args.min_pixels,
         scheduler_progress=True,
+        scheduler_progress_events=BOUNDARY_PROGRESS_EVENTS,
         diagnostic_decode_effective_length=args.target_effective_length,
     )
     setup_s = time.perf_counter() - setup_started

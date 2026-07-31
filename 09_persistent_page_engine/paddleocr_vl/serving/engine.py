@@ -428,6 +428,7 @@ class ContinuousRecognizer:
         vision_route_plan: dict[str, Any] | None = None,
         timeline: TimelineRecorder | None = None,
         scheduler_progress: bool = False,
+        scheduler_progress_events: Iterable[str] | None = None,
         diagnostic_decode_effective_length: int | None = None,
         diagnostic_decode_request_id: str | None = None,
         decode_optimization: str = DEFAULT_DECODE_OPTIMIZATION,
@@ -454,6 +455,11 @@ class ContinuousRecognizer:
         self.decode_optimization = str(decode_optimization)
         self.timeline = timeline
         self.scheduler_progress = bool(scheduler_progress)
+        self.scheduler_progress_events = (
+            None
+            if scheduler_progress_events is None
+            else frozenset(str(event) for event in scheduler_progress_events)
+        )
         self.diagnostic_decode_effective_length = (
             None
             if diagnostic_decode_effective_length is None
@@ -770,6 +776,11 @@ class ContinuousRecognizer:
 
     def _emit_scheduler_progress(self, event: str, **fields: Any) -> None:
         if not self.scheduler_progress:
+            return
+        if (
+            self.scheduler_progress_events is not None
+            and event not in self.scheduler_progress_events
+        ):
             return
         record = {
             "event": str(event),
@@ -2669,6 +2680,11 @@ class ContinuousRecognizer:
             "batch_size": self.batch_size,
             "diagnostic_decode_effective_length": (
                 self.diagnostic_decode_effective_length
+            ),
+            "scheduler_progress_events": (
+                None
+                if self.scheduler_progress_events is None
+                else sorted(self.scheduler_progress_events)
             ),
             "diagnostic_decode_request_id": self.diagnostic_decode_request_id,
             "vision_prefill": self.vision_prefill.metadata,
