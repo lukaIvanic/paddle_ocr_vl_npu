@@ -1,0 +1,999 @@
+	 sleep 45
+	 for f in "$FULL_EVAL/default13b/work/eval.log" "$FULL_EVAL/min8_13b/work/eval.log"; do tail -c 180 "$f"; echo; done
+	 sleep 45
+	 for f in "$FULL_EVAL/default13b/work/eval.log" "$FULL_EVAL/min8_13b/work/eval.log"; do tail -c 180 "$f"; echo; done
+	 sleep 45
+	 for f in "$FULL_EVAL/default13b/work/eval.log" "$FULL_EVAL/min8_13b/work/eval.log"; do tail -c 180 "$f"; echo; done
+	 sleep 45
+	 for f in "$FULL_EVAL/default13b/work/eval.log" "$FULL_EVAL/min8_13b/work/eval.log"; do tail -c 180 "$f"; echo; done
+	 sleep 45
+	 for f in "$FULL_EVAL/default13b/work/eval.log" "$FULL_EVAL/min8_13b/work/eval.log"; do echo "$f"; grep -ao 'Matching pages: *[0-9]*%[^\r]*' "$f" | tail -n 1 | tail -c 220; echo; done
+	 sleep 45
+	 for f in "$FULL_EVAL/default13b/work/eval.log" "$FULL_EVAL/min8_13b/work/eval.log"; do grep -ao 'Matching pages: *[0-9]*%[^\r]*' "$f" | tail -n 1 | tail -c 180; echo; done
+	 sleep 45
+	 for f in "$FULL_EVAL/default13b/work/eval.log" "$FULL_EVAL/min8_13b/work/eval.log"; do grep -ao 'Matching pages: *[0-9]*%[^\r]*' "$f" | tail -n 1 | tail -c 180; echo; done
+	 sleep 45
+	 for f in "$FULL_EVAL/default13b/work/eval.log" "$FULL_EVAL/min8_13b/work/eval.log"; do grep -ao 'Matching pages: *[0-9]*%[^\r]*' "$f" | tail -n 1 | tail -c 180; echo; done
+	 sleep 45
+	 for f in "$FULL_EVAL/default13b/work/eval.log" "$FULL_EVAL/min8_13b/work/eval.log"; do grep -ao 'Matching pages: *[0-9]*%[^\r]*' "$f" | tail -n 1 | tail -c 180; echo; done
+	 sleep 45
+	 for f in "$FULL_EVAL/default13b/work/eval.log" "$FULL_EVAL/min8_13b/work/eval.log"; do grep -ao 'Matching pages: *[0-9]*%[^\r]*' "$f" | tail -n 1 | tail -c 180; echo; done
+	 sleep 45
+	 for f in "$FULL_EVAL/default13b/work/eval.log" "$FULL_EVAL/min8_13b/work/eval.log"; do grep -ao 'Matching pages: *[0-9]*%[^\r]*' "$f" | tail -n 1 | tail -c 180; echo; done
+	 ps -p 1038512,1038513 -o pid=,etime=,stat=,cmd=
+	 sleep 45
+	 for f in "$FULL_EVAL/default13b/work/eval.log" "$FULL_EVAL/min8_13b/work/eval.log"; do grep -ao 'Matching pages: *[0-9]*%[^\r]*' "$f" | tail -n 1 | tail -c 180; echo; done
+	 ps -p 1038512,1038513 -o pid=,etime=,stat=
+	 sleep 45
+	 for f in "$FULL_EVAL/default13b/work/eval.log" "$FULL_EVAL/min8_13b/work/eval.log"; do grep -ao 'Matching pages: *[0-9]*%[^\r]*' "$f" | tail -n 1 | tail -c 180; echo; done
+	 sleep 45
+	 for f in "$FULL_EVAL/default13b/work/eval.log" "$FULL_EVAL/min8_13b/work/eval.log"; do grep -ao 'Matching pages: *[0-9]*%[^\r]*' "$f" | tail -n 1 | tail -c 180; echo; done
+	 sleep 45
+	 for f in "$FULL_EVAL/default13b/work/eval.log" "$FULL_EVAL/min8_13b/work/eval.log"; do grep -ao 'Matching pages: *[0-9]*%[^\r]*' "$f" | tail -n 1 | tail -c 180; echo; done
+	 sleep 45
+	 for f in "$FULL_EVAL/default13b/work/eval.log" "$FULL_EVAL/min8_13b/work/eval.log"; do grep -ao 'Matching pages: *[0-9]*%[^\r]*' "$f" | tail -n 1 | tail -c 180; echo; done
+	 sleep 45
+	 ps -p 1038512,1038513 -o pid=,etime=,stat=
+	 for f in "$FULL_EVAL/default13b/work/eval.log" "$FULL_EVAL/min8_13b/work/eval.log"; do grep -ao 'Matching pages: *[0-9]*%[^\r]*' "$f" | tail -n 1 | tail -c 180; echo; tail -n 3 "$f"; done
+	 sleep 45
+	 ps -p 1038512,1038513 -o pid=,etime=,stat=
+	 for f in "$FULL_EVAL/default13b/work/eval.log" "$FULL_EVAL/min8_13b/work/eval.log"; do echo FILE:$f; grep -ao 'Matching pages: *[0-9]*%[^\r]*' "$f" | tail -n 1 | tail -c 160; echo; grep -ao 'TEDS: *[0-9]*%[^\r]*' "$f" | tail -n 1 | tail -c 160; echo; done
+	 sleep 45
+	 ps -p 1038512 -o pid=,etime=,stat=
+	 grep -ao 'TEDS: *[0-9]*%[^\r]*' "$FULL_EVAL/default13b/work/eval.log" | tail -n 1 | tail -c 180; echo
+	 sleep 30
+	 ps -p 1038512 -o pid=,etime=,stat=
+	 grep -ao 'TEDS: *[0-9]*%[^\r]*' "$FULL_EVAL/default13b/work/eval.log" | tail -n 1 | tail -c 180; echo
+	 python3 - <<'PY'
+	 import json, os
+	 base=os.environ['FULL_EVAL']
+	 for name in ['default13b','min8_13b']:
+	  p=f'{base}/{name}/work/result/predictions_quick_match_metric_result.json'
+	  print('\n###',name,p,os.path.exists(p))
+	  x=json.load(open(p))
+	  print(json.dumps(x,indent=2,ensure_ascii=False))
+	 PY
+	 python3 - <<'PY'
+	 import json, os
+	 base='/workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/full_eval_custom_default_vs_min8_20260717'
+	 for name in ['default13b','min8_13b']:
+	  p=f'{base}/{name}/work/result/predictions_quick_match_metric_result.json'
+	  print('\n###',name,p,os.path.exists(p))
+	  x=json.load(open(p))
+	  print(json.dumps(x,indent=2,ensure_ascii=False))
+	 PY
+	 python3 - <<'PY'
+	 import json
+	 paths={
+	 'default':'/workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2/run_summary.json',
+	 'min8':'/workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_min_pixels_div8_c94ef82_run2/run_summary.json'}
+	 for n,p in paths.items():
+	  x=json.load(open(p))
+	  print('\n###',n)
+	  print('\n'.join(sorted(x.keys())))
+	 PY
+	 python3 - <<'PY'
+	 import json
+	 p='/workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2/run_summary.json'
+	 x=json.load(open(p))
+	 print('pipeline',json.dumps(x['pipeline'],indent=2)[:12000])
+	 print('adapter keys',sorted(x['adapter']))
+	 PY
+	 python3 - <<'PY'
+	 import json
+	 p='/workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2/run_summary.json'
+	 x=json.load(open(p))
+	 print(x['page_regions_jsonl'])
+	 q=x['page_regions_jsonl']
+	 with open(q) as f:
+	  for i in range(2):
+	   o=json.loads(next(f)); print(json.dumps(o,indent=2)[:8000])
+	 PY
+	 rg -n "layout.*(time|timing|wall)|timing.*layout|layout_s" scripts | head -n 80
+	 grep -RInE "layout.*(time|timing|wall)|timing.*layout|layout_s" scripts | head -n 80
+	 find . -maxdepth 2 -type d | head -n 40
+	 grep -RInE "layout.*(time|timing|wall)|timing.*layout|layout_s" 08_offline_e2e_b1 | head -n 100
+	 sed -n '250,350p' 08_offline_e2e_b1/pipeline.py
+	 find /workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2 -maxdepth 2 -type f | head -n 40
+	 find /workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2 -maxdepth 1 -type f -printf '%f\n'
+	 grep -m 3 -n 'layout_inference' /workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2/run.log
+	 sed -n '120,240p' 08_offline_e2e_b1/run_offline_e2e.py
+	 grep -RIn "run_summary.json\|page_regions.jsonl" 08_offline_e2e_b1 | head -n 60
+	 sed -n '250,380p' 08_offline_e2e_b1/run_omnidocbench_paddlex.py
+	 python3 - <<'PY'
+	 import json
+	 for n in ['default','min8']:
+	  p='/workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2/run_summary.json' if n=='default' else '/workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_min_pixels_div8_c94ef82_run2/run_summary.json'
+	  x=json.load(open(p))
+	  print(n,type(x['completion_s']).__name__)
+	  print(str(x['completion_s'])[:1000])
+	 PY
+	 python3 - <<'PY'
+	 import json
+	 b='/workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/full_eval_custom_default_vs_min8_20260717'
+	 a=json.load(open(b+'/default13b/work/result/predictions_quick_match_metric_result.json'))
+	 c=json.load(open(b+'/min8_13b/work/result/predictions_quick_match_metric_result.json'))
+	 items=[
+	 ('Text edit page','text_block','Edit_dist','ALL_page_avg'),('Text edit whole','text_block','Edit_dist','edit_whole'),('Text edit sample','text_block','Edit_dist','edit_sample_avg'),
+	 ('Formula edit page','display_formula','Edit_dist','ALL_page_avg'),('Formula edit whole','display_formula','Edit_dist','edit_whole'),('Formula edit sample','display_formula','Edit_dist','edit_sample_avg'),
+	 ('Table TEDS','table','TEDS','all'),('Table structure TEDS','table','TEDS_structure_only','all'),
+	 ('Table edit page','table','Edit_dist','ALL_page_avg'),('Table edit whole','table','Edit_dist','edit_whole'),('Table edit sample','table','Edit_dist','edit_sample_avg'),
+	 ('Reading edit page','reading_order','Edit_dist','ALL_page_avg'),('Reading edit whole','reading_order','Edit_dist','edit_whole')]
+	 for label,sec,met,key in items:
+	  x=a[sec]['all'][met][key]; y=c[sec]['all'][met][key]
+	  print(f'{label:24s} {x:.9f} {y:.9f} abs={y-x:+.9f} rel={(y/x-1)*100:+.3f}%')
+	 PY
+	 python3 - <<'PY'
+	 d={'e2e':3647.3469820229802,'prefill':2186.928654778516,'decode':1223.5891921738826}
+	 m={'e2e':3363.1882903540973,'prefill':1850.8608713077847,'decode':1272.2134395078901}
+	 for x in (d,m): x['other']=x['e2e']-x['prefill']-x['decode']
+	 for k in ['e2e','prefill','decode','other']:
+	  print(k, f'{d[k]:.3f}s {d[k]/60:.3f}m {d[k]/d["e2e"]*100:.2f}%', f'{m[k]:.3f}s {m[k]/60:.3f}m {m[k]/m["e2e"]*100:.2f}%', f'delta={(m[k]/d[k]-1)*100:+.2f}%')
+	 PY
+	 python3 - <<'PY'
+	 import json
+	 p='/workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2/run_summary.json'
+	 x=json.load(open(p)); print(x['configuration']['recognizer_model'])
+	 PY
+	 python3 - <<'PY'
+	 import json, os
+	 p='/workspace/models/PaddleOCR-VL-1.6/config.json'
+	 x=json.load(open(p))
+	 print(json.dumps(x,indent=2)[:15000])
+	 PY
+	 git status --short
+	 git rev-parse --short HEAD
+	 sed -n '1,260p' 08_offline_e2e_b1/run_omnidocbench_paddlex.py
+	 sed -n '1,360p' 08_offline_e2e_b1/paddlex_adapter.py
+	 grep -nE '^class |^    def |preprocess|prefill|recognize_stream|thread|queue|executor' 08_offline_e2e_b1/engine.py | head -n 220
+	 sed -n '119,420p' 08_offline_e2e_b1/engine.py
+	 sed -n '420,780p' 08_offline_e2e_b1/engine.py
+	 grep -nE '^class |^    def |ready_buffer|refill|next\(|decode' 08_offline_e2e_b1/continuous_decode.py | head -n 260
+	 sed -n '408,680p' 08_offline_e2e_b1/continuous_decode.py
+	 sed -n '1,360p' 08_offline_e2e_b1/preprocessing.py
+	 grep -RIn "vl_rec_model.predict" /workspace/repos/vllm_paddle_ocr/PaddleOCR/ppstructure /workspace/repos/vllm_paddle_ocr/PaddleOCR/paddleocr 2>/dev/null | head -n 40
+	 grep -RIn "vl_rec_max_concurrency" /workspace/repos/vllm_paddle_ocr/PaddleOCR 2>/dev/null | head -n 60
+	 /workspace/venvs/paddleocrvl_py312/bin/python - <<'PY'
+	 import paddlex, inspect
+	 print(paddlex.__file__)
+	 PY
+	 /usr/local/python3.12.13/bin/python3 - <<'PY'
+	 import paddlex
+	 print(paddlex.__file__)
+	 PY
+	 head -n 40 /workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2/run.log
+	 find /usr/local/python3.12.13/lib/python3.12/site-packages -maxdepth 2 -type d -iname 'paddlex*' -o -iname 'paddlex*dist-info' | head -n 30
+	 echo "$PYTHONPATH"
+	 find /workspace -maxdepth 5 -type d -name paddlex 2>/dev/null | head -n 40
+	 find /usr/local/python3.12.13/lib/python3.12/site-packages -maxdepth 1 -type f -name '*.pth' -print -exec sed -n '1,10p' {} \;
+	 find /workspace -type d -name 'paddlex' 2>/dev/null | head -n 40
+	 /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python - <<'PY'
+	 import paddlex
+	 print(paddlex.__file__)
+	 PY
+	 P=/workspace/venvs/vllm_paddle_ocr_pipeline_py312/lib/python3.12/site-packages/paddlex
+	 grep -RIn "class.*PaddleOCRVL\|vl_rec_model.predict\|use_queues" "$P/inference" | head -n 100
+	 P=/workspace/venvs/vllm_paddle_ocr_pipeline_py312/lib/python3.12/site-packages/paddlex/inference/pipelines/paddleocr_vl/pipeline.py
+	 sed -n '430,570p' "$P"
+	 sed -n '980,1220p' "$P"
+	 P=/workspace/venvs/vllm_paddle_ocr_pipeline_py312/lib/python3.12/site-packages/paddlex
+	 grep -RIn "def timeit_with_options\|class.*Benchmark\|PADDLEX.*BENCH" "$P" | head -n 80
+	 sed -n '1,240p' /workspace/venvs/vllm_paddle_ocr_pipeline_py312/lib/python3.12/site-packages/paddlex/inference/utils/benchmark.py
+	 python3 - <<'PY'
+	 import json, math, statistics as s
+	 from collections import Counter,defaultdict
+	 p='/workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2/recognition_trace.jsonl'
+	 cols=defaultdict(list); batches=Counter(); labels=Counter(); execs=Counter(); bylabel=defaultdict(lambda:defaultdict(float)); batch_decode={}
+	 with open(p) as f:
+	  for line in f:
+	   x=json.loads(line); t=x['timing_s']; v=x['vision']; tx=x['text_prefill']; b=x['batch_index']; lab=x['label']
+	   batches[b]+=1; labels[lab]+=1; execs[v['execution']]+=1
+	   vals={'cpu_pre':t['cpu_image_and_prompt_preprocess'],'mrope':t['cpu_mrope_index'],'h2d':t['recognizer_h2d'],'prefill_total':t['prefill_request_total'],'vision_real':v['real_vision_tokens'],'vision_phys':v['physical_vision_tokens'],'text_real':tx['real_text_tokens'],'text_phys':tx['physical_text_tokens'],'out':x['generated_tokens_including_eos'],'decode_eff':x['decode_tokens_after_prefill_including_eos'],'crop_pixels':x['crop_size'][0]*x['crop_size'][1]}
+	   for k,z in vals.items(): cols[k].append(z); bylabel[lab][k]+=z
+	   batch_decode.setdefault(b,t.get('continuous_decode_wall_shared'))
+	 def q(a,p):
+	  a=sorted(a); return a[min(len(a)-1,round((len(a)-1)*p))]
+	 def corr(a,b):
+	  ma=s.fmean(a); mb=s.fmean(b); num=sum((x-ma)*(y-mb) for x,y in zip(a,b)); da=sum((x-ma)**2 for x in a); db=sum((y-mb)**2 for y in b); return num/(da*db)**.5
+	 print('requests',len(cols['cpu_pre']),'batches',len(batches),'labels',dict(labels),'vision_exec',dict(execs))
+	 print('batch_size min/median/p90/max/mean',min(batches.values()),s.median(batches.values()),q(list(batches.values()),.9),max(batches.values()),s.fmean(batches.values()))
+	 for k in ['cpu_pre','mrope','h2d','prefill_total','vision_real','vision_phys','text_real','text_phys','out','decode_eff','crop_pixels']:
+	  a=cols[k]; print(k,'sum',sum(a),'mean',s.fmean(a),'p50',q(a,.5),'p90',q(a,.9),'p99',q(a,.99),'max',max(a))
+	 print('corr cpu_pre crop_pixels',corr(cols['cpu_pre'],cols['crop_pixels']))
+	 print('corr cpu_pre vision_real',corr(cols['cpu_pre'],cols['vision_real']))
+	 print('corr cpu_pre text_real',corr(cols['cpu_pre'],cols['text_real']))
+	 print('per label')
+	 for lab,n in labels.most_common():
+	  d=bylabel[lab]; print(lab,n,'cpu_ms',1000*d['cpu_pre']/n,'vreal',d['vision_real']/n,'treal',d['text_real']/n,'out',d['out']/n)
+	 PY
+	 python3 - <<'PY'
+	 import json
+	 p='/workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2/recognition_trace.jsonl'
+	 a=[]
+	 for line in open(p):
+	  x=json.loads(line); a.append((x['vision']['real_vision_tokens'],x['crop_size'],x['label'],x['timing_s']['cpu_image_and_prompt_preprocess']))
+	 a.sort()
+	 for q in [.1,.5,.9,.99,1]:
+	  x=a[min(len(a)-1,round((len(a)-1)*q))]; print(q,x)
+	 PY
+	 PYTHONPATH=08_offline_e2e_b1 /usr/local/python3.12.13/bin/python3 - <<'PY'
+	 import time, numpy as np
+	 from PIL import Image
+	 from pathlib import Path
+	 from tokenizers import Tokenizer
+	 from preprocessing import load_preprocessor_config, preprocess_pil_image, build_inputs
+	 cfg=load_preprocessor_config(Path('/workspace/models/PaddleOCR-VL-1.6'))
+	 tok=Tokenizer.from_file('/workspace/models/PaddleOCR-VL-1.6/tokenizer.json')
+	 for wh in [(561,93),(1535,93),(858,317),(1429,782)]:
+	  w,h=wh; arr=np.zeros((h,w,3),dtype=np.uint8)
+	  def cvt(): return Image.fromarray(np.ascontiguousarray(arr[:,:,::-1]))
+	  im=cvt(); pix,grid=preprocess_pil_image(im,cfg); build_inputs(tok,grid,'OCR:',merge_size=2)
+	  n=50 if w*h<500000 else 15
+	  def bench(fn):
+	   t=time.perf_counter()
+	   for _ in range(n): fn()
+	   return (time.perf_counter()-t)*1000/n
+	  cv=bench(cvt)
+	  pp=bench(lambda:preprocess_pil_image(im,cfg))
+	  bi=bench(lambda:build_inputs(tok,grid,'OCR:',merge_size=2))
+	  print(wh,'grid',grid.tolist(),'tokens',int(grid.prod()),'bgr2pil_ms',cv,'image_pre_ms',pp,'prompt_ms',bi,'sum_ms',cv+pp+bi)
+	 PY
+	 sed -n '1,260p' 08_offline_e2e_b1/timing.py
+	 python3 - <<'PY'
+	 import json
+	 from collections import defaultdict
+	 p='/workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2/recognition_trace.jsonl'
+	 d=defaultdict(lambda:defaultdict(float))
+	 for line in open(p):
+	  x=json.loads(line); e=x['vision']['execution']; z=d[e]; z['n']+=1; z['real']+=x['vision']['real_vision_tokens']; z['phys']+=x['vision']['physical_vision_tokens'];
+	  for k,v in x['device_stage_s'].items(): z[k]+=v
+	 for e,z in d.items():
+	  enc=z.get('vision_encoder_post_layernorm_compiled',0)+z.get('vision_encoder',0)+z.get('vision_post_layernorm',0)
+	  print(e,dict(z)); print('encoder_s',enc,'real_tok_s',z['real']/enc,'physical_tok_s',z['phys']/enc)
+	 PY
+	 du -sh /workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2/{recognition_trace.jsonl,page_regions.jsonl,predictions}
+	 python3 - <<'PY'
+	 import json
+	 from collections import defaultdict
+	 p='/workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2/recognition_trace.jsonl'
+	 bounds=[2304,2560,3072,3584,4096,4608,5120]
+	 d=defaultdict(lambda:[0,0,0.])
+	 for line in open(p):
+	  x=json.loads(line); n=x['vision']['real_vision_tokens']
+	  if n<=2048: continue
+	  b=next(v for v in bounds if n<=v); d[b][0]+=1; d[b][1]+=n; d[b][2]+=x['device_stage_s'].get('vision_encoder',0)+x['device_stage_s'].get('vision_post_layernorm',0)
+	 for b,v in d.items(): print('<=',b,'requests',v[0],'tokens',v[1],'encoder_s',v[2],'tok_s',v[1]/v[2])
+	 PY
+	 python3 - <<'PY'
+	 import json
+	 from collections import Counter
+	 p='/workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2/recognition_trace.jsonl'
+	 c=Counter()
+	 for line in open(p):
+	  x=json.loads(line); n=x['vision']['real_vision_tokens'];
+	  if n>2048:c[n]+=1
+	 for n,k in c.most_common(25): print(n,k)
+	 PY
+	 python3 - <<'PY'
+	 import json, math
+	 p='/workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2/recognition_trace.jsonl'
+	 e=[]; batches={}
+	 for line in open(p):
+	  x=json.loads(line); z=x['decode_tokens_after_prefill_including_eos']; e.append(z); batches.setdefault(x['batch_index'],[]).append(z)
+	 raw=3436512; eff=sum(e); nonzero=sum(z>0 for z in e); active=eff+nonzero
+	 print('eff',eff,'nonzero',nonzero,'estimated_active',active,'raw',raw)
+	 print('effective_fraction',eff/raw,'active_fraction',active/raw,'idle_fraction',(raw-active)/raw,'lookahead_fraction',nonzero/raw)
+	 print('global arithmetic floor slots',math.ceil(active/16)*16,'actual/floor',raw/(math.ceil(active/16)*16))
+	 print('barrier groups',len(batches))
+	 PY
+	 python3 - <<'PY'
+	 import json,heapq
+	 from collections import defaultdict
+	 p='/workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2/recognition_trace.jsonl'
+	 b=defaultdict(list); allj=[]
+	 for line in open(p):
+	  x=json.loads(line); e=x['decode_tokens_after_prefill_including_eos']; job=e+(1 if e>0 else 0); b[x['batch_index']].append(job); allj.append(job)
+	 def slots(jobs,B=16):
+	  h=[0]*B; heapq.heapify(h)
+	  for j in jobs:
+	   x=heapq.heappop(h); heapq.heappush(h,x+j)
+	  return max(h)*B
+	 print('sim batch barrier slots',sum(slots(v) for k,v in sorted(b.items())))
+	 print('sim global slots',slots(allj))
+	 print('actual slots',3436512)
+	 PY
+	 grep -nE 'INFER_BENCHMARK|PIPELINE_BENCHMARK' /workspace/venvs/vllm_paddle_ocr_pipeline_py312/lib/python3.12/site-packages/paddlex/utils/flags.py
+	 find tmp/08_offline_e2e_b1 -name run.json -type f | head -n 40
+	 python3 - <<'PY'
+	 import json
+	 ps=['tmp/08_offline_e2e_b1/five_pages_dense_vision_buckets/default_div1/run.json','tmp/08_offline_e2e_b1/five_pages_uniform/cross_page_b4/run.json']
+	 for p in ps:
+	  x=json.load(open(p)); print('\n',p); print('aggregate keys',x['aggregate'].keys()); print(json.dumps(x['aggregate'],indent=2)[:8000])
+	 PY
+	 python3 - <<'PY'
+	 import json
+	 for p in ['tmp/08_offline_e2e_b1/five_pages_dense_vision_buckets/default_div1/run.json','tmp/08_offline_e2e_b1/five_pages_uniform/cross_page_b4/run.json']:
+	  x=json.load(open(p)); print('\n',p)
+	  ks=x['pages'][0]['timing_s'].keys() if isinstance(x['pages'],list) else None; print('pages type',type(x['pages']),ks)
+	 PY
+	 python3 - <<'PY'
+	 import json,statistics as s
+	 for p in ['tmp/08_offline_e2e_b1/five_pages_dense_vision_buckets/default_div1/run.json','tmp/08_offline_e2e_b1/five_pages_uniform/cross_page_b4/run.json']:
+	  x=json.load(open(p)); print('\n',p)
+	  for k in ['image_load','layout_preprocess','layout_h2d','layout_inference','layout_postprocess','layout_total','crop_extraction','reading_order_text_postprocess','artifact_write']:
+	   a=[q['timing_s'][k] for q in x['pages']]; print(k,'sum',sum(a),'mean',s.fmean(a),a)
+	 PY
+	 python3 - <<'PY'
+	 import json,glob,os
+	 for p in glob.glob('tmp/08_offline_e2e_b1/**/run.json',recursive=True):
+	  try:
+	   x=json.load(open(p)); n=x.get('aggregate',{}).get('pages',0)
+	   if n>=50: print(n,p)
+	  except Exception: pass
+	 PY
+	 sed -n '1,240p' 08_offline_e2e_b1/runtime_defaults.py
+	 python3 - <<'PY'
+	 phys=29057316; real=28183204; pages=1651; req=30560; vtime=1189.9654953832683
+	 print('phys/page',phys/pages,'real/page',real/pages,'phys/crop',phys/req,'crops/page',req/pages,'sec/page',vtime/pages,'standalone pages/s',pages/vtime)
+	 for p in [.5,1,2,4,8]:print(p,'page/s needs',phys/pages*p,'physical vision tok/s')
+	 PY
+	 python3 - <<'PY'
+	 for name,n in [('projected image',7045801),('real text',7443081),('physical text',7860368),('output',1694497)]:print(name,n/1651)
+	 PY
+	 du -h -d 2 /workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2/predictions | sort -hr | head -n 30
+	 grep -RIn "PP-DocLayoutV3" /workspace/repos/vllm_paddle_ocr/PaddleOCR/paddlex_config* /workspace/repos/vllm_paddle_ocr/PaddleOCR 2>/dev/null | head -n 50
+	 nproc
+	 python3 - <<'PY'
+	 import json
+	 p='/workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2/run_summary.json'
+	 x=json.load(open(p));print(json.dumps(x['configuration'],indent=2))
+	 PY
+	 grep -iE 'prompt|attention|vision_attention|promptfa' /workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2/run.log | head -n 40
+	 sed -n '1,220p' 08_offline_e2e_b1/vision_attention.py
+	 grep -RIn "def get_vision_attention_impl" 08_offline_e2e_b1
+	 sed -n '1,90p' 08_offline_e2e_b1/local_modeling_paddleocr_vl.py
+	 env | grep '^PADDLE_OCR_VL_' || true
+	 grep -RInE "promptfa|prompt_flash|PromptFA" 07_vision_prefill_optimization tmp/07_vision_prefill_optimization 08_offline_e2e_b1/*.md tmp/08_offline_e2e_b1 2>/dev/null | head -n 120
+	 find tmp/07_vision_prefill_optimization -type f \( -name '*.json' -o -name '*.md' \) | head -n 100
+	 find tmp/07_vision_prefill_optimization -type f -name 'case_*' | grep -E '2048|4096|5120|S1024|S2048|S4096' | head -n 100
+	 python3 - <<'PY'
+	 import json,heapq
+	 from collections import defaultdict
+	 p='/workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2/recognition_trace.jsonl'
+	 b=defaultdict(list)
+	 for line in open(p):
+	  x=json.loads(line); e=x['decode_tokens_after_prefill_including_eos']; b[x['batch_index']].append((e+(e>0),x['label']))
+	 def slots(js):
+	  h=[0]*16;heapq.heapify(h)
+	  for j in js:
+	   t=heapq.heappop(h);heapq.heappush(h,t+j)
+	  return max(h)*16
+	 actual=sum(slots([j for j,l in v]) for v in b.values())
+	 lpt=sum(slots(sorted((j for j,l in v),reverse=True)) for v in b.values())
+	 label_order={'table':0,'formula':1,'text':2}
+	 heur=sum(slots([j for j,l in sorted(v,key=lambda z:(label_order[z[1]],-z[0]))]) for v in b.values())
+	 print('actual',actual,'LPT oracle',lpt,'label_then_oracle_within_label',heur,'savings vs actual',1-lpt/actual,1-heur/actual)
+	 PY
+	 python3 - <<'PY'
+	 import json,heapq
+	 from collections import defaultdict
+	 p='/workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2/recognition_trace.jsonl';b=defaultdict(list)
+	 for line in open(p):
+	  x=json.loads(line);e=x['decode_tokens_after_prefill_including_eos'];b[x['batch_index']].append((e+(e>0),x['label']))
+	 def slots(js):
+	  h=[0]*16;heapq.heapify(h)
+	  for j in js:t=heapq.heappop(h);heapq.heappush(h,t+j)
+	  return max(h)*16
+	 order={'table':0,'formula':1,'text':2}
+	 a=sum(slots([j for j,l in v]) for v in b.values()); z=sum(slots([j for j,l in sorted(v,key=lambda x:order[x[1]])]) for v in b.values())
+	 print(a,z,1-z/a)
+	 PY
+	 sed -n '200,286p' 08_offline_e2e_b1/continuous_decode.py
+	 python3 - <<'PY'
+	 print(1223.5891921738826*1695968/3436512, (1223.5891921738826*(1-1695968/3436512))/60)
+	 print(3429.1400162365753/3647.3469820229802)
+	 print(1663937/1695968)
+	 PY
+	 python3 - <<'PY'
+	 import json
+	 p='/workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2/recognition_trace.jsonl'
+	 a=[json.loads(x) for x in open(p) if json.loads(x)['batch_index']==0]
+	 print('requests',len(a),'max_input',max(x['input_tokens'] for x in a),'max_output',max(x['generated_tokens_including_eos'] for x in a))
+	 for k in [256,384,512,768]:
+	  print('max cache required if max_new_tokens',k, max(x['input_tokens']+k-1 for x in a))
+	 print('actual output >511',sum(x['generated_tokens_including_eos']>511 for x in a),' >767',sum(x['generated_tokens_including_eos']>767 for x in a))
+	 PY
+	 npu-status
+	 history | tail -n 30
+	 history | grep 'run_omnidocbench_paddlex.py' | tail -n 20
+	 grep -nE 'cache_length|bucket' 08_offline_e2e_b1/text_compile.py | head -n 120
+	 BASE=/workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/cache_length_smoke_8pages_20260717
+	 for c in 1024 2048 8192; do test ! -e "$BASE/cache$c" || { echo "exists:$BASE/cache$c"; exit 1; }; done
+	 source npu-setup
+	 mkdir -p "$BASE"
+	 for c in 1024 2048 8192; do   out="$BASE/cache$c";   mkdir -p "$out";   echo "START cache=$c physical=$ASCEND_RT_VISIBLE_DEVICES";   /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python 08_offline_e2e_b1/run_omnidocbench_paddlex.py     --limit 8 --batch-size 16 --cache-length "$c" --max-new-tokens 384     --text-compile-buckets 160,176,192,208,224,256,320,384,448,576,640     --torchair-cache-dir "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/cache_length_smoke_c94ef82/cache$c/decode"     --vision-torchair-cache-dir /workspace/repos/paddle_ocr_vl_npu/.runtime_cache/omnidocbench_v16_custom_b16_default_e4230ec/vision     --text-torchair-cache-dir "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/cache_length_smoke_c94ef82/cache$c/text"     --output-dir "$out" > "$out/run.log" 2>&1 || { echo "FAILED cache=$c"; tail -n 80 "$out/run.log"; break; };   echo "DONE cache=$c"; done
+	 /usr/local/python3.12.13/bin/python3 - <<'PY'
+	 from pathlib import Path
+	 import json
+	 base=Path('tmp/08_offline_e2e_b1/cache_length_smoke_8pages_20260717')
+	 rows=[]
+	 traces={}
+	 for c in (1024,2048,8192):
+	     d=json.load(open(base/f'cache{c}/run_summary.json'))
+	     a=d['adapter']
+	     dec=a['decode_tokens_after_prefill_including_eos']
+	     calls=a['decode_graph_calls']
+	     dw=a['decode_wall_s']
+	     rows.append({
+	         'cache':c,
+	         'setup_s':d['setup_s'],
+	         'e2e_s':d['pipeline_e2e_s'],
+	         'pages_per_s':d['pages_per_s'],
+	         'adapter_wall_s':a['wall_s'],
+	         'output_tokens':a['generated_tokens_including_eos'],
+	         'decode_effective_tokens':dec,
+	         'decode_graph_calls':calls,
+	         'decode_wall_s':dw,
+	         'decode_effective_tok_s':dec/dw,
+	         'decode_raw_slots':calls*16,
+	         'decode_raw_tok_s':calls*16/dw,
+	         'adapter_output_tok_s':a['output_tok_per_s'],
+	         'kv_prefix_bytes_copied':a['kv_prefix_bytes_copied'],
+	         'static_cache_alloc_s':a['device_stage_s']['static_cache_alloc'],
+	         'text_prefill_s':a['device_stage_s']['text_prefill_compiled'],
+	         'stops':a['stop_reason_counts'],
+	     })
+	     traces[c]=[json.loads(x) for x in open(base/f'cache{c}/recognition_trace.jsonl')]
+	 print(json.dumps(rows,indent=2))
+	 ref=traces[8192]
+	 for c in (1024,2048):
+	     print(c,'request_ids_equal', [x['request_id'] for x in traces[c]]==[x['request_id'] for x in ref],
+	           'token_ids_equal',[x['token_ids'] for x in traces[c]]==[x['token_ids'] for x in ref],
+	           'text_equal',[x['text'] for x in traces[c]]==[x['text'] for x in ref])
+	     pa={p.name:p.read_bytes() for p in (base/f'cache{c}/predictions').glob('*.md')}
+	     pr={p.name:p.read_bytes() for p in (base/'cache8192/predictions').glob('*.md')}
+	     print(c,'predictions_equal',pa==pr)
+	 print('max_input',max(r['input_tokens'] for r in ref),'max_generated',max(r['generated_tokens_including_eos'] for r in ref),'max_decode_after_prefill',max(r['decode_tokens_after_prefill_including_eos'] for r in ref))
+	 PY
+	 grep -RIn '"max_ready_queue_depth"\|"ready_buffer_capacity"' tmp/08_offline_e2e_b1/cache_length_smoke_8pages_20260717/cache8192 | head -n 20
+	 git status --short
+	 du -sh tmp/08_offline_e2e_b1/cache_length_smoke_8pages_20260717
+	 find tmp/08_offline_e2e_b1/cache_length_smoke_8pages_20260717 -type f | wc -l
+	 git check-ignore -v tmp/08_offline_e2e_b1/cache_length_smoke_8pages_20260717/cache1024/run_summary.json || true
+	 git branch --show-current
+	 git rev-parse HEAD
+	 git status -sb
+	 git remote -v
+	 git branch -av --contains HEAD
+	 git log -1 --oneline --decorate
+	 find tmp -path '*omnidocbench_v16_custom_b16_default_e4230ec*' -type f \( -name 'recognition_trace.jsonl' -o -name 'run_summary.json' \) -print | head -n 20
+	 /usr/local/python3.12.13/bin/python3 - <<'PY'
+	 import json
+	 p='tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_e4230ec/recognition_trace.jsonl'
+	 mx_in=(-1,None); mx_out=(-1,None); n=0; sums={'input':0,'physical_text':0,'real_vision':0,'physical_vision':0,'output':0,'decode':0}
+	 for line in open(p):
+	  r=json.loads(line); n+=1
+	  if r['input_tokens']>mx_in[0]: mx_in=(r['input_tokens'],r['request_id'])
+	  if r['generated_tokens_including_eos']>mx_out[0]: mx_out=(r['generated_tokens_including_eos'],r['request_id'])
+	  sums['input']+=r['input_tokens']; sums['physical_text']+=r['text_prefill']['physical_text_tokens']; sums['real_vision']+=r['vision']['real_vision_tokens']; sums['physical_vision']+=r['vision']['physical_vision_tokens']; sums['output']+=r['generated_tokens_including_eos']; sums['decode']+=r['decode_tokens_after_prefill_including_eos']
+	 print(n,mx_in,mx_out,sums)
+	 PY
+	 find tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_e4230ec -maxdepth 2 -type f -printf '%P\n' | sort | head -n 100
+	 find tmp/08_offline_e2e_b1 -name recognition_trace.jsonl -printf '%s %p\n' | sort -nr | head -n 30
+	 /usr/local/python3.12.13/bin/python3 - <<'PY'
+	 import json
+	 p='tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2/recognition_trace.jsonl'
+	 n=0; mx_in=(-1,None); mx_out=(-1,None); cnt_in_gt1024=0; req1024_384=0; actual1024=0; actual2048=0; sums={k:0 for k in ['input','physical_text','real_vision','physical_vision','output','decode']}
+	 for line in open(p):
+	  r=json.loads(line); n+=1
+	  inp=r['input_tokens']; out=r['generated_tokens_including_eos']
+	  mx_in=max(mx_in,(inp,r['request_id'])); mx_out=max(mx_out,(out,r['request_id']))
+	  cnt_in_gt1024 += inp>1024
+	  req1024_384 += inp+383>1024
+	  actual1024 += inp+out-1>1024
+	  actual2048 += inp+out-1>2048
+	  sums['input']+=inp; sums['physical_text']+=r['text_prefill']['physical_text_tokens']; sums['real_vision']+=r['vision']['real_vision_tokens']; sums['physical_vision']+=r['vision']['physical_vision_tokens']; sums['output']+=out; sums['decode']+=r['decode_tokens_after_prefill_including_eos']
+	 print({'n':n,'max_input':mx_in,'max_output':mx_out,'input_gt1024':cnt_in_gt1024,'needs_gt1024_at_cap384':req1024_384,'actual_needs_gt1024':actual1024,'actual_needs_gt2048':actual2048,'sums':sums})
+	 PY
+	 /usr/local/python3.12.13/bin/python3 - <<'PY'
+	 import json, collections
+	 p='tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2/recognition_trace.jsonl'
+	 req=[]
+	 for line in open(p):
+	  r=json.loads(line); req.append((r['input_tokens']+r['generated_tokens_including_eos']-1,r['request_id'],r['input_tokens'],r['generated_tokens_including_eos'],r['stop_reason']))
+	 req.sort(reverse=True)
+	 print('max10')
+	 for x in req[:10]:print(x)
+	 for c in (1024,1536,2048,3072,4096,6144,8192): print(c,sum(x[0]>c for x in req),sum(x[0]>c for x in req)/len(req))
+	 print('stop_reasons',collections.Counter(x[4] for x in req))
+	 PY
+	 ls tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2 | grep -E 'summary|log' | head -n 20
+	 /usr/local/python3.12.13/bin/python3 - <<'PY'
+	 import json
+	 p='tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2/run_summary.json'
+	 d=json.load(open(p)); a=d['adapter']
+	 print(d['pipeline_e2e_s'],a['decode_graph_calls'],a['decode_graph_calls']*16,a['decode_wall_s'])
+	 PY
+	 git status -sb
+	 exit
+	 cd /workspace/repos/custom_vllm_glm_ocr
+	 git status -sb
+	 git log -1 --oneline --decorate
+	 npu-status
+	 ps -eo pid,etime,cmd | grep -E 'benchmark_paddleocr_vllm|EngineCore|run_omnidocbench_paddlex' | grep -v grep || true
+	 for d in tmp/omnidocbench_v16_full_stock_b16_default_final_20260717 tmp/omnidocbench_v16_full_stock_c16_full_decode_only_guarded tmp/omnidocbench_v16_full_stock_c16_full_decode_only_guarded_rerun tmp/omnidocbench_v16_stock_official_2npu_b16_default_af80f8a tmp/omnidocbench_v16_stock_official_paddlex_b16_default_6145a98 tmp/omnidocbench_v16_stock_official_paddlex_b16_default_npu4_6145a98 tmp/omnidocbench_v16_stock_official_paddlex_b16_default_retry2_6145a98; do   echo "=== $d ===";   find "$d" -maxdepth 1 -type f -printf '%f %s bytes\n' 2>/dev/null | sort;   test -f "$d/progress.json" && tail -n 30 "$d/progress.json";   test -f "$d/run_summary.json" && /usr/local/python3.12.13/bin/python3 -c "import json;d=json.load(open('$d/run_summary.json'));print({k:d.get(k) for k in ('count','pipeline_e2e_s','pages_per_s','s_per_page','result_count')})";   test -f "$d/run.log" && tail -n 8 "$d/run.log"; done
+	 D=tmp/omnidocbench_v16_stock_official_2npu_b16_default_af80f8a
+	 echo "predictions=$(find "$D/predictions" -maxdepth 1 -type f -name '*.md' | wc -l)"
+	 echo "progress_lines=$(wc -l < "$D/progress.jsonl") trace_lines=$(wc -l < "$D/recognition_trace.jsonl") page_region_lines=$(wc -l < "$D/page_regions.jsonl")"
+	 echo "--- progress head ---"
+	 head -n 3 "$D/progress.jsonl"
+	 echo "--- progress tail ---"
+	 tail -n 5 "$D/progress.jsonl"
+	 echo "--- empty prediction ---"
+	 ls -l "$D/predictions/color_textbook_zhonggaokao_小学_13.人教新起点英语（4-5年级）_人教新起点五年级英语上册_课本_人教新起点英语5A电子课本_page_004.md"
+	 grep -n "color_textbook_zhonggaokao_小学_13.人教新起点英语（4-5年级）_人教新起点五年级英语上册_课本_人教新起点英语5A电子课本_page_004" "$D/page_regions.jsonl" | head -n 3
+	 F='color_textbook_zhonggaokao_小学_13.人教新起点英语（4-5年级）_人教新起点五年级英语上册_课本_人教新起点英语5A电子课本_page_004.md'
+	 for d in /workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2/predictions /workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_min_pixels_div8_c94ef82_run2/predictions; do   echo "=== $d ===";   ls -l "$d/$F" 2>&1 || true;   test -f "$d/$F" && wc -c "$d/$F"; done
+	 D=tmp/omnidocbench_v16_stock_official_2npu_b16_default_af80f8a
+	 head -n 1 "$D/recognition_trace.jsonl"
+	 cat "$D/setup.json"
+	 /usr/local/python3.12.13/bin/python3 - <<'PY'
+	 import json,collections
+	 p='tmp/omnidocbench_v16_stock_official_2npu_b16_default_af80f8a/progress.jsonl'
+	 rows=[json.loads(x) for x in open(p)]
+	 c=collections.Counter(r['event'] for r in rows)
+	 print(c)
+	 for r in rows:
+	  if r['event'] not in {'page_submitted','page_completed','recognition_batch_started','recognition_batch_returned'}: print(r)
+	 PY
+	 git pull --ff-only origin codex/omnidocbench-full-comparison
+	 git log -1 --oneline --decorate
+	 /usr/local/python3.12.13/bin/python3 -m py_compile scripts/benchmark_paddleocr_vllm_paddlex_omnidocbench.py scripts/finalize_paddleocr_vllm_paddlex_omnidocbench.py
+	 /usr/local/python3.12.13/bin/python3 scripts/finalize_paddleocr_vllm_paddlex_omnidocbench.py --output-dir tmp/omnidocbench_v16_stock_official_2npu_b16_default_af80f8a > tmp/omnidocbench_v16_stock_official_2npu_b16_default_af80f8a/finalize.log 2>&1
+	 status=$?
+	 echo "finalize_exit=$status"
+	 tail -n 30 tmp/omnidocbench_v16_stock_official_2npu_b16_default_af80f8a/finalize.log
+	 /usr/local/python3.12.13/bin/python3 - <<'PY'
+	 import json
+	 p='tmp/omnidocbench_v16_stock_official_2npu_b16_default_af80f8a/run_summary.json'
+	 d=json.load(open(p)); a=d['adapter']
+	 print(json.dumps({
+	  'pipeline_e2e_s':d['pipeline_e2e_s'],
+	  'pages':d['result_count'],
+	  's_per_page':d['s_per_page'],
+	  'pages_per_s':d['pages_per_s'],
+	  'prediction_count':d['prediction_count'],
+	  'requests':a['requests'],
+	  'batches':a['batches'],
+	  'wall_s':a['wall_s'],
+	  'prompt_tokens':a['prompt_tokens'],
+	  'raw_vision_tokens':a['raw_vision_tokens'],
+	  'output_tokens':a['output_tokens'],
+	  'decode_tokens':a['decode_tokens_after_first'],
+	  'vision_encoder_s':a['native_encoder_forward_s'],
+	  'text_prefill_s':a['text_prefill_residual_s'],
+	  'decode_window_s':a['decode_service_window_s'],
+	  'output_tok_per_s':a['output_tok_per_s'],
+	  'vision_tok_per_s':a['vision_raw_tok_per_s'],
+	  'text_prefill_tok_per_s':a['text_prompt_tok_per_s'],
+	  'decode_tok_per_s':a['decode_tok_per_s'],
+	  'finish_reasons':a['finish_reason_counts'],
+	  'empty_pages':d['validation']['empty_markdown_pages'],
+	 },indent=2))
+	 PY
+	 find /workspace/repos /workspace/datasets -maxdepth 4 -type f \( -name 'pdf_validation.py' -o -name 'OmniDocBench.py' -o -name 'eval.py' -o -name 'end2end_v16_no_formula_cdm.yaml' \) 2>/dev/null | head -n 100
+	 find /workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/full_eval_custom_default_vs_min8_20260717 -maxdepth 3 -type f -printf '%p\n' 2>/dev/null | sort | head -n 100
+	 for f in /workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/full_eval_custom_default_vs_min8_20260717/default13b/work/config.yaml /workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/full_eval_custom_default_vs_min8_20260717/default13b/work/eval.log; do echo "=== $f ==="; sed -n '1,220p' "$f"; done
+	 sed -n '1,180p' /workspace/repos/OmniDocBench_eval/pdf_validation.py
+	 grep -RIn "pdf_validation.py" /workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/full_eval_custom_default_vs_min8_20260717 /workspace/repos/paddle_ocr_vl_npu/scripts /workspace/repos/paddle_ocr_vl_npu 2>/dev/null | head -n 80
+	 find /workspace/venvs -maxdepth 3 -type f -path '*/bin/python*' -print 2>/dev/null | sort
+	 grep -RIn "def main" /workspace/repos/OmniDocBench_eval/src/cli.py
+	 sed -n '1,180p' /workspace/repos/OmniDocBench_eval/src/cli.py
+	 find /workspace/venvs -maxdepth 3 \( -type f -o -type l \) -path '*/bin/python*' -print 2>/dev/null | sort
+	 grep -RIn "argparse\|ArgumentParser\|--config" /workspace/repos/OmniDocBench_eval/src/core/pipeline.py | head -n 80
+	 sed -n '1,180p' /workspace/repos/OmniDocBench_eval/src/core/pipeline.py
+	 cat tmp/omnidocbench_v16_stock_official_2npu_b16_default_af80f8a/end2end_v16_no_formula_cdm.yaml
+	 tmux ls 2>/dev/null || true
+	 WORK=tmp/omnidocbench_v16_stock_official_2npu_b16_default_af80f8a/evaluation/work
+	 mkdir -p "$WORK"
+	 cp tmp/omnidocbench_v16_stock_official_2npu_b16_default_af80f8a/end2end_v16_no_formula_cdm.yaml "$WORK/config.yaml"
+	 tmux new-session -d -s stock_vllm_eval -c "/workspace/repos/custom_vllm_glm_ocr/$WORK"
+	 tmux send-keys -t stock_vllm_eval "env PYTHONPATH=/workspace/repos/OmniDocBench_eval /workspace/venvs/omnidocbench_py310/bin/python /workspace/repos/OmniDocBench_eval/pdf_validation.py --config config.yaml > eval.log 2>&1; status=\$?; echo \$status > exit_status.txt" C-m
+	 tmux display-message -p -t stock_vllm_eval 'session=#{session_name} pid=#{pane_pid} dead=#{pane_dead}'
+	 WORK=/workspace/repos/custom_vllm_glm_ocr/tmp/omnidocbench_v16_stock_official_2npu_b16_default_af80f8a/evaluation/work
+	 nohup bash -lc 'cd /workspace/repos/custom_vllm_glm_ocr/tmp/omnidocbench_v16_stock_official_2npu_b16_default_af80f8a/evaluation/work && env PYTHONPATH=/workspace/repos/OmniDocBench_eval /workspace/venvs/omnidocbench_py310/bin/python /workspace/repos/OmniDocBench_eval/pdf_validation.py --config config.yaml > eval.log 2>&1; status=$?; echo $status > exit_status.txt' > "$WORK/launcher.log" 2>&1 < /dev/null &
+	 echo $! > "$WORK/launcher.pid"
+	 echo "eval_launcher_pid=$(cat "$WORK/launcher.pid")"
+	 WORK=tmp/omnidocbench_v16_stock_official_2npu_b16_default_af80f8a/evaluation/work
+	 ps -p "$(cat "$WORK/launcher.pid")" -o pid,etime,cmd
+	 test -f "$WORK/eval.log" && tail -n 5 "$WORK/eval.log"
+	 WORK=tmp/omnidocbench_v16_stock_official_2npu_b16_default_af80f8a/evaluation/work
+	 ps -p "$(cat "$WORK/launcher.pid")" -o pid,etime,cmd || true
+	 test -f "$WORK/exit_status.txt" && echo "exit=$(cat "$WORK/exit_status.txt")"
+	 tail -n 3 "$WORK/eval.log"
+	 WORK=tmp/omnidocbench_v16_stock_official_2npu_b16_default_af80f8a/evaluation/work
+	 /usr/local/python3.12.13/bin/python3 - <<'PY'
+	 from pathlib import Path
+	 import re
+	 p=Path('tmp/omnidocbench_v16_stock_official_2npu_b16_default_af80f8a/evaluation/work/eval.log')
+	 s=p.read_text(errors='replace')
+	 hits=re.findall(r'Matching pages:\s+\d+%.*?\|\s*(\d+)/1651 \[([^\]]]+)\]',s)
+	 print('latest_match_progress',hits[-1] if hits else None)
+	 print('log_bytes',p.stat().st_size)
+	 PY
+	 ps -p "$(cat "$WORK/launcher.pid")" -o pid,etime= || true
+	 /usr/local/python3.12.13/bin/python3 -c "import re,pathlib;p=pathlib.Path('tmp/omnidocbench_v16_stock_official_2npu_b16_default_af80f8a/evaluation/work/eval.log');h=re.findall(rb'(\d+)/1651',p.read_bytes());print('latest_page',int(h[-1]) if h else None)"
+	 WORK=tmp/omnidocbench_v16_stock_official_2npu_b16_default_af80f8a/evaluation/work
+	 /usr/local/python3.12.13/bin/python3 -c "import re,pathlib;p=pathlib.Path('$WORK/eval.log');h=re.findall(rb'(\d+)/1651',p.read_bytes());print('latest_page',int(h[-1]) if h else None,'log_kb',p.stat().st_size//1024)"
+	 test -f "$WORK/exit_status.txt" && echo "exit=$(cat "$WORK/exit_status.txt")"
+	 WORK=tmp/omnidocbench_v16_stock_official_2npu_b16_default_af80f8a/evaluation/work
+	 /usr/local/python3.12.13/bin/python3 -c "import re,pathlib;p=pathlib.Path('$WORK/eval.log');h=re.findall(rb'(\d+)/1651',p.read_bytes());print('latest_page',int(h[-1]) if h else None,'log_kb',p.stat().st_size//1024)"
+	 test -f "$WORK/exit_status.txt" && echo "exit=$(cat "$WORK/exit_status.txt")"
+	 /usr/local/python3.12.13/bin/python3 -c "import re,pathlib;p=pathlib.Path('$WORK/eval.log');h=re.findall(rb'(\d+)/1651',p.read_bytes());print('latest_page',int(h[-1]) if h else None,'log_kb',p.stat().st_size//1024)"
+	 test -f "$WORK/exit_status.txt" && echo "exit=$(cat "$WORK/exit_status.txt")"
+	 /usr/local/python3.12.13/bin/python3 -c "import re,pathlib;p=pathlib.Path('$WORK/eval.log');h=re.findall(rb'(\d+)/1651',p.read_bytes());print('latest_page',int(h[-1]) if h else None,'log_kb',p.stat().st_size//1024)"
+	 test -f "$WORK/exit_status.txt" && echo "exit=$(cat "$WORK/exit_status.txt")"
+	 /usr/local/python3.12.13/bin/python3 -c "import re,pathlib;p=pathlib.Path('$WORK/eval.log');h=re.findall(rb'(\d+)/1651',p.read_bytes());print('latest_page',int(h[-1]) if h else None,'log_kb',p.stat().st_size//1024)"
+	 test -f "$WORK/exit_status.txt" && echo "exit=$(cat "$WORK/exit_status.txt")"
+	 /usr/local/python3.12.13/bin/python3 -c "import re,pathlib;p=pathlib.Path('$WORK/eval.log');h=re.findall(rb'(\d+)/1651',p.read_bytes());print('latest_page',int(h[-1]) if h else None,'log_kb',p.stat().st_size//1024)"
+	 test -f "$WORK/exit_status.txt" && echo "exit=$(cat "$WORK/exit_status.txt")"
+	 /usr/local/python3.12.13/bin/python3 -c "import re,pathlib;p=pathlib.Path('$WORK/eval.log');h=re.findall(rb'(\d+)/1651',p.read_bytes());print('latest_page',int(h[-1]) if h else None,'log_kb',p.stat().st_size//1024)"
+	 test -f "$WORK/exit_status.txt" && echo "exit=$(cat "$WORK/exit_status.txt")"
+	 /usr/local/python3.12.13/bin/python3 -c "import re,pathlib;p=pathlib.Path('$WORK/eval.log');h=re.findall(rb'(\d+)/1651',p.read_bytes());print('latest_page',int(h[-1]) if h else None,'log_kb',p.stat().st_size//1024)"
+	 test -f "$WORK/exit_status.txt" && echo "exit=$(cat "$WORK/exit_status.txt")"
+	 /usr/local/python3.12.13/bin/python3 -c "import re,pathlib;p=pathlib.Path('$WORK/eval.log');h=re.findall(rb'(\d+)/1651',p.read_bytes());print('latest_page',int(h[-1]) if h else None,'log_kb',p.stat().st_size//1024)"
+	 test -f "$WORK/exit_status.txt" && echo "exit=$(cat "$WORK/exit_status.txt")"
+	 /usr/local/python3.12.13/bin/python3 -c "import re,pathlib;p=pathlib.Path('$WORK/eval.log');h=re.findall(rb'(\d+)/1651',p.read_bytes());print('latest_page',int(h[-1]) if h else None,'log_kb',p.stat().st_size//1024)"
+	 test -f "$WORK/exit_status.txt" && echo "exit=$(cat "$WORK/exit_status.txt")"
+	 /usr/local/python3.12.13/bin/python3 -c "import re,pathlib;p=pathlib.Path('$WORK/eval.log');h=re.findall(rb'(\d+)/1651',p.read_bytes());print('latest_page',int(h[-1]) if h else None,'log_kb',p.stat().st_size//1024)"
+	 test -f "$WORK/exit_status.txt" && echo "exit=$(cat "$WORK/exit_status.txt")"
+	 /usr/local/python3.12.13/bin/python3 -c "import re,pathlib;p=pathlib.Path('$WORK/eval.log');h=re.findall(rb'(\d+)/1651',p.read_bytes());print('latest_page',int(h[-1]) if h else None,'log_kb',p.stat().st_size//1024)"
+	 test -f "$WORK/exit_status.txt" && echo "exit=$(cat "$WORK/exit_status.txt")"
+	 /usr/local/python3.12.13/bin/python3 -c "import re,pathlib;p=pathlib.Path('$WORK/eval.log');h=re.findall(rb'(\d+)/1651',p.read_bytes());print('latest_page',int(h[-1]) if h else None,'log_kb',p.stat().st_size//1024)"
+	 test -f "$WORK/exit_status.txt" && echo "exit=$(cat "$WORK/exit_status.txt")"
+	 /usr/local/python3.12.13/bin/python3 -c "import re,pathlib;p=pathlib.Path('$WORK/eval.log');h=re.findall(rb'(\d+)/1651',p.read_bytes());print('latest_page',int(h[-1]) if h else None,'log_kb',p.stat().st_size//1024)"
+	 test -f "$WORK/exit_status.txt" && echo "exit=$(cat "$WORK/exit_status.txt")"
+	 /usr/local/python3.12.13/bin/python3 -c "import re,pathlib;p=pathlib.Path('$WORK/eval.log');h=re.findall(rb'(\d+)/1651',p.read_bytes());print('latest_page',int(h[-1]) if h else None,'log_kb',p.stat().st_size//1024)"
+	 test -f "$WORK/exit_status.txt" && echo "exit=$(cat "$WORK/exit_status.txt")"
+	 /usr/local/python3.12.13/bin/python3 -c "import re,pathlib;p=pathlib.Path('$WORK/eval.log');h=re.findall(rb'(\d+)/1651',p.read_bytes());print('latest_page',int(h[-1]) if h else None,'log_kb',p.stat().st_size//1024)"
+	 test -f "$WORK/exit_status.txt" && echo "exit=$(cat "$WORK/exit_status.txt")"
+	 /usr/local/python3.12.13/bin/python3 -c "import re,pathlib;p=pathlib.Path('$WORK/eval.log');h=re.findall(rb'(\d+)/1651',p.read_bytes());print('latest_page',int(h[-1]) if h else None,'log_kb',p.stat().st_size//1024)"
+	 test -f "$WORK/exit_status.txt" && echo "exit=$(cat "$WORK/exit_status.txt")"
+	 /usr/local/python3.12.13/bin/python3 -c "import re,pathlib;p=pathlib.Path('$WORK/eval.log');h=re.findall(rb'(\d+)/1651',p.read_bytes());print('latest_page',int(h[-1]) if h else None,'log_kb',p.stat().st_size//1024)"
+	 test -f "$WORK/exit_status.txt" && echo "exit=$(cat "$WORK/exit_status.txt")"
+	 /usr/local/python3.12.13/bin/python3 -c "import re,pathlib;p=pathlib.Path('$WORK/eval.log');h=re.findall(rb'(\d+)/1651',p.read_bytes());print('latest_page',int(h[-1]) if h else None,'log_kb',p.stat().st_size//1024)"
+	 test -f "$WORK/exit_status.txt" && echo "exit=$(cat "$WORK/exit_status.txt")"
+	 test -f "$WORK/exit_status.txt" && echo "exit=$(cat "$WORK/exit_status.txt")" || echo evaluator_still_running
+	 ps -p "$(cat "$WORK/launcher.pid")" -o pid=,etime=,stat=,cmd= 2>/dev/null || true
+	 /usr/local/python3.12.13/bin/python3 -c "from pathlib import Path;s=Path('$WORK/eval.log').read_text(errors='replace').replace(chr(13),chr(10));print(chr(10).join(s.splitlines()[-30:]))"
+	 test -f "$WORK/exit_status.txt" && echo "exit=$(cat "$WORK/exit_status.txt")" || echo evaluator_still_running
+	 /usr/local/python3.12.13/bin/python3 -c "from pathlib import Path;s=Path('$WORK/eval.log').read_text(errors='replace').replace(chr(13),chr(10));print(chr(10).join(s.splitlines()[-20:]))"
+	 find "$WORK/result" -maxdepth 2 -type f -printf '%P\t%k KB\n' | sort
+	 /usr/local/python3.12.13/bin/python3 -m json.tool "$WORK/result/predictions_quick_match_metric_result.json"
+	 CUSTOM=/workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/full_eval_custom_default_vs_min8_20260717/default13b/work
+	 find "$CUSTOM" -type f -name '*metric_result.json' -o -name '*run_summary.json' | sort
+	 /usr/local/python3.12.13/bin/python3 -c "import json; paths={'vllm':'$WORK/result/predictions_quick_match_metric_result.json','custom_default':'$CUSTOM/result/predictions_quick_match_metric_result.json'}; keys=['text_block','display_formula','table','reading_order']; [(print(name),[print(k,json.load(open(p))[k]['all']) for k in []]) for name,p in []]; exec(\"for name,p in paths.items():\\n d=json.load(open(p)); print('---',name); [print(k, json.dumps(d[k]['all'],sort_keys=True)) for k in keys]\")"
+	 git status --short --branch
+	 du -sh tmp/omnidocbench_v16_stock_official_2npu_b16_default_af80f8a
+	 find tmp/omnidocbench_v16_stock_official_2npu_b16_default_af80f8a -maxdepth 2 -type f -printf '%s %p\n' | sort -nr | head -n 20
+	 find /workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1 -maxdepth 3 -type f \( -name 'run_summary.json' -o -name 'manifest.json' -o -name 'command*.txt' \) -printf '%p\n' | sort | tail -n 80
+	 CRUN=/workspace/repos/paddle_ocr_vl_npu/tmp/08_offline_e2e_b1/omnidocbench_v16_custom_b16_default_c94ef82_run2
+	 /usr/local/python3.12.13/bin/python3 -c "import json; from pprint import pprint; d=json.load(open('$CRUN/manifest.json')); print('manifest keys',d.keys()); pprint(d)" | head -n 180
+	 /usr/local/python3.12.13/bin/python3 -c "import json; from pprint import pprint; d=json.load(open('$CRUN/manifest.json')); pprint(d['pipeline'])"
+	 /usr/local/python3.12.13/bin/python3 -c "import json; d=json.load(open('$CRUN/run_summary.json')); print(d.keys()); print(json.dumps(d,indent=2)[:12000])"
+	 /usr/local/python3.12.13/bin/python3 -c "import json; from pprint import pprint; d=json.load(open('$CRUN/run_summary.json')); pprint(d['configuration']); print('pipeline_e2e_s',d['pipeline_e2e_s'],'s_per_page',d['s_per_page'],'pages_per_s',d['pages_per_s']); print('adapter keys',d['adapter'].keys())"
+	 exit
+	 cd /workspace/repos/custom_vllm_glm_ocr
+	 source npu-setup
+	 printf 'ASCEND_RT_VISIBLE_DEVICES=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"
+	 curl -sS --max-time 5 http://127.0.0.1:8000/v1/models
+	 PYTHONPATH=/workspace/venvs/vllm_paddle_ocr_pipeline_py312/lib/python3.12/site-packages /usr/local/python3.12.13/bin/python3 scripts/smoke_paddlex_rolling_vllm_server.py --limit 16 --page-workers 8 --server-max-concurrency 128 --server-url http://127.0.0.1:8000/v1 --served-model-name PaddleOCR-VL-1.6 --device npu:0 --output-dir tmp/paddlex_rolling_server_smoke_16p_w8_20260717
+	 NEW=tmp/paddlex_rolling_server_smoke_16p_w8_20260717
+	 OLD=tmp/omnidocbench_v16_stock_official_2npu_b16_default_af80f8a
+	 /usr/local/python3.12.13/bin/python3 -c "import json,pathlib; n=pathlib.Path('$NEW/predictions'); o=pathlib.Path('$OLD/predictions'); names=sorted(p.name for p in n.glob('*.md')); same=[x for x in names if (n/x).read_bytes()==(o/x).read_bytes()]; print('markdown_byte_identical',len(same),'of',len(names)); print('different',sorted(set(names)-set(same)))"
+	 /usr/local/python3.12.13/bin/python3 -c "import json; rows=[json.loads(x) for x in open('$OLD/progress.jsonl')]; done=[r for r in rows if r['event']=='page_completed']; print('old_page8_s',done[7]['pipeline_elapsed_s'],'old_page16_s',done[15]['pipeline_elapsed_s']); d=json.load(open('$NEW/run_summary.json')); print('rolling_16_s',d['pipeline_e2e_s'],'peak_recognition',d['peak_active_recognition_calls'])"
+	 NAME=page-d1561665-5359-42fe-920c-d6e3bff81953.md
+	 wc -c "$NEW/predictions/$NAME" "$OLD/predictions/$NAME"
+	 diff -u "$OLD/predictions/$NAME" "$NEW/predictions/$NAME" | head -n 120
+	 git pull --ff-only origin codex/omnidocbench-full-comparison
+	 /usr/local/python3.12.13/bin/python3 -m py_compile scripts/smoke_paddlex_rolling_vllm_server.py
+	 PYTHONPATH=/workspace/venvs/vllm_paddle_ocr_pipeline_py312/lib/python3.12/site-packages /usr/local/python3.12.13/bin/python3 scripts/smoke_paddlex_rolling_vllm_server.py --limit 16 --page-workers 8 --server-max-concurrency 128 --server-image-format PNG --server-url http://127.0.0.1:8000/v1 --served-model-name PaddleOCR-VL-1.6 --device npu:0 --output-dir tmp/paddlex_rolling_server_smoke_16p_w8_png_20260717
+	 PNG=tmp/paddlex_rolling_server_smoke_16p_w8_png_20260717
+	 OLD=tmp/omnidocbench_v16_stock_official_2npu_b16_default_af80f8a
+	 /usr/local/python3.12.13/bin/python3 -c "import pathlib; n=pathlib.Path('$PNG/predictions'); o=pathlib.Path('$OLD/predictions'); names=sorted(p.name for p in n.glob('*.md')); same=[x for x in names if (n/x).read_bytes()==(o/x).read_bytes()]; print('markdown_byte_identical',len(same),'of',len(names)); print('different',sorted(set(names)-set(same)))"
+	 exit
+	 cd /workspace/repos/custom_vllm_glm_ocr
+	 rg -n "def predict_iter|use_queues|vl_rec_max_concurrency|batch_sampler|AutoParallel|Queue" /workspace/repos/paddle_ocr_vl_npu/PaddleOCR /usr/local/python3.12.13/lib/python3.12/site-packages/paddlex 2>/dev/null | head -n 300
+	 ls -la /workspace/repos/paddle_ocr_vl_npu/PaddleOCR | head -n 60
+	 find /workspace/repos/paddle_ocr_vl_npu/PaddleOCR -maxdepth 4 -type f -name '*.py' | head -n 30
+	 find /usr/local/python3.12.13/lib/python3.12/site-packages -maxdepth 2 -iname '*paddlex*' -o -iname '*paddleocr*' | head -n 60
+	 ls -la /workspace/repos
+	 find /workspace/repos -maxdepth 4 -type d \( -iname '*PaddleOCR*' -o -iname 'paddlex' \) -print
+	 rg -n "paddleocr-source|paddleocr_source" scripts/benchmark_paddleocr_vllm_paddlex_omnidocbench.py
+	 grep -n "paddleocr_source\|paddleocr-source" scripts/benchmark_paddleocr_vllm_paddlex_omnidocbench.py
+	 find /workspace/repos/vllm_paddle_ocr/PaddleOCR -type f -name '*.py' -print0 | xargs -0 grep -nE "def predict_iter|use_queues|vl_rec_max_concurrency|batch_sampler" | head -n 300
+	 sed -n '1,230p' /workspace/repos/vllm_paddle_ocr/PaddleOCR/paddleocr/_pipelines/paddleocr_vl.py
+	 sed -n '1,100p' /workspace/repos/vllm_paddle_ocr/PaddleOCR/paddleocr/_models/base.py
+	 source npu-setup
+	 /usr/local/python3.12.13/bin/python3 -c "import sys;sys.path.insert(0,'/workspace/repos/vllm_paddle_ocr/PaddleOCR');import paddleocr,paddlex,inspect;print('paddleocr',paddleocr.__file__);print('paddlex',paddlex.__file__)"
+	 find /workspace/repos/vllm_paddle_ocr -maxdepth 2 -type d -print | sort
+	 find tmp/omnidocbench_v16_stock_official_2npu_b16_default_af80f8a -maxdepth 1 -type f -printf '%f\n' | sort
+	 head -n 80 tmp/omnidocbench_v16_stock_official_2npu_b16_default_af80f8a/run.log
+	 find /workspace/venvs/vllm_paddle_ocr_pipeline_py312 -maxdepth 5 -type d -name paddlex -print
+	 find /workspace/venvs/vllm_paddle_ocr_pipeline_py312/lib/python3.12/site-packages/paddlex -type f -name '*.py' -print0 | xargs -0 grep -nE "def predict|use_queues|vl_rec_max_concurrency|batch_sampler|queue" | head -n 400
+	 PXP=/workspace/venvs/vllm_paddle_ocr_pipeline_py312/lib/python3.12/site-packages/paddlex/inference/pipelines/paddleocr_vl/pipeline.py
+	 sed -n '1,240p' "$PXP"
+	 sed -n '850,1225p' "$PXP"
+	 RUN=tmp/omnidocbench_v16_stock_official_2npu_b16_default_af80f8a
+	 /usr/local/python3.12.13/bin/python3 -c "import json,collections; rows=[json.loads(x) for x in open('$RUN/progress.jsonl')]; ev=collections.Counter(r['event'] for r in rows); print(ev); batches=[r['batch_requests'] for r in rows if r['event']=='recognition_batch_started']; print('batch sizes',collections.Counter(batches),'n',len(batches),'mean',sum(batches)/len(batches)); print('first 60 events'); [print(round(r['elapsed_s'],3),r['event'],{k:v for k,v in r.items() if k in ('pages_submitted','pages_completed','batch_index','batch_requests','requests_submitted','requests_returned','image_name')}) for r in rows[:60]]"
+	 grep -n "def get_layout_parsing_results\|vl_rec_model(" "$PXP"
+	 sed -n '360,760p' "$PXP"
+	 PKG=/workspace/venvs/vllm_paddle_ocr_pipeline_py312/lib/python3.12/site-packages/paddlex
+	 find "$PKG/inference/models/doc_vlm" -type f -name '*.py' -print0 | xargs -0 grep -nE "vllm|ThreadPool|concurr|server_url|OpenAI|http" | head -n 300
+	 sed -n '360,470p' "$PKG/inference/models/doc_vlm/predictor.py"
+	 grep -R -n "class GenAIClientPredictor\|def _genai_client_process\|max_concurrency" "$PKG/inference" | head -n 120
+	 sed -n '470,590p' "$PKG/inference/models/doc_vlm/predictor.py"
+	 sed -n '580,650p' "$PKG/inference/models/doc_vlm/predictor.py"
+	 sed -n '1,120p' "$PKG/inference/models/predictors/genai_client_predictor.py"
+	 sed -n '500,590p' "$PKG/inference/models/common/genai.py"
+	 sed -n '40,130p' scripts/benchmark_paddleocr_vllm_paddlex_omnidocbench.py
+	 sed -n '600,745p' scripts/benchmark_paddleocr_vllm_paddlex_omnidocbench.py
+	 find /workspace/repos/vllm_paddle_ocr/scripts -maxdepth 2 -type f -print | sort
+	 find /workspace/repos/vllm_paddle_ocr -maxdepth 3 -type f \( -name '*.py' -o -name '*.sh' -o -name '*.md' \) -print0 | xargs -0 grep -nE "vllm serve|api_server|vllm-server|server_url|FULL_DECODE_ONLY" | head -n 300
+	 /usr/local/python3.12.13/bin/python3 -m vllm.entrypoints.openai.api_server --help 2>&1 | grep -E "served-model-name|max-model-len|max-num-seqs|max-num-batched-tokens|gpu-memory-utilization|compilation-config|limit-mm-per-prompt|enable-prefix|disable-log|port|host" | head -n 120
+	 sed -n '1,240p' /workspace/repos/vllm_paddle_ocr/run_full_pipeline.py
+	 sed -n '1,260p' /workspace/repos/vllm_paddle_ocr/scripts/run_omnidocbench_subset.py
+	 git pull --ff-only origin codex/omnidocbench-full-comparison
+	 /usr/local/python3.12.13/bin/python3 -m py_compile scripts/smoke_paddlex_rolling_vllm_server.py
+	 npu-status
+	 SERVER_RUN=tmp/paddlex_rolling_server_smoke_20260717
+	 mkdir -p "$SERVER_RUN"
+	 nohup /usr/local/python3.12.13/bin/python3 -m vllm.entrypoints.openai.api_server --model /workspace/models/PaddleOCR-VL-1.6 --served-model-name PaddleOCR-VL-1.6 --trust-remote-code --dtype float16 --max-model-len 16384 --max-num-seqs 16 --max-num-batched-tokens 16384 --gpu-memory-utilization 0.70 --limit-mm-per-prompt '{"image":1}' --no-enable-prefix-caching --compilation-config '{"cudagraph_mode":"FULL_DECODE_ONLY","cudagraph_capture_sizes":[1,2,4,8,16]}' --additional-config '{"enable_cpu_binding":true,"ascend_compilation_config":{"enable_npugraph_ex":true}}' --host 127.0.0.1 --port 8000 > "$SERVER_RUN/server.log" 2>&1 < /dev/null &
+	 echo $! > "$SERVER_RUN/server.pid"
+	 echo "server_pid=$(cat "$SERVER_RUN/server.pid") physical_npu=$SELECTED_PHYSICAL_NPU"
+	 ps -p "$(cat "$SERVER_RUN/server.pid")" -o pid=,etime=,stat=,cmd=
+	 curl -sS --max-time 3 http://127.0.0.1:8000/v1/models || true
+	 tail -n 30 "$SERVER_RUN/server.log"
+	 curl -sS --max-time 3 http://127.0.0.1:8000/v1/models || true
+	 tail -n 35 "$SERVER_RUN/server.log"
+	 curl -sS --max-time 5 http://127.0.0.1:8000/v1/models
+	 ps -p "$(cat "$SERVER_RUN/server.pid")" -o pid=,etime=,stat=,cmd= || true
+	 tail -n 60 "$SERVER_RUN/server.log"
+	 SERVER_PID=$(cat "$SERVER_RUN/server.pid")
+	 ENGINE_PID=$(pgrep -P "$SERVER_PID" | head -n 1)
+	 printf 'stopping server_pid=%s engine_pid=%s\n' "$SERVER_PID" "$ENGINE_PID"
+	 kill "$SERVER_PID"
+	 ps -p 1216623,1217108,1217109 -o pid=,ppid=,stat=,cmd= || true
+	 npu-status
+	 git status --short --branch
+	 exit
+	 cd /workspace/repos/custom_vllm_glm_ocr
+	 source npu-setup
+	 printf 'CLIENT_VISIBLE=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"
+	 npu-status
+	 PYTHONPATH=/workspace/venvs/vllm_paddle_ocr_pipeline_py312/lib/python3.12/site-packages /usr/local/python3.12.13/bin/python3 scripts/smoke_paddlex_rolling_vllm_server.py --execution-mode rolling --offset 1600 --limit 8 --page-workers 8 --server-max-concurrency 128 --server-image-format PNG --server-url http://127.0.0.1:8000/v1 --served-model-name PaddleOCR-VL-1.6 --device npu:0 --output-dir tmp/paddlex_rolling_ab160_warmup_20260717
+	 PYTHONPATH=/workspace/venvs/vllm_paddle_ocr_pipeline_py312/lib/python3.12/site-packages /usr/local/python3.12.13/bin/python3 scripts/smoke_paddlex_rolling_vllm_server.py --execution-mode cohort --offset 0 --limit 160 --page-workers 8 --server-max-concurrency 128 --server-image-format PNG --server-url http://127.0.0.1:8000/v1 --served-model-name PaddleOCR-VL-1.6 --device npu:0 --output-dir tmp/paddlex_cohort_server_160p_png_20260717
+	 /usr/local/python3.12.13/bin/python3 -c 'import json; p="tmp/paddlex_cohort_server_160p_png_20260717/run_summary.json"; d=json.load(open(p)); print({k:d[k] for k in ("pipeline_e2e_s","pages_per_s","s_per_page","completed","peak_active_recognition_calls")})'
+	 git pull --ff-only origin codex/omnidocbench-full-comparison
+	 PYTHONPATH=/workspace/venvs/vllm_paddle_ocr_pipeline_py312/lib/python3.12/site-packages /usr/local/python3.12.13/bin/python3 scripts/smoke_paddlex_rolling_vllm_server.py --execution-mode rolling --offset 0 --limit 160 --page-workers 8 --server-max-concurrency 128 --server-image-format PNG --server-url http://127.0.0.1:8000/v1 --served-model-name PaddleOCR-VL-1.6 --device npu:0 --output-dir tmp/paddlex_rolling_server_160p_w8_png_20260717
+	 PYTHONPATH=/workspace/venvs/vllm_paddle_ocr_pipeline_py312/lib/python3.12/site-packages /usr/local/python3.12.13/bin/python3 scripts/smoke_paddlex_rolling_vllm_server.py --execution-mode chunked --page-chunk-size 8 --offset 0 --limit 160 --page-workers 8 --server-max-concurrency 128 --server-image-format PNG --server-url http://127.0.0.1:8000/v1 --served-model-name PaddleOCR-VL-1.6 --device npu:0 --output-dir tmp/paddlex_chunked8_server_160p_png_20260717
+	 /usr/local/python3.12.13/bin/python3 -c 'import json,pathlib; base=pathlib.Path("tmp"); ps={"cohort":base/"paddlex_cohort_server_160p_png_20260717","rolling":base/"paddlex_rolling_server_160p_w8_png_20260717","chunked8":base/"paddlex_chunked8_server_160p_png_20260717"}; outs={};
+	 for name,p in ps.items():
+	  d=json.load(open(p/"run_summary.json")); ev=[json.loads(x) for x in open(p/"progress.jsonl")]; cs=sorted(r["completion_s"] for r in d["page_records"]); crops=[r["crop_count"] for r in ev if r["event"]=="recognition_call_started"]; outs[name]={q.read_text(encoding="utf-8") for q in (p/"predictions").glob("*.md")}; print(name,{"e2e_s":d["pipeline_e2e_s"],"s_page":d["s_per_page"],"pages_s":d["pages_per_s"],"peak_rec":d["peak_active_recognition_calls"],"rec_calls":len(crops),"crops":sum(crops),"crop_range":[min(crops),max(crops)],"p50_emit_s":cs[79],"p90_emit_s":cs[143],"p99_emit_s":cs[158],"last_emit_s":cs[-1]});
+	 print("prediction_set_sizes",{k:len(v) for k,v in outs.items()}); print("markdown_content_sets_equal",outs["cohort"]==outs["rolling"]==outs["chunked8"])'
+	 /usr/local/python3.12.13/bin/python3 -c 'import pathlib; base=pathlib.Path("tmp"); ds={"cohort":base/"paddlex_cohort_server_160p_png_20260717/predictions","rolling":base/"paddlex_rolling_server_160p_w8_png_20260717/predictions","chunked8":base/"paddlex_chunked8_server_160p_png_20260717/predictions"}; maps={k:{p.name:p.read_text(encoding="utf-8") for p in v.glob("*.md")} for k,v in ds.items()}; names=sorted(set.intersection(*(set(m) for m in maps.values()))); print("common_names",len(names));
+	 for a,b in (("cohort","rolling"),("cohort","chunked8"),("rolling","chunked8")):
+	  bad=[n for n in names if maps[a][n]!=maps[b][n]]; print(a,b,"exact",len(names)-len(bad),"different",len(bad),"examples",bad[:8],"total_abs_char_delta",sum(abs(len(maps[a][n])-len(maps[b][n])) for n in bad))'
+	 diff -u tmp/paddlex_cohort_server_160p_png_20260717/predictions/page-1853e666-6f83-432c-afc8-923ce8cf0fea.md tmp/paddlex_rolling_server_160p_w8_png_20260717/predictions/page-1853e666-6f83-432c-afc8-923ce8cf0fea.md || true
+	 diff -u tmp/paddlex_cohort_server_160p_png_20260717/predictions/page-4009495f-1a7c-46dc-9f52-7f80f5f0cc5c.md tmp/paddlex_rolling_server_160p_w8_png_20260717/predictions/page-4009495f-1a7c-46dc-9f52-7f80f5f0cc5c.md || true
+	 /usr/local/python3.12.13/bin/python3 -c 'from rapidfuzz.distance import Levenshtein; import pathlib; base=pathlib.Path("tmp"); ds={"cohort":base/"paddlex_cohort_server_160p_png_20260717/predictions","rolling":base/"paddlex_rolling_server_160p_w8_png_20260717/predictions","chunked8":base/"paddlex_chunked8_server_160p_png_20260717/predictions"}; maps={k:{p.name:p.read_text(encoding="utf-8") for p in v.glob("*.md")} for k,v in ds.items()}; names=sorted(maps["cohort"]);
+	 for a,b in (("cohort","rolling"),("cohort","chunked8"),("rolling","chunked8")):
+	  dist=sum(Levenshtein.distance(maps[a][n],maps[b][n]) for n in names); denom=sum(max(len(maps[a][n]),len(maps[b][n])) for n in names); print(a,b,{"levenshtein_edits":dist,"total_chars":denom,"similarity":1-dist/denom})'
+	 /usr/local/python3.12.13/bin/python3 -c 'from difflib import SequenceMatcher; import pathlib; base=pathlib.Path("tmp"); ds={"cohort":base/"paddlex_cohort_server_160p_png_20260717/predictions","rolling":base/"paddlex_rolling_server_160p_w8_png_20260717/predictions","chunked8":base/"paddlex_chunked8_server_160p_png_20260717/predictions"}; maps={k:{p.name:p.read_text(encoding="utf-8") for p in v.glob("*.md")} for k,v in ds.items()}; names=sorted(maps["cohort"]); pairs=(("cohort","rolling"),("cohort","chunked8"),("rolling","chunked8")); print([(a,b,{"min_page_ratio":min(SequenceMatcher(None,maps[a][n],maps[b][n],autojunk=False).ratio() for n in names),"weighted_ratio":sum(SequenceMatcher(None,maps[a][n],maps[b][n],autojunk=False).ratio()*max(len(maps[a][n]),len(maps[b][n])) for n in names)/sum(max(len(maps[a][n]),len(maps[b][n])) for n in names)}) for a,b in pairs])'
+	 /usr/local/python3.12.13/bin/python3 -c 'from difflib import SequenceMatcher; import pathlib; base=pathlib.Path("tmp"); ds={"cohort":base/"paddlex_cohort_server_160p_png_20260717/predictions","rolling":base/"paddlex_rolling_server_160p_w8_png_20260717/predictions","chunked8":base/"paddlex_chunked8_server_160p_png_20260717/predictions"}; maps={k:{p.name:p.read_text(encoding="utf-8") for p in v.glob("*.md")} for k,v in ds.items()}; names=sorted(maps["cohort"]);
+	 for a,b in (("cohort","rolling"),("cohort","chunked8"),("rolling","chunked8")):
+	  bad=[n for n in names if maps[a][n]!=maps[b][n]]; vals=[SequenceMatcher(None,maps[a][n],maps[b][n]).ratio() for n in bad]; print(a,b,{"different_pages":len(bad),"min_changed_page_similarity":min(vals),"mean_changed_page_similarity":sum(vals)/len(vals),"total_chars":sum(len(maps[a][n]) for n in names)})'
+	 /usr/local/python3.12.13/bin/python3 -c 'from difflib import SequenceMatcher; import pathlib; base=pathlib.Path("tmp"); a={p.name:p.read_text() for p in (base/"paddlex_cohort_server_160p_png_20260717/predictions").glob("*.md")}; b={p.name:p.read_text() for p in (base/"paddlex_chunked8_server_160p_png_20260717/predictions").glob("*.md")}; vals=sorted((SequenceMatcher(None,a[n],b[n]).ratio(),n,len(a[n]),len(b[n])) for n in a if a[n]!=b[n]); print(vals[:5])'
+	 diff -u tmp/paddlex_cohort_server_160p_png_20260717/predictions/page-05746fc5-2045-4dea-94e7-4bbab648d702.md tmp/paddlex_chunked8_server_160p_png_20260717/predictions/page-05746fc5-2045-4dea-94e7-4bbab648d702.md || true
+	 /usr/local/python3.12.13/bin/python3 -c 'a=360.735760104144; r=330.50042483303696; c=478.4735935649369; print({"rolling_vs_chunked":{"seconds_saved":c-r,"wall_time_reduction_pct":100*(c-r)/c,"throughput_gain_pct":100*(c/r-1),"speedup_x":c/r},"rolling_vs_unrestricted":{"seconds_saved":a-r,"wall_time_reduction_pct":100*(a-r)/a,"throughput_gain_pct":100*(a/r-1),"speedup_x":a/r},"unrestricted_vs_chunked":{"seconds_saved":c-a,"wall_time_reduction_pct":100*(c-a)/c,"throughput_gain_pct":100*(c/a-1),"speedup_x":c/a}})'
+	 exit
+	 cd /workspace/repos/custom_vllm_glm_ocr
+	 git pull --ff-only origin codex/omnidocbench-full-comparison
+	 source npu-setup
+	 printf 'server physical NPU=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"
+	 SERVER_RUN=tmp/paddlex_rolling_ab160_server_20260717
+	 mkdir -p "$SERVER_RUN"
+	 nohup /usr/local/python3.12.13/bin/python3 -m vllm.entrypoints.openai.api_server --model /workspace/models/PaddleOCR-VL-1.6 --served-model-name PaddleOCR-VL-1.6 --trust-remote-code --dtype float16 --max-model-len 16384 --max-num-seqs 16 --max-num-batched-tokens 16384 --gpu-memory-utilization 0.70 --limit-mm-per-prompt '{"image":1}' --no-enable-prefix-caching --mm-processor-cache-gb 0 --compilation-config '{"cudagraph_mode":"FULL_DECODE_ONLY","cudagraph_capture_sizes":[1,2,4,8,16]}' --additional-config '{"enable_cpu_binding":true,"ascend_compilation_config":{"enable_npugraph_ex":true}}' --host 127.0.0.1 --port 8000 > "$SERVER_RUN/server.log" 2>&1 < /dev/null &
+	 echo $! > "$SERVER_RUN/server.pid"
+	 echo "server_pid=$(cat "$SERVER_RUN/server.pid")"
+	 npu-status
+	 curl -sS --max-time 3 http://127.0.0.1:8000/v1/models || true
+	 ps -p "$(cat "$SERVER_RUN/server.pid")" -o pid=,etime=,stat=,cmd= || true
+	 tail -n 60 "$SERVER_RUN/server.log"
+	 curl -sS --max-time 5 http://127.0.0.1:8000/v1/models || true
+	 tail -n 25 "$SERVER_RUN/server.log"
+	 npu-status
+	 tail -n 8 "$SERVER_RUN/server.log"
+	 tail -n 12 "$SERVER_RUN/server.log"
+	 /usr/local/python3.12.13/bin/python3 -c 'import json; p="tmp/paddlex_rolling_server_160p_w8_png_20260717/progress.jsonl"; rows=[json.loads(x) for x in open(p)]; done=[r for r in rows if r["event"]=="page_completed"]; print("rolling_progress",len(done),"last_elapsed_s",done[-1]["pipeline_elapsed_s"] if done else None)'
+	 pstree -p 1223033 || true
+	 ps -o pid,ppid,stat,etime,cmd -p 1223033,1223519
+	 kill 1223033
+	 ps -o pid,ppid,stat,etime,cmd -p 1223033,1223519
+	 npu-status
+	 du -sh tmp/paddlex_rolling_ab160_server_20260717 tmp/paddlex_rolling_ab160_warmup_20260717 tmp/paddlex_cohort_server_160p_png_20260717 tmp/paddlex_rolling_server_160p_w8_png_20260717 tmp/paddlex_chunked8_server_160p_png_20260717
+	 git status --short -- tmp/paddlex_rolling_ab160_server_20260717 tmp/paddlex_rolling_ab160_warmup_20260717 tmp/paddlex_cohort_server_160p_png_20260717 tmp/paddlex_rolling_server_160p_w8_png_20260717 tmp/paddlex_chunked8_server_160p_png_20260717
+	 du -h tmp/paddlex_cohort_server_160p_png_20260717/* | sort -h
+	 du -h tmp/paddlex_rolling_server_160p_w8_png_20260717/* | sort -h
+	 du -h tmp/paddlex_chunked8_server_160p_png_20260717/* | sort -h
+	 git add tmp/paddlex_rolling_ab160_server_20260717 tmp/paddlex_rolling_ab160_warmup_20260717 tmp/paddlex_cohort_server_160p_png_20260717 tmp/paddlex_rolling_server_160p_w8_png_20260717 tmp/paddlex_chunked8_server_160p_png_20260717
+	 git status --short -- tmp/paddlex_rolling_ab160_server_20260717 tmp/paddlex_rolling_ab160_warmup_20260717 tmp/paddlex_cohort_server_160p_png_20260717 tmp/paddlex_rolling_server_160p_w8_png_20260717 tmp/paddlex_chunked8_server_160p_png_20260717 | tail -n 20
+	 git commit -m 'Record 160-page PaddleX server comparison'
+	 git push origin codex/omnidocbench-full-comparison
+	 exit
+	 /usr/sbin/sshd   -p 22021   -o PermitRootLogin=prohibit-password   -o PasswordAuthentication=no   -o PubkeyAuthentication=yes
+	 hostname research-vllm-021
+	 printf '%s\n' research-vllm-021 > /etc/hostname
+	 cd /workspace/repos/paddle_ocr_vl_npu
+	 source npu-setup
+	 MODEL=/workspace/models/PaddleOCR-VL-1.6 DATASET_DIR=/workspace/datasets/OmniDocBench BASELINE_DIR=tmp/w8a8_reference_promptfa_fp16_eager_8 OUT_ROOT=tmp/w8a8_compiled_full_encoder_b1_s1024_v2 BATCH_SIZE=1 MAX_ITEMS=8 STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=1024 STATIC_VISUAL_LN_LINEAR_MODE=normal VISION_ATTENTION=manual VISION_COMPILE_BACKEND=torchair VISION_USE_TORCHAIR_CACHE_COMPILE=1 VISION_TORCHAIR_CACHE_DIR=.runtime_cache/w8a8_compiled_full_encoder_v2 W8A8_WEIGHT_LAYOUT=nd_kn W8A8_SITES=fc1 ENCODER_TIMING_REPEATS=20 QUANTIZATION_CASES='none w8a8_static' bash 07_vision_prefill_optimization/run_npu_w8a8_static_visual_batched_encoder.sh
+	 MODEL=/workspace/models/PaddleOCR-VL-1.6 DATASET_DIR=/workspace/datasets/OmniDocBench BASELINE_DIR=tmp/w8a8_reference_promptfa_fp16_eager_8 OUT_ROOT=tmp/w8a8_compiled_full_encoder_b4_s1024_v2 BATCH_SIZE=4 MAX_ITEMS=8 STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=1024 STATIC_VISUAL_LN_LINEAR_MODE=normal VISION_ATTENTION=manual VISION_COMPILE_BACKEND=torchair VISION_USE_TORCHAIR_CACHE_COMPILE=1 VISION_TORCHAIR_CACHE_DIR=.runtime_cache/w8a8_compiled_full_encoder_v2 W8A8_WEIGHT_LAYOUT=nd_kn W8A8_SITES=fc1 ENCODER_TIMING_REPEATS=20 QUANTIZATION_CASES='none w8a8_static' bash 07_vision_prefill_optimization/run_npu_w8a8_static_visual_batched_encoder.sh
+	 MODEL=/workspace/models/PaddleOCR-VL-1.6 DATASET_DIR=/workspace/datasets/OmniDocBench BASELINE_DIR=tmp/w8a8_reference_promptfa_fp16_eager_8 OUT_ROOT=tmp/w8a8_compiled_full_encoder_b1_s2048_v2 BATCH_SIZE=1 MAX_ITEMS=8 STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=2048 STATIC_VISUAL_LN_LINEAR_MODE=normal VISION_ATTENTION=manual VISION_COMPILE_BACKEND=torchair VISION_USE_TORCHAIR_CACHE_COMPILE=1 VISION_TORCHAIR_CACHE_DIR=.runtime_cache/w8a8_compiled_full_encoder_v2 W8A8_WEIGHT_LAYOUT=nd_kn W8A8_SITES=fc1 ENCODER_TIMING_REPEATS=20 QUANTIZATION_CASES='none w8a8_static' bash 07_vision_prefill_optimization/run_npu_w8a8_static_visual_batched_encoder.sh
+	 git fetch origin codex/exp08-vision-w8a8 && git checkout --detach origin/codex/exp08-vision-w8a8 && git rev-parse --short HEAD
+	 /usr/local/python3.12.13/bin/python3 07_vision_prefill_optimization/profile_static_visual_batched_encoder.py --model /workspace/models/PaddleOCR-VL-1.6 --dataset-dir /workspace/datasets/OmniDocBench --baseline tmp/w8a8_reference_promptfa_fp16_eager_8 --device npu:0 --dtype fp16 --npu-jit-compile off --vision-attention manual --vision-prompt-fa-layout bnsd --vision-prompt-fa-mask-sparse-mode 1 --static-visual-fixed-physical-seq-len 1024 --static-visual-ln-impl manual_fp32 --static-visual-ln-linear-mode normal --static-visual-promptfa-pad-head-dim-to 80 --vision-use-torchair-cache-compile --vision-torchair-cache-dir .runtime_cache/w8a8_compiled_full_encoder_v2 --vision-linear-quantization none --w8a8-sites fc1 --w8a8-weight-layout nd_kn --batch-size 4 --max-items 8 --profile-batch-index 0 --profile-warmup-steps 2 --profile-active-steps 10 --profile-metric pipe --profile-root tmp/w8a8_profile_b4_s1024 --output tmp/w8a8_profile_b4_s1024/none.json --parser-topn 30
+	 /usr/local/python3.12.13/bin/python3 07_vision_prefill_optimization/profile_static_visual_batched_encoder.py --model /workspace/models/PaddleOCR-VL-1.6 --dataset-dir /workspace/datasets/OmniDocBench --baseline tmp/w8a8_reference_promptfa_fp16_eager_8 --device npu:0 --dtype fp16 --npu-jit-compile off --vision-attention manual --vision-prompt-fa-layout bnsd --vision-prompt-fa-mask-sparse-mode 1 --static-visual-fixed-physical-seq-len 1024 --static-visual-ln-impl manual_fp32 --static-visual-ln-linear-mode normal --static-visual-promptfa-pad-head-dim-to 80 --vision-use-torchair-cache-compile --vision-torchair-cache-dir .runtime_cache/w8a8_compiled_full_encoder_v2 --vision-linear-quantization w8a8_static --w8a8-sites fc1 --w8a8-weight-layout nd_kn --w8a8-static-scale-headroom 1.05 --batch-size 4 --max-items 8 --profile-batch-index 0 --profile-warmup-steps 2 --profile-active-steps 10 --profile-metric pipe --profile-root tmp/w8a8_profile_b4_s1024 --output tmp/w8a8_profile_b4_s1024/w8a8_static_fc1.json --parser-topn 30
+	 jq '{summary: {phys_tok_s: .encoder_physical_tokens_per_s_forward_sync, forward: .profile_forward_sync_s, validation: .validation.visual_max_abs_diff}, quantization: .candidate.vision_linear_quantization, profile_dir: .profile_dir}' tmp/w8a8_profile_b4_s1024/none.json tmp/w8a8_profile_b4_s1024/w8a8_static_fc1.json
+	 jq 'keys' tmp/w8a8_profile_b4_s1024/static_visual_encoder_*_B4_S1024_pipe_none_none/parsed_profile_summary.json
+	 jq '.runs[0] | keys' tmp/w8a8_profile_b4_s1024/static_visual_encoder_*_B4_S1024_pipe_none_none/parsed_profile_summary.json
+	 jq '.runs[0].op_statistic | keys, .runs[0].operator_details | keys, .runs[0].kernel_details | keys' tmp/w8a8_profile_b4_s1024/static_visual_encoder_*_B4_S1024_pipe_none_none/parsed_profile_summary.json
+	 jq '{op0: .runs[0].op_statistic[0], operator0: .runs[0].operator_details[0], kernel0: .runs[0].kernel_details[0]}' tmp/w8a8_profile_b4_s1024/static_visual_encoder_*_B4_S1024_pipe_none_none/parsed_profile_summary.json
+	 jq '{op_type: (.runs[0].op_statistic|type), operator_type: (.runs[0].operator_details|type), kernel_type: (.runs[0].kernel_details|type), op: .runs[0].op_statistic, operator_keys: (.runs[0].operator_details|keys), kernel_keys: (.runs[0].kernel_details|keys)}' tmp/w8a8_profile_b4_s1024/static_visual_encoder_*_B4_S1024_pipe_none_none/parsed_profile_summary.json
+	 for f in tmp/w8a8_profile_b4_s1024/static_visual_encoder_*_B4_S1024_pipe_*/parsed_profile_summary.json; do echo FILE=$f; jq '{total_aicore_us: .runs[0].kernel_details.total_aicore_time_us, cube_util_pct: .runs[0].kernel_details.weighted_cube_utilization_pct, target_ops: [.runs[0].op_statistic.top[] | select(.name | test("MatMul|Quant|Cast"))], target_kernels: [.runs[0].kernel_details.top_kernel_types[] | select(.name | test("matmul|quant|cast"; "i"))]}' "$f"; done
+	 for f in tmp/w8a8_profile_b4_s1024/static_visual_encoder_*_B4_S1024_pipe_*/parsed_profile_summary.json; do echo FILE=$f; jq '[.runs[0].operator_details.top_by_device_total_us[] | select((.name // "") | test("MatMul|Quant"))] | .[:12]' "$f"; done
+	 jq '.runs[0].operator_details.top_by_device_total_us[0:3]' tmp/w8a8_profile_b4_s1024/static_visual_encoder_*_B4_S1024_pipe_none_none/parsed_profile_summary.json
+	 for f in tmp/w8a8_profile_b4_s1024/static_visual_encoder_*_B4_S1024_pipe_*/parsed_profile_summary.json; do p=$(jq -r '.runs[0].kernel_details.path' "$f"); echo FILE=$f; head -n 2 "$p"; done
+	 /usr/local/python3.12.13/bin/python3 -c 'import csv,glob,json; paths=glob.glob("tmp/w8a8_profile_b4_s1024/static_visual_encoder_*_B4_S1024_pipe_*/**/kernel_details.csv",recursive=True); out={};
+	 for p in paths:
+	  d={};
+	  for r in csv.DictReader(open(p,newline="")):
+	   if any(x in r["Type"] for x in ("MatMul","Quant")):
+	    k=(r["Type"],r["Input Shapes"]); q=d.setdefault(k,[0,0.0]); q[0]+=1; q[1]+=float(r["Duration(us)"])
+	  out[p]=sorted([{"type":k[0],"shape":k[1],"count":v[0],"duration_us":round(v[1],3),"avg_us":round(v[1]/v[0],3)} for k,v in d.items()],key=lambda x:-x["duration_us"])
+	 print(json.dumps(out,indent=2))' > tmp/w8a8_profile_b4_s1024/target_kernel_shape_summary.json
+	 jq . tmp/w8a8_profile_b4_s1024/target_kernel_shape_summary.json
+	 MODEL=/workspace/models/PaddleOCR-VL-1.6 DATASET_DIR=/workspace/datasets/OmniDocBench BASELINE_DIR=tmp/w8a8_reference_promptfa_fp16_eager_8 OUT_ROOT=tmp/w8a8_compiled_full_encoder_b4_s1024_allsites BATCH_SIZE=4 MAX_ITEMS=8 STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=1024 STATIC_VISUAL_LN_LINEAR_MODE=normal VISION_ATTENTION=manual VISION_COMPILE_BACKEND=torchair VISION_USE_TORCHAIR_CACHE_COMPILE=1 VISION_TORCHAIR_CACHE_DIR=.runtime_cache/w8a8_compiled_full_encoder_v2 W8A8_WEIGHT_LAYOUT=nd_kn W8A8_SITES=qkv,out_proj,fc1,fc2 ENCODER_TIMING_REPEATS=20 QUANTIZATION_CASES='w8a8_static' bash 07_vision_prefill_optimization/run_npu_w8a8_static_visual_batched_encoder.sh
+	 MODEL=/workspace/models/PaddleOCR-VL-1.6 DATASET_DIR=/workspace/datasets/OmniDocBench BASELINE_DIR=tmp/w8a8_reference_promptfa_fp16_eager_8 OUT_ROOT=tmp/w8a8_compiled_full_encoder_b4_s1024_fc1_nz BATCH_SIZE=4 MAX_ITEMS=8 STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=1024 STATIC_VISUAL_LN_LINEAR_MODE=normal VISION_ATTENTION=manual VISION_COMPILE_BACKEND=torchair VISION_USE_TORCHAIR_CACHE_COMPILE=1 VISION_TORCHAIR_CACHE_DIR=.runtime_cache/w8a8_compiled_full_encoder_v2 W8A8_WEIGHT_LAYOUT=nz_kn W8A8_SITES=fc1 ENCODER_TIMING_REPEATS=20 QUANTIZATION_CASES='w8a8_static' bash 07_vision_prefill_optimization/run_npu_w8a8_static_visual_batched_encoder.sh
+	 du -sh tmp/w8a8_compiled_full_encoder_b1_s1024_v2 tmp/w8a8_compiled_full_encoder_b4_s1024_v2 tmp/w8a8_compiled_full_encoder_b1_s2048_v2 tmp/w8a8_compiled_full_encoder_b4_s1024_allsites tmp/w8a8_compiled_full_encoder_b4_s1024_fc1_nz tmp/w8a8_profile_b4_s1024
+	 find tmp/w8a8_profile_b4_s1024 -maxdepth 2 -type f -printf '%s %p\n' | sort -nr | head -n 20
+	 git status --short | head -n 80
+	 git check-ignore -v tmp/w8a8_compiled_full_encoder_b4_s1024_v2/none.json tmp/w8a8_profile_b4_s1024/none.json || true
+	 exit
+	 cd /workspace/repos/paddle_ocr_vl_npu
+	 source npu-setup
+	 MODEL=/workspace/models/PaddleOCR-VL-1.6 DATASET_DIR=/workspace/datasets/OmniDocBench BASELINE_DIR=tmp/w8a8_reference_promptfa_fp16_eager_8 OUT_ROOT=tmp/w8a8_compiled_full_encoder_b8_s1024 BATCH_SIZE=8 MAX_ITEMS=8 STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=1024 STATIC_VISUAL_LN_LINEAR_MODE=normal VISION_ATTENTION=manual VISION_COMPILE_BACKEND=torchair VISION_USE_TORCHAIR_CACHE_COMPILE=1 VISION_TORCHAIR_CACHE_DIR=.runtime_cache/w8a8_compiled_full_encoder_v2 W8A8_WEIGHT_LAYOUT=nd_kn W8A8_SITES=fc1 ENCODER_TIMING_REPEATS=20 QUANTIZATION_CASES='none w8a8_static' bash 07_vision_prefill_optimization/run_npu_w8a8_static_visual_batched_encoder.sh
+	 MODEL=/workspace/models/PaddleOCR-VL-1.6 DATASET_DIR=/workspace/datasets/OmniDocBench BASELINE_DIR=tmp/w8a8_reference_promptfa_fp16_eager_8 OUT_ROOT=tmp/w8a8_compiled_full_encoder_b4_s2048 BATCH_SIZE=4 MAX_ITEMS=8 STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=2048 STATIC_VISUAL_LN_LINEAR_MODE=normal VISION_ATTENTION=manual VISION_COMPILE_BACKEND=torchair VISION_USE_TORCHAIR_CACHE_COMPILE=1 VISION_TORCHAIR_CACHE_DIR=.runtime_cache/w8a8_compiled_full_encoder_v2 W8A8_WEIGHT_LAYOUT=nd_kn W8A8_SITES=fc1 ENCODER_TIMING_REPEATS=20 QUANTIZATION_CASES='none w8a8_static' bash 07_vision_prefill_optimization/run_npu_w8a8_static_visual_batched_encoder.sh
+	 MODEL=/workspace/models/PaddleOCR-VL-1.6 DATASET_DIR=/workspace/datasets/OmniDocBench BASELINE_DIR=tmp/w8a8_reference_promptfa_fp16_eager_8 OUT_ROOT=tmp/w8a8_compiled_full_encoder_b8_s2048 BATCH_SIZE=8 MAX_ITEMS=8 STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=2048 STATIC_VISUAL_LN_LINEAR_MODE=normal VISION_ATTENTION=manual VISION_COMPILE_BACKEND=torchair VISION_USE_TORCHAIR_CACHE_COMPILE=1 VISION_TORCHAIR_CACHE_DIR=.runtime_cache/w8a8_compiled_full_encoder_v2 W8A8_WEIGHT_LAYOUT=nd_kn W8A8_SITES=fc1 ENCODER_TIMING_REPEATS=20 QUANTIZATION_CASES='none w8a8_static' bash 07_vision_prefill_optimization/run_npu_w8a8_static_visual_batched_encoder.sh
+	 git fetch origin codex/exp08-vision-w8a8 && git checkout --detach origin/codex/exp08-vision-w8a8 && git rev-parse --short HEAD
+	 MODEL=/workspace/models/PaddleOCR-VL-1.6 DATASET_DIR=/workspace/datasets/OmniDocBench BASELINE_DIR=tmp/w8a8_reference_promptfa_fp16_eager_8 OUT_ROOT=tmp/w8a8_fused_full_encoder_b4_s1024 BATCH_SIZE=4 MAX_ITEMS=8 STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=1024 STATIC_VISUAL_LN_LINEAR_MODE=normal VISION_ATTENTION=manual VISION_COMPILE_BACKEND=torchair VISION_USE_TORCHAIR_CACHE_COMPILE=1 VISION_TORCHAIR_CACHE_DIR=.runtime_cache/w8a8_compiled_full_encoder_v2 W8A8_WEIGHT_LAYOUT=nd_kn W8A8_SITES=fc1 ENCODER_TIMING_REPEATS=20 QUANTIZATION_CASES='w8a8_fused_pertoken' bash 07_vision_prefill_optimization/run_npu_w8a8_static_visual_batched_encoder.sh
+	 /usr/local/python3.12.13/bin/python3 07_vision_prefill_optimization/profile_static_visual_batched_encoder.py --model /workspace/models/PaddleOCR-VL-1.6 --dataset-dir /workspace/datasets/OmniDocBench --baseline tmp/w8a8_reference_promptfa_fp16_eager_8 --device npu:0 --dtype fp16 --npu-jit-compile off --vision-attention manual --vision-prompt-fa-layout bnsd --vision-prompt-fa-mask-sparse-mode 1 --static-visual-fixed-physical-seq-len 2048 --static-visual-ln-impl manual_fp32 --static-visual-ln-linear-mode normal --static-visual-promptfa-pad-head-dim-to 80 --vision-use-torchair-cache-compile --vision-torchair-cache-dir .runtime_cache/w8a8_compiled_full_encoder_v2 --vision-linear-quantization none --w8a8-sites fc1 --w8a8-weight-layout nd_kn --batch-size 8 --max-items 8 --profile-batch-index 0 --profile-warmup-steps 2 --profile-active-steps 5 --profile-metric pipe --profile-root tmp/w8a8_profile_b8_s2048 --output tmp/w8a8_profile_b8_s2048/none.json --parser-topn 30
+	 /usr/local/python3.12.13/bin/python3 07_vision_prefill_optimization/profile_static_visual_batched_encoder.py --model /workspace/models/PaddleOCR-VL-1.6 --dataset-dir /workspace/datasets/OmniDocBench --baseline tmp/w8a8_reference_promptfa_fp16_eager_8 --device npu:0 --dtype fp16 --npu-jit-compile off --vision-attention manual --vision-prompt-fa-layout bnsd --vision-prompt-fa-mask-sparse-mode 1 --static-visual-fixed-physical-seq-len 2048 --static-visual-ln-impl manual_fp32 --static-visual-ln-linear-mode normal --static-visual-promptfa-pad-head-dim-to 80 --vision-use-torchair-cache-compile --vision-torchair-cache-dir .runtime_cache/w8a8_compiled_full_encoder_v2 --vision-linear-quantization w8a8_static --w8a8-sites fc1 --w8a8-weight-layout nd_kn --w8a8-static-scale-headroom 1.05 --batch-size 8 --max-items 8 --profile-batch-index 0 --profile-warmup-steps 2 --profile-active-steps 5 --profile-metric pipe --profile-root tmp/w8a8_profile_b8_s2048 --output tmp/w8a8_profile_b8_s2048/w8a8_static_fc1.json --parser-topn 30
+	 /usr/local/python3.12.13/bin/python3 -c 'import csv,glob,json; paths=glob.glob("tmp/w8a8_profile_b8_s2048/static_visual_encoder_*_B8_S2048_pipe_*/**/kernel_details.csv",recursive=True); out={};
+	 for p in paths:
+	  d={};
+	  for r in csv.DictReader(open(p,newline="")):
+	   if any(x in r["Type"] for x in ("MatMul","Quant")):
+	    k=(r["Type"],r["Input Shapes"]); q=d.setdefault(k,[0,0.0]); q[0]+=1; q[1]+=float(r["Duration(us)"])
+	  out[p]=sorted([{"type":k[0],"shape":k[1],"count":v[0],"duration_us":round(v[1],3),"avg_us":round(v[1]/v[0],3)} for k,v in d.items()],key=lambda x:-x["duration_us"])
+	 print(json.dumps(out,indent=2))' > tmp/w8a8_profile_b8_s2048/target_kernel_shape_summary.json
+	 jq . tmp/w8a8_profile_b8_s2048/target_kernel_shape_summary.json
+	 git fetch origin codex/exp08-vision-w8a8 && git checkout --detach origin/codex/exp08-vision-w8a8 && git rev-parse --short HEAD
+	 MODEL=/workspace/models/PaddleOCR-VL-1.6 DATASET_DIR=/workspace/datasets/OmniDocBench BASELINE_DIR=tmp/w8a8_reference_promptfa_fp16_eager_8 OUT_ROOT=tmp/a16w8_full_encoder_b4_s1024 BATCH_SIZE=4 MAX_ITEMS=8 STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=1024 STATIC_VISUAL_LN_LINEAR_MODE=normal VISION_ATTENTION=manual VISION_COMPILE_BACKEND=torchair VISION_USE_TORCHAIR_CACHE_COMPILE=1 VISION_TORCHAIR_CACHE_DIR=.runtime_cache/w8a8_compiled_full_encoder_v2 W8A8_WEIGHT_LAYOUT=nd_kn W8A8_SITES=fc1 ENCODER_TIMING_REPEATS=20 QUANTIZATION_CASES='a16w8_weight_only' bash 07_vision_prefill_optimization/run_npu_w8a8_static_visual_batched_encoder.sh
+	 MODEL=/workspace/models/PaddleOCR-VL-1.6 DATASET_DIR=/workspace/datasets/OmniDocBench BASELINE_DIR=tmp/w8a8_reference_promptfa_fp16_eager_8 OUT_ROOT=tmp/a16w8_full_encoder_b8_s2048 BATCH_SIZE=8 MAX_ITEMS=8 STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=2048 STATIC_VISUAL_LN_LINEAR_MODE=normal VISION_ATTENTION=manual VISION_COMPILE_BACKEND=torchair VISION_USE_TORCHAIR_CACHE_COMPILE=1 VISION_TORCHAIR_CACHE_DIR=.runtime_cache/w8a8_compiled_full_encoder_v2 W8A8_WEIGHT_LAYOUT=nd_kn W8A8_SITES=fc1 ENCODER_TIMING_REPEATS=12 QUANTIZATION_CASES='a16w8_weight_only' bash 07_vision_prefill_optimization/run_npu_w8a8_static_visual_batched_encoder.sh
+	 ROWS=32768 BACKEND=npu WEIGHT_LAYOUT=nd_kn WARMUP=8 ITERATIONS=40 OUTPUT=tmp/compiled_w8a8_fc1_rows_32768.json bash 07_vision_prefill_optimization/run_npu_compiled_w8a8_fc1.sh
+	 ROWS=65536 BACKEND=npu WEIGHT_LAYOUT=nd_kn WARMUP=6 ITERATIONS=24 OUTPUT=tmp/compiled_w8a8_fc1_rows_65536.json bash 07_vision_prefill_optimization/run_npu_compiled_w8a8_fc1.sh
+	 git fetch origin codex/exp08-vision-w8a8
+	 git checkout --detach origin/codex/exp08-vision-w8a8
+	 git rev-parse --short HEAD
+	 MODEL=/workspace/models/PaddleOCR-VL-1.6 DATASET_DIR=/workspace/datasets/OmniDocBench BASELINE_DIR=tmp/w8a8_reference_promptfa_fp16_eager_8 OUT_ROOT=tmp/w8a8_pad64_full_encoder_b4_s1024 BATCH_SIZE=4 MAX_ITEMS=8 STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=1024 STATIC_VISUAL_LN_LINEAR_MODE=normal VISION_ATTENTION=manual VISION_COMPILE_BACKEND=torchair VISION_USE_TORCHAIR_CACHE_COMPILE=1 VISION_TORCHAIR_CACHE_DIR=.runtime_cache/w8a8_compiled_full_encoder_v2 W8A8_WEIGHT_LAYOUT=nd_kn W8A8_SITES=fc1 ENCODER_TIMING_REPEATS=20 QUANTIZATION_CASES='w8a8_static_pad64' bash 07_vision_prefill_optimization/run_npu_w8a8_static_visual_batched_encoder.sh
+	 git fetch origin codex/exp08-vision-w8a8
+	 git checkout --detach origin/codex/exp08-vision-w8a8
+	 git rev-parse --short HEAD
+	 MODEL=/workspace/models/PaddleOCR-VL-1.6 DATASET_DIR=/workspace/datasets/OmniDocBench BASELINE_DIR=tmp/w8a8_reference_promptfa_fp16_eager_8 OUT_ROOT=tmp/w8a8_pad64_full_encoder_b4_s1024 BATCH_SIZE=4 MAX_ITEMS=8 STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=1024 STATIC_VISUAL_LN_LINEAR_MODE=normal VISION_ATTENTION=manual VISION_COMPILE_BACKEND=torchair VISION_USE_TORCHAIR_CACHE_COMPILE=1 VISION_TORCHAIR_CACHE_DIR=.runtime_cache/w8a8_compiled_full_encoder_v2 W8A8_WEIGHT_LAYOUT=nd_kn W8A8_SITES=fc1 ENCODER_TIMING_REPEATS=20 QUANTIZATION_CASES='w8a8_static_pad64' bash 07_vision_prefill_optimization/run_npu_w8a8_static_visual_batched_encoder.sh
+	 MODEL=/workspace/models/PaddleOCR-VL-1.6 DATASET_DIR=/workspace/datasets/OmniDocBench BASELINE_DIR=tmp/w8a8_reference_promptfa_fp16_eager_8 OUT_ROOT=tmp/w8a8_pad64_full_encoder_b8_s2048 BATCH_SIZE=8 MAX_ITEMS=8 STATIC_VISUAL_FIXED_PHYSICAL_SEQ_LEN=2048 STATIC_VISUAL_LN_LINEAR_MODE=normal VISION_ATTENTION=manual VISION_COMPILE_BACKEND=torchair VISION_USE_TORCHAIR_CACHE_COMPILE=1 VISION_TORCHAIR_CACHE_DIR=.runtime_cache/w8a8_compiled_full_encoder_v2 W8A8_WEIGHT_LAYOUT=nd_kn W8A8_SITES=fc1 ENCODER_TIMING_REPEATS=12 QUANTIZATION_CASES='w8a8_static_pad64' bash 07_vision_prefill_optimization/run_npu_w8a8_static_visual_batched_encoder.sh
+	 git fetch origin codex/exp08-vision-w8a8
+	 git checkout --detach origin/codex/exp08-vision-w8a8
+	 QUANTIZATION=w8a8_static_pad64 ROWS=4096 BACKEND=npu WEIGHT_LAYOUT=nd_kn WARMUP=10 ITERATIONS=100 OUTPUT=tmp/compiled_w8a8_pad64_fc1_rows_4096.json bash 07_vision_prefill_optimization/run_npu_compiled_w8a8_fc1.sh
+	 find tmp -path '*b4_s1024*' -name '*.json' -maxdepth 4 -print
+	 jq '{file: input_filename, encoder_ms: (.summary.batch_timing_s.batched_encoder_s.avg * 1000), visual: .summary.visual_features.max_abs_diff, logits: .summary.prefill_logits.max_abs_diff}' tmp/w8a8_compiled_full_encoder_b4_s1024_v2/w8a8_static.json tmp/w8a8_pad64_full_encoder_b4_s1024/w8a8_static_pad64.json tmp/a16w8_full_encoder_b4_s1024/a16w8_weight_only.json
+	 QUANTIZATION=w8a8_static_pad64 ROWS=16384 BACKEND=npu WEIGHT_LAYOUT=nd_kn WARMUP=8 ITERATIONS=50 OUTPUT=tmp/compiled_w8a8_pad64_fc1_rows_16384.json bash 07_vision_prefill_optimization/run_npu_compiled_w8a8_fc1.sh
+	 QUANTIZATION=w8a8_static_pad64 ROWS=32768 BACKEND=npu WEIGHT_LAYOUT=nd_kn WARMUP=8 ITERATIONS=40 OUTPUT=tmp/compiled_w8a8_pad64_fc1_rows_32768.json bash 07_vision_prefill_optimization/run_npu_compiled_w8a8_fc1.sh
+	 QUANTIZATION=w8a8_static_pad64 ROWS=65536 BACKEND=npu WEIGHT_LAYOUT=nd_kn WARMUP=6 ITERATIONS=24 OUTPUT=tmp/compiled_w8a8_pad64_fc1_rows_65536.json bash 07_vision_prefill_optimization/run_npu_compiled_w8a8_fc1.sh
+	 git status --short
+	 git rev-parse --short HEAD
+	 du -sh
+	 du -sh /
+	 df -h
+	 df -h /workspace
+	 cd /workspace/repos/paddle_ocr_vl_npu
+	 git status --short
+	 type npu-setup
+	 npu-status
+	 cd /workspace/repos/paddle_ocr_vl_npu
+	 TIMEFORMAT='npu-setup=%R s'; time source npu-setup >/dev/null
+	 /usr/local/python3.12.13/bin/python3 - <<'PY'
+	 import subprocess, time
+	 cases=[('torch-import',['/usr/local/python3.12.13/bin/python3','-c','import torch']),('torch-npu-import',['/usr/local/python3.12.13/bin/python3','-c','import torch, torch_npu']),('torch-npu-device',['/usr/local/python3.12.13/bin/python3','-c','import torch, torch_npu; print(torch_npu.npu.get_device_name())'])]
+	 for name, cmd in cases:
+	     samples=[]
+	     for _ in range(3):
+	         t=time.perf_counter(); p=subprocess.run(cmd,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,text=True); samples.append(time.perf_counter()-t)
+	         assert p.returncode==0, p.stderr
+	     print(name, ' '.join(f'{x:.3f}s' for x in samples))
+	 PY
+	 printf 'PERSISTENT_SHELL_READY\n'
+	 hostname
+	 pwd
+	 ls -d /workspace/repos/custom_vllm_glm_ocr /workspace/repos/paddle_ocr_vl_npu 2>/dev/null
+	 cd /workspace/repos/paddle_ocr_vl_npu
+	 npu-status
+	 source npu-setup
+	 printf 'ASCEND_RT_VISIBLE_DEVICES=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"
+	 /usr/local/python3.12.13/bin/python3 -c 'import torch, torch_npu; print("torch",torch.__version__,"torch_npu",torch_npu.__version__,"device",torch.npu.current_device())'
+	 env | sort | grep -E '^(ASCEND|TORCH_NPU|TASK_QUEUE)' | grep -E 'LOG|TASK_QUEUE|VISIBLE|LAUNCH|COMPACT' || true
+	 find "$HOME/ascend/log" -maxdepth 3 -type d 2>/dev/null | head -n 30
+	 git status --short --branch
+	 git rev-parse --short HEAD
+	 git rev-parse --short origin/main
+	 git worktree list --porcelain
+	 du -sh extra-info 2>/dev/null || true
+	 find extra-info -maxdepth 2 -type f -printf '%p %s bytes\n' 2>/dev/null | head -n 40
+	 for p in /workspace/repos/paddle_ocr_vl_npu_bench_4789067 /workspace/repos/paddle_ocr_vl_npu_profiler_profile_test; do echo "[$p]"; git -C "$p" status --short --branch; done
+	 find extra-info -maxdepth 3 -printf '%y %p %s bytes\n' 2>/dev/null | head -n 80
+	 ls -lad extra-info
+	 readlink -f extra-info || true
+	 file extra-info
+	 ps -eo pid,lstart,args | grep -E '/workspace/repos/paddle_ocr_vl_npu_(bench_4789067|profiler_profile_test)' | grep -v grep || true
+	 git branch -vv
+	 git worktree remove /workspace/repos/paddle_ocr_vl_npu_bench_4789067
+	 git worktree remove /workspace/repos/paddle_ocr_vl_npu_profiler_profile_test
+	 git worktree prune -v
+	 mkdir -p .runtime_cache/cann_extra_info
+	 mv extra-info .runtime_cache/cann_extra_info/20260724-scatter-exception
+	 git fetch origin main
+	 git switch main
+	 git merge --ff-only origin/main
+	 git branch --merged main -vv
+	 git worktree list --porcelain
+	 git status --short --branch
+	 test -d .runtime_cache/cann_extra_info/20260724-scatter-exception && du -sh .runtime_cache/cann_extra_info/20260724-scatter-exception
+	 git branch -d codex/exp08-offline-e2e-b1 codex/paddle-910b-torch210-port
+	 git branch -vv
+	 git status --short --branch
+	 git worktree list --porcelain
+	 git rev-parse HEAD
+	 git rev-parse origin/main
+	 git check-ignore -v .DS_Store extra-info/example
+	 git pull --ff-only origin main
+	 for p in /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python /usr/local/python3.12.13/bin/python3; do test -x "$p" && echo "$p" && "$p" -c 'import importlib.util; print("kornia_rs", bool(importlib.util.find_spec("kornia_rs")))'; done
+	 git status --short --branch
+	 git rev-parse --short HEAD
+	 pwd
+	 git status --short --branch
+	 git rev-parse --short HEAD
+	 npu-status
+	 printf 'VISIBLE=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"
+	 command -v python
+	 find .runtime_cache/09_persistent_page_engine_torchair -maxdepth 2 -type d -name '*bs16*cache4096*' -o -name '*b16*k4096*' | head -n 30
+	 df -h . .runtime_cache
+	 find .runtime_cache -maxdepth 3 -type d | grep -E 'b16_k4096|bs16_cache4096' | head -n 80
+	 RUN=tmp/09_persistent_page_engine/910b_decode1280_page11_ddf013d
+	 mkdir -p "$RUN"
+	 /usr/local/python3.12.13/bin/python3 09_persistent_page_engine/scripts/run_omnidocbench.py --offset 11 --limit 1 --batch-size 16 --cache-length 4096 --max-new-tokens 2808 --preprocessor-min-pixels 28224 --text-packing production_group --text-pack-buckets 128,256,512,1024 --text-pack-max-members 32 --vision-packing greedy --vision-pack-target 1920 --vision-backend torchair --vision-attention prompt_flash_attention --vision-promptfa-align-128 --vision-padding bucket --layout-device npu --no-layout-graph-capture --preprocess-all-pages-first --scheduler-progress --diagnostic-decode-effective-length 1280 --diagnostic-decode-request-id page_000000_block_000003 --output-dir "$RUN/output" 2>&1 | tee "$RUN/run.log"
+	 RUN=tmp/09_persistent_page_engine/910b_decode1280_page11_venv_ddf013d
+	 mkdir -p "$RUN"
+	 /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python 09_persistent_page_engine/scripts/run_omnidocbench.py --offset 11 --limit 1 --batch-size 16 --cache-length 4096 --max-new-tokens 2808 --preprocessor-min-pixels 28224 --text-packing production_group --text-pack-buckets 128,256,512,1024 --text-pack-max-members 32 --vision-packing greedy --vision-pack-target 1920 --vision-backend torchair --vision-attention prompt_flash_attention --vision-promptfa-align-128 --vision-padding bucket --layout-device npu --no-layout-graph-capture --preprocess-all-pages-first --scheduler-progress --diagnostic-decode-effective-length 1280 --diagnostic-decode-request-id page_000000_block_000003 --output-dir "$RUN/output" 2>&1 | tee "$RUN/run.log"
+	 python_bin=/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python
+	 "$python_bin" -c 'import json; p="tmp/09_persistent_page_engine/910b_decode1280_page11_venv_ddf013d/output/recognition_trace.jsonl"; rows=[json.loads(x) for x in open(p)]; row=next(x for x in rows if x.get("request_id")=="page_000000_block_000003"); print(json.dumps(row,indent=2))'
+	 grep 'diagnostic_' tmp/09_persistent_page_engine/910b_decode1280_page11_venv_ddf013d/run.log
+	 du -h tmp/09_persistent_page_engine/910b_decode1280_page11_venv_ddf013d/output/run_summary.json tmp/09_persistent_page_engine/910b_decode1280_page11_venv_ddf013d/output/recognition_trace.jsonl tmp/09_persistent_page_engine/910b_decode1280_page11_venv_ddf013d/output/vision_route_plan.json tmp/09_persistent_page_engine/910b_decode1280_page11_venv_ddf013d/run.log tmp/09_persistent_page_engine/dense_decode_boundary_910b_b87d15d/* tmp/09_persistent_page_engine/dense_decode_boundary_k3584_910b_b87d15d/*
+	 E2E=tmp/09_persistent_page_engine/910b_decode1280_page11_venv_ddf013d
