@@ -22,6 +22,8 @@ sys.path.insert(0, str(EXPERIMENT_ROOT))
 
 from paddleocr_vl.serving.engine import ContinuousRecognizer
 from paddleocr_vl.serving.runtime_defaults import (
+    DECODE_BACKEND_CHOICES,
+    DEFAULT_DECODE_BACKEND,
     DEFAULT_TEXT_PACK_BUCKETS,
     DEFAULT_TEXT_PACK_MAX_MEMBERS,
     DEFAULT_TEXT_PACKING,
@@ -120,6 +122,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         type=int,
         default=None,
         help="Override the global recognition min_pixels; omit for the v1.6 default.",
+    )
+    parser.add_argument(
+        "--decode-backend",
+        default=DEFAULT_DECODE_BACKEND,
+        choices=DECODE_BACKEND_CHOICES,
+        help=(
+            "Decode execution backend. 'raw_eager' runs the same decode step "
+            "without TorchAir, which isolates compiled-graph failures."
+        ),
     )
     parser.add_argument(
         "--vision-backend",
@@ -594,7 +605,7 @@ def main() -> None:
     recognizer = ContinuousRecognizer(
         model=str(recognizer_model),
         dtype=args.dtype,
-        decode_backend="torchair",
+        decode_backend=args.decode_backend,
         batch_size=args.batch_size,
         cache_length=args.cache_length,
         max_new_tokens=args.max_new_tokens,
@@ -648,6 +659,7 @@ def main() -> None:
             "pipeline": "owned_paddleocr_vl_v1.6",
             "pages": len(image_paths),
             "decode_batch_size": args.batch_size,
+            "decode_backend": args.decode_backend,
             "decode_optimization": recognizer_configuration["decode_optimization"],
             "vision_backend": args.vision_backend,
             "vision_attention": args.vision_attention,
@@ -732,6 +744,7 @@ def main() -> None:
             "batch_size": args.batch_size,
             "cache_length": args.cache_length,
             "max_new_tokens": args.max_new_tokens,
+            "decode_backend": args.decode_backend,
             "decode_optimization": recognizer_configuration["decode_optimization"],
             "preprocessor_min_pixels": args.preprocessor_min_pixels,
             "effective_global_min_pixels": (
