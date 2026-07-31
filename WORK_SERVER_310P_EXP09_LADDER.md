@@ -11866,3 +11866,203 @@ evidence paths:
 Paste back the report and the literal last 20 `EXP09_SCHEDULER` JSON lines.
 Do not summarize those lines away: their exact event names and snapshots are
 the evidence needed for the next code decision.
+
+## Phase 29: isolate the 1280-token decode boundary
+
+Run this phase after pulling a commit that contains
+`--diagnostic-decode-effective-length`. The earlier offset-0 and offset-4
+replays stopped at different global scheduler iterations, but both stopped
+when this same request reached the same local state:
+
+```text
+request_id:       page_000011_block_000003
+prompt_length:    1021
+generated tokens: 259 at the stalled wait
+```
+
+The pending graph was launched while the CPU request state still contained
+258 tokens. Its expected cache write position was therefore 1279 and its
+effective valid KV length was 1280. The following graph was submitted at
+position 1280, but the host stopped while waiting for the previous graph's
+sampled-token transfer.
+
+This phase records one extra compute event only when that exact request reaches
+effective length 1280. It then synchronizes that compute event before
+synchronizing the existing sampled-token D2H event. It does not alter the
+compiled decode function, cache tensors, graph inputs, packing, or normal
+iterations.
+
+### 29.1 Preflight
+
+```sh
+cd /workspace/repos/paddle_ocr_vl_npu
+git status --short --branch
+git pull --ff-only origin main
+
+REPO="$(git rev-parse --show-toplevel)"
+COMMIT="$(git rev-parse HEAD)"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+PYTHON_BIN="${PYTHON_BIN:-$(command -v python)}"
+test -x "$PYTHON_BIN"
+
+"$PYTHON_BIN" 09_persistent_page_engine/scripts/run_omnidocbench.py \
+  --help | grep -q -- '--diagnostic-decode-effective-length'
+"$PYTHON_BIN" 09_persistent_page_engine/scripts/run_omnidocbench.py \
+  --help | grep -q -- '--diagnostic-decode-request-id'
+```
+
+Start from the exact successful-to-reproduce Phase-28 command. Do not change
+its model paths, batch size, caches, min-pixels, text packing, vision packing,
+PromptFA alignment, layout device, layout graph-capture setting, cache length,
+or max-new-tokens. Keep:
+
+```text
+--preprocess-all-pages-first
+--scheduler-progress
+```
+
+Add exactly:
+
+```text
+--diagnostic-decode-effective-length 1280
+--diagnostic-decode-request-id page_000011_block_000003
+```
+
+These scheduler-only source changes must not require a new TorchAir decode
+graph. Record whether the existing decode cache was reused; do not delete or
+replace any cache directory.
+
+### 29.2 Lane A: isolate the source page
+
+Use the Phase-28 command with only these selection/output changes:
+
+```text
+--offset 11
+--limit 1
+--output-dir <LANE_A>/output
+```
+
+This preserves the original page numbering, so the target remains
+`page_000011_block_000003`. The lane may contain the target page's other
+layout regions, but removes all preceding-page history.
+
+```sh
+ROOT="$REPO/tmp/09_persistent_page_engine/310p_phase29_decode1280_$COMMIT_SHORT"
+LANE_A="$ROOT/page11_only"
+test ! -e "$ROOT"
+mkdir -p "$LANE_A/cann"
+```
+
+Create `$LANE_A/command.sh` with the fully expanded production command and
+these environment variables before its final `exec`:
+
+```sh
+export ASCEND_PROCESS_LOG_PATH="<absolute LANE_A path>/cann"
+export TORCH_NPU_COMPACT_ERROR_OUTPUT=0
+export PYTHONUNBUFFERED=1
+```
+
+Run it in the background so the exact process is known and the log is durable:
+
+```sh
+bash "$LANE_A/command.sh" >"$LANE_A/run.log" 2>&1 &
+RUN_PID=$!
+printf '%s\n' "$RUN_PID" >"$LANE_A/pid.txt"
+tail --pid="$RUN_PID" -f "$LANE_A/run.log"
+wait "$RUN_PID"
+printf '%s\n' "$?" >"$LANE_A/exit_code.txt"
+```
+
+If no new scheduler record appears for 90 seconds, capture evidence before
+terminating only `$RUN_PID`:
+
+```sh
+grep '^EXP09_SCHEDULER ' "$LANE_A/run.log" \
+  | tail -n 120 >"$LANE_A/last_scheduler_events.log"
+npu-smi info >"$LANE_A/npu_smi_at_stall.txt" 2>&1 || true
+find "$LANE_A/cann" -type f -print \
+  | sort >"$LANE_A/cann_files.txt"
+grep -R -n -E 'ERROR|AICore|aicore|5070|0x[0-9A-Fa-f]+' \
+  "$LANE_A/cann" >"$LANE_A/cann_errors.txt" 2>&1 || true
+kill -TERM "$RUN_PID"
+wait "$RUN_PID" || true
+```
+
+Do not use `pkill` or `killall`.
+
+### 29.3 Mechanical interpretation
+
+At the target, the log must contain `diagnostic_pending_state` with:
+
+```text
+request_id=page_000011_block_000003
+cache_position=1279
+effective_length=1280
+generated_tokens=258
+```
+
+Classify using the last unmatched diagnostic boundary:
+
+| Observed sequence | Conclusion |
+| --- | --- |
+| `diagnostic_compute_sync_begin` with no end/error | the compiled decode graph at effective length 1280 did not complete |
+| `diagnostic_compute_sync_error` | the compiled graph failed; report the exact Python/CANN error and first matching plog error |
+| compute sync ends, then `diagnostic_d2h_sync_begin` has no end/error | compute completed; the sampled-token copy stream/D2H event chain is blocked |
+| `diagnostic_d2h_sync_error` | D2H/event synchronization returned a runtime error; report it verbatim |
+| both diagnostic syncs end | the target boundary completed in this reduced history; continue to Lane B |
+
+The ordinary `pending_token_wait_begin` line is not the classification once
+these more precise diagnostic events exist.
+
+If Lane A blocks or errors at the target, stop after collecting its evidence.
+The page-level lane has isolated the failure sufficiently for the next
+operator-level experiment.
+
+### 29.4 Lane B: changed history, original multi-page interaction
+
+Run Lane B only if Lane A completes. Use the exact same command and caches,
+changing only:
+
+```text
+--offset 4
+--limit 16
+--output-dir <LANE_B>/output
+```
+
+Set:
+
+```sh
+LANE_B="$ROOT/offset4_limit16"
+mkdir -p "$LANE_B/cann"
+```
+
+Create `$LANE_B/command.sh` with its own absolute
+`ASCEND_PROCESS_LOG_PATH`, run it with the same PID/log procedure, and apply
+the same 90-second evidence capture. This lane tests whether the exact
+1280-token boundary requires the larger active-slot/cache-state composition.
+
+### 29.5 Report
+
+Write `$ROOT/agent_report.md`:
+
+```text
+310P PHASE 29 DECODE LENGTH 1280: COMPUTE_BLOCK | COMPUTE_ERROR |
+TOKEN_D2H_BLOCK | TOKEN_D2H_ERROR | HISTORY_DEPENDENT | PASS
+
+commit / host / exact NPU / software:
+exact Lane-A command:
+Lane-A exit / result count:
+target diagnostic_pending_state JSON:
+last matched diagnostic boundary:
+compute sync outcome and wait:
+D2H sync outcome and wait:
+first Python/CANN error:
+first matching plog error:
+decode graph cache reused or recompiled:
+Lane-B command/outcome, if run:
+mechanical conclusion:
+evidence paths:
+```
+
+Paste back the report plus every `EXP09_SCHEDULER` line whose event begins
+with `diagnostic_`. Do not summarize those lines away.

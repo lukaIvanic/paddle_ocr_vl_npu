@@ -68,8 +68,12 @@ class PendingTokenCopy:
     iteration: int
     active_slots: tuple[bool, ...]
     slot_epochs: tuple[int | None, ...]
+    slot_request_ids: tuple[str | None, ...]
+    cache_positions: tuple[int | None, ...]
+    generated_token_counts: tuple[int | None, ...]
     ring_index: int | None
     done_event: Any | None
+    diagnostic_compute_event: Any | None
     host_tokens: list[int] | None
 
 
@@ -78,6 +82,9 @@ class DecodeStep:
     sampled: torch.Tensor
     active_slots: tuple[bool, ...]
     slot_epochs: tuple[int | None, ...]
+    slot_request_ids: tuple[str | None, ...]
+    cache_positions: tuple[int | None, ...]
+    generated_token_counts: tuple[int | None, ...]
 
 
 @dataclass
@@ -398,6 +405,22 @@ class DecodeArena:
     ) -> DecodeStep:
         active_slots = tuple(slot is not None for slot in self.slots)
         slot_epochs = tuple(slot.epoch if slot is not None else None for slot in self.slots)
+        slot_request_ids = tuple(
+            slot.ready.request_id if slot is not None else None
+            for slot in self.slots
+        )
+        cache_positions = tuple(
+            (
+                int(slot.ready.prompt_length) + int(slot.iterations_launched)
+                if slot is not None
+                else None
+            )
+            for slot in self.slots
+        )
+        generated_token_counts = tuple(
+            len(slot.token_ids) if slot is not None else None
+            for slot in self.slots
+        )
         launched_at = time.perf_counter()
         for slot in self.slots:
             if slot is not None:
@@ -449,6 +472,9 @@ class DecodeArena:
             sampled=sampled,
             active_slots=active_slots,
             slot_epochs=slot_epochs,
+            slot_request_ids=slot_request_ids,
+            cache_positions=cache_positions,
+            generated_token_counts=generated_token_counts,
         )
 
 
@@ -471,6 +497,8 @@ class ContinuousDecodeScheduler:
             Callable[[DecodeSlotState, int], str | None] | None
         ) = None,
         progress: Callable[..., None] | None = None,
+        diagnostic_effective_length: int | None = None,
+        diagnostic_request_id: str | None = None,
     ) -> None:
         self.arena = arena
         self.decode_fn = decode_fn
@@ -481,6 +509,21 @@ class ContinuousDecodeScheduler:
         self.timeline = timeline
         self.completion_policy = completion_policy
         self.progress = progress
+        if (
+            diagnostic_effective_length is not None
+            and int(diagnostic_effective_length) <= 0
+        ):
+            raise ValueError("diagnostic_effective_length must be positive")
+        self.diagnostic_effective_length = (
+            None
+            if diagnostic_effective_length is None
+            else int(diagnostic_effective_length)
+        )
+        self.diagnostic_request_id = (
+            None
+            if diagnostic_request_id is None
+            else str(diagnostic_request_id)
+        )
         self.copy_stream = None
         self.host_token_ring = None
         if self.device.type == "npu":
@@ -524,6 +567,15 @@ class ContinuousDecodeScheduler:
             assert self.copy_stream is not None
             assert self.host_token_ring is not None
             ring_index = iteration % 2
+            diagnostic_compute_event = None
+            if self._diagnostic_slots(step):
+                # This is separate from the copy stream's dependency event.
+                # Retaining it does not change the lifetime of the production
+                # ready_event; it gives the diagnostic path a precise compute
+                # completion boundary to synchronize.
+                diagnostic_compute_event = (
+                    torch_npu.npu.current_stream().record_event()
+                )
             ready_event = torch_npu.npu.current_stream().record_event()
             done_event = torch_npu.npu.Event()
             with torch_npu.npu.stream(self.copy_stream):
@@ -537,18 +589,62 @@ class ContinuousDecodeScheduler:
                 iteration=iteration,
                 active_slots=step.active_slots,
                 slot_epochs=step.slot_epochs,
+                slot_request_ids=step.slot_request_ids,
+                cache_positions=step.cache_positions,
+                generated_token_counts=step.generated_token_counts,
                 ring_index=ring_index,
                 done_event=done_event,
+                diagnostic_compute_event=diagnostic_compute_event,
                 host_tokens=None,
             )
         return PendingTokenCopy(
             iteration=iteration,
             active_slots=step.active_slots,
             slot_epochs=step.slot_epochs,
+            slot_request_ids=step.slot_request_ids,
+            cache_positions=step.cache_positions,
+            generated_token_counts=step.generated_token_counts,
             ring_index=None,
             done_event=None,
+            diagnostic_compute_event=None,
             host_tokens=[int(value) for value in step.sampled.detach().cpu().reshape(-1).tolist()],
         )
+
+    def _diagnostic_slots(
+        self,
+        step: DecodeStep | PendingTokenCopy,
+    ) -> list[dict[str, int | str]]:
+        target_length = self.diagnostic_effective_length
+        if target_length is None:
+            return []
+        matches: list[dict[str, int | str]] = []
+        for slot, (request_id, cache_position, generated_tokens) in enumerate(
+            zip(
+                step.slot_request_ids,
+                step.cache_positions,
+                step.generated_token_counts,
+            )
+        ):
+            if request_id is None or cache_position is None:
+                continue
+            if (
+                self.diagnostic_request_id is not None
+                and request_id != self.diagnostic_request_id
+            ):
+                continue
+            effective_length = int(cache_position) + 1
+            if effective_length != target_length:
+                continue
+            matches.append(
+                {
+                    "slot": slot,
+                    "request_id": request_id,
+                    "cache_position": int(cache_position),
+                    "effective_length": effective_length,
+                    "generated_tokens": int(generated_tokens or 0),
+                }
+            )
+        return matches
 
     def _wait_tokens(self, pending: PendingTokenCopy) -> tuple[list[int], float]:
         started = time.perf_counter()
@@ -906,7 +1002,72 @@ class ContinuousDecodeScheduler:
                     iteration=iteration,
                     pending_iteration=pending.iteration,
                 )
-                host_tokens, wait_s = self._wait_tokens(pending)
+                diagnostic_slots = self._diagnostic_slots(pending)
+                if diagnostic_slots:
+                    progress(
+                        "diagnostic_pending_state",
+                        iteration=iteration,
+                        pending_iteration=pending.iteration,
+                        diagnostic_slots=diagnostic_slots,
+                    )
+                    if pending.diagnostic_compute_event is None:
+                        raise RuntimeError(
+                            "targeted decode diagnostic lost its compute event"
+                        )
+                    progress(
+                        "diagnostic_compute_sync_begin",
+                        iteration=iteration,
+                        pending_iteration=pending.iteration,
+                        diagnostic_slots=diagnostic_slots,
+                    )
+                    compute_sync_started = time.perf_counter()
+                    try:
+                        pending.diagnostic_compute_event.synchronize()
+                    except BaseException as exc:
+                        progress(
+                            "diagnostic_compute_sync_error",
+                            iteration=iteration,
+                            pending_iteration=pending.iteration,
+                            diagnostic_slots=diagnostic_slots,
+                            wait_s=time.perf_counter() - compute_sync_started,
+                            error_type=type(exc).__name__,
+                            error=str(exc),
+                        )
+                        raise
+                    progress(
+                        "diagnostic_compute_sync_end",
+                        iteration=iteration,
+                        pending_iteration=pending.iteration,
+                        diagnostic_slots=diagnostic_slots,
+                        wait_s=time.perf_counter() - compute_sync_started,
+                    )
+                    progress(
+                        "diagnostic_d2h_sync_begin",
+                        iteration=iteration,
+                        pending_iteration=pending.iteration,
+                        diagnostic_slots=diagnostic_slots,
+                    )
+                try:
+                    host_tokens, wait_s = self._wait_tokens(pending)
+                except BaseException as exc:
+                    if diagnostic_slots:
+                        progress(
+                            "diagnostic_d2h_sync_error",
+                            iteration=iteration,
+                            pending_iteration=pending.iteration,
+                            diagnostic_slots=diagnostic_slots,
+                            error_type=type(exc).__name__,
+                            error=str(exc),
+                        )
+                    raise
+                if diagnostic_slots:
+                    progress(
+                        "diagnostic_d2h_sync_end",
+                        iteration=iteration,
+                        pending_iteration=pending.iteration,
+                        diagnostic_slots=diagnostic_slots,
+                        wait_s=wait_s,
+                    )
                 progress(
                     "pending_token_wait_end",
                     iteration=iteration,

@@ -428,6 +428,8 @@ class ContinuousRecognizer:
         vision_route_plan: dict[str, Any] | None = None,
         timeline: TimelineRecorder | None = None,
         scheduler_progress: bool = False,
+        diagnostic_decode_effective_length: int | None = None,
+        diagnostic_decode_request_id: str | None = None,
     ):
         # TorchAir guards tensor dispatch-key sets. Build and warm every graph
         # under the same inference-mode contract used by run(),
@@ -451,6 +453,16 @@ class ContinuousRecognizer:
         self.decode_optimization = DEFAULT_DECODE_OPTIMIZATION
         self.timeline = timeline
         self.scheduler_progress = bool(scheduler_progress)
+        self.diagnostic_decode_effective_length = (
+            None
+            if diagnostic_decode_effective_length is None
+            else int(diagnostic_decode_effective_length)
+        )
+        self.diagnostic_decode_request_id = (
+            None
+            if diagnostic_decode_request_id is None
+            else str(diagnostic_decode_request_id)
+        )
         self.batch_size = int(batch_size)
         self.cache_length = int(cache_length)
         self.max_new_tokens = int(max_new_tokens)
@@ -731,6 +743,10 @@ class ContinuousRecognizer:
             max_new_tokens=self.max_new_tokens,
             timeline=self.timeline,
             progress=self._emit_scheduler_progress,
+            diagnostic_effective_length=(
+                self.diagnostic_decode_effective_length
+            ),
+            diagnostic_request_id=self.diagnostic_decode_request_id,
         )
         decode_control_setup_s = time.perf_counter() - started
 
@@ -2650,6 +2666,10 @@ class ContinuousRecognizer:
             "cache_length": self.cache_length,
             "max_new_tokens": self.max_new_tokens,
             "batch_size": self.batch_size,
+            "diagnostic_decode_effective_length": (
+                self.diagnostic_decode_effective_length
+            ),
+            "diagnostic_decode_request_id": self.diagnostic_decode_request_id,
             "vision_prefill": self.vision_prefill.metadata,
             "vision_backend": self.vision_backend,
             "vision_attention": vision_attention,

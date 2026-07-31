@@ -231,6 +231,24 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--diagnostic-decode-effective-length",
+        type=int,
+        default=None,
+        help=(
+            "At this one effective KV length, retain a separate compute event "
+            "and synchronize it before the sampled-token D2H event. This "
+            "diagnostic deliberately adds synchronization only at the target."
+        ),
+    )
+    parser.add_argument(
+        "--diagnostic-decode-request-id",
+        default=None,
+        help=(
+            "Restrict --diagnostic-decode-effective-length to one recognition "
+            "request ID. Requires the effective-length diagnostic."
+        ),
+    )
+    parser.add_argument(
         "--preprocess-all-pages-first",
         action="store_true",
         help=(
@@ -324,6 +342,19 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--vision-router-lookahead must be positive")
     if args.text_pack_max_members <= 0:
         raise ValueError("--text-pack-max-members must be positive")
+    if (
+        args.diagnostic_decode_effective_length is not None
+        and args.diagnostic_decode_effective_length <= 0
+    ):
+        raise ValueError("--diagnostic-decode-effective-length must be positive")
+    if (
+        args.diagnostic_decode_request_id is not None
+        and args.diagnostic_decode_effective_length is None
+    ):
+        raise ValueError(
+            "--diagnostic-decode-request-id requires "
+            "--diagnostic-decode-effective-length"
+        )
 
 
 def run_predictions(
@@ -594,6 +625,10 @@ def main() -> None:
         vision_route_plan=vision_route_plan,
         timeline=timeline,
         scheduler_progress=args.scheduler_progress,
+        diagnostic_decode_effective_length=(
+            args.diagnostic_decode_effective_length
+        ),
+        diagnostic_decode_request_id=args.diagnostic_decode_request_id,
     )
     recognizer_configuration = recognizer.configuration()
     page_engine = OwnedPageEngine(
