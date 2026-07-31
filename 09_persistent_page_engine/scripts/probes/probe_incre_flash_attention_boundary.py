@@ -162,10 +162,11 @@ class ProgressRecorder:
 @torch.inference_mode()
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
-    if not torch.npu.is_available():
-        raise RuntimeError("probe requires an available Ascend NPU")
 
     import torch_npu
+
+    if not torch.npu.is_available():
+        raise RuntimeError("probe requires an available Ascend NPU")
 
     device = torch.device("npu:0")
     dtype = torch.float16
