@@ -12628,3 +12628,285 @@ evidence paths:
 
 Paste back the report and every `INCREFA_GQA` progress line. Do not summarize
 the version metadata or omit passing-control progress.
+
+## Phase 33: full-decoder masked-GQA boundary in the text-decode lab
+
+### 33.0 What this phase asks
+
+Phase 32 produced this exact 310P discriminator:
+
+- B1 GQA without a mask passed;
+- B1 masked MHA passed;
+- B1 masked GQA passed;
+- B16 masked GQA with every row at effective length 1280 hung;
+- an additional B16 masked-MHA control passed.
+
+The trigger is therefore **batched masked GQA**, not masked GQA in general.
+Phase 33 moves that result into the production-faithful text-decode lab. It
+runs the real 18-layer PaddleOCR-VL text decoder, production decode arena,
+production bool position mask, cache update, LM head, and argmax at B16,
+physical KV4096, and `cache_position=1279`.
+
+There are two decoder implementations in this phase:
+
+- `combined_apply` is the unchanged production GQA path: 16 query heads, two
+  stored KV heads, and `num_key_value_heads=2` in IncreFA.
+- `combined_apply_mha_repeat` is a lab-only discriminator. The persistent
+  cache remains `[B, 2, 4096, 128]`. Within each decoder layer, immediately
+  before IncreFA, that layer's K and V are expanded 2 to 16 heads and the op is
+  called with `num_key_value_heads=0`. Do not promote this preset into the E2E
+  runner in this phase.
+
+This distinction matters for memory interpretation. At B16/KV4096/fp16, the
+ordinary persistent K+V allocation is 64 MiB per layer, or 1.125 GiB across 18
+layers. The MHA lane does **not** make that persistent allocation eight times
+larger. It materializes up to 512 MiB of K+V for the current layer, an
+additional 448 MiB transient tensor footprint before compiler workspaces and
+allocator reuse. This phase only establishes termination and numerical sanity;
+it does not yet decide whether that overhead is acceptable.
+
+The matching 910B controls are already recorded under:
+
+```text
+tmp/09_persistent_page_engine/text_decode_boundary_910b_5f1b27a/
+```
+
+Both raw-eager and TorchAir GQA/MHA lanes passed at position 1279. The compiled
+single-step times were 12.57 ms for GQA and 17.96 ms for repeated-KV MHA. A
+four-step, 16-request compiled-MHA correctness control had mean logit error
+0.01149, max 0.27539, and 64/64 argmax matches against baseline eager. These
+are 910B controls only and do not predict 310P termination or speed.
+
+### 33.1 Constraints and preflight
+
+- Pull `main` and record the exact commit. The required source commit is
+  `5f1b27a` or a descendant containing it.
+- Do not edit tracked files, create a branch, commit, or push.
+- Use the same working Python/NPU environment and model directory as the
+  successful Phase 32 and Experiment 09 runs.
+- Use one NPU. Run every lane in a fresh process.
+- Passing lanes must be run before the known hanging trigger.
+- A hanging process must be terminated by its exact PID only. Never use
+  `pkill` or `killall`.
+- Do not interpret AICore utilization as proof of progress.
+- Do not run an E2E page workload in this phase.
+
+```sh
+cd "$(git rev-parse --show-toplevel)"
+git status --short --branch
+git pull --ff-only origin main
+
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+COMMIT="$(git rev-parse HEAD)"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+PYTHON_BIN="${PYTHON_BIN:-$(command -v python)}"
+LAB=09_persistent_page_engine/scripts/text_decode_lab.py
+MODEL_DIR="${MODEL_DIR:-/workspace/models/PaddleOCR-VL-1.6}"
+CACHE_ROOT="$WORK_SERVER_REPO/.runtime_cache/310p_phase33_text_decode"
+ROOT="$WORK_SERVER_REPO/tmp/09_persistent_page_engine/310p_phase33_text_decode_$COMMIT_SHORT"
+
+test -x "$PYTHON_BIN"
+test -d "$MODEL_DIR"
+"$PYTHON_BIN" "$LAB" --help | grep -q -- 'boundary'
+"$PYTHON_BIN" "$LAB" --help | grep -q -- 'combined_apply_mha_repeat'
+test ! -e "$ROOT"
+mkdir -p "$ROOT"
+
+{
+  printf 'commit=%s\n' "$COMMIT"
+  hostname
+  npu-smi info
+  "$PYTHON_BIN" - <<'PY'
+import platform
+import torch
+import torch_npu
+print("python", platform.python_version())
+print("torch", torch.__version__)
+print("torch_npu", torch_npu.__version__)
+print("torch_npu_git", getattr(torch_npu.version, "git_version", None))
+PY
+} >"$ROOT/preflight.log" 2>&1
+```
+
+Use this helper. It records the expanded command, streams flushed lab markers
+to a log, records the exit code, and bounds setup/compile plus a possible
+silent device hang. The compile lanes receive 1,200 seconds because a new
+TorchAir cache key is expected. The final trigger reuses the GQA cache and
+receives 300 seconds; if setup has not reached `step_begin` in that time,
+classify it as `SETUP_TIMEOUT`, not the expected boundary hang.
+
+```sh
+run_lane() {
+  lane_name="$1"
+  timeout_s="$2"
+  shift 2
+  lane_dir="$ROOT/$lane_name"
+  mkdir -p "$lane_dir"
+  printf '%q ' timeout --signal=TERM --kill-after=10s "$timeout_s" \
+    "$PYTHON_BIN" "$LAB" "$@" --output "$lane_dir/result.json" \
+    >"$lane_dir/command.sh"
+  printf '\n' >>"$lane_dir/command.sh"
+  set +e
+  timeout --signal=TERM --kill-after=10s "$timeout_s" \
+    "$PYTHON_BIN" "$LAB" "$@" --output "$lane_dir/result.json" \
+    >"$lane_dir/run.log" 2>&1
+  lane_exit="$?"
+  printf '%s\n' "$lane_exit" >"$lane_dir/exit_code.txt"
+  grep 'TEXT_DECODE_BOUNDARY' "$lane_dir/run.log" \
+    >"$lane_dir/boundary_events.log" || true
+  return "$lane_exit"
+}
+
+common_args="--model $MODEL_DIR --cache-dir $CACHE_ROOT --batch-size 16 --active-slots 16 --cache-length 4096 --profile-position 1279"
+```
+
+When reporting a timeout, inspect the last flushed marker:
+
+- no `step_begin`: setup or compile timeout; not a boundary reproduction;
+- `step_begin` without `step_returned`: the Python graph call itself did not
+  return;
+- `sync_begin` without `sync_end` or `sync_error`: device computation did not
+  complete;
+- `sync_error`: report the full Python/CANN error verbatim.
+
+### 33.2 Lane A: raw-eager full-decoder MHA control
+
+This confirms that the 18-layer implementation and transient per-layer repeat
+are valid before involving TorchAir.
+
+```sh
+set +e
+run_lane A_mha_raw_pos1279 600 \
+  --mode boundary --backend raw_eager $common_args \
+  --decode-optimization combined_apply_mha_repeat
+A_EXIT="$?"
+set -e
+test "$A_EXIT" -eq 0
+```
+
+Require `step_begin`, `step_returned`, `sync_begin`, and `sync_end`, in that
+order. Stop as `MHA_RAW_FAILURE` if this lane errors or times out.
+
+### 33.3 Lane B: compiled full-decoder MHA at the trigger position
+
+This is the direct candidate-control lane. It compiles one B16/KV4096 graph,
+then executes it at position 1279.
+
+```sh
+set +e
+run_lane B_mha_torchair_pos1279 1200 \
+  --mode boundary --backend torchair --allow-compile $common_args \
+  --decode-optimization combined_apply_mha_repeat
+B_EXIT="$?"
+set -e
+test "$B_EXIT" -eq 0
+```
+
+Require all four completion markers. Also require runtime metadata to report
+`backend=torchair`, `batch_size=16`, `cache_length=4096`,
+`decode_optimization=combined_apply_mha_repeat`, and `attention=mha_repeat`.
+Stop as `MHA_COMPILED_FAILURE` if this lane fails.
+
+### 33.4 Lane C: compile/reuse the production GQA graph at position 1278
+
+The graph shape is identical to the trigger. Only the runtime cache position is
+one token earlier. This lane creates the GQA cache without asking the compiler
+to run first at the known bad boundary.
+
+```sh
+set +e
+run_lane C_gqa_torchair_pos1278 1200 \
+  --mode boundary --backend torchair --allow-compile \
+  --model "$MODEL_DIR" --cache-dir "$CACHE_ROOT" \
+  --batch-size 16 --active-slots 16 --cache-length 4096 \
+  --profile-position 1278 --decode-optimization combined_apply
+C_EXIT="$?"
+set -e
+test "$C_EXIT" -eq 0
+```
+
+Require all four completion markers and metadata with `attention=gqa`. Record
+the exact shape-cache directory and whether it was created or reused. Stop as
+`GQA_SAFE_CONTROL_FAILURE` if this lane fails.
+
+### 33.5 Lane D: cached production GQA at position 1279
+
+Run the expected trigger only after A-C pass. Deliberately omit
+`--allow-compile`. The exact B16/KV4096/source/optimization cache created in
+Lane C must be reused, so a timeout after `sync_begin` cannot be confused with
+compilation.
+
+```sh
+set +e
+run_lane D_gqa_torchair_pos1279 300 \
+  --mode boundary --backend torchair $common_args \
+  --decode-optimization combined_apply
+D_EXIT="$?"
+set -e
+```
+
+Expected 310P result: exit 124, with `step_begin`, `step_returned`, and
+`sync_begin`, but no `sync_end`, `sync_error`, Python traceback, CANN error, or
+AICore exception. Report the duration only as `>boundary wait`; do not call the
+300-second process timeout a kernel duration because model setup occurs first.
+
+If Lane D exits zero, classify `TEXT_LAB_GQA_PASSED`; the standalone trigger
+does not reproduce in the full compiled decoder. If it errors, classify
+`TEXT_LAB_GQA_ERROR` and preserve the full error. If it times out before
+`step_begin`, classify `SETUP_TIMEOUT` and do not claim reproduction.
+
+### 33.6 Optional numerical check after A-D
+
+Run only if Lane B passed and the device remains healthy after Lane D is
+terminated. This reuses the compiled MHA graph and checks four decoder steps on
+16 recorded requests. It is not an accuracy certification.
+
+```sh
+set +e
+run_lane E_mha_correctness 600 \
+  --mode correctness --backend torchair \
+  --model "$MODEL_DIR" --cache-dir "$CACHE_ROOT" \
+  --batch-size 16 --cache-length 4096 \
+  --correctness-items 16 --correctness-steps 4 \
+  --decode-optimization combined_apply_mha_repeat
+E_EXIT="$?"
+set -e
+```
+
+This mode has no boundary markers. Require exit zero and report mean/max logit
+error, argmax matches, and written-KV mean/max error. Do not reject solely on a
+moderate maximum-logit difference; mean error and token decisions are more
+informative here.
+
+### 33.7 Report
+
+Write `$ROOT/agent_report.md`:
+
+```text
+310P PHASE 33 TEXT-DECODE LAB BOUNDARY: TEXT_LAB_REPRODUCED_MHA_PASSES |
+TEXT_LAB_GQA_PASSED | TEXT_LAB_GQA_ERROR | MHA_RAW_FAILURE |
+MHA_COMPILED_FAILURE | GQA_SAFE_CONTROL_FAILURE | SETUP_TIMEOUT
+
+commit / host / exact NPU / software:
+torch_npu version and git_version:
+CANN / driver / firmware:
+model path:
+Lane A exact command / exit / complete boundary markers / elapsed:
+Lane B exact command / exit / complete boundary markers / elapsed:
+Lane B runtime metadata and shape-cache path:
+Lane C exact command / exit / complete boundary markers / elapsed:
+Lane C runtime metadata and shape-cache path / created or reused:
+Lane D exact command / exit / complete boundary markers:
+Lane D last marker and first Python/CANN/plog error, if any:
+Lane E correctness metrics, if run:
+peak NPU memory reported for passing GQA and MHA lanes, if available:
+mechanical classification:
+what is proven:
+what is not proven:
+evidence paths:
+```
+
+Paste back the report and every `TEXT_DECODE_BOUNDARY` line from A-D. Do not
+summarize the event sequence away. In particular, the result is only
+`TEXT_LAB_REPRODUCED_MHA_PASSES` if B completes and D reaches `sync_begin` but
+never reaches `sync_end` or `sync_error`.

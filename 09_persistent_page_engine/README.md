@@ -308,7 +308,8 @@ summary.
 - `boundary` runs exactly one real full-decoder/arena step at a selected cache
   position and emits flushed markers before the call, after enqueue, and around
   device synchronization. It exists for externally timed hardware-boundary
-  probes where a kernel can hang without raising a Python or CANN error.
+  probes where a kernel can hang without raising a Python or CANN error. Its
+  inputs are synthetic and it deliberately does not require a replay corpus.
 - `replay` runs the real `TextDecodeRuntime`, `DecodeArena`, sampled-token D2H
   ring, retirement, refill, admission-copy, and hot-swap scheduler. Recorded
   request lengths decide completion, so every tested shape sees the same

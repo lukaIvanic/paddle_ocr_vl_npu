@@ -1095,6 +1095,7 @@ def _write_report(
     *,
     lab: TextDecodeLab | None,
 ) -> Path:
+    uses_corpus = args.mode != "boundary"
     if args.output is not None:
         output = args.output.expanduser().resolve()
     else:
@@ -1106,8 +1107,14 @@ def _write_report(
         "kind": "text_decode_lab_result",
         "configuration": {
             "mode": args.mode,
-            "corpus": str(args.corpus.expanduser().resolve()),
-            "corpus_sha256": _sha256(args.corpus.expanduser().resolve()),
+            "corpus": (
+                str(args.corpus.expanduser().resolve()) if uses_corpus else None
+            ),
+            "corpus_sha256": (
+                _sha256(args.corpus.expanduser().resolve())
+                if uses_corpus
+                else None
+            ),
             "batch_size": args.batch_size,
             "cache_length": args.cache_length,
             "dtype": args.dtype,
@@ -1201,7 +1208,16 @@ def _print_result(mode: str, result: dict[str, Any]) -> None:
 @torch.inference_mode()
 def main(argv: Sequence[str] | None = None) -> None:
     args = parse_args(argv)
-    corpus, selected_items = _load_corpus(args.corpus, args.max_items)
+    if args.mode == "boundary":
+        corpus: dict[str, Any] = {
+            "contract": {
+                "corpus_used": False,
+                "scope": "synthetic full-decoder cache-position boundary",
+            }
+        }
+        selected_items: list[dict[str, Any]] = []
+    else:
+        corpus, selected_items = _load_corpus(args.corpus, args.max_items)
 
     lab: TextDecodeLab | None = None
     if args.mode in ("profile", "torch_profile", "boundary"):
