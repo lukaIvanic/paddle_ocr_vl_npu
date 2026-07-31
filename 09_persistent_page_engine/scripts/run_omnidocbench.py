@@ -24,6 +24,7 @@ from paddleocr_vl.serving.engine import ContinuousRecognizer
 from paddleocr_vl.serving.runtime_defaults import (
     DECODE_BACKEND_CHOICES,
     DEFAULT_DECODE_BACKEND,
+    DEFAULT_DECODE_OPTIMIZATION,
     DEFAULT_TEXT_PACK_BUCKETS,
     DEFAULT_TEXT_PACK_MAX_MEMBERS,
     DEFAULT_TEXT_PACKING,
@@ -67,6 +68,10 @@ DEFAULT_PACKED_TEXT_CACHE_ROOT = (
 )
 DEFAULT_BATCHED_VISION_CACHE_ROOT = REPO_ROOT / ".runtime_cache/09_vision_router_batched"
 PAGE_ARTIFACT_MAX_PENDING = 8
+E2E_DECODE_OPTIMIZATION_CHOICES = (
+    DEFAULT_DECODE_OPTIMIZATION,
+    "combined_apply_mha_repeat",
+)
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -130,6 +135,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help=(
             "Decode execution backend. 'raw_eager' runs the same decode step "
             "without TorchAir, which isolates compiled-graph failures."
+        ),
+    )
+    parser.add_argument(
+        "--decode-optimization",
+        default=DEFAULT_DECODE_OPTIMIZATION,
+        choices=E2E_DECODE_OPTIMIZATION_CHOICES,
+        help=(
+            "Keep the production combined_apply GQA path by default. "
+            "combined_apply_mha_repeat is the narrowly scoped 310P "
+            "masked-GQA boundary workaround and remains experimental."
         ),
     )
     parser.add_argument(
@@ -606,6 +621,7 @@ def main() -> None:
         model=str(recognizer_model),
         dtype=args.dtype,
         decode_backend=args.decode_backend,
+        decode_optimization=args.decode_optimization,
         batch_size=args.batch_size,
         cache_length=args.cache_length,
         max_new_tokens=args.max_new_tokens,
