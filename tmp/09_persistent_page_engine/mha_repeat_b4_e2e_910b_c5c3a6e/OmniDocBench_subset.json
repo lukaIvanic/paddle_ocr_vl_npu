@@ -1,0 +1,166 @@
+[
+  {
+    "layout_dets": [
+      {
+        "category_type": "table_caption",
+        "poly": [
+          298.03589999999997,
+          344.06690000000003,
+          927.9942,
+          344.06690000000003,
+          927.9942,
+          381.9587,
+          298.03589999999997,
+          381.9587
+        ],
+        "ignore": false,
+        "order": 2,
+        "anno_id": "box_id_0",
+        "attribute": {},
+        "text": "Table 5.8 End-point Constraints for a Cubic Spline"
+      },
+      {
+        "category_type": "table",
+        "poly": [
+          282.0018,
+          402.0741,
+          1315.9533000000001,
+          402.0741,
+          1315.9533000000001,
+          1172.0729,
+          282.0018,
+          1172.0729
+        ],
+        "ignore": false,
+        "order": 3,
+        "anno_id": "box_id_1",
+        "attribute": {},
+        "html": "<table><tr><td>Description of the strategy</td><td>Equations involving $m_{0}$ and $m_{N}$</td></tr><tr><td>(i) Clamped cubic spline: specify $S^{\\prime }(x_{0})$, $S^{\\prime }(x_{n})$(the “best choice\" if the derivatives are known)</td><td>$m_{0}=\\frac {3}{h_{0}}(d_{0}\\quad S^{\\prime }(x_{0}))\\frac {m_{1}}{2}$$m_{N}=\\frac{3}{h_{N\\quad1}}(S^{\\prime}(x_{N})\\quad d_{N\\quad1})\\quad\\frac{m_{N\\quad1}}{2}$</td></tr><tr><td>(ii) Natural cubic spline(a\"relaxed curve\")</td><td>$m_{0}=0,m_{N}=0$</td></tr><tr><td>(iii) Extrapolate $S^{\\prime \\prime }(x)$to the<br/>endpoints</td><td>$m_{0}=m_{1}\\quad\\frac {h_{0}(m_{2}\\quad m_{1})}{h_{1}},$$m_{N}=m_{N\\quad1}+\\frac{h_{N\\quad1}(m_{N\\quad1}\\quad m_{N\\quad2})}{h_{N\\quad2}}$</td></tr><tr><td>(iv) $S^{\\prime \\prime }(x)$ is constant near the<br/>endpoints</td><td>$m_{0}=m_{1},m_{N}=m_{N\\quad1}$</td></tr><tr><td>(v) Specify $S^{\\prime \\prime }(X)$ at each<br/>endpoint</td><td>$m_{0}=S^{\\prime \\prime }(x_{0}),m_{N}=S^{\\prime \\prime }(x_{N})$</td></tr></table>"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          248.94180000000003,
+          1390.0677,
+          1351.9886999999999,
+          1390.0677,
+          1351.9886999999999,
+          1467.9564,
+          248.94180000000003,
+          1467.9564
+        ],
+        "ignore": false,
+        "order": 4,
+        "anno_id": "box_id_2",
+        "attribute": {},
+        "text": "Equations (13) and (14) with (12) used for $ k = 2,3,\\ldots ,N\\quad2 $ form $ N\\quad1 $ linear equations involving the coefficients $ {m}_{1},{m}_{2},\\ldots ,{m}_{N \\quad1} $."
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          252.08249999999998,
+          1470.0614999999998,
+          1354.9641,
+          1470.0614999999998,
+          1354.9641,
+          1584.9063999999998,
+          252.08249999999998,
+          1584.9063999999998
+        ],
+        "ignore": false,
+        "order": 5,
+        "anno_id": "box_id_3",
+        "attribute": {},
+        "text": "Regardless of the particular strategy chosen in Table 5.8, we can rewrite equations 1 and $ N\\quad1 $ in (12) and obtain a tridiagonal linear system of the form $ \\pmb{{HM}} = \\pmb{V} $, which involves $ {m}_{1},{m}_{2},\\ldots ,{m}_{N \\quad1} $ :"
+      },
+      {
+        "category_type": "equation_isolated",
+        "poly": [
+          252.73623919352463,
+          1626.0728000000004,
+          1213.9632000000001,
+          1626.0728000000004,
+          1213.9632000000001,
+          1859.9728000000002,
+          252.73623919352463,
+          1859.9728000000002
+        ],
+        "ignore": false,
+        "order": 6,
+        "anno_id": "box_id_4",
+        "attribute": {},
+        "latex": "$$\\left\\lbrack  \\begin{array}{ccccccc} {b}_{1} & {c}_{1} & & & & & & \\\\  {a}_{1} & {b}_{2} & {c}_{2} & & & & & \\\\   & &  \\ddots  & & & & & \\\\   & & & {a}_{N\\quad3} & {b}_{N\\quad 2}  & {c}_{N\\quad 2} \\\\   & & & & {a}_{N\\quad2} & {b}_{N\\quad1} \\end{array}\\right\\rbrack  \\left\\lbrack  \\begin{array}{c} {m}_{1} \\\\  {m}_{2} \\\\  \\vdots \\\\  {m}_{N\\quad2} \\\\  {m}_{N\\quad1} \\\\  \\end{array}\\right\\rbrack   = \\left\\lbrack  \\begin{array}{cc} {v}_{1} \\\\  {v}_{2} \\\\  \\vdots \\\\  {v}_{N\\quad2} \\\\  {v}_{N\\quad1}  \\\\  \\end{array}\\right\\rbrack  .\\tag{15}$$"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          250.9254,
+          1899.9697,
+          1355.9559000000002,
+          1899.9697,
+          1355.9559000000002,
+          1980.8990999999999,
+          250.9254,
+          1980.8990999999999
+        ],
+        "ignore": false,
+        "order": 7,
+        "anno_id": "box_id_5",
+        "attribute": {},
+        "text": "The linear system in (15) is strictly diagonally dominant and has a unique solution (see Chapter 3 for details). After the coefficients $\\{ {m}_{k}\\} $ are determined, the spline"
+      },
+      {
+        "category_type": "page_number",
+        "poly": [
+          240.0156,
+          254.95099999999996,
+          290.15793119099254,
+          254.95099999999996,
+          290.15793119099254,
+          287.93089999999995,
+          240.0156,
+          287.93089999999995
+        ],
+        "ignore": false,
+        "order": 0,
+        "anno_id": "box_id_6",
+        "attribute": {},
+        "text": "284"
+      },
+      {
+        "category_type": "header",
+        "poly": [
+          314.98800290012196,
+          256.8751831225091,
+          646.055568741813,
+          256.8751831225091,
+          646.055568741813,
+          283.0846890232481,
+          314.98800290012196,
+          283.0846890232481
+        ],
+        "ignore": false,
+        "order": 1,
+        "anno_id": "box-fth4536l",
+        "attribute": {},
+        "text": "CHAP.5 CURVE FITTING"
+      }
+    ],
+    "page_info": {
+      "page_no": 0,
+      "height": 2339,
+      "width": 1653,
+      "image_path": "page-573c437e-c309-4483-a038-ef2f440b104a.png",
+      "page_attribute": {
+        "data_source": "book",
+        "language": "english",
+        "layout": "single_column",
+        "special_issue": [],
+        "subset": "equation_hard"
+      }
+    },
+    "extra": {
+      "relation": []
+    }
+  }
+]
