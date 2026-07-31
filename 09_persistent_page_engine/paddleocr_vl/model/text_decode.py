@@ -52,6 +52,7 @@ class DecodeOptimizationConfig:
     npu_swiglu: bool = False
     add_rms_norm: bool = False
     attention: str = "gqa"
+    increfa_length_mode: str = "mask"
 
 
 DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
@@ -99,6 +100,24 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         rms_norm="npu",
         rotary="npu_apply",
         add_rms_norm=True,
+    ),
+    "combined_apply_pse_sentinel": DecodeOptimizationConfig(
+        name="combined_apply_pse_sentinel",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        add_rms_norm=True,
+        increfa_length_mode="pse_sentinel",
+    ),
+    "combined_apply_static_actual": DecodeOptimizationConfig(
+        name="combined_apply_static_actual",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        add_rms_norm=True,
+        increfa_length_mode="static_actual",
     ),
     "combined_apply_mha_repeat": DecodeOptimizationConfig(
         name="combined_apply_mha_repeat",
@@ -532,6 +551,8 @@ def _decode_attention(
     value_cache: torch.Tensor,
     cache_position: torch.Tensor,
     attention_mask: torch.Tensor | None,
+    pse_shift: torch.Tensor | None,
+    actual_seq_lengths: list[int] | None,
     optimization: DecodeOptimizationConfig,
 ) -> torch.Tensor:
     query_states, key_states, value_states = _project_decode_qkv(
@@ -629,10 +650,11 @@ def _decode_attention(
         query_states.contiguous(),
         key_for_attention.contiguous(),
         value_for_attention.contiguous(),
+        pse_shift=pse_shift,
         atten_mask=(
             None if attention_mask is None else attention_mask.contiguous()
         ),
-        actual_seq_lengths=None,
+        actual_seq_lengths=actual_seq_lengths,
         num_heads=int(attention.num_heads),
         num_key_value_heads=num_key_value_heads,
         input_layout="BNSD",
@@ -680,6 +702,52 @@ def run_text_decode_transformer(
         attention_mask = build_static_decode_bool_mask(
             cache_position, cache_length
         )
+    pse_shift: torch.Tensor | None = None
+    actual_seq_lengths: list[int] | None = None
+    if optimization.increfa_length_mode == "pse_sentinel":
+        # The 310P masked-GQA kernel can deadlock when the valid prefix is an
+        # exact 1280-token internal tile. Keep one always-present PSE graph:
+        # expose one otherwise-masked cache position only at those boundaries,
+        # then suppress it additively. The PSE is zero at all other positions.
+        effective_lengths = cache_position.view(batch_size, 1, 1, 1) + 1
+        physical_positions = torch.arange(
+            int(cache_length),
+            device=inputs_embeds.device,
+            dtype=torch.int64,
+        ).view(1, 1, 1, int(cache_length))
+        boundary = (
+            (effective_lengths.remainder(1280) == 0)
+            & (effective_lengths < int(cache_length))
+        )
+        sentinel = boundary & (physical_positions == effective_lengths)
+        attention_mask = attention_mask & ~sentinel
+        pse_shift = torch.zeros(
+            (
+                batch_size,
+                int(text_model.config.num_attention_heads),
+                1,
+                int(cache_length),
+            ),
+            device=inputs_embeds.device,
+            dtype=inputs_embeds.dtype,
+        ).masked_fill(
+            sentinel.expand(
+                batch_size,
+                int(text_model.config.num_attention_heads),
+                1,
+                int(cache_length),
+            ),
+            torch.finfo(inputs_embeds.dtype).min,
+        )
+    elif optimization.increfa_length_mode == "static_actual":
+        # Deliberately constant for the static BxKV graph. The boolean mask
+        # still carries each row's logical prefix length.
+        actual_seq_lengths = [int(cache_length)] * int(batch_size)
+    elif optimization.increfa_length_mode != "mask":
+        raise ValueError(
+            "unsupported IncreFA length mode: "
+            f"{optimization.increfa_length_mode!r}"
+        )
     position_ids = cache_position.view(batch_size, 1) + rope_deltas.to(
         device=inputs_embeds.device, dtype=torch.int64
     )
@@ -707,6 +775,8 @@ def run_text_decode_transformer(
                 value_caches[layer_idx],
                 cache_position,
                 attention_mask,
+                pse_shift,
+                actual_seq_lengths,
                 optimization,
             )
             hidden_states = layer.apply_blocks(residual, attention_output)
@@ -737,6 +807,8 @@ def run_text_decode_transformer(
                 value_caches[layer_idx],
                 cache_position,
                 attention_mask,
+                pse_shift,
+                actual_seq_lengths,
                 optimization,
             )
             mlp_input, residual = _decode_add_rms_norm(
@@ -772,6 +844,8 @@ def run_text_decode_transformer(
             value_caches[layer_idx],
             cache_position,
             attention_mask,
+            pse_shift,
+            actual_seq_lengths,
             optimization,
         )
         if (
@@ -1029,6 +1103,7 @@ def compile_text_decode_stage(
             "npu_swiglu": optimization.npu_swiglu,
             "add_rms_norm": optimization.add_rms_norm,
             "attention": optimization.attention,
+            "increfa_length_mode": optimization.increfa_length_mode,
         },
     }
     if backend_name == "raw_eager":
