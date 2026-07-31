@@ -109,6 +109,15 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         add_rms_norm=True,
         attention="mha_repeat",
     ),
+    "combined_apply_mha_cache": DecodeOptimizationConfig(
+        name="combined_apply_mha_cache",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        add_rms_norm=True,
+        attention="mha_cache",
+    ),
     "combined_apply_all": DecodeOptimizationConfig(
         name="combined_apply_all",
         hoist_mrope=True,
@@ -166,10 +175,18 @@ class LocalPaddleOCRVLStaticCache:
         device: torch.device,
         dtype: torch.dtype,
         init_mode: str = "zeros",
+        num_key_value_heads: int | None = None,
     ) -> "LocalPaddleOCRVLStaticCache":
+        cache_heads = (
+            int(config.num_key_value_heads)
+            if num_key_value_heads is None
+            else int(num_key_value_heads)
+        )
+        if cache_heads <= 0:
+            raise ValueError("num_key_value_heads must be positive")
         cache_shape = (
             int(batch_size),
-            int(config.num_key_value_heads),
+            cache_heads,
             int(cache_length),
             int(config.head_dim),
         )
@@ -530,6 +547,29 @@ def _decode_attention(
         prepared_factors,
         optimization,
     )
+    if optimization.attention == "mha_cache":
+        if query_states.device.type != "npu":
+            raise ValueError("mha_cache is an NPU-only decode lab path")
+        groups = int(attention.num_key_value_groups)
+        batch_size, kv_heads, token_count, head_dim = key_states.shape
+        expected_heads = int(attention.num_heads)
+        if int(key_cache.shape[1]) != expected_heads:
+            raise ValueError(
+                "mha_cache requires a fully expanded decode arena: "
+                f"expected {expected_heads} heads, got {int(key_cache.shape[1])}"
+            )
+        key_states = (
+            key_states[:, :, None, :, :]
+            .expand(batch_size, kv_heads, groups, token_count, head_dim)
+            .reshape(batch_size, expected_heads, token_count, head_dim)
+            .contiguous()
+        )
+        value_states = (
+            value_states[:, :, None, :, :]
+            .expand(batch_size, kv_heads, groups, token_count, head_dim)
+            .reshape(batch_size, expected_heads, token_count, head_dim)
+            .contiguous()
+        )
     update_decode_kv_cache_(
         key_cache,
         value_cache,
@@ -574,6 +614,10 @@ def _decode_attention(
             .reshape(batch_size, kv_heads * groups, kv_length, head_dim)
             .contiguous()
         )
+        num_key_value_heads = 0
+    elif optimization.attention == "mha_cache":
+        if int(key_cache.shape[1]) != int(attention.num_heads):
+            raise ValueError("mha_cache received a non-expanded decode arena")
         num_key_value_heads = 0
     elif optimization.attention != "gqa":
         raise ValueError(
@@ -1073,6 +1117,11 @@ class TextDecodeRuntime:
             model,
             optimization=self.optimization,
         ).eval()
+        self.cache_num_key_value_heads = (
+            int(model.config.text_config.num_attention_heads)
+            if self.optimization.attention == "mha_cache"
+            else int(model.config.text_config.num_key_value_heads)
+        )
         synchronize(device)
         started = time.perf_counter()
         self.fn, self.metadata = compile_text_decode_stage(
@@ -1096,6 +1145,14 @@ class TextDecodeRuntime:
             device=device,
             dtype=dtype,
             init_mode="zeros",
+            num_key_value_heads=self.cache_num_key_value_heads,
+        )
+        self.metadata["cache_num_key_value_heads"] = (
+            self.cache_num_key_value_heads
+        )
+        self.metadata["cache_allocated_bytes"] = sum(
+            int(tensor.numel()) * int(tensor.element_size())
+            for tensor in self.warm_cache.flat_tensors()
         )
         warm_input = torch.zeros((batch_size, 1), device=device, dtype=torch.int64)
         warm_position = torch.ones((batch_size,), device=device, dtype=torch.int64)

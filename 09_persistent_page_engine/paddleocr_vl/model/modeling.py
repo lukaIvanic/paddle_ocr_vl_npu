@@ -233,6 +233,7 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
         device: torch.device,
         dtype: torch.dtype,
         init_mode: str = "zeros",
+        num_key_value_heads: int | None = None,
     ) -> LocalPaddleOCRVLStaticCache:
         return LocalPaddleOCRVLStaticCache.allocate(
             self.config.text_config,
@@ -241,6 +242,7 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
             device=device,
             dtype=dtype,
             init_mode=init_mode,
+            num_key_value_heads=num_key_value_heads,
         )
 
     def forward_static_prefill(

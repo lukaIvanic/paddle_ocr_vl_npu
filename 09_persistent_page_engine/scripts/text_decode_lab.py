@@ -899,6 +899,7 @@ class TextDecodeLab:
             device=self.device,
             dtype=self.dtype,
             init_mode="zeros",
+            num_key_value_heads=self.runtime.cache_num_key_value_heads,
         )
         positions = torch.tensor(
             [int(item["prompt_tokens"]) for item in selected],
@@ -973,6 +974,17 @@ class TextDecodeLab:
                 compiled_written = compiled_tensor[
                     batch_indices, :, written_positions, :
                 ]
+                if compiled_written.shape[1] != eager_written.shape[1]:
+                    groups = (
+                        int(compiled_written.shape[1])
+                        // int(eager_written.shape[1])
+                    )
+                    eager_written = eager_written[:, :, None, :].expand(
+                        eager_written.shape[0],
+                        eager_written.shape[1],
+                        groups,
+                        eager_written.shape[2],
+                    ).reshape_as(compiled_written)
                 diff = (eager_written.float() - compiled_written.float()).abs()
                 step_kv_max = max(step_kv_max, float(diff.max().item()))
                 step_kv_sum += float(diff.sum().item())

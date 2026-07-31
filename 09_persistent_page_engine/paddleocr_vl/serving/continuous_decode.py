@@ -335,16 +335,42 @@ class DecodeArena:
             destination[slot_index : slot_index + 1]
             for destination in self.cache.flat_tensors()
         )
+        source_heads = int(source_tensors[0].shape[1])
+        destination_heads = int(destination_tensors[0].shape[1])
+        if destination_heads % source_heads != 0:
+            raise ValueError(
+                "decode arena KV heads must equal or be an integer multiple "
+                f"of prefill KV heads: source={source_heads}, "
+                f"destination={destination_heads}"
+            )
+        cache_head_expansion = destination_heads // source_heads
         useful_prefix_bytes = sum(
             int(source[:, :, :prompt_length, :].numel()) * source.element_size()
             for source in source_tensors
         )
         physical_copied_bytes = sum(
-            int(source.numel()) * source.element_size() for source in source_tensors
+            int(destination.numel()) * destination.element_size()
+            for destination in destination_tensors
         )
 
         def copy_state() -> None:
-            torch._foreach_copy_(destination_tensors, source_tensors)
+            if cache_head_expansion == 1:
+                torch._foreach_copy_(destination_tensors, source_tensors)
+            else:
+                for destination, source in zip(
+                    destination_tensors,
+                    source_tensors,
+                    strict=True,
+                ):
+                    batch_size, kv_heads, cache_length, head_dim = source.shape
+                    expanded = source[:, :, None, :, :].expand(
+                        batch_size,
+                        kv_heads,
+                        cache_head_expansion,
+                        cache_length,
+                        head_dim,
+                    )
+                    destination.view_as(expanded).copy_(expanded)
             self.rope_deltas[slot_index : slot_index + 1].copy_(source_rope_deltas)
             self.cache_position[slot_index : slot_index + 1].copy_(
                 source_cache_position.reshape(1)
@@ -365,6 +391,9 @@ class DecodeArena:
                 "prompt_tokens": prompt_length,
                 "useful_prefix_bytes": useful_prefix_bytes,
                 "physical_copied_bytes": physical_copied_bytes,
+                "source_kv_heads": source_heads,
+                "destination_kv_heads": destination_heads,
+                "cache_head_expansion": cache_head_expansion,
                 "hot_swap": hot_swap,
             },
         )
