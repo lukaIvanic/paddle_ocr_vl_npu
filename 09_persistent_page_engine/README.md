@@ -344,6 +344,40 @@ fallback or an accepted optimization: the boundary lab first establishes
 whether it avoids the fault, and later measurements must price its transient
 memory and repeated-copy cost.
 
+`scripts/text_decode_real_generation.py` is the real-generation gate after the
+synthetic `boundary` and `correctness` modes. It obtains block 3 from a fixed
+OmniDocBench page through the owned layout frontend, verifies the expected
+1022-by-772 table crop and 1,021-token real prefill, duplicates that crop into
+16 slots, and performs real vision prefill, text prefill, KV admission, and
+autoregressive decoding. The selected crop generates 374 tokens before EOS,
+so every slot naturally executes cache position 1279/effective length 1280.
+The report retains every generated token and requires all requests to cross
+the target. `--reference` performs exact per-request token, text, and stop
+reason comparison.
+
+The 910B controls at commit `e257add` are under
+`tmp/09_persistent_page_engine/real_decode_generation_910b_e257add/`. Both GQA
+and repeated-KV MHA completed 16/16 requests and were bit-exact. The sustained
+cost is substantial: production GQA measured 4,104 effective decode tok/s and
+0.940 s of model-plus-argmax device time, while MHA measured 916 tok/s and
+6.057 s. The MHA path is therefore a correctness/termination candidate for
+310P, not a performance optimization.
+
+```sh
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
+  09_persistent_page_engine/scripts/text_decode_real_generation.py \
+  --decode-cache-dir .runtime_cache/09_persistent_page_engine_torchair \
+  --decode-optimization combined_apply \
+  --output tmp/09_persistent_page_engine/real_decode_generation/gqa.json
+
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
+  09_persistent_page_engine/scripts/text_decode_real_generation.py \
+  --decode-cache-dir .runtime_cache/09_persistent_page_engine_torchair \
+  --decode-optimization combined_apply_mha_repeat \
+  --reference tmp/09_persistent_page_engine/real_decode_generation/gqa.json \
+  --output tmp/09_persistent_page_engine/real_decode_generation/mha.json
+```
+
 The faithful OmniDocBench runner defaults to the measured B32/KV4096 decode
 shape. Its 2,808-token generation cap leaves room for the retained corpus's
 1,289-token maximum prompt in that static cache.

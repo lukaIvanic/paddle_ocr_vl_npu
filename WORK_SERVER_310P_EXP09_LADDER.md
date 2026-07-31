@@ -12910,3 +12910,220 @@ Paste back the report and every `TEXT_DECODE_BOUNDARY` line from A-D. Do not
 summarize the event sequence away. In particular, the result is only
 `TEXT_LAB_REPRODUCED_MHA_PASSES` if B completes and D reaches `sync_begin` but
 never reaches `sync_end` or `sync_error`.
+
+## Phase 34: real B16 OCR generation through effective length 1280
+
+### 34.0 Question and fixed workload
+
+Phase 33 proved that the complete compiled MHA decoder can execute one
+synthetic step at the failing 310P boundary. Phase 34 tests the part that the
+one-step and four-step probes cannot establish: real autoregressive generation
+with real vision/text prefills, production KV admission, 16 active slots, 374
+decode iterations, and the natural transition through cache position 1279.
+
+Use the committed 910B GQA output as the semantic reference:
+
+```text
+tmp/09_persistent_page_engine/real_decode_generation_910b_e257add/gqa_reference.json
+```
+
+The fixed source is OmniDocBench page
+`page-573c437e-c309-4483-a038-ef2f440b104a.png`, owned-layout block 3. The
+script asserts a 1022-by-772 crop, prompt `Table Recognition:`, and exactly
+1,021 input tokens. It duplicates that same genuine crop into 16 independent
+requests. Do not replace it with synthetic KV, shorten generation, change the
+crop, or lower the target. All 16 requests must naturally cross effective
+length 1280 and terminate by EOS.
+
+The candidate remains lab-only. Do not change the Experiment 09 production
+default from `combined_apply`.
+
+### 34.1 Preflight
+
+Pull `main` and require commit `9862b09` or a descendant. Use the same working
+environment, model paths, and NPU-selection procedure as Phase 33. Do not edit
+tracked files, create a branch, commit, or push. Use one fresh process and an
+external timeout. Never terminate unrelated processes.
+
+```sh
+cd "$(git rev-parse --show-toplevel)"
+git status --short --branch
+git pull --ff-only origin main
+
+REPO="$(git rev-parse --show-toplevel)"
+COMMIT="$(git rev-parse HEAD)"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+PYTHON_BIN="${PYTHON_BIN:-$(command -v python)}"
+LAB="$REPO/09_persistent_page_engine/scripts/text_decode_real_generation.py"
+MODEL_DIR="${MODEL_DIR:-/workspace/models/PaddleOCR-VL-1.6}"
+LAYOUT_MODEL="${LAYOUT_MODEL:-/workspace/models/PP-DocLayoutV3_safetensors}"
+PAGE_IMAGE="${PAGE_IMAGE:-/workspace/datasets/OmniDocBench/images/page-573c437e-c309-4483-a038-ef2f440b104a.png}"
+CACHE_ROOT="$REPO/.runtime_cache/310p_phase33_text_decode"
+REFERENCE="$REPO/tmp/09_persistent_page_engine/real_decode_generation_910b_e257add/gqa_reference.json"
+ROOT="$REPO/tmp/09_persistent_page_engine/310p_phase34_real_generation_$COMMIT_SHORT"
+
+test -x "$PYTHON_BIN"
+test -f "$LAB"
+test -d "$MODEL_DIR"
+test -d "$LAYOUT_MODEL"
+test -f "$PAGE_IMAGE"
+test -s "$REFERENCE"
+"$PYTHON_BIN" "$LAB" --help | grep -q -- 'combined_apply_mha_repeat'
+test ! -e "$ROOT"
+mkdir -p "$ROOT/mha"
+
+{
+  printf 'commit=%s\n' "$COMMIT"
+  hostname
+  npu-smi info
+  "$PYTHON_BIN" - <<'PY'
+import platform
+import torch
+import torch_npu
+print("python", platform.python_version())
+print("torch", torch.__version__)
+print("torch_npu", torch_npu.__version__)
+print("torch_npu_git", getattr(torch_npu.version, "git_version", None))
+PY
+} >"$ROOT/preflight.log" 2>&1
+```
+
+If Phase 33 used a different cache root, set `CACHE_ROOT` to that exact root.
+The MHA B16/KV4096 graph should normally be reused. If no matching graph is
+present and setup compiles one, report the compile explicitly and do not count
+setup time as generation time.
+
+### 34.2 Run the real MHA lane
+
+Record the exact expanded command, keep live output in a log, preserve the
+exit code, and allow setup/cache loading plus generation enough time. The lab
+prints only the boundary synchronization events, not every scheduler event, so
+the log itself does not dominate host time.
+
+```sh
+printf '%q ' timeout --signal=TERM --kill-after=10s 1200 \
+  "$PYTHON_BIN" "$LAB" \
+  --page-image "$PAGE_IMAGE" \
+  --layout-model "$LAYOUT_MODEL" \
+  --layout-device cpu \
+  --layout-model-backend owned \
+  --recognizer-model "$MODEL_DIR" \
+  --decode-cache-dir "$CACHE_ROOT" \
+  --decode-backend torchair \
+  --decode-optimization combined_apply_mha_repeat \
+  --batch-size 16 --replicas 16 \
+  --cache-length 4096 --max-new-tokens 512 \
+  --target-effective-length 1280 \
+  --min-pixels 28224 \
+  --vision-backend raw_eager \
+  --vision-attention prompt_flash_attention \
+  --vision-promptfa-align-128 \
+  --text-backend raw_eager \
+  --reference "$REFERENCE" \
+  --output "$ROOT/mha/result.json" \
+  >"$ROOT/mha/command.sh"
+printf '\n' >>"$ROOT/mha/command.sh"
+
+set +e
+timeout --signal=TERM --kill-after=10s 1200 \
+  "$PYTHON_BIN" "$LAB" \
+  --page-image "$PAGE_IMAGE" \
+  --layout-model "$LAYOUT_MODEL" \
+  --layout-device cpu \
+  --layout-model-backend owned \
+  --recognizer-model "$MODEL_DIR" \
+  --decode-cache-dir "$CACHE_ROOT" \
+  --decode-backend torchair \
+  --decode-optimization combined_apply_mha_repeat \
+  --batch-size 16 --replicas 16 \
+  --cache-length 4096 --max-new-tokens 512 \
+  --target-effective-length 1280 \
+  --min-pixels 28224 \
+  --vision-backend raw_eager \
+  --vision-attention prompt_flash_attention \
+  --vision-promptfa-align-128 \
+  --text-backend raw_eager \
+  --reference "$REFERENCE" \
+  --output "$ROOT/mha/result.json" \
+  2>&1 | tee "$ROOT/mha/run.log"
+MHA_EXIT="${PIPESTATUS[0]}"
+set -e
+printf '%s\n' "$MHA_EXIT" >"$ROOT/mha/exit_code.txt"
+grep 'EXP09_SCHEDULER' "$ROOT/mha/run.log" \
+  >"$ROOT/mha/boundary_events.log" || true
+```
+
+Do not run the production GQA generation lane first: its 310P failure at this
+boundary is already established and can leave the device unhealthy. If the
+MHA lane passes and Luka later asks for a same-machine GQA confirmation, run it
+last in a new process with a strict timeout.
+
+### 34.3 Mechanical checks
+
+Require exit zero and parse `result.json`; do not infer success from the final
+console line alone. Require all of the following:
+
+- `configuration.decode_optimization == "combined_apply_mha_repeat"`;
+- 16 results and `cohort.input_tokens == [1021]`;
+- every generated length is 374 and every stop reason is `eos`;
+- `cohort.all_crossed_target`, `all_token_ids_identical`, and
+  `all_text_identical` are true;
+- reference comparison reports exact token IDs, text, and stop reasons for all
+  16 requests;
+- the log has one `diagnostic_pending_state` at cache position 1279/effective
+  length 1280, followed by matching compute-sync and D2H-sync end events;
+- no Python traceback, CANN error, AICore error, or timeout.
+
+Report these performance numbers from the JSON rather than estimating them
+from shell wall time:
+
+- `run_wall_s` and `schedule.timing_s.continuous_decode_wall`;
+- raw, effective, and effective-device decode tok/s;
+- `schedule.timing_s.decode_model_and_argmax_device`;
+- `schedule.timing_s.d2h_wait_wall` and `retire_and_refill_host_wall`;
+- graph calls, raw/effective token totals, and effective fraction;
+- memory before, peak, and peak delta;
+- setup time and whether the graph was reused or compiled.
+
+For context only, the corresponding 910B MHA result is 916.1 effective tok/s,
+985.2 effective-device tok/s, 6.057 s model-plus-argmax device time, and a
+263,521,792-byte peak delta. The 910B production GQA reference is 4,104.4
+effective tok/s and 0.940 s model-plus-argmax device time. Do not treat those
+as 310P pass thresholds.
+
+### 34.4 Report
+
+Write `$ROOT/agent_report.md`:
+
+```text
+310P PHASE 34 REAL B16 GENERATION: MHA_REAL_GENERATION_PASS |
+MHA_OUTPUT_DIVERGENCE | MHA_BOUNDARY_HANG | MHA_RUNTIME_ERROR |
+SETUP_TIMEOUT
+
+commit / host / exact NPU / software:
+torch_npu version and git_version:
+CANN / driver / firmware:
+exact command / exit code:
+model, layout model, page image, cache and reference paths:
+graph reused or compiled:
+source crop size / prompt / input-token count:
+request count / generated lengths / stop reasons:
+all 16 crossed effective length 1280:
+boundary compute and D2H event sequence with wait times:
+reference token / text / stop-reason exactness:
+run wall / continuous-decode wall:
+raw / effective / effective-device decode tok/s:
+model-plus-argmax device / D2H wait / retire-refill wall:
+graph calls / raw and effective token totals / effective fraction:
+memory before / peak / peak delta:
+first Python/CANN/plog error, if any:
+mechanical classification:
+what is proven:
+what is not proven:
+evidence paths:
+```
+
+Paste back the report and the complete `boundary_events.log`. A passing Phase
+34 proves that the MHA workaround survives real B16 OCR generation across the
+faulting boundary with exact 910B output. It does not make MHA a production
+choice; its 310P sustained cost still has to be judged against alternatives.
