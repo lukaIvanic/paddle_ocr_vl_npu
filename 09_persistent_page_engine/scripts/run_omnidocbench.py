@@ -70,6 +70,7 @@ DEFAULT_BATCHED_VISION_CACHE_ROOT = REPO_ROOT / ".runtime_cache/09_vision_router
 PAGE_ARTIFACT_MAX_PENDING = 8
 E2E_DECODE_OPTIMIZATION_CHOICES = (
     DEFAULT_DECODE_OPTIMIZATION,
+    "combined_apply_static_actual",
     "combined_apply_mha_repeat",
 )
 
@@ -143,6 +144,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         choices=E2E_DECODE_OPTIMIZATION_CHOICES,
         help=(
             "Keep the production combined_apply GQA path by default. "
+            "combined_apply_static_actual keeps the same GQA mask while "
+            "always passing a cache-length actual_seq_lengths list. "
             "combined_apply_mha_repeat is the narrowly scoped 310P "
             "masked-GQA boundary workaround and remains experimental."
         ),
