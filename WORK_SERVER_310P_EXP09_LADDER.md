@@ -12257,3 +12257,146 @@ evidence paths:
 Paste back the report, both probes' complete `DENSE_DECODE_BOUNDARY` progress
 records, and every KV3584 E2E `EXP09_SCHEDULER` line beginning with
 `diagnostic_`.
+
+## Phase 31: minimal IncreFlashAttention boundary reproduction
+
+### 31.0 Question and constraints
+
+Phase 30 proved that the complete production-shaped compiled decoder hangs at
+`cache_position=1279` (`effective_length=1280`) with both physical KV4096 and
+KV3584, while the adjacent positions pass. This phase asks whether one
+`npu_incre_flash_attention` call reproduces the boundary without the model,
+decoder layers, KV scatter, scheduler, or page pipeline.
+
+Do not use event polling, `ASCEND_LAUNCH_BLOCKING`, a profiler, or an in-process
+timeout. Every measured process performs one ordinary event synchronization.
+Use the shell `timeout` command as the external watchdog. Run every lane in its
+own process and terminate only its exact PID.
+
+### 31.1 Preflight
+
+```sh
+cd "$(git rev-parse --show-toplevel)"
+git status --short --branch
+git pull --ff-only origin main
+
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+PYTHON_BIN="${PYTHON_BIN:-$(command -v python)}"
+PROBE=09_persistent_page_engine/scripts/probes/probe_incre_flash_attention_boundary.py
+"$PYTHON_BIN" "$PROBE" --help | grep -q -- '--mask'
+
+ROOT="$WORK_SERVER_REPO/tmp/09_persistent_page_engine/310p_phase31_minimal_increfa_$COMMIT_SHORT"
+test ! -e "$ROOT"
+mkdir -p "$ROOT"
+```
+
+The probe uses synthetic Q/K/V tensors at the production B16/KV4096/head
+shapes. It issues only one `npu_incre_flash_attention` operation per tested
+position. Its `step_sync_begin`/`step_sync_end` records are flushed before and
+after the sole synchronization boundary.
+
+For compiled lanes, first compile/replay the identical graph on safe positions
+1278 and 1280. Only after that process passes, start a fresh process using the
+same cache and test position 1279 alone. This prevents compile time from being
+confused with the hang timeout.
+
+### 31.2 Lane A: compiled, production position mask
+
+```sh
+LANE="$ROOT/A_compiled_masked"
+CACHE="$WORK_SERVER_REPO/.runtime_cache/310p_phase31_increfa_masked"
+mkdir -p "$LANE"
+
+timeout 900 "$PYTHON_BIN" "$PROBE" \
+  --backend torchair --mask position --cache-init zeros \
+  --batch-size 16 --cache-length 4096 --target-row 3 --inactive-position 0 \
+  --positions 1278,1280 --cache-dir "$CACHE" \
+  --output "$LANE/safe.json" >"$LANE/safe.log" 2>&1
+printf '%s\n' "$?" >"$LANE/safe_exit_code.txt"
+
+timeout --signal=TERM --kill-after=5s 60 "$PYTHON_BIN" "$PROBE" \
+  --backend torchair --mask position --cache-init zeros \
+  --batch-size 16 --cache-length 4096 --target-row 3 --inactive-position 0 \
+  --positions 1279 --cache-dir "$CACHE" \
+  --output "$LANE/boundary.json" >"$LANE/boundary.log" 2>&1
+printf '%s\n' "$?" >"$LANE/boundary_exit_code.txt"
+```
+
+Do not run the boundary command unless the safe command exits zero. Confirm
+that the boundary process reused the safe command's cache rather than compiling
+a new shape.
+
+### 31.3 Lane B: eager, production position mask
+
+```sh
+LANE="$ROOT/B_eager_masked"
+mkdir -p "$LANE"
+
+timeout --signal=TERM --kill-after=5s 60 "$PYTHON_BIN" "$PROBE" \
+  --backend eager --mask position --cache-init zeros \
+  --batch-size 16 --cache-length 4096 --target-row 3 --inactive-position 0 \
+  --positions 1278,1280,1279 \
+  --output "$LANE/result.json" >"$LANE/run.log" 2>&1
+printf '%s\n' "$?" >"$LANE/exit_code.txt"
+```
+
+Position 1279 is deliberately last, so both safe controls remain recorded if
+the final synchronization hangs.
+
+### 31.4 Lane C: compiled, no attention mask
+
+```sh
+LANE="$ROOT/C_compiled_nomask"
+CACHE="$WORK_SERVER_REPO/.runtime_cache/310p_phase31_increfa_nomask"
+mkdir -p "$LANE"
+
+timeout 900 "$PYTHON_BIN" "$PROBE" \
+  --backend torchair --mask none --cache-init zeros \
+  --batch-size 16 --cache-length 4096 --target-row 3 --inactive-position 0 \
+  --positions 1278,1280 --cache-dir "$CACHE" \
+  --output "$LANE/safe.json" >"$LANE/safe.log" 2>&1
+printf '%s\n' "$?" >"$LANE/safe_exit_code.txt"
+
+timeout --signal=TERM --kill-after=5s 60 "$PYTHON_BIN" "$PROBE" \
+  --backend torchair --mask none --cache-init zeros \
+  --batch-size 16 --cache-length 4096 --target-row 3 --inactive-position 0 \
+  --positions 1279 --cache-dir "$CACHE" \
+  --output "$LANE/boundary.json" >"$LANE/boundary.log" 2>&1
+printf '%s\n' "$?" >"$LANE/boundary_exit_code.txt"
+```
+
+### 31.5 Mechanical interpretation and report
+
+| Lane A | Lane B | Lane C | Conclusion |
+| --- | --- | --- | --- |
+| hangs | passes | passes | compiled masked IncreFA lowering/tiling bug |
+| hangs | hangs | passes | eager and compiled masked IncreFA kernel/mask bug |
+| hangs | hangs | hangs | IncreFA problem not specific to compilation or the mask |
+| passes | passes | passes | the full decoder graph interaction is required; one IncreFA call is insufficient |
+| passes | hangs | any | unexpected; report without interpreting |
+
+For a hang, the decisive evidence is a final flushed
+`step_sync_begin target_position=1279 effective_length=1280` with no matching
+`step_sync_end`, followed by shell exit 124. Record the wall-time lower bound as
+`>60 s`; do not report an NPU kernel duration because the completion event was
+never reached.
+
+Write `$ROOT/agent_report.md` containing:
+
+```text
+310P PHASE 31 MINIMAL INCREFA BOUNDARY: COMPILED_MASK | KERNEL_MASK |
+GENERAL_INCREFA | FULL_GRAPH_INTERACTION | UNRESOLVED
+
+commit / host / exact NPU / software:
+Lane A safe and boundary exact commands / exits / progress records:
+Lane B exact command / exit / progress record:
+Lane C safe and boundary exact commands / exits / progress records:
+cache compile versus replay evidence for A and C:
+first Python/CANN/plog error, if any:
+mechanical classification from the table:
+evidence paths:
+```
+
+Paste back the complete report and every `INCRE_FA_BOUNDARY` line. Do not
+summarize the progress records away.
