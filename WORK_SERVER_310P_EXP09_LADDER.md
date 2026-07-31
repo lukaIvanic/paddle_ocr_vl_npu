@@ -12400,3 +12400,231 @@ evidence paths:
 
 Paste back the complete report and every `INCRE_FA_BOUNDARY` line. Do not
 summarize the progress records away.
+
+## Phase 32: standalone masked-GQA IncreFA discriminator
+
+### 32.0 Why this phase exists
+
+Phase 31 established the following 310P result at cache position 1279
+(`effective_length=1280`):
+
+- compiled IncreFA with the production bool position mask hung;
+- eager IncreFA with the same mask hung;
+- compiled IncreFA with `atten_mask=None` passed;
+- an additional eager `atten_mask=None` lane also passed.
+
+TorchAir is therefore no longer the discriminator. This phase removes the
+model config and every repository runtime helper as well. It asks a narrower
+question: is the nonterminating path specifically masked GQA on 310P?
+
+The low-level CANN contract is important here. PaddleOCR-VL uses 16 query heads
+and 2 KV heads, passing `numKeyValueHeads=2`. The CANN
+`aclnnIncreFlashAttention` documentation says Atlas inference-series
+accelerator cards support only `numKeyValueHeads=0`; zero denotes MHA with the
+same number of query and KV heads. Nonzero GQA is documented for Atlas A2.
+
+References:
+
+- TorchNPU 26.0 API:
+  <https://www.hiascend.com/document/detail/zh/Pytorch/2600/apiref/torchnpuCustomsapi/docs/zh/custom_APIs/torch_npu/torch_npu-npu_incre_flash_attention.md>
+- low-level `aclnnIncreFlashAttention` contract:
+  <https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/910beta1/API/aolapi/context/ops-transformer/aclnnIncreFlashAttention.md>
+- current TorchNPU/CANN compatibility table:
+  <https://gitcode.com/Ascend/pytorch/blob/master/COMPATIBILITY.md>
+
+Do not describe the expected hang as acceptable behavior merely because the
+GQA configuration is outside the documented 310P contract. A submitted kernel
+that never completes, returns no error, and requires killing the process is
+still a vendor-quality failure mode. This phase identifies the smallest exact
+trigger; it does not choose a production workaround.
+
+### 32.1 Constraints and preflight
+
+The probe is one standalone Python file. It imports no project module, reads no
+model file, performs no TorchAir compile, and runs exactly one eager
+`npu_incre_flash_attention` call followed by one ordinary device
+synchronization. Do not add polling, a profiler, `ASCEND_LAUNCH_BLOCKING`, an
+in-process alarm, or other pipeline code.
+
+Run every lane in a fresh process under the shell timeout. Run passing controls
+before a potentially hanging lane. Do not continue using a device if killing a
+hung process leaves it unhealthy.
+
+```sh
+cd "$(git rev-parse --show-toplevel)"
+git status --short --branch
+git pull --ff-only origin main
+
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+PYTHON_BIN="${PYTHON_BIN:-$(command -v python)}"
+PROBE=09_persistent_page_engine/scripts/probes/probe_increfa_masked_gqa.py
+"$PYTHON_BIN" "$PROBE" --help | grep -q -- '--lane'
+
+ROOT="$WORK_SERVER_REPO/tmp/09_persistent_page_engine/310p_phase32_increfa_gqa_$COMMIT_SHORT"
+test ! -e "$ROOT"
+mkdir -p "$ROOT"
+
+{
+  git rev-parse HEAD
+  hostname
+  npu-smi info
+  "$PYTHON_BIN" -m pip show torch torch-npu
+} >"$ROOT/preflight.log" 2>&1
+```
+
+The probe itself records the Python, torch, torch_npu, and
+`torch_npu.version.git_version` values in each completed result and in the
+flushed `setup_begin` progress row. Preserve that full row even when a lane
+hangs. This matters because `torch_npu.__version__ == 2.10.0` alone does not
+distinguish the CANN-9.0 `v2.10.0-26.0.0` build from the CANN-9.1
+`v2.10.0-26.1.0` build.
+
+Use this shell helper for each lane. It records the exact command, streams the
+probe output into a log, and preserves timeout exit 124:
+
+```sh
+run_lane() {
+  lane_name="$1"
+  shift
+  lane_dir="$ROOT/$lane_name"
+  mkdir -p "$lane_dir"
+  printf '%q ' timeout --signal=TERM --kill-after=5s 60 \
+    "$PYTHON_BIN" "$PROBE" "$@" --output "$lane_dir/result.json" \
+    >"$lane_dir/command.sh"
+  printf '\n' >>"$lane_dir/command.sh"
+  timeout --signal=TERM --kill-after=5s 60 \
+    "$PYTHON_BIN" "$PROBE" "$@" --output "$lane_dir/result.json" \
+    >"$lane_dir/run.log" 2>&1
+  lane_exit="$?"
+  printf '%s\n' "$lane_exit" >"$lane_dir/exit_code.txt"
+  return "$lane_exit"
+}
+```
+
+Because an expected timeout is nonzero, invoke each helper call with
+`set +e` or as the condition of an `if`; do not let `set -e` abort before the
+exit code is saved.
+
+### 32.2 Passing controls first
+
+Run GQA without a mask. This exactly retains the production 16:2 head ratio but
+avoids the mask-selected kernel route:
+
+```sh
+set +e
+run_lane A_b1_gqa_nomask \
+  --lane gqa_nomask --batch-size 1 --batch-pattern uniform \
+  --cache-length 4096 --effective-length 1280
+A_EXIT="$?"
+set -e
+test "$A_EXIT" -eq 0
+```
+
+Next run masked MHA using 16 stored KV heads and
+`num_key_value_heads=0`. This is the documented Atlas inference-series form and
+uses the same bool mask contents as the failing GQA lane:
+
+```sh
+set +e
+run_lane B_b1_mha_masked \
+  --lane mha_masked --batch-size 1 --batch-pattern uniform \
+  --cache-length 4096 --effective-length 1280
+B_EXIT="$?"
+set -e
+test "$B_EXIT" -eq 0
+```
+
+Stop and report `CONTROL_FAILURE` if either control fails or hangs. Do not run
+the trigger lane after a failed control.
+
+### 32.3 Minimal trigger: B1 masked GQA
+
+Only after both controls pass, run the smallest suspected trigger:
+
+```sh
+set +e
+run_lane C_b1_gqa_masked \
+  --lane gqa_masked --batch-size 1 --batch-pattern uniform \
+  --cache-length 4096 --effective-length 1280
+C_EXIT="$?"
+set -e
+```
+
+If this exits 124 with a final `sync_begin` and no `sync_end`, stop. The issue
+has been reduced to one B1 eager masked-GQA IncreFA call.
+
+### 32.4 Conditional batch-shape escalation
+
+Run this section only if Lane C exits zero. It determines whether the trigger
+requires B16 or mixed per-row prefix lengths.
+
+First test B16 with every row at effective length 1280:
+
+```sh
+set +e
+run_lane D_b16_gqa_masked_uniform \
+  --lane gqa_masked --batch-size 16 --batch-pattern uniform \
+  --cache-length 4096 --effective-length 1280
+D_EXIT="$?"
+set -e
+```
+
+If D passes, reproduce the Phase-31 mask geometry: row 3 has effective length
+1280 while all other rows have effective length 1.
+
+```sh
+set +e
+run_lane E_b16_gqa_masked_mixed \
+  --lane gqa_masked --batch-size 16 --batch-pattern mixed \
+  --target-row 3 --inactive-effective-length 1 \
+  --cache-length 4096 --effective-length 1280
+E_EXIT="$?"
+set -e
+```
+
+Stop after the first hang. Do not rerun a hanging lane merely to collect more
+wall time.
+
+### 32.5 Classification and report
+
+| A GQA no mask | B MHA mask | C B1 GQA mask | D/E if needed | Classification |
+| --- | --- | --- | --- | --- |
+| pass | pass | hangs | not run | `B1_MASKED_GQA` |
+| pass | pass | pass | B16 uniform hangs | `BATCHED_MASKED_GQA` |
+| pass | pass | pass | uniform passes, mixed hangs | `MIXED_PREFIX_MASKED_GQA` |
+| pass | pass | pass | both pass | `PHASE31_CONTEXT_REQUIRED` |
+| any control fails | any | not run | not run | `CONTROL_FAILURE` |
+
+For a hang, require all three pieces of evidence:
+
+1. shell exit 124;
+2. the last flushed `INCREFA_GQA` event is `sync_begin`;
+3. no `sync_end`, Python exception, CANN error, or AICore exception appears.
+
+Report the duration only as `>60 s`. Do not call it a 60-second kernel time.
+
+Write `$ROOT/agent_report.md`:
+
+```text
+310P PHASE 32 STANDALONE MASKED GQA: B1_MASKED_GQA |
+BATCHED_MASKED_GQA | MIXED_PREFIX_MASKED_GQA |
+PHASE31_CONTEXT_REQUIRED | CONTROL_FAILURE
+
+commit / host / exact NPU / software:
+torch_npu version and git_version:
+CANN / driver / firmware:
+Lane A exact command / exit / complete progress:
+Lane B exact command / exit / complete progress:
+Lane C exact command / exit / complete progress:
+conditional Lane D/E exact commands / exits / complete progress:
+last event for every timed-out lane:
+first Python/CANN/plog error, if any:
+mechanical classification from the table:
+what is proven:
+what is not proven:
+evidence paths:
+```
+
+Paste back the report and every `INCREFA_GQA` progress line. Do not summarize
+the version metadata or omit passing-control progress.
