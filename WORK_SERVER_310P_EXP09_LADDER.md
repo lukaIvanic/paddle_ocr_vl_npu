@@ -13547,8 +13547,8 @@ run_profile() {
   return "$lane_exit"
 }
 
-run_profile control_profile combined_apply
 run_profile static_profile combined_apply_static_actual
+run_profile control_profile combined_apply
 ```
 
 Require both exits to be zero. Extract from each result:
