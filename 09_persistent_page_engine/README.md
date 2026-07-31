@@ -344,6 +344,26 @@ fallback or an accepted optimization: the boundary lab first establishes
 whether it avoids the fault, and later measurements must price its transient
 memory and repeated-copy cost.
 
+`combined_apply_mha_cache` prices the opposite point in that trade-off. Its
+decode arena permanently stores all 16 repeated KV heads, while text prefill
+still produces the ordinary two-head cache. Admission broadcasts the prefill
+cache once into the expanded arena; each decode layer then repeats only the
+new one-token K/V write and calls IncreFA as MHA. At B16/KV4096/fp16 across 18
+layers, the decode arena grows from 1.125 GiB to 9.0 GiB. This path is also
+lab-only.
+
+The 910B comparison at commit `77ebec8` is recorded under
+`tmp/09_persistent_page_engine/mha_cache_910b_77ebec8/`. In the same compiled
+100-step B16, position-1279 profile, production GQA measured 2.517 ms/step and
+6,356 physical tok/s; per-layer repeated MHA measured 16.276 ms and 983 tok/s;
+expanded-cache MHA measured 8.189 ms and 1,954 tok/s. Thus permanent expansion
+recovers about half the MHA loss, but remains 3.25x slower than GQA at the
+device-step level. The real 16-request OCR generation remained token-, text-,
+and EOS-exact against GQA and measured 1,928 effective tok/s, versus 916 for
+per-layer repetition and 4,104 for GQA. Measured allocation before the real
+run rose from 9.19 GB for GQA to 17.64 GB for expanded-cache MHA, matching the
+expected 7.875 GiB arena increase.
+
 `scripts/text_decode_real_generation.py` is the real-generation gate after the
 synthetic `boundary` and `correctness` modes. It obtains block 3 from a fixed
 OmniDocBench page through the owned layout frontend, verifies the expected
