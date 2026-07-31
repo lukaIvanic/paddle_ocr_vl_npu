@@ -430,6 +430,7 @@ class ContinuousRecognizer:
         scheduler_progress: bool = False,
         diagnostic_decode_effective_length: int | None = None,
         diagnostic_decode_request_id: str | None = None,
+        decode_optimization: str = DEFAULT_DECODE_OPTIMIZATION,
     ):
         # TorchAir guards tensor dispatch-key sets. Build and warm every graph
         # under the same inference-mode contract used by run(),
@@ -450,7 +451,7 @@ class ContinuousRecognizer:
             raise ValueError(f"unsupported dtype: {dtype}")
         torch.npu.set_compile_mode(jit_compile=False)
         self.decode_backend = decode_backend
-        self.decode_optimization = DEFAULT_DECODE_OPTIMIZATION
+        self.decode_optimization = str(decode_optimization)
         self.timeline = timeline
         self.scheduler_progress = bool(scheduler_progress)
         self.diagnostic_decode_effective_length = (
