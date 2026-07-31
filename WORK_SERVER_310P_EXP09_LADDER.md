@@ -13754,3 +13754,463 @@ evidence paths:
 Paste back the complete report, both profile result summaries, the boundary
 `events.log`, and the last 80 lines of the 32-page log. Stop after Phase 36;
 do not promote static actual length to the default production preset yet.
+
+## Phase 37: checkpointed 310P OmniDocBench prefix reference
+
+### Goal and execution rule
+
+Measure the optimized 310P pipeline and official OmniDocBench metrics on the
+same cumulative prefixes that were measured on one Ascend 910B2:
+`0:32`, `0:64`, `0:128`, and `0:256`.
+
+This phase is deliberately checkpointed. Execute **one prefix only**, run its
+evaluation, write and paste its report, then stop. Do not start the next prefix
+until Luka explicitly asks you to continue. The order is 32, 64, 128, 256.
+Each checkpoint has one measured E2E run and one evaluation. Do not queue all
+four runs in one shell loop and do not defer reporting until the end.
+
+The committed 910B reference is:
+
+```text
+tmp/09_persistent_page_engine/
+  910b_static_actual_reference_prefixes_3a9244b/
+    REFERENCE.md
+    reference_summary.json
+```
+
+`reference_summary.json` is the comparison authority. It contains both 910B
+timing repeats, exact commands/configuration, layout and recognition stage
+times, token accounting, packing statistics, output hashes, and evaluation
+metrics. The short headline is:
+
+| pages | 910B E2E mean s (range) | 910B pages/s mean (range) |
+|---:|---:|---:|
+| 32 | 19.481 (19.388-19.573) | 1.6427 (1.6349-1.6505) |
+| 64 | 45.747 (45.141-46.352) | 1.3993 (1.3807-1.4178) |
+| 128 | 71.987 (71.911-72.063) | 1.7781 (1.7762-1.7800) |
+| 256 | 125.214 (124.579-125.849) | 2.0446 (2.0342-2.0549) |
+
+The 910B runs used physical NPU 5, CANN 9.0.0, project commit `3a9244b`,
+layout-first execution, B32/KV4096 static-actual GQA, `min_pixels=28224`,
+compiled PromptFA vision, greedy vision packing with target 1920/lookahead 32,
+and production-group text packing. Both timing repeats had exact recognition
+semantics and byte-identical prediction Markdown at every prefix.
+
+The evaluator is `opendatalab/OmniDocBench` commit
+`2b161d010d2e3aff77a0edef359ea3a6411d23cd`, using `quick_match` with 12
+workers. CDM is intentionally skipped. Therefore there is no leaderboard
+Overall score; compare text/formula/table/reading-order metrics individually.
+Lower Edit distance is better and higher TEDS is better.
+
+### 37.1 Preconditions and preflight
+
+Require Phase 36 to have passed the B32 static-actual boundary, target page,
+and first-32-pages E2E gates. If Phase 36 did not reach `FULL_32_PASS`, stop and
+report; do not hide that failure by starting this phase.
+
+Pull `main` and require commit `153866a` or a descendant. Continue using the
+same verified Python, model, layout model, dataset, NPU selection, and warmed
+TorchAir caches from Phase 36. Do not install or upgrade torch, torch_npu,
+TorchAir, Transformers, OpenCV, or model dependencies for this phase.
+
+```sh
+cd "$(git rev-parse --show-toplevel)"
+git status --short --branch
+git pull --ff-only origin main
+
+REPO="$(git rev-parse --show-toplevel)"
+COMMIT="$(git rev-parse HEAD)"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+PYTHON_BIN="${PYTHON_BIN:-$(command -v python)}"
+MODEL_DIR="${MODEL_DIR:-/workspace/models/PaddleOCR-VL-1.6}"
+LAYOUT_MODEL="${LAYOUT_MODEL:-/workspace/models/PP-DocLayoutV3_safetensors}"
+DATASET_JSON="${DATASET_JSON:-/workspace/datasets/OmniDocBench/OmniDocBench.json}"
+IMAGES_DIR="${IMAGES_DIR:-/workspace/datasets/OmniDocBench/images}"
+E2E="$REPO/09_persistent_page_engine/scripts/run_omnidocbench.py"
+REFERENCE="$REPO/tmp/09_persistent_page_engine/910b_static_actual_reference_prefixes_3a9244b/reference_summary.json"
+DECODE_CACHE="$REPO/.runtime_cache/310p_phase36_static_actual_b32"
+VISION_CACHE="$REPO/.runtime_cache/09_persistent_page_engine_vision_torchair"
+VISION_BATCHED_CACHE="$REPO/.runtime_cache/09_vision_router_batched"
+TEXT_CACHE="$REPO/.runtime_cache/09_persistent_page_engine_text_torchair"
+PACKED_TEXT_CACHE="$REPO/.runtime_cache/310p_text_packed_4789067"
+ROOT="$REPO/tmp/09_persistent_page_engine/310p_phase37_prefixes_$COMMIT_SHORT"
+CACHE_ROOTS=(
+  "$DECODE_CACHE"
+  "$VISION_CACHE"
+  "$VISION_BATCHED_CACHE"
+  "$TEXT_CACHE"
+  "$PACKED_TEXT_CACHE"
+)
+
+test -x "$PYTHON_BIN"
+test -d "$MODEL_DIR"
+test -d "$LAYOUT_MODEL"
+test -f "$DATASET_JSON"
+test -d "$IMAGES_DIR"
+test -f "$E2E"
+test -f "$REFERENCE"
+test -d "$DECODE_CACHE"
+test -d "$VISION_CACHE"
+test -d "$VISION_BATCHED_CACHE"
+test -d "$TEXT_CACHE"
+test -d "$PACKED_TEXT_CACHE"
+mkdir -p "$ROOT"
+
+git merge-base --is-ancestor 153866a HEAD
+"$PYTHON_BIN" - <<'PY'
+import json
+import kornia_rs
+import torch
+import torch_npu
+from pathlib import Path
+
+reference = Path(
+    "tmp/09_persistent_page_engine/"
+    "910b_static_actual_reference_prefixes_3a9244b/"
+    "reference_summary.json"
+)
+data = json.loads(reference.read_text())
+assert data["project_commit"] == "3a9244b"
+assert set(data["prefixes"]) == {"32", "64", "128", "256"}
+assert data["evaluator"]["cdm"] == "skipped_by_request"
+assert torch.npu.is_available()
+print("torch", torch.__version__)
+print("torch_npu", torch_npu.__version__)
+print("reference", reference, "OK")
+PY
+```
+
+Resolve an existing official evaluator checkout. Do not substitute the old
+lightweight experiment-06 metrics. Do not mutate the main project checkout to
+install evaluation dependencies.
+
+```sh
+if test -n "${OMNIDOCBENCH_EVAL_REPO:-}"; then
+  EVAL_REPO="$OMNIDOCBENCH_EVAL_REPO"
+else
+  EVAL_REPO=""
+  for candidate in \
+    "$REPO/../OmniDocBench_eval" \
+    "$REPO/../OmniDocBench" \
+    /workspace/repos/OmniDocBench_eval \
+    /workspace/repos/OmniDocBench
+  do
+    if test -f "$candidate/pdf_validation.py"; then
+      EVAL_REPO="$candidate"
+      break
+    fi
+  done
+fi
+
+test -n "$EVAL_REPO"
+test -f "$EVAL_REPO/pdf_validation.py"
+test "$(git -C "$EVAL_REPO" rev-parse HEAD)" = \
+  2b161d010d2e3aff77a0edef359ea3a6411d23cd
+
+if test -n "${OMNIDOCBENCH_EVAL_PYTHON:-}"; then
+  EVAL_PY="$OMNIDOCBENCH_EVAL_PYTHON"
+elif test -x /workspace/venvs/omnidocbench_py310/bin/python; then
+  EVAL_PY=/workspace/venvs/omnidocbench_py310/bin/python
+elif test -x "$EVAL_REPO/.venv/bin/python"; then
+  EVAL_PY="$EVAL_REPO/.venv/bin/python"
+else
+  printf '%s\n' "No verified OmniDocBench evaluator Python found."
+  exit 1
+fi
+
+"$EVAL_PY" - <<'PY'
+import Levenshtein
+import apted
+import bs4
+import lxml
+import numpy
+import pandas
+import yaml
+print("official evaluator imports: PASS")
+PY
+```
+
+If the evaluator checkout, exact commit, or evaluator Python is missing, stop
+and report `EVALUATOR_PREFLIGHT_MISSING` with the paths/checks that failed. Do
+not clone packages, change commits, or improvise a different evaluator during a
+measured checkpoint without asking first.
+
+Record the environment once:
+
+```sh
+{
+  printf 'project_commit=%s\n' "$COMMIT"
+  printf 'evaluator_commit=%s\n' "$(git -C "$EVAL_REPO" rev-parse HEAD)"
+  printf 'project_python=%s\n' "$PYTHON_BIN"
+  printf 'evaluator_python=%s\n' "$EVAL_PY"
+  hostname
+  npu-smi info
+  "$PYTHON_BIN" - <<'PY'
+import platform
+import torch
+import torch_npu
+print("python", platform.python_version())
+print("torch", torch.__version__)
+print("torch_npu", torch_npu.__version__)
+print("torch_npu_git", getattr(torch_npu.version, "git_version", None))
+PY
+} >"$ROOT/preflight.log" 2>&1
+```
+
+### 37.2 One-prefix E2E helper
+
+The helper below runs exactly one prefix. Do not wrap it in a loop. It keeps
+layout fully ahead of OCR and matches the committed 910B configuration. Model
+setup and cache loading are excluded by `pipeline_e2e_s`; on-demand graph
+compilation during the pipeline is not excluded and must be reported.
+
+```sh
+run_prefix() {
+  pages="$1"
+  lane="$ROOT/n${pages}"
+  output="$lane/output"
+  test ! -e "$lane"
+  mkdir -p "$lane"
+
+  du -sb "${CACHE_ROOTS[@]}" \
+    >"$lane/cache_sizes_before.txt" 2>&1 || true
+  find "${CACHE_ROOTS[@]}" -type f -printf '%T@ %s %p\n' \
+    | sort >"$lane/cache_files_before.txt" 2>/dev/null || true
+
+  printf '%q ' timeout --signal=TERM --kill-after=15s 7200 \
+    "$PYTHON_BIN" "$E2E" \
+    --dataset-json "$DATASET_JSON" --images-dir "$IMAGES_DIR" \
+    --layout-model "$LAYOUT_MODEL" --recognizer-model "$MODEL_DIR" \
+    --offset 0 --limit "$pages" \
+    --batch-size 32 --cache-length 4096 --max-new-tokens 2808 \
+    --preprocessor-min-pixels 28224 \
+    --decode-backend torchair \
+    --decode-optimization combined_apply_static_actual \
+    --torchair-cache-dir "$DECODE_CACHE" \
+    --vision-backend torchair \
+    --vision-attention prompt_flash_attention \
+    --vision-torchair-cache-dir "$VISION_CACHE" \
+    --vision-batched-cache-dir "$VISION_BATCHED_CACHE" \
+    --vision-promptfa-align-128 --vision-padding bucket \
+    --vision-packing greedy --vision-pack-target 1920 \
+    --vision-router-lookahead 32 \
+    --text-packing production_group \
+    --text-pack-buckets 128,256,512,1024 \
+    --text-pack-max-members 32 \
+    --text-torchair-cache-dir "$TEXT_CACHE" \
+    --text-packed-cache-dir "$PACKED_TEXT_CACHE" \
+    --layout-device npu --no-layout-graph-capture \
+    --preprocess-all-pages-first --no-timeline \
+    --output-dir "$output" >"$lane/command.sh"
+  printf '\n' >>"$lane/command.sh"
+
+  set +e
+  timeout --signal=TERM --kill-after=15s 7200 \
+    "$PYTHON_BIN" "$E2E" \
+    --dataset-json "$DATASET_JSON" --images-dir "$IMAGES_DIR" \
+    --layout-model "$LAYOUT_MODEL" --recognizer-model "$MODEL_DIR" \
+    --offset 0 --limit "$pages" \
+    --batch-size 32 --cache-length 4096 --max-new-tokens 2808 \
+    --preprocessor-min-pixels 28224 \
+    --decode-backend torchair \
+    --decode-optimization combined_apply_static_actual \
+    --torchair-cache-dir "$DECODE_CACHE" \
+    --vision-backend torchair \
+    --vision-attention prompt_flash_attention \
+    --vision-torchair-cache-dir "$VISION_CACHE" \
+    --vision-batched-cache-dir "$VISION_BATCHED_CACHE" \
+    --vision-promptfa-align-128 --vision-padding bucket \
+    --vision-packing greedy --vision-pack-target 1920 \
+    --vision-router-lookahead 32 \
+    --text-packing production_group \
+    --text-pack-buckets 128,256,512,1024 \
+    --text-pack-max-members 32 \
+    --text-torchair-cache-dir "$TEXT_CACHE" \
+    --text-packed-cache-dir "$PACKED_TEXT_CACHE" \
+    --layout-device npu --no-layout-graph-capture \
+    --preprocess-all-pages-first --no-timeline \
+    --output-dir "$output" 2>&1 | tee "$lane/run.log"
+  lane_exit="${PIPESTATUS[0]}"
+  set -e
+  printf '%s\n' "$lane_exit" >"$lane/exit_code.txt"
+
+  du -sb "${CACHE_ROOTS[@]}" \
+    >"$lane/cache_sizes_after.txt" 2>&1 || true
+  find "${CACHE_ROOTS[@]}" -type f -printf '%T@ %s %p\n' \
+    | sort >"$lane/cache_files_after.txt" 2>/dev/null || true
+  diff -u "$lane/cache_files_before.txt" "$lane/cache_files_after.txt" \
+    >"$lane/cache_files.diff" || true
+  return "$lane_exit"
+}
+```
+
+For the 32-page checkpoint only, a successful Phase-36 `pages32/output` may be
+used as its one measured run instead of rerunning, but only if its
+`run_summary.json` says all of the following: offset 0, count 32, B32, KV4096,
+`combined_apply_static_actual`, min_pixels 28224, PromptFA with align-128,
+vision target 1920/lookahead 32, production-group text packing, layout NPU
+eager, and `all_before_recognition`. Copy the complete Phase-36 `pages32`
+artifact directory to `$ROOT/n32` and record the source path in
+`$ROOT/n32/reused_phase36_path.txt`. Otherwise run:
+
+```sh
+run_prefix 32
+```
+
+For later checkpoints, execute exactly one of these only after Luka asks:
+
+```sh
+run_prefix 64
+# OR, in a later turn:
+run_prefix 128
+# OR, in a later turn:
+run_prefix 256
+```
+
+Require exit zero, exactly `pages` results and predictions, EOS for every
+recognition request, no Python/CANN/AICore error, and summary configuration
+matching the command. If cache files changed or logs show compilation during
+the measured pipeline, label timing `COMPILE_CONTAMINATED`; still evaluate the
+completed outputs, report the contamination, and stop for a decision rather
+than silently rerunning.
+
+### 37.3 Official evaluation for that prefix, without CDM
+
+Run this only after the current prefix E2E succeeds. It writes evaluator
+results inside the prefix artifact directory, not into the evaluator checkout.
+
+```sh
+evaluate_prefix() {
+  pages="$1"
+  lane="$ROOT/n${pages}"
+  output="$lane/output"
+  eval_root="$lane/evaluation"
+  work="$eval_root/work"
+  test -f "$output/run_summary.json"
+  test -f "$output/OmniDocBench_subset.json"
+  test -d "$output/predictions"
+  mkdir -p "$work"
+
+  "$EVAL_PY" - "$output" "$work" <<'PY'
+from pathlib import Path
+import sys
+
+output = Path(sys.argv[1]).resolve()
+work = Path(sys.argv[2]).resolve()
+config = f"""end2end_eval:
+  metrics:
+    text_block:
+      metric:
+      - Edit_dist
+    display_formula:
+      metric:
+      - Edit_dist
+    table:
+      metric:
+      - TEDS
+      - Edit_dist
+      teds_workers: 12
+    reading_order:
+      metric:
+      - Edit_dist
+  dataset:
+    dataset_name: end2end_dataset
+    ground_truth:
+      data_path: {output / 'OmniDocBench_subset.json'}
+    prediction:
+      data_path: {output / 'predictions'}
+    match_method: quick_match
+    match_workers: 12
+    quick_match_truncated_timeout_sec: 300
+    match_timeout_sec: 420
+    timeout_fallback_max_chunk_span: 10
+    timeout_fallback_order_penalty: 0.10
+"""
+(work / "config.yaml").write_text(config)
+PY
+
+  printf '%q ' timeout --signal=TERM --kill-after=15s 3600 \
+    "$EVAL_PY" "$EVAL_REPO/pdf_validation.py" --config config.yaml \
+    >"$eval_root/command.sh"
+  printf '\n' >>"$eval_root/command.sh"
+
+  set +e
+  (
+    cd "$work"
+    PYTHONPATH="$EVAL_REPO" \
+      timeout --signal=TERM --kill-after=15s 3600 \
+      "$EVAL_PY" "$EVAL_REPO/pdf_validation.py" --config config.yaml
+  ) 2>&1 | tee "$eval_root/evaluation.log"
+  eval_exit="${PIPESTATUS[0]}"
+  set -e
+  printf '%s\n' "$eval_exit" >"$eval_root/exit_code.txt"
+  return "$eval_exit"
+}
+```
+
+For the current checkpoint only:
+
+```sh
+evaluate_prefix 32   # replace 32 with the one prefix Luka authorized
+```
+
+Require exit zero. Read:
+
+```text
+$ROOT/n<PAGES>/evaluation/work/result/
+  predictions_quick_match_metric_result.json
+  predictions_quick_match_run_summary.json
+```
+
+Require page-match `page_timeout=0`, `quick_match_timeout=0`, and TEDS error,
+exception, and timeout counts all zero. CDM must remain absent/null. Do not
+invent an Overall score from the remaining metrics.
+
+### 37.4 Per-checkpoint analysis and report
+
+For the current prefix, compare the 310P run to
+`reference_summary.json["prefixes"][str(PAGES)]`. Use the 910B timing mean and
+range for E2E comparison; use its repeat-1 evaluation metrics because those are
+the committed official evaluation outputs.
+
+Write both `$ROOT/n<PAGES>/checkpoint_report.json` and
+`$ROOT/n<PAGES>/agent_report.md`. Report:
+
+- exact project/evaluator commits, host, NPU, CANN/driver/firmware, Python,
+  torch, and torch_npu;
+- exact E2E and evaluation commands and all artifact paths;
+- pipeline E2E, pages/s, seconds/page, and the ratio to 910B mean pages/s;
+- setup separately, including compile first-call/cache evidence;
+- complete layout total and stage breakdown, layout pages/s, and ratios to the
+  corresponding 910B values;
+- requests, input tokens, projected image tokens, real/physical vision tokens,
+  real/physical text tokens, generated/effective/raw decode tokens;
+- vision prefill seconds and real/physical tok/s; text prefill seconds and
+  real/physical tok/s; decode wall and raw/effective tok/s;
+- every device-stage total, packing group counts/fill fractions/histograms,
+  decode graph calls, active/idle/lookahead slots, stop reasons, and output
+  counts;
+- official text-block Edit distance, display-formula Edit distance, table
+  TEDS/TEDS-structure/table Edit distance, and reading-order Edit distance;
+- signed metric deltas versus 910B (310P minus 910B), with the reminder that
+  lower Edit distance and higher TEDS are better;
+- evaluator fallback/error/timeout counts;
+- whether timing was cache-warm or compile-contaminated;
+- what is proven, what is not proven, and the first error if anything failed.
+
+Use this first line:
+
+```text
+310P PHASE 37 N<PAGES>: PASS | COMPILE_CONTAMINATED | E2E_FAILURE |
+EVALUATOR_FAILURE | EVALUATOR_PREFLIGHT_MISSING | RUNTIME_ERROR
+```
+
+After writing the report, paste it back immediately together with:
+
+1. the current prefix's `checkpoint_report.json`;
+2. the final 80 lines of its E2E log;
+3. the evaluator headline metrics and fallback/timeout counts;
+4. the cache diff or a statement that it was empty.
+
+Then **stop**. Do not start the next prefix until Luka explicitly says to
+continue.
