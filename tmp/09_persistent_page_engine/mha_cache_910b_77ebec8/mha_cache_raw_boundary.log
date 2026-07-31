@@ -1,0 +1,7 @@
+[W731 13:56:58.177993967 TensorFactories.cpp:340] Warning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (function operator())
+TEXT_DECODE_BOUNDARY {"active_slots": 16, "attention": "mha_cache", "backend": "raw_eager", "batch_size": 16, "cache_length": 4096, "cache_position": 1279, "decode_optimization": "combined_apply_mha_cache", "effective_length": 1280, "event": "step_begin"}
+TEXT_DECODE_BOUNDARY {"active_slots": 16, "attention": "mha_cache", "backend": "raw_eager", "batch_size": 16, "cache_length": 4096, "cache_position": 1279, "decode_optimization": "combined_apply_mha_cache", "effective_length": 1280, "event": "step_returned"}
+TEXT_DECODE_BOUNDARY {"active_slots": 16, "attention": "mha_cache", "backend": "raw_eager", "batch_size": 16, "cache_length": 4096, "cache_position": 1279, "decode_optimization": "combined_apply_mha_cache", "effective_length": 1280, "event": "sync_begin"}
+TEXT_DECODE_BOUNDARY {"active_slots": 16, "attention": "mha_cache", "backend": "raw_eager", "batch_size": 16, "cache_length": 4096, "cache_position": 1279, "decode_optimization": "combined_apply_mha_cache", "effective_length": 1280, "elapsed_s": 0.02859240584075451, "event": "sync_end"}
+DECODE_BOUNDARY position=1279 effective_length=1280 attention=mha_cache elapsed_s=0.028592
+output=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/mha_cache_910b_77ebec8/mha_cache_raw_boundary.json
