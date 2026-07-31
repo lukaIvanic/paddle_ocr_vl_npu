@@ -46,6 +46,24 @@ LANES = {
         "op_num_key_value_heads": 0,
         "masked": True,
     },
+    "gqa_pse_only": {
+        "stored_kv_heads": GQA_KV_HEADS,
+        "op_num_key_value_heads": GQA_KV_HEADS,
+        "masked": False,
+        "pse_only": True,
+    },
+    "gqa_masked_static_actual": {
+        "stored_kv_heads": GQA_KV_HEADS,
+        "op_num_key_value_heads": GQA_KV_HEADS,
+        "masked": True,
+        "static_actual": True,
+    },
+    "gqa_masked_pse_sentinel": {
+        "stored_kv_heads": GQA_KV_HEADS,
+        "op_num_key_value_heads": GQA_KV_HEADS,
+        "masked": True,
+        "pse_sentinel": True,
+    },
 }
 
 
@@ -166,14 +184,51 @@ def main(argv: Sequence[str] | None = None) -> int:
     value = torch.zeros(cache_shape, device=device, dtype=dtype)
 
     atten_mask = None
-    if lane["masked"]:
+    pse_shift = None
+    physical_positions = None
+    lengths_npu = None
+    if lane["masked"] or lane.get("pse_only"):
         physical_positions = torch.arange(
             args.cache_length,
             device=device,
             dtype=torch.int64,
         ).view(1, 1, 1, args.cache_length)
         lengths_npu = effective_lengths.to(device).view(args.batch_size, 1, 1, 1)
+    if lane["masked"]:
         atten_mask = (physical_positions >= lengths_npu).contiguous()
+
+    if lane.get("pse_only"):
+        pse_shift = torch.zeros(
+            (args.batch_size, QUERY_HEADS, 1, args.cache_length),
+            device=device,
+            dtype=dtype,
+        ).masked_fill(
+            (physical_positions >= lengths_npu).expand(
+                args.batch_size, QUERY_HEADS, 1, args.cache_length
+            ),
+            float("-inf"),
+        )
+
+    if lane.get("pse_sentinel"):
+        sentinel_positions = effective_lengths.to(device).view(
+            args.batch_size, 1, 1, 1
+        )
+        is_sentinel = physical_positions == sentinel_positions
+        atten_mask = atten_mask & ~is_sentinel
+        pse_shift = torch.zeros(
+            (args.batch_size, QUERY_HEADS, 1, args.cache_length),
+            device=device,
+            dtype=dtype,
+        ).masked_fill(
+            is_sentinel.expand(
+                args.batch_size, QUERY_HEADS, 1, args.cache_length
+            ),
+            float("-inf"),
+        )
+
+    actual_seq_lengths = None
+    if lane.get("static_actual"):
+        actual_seq_lengths = [args.cache_length] * args.batch_size
 
     torch.npu.synchronize()
     recorder.emit("setup_end")
@@ -183,8 +238,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         query,
         key,
         value,
+        pse_shift=pse_shift,
         atten_mask=atten_mask,
-        actual_seq_lengths=None,
+        actual_seq_lengths=actual_seq_lengths,
         num_heads=QUERY_HEADS,
         num_key_value_heads=lane["op_num_key_value_heads"],
         input_layout="BNSD",
