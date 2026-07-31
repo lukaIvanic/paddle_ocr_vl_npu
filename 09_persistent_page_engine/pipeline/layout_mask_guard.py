@@ -21,7 +21,7 @@ import cv2
 import numpy as np
 
 
-GUARD_VERSION = 1
+GUARD_VERSION = 2
 
 
 def _scalar(value: Any) -> float:
@@ -107,6 +107,26 @@ class LayoutMaskGuardState:
         self._lock = threading.Lock()
         self._events: list[dict[str, Any]] = []
 
+    def record_fallback_regions(
+        self,
+        detections: int,
+        fallback_regions: list[dict[str, Any]],
+    ) -> None:
+        """Record fallback telemetry from any installed extraction path."""
+
+        if not fallback_regions:
+            return
+        with self._lock:
+            self._events.append(
+                {
+                    "call_index": len(self._events),
+                    "detections": int(detections),
+                    "fallback_regions": [
+                        dict(record) for record in fallback_regions
+                    ],
+                }
+            )
+
     def guarded_extract(
         self,
         processor: Any,
@@ -179,14 +199,7 @@ class LayoutMaskGuardState:
                 "PP-DocLayout batch mask extraction raised an empty-resize error, "
                 "but every individual detection succeeded"
             )
-        with self._lock:
-            self._events.append(
-                {
-                    "call_index": len(self._events),
-                    "detections": int(len(boxes_np)),
-                    "fallback_regions": fallback_regions,
-                }
-            )
+        self.record_fallback_regions(len(boxes_np), fallback_regions)
         return polygons
 
     def snapshot(self) -> dict[str, Any]:

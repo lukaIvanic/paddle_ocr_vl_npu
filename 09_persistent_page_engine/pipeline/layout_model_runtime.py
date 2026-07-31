@@ -363,8 +363,9 @@ def _extract_polygon_points_by_masks_owned(
     scale_height = float(scale_ratio[1]) / 4.0
     mask_height, mask_width = masks_np.shape[1:]
     polygon_points: list[Any] = []
+    fallback_regions: list[dict[str, Any]] = []
 
-    for box, mask in zip(boxes_np, masks_np):
+    for region_index, (box, mask) in enumerate(zip(boxes_np, masks_np)):
         x_min, y_min, x_max, y_max = (int(value) for value in box)
         box_width = x_max - x_min
         box_height = y_max - y_min
@@ -381,22 +382,43 @@ def _extract_polygon_points_by_masks_owned(
             polygon_points.append(rect)
             continue
 
-        x_start = max(
-            0,
-            min(mask_width, int(round(x_min * scale_width))),
-        )
-        x_end = max(
-            0,
-            min(mask_width, int(round(x_max * scale_width))),
-        )
-        y_start = max(
-            0,
-            min(mask_height, int(round(y_min * scale_height))),
-        )
-        y_end = max(
-            0,
-            min(mask_height, int(round(y_max * scale_height))),
-        )
+        x_unclipped = [
+            int(round(x_min * scale_width)),
+            int(round(x_max * scale_width)),
+        ]
+        y_unclipped = [
+            int(round(y_min * scale_height)),
+            int(round(y_max * scale_height)),
+        ]
+        x_start, x_end = [
+            max(0, min(mask_width, value)) for value in x_unclipped
+        ]
+        y_start, y_end = [
+            max(0, min(mask_height, value)) for value in y_unclipped
+        ]
+        if x_start >= x_end or y_start >= y_end:
+            fallback_regions.append(
+                {
+                    "region_index": int(region_index),
+                    "box_float": box.astype(np.float64).tolist(),
+                    "box_int": [x_min, y_min, x_max, y_max],
+                    "box_width": int(box_width),
+                    "box_height": int(box_height),
+                    "mask_shape": [int(mask_height), int(mask_width)],
+                    "scale_ratio": [
+                        float(scale_ratio[0]),
+                        float(scale_ratio[1]),
+                    ],
+                    "scaled_x_unclipped": x_unclipped,
+                    "scaled_y_unclipped": y_unclipped,
+                    "scaled_x_clipped": [x_start, x_end],
+                    "scaled_y_clipped": [y_start, y_end],
+                    "precheck_detected": True,
+                    "extraction_path": "owned",
+                }
+            )
+            polygon_points.append(rect)
+            continue
         cropped_mask = mask[y_start:y_end, x_start:x_end]
         if cropped_mask.dtype != np.uint8:
             cropped_mask = cropped_mask.astype(np.uint8)
@@ -412,6 +434,10 @@ def _extract_polygon_points_by_masks_owned(
         if polygon is not None and len(polygon) > 0:
             polygon = polygon + np.array([x_min, y_min])
         polygon_points.append(polygon)
+
+    guard_state = getattr(processor, "_layout_mask_guard_state", None)
+    if guard_state is not None:
+        guard_state.record_fallback_regions(len(boxes_np), fallback_regions)
 
     return polygon_points
 

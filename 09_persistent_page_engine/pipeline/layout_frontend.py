@@ -264,6 +264,13 @@ class OwnedLayoutFrontend:
             _extract_custom_vertices_vectorized,
             self.processor,
         )
+        layout_mask_guard_state = getattr(
+            type(self.processor)._extract_polygon_points_by_masks,
+            "_layout_mask_guard_state",
+            None,
+        )
+        if layout_mask_guard_state is not None:
+            self.processor._layout_mask_guard_state = layout_mask_guard_state
         self.processor._extract_polygon_points_by_masks = MethodType(
             _extract_polygon_points_by_masks_owned,
             self.processor,
