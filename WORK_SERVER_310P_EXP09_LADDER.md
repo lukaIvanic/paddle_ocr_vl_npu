@@ -13932,8 +13932,121 @@ PY
 
 If the evaluator checkout, exact commit, or evaluator Python is missing, stop
 and report `EVALUATOR_PREFLIGHT_MISSING` with the paths/checks that failed. Do
-not clone packages, change commits, or improvise a different evaluator during a
-measured checkpoint without asking first.
+not improvise a different evaluator during a measured checkpoint. The dataset
+directory is not expected to contain `pdf_validation.py`; the evaluator is a
+separate checkout of `opendatalab/OmniDocBench`.
+
+#### 37.1A Missing evaluator acquisition checkpoint
+
+Luka has now authorized this checkpoint when the evaluator code is absent.
+Run it by itself, report the result, and stop before any measured prefix run.
+Do not place evaluator source or its environment inside the PaddleOCR project.
+
+Fetch only the exact evaluator revision used by the 910B references:
+
+```sh
+EVAL_REPO=/workspace/repos/OmniDocBench_eval
+EVAL_COMMIT=2b161d010d2e3aff77a0edef359ea3a6411d23cd
+
+if test -e "$EVAL_REPO"; then
+  test -d "$EVAL_REPO/.git"
+else
+  mkdir -p "$(dirname "$EVAL_REPO")"
+  git init "$EVAL_REPO"
+  git -C "$EVAL_REPO" remote add origin \
+    https://github.com/opendatalab/OmniDocBench.git
+fi
+
+git -C "$EVAL_REPO" fetch --depth=1 origin "$EVAL_COMMIT"
+git -C "$EVAL_REPO" checkout --detach FETCH_HEAD
+test "$(git -C "$EVAL_REPO" rev-parse HEAD)" = "$EVAL_COMMIT"
+test -f "$EVAL_REPO/pdf_validation.py"
+test -f "$EVAL_REPO/pyproject.toml"
+du -sh "$EVAL_REPO"
+```
+
+The official evaluator declares Python `>=3.10,<3.12`; do not use the
+Experiment-09 Python 3.12 environment for it. First look for an already usable
+evaluator interpreter:
+
+```sh
+EVAL_PY=""
+for candidate in \
+  /workspace/venvs/omnidocbench_py310/bin/python \
+  /workspace/venvs/omnidocbench/bin/python \
+  "$EVAL_REPO/.venv/bin/python"
+do
+  if test -x "$candidate"; then
+    if "$candidate" - <<'PY' >/dev/null 2>&1
+import sys
+assert (3, 10) <= sys.version_info[:2] < (3, 12)
+import Levenshtein, apted, bs4, lxml, numpy, pandas, yaml
+PY
+    then
+      EVAL_PY="$candidate"
+      break
+    fi
+  fi
+done
+```
+
+If `EVAL_PY` is still empty, locate a base Python 3.10 or 3.11 interpreter.
+Do not guess that `python` is suitable, and do not bypass the evaluator's
+Python constraint:
+
+```sh
+if test -z "$EVAL_PY"; then
+  BASE_PY=""
+  for candidate in \
+    /usr/local/python3.10.13/bin/python3 \
+    /usr/local/bin/python3.10 \
+    /usr/bin/python3.10 \
+    /usr/local/bin/python3.11 \
+    /usr/bin/python3.11
+  do
+    if test -x "$candidate"; then
+      BASE_PY="$candidate"
+      break
+    fi
+  done
+  if test -z "$BASE_PY"; then
+    printf '%s\n' "EVALUATOR_PYTHON_310_OR_311_MISSING"
+    exit 1
+  fi
+
+  EVAL_VENV=/workspace/venvs/omnidocbench_py310
+  "$BASE_PY" -m venv "$EVAL_VENV"
+  "$EVAL_VENV/bin/python" -m pip install --upgrade pip setuptools wheel
+  "$EVAL_VENV/bin/python" -m pip install "$EVAL_REPO"
+  EVAL_PY="$EVAL_VENV/bin/python"
+fi
+
+"$EVAL_PY" - <<'PY'
+import sys
+import Levenshtein
+import apted
+import bs4
+import lxml
+import numpy
+import pandas
+import yaml
+assert (3, 10) <= sys.version_info[:2] < (3, 12)
+print("evaluator_python", sys.executable)
+print("evaluator_version", sys.version)
+print("official evaluator imports: PASS")
+PY
+```
+
+Report:
+
+- `git -C "$EVAL_REPO" rev-parse HEAD`;
+- the absolute `pdf_validation.py` path;
+- `EVAL_PY` and its Python version;
+- whether an existing environment was reused or a new one was created;
+- any clone, package-download, proxy, or wheel-build failure verbatim.
+
+Success marker: `PHASE37_EVALUATOR_SETUP: PASS`. After reporting it, wait for
+Luka before running the first prefix checkpoint.
 
 Record the environment once:
 
