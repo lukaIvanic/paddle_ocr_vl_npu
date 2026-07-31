@@ -13398,3 +13398,359 @@ Paste back the report and Gate A's complete `events.log`. If the eight-page
 lane passes, stop; do not automatically start 32 pages. We will use the
 measured eight-page decode rate and page time to decide whether a longer run is
 worthwhile.
+
+## Phase 36: static actual-sequence-length GQA, lab throughput and 32-page E2E
+
+### Goal and decision boundary
+
+Phase 30-33 isolated the 310P hang to masked GQA IncreFA at
+`cache_position=1279` / effective length 1280. Phase 36 tests the least
+invasive workaround: keep the existing BNSD GQA cache and boolean tail mask,
+but always pass the compile-time constant
+`actual_seq_lengths=[4096] * batch_size` to every IncreFA layer. The constant
+is present on every decode step, so this remains one static TorchAir graph and
+does not switch graphs at the boundary.
+
+Execute in this order:
+
+1. compare the optimized masked-GQA control and static-actual GQA at safe
+   non-1280 positions in the full B32/KV4096 text-decode lab;
+2. synchronize one static-actual full-decoder step at position 1279;
+3. run the boundary-containing page at dataset offset 11;
+4. if all gates pass, run the first 32 pages with all layout preprocessing
+   completed before OCR.
+
+Do not run the normal masked-GQA control at position 1279. Do not test PSE or
+MHA in this phase. Do not change batch size, KV length, packing, min_pixels,
+or frontend scheduling between the two lab profiles and the E2E lane.
+
+The matching 910B checks at commits `4b4eb55` and `05c1441` established:
+
+- B16/KV4096 static-actual synchronized at position 1279;
+- at safe positions, full-decoder control was 6,391.6 physical tok/s and
+  static-actual was 6,170.3 physical tok/s (3.46% lower);
+- the 32-page layout-first static-actual E2E run finished 510/510 recognition
+  requests in 20.599 s, with zero token or text mismatches against the normal
+  GQA control.
+
+Those are functional controls, not 310P performance thresholds.
+
+### 36.1 Preflight
+
+Pull `main` and require a descendant of `05c1441`. Use the already-established
+310P Experiment 09 environment from Phases 33-35. The selected Python must
+import `torch_npu` and `kornia_rs`; do not fall back to system Python. Use one
+free 310P and terminate only PIDs started by this phase.
+
+```sh
+cd "$(git rev-parse --show-toplevel)"
+git status --short --branch
+git pull --ff-only origin main
+
+REPO="$(git rev-parse --show-toplevel)"
+COMMIT="$(git rev-parse HEAD)"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+PYTHON_BIN="${PYTHON_BIN:-$(command -v python)}"
+MODEL_DIR="${MODEL_DIR:-/workspace/models/PaddleOCR-VL-1.6}"
+LAYOUT_MODEL="${LAYOUT_MODEL:-/workspace/models/PP-DocLayoutV3_safetensors}"
+DATASET_JSON="${DATASET_JSON:-/workspace/datasets/OmniDocBench/OmniDocBench.json}"
+IMAGES_DIR="${IMAGES_DIR:-/workspace/datasets/OmniDocBench/images}"
+TEXT_LAB="$REPO/09_persistent_page_engine/scripts/text_decode_lab.py"
+E2E="$REPO/09_persistent_page_engine/scripts/run_omnidocbench.py"
+DECODE_CACHE="$REPO/.runtime_cache/310p_phase36_static_actual_b32"
+PACKED_TEXT_CACHE="$REPO/.runtime_cache/310p_text_packed_4789067"
+ROOT="$REPO/tmp/09_persistent_page_engine/310p_phase36_static_actual_$COMMIT_SHORT"
+
+test -x "$PYTHON_BIN"
+test -d "$MODEL_DIR"
+test -d "$LAYOUT_MODEL"
+test -f "$DATASET_JSON"
+test -d "$IMAGES_DIR"
+test -f "$TEXT_LAB"
+test -f "$E2E"
+test ! -e "$ROOT"
+mkdir -p "$ROOT/control_profile" "$ROOT/static_profile" \
+  "$ROOT/static_boundary" "$ROOT/target_page" "$ROOT/pages32"
+
+"$PYTHON_BIN" - <<'PY'
+import kornia_rs
+import torch
+import torch_npu
+print("torch", torch.__version__)
+print("torch_npu", torch_npu.__version__)
+print("npu_available", torch.npu.is_available())
+PY
+
+"$PYTHON_BIN" "$TEXT_LAB" --help \
+  | grep -q -- 'combined_apply_static_actual'
+"$PYTHON_BIN" "$E2E" --help \
+  | grep -q -- 'combined_apply_static_actual'
+df -h "$REPO" "$REPO/.runtime_cache"
+
+{
+  printf 'commit=%s\n' "$COMMIT"
+  hostname
+  npu-smi info
+  "$PYTHON_BIN" - <<'PY'
+import platform
+import torch
+import torch_npu
+print("python", platform.python_version())
+print("torch", torch.__version__)
+print("torch_npu", torch_npu.__version__)
+print("torch_npu_git", getattr(torch_npu.version, "git_version", None))
+PY
+} >"$ROOT/preflight.log" 2>&1
+```
+
+If imports, paths, free space, or NPU availability fail, stop and report. Do
+not silently change Python, model, dataset, or device.
+
+### 36.2 Full-decoder safe-position throughput comparison
+
+Both lanes are the complete optimized text decoder plus LM head at B32 and
+KV4096. Position 1024 and the 30 timed steps stay far from the failing 1279
+boundary. The two optimization names create separate cache entries under one
+cache root. Compilation time is setup and must not enter tok/s.
+
+Use this helper so progress is visible and the true exit status is preserved:
+
+```sh
+run_profile() {
+  lane="$1"
+  optimization="$2"
+  lane_dir="$ROOT/$lane"
+
+  printf '%q ' timeout --signal=TERM --kill-after=10s 2400 \
+    "$PYTHON_BIN" "$TEXT_LAB" \
+    --mode profile --backend torchair --allow-compile \
+    --model "$MODEL_DIR" --cache-dir "$DECODE_CACHE" \
+    --batch-size 32 --active-slots 32 --cache-length 4096 \
+    --profile-position 1024 --warmup 3 --repeats 30 \
+    --decode-optimization "$optimization" \
+    --output "$lane_dir/result.json" >"$lane_dir/command.sh"
+  printf '\n' >>"$lane_dir/command.sh"
+
+  set +e
+  timeout --signal=TERM --kill-after=10s 2400 \
+    "$PYTHON_BIN" "$TEXT_LAB" \
+    --mode profile --backend torchair --allow-compile \
+    --model "$MODEL_DIR" --cache-dir "$DECODE_CACHE" \
+    --batch-size 32 --active-slots 32 --cache-length 4096 \
+    --profile-position 1024 --warmup 3 --repeats 30 \
+    --decode-optimization "$optimization" \
+    --output "$lane_dir/result.json" \
+    2>&1 | tee "$lane_dir/run.log"
+  lane_exit="${PIPESTATUS[0]}"
+  set -e
+  printf '%s\n' "$lane_exit" >"$lane_dir/exit_code.txt"
+  return "$lane_exit"
+}
+
+run_profile control_profile combined_apply
+run_profile static_profile combined_apply_static_actual
+```
+
+Require both exits to be zero. Extract from each result:
+
+- mean, median, p95, min, and max full-step latency;
+- physical and active tok/s (they are equal with 32 active slots);
+- summed device time and model/argmax device time;
+- peak allocated-memory delta;
+- compile-wrapper and first-call setup time;
+- exact resolved TorchAir cache directory and optimization metadata.
+
+Compute `static/control` throughput and latency ratios. Do not use host wall
+time as the throughput denominator. Record whether each graph compiled or
+reused; do not describe compilation time as inference latency.
+
+### 36.3 Static-actual boundary gate
+
+This must reuse the B32 static-actual graph from 36.2. Omit `--allow-compile`:
+
+```sh
+printf '%q ' timeout --signal=TERM --kill-after=10s 300 \
+  "$PYTHON_BIN" "$TEXT_LAB" \
+  --mode boundary --backend torchair \
+  --model "$MODEL_DIR" --cache-dir "$DECODE_CACHE" \
+  --batch-size 32 --active-slots 32 --cache-length 4096 \
+  --profile-position 1279 \
+  --decode-optimization combined_apply_static_actual \
+  --output "$ROOT/static_boundary/result.json" \
+  >"$ROOT/static_boundary/command.sh"
+printf '\n' >>"$ROOT/static_boundary/command.sh"
+
+set +e
+timeout --signal=TERM --kill-after=10s 300 \
+  "$PYTHON_BIN" "$TEXT_LAB" \
+  --mode boundary --backend torchair \
+  --model "$MODEL_DIR" --cache-dir "$DECODE_CACHE" \
+  --batch-size 32 --active-slots 32 --cache-length 4096 \
+  --profile-position 1279 \
+  --decode-optimization combined_apply_static_actual \
+  --output "$ROOT/static_boundary/result.json" \
+  2>&1 | tee "$ROOT/static_boundary/run.log"
+BOUNDARY_EXIT="${PIPESTATUS[0]}"
+set -e
+printf '%s\n' "$BOUNDARY_EXIT" >"$ROOT/static_boundary/exit_code.txt"
+grep 'TEXT_DECODE_BOUNDARY' "$ROOT/static_boundary/run.log" \
+  >"$ROOT/static_boundary/events.log" || true
+```
+
+Require exit zero and the complete sequence `step_begin`, `step_returned`,
+`sync_begin`, `sync_end`. The result must say B32, KV4096, position 1279,
+effective length 1280, `attention=gqa`, TorchAir, and
+`combined_apply_static_actual`. If it hangs, times out, or reports a CANN/AICore
+error, stop. Do not run E2E.
+
+### 36.4 E2E helper and boundary-containing page
+
+The only behavior change from the prior optimized GQA pipeline is
+`combined_apply_static_actual`. Layout is fully completed before recognition.
+The B32 decode cache from the lab must be reused.
+
+```sh
+run_e2e() {
+  lane="$1"
+  timeout_s="$2"
+  offset="$3"
+  limit="$4"
+  lane_dir="$ROOT/$lane"
+  output_dir="$lane_dir/output"
+
+  printf '%q ' timeout --signal=TERM --kill-after=10s "$timeout_s" \
+    "$PYTHON_BIN" "$E2E" \
+    --dataset-json "$DATASET_JSON" --images-dir "$IMAGES_DIR" \
+    --layout-model "$LAYOUT_MODEL" --recognizer-model "$MODEL_DIR" \
+    --offset "$offset" --limit "$limit" \
+    --batch-size 32 --cache-length 4096 --max-new-tokens 2808 \
+    --preprocessor-min-pixels 28224 \
+    --decode-backend torchair \
+    --decode-optimization combined_apply_static_actual \
+    --torchair-cache-dir "$DECODE_CACHE" \
+    --vision-backend torchair \
+    --vision-attention prompt_flash_attention \
+    --vision-promptfa-align-128 --vision-padding bucket \
+    --vision-packing greedy --vision-pack-target 1920 \
+    --vision-router-lookahead 32 \
+    --text-packing production_group \
+    --text-pack-buckets 128,256,512,1024 \
+    --text-pack-max-members 32 \
+    --text-packed-cache-dir "$PACKED_TEXT_CACHE" \
+    --layout-device npu --no-layout-graph-capture \
+    --preprocess-all-pages-first --no-timeline \
+    --output-dir "$output_dir" >"$lane_dir/command.sh"
+  printf '\n' >>"$lane_dir/command.sh"
+
+  set +e
+  timeout --signal=TERM --kill-after=10s "$timeout_s" \
+    "$PYTHON_BIN" "$E2E" \
+    --dataset-json "$DATASET_JSON" --images-dir "$IMAGES_DIR" \
+    --layout-model "$LAYOUT_MODEL" --recognizer-model "$MODEL_DIR" \
+    --offset "$offset" --limit "$limit" \
+    --batch-size 32 --cache-length 4096 --max-new-tokens 2808 \
+    --preprocessor-min-pixels 28224 \
+    --decode-backend torchair \
+    --decode-optimization combined_apply_static_actual \
+    --torchair-cache-dir "$DECODE_CACHE" \
+    --vision-backend torchair \
+    --vision-attention prompt_flash_attention \
+    --vision-promptfa-align-128 --vision-padding bucket \
+    --vision-packing greedy --vision-pack-target 1920 \
+    --vision-router-lookahead 32 \
+    --text-packing production_group \
+    --text-pack-buckets 128,256,512,1024 \
+    --text-pack-max-members 32 \
+    --text-packed-cache-dir "$PACKED_TEXT_CACHE" \
+    --layout-device npu --no-layout-graph-capture \
+    --preprocess-all-pages-first --no-timeline \
+    --output-dir "$output_dir" \
+    2>&1 | tee "$lane_dir/run.log"
+  lane_exit="${PIPESTATUS[0]}"
+  set -e
+  printf '%s\n' "$lane_exit" >"$lane_dir/exit_code.txt"
+  return "$lane_exit"
+}
+
+run_e2e target_page 1800 11 1
+```
+
+Require one result and prediction, all recognition requests EOS-terminated,
+and no Python, CANN, AICore, or timeout error. Confirm the summary says B32,
+KV4096, TorchAir, static-actual optimization, and all-before-recognition.
+Confirm at least one request crosses effective length 1280 by calculating
+`input_tokens + decode_tokens_after_prefill_including_eos` from the trace.
+
+### 36.5 First 32 pages, layout first
+
+Run only after 36.2-36.4 pass:
+
+```sh
+run_e2e pages32 7200 0 32
+```
+
+Require 32 results and predictions, no timeout/error, and EOS for every
+recognition request. This subset includes the crop that deterministically hung
+normal masked GQA at position 1279. Report progress timestamps from `run.log`
+and explicitly state whether the run passed page 12 and completed page 32.
+
+From `run_summary.json`, report:
+
+- measured pipeline E2E, pages/s, and seconds/page (setup excluded);
+- complete setup decomposition, especially decode first-call/cache time;
+- layout total and detailed stage times;
+- recognition requests and all real/physical vision/text/decode token totals;
+- decode graph calls, raw/effective/idle/look-ahead token slots;
+- decode wall and raw/effective decode tok/s;
+- run-scoped scheduler wall;
+- every device-stage total, especially vision prefill, text prefill, H2D, KV
+  redistribution, and decode;
+- vision/text packing groups, fill fractions, and bucket histograms;
+- stop-reason counts and page completion times;
+- number of requests whose generated path crossed effective lengths 1280,
+  2560, or 3840.
+
+Do not include model/setup/compile time in pages/s. Do not infer decode tok/s
+from E2E; use the recorded decode wall and token counters. Do not attribute
+speed differences to static actual length unless the safe-position lab profile
+supports them.
+
+### 36.6 Report
+
+Write `$ROOT/agent_report.md`:
+
+```text
+310P PHASE 36 STATIC ACTUAL GQA: FULL_32_PASS | TARGET_PAGE_PASS_ONLY |
+BOUNDARY_FAILURE | PROFILE_FAILURE | TARGET_PAGE_FAILURE | FULL_32_HANG |
+RUNTIME_ERROR
+
+commit / host / exact NPU / software:
+CANN / driver / firmware:
+control profile command / compiled or reused / exit:
+static profile command / compiled or reused / exit:
+control B32 safe-position latency distribution / physical tok-s / memory:
+static B32 safe-position latency distribution / physical tok-s / memory:
+static-vs-control latency and throughput ratios:
+static boundary command / cache reuse / exit:
+static boundary complete event sequence and synchronized elapsed:
+target-page command / exit / results / requests / EOS:
+target-page 1280-crossing evidence / E2E / decode wall / tok-s:
+32-page command / exit / results / requests / EOS:
+32-page E2E / pages-s / seconds-page:
+32-page layout stage breakdown:
+32-page token totals and decode accounting:
+32-page raw / effective decode tok-s and decode wall:
+32-page vision/text/H2D/KV device-stage times:
+32-page packing statistics and bucket histograms:
+32-page boundary-crossing request counts:
+setup decomposition and graph cache evidence:
+first Python/CANN/plog error, if any:
+mechanical classification:
+what is proven:
+what is not proven:
+evidence paths:
+```
+
+Paste back the complete report, both profile result summaries, the boundary
+`events.log`, and the last 80 lines of the 32-page log. Stop after Phase 36;
+do not promote static actual length to the default production preset yet.

@@ -1107,7 +1107,7 @@ def _write_report(
     *,
     lab: TextDecodeLab | None,
 ) -> Path:
-    uses_corpus = args.mode != "boundary"
+    uses_corpus = args.mode in ("simulate", "replay", "correctness")
     if args.output is not None:
         output = args.output.expanduser().resolve()
     else:
@@ -1220,11 +1220,15 @@ def _print_result(mode: str, result: dict[str, Any]) -> None:
 @torch.inference_mode()
 def main(argv: Sequence[str] | None = None) -> None:
     args = parse_args(argv)
-    if args.mode == "boundary":
+    if args.mode in ("profile", "torch_profile", "boundary"):
         corpus: dict[str, Any] = {
             "contract": {
                 "corpus_used": False,
-                "scope": "synthetic full-decoder cache-position boundary",
+                "scope": (
+                    "synthetic full-decoder cache-position boundary"
+                    if args.mode == "boundary"
+                    else "synthetic full-decoder throughput profile"
+                ),
             }
         }
         selected_items: list[dict[str, Any]] = []
