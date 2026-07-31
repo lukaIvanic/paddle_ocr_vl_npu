@@ -364,6 +364,16 @@ per-layer repetition and 4,104 for GQA. Measured allocation before the real
 run rose from 9.19 GB for GQA to 17.64 GB for expanded-cache MHA, matching the
 expected 7.875 GiB arena increase.
 
+The full OmniDocBench runner exposes only `combined_apply` and
+`combined_apply_mha_repeat` through `--decode-optimization`. GQA remains the
+default; the MHA choice exists solely to run the 310P boundary workaround
+through the real page pipeline. The B4/KV4096 910B controls are recorded under
+`tmp/09_persistent_page_engine/mha_repeat_b4_910b_87136a4/` and
+`tmp/09_persistent_page_engine/mha_repeat_b4_e2e_910b_c5c3a6e/`. The compiled
+text-decode lab completed cache position 1279, and the boundary-containing
+OmniDocBench page completed all nine crops by EOS in 3.02 s with a 1.90 s
+decode wall. This is a wiring/termination control, not a 310P speed estimate.
+
 `scripts/text_decode_real_generation.py` is the real-generation gate after the
 synthetic `boundary` and `correctness` modes. It obtains block 3 from a fixed
 OmniDocBench page through the owned layout frontend, verifies the expected
