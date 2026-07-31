@@ -1,6 +1,0 @@
-commit: 4fa19b4292669b7778434e4e29c6ad9cac353dc2
-host: liteserver-c001-4
-ASCEND_RT_VISIBLE_DEVICES=5
-python: /usr/local/python3.12.13/bin/python3
-positions: 1023,1151,1277,1278,1280,1281,1282,1407,1535,1663,1791,2047,3071,1279
-lanes: B1 dense/torchair/zeros/d1, B2 dense/torchair/random/d1, C1 op/torchair/random/mask, C3 op/torchair/random/nomask
