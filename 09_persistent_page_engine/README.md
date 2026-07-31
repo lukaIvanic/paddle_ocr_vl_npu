@@ -291,7 +291,7 @@ the extra active iteration caused by the scheduler's queue-depth-one completion
 look-ahead. The builder verifies its request and token totals against the run
 summary.
 
-`scripts/text_decode_lab.py` deliberately separates five questions:
+`scripts/text_decode_lab.py` deliberately separates six questions:
 
 - `simulate` reconstructs stable-slot occupancy without loading the model or
   using an NPU. It must reproduce the reference run's graph-call, active,
@@ -305,6 +305,10 @@ summary.
   operator shapes, framework stacks, a Chrome timeline, CANN operator/kernel
   tables, and one selected Level1 AI Core metric. Profiler wall time is
   intentionally not treated as throughput because collection perturbs it.
+- `boundary` runs exactly one real full-decoder/arena step at a selected cache
+  position and emits flushed markers before the call, after enqueue, and around
+  device synchronization. It exists for externally timed hardware-boundary
+  probes where a kernel can hang without raising a Python or CANN error.
 - `replay` runs the real `TextDecodeRuntime`, `DecodeArena`, sampled-token D2H
   ring, retirement, refill, admission-copy, and hot-swap scheduler. Recorded
   request lengths decide completion, so every tested shape sees the same
@@ -330,6 +334,14 @@ projection modules are materialized before the decode weight-format pass so
 their weights receive the same FRACTAL_NZ treatment as production linears.
 Each preset has a distinct TorchAir cache key. Correctness mode always compares
 the selected compiled preset against the baseline eager stage.
+
+`combined_apply_mha_repeat` is a lab-only discriminator for the 310P masked-GQA
+boundary issue. It leaves the persistent cache in production's two-KV-head
+form, expands one layer's K/V to 16 heads immediately before IncreFA, and calls
+the operator in MHA form (`num_key_value_heads=0`). It is not a production
+fallback or an accepted optimization: the boundary lab first establishes
+whether it avoids the fault, and later measurements must price its transient
+memory and repeated-copy cost.
 
 The faithful OmniDocBench runner defaults to the measured B32/KV4096 decode
 shape. Its 2,808-token generation cap leaves room for the retained corpus's
@@ -372,6 +384,16 @@ reused without copying it or maintaining a second cache.
   --repeats 3 \
   --profile-metric pipe \
   --name torch_profile_b4_k1024
+
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
+  09_persistent_page_engine/scripts/text_decode_lab.py \
+  --mode boundary \
+  --batch-size 16 \
+  --active-slots 16 \
+  --cache-length 4096 \
+  --profile-position 1279 \
+  --decode-optimization combined_apply \
+  --name boundary_b16_k4096_pos1279
 
 /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
   09_persistent_page_engine/scripts/text_decode_lab.py \

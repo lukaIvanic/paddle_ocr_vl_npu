@@ -51,6 +51,7 @@ class DecodeOptimizationConfig:
     packed_mlp: bool = False
     npu_swiglu: bool = False
     add_rms_norm: bool = False
+    attention: str = "gqa"
 
 
 DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
@@ -98,6 +99,15 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         rms_norm="npu",
         rotary="npu_apply",
         add_rms_norm=True,
+    ),
+    "combined_apply_mha_repeat": DecodeOptimizationConfig(
+        name="combined_apply_mha_repeat",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        add_rms_norm=True,
+        attention="mha_repeat",
     ),
     "combined_apply_all": DecodeOptimizationConfig(
         name="combined_apply_all",
@@ -546,16 +556,41 @@ def _decode_attention(
     import torch_npu
 
     batch = query_states.shape[0]
+    key_for_attention = key_cache
+    value_for_attention = value_cache
+    num_key_value_heads = int(attention.num_key_value_heads)
+    if optimization.attention == "mha_repeat":
+        groups = int(attention.num_key_value_groups)
+        batch_size, kv_heads, kv_length, head_dim = key_cache.shape
+        key_for_attention = (
+            key_cache[:, :, None, :, :]
+            .expand(batch_size, kv_heads, groups, kv_length, head_dim)
+            .reshape(batch_size, kv_heads * groups, kv_length, head_dim)
+            .contiguous()
+        )
+        value_for_attention = (
+            value_cache[:, :, None, :, :]
+            .expand(batch_size, kv_heads, groups, kv_length, head_dim)
+            .reshape(batch_size, kv_heads * groups, kv_length, head_dim)
+            .contiguous()
+        )
+        num_key_value_heads = 0
+    elif optimization.attention != "gqa":
+        raise ValueError(
+            f"unsupported decode attention implementation: "
+            f"{optimization.attention!r}"
+        )
+
     attention_output = torch_npu.npu_incre_flash_attention(
         query_states.contiguous(),
-        key_cache.contiguous(),
-        value_cache.contiguous(),
+        key_for_attention.contiguous(),
+        value_for_attention.contiguous(),
         atten_mask=(
             None if attention_mask is None else attention_mask.contiguous()
         ),
         actual_seq_lengths=None,
         num_heads=int(attention.num_heads),
-        num_key_value_heads=int(attention.num_key_value_heads),
+        num_key_value_heads=num_key_value_heads,
         input_layout="BNSD",
         scale_value=float(attention.scaling),
     )
@@ -949,6 +984,7 @@ def compile_text_decode_stage(
             "packed_mlp": optimization.packed_mlp,
             "npu_swiglu": optimization.npu_swiglu,
             "add_rms_norm": optimization.add_rms_norm,
+            "attention": optimization.attention,
         },
     }
     if backend_name == "raw_eager":

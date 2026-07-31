@@ -53,7 +53,14 @@ DEFAULT_OUTPUT_ROOT = REPO_ROOT / "tmp/09_persistent_page_engine/text_decode_lab
 DEFAULT_CACHE_ROOT = (
     REPO_ROOT / ".runtime_cache/09_persistent_page_engine_torchair"
 )
-MODES = ("simulate", "profile", "torch_profile", "replay", "correctness")
+MODES = (
+    "simulate",
+    "profile",
+    "torch_profile",
+    "boundary",
+    "replay",
+    "correctness",
+)
 NPU_PROFILE_METRICS = ("pipe", "memory", "l2", "memory_access")
 
 
@@ -617,6 +624,84 @@ class TextDecodeLab:
             "profile_wall_is_throughput_measurement": False,
         }
 
+    def boundary(self) -> dict[str, Any]:
+        """Run one full decoder step with durable synchronization markers."""
+        arena = self._dummy_arena(
+            active_slots=self.args.active_slots,
+            cache_position=self.args.profile_position,
+        )
+        synchronize(self.device)
+        event = {
+            "batch_size": self.args.batch_size,
+            "active_slots": self.args.active_slots,
+            "cache_length": self.args.cache_length,
+            "cache_position": self.args.profile_position,
+            "effective_length": self.args.profile_position + 1,
+            "backend": self.args.backend,
+            "decode_optimization": self.optimization.name,
+            "attention": self.optimization.attention,
+        }
+        print(
+            "TEXT_DECODE_BOUNDARY "
+            + json.dumps({"event": "step_begin", **event}, sort_keys=True),
+            flush=True,
+        )
+        started = time.perf_counter()
+        arena.step(self.runtime.fn, iteration=0)
+        print(
+            "TEXT_DECODE_BOUNDARY "
+            + json.dumps({"event": "step_returned", **event}, sort_keys=True),
+            flush=True,
+        )
+        print(
+            "TEXT_DECODE_BOUNDARY "
+            + json.dumps({"event": "sync_begin", **event}, sort_keys=True),
+            flush=True,
+        )
+        try:
+            synchronize(self.device)
+        except BaseException as exc:
+            print(
+                "TEXT_DECODE_BOUNDARY "
+                + json.dumps(
+                    {
+                        "event": "sync_error",
+                        "error_type": type(exc).__name__,
+                        "error": str(exc),
+                        **event,
+                    },
+                    sort_keys=True,
+                ),
+                flush=True,
+            )
+            raise
+        elapsed_s = time.perf_counter() - started
+        print(
+            "TEXT_DECODE_BOUNDARY "
+            + json.dumps(
+                {"event": "sync_end", "elapsed_s": elapsed_s, **event},
+                sort_keys=True,
+            ),
+            flush=True,
+        )
+        model_and_argmax_s, admission_s = arena.resolve_device_timing()
+        if admission_s:
+            raise AssertionError("boundary mode unexpectedly performed admission")
+        return {
+            "shape": {
+                "batch_size": self.args.batch_size,
+                "cache_length": self.args.cache_length,
+                "active_slots": self.args.active_slots,
+                "cache_position": self.args.profile_position,
+                "effective_length": self.args.profile_position + 1,
+            },
+            "backend": self.args.backend,
+            "decode_optimization": self.optimization.name,
+            "attention": self.optimization.attention,
+            "elapsed_s": elapsed_s,
+            "model_and_argmax_device_s": model_and_argmax_s,
+        }
+
     def replay(
         self,
         items: list[dict[str, Any]],
@@ -1081,6 +1166,14 @@ def _print_result(mode: str, result: dict[str, Any]) -> None:
             f"metric={result['metric']} "
             f"profile_dir={result['profile_dir']}"
         )
+    elif mode == "boundary":
+        print(
+            "DECODE_BOUNDARY "
+            f"position={result['shape']['cache_position']} "
+            f"effective_length={result['shape']['effective_length']} "
+            f"attention={result['attention']} "
+            f"elapsed_s={result['elapsed_s']:.6f}"
+        )
     elif mode == "replay":
         scheduler = result["scheduler"]
         throughput = result["throughput"]
@@ -1111,13 +1204,14 @@ def main(argv: Sequence[str] | None = None) -> None:
     corpus, selected_items = _load_corpus(args.corpus, args.max_items)
 
     lab: TextDecodeLab | None = None
-    if args.mode in ("profile", "torch_profile"):
+    if args.mode in ("profile", "torch_profile", "boundary"):
         lab = TextDecodeLab(args)
-        result: dict[str, Any] = (
-            lab.profile()
-            if args.mode == "profile"
-            else lab.torch_profile()
-        )
+        if args.mode == "profile":
+            result: dict[str, Any] = lab.profile()
+        elif args.mode == "torch_profile":
+            result = lab.torch_profile()
+        else:
+            result = lab.boundary()
     else:
         items, overflow = _filter_for_cache(
             selected_items,
@@ -1150,7 +1244,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             },
             "production_reference": reference,
         }
-    elif args.mode not in ("profile", "torch_profile"):
+    elif args.mode not in ("profile", "torch_profile", "boundary"):
         lab = TextDecodeLab(args)
         if args.mode == "replay":
             result = lab.replay(items, overflow)
