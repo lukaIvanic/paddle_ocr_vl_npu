@@ -100,8 +100,11 @@ run it on the 910B container after `source npu-setup`.
 Two substitutions apply to every `python3` block below (verified 2026-07-27 on
 the blue-zone box, commit `d82bb1d`):
 
-- **Interpreter.** Bare `python3` is `/usr/bin/python3` and has no torch. Use
-  `/usr/local/python3.12.13/bin/python3` — the one `npu-setup` prints.
+- **Interpreter.** Bare `python3` is `/usr/bin/python3` and has no torch.
+  Model-only probes can use `/usr/local/python3.12.13/bin/python3`, but the
+  current full experiment-09 runner imports `kornia_rs` through the owned
+  layout frontend and must use
+  `/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python`.
 - **Model path.** Scripts in `01`–`06` default `--model` to the hub id
   `PaddlePaddle/PaddleOCR-VL-1.6`. The box has no route to huggingface.co and
   its HF cache entry is a stub, so the default fails after a ~90 s connect

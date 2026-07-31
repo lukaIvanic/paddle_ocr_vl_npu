@@ -12066,3 +12066,194 @@ evidence paths:
 
 Paste back the report plus every `EXP09_SCHEDULER` line whose event begins
 with `diagnostic_`. Do not summarize those lines away.
+
+## Phase 30: dense-decode position boundary and physical-KV control
+
+### 30.0 What Phase 29 established
+
+Phase 29 reproduced the failure with one source page and one remaining active
+decode slot. The fixed B16/KV4096 compiled graph was enqueued for:
+
+```text
+target row:       slot 3
+cache_position:   1279
+effective length: 1280
+other rows:       inactive, cache_position 0
+```
+
+The separate compute event never completed. D2H was not reached. This removes
+page history, ready-queue refill, slot swapping, and sampled-token transfer as
+the primary cause.
+
+The matching 910B page control also establishes that the target crop did not
+use a 1280 prefill bucket:
+
+```text
+vision route:      compiled B1/S4096 (4032 real, 4096 physical)
+text-prefill route: compiled packed 1024 (1021 real, 1024 physical)
+decode boundary:   cache_position 1279 / effective length 1280
+```
+
+On 910B2 the full page crossed the diagnostic boundary, with both compute and
+D2H syncs completing. The standalone mixed-position probe also passed target
+positions 1277 through 1281 for both physical KV4096 and KV3584. These are
+controls only; they do not predict 310P behavior.
+
+### 30.1 Constraints and preflight
+
+- Use the same NPU, Python environment, model, and software stack as Phase 29.
+- Do not edit tracked files, create branches, commit, or push.
+- Run each lane in its own process. A hung NPU process must be terminated by
+  its exact PID only; never use `pkill` or `killall`.
+- Do not use AICore utilization percentage as a causal diagnostic.
+- Preserve the Phase-29 artifacts and compiler caches.
+
+```sh
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git status --short --branch
+git pull --ff-only origin main
+COMMIT="$(git rev-parse HEAD)"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+PYTHON_BIN="${PYTHON_BIN:-$(command -v python)}"
+test -x "$PYTHON_BIN"
+PROBE=09_persistent_page_engine/scripts/probes/probe_dense_decode_position_boundary.py
+"$PYTHON_BIN" "$PROBE" --help | grep -q -- '--inactive-position'
+ROOT="$WORK_SERVER_REPO/tmp/09_persistent_page_engine/310p_phase30_decode_boundary_$COMMIT_SHORT"
+test ! -e "$ROOT"
+mkdir -p "$ROOT"
+```
+
+Use the same TorchAir decode cache root used by Phase 29 for the KV4096 lane.
+The runtime creates a shape-specific child directory and must report
+`batch_size=16`, `cache_length=4096`, `decode_attention=increfa`,
+`decode_cache_update=npu_scatter`, and `decode_optimization=combined_apply`.
+Do not trust a parent directory's historical `b32` name; inspect the emitted
+runtime metadata.
+
+### 30.2 Standalone mixed-position probe, KV4096
+
+The probe builds the production dense `TextDecodeRuntime` with random model
+weights and a zero-initialized KV cache. It is deliberately a shape/value
+control, not real-input parity. Fifteen rows stay at position zero while slot 3
+is tested at the boundary.
+
+```sh
+LANE="$ROOT/probe_k4096"
+mkdir -p "$LANE"
+
+timeout 600 "$PYTHON_BIN" "$PROBE" \
+  --batch-size 16 \
+  --cache-length 4096 \
+  --target-row 3 \
+  --inactive-position 0 \
+  --positions 1277,1278,1279,1280,1281 \
+  --cache-dir "$WORK_SERVER_REPO/.runtime_cache/310p_decode_b32_k4096_4789067" \
+  --output "$LANE/result.json" \
+  >"$LANE/run.log" 2>&1 &
+PID=$!
+printf '%s\n' "$PID" >"$LANE/pid.txt"
+wait "$PID"
+printf '%s\n' "$?" >"$LANE/exit_code.txt"
+```
+
+The probe flushes every event to both stdout and
+`result.progress.jsonl`. If the timeout fires, report the last progress row.
+The decisive boundary is:
+
+```text
+step_sync_begin target_position=1279 effective_length=1280
+```
+
+If this row has no matching `step_sync_end`, the synthetic production-shaped
+graph reproduces the 310P hang without real images, prefill, scheduling, or
+D2H.
+
+### 30.3 Standalone mixed-position probe, KV3584
+
+Run this lane regardless of whether KV4096 passes or times out. Use a new cache
+root because KV3584 is a new compiled graph shape.
+
+```sh
+LANE="$ROOT/probe_k3584"
+mkdir -p "$LANE"
+
+timeout 900 "$PYTHON_BIN" "$PROBE" \
+  --batch-size 16 \
+  --cache-length 3584 \
+  --target-row 3 \
+  --inactive-position 0 \
+  --positions 1277,1278,1279,1280,1281 \
+  --cache-dir "$WORK_SERVER_REPO/.runtime_cache/310p_phase30_dense_k3584" \
+  --output "$LANE/result.json" \
+  >"$LANE/run.log" 2>&1 &
+PID=$!
+printf '%s\n' "$PID" >"$LANE/pid.txt"
+wait "$PID"
+printf '%s\n' "$?" >"$LANE/exit_code.txt"
+```
+
+Compilation may dominate setup. Distinguish compile/setup time from the five
+step synchronizations.
+
+### 30.4 Real page, physical KV3584
+
+Copy the exact successful-to-reproduce Phase-29 Lane-A command. Change only:
+
+```text
+--cache-length 3584
+--max-new-tokens 2048
+--torchair-cache-dir .runtime_cache/310p_phase30_e2e_k3584
+--output-dir <Phase-30 E2E output>
+```
+
+Keep:
+
+```text
+--offset 11 --limit 1 --batch-size 16
+--diagnostic-decode-effective-length 1280
+--diagnostic-decode-request-id page_000000_block_000003
+--preprocess-all-pages-first --scheduler-progress
+```
+
+The smaller generation cap does not affect the request before generated token
+259. For the 1021-token target prompt, the maximum required cache under this
+lane is `1021 + 2048 - 1 = 3068`, which fits KV3584. This lane answers whether
+the real-input failure depends on the physical KV4096 graph shape.
+
+Use the same 90-second no-progress evidence procedure as Phase 29. Record all
+`diagnostic_` events and whether a new KV3584 decode graph compiled.
+
+### 30.5 Interpretation and report
+
+| KV4096 probe | KV3584 probe/E2E | Interpretation |
+| --- | --- | --- |
+| hangs at position 1279 | also hangs there | position/prefix-dependent compiled-op failure, not specific to physical KV4096 |
+| hangs at position 1279 | passes | interaction between effective length 1280 and the physical KV4096 graph/tiling |
+| passes | real KV4096 E2E hangs | trigger depends on real token, RoPE delta, or accumulated KV contents rather than position shape alone |
+| both probes pass, KV3584 E2E passes | physical KV shape or real KV4096 state remains the discriminator |
+
+Write `$ROOT/agent_report.md`:
+
+```text
+310P PHASE 30 DENSE DECODE BOUNDARY: POSITION_ONLY | KV4096_INTERACTION |
+REAL_STATE_DEPENDENT | UNRESOLVED
+
+commit / host / exact NPU / software:
+Phase-29 decode cache root:
+KV4096 probe exact command / exit:
+KV4096 runtime cache-key metadata:
+KV4096 last progress row / per-position outcomes:
+KV3584 probe exact command / exit:
+KV3584 runtime cache-key metadata:
+KV3584 last progress row / per-position outcomes:
+KV3584 E2E exact changed arguments / exit:
+KV3584 E2E target diagnostic events:
+new compile versus cache replay for each lane:
+mechanical classification from the table:
+evidence paths:
+```
+
+Paste back the report, both probes' complete `DENSE_DECODE_BOUNDARY` progress
+records, and every KV3584 E2E `EXP09_SCHEDULER` line beginning with
+`diagnostic_`.

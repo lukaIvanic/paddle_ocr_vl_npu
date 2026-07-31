@@ -70,12 +70,13 @@ ssh blue_zone_npu_container 'cd /workspace/repos/paddle_ocr_vl_npu && source npu
 Interpreters — all give torch 2.10.0+cpu / torch_npu 2.10.0 / 8 visible devices:
 
 - `/usr/local/python3.12.13/bin/python3` — transformers 5.5.4, torchvision
-  0.25.0, torchair. **This is what the current 09 runs use**, and what
-  `npu-setup` prints.
+  0.25.0, torchair, but no `kornia_rs`. It is sufficient for model-only
+  probes; the current full experiment-09 runner fails during layout import.
 - `/workspace/venvs/paddleocr_vl_baseline_py312` — transformers 5.0.0, no paddlex.
-- `/workspace/venvs/vllm_paddle_ocr_pipeline_py312` — transformers 5.5.4 plus
-  paddlex 3.7.2. Only needed for legacy PaddleX comparisons; the production path
-  no longer imports PaddleX.
+- `/workspace/venvs/vllm_paddle_ocr_pipeline_py312` — transformers 5.5.4,
+  `kornia_rs`, and paddlex 3.7.2. Use this interpreter for the current full
+  experiment-09 runner. The production path does not import PaddleX, but its
+  owned layout frontend does require `kornia_rs`.
 
 The box is shared with other users. `npu-setup` handles device selection; do not
 override it with a hand-picked device unless you have a reason, and never
