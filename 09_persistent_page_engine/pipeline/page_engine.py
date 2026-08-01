@@ -93,6 +93,7 @@ class OwnedPageEngine:
             "page_input_index": owner.page.prepared.ordinal,
             "block_index": owner.block_index,
             "request_id": result.request_id,
+            "source_image_name": owner.page.prepared.image_path.name,
             "label": PROMPT_LABELS.get(result.prompt, "unknown"),
             "prompt": result.prompt,
             "crop_size": list(result.crop_size),
@@ -114,6 +115,7 @@ class OwnedPageEngine:
             "text_prefill": result.text_prefill,
             "timing_s": result.timing_s,
             "device_stage_s": result.device_stage_s,
+            "input_fingerprints": result.input_fingerprints,
         }
 
     def _finish_page(self, page: _PageState) -> OwnedPageResult:

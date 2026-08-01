@@ -63,6 +63,7 @@ CONFIG_FIELDS = (
     "text_pack_max_members",
     "layout_graph_capture",
     "page_preprocessing_mode",
+    "recognition_input_fingerprints",
 )
 
 LAYOUT_BLOCK_FIELDS = (
@@ -177,6 +178,56 @@ def token_excerpt(tokens: list[int], divergence: int, radius: int = 4) -> list[i
     return tokens[start:end]
 
 
+def exact_status(left: Any, right: Any) -> str:
+    if left is None or right is None:
+        return "unavailable"
+    return "exact" if left == right else "different"
+
+
+def input_fingerprint(row: dict[str, Any], name: str) -> str | None:
+    fingerprints = row.get("input_fingerprints") or {}
+    if name == "crop":
+        return (fingerprints.get("crop") or {}).get("sha256")
+    if name == "prepared_inputs":
+        return fingerprints.get("prepared_inputs_sha256")
+    return (
+        (fingerprints.get("tensors") or {}).get(name) or {}
+    ).get("sha256")
+
+
+VISION_ROUTE_FIELDS = (
+    "execution",
+    "real_vision_tokens",
+    "physical_vision_tokens",
+    "bucket",
+    "packing",
+    "pack_crops",
+    "pack_real_vision_tokens",
+    "pack_physical_vision_tokens",
+    "pack_batch_size",
+    "pack_sequence_length",
+    "pack_row_sizes",
+)
+
+TEXT_ROUTE_FIELDS = (
+    "execution",
+    "real_text_tokens",
+    "physical_text_tokens",
+    "bucket",
+    "packing",
+    "pack_members",
+    "segment_lengths",
+    "pack_real_text_tokens",
+    "pack_physical_text_tokens",
+)
+
+
+def route_signature(row: dict[str, Any], section: str) -> dict[str, Any]:
+    route = dict(row.get(section) or {})
+    fields = VISION_ROUTE_FIELDS if section == "vision" else TEXT_ROUTE_FIELDS
+    return {field: route.get(field) for field in fields}
+
+
 def compare_configurations(
     reference: dict[str, Any],
     candidate: dict[str, Any],
@@ -274,6 +325,21 @@ def request_comparison(
     token_exact = reference_tokens == candidate_tokens
     reference_text = str(reference.get("text", ""))
     candidate_text = str(candidate.get("text", ""))
+    tensor_names = (
+        "attention_mask",
+        "image_grid_thw",
+        "input_ids",
+        "pixel_values",
+        "position_ids",
+        "rope_deltas",
+    )
+    tensor_fingerprint_status = {
+        name: exact_status(
+            input_fingerprint(reference, name),
+            input_fingerprint(candidate, name),
+        )
+        for name in tensor_names
+    }
     input_differences = {
         field: {
             "reference": reference.get(field),
@@ -297,6 +363,39 @@ def request_comparison(
         "label": reference.get("label"),
         "input_exact": not input_differences,
         "input_differences": input_differences,
+        "crop_fingerprint_status": exact_status(
+            input_fingerprint(reference, "crop"),
+            input_fingerprint(candidate, "crop"),
+        ),
+        "prepared_input_fingerprint_status": exact_status(
+            input_fingerprint(reference, "prepared_inputs"),
+            input_fingerprint(candidate, "prepared_inputs"),
+        ),
+        "tensor_fingerprint_status": tensor_fingerprint_status,
+        "reference_crop_sha256": input_fingerprint(reference, "crop"),
+        "candidate_crop_sha256": input_fingerprint(candidate, "crop"),
+        "reference_prepared_inputs_sha256": input_fingerprint(
+            reference, "prepared_inputs"
+        ),
+        "candidate_prepared_inputs_sha256": input_fingerprint(
+            candidate, "prepared_inputs"
+        ),
+        "vision_route_status": exact_status(
+            route_signature(reference, "vision"),
+            route_signature(candidate, "vision"),
+        ),
+        "text_prefill_route_status": exact_status(
+            route_signature(reference, "text_prefill"),
+            route_signature(candidate, "text_prefill"),
+        ),
+        "reference_vision_route": route_signature(reference, "vision"),
+        "candidate_vision_route": route_signature(candidate, "vision"),
+        "reference_text_prefill_route": route_signature(
+            reference, "text_prefill"
+        ),
+        "candidate_text_prefill_route": route_signature(
+            candidate, "text_prefill"
+        ),
         "token_ids_exact": token_exact,
         "text_exact": reference_text == candidate_text,
         "compact_text_exact": compact_text(reference_text) == compact_text(candidate_text),
@@ -380,6 +479,26 @@ def compare_requests(
         f"{row['reference_stop_reason']} -> {row['candidate_stop_reason']}"
         for row in comparisons
     )
+    evidence_cross_tabs = {}
+    for field in (
+        "crop_fingerprint_status",
+        "prepared_input_fingerprint_status",
+        "vision_route_status",
+        "text_prefill_route_status",
+    ):
+        counts = Counter(
+            f"{row[field]} -> {row['divergence_kind']}"
+            for row in comparisons
+        )
+        evidence_cross_tabs[field] = dict(sorted(counts.items()))
+    input_counts = Counter(
+        f"{'exact' if row['input_exact'] else 'different'} -> "
+        f"{row['divergence_kind']}"
+        for row in comparisons
+    )
+    evidence_cross_tabs["recorded_request_metadata"] = dict(
+        sorted(input_counts.items())
+    )
     return {
         "reference_requests": len(reference),
         "candidate_requests": len(candidate),
@@ -431,6 +550,7 @@ def compare_requests(
             sorted(Counter(row["divergence_kind"] for row in comparisons).items())
         ),
         "stop_reason_pairs": dict(sorted(stop_pairs.items())),
+        "evidence_cross_tabs": evidence_cross_tabs,
         "by_label": by_label,
         "by_page": {
             str(page): dict(counts)
@@ -439,6 +559,14 @@ def compare_requests(
         "worst_divergences": worst,
         "per_request": comparisons,
     }
+
+
+def cross_tab_status_total(table: dict[str, int], status: str) -> int:
+    return sum(
+        int(count)
+        for key, count in table.items()
+        if key.startswith(f"{status} -> ")
+    )
 
 
 def read_predictions(root: Path) -> dict[str, str]:
@@ -483,6 +611,13 @@ def render_markdown(report: dict[str, Any]) -> str:
     requests = report["recognition"]
     layout = report["layout"]
     pages = report["page_outputs"]
+    cross_tabs = requests["evidence_cross_tabs"]
+    exact_crop_fingerprints = cross_tab_status_total(
+        cross_tabs["crop_fingerprint_status"], "exact"
+    )
+    exact_prepared_fingerprints = cross_tab_status_total(
+        cross_tabs["prepared_input_fingerprint_status"], "exact"
+    )
     lines = [
         "# Experiment 09 E2E output comparison",
         "",
@@ -493,6 +628,8 @@ def render_markdown(report: dict[str, Any]) -> str:
         "",
         f"- Layout geometry exact: **{layout['geometry_exact_pages']}/{layout['shared_pages']} pages**",
         f"- Recorded request metadata exact: **{requests['input_exact_requests']}/{requests['shared_requests']} crops**",
+        f"- Crop-pixel fingerprints exact: **{exact_crop_fingerprints}/{requests['shared_requests']} crops** (missing fingerprints remain unavailable)",
+        f"- Prepared-input fingerprints exact: **{exact_prepared_fingerprints}/{requests['shared_requests']} crops** (missing fingerprints remain unavailable)",
         f"- Generated token streams exact: **{requests['token_exact_requests']}/{requests['shared_requests']} crops**",
         f"- First generated token differs: **{requests['first_generated_token_differences']} crops**",
         f"- Diverges after a shared prefix: **{requests['after_shared_prefix_differences']} crops**",
@@ -501,7 +638,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Assembled Markdown exact: **{pages['exact_pages']}/{pages['shared_pages']} pages**",
         "",
         "The first generated token is produced by multimodal prefill. A mismatch at token zero therefore proves a prefill-output difference. A later mismatch only proves divergence after a shared prefix; it does not by itself distinguish prefill-KV drift from decode drift.",
-        "The trace records crop geometry, prompt, token counts, and pixel-policy metadata, but not a crop-pixel hash. Exact request metadata therefore does not by itself prove byte-identical crop pixels.",
+        "When both traces include accuracy fingerprints, the crop hash covers exact RGB crop bytes and the prepared-input hash covers pixel values, token IDs, masks, image grid, MRoPE positions, and rope deltas before H2D. Older traces report these fields as unavailable.",
         "",
         "## Configuration differences",
         "",

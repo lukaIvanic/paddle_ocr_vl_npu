@@ -9,7 +9,7 @@ import queue
 import threading
 from collections import Counter, deque
 from concurrent.futures import Future, ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
@@ -63,6 +63,7 @@ from .types import ContinuousDecodeResult, RecognitionRequest, RecognitionResult
 from utils.timing import DeviceTimeline, synchronize
 from utils.timeline import TimelineRecorder
 from utils.metrics import per_second
+from utils.input_fingerprints import fingerprint_recognition_inputs
 from ..model.vision_prefill import (
     PreparedVisionPrefill,
     VISION_ATTENTION_CHOICES,
@@ -90,6 +91,7 @@ class CpuPreparedRecognition:
     timing_s: dict[str, float]
     request_started: float
     preparation_finished: float
+    input_fingerprints: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -347,6 +349,7 @@ class PrefilledRecognition:
     device_stage_s: dict[str, float]
     request_started: float
     prefill_finished: float
+    input_fingerprints: dict[str, Any] = field(default_factory=dict)
 
     def take_device_state(
         self,
@@ -432,6 +435,7 @@ class ContinuousRecognizer:
         diagnostic_decode_effective_length: int | None = None,
         diagnostic_decode_request_id: str | None = None,
         decode_optimization: str = DEFAULT_DECODE_OPTIMIZATION,
+        recognition_input_fingerprints: bool = False,
     ):
         # TorchAir guards tensor dispatch-key sets. Build and warm every graph
         # under the same inference-mode contract used by run(),
@@ -473,6 +477,9 @@ class ContinuousRecognizer:
         self.batch_size = int(batch_size)
         self.cache_length = int(cache_length)
         self.max_new_tokens = int(max_new_tokens)
+        self.recognition_input_fingerprints = bool(
+            recognition_input_fingerprints
+        )
         self.vision_backend = str(vision_backend)
         self.vision_attention = str(vision_attention)
         if self.vision_attention not in VISION_ATTENTION_CHOICES:
@@ -1600,6 +1607,7 @@ class ContinuousRecognizer:
             },
             vision=dict(state.vision),
             text_prefill=dict(state.text_prefill),
+            input_fingerprints=dict(state.input_fingerprints),
         )
 
     @torch.inference_mode()
@@ -1686,6 +1694,22 @@ class ContinuousRecognizer:
                 args={"input_tokens": int(input_ids.shape[1])},
             )
 
+        input_fingerprints: dict[str, Any] = {}
+        if self.recognition_input_fingerprints:
+            started = time.perf_counter()
+            input_fingerprints = fingerprint_recognition_inputs(
+                crop=request.crop,
+                tensors={
+                    "attention_mask": attention_mask,
+                    "image_grid_thw": image_grid_thw,
+                    "input_ids": input_ids,
+                    "pixel_values": pixel_values,
+                    "position_ids": position_ids_cpu,
+                    "rope_deltas": rope_deltas_cpu,
+                },
+            )
+            timing["cpu_input_fingerprints"] = time.perf_counter() - started
+
         started = time.perf_counter()
         input_ids = _pin_memory_or_keep(input_ids)
         attention_mask = _pin_memory_or_keep(attention_mask)
@@ -1738,6 +1762,7 @@ class ContinuousRecognizer:
             timing_s=timing,
             request_started=submitted_at,
             preparation_finished=preparation_finished,
+            input_fingerprints=input_fingerprints,
         )
 
     @staticmethod
@@ -2651,6 +2676,7 @@ class ContinuousRecognizer:
                     device_stage_s=device_stage_s,
                     request_started=prepared.request_started,
                     prefill_finished=resolve_finished,
+                    input_fingerprints=dict(prepared.input_fingerprints),
                 )
             )
         return results
@@ -2675,6 +2701,9 @@ class ContinuousRecognizer:
             "decode_cache_update": DECODE_CACHE_UPDATE if self.device.type == "npu" else "per_row_copy",
             "cache_length": self.cache_length,
             "max_new_tokens": self.max_new_tokens,
+            "recognition_input_fingerprints": (
+                self.recognition_input_fingerprints
+            ),
             "batch_size": self.batch_size,
             "diagnostic_decode_effective_length": (
                 self.diagnostic_decode_effective_length

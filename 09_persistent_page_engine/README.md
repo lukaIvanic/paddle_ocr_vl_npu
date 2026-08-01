@@ -281,6 +281,19 @@ release occurs only after the last admission read has been enqueued.
   --name cache_lease_256p
 ```
 
+### Accuracy localization lab
+
+`accuracy_lab/` defines a fixed seven-page, ten-diagnostic-crop corpus for
+exact 910B/310P investigation.  The production runner's opt-in
+`--recognition-input-fingerprints` flag hashes raw crop pixels and all final CPU
+recognition inputs before H2D.  `scripts/accuracy_lab.py` keys requests by
+original image name plus block index, so smaller offset runs remain comparable,
+and cross-tabulates output divergence against crop identity, prepared-input
+identity, and the exact vision/text-prefill routes.  See
+[`accuracy_lab/README.md`](accuracy_lab/README.md) for the fixed cases and run
+contract.  This instrumentation is disabled by default and does not change the
+production model path.
+
 ### Text-decode optimization lab
 
 `scripts/text_decode_lab_corpus.py` turns a production recognition trace into

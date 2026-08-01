@@ -260,6 +260,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--recognition-input-fingerprints",
+        action="store_true",
+        help=(
+            "Accuracy-lab instrumentation: hash each raw crop and every final "
+            "CPU recognition input before H2D. Disabled in production runs."
+        ),
+    )
+    parser.add_argument(
         "--diagnostic-decode-effective-length",
         type=int,
         default=None,
@@ -659,6 +667,9 @@ def main() -> None:
             args.diagnostic_decode_effective_length
         ),
         diagnostic_decode_request_id=args.diagnostic_decode_request_id,
+        recognition_input_fingerprints=(
+            args.recognition_input_fingerprints
+        ),
     )
     recognizer_configuration = recognizer.configuration()
     page_engine = OwnedPageEngine(
@@ -691,6 +702,9 @@ def main() -> None:
             "layout_frontend": "owned_no_paddlex",
             "page_preprocessing_mode": manifest["page_preprocessing_mode"],
             "scheduler_progress": bool(args.scheduler_progress),
+            "recognition_input_fingerprints": bool(
+                args.recognition_input_fingerprints
+            ),
             "vision_route_plan": (
                 str(vision_route_plan_path)
                 if vision_route_plan_path is not None
@@ -791,6 +805,9 @@ def main() -> None:
             "cpu_preprocessing": recognizer_configuration["cpu_preprocessing"],
             "page_preprocessing_mode": manifest["page_preprocessing_mode"],
             "scheduler_progress": bool(args.scheduler_progress),
+            "recognition_input_fingerprints": bool(
+                args.recognition_input_fingerprints
+            ),
             "vision_route_plan_input": (
                 str(vision_route_plan_path)
                 if vision_route_plan_path is not None

@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import re
 import sys
@@ -28,6 +27,7 @@ from pipeline.omnidocbench_defaults import (
     OMNIDOCBENCH_PAGE_COUNT,
 )
 from utils.timeline import TimelineRecorder
+from utils.input_fingerprints import fingerprint_pil_image
 
 
 DEFAULT_DATASET_JSON = Path(
@@ -161,13 +161,7 @@ def _request_record(
     if match is None:
         raise ValueError(f"unexpected request id: {request.request_id!r}")
     page_index = int(match.group(1))
-    crop_bytes = request.crop.tobytes()
-    crop_hash = hashlib.sha256(
-        (
-            f"{request.crop.mode}:{request.crop.width}:{request.crop.height}:"
-        ).encode()
-        + crop_bytes
-    ).hexdigest()
+    crop = fingerprint_pil_image(request.crop)
     return {
         "request_index": request_index,
         "request_id": request.request_id,
@@ -180,8 +174,8 @@ def _request_record(
         "max_pixels": request.max_pixels,
         "crop_mode": request.crop.mode,
         "crop_size": [request.crop.width, request.crop.height],
-        "crop_nbytes": len(crop_bytes),
-        "crop_sha256": crop_hash,
+        "crop_nbytes": crop["nbytes"],
+        "crop_sha256": crop["sha256"],
     }
 
 
