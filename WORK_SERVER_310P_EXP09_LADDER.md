@@ -15056,7 +15056,190 @@ Write `$ROOT/manual_review.md` and `$ROOT/agent_report.md`.  Include:
     route shape.
 
 Paste the complete `agent_report.md`, `manual_review.md`, and the top-level
-summary from `survey/survey.json`.  Commit and push the run artifacts and
-survey artifacts, but no model/source changes.  Then **stop**.  Do not begin a
-debugging experiment until the confirmed incidence and category table have
-been discussed.
+summary from `survey/survey.json`.  Keep all run and survey artifacts local on
+the work server: this agent is pull-only and must not commit or push them.
+Then **stop**.  Do not begin a debugging experiment until the confirmed
+incidence and category table have been discussed.
+
+### 40.5 Local-only follow-up: correct the denominator and inspect cache history
+
+Run this only after Phase 40 has been discussed and the user explicitly asks
+for the follow-up.  It performs no NPU work and modifies no source.  It reads
+the agent's local Phase-39 and Phase-40 traces, writes one local JSON evidence
+file, and prints a compact result.
+
+The purpose is to answer exactly three questions:
+
+1. What is the real number of input-exact requests across all 2,082 crops?
+2. For each of the seven manually confirmed cases, had its reused private-cache
+   slot previously held a longer prompt, leaving a possible stale KV tail?
+3. For the known page-14 runaway, were the crop, prepared tensors, and actual
+   vision/text pack companions identical between the non-runaway Phase-39 run
+   and runaway Phase-40 run?
+
+```sh
+cd "$(git rev-parse --show-toplevel)"
+git pull --ff-only origin main
+git status --short
+
+PYTHON_BIN=/usr/local/python3.12.13/bin/python
+P39=tmp/09_persistent_page_engine/310p_phase39_accuracy_lab_8e19fdc/310p_e2e/output
+P40_ROOT=tmp/09_persistent_page_engine/310p_phase40_degeneration_n128_4817613
+P40="$P40_ROOT/310p_e2e/output"
+REF=tmp/09_persistent_page_engine/910b_degeneration_survey_n128_491de50/output
+
+test -f "$P39/run_summary.json"
+test -f "$P39/recognition_trace.jsonl"
+test -f "$P40/run_summary.json"
+test -f "$P40/recognition_trace.jsonl"
+test -f "$REF/recognition_trace.jsonl"
+
+"$PYTHON_BIN" - "$P39" "$P40" "$REF" "$P40_ROOT/followup_analysis.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+p39_root, p40_root, ref_root, output_path = map(Path, sys.argv[1:])
+
+def load_rows(root):
+    return [
+        json.loads(line)
+        for line in (root / "recognition_trace.jsonl").read_text().splitlines()
+        if line.strip()
+    ]
+
+def load_summary(root):
+    return json.loads((root / "run_summary.json").read_text())
+
+def fingerprint(row):
+    value = row.get("input_fingerprints") or {}
+    return (
+        (value.get("crop") or {}).get("sha256"),
+        value.get("prepared_inputs_sha256"),
+    )
+
+def visible_tokens(row):
+    values = list(row.get("token_ids") or [])
+    if values and values[-1] == 2:
+        values.pop()
+    return values
+
+def pack_members(rows, target, stage):
+    route = target[stage]
+    group_id = route["pack_group_id"]
+    pack_index = route.get("text_pack_index")
+    members = []
+    for row in rows:
+        candidate_route = row.get(stage) or {}
+        if candidate_route.get("pack_group_id") != group_id:
+            continue
+        if stage == "text_prefill" and candidate_route.get("text_pack_index") != pack_index:
+            continue
+        members.append({
+            "block_index": row["block_index"],
+            "crop_sha256": fingerprint(row)[0],
+            "prepared_inputs_sha256": fingerprint(row)[1],
+            "input_tokens": row["input_tokens"],
+            "projected_image_tokens": row["projected_image_tokens"],
+        })
+    return members
+
+p39_rows = load_rows(p39_root)
+p40_rows = load_rows(p40_root)
+ref_rows = load_rows(ref_root)
+p39_summary = load_summary(p39_root)
+p40_summary = load_summary(p40_root)
+
+p40_by_id = {row["request_id"]: row for row in p40_rows}
+ref_by_id = {row["request_id"]: row for row in ref_rows}
+assert set(p40_by_id) == set(ref_by_id)
+assert len(p40_by_id) == 2082
+
+input_status = {"exact": 0, "different": 0, "unavailable": 0}
+for request_id, candidate in p40_by_id.items():
+    left = fingerprint(ref_by_id[request_id])
+    right = fingerprint(candidate)
+    if not all(left + right):
+        input_status["unavailable"] += 1
+    elif left == right:
+        input_status["exact"] += 1
+    else:
+        input_status["different"] += 1
+
+degeneration_ids = [
+    "page_000014_block_000006",
+    "page_000064_block_000005",
+    "page_000086_block_000020",
+    "page_000090_block_000003",
+    "page_000064_block_000007",
+    "page_000063_block_000003",
+    "page_000111_block_000002",
+]
+
+slot_histories = []
+for request_id in degeneration_ids:
+    row = p40_by_id[request_id]
+    route = row["text_prefill"]
+    slot = int(route["private_cache_slot_index"])
+    generation = int(route["private_cache_generation"])
+    history = [
+        other
+        for other in p40_rows
+        if int(other["text_prefill"]["private_cache_slot_index"]) == slot
+        and int(other["text_prefill"]["private_cache_generation"]) < generation
+    ]
+    prior_lengths = [int(other["input_tokens"]) for other in history]
+    max_prior = max(prior_lengths, default=0)
+    current = int(row["input_tokens"])
+    slot_histories.append({
+        "request_id": request_id,
+        "slot": slot,
+        "generation": generation,
+        "current_prompt_tokens": current,
+        "prior_prompt_tokens": prior_lengths,
+        "max_prior_prompt_tokens": max_prior,
+        "possible_stale_tail_tokens": max(0, max_prior - current),
+        "had_longer_prior_prompt": max_prior > current,
+    })
+
+p39_by_id = {row["request_id"]: row for row in p39_rows}
+old = p39_by_id["page_000006_block_000006"]
+new = p40_by_id["page_000014_block_000006"]
+old_pool = p39_summary["recognition"]["text_packing"]["private_cache_pool"]
+new_pool = p40_summary["recognition"]["text_packing"]["private_cache_pool"]
+known_case = {
+    "phase39_tokens": len(visible_tokens(old)),
+    "phase40_tokens": len(visible_tokens(new)),
+    "crop_and_prepared_exact": fingerprint(old) == fingerprint(new),
+    "vision_pack_members_exact": pack_members(p39_rows, old, "vision")
+    == pack_members(p40_rows, new, "vision"),
+    "text_pack_members_exact": pack_members(p39_rows, old, "text_prefill")
+    == pack_members(p40_rows, new, "text_prefill"),
+    "phase39_private_pool": old_pool,
+    "phase40_private_pool": new_pool,
+    "phase40_private_slot": new["text_prefill"]["private_cache_slot_index"],
+    "phase40_private_generation": new["text_prefill"]["private_cache_generation"],
+}
+
+result = {
+    "input_fingerprint_counts_all_requests": input_status,
+    "confirmed_degenerations": len(degeneration_ids),
+    "incidence_all_requests": len(degeneration_ids) / len(p40_rows),
+    "incidence_input_exact": len(degeneration_ids) / input_status["exact"],
+    "slot_histories": slot_histories,
+    "known_case_phase39_vs_phase40": known_case,
+}
+output_path.write_text(json.dumps(result, indent=2), encoding="utf-8")
+print(json.dumps(result, indent=2))
+PY
+```
+
+Do not push or commit the JSON.  Report back in **at most three sentences**:
+
+1. the exact all-request fingerprint counts and corrected degeneration rates;
+2. how many of seven slots had a longer prior prompt, plus the stale-tail range;
+3. whether the known case had exact pack members, its Phase-39/40 token counts
+   and reuse states, and whether that supports or contradicts stale KV state.
+
+Do not add general theory, repeat the Phase-40 report, modify code, or begin a
+new NPU experiment.
