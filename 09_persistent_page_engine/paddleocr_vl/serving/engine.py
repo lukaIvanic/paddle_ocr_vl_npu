@@ -573,8 +573,6 @@ class ContinuousRecognizer:
             raise ValueError("batch_size must be a positive power of two")
         if self.max_new_tokens <= 0:
             raise ValueError("max_new_tokens must be positive")
-        if self.cache_length <= self.max_new_tokens:
-            raise ValueError("cache_length must leave room for both prompt and generated tokens")
 
         model_preprocessor_config = load_preprocessor_config(self.model_dir)
         self.model_preprocessor_min_pixels = int(model_preprocessor_config["min_pixels"])
@@ -1661,10 +1659,10 @@ class ContinuousRecognizer:
                 args={"crop_width": crop_size[0], "crop_height": crop_size[1]},
             )
 
-        min_cache_length = int(input_ids.shape[1]) + max(0, self.max_new_tokens - 1)
-        if self.cache_length < min_cache_length:
+        prompt_length = int(input_ids.shape[1])
+        if prompt_length > self.cache_length:
             raise ValueError(
-                f"request {request.request_id} needs cache_length>={min_cache_length}, "
+                f"request {request.request_id} has prompt_length={prompt_length}, "
                 f"configured cache_length={self.cache_length}"
             )
         image_token_count = int(

@@ -185,15 +185,17 @@ The core shapes are:
 two, groups of four vision rows become one projected image token. `S` is the
 full text-model prefix length after the image placeholders are expanded.
 
-Before the request may proceed, the worker checks:
+Before the request may proceed, the worker checks only:
 
 ```text
-cache_length >= S + max_new_tokens - 1
+cache_length >= S
 ```
 
-This is a correctness guard, not a tuning hint. The prefill-produced first
-token occupies the first generated position; each later decode graph call
-writes one more cache position.
+The prefill-produced first token occupies no additional cache position. Each
+later decode graph call writes one more position. Therefore a prompt of length
+`S` can return at most `cache_length - S + 1` generated tokens, including the
+first token. If it has not emitted EOS by then, the scheduler returns it with
+`stop_reason="kv_cache_full"` before launching an out-of-range graph step.
 
 ### 5. H2D staging is a pipeline boundary
 

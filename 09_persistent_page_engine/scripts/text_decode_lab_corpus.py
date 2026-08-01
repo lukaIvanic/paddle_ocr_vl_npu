@@ -163,7 +163,7 @@ def build_corpus(
             raise ValueError(
                 f"{request_id}: effective decode token accounting mismatch"
             )
-        if stop_reason not in {"eos", "length"}:
+        if stop_reason not in {"eos", "length", "kv_cache_full"}:
             raise ValueError(f"{request_id}: unexpected stop_reason={stop_reason!r}")
         if (
             generated_tokens == 1
@@ -176,16 +176,17 @@ def build_corpus(
 
         source_indices.add(source_index)
         request_ids.add(request_id)
-        active_iterations = effective_tokens + (1 if effective_tokens > 0 else 0)
-        replay_required_cache_tokens = prompt_tokens + active_iterations
-        production_guard_min_cache_tokens = prompt_tokens + max(
-            0,
-            int(configuration["max_new_tokens"]) - 1,
+        active_iterations = effective_tokens + (
+            1
+            if effective_tokens > 0 and stop_reason != "kv_cache_full"
+            else 0
         )
-        if production_guard_min_cache_tokens > int(configuration["cache_length"]):
+        replay_required_cache_tokens = prompt_tokens + active_iterations
+        production_admission_min_cache_tokens = prompt_tokens
+        if production_admission_min_cache_tokens > int(configuration["cache_length"]):
             raise ValueError(
-                f"{request_id}: source run violates its production cache guard: "
-                f"required={production_guard_min_cache_tokens} "
+                f"{request_id}: source run violates its production admission guard: "
+                f"required={production_admission_min_cache_tokens} "
                 f"configured={configuration['cache_length']}"
             )
         timing = dict(record.get("timing_s") or {})
@@ -204,8 +205,8 @@ def build_corpus(
                 "active_decode_iterations": active_iterations,
                 "stop_reason": stop_reason,
                 "replay_required_cache_tokens": replay_required_cache_tokens,
-                "production_guard_min_cache_tokens": (
-                    production_guard_min_cache_tokens
+                "production_admission_min_cache_tokens": (
+                    production_admission_min_cache_tokens
                 ),
                 "recorded_timing_s": {
                     name: float(timing[name])
@@ -244,8 +245,8 @@ def build_corpus(
     replay_cache_lengths = [
         int(item["replay_required_cache_tokens"]) for item in items
     ]
-    production_guard_lengths = [
-        int(item["production_guard_min_cache_tokens"]) for item in items
+    production_admission_lengths = [
+        int(item["production_admission_min_cache_tokens"]) for item in items
     ]
     stop_reasons = Counter(str(item["stop_reason"]) for item in items)
     cache_coverage = {
@@ -274,7 +275,7 @@ def build_corpus(
             "ordering": "items are stored in exact production request-source order",
             "tokens": (
                 "token_ids include the prefill-produced first token and the final "
-                "EOS/length token exactly as recorded"
+                "EOS/length/KV-full token exactly as recorded"
             ),
             "scheduler_lifetime": (
                 "active_decode_iterations includes production's one queue-depth-one "
@@ -283,8 +284,8 @@ def build_corpus(
             "cache_capacity": (
                 "replay_required_cache_tokens includes every recorded graph write, "
                 "including the queue-depth-one look-ahead; "
-                "production_guard_min_cache_tokens records the source runner's "
-                "prompt + configured max_new_tokens - 1 admission guard"
+                "production_admission_min_cache_tokens records the source runner's "
+                "prompt-only admission guard"
             ),
             "device_replay": (
                 "recorded request lifetimes drive completion while the real decode "
@@ -333,8 +334,8 @@ def build_corpus(
             "replay_required_cache_tokens": _length_summary(
                 replay_cache_lengths
             ),
-            "production_guard_min_cache_tokens": _length_summary(
-                production_guard_lengths
+            "production_admission_min_cache_tokens": _length_summary(
+                production_admission_lengths
             ),
             "replay_cache_coverage": cache_coverage,
         },

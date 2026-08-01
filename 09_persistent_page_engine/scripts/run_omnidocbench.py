@@ -361,8 +361,8 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--offset must be non-negative and --limit must be positive")
     if args.batch_size <= 0 or args.batch_size & (args.batch_size - 1):
         raise ValueError("--batch-size must be a positive power of two")
-    if args.cache_length <= args.max_new_tokens:
-        raise ValueError("--cache-length must leave room for the input prompt")
+    if args.cache_length <= 0 or args.max_new_tokens <= 0:
+        raise ValueError("--cache-length and --max-new-tokens must be positive")
     if args.preprocessor_min_pixels is not None and args.preprocessor_min_pixels <= 0:
         raise ValueError("--preprocessor-min-pixels must be positive")
     if args.vision_pack_target <= 0:

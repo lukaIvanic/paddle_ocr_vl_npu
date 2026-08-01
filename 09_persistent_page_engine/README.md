@@ -409,8 +409,10 @@ cost is substantial: production GQA measured 4,104 effective decode tok/s and
 ```
 
 The faithful OmniDocBench runner defaults to the measured B32/KV4096 decode
-shape. Its 2,808-token generation cap leaves room for the retained corpus's
-1,289-token maximum prompt in that static cache.
+shape. Every crop whose prompt fits KV4096 is admitted. It then decodes until
+EOS or until its next token would exceed that request's KV capacity; the latter
+is returned normally with `stop_reason="kv_cache_full"`. The global
+`max_new_tokens` setting remains only a secondary safety ceiling.
 
 TorchAir graph creation is opt-in. A missing shape fails unless
 `--allow-compile` is explicit, and each invocation profiles only the requested

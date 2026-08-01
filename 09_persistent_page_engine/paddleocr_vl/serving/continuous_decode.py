@@ -512,7 +512,7 @@ class ContinuousDecodeScheduler:
 
     ``completion_policy`` is an optional decode-control seam for deterministic
     workload replay. Production leaves it unset and retains the normal
-    EOS/max-length behavior.
+    EOS/KV-capacity/max-length behavior.
     """
 
     def __init__(
@@ -574,14 +574,23 @@ class ContinuousDecodeScheduler:
         state: DecodeSlotState,
         token_id: int,
     ) -> str | None:
+        generated_tokens = len(state.token_ids)
+        cache_is_full = (
+            int(state.ready.prompt_length) + generated_tokens - 1
+            >= int(self.arena.cache.cache_length)
+        )
         if self.completion_policy is not None:
+            if cache_is_full:
+                return "kv_cache_full"
             reason = self.completion_policy(state, token_id)
             if reason is not None and not reason:
                 raise ValueError("completion policy returned an empty stop reason")
             return reason
         if token_id == self.eos_token_id:
             return "eos"
-        if len(state.token_ids) >= self.max_new_tokens:
+        if cache_is_full:
+            return "kv_cache_full"
+        if generated_tokens >= self.max_new_tokens:
             return "length"
         return None
 
@@ -949,17 +958,20 @@ class ContinuousDecodeScheduler:
                                 "ready_queue_after_pop": len(ready_queue),
                             },
                         )
-                    if ready.first_token == self.eos_token_id or self.max_new_tokens == 1:
+                    prefill_stop_reason = None
+                    if ready.first_token == self.eos_token_id:
+                        prefill_stop_reason = "eos"
+                    elif ready.prompt_length >= int(self.arena.cache.cache_length):
+                        prefill_stop_reason = "kv_cache_full"
+                    elif self.max_new_tokens == 1:
+                        prefill_stop_reason = "length"
+                    if prefill_stop_reason is not None:
                         ready.release_device_state()
                         record_completion(
                             DecodeCompletion(
                                 ready=ready,
                                 token_ids=[int(ready.first_token)],
-                                stop_reason=(
-                                    "eos"
-                                    if ready.first_token == self.eos_token_id
-                                    else "length"
-                                ),
+                                stop_reason=prefill_stop_reason,
                                 slot_index=None,
                                 slot_epoch=None,
                                 admitted_at=None,
@@ -990,6 +1002,156 @@ class ContinuousDecodeScheduler:
                         initial_kv_bytes += copied_bytes
                     break
 
+        def retire_pending(
+            pending_copy: PendingTokenCopy,
+            *,
+            iteration: int,
+            refill_reason: str,
+        ) -> None:
+            nonlocal d2h_wait_wall_s, retire_and_refill_wall_s
+            progress(
+                "pending_token_wait_begin",
+                iteration=iteration,
+                pending_iteration=pending_copy.iteration,
+            )
+            diagnostic_slots = self._diagnostic_slots(pending_copy)
+            if diagnostic_slots:
+                progress(
+                    "diagnostic_pending_state",
+                    iteration=iteration,
+                    pending_iteration=pending_copy.iteration,
+                    diagnostic_slots=diagnostic_slots,
+                )
+                if pending_copy.diagnostic_compute_event is None:
+                    raise RuntimeError(
+                        "targeted decode diagnostic lost its compute event"
+                    )
+                progress(
+                    "diagnostic_compute_sync_begin",
+                    iteration=iteration,
+                    pending_iteration=pending_copy.iteration,
+                    diagnostic_slots=diagnostic_slots,
+                )
+                compute_sync_started = time.perf_counter()
+                try:
+                    pending_copy.diagnostic_compute_event.synchronize()
+                except BaseException as exc:
+                    progress(
+                        "diagnostic_compute_sync_error",
+                        iteration=iteration,
+                        pending_iteration=pending_copy.iteration,
+                        diagnostic_slots=diagnostic_slots,
+                        wait_s=time.perf_counter() - compute_sync_started,
+                        error_type=type(exc).__name__,
+                        error=str(exc),
+                    )
+                    raise
+                progress(
+                    "diagnostic_compute_sync_end",
+                    iteration=iteration,
+                    pending_iteration=pending_copy.iteration,
+                    diagnostic_slots=diagnostic_slots,
+                    wait_s=time.perf_counter() - compute_sync_started,
+                )
+                progress(
+                    "diagnostic_d2h_sync_begin",
+                    iteration=iteration,
+                    pending_iteration=pending_copy.iteration,
+                    diagnostic_slots=diagnostic_slots,
+                )
+            try:
+                host_tokens, wait_s = self._wait_tokens(pending_copy)
+            except BaseException as exc:
+                if diagnostic_slots:
+                    progress(
+                        "diagnostic_d2h_sync_error",
+                        iteration=iteration,
+                        pending_iteration=pending_copy.iteration,
+                        diagnostic_slots=diagnostic_slots,
+                        error_type=type(exc).__name__,
+                        error=str(exc),
+                    )
+                raise
+            if diagnostic_slots:
+                progress(
+                    "diagnostic_d2h_sync_end",
+                    iteration=iteration,
+                    pending_iteration=pending_copy.iteration,
+                    diagnostic_slots=diagnostic_slots,
+                    wait_s=wait_s,
+                )
+            progress(
+                "pending_token_wait_end",
+                iteration=iteration,
+                pending_iteration=pending_copy.iteration,
+                wait_s=wait_s,
+            )
+            d2h_wait_wall_s += wait_s
+            wait_finished = time.perf_counter()
+            if self.timeline is not None:
+                self.timeline.record_span_seconds(
+                    "Decode control / wait",
+                    "Wait for sampled-token D2H",
+                    wait_finished - wait_s,
+                    wait_finished,
+                    flow_id=f"decode-iteration:{pending_copy.iteration}",
+                    event_type="wait",
+                    args={"iteration": pending_copy.iteration},
+                )
+            started = time.perf_counter()
+            completed_before = len(completions)
+            for slot_index, was_active in enumerate(pending_copy.active_slots):
+                if not was_active:
+                    continue
+                state = self.arena.slots[slot_index]
+                expected_epoch = pending_copy.slot_epochs[slot_index]
+                if state is None or state.epoch != expected_epoch:
+                    continue
+                token_id = int(host_tokens[slot_index])
+                state.token_ids.append(token_id)
+                stop_reason = self._completion_reason(state, token_id)
+                if stop_reason is not None:
+                    released = self.arena.release(slot_index)
+                    record_completion(
+                        DecodeCompletion(
+                            ready=released.ready,
+                            token_ids=list(released.token_ids),
+                            stop_reason=stop_reason,
+                            slot_index=slot_index,
+                            slot_epoch=released.epoch,
+                            admitted_at=released.admitted_at,
+                            first_decode_launched_at=released.first_decode_launched_at,
+                            completed_at=time.perf_counter(),
+                            iterations_launched=released.iterations_launched,
+                        )
+                    )
+            progress(
+                "retire_end",
+                iteration=iteration,
+                pending_iteration=pending_copy.iteration,
+                newly_completed=len(completions) - completed_before,
+            )
+            progress("hot_swap_admission_begin", iteration=iteration)
+            fill_free_slots(hot_swap=True)
+            progress("hot_swap_admission_end", iteration=iteration)
+            if len(ready_queue) < low_watermark:
+                refill_ready_queue(reason=refill_reason)
+            finished = time.perf_counter()
+            retire_and_refill_wall_s += finished - started
+            if self.timeline is not None:
+                self.timeline.record_span_seconds(
+                    "Decode control / wait",
+                    "Retire completed slots and refill",
+                    started,
+                    finished,
+                    flow_id=f"decode-iteration:{pending_copy.iteration}",
+                    args={
+                        "iteration": pending_copy.iteration,
+                        "active_after_refill": self.arena.num_active,
+                        "ready_queue_depth": len(ready_queue),
+                    },
+                )
+
         progress("scheduler_device_sync_begin", phase="before_initial_fill")
         synchronize(self.device)
         progress("scheduler_device_sync_end", phase="before_initial_fill")
@@ -1016,6 +1178,32 @@ class ContinuousDecodeScheduler:
                     None if pending is None else pending.iteration
                 ),
             )
+            boundary_slots = [
+                index
+                for index, state in enumerate(self.arena.slots)
+                if state is not None
+                and int(state.ready.prompt_length) + int(state.iterations_launched)
+                >= int(self.arena.cache.cache_length)
+            ]
+            if pending is not None and boundary_slots:
+                progress(
+                    "kv_cache_boundary_drain_begin",
+                    iteration=iteration,
+                    pending_iteration=pending.iteration,
+                    slots=boundary_slots,
+                )
+                retire_pending(
+                    pending,
+                    iteration=iteration,
+                    refill_reason="kv_cache_boundary",
+                )
+                progress(
+                    "kv_cache_boundary_drain_end",
+                    iteration=iteration,
+                    slots=boundary_slots,
+                )
+                pending = None
+                continue
             progress("decode_step_begin", iteration=iteration)
             step = self.arena.step(self.decode_fn, iteration=iteration)
             progress("decode_step_end", iteration=iteration)
@@ -1026,148 +1214,11 @@ class ContinuousDecodeScheduler:
             progress("token_copy_schedule_end", iteration=iteration)
 
             if pending is not None:
-                progress(
-                    "pending_token_wait_begin",
+                retire_pending(
+                    pending,
                     iteration=iteration,
-                    pending_iteration=pending.iteration,
+                    refill_reason="steady_low_watermark",
                 )
-                diagnostic_slots = self._diagnostic_slots(pending)
-                if diagnostic_slots:
-                    progress(
-                        "diagnostic_pending_state",
-                        iteration=iteration,
-                        pending_iteration=pending.iteration,
-                        diagnostic_slots=diagnostic_slots,
-                    )
-                    if pending.diagnostic_compute_event is None:
-                        raise RuntimeError(
-                            "targeted decode diagnostic lost its compute event"
-                        )
-                    progress(
-                        "diagnostic_compute_sync_begin",
-                        iteration=iteration,
-                        pending_iteration=pending.iteration,
-                        diagnostic_slots=diagnostic_slots,
-                    )
-                    compute_sync_started = time.perf_counter()
-                    try:
-                        pending.diagnostic_compute_event.synchronize()
-                    except BaseException as exc:
-                        progress(
-                            "diagnostic_compute_sync_error",
-                            iteration=iteration,
-                            pending_iteration=pending.iteration,
-                            diagnostic_slots=diagnostic_slots,
-                            wait_s=time.perf_counter() - compute_sync_started,
-                            error_type=type(exc).__name__,
-                            error=str(exc),
-                        )
-                        raise
-                    progress(
-                        "diagnostic_compute_sync_end",
-                        iteration=iteration,
-                        pending_iteration=pending.iteration,
-                        diagnostic_slots=diagnostic_slots,
-                        wait_s=time.perf_counter() - compute_sync_started,
-                    )
-                    progress(
-                        "diagnostic_d2h_sync_begin",
-                        iteration=iteration,
-                        pending_iteration=pending.iteration,
-                        diagnostic_slots=diagnostic_slots,
-                    )
-                try:
-                    host_tokens, wait_s = self._wait_tokens(pending)
-                except BaseException as exc:
-                    if diagnostic_slots:
-                        progress(
-                            "diagnostic_d2h_sync_error",
-                            iteration=iteration,
-                            pending_iteration=pending.iteration,
-                            diagnostic_slots=diagnostic_slots,
-                            error_type=type(exc).__name__,
-                            error=str(exc),
-                        )
-                    raise
-                if diagnostic_slots:
-                    progress(
-                        "diagnostic_d2h_sync_end",
-                        iteration=iteration,
-                        pending_iteration=pending.iteration,
-                        diagnostic_slots=diagnostic_slots,
-                        wait_s=wait_s,
-                    )
-                progress(
-                    "pending_token_wait_end",
-                    iteration=iteration,
-                    pending_iteration=pending.iteration,
-                    wait_s=wait_s,
-                )
-                d2h_wait_wall_s += wait_s
-                wait_finished = time.perf_counter()
-                if self.timeline is not None:
-                    self.timeline.record_span_seconds(
-                        "Decode control / wait",
-                        "Wait for sampled-token D2H",
-                        wait_finished - wait_s,
-                        wait_finished,
-                        flow_id=f"decode-iteration:{pending.iteration}",
-                        event_type="wait",
-                        args={"iteration": pending.iteration},
-                    )
-                started = time.perf_counter()
-                completed_before = len(completions)
-                for slot_index, was_active in enumerate(pending.active_slots):
-                    if not was_active:
-                        continue
-                    state = self.arena.slots[slot_index]
-                    expected_epoch = pending.slot_epochs[slot_index]
-                    if state is None or state.epoch != expected_epoch:
-                        continue
-                    token_id = int(host_tokens[slot_index])
-                    state.token_ids.append(token_id)
-                    stop_reason = self._completion_reason(state, token_id)
-                    if stop_reason is not None:
-                        released = self.arena.release(slot_index)
-                        record_completion(
-                            DecodeCompletion(
-                                ready=released.ready,
-                                token_ids=list(released.token_ids),
-                                stop_reason=stop_reason,
-                                slot_index=slot_index,
-                                slot_epoch=released.epoch,
-                                admitted_at=released.admitted_at,
-                                first_decode_launched_at=released.first_decode_launched_at,
-                                completed_at=time.perf_counter(),
-                                iterations_launched=released.iterations_launched,
-                            )
-                        )
-                progress(
-                    "retire_end",
-                    iteration=iteration,
-                    pending_iteration=pending.iteration,
-                    newly_completed=len(completions) - completed_before,
-                )
-                progress("hot_swap_admission_begin", iteration=iteration)
-                fill_free_slots(hot_swap=True)
-                progress("hot_swap_admission_end", iteration=iteration)
-                if len(ready_queue) < low_watermark:
-                    refill_ready_queue(reason="steady_low_watermark")
-                finished = time.perf_counter()
-                retire_and_refill_wall_s += finished - started
-                if self.timeline is not None:
-                    self.timeline.record_span_seconds(
-                        "Decode control / wait",
-                        "Retire completed slots and refill",
-                        started,
-                        finished,
-                        flow_id=f"decode-iteration:{pending.iteration}",
-                        args={
-                            "iteration": pending.iteration,
-                            "active_after_refill": self.arena.num_active,
-                            "ready_queue_depth": len(ready_queue),
-                        },
-                    )
 
             pending = current
             iteration += 1
