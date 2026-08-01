@@ -14745,3 +14745,318 @@ Paste the complete `agent_report.md`, `comparison/report.md`, the top-level
 `classification` object, all evidence cross-tabs, and the ten selected-case
 objects from `comparison/report.json`.  Then **stop**.  Do not start per-layer
 profiling or modify any source.
+
+---
+
+## Phase 40: 128-page manual degeneration incidence survey
+
+### Goal and interpretation boundary
+
+Run the first 128 OmniDocBench pages on 310P with the exact current production
+configuration, compare all recognition crops against the committed matched
+910B reference, and build a high-recall manual-review set.
+
+This phase is not an accuracy evaluation and token non-parity is not an error.
+LaTeX spelling, harmless markup, and semantically equivalent output can differ
+between devices.  The goal is to count genuinely degenerate generations such
+as runaway repetition, script corruption, gross omissions, or unrelated text,
+then describe where those confirmed cases concentrate.  Do not change model
+code, graph code, cache policy, or generation policy in this phase.
+
+The 910B reference was produced by behavior commit `491de50` and committed as
+artifacts in `96654bb`.  Its fixed contract is:
+
+- offset 0, count 128, 128 results, 2,082 recognition requests;
+- B32, KV4096, min_pixels 28224, static-actual GQA decode;
+- layout completed before recognition;
+- ten explicit vision buckets and the 21-value text bucket ladder below;
+- PromptFA, greedy vision packing at 1920, production-group text packing;
+- input fingerprints plus private-cache and decode-slot reuse metadata;
+- stop reasons `{eos: 2081, kv_cache_full: 1}`;
+- pipeline E2E 78.651 s on 910B2 (performance context only).
+
+### 40.1 Pull, preflight, and verify the reference
+
+```sh
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git pull --ff-only origin main
+git status --short
+source npu-setup
+
+PYTHON_BIN=/usr/local/python3.12.13/bin/python
+E2E=09_persistent_page_engine/scripts/run_omnidocbench.py
+SURVEY=09_persistent_page_engine/scripts/degeneration_survey.py
+REFERENCE=tmp/09_persistent_page_engine/910b_degeneration_survey_n128_491de50/output
+ROOT=tmp/09_persistent_page_engine/310p_phase40_degeneration_n128_$(git rev-parse --short HEAD)
+
+test -f "$REFERENCE/run_summary.json"
+test -f "$REFERENCE/recognition_trace.jsonl"
+test -f "$SURVEY"
+test ! -e "$ROOT"
+mkdir -p "$ROOT"
+
+"$PYTHON_BIN" - <<'PY'
+import json
+from pathlib import Path
+
+root = Path("tmp/09_persistent_page_engine/910b_degeneration_survey_n128_491de50/output")
+summary = json.loads((root / "run_summary.json").read_text())
+rows = [json.loads(line) for line in (root / "recognition_trace.jsonl").read_text().splitlines() if line.strip()]
+assert summary["offset"] == 0 and summary["count"] == 128
+assert summary["result_count"] == 128 and summary["prediction_count"] == 128
+assert summary["recognition"]["requests"] == len(rows) == 2082
+assert summary["configuration"]["recognition_input_fingerprints"] is True
+assert summary["configuration"]["page_preprocessing_mode"] == "all_before_recognition"
+assert summary["recognition"]["stop_reason_counts"] == {"eos": 2081, "kv_cache_full": 1}
+for row in rows:
+    fp = row.get("input_fingerprints") or {}
+    assert (fp.get("crop") or {}).get("sha256")
+    assert fp.get("prepared_inputs_sha256")
+    assert isinstance(row.get("decode_slot_index"), int)
+    assert isinstance(row.get("decode_slot_epoch"), int)
+    text = row.get("text_prefill") or {}
+    assert isinstance(text.get("private_cache_slot_index"), int)
+    assert isinstance(text.get("private_cache_generation"), int)
+print("PHASE40_REFERENCE_CONTRACT: PASS")
+PY
+```
+
+If any assertion fails, report `REFERENCE_CONTRACT_FAILURE` and stop.  Do not
+substitute a Phase-37 or Phase-38 reference; they lack this full metadata
+contract.
+
+Record exact software/NPU state and warm-cache state before the run.  These
+cache roots must already exist and be nonempty; a missing cache is not
+permission to compile a new experiment silently.
+
+```sh
+{
+  date -Is
+  hostname
+  git rev-parse HEAD
+  "$PYTHON_BIN" -V
+  "$PYTHON_BIN" - <<'PY'
+import torch, torch_npu
+print("torch", torch.__version__)
+print("torch_npu", torch_npu.__version__)
+print("device", torch.npu.current_device())
+print("device_name", torch.npu.get_device_name(torch.npu.current_device()))
+PY
+  npu-smi info
+} 2>&1 | tee "$ROOT/preflight.log"
+
+for cache in \
+  .runtime_cache/310p_phase36_static_actual_b32 \
+  .runtime_cache/09_persistent_page_engine_vision_torchair \
+  .runtime_cache/09_vision_router_batched \
+  .runtime_cache/09_persistent_page_engine_text_torchair \
+  .runtime_cache/310p_text_packed_4789067
+do
+  test -d "$cache"
+  test -n "$(find "$cache" -type f -print -quit)"
+  printf '%s\tfiles=%s\tbytes=%s\n' \
+    "$cache" \
+    "$(find "$cache" -type f | wc -l)" \
+    "$(du -sb "$cache" | cut -f1)"
+done | tee "$ROOT/cache_before.txt"
+```
+
+### 40.2 Run the matched 128-page 310P lane
+
+Path adaptations are allowed only for dataset/model roots.  Record them.
+Do not add `--max-new-tokens`: current production policy generates until EOS
+or KV capacity.  Do not run the evaluator in this phase.
+
+```sh
+LANE="$ROOT/310p_e2e"
+OUTPUT="$LANE/output"
+mkdir -p "$LANE"
+
+printf '%q ' timeout --signal=TERM --kill-after=15s 1800 \
+  "$PYTHON_BIN" "$E2E" \
+  --dataset-json /workspace/datasets/OmniDocBench/OmniDocBench.json \
+  --images-dir /workspace/datasets/OmniDocBench/images \
+  --layout-model /workspace/models/PP-DocLayoutV3_safetensors \
+  --recognizer-model /workspace/models/PaddleOCR-VL-1.6 \
+  --offset 0 --limit 128 \
+  --batch-size 32 --cache-length 4096 \
+  --preprocessor-min-pixels 28224 \
+  --decode-backend torchair \
+  --decode-optimization combined_apply_static_actual \
+  --torchair-cache-dir .runtime_cache/310p_phase36_static_actual_b32 \
+  --vision-backend torchair \
+  --vision-attention prompt_flash_attention \
+  --vision-buckets 128,256,384,512,640,768,1408,1920,2944,4992 \
+  --vision-torchair-cache-dir .runtime_cache/09_persistent_page_engine_vision_torchair \
+  --vision-batched-cache-dir .runtime_cache/09_vision_router_batched \
+  --vision-promptfa-align-128 --vision-padding bucket \
+  --vision-packing greedy --vision-pack-target 1920 \
+  --vision-router-lookahead 32 \
+  --text-buckets 32,64,96,128,160,176,192,208,224,256,320,384,448,576,640,768,896,1024,1152,1280,1312 \
+  --text-packing production_group \
+  --text-pack-buckets 128,256,512,1024 \
+  --text-pack-max-members 32 \
+  --text-torchair-cache-dir .runtime_cache/09_persistent_page_engine_text_torchair \
+  --text-packed-cache-dir .runtime_cache/310p_text_packed_4789067 \
+  --layout-device npu --no-layout-graph-capture \
+  --preprocess-all-pages-first --no-timeline \
+  --recognition-input-fingerprints \
+  --output-dir "$OUTPUT" >"$LANE/command.sh"
+printf '\n' >>"$LANE/command.sh"
+
+set +e
+timeout --signal=TERM --kill-after=15s 1800 \
+  "$PYTHON_BIN" "$E2E" \
+  --dataset-json /workspace/datasets/OmniDocBench/OmniDocBench.json \
+  --images-dir /workspace/datasets/OmniDocBench/images \
+  --layout-model /workspace/models/PP-DocLayoutV3_safetensors \
+  --recognizer-model /workspace/models/PaddleOCR-VL-1.6 \
+  --offset 0 --limit 128 \
+  --batch-size 32 --cache-length 4096 \
+  --preprocessor-min-pixels 28224 \
+  --decode-backend torchair \
+  --decode-optimization combined_apply_static_actual \
+  --torchair-cache-dir .runtime_cache/310p_phase36_static_actual_b32 \
+  --vision-backend torchair \
+  --vision-attention prompt_flash_attention \
+  --vision-buckets 128,256,384,512,640,768,1408,1920,2944,4992 \
+  --vision-torchair-cache-dir .runtime_cache/09_persistent_page_engine_vision_torchair \
+  --vision-batched-cache-dir .runtime_cache/09_vision_router_batched \
+  --vision-promptfa-align-128 --vision-padding bucket \
+  --vision-packing greedy --vision-pack-target 1920 \
+  --vision-router-lookahead 32 \
+  --text-buckets 32,64,96,128,160,176,192,208,224,256,320,384,448,576,640,768,896,1024,1152,1280,1312 \
+  --text-packing production_group \
+  --text-pack-buckets 128,256,512,1024 \
+  --text-pack-max-members 32 \
+  --text-torchair-cache-dir .runtime_cache/09_persistent_page_engine_text_torchair \
+  --text-packed-cache-dir .runtime_cache/310p_text_packed_4789067 \
+  --layout-device npu --no-layout-graph-capture \
+  --preprocess-all-pages-first --no-timeline \
+  --recognition-input-fingerprints \
+  --output-dir "$OUTPUT" 2>&1 | tee "$LANE/run.log"
+run_exit="${PIPESTATUS[0]}"
+set -e
+printf '%s\n' "$run_exit" >"$LANE/exit_code.txt"
+test "$run_exit" -eq 0
+```
+
+Validate the completed lane mechanically before surveying it:
+
+```sh
+"$PYTHON_BIN" - "$REFERENCE" "$OUTPUT" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+reference = Path(sys.argv[1])
+candidate = Path(sys.argv[2])
+ref_rows = [json.loads(line) for line in (reference / "recognition_trace.jsonl").read_text().splitlines() if line.strip()]
+summary = json.loads((candidate / "run_summary.json").read_text())
+rows = [json.loads(line) for line in (candidate / "recognition_trace.jsonl").read_text().splitlines() if line.strip()]
+assert summary["offset"] == 0 and summary["count"] == 128
+assert summary["result_count"] == 128 and summary["prediction_count"] == 128
+assert summary["recognition"]["requests"] == len(rows) == 2082
+assert set(row["request_id"] for row in rows) == set(row["request_id"] for row in ref_rows)
+assert set(summary["recognition"]["stop_reason_counts"]) <= {"eos", "kv_cache_full"}
+for row in rows:
+    fp = row.get("input_fingerprints") or {}
+    assert (fp.get("crop") or {}).get("sha256")
+    assert fp.get("prepared_inputs_sha256")
+    assert isinstance(row.get("decode_slot_index"), int)
+    assert isinstance(row.get("decode_slot_epoch"), int)
+    text = row.get("text_prefill") or {}
+    assert isinstance(text.get("private_cache_slot_index"), int)
+    assert isinstance(text.get("private_cache_generation"), int)
+print("PHASE40_310P_CONTRACT: PASS")
+print(json.dumps({
+    "pipeline_e2e_s": summary["pipeline_e2e_s"],
+    "pages_per_s": summary["pages_per_s"],
+    "requests": summary["recognition"]["requests"],
+    "stop_reasons": summary["recognition"]["stop_reason_counts"],
+}, indent=2))
+PY
+
+for cache in \
+  .runtime_cache/310p_phase36_static_actual_b32 \
+  .runtime_cache/09_persistent_page_engine_vision_torchair \
+  .runtime_cache/09_vision_router_batched \
+  .runtime_cache/09_persistent_page_engine_text_torchair \
+  .runtime_cache/310p_text_packed_4789067
+do
+  printf '%s\tfiles=%s\tbytes=%s\n' \
+    "$cache" \
+    "$(find "$cache" -type f | wc -l)" \
+    "$(du -sb "$cache" | cut -f1)"
+done | tee "$ROOT/cache_after.txt"
+diff -u "$ROOT/cache_before.txt" "$ROOT/cache_after.txt" \
+  | tee "$ROOT/cache_diff.txt" || true
+```
+
+If request IDs do not exactly match the reference, report the missing/extra
+sets and stop before surveying; do not force an approximate comparison.
+Report any cache size/file-count change and whether setup or first-call timings
+show compilation.
+
+### 40.3 Generate the high-recall review set
+
+```sh
+"$PYTHON_BIN" "$SURVEY" \
+  --reference-output "$REFERENCE" \
+  --candidate-output "$OUTPUT" \
+  --output-dir "$ROOT/survey" \
+  --review-limit 150 \
+  2>&1 | tee "$ROOT/survey.log"
+```
+
+Open `$ROOT/survey/review.html`.  The flags are triage signals only.  Manually
+inspect every row carrying `candidate_runaway_length`, `candidate_repetition`,
+`candidate_added_script`, or `candidate_possible_early_eos`, plus the 30 most
+severe remaining low-similarity/length-delta rows.  Compare the crop image,
+the IoU-matched GT candidate, the 910B output, and the 310P output.
+
+For each inspected row, assign exactly one provisional disposition:
+
+```text
+EQUIVALENT_SYNTAX | 310P_BETTER | 910B_BETTER | BOTH_WRONG |
+310P_DEGENERATION | 910B_DEGENERATION | INPUT_MISMATCH | UNCERTAIN
+```
+
+Call a case `310P_DEGENERATION` only for a material failure such as runaway
+repetition, unrelated multilingual/script corruption, gross content loss, or
+content unrelated to the visible crop.  A different but valid LaTeX spelling
+is not degeneration.  Preserve the full 910B and 310P text for every confirmed
+degeneration.
+
+### 40.4 Incidence and category report, then stop
+
+Write `$ROOT/manual_review.md` and `$ROOT/agent_report.md`.  Include:
+
+1. exact commit, host/NPU/software, expanded command, cache-hit/compile evidence;
+2. run timing, pages/s, stage times/tok/s, request count, and stop reasons;
+3. exact/different/unavailable crop and prepared-input fingerprint counts;
+4. total token-exact, token-different, triage-candidate, manually inspected,
+   confirmed 310P-degeneration, confirmed 910B-degeneration, and uncertain
+   counts;
+5. confirmed 310P-degeneration incidence over all 2,082 requests and over only
+   input-exact requests;
+6. all triage flag counts, while stating explicitly that these are not error
+   counts;
+7. confirmed-degeneration cross-tabs by OCR label, input-fingerprint status,
+   first-use versus reused private-cache generation, first-use versus reused
+   decode-slot epoch, vision bucket, text bucket, and output-length band;
+8. a case table for every confirmed degeneration with request ID, source page,
+   label, crop size, GT candidate, full 910B text, full 310P text, both token
+   counts, first divergence, flags, cache slot/generation, decode slot/epoch,
+   and route metadata;
+9. whether `page_000014_block_000006` recurs as the known multilingual runaway;
+10. a short pattern assessment: isolated stochastic-looking cases versus a
+    concentration by content class, length, cache reuse, decode-slot reuse, or
+    route shape.
+
+Paste the complete `agent_report.md`, `manual_review.md`, and the top-level
+summary from `survey/survey.json`.  Commit and push the run artifacts and
+survey artifacts, but no model/source changes.  Then **stop**.  Do not begin a
+debugging experiment until the confirmed incidence and category table have
+been discussed.
