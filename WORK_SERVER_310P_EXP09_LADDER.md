@@ -13623,7 +13623,7 @@ run_e2e() {
     --dataset-json "$DATASET_JSON" --images-dir "$IMAGES_DIR" \
     --layout-model "$LAYOUT_MODEL" --recognizer-model "$MODEL_DIR" \
     --offset "$offset" --limit "$limit" \
-    --batch-size 32 --cache-length 4096 --max-new-tokens 2808 \
+    --batch-size 32 --cache-length 4096 \
     --preprocessor-min-pixels 28224 \
     --decode-backend torchair \
     --decode-optimization combined_apply_static_actual \
@@ -13648,7 +13648,7 @@ run_e2e() {
     --dataset-json "$DATASET_JSON" --images-dir "$IMAGES_DIR" \
     --layout-model "$LAYOUT_MODEL" --recognizer-model "$MODEL_DIR" \
     --offset "$offset" --limit "$limit" \
-    --batch-size 32 --cache-length 4096 --max-new-tokens 2808 \
+    --batch-size 32 --cache-length 4096 \
     --preprocessor-min-pixels 28224 \
     --decode-backend torchair \
     --decode-optimization combined_apply_static_actual \
@@ -14180,12 +14180,15 @@ run_prefix 128
 run_prefix 256
 ```
 
-Require exit zero, exactly `pages` results and predictions, EOS for every
-recognition request, no Python/CANN/AICore error, and summary configuration
-matching the command. If cache files changed or logs show compilation during
-the measured pipeline, label timing `COMPILE_CONTAMINATED`; still evaluate the
-completed outputs, report the contamination, and stop for a decision rather
-than silently rerunning.
+Require exit zero, exactly `pages` results and predictions, no `length` stops,
+stop reasons limited to `eos` and `kv_cache_full`, no Python/CANN/AICore error,
+and summary configuration matching the command. Omitting `--max-new-tokens`
+is intentional: the committed default equals KV4096, and the scheduler admits
+every fitting prompt before stopping that request at EOS or its exact KV
+boundary. If cache files changed or logs show compilation during the measured
+pipeline, label timing `COMPILE_CONTAMINATED`; still evaluate the completed
+outputs, report the contamination, and stop for a decision rather than
+silently rerunning.
 
 ### 37.3 Official evaluation for that prefix, without CDM
 
@@ -14327,3 +14330,231 @@ After writing the report, paste it back immediately together with:
 
 Then **stop**. Do not start the next prefix until Luka explicitly says to
 continue.
+
+---
+
+## Phase 38: exact 32-page 310P versus 910B accuracy localization
+
+### Goal and decision boundary
+
+The Phase-37 headline metrics only say that the final pages differ. This phase
+must locate the first boundary at which they differ:
+
+1. layout geometry;
+2. recorded crop/request metadata;
+3. the prefill-produced first generated token;
+4. a later token after an initially shared generation prefix;
+5. final assembled page Markdown.
+
+Do not run another model variant, attention lane, eager lane, evaluator, or
+larger prefix in this phase. First produce the exact comparison. The result of
+that comparison decides the next experiment.
+
+The committed 910B reference is the ten-vision-bucket B32/KV4096
+`combined_apply_static_actual` run. On 910B, this reference was already proven
+token-identical across all 510 crops to both:
+
+- the same ten-bucket run with normal `combined_apply` GQA; and
+- the evaluated forty-bucket static-actual n32 reference.
+
+Therefore the ten-bucket restriction and static actual are already excluded as
+causes of any 310P token difference.
+
+### 38.1 Pull, preflight, and paths
+
+```sh
+cd /workspace/repos/paddle_ocr_vl_npu
+git pull --ff-only origin main
+git status --short
+source npu-setup
+
+PYTHON_BIN=/usr/local/python3.12.13/bin/python
+E2E=09_persistent_page_engine/scripts/run_omnidocbench.py
+COMPARE=09_persistent_page_engine/scripts/compare_e2e_outputs.py
+REFERENCE=tmp/09_persistent_page_engine/910b_accuracy_reference_n32_05c1441/output
+PHASE37=tmp/09_persistent_page_engine/310p_phase37_prefixes_47b5d56/n32/output
+ROOT=tmp/09_persistent_page_engine/310p_phase38_accuracy_1a3d8b7
+
+test -f "$REFERENCE/run_summary.json"
+test -f "$REFERENCE/recognition_trace.jsonl"
+test -f "$REFERENCE/page_regions.jsonl"
+test -d "$REFERENCE/predictions"
+test -f "$PHASE37/run_summary.json"
+test -f "$PHASE37/recognition_trace.jsonl"
+test -f "$PHASE37/page_regions.jsonl"
+test -d "$PHASE37/predictions"
+test ! -e "$ROOT"
+mkdir -p "$ROOT"
+```
+
+Record the exact project commit and confirm the reference summary says:
+
+- offset 0, count 32, 510 recognition requests;
+- B32, KV4096, min_pixels 28224;
+- `combined_apply_static_actual`;
+- PromptFA, greedy vision packing, target 1920, lookahead 32;
+- vision buckets exactly
+  `128,256,384,512,640,768,1408,1920,2944,4992`;
+- production-group text packing with buckets `128,256,512,1024`;
+- all-page preprocessing before recognition.
+
+The historical reference has `max_new_tokens=2808`; that is acceptable only
+because all 510 reference crops stopped at EOS. The fresh 310P run below must
+use the new EOS-or-KV-full policy and report `max_new_tokens=4096`.
+
+### 38.2 Immediately compare the existing Phase-37 n32 output
+
+This is CPU-only and should finish quickly. It establishes the differences
+before spending time on another E2E run.
+
+```sh
+"$PYTHON_BIN" "$COMPARE" \
+  --reference-output "$REFERENCE" \
+  --candidate-output "$PHASE37" \
+  --output-dir "$ROOT/existing_phase37_comparison" \
+  --worst-limit 30 \
+  2>&1 | tee "$ROOT/existing_phase37_compare.log"
+```
+
+Do not summarize this as merely pass/fail. Preserve `comparison.json` and
+`comparison.md`. Read and report at least:
+
+- whether all 32 layout geometries are exact;
+- whether request order and all 510 recorded request-metadata contracts are
+  exact;
+- exact-token crop count and fraction;
+- first-generated-token divergence count;
+- divergence-after-shared-prefix count;
+- length-only divergence count;
+- candidate-minus-reference output tokens;
+- all label rows;
+- all pages with any divergent crops, sorted by divergent-crop count;
+- the worst 30 crop rows and their token/text similarity;
+- every stop-reason transition.
+
+### 38.3 Fresh 32-page run with EOS-or-KV-full generation
+
+Use only the already-compiled ten vision buckets. Omitting
+`--max-new-tokens` is deliberate. Do not add `2808` back.
+
+```sh
+LANE="$ROOT/fresh_n32"
+OUTPUT="$LANE/output"
+mkdir -p "$LANE"
+
+printf '%q ' timeout --signal=TERM --kill-after=15s 1800 \
+  "$PYTHON_BIN" "$E2E" \
+  --dataset-json /workspace/datasets/OmniDocBench/OmniDocBench.json \
+  --images-dir /workspace/datasets/OmniDocBench/images \
+  --layout-model /workspace/models/PP-DocLayoutV3_safetensors \
+  --recognizer-model /workspace/models/PaddleOCR-VL-1.6 \
+  --offset 0 --limit 32 \
+  --batch-size 32 --cache-length 4096 \
+  --preprocessor-min-pixels 28224 \
+  --decode-backend torchair \
+  --decode-optimization combined_apply_static_actual \
+  --torchair-cache-dir .runtime_cache/310p_phase36_static_actual_b32 \
+  --vision-backend torchair \
+  --vision-attention prompt_flash_attention \
+  --vision-buckets 128,256,384,512,640,768,1408,1920,2944,4992 \
+  --vision-torchair-cache-dir .runtime_cache/09_persistent_page_engine_vision_torchair \
+  --vision-batched-cache-dir .runtime_cache/09_vision_router_batched \
+  --vision-promptfa-align-128 --vision-padding bucket \
+  --vision-packing greedy --vision-pack-target 1920 \
+  --vision-router-lookahead 32 \
+  --text-packing production_group \
+  --text-pack-buckets 128,256,512,1024 \
+  --text-pack-max-members 32 \
+  --text-torchair-cache-dir .runtime_cache/09_persistent_page_engine_text_torchair \
+  --text-packed-cache-dir .runtime_cache/310p_text_packed_4789067 \
+  --layout-device npu --no-layout-graph-capture \
+  --preprocess-all-pages-first --no-timeline \
+  --output-dir "$OUTPUT" >"$LANE/command.sh"
+printf '\n' >>"$LANE/command.sh"
+
+set +e
+timeout --signal=TERM --kill-after=15s 1800 \
+  "$PYTHON_BIN" "$E2E" \
+  --dataset-json /workspace/datasets/OmniDocBench/OmniDocBench.json \
+  --images-dir /workspace/datasets/OmniDocBench/images \
+  --layout-model /workspace/models/PP-DocLayoutV3_safetensors \
+  --recognizer-model /workspace/models/PaddleOCR-VL-1.6 \
+  --offset 0 --limit 32 \
+  --batch-size 32 --cache-length 4096 \
+  --preprocessor-min-pixels 28224 \
+  --decode-backend torchair \
+  --decode-optimization combined_apply_static_actual \
+  --torchair-cache-dir .runtime_cache/310p_phase36_static_actual_b32 \
+  --vision-backend torchair \
+  --vision-attention prompt_flash_attention \
+  --vision-buckets 128,256,384,512,640,768,1408,1920,2944,4992 \
+  --vision-torchair-cache-dir .runtime_cache/09_persistent_page_engine_vision_torchair \
+  --vision-batched-cache-dir .runtime_cache/09_vision_router_batched \
+  --vision-promptfa-align-128 --vision-padding bucket \
+  --vision-packing greedy --vision-pack-target 1920 \
+  --vision-router-lookahead 32 \
+  --text-packing production_group \
+  --text-pack-buckets 128,256,512,1024 \
+  --text-pack-max-members 32 \
+  --text-torchair-cache-dir .runtime_cache/09_persistent_page_engine_text_torchair \
+  --text-packed-cache-dir .runtime_cache/310p_text_packed_4789067 \
+  --layout-device npu --no-layout-graph-capture \
+  --preprocess-all-pages-first --no-timeline \
+  --output-dir "$OUTPUT" 2>&1 | tee "$LANE/run.log"
+run_exit="${PIPESTATUS[0]}"
+set -e
+printf '%s\n' "$run_exit" >"$LANE/exit_code.txt"
+test "$run_exit" -eq 0
+```
+
+Require `run_summary.json` to report `max_new_tokens=4096`, 32/32 results,
+510 requests, no `length` stops, and stop reasons limited to `eos` and
+`kv_cache_full`. Cache loading may take time, but no new graph compilation or
+cache regeneration is allowed in the measured run.
+
+### 38.4 Compare fresh 310P to 910B and to old 310P
+
+```sh
+"$PYTHON_BIN" "$COMPARE" \
+  --reference-output "$REFERENCE" \
+  --candidate-output "$OUTPUT" \
+  --output-dir "$ROOT/fresh_vs_910b" \
+  --worst-limit 30 \
+  2>&1 | tee "$ROOT/fresh_vs_910b.log"
+
+"$PYTHON_BIN" "$COMPARE" \
+  --reference-output "$PHASE37" \
+  --candidate-output "$OUTPUT" \
+  --output-dir "$ROOT/fresh_vs_old_310p" \
+  --worst-limit 30 \
+  2>&1 | tee "$ROOT/fresh_vs_old_310p.log"
+```
+
+The fresh-versus-old comparison determines whether the generation-policy
+change affected the 32-page output. Because all historical n32 requests ended
+at EOS, the expected result is 510/510 exact token streams. If it is not exact,
+do not attribute that automatically to `max_new_tokens`; report the first
+divergences and stop.
+
+### 38.5 Report and stop
+
+Write `$ROOT/agent_report.md` with these sections:
+
+1. exact commits, software, host, NPU, and commands;
+2. reference contract verification;
+3. existing Phase-37 versus 910B boundary summary;
+4. fresh-run configuration and stop-reason verification;
+5. fresh 310P versus 910B boundary summary;
+6. fresh versus old 310P determinism summary;
+7. differences by label and page;
+8. worst 30 crop divergences;
+9. what is proven about layout, recorded request metadata, token zero, later
+   generation, and assembled pages; explicitly note that the historical trace
+   has no crop-pixel hash, so geometry parity does not prove byte-identical
+   crop pixels;
+10. what remains unresolved and the single narrow next experiment suggested by
+    the observed first-divergence distribution.
+
+Paste the full report, all three generated `comparison.md` files, and the
+headline `recognition` and `layout` objects from each `comparison.json`. Then
+**stop**. Do not start that next experiment yet.
