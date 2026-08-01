@@ -2235,6 +2235,7 @@ class ContinuousRecognizer:
                     - int(text_route["real_text_tokens"])
                 )
                 for position, member_index in enumerate(indices):
+                    member_item = text_inputs[member_index]
                     member_padding = (
                         pack_padding if position == len(indices) - 1 else 0
                     )
@@ -2255,6 +2256,12 @@ class ContinuousRecognizer:
                         ),
                         "pack_physical_text_tokens": int(
                             text_route["physical_text_tokens"]
+                        ),
+                        "private_cache_slot_index": int(
+                            member_item.cache_lease.slot_index
+                        ),
+                        "private_cache_generation": int(
+                            member_item.cache_lease.generation
                         ),
                     }
                     next_tokens[member_index] = packed_tokens[
@@ -2333,6 +2340,12 @@ class ContinuousRecognizer:
                 "pack_real_text_tokens": int(text_route["real_text_tokens"]),
                 "pack_physical_text_tokens": int(
                     text_route["physical_text_tokens"]
+                ),
+                "private_cache_slot_index": int(
+                    item.cache_lease.slot_index
+                ),
+                "private_cache_generation": int(
+                    item.cache_lease.generation
                 ),
             }
             next_tokens[member_index] = next_token

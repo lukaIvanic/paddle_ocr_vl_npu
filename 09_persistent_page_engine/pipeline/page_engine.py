@@ -111,6 +111,10 @@ class OwnedPageEngine:
             "decode_tokens_after_prefill_including_eos": (
                 result.decode_tokens_after_prefill_including_eos
             ),
+            "decode_schedule_id": result.decode_schedule_id,
+            "decode_slot_index": result.decode_slot_index,
+            "decode_slot_epoch": result.decode_slot_epoch,
+            "decode_calls_executed": result.decode_calls_executed,
             "vision": result.vision,
             "text_prefill": result.text_prefill,
             "timing_s": result.timing_s,
