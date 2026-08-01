@@ -1,0 +1,19 @@
+{
+  "dataset_json": "/workspace/datasets/OmniDocBench/OmniDocBench.json",
+  "images_dir": "/workspace/datasets/OmniDocBench/images",
+  "offset": 8,
+  "count": 7,
+  "images": [
+    "page-0a262e27-b24d-4429-9b21-90563d4fada7.png",
+    "page-99c0fd2f-608e-479c-9af5-5b012de4f6af.png",
+    "page-f9583127-1277-4424-be9d-35430e0aedd6.png",
+    "page-573c437e-c309-4483-a038-ef2f440b104a.png",
+    "page-062fc21c-6b9c-40be-8d0e-7a617509a9bc.png",
+    "page-52875b3d-f4dc-44c2-a9bb-514b0763833d.png",
+    "page-cdd33cf6-76ce-42bb-a99c-342c861afed0.png"
+  ],
+  "pipeline": "owned_paddleocr_vl_v1.6",
+  "layout_device": "npu",
+  "layout_graph_capture": false,
+  "page_preprocessing_mode": "all_before_recognition"
+}

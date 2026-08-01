@@ -1,0 +1,327 @@
+Loading weights:   0%|          | 0/858 [00:00<?, ?it/s]Loading weights:  60%|██████    | 515/858 [00:00<00:00, 5144.90it/s]Loading weights: 100%|██████████| 858/858 [00:00<00:00, 5365.28it/s]
+[W801 13:41:57.705418615 TensorFactories.cpp:340] Warning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (function operator())
+completed=1/7 elapsed_s=4.886
+completed=2/7 elapsed_s=5.102
+completed=3/7 elapsed_s=5.161
+completed=4/7 elapsed_s=5.331
+completed=5/7 elapsed_s=5.652
+completed=6/7 elapsed_s=5.919
+completed=7/7 elapsed_s=5.988
+{
+  "dataset_json": "/workspace/datasets/OmniDocBench/OmniDocBench.json",
+  "images_dir": "/workspace/datasets/OmniDocBench/images",
+  "offset": 8,
+  "count": 7,
+  "images": [
+    "page-0a262e27-b24d-4429-9b21-90563d4fada7.png",
+    "page-99c0fd2f-608e-479c-9af5-5b012de4f6af.png",
+    "page-f9583127-1277-4424-be9d-35430e0aedd6.png",
+    "page-573c437e-c309-4483-a038-ef2f440b104a.png",
+    "page-062fc21c-6b9c-40be-8d0e-7a617509a9bc.png",
+    "page-52875b3d-f4dc-44c2-a9bb-514b0763833d.png",
+    "page-cdd33cf6-76ce-42bb-a99c-342c861afed0.png"
+  ],
+  "pipeline": "owned_paddleocr_vl_v1.6",
+  "layout_device": "npu",
+  "layout_graph_capture": false,
+  "page_preprocessing_mode": "all_before_recognition",
+  "configuration": {
+    "layout_model": "/workspace/models/PP-DocLayoutV3_safetensors",
+    "recognizer_model": "/workspace/models/PaddleOCR-VL-1.6",
+    "device": "npu:0",
+    "layout_device": "npu:0",
+    "layout_graph_capture": false,
+    "dtype": "fp16",
+    "batch_size": 32,
+    "cache_length": 4096,
+    "max_new_tokens": 4096,
+    "decode_backend": "torchair",
+    "decode_optimization": "combined_apply_static_actual",
+    "preprocessor_min_pixels": 28224,
+    "effective_global_min_pixels": 28224,
+    "vision_backend": "torchair",
+    "vision_attention": "prompt_flash_attention",
+    "vision_padding": "bucket",
+    "vision_packing": "greedy",
+    "vision_pack_target": 1920,
+    "vision_router_lookahead": 32,
+    "vision_batched_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_vision_router_batched",
+    "vision_buckets": [
+      128,
+      256,
+      384,
+      512,
+      640,
+      768,
+      1408,
+      1920,
+      2944,
+      4992
+    ],
+    "text_buckets": [
+      32,
+      64,
+      96,
+      128,
+      160,
+      176,
+      192,
+      208,
+      224,
+      256,
+      320,
+      384,
+      448,
+      576,
+      640,
+      768,
+      896,
+      1024,
+      1152,
+      1280,
+      1312
+    ],
+    "text_packing": "production_group",
+    "text_pack_buckets": [
+      128,
+      256,
+      512,
+      1024
+    ],
+    "text_pack_max_members": 32,
+    "text_packed_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_packed_torchair",
+    "cpu_preprocessing": {
+      "execution": "background_thread",
+      "workers": 1,
+      "max_pending": 32,
+      "ordering": "fifo",
+      "pin_recognition_inputs": "best_effort"
+    },
+    "page_preprocessing_mode": "all_before_recognition",
+    "scheduler_progress": false,
+    "recognition_input_fingerprints": true,
+    "vision_route_plan_input": null
+  },
+  "setup_s": 41.953404877102,
+  "recognizer_setup_timing_s": {
+    "recognizer_frontend_setup": 0.8612378078978509,
+    "recognizer_model_load": 10.062085383106023,
+    "decode_optimization_setup": 0.032420211005955935,
+    "decode_weight_format": 4.475846299901605,
+    "vision_runtime_setup": 8.079553038114682,
+    "text_runtime_setup": 13.777065810980275,
+    "compile_wrapper": 0.0018500210717320442,
+    "compile_first_call": 0.21452348586171865,
+    "vision_router_setup": 0.0,
+    "packed_text_runtime_setup": 2.352667195023969,
+    "private_cache_pool_setup": 0.016080322908237576,
+    "decode_control_setup": 0.003669033059850335,
+    "recognizer_runtime_total": 39.897887392900884
+  },
+  "pipeline_e2e_s": 5.998104152036831,
+  "pages_per_s": 1.1670354202874165,
+  "s_per_page": 0.8568720217195472,
+  "result_count": 7,
+  "prediction_count": 7,
+  "completion_s": [
+    4.885610084980726,
+    5.102099153911695,
+    5.161363800987601,
+    5.3311282868962735,
+    5.652055361075327,
+    5.918994198087603,
+    5.9881469330284745
+  ],
+  "page_artifact_writer": {
+    "execution": "background_ordered_single_worker",
+    "max_pending": 8,
+    "max_pending_observed": 1,
+    "write_wall_sum_s": 0.007373526,
+    "queue_wait_sum_s": 0.00234288,
+    "producer_backpressure_s": 0.0,
+    "final_drain_s": 1.11e-05
+  },
+  "recognition": {
+    "schedules": 1,
+    "requests": 106,
+    "wall_s": 5.994760044850409,
+    "generated_tokens_including_eos": 5872,
+    "decode_tokens_after_prefill_including_eos": 5766,
+    "input_tokens": 14006,
+    "projected_image_tokens": 12628,
+    "real_vision_tokens": 50512,
+    "physical_vision_tokens": 56832,
+    "real_text_tokens": 14006,
+    "physical_text_tokens": 20608,
+    "decode_graph_calls": 417,
+    "raw_decode_token_slots": 13344,
+    "active_decode_token_slots": 5872,
+    "effective_decode_tokens": 5766,
+    "idle_decode_token_slots": 7472,
+    "lookahead_decode_token_slots": 106,
+    "decode_wall_s": 2.1834558221250777,
+    "run_scoped_scheduler_wall_s": 4.089917001081631,
+    "kv_prefix_bytes_copied": 258158592,
+    "stop_reason_counts": {
+      "eos": 106
+    },
+    "pixel_profile_request_counts": {
+      "28224:1003520": 106
+    },
+    "device_stage_s": {
+      "adaptive_mlp_projector": 0.025878619663417316,
+      "image_embed_scatter": 0.01928452031314373,
+      "prefill_argmax": 0.002629259997978807,
+      "prefill_lm_head": 0.02301802051067352,
+      "recognition_inputs_h2d": 0.22399278068542477,
+      "static_cache_alloc": 3.589999917312516e-05,
+      "text_kv_redistribute": 0.09668932145833967,
+      "text_prefill": 0.32102598142623906,
+      "text_prefill_input_prep": 0.022437239855527872,
+      "text_token_embedding": 0.0041356398882344365,
+      "vision_embeddings": 0.13683516116440295,
+      "vision_prefill": 0.9619452362060548,
+      "vision_prefill_input_prep": 0.159442440867424
+    },
+    "vision_packing": {
+      "mode": "greedy",
+      "target": 1920,
+      "lookahead": 32,
+      "groups": 32,
+      "crops": 106,
+      "packed_groups": 24,
+      "singleton_groups": 8,
+      "eager_overflow_groups": 0,
+      "crops_per_group": 3.3125,
+      "group_size_histogram": {
+        "1": 8,
+        "2": 3,
+        "3": 6,
+        "4": 7,
+        "5": 4,
+        "6": 2,
+        "7": 2
+      },
+      "graph_shape_histogram": {
+        "b1_s1408": 5,
+        "b1_s1920": 21,
+        "b1_s256": 3,
+        "b1_s2944": 1,
+        "b1_s4992": 1,
+        "b1_s768": 1
+      },
+      "ready_window_histogram": {},
+      "router_cpu_s": 0.0,
+      "packed_real_vision_tokens": 39808,
+      "packed_physical_vision_tokens": 43392,
+      "packed_fill_fraction": 0.9174041297935103
+    },
+    "text_packing": {
+      "mode": "production_group",
+      "buckets": [
+        128,
+        256,
+        512,
+        1024
+      ],
+      "groups": 32,
+      "crops": 106,
+      "packs": 32,
+      "packed_crops": 106,
+      "fallback_crops": 0,
+      "calls": 32,
+      "call_reduction_fraction": 0.6981132075471699,
+      "pack_size_histogram": {
+        "1": 8,
+        "2": 3,
+        "3": 6,
+        "4": 7,
+        "5": 4,
+        "6": 2,
+        "7": 2
+      },
+      "bucket_histogram": {
+        "128": 3,
+        "256": 1,
+        "512": 17,
+        "1024": 11
+      },
+      "packed_real_text_tokens": 14006,
+      "packed_physical_text_tokens": 20608,
+      "packed_fill_fraction": 0.6796389751552795,
+      "redistributed_kv_bytes": 258158592,
+      "private_cache_pool": {
+        "storage": "zero_once_fixed_arena",
+        "capacity": 160,
+        "allocated_bytes": 12079595520,
+        "acquisitions": 106,
+        "reuses": 0,
+        "releases": 106,
+        "active_slots": 0,
+        "free_slots": 160,
+        "high_water_active_slots": 106
+      }
+    },
+    "run_output_tok_per_s": 979.5221086528957,
+    "decode_useful_token_fraction": 0.43210431654676257,
+    "vision_useful_token_fraction": 0.888795045045045,
+    "text_useful_token_fraction": 0.6796389751552795,
+    "trace_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_accuracy_lab_7p_8e19fdc/output/recognition_trace.jsonl"
+  },
+  "layout_frontend": {
+    "implementation": "owned_no_paddlex",
+    "device": "npu:0",
+    "graph_capture": false,
+    "npu_indexput_compat": true,
+    "setup_s": 2.0395918739959598,
+    "stage_s": {
+      "file_read_s": 0.002308238996192813,
+      "image_decode_s": 0.6466955000068992,
+      "layout_mask_polygon_cpu_s": 0.1376479179598391,
+      "layout_mask_wait_and_d2h_s": 0.005897111026570201,
+      "layout_metadata_wait_and_d2h_s": 0.0033730475697666407,
+      "layout_model_submit_s": 0.8279607526492327,
+      "layout_postprocess_s": 0.29329305491410196,
+      "layout_preprocess_h2d_s": 0.06882065092213452,
+      "layout_structural_postprocess_cpu_s": 0.09123176103457808,
+      "page_preparation_s": 0.04630137700587511,
+      "page_total_s": 1.8872371546458453
+    },
+    "statistics": {
+      "filtered_layout_boxes": 106,
+      "merged_blocks": 106,
+      "raw_layout_boxes": 106,
+      "requests": 106
+    }
+  },
+  "page_completion_order": [
+    "page-99c0fd2f-608e-479c-9af5-5b012de4f6af.png",
+    "page-f9583127-1277-4424-be9d-35430e0aedd6.png",
+    "page-0a262e27-b24d-4429-9b21-90563d4fada7.png",
+    "page-062fc21c-6b9c-40be-8d0e-7a617509a9bc.png",
+    "page-52875b3d-f4dc-44c2-a9bb-514b0763833d.png",
+    "page-cdd33cf6-76ce-42bb-a99c-342c861afed0.png",
+    "page-573c437e-c309-4483-a038-ef2f440b104a.png"
+  ],
+  "paddlex_runtime_dependency": false,
+  "loaded_paddlex_modules": [],
+  "layout_mask_guard": {
+    "guard_version": 2,
+    "behavior": "integer_bounding_rectangle_for_empty_scaled_mask_crop",
+    "fallback_calls": 0,
+    "fallback_regions": 0,
+    "events": []
+  },
+  "layout_mask_guard_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_accuracy_lab_7p_8e19fdc/output/layout_mask_guard.json",
+  "predictions_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_accuracy_lab_7p_8e19fdc/output/predictions",
+  "page_regions_jsonl": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_accuracy_lab_7p_8e19fdc/output/page_regions.jsonl",
+  "vision_route_plan": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_accuracy_lab_7p_8e19fdc/output/vision_route_plan.json",
+  "timeline": {
+    "enabled": false,
+    "event_count": 0,
+    "trace_json": null,
+    "html": null,
+    "additional_device_synchronization": false
+  }
+}
+summary=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_accuracy_lab_7p_8e19fdc/output/run_summary.json

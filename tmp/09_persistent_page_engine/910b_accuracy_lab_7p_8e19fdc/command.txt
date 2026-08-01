@@ -1,0 +1,6 @@
+git_commit=085adbcd931d2905a8404c5f11189b6f705abebe
+behavior_commit=8e19fdc
+started_utc=2026-08-01T13:41:28+00:00
+physical_npu=7
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python 09_persistent_page_engine/scripts/run_omnidocbench.py --offset 8 --limit 7 --batch-size 32 --cache-length 4096 --preprocessor-min-pixels 28224 --decode-backend torchair --decode-optimization combined_apply_static_actual --vision-backend torchair --vision-attention prompt_flash_attention --vision-buckets 128\,256\,384\,512\,640\,768\,1408\,1920\,2944\,4992 --vision-promptfa-align-128 --vision-padding bucket --vision-packing greedy --vision-pack-target 1920 --vision-router-lookahead 32 --text-buckets 32\,64\,96\,128\,160\,176\,192\,208\,224\,256\,320\,384\,448\,576\,640\,768\,896\,1024\,1152\,1280\,1312 --text-packing production_group --text-pack-buckets 128\,256\,512\,1024 --text-pack-max-members 32 --layout-device npu --no-layout-graph-capture --preprocess-all-pages-first --no-timeline --recognition-input-fingerprints --output-dir tmp/09_persistent_page_engine/910b_accuracy_lab_7p_8e19fdc/output 
+finished_utc=2026-08-01T13:43:00+00:00

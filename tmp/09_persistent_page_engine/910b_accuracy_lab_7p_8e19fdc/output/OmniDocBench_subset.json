@@ -1,0 +1,2268 @@
+[
+  {
+    "layout_dets": [
+      {
+        "category_type": "text_block",
+        "poly": [
+          264.9759,
+          315.9989,
+          1370.9982,
+          315.9989,
+          1370.9982,
+          392.952,
+          264.9759,
+          392.952
+        ],
+        "ignore": false,
+        "order": 2,
+        "anno_id": "box_id_0",
+        "attribute": {},
+        "text": "Hence $ {a}_{1} $ is the slope of the secant line passing through the two points $ \\left( {{x}_{0},f\\left( {x}_{0}\\right) }\\right) $ and $ \\left( {{x}_{1},f\\left( {x}_{1}\\right) }\\right) $ ."
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          263.9841,
+          392.952,
+          1370.9982,
+          392.952,
+          1370.9982,
+          468.96950000000004,
+          263.9841,
+          468.96950000000004
+        ],
+        "ignore": false,
+        "order": 3,
+        "anno_id": "box_id_1",
+        "attribute": {},
+        "text": "The coefficients $ {a}_{0} $ and $ {a}_{1} $ are the same for both $ {P}_{1}\\left( x\\right) $ and $ {P}_{2}\\left( x\\right) $. Evaluating (2) at the node $ {x}_{2} $ , we find that"
+      },
+      {
+        "category_type": "equation_isolated",
+        "poly": [
+          266.29901123046875,
+          494.9324,
+          1218.9222000000002,
+          494.9324,
+          1218.9222000000002,
+          537.97,
+          266.29901123046875,
+          537.97
+        ],
+        "ignore": false,
+        "order": 4,
+        "anno_id": "box_id_2",
+        "attribute": {},
+        "latex": "$$f\\left( {x}_{2}\\right)  = {P}_{2}\\left( {x}_{2}\\right)  = {a}_{0} + {a}_{1}\\left( {{x}_{2}\\;{x}_{0}}\\right)  + {a}_{2}\\left( {{x}_{2}\\;{x}_{0}}\\right) \\left( {{x}_{2}\\;{x}_{1}}\\right) .\\tag{11}$$"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          263.9841,
+          560.8922,
+          1152.9675,
+          560.8922,
+          1152.9675,
+          602.0586000000001,
+          263.9841,
+          602.0586000000001
+        ],
+        "ignore": false,
+        "order": 5,
+        "anno_id": "box_id_3",
+        "attribute": {},
+        "text": "The values for $ {a}_{0} $ and $ {a}_{1} $ in (9) and (10) can be used in (11) to obtain"
+      },
+      {
+        "category_type": "equation_isolated",
+        "poly": [
+          452.922,
+          617.9638,
+          885.0932322704566,
+          617.9638,
+          885.0932322704566,
+          705.6833894722174,
+          452.922,
+          705.6833894722174
+        ],
+        "ignore": false,
+        "order": 6,
+        "anno_id": "box_id_4",
+        "attribute": {},
+        "latex": "$$a_2 = \\frac{ f(x_2) \\quad a_0 \\quad a_1(x_2 \\quad x_0 )}{(x_2 \\quad x_0)(x_2 \\quad x_1)}$$"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          267.9513,
+          813.0364000000001,
+          1120.0728,
+          813.0364000000001,
+          1120.0728,
+          852.0977,
+          267.9513,
+          852.0977
+        ],
+        "ignore": false,
+        "order": 8,
+        "anno_id": "box_id_5",
+        "attribute": {},
+        "text": "For computational purposes we prefer to write this last quantity as"
+      },
+      {
+        "category_type": "equation_isolated",
+        "poly": [
+          268.1627502441406,
+          870.108,
+          1184.0439000000001,
+          870.108,
+          1184.0439000000001,
+          962.0307,
+          268.1627502441406,
+          962.0307
+        ],
+        "ignore": false,
+        "order": 9,
+        "anno_id": "box_id_6",
+        "attribute": {},
+        "latex": "$$a_2 = \\left( \\frac{f(x_2)f(x_1)}{{x_2}~{x_1}} \\quad \\quad \\frac{f(x_1)f(x_0)}{{x_1}~{x_0}} \\quad \\right) / (x_2 \\quad x_0).\\tag{12}$$"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          266.9595,
+          979.1054,
+          1376.9489999999998,
+          979.1054,
+          1376.9489999999998,
+          1133.0116,
+          266.9595,
+          1133.0116
+        ],
+        "ignore": false,
+        "order": 10,
+        "anno_id": "box_id_7",
+        "attribute": {},
+        "text": "The two formulas for $ {a}_{2} $ can be shown to be equivalent by writing the quotients over the common denominator $( {x}_{2} \\quad {x}_{1}) ( {x}_{2} \\quad {x}_{0}) ({x}_{1} \\quad {x}_{0} )$ . The details are left for the reader. The numerator in (12) is the difference between the first-order divided differences. In order to proceed, we need to introduce the idea of divided differences."
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          268.9431,
+          1163.8863999999999,
+          1373.9736,
+          1163.8863999999999,
+          1373.9736,
+          1241.0734,
+          268.9431,
+          1241.0734
+        ],
+        "ignore": false,
+        "order": 11,
+        "anno_id": "box_id_8",
+        "attribute": {},
+        "text": "Definition 4.1 (Divided Differences). The divided differences for a function $ f\\left( x\\right) $ are defined as follows:"
+      },
+      {
+        "category_type": "equation_isolated",
+        "poly": [
+          629.3274626308807,
+          1256.9786,
+          846.656136947287,
+          1256.9786,
+          846.656136947287,
+          1302.7578125,
+          629.3274626308807,
+          1302.7578125
+        ],
+        "ignore": false,
+        "order": 12,
+        "anno_id": "box_id_9",
+        "attribute": {},
+        "latex": "$$f[x_k] = f(x_k),$$"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          265.9677,
+          1580.9300999999998,
+          1169.0016,
+          1580.9300999999998,
+          1169.0016,
+          1623.0321,
+          265.9677,
+          1623.0321
+        ],
+        "ignore": false,
+        "order": 16,
+        "anno_id": "box_id_10",
+        "attribute": {},
+        "text": "The recursive rule for constructing higher-order divided differences is"
+      },
+      {
+        "category_type": "equation_isolated",
+        "poly": [
+          268.1627502441406,
+          1638.9373,
+          1302.0681,
+          1638.9373,
+          1302.0681,
+          1733.9007,
+          268.1627502441406,
+          1733.9007
+        ],
+        "ignore": false,
+        "order": 17,
+        "anno_id": "box_id_11",
+        "attribute": {},
+        "latex": "$$f\\left\\lbrack  {{x}_{k\\;j},{x}_{k\\;j + 1},\\ldots ,{x}_{k}}\\right\\rbrack   = \\frac{f\\left\\lbrack  {{x}_{k\\;j + 1},\\ldots ,{x}_{k}}\\right\\rbrack \\quad f\\left\\lbrack  {{x}_{k\\;j},\\ldots ,{x}_{k\\;1}}\\right\\rbrack  }{{x}_{k}\\quad{x}_{k\\;j}}\\tag{14}$$"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          271.9185,
+          1749.1042,
+          1043.0430000000001,
+          1749.1042,
+          1043.0430000000001,
+          1790.0366999999999,
+          271.9185,
+          1790.0366999999999
+        ],
+        "ignore": false,
+        "order": 18,
+        "anno_id": "box_id_12",
+        "attribute": {},
+        "text": "and is used to construct the divided differences in Table 4.8."
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          270.9267,
+          1808.047,
+          1379.9243999999999,
+          1808.047,
+          1379.9243999999999,
+          1885.0001,
+          270.9267,
+          1885.0001
+        ],
+        "ignore": false,
+        "order": 20,
+        "anno_id": "box_id_13",
+        "attribute": {},
+        "text": "The coefficients $ {a}_{k} $ of $ {P}_{N}\\left( x\\right) $ depend on the values $ f\\left( {x}_{j}\\right) $, for $ j = 0,1,\\ldots ,k $. The next theorem shows that ${a}_{k}$ can be computed using divided differences:"
+      },
+      {
+        "category_type": "equation_isolated",
+        "poly": [
+          271.8902587890625,
+          1910.963,
+          982.0473,
+          1910.963,
+          982.0473,
+          1953.0649999999998,
+          271.8902587890625,
+          1953.0649999999998
+        ],
+        "ignore": false,
+        "order": 21,
+        "anno_id": "box_id_14",
+        "attribute": {},
+        "latex": "$${a}_{k} = f\\left\\lbrack  {{x}_{0},{x}_{1},\\ldots ,{x}_{k}}\\right\\rbrack  .\\tag{15}$$"
+      },
+      {
+        "category_type": "header",
+        "poly": [
+          264.9759,
+          239.98139999999998,
+          707.9799,
+          239.98139999999998,
+          707.9799,
+          275.0664,
+          264.9759,
+          275.0664
+        ],
+        "ignore": false,
+        "order": 0,
+        "anno_id": "box_id_15",
+        "attribute": {},
+        "text": "Sec. 4.4 NEWTON POLYNOMIALS"
+      },
+      {
+        "category_type": "page_number",
+        "poly": [
+          1318.9287000000002,
+          239.98139999999998,
+          1369.0146,
+          239.98139999999998,
+          1369.0146,
+          271.0901,
+          1318.9287000000002,
+          271.0901
+        ],
+        "ignore": false,
+        "order": 1,
+        "anno_id": "box_id_16",
+        "attribute": {},
+        "text": "223"
+      },
+      {
+        "category_type": "abandon",
+        "poly": [
+          1350.0050999999999,
+          1760.0974999999999,
+          1374.9654,
+          1760.0974999999999,
+          1374.9654,
+          1787.9316,
+          1350.0050999999999,
+          1787.9316
+        ],
+        "ignore": false,
+        "order": 19,
+        "anno_id": "box_id_17",
+        "attribute": {},
+        "text": ""
+      },
+      {
+        "category_type": "equation_isolated",
+        "poly": [
+          493.6759033203125,
+          710.0868530273438,
+          1182.5288488662288,
+          710.0868530273438,
+          1182.5288488662288,
+          801.4103393554688,
+          493.6759033203125,
+          801.4103393554688
+        ],
+        "ignore": false,
+        "order": 7,
+        "anno_id": "box-ur8e9szp",
+        "attribute": {},
+        "latex": "$$= \\left( \\frac{f(x_2)~f(x_0)}{{x_2}~{x_0}} \\qquad \\frac{f(x_1)~f(x_0)}{{x_1}~{x_0}} \\quad \\right) / (x_2 \\quad x_1).$$"
+      },
+      {
+        "category_type": "equation_isolated",
+        "poly": [
+          555.1795043945312,
+          1308.3489990234375,
+          1000.6145629882812,
+          1308.3489990234375,
+          1000.6145629882812,
+          1394.081298828125,
+          555.1795043945312,
+          1394.081298828125
+        ],
+        "ignore": false,
+        "order": 13,
+        "anno_id": "box-3j91jxd6",
+        "attribute": {},
+        "latex": "$$f[x_{k~~1}, x_k] = \\frac{f[x_k]~f[x_{k~~1}]}{{x_k}~ x_{k~1}},$$"
+      },
+      {
+        "category_type": "equation_isolated",
+        "poly": [
+          270.0265197753906,
+          1394.081298828125,
+          1155.305419921875,
+          1394.081298828125,
+          1155.305419921875,
+          1479.8135986328125,
+          270.0265197753906,
+          1479.8135986328125
+        ],
+        "ignore": false,
+        "order": 14,
+        "anno_id": "box-3dv2w0e1",
+        "attribute": {},
+        "latex": "$$f[x_{k\\quad2}, x_{k\\quad1}, x_k] = \\frac{f[x_{k\\quad1},x_k]\\quad f[x_{k\\quad2}, x_{k\\quad1}]}{x_k\\quad x_{k\\quad2}} ,\\tag{13}$$"
+      },
+      {
+        "category_type": "equation_isolated",
+        "poly": [
+          404.2161560058594,
+          1483.541015625,
+          1308.1324462890625,
+          1483.541015625,
+          1308.1324462890625,
+          1567.4095458984375,
+          404.2161560058594,
+          1567.4095458984375
+        ],
+        "ignore": false,
+        "order": 15,
+        "anno_id": "box-z10z1vt4",
+        "attribute": {},
+        "latex": "$$f[x_{k\\quad 3}, x_{k\\quad 2}, x_{k\\quad 1}, x_k] = \\frac{f[x_{k\\quad 2}, x_{k\\quad 1}, x_k]\\quad f[x_{k\\quad 3}, x_{k\\quad 2}, x_{k\\quad 1}]}{x_k\\quad  x_{k\\quad 3}} .$$"
+      },
+      {
+        "category_type": "equation_semantic",
+        "poly": [
+          450.5853785182178,
+          612.5416240590255,
+          1191.0004175807173,
+          612.5416240590255,
+          1191.0004175807173,
+          807.387704492264,
+          450.5853785182178,
+          807.387704492264
+        ],
+        "ignore": false,
+        "order": null,
+        "anno_id": "box-3djlejnf",
+        "attribute": {},
+        "text": ""
+      },
+      {
+        "category_type": "equation_semantic",
+        "poly": [
+          270.9881273197093,
+          1252.9921744851615,
+          1311.296715521058,
+          1252.9921744851615,
+          1311.296715521058,
+          1573.2174496982295,
+          270.9881273197093,
+          1573.2174496982295
+        ],
+        "ignore": false,
+        "order": null,
+        "anno_id": "box-c567ixf2",
+        "attribute": {},
+        "text": ""
+      }
+    ],
+    "page_info": {
+      "page_no": 0,
+      "height": 2339,
+      "width": 1653,
+      "image_path": "page-0a262e27-b24d-4429-9b21-90563d4fada7.png",
+      "page_attribute": {
+        "data_source": "book",
+        "language": "english",
+        "layout": "single_column",
+        "special_issue": [],
+        "subset": "equation_hard"
+      }
+    },
+    "extra": {
+      "relation": []
+    }
+  },
+  {
+    "layout_dets": [
+      {
+        "category_type": "text_block",
+        "poly": [
+          247.93460000000002,
+          206.0659,
+          1410.035,
+          206.0659,
+          1410.035,
+          378.918,
+          247.93460000000002,
+          378.918
+        ],
+        "ignore": false,
+        "order": 0,
+        "anno_id": "box_id_0",
+        "attribute": {},
+        "text": "测以及成品及半成品的拆解决策四个主要阶段。问题目标是通过合理设计检测与回收策略,最大化系统的期望利润。期望利润的需要考虑成品销售收益、零件回收收益,以及系统在检测、装配、拆解中的相关成本。为此,我们将问题转化为一个多阶段决策问题,建立状态-决策模型,并通过动态规划算法来求解最优策略。"
+      },
+      {
+        "category_type": "title",
+        "poly": [
+          247.93460000000002,
+          391.08079999999995,
+          455.0154,
+          391.08079999999995,
+          455.0154,
+          431.0777,
+          247.93460000000002,
+          431.0777
+        ],
+        "ignore": false,
+        "order": 1,
+        "anno_id": "box_id_1",
+        "attribute": {},
+        "text": "# 7.1 模型建立"
+      },
+      {
+        "category_type": "title",
+        "poly": [
+          248.927,
+          445.1117,
+          664.081,
+          445.1117,
+          664.081,
+          485.1086,
+          248.927,
+          485.1086
+        ],
+        "ignore": false,
+        "order": 2,
+        "anno_id": "box_id_2",
+        "attribute": {},
+        "text": "# 7.1.1 状态变量与决策变量定义"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          246.94219999999999,
+          498.90869999999995,
+          1412.0198,
+          498.90869999999995,
+          1412.0198,
+          581.0076,
+          246.94219999999999,
+          581.0076
+        ],
+        "ignore": false,
+        "order": 3,
+        "anno_id": "box_id_3",
+        "attribute": {},
+        "text": "为了构建状态-决策模型，首先需要明确该问题背景下不同阶段的状态变量与决策变量定义。"
+      },
+      {
+        "category_type": "title",
+        "poly": [
+          247.93460000000002,
+          596.9128,
+          461.9622,
+          596.9128,
+          461.9622,
+          635.9740999999999,
+          247.93460000000002,
+          635.9740999999999
+        ],
+        "ignore": false,
+        "order": 4,
+        "anno_id": "box_id_4",
+        "attribute": {},
+        "text": "### （1）状态变量定义"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          247.93460000000002,
+          650.9437,
+          1409.0426,
+          650.9437,
+          1409.0426,
+          730.0019,
+          247.93460000000002,
+          730.0019
+        ],
+        "ignore": false,
+        "order": 5,
+        "anno_id": "box_id_5",
+        "attribute": {},
+        "text": "系统的状态$\\mathrm{S}$描述了当前零件、半成品和成品的质量状况及其检测结果。具体面言，状态变量包括："
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          246.94219999999999,
+          747.0766,
+          400.9296,
+          747.0766,
+          400.9296,
+          784.9684,
+          246.94219999999999,
+          784.9684
+        ],
+        "ignore": false,
+        "order": 6,
+        "anno_id": "box_id_6",
+        "attribute": {},
+        "text": "① 零件状态"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          306.9824,
+          799.9380000000001,
+          877.9432,
+          799.9380000000001,
+          877.9432,
+          838.9993000000001,
+          306.9824,
+          838.9993000000001
+        ],
+        "ignore": false,
+        "order": 7,
+        "anno_id": "box_id_7",
+        "attribute": {},
+        "text": "对于每个零件$𝑖$，其状态由以下两个维度构成"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          248.927,
+          853.0333,
+          710.0622000000001,
+          853.0333,
+          710.0622000000001,
+          892.0946,
+          248.927,
+          892.0946
+        ],
+        "ignore": false,
+        "order": 8,
+        "anno_id": "box_id_8",
+        "attribute": {},
+        "text": "- 检测状态 $d _ { i }$：零件$i$是否已检测，"
+      },
+      {
+        "category_type": "equation_isolated",
+        "poly": [
+          718.0014,
+          922.0338,
+          935.9985999999999,
+          922.0338,
+          935.9985999999999,
+          1009.9802000000001,
+          718.0014,
+          1009.9802000000001
+        ],
+        "ignore": false,
+        "order": 9,
+        "anno_id": "box_id_9",
+        "attribute": {},
+        "latex": "$${d}_{i} = \\left\\{ \\begin{array}{l}0,\\text{ 未检测 } \\\\  1,\\text{ 检测 } \\end{array}\\right.$$"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          244.9574,
+          1043.8957,
+          1411.0274,
+          1043.8957,
+          1411.0274,
+          1129.0353,
+          244.9574,
+          1129.0353
+        ],
+        "ignore": false,
+        "order": 10,
+        "anno_id": "box_id_10",
+        "attribute": {},
+        "text": "- 质量状态$q _ { i }$：零件$i$是否为次品，0表示合格，1表示次品。未检测时，零件状态通过次品率$p _ { i } = 0 . 1$进行描述，检测后其状态变为确定的质量状态。"
+      },
+      {
+        "category_type": "equation_isolated",
+        "poly": [
+          728.9177999999999,
+          1158.0389,
+          925.0822000000001,
+          1158.0389,
+          925.0822000000001,
+          1246.9209,
+          728.9177999999999,
+          1246.9209
+        ],
+        "ignore": false,
+        "order": 11,
+        "anno_id": "box_id_11",
+        "attribute": {},
+        "latex": "$${q}_{i} = \\left\\{  \\begin{array}{ll} 0, & \\text{ 合格 } \\\\  1, & \\text{ 次品 } \\end{array}\\right.$$"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          304.99760000000003,
+          1281.0702999999999,
+          737.0224,
+          1281.0702999999999,
+          737.0224,
+          1322.0028,
+          304.99760000000003,
+          1322.0028
+        ],
+        "ignore": false,
+        "order": 12,
+        "anno_id": "box_id_12",
+        "attribute": {},
+        "text": "最终有零件状态变$S _ {\\text{part}_i } = ( d _ { i } , q _ { i } )$"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          247.93460000000002,
+          1333.9317,
+          519.0252,
+          1333.9317,
+          519.0252,
+          1370.8879,
+          247.93460000000002,
+          1370.8879
+        ],
+        "ignore": false,
+        "order": 13,
+        "anno_id": "box_id_13",
+        "attribute": {},
+        "text": "② 半成品和成品状态"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          247.93460000000002,
+          1387.027,
+          1406.0654,
+          1387.027,
+          1406.0654,
+          1468.892,
+          247.93460000000002,
+          1468.892
+        ],
+        "ignore": false,
+        "order": 14,
+        "anno_id": "box_id_14",
+        "attribute": {},
+        "text": "半成品和成品的状态同样由检测状态和质量状态构成。与零件类似,未检测的半成品或成品状态由其次品率表示,检测后状态转变为确定值。"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          246.94219999999999,
+          1478.0141,
+          1407.0578,
+          1478.0141,
+          1407.0578,
+          1611.1032,
+          246.94219999999999,
+          1611.1032
+        ],
+        "ignore": false,
+        "order": 15,
+        "anno_id": "box_id_15",
+        "attribute": {},
+        "text": "半成品状态： $S_{\\text{semi}_j} = (d_{\\text{semi}_j}, q_{\\text{semi}_j}, r_{\\text{semi}_j})$：对于每个半成品j，若$d_{\\text{semi}_j} = 0$，且组成零件均合格，次品率为$p _ \\text{semi} = 0 . 1$;若$d_{\\text{semi}_j} = 1$，次品状态$\\ { q } _\\text{semi}$确定为0（合格）或1（次品）;$r_{\\text{semi}_j} \\in \\{0,1\\}$，其中，1表示拆解操作，0表示未拆解。"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          246.94219999999999,
+          1623.9677000000001,
+          1409.0426,
+          1623.9677000000001,
+          1409.0426,
+          1753.0805,
+          246.94219999999999,
+          1753.0805
+        ],
+        "ignore": false,
+        "order": 16,
+        "anno_id": "box_id_16",
+        "attribute": {},
+        "text": "成品状态：$S _\\text{final} = \\left( d _ \\text{final}, q _\\text{final} , r _ \\text{final}\\right) ;$对于每个成品，若$d _ { final } = 0$，且组成半成品均合格，次品率为$p _ {  final  } =0. 1 $;若$d _ {  final }=1$，次品状态$q _ \\text{final}$确定为0（合格）或1（次品）:$r _ \\text{final} \\in \\{0,1\\}$，其中，1表示拆解操作，0表示未拆解。"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          303.0128,
+          1767.1145,
+          517.0404,
+          1767.1145,
+          517.0404,
+          1805.9419,
+          303.0128,
+          1805.9419
+        ],
+        "ignore": false,
+        "order": 17,
+        "anno_id": "box_id_17",
+        "attribute": {},
+        "text": "③状态变量总结"
+      },
+      {
+        "category_type": "equation_isolated",
+        "poly": [
+          530.934,
+          1818.1046999999999,
+          1119.9234000000001,
+          1818.1046999999999,
+          1119.9234000000001,
+          1863.9491,
+          530.934,
+          1863.9491
+        ],
+        "ignore": false,
+        "order": 18,
+        "anno_id": "box_id_18",
+        "attribute": {},
+        "latex": "$$S = \\left( {{S}_{\\text{part}_{1}},\\ldots ,{S}_{\\text{part}_{8}},{S}_{\\text{sem}{i}_{1}},{S}_{\\text{sem}{i}_{2}},{S}_{\\text{sem}{i}_{3}},{S}_\\text{final}}\\right)$$"
+      },
+      {
+        "category_type": "title",
+        "poly": [
+          247.93460000000002,
+          1878.9187,
+          461.9622,
+          1878.9187,
+          461.9622,
+          1917.9799999999998,
+          247.93460000000002,
+          1917.9799999999998
+        ],
+        "ignore": false,
+        "order": 19,
+        "anno_id": "box_id_19",
+        "attribute": {},
+        "text": "### （2）决策变量定义"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          246.94219999999999,
+          1932.014,
+          1411.0274,
+          1932.014,
+          1411.0274,
+          2014.1128999999999,
+          246.94219999999999,
+          2014.1128999999999
+        ],
+        "ignore": false,
+        "order": 20,
+        "anno_id": "box_id_20",
+        "attribute": {},
+        "text": "决策变量用于描述企业在每个阶段的操作选择，包括是否检测零件、半成品和成品，以及是否拆解不合格的半成品或成品。"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          246.94219999999999,
+          2029.0825000000002,
+          458.985,
+          2029.0825000000002,
+          458.985,
+          2067.9099,
+          246.94219999999999,
+          2067.9099
+        ],
+        "ignore": false,
+        "order": 21,
+        "anno_id": "box_id_21",
+        "attribute": {},
+        "text": "①检测决策变量"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          248.927,
+          2083.1133999999997,
+          882.0782,
+          2083.1133999999997,
+          882.0782,
+          2123.1103,
+          248.927,
+          2123.1103
+        ],
+        "ignore": false,
+        "order": 22,
+        "anno_id": "box_id_22",
+        "attribute": {},
+        "text": "- 零件检测决策变量$x _ { i }$：是否对零件i进行检测，"
+      },
+      {
+        "category_type": "page_number",
+        "poly": [
+          812.941,
+          2174.1005,
+          843.0438,
+          2174.1005,
+          843.0438,
+          2198.8939,
+          812.941,
+          2198.8939
+        ],
+        "ignore": false,
+        "order": 23,
+        "anno_id": "box_id_23",
+        "attribute": {},
+        "text": "14"
+      }
+    ],
+    "page_info": {
+      "page_no": 0,
+      "height": 2339,
+      "width": 1654,
+      "image_path": "page-99c0fd2f-608e-479c-9af5-5b012de4f6af.png",
+      "page_attribute": {
+        "data_source": "book",
+        "language": "simplified_chinese",
+        "layout": "single_column",
+        "special_issue": [
+          "with_watermark"
+        ],
+        "subset": "equation_hard"
+      }
+    },
+    "extra": {
+      "relation": []
+    }
+  },
+  {
+    "layout_dets": [
+      {
+        "category_type": "text_block",
+        "poly": [
+          298.01,
+          227.92,
+          1403.01,
+          227.92,
+          1403.01,
+          324.05999999999995,
+          298.01,
+          324.05999999999995
+        ],
+        "ignore": false,
+        "order": 0,
+        "anno_id": "box_id_0",
+        "attribute": {},
+        "text": "RWKV-7 uses four low-rank MLPs for decay $ w $ , value residual $ v $, in-context learning rate $ a $ and gate $ g $ respectively. The intermediate dimensions are listed in Table 16. These values are based on our mere speculation of how much information can be passed through."
+      },
+      {
+        "category_type": "table",
+        "poly": [
+          602.99,
+          350.02,
+          1099.05,
+          350.02,
+          1099.05,
+          572.0,
+          602.99,
+          572.0
+        ],
+        "ignore": false,
+        "order": 1,
+        "anno_id": "box_id_1",
+        "attribute": {},
+        "html": "<table><tr><td>Dimension $(D)$</td><td>$d_{w}$</td><td>$d_{a}$</td><td>$d_{ν}$</td><td>$d_{g}$</td></tr><tr><td>768</td><td>64</td><td>64</td><td>32</td><td>128</td></tr><tr><td>1024</td><td>64</td><td>64</td><td>32</td><td>128</td></tr><tr><td>2048</td><td>96</td><td>96</td><td>64</td><td>256</td></tr><tr><td>2560</td><td>96</td><td>96</td><td>64</td><td>320</td></tr><tr><td>4096</td><td>128</td><td>128</td><td>96</td><td>480</td></tr><tr><td>6144</td><td>128</td><td>128</td><td>96</td><td>640</td></tr></table>"
+      },
+      {
+        "category_type": "table_caption",
+        "poly": [
+          328.95,
+          623.9200000000001,
+          1360.0,
+          623.9200000000001,
+          1360.0,
+          656.92,
+          328.95,
+          656.92
+        ],
+        "ignore": false,
+        "order": 2,
+        "anno_id": "box_id_2",
+        "attribute": {},
+        "text": "Table 16: Suggested Intermediate Dimensions for the low-rank MLPs for RWKV-7 models"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          293.6550129846337,
+          689.92,
+          1262.93,
+          689.92,
+          1262.93,
+          722.92,
+          293.6550129846337,
+          722.92
+        ],
+        "ignore": false,
+        "order": 3,
+        "anno_id": "box_id_3",
+        "attribute": {},
+        "text": "The number of parameters for all RWKV-7 models can be computed by the formula:"
+      },
+      {
+        "category_type": "equation_isolated",
+        "poly": [
+          412.08000000000004,
+          733.9200000000001,
+          1404.5062050749048,
+          733.9200000000001,
+          1404.5062050749048,
+          775.0600000000001,
+          412.08000000000004,
+          775.0600000000001
+        ],
+        "ignore": false,
+        "order": 4,
+        "anno_id": "box_id_4",
+        "attribute": {},
+        "latex": "$$\\# \\left( \\text{Params}\\right)  = {2DV} + {4D} + {LD}\\left( {{12D} + 2\\left( {{d}_{w} + {d}_{a} + {d}_{v} + {d}_{g}}\\right)  + {19}}\\right)  - \\left( {{2D}{d}_{v} + D}\\right) \\text{.} \\tag{26}$$"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          295.97,
+          801.02,
+          383.01,
+          801.02,
+          383.01,
+          832.04,
+          295.97,
+          832.04
+        ],
+        "ignore": false,
+        "order": 5,
+        "anno_id": "box_id_5",
+        "attribute": {},
+        "text": "Where:"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          371.9599999999999,
+          922.0800292634674,
+          1403.0099999999998,
+          922.0800292634674,
+          1403.0099999999998,
+          979.8521109207188,
+          371.9599999999999,
+          979.8521109207188
+        ],
+        "ignore": false,
+        "order": 7,
+        "anno_id": "box_id_6",
+        "attribute": {},
+        "text": "- The weights of each layer yield $ D\\left( {{12D} + 2\\left( {{d}_{w} + {d}_{a} + {d}_{v} + {d}_{g}}\\right) + {19}}\\right) $ parameters, except for the first layer;"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          296.99,
+          1076.02,
+          1405.05,
+          1076.02,
+          1405.05,
+          1259.94,
+          296.99,
+          1259.94
+        ],
+        "ignore": false,
+        "order": 9,
+        "anno_id": "box_id_7",
+        "attribute": {},
+        "text": "Parameter Initializations Proper parameter initialization is crucial for ensuring training stability and achieving optimal performance for language models. RWKV-7 employs a carefully designed initialization strategy tailored to its architecture. The detailed initialization scheme is beyond the scope here but can be found in the official code repository. We emphasize that using the recommended initialization is essential for replicating the results in this paper. Deviations from the prescribed initialization may lead to performance degradation."
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          298.01,
+          1292.94,
+          1406.07,
+          1292.94,
+          1406.07,
+          1508.1,
+          298.01,
+          1508.1
+        ],
+        "ignore": false,
+        "order": 10,
+        "anno_id": "box_id_8",
+        "attribute": {},
+        "text": "Dataset Loading The dataset used for pretraining consists of 3119194079123 tokens stored on disk, which are memory-mapped using the mmap mechanism. To ensure a diverse and pseudorandom sampling of training sequences, we employ a custom data loading strategy based on a mathematical function with desirable properties. Specifically, we utilize a pseudo-random number generator defined by the function $ f\\left( x\\right) = a{x}^{3} $ over the finite field $ \\mathbb{Z}/p\\mathbb{Z} $, where $ p $ is a prime number of the form $ {3n} + 2 $. This function is chosen because it is a bijection (full map) in $\\mathbb{Z}/p\\mathbb{Z}$, ensuring that all possible indices are eventually accessed exactly once within one epoch."
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          293.93,
+          1521.08,
+          1404.03,
+          1521.08,
+          1404.03,
+          1585.98,
+          293.93,
+          1585.98
+        ],
+        "ignore": false,
+        "order": 11,
+        "anno_id": "box_id_9",
+        "attribute": {},
+        "text": "For pretraining with a sequence length of 4096, the relative address of the $ k $-th sample is determined as:"
+      },
+      {
+        "category_type": "equation_isolated",
+        "poly": [
+          418.0300000000001,
+          1596.1,
+          1285.0510410508932,
+          1596.1,
+          1285.0510410508932,
+          1633.9399999999998,
+          418.0300000000001,
+          1633.9399999999998
+        ],
+        "ignore": false,
+        "order": 12,
+        "anno_id": "box_id_10",
+        "attribute": {},
+        "latex": "$$\\text{start_address}=4096\\cdot(ak^3\\pmod p,\\;\\text{end_address}=\\text{start_address}+4097.$$"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          298.01,
+          1646.92,
+          1405.05,
+          1646.92,
+          1405.05,
+          1739.98,
+          298.01,
+          1739.98
+        ],
+        "ignore": false,
+        "order": 13,
+        "anno_id": "box_id_11",
+        "attribute": {},
+        "text": "Here, $ p $ is chosen as the largest prime of the form $ {3n} + 2 $ smaller than [dataset_size/4096], yielding $ p = {761521949} $. The parameter $ a $ is set to an integer close to $ {0.618p} $ that ensures good mixing properties of the generated addresses."
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          298.01,
+          1754.06,
+          1404.03,
+          1754.06,
+          1404.03,
+          1879.9,
+          298.01,
+          1879.9
+        ],
+        "ignore": false,
+        "order": 14,
+        "anno_id": "box_id_12",
+        "attribute": {},
+        "text": "This approach guarantees both simple calculation and uniform access to the dataset while maintaining pseudo-randomness. By leveraging the properties of modular arithmetic and cubic mappings, we achieve a balance between computational efficiency and data diversity during pretraining."
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          299.03000000000003,
+          1910.04,
+          1403.01,
+          1910.04,
+          1403.01,
+          2035.0,
+          299.03000000000003,
+          2035.0
+        ],
+        "ignore": false,
+        "order": 15,
+        "anno_id": "box_id_13",
+        "attribute": {},
+        "text": "Training Details All RWKV-7 models were trained under bfloat 16 format on nodes of $ 8 \\times \\text{Nvidia H800}$. The AdamW optimizer was configured with $ {\\beta }_{1} = {0.9},{\\beta }_{2} = {0.99},\\epsilon = 1 \\times {10}^{-{18}} $, and a weight decay of 0.1 applied exclusively to linear layers and embedding weights. The choice of such a small $ \\epsilon $ value is motivated by the theory proposed by Molybog et al. (2023), which suggests that"
+      },
+      {
+        "category_type": "page_number",
+        "poly": [
+          835.0400000000001,
+          2090,
+          863.9399999999999,
+          2090,
+          863.9399999999999,
+          2112,
+          835.0400000000001,
+          2112
+        ],
+        "ignore": false,
+        "order": 16,
+        "anno_id": "box_id_14",
+        "attribute": {},
+        "text": "40"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          372.0831655059742,
+          859.9638542320301,
+          1402.9189768106758,
+          859.9638542320301,
+          1402.9189768106758,
+          922.0800292634675,
+          372.0831655059742,
+          922.0800292634675
+        ],
+        "ignore": false,
+        "order": 6,
+        "anno_id": "box-lfq8ygbh",
+        "attribute": {},
+        "text": "- The weights of the embeddings and head, and the Layernorms beside them, yield $2DV+4D$ parameters;"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          372.51945720907133,
+          983.0955137661879,
+          1404.8063724037365,
+          983.0955137661879,
+          1404.8063724037365,
+          1041.8122201346287,
+          372.51945720907133,
+          1041.8122201346287
+        ],
+        "ignore": false,
+        "order": 8,
+        "anno_id": "box-3gr5v2p3",
+        "attribute": {},
+        "text": "- The low-rank MLP for the value residual is not present in the first layer, subtracting $( 2 D d _ {v } + D )$ parameters."
+      },
+      {
+        "category_type": "list_group",
+        "poly": [
+          367.11446191388416,
+          855.2346845744758,
+          1409.5714940053567,
+          855.2346845744758,
+          1409.5714940053567,
+          1046.7704322807003,
+          367.11446191388416,
+          1046.7704322807003
+        ],
+        "ignore": false,
+        "order": null,
+        "anno_id": "box-wfkrnaa1",
+        "attribute": {},
+        "text": ""
+      }
+    ],
+    "page_info": {
+      "page_no": 0,
+      "height": 2200,
+      "width": 1700,
+      "image_path": "page-f9583127-1277-4424-be9d-35430e0aedd6.png",
+      "page_attribute": {
+        "data_source": "academic_literature",
+        "language": "english",
+        "layout": "single_column",
+        "special_issue": [],
+        "subset": "equation_hard"
+      }
+    },
+    "extra": {
+      "relation": []
+    }
+  },
+  {
+    "layout_dets": [
+      {
+        "category_type": "table_caption",
+        "poly": [
+          298.03589999999997,
+          344.06690000000003,
+          927.9942,
+          344.06690000000003,
+          927.9942,
+          381.9587,
+          298.03589999999997,
+          381.9587
+        ],
+        "ignore": false,
+        "order": 2,
+        "anno_id": "box_id_0",
+        "attribute": {},
+        "text": "Table 5.8 End-point Constraints for a Cubic Spline"
+      },
+      {
+        "category_type": "table",
+        "poly": [
+          282.0018,
+          402.0741,
+          1315.9533000000001,
+          402.0741,
+          1315.9533000000001,
+          1172.0729,
+          282.0018,
+          1172.0729
+        ],
+        "ignore": false,
+        "order": 3,
+        "anno_id": "box_id_1",
+        "attribute": {},
+        "html": "<table><tr><td>Description of the strategy</td><td>Equations involving $m_{0}$ and $m_{N}$</td></tr><tr><td>(i) Clamped cubic spline: specify $S^{\\prime }(x_{0})$, $S^{\\prime }(x_{n})$(the “best choice\" if the derivatives are known)</td><td>$m_{0}=\\frac {3}{h_{0}}(d_{0}\\quad S^{\\prime }(x_{0}))\\frac {m_{1}}{2}$$m_{N}=\\frac{3}{h_{N\\quad1}}(S^{\\prime}(x_{N})\\quad d_{N\\quad1})\\quad\\frac{m_{N\\quad1}}{2}$</td></tr><tr><td>(ii) Natural cubic spline(a\"relaxed curve\")</td><td>$m_{0}=0,m_{N}=0$</td></tr><tr><td>(iii) Extrapolate $S^{\\prime \\prime }(x)$to the<br/>endpoints</td><td>$m_{0}=m_{1}\\quad\\frac {h_{0}(m_{2}\\quad m_{1})}{h_{1}},$$m_{N}=m_{N\\quad1}+\\frac{h_{N\\quad1}(m_{N\\quad1}\\quad m_{N\\quad2})}{h_{N\\quad2}}$</td></tr><tr><td>(iv) $S^{\\prime \\prime }(x)$ is constant near the<br/>endpoints</td><td>$m_{0}=m_{1},m_{N}=m_{N\\quad1}$</td></tr><tr><td>(v) Specify $S^{\\prime \\prime }(X)$ at each<br/>endpoint</td><td>$m_{0}=S^{\\prime \\prime }(x_{0}),m_{N}=S^{\\prime \\prime }(x_{N})$</td></tr></table>"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          248.94180000000003,
+          1390.0677,
+          1351.9886999999999,
+          1390.0677,
+          1351.9886999999999,
+          1467.9564,
+          248.94180000000003,
+          1467.9564
+        ],
+        "ignore": false,
+        "order": 4,
+        "anno_id": "box_id_2",
+        "attribute": {},
+        "text": "Equations (13) and (14) with (12) used for $ k = 2,3,\\ldots ,N\\quad2 $ form $ N\\quad1 $ linear equations involving the coefficients $ {m}_{1},{m}_{2},\\ldots ,{m}_{N \\quad1} $."
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          252.08249999999998,
+          1470.0614999999998,
+          1354.9641,
+          1470.0614999999998,
+          1354.9641,
+          1584.9063999999998,
+          252.08249999999998,
+          1584.9063999999998
+        ],
+        "ignore": false,
+        "order": 5,
+        "anno_id": "box_id_3",
+        "attribute": {},
+        "text": "Regardless of the particular strategy chosen in Table 5.8, we can rewrite equations 1 and $ N\\quad1 $ in (12) and obtain a tridiagonal linear system of the form $ \\pmb{{HM}} = \\pmb{V} $, which involves $ {m}_{1},{m}_{2},\\ldots ,{m}_{N \\quad1} $ :"
+      },
+      {
+        "category_type": "equation_isolated",
+        "poly": [
+          252.73623919352463,
+          1626.0728000000004,
+          1213.9632000000001,
+          1626.0728000000004,
+          1213.9632000000001,
+          1859.9728000000002,
+          252.73623919352463,
+          1859.9728000000002
+        ],
+        "ignore": false,
+        "order": 6,
+        "anno_id": "box_id_4",
+        "attribute": {},
+        "latex": "$$\\left\\lbrack  \\begin{array}{ccccccc} {b}_{1} & {c}_{1} & & & & & & \\\\  {a}_{1} & {b}_{2} & {c}_{2} & & & & & \\\\   & &  \\ddots  & & & & & \\\\   & & & {a}_{N\\quad3} & {b}_{N\\quad 2}  & {c}_{N\\quad 2} \\\\   & & & & {a}_{N\\quad2} & {b}_{N\\quad1} \\end{array}\\right\\rbrack  \\left\\lbrack  \\begin{array}{c} {m}_{1} \\\\  {m}_{2} \\\\  \\vdots \\\\  {m}_{N\\quad2} \\\\  {m}_{N\\quad1} \\\\  \\end{array}\\right\\rbrack   = \\left\\lbrack  \\begin{array}{cc} {v}_{1} \\\\  {v}_{2} \\\\  \\vdots \\\\  {v}_{N\\quad2} \\\\  {v}_{N\\quad1}  \\\\  \\end{array}\\right\\rbrack  .\\tag{15}$$"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          250.9254,
+          1899.9697,
+          1355.9559000000002,
+          1899.9697,
+          1355.9559000000002,
+          1980.8990999999999,
+          250.9254,
+          1980.8990999999999
+        ],
+        "ignore": false,
+        "order": 7,
+        "anno_id": "box_id_5",
+        "attribute": {},
+        "text": "The linear system in (15) is strictly diagonally dominant and has a unique solution (see Chapter 3 for details). After the coefficients $\\{ {m}_{k}\\} $ are determined, the spline"
+      },
+      {
+        "category_type": "page_number",
+        "poly": [
+          240.0156,
+          254.95099999999996,
+          290.15793119099254,
+          254.95099999999996,
+          290.15793119099254,
+          287.93089999999995,
+          240.0156,
+          287.93089999999995
+        ],
+        "ignore": false,
+        "order": 0,
+        "anno_id": "box_id_6",
+        "attribute": {},
+        "text": "284"
+      },
+      {
+        "category_type": "header",
+        "poly": [
+          314.98800290012196,
+          256.8751831225091,
+          646.055568741813,
+          256.8751831225091,
+          646.055568741813,
+          283.0846890232481,
+          314.98800290012196,
+          283.0846890232481
+        ],
+        "ignore": false,
+        "order": 1,
+        "anno_id": "box-fth4536l",
+        "attribute": {},
+        "text": "CHAP.5 CURVE FITTING"
+      }
+    ],
+    "page_info": {
+      "page_no": 0,
+      "height": 2339,
+      "width": 1653,
+      "image_path": "page-573c437e-c309-4483-a038-ef2f440b104a.png",
+      "page_attribute": {
+        "data_source": "book",
+        "language": "english",
+        "layout": "single_column",
+        "special_issue": [],
+        "subset": "equation_hard"
+      }
+    },
+    "extra": {
+      "relation": []
+    }
+  },
+  {
+    "layout_dets": [
+      {
+        "category_type": "title",
+        "poly": [
+          627.0314,
+          210.0422,
+          1019.0294,
+          210.0422,
+          1019.0294,
+          250.9747,
+          627.0314,
+          250.9747
+        ],
+        "ignore": false,
+        "order": 0,
+        "anno_id": "box_id_0",
+        "attribute": {},
+        "text": "### 1.1.9【因式分解双换元类型】"
+      },
+      {
+        "category_type": "title",
+        "poly": [
+          248.927,
+          279.0427,
+          410.02660000000003,
+          279.0427,
+          410.02660000000003,
+          313.89380000000006,
+          248.927,
+          313.89380000000006
+        ],
+        "ignore": false,
+        "order": 1,
+        "anno_id": "box_id_1",
+        "attribute": {},
+        "text": "# $\\blacktriangle$适用题型："
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          244.9574,
+          341.0262,
+          1350.9872,
+          341.0262,
+          1350.9872,
+          381.9587,
+          244.9574,
+          381.9587
+        ],
+        "ignore": false,
+        "order": 2,
+        "anno_id": "box_id_2",
+        "attribute": {},
+        "text": "双变量条件等式能因式分解的时候可以考虑双换元。整理成更容易利用不等式的结构；"
+      },
+      {
+        "category_type": "title",
+        "poly": [
+          247.93460000000002,
+          409.0911,
+          411.019,
+          409.0911,
+          411.019,
+          443.9422,
+          247.93460000000002,
+          443.9422
+        ],
+        "ignore": false,
+        "order": 3,
+        "anno_id": "box_id_3",
+        "attribute": {},
+        "text": "# $\\blacktriangle$方法原理："
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          242.6220865759903,
+          457.97619999999995,
+          972.0557999999999,
+          457.97619999999995,
+          972.0557999999999,
+          969.9833,
+          242.6220865759903,
+          969.9833
+        ],
+        "ignore": false,
+        "order": 4,
+        "anno_id": "box_id_4",
+        "attribute": {},
+        "text": "比如：$\\left\\{  \\begin{array}{l} {a}^{2} - {b}^{2} = 1 \\Rightarrow  \\left( {a + b}\\right) \\left( {a - b}\\right)  = 1 \\Rightarrow  \\left\\{  \\begin{array}{l} a + b = m \\\\  a - b = \\frac{1}{m} \\end{array}\\right. \\\\   \\Rightarrow  \\left\\{  \\begin{array}{l} a = \\frac{1}{2}\\left( {m + \\frac{1}{m}}\\right) \\\\  b = \\frac{1}{2}\\left( {m - \\frac{1}{m}}\\right)  \\end{array}\\right. \\\\   \\Rightarrow  {2a} + b = \\left( {m + \\frac{1}{m}}\\right)  + \\frac{1}{2}\\left( {m - \\frac{1}{m}}\\right)  = \\frac{3m}{2} + \\frac{1}{2m} \\end{array}\\right. $"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          246.94219999999999,
+          985.8885,
+          1408.0502,
+          985.8885,
+          1408.0502,
+          1146.11,
+          246.94219999999999,
+          1146.11
+        ],
+        "ignore": false,
+        "order": 5,
+        "anno_id": "box_id_5",
+        "attribute": {},
+        "text": "关键在于观察条件等式能否因式分解,除了常见的初中所学的因式分解,还有一些可以配凑分解,比如 $\\left\\{ \\begin{array} { l l } { a b + a + b = 3 \\Rightarrow a b + a + b = a { \\left( \\ b + 1 \\right) } + b + 1 - 1 } \\\\ { = { \\left( a + 1 \\right) } { \\left( b + 1 \\right) } - 1 = 3 \\Rightarrow { \\left( \\ a + 1 \\right) } { \\left( \\ b + 1 \\right) } = 4 } \\end{array} \\right.$"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          240.9878,
+          1177.9204000000002,
+          1402.9227999999998,
+          1177.9204000000002,
+          1402.9227999999998,
+          1221.8935999999999,
+          240.9878,
+          1221.8935999999999
+        ],
+        "ignore": false,
+        "order": 6,
+        "anno_id": "box_id_6",
+        "attribute": {},
+        "text": "例题1.（辽宁·高二期末）若实数${ a , b }$满足$4 a ^ { 2 } - b ^ { 2 } = 4$，则$5 a ^ { 2 } + 2 a b$的最小值为____."
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          245.9498,
+          1373.9286000000002,
+          1397.9607999999998,
+          1373.9286000000002,
+          1397.9607999999998,
+          1481.9904000000001,
+          245.9498,
+          1481.9904000000001
+        ],
+        "ignore": false,
+        "order": 7,
+        "anno_id": "box_id_7",
+        "attribute": {},
+        "text": "例题2．（全国·高一单元测试）已知正实数$a , ~ b$满足$a b + a + b = 3$，则$2 a + b$的最小值为____."
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          245.9498,
+          1634.0254,
+          1409.0426,
+          1634.0254,
+          1409.0426,
+          1764.0738,
+          245.9498,
+          1764.0738
+        ],
+        "ignore": false,
+        "order": 8,
+        "anno_id": "box_id_8",
+        "attribute": {},
+        "text": "例题3．（山东德州·高二期末）若$a > 2 , b > - 1$，且满足$a b + a - 2 b = 6$，则$\\frac { 1 } { a - 2 } + \\frac { 9 } { b + 1 }$的最小值为____."
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          245.9498,
+          1911.8986,
+          1409.0426,
+          1911.8986,
+          1409.0426,
+          2045.9233000000002,
+          245.9498,
+          2045.9233000000002
+        ],
+        "ignore": false,
+        "order": 9,
+        "anno_id": "box_id_9",
+        "attribute": {},
+        "text": "练习1．（全国·高一单元测试）已知正实数$x , \\ y$满足：$x ^ { 2 } + x y + \\frac { 2 x } { y } = 2$，则$3 x + 2 y + { \\frac { 2 } { y } }$的最小值为____."
+      },
+      {
+        "category_type": "page_number",
+        "poly": [
+          811.9486,
+          2174.1005,
+          841.059,
+          2174.1005,
+          841.059,
+          2197.9583,
+          811.9486,
+          2197.9583
+        ],
+        "ignore": false,
+        "order": 10,
+        "anno_id": "box_id_10",
+        "attribute": {},
+        "text": "24"
+      }
+    ],
+    "page_info": {
+      "page_no": 0,
+      "height": 2339,
+      "width": 1654,
+      "image_path": "page-062fc21c-6b9c-40be-8d0e-7a617509a9bc.png",
+      "page_attribute": {
+        "data_source": "book",
+        "language": "simplified_chinese",
+        "layout": "single_column",
+        "special_issue": [],
+        "subset": "equation_hard"
+      }
+    },
+    "extra": {
+      "relation": []
+    }
+  },
+  {
+    "layout_dets": [
+      {
+        "category_type": "title",
+        "poly": [
+          652.9992,
+          212.2567567053141,
+          993.0616000000001,
+          212.2567567053141,
+          993.0616000000001,
+          253.0798,
+          652.9992,
+          253.0798
+        ],
+        "ignore": false,
+        "order": 0,
+        "anno_id": "box_id_0",
+        "attribute": {},
+        "text": "#### 1.2.1.4【待定系数类型】"
+      },
+      {
+        "category_type": "title",
+        "poly": [
+          248.927,
+          279.0427,
+          410.02660000000003,
+          279.0427,
+          410.02660000000003,
+          313.89380000000006,
+          248.927,
+          313.89380000000006
+        ],
+        "ignore": false,
+        "order": 1,
+        "anno_id": "box_id_1",
+        "attribute": {},
+        "text": "# $\\blacktriangle$适用题型："
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          244.9574,
+          334.0092,
+          1398.9532,
+          334.0092,
+          1398.9532,
+          500.0782,
+          244.9574,
+          500.0782
+        ],
+        "ignore": false,
+        "order": 2,
+        "anno_id": "box_id_2",
+        "attribute": {},
+        "text": "知道可以配凑出${ ( } { \\frac { m } { a } } + { \\frac { n } { b } } { ) } {  ( } p a + q b {  ) }$结构，但是不能直接观察出系数的不等式题型；如：已知正实数$x$、$y$满足${ \\frac { 1 } { x + 3 y } } + { \\frac { 1 } { 2 x + y } } = 1$，则$x+y$的最小值为____·"
+      },
+      {
+        "category_type": "title",
+        "poly": [
+          248.927,
+          516.919,
+          410.02660000000003,
+          516.919,
+          410.02660000000003,
+          552.9396,
+          248.927,
+          552.9396
+        ],
+        "ignore": false,
+        "order": 3,
+        "anno_id": "box_id_3",
+        "attribute": {},
+        "text": "# $\\blacktriangle$方法原理："
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          244.957441687833,
+          566.5520943914989,
+          1077.0970598049466,
+          566.5520943914989,
+          1077.0970598049466,
+          608.78592016245,
+          244.957441687833,
+          608.78592016245
+        ],
+        "ignore": false,
+        "order": 4,
+        "anno_id": "box_id_4",
+        "attribute": {},
+        "text": "1. 如果可以直接看出或者简单尝试可知系数关系的，则直接处理"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          245.9498,
+          1027.9905,
+          793.92,
+          1027.9905,
+          793.92,
+          1067.0518,
+          245.9498,
+          1067.0518
+        ],
+        "ignore": false,
+        "order": 7,
+        "anno_id": "box_id_5",
+        "attribute": {},
+        "text": "2. 不易看出系数关系的,则待定系数处理:"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          245.9498,
+          1086.9333,
+          1088.0012000000002,
+          1086.9333,
+          1088.0012000000002,
+          1163.8863999999999,
+          245.9498,
+          1163.8863999999999
+        ],
+        "ignore": false,
+        "order": 8,
+        "anno_id": "box_id_6",
+        "attribute": {},
+        "text": "比如: $x > 0 , y > 0 , 3 x + y = 1$ ,则 ${ \\frac { 1 } { 5 x + y } } + { \\frac { 1 } { 5 x + 3 y } }$ 的最小值为____."
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          245.9498,
+          1184.0018,
+          1148.0414,
+          1184.0018,
+          1148.0414,
+          1587.0115,
+          245.9498,
+          1587.0115
+        ],
+        "ignore": false,
+        "order": 9,
+        "anno_id": "box_id_7",
+        "attribute": {},
+        "text": "变形: $\\begin{cases}\n 3x+y=m\\left(5x+y\\right)+n\\left(5x+3y\\right)\\Rightarrow\n\\begin{cases}\n5m+5n=3 \\\\\nm+3n=1 \n\\end{cases}\\Rightarrow\n\\begin{cases}\nm=\\frac{2}{5} \\\\\nn=\\frac{1}{5} \n\\end{cases} \\\\\n\\Rightarrow\\frac{1}{5x+y}+\\frac{1}{5x+3y}=\\left(\\frac{1}{5x+y}+\\frac{1}{5x+3y}\\right)\\left[\\frac{2}{5}\\left(5x+y\\right)+\\frac{1}{5}\\left(5x+3y\\right)\\right] \\\\\n \\text{此时建议结合换元处理结构更简单}\n\\begin{cases}\n5x+y=m \\\\\n5x+3y=n\n\\end{cases}\n\\end{cases}$"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          238.0106,
+          1615.0795,
+          1408.0502,
+          1615.0795,
+          1408.0502,
+          1692.0326,
+          238.0106,
+          1692.0326
+        ],
+        "ignore": false,
+        "order": 10,
+        "anno_id": "box_id_8",
+        "attribute": {},
+        "text": "例题1.（全国·高三专题练习）已知正数$ { x , y }$满足$\\frac { 2 } { x + 3 y } + \\frac { 1 } { 3 x + y } = 1$则，$x + y$的最小值（ ）"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          242.88758705190958,
+          1710.9785000000002,
+          398.40310996674407,
+          1710.9785000000002,
+          398.40310996674407,
+          1808.047,
+          242.88758705190958,
+          1808.047
+        ],
+        "ignore": false,
+        "order": 11,
+        "anno_id": "box_id_9",
+        "attribute": {},
+        "text": "A. $ \\frac{3 + 2\\sqrt{2}}{4} $"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          244.9574,
+          1878.9187,
+          1397.9607999999998,
+          1878.9187,
+          1397.9607999999998,
+          2012.9434,
+          244.9574,
+          2012.9434
+        ],
+        "ignore": false,
+        "order": 15,
+        "anno_id": "box_id_10",
+        "attribute": {},
+        "text": "例题2.（全国·高三专题练习）已知正实数$x,y$满足$4 x + 3 y = 4$，则$\\frac { 1 } { 2 x + 1 } + \\frac { 1 } { 3 y + 2 }$的最小值为（ ）"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          243.965,
+          2040.0757999999996,
+          385.3932581266164,
+          2040.0757999999996,
+          385.3932581266164,
+          2136.9103999999998,
+          243.965,
+          2136.9103999999998
+        ],
+        "ignore": false,
+        "order": 16,
+        "anno_id": "box_id_11",
+        "attribute": {},
+        "text": "A. $ \\frac{3}{8} + \\frac{\\sqrt{2}}{4} $"
+      },
+      {
+        "category_type": "page_number",
+        "poly": [
+          810.9562,
+          2172.931,
+          841.059,
+          2172.931,
+          841.059,
+          2198.8939,
+          810.9562,
+          2198.8939
+        ],
+        "ignore": false,
+        "order": 20,
+        "anno_id": "box_id_12",
+        "attribute": {},
+        "text": "41"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          247.41891128666475,
+          625.8638794974197,
+          1072.8937568525353,
+          625.8638794974197,
+          1072.8937568525353,
+          703.2521578309576,
+          247.41891128666475,
+          703.2521578309576
+        ],
+        "ignore": false,
+        "order": 5,
+        "anno_id": "box-16ay82x0",
+        "attribute": {},
+        "text": "比如：$x>0,y>0,x+2y=1,$则$\\frac{1}{4x+3}+\\frac{1}{2y+1}$的最小值为_____."
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          241.34924277199596,
+          719.9437030580073,
+          1103.2420607644076,
+          719.9437030580073,
+          1103.2420607644076,
+          1008.2529347483393,
+          241.34924277199596,
+          1008.2529347483393
+        ],
+        "ignore": false,
+        "order": 6,
+        "anno_id": "box-kdc2e8xj",
+        "attribute": {},
+        "text": "变形：$\\begin{cases}\nx+2y=\\frac{1}{4}\\left(4x+3\\right)+\\left(2y+1\\right)-\\frac{7}{4}=1\\Longrightarrow\\left(4x+3\\right)+4\\left(2y+5\\right)=11 \\\\\n\\frac{1}{4x+3}+\\frac{1}{2y+5}=\\frac{1}{11}\\left(\\frac{1}{4x+3}+\\frac{1}{2y+5}\\right)\\left[\\left(4x+3\\right)+4\\left(2y+5\\right)\\right] \\\\\n\\text{此时建议结合换元处理结构更简单}\\begin{cases}4x+3=m\\\\\n2y+1=n\n\\end{cases}\n\\end{cases}$"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          533.0289929443029,
+          1712.5233437023564,
+          673.4841240377012,
+          1712.5233437023564,
+          673.4841240377012,
+          1809.086260889304,
+          533.0289929443029,
+          1809.086260889304
+        ],
+        "ignore": false,
+        "order": 12,
+        "anno_id": "box-httv6j0p",
+        "attribute": {},
+        "text": "B. $ \\frac{3 + \\sqrt{2}}{4} $"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          819.9876332226528,
+          1715.027686679832,
+          971.8810079956636,
+          1715.027686679832,
+          971.8810079956636,
+          1801.8239598977032,
+          819.9876332226528,
+          1801.8239598977032
+        ],
+        "ignore": false,
+        "order": 13,
+        "anno_id": "box-xkj87tiu",
+        "attribute": {},
+        "text": "C. $ \\frac{3 + 2\\sqrt{2}}{8} $"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          1111.0679961593103,
+          1715.9988194215005,
+          1249.6081723355044,
+          1715.9988194215005,
+          1249.6081723355044,
+          1809.4716919377797,
+          1111.0679961593103,
+          1809.4716919377797
+        ],
+        "ignore": false,
+        "order": 14,
+        "anno_id": "box-c3zzcosb",
+        "attribute": {},
+        "text": "D. $ \\frac{3 + \\sqrt{2}}{8} $"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          534.1152986200367,
+          2047.029297985377,
+          675.4930277754167,
+          2047.029297985377,
+          675.4930277754167,
+          2133.324779744649,
+          534.1152986200367,
+          2133.324779744649
+        ],
+        "ignore": false,
+        "order": 17,
+        "anno_id": "box-45pn9u6i",
+        "attribute": {},
+        "text": "B. $ \\frac{1}{2} + \\frac{\\sqrt{2}}{3} $"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          826.0511378131531,
+          2045.1932142292999,
+          965.5927832124557,
+          2045.1932142292999,
+          965.5927832124557,
+          2142.505198525035,
+          826.0511378131531,
+          2142.505198525035
+        ],
+        "ignore": false,
+        "order": 18,
+        "anno_id": "box-o39v1arm",
+        "attribute": {},
+        "text": "C. $ \\frac{1}{2} + \\frac{\\sqrt{2}}{4} $"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          1110.6427177780204,
+          2047.029297985377,
+          1253.8564927914476,
+          2047.029297985377,
+          1253.8564927914476,
+          2133.324779744649,
+          1110.6427177780204,
+          2133.324779744649
+        ],
+        "ignore": false,
+        "order": 19,
+        "anno_id": "box-vqlqxbe9",
+        "attribute": {},
+        "text": "D. $ \\frac{1}{2} + \\frac{\\sqrt{2}}{2} $"
+      }
+    ],
+    "page_info": {
+      "page_no": 0,
+      "height": 2339,
+      "width": 1654,
+      "image_path": "page-52875b3d-f4dc-44c2-a9bb-514b0763833d.png",
+      "page_attribute": {
+        "data_source": "colorful_textbook",
+        "language": "simplified_chinese",
+        "layout": "other_layout",
+        "special_issue": [],
+        "subset": "equation_hard"
+      }
+    },
+    "extra": {
+      "relation": []
+    }
+  },
+  {
+    "layout_dets": [
+      {
+        "category_type": "text_block",
+        "poly": [
+          246.94219999999999,
+          209.1066,
+          989.9190000000001,
+          209.1066,
+          989.9190000000001,
+          707.0797,
+          246.94219999999999,
+          707.0797
+        ],
+        "ignore": false,
+        "order": 0,
+        "anno_id": "box_id_0",
+        "attribute": {},
+        "text": "万能公式：$\\begin{cases}\n & \\sin x=\\frac{\\sin x}{1}=\\frac{2\\sin\\frac{x}{2}\\cos\\frac{x}{2}}{\\sin^{2}\\frac{x}{2}+\\cos^{2}\\frac{x}{2}}=\\frac{2\\tan\\frac{x}{2}}{1+\\tan^{2}\\frac{x}{2}} \\\\\n & \\cos x=\\frac{\\cos x}{1}=\\frac{\\cos^{2}\\frac{x}{2}-\\sin^{2}\\frac{x}{2}}{\\cos^{2}\\frac{x}{2}+\\sin^{2}\\frac{x}{2}}=\\frac{1-\\tan^{2}\\frac{x}{2}}{1+\\tan^{2}\\frac{x}{2}} \\\\\n & \\tan x=\\frac{2\\tan\\frac{x}{2}}{1-\\tan^{2}\\frac{x}{2}}\n\\end{cases}$"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          244.9574,
+          718.073,
+          883.0706,
+          718.073,
+          883.0706,
+          759.0055,
+          244.9574,
+          759.0055
+        ],
+        "ignore": false,
+        "order": 1,
+        "anno_id": "box_id_1",
+        "attribute": {},
+        "text": "4. 含三角的分式，如果异名，还可考虑万能公式："
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          246.94219999999999,
+          784.0328,
+          783.0036,
+          784.0328,
+          783.0036,
+          857.9452,
+          246.94219999999999,
+          857.9452
+        ],
+        "ignore": false,
+        "order": 2,
+        "anno_id": "box_id_2",
+        "attribute": {},
+        "text": "比如：求 $f (x)= { \\frac { 1 + \\sin x } { 2 - 3 \\cos x } } (x\\in \\mathbf { R }  ) $ 的值域："
+      },
+      {
+        "category_type": "equation_isolated",
+        "poly": [
+          245.78057173308366,
+          893.0301999999999,
+          1266.964,
+          893.0301999999999,
+          1266.964,
+          1324.478442304551,
+          245.78057173308366,
+          1324.478442304551
+        ],
+        "ignore": false,
+        "order": 3,
+        "anno_id": "box_id_3",
+        "attribute": {},
+        "latex": "$$\\left\\{\\begin{array}{l}\\left(1\\right)\\text{ 令 }\\tan\\frac{x}{2}=t\\Rightarrow\\left\\{{\\begin{array}{l}\\sin x=\\frac{2t}{1 + {t}^{2}}\\\\ \\cos x=\\frac{1 - {t}^{2}}{1 + {t}^{2}}\\neq\\frac{2}{3}\\end{array}\\Rightarrow\\frac{1 - \\sin x}{2 - 3\\cos x}=\\frac{1-\\frac{2t}{1 + {t}^{2}}}{2-3 \\cdot \\frac{1 - {t}^{2}}{1 + {t}^{2}}}=\\frac{1 + t^2 - {2t}}{5{t}^{2} - 1}\\left({5{t}^{2} \\neq1}\\right)}\\right.\\\\ \\left(2\\right)\\text{ 令 }\\frac{1+{t}^{2} - {2t}}{5{t}^{2} - 1}=y\\Rightarrow\\left\\{\\begin{array}{l}\\left({{5y} - 1}\\right){t}^2+{2t}-y-1=0\\\\ \\text{ 判别式法 }\\end{array}\\right.\\\\ \\Rightarrow\\left\\{{\\begin{array}{l} {5y} - 1 - 0\\text{ 时,}t = \\frac{3}{5}\\text{ 符合题意 } \\\\ 5y - 1 \\neq0\\text{ 时,}\\Delta= 4 + 4\\left( {{5y} - 1}\\right) \\left( {y + 1}\\right) \\geq0 \\end{array} \\Rightarrow y \\geq0\\text{ 或 }y \\leq\\frac{4}{5}}\\right.\\end{array}\\right.$$"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          241.98020000000002,
+          1337.908,
+          1089.986,
+          1337.908,
+          1089.986,
+          1380.9456,
+          241.98020000000002,
+          1380.9456
+        ],
+        "ignore": false,
+        "order": 4,
+        "anno_id": "box_id_4",
+        "attribute": {},
+        "text": "5. 类似$f (x)= 2 \\sin x + \\sin 2 x$这种结构，也可万能公式后求导处理；"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          242.9726,
+          1470.0614999999998,
+          1253.0704,
+          1470.0614999999998,
+          1253.0704,
+          1544.9095,
+          242.9726,
+          1544.9095
+        ],
+        "ignore": false,
+        "order": 5,
+        "anno_id": "box_id_5",
+        "attribute": {},
+        "text": "例题1．（重庆·高考真题）函数$f (x)= \\frac { \\sin { x } } { \\sqrt { 5 + 4 \\cos { x } } } ( 0 \\leq x \\leq 2 \\pi )$的值域是（ ）"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          243.96499999999995,
+          1555.9028000000003,
+          400.9154082861746,
+          1555.9028000000003,
+          400.9154082861746,
+          1634.0254000000002,
+          243.96499999999995,
+          1634.0254000000002
+        ],
+        "ignore": false,
+        "order": 6,
+        "anno_id": "box_id_6",
+        "attribute": {},
+        "text": "A. $ \\left\\lbrack {-\\frac{1}{4},\\frac{1}{4}}\\right\\rbrack $"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          239.99540000000002,
+          1815.064,
+          1417.9741999999999,
+          1815.064,
+          1417.9741999999999,
+          1862.0779,
+          239.99540000000002,
+          1862.0779
+        ],
+        "ignore": false,
+        "order": 10,
+        "anno_id": "box_id_7",
+        "attribute": {},
+        "text": "例题2.（全国·高考真题）已知函数$f (x)= 2 \\sin x + \\sin 2 x$，则$f ( x )$的最小值是____."
+      },
+      {
+        "category_type": "page_number",
+        "poly": [
+          805.0018,
+          2172.931,
+          846.021,
+          2172.931,
+          846.021,
+          2198.8939,
+          805.0018,
+          2198.8939
+        ],
+        "ignore": false,
+        "order": 11,
+        "anno_id": "box_id_8",
+        "attribute": {},
+        "text": "341"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          534.4481067999452,
+          1555.0125228535696,
+          686.1898142834223,
+          1555.0125228535696,
+          686.1898142834223,
+          1633.9181631375352,
+          534.4481067999452,
+          1633.9181631375352
+        ],
+        "ignore": false,
+        "order": 7,
+        "anno_id": "box-vek9dw7v",
+        "attribute": {},
+        "text": "B. $ \\left\\lbrack {-\\frac{1}{3},\\frac{1}{3}}\\right\\rbrack $"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          757.3955390883023,
+          1560.279583863068,
+          904.6978592785274,
+          1560.279583863068,
+          904.6978592785274,
+          1629.3659520035087,
+          757.3955390883023,
+          1629.3659520035087
+        ],
+        "ignore": false,
+        "order": 8,
+        "anno_id": "box-oyhprs4e",
+        "attribute": {},
+        "text": "C. $ \\left\\lbrack {-\\frac{1}{2},\\frac{1}{2}}\\right\\rbrack $"
+      },
+      {
+        "category_type": "text_block",
+        "poly": [
+          1113.4569268180771,
+          1558.0759787768584,
+          1261.4363997203502,
+          1558.0759787768584,
+          1261.4363997203502,
+          1630.8116712022816,
+          1113.4569268180771,
+          1630.8116712022816
+        ],
+        "ignore": false,
+        "order": 9,
+        "anno_id": "box-rjrbugli",
+        "attribute": {},
+        "text": "D. $ \\left\\lbrack {-\\frac{2}{3},\\frac{2}{3}}\\right\\rbrack $"
+      }
+    ],
+    "page_info": {
+      "page_no": 0,
+      "height": 2339,
+      "width": 1654,
+      "image_path": "page-cdd33cf6-76ce-42bb-a99c-342c861afed0.png",
+      "page_attribute": {
+        "data_source": "book",
+        "language": "simplified_chinese",
+        "layout": "other_layout",
+        "special_issue": [],
+        "subset": "equation_hard"
+      }
+    },
+    "extra": {
+      "relation": []
+    }
+  }
+]
