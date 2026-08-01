@@ -1,0 +1,824 @@
+Loading weights:   0%|          | 0/858 [00:00<?, ?it/s]Loading weights:  59%|█████▉    | 510/858 [00:00<00:00, 5096.75it/s]Loading weights: 100%|██████████| 858/858 [00:00<00:00, 5241.89it/s]
+[W801 16:19:51.664609110 TensorFactories.cpp:340] Warning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (function operator())
+completed=1/128 elapsed_s=19.721
+completed=2/128 elapsed_s=19.826
+completed=3/128 elapsed_s=21.584
+completed=4/128 elapsed_s=21.689
+completed=5/128 elapsed_s=21.897
+completed=6/128 elapsed_s=23.410
+completed=7/128 elapsed_s=23.423
+completed=8/128 elapsed_s=23.556
+completed=9/128 elapsed_s=23.590
+completed=10/128 elapsed_s=23.672
+completed=11/128 elapsed_s=23.679
+completed=12/128 elapsed_s=25.130
+completed=13/128 elapsed_s=25.385
+completed=14/128 elapsed_s=25.403
+completed=15/128 elapsed_s=25.481
+completed=16/128 elapsed_s=27.766
+completed=17/128 elapsed_s=27.863
+completed=18/128 elapsed_s=27.876
+completed=19/128 elapsed_s=27.896
+completed=20/128 elapsed_s=27.917
+completed=21/128 elapsed_s=27.955
+completed=22/128 elapsed_s=27.956
+completed=23/128 elapsed_s=30.103
+completed=24/128 elapsed_s=30.152
+completed=25/128 elapsed_s=30.167
+completed=26/128 elapsed_s=30.202
+completed=27/128 elapsed_s=30.243
+completed=28/128 elapsed_s=30.321
+completed=29/128 elapsed_s=30.619
+completed=30/128 elapsed_s=30.623
+completed=31/128 elapsed_s=30.797
+completed=32/128 elapsed_s=32.614
+completed=33/128 elapsed_s=32.717
+completed=34/128 elapsed_s=32.878
+completed=35/128 elapsed_s=33.308
+completed=36/128 elapsed_s=33.657
+completed=37/128 elapsed_s=35.638
+completed=38/128 elapsed_s=35.886
+completed=39/128 elapsed_s=36.313
+completed=40/128 elapsed_s=39.347
+completed=41/128 elapsed_s=39.505
+completed=42/128 elapsed_s=39.530
+completed=43/128 elapsed_s=39.768
+completed=44/128 elapsed_s=39.942
+completed=45/128 elapsed_s=39.995
+completed=46/128 elapsed_s=40.077
+completed=47/128 elapsed_s=40.252
+completed=48/128 elapsed_s=42.327
+completed=49/128 elapsed_s=42.599
+completed=50/128 elapsed_s=42.866
+completed=51/128 elapsed_s=42.883
+completed=52/128 elapsed_s=45.062
+completed=53/128 elapsed_s=45.152
+completed=54/128 elapsed_s=45.191
+completed=55/128 elapsed_s=45.521
+completed=56/128 elapsed_s=45.634
+completed=57/128 elapsed_s=45.726
+completed=58/128 elapsed_s=45.961
+completed=59/128 elapsed_s=48.225
+completed=60/128 elapsed_s=48.295
+completed=61/128 elapsed_s=48.494
+completed=62/128 elapsed_s=48.672
+completed=63/128 elapsed_s=48.862
+completed=64/128 elapsed_s=48.959
+completed=65/128 elapsed_s=48.980
+completed=66/128 elapsed_s=48.995
+completed=67/128 elapsed_s=50.786
+completed=68/128 elapsed_s=51.011
+completed=69/128 elapsed_s=51.084
+completed=70/128 elapsed_s=51.146
+completed=71/128 elapsed_s=51.496
+completed=72/128 elapsed_s=51.687
+completed=73/128 elapsed_s=53.272
+completed=74/128 elapsed_s=53.310
+completed=75/128 elapsed_s=53.724
+completed=76/128 elapsed_s=53.965
+completed=77/128 elapsed_s=56.320
+completed=78/128 elapsed_s=56.646
+completed=79/128 elapsed_s=57.029
+completed=80/128 elapsed_s=57.242
+completed=81/128 elapsed_s=59.341
+completed=82/128 elapsed_s=59.371
+completed=83/128 elapsed_s=59.719
+completed=84/128 elapsed_s=59.799
+completed=85/128 elapsed_s=59.801
+completed=86/128 elapsed_s=60.079
+completed=87/128 elapsed_s=60.164
+completed=88/128 elapsed_s=63.329
+completed=89/128 elapsed_s=64.155
+completed=90/128 elapsed_s=65.641
+completed=91/128 elapsed_s=65.649
+completed=92/128 elapsed_s=65.713
+completed=93/128 elapsed_s=65.748
+completed=94/128 elapsed_s=65.778
+completed=95/128 elapsed_s=65.803
+completed=96/128 elapsed_s=65.854
+completed=97/128 elapsed_s=67.440
+completed=98/128 elapsed_s=67.553
+completed=99/128 elapsed_s=67.566
+completed=100/128 elapsed_s=67.572
+completed=101/128 elapsed_s=67.590
+completed=102/128 elapsed_s=67.617
+completed=103/128 elapsed_s=67.777
+completed=104/128 elapsed_s=67.800
+completed=105/128 elapsed_s=69.164
+completed=106/128 elapsed_s=69.172
+completed=107/128 elapsed_s=69.250
+completed=108/128 elapsed_s=69.292
+completed=109/128 elapsed_s=69.361
+completed=110/128 elapsed_s=72.017
+completed=111/128 elapsed_s=72.036
+completed=112/128 elapsed_s=72.102
+completed=113/128 elapsed_s=72.231
+completed=114/128 elapsed_s=72.238
+completed=115/128 elapsed_s=72.280
+completed=116/128 elapsed_s=72.291
+completed=117/128 elapsed_s=72.359
+completed=118/128 elapsed_s=72.385
+completed=119/128 elapsed_s=72.486
+completed=120/128 elapsed_s=72.494
+completed=121/128 elapsed_s=72.533
+completed=122/128 elapsed_s=72.682
+completed=123/128 elapsed_s=72.760
+completed=124/128 elapsed_s=72.780
+completed=125/128 elapsed_s=73.069
+completed=126/128 elapsed_s=73.073
+completed=127/128 elapsed_s=73.284
+completed=128/128 elapsed_s=78.498
+{
+  "dataset_json": "/workspace/datasets/OmniDocBench/OmniDocBench.json",
+  "images_dir": "/workspace/datasets/OmniDocBench/images",
+  "offset": 0,
+  "count": 128,
+  "images": [
+    "page-d1561665-5359-42fe-920c-d6e3bff81953.png",
+    "page-bd6eb36e-0856-4d9d-b587-21b4a0209c8b.png",
+    "page-affbb0cc-d616-481d-b493-80ed1ccb5a10.png",
+    "page-14cd673f-d86d-45a7-a13e-2b4e1d91c08f.png",
+    "page-ba4443e6-f432-435f-89e7-ddf0a571d2cd.png",
+    "page-1c08a4a2-8163-44d3-93f0-9449457dbba3.png",
+    "page-74c7629d-b064-4b8f-8667-bf943f5ba367.png",
+    "page-c9654418-0624-48d4-8be7-6065f45dd1f9.png",
+    "page-0a262e27-b24d-4429-9b21-90563d4fada7.png",
+    "page-99c0fd2f-608e-479c-9af5-5b012de4f6af.png",
+    "page-f9583127-1277-4424-be9d-35430e0aedd6.png",
+    "page-573c437e-c309-4483-a038-ef2f440b104a.png",
+    "page-062fc21c-6b9c-40be-8d0e-7a617509a9bc.png",
+    "page-52875b3d-f4dc-44c2-a9bb-514b0763833d.png",
+    "page-cdd33cf6-76ce-42bb-a99c-342c861afed0.png",
+    "page-39d18b46-ad1b-4c7a-b7e2-132471c27c15.png",
+    "page-e2fbf592-51f5-431a-8ae6-0c62e3349e89.png",
+    "page-7dfc88d8-6d95-446c-b910-2410e8552f76.png",
+    "page-4b8f8a9d-e061-4207-a42e-ebf9b7090099.png",
+    "page-bb98165a-8033-4ea4-a527-58ac974f2c32.png",
+    "page-8c21f73a-b849-4f71-9573-57d50fbcc180.png",
+    "page-1853e666-6f83-432c-afc8-923ce8cf0fea.png",
+    "page-4431f432-9e71-46d3-a5ea-4d705ad163a8.png",
+    "page-9bcba6da-bdb0-4403-97cb-8874898ac8ab.png",
+    "page-b21c7247-a843-4316-a44d-c3365077f077.png",
+    "page-0c8b5994-685d-4b1b-816a-74f43aff8a53.png",
+    "page-d43b98f8-6a96-44f8-a3cf-65de9397f582.png",
+    "page-44a14308-9d3e-4044-9508-5c3e30141a19.png",
+    "page-67013be9-58e5-4842-809d-7a3c1fc91fc7.png",
+    "page-39551bb3-1b65-4562-b258-1bc97898cdf9.png",
+    "page-374e9c4b-6fdb-4176-8ac7-519b86d97e40.png",
+    "page-49776237-a9be-441d-a326-002eb7084385.png",
+    "page-30aa7cae-34fd-4b0b-b01a-fd35ff3bdfea.png",
+    "page-b2349b51-01db-4dc1-9e4a-58e52f5e4362.png",
+    "page-21967f5d-667d-488e-a5b3-76b9d6f53656.png",
+    "page-c1c135ad-427e-482b-b01c-05c0ccbc6e76.png",
+    "page-085e8c3e-54f9-4f46-b59b-163ee783dbfd.png",
+    "page-37a801d0-4422-4ddb-8b45-73b259396212.png",
+    "page-9477c155-19b3-4f2d-ac18-ee3f8997d2f8.png",
+    "page-cdb92c2f-f43f-45ef-ace7-91d4664a7834.png",
+    "page-1ce383cc-63a3-43c9-b6f2-7498a952b65c.png",
+    "page-a6d06208-475c-4c6e-9d84-858f7e2ecf72.png",
+    "page-e721a819-6dbf-453a-a7ad-857c24f9aa3e.png",
+    "page-e4053f20-e6e6-430e-83ef-db298a3199aa.png",
+    "page-ccd77e4e-4f94-45df-8e3d-e054a951f65f.png",
+    "page-29ccb4ce-9266-4938-8f2d-b2b69ceb43cd.png",
+    "page-60d560a3-cd92-4b7d-b6c5-f0d6ce6dc3f1.png",
+    "page-f108020f-edc5-4a27-85d9-d9d9c5d67309.png",
+    "page-dc728bd5-50a9-41e8-9e5a-d4b01e6664a2.png",
+    "page-47977c29-59ca-4534-9a00-becad3bfdaa4.png",
+    "page-87c18f88-ea2f-4044-b092-02e9b2a7436d.png",
+    "page-7050793e-109f-4066-be91-107f94b617b9.png",
+    "page-c6168ed8-ca6a-4ddd-8bfc-92dec77f1870.png",
+    "page-e9e8bc8e-e22d-4d1a-a3fb-5d175e5e4d70.png",
+    "page-85377cdf-d6a2-4611-bd50-08795bf7acb6.png",
+    "page-d2816bbe-3c28-4905-ad6d-5f873b525de3.png",
+    "page-7a7566fd-43d8-46e4-8a4f-0330e1f27a88.png",
+    "page-c7fec126-2adb-4094-8110-5d81a92e05b0.png",
+    "page-fb79f57d-9d7e-4129-a08c-6fc189e84a21.png",
+    "page-d9a27df2-127e-4f76-bb61-e7e741078bef.png",
+    "page-b0bdb7a8-c7de-4e6c-9e9c-bf979f3a3227.png",
+    "page-ad5a110f-a4b4-430b-b5db-ecd0ee394451.png",
+    "page-7d2d833d-37b1-4c18-9ee6-4e09d352e265.png",
+    "page-83a675ab-0021-4979-8293-8af0d36146a0.png",
+    "page-9b70f2f0-2a0e-4337-8750-84e79503e939.png",
+    "page-b3394f89-fe60-4f69-a0ee-aca79889950d.png",
+    "page-6486c98f-3fc3-4c8f-b35c-ce6005ecb876.png",
+    "page-3ec8e45c-1c38-41d2-bb9d-c50745232f2a.png",
+    "page-a32698bb-e3ae-49bc-b3af-203fb77b2bdf.png",
+    "page-ae356bde-652d-44a9-9e21-76cadf5a9dea.png",
+    "page-b2cc5729-a6b2-49ba-af62-788bf069b617.png",
+    "page-f029e208-32a7-49e6-a0a1-675590a3e55e.png",
+    "page-796ae342-1329-4bd4-9e64-4d1379cdd26e.png",
+    "page-aae359c6-5e6e-4e18-9187-2e9d55b6e9bd.png",
+    "page-9cca07f9-2e06-4da7-b4f4-496c6e305543.png",
+    "page-d209d5c0-fe1e-4cf0-90d8-6d610948b235.png",
+    "page-617783f8-bbd6-4faf-bca6-a05222c29314.png",
+    "page-8cbbe0d4-a3a8-4533-a620-048bebfa714b.png",
+    "page-05746fc5-2045-4dea-94e7-4bbab648d702.png",
+    "page-3e0da562-e549-4a04-8335-e76db83d57e6.png",
+    "page-d5c82c0e-2a7d-4573-9dce-bff939504367.png",
+    "page-57d5842c-85c2-41c9-9d37-65aad59c1277.png",
+    "page-cc37a835-903b-4079-88fc-ae04625c9b5d.png",
+    "page-2329f04a-41b3-435b-993a-a0652294b07d.png",
+    "page-f6ad0f1c-acb7-43c0-b08d-5606ca82fc1b.png",
+    "page-404e0471-bd71-426a-8e5a-81b8327f88e5.png",
+    "page-dad0f4e5-290f-496f-bbdd-099ad75c6ff0.png",
+    "page-80a540c8-88d4-4643-b40e-282489353fb8.png",
+    "page-a976a26e-4dbb-492a-a380-b923b87ed496.png",
+    "page-bbe2b2d5-1e02-4d53-ba1c-158eaab2e6d5.png",
+    "page-27a46d41-49b5-4562-a546-6cbbafd23a81.png",
+    "page-5b2f2dec-8e96-450f-aea0-b73d46eac172.png",
+    "page-39f38730-0ae6-4cfe-8b99-c65d06d09544.png",
+    "page-4009495f-1a7c-46dc-9f52-7f80f5f0cc5c.png",
+    "page-8524b54d-6372-4f9e-a662-5254349cfda3.png",
+    "page-b4b6b1d1-5fa6-42ce-8a62-8a6ddd4608f6.png",
+    "page-e13fef95-c179-4a0f-94f9-1cc970aab788.png",
+    "page-175b8afd-8077-4f65-bdbf-40682e0a9a4b.png",
+    "page-4089ffa0-27f5-4a20-ba2f-c68e3ad46ce2.png",
+    "page-268266af-56c0-4b3b-9d07-73c6e50feb58.png",
+    "page-dad79c54-8125-4927-9988-ee1d2a139d7b.png",
+    "page-5a104368-22a2-440a-a1aa-49b7d1eb57f0.png",
+    "page-9d14b692-a01c-45bd-9726-929bd3c4b726.png",
+    "page-87866578-c897-404e-b751-51fd444f59b2.png",
+    "page-07b33434-d7fe-4ada-b764-ba2df172d1fb.png",
+    "page-6eaea9af-1dfa-4166-9881-b5047bbd0a4f.png",
+    "page-0b20ed47-7c6c-4578-bbdf-057a89a083ec.png",
+    "page-24b49b01-6c1f-46d2-a389-6e537f9902e1.png",
+    "page-59ff417b-63b3-40a4-a6ac-8fc2cdf71b5f.png",
+    "page-6788acda-bfb0-479c-bc2a-9b471ec2cc33.png",
+    "page-07088b2f-f9d6-4c38-9c97-d7f98bc3d556.png",
+    "page-942ac90d-4704-43f3-9286-719c7be9e655.png",
+    "page-b1b8cc79-a7b3-4ac5-a7c2-49416b195ccb.png",
+    "page-bea34248-acae-4578-9ff2-3149a84d7c38.png",
+    "page-4c92c2ac-d7f7-43a5-b323-f242f31ddbf8.png",
+    "page-39abce32-298b-42ab-8c46-b4fbfbcaa674.png",
+    "page-c7a51204-5142-4c7a-bc9d-1faf1fe1be02.png",
+    "page-15cc8cbe-9ce3-4ad8-8737-9159b061ca95.png",
+    "page-01a2352e-2a3b-4a56-b3fc-d86b170f1f60.png",
+    "page-0c28f48b-33da-489c-bfc1-1fe82e5be68f.png",
+    "page-430a31db-08e2-41e9-9812-8bd807b8e1c1.png",
+    "page-51757cee-c153-4baf-8616-ac106b543885.png",
+    "page-89180317-baf8-4c13-9b21-722e7d634eeb.png",
+    "page-8e2f7ce3-83c4-4977-b6dc-278394c4bd64.png",
+    "page-fbfad23e-60e1-40d5-ba55-e7a1bcb26c97.png",
+    "page-b145da5c-182f-4d4e-813a-28b8d6971b0f.png",
+    "page-4540d82a-19d8-44ef-8f18-6d42fdb2a2de.png",
+    "page-8f6792bd-b5e4-435e-b1b0-1b2daa3f7234.png"
+  ],
+  "pipeline": "owned_paddleocr_vl_v1.6",
+  "layout_device": "npu",
+  "layout_graph_capture": false,
+  "page_preprocessing_mode": "all_before_recognition",
+  "configuration": {
+    "layout_model": "/workspace/models/PP-DocLayoutV3_safetensors",
+    "recognizer_model": "/workspace/models/PaddleOCR-VL-1.6",
+    "device": "npu:0",
+    "layout_device": "npu:0",
+    "layout_graph_capture": false,
+    "dtype": "fp16",
+    "batch_size": 32,
+    "cache_length": 4096,
+    "max_new_tokens": 4096,
+    "decode_backend": "torchair",
+    "decode_optimization": "combined_apply_static_actual",
+    "preprocessor_min_pixels": 28224,
+    "effective_global_min_pixels": 28224,
+    "vision_backend": "torchair",
+    "vision_attention": "prompt_flash_attention",
+    "vision_padding": "bucket",
+    "vision_packing": "greedy",
+    "vision_pack_target": 1920,
+    "vision_router_lookahead": 32,
+    "vision_batched_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_vision_router_batched",
+    "vision_buckets": [
+      128,
+      256,
+      384,
+      512,
+      640,
+      768,
+      1408,
+      1920,
+      2944,
+      4992
+    ],
+    "text_buckets": [
+      32,
+      64,
+      96,
+      128,
+      160,
+      176,
+      192,
+      208,
+      224,
+      256,
+      320,
+      384,
+      448,
+      576,
+      640,
+      768,
+      896,
+      1024,
+      1152,
+      1280,
+      1312
+    ],
+    "text_packing": "production_group",
+    "text_pack_buckets": [
+      128,
+      256,
+      512,
+      1024
+    ],
+    "text_pack_max_members": 32,
+    "text_packed_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_packed_torchair",
+    "cpu_preprocessing": {
+      "execution": "background_thread",
+      "workers": 1,
+      "max_pending": 32,
+      "ordering": "fifo",
+      "pin_recognition_inputs": "best_effort"
+    },
+    "page_preprocessing_mode": "all_before_recognition",
+    "scheduler_progress": false,
+    "recognition_input_fingerprints": true,
+    "vision_route_plan_input": null
+  },
+  "setup_s": 42.060378146125004,
+  "recognizer_setup_timing_s": {
+    "recognizer_frontend_setup": 0.8606851680669934,
+    "recognizer_model_load": 10.13029196090065,
+    "decode_optimization_setup": 0.0328148880507797,
+    "decode_weight_format": 4.513556580990553,
+    "vision_runtime_setup": 8.058917336864397,
+    "text_runtime_setup": 13.751393924932927,
+    "compile_wrapper": 0.0018474122043699026,
+    "compile_first_call": 0.21492924285121262,
+    "vision_router_setup": 0.0,
+    "packed_text_runtime_setup": 2.355667436029762,
+    "private_cache_pool_setup": 0.015779378125444055,
+    "decode_control_setup": 0.0036773430183529854,
+    "recognizer_runtime_total": 39.95981647493318
+  },
+  "pipeline_e2e_s": 78.65093175787479,
+  "pages_per_s": 1.6274441654937448,
+  "s_per_page": 0.6144604043583968,
+  "result_count": 128,
+  "prediction_count": 128,
+  "completion_s": [
+    19.72075521806255,
+    19.826459724921733,
+    21.583800561958924,
+    21.68889700807631,
+    21.89675792097114,
+    23.410372616024688,
+    23.423396956874058,
+    23.556141262874007,
+    23.59007149003446,
+    23.67249872093089,
+    23.679319026879966,
+    25.130325518082827,
+    25.38503198698163,
+    25.403329588007182,
+    25.48071836307645,
+    27.766353168990463,
+    27.862684825900942,
+    27.875779699068516,
+    27.8956585759297,
+    27.91725159296766,
+    27.95493672392331,
+    27.95621035597287,
+    30.10321255493909,
+    30.151894402923062,
+    30.166869637090713,
+    30.202017054893076,
+    30.243106802925467,
+    30.320504837902263,
+    30.61870918702334,
+    30.623217752901837,
+    30.796562459087,
+    32.61435272404924,
+    32.7170684998855,
+    32.877502016024664,
+    33.3076917079743,
+    33.656503225909546,
+    35.637940771877766,
+    35.88598437793553,
+    36.3129165940918,
+    39.346603272948414,
+    39.50547575298697,
+    39.529552303021774,
+    39.76834910106845,
+    39.94166098698042,
+    39.99495595204644,
+    40.077058797935024,
+    40.251614205073565,
+    42.32672447199002,
+    42.59866897389293,
+    42.86648851609789,
+    42.88342718407512,
+    45.062145622912794,
+    45.15223991405219,
+    45.190564984921366,
+    45.52090658992529,
+    45.633540644077584,
+    45.72572260093875,
+    45.960719645023346,
+    48.224818754941225,
+    48.2947025320027,
+    48.49380063591525,
+    48.67196322395466,
+    48.86163980793208,
+    48.958895991090685,
+    48.979856146965176,
+    48.994572806870565,
+    50.78574231895618,
+    51.010502129094675,
+    51.084462316008285,
+    51.146133434958756,
+    51.496459788875654,
+    51.68653904902749,
+    53.27186800306663,
+    53.309860958950594,
+    53.72375421295874,
+    53.96469096792862,
+    56.31970421294682,
+    56.64637745497748,
+    57.02875585388392,
+    57.24186204606667,
+    59.340817108983174,
+    59.37096822098829,
+    59.71909664804116,
+    59.79896302497946,
+    59.800934019032866,
+    60.07916250801645,
+    60.163546561961994,
+    63.3290263810195,
+    64.15539684589021,
+    65.64056433690712,
+    65.64940776792355,
+    65.71270341402851,
+    65.74816210591234,
+    65.77826769789681,
+    65.80278590507805,
+    65.85377363092266,
+    67.43958982289769,
+    67.55334746697918,
+    67.5656483459752,
+    67.57221135706641,
+    67.59030696493573,
+    67.61684707598761,
+    67.77700761798769,
+    67.79976515495218,
+    69.16423554508947,
+    69.17180796293542,
+    69.24959692498669,
+    69.29217960895039,
+    69.36103149899282,
+    72.01654466195032,
+    72.03610373404808,
+    72.10249885288067,
+    72.23060278990306,
+    72.2382713300176,
+    72.27962081297301,
+    72.29053136799484,
+    72.35896663088351,
+    72.38479109993204,
+    72.48554435302503,
+    72.49387444392778,
+    72.5331469620578,
+    72.68200304196216,
+    72.76030880305916,
+    72.78035309305415,
+    73.06881032604724,
+    73.07293165591545,
+    73.28374533890747,
+    78.49846626608633
+  ],
+  "page_artifact_writer": {
+    "execution": "background_ordered_single_worker",
+    "max_pending": 8,
+    "max_pending_observed": 2,
+    "write_wall_sum_s": 0.300191353,
+    "queue_wait_sum_s": 0.083432195,
+    "producer_backpressure_s": 0.0,
+    "final_drain_s": 2.019e-05
+  },
+  "recognition": {
+    "schedules": 1,
+    "requests": 2082,
+    "wall_s": 78.58927495917305,
+    "generated_tokens_including_eos": 147725,
+    "decode_tokens_after_prefill_including_eos": 145643,
+    "input_tokens": 294992,
+    "projected_image_tokens": 267926,
+    "real_vision_tokens": 1071704,
+    "physical_vision_tokens": 1243008,
+    "real_text_tokens": 294992,
+    "physical_text_tokens": 416064,
+    "decode_graph_calls": 6050,
+    "raw_decode_token_slots": 193600,
+    "active_decode_token_slots": 147724,
+    "effective_decode_tokens": 145643,
+    "idle_decode_token_slots": 45876,
+    "lookahead_decode_token_slots": 2081,
+    "decode_wall_s": 24.97832371938975,
+    "run_scoped_scheduler_wall_s": 62.34518165001646,
+    "kv_prefix_bytes_copied": 5437292544,
+    "stop_reason_counts": {
+      "eos": 2081,
+      "kv_cache_full": 1
+    },
+    "pixel_profile_request_counts": {
+      "28224:1003520": 2082
+    },
+    "device_stage_s": {
+      "adaptive_mlp_projector": 0.24143098067492247,
+      "image_embed_scatter": 0.2918730802685025,
+      "prefill_argmax": 0.029805599963292444,
+      "prefill_lm_head": 0.18891293941438225,
+      "recognition_inputs_h2d": 3.0545175188183755,
+      "static_cache_alloc": 0.4427344897989158,
+      "text_kv_redistribute": 2.5243982202112654,
+      "text_prefill": 6.017005201816568,
+      "text_prefill_input_prep": 0.3537001599669456,
+      "text_token_embedding": 0.022756420027464655,
+      "vision_embeddings": 1.998027160704139,
+      "vision_prefill": 21.086697233200077,
+      "vision_prefill_input_prep": 2.1750170998275307
+    },
+    "vision_packing": {
+      "mode": "greedy",
+      "target": 1920,
+      "lookahead": 32,
+      "groups": 622,
+      "crops": 2082,
+      "packed_groups": 418,
+      "singleton_groups": 204,
+      "eager_overflow_groups": 2,
+      "crops_per_group": 3.347266881028939,
+      "group_size_histogram": {
+        "1": 204,
+        "2": 89,
+        "3": 77,
+        "4": 79,
+        "5": 55,
+        "6": 42,
+        "7": 29,
+        "8": 18,
+        "9": 14,
+        "10": 12,
+        "11": 3
+      },
+      "graph_shape_histogram": {
+        "b1_s1408": 129,
+        "b1_s1920": 356,
+        "b1_s256": 13,
+        "b1_s2944": 45,
+        "b1_s384": 7,
+        "b1_s4992": 42,
+        "b1_s512": 3,
+        "b1_s640": 10,
+        "b1_s768": 15,
+        "eager_overflow": 2
+      },
+      "ready_window_histogram": {},
+      "router_cpu_s": 0.0,
+      "packed_real_vision_tokens": 658016,
+      "packed_physical_vision_tokens": 734208,
+      "packed_fill_fraction": 0.8962255927475593
+    },
+    "text_packing": {
+      "mode": "production_group",
+      "buckets": [
+        128,
+        256,
+        512,
+        1024
+      ],
+      "groups": 622,
+      "crops": 2082,
+      "packs": 603,
+      "packed_crops": 2063,
+      "fallback_crops": 19,
+      "calls": 622,
+      "call_reduction_fraction": 0.7012487992315082,
+      "pack_size_histogram": {
+        "1": 185,
+        "2": 89,
+        "3": 77,
+        "4": 79,
+        "5": 55,
+        "6": 42,
+        "7": 29,
+        "8": 18,
+        "9": 14,
+        "10": 12,
+        "11": 3
+      },
+      "bucket_histogram": {
+        "128": 21,
+        "256": 44,
+        "512": 336,
+        "1024": 202
+      },
+      "packed_real_text_tokens": 272919,
+      "packed_physical_text_tokens": 392832,
+      "packed_fill_fraction": 0.6947473729227761,
+      "redistributed_kv_bytes": 5030443008,
+      "private_cache_pool": {
+        "storage": "zero_once_fixed_arena",
+        "capacity": 160,
+        "allocated_bytes": 12079595520,
+        "acquisitions": 2082,
+        "reuses": 1922,
+        "releases": 2082,
+        "active_slots": 0,
+        "free_slots": 160,
+        "high_water_active_slots": 136
+      }
+    },
+    "run_output_tok_per_s": 1879.7094142520439,
+    "decode_useful_token_fraction": 0.7522882231404958,
+    "vision_useful_token_fraction": 0.8621859231798991,
+    "text_useful_token_fraction": 0.7090063067220428,
+    "trace_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_degeneration_survey_n128_491de50/output/recognition_trace.jsonl"
+  },
+  "layout_frontend": {
+    "implementation": "owned_no_paddlex",
+    "device": "npu:0",
+    "graph_capture": false,
+    "npu_indexput_compat": true,
+    "setup_s": 2.087179662892595,
+    "stage_s": {
+      "file_read_s": 0.1740077326539904,
+      "image_decode_s": 4.982749975519255,
+      "layout_mask_polygon_cpu_s": 0.9183272381778806,
+      "layout_mask_wait_and_d2h_s": 0.12068410078063607,
+      "layout_metadata_wait_and_d2h_s": 0.034557577688246965,
+      "layout_model_submit_s": 6.638435980305076,
+      "layout_postprocess_s": 2.208930807420984,
+      "layout_preprocess_h2d_s": 1.0002719729673117,
+      "layout_structural_postprocess_cpu_s": 0.8593875169754028,
+      "page_preparation_s": 0.9772758416365832,
+      "page_total_s": 16.005516910692677
+    },
+    "statistics": {
+      "filtered_layout_boxes": 2123,
+      "merged_blocks": 2123,
+      "raw_layout_boxes": 2123,
+      "requests": 2082
+    }
+  },
+  "page_completion_order": [
+    "page-ba4443e6-f432-435f-89e7-ddf0a571d2cd.png",
+    "page-14cd673f-d86d-45a7-a13e-2b4e1d91c08f.png",
+    "page-1c08a4a2-8163-44d3-93f0-9449457dbba3.png",
+    "page-bd6eb36e-0856-4d9d-b587-21b4a0209c8b.png",
+    "page-d1561665-5359-42fe-920c-d6e3bff81953.png",
+    "page-affbb0cc-d616-481d-b493-80ed1ccb5a10.png",
+    "page-99c0fd2f-608e-479c-9af5-5b012de4f6af.png",
+    "page-c9654418-0624-48d4-8be7-6065f45dd1f9.png",
+    "page-0a262e27-b24d-4429-9b21-90563d4fada7.png",
+    "page-f9583127-1277-4424-be9d-35430e0aedd6.png",
+    "page-74c7629d-b064-4b8f-8667-bf943f5ba367.png",
+    "page-062fc21c-6b9c-40be-8d0e-7a617509a9bc.png",
+    "page-39d18b46-ad1b-4c7a-b7e2-132471c27c15.png",
+    "page-e2fbf592-51f5-431a-8ae6-0c62e3349e89.png",
+    "page-52875b3d-f4dc-44c2-a9bb-514b0763833d.png",
+    "page-bb98165a-8033-4ea4-a527-58ac974f2c32.png",
+    "page-4b8f8a9d-e061-4207-a42e-ebf9b7090099.png",
+    "page-cdd33cf6-76ce-42bb-a99c-342c861afed0.png",
+    "page-1853e666-6f83-432c-afc8-923ce8cf0fea.png",
+    "page-573c437e-c309-4483-a038-ef2f440b104a.png",
+    "page-8c21f73a-b849-4f71-9573-57d50fbcc180.png",
+    "page-4431f432-9e71-46d3-a5ea-4d705ad163a8.png",
+    "page-44a14308-9d3e-4044-9508-5c3e30141a19.png",
+    "page-39551bb3-1b65-4562-b258-1bc97898cdf9.png",
+    "page-0c8b5994-685d-4b1b-816a-74f43aff8a53.png",
+    "page-b21c7247-a843-4316-a44d-c3365077f077.png",
+    "page-d43b98f8-6a96-44f8-a3cf-65de9397f582.png",
+    "page-7dfc88d8-6d95-446c-b910-2410e8552f76.png",
+    "page-9bcba6da-bdb0-4403-97cb-8874898ac8ab.png",
+    "page-67013be9-58e5-4842-809d-7a3c1fc91fc7.png",
+    "page-085e8c3e-54f9-4f46-b59b-163ee783dbfd.png",
+    "page-30aa7cae-34fd-4b0b-b01a-fd35ff3bdfea.png",
+    "page-374e9c4b-6fdb-4176-8ac7-519b86d97e40.png",
+    "page-b2349b51-01db-4dc1-9e4a-58e52f5e4362.png",
+    "page-37a801d0-4422-4ddb-8b45-73b259396212.png",
+    "page-c1c135ad-427e-482b-b01c-05c0ccbc6e76.png",
+    "page-49776237-a9be-441d-a326-002eb7084385.png",
+    "page-21967f5d-667d-488e-a5b3-76b9d6f53656.png",
+    "page-9477c155-19b3-4f2d-ac18-ee3f8997d2f8.png",
+    "page-e721a819-6dbf-453a-a7ad-857c24f9aa3e.png",
+    "page-cdb92c2f-f43f-45ef-ace7-91d4664a7834.png",
+    "page-29ccb4ce-9266-4938-8f2d-b2b69ceb43cd.png",
+    "page-f108020f-edc5-4a27-85d9-d9d9c5d67309.png",
+    "page-1ce383cc-63a3-43c9-b6f2-7498a952b65c.png",
+    "page-87c18f88-ea2f-4044-b092-02e9b2a7436d.png",
+    "page-ccd77e4e-4f94-45df-8e3d-e054a951f65f.png",
+    "page-a6d06208-475c-4c6e-9d84-858f7e2ecf72.png",
+    "page-c6168ed8-ca6a-4ddd-8bfc-92dec77f1870.png",
+    "page-7050793e-109f-4066-be91-107f94b617b9.png",
+    "page-e4053f20-e6e6-430e-83ef-db298a3199aa.png",
+    "page-60d560a3-cd92-4b7d-b6c5-f0d6ce6dc3f1.png",
+    "page-85377cdf-d6a2-4611-bd50-08795bf7acb6.png",
+    "page-47977c29-59ca-4534-9a00-becad3bfdaa4.png",
+    "page-dc728bd5-50a9-41e8-9e5a-d4b01e6664a2.png",
+    "page-7a7566fd-43d8-46e4-8a4f-0330e1f27a88.png",
+    "page-e9e8bc8e-e22d-4d1a-a3fb-5d175e5e4d70.png",
+    "page-c7fec126-2adb-4094-8110-5d81a92e05b0.png",
+    "page-83a675ab-0021-4979-8293-8af0d36146a0.png",
+    "page-9b70f2f0-2a0e-4337-8750-84e79503e939.png",
+    "page-fb79f57d-9d7e-4129-a08c-6fc189e84a21.png",
+    "page-3ec8e45c-1c38-41d2-bb9d-c50745232f2a.png",
+    "page-6486c98f-3fc3-4c8f-b35c-ce6005ecb876.png",
+    "page-b3394f89-fe60-4f69-a0ee-aca79889950d.png",
+    "page-d2816bbe-3c28-4905-ad6d-5f873b525de3.png",
+    "page-ae356bde-652d-44a9-9e21-76cadf5a9dea.png",
+    "page-b0bdb7a8-c7de-4e6c-9e9c-bf979f3a3227.png",
+    "page-ad5a110f-a4b4-430b-b5db-ecd0ee394451.png",
+    "page-796ae342-1329-4bd4-9e64-4d1379cdd26e.png",
+    "page-7d2d833d-37b1-4c18-9ee6-4e09d352e265.png",
+    "page-a32698bb-e3ae-49bc-b3af-203fb77b2bdf.png",
+    "page-aae359c6-5e6e-4e18-9187-2e9d55b6e9bd.png",
+    "page-d209d5c0-fe1e-4cf0-90d8-6d610948b235.png",
+    "page-8cbbe0d4-a3a8-4533-a620-048bebfa714b.png",
+    "page-f029e208-32a7-49e6-a0a1-675590a3e55e.png",
+    "page-3e0da562-e549-4a04-8335-e76db83d57e6.png",
+    "page-05746fc5-2045-4dea-94e7-4bbab648d702.png",
+    "page-9cca07f9-2e06-4da7-b4f4-496c6e305543.png",
+    "page-b2cc5729-a6b2-49ba-af62-788bf069b617.png",
+    "page-2329f04a-41b3-435b-993a-a0652294b07d.png",
+    "page-dad0f4e5-290f-496f-bbdd-099ad75c6ff0.png",
+    "page-d5c82c0e-2a7d-4573-9dce-bff939504367.png",
+    "page-cc37a835-903b-4079-88fc-ae04625c9b5d.png",
+    "page-57d5842c-85c2-41c9-9d37-65aad59c1277.png",
+    "page-a976a26e-4dbb-492a-a380-b923b87ed496.png",
+    "page-bbe2b2d5-1e02-4d53-ba1c-158eaab2e6d5.png",
+    "page-404e0471-bd71-426a-8e5a-81b8327f88e5.png",
+    "page-f6ad0f1c-acb7-43c0-b08d-5606ca82fc1b.png",
+    "page-617783f8-bbd6-4faf-bca6-a05222c29314.png",
+    "page-27a46d41-49b5-4562-a546-6cbbafd23a81.png",
+    "page-175b8afd-8077-4f65-bdbf-40682e0a9a4b.png",
+    "page-5b2f2dec-8e96-450f-aea0-b73d46eac172.png",
+    "page-dad79c54-8125-4927-9988-ee1d2a139d7b.png",
+    "page-5a104368-22a2-440a-a1aa-49b7d1eb57f0.png",
+    "page-6eaea9af-1dfa-4166-9881-b5047bbd0a4f.png",
+    "page-b4b6b1d1-5fa6-42ce-8a62-8a6ddd4608f6.png",
+    "page-268266af-56c0-4b3b-9d07-73c6e50feb58.png",
+    "page-24b49b01-6c1f-46d2-a389-6e537f9902e1.png",
+    "page-59ff417b-63b3-40a4-a6ac-8fc2cdf71b5f.png",
+    "page-9d14b692-a01c-45bd-9726-929bd3c4b726.png",
+    "page-4089ffa0-27f5-4a20-ba2f-c68e3ad46ce2.png",
+    "page-87866578-c897-404e-b751-51fd444f59b2.png",
+    "page-07b33434-d7fe-4ada-b764-ba2df172d1fb.png",
+    "page-b1b8cc79-a7b3-4ac5-a7c2-49416b195ccb.png",
+    "page-80a540c8-88d4-4643-b40e-282489353fb8.png",
+    "page-07088b2f-f9d6-4c38-9c97-d7f98bc3d556.png",
+    "page-8524b54d-6372-4f9e-a662-5254349cfda3.png",
+    "page-4c92c2ac-d7f7-43a5-b323-f242f31ddbf8.png",
+    "page-6788acda-bfb0-479c-bc2a-9b471ec2cc33.png",
+    "page-39abce32-298b-42ab-8c46-b4fbfbcaa674.png",
+    "page-bea34248-acae-4578-9ff2-3149a84d7c38.png",
+    "page-430a31db-08e2-41e9-9812-8bd807b8e1c1.png",
+    "page-c7a51204-5142-4c7a-bc9d-1faf1fe1be02.png",
+    "page-942ac90d-4704-43f3-9286-719c7be9e655.png",
+    "page-51757cee-c153-4baf-8616-ac106b543885.png",
+    "page-15cc8cbe-9ce3-4ad8-8737-9159b061ca95.png",
+    "page-39f38730-0ae6-4cfe-8b99-c65d06d09544.png",
+    "page-01a2352e-2a3b-4a56-b3fc-d86b170f1f60.png",
+    "page-0c28f48b-33da-489c-bfc1-1fe82e5be68f.png",
+    "page-89180317-baf8-4c13-9b21-722e7d634eeb.png",
+    "page-0b20ed47-7c6c-4578-bbdf-057a89a083ec.png",
+    "page-4540d82a-19d8-44ef-8f18-6d42fdb2a2de.png",
+    "page-8f6792bd-b5e4-435e-b1b0-1b2daa3f7234.png",
+    "page-b145da5c-182f-4d4e-813a-28b8d6971b0f.png",
+    "page-8e2f7ce3-83c4-4977-b6dc-278394c4bd64.png",
+    "page-e13fef95-c179-4a0f-94f9-1cc970aab788.png",
+    "page-4009495f-1a7c-46dc-9f52-7f80f5f0cc5c.png",
+    "page-fbfad23e-60e1-40d5-ba55-e7a1bcb26c97.png",
+    "page-d9a27df2-127e-4f76-bb61-e7e741078bef.png"
+  ],
+  "paddlex_runtime_dependency": false,
+  "loaded_paddlex_modules": [],
+  "layout_mask_guard": {
+    "guard_version": 2,
+    "behavior": "integer_bounding_rectangle_for_empty_scaled_mask_crop",
+    "fallback_calls": 0,
+    "fallback_regions": 0,
+    "events": []
+  },
+  "layout_mask_guard_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_degeneration_survey_n128_491de50/output/layout_mask_guard.json",
+  "predictions_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_degeneration_survey_n128_491de50/output/predictions",
+  "page_regions_jsonl": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_degeneration_survey_n128_491de50/output/page_regions.jsonl",
+  "vision_route_plan": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_degeneration_survey_n128_491de50/output/vision_route_plan.json",
+  "timeline": {
+    "enabled": false,
+    "event_count": 0,
+    "trace_json": null,
+    "html": null,
+    "additional_device_synchronization": false
+  }
+}
+summary=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_degeneration_survey_n128_491de50/output/run_summary.json
