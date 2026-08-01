@@ -1,0 +1,8 @@
+date_utc=2026-08-01T19:32:35+00:00
+project_git_commit=8634d3abd75aebb1bf1a33f5e1e4a23722d09c3b
+evaluator_git_commit=2b161d010d2e3aff77a0edef359ea3a6411d23cd
+host=liteserver-c001-4
+python=/workspace/venvs/omnidocbench_py310/bin/python
+working_directory=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_full_e2e_eval_8634d3a_r1/evaluation/work
+
+/workspace/venvs/omnidocbench_py310/bin/python /workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/run_omnidocbench_eval.py --config config.yaml --evaluator-root /workspace/repos/OmniDocBench_eval --match-workers 24 --teds-workers 12 --page-timeout-sec 120 --fallback-timeout-sec 180 --fallback-latex-timeout-sec 30

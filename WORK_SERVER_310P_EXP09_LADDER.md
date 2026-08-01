@@ -15243,3 +15243,512 @@ Do not push or commit the JSON.  Report back in **at most three sentences**:
 
 Do not add general theory, repeat the Phase-40 report, modify code, or begin a
 new NPU experiment.
+
+---
+
+## Phase 41: full OmniDocBench v1.6 production run and official evaluation
+
+### Goal and fixed comparison boundary
+
+Run the complete 1,651-page OmniDocBench v1.6 dataset on one 310P3 with the
+same production configuration as the completed 910B2 reference, evaluate all
+1,651 predictions with the guarded evaluator committed in this repository,
+and report a direct performance and quality comparison.
+
+This is a measurement phase, not an optimization or debugging phase.  Do not
+change model code, generation policy, packing, graph shapes, evaluator matching
+semantics, or the dataset.  Do not add `--max-new-tokens`: production policy is
+to generate until EOS or until the 4,096-token KV capacity is exhausted.  The
+only allowed path adaptations are the already-established local model,
+dataset, evaluator, Python, and cache roots.  Record every adaptation.
+
+The fixed 910B2 reference was run on commit `8634d3a` with warm compiled
+caches, physical NPU 7, CANN 9.0.0, torch 2.10.0+cpu, and torch_npu 2.10.0.
+Its exact production result is:
+
+| Metric | 910B2 full reference |
+|---|---:|
+| pages / results / predictions | 1,651 / 1,651 / 1,651 |
+| setup | 46.126 s |
+| pipeline E2E | 1,055.523 s |
+| throughput | 1.56415 pages/s |
+| latency-equivalent | 0.63932 s/page |
+| all-pages-first layout | 202.385 s, 8.158 pages/s |
+| OCR scheduler wall after layout | 849.540 s |
+| recognition requests | 30,557 |
+| stop reasons | 30,534 EOS; 23 KV-cache-full |
+| real / physical vision tokens | 18,805,052 / 21,310,208 |
+| vision prefill | 368.851 s; 50,983 real and 57,775 physical tok/s |
+| real / physical text-prefill tokens | 5,098,504 / 6,792,832 |
+| text prefill | 103.343 s; 49,336 real and 65,731 physical tok/s |
+| effective / raw decode tokens | 1,656,185 / 1,727,488 |
+| decode | 225.393 s; 7,348 effective and 7,664 raw tok/s |
+
+The 910B evaluator completed with exit 0.  Process-isolated page matching
+finished all 1,651 pages, using bounded fallback for three pathological pages.
+TEDS evaluated 665 table pairs; one 2,054,838-character malformed prediction
+hit the explicit 120-second TEDS timeout, was recorded, and did not hang or
+crash the run.  Use the official evaluator page-level metrics below as the
+quality comparison values (these are also the values selected by the notebook
+summary where that notebook exposes the metric):
+
+| Official evaluator metric | 910B2 full reference |
+|---|---:|
+| text-block Edit distance | 0.0408832043 |
+| display-formula Edit distance | 0.0868281401 |
+| table Edit distance | 0.0569611203 |
+| table TEDS | 0.9434504390 |
+| table TEDS structure-only | 0.9676980846 |
+| reading-order Edit distance | 0.1380544862 |
+
+The page denominators are 1,557 text-block pages, 313 display-formula pages,
+458 table pages, and 1,638 reading-order pages.  Evaluation wall time was
+approximately 358 seconds, including the three overlapping 120-second page
+timeouts and one 120-second TEDS timeout.
+
+For clarity, lower is better for all Edit-distance metrics and higher is better
+for TEDS.  CDM was not run and must remain omitted.  The table-sample aggregate
+printed elsewhere by the evaluator (`TEDS all = 0.929508`) is not the notebook
+summary above; do not mix the two aggregation levels.
+
+### 41.1 Pull, verify commits, choose a free NPU, and preflight
+
+Start clean and preserve all evidence locally.  This agent is pull-only: it
+must not edit tracked files, create a branch, commit, or push.
+
+```sh
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git pull --ff-only origin main
+git status --short
+git rev-parse HEAD
+test -z "$(git status --porcelain)"
+source npu-setup
+
+PYTHON_BIN=/usr/local/python3.12.13/bin/python
+E2E=09_persistent_page_engine/scripts/run_omnidocbench.py
+EVAL_WRAPPER=09_persistent_page_engine/scripts/run_omnidocbench_eval.py
+ROOT=tmp/09_persistent_page_engine/310p_phase41_full_eval_$(git rev-parse --short HEAD)
+LANE="$ROOT/e2e"
+OUTPUT="$LANE/output"
+EVAL="$ROOT/evaluation"
+
+test -f "$E2E"
+test -f "$EVAL_WRAPPER"
+test ! -e "$ROOT"
+mkdir -p "$LANE" "$EVAL/work"
+```
+
+`git status --short` must be empty before starting.  If it is dirty, inventory
+the paths and stop; do not discard or hide anything.  `npu-setup` must select a
+genuinely free physical 310P3 with enough HBM for the known production caches.
+Never kill another user's process.
+
+Locate the evaluator already used in Phase 37.  Prefer the first candidate
+whose root contains `pdf_validation.py`; do not clone or update it silently.
+
+```sh
+EVALUATOR_ROOT=
+for candidate in \
+  /workspace/repos/OmniDocBench_eval \
+  "$HOME/OmniDocBench_eval" \
+  "$HOME/OmniDocBench"
+do
+  if test -f "$candidate/pdf_validation.py"; then
+    EVALUATOR_ROOT="$candidate"
+    break
+  fi
+done
+
+if test -z "$EVALUATOR_ROOT"; then
+  find /workspace "$HOME" -maxdepth 5 -type f -name pdf_validation.py \
+    -print 2>/dev/null | tee "$ROOT/evaluator_candidates.txt"
+  echo "EVALUATOR_ROOT_NOT_FOUND"
+  exit 1
+fi
+
+EVAL_PYTHON=/workspace/venvs/omnidocbench_py310/bin/python
+test -x "$EVAL_PYTHON"
+test -f "$EVALUATOR_ROOT/pdf_validation.py"
+```
+
+Record exact state, including the evaluator commit and the physical NPU:
+
+```sh
+{
+  date -Is
+  hostname
+  git rev-parse HEAD
+  printf 'ASCEND_RT_VISIBLE_DEVICES=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"
+  "$PYTHON_BIN" -V
+  "$PYTHON_BIN" - <<'PY'
+import torch, torch_npu
+print("torch", torch.__version__)
+print("torch_npu", torch_npu.__version__)
+print("logical_device", torch.npu.current_device())
+print("device_name", torch.npu.get_device_name(torch.npu.current_device()))
+PY
+  npu-smi info
+  printf 'evaluator_root=%s\n' "$EVALUATOR_ROOT"
+  git -C "$EVALUATOR_ROOT" rev-parse HEAD
+  "$EVAL_PYTHON" -V
+} 2>&1 | tee "$ROOT/preflight.log"
+```
+
+The evaluator wrapper was validated against evaluator commit
+`2b161d010d2e3aff77a0edef359ea3a6411d23cd`.  If the local evaluator differs,
+report the exact commit and stop.  Do not change evaluator revisions without
+Luka's approval.
+
+```sh
+test "$(git -C "$EVALUATOR_ROOT" rev-parse HEAD)" = \
+  2b161d010d2e3aff77a0edef359ea3a6411d23cd
+```
+
+All five production cache roots below must already exist and be nonempty.  A
+missing cache is not permission for an unreported fresh compile.  Record cache
+file counts and bytes before and after the run.
+
+```sh
+for cache in \
+  .runtime_cache/310p_phase36_static_actual_b32 \
+  .runtime_cache/09_persistent_page_engine_vision_torchair \
+  .runtime_cache/09_vision_router_batched \
+  .runtime_cache/09_persistent_page_engine_text_torchair \
+  .runtime_cache/310p_text_packed_4789067
+do
+  test -d "$cache"
+  test -n "$(find "$cache" -type f -print -quit)"
+  printf '%s\tfiles=%s\tbytes=%s\n' \
+    "$cache" \
+    "$(find "$cache" -type f | wc -l)" \
+    "$(du -sb "$cache" | cut -f1)"
+done | tee "$ROOT/cache_before.txt"
+```
+
+### 41.2 Run all 1,651 pages with the matched production configuration
+
+The command below deliberately uses the ten 310P-compatible vision buckets
+from Phase 37, B32 static-actual GQA decode, KV4096, PromptFA with 128 alignment,
+greedy vision packing, production-group text packing, and all-pages-first
+layout.  It omits fingerprints and timeline tracing to match the 910B full
+performance reference.  Do not change any of those choices.
+
+```sh
+printf '%q ' timeout --signal=TERM --kill-after=30s 10800 \
+  "$PYTHON_BIN" "$E2E" \
+  --dataset-json /workspace/datasets/OmniDocBench/OmniDocBench.json \
+  --images-dir /workspace/datasets/OmniDocBench/images \
+  --layout-model /workspace/models/PP-DocLayoutV3_safetensors \
+  --recognizer-model /workspace/models/PaddleOCR-VL-1.6 \
+  --offset 0 --limit 1651 \
+  --batch-size 32 --cache-length 4096 \
+  --preprocessor-min-pixels 28224 \
+  --decode-backend torchair \
+  --decode-optimization combined_apply_static_actual \
+  --torchair-cache-dir .runtime_cache/310p_phase36_static_actual_b32 \
+  --vision-backend torchair \
+  --vision-attention prompt_flash_attention \
+  --vision-buckets 128,256,384,512,640,768,1408,1920,2944,4992 \
+  --vision-torchair-cache-dir .runtime_cache/09_persistent_page_engine_vision_torchair \
+  --vision-batched-cache-dir .runtime_cache/09_vision_router_batched \
+  --vision-promptfa-align-128 --vision-padding bucket \
+  --vision-packing greedy --vision-pack-target 1920 \
+  --vision-router-lookahead 32 \
+  --text-buckets 32,64,96,128,160,176,192,208,224,256,320,384,448,576,640,768,896,1024,1152,1280,1312 \
+  --text-packing production_group \
+  --text-pack-buckets 128,256,512,1024 \
+  --text-pack-max-members 32 \
+  --text-torchair-cache-dir .runtime_cache/09_persistent_page_engine_text_torchair \
+  --text-packed-cache-dir .runtime_cache/310p_text_packed_4789067 \
+  --layout-device npu --no-layout-graph-capture \
+  --preprocess-all-pages-first --no-timeline \
+  --output-dir "$OUTPUT" >"$LANE/command.sh"
+printf '\n' >>"$LANE/command.sh"
+
+SECONDS=0
+set +e
+set -o pipefail
+PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 10800 \
+  "$PYTHON_BIN" "$E2E" \
+  --dataset-json /workspace/datasets/OmniDocBench/OmniDocBench.json \
+  --images-dir /workspace/datasets/OmniDocBench/images \
+  --layout-model /workspace/models/PP-DocLayoutV3_safetensors \
+  --recognizer-model /workspace/models/PaddleOCR-VL-1.6 \
+  --offset 0 --limit 1651 \
+  --batch-size 32 --cache-length 4096 \
+  --preprocessor-min-pixels 28224 \
+  --decode-backend torchair \
+  --decode-optimization combined_apply_static_actual \
+  --torchair-cache-dir .runtime_cache/310p_phase36_static_actual_b32 \
+  --vision-backend torchair \
+  --vision-attention prompt_flash_attention \
+  --vision-buckets 128,256,384,512,640,768,1408,1920,2944,4992 \
+  --vision-torchair-cache-dir .runtime_cache/09_persistent_page_engine_vision_torchair \
+  --vision-batched-cache-dir .runtime_cache/09_vision_router_batched \
+  --vision-promptfa-align-128 --vision-padding bucket \
+  --vision-packing greedy --vision-pack-target 1920 \
+  --vision-router-lookahead 32 \
+  --text-buckets 32,64,96,128,160,176,192,208,224,256,320,384,448,576,640,768,896,1024,1152,1280,1312 \
+  --text-packing production_group \
+  --text-pack-buckets 128,256,512,1024 \
+  --text-pack-max-members 32 \
+  --text-torchair-cache-dir .runtime_cache/09_persistent_page_engine_text_torchair \
+  --text-packed-cache-dir .runtime_cache/310p_text_packed_4789067 \
+  --layout-device npu --no-layout-graph-capture \
+  --preprocess-all-pages-first --no-timeline \
+  --output-dir "$OUTPUT" 2>&1 | tee "$LANE/run.log"
+run_exit="${PIPESTATUS[0]}"
+run_wall_s="$SECONDS"
+set -e
+printf '%s\n' "$run_exit" >"$LANE/exit_code.txt"
+printf '%s\n' "$run_wall_s" >"$LANE/launcher_wall_s.txt"
+test "$run_exit" -eq 0
+```
+
+The foreground `tee` is the authoritative progress log.  In another terminal,
+low-cost monitoring is allowed with:
+
+```sh
+tail -f "$LANE/run.log"
+watch -n 30 'npu-smi info; wc -l '"$OUTPUT"'/page_regions.jsonl '"$OUTPUT"'/recognition_trace.jsonl 2>/dev/null'
+```
+
+Do not enable extra scheduler tracing merely to obtain progress; that would no
+longer be the matched performance lane.
+
+Validate the completed output before evaluation:
+
+```sh
+"$PYTHON_BIN" - "$OUTPUT" <<'PY' | tee "$LANE/compact_summary.json"
+import json
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+summary = json.loads((root / "run_summary.json").read_text())
+r = summary["recognition"]
+s = r["device_stage_s"]
+assert summary["offset"] == 0 and summary["count"] == 1651
+assert summary["result_count"] == 1651
+assert summary["prediction_count"] == 1651
+assert summary["configuration"]["page_preprocessing_mode"] == "all_before_recognition"
+assert set(r["stop_reason_counts"]) <= {"eos", "kv_cache_full"}
+assert r["requests"] == sum(1 for line in (root / "recognition_trace.jsonl").open() if line.strip())
+
+result = {
+    "setup_s": summary["setup_s"],
+    "pipeline_e2e_s": summary["pipeline_e2e_s"],
+    "pages_per_s": summary["pages_per_s"],
+    "s_per_page": summary["s_per_page"],
+    "layout_s": summary["layout_frontend"]["stage_s"]["page_total_s"],
+    "ocr_scheduler_wall_s": r["run_scoped_scheduler_wall_s"],
+    "requests": r["requests"],
+    "stop_reasons": r["stop_reason_counts"],
+    "vision": {
+        "real_tokens": r["real_vision_tokens"],
+        "physical_tokens": r["physical_vision_tokens"],
+        "seconds": s["vision_prefill"],
+        "real_tps": r["real_vision_tokens"] / s["vision_prefill"],
+        "physical_tps": r["physical_vision_tokens"] / s["vision_prefill"],
+    },
+    "text": {
+        "real_tokens": r["real_text_tokens"],
+        "physical_tokens": r["physical_text_tokens"],
+        "seconds": s["text_prefill"],
+        "real_tps": r["real_text_tokens"] / s["text_prefill"],
+        "physical_tps": r["physical_text_tokens"] / s["text_prefill"],
+    },
+    "decode": {
+        "generated_including_eos": r["generated_tokens_including_eos"],
+        "effective_tokens": r["effective_decode_tokens"],
+        "raw_slots": r["raw_decode_token_slots"],
+        "seconds": r["decode_wall_s"],
+        "effective_tps": r["effective_decode_tokens"] / r["decode_wall_s"],
+        "raw_tps": r["raw_decode_token_slots"] / r["decode_wall_s"],
+    },
+}
+print(json.dumps(result, indent=2))
+PY
+```
+
+Print this compact summary immediately when E2E completes so Luka can see the
+performance result before evaluation starts.  Then continue to 41.3 unless an
+assertion failed.
+
+Record cache state again and report any differences:
+
+```sh
+for cache in \
+  .runtime_cache/310p_phase36_static_actual_b32 \
+  .runtime_cache/09_persistent_page_engine_vision_torchair \
+  .runtime_cache/09_vision_router_batched \
+  .runtime_cache/09_persistent_page_engine_text_torchair \
+  .runtime_cache/310p_text_packed_4789067
+do
+  printf '%s\tfiles=%s\tbytes=%s\n' \
+    "$cache" \
+    "$(find "$cache" -type f | wc -l)" \
+    "$(du -sb "$cache" | cut -f1)"
+done | tee "$ROOT/cache_after.txt"
+diff -u "$ROOT/cache_before.txt" "$ROOT/cache_after.txt" \
+  | tee "$ROOT/cache_diff.txt" || true
+```
+
+### 41.3 Run the guarded full evaluator
+
+Create a fresh evaluation config pointing at the exact Phase-41 subset and
+prediction directory.  This runtime config is an artifact under `tmp/`, not a
+tracked source edit.
+
+```sh
+cat >"$EVAL/work/config.yaml" <<EOF
+end2end_eval:
+  metrics:
+    text_block:
+      metric:
+      - Edit_dist
+    display_formula:
+      metric:
+      - Edit_dist
+    table:
+      metric:
+      - TEDS
+      - Edit_dist
+      teds_workers: 12
+    reading_order:
+      metric:
+      - Edit_dist
+  dataset:
+    dataset_name: end2end_dataset
+    ground_truth:
+      data_path: $WORK_SERVER_REPO/$OUTPUT/OmniDocBench_subset.json
+    prediction:
+      data_path: $WORK_SERVER_REPO/$OUTPUT/predictions
+    match_method: quick_match
+    match_workers: 12
+    quick_match_truncated_timeout_sec: 300
+    match_timeout_sec: 420
+    timeout_fallback_max_chunk_span: 10
+    timeout_fallback_order_penalty: 0.10
+EOF
+
+cd "$EVAL/work"
+ulimit -n 65536
+SECONDS=0
+set +e
+set -o pipefail
+PYTHONUNBUFFERED=1 "$EVAL_PYTHON" \
+  "$WORK_SERVER_REPO/$EVAL_WRAPPER" \
+  --config config.yaml \
+  --evaluator-root "$EVALUATOR_ROOT" \
+  --match-workers 12 \
+  --teds-workers 12 \
+  --page-timeout-sec 120 \
+  --fallback-timeout-sec 180 \
+  --fallback-latex-timeout-sec 30 \
+  2>&1 | tee evaluation.log
+eval_exit="${PIPESTATUS[0]}"
+eval_wall_s="$SECONDS"
+set -e
+printf '%s\n' "$eval_exit" >../exit_code.txt
+printf '%s\n' "$eval_wall_s" >../wall_s.txt
+test "$eval_exit" -eq 0
+cd "$WORK_SERVER_REPO"
+```
+
+The wrapper is intentionally different from invoking `pdf_validation.py`
+directly:
+
+- each page match runs in a killable child process;
+- a 120-second primary timeout is recorded and retried with bounded fallback;
+- fallback LaTeX conversion has its own hard limit;
+- exact table strings bypass unnecessary TEDS work;
+- every TEDS timeout/error is recorded instead of hanging or corrupting the
+  whole evaluation.
+
+Do not exclude difficult pages from ground truth.  Do not rerun only a filtered
+499-page set.  A guarded timeout is valid evidence and must remain in the full
+1,651-page denominator/report.
+
+Validate the evaluator outputs:
+
+```sh
+RESULT="$EVAL/work/result"
+test -f "$RESULT/predictions_quick_match_metric_result.json"
+test -f "$RESULT/predictions_quick_match_run_summary.json"
+test -f "$RESULT/predictions_quick_match_stage_execution.json"
+
+"$EVAL_PYTHON" - "$RESULT" <<'PY' | tee "$EVAL/compact_eval_summary.json"
+import json
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+report = json.loads((root / "predictions_quick_match_run_summary.json").read_text())
+metric_result = json.loads(
+    (root / "predictions_quick_match_metric_result.json").read_text()
+)
+stage = report["stage_execution"]
+assert stage["page_match"]["page_count"] == 1651
+
+out = {
+    "text_block_Edit_dist": metric_result["text_block"]["all"]["Edit_dist"]["ALL_page_avg"],
+    "display_formula_Edit_dist": metric_result["display_formula"]["all"]["Edit_dist"]["ALL_page_avg"],
+    "table_Edit_dist": metric_result["table"]["all"]["Edit_dist"]["ALL_page_avg"],
+    "reading_order_Edit_dist": metric_result["reading_order"]["all"]["Edit_dist"]["ALL_page_avg"],
+    "table_TEDS": metric_result["table"]["page"]["TEDS"]["ALL"],
+    "table_TEDS_structure_only": metric_result["table"]["page"]["TEDS_structure_only"]["ALL"],
+    "table_TEDS_sample_aggregate": metric_result["table"]["all"]["TEDS"]["all"],
+    "page_denominators": report["page_denominators"],
+    "page_match": stage["page_match"],
+    "table_TEDS_execution": stage["metrics"]["table"]["TEDS"],
+}
+print(json.dumps(out, indent=2))
+PY
+```
+
+The evaluator's `display_formula_CDM` notebook field is expected to remain null
+because CDM is disabled; it is not the display-formula Edit distance.  The
+compact script deliberately reads the actual display-formula Edit-distance
+`ALL_page_avg` directly from `predictions_quick_match_metric_result.json`.
+
+### 41.4 Produce the head-to-head report, then stop
+
+Write `$ROOT/agent_report.md`.  Begin with exactly one classification:
+
+```text
+310P PHASE 41 FULL: PASS | E2E_FAILURE | EVALUATOR_FAILURE |
+COMPILE_CONTAMINATED | DATASET_MISMATCH
+```
+
+Include all of the following:
+
+1. exact project/evaluator commits, host, physical NPU, CANN, driver, firmware,
+   Python, torch, and torch_npu;
+2. exact expanded E2E and evaluation commands and all artifact paths;
+3. setup, pipeline E2E, pages/s, seconds/page, layout time/pages-s, and OCR
+   scheduler wall;
+4. request count; stop reasons; real/physical vision tokens; real/physical
+   text-prefill tokens; generated/effective/raw decode tokens;
+5. vision/text/decode seconds and real/physical/effective/raw tok/s;
+6. every device-stage total, packing group counts/fill fractions/histograms,
+   decode graph calls, idle/lookahead slots, KV bytes copied, and private-cache
+   high-water mark;
+7. cache before/after diff and explicit warm-cache versus compile-contaminated
+   classification;
+8. official evaluator page-level quality metrics, all denominators, page-match
+   fallback cases, TEDS timeout/error/exception cases, and evaluator wall time;
+9. signed quality deltas against 910B2: `310P - 910B` for Edit distances and
+   `310P - 910B` for TEDS, while marking the desired direction correctly;
+10. performance ratios: 310P/910B pages/s and each 310P/910B stage tok/s, plus
+    the reciprocal slowdown;
+11. any long/degenerate prediction responsible for evaluator fallback or TEDS
+    timeout, without manually excluding it from the score;
+12. concise `what is proven`, `what is not proven`, and the first causal error
+    if any stage failed.
+
+Paste the complete `agent_report.md`, `e2e/compact_summary.json`,
+`evaluation/compact_eval_summary.json`, and both evaluator stage/run summaries.
+Keep all artifacts local on the work server.  Do not modify source, commit,
+push, or begin another optimization.  Then **stop**.

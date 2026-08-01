@@ -1,0 +1,52 @@
+{
+    "page_match": {
+        "workers": 24,
+        "page_count": 1651,
+        "quick_match_truncated_timeout_sec": 300,
+        "match_timeout_sec": 420,
+        "fallbacks": {
+            "quick_match_timeout": {
+                "count": 0,
+                "cases": []
+            },
+            "page_timeout": {
+                "count": 3,
+                "cases": [
+                    "docstructbench_enbook-zlib-o.O-17208435.pdf_105.jpg",
+                    "docstructbench_enbook-zlib-o.O-17208435.pdf_57.jpg",
+                    "newspaper_0b1bb8d03b4287eb95f67b68c2cf9f92_1.jpg"
+                ]
+            }
+        }
+    },
+    "metrics": {
+        "table": {
+            "TEDS": {
+                "workers": 12,
+                "timeout_sec": 120.0,
+                "sample_count": 665,
+                "timeout_case_count": 1,
+                "timeout_cases": [
+                    {
+                        "case_name": "yanbaopptmerge_bde265c4886a63cc9a96575991522f2abfce961325fcd4884fabd9a79c423ffa.pdf_2.jpg[gt=[1], pred=[1]]",
+                        "img_id": "yanbaopptmerge_bde265c4886a63cc9a96575991522f2abfce961325fcd4884fabd9a79c423ffa.pdf_2.jpg",
+                        "gt_idx": [
+                            1
+                        ],
+                        "pred_idx": [
+                            1
+                        ],
+                        "reason": "timeout:120.0",
+                        "timeout_sec": 120.0,
+                        "gt_length": 711,
+                        "pred_length": 2054838
+                    }
+                ],
+                "error_case_count": 0,
+                "error_cases": [],
+                "exception_case_count": 0,
+                "exception_cases": []
+            }
+        }
+    }
+}
