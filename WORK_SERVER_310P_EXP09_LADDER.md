@@ -14558,3 +14558,190 @@ Write `$ROOT/agent_report.md` with these sections:
 Paste the full report, all three generated `comparison.md` files, and the
 headline `recognition` and `layout` objects from each `comparison.json`. Then
 **stop**. Do not start that next experiment yet.
+
+---
+
+## Phase 39: fixed seven-page input-identity and execution localization
+
+### Goal and hard boundary
+
+Phase 38 proved a deterministic cross-device output difference but did not
+record crop bytes or final CPU model inputs.  Phase 39 reruns only original
+OmniDocBench pages 8 through 14 (106 historical recognition requests), with a
+fixed ten-case diagnostic manifest and exact pre-H2D fingerprints.
+
+This phase answers one question:
+
+> For divergent crops, are the raw crop pixels, prepared CPU tensors, and
+> vision/text execution routes actually identical between 310P and 910B?
+
+Do not run the evaluator, a larger prefix, eager variants, new graph shapes,
+or per-layer tensor dumps.  The fixed-corpus classification decides whether
+the next phase belongs in the frontend or inside model execution.
+
+### 39.1 Pull and verify the committed 910B reference
+
+```sh
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git pull --ff-only origin main
+git status --short
+source npu-setup
+
+PYTHON_BIN=/usr/local/python3.12.13/bin/python
+E2E=09_persistent_page_engine/scripts/run_omnidocbench.py
+LAB=09_persistent_page_engine/scripts/accuracy_lab.py
+CASES=09_persistent_page_engine/accuracy_lab/cases.json
+REFERENCE=tmp/09_persistent_page_engine/910b_accuracy_lab_7p_8e19fdc/output
+ROOT=tmp/09_persistent_page_engine/310p_phase39_accuracy_lab_8e19fdc
+
+test -f "$CASES"
+test -f "$REFERENCE/run_summary.json"
+test -f "$REFERENCE/recognition_trace.jsonl"
+test -f "$REFERENCE/page_regions.jsonl"
+test -d "$REFERENCE/predictions"
+test ! -e "$ROOT"
+mkdir -p "$ROOT"
+```
+
+If the committed reference does not exist, stop immediately and report
+`REFERENCE_NOT_COMMITTED`.  Do not substitute the old 32-page Phase-38
+reference: it lacks input fingerprints.
+
+Before running, inspect the reference and require:
+
+- offset 8, count 7, and the exact seven image names in `cases.json`;
+- B32, KV4096, min_pixels 28224, static-actual GQA;
+- the exact ten vision buckets from Phase 38;
+- the explicit 21-value text bucket ladder in the command below;
+- production-group text packing at 128/256/512/1024;
+- `page_preprocessing_mode=all_before_recognition`;
+- `recognition_input_fingerprints=true`;
+- only EOS or KV-full stop reasons.
+
+### 39.2 Run the matching 310P corpus
+
+CPU hashing does not change any compiled graph.  Reuse the already validated
+310P graph caches; no new compilation or regeneration is allowed.
+
+```sh
+LANE="$ROOT/310p_e2e"
+OUTPUT="$LANE/output"
+mkdir -p "$LANE"
+
+printf '%q ' timeout --signal=TERM --kill-after=15s 900 \
+  "$PYTHON_BIN" "$E2E" \
+  --dataset-json /workspace/datasets/OmniDocBench/OmniDocBench.json \
+  --images-dir /workspace/datasets/OmniDocBench/images \
+  --layout-model /workspace/models/PP-DocLayoutV3_safetensors \
+  --recognizer-model /workspace/models/PaddleOCR-VL-1.6 \
+  --offset 8 --limit 7 \
+  --batch-size 32 --cache-length 4096 \
+  --preprocessor-min-pixels 28224 \
+  --decode-backend torchair \
+  --decode-optimization combined_apply_static_actual \
+  --torchair-cache-dir .runtime_cache/310p_phase36_static_actual_b32 \
+  --vision-backend torchair \
+  --vision-attention prompt_flash_attention \
+  --vision-buckets 128,256,384,512,640,768,1408,1920,2944,4992 \
+  --vision-torchair-cache-dir .runtime_cache/09_persistent_page_engine_vision_torchair \
+  --vision-batched-cache-dir .runtime_cache/09_vision_router_batched \
+  --vision-promptfa-align-128 --vision-padding bucket \
+  --vision-packing greedy --vision-pack-target 1920 \
+  --vision-router-lookahead 32 \
+  --text-buckets 32,64,96,128,160,176,192,208,224,256,320,384,448,576,640,768,896,1024,1152,1280,1312 \
+  --text-packing production_group \
+  --text-pack-buckets 128,256,512,1024 \
+  --text-pack-max-members 32 \
+  --text-torchair-cache-dir .runtime_cache/09_persistent_page_engine_text_torchair \
+  --text-packed-cache-dir .runtime_cache/310p_text_packed_4789067 \
+  --layout-device npu --no-layout-graph-capture \
+  --preprocess-all-pages-first --no-timeline \
+  --recognition-input-fingerprints \
+  --output-dir "$OUTPUT" >"$LANE/command.sh"
+printf '\n' >>"$LANE/command.sh"
+
+set +e
+timeout --signal=TERM --kill-after=15s 900 \
+  "$PYTHON_BIN" "$E2E" \
+  --dataset-json /workspace/datasets/OmniDocBench/OmniDocBench.json \
+  --images-dir /workspace/datasets/OmniDocBench/images \
+  --layout-model /workspace/models/PP-DocLayoutV3_safetensors \
+  --recognizer-model /workspace/models/PaddleOCR-VL-1.6 \
+  --offset 8 --limit 7 \
+  --batch-size 32 --cache-length 4096 \
+  --preprocessor-min-pixels 28224 \
+  --decode-backend torchair \
+  --decode-optimization combined_apply_static_actual \
+  --torchair-cache-dir .runtime_cache/310p_phase36_static_actual_b32 \
+  --vision-backend torchair \
+  --vision-attention prompt_flash_attention \
+  --vision-buckets 128,256,384,512,640,768,1408,1920,2944,4992 \
+  --vision-torchair-cache-dir .runtime_cache/09_persistent_page_engine_vision_torchair \
+  --vision-batched-cache-dir .runtime_cache/09_vision_router_batched \
+  --vision-promptfa-align-128 --vision-padding bucket \
+  --vision-packing greedy --vision-pack-target 1920 \
+  --vision-router-lookahead 32 \
+  --text-buckets 32,64,96,128,160,176,192,208,224,256,320,384,448,576,640,768,896,1024,1152,1280,1312 \
+  --text-packing production_group \
+  --text-pack-buckets 128,256,512,1024 \
+  --text-pack-max-members 32 \
+  --text-torchair-cache-dir .runtime_cache/09_persistent_page_engine_text_torchair \
+  --text-packed-cache-dir .runtime_cache/310p_text_packed_4789067 \
+  --layout-device npu --no-layout-graph-capture \
+  --preprocess-all-pages-first --no-timeline \
+  --recognition-input-fingerprints \
+  --output-dir "$OUTPUT" 2>&1 | tee "$LANE/run.log"
+run_exit="${PIPESTATUS[0]}"
+set -e
+printf '%s\n' "$run_exit" >"$LANE/exit_code.txt"
+test "$run_exit" -eq 0
+```
+
+Path adaptations are allowed only for dataset/model roots.  Record them.  Do
+not alter any model, bucket, packing, frontend, generation, or fingerprint
+setting.
+
+### 39.3 Run the strict fixed-corpus comparison
+
+```sh
+"$PYTHON_BIN" "$LAB" \
+  --cases "$CASES" \
+  --reference-output "$REFERENCE" \
+  --candidate-output "$OUTPUT" \
+  --output-dir "$ROOT/comparison" \
+  2>&1 | tee "$ROOT/comparison.log"
+```
+
+Do not pass `--allow-missing-fingerprints`.  A missing crop or prepared-input
+hash is a failed instrumentation contract, not an inconclusive result.
+
+### 39.4 Report and stop
+
+Write `$ROOT/agent_report.md`.  Begin with exactly one classification:
+
+```text
+310P PHASE 39: MODEL_EXECUTION_DIFFERENCE_PROVEN |
+ALL_DIVERGENCES_HAVE_DIFFERENT_PREPARED_INPUTS |
+MIXED_INPUT_AND_ROUTE_EVIDENCE | FIXED_CORPUS_TOKEN_EXACT |
+INPUT_IDENTITY_UNRESOLVED | E2E_FAILURE | REFERENCE_NOT_COMMITTED
+```
+
+Then include:
+
+1. exact commit, host/NPU/software, expanded E2E command, and cache-hit evidence;
+2. reference and candidate request/page counts and stop reasons;
+3. complete fixed-corpus boundary summary;
+4. exact/different/unavailable cross-tabs for crop hashes, prepared-input
+   hashes, recorded request metadata, vision routes, and text-prefill routes;
+5. the complete ten-case table from `report.md`;
+6. for every divergent selected case, both original request IDs, first
+   divergence index, full route signatures, crop hash, combined prepared hash,
+   and all six individual tensor-hash statuses;
+7. whether the two control candidates are actually cross-device token exact;
+8. contract warnings, what is proven, and what remains unresolved.
+
+Paste the complete `agent_report.md`, `comparison/report.md`, the top-level
+`classification` object, all evidence cross-tabs, and the ten selected-case
+objects from `comparison/report.json`.  Then **stop**.  Do not start per-layer
+profiling or modify any source.
