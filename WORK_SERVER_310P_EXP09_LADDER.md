@@ -16576,3 +16576,48 @@ For PASS, report:
 Paste `agent_report.md` plus `headline.json`.  Full bundle, JSONL, and HTML
 artifacts remain local on the work server.  Do not use an NPU or begin the logit
 replay.  Then **stop**.
+
+### 44.7 Compact manual-transfer addendum
+
+If `headline.json` is too large to transfer through the coordinating chat, do
+not rerun the atlas, inference, matching, or TEDS.  Read the already-generated
+`headline.json`, `report.json`, and JSONL artifacts, then append a section named
+`Compact transfer summary` to the existing `$ROOT/agent_report.md`.  Keep the
+complete Markdown report below 100 KB.  Do not paste raw JSON, full token-ID
+sequences, complete generations, or large arrays.
+
+The compact section must include:
+
+1. **Generation comparison:** paired/reference-only/candidate-only request
+   counts; every difference-class count split by text/formula/table; triage
+   flag counts; and every manually confirmed real degeneration with
+   page/block, token counts, and a short description.
+2. **Official metrics:** one table containing every 910B score, 310P score,
+   and signed candidate-minus-reference delta for text Edit, formula Edit,
+   table Edit, corrected page TEDS, corrected page TEDS-structure, and reading
+   order Edit.
+3. **Metric concentration:** for each metric, top-10/top-25/top-50 page
+   contribution to net and gross regression.  List only the ten most harmful
+   pages with reference score, candidate score, and signed contribution.
+4. **Evaluator GT-result universe audit:** exact/nonexact status,
+   differing-page count, and reference-only/candidate-only atom counts for
+   every evaluator kind.  Include every difference when there are at most 20;
+   otherwise include the first 20 and the total counts.
+5. **Manual text/formula review:** the ten reviewed examples and their
+   disposition (`syntax/spacing only`, `310P clearly better`, `910B clearly
+   better`, `both wrong`, `real 310P degeneration`, or
+   `evaluator/matching confound`), with short GT/910B/310P excerpts.  Report
+   every observed minus-to-`\\quad` case.
+6. **Tables:** independent raw format counts for both devices; the complete
+   compact transition matrix; exact-input-proven versus stable-key-only
+   transition counts; table Edit/TEDS loss grouped by transition signature;
+   and the five strongest exact-target token-zero replay candidates.
+7. **Reading order:** worse/better/unchanged page counts; missing-member versus
+   inversion counts; top-10/top-25/top-50 concentration; and `pred_idx=0`
+   evaluator-defect counts for both devices.
+8. Finish with explicit `What is proven` and `What remains unresolved`
+   sections.
+
+Preserve the existing report content.  After appending the compact section,
+print only the updated `agent_report.md` for manual transfer.  Do not print or
+attempt to transfer `headline.json`.
