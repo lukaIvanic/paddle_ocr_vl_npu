@@ -16095,3 +16095,180 @@ Paste `agent_report.md`, `compact_summary.json`, and
 `table_edit_diagnostics.json`.  Do not rerun inference, matching, or another
 metric.  Do not edit source, commit, push, or begin a new experiment.  Then
 **stop**.
+
+---
+
+## Phase 43: localize the 396 missing tables across the frozen pipeline
+
+### Goal
+
+Phase 42 proved that 396 of 665 310P GT-table samples reached the evaluator
+with an empty prediction.  An empty evaluator prediction proves only that the
+GT table was left unmatched; it does not identify which upstream boundary lost
+it.  Trace the same frozen Phase-41 artifacts through:
+
+```text
+GT table bbox
+  -> best-overlap final page block and label
+  -> recognition request label/prompt
+  -> raw recognition text
+  -> final page-block content
+  -> evaluator matched prediction
+```
+
+This is a CPU-only artifact audit.  Do not rerun inference, page matching, or
+TEDS.  Do not source `npu-setup` or reserve an NPU.
+
+The identical audit already passed on the frozen 910B full run.  Its committed
+reference is:
+
+```text
+tmp/09_persistent_page_engine/910b_table_pipeline_audit_fad036f/report.json
+```
+
+The critical 910B reference counts are:
+
+| Boundary | 910B count out of 665 GT tables |
+|---|---:|
+| best-overlap block IoU >= 0.5 | 657 |
+| best-overlap block labeled table | 657 |
+| Table Recognition request | 641 |
+| any non-empty recognition text | 662 |
+| non-empty evaluator prediction | 657 |
+| empty evaluator prediction | 8 |
+
+Across the whole 910B run there were 751 final blocks labeled `table`, 751
+table recognition requests, and 751 `Table Recognition:` prompts.
+
+### 43.1 Pull and verify frozen inputs
+
+The work-server agent remains pull-only.  Do not edit tracked files, create a
+branch, commit, or push.
+
+```sh
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git pull --ff-only origin main
+git status --short
+test -z "$(git status --porcelain)"
+
+AUDIT=09_persistent_page_engine/scripts/audit_table_pipeline.py
+PHASE41=tmp/09_persistent_page_engine/310p_phase41_full_eval_7bda07e
+E2E_OUTPUT="$PHASE41/e2e/output"
+TABLE_RESULT="$PHASE41/evaluation/work/result/predictions_quick_match_table_result.json"
+REFERENCE=tmp/09_persistent_page_engine/910b_table_pipeline_audit_fad036f/report.json
+ROOT="$PHASE41/table_pipeline_audit_$(git rev-parse --short HEAD)"
+REPORT="$ROOT/report.json"
+
+test -f "$AUDIT"
+test -f "$E2E_OUTPUT/OmniDocBench_subset.json"
+test -f "$E2E_OUTPUT/page_regions.jsonl"
+test -f "$E2E_OUTPUT/recognition_trace.jsonl"
+test -f "$TABLE_RESULT"
+test -f "$REFERENCE"
+test ! -e "$ROOT"
+mkdir -p "$ROOT"
+
+{
+  date -Is
+  hostname
+  git rev-parse HEAD
+  sha256sum \
+    "$E2E_OUTPUT/OmniDocBench_subset.json" \
+    "$E2E_OUTPUT/page_regions.jsonl" \
+    "$E2E_OUTPUT/recognition_trace.jsonl" \
+    "$TABLE_RESULT" \
+    "$REFERENCE"
+} | tee "$ROOT/preflight.log"
+```
+
+### 43.2 Run the frozen-artifact audit
+
+```sh
+PYTHONUNBUFFERED=1 /usr/local/python3.12.13/bin/python \
+  "$AUDIT" \
+  --e2e-output "$E2E_OUTPUT" \
+  --table-result "$TABLE_RESULT" \
+  --report "$REPORT" \
+  --expected-pages 1651 \
+  --expected-tables 665 \
+  2>&1 | tee "$ROOT/run.log"
+test "${PIPESTATUS[0]}" -eq 0
+```
+
+The audit uses no model code.  It matches each GT table to the final page block
+with maximum bbox IoU, then follows that block ID into the already recorded
+recognition trace and finally the frozen evaluator sample.
+
+Create a compact direct comparison against 910B:
+
+```sh
+/usr/local/python3.12.13/bin/python - "$REPORT" "$REFERENCE" <<'PY' \
+  | tee "$ROOT/comparison.json"
+import json
+import sys
+from pathlib import Path
+
+test = json.loads(Path(sys.argv[1]).read_text())
+ref = json.loads(Path(sys.argv[2]).read_text())
+
+def value(report, *path):
+    node = report
+    for key in path[:-1]:
+        node = node[key]
+    return node.get(path[-1], 0)
+
+paths = {
+    "whole_run_layout_table": ("whole_run", "layout_label_histogram", "table"),
+    "whole_run_recognition_table": ("whole_run", "recognition_label_histogram", "table"),
+    "gt_good_iou": ("gt_table_path", "iou_band", "good_ge_0.5"),
+    "gt_best_block_table": ("gt_table_path", "best_block_label", "table"),
+    "gt_table_recognition": ("gt_table_path", "recognition_label", "table"),
+    "gt_recognition_text_nonempty": ("gt_table_path", "recognition_text_nonempty", "True"),
+    "gt_evaluator_pred_nonempty": ("gt_table_path", "evaluator_pred_nonempty", "True"),
+    "gt_evaluator_pred_empty": ("gt_table_path", "evaluator_pred_nonempty", "False"),
+}
+
+out = {}
+for name, path in paths.items():
+    test_value = value(test, *path)
+    ref_value = value(ref, *path)
+    out[name] = {
+        "310P": test_value,
+        "910B": ref_value,
+        "delta_310P_minus_910B": test_value - ref_value,
+    }
+out["310P_failure_stage"] = test["gt_table_path"]["failure_stage"]
+out["910B_failure_stage"] = ref["gt_table_path"]["failure_stage"]
+out["310P_empty_by_failure_stage"] = test["empty_evaluator_predictions"]["failure_stage"]
+out["310P_empty_by_best_block_label"] = test["empty_evaluator_predictions"]["best_block_label"]
+out["310P_empty_by_recognition_label"] = test["empty_evaluator_predictions"]["recognition_label"]
+out["310P_stage_paths"] = test["gt_table_path"]["stage_paths"]
+print(json.dumps(out, indent=2, ensure_ascii=False))
+PY
+```
+
+### 43.3 Interpret mechanically, report, and stop
+
+Use the first boundary whose count collapses relative to 910B:
+
+- Low GT-table IoU means layout localization/geometry.
+- Good IoU but a non-table best-block label means layout classification.
+- Table block but non-table/missing recognition request means routing.
+- Table request but empty recognition text means recognition generation.
+- Non-empty table recognition and final content but empty evaluator prediction
+  means page assembly/parser/matching.
+
+Write `$ROOT/agent_report.md`, beginning with:
+
+```text
+310P PHASE 43 TABLE LOSS LOCALIZATION: PASS | INPUT_MISMATCH | AUDIT_FAILURE
+```
+
+Report the complete `comparison.json`, the 310P whole-run label/prompt counts,
+all 310P GT-table boundary counts, the empty-prediction failure-stage split,
+and the top five `stage_paths`.  End with one sentence naming the first proven
+dominant loss boundary.  Do not speculate about a model numerical cause yet.
+
+Paste `agent_report.md` and `comparison.json`.  Do not run another experiment,
+modify source, commit, push, or use an NPU.  Then **stop**.
