@@ -17979,3 +17979,622 @@ Include:
 Paste `agent_report.md`, `checkpoint/gate.json`, and `token0/headline.json`.
 Do not commit/push large model or runtime artifacts.  Do not start a 32-page or
 larger run.  Then **stop**.
+
+---
+
+## Phase 49: full OmniDocBench v1.6 rerun with the corrected v1.6 checkpoint
+
+### Goal and fixed comparison boundary
+
+Phase 48 proved that the old work-server run used the official v1 checkpoint,
+not the byte-identical v1.6 checkpoint used by the 910B reference.  It then
+proved that this checkpoint mismatch was the sole cause of the Phase-45
+token-zero divergence.  Now repeat the complete 1,651-page production run with
+the verified v1.6 snapshot, run the guarded official OmniDocBench evaluator,
+and compare performance, generation streams, and quality directly with the
+committed 910B2 full reference.
+
+This is the corrected equivalent of Phase 41.  Do not optimize or change the
+pipeline.  In particular:
+
+- use `/home/lukaiv/models/PaddleOCR-VL-1.6`, whose weight SHA is fixed below;
+- do not use `/home/lukaiv/models/PaddleOCR-VL`;
+- do not pass the old `--max-new-tokens 2808`; the current default is the
+  4,096-token secondary safety ceiling, while each request stops at EOS or its
+  own remaining KV capacity;
+- use all-pages-first layout, B32 static-actual GQA decode, KV4096, the fixed
+  ten-bucket 310P vision ladder, production-group text packing, and no timeline;
+- use fresh v1.6 cache roots.  The v1 and v1.6 `config.json` files are identical,
+  so reusing the old cache roots risks silently loading graphs compiled with v1
+  weight constants;
+- evaluate all 1,651 pages.  Do not exclude hard pages or substitute a filtered
+  ground truth.
+
+The committed 910B reference is:
+
+```text
+run summary
+  tmp/09_persistent_page_engine/910b_full_e2e_eval_8634d3a_r1/output/run_summary.json
+evaluation
+  tmp/09_persistent_page_engine/910b_full_e2e_eval_8634d3a_r1/evaluation/work/result/
+generation bundle
+  tmp/09_persistent_page_engine/910b_generation_difference_reference_ab00d1f/
+  omnidocbench_v1_6_910b2_full_8634d3a.gdatlas.zip
+```
+
+The 910B headline is 1,651 pages in 1,055.523 s, or 1.56415 pages/s.  Its
+official metrics are text Edit `0.0408832`, formula Edit `0.0868281`, table Edit
+`0.0569611`, page TEDS `0.9434504`, structure TEDS `0.9676981`, and reading-order
+Edit `0.1380545`.  The scripts below read the committed files rather than
+trusting these rounded values.
+
+### 49.1 Pull and prove the corrected checkpoint
+
+The work-server agent remains pull-only.  Do not edit tracked files, create a
+branch, commit, or push.
+
+```sh
+set -o pipefail
+
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git pull --ff-only origin main
+git status --short
+test -z "$(git status --porcelain)"
+source npu-setup
+
+PYTHON_BIN=/usr/local/python3.12.13/bin/python
+EVAL_PYTHON=/workspace/venvs/omnidocbench_py310/bin/python
+E2E=09_persistent_page_engine/scripts/run_omnidocbench.py
+EVAL_WRAPPER=09_persistent_page_engine/scripts/run_omnidocbench_eval.py
+BATCHED_VISION=09_persistent_page_engine/scripts/vision_lab_batched_packed.py
+MODEL=/home/lukaiv/models/PaddleOCR-VL-1.6
+OLD_MODEL=/home/lukaiv/models/PaddleOCR-VL
+DATASET_JSON=/home/lukaiv/datasets/OmniDocBench/OmniDocBench.json
+IMAGES_DIR=/home/lukaiv/datasets/OmniDocBench/images
+LAYOUT_MODEL=/home/lukaiv/models/PP-DocLayoutV3_safetensors
+ROOT="tmp/09_persistent_page_engine/310p_phase49_v16_full_$(git rev-parse --short HEAD)"
+PREP="$ROOT/cache_prepare"
+LANE="$ROOT/e2e"
+OUTPUT="$LANE/output"
+EVAL="$ROOT/evaluation"
+
+REFERENCE_RUN=tmp/09_persistent_page_engine/910b_full_e2e_eval_8634d3a_r1/output/run_summary.json
+REFERENCE_RESULT=tmp/09_persistent_page_engine/910b_full_e2e_eval_8634d3a_r1/evaluation/work/result
+REFERENCE_METRIC="$REFERENCE_RESULT/predictions_quick_match_metric_result.json"
+REFERENCE_BUNDLE=tmp/09_persistent_page_engine/910b_generation_difference_reference_ab00d1f/omnidocbench_v1_6_910b2_full_8634d3a.gdatlas.zip
+
+DECODE_CACHE=.runtime_cache/310p_phase49_v16_decode_b32_k4096
+VISION_CACHE=.runtime_cache/310p_phase49_v16_vision_b1
+BATCHED_CACHE=.runtime_cache/310p_phase49_v16_vision_batched
+TEXT_CACHE=.runtime_cache/310p_phase49_v16_text
+PACKED_CACHE=.runtime_cache/310p_phase49_v16_text_packed
+
+test ! -e "$ROOT"
+mkdir -p "$PREP" "$LANE" "$EVAL/work"
+test -x "$PYTHON_BIN"
+test -x "$EVAL_PYTHON"
+test -f "$E2E"
+test -f "$EVAL_WRAPPER"
+test -f "$BATCHED_VISION"
+test -f "$DATASET_JSON"
+test -d "$IMAGES_DIR"
+test -f "$MODEL/model.safetensors"
+test -f "$OLD_MODEL/model.safetensors"
+test -f "$REFERENCE_RUN"
+test -f "$REFERENCE_METRIC"
+test -f "$REFERENCE_BUNDLE"
+
+test "$(sha256sum "$MODEL/model.safetensors" | awk '{print $1}')" = \
+  85a479d506a11e724e7285d395c551be69f41dbc16b6342d3cacfb189aed71db
+test "$(sha256sum "$OLD_MODEL/model.safetensors" | awk '{print $1}')" = \
+  3085f1042e184f68f8a412aa0f64f2c4b8562989598bbfba326aaa11fc685de8
+test "$(sha256sum "$REFERENCE_BUNDLE" | awk '{print $1}')" = \
+  a1c2ec99b8aa2b0a18f26cedc9fa7383aa42c78620224aed497035b46bb1ba84
+
+PHASE48_ROOT="$(find tmp/09_persistent_page_engine -maxdepth 1 -type d \
+  -name '310p_phase48_v16_*' | sort | tail -n 1)"
+test -n "$PHASE48_ROOT"
+test -f "$PHASE48_ROOT/agent_report.md"
+rg -n '310P PHASE 48: V16_TOKEN0_MATCH' "$PHASE48_ROOT/agent_report.md"
+
+for cache in \
+  "$DECODE_CACHE" "$VISION_CACHE" "$BATCHED_CACHE" \
+  "$TEXT_CACHE" "$PACKED_CACHE"
+do
+  test ! -e "$cache"
+done
+
+{
+  date -Is
+  hostname
+  git rev-parse HEAD
+  printf 'ASCEND_RT_VISIBLE_DEVICES=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"
+  "$PYTHON_BIN" -V
+  "$PYTHON_BIN" - <<'PY'
+import torch, torch_npu
+print("torch", torch.__version__)
+print("torch_npu", torch_npu.__version__)
+print("logical_device", torch.npu.current_device())
+print("device_name", torch.npu.get_device_name(torch.npu.current_device()))
+PY
+  npu-smi info
+  sha256sum \
+    "$MODEL/model.safetensors" \
+    "$OLD_MODEL/model.safetensors" \
+    "$REFERENCE_RUN" "$REFERENCE_METRIC" "$REFERENCE_BUNDLE"
+  df -h "$WORK_SERVER_REPO" /home/lukaiv/models
+} 2>&1 | tee "$ROOT/preflight.log"
+
+available_kb="$(df -Pk "$WORK_SERVER_REPO" | awk 'NR==2 {print $4}')"
+test "$available_kb" -ge 10485760
+```
+
+If the v1.6 hash, Phase-48 token match, clean checkout, reference artifact, free
+NPU, or 10-GiB disk-space check fails, report
+`310P PHASE 49 PREFLIGHT: FAILURE` and
+stop.  Never fall back to the old checkpoint.  Report
+`310P PHASE 49 PREFLIGHT: PASS` immediately with the exact commit, device,
+software, v1.6 hash, and free disk.
+
+### 49.2 Prepare fresh v1.6 graph caches outside the measured run
+
+First compile the two profile-guided batched-vision graphs.  The production
+runtime requires these caches to be warm rather than compiling them itself:
+
+```sh
+SECONDS=0
+set +e
+PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 7200 \
+  "$PYTHON_BIN" "$BATCHED_VISION" \
+  --corpus tmp/09_persistent_page_engine/vision_lab/corpus_recognition_trace_variants.json \
+  --model "$MODEL" \
+  --variant min_pixels_28224 \
+  --cache-dir "$BATCHED_CACHE" \
+  --shape 2x3072 --shape 4x1024 \
+  --warmup 0 --repeats 1 \
+  --output "$PREP/batched_vision.json" \
+  2>&1 | tee "$PREP/batched_vision.log"
+batched_exit="${PIPESTATUS[0]}"
+set -e
+printf '%s\n' "$batched_exit" >"$PREP/batched_vision_exit_code.txt"
+test "$batched_exit" -eq 0
+```
+
+Define the exact production argument vector once.  Both the warmup and full
+run must use this unchanged vector:
+
+```sh
+PRODUCTION_ARGS=(
+  "$E2E"
+  --dataset-json "$DATASET_JSON"
+  --images-dir "$IMAGES_DIR"
+  --layout-model "$LAYOUT_MODEL"
+  --recognizer-model "$MODEL"
+  --batch-size 32 --cache-length 4096
+  --preprocessor-min-pixels 28224
+  --decode-backend torchair
+  --decode-optimization combined_apply_static_actual
+  --torchair-cache-dir "$DECODE_CACHE"
+  --vision-backend torchair
+  --vision-attention prompt_flash_attention
+  --vision-buckets 128,256,384,512,640,768,1408,1920,2944,4992
+  --vision-torchair-cache-dir "$VISION_CACHE"
+  --vision-batched-cache-dir "$BATCHED_CACHE"
+  --vision-promptfa-align-128 --vision-padding bucket
+  --vision-packing greedy --vision-pack-target 1920
+  --vision-router-lookahead 32
+  --text-buckets 32,64,96,128,160,176,192,208,224,256,320,384,448,576,640,768,896,1024,1152,1280,1312
+  --text-packing production_group
+  --text-pack-buckets 128,256,512,1024
+  --text-pack-max-members 32
+  --text-torchair-cache-dir "$TEXT_CACHE"
+  --text-packed-cache-dir "$PACKED_CACHE"
+  --layout-device npu --no-layout-graph-capture
+  --preprocess-all-pages-first --no-timeline
+)
+```
+
+Run one page to make every configured singleton-vision, text-prefill,
+packed-text, and decode graph warm.  Compilation belongs to this preparation
+lane, not to the full-run result:
+
+```sh
+printf '%q ' "$PYTHON_BIN" "${PRODUCTION_ARGS[@]}" \
+  --offset 0 --limit 1 --output-dir "$PREP/one_page_output" \
+  >"$PREP/one_page_command.sh"
+printf '\n' >>"$PREP/one_page_command.sh"
+
+SECONDS=0
+set +e
+PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 7200 \
+  "$PYTHON_BIN" "${PRODUCTION_ARGS[@]}" \
+  --offset 0 --limit 1 --output-dir "$PREP/one_page_output" \
+  2>&1 | tee "$PREP/one_page.log"
+prep_exit="${PIPESTATUS[0]}"
+prep_wall_s="$SECONDS"
+set -e
+printf '%s\n' "$prep_exit" >"$PREP/one_page_exit_code.txt"
+printf '%s\n' "$prep_wall_s" >"$PREP/one_page_wall_s.txt"
+test "$prep_exit" -eq 0
+
+for cache in \
+  "$DECODE_CACHE" "$VISION_CACHE" "$BATCHED_CACHE" \
+  "$TEXT_CACHE" "$PACKED_CACHE"
+do
+  test -d "$cache"
+  test -n "$(find "$cache" -type f -print -quit)"
+  printf '%s\tfiles=%s\tbytes=%s\n' \
+    "$cache" \
+    "$(find "$cache" -type f | wc -l)" \
+    "$(du -sb "$cache" | cut -f1)"
+done | tee "$ROOT/cache_before_full.txt"
+```
+
+Report `310P PHASE 49 CACHE PREP: PASS` with compile wall time, each cache's
+file count/bytes, and the compile/cache metadata from the one-page
+`run_summary.json`.  If preparation fails or any cache is empty, report the
+first causal error and stop.  Do not start the 1,651-page run with a partial
+cache set.
+
+### 49.3 Run all 1,651 pages and compare exact crop generations
+
+```sh
+printf '%q ' "$PYTHON_BIN" "${PRODUCTION_ARGS[@]}" \
+  --offset 0 --limit 1651 --output-dir "$OUTPUT" \
+  >"$LANE/command.sh"
+printf '\n' >>"$LANE/command.sh"
+
+SECONDS=0
+set +e
+PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 14400 \
+  "$PYTHON_BIN" "${PRODUCTION_ARGS[@]}" \
+  --offset 0 --limit 1651 --output-dir "$OUTPUT" \
+  2>&1 | tee "$LANE/run.log"
+run_exit="${PIPESTATUS[0]}"
+run_wall_s="$SECONDS"
+set -e
+printf '%s\n' "$run_exit" >"$LANE/exit_code.txt"
+printf '%s\n' "$run_wall_s" >"$LANE/launcher_wall_s.txt"
+test "$run_exit" -eq 0
+```
+
+The foreground log is the authoritative progress stream.  In a second shell,
+the user may inspect it with:
+
+```sh
+tail -f "$LANE/run.log"
+```
+
+Validate and print the performance headline immediately, before evaluation:
+
+```sh
+"$PYTHON_BIN" - "$OUTPUT/run_summary.json" <<'PY' \
+  | tee "$LANE/compact_summary.json"
+import json, sys
+d = json.load(open(sys.argv[1]))
+r = d["recognition"]
+s = r["device_stage_s"]
+assert d["offset"] == 0 and d["count"] == 1651
+assert d["result_count"] == 1651 and d["prediction_count"] == 1651
+assert d["configuration"]["page_preprocessing_mode"] == "all_before_recognition"
+assert d["configuration"]["cache_length"] == 4096
+assert d["configuration"]["max_new_tokens"] == 4096
+assert set(r["stop_reason_counts"]) <= {"eos", "kv_cache_full"}
+out = {
+    "setup_s": d["setup_s"],
+    "pipeline_e2e_s": d["pipeline_e2e_s"],
+    "pages_per_s": d["pages_per_s"],
+    "s_per_page": d["s_per_page"],
+    "layout_s": d["layout_frontend"]["stage_s"]["page_total_s"],
+    "ocr_scheduler_wall_s": r["run_scoped_scheduler_wall_s"],
+    "requests": r["requests"],
+    "stop_reasons": r["stop_reason_counts"],
+    "vision": {"real": r["real_vision_tokens"], "physical": r["physical_vision_tokens"], "s": s["vision_prefill"]},
+    "text": {"real": r["real_text_tokens"], "physical": r["physical_text_tokens"], "s": s["text_prefill"]},
+    "decode": {"effective": r["effective_decode_tokens"], "raw": r["raw_decode_token_slots"], "s": r["decode_wall_s"]},
+}
+for key in ("vision", "text"):
+    out[key]["real_tps"] = out[key]["real"] / out[key]["s"]
+    out[key]["physical_tps"] = out[key]["physical"] / out[key]["s"]
+out["decode"]["effective_tps"] = out["decode"]["effective"] / out["decode"]["s"]
+out["decode"]["raw_tps"] = out["decode"]["raw"] / out["decode"]["s"]
+print(json.dumps(out, indent=2))
+PY
+```
+
+Now compare every shared request's exact token stream with the committed 910B
+trace.  This is deliberately independent of OmniDocBench normalization:
+
+```sh
+unzip -p "$REFERENCE_BUNDLE" recognition_trace.jsonl \
+  >"$ROOT/910b_recognition_trace.jsonl"
+
+"$PYTHON_BIN" - \
+  "$ROOT/910b_recognition_trace.jsonl" \
+  "$OUTPUT/recognition_trace.jsonl" <<'PY' \
+  | tee "$LANE/generation_comparison.json"
+import json, sys
+
+def load(path):
+    rows = [json.loads(line) for line in open(path) if line.strip()]
+    result = {str(row["request_id"]): row for row in rows}
+    assert len(result) == len(rows), "duplicate request_id"
+    return result
+
+ref = load(sys.argv[1])
+candidate = load(sys.argv[2])
+shared = sorted(set(ref) & set(candidate))
+token_exact = []
+text_exact = []
+compact_exact = []
+length_deltas = []
+for key in shared:
+    left, right = ref[key], candidate[key]
+    lt = [int(x) for x in left.get("token_ids", [])]
+    rt = [int(x) for x in right.get("token_ids", [])]
+    token_exact.append(lt == rt)
+    text_exact.append(left.get("text") == right.get("text"))
+    compact_exact.append(
+        "".join(str(left.get("text", "")).split()) ==
+        "".join(str(right.get("text", "")).split())
+    )
+    if lt != rt:
+        length_deltas.append({
+            "request_id": key,
+            "reference_tokens": len(lt),
+            "candidate_tokens": len(rt),
+            "absolute_delta": abs(len(rt) - len(lt)),
+        })
+out = {
+    "reference_requests": len(ref),
+    "candidate_requests": len(candidate),
+    "shared_requests": len(shared),
+    "reference_only": sorted(set(ref) - set(candidate)),
+    "candidate_only": sorted(set(candidate) - set(ref)),
+    "token_exact": sum(token_exact),
+    "token_different": len(shared) - sum(token_exact),
+    "text_exact": sum(text_exact),
+    "whitespace_compact_text_exact": sum(compact_exact),
+    "worst_30_token_length_deltas": sorted(
+        length_deltas,
+        key=lambda row: (-row["absolute_delta"], row["request_id"]),
+    )[:30],
+}
+print(json.dumps(out, indent=2, ensure_ascii=False))
+PY
+```
+
+Report `310P PHASE 49 E2E: PASS` immediately with the compact timing/tok-s
+summary and exact generation counts.  Do not interpret a token difference as
+wrong until the official evaluation finishes.
+
+Record cache state again.  Any new graph directory during the full run makes
+the timing compile-contaminated and must be called out:
+
+```sh
+for cache in \
+  "$DECODE_CACHE" "$VISION_CACHE" "$BATCHED_CACHE" \
+  "$TEXT_CACHE" "$PACKED_CACHE"
+do
+  printf '%s\tfiles=%s\tbytes=%s\n' \
+    "$cache" \
+    "$(find "$cache" -type f | wc -l)" \
+    "$(du -sb "$cache" | cut -f1)"
+done | tee "$ROOT/cache_after_full.txt"
+diff -u "$ROOT/cache_before_full.txt" "$ROOT/cache_after_full.txt" \
+  | tee "$ROOT/cache_diff.txt" || true
+```
+
+### 49.4 Run the guarded official evaluator
+
+Locate the evaluator checkout already established in Phases 41/42.  Do not
+clone or change it:
+
+```sh
+EVALUATOR_ROOT=
+for candidate in \
+  /workspace/repos/OmniDocBench_eval \
+  /home/lukaiv/repos/OmniDocBench_eval \
+  "$HOME/repos/OmniDocBench_eval" \
+  "$HOME/OmniDocBench_eval" \
+  "$HOME/OmniDocBench"
+do
+  if test -f "$candidate/pdf_validation.py"; then
+    EVALUATOR_ROOT="$candidate"
+    break
+  fi
+done
+test -n "$EVALUATOR_ROOT"
+test "$(git -C "$EVALUATOR_ROOT" rev-parse HEAD)" = \
+  2b161d010d2e3aff77a0edef359ea3a6411d23cd
+
+cat >"$EVAL/work/config.yaml" <<EOF
+end2end_eval:
+  metrics:
+    text_block:
+      metric:
+      - Edit_dist
+    display_formula:
+      metric:
+      - Edit_dist
+    table:
+      metric:
+      - TEDS
+      - Edit_dist
+      teds_workers: 12
+    reading_order:
+      metric:
+      - Edit_dist
+  dataset:
+    dataset_name: end2end_dataset
+    ground_truth:
+      data_path: $WORK_SERVER_REPO/$OUTPUT/OmniDocBench_subset.json
+    prediction:
+      data_path: $WORK_SERVER_REPO/$OUTPUT/predictions
+    match_method: quick_match
+    match_workers: 12
+    quick_match_truncated_timeout_sec: 300
+    match_timeout_sec: 420
+    timeout_fallback_max_chunk_span: 10
+    timeout_fallback_order_penalty: 0.10
+EOF
+
+cd "$EVAL/work"
+ulimit -n 65536
+SECONDS=0
+set +e
+PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 3600 \
+  "$EVAL_PYTHON" "$WORK_SERVER_REPO/$EVAL_WRAPPER" \
+  --config config.yaml \
+  --evaluator-root "$EVALUATOR_ROOT" \
+  --match-workers 12 --teds-workers 12 \
+  --page-timeout-sec 120 \
+  --fallback-timeout-sec 180 \
+  --fallback-latex-timeout-sec 30 \
+  --teds-timeout-sec 120 \
+  2>&1 | tee evaluation.log
+eval_exit="${PIPESTATUS[0]}"
+eval_wall_s="$SECONDS"
+set -e
+printf '%s\n' "$eval_exit" >../exit_code.txt
+printf '%s\n' "$eval_wall_s" >../wall_s.txt
+cd "$WORK_SERVER_REPO"
+test "$eval_exit" -eq 0
+```
+
+This wrapper uses process-isolated page matching and the corrected
+parent-owned TEDS process scheduler.  It should not reproduce the old nested
+thread/process `can only join a started process` failure.  A bounded timeout is
+valid evidence; a worker lifecycle error is not.  Do not exclude pages or run
+the old direct `pdf_validation.py` command if this fails.
+
+Validate the complete evaluator result:
+
+```sh
+RESULT="$EVAL/work/result"
+METRIC="$RESULT/predictions_quick_match_metric_result.json"
+EVAL_SUMMARY="$RESULT/predictions_quick_match_run_summary.json"
+STAGE="$RESULT/predictions_quick_match_stage_execution.json"
+test -f "$METRIC"
+test -f "$EVAL_SUMMARY"
+test -f "$STAGE"
+
+"$EVAL_PYTHON" - "$METRIC" "$EVAL_SUMMARY" <<'PY' \
+  | tee "$EVAL/compact_eval_summary.json"
+import json, sys
+m = json.load(open(sys.argv[1]))
+s = json.load(open(sys.argv[2]))
+stage = s["stage_execution"]
+assert stage["page_match"]["page_count"] == 1651
+out = {
+    "text_block_Edit_dist": m["text_block"]["all"]["Edit_dist"]["ALL_page_avg"],
+    "display_formula_Edit_dist": m["display_formula"]["all"]["Edit_dist"]["ALL_page_avg"],
+    "table_Edit_dist": m["table"]["all"]["Edit_dist"]["ALL_page_avg"],
+    "table_TEDS": m["table"]["page"]["TEDS"]["ALL"],
+    "table_TEDS_structure_only": m["table"]["page"]["TEDS_structure_only"]["ALL"],
+    "reading_order_Edit_dist": m["reading_order"]["all"]["Edit_dist"]["ALL_page_avg"],
+    "page_denominators": s["page_denominators"],
+    "page_match": stage["page_match"],
+    "table_TEDS_execution": stage["metrics"]["table"]["TEDS"],
+}
+print(json.dumps(out, indent=2, ensure_ascii=False))
+PY
+```
+
+Report `310P PHASE 49 EVALUATION: PASS` with all six official metrics,
+denominators, fallback/timeouts/errors, and evaluation wall time.
+
+### 49.5 Produce the direct 310P-versus-910B comparison and stop
+
+Use the exact committed 910B JSON as the comparison source:
+
+```sh
+"$PYTHON_BIN" - \
+  "$REFERENCE_RUN" "$REFERENCE_METRIC" \
+  "$OUTPUT/run_summary.json" "$METRIC" <<'PY' \
+  | tee "$ROOT/head_to_head.json"
+import json, sys
+
+ref_run, ref_metric, run, metric = [json.load(open(path)) for path in sys.argv[1:]]
+
+def perf(d):
+    r = d["recognition"]
+    s = r["device_stage_s"]
+    return {
+        "pages_per_s": d["pages_per_s"],
+        "pipeline_e2e_s": d["pipeline_e2e_s"],
+        "layout_pages_per_s": 1651 / d["layout_frontend"]["stage_s"]["page_total_s"],
+        "vision_physical_tps": r["physical_vision_tokens"] / s["vision_prefill"],
+        "text_physical_tps": r["physical_text_tokens"] / s["text_prefill"],
+        "decode_raw_tps": r["raw_decode_token_slots"] / r["decode_wall_s"],
+        "requests": r["requests"],
+        "generated_including_eos": r["generated_tokens_including_eos"],
+        "stop_reasons": r["stop_reason_counts"],
+    }
+
+def quality(m):
+    return {
+        "text_block_Edit_dist": m["text_block"]["all"]["Edit_dist"]["ALL_page_avg"],
+        "display_formula_Edit_dist": m["display_formula"]["all"]["Edit_dist"]["ALL_page_avg"],
+        "table_Edit_dist": m["table"]["all"]["Edit_dist"]["ALL_page_avg"],
+        "table_TEDS": m["table"]["page"]["TEDS"]["ALL"],
+        "table_TEDS_structure_only": m["table"]["page"]["TEDS_structure_only"]["ALL"],
+        "reading_order_Edit_dist": m["reading_order"]["all"]["Edit_dist"]["ALL_page_avg"],
+    }
+
+rp, cp = perf(ref_run), perf(run)
+rq, cq = quality(ref_metric), quality(metric)
+out = {
+    "performance": {},
+    "quality": {},
+}
+for name in rp:
+    row = {"910B2": rp[name], "310P3": cp[name]}
+    if isinstance(rp[name], (int, float)) and isinstance(cp[name], (int, float)):
+        row["310P_minus_910B"] = cp[name] - rp[name]
+        row["310P_over_910B"] = cp[name] / rp[name] if rp[name] else None
+    out["performance"][name] = row
+for name in rq:
+    delta = cq[name] - rq[name]
+    higher_is_better = "TEDS" in name
+    out["quality"][name] = {
+        "910B2": rq[name],
+        "310P3": cq[name],
+        "310P_minus_910B": delta,
+        "direction": "higher_is_better" if higher_is_better else "lower_is_better",
+        "310P_better": delta > 0 if higher_is_better else delta < 0,
+    }
+print(json.dumps(out, indent=2, ensure_ascii=False))
+PY
+```
+
+Write `$ROOT/agent_report.md` beginning with exactly one classification:
+
+```text
+310P PHASE 49 FULL V1.6: PASS | PREFLIGHT_FAILURE | CACHE_PREP_FAILURE |
+E2E_FAILURE | COMPILE_CONTAMINATED | EVALUATOR_FAILURE | DATASET_MISMATCH
+```
+
+Include:
+
+1. project/evaluator commits, host, exact NPU and software, dataset paths, and
+   the v1.6 weights hash;
+2. proof the old v1 checkpoint was not loaded and all five cache roots were
+   fresh and v1.6-specific;
+3. cache-preparation wall time and cache before/after evidence;
+4. complete E2E stage/tok-s metrics, packing histograms, stop reasons, requests,
+   and setup versus measured pipeline time;
+5. exact shared token-stream/text comparison against 910B, including unmatched
+   request IDs and the worst length deltas;
+6. all six official metrics, denominators, page fallbacks, TEDS timeouts/errors,
+   and evaluator wall time;
+7. the full `head_to_head.json`, with desired metric direction stated correctly;
+8. concise `What is proven`, `What remains unresolved`, and the first causal
+   error if anything failed.
+
+Paste `agent_report.md`, `e2e/compact_summary.json`,
+`e2e/generation_comparison.json`, `evaluation/compact_eval_summary.json`, and
+`head_to_head.json`.  Keep large outputs/caches local; do not commit or push
+them.  Do not begin another accuracy-debugging or optimization phase.  Then
+**stop**.
