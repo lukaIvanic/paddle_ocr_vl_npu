@@ -512,7 +512,12 @@ def _analyze_generations(reference_rows: list[dict[str, Any]], candidate_rows: l
         right_raw_tokens = [int(value) for value in right.get("token_ids") or ()]
         left_tokens = _visible_tokens(left)
         right_tokens = _visible_tokens(right)
-        flags = _degeneration_flags(left, right) if pair_status == "paired" else []
+        flags = (
+            _degeneration_flags(left, right)
+            if pair_status == "paired"
+            and (left_text != right_text or left_raw_tokens != right_raw_tokens)
+            else []
+        )
         label = str(right.get("label") or left.get("label") or "")
         input_proof = (
             _input_proof(left, right)
@@ -589,6 +594,14 @@ def _analyze_generations(reference_rows: list[dict[str, Any]], candidate_rows: l
         and record["reference_label"] == "table"
         and record["candidate_label"] == "table"
     )
+    verified_table_transitions = collections.Counter(
+        (record["reference_format"], record["candidate_format"])
+        for record in records
+        if record["pair_status"] == "paired"
+        and record["reference_label"] == "table"
+        and record["candidate_label"] == "table"
+        and record["input_status"] == "exact"
+    )
     logit_candidates = [
         record
         for record in records
@@ -631,10 +644,15 @@ def _analyze_generations(reference_rows: list[dict[str, Any]], candidate_rows: l
         "candidate_table_requests": len(table_right),
         "reference_table_formats": _counter(_format_family(row.get("text")) for row in table_left),
         "candidate_table_formats": _counter(_format_family(row.get("text")) for row in table_right),
-        "paired_table_format_transitions": {
+        "stable_key_table_format_transitions": {
             f"{left}->{right}": count
             for (left, right), count in sorted(table_transitions.items(), key=lambda item: (-item[1], item[0]))
         },
+        "verified_exact_input_table_format_transitions": {
+            f"{left}->{right}": count
+            for (left, right), count in sorted(verified_table_transitions.items(), key=lambda item: (-item[1], item[0]))
+        },
+        "stable_key_table_transitions_without_exact_input_proof": sum(table_transitions.values()) - sum(verified_table_transitions.values()),
         "exact_target_input_table_candidates": len(logit_candidates),
         "exact_target_input_table_candidates_token0": sum(
             record["first_divergence_token"] == 0 for record in logit_candidates
@@ -1249,13 +1267,13 @@ def _order_shape(sample: dict[str, Any] | None) -> str:
     pred = list(sample.get("pred") or ())
     if gt == pred:
         return "exact"
-    gt_set = set(gt)
-    pred_set = set(pred)
-    if gt_set == pred_set and len(gt) == len(pred):
+    gt_count = collections.Counter(gt)
+    pred_count = collections.Counter(pred)
+    if gt_count == pred_count:
         return "same_members_reordered"
-    if pred_set <= gt_set:
+    if not (pred_count - gt_count):
         return "missing_members"
-    if gt_set <= pred_set:
+    if not (gt_count - pred_count):
         return "extra_members"
     return "mixed_membership_and_order"
 
@@ -1296,6 +1314,14 @@ def _augment_reading_order(records: list[dict[str, Any]], reference_samples: lis
         record["candidate_missing_order_members"] = dict(
             collections.Counter((right or {}).get("gt") or ())
             - collections.Counter((right or {}).get("pred") or ())
+        )
+        record["reference_extra_order_members"] = dict(
+            collections.Counter((left or {}).get("pred") or ())
+            - collections.Counter((left or {}).get("gt") or ())
+        )
+        record["candidate_extra_order_members"] = dict(
+            collections.Counter((right or {}).get("pred") or ())
+            - collections.Counter((right or {}).get("gt") or ())
         )
         shapes[(record["reference_order_shape"], record["candidate_order_shape"])] += 1
     return {f"{left}->{right}": count for (left, right), count in sorted(shapes.items(), key=lambda item: (-item[1], item[0]))}
@@ -1421,8 +1447,9 @@ def _table_relevance_bridge(
         if record["pair_status"] != "paired":
             continue
         if record["reference_label"] == "table" and record["candidate_label"] == "table":
+            proof = "verified" if record["input_status"] == "exact" else "unverified_stable_key"
             transitions_by_page[record["source_image_name"]].append(
-                f"{record['reference_format']}->{record['candidate_format']}"
+                f"{proof}:{record['reference_format']}->{record['candidate_format']}"
             )
     candidate_table_by_page: dict[str, list[dict[str, Any]]] = collections.defaultdict(list)
     for sample in candidate_table_samples:
@@ -1661,6 +1688,12 @@ def main() -> None:
             "candidate_source": candidate_side["source"],
             "reference_manifest": reference_side["manifest"],
             "candidate_manifest": candidate_side["manifest"],
+            "run_configuration": {
+                "equal": reference_side["run_summary"].get("configuration")
+                == candidate_side["run_summary"].get("configuration"),
+                "reference": reference_side["run_summary"].get("configuration"),
+                "candidate": candidate_side["run_summary"].get("configuration"),
+            },
         },
         "generation": generation_summary,
         "metrics": metric_summaries,
