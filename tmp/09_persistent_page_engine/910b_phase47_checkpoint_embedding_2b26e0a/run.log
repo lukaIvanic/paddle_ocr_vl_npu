@@ -1,0 +1,42 @@
+CHECKPOINT_PROBE step=setup_npu
+CHECKPOINT_PROBE step=file_hash name=model.safetensors
+CHECKPOINT_PROBE step=file_hash name=config.json
+CHECKPOINT_PROBE step=file_hash name=preprocessor_config.json
+CHECKPOINT_PROBE step=file_hash name=processor_config.json
+CHECKPOINT_PROBE step=file_hash name=tokenizer.json
+CHECKPOINT_PROBE step=file_hash name=tokenizer.model
+CHECKPOINT_PROBE step=file_hash name=tokenizer_config.json
+CHECKPOINT_PROBE step=file_hash name=generation_config.json
+CHECKPOINT_PROBE step=tensor_manifest position=1/620
+CHECKPOINT_PROBE step=tensor_manifest position=50/620
+CHECKPOINT_PROBE step=tensor_manifest position=100/620
+CHECKPOINT_PROBE step=tensor_manifest position=150/620
+CHECKPOINT_PROBE step=tensor_manifest position=200/620
+CHECKPOINT_PROBE step=tensor_manifest position=250/620
+CHECKPOINT_PROBE step=tensor_manifest position=300/620
+CHECKPOINT_PROBE step=tensor_manifest position=350/620
+CHECKPOINT_PROBE step=tensor_manifest position=400/620
+CHECKPOINT_PROBE step=tensor_manifest position=450/620
+CHECKPOINT_PROBE step=tensor_manifest position=500/620
+CHECKPOINT_PROBE step=tensor_manifest position=550/620
+CHECKPOINT_PROBE step=tensor_manifest position=600/620
+CHECKPOINT_PROBE step=tensor_manifest position=620/620
+CHECKPOINT_PROBE step=npu_roundtrip tensor=lm_head.weight
+CHECKPOINT_PROBE step=npu_roundtrip tensor=mlp_AR.linear_1.weight
+CHECKPOINT_PROBE step=npu_roundtrip tensor=model.embed_tokens.weight
+CHECKPOINT_PROBE step=npu_roundtrip tensor=model.layers.0.self_attn.q_proj.weight
+CHECKPOINT_PROBE step=npu_roundtrip tensor=visual.vision_model.embeddings.patch_embedding.bias
+CHECKPOINT_PROBE step=npu_roundtrip tensor=visual.vision_model.embeddings.patch_embedding.weight
+CHECKPOINT_PROBE step=npu_roundtrip tensor=visual.vision_model.embeddings.position_embedding.weight
+CHECKPOINT_PROBE step=npu_roundtrip tensor=visual.vision_model.encoder.layers.0.mlp.fc1.weight
+CHECKPOINT_PROBE step=npu_roundtrip tensor=visual.vision_model.encoder.layers.0.self_attn.q_proj.weight
+CHECKPOINT_PROBE step=direct_safetensors_npu
+CHECKPOINT_PROBE step=production_model_load dtype=fp16
+CHECKPOINT_PROBE step=production_model_load dtype=bf16
+CHECKPOINT_PROBE step=production_model_load dtype=fp32
+CHECKPOINT_PROBE step=cpu_fp32_reference
+CHECKPOINT_PROBE step=embedding_ops lane=fp16
+CHECKPOINT_PROBE step=embedding_ops lane=bf16
+CHECKPOINT_PROBE step=embedding_ops lane=fp32
+CHECKPOINT_PROBE step=embedding_ops lane=fp32_hf32_off
+CHECKPOINT_PROBE status=PASS output=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_phase47_checkpoint_embedding_2b26e0a/output
