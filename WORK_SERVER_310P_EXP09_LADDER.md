@@ -17308,3 +17308,273 @@ Paste `agent_report.md`, `exact/headline.json`, and `corpus/headline.json`.
 Do not paste, commit, or push either candidate tensor bundle.  Do not run a
 transformer variant, change a model operation, or start a corrective experiment
 in this phase.  Then **stop**.
+
+---
+
+## Phase 47: checkpoint provenance, dtype conversion, and embedding-op numerics
+
+### Goal and interpretation boundary
+
+Phase 46 found large differences in the three resident vision-embedding
+parameters before any arithmetic was run.  That means `PATCH_CONV2D` was not a
+valid root-cause classification yet: different Conv2d inputs (the weights and
+bias) naturally produce different outputs.  This phase identifies the earliest
+real boundary among:
+
+```text
+model/config file bytes
+  -> safetensors source tensors (all 620 tensors)
+  -> deterministic CPU BF16/FP16/FP32 values
+  -> CPU-to-NPU transfer / direct safetensors-to-NPU load
+  -> production model loader's resident parameters
+  -> Conv2d / bilinear interpolation / add / cos / sin
+```
+
+The operation matrix uses the exact fixed Phase-46 crop input, but always loads
+the weights from the candidate `--model-dir`.  It runs FP16, BF16, default FP32,
+and FP32 with Conv HF32 explicitly disabled.  For each lane it compares the
+candidate NPU output both with a candidate-weight CPU-FP32 reference and with
+the committed 910B output.  Therefore:
+
+- candidate-versus-CPU metrics isolate local operator numerical quality even
+  when the checkpoint differs;
+- candidate-versus-910B output metrics are interpretable as an operator
+  comparison only after all source/cast/resident inputs are proven exact;
+- a non-byte-exact floating-point output is not automatically an accuracy bug.
+
+This probe executes no transformer layer, graph compile/replay, projector, text
+prefill, LM head, decode, layout model, or dataset corpus.  It should take only
+a few minutes and does not require any compile cache.  Do not download or
+replace a model file during this phase even if a difference is found.
+
+The definitive 910B reference was produced by behavior commit `2b26e0a` on an
+Ascend 910B2 with Python 3.12.13, torch 2.10.0+cpu, torch_npu 2.10.0.  Its
+`model.safetensors` is 1,917,255,968 bytes with SHA-256
+`85a479d506a11e724e7285d395c551be69f41dbc16b6342d3cacfb189aed71db`.
+That is also the SHA-256 currently published by the official
+`PaddlePaddle/PaddleOCR-VL-1.6` Hugging Face repository.  The local HF metadata
+records source revision `66317acc4c9fc17bd154591ce650735cd2855f3e`; the
+safetensors metadata itself contains only `format=pt`.  All 620 tensors in the
+reference checkpoint are BF16.
+
+### 47.1 Pull and verify the 910B reference
+
+```sh
+set -o pipefail
+
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git pull --ff-only origin main
+git status --short
+test -z "$(git status --porcelain)"
+source npu-setup
+
+PYTHON_BIN=/usr/local/python3.12.13/bin/python
+PROBE=09_persistent_page_engine/scripts/checkpoint_embedding_ops_probe.py
+MODEL_DIR=/workspace/models/PaddleOCR-VL-1.6
+PHASE46_EXACT=tmp/09_persistent_page_engine/910b_phase46_vision_embedding_exact_edc0e49/output/tensor_bundle.pt
+REFERENCE=tmp/09_persistent_page_engine/910b_phase47_checkpoint_embedding_2b26e0a/output/probe_bundle.pt
+ROOT="tmp/09_persistent_page_engine/310p_phase47_checkpoint_embedding_$(git rev-parse --short HEAD)"
+
+test -f "$PROBE"
+test -f "$MODEL_DIR/model.safetensors"
+test -f "$PHASE46_EXACT"
+test -f "$REFERENCE"
+test ! -e "$ROOT"
+mkdir -p "$ROOT"
+
+test "$(sha256sum "$REFERENCE" | awk '{print $1}')" = \
+  9add33b8244ba7377be67151a99a8a34f43396d9a169f4d9f5bc97d4c1a08d0f
+test "$(stat -c %s "$REFERENCE")" -eq 4150889
+
+"$PYTHON_BIN" - "$REFERENCE" <<'PY'
+import sys
+import torch
+
+d = torch.load(sys.argv[1], map_location="cpu", weights_only=False)
+assert d["schema_version"] == 2
+assert d["kind"] == "checkpoint_embedding_ops_probe"
+assert len(d["tensor_manifest"]) == 620
+assert set(d["operation_matrix"]) == {
+    "fp16", "bf16", "fp32", "fp32_hf32_off"
+}
+assert all(row["dtype"] == "bfloat16" for row in d["tensor_manifest"].values())
+assert d["files"]["model.safetensors"]["sha256"] == \
+    "85a479d506a11e724e7285d395c551be69f41dbc16b6342d3cacfb189aed71db"
+print("PHASE47_REFERENCE_CONTRACT: PASS")
+PY
+```
+
+If the repository is dirty, a required path/hash/size/contract is wrong, or no
+NPU is available, report `310P PHASE 47: PREFLIGHT_FAILURE` and stop.  Do not
+substitute an earlier `776722d` reference; it lacks the strict-HF32 lane and
+full-output comparison.
+
+### 47.2 Record environment and model-source evidence
+
+```sh
+{
+  date -Is
+  hostname
+  git rev-parse HEAD
+  printf 'ASCEND_RT_VISIBLE_DEVICES=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"
+  "$PYTHON_BIN" -V
+  "$PYTHON_BIN" - <<'PY'
+import torch, torch_npu
+print("torch", torch.__version__)
+print("torch_npu", torch_npu.__version__)
+print("device", torch.npu.current_device())
+print("device_name", torch.npu.get_device_name(torch.npu.current_device()))
+print("aclnn_allow_hf32", torch_npu.npu.aclnn.allow_hf32)
+print("conv_allow_hf32", torch_npu.npu.conv.allow_hf32)
+print("matmul_allow_hf32", torch_npu.npu.matmul.allow_hf32)
+PY
+  npu-smi info
+  ls -ld "$MODEL_DIR"
+  ls -l "$MODEL_DIR/model.safetensors"
+  readlink -f "$MODEL_DIR" "$MODEL_DIR/model.safetensors"
+  stat -c '%n size=%s mtime=%y' "$MODEL_DIR/model.safetensors"
+  sha256sum "$MODEL_DIR/model.safetensors" "$REFERENCE" "$PHASE46_EXACT"
+  find "$MODEL_DIR/.cache/huggingface/download" -maxdepth 1 \
+    -name 'model.safetensors.metadata' -type f -print -exec sed -n '1,5p' {} \;
+} 2>&1 | tee "$ROOT/preflight.log"
+```
+
+Report `310P PHASE 47 PREFLIGHT: PASS` immediately with the exact commit,
+physical NPU, CANN/driver/firmware, Python/torch/torch_npu, model path/resolved
+path, model size/hash, and the three lines of HF model metadata if present.  If
+that metadata is absent, say provenance metadata is unavailable; do not infer a
+source repository from the directory name.
+
+### 47.3 Run the single comparison probe
+
+```sh
+OUTPUT="$ROOT/output"
+
+printf '%q ' timeout --signal=TERM --kill-after=15s 1800 \
+  "$PYTHON_BIN" "$PROBE" \
+  --model-dir "$MODEL_DIR" \
+  --phase46-exact-bundle "$PHASE46_EXACT" \
+  --reference-bundle "$REFERENCE" \
+  --output-dir "$OUTPUT" > "$ROOT/command.sh"
+printf '\n' >> "$ROOT/command.sh"
+
+set +e
+PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=15s 1800 \
+  "$PYTHON_BIN" "$PROBE" \
+  --model-dir "$MODEL_DIR" \
+  --phase46-exact-bundle "$PHASE46_EXACT" \
+  --reference-bundle "$REFERENCE" \
+  --output-dir "$OUTPUT" 2>&1 | tee "$ROOT/run.log"
+probe_exit="${PIPESTATUS[0]}"
+set -e
+printf '%s\n' "$probe_exit" > "$ROOT/exit_code.txt"
+test "$probe_exit" -eq 0
+test -f "$OUTPUT/report.json"
+test -f "$OUTPUT/probe_bundle.pt"
+```
+
+Progress is explicit: 8 file hashes, 620 tensors in 50-tensor increments, 9
+selected tensor roundtrips, 3 production model loads, and 4 operation lanes.
+The terminal success line is `CHECKPOINT_PROBE status=PASS`.
+
+Create a compact headline without copying tensor arrays:
+
+```sh
+"$PYTHON_BIN" - "$OUTPUT/report.json" <<'PY' \
+  | tee "$ROOT/headline.json"
+import json
+import sys
+
+d = json.load(open(sys.argv[1]))
+c = d["reference_comparison"]
+assert c is not None
+operations = {}
+for lane, rows in c["operation_samples"].items():
+    operations[lane] = {}
+    for name, row in rows.items():
+        operations[lane][name] = {
+            "full_output_hash_exact": row["full_output_hash_exact"],
+            "candidate_vs_910b": row["sample_comparison"],
+            "candidate_vs_cpu_fp32": row["candidate_vs_cpu_fp32"],
+            "reference_vs_cpu_fp32": row["reference_vs_cpu_fp32"],
+        }
+print(json.dumps({
+    "classification": d["reference_classification"],
+    "candidate_environment": c["candidate_environment"],
+    "reference_environment": c["reference_environment"],
+    "candidate_checkpoint_provenance": c["candidate_checkpoint_provenance"],
+    "reference_checkpoint_provenance": c["reference_checkpoint_provenance"],
+    "file_comparisons": c["file_comparisons"],
+    "tensor_manifest": c["tensor_manifest"],
+    "selected_casts_exact": c["selected_casts_exact"],
+    "npu_roundtrips": c["npu_roundtrips"],
+    "direct_npu_safetensors": c["direct_npu_safetensors"],
+    "production_model_loads": c["production_model_loads"],
+    "operations": operations,
+}, indent=2, ensure_ascii=False))
+PY
+```
+
+### 47.4 Mechanical interpretation
+
+Use the probe's `reference_classification.classification` as the headline; it
+already applies this first-difference order:
+
+1. `CHECKPOINT_FILE_DIFFERENCE`: model.safetensors size/hash differs;
+2. `SOURCE_TENSOR_DIFFERENCE`: file matches but one of the 620 source tensor
+   shape/dtype/value hashes differs;
+3. `CPU_CAST_DIFFERENCE`: source tensors match but a selected deterministic
+   FP16/BF16/FP32 CPU cast differs;
+4. `NPU_TRANSFER_DIFFERENCE`: a CPU-to-NPU-to-CPU roundtrip is not byte-exact,
+   differs from 910B, or direct safetensors-to-NPU loading differs;
+5. `PRODUCTION_LOAD_DIFFERENCE`: source/casts/transfers match but one of nine
+   production resident parameters differs in FP16/BF16/FP32;
+6. `OPERATOR_OUTPUT_DIFFERENCE`: all inputs match but at least one full output
+   hash differs;
+7. `EXACT_MATCH`: every boundary including all operation outputs is byte exact.
+
+Independently of that headline, report the complete 4-by-5 operation matrix:
+
+| lane | op boundary | full hash exact vs 910B | candidate-vs-910B max/mean/relative-L2/cosine | candidate-vs-CPU max/mean/relative-L2 | 910B-vs-CPU relative-L2 |
+|---|---|---:|---|---|---:|
+
+The five boundaries are patch Conv2d, bilinear position interpolation, their
+addition, `cos`, and `sin`.  Explicitly compare default FP32 with
+`fp32_hf32_off` on the candidate.  If they are byte exact, HF32 is not affecting
+this concrete calculation despite the property value.  If strict FP32 is near
+CPU (~1e-7 relative L2) while FP16 is near its normal quantization floor
+(roughly 1e-4 to 1e-3), the Phase-46 ~0.1 weight/output divergence cannot be
+explained as ordinary FP16-versus-FP32 arithmetic.
+
+If the checkpoint differs, the candidate-versus-910B operator output comparison
+is confounded by different weights.  State that plainly and use only each
+machine's candidate-versus-CPU metrics to judge its operators.  Do not call
+Conv2d inaccurate merely because different checkpoint weights yield different
+outputs.
+
+### 47.5 Final report and stop
+
+Write `$ROOT/agent_report.md` containing:
+
+- one headline classification from the list above;
+- exact command, commit, host/NPU/software, wall time, and artifact paths;
+- 910B and 310P model file size/hash, resolved path, safetensors metadata, and
+  HF download revision/hash metadata when present;
+- dtype counts for all 620 tensors and source/FP16 manifest exact counts;
+- any differing tensor names (all of them if at most 30, otherwise counts by
+  top-level subsystem plus the first 30);
+- the 9-by-3 CPU cast, NPU roundtrip, direct-NPU, and production-load verdicts;
+- the complete 20-row operation table described above;
+- an explicit answer to each question:
+  1. Are both machines using byte-identical official model weights?
+  2. Is there any FP16/BF16/FP32 cast or transfer difference?
+  3. Does the production loader alter resident weights on either platform?
+  4. Is default-HF32 versus strict-FP32 relevant for this exact Conv2d?
+  5. After controlling the weights, is any 310P operator error large enough to
+     plausibly explain Phase 46?
+- `What is proven` and `What remains unresolved`.
+
+Paste `agent_report.md` and `headline.json`.  Do not paste or commit the
+candidate `probe_bundle.pt`, do not replace/download the checkpoint, and do not
+run any E2E/compile/corpus experiment.  Then **stop**.
