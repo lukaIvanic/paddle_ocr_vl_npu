@@ -82,6 +82,15 @@ CAPTURE_ORDER = (
     "token0_logits",
 )
 
+
+def parse_int_csv(value: str) -> tuple[int, ...]:
+    parsed = tuple(int(item.strip()) for item in value.split(",") if item.strip())
+    if not parsed or any(item <= 0 for item in parsed):
+        raise argparse.ArgumentTypeError(
+            "bucket list must contain one or more positive integers"
+        )
+    return parsed
+
 # These hashes were exact on both devices in Phase 39.  Requiring them keeps a
 # changed crop or preprocessing contract from being mistaken for model drift.
 EXPECTED_INPUTS = {
@@ -134,6 +143,24 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--text-packed-cache-dir",
         type=Path,
         default=DEFAULT_PACKED_TEXT_CACHE_ROOT,
+    )
+    parser.add_argument(
+        "--vision-buckets",
+        type=parse_int_csv,
+        default=VISION_BUCKETS,
+        help="Comma-separated compiled vision buckets (defaults to production set).",
+    )
+    parser.add_argument(
+        "--text-buckets",
+        type=parse_int_csv,
+        default=TEXT_BUCKETS,
+        help="Comma-separated compiled text-prefill buckets.",
+    )
+    parser.add_argument(
+        "--text-pack-buckets",
+        type=parse_int_csv,
+        default=TEXT_PACK_BUCKETS,
+        help="Comma-separated compiled packed-text buckets.",
     )
     return parser.parse_args(argv)
 
@@ -602,7 +629,7 @@ def main() -> None:
         torchair_cache_dir=args.torchair_cache_dir.expanduser().resolve(),
         vision_backend="torchair",
         vision_attention="prompt_flash_attention",
-        vision_buckets=VISION_BUCKETS,
+        vision_buckets=args.vision_buckets,
         vision_torchair_cache_dir=args.vision_torchair_cache_dir.expanduser().resolve(),
         vision_padding="bucket",
         vision_promptfa_align_128=True,
@@ -610,11 +637,11 @@ def main() -> None:
         vision_pack_target=1920,
         vision_router_lookahead=32,
         text_backend="torchair",
-        text_buckets=TEXT_BUCKETS,
+        text_buckets=args.text_buckets,
         text_torchair_cache_dir=args.text_torchair_cache_dir.expanduser().resolve(),
         text_padding="auto",
         text_packing="production_group",
-        text_pack_buckets=TEXT_PACK_BUCKETS,
+        text_pack_buckets=args.text_pack_buckets,
         text_pack_max_members=32,
         text_packed_cache_dir=args.text_packed_cache_dir.expanduser().resolve(),
         preprocessor_min_pixels=28_224,

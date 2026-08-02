@@ -17578,3 +17578,404 @@ Write `$ROOT/agent_report.md` containing:
 Paste `agent_report.md` and `headline.json`.  Do not paste or commit the
 candidate `probe_bundle.pt`, do not replace/download the checkpoint, and do not
 run any E2E/compile/corpus experiment.  Then **stop**.
+
+---
+
+## Phase 48: install the correct PaddleOCR-VL-1.6 snapshot and retest one crop
+
+### Root cause and goal
+
+Phase 47 proved that the work server was not running a damaged copy of
+PaddleOCR-VL-1.6.  It was running the separate, older official
+`PaddlePaddle/PaddleOCR-VL` v1 checkpoint:
+
+```text
+old v1 repo       PaddlePaddle/PaddleOCR-VL
+old v1 weight SHA 3085f1042e184f68f8a412aa0f64f2c4b8562989598bbfba326aaa11fc685de8
+
+required repo     PaddlePaddle/PaddleOCR-VL-1.6
+required revision 66317acc4c9fc17bd154591ce650735cd2855f3e
+required SHA      85a479d506a11e724e7285d395c551be69f41dbc16b6342d3cacfb189aed71db
+```
+
+The v1 and v1.6 files have the same byte size and tensor structure, but 614 of
+620 tensor values differ.  The tokenizer/processor assets also differ.  This
+made every previous 310P-versus-910B accuracy comparison a model-version
+comparison, not a hardware comparison.
+
+This phase:
+
+1. preserves `/home/lukaiv/models/PaddleOCR-VL` as the v1 checkpoint;
+2. resumably downloads the complete, pinned v1.6 snapshot into a new directory;
+3. verifies exact file hashes before loading the model;
+4. reruns the Phase-47 source/cast/transfer/operator comparison;
+5. only if every pre-operator boundary is exact, recompiles the three prefill
+   shapes needed by the single Phase-45 table crop into fresh v1.6 cache roots
+   and compares its first token with 910B.
+
+Do not overwrite, rename, or delete the existing v1 model.  Do not use `main`
+without a revision pin.  Do not run a page prefix, evaluator, or full E2E test
+in this phase.
+
+### 48.1 Pull, establish paths, and check disk
+
+```sh
+set -o pipefail
+
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git pull --ff-only origin main
+git status --short
+test -z "$(git status --porcelain)"
+source npu-setup
+
+PYTHON_BIN=/usr/local/python3.12.13/bin/python
+OLD_MODEL=/home/lukaiv/models/PaddleOCR-VL
+MODEL_V16=/home/lukaiv/models/PaddleOCR-VL-1.6
+DOWNLOAD_DIR=/home/lukaiv/models/PaddleOCR-VL-1.6.download
+HF_REPO=PaddlePaddle/PaddleOCR-VL-1.6
+HF_REVISION=66317acc4c9fc17bd154591ce650735cd2855f3e
+ROOT="tmp/09_persistent_page_engine/310p_phase48_v16_$(git rev-parse --short HEAD)"
+
+PROBE=09_persistent_page_engine/scripts/checkpoint_embedding_ops_probe.py
+REPLAY=09_persistent_page_engine/scripts/table_token0_replay.py
+PHASE46_EXACT=tmp/09_persistent_page_engine/910b_phase46_vision_embedding_exact_edc0e49/output/tensor_bundle.pt
+PHASE47_REFERENCE=tmp/09_persistent_page_engine/910b_phase47_checkpoint_embedding_2b26e0a/output/probe_bundle.pt
+PHASE45_REFERENCE=tmp/09_persistent_page_engine/910b_phase45_table_token0_228a10a/output/tensor_bundle.pt
+
+test -f "$OLD_MODEL/model.safetensors"
+test "$(sha256sum "$OLD_MODEL/model.safetensors" | awk '{print $1}')" = \
+  3085f1042e184f68f8a412aa0f64f2c4b8562989598bbfba326aaa11fc685de8
+test -f "$PROBE"
+test -f "$REPLAY"
+test -f "$PHASE46_EXACT"
+test -f "$PHASE47_REFERENCE"
+test -f "$PHASE45_REFERENCE"
+test ! -e "$ROOT"
+mkdir -p "$ROOT"
+
+{
+  date -Is
+  hostname
+  git rev-parse HEAD
+  "$PYTHON_BIN" -V
+  "$PYTHON_BIN" - <<'PY'
+import huggingface_hub
+import torch, torch_npu
+print("huggingface_hub", huggingface_hub.__version__)
+print("torch", torch.__version__)
+print("torch_npu", torch_npu.__version__)
+print("device", torch.npu.current_device())
+print("device_name", torch.npu.get_device_name(torch.npu.current_device()))
+PY
+  npu-smi info
+  df -h /home/lukaiv/models "$WORK_SERVER_REPO"
+  du -sh "$OLD_MODEL"
+  sha256sum "$OLD_MODEL/model.safetensors" "$PHASE47_REFERENCE"
+} 2>&1 | tee "$ROOT/preflight.log"
+
+available_kb="$(df -Pk /home/lukaiv/models | awk 'NR==2 {print $4}')"
+test "$available_kb" -ge 6291456
+```
+
+Require at least 6 GiB free because the download/cache may temporarily hold
+more than one copy of the 1.92 GB weights.  If `huggingface_hub` is missing, the
+old-model hash is unexpected, the repository is dirty, no NPU is free, or disk
+is insufficient, report `310P PHASE 48: PREFLIGHT_FAILURE` and stop.  Do not
+install packages or delete files without Luka's approval.
+
+Report `310P PHASE 48 PREFLIGHT: PASS` immediately with commit, NPU/software,
+old-model hash, free disk, and whether `$MODEL_V16` or `$DOWNLOAD_DIR` already
+exists.
+
+### 48.2 Download the pinned snapshot without touching v1
+
+If `$MODEL_V16` already exists, do not download into or overwrite it.  Go
+straight to the hash verification in 48.3.  A nonexact existing directory is a
+conflict to report, not permission to delete it.
+
+Otherwise, resume into `$DOWNLOAD_DIR`.  Re-running this same command after a
+network interruption resumes completed files:
+
+```sh
+mkdir -p "$DOWNLOAD_DIR"
+
+set +e
+HF_HUB_DOWNLOAD_TIMEOUT=600 \
+HF_HUB_ETAG_TIMEOUT=60 \
+PYTHONUNBUFFERED=1 \
+"$PYTHON_BIN" - "$HF_REPO" "$HF_REVISION" "$DOWNLOAD_DIR" <<'PY' \
+  2>&1 | tee "$ROOT/download.log"
+import sys
+from huggingface_hub import snapshot_download
+
+repo_id, revision, local_dir = sys.argv[1:]
+path = snapshot_download(
+    repo_id=repo_id,
+    revision=revision,
+    local_dir=local_dir,
+    max_workers=2,
+)
+print("PHASE48_DOWNLOAD_COMPLETE", path, flush=True)
+PY
+download_exit="${PIPESTATUS[0]}"
+set -e
+printf '%s\n' "$download_exit" > "$ROOT/download_exit_code.txt"
+```
+
+If the default Hugging Face endpoint fails because of the work-server proxy,
+rerun the exact same command once with this additional environment variable:
+
+```sh
+HF_ENDPOINT=https://hf-mirror.com
+```
+
+Do not change repo/revision or mix files manually.  The mirror is acceptable
+only because 48.3 verifies every behavior-relevant file by SHA-256.  If both
+attempts fail, preserve `$DOWNLOAD_DIR` for resumability, report the last real
+network error and downloaded byte count, then stop.
+
+### 48.3 Verify the complete v1.6 snapshot and promote it atomically
+
+Set the candidate directory without modifying either model:
+
+```sh
+if test -d "$MODEL_V16"; then
+  CANDIDATE_MODEL="$MODEL_V16"
+else
+  test "$download_exit" -eq 0
+  CANDIDATE_MODEL="$DOWNLOAD_DIR"
+fi
+
+"$PYTHON_BIN" - "$CANDIDATE_MODEL" <<'PY' \
+  | tee "$ROOT/model_hash_verification.json"
+import hashlib
+import json
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1]).resolve()
+expected = {
+    "model.safetensors": "85a479d506a11e724e7285d395c551be69f41dbc16b6342d3cacfb189aed71db",
+    "config.json": "ce7f4565f8b1db78532ad5d1b9ebe55c2139d49bd4cb04778b580a08a598f171",
+    "preprocessor_config.json": "111872ab1e8bb7fd040ac5087bfced7ab8f011f02139b088cba294964c3b1d0e",
+    "processor_config.json": "1568858960a9760c54431dae693a6152e601ff55cdf6d2eab97a4a99958faea0",
+    "tokenizer.json": "c8a215a59183d0d0781adc33bacd3ce6162716f7fd568fb30234a74d69803a7d",
+    "tokenizer.model": "34ef7db83df785924fb83d7b887b6e822a031c56e15cff40aaf9b982988180df",
+    "tokenizer_config.json": "1f979337347cc0cb72a6282d8a23ed183539aa81a87a906f022aee2bab83c7c5",
+    "generation_config.json": "a6701d78ab3b4d972307cdec3b69d4c13f46e0d5140514f50ab7d84259324b94",
+}
+
+rows = {}
+for name, wanted in expected.items():
+    path = root / name
+    if not path.is_file():
+        rows[name] = {"exists": False, "expected": wanted}
+        continue
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        while chunk := handle.read(16 * 1024 * 1024):
+            digest.update(chunk)
+    actual = digest.hexdigest()
+    rows[name] = {
+        "exists": True,
+        "size": path.stat().st_size,
+        "expected": wanted,
+        "actual": actual,
+        "exact": actual == wanted,
+    }
+print(json.dumps({"root": str(root), "files": rows}, indent=2))
+assert all(row.get("exact") for row in rows.values()), rows
+print("PHASE48_MODEL_FILES: EXACT")
+PY
+```
+
+These are the hashes measured from the committed 910B v1.6 reference.  All
+eight must match; a correct weights file combined with stale v1 tokenizer or
+processor assets is not a valid installation.
+
+If `$MODEL_V16` did not exist and verification passed, promote the complete
+directory with one rename:
+
+```sh
+if test "$CANDIDATE_MODEL" = "$DOWNLOAD_DIR"; then
+  test ! -e "$MODEL_V16"
+  mv "$DOWNLOAD_DIR" "$MODEL_V16"
+fi
+test -f "$MODEL_V16/model.safetensors"
+test "$(sha256sum "$MODEL_V16/model.safetensors" | awk '{print $1}')" = \
+  85a479d506a11e724e7285d395c551be69f41dbc16b6342d3cacfb189aed71db
+```
+
+Report `310P PHASE 48 MODEL INSTALL: PASS` with the final path, eight hashes,
+HF metadata revision/hash when present, download wall time, and disk usage.
+
+### 48.4 Rerun Phase 47 against byte-identical v1.6 inputs
+
+```sh
+CHECK_ROOT="$ROOT/checkpoint"
+mkdir -p "$CHECK_ROOT"
+
+set +e
+PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=15s 1800 \
+  "$PYTHON_BIN" "$PROBE" \
+  --model-dir "$MODEL_V16" \
+  --phase46-exact-bundle "$PHASE46_EXACT" \
+  --reference-bundle "$PHASE47_REFERENCE" \
+  --output-dir "$CHECK_ROOT/output" 2>&1 | tee "$CHECK_ROOT/run.log"
+check_exit="${PIPESTATUS[0]}"
+set -e
+printf '%s\n' "$check_exit" > "$CHECK_ROOT/exit_code.txt"
+test "$check_exit" -eq 0
+
+"$PYTHON_BIN" - "$CHECK_ROOT/output/report.json" <<'PY' \
+  | tee "$CHECK_ROOT/gate.json"
+import json
+import sys
+
+d = json.load(open(sys.argv[1]))
+c = d["reference_comparison"]
+k = d["reference_classification"]
+assert c is not None and k is not None
+assert k["model_file_exact"]
+assert not k["config_file_differences"]
+assert k["source_manifest_exact"]
+assert k["selected_cpu_casts_exact"]
+assert k["npu_roundtrips_exact"]
+assert k["direct_npu_safetensors_exact"]
+assert k["production_model_loads_exact"]
+assert c["tensor_manifest"]["source_exact"] == 620
+assert c["tensor_manifest"]["fp16_exact"] == 620
+assert not c["tensor_manifest"]["different"]
+assert all(
+    exact
+    for row in c["selected_casts_exact"].values()
+    for exact in row.values()
+)
+print(json.dumps({
+    "classification": k,
+    "tensor_manifest": c["tensor_manifest"],
+    "file_comparisons": c["file_comparisons"],
+    "operation_samples": c["operation_samples"],
+}, indent=2))
+print("PHASE48_CHECKPOINT_GATE: PASS")
+PY
+```
+
+The likely overall classification is `OPERATOR_OUTPUT_DIFFERENCE`, because
+cross-hardware floating-point outputs need not be byte-exact.  That is fine.
+The hard gate is that every checkpoint/source/cast/transfer/production-load
+field above is exact.  If any hard-gate assertion fails, report the first field
+and stop before compilation.
+
+Report the complete 20-row FP16/BF16/FP32/strict-FP32 operation matrix.  Do not
+repeat Phase 47's incorrect claim that a candidate-versus-its-own-CPU Conv2d
+error is caused by cross-machine weight differences.  Those weights cancel in
+that comparison.  The already-observed 310P FP32 Conv2d relative-L2 around
+`2.9e-4` is a real reduced-precision kernel characteristic; the production
+FP16 result around `2.9e-4` remains the relevant path.
+
+### 48.5 Fresh-cache one-crop token-zero correctness replay
+
+Only run this section after `PHASE48_CHECKPOINT_GATE: PASS`.
+
+The v1 and v1.6 `config.json` files are byte-identical, and the existing
+TorchAir cache keys include the config hash rather than the checkpoint hash.
+Therefore do not reuse the v1 cache roots for this correctness test.  Use these
+new roots:
+
+```sh
+DECODE_CACHE=.runtime_cache/310p_phase48_v16_decode
+VISION_CACHE=.runtime_cache/310p_phase48_v16_vision
+TEXT_CACHE=.runtime_cache/310p_phase48_v16_text
+PACKED_CACHE=.runtime_cache/310p_phase48_v16_text_packed
+
+for cache in "$DECODE_CACHE" "$VISION_CACHE" "$TEXT_CACHE" "$PACKED_CACHE"; do
+  test ! -e "$cache"
+done
+
+REPLAY_ROOT="$ROOT/token0"
+mkdir -p "$REPLAY_ROOT"
+
+set +e
+PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=15s 1800 \
+  "$PYTHON_BIN" "$REPLAY" \
+  --images-dir /home/lukaiv/datasets/OmniDocBench/images \
+  --layout-model /home/lukaiv/models/PP-DocLayoutV3_safetensors \
+  --recognizer-model "$MODEL_V16" \
+  --reference-bundle "$PHASE45_REFERENCE" \
+  --torchair-cache-dir "$DECODE_CACHE" \
+  --vision-torchair-cache-dir "$VISION_CACHE" \
+  --text-torchair-cache-dir "$TEXT_CACHE" \
+  --text-packed-cache-dir "$PACKED_CACHE" \
+  --vision-buckets 4992 \
+  --text-buckets 1024 \
+  --text-pack-buckets 1024 \
+  --output-dir "$REPLAY_ROOT/output" 2>&1 | tee "$REPLAY_ROOT/run.log"
+replay_exit="${PIPESTATUS[0]}"
+set -e
+printf '%s\n' "$replay_exit" > "$REPLAY_ROOT/exit_code.txt"
+test "$replay_exit" -eq 0
+test -f "$REPLAY_ROOT/output/report.json"
+```
+
+The three bucket overrides are diagnostic-only and preserve the exact
+production operations for this crop; they merely avoid compiling 36 unused
+vision/text buckets.  The crop still executes singleton vision S4992 and
+singleton packed-text S1024.  Fresh cache roots prevent any v1 graph artifact
+from entering the result.
+
+Extract the compact correctness result:
+
+```sh
+"$PYTHON_BIN" - "$REPLAY_ROOT/output/report.json" <<'PY' \
+  | tee "$REPLAY_ROOT/headline.json"
+import json
+import sys
+
+d = json.load(open(sys.argv[1]))
+assert d["contract"]["status"] == "PASS"
+assert all(d["contract"]["checks"].values())
+assert d["route_comparisons"]["vision"]["exact"]
+assert d["route_comparisons"]["text_prefill"]["exact"]
+print(json.dumps({
+    "contract": d["contract"],
+    "input_fingerprints": d["input_fingerprints"],
+    "route_comparisons": d["route_comparisons"],
+    "graph_input_comparisons": d["graph_input_comparisons"],
+    "decision": d["decision"],
+    "comparisons": d["comparisons"],
+}, indent=2, ensure_ascii=False))
+PY
+```
+
+Report whether the candidate first token is the 910B token ID `101309`
+(`<fcel>`), its logit/margin, the 910B token's rank if it is not top-1, and the
+complete numerical curve for all eight boundaries.  Do not demand byte-exact
+NPU activations; identify error growth and the final top-token decision.
+
+### 48.6 Final report and stop
+
+Write `$ROOT/agent_report.md` with one headline:
+
+```text
+310P PHASE 48: V16_TOKEN0_MATCH | V16_TOKEN0_DIVERGENCE |
+V16_CHECKPOINT_GATE_FAILURE | DOWNLOAD_FAILURE | RUNTIME_FAILURE
+```
+
+Include:
+
+- exact pinned HF repo/revision, final path, all eight file hashes, and proof
+  that the old v1 directory remains unchanged;
+- download method, attempts, wall time, byte count, and whether a mirror was
+  required;
+- Phase-47 gate results: 620/620 source and FP16 tensors exact, all selected
+  casts/transfers/direct loads/production loads, and all 20 operator rows;
+- fresh-cache compile evidence and cache sizes;
+- the exact one-crop input/route contracts, eight-boundary comparison, and
+  first-token decision;
+- `What is proven` and `What remains unresolved`.
+
+Paste `agent_report.md`, `checkpoint/gate.json`, and `token0/headline.json`.
+Do not commit/push large model or runtime artifacts.  Do not start a 32-page or
+larger run.  Then **stop**.
