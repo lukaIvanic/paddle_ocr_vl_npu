@@ -309,6 +309,81 @@ def load_reference(path: Path) -> dict[str, Any]:
     return payload
 
 
+def graph_input_comparison(
+    candidate: dict[str, Any],
+    reference: dict[str, Any],
+) -> dict[str, Any]:
+    groups = sorted(set(candidate) | set(reference))
+    result: dict[str, Any] = {}
+    for group in groups:
+        candidate_group = candidate.get(group) or {}
+        reference_group = reference.get(group) or {}
+        names = sorted(set(candidate_group) | set(reference_group))
+        result[group] = {}
+        for name in names:
+            left = candidate_group.get(name)
+            right = reference_group.get(name)
+            result[group][name] = {
+                "present_on_both": left is not None and right is not None,
+                "shape_exact": (
+                    left is not None
+                    and right is not None
+                    and left.get("shape") == right.get("shape")
+                ),
+                "dtype_exact": (
+                    left is not None
+                    and right is not None
+                    and left.get("dtype") == right.get("dtype")
+                ),
+                "sha256_exact": (
+                    left is not None
+                    and right is not None
+                    and left.get("sha256") == right.get("sha256")
+                ),
+                "candidate_sha256": None if left is None else left.get("sha256"),
+                "reference_sha256": None if right is None else right.get("sha256"),
+            }
+    return result
+
+
+def route_signature(
+    route: dict[str, Any],
+    *,
+    kind: str,
+) -> dict[str, Any]:
+    if kind == "vision":
+        keys = (
+            "execution",
+            "real_vision_tokens",
+            "physical_vision_tokens",
+            "padding_vision_tokens",
+            "bucket",
+            "packing",
+            "pack_crops",
+            "pack_real_vision_tokens",
+            "pack_physical_vision_tokens",
+            "pack_batch_size",
+            "pack_sequence_length",
+            "pack_row_sizes",
+        )
+    elif kind == "text":
+        keys = (
+            "execution",
+            "real_text_tokens",
+            "physical_text_tokens",
+            "padding_text_tokens",
+            "bucket",
+            "packing",
+            "pack_members",
+            "segment_lengths",
+            "pack_real_text_tokens",
+            "pack_physical_text_tokens",
+        )
+    else:
+        raise ValueError(f"unsupported route signature kind: {kind}")
+    return {key: route.get(key) for key in keys}
+
+
 def capture_prefill(
     recognizer: ContinuousRecognizer,
     request: Any,
@@ -565,6 +640,8 @@ def main() -> None:
         else None
     )
     comparisons: dict[str, Any] | None = None
+    graph_input_comparisons: dict[str, Any] | None = None
+    route_comparisons: dict[str, Any] | None = None
     reference_logits: torch.Tensor | None = None
     if reference is not None:
         if reference.get("case_id") != args.case_id:
@@ -583,6 +660,32 @@ def main() -> None:
         comparisons = {
             name: tensor_comparison(captured[name], reference_tensors[name])
             for name in CAPTURE_ORDER
+        }
+        graph_input_comparisons = graph_input_comparison(
+            graph_input_summaries,
+            reference.get("graph_input_summaries") or {},
+        )
+        candidate_vision_signature = route_signature(state.vision, kind="vision")
+        reference_vision_signature = route_signature(
+            reference.get("vision_route") or {}, kind="vision"
+        )
+        candidate_text_signature = route_signature(
+            state.text_prefill, kind="text"
+        )
+        reference_text_signature = route_signature(
+            reference.get("text_prefill_route") or {}, kind="text"
+        )
+        route_comparisons = {
+            "vision": {
+                "exact": candidate_vision_signature == reference_vision_signature,
+                "candidate": candidate_vision_signature,
+                "reference": reference_vision_signature,
+            },
+            "text_prefill": {
+                "exact": candidate_text_signature == reference_text_signature,
+                "candidate": candidate_text_signature,
+                "reference": reference_text_signature,
+            },
         }
         reference_logits = reference_tensors["token0_logits"]
 
@@ -633,6 +736,8 @@ def main() -> None:
             else None
         ),
         "comparisons": comparisons,
+        "graph_input_comparisons": graph_input_comparisons,
+        "route_comparisons": route_comparisons,
         "tensor_bundle": str(bundle_path),
     }
     report_path = output_dir / "report.json"
