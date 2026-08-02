@@ -15752,3 +15752,346 @@ Paste the complete `agent_report.md`, `e2e/compact_summary.json`,
 `evaluation/compact_eval_summary.json`, and both evaluator stage/run summaries.
 Keep all artifacts local on the work server.  Do not modify source, commit,
 push, or begin another optimization.  Then **stop**.
+
+---
+
+## Phase 42: recover Phase-41 TEDS without rerunning inference or page matching
+
+### Goal and diagnosis
+
+Do **not** rerun the 1,651-page pipeline.  Do **not** rerun page matching.  The
+Phase-41 evaluator already saved the 665 matched table samples; recompute TEDS
+and TEDS-structure directly from that frozen input.
+
+The Phase-41 TEDS result is invalid because evaluator commit `2b161d0` uses a
+12-thread `ThreadPoolExecutor`, and each thread starts another
+`multiprocessing.Process`.  If `process.start()` fails, the evaluator's
+unconditional `process.join()` in `finally` masks the original exception with
+`AssertionError: can only join a started process`.  That happened for 134
+table pairs, which were incorrectly recorded as zero scores.
+
+The repository wrapper now replaces that nested thread/process design with a
+bounded parent scheduler.  The main thread starts at most 12 direct TEDS child
+processes; the parent owns each hard timeout and cleanup.  A child metric error
+is still scored as zero under the evaluator's established semantics, but a
+worker-start or worker-lifecycle failure raises with its real cause instead of
+silently becoming a score.
+
+This phase also audits the independently computed table Edit-distance result.
+TEDS worker failures cannot alter table Edit distance: Edit distance is computed
+later from the frozen normalized `gt` and `pred` strings.  Do not call table
+Edit distance "contaminated" by TEDS.  The two 310P-only page-match fallbacks
+also cannot by themselves explain the `+0.5513` page-average gap: with 458 table
+pages, even changing two pages from perfect to maximally wrong moves the mean by
+at most `2 / 458 = 0.00437`.
+
+This is a CPU-only evaluator recovery.  Do not source `npu-setup`, reserve an
+NPU, load either model, or touch compiler caches.
+
+### 42.1 Pull and verify the frozen Phase-41 inputs
+
+The work-server agent remains pull-only.  It must not edit tracked files,
+create a branch, commit, or push.
+
+```sh
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git pull --ff-only origin main
+git status --short
+test -z "$(git status --porcelain)"
+
+EVAL_PYTHON=/workspace/venvs/omnidocbench_py310/bin/python
+EVAL_WRAPPER=09_persistent_page_engine/scripts/run_omnidocbench_eval.py
+PHASE41=tmp/09_persistent_page_engine/310p_phase41_full_eval_7bda07e
+OLD_RESULT="$PHASE41/evaluation/work/result"
+TABLE_INPUT="$OLD_RESULT/predictions_quick_match_table_result.json"
+OLD_METRIC="$OLD_RESULT/predictions_quick_match_metric_result.json"
+RERUN="$PHASE41/evaluation_teds_process_$(git rev-parse --short HEAD)"
+WORK="$RERUN/work"
+
+test -x "$EVAL_PYTHON"
+test -f "$EVAL_WRAPPER"
+test -f "$TABLE_INPUT"
+test -f "$OLD_METRIC"
+test ! -e "$RERUN"
+mkdir -p "$RERUN"
+rg -n 'process_isolated_parent_timeout|teds-only-input' "$EVAL_WRAPPER" \
+  | tee "$RERUN/wrapper_markers.txt"
+```
+
+Locate and pin the same evaluator checkout used in Phase 41:
+
+```sh
+EVALUATOR_ROOT=
+for candidate in \
+  /workspace/repos/OmniDocBench_eval \
+  "$HOME/OmniDocBench_eval" \
+  "$HOME/OmniDocBench"
+do
+  if test -f "$candidate/pdf_validation.py"; then
+    EVALUATOR_ROOT="$candidate"
+    break
+  fi
+done
+test -n "$EVALUATOR_ROOT"
+test "$(git -C "$EVALUATOR_ROOT" rev-parse HEAD)" = \
+  2b161d010d2e3aff77a0edef359ea3a6411d23cd
+
+{
+  date -Is
+  hostname
+  git rev-parse HEAD
+  printf 'evaluator_root=%s\n' "$EVALUATOR_ROOT"
+  git -C "$EVALUATOR_ROOT" rev-parse HEAD
+  "$EVAL_PYTHON" -V
+  sha256sum "$TABLE_INPUT" "$OLD_METRIC"
+} | tee "$RERUN/preflight.log"
+```
+
+Confirm that the frozen input contains exactly 665 matched table pairs over
+458 table pages before starting any metric work:
+
+```sh
+"$EVAL_PYTHON" - "$TABLE_INPUT" <<'PY' | tee "$RERUN/input_contract.json"
+import json
+import sys
+from pathlib import Path
+
+samples = json.loads(Path(sys.argv[1]).read_text())
+pages = set()
+for sample in samples:
+    img_id = sample["img_id"]
+    if img_id.endswith((".jpg", ".png")):
+        page = img_id
+    else:
+        page = "_".join(img_id.split("_")[:-1])
+    pages.add(page)
+out = {"sample_count": len(samples), "page_count": len(pages)}
+assert out == {"sample_count": 665, "page_count": 458}, out
+print(json.dumps(out, indent=2))
+PY
+```
+
+If any contract fails, report it and stop.  Do not search for a different
+input or regenerate matching.
+
+### 42.2 Recompute only TEDS from the frozen matched tables
+
+`--teds-only-output-dir` must name a nonexistent directory; the wrapper creates
+it.  The outer `RERUN` directory already exists so the foreground log remains
+visible while the metric runs.
+
+```sh
+printf '%q ' timeout --signal=TERM --kill-after=30s 1800 \
+  "$EVAL_PYTHON" "$WORK_SERVER_REPO/$EVAL_WRAPPER" \
+  --evaluator-root "$EVALUATOR_ROOT" \
+  --teds-workers 12 \
+  --teds-timeout-sec 120 \
+  --teds-expected-samples 665 \
+  --teds-expected-pages 458 \
+  --teds-only-input "$WORK_SERVER_REPO/$TABLE_INPUT" \
+  --teds-only-output-dir "$WORK_SERVER_REPO/$WORK" \
+  >"$RERUN/command.sh"
+printf '\n' >>"$RERUN/command.sh"
+
+SECONDS=0
+set +e
+set -o pipefail
+PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 1800 \
+  "$EVAL_PYTHON" "$WORK_SERVER_REPO/$EVAL_WRAPPER" \
+  --evaluator-root "$EVALUATOR_ROOT" \
+  --teds-workers 12 \
+  --teds-timeout-sec 120 \
+  --teds-expected-samples 665 \
+  --teds-expected-pages 458 \
+  --teds-only-input "$WORK_SERVER_REPO/$TABLE_INPUT" \
+  --teds-only-output-dir "$WORK_SERVER_REPO/$WORK" \
+  2>&1 | tee "$RERUN/run.log"
+run_exit="${PIPESTATUS[0]}"
+run_wall_s="$SECONDS"
+set -e
+printf '%s\n' "$run_exit" >"$RERUN/exit_code.txt"
+printf '%s\n' "$run_wall_s" >"$RERUN/wall_s.txt"
+test "$run_exit" -eq 0
+```
+
+Progress must visibly use the `TEDS (process-isolated)` bar.  The log must not
+contain `can only join a started process`.  A timeout is an explicit, valid
+zero-score result.  A worker start/lifecycle failure must terminate the command
+with its real error and is an evaluator failure.
+
+Validate and print the corrected headline values immediately:
+
+```sh
+SUMMARY="$WORK/teds_only_summary.json"
+test -f "$SUMMARY"
+"$EVAL_PYTHON" - "$SUMMARY" <<'PY' | tee "$RERUN/compact_summary.json"
+import json
+import sys
+from pathlib import Path
+
+s = json.loads(Path(sys.argv[1]).read_text())
+e = s["execution"]
+assert s["sample_count"] == 665, s["sample_count"]
+assert s["page_count"] == 458, s["page_count"]
+assert e["scheduler"] == "process_isolated_parent_timeout", e
+assert e["sample_count"] == 665, e
+assert e["error_case_count"] == 0, e["error_cases"]
+out = {
+    "elapsed_s": s["elapsed_s"],
+    "sample_TEDS": s["sample_aggregate"]["TEDS"]["all"],
+    "sample_TEDS_structure_only": s["sample_aggregate"]["TEDS_structure_only"]["all"],
+    "page_TEDS": s["page_aggregate"]["TEDS"]["ALL"],
+    "page_TEDS_structure_only": s["page_aggregate"]["TEDS_structure_only"]["ALL"],
+    "timeouts": e["timeout_case_count"],
+    "timeout_cases": e["timeout_cases"],
+    "errors": e["error_case_count"],
+}
+print(json.dumps(out, indent=2, ensure_ascii=False))
+PY
+```
+
+If there are genuine child metric errors, the wrapper records them as zero in
+accordance with the evaluator, but the strict compact check above intentionally
+fails.  Report the cases and stop rather than presenting a corrected score as
+clean.
+
+### 42.3 Audit the separate table Edit-distance regression
+
+Use the frozen table sample file.  This does not execute TEDS and does not
+change any score.  It verifies the official page-average Edit distance and
+shows whether the regression is broad or concentrated.
+
+```sh
+"$EVAL_PYTHON" - "$TABLE_INPUT" "$OLD_METRIC" <<'PY' \
+  >"$RERUN/table_edit_diagnostics.json"
+import collections
+import json
+import math
+import sys
+from pathlib import Path
+
+samples = json.loads(Path(sys.argv[1]).read_text())
+metric = json.loads(Path(sys.argv[2]).read_text())
+page_acc = collections.defaultdict(lambda: [0.0, 0])
+sample_rows = []
+raw_formats = collections.Counter()
+normalized_formats = collections.Counter()
+
+def page_name(img_id):
+    if img_id.endswith((".jpg", ".png")):
+        return img_id
+    return "_".join(img_id.split("_")[:-1])
+
+def classify(text):
+    text = str(text or "").lstrip().lower()
+    if not text:
+        return "empty"
+    if text.startswith("<fcel") or "<fcel" in text[:256]:
+        return "fcel"
+    if text.startswith("<table") or "<table" in text[:256]:
+        return "html_table"
+    return "other"
+
+for sample in samples:
+    gt = sample.get("norm_gt") or sample.get("gt") or ""
+    pred = sample.get("norm_pred") or sample.get("pred") or ""
+    upper = max(len(gt), len(pred))
+    edit = float(sample["metric"]["Edit_dist"])
+    name = page_name(sample["img_id"])
+    page_acc[name][0] += edit * upper
+    page_acc[name][1] += upper
+    raw_formats[classify(sample.get("pred"))] += 1
+    normalized_formats[classify(sample.get("norm_pred"))] += 1
+    sample_rows.append({
+        "img_id": sample["img_id"],
+        "gt_idx": sample.get("gt_idx"),
+        "pred_idx": sample.get("pred_idx"),
+        "edit": edit,
+        "gt_len": len(gt),
+        "pred_len": len(pred),
+        "raw_format": classify(sample.get("pred")),
+        "normalized_format": classify(sample.get("norm_pred")),
+    })
+
+page_scores = {
+    name: edits / upper if upper else 0.0
+    for name, (edits, upper) in page_acc.items()
+}
+values = sorted(page_scores.values())
+def quantile(q):
+    if not values:
+        return None
+    pos = q * (len(values) - 1)
+    lo = math.floor(pos)
+    hi = math.ceil(pos)
+    if lo == hi:
+        return values[lo]
+    return values[lo] * (hi - pos) + values[hi] * (pos - lo)
+
+official = metric["table"]["all"]["Edit_dist"]["ALL_page_avg"]
+recomputed = sum(values) / len(values)
+assert len(samples) == 665 and len(values) == 458
+assert abs(official - recomputed) < 1e-12, (official, recomputed)
+out = {
+    "sample_count": len(samples),
+    "page_count": len(values),
+    "official_page_Edit_dist": official,
+    "recomputed_page_Edit_dist": recomputed,
+    "page_quantiles": {
+        "p0": quantile(0), "p25": quantile(.25), "p50": quantile(.5),
+        "p75": quantile(.75), "p90": quantile(.9), "p95": quantile(.95),
+        "p99": quantile(.99), "p100": quantile(1),
+    },
+    "page_threshold_counts": {
+        str(t): sum(value >= t for value in values)
+        for t in (0.1, 0.25, 0.5, 0.75, 0.9)
+    },
+    "sample_threshold_counts": {
+        str(t): sum(row["edit"] >= t for row in sample_rows)
+        for t in (0.1, 0.25, 0.5, 0.75, 0.9)
+    },
+    "raw_prediction_formats": dict(raw_formats),
+    "normalized_prediction_formats": dict(normalized_formats),
+    "worst_20_pages": sorted(
+        ({"img_id": name, "Edit_dist": score} for name, score in page_scores.items()),
+        key=lambda row: (-row["Edit_dist"], row["img_id"]),
+    )[:20],
+    "worst_20_samples": sorted(
+        sample_rows,
+        key=lambda row: (-row["edit"], -row["pred_len"], row["img_id"]),
+    )[:20],
+}
+print(json.dumps(out, indent=2, ensure_ascii=False))
+PY
+
+cat "$RERUN/table_edit_diagnostics.json"
+```
+
+### 42.4 Report, then stop
+
+Write `$RERUN/agent_report.md` and paste it to Luka.  Begin with exactly one:
+
+```text
+310P PHASE 42 TEDS RECOVERY: PASS | INPUT_MISMATCH | TEDS_TIMEOUTS |
+TEDS_METRIC_ERRORS | EVALUATOR_INFRASTRUCTURE_FAILURE
+```
+
+Include:
+
+1. project and evaluator commits, host, Python, frozen input SHA-256, exact
+   command, exit code, and wall time;
+2. corrected sample TEDS/TEDS-structure and corrected page TEDS/TEDS-structure;
+3. timeout and error counts with every case;
+4. deltas of corrected page scores against the 910B page references
+   `0.9434504389897741` and `0.9676980845673955`;
+5. the complete table Edit diagnostic summary, especially median/p90/p95,
+   threshold counts, format counts, and worst 20 pages;
+6. an explicit statement that table Edit `0.608267...` was reproduced from the
+   frozen samples and is independent of the Phase-41 TEDS process failures;
+7. concise `what is proven` and `what remains unresolved`.
+
+Paste `agent_report.md`, `compact_summary.json`, and
+`table_edit_diagnostics.json`.  Do not rerun inference, matching, or another
+metric.  Do not edit source, commit, push, or begin a new experiment.  Then
+**stop**.
