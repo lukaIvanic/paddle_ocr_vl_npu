@@ -1,0 +1,8 @@
+VISION_EMBED step=layout_setup_begin
+Loading weights:   0%|          | 0/858 [00:00<?, ?it/s]Loading weights:  52%|█████▏    | 446/858 [00:00<00:00, 4444.77it/s]Loading weights: 100%|██████████| 858/858 [00:00<00:00, 4317.46it/s]
+VISION_EMBED step=layout_page position=1/1 source_index=11 image=page-573c437e-c309-4483-a038-ef2f440b104a.png
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/pipeline/layout_frontend.py:344: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  return pixel_values.to(
+VISION_EMBED step=recognizer_setup_begin
+VISION_EMBED step=exact_capture_begin
+VISION_EMBED status=PASS mode=exact elapsed_s=53.085 output=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_phase46_vision_embedding_exact_edc0e49/output
