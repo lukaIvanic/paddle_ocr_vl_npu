@@ -16272,3 +16272,289 @@ dominant loss boundary.  Do not speculate about a model numerical cause yet.
 
 Paste `agent_report.md` and `comparison.json`.  Do not run another experiment,
 modify source, commit, push, or use an NPU.  Then **stop**.
+
+---
+
+## Phase 44: exact full-run generation and OmniDocBench difference atlas
+
+### Goal and boundary
+
+Use only the already-frozen Phase-41 inference/evaluator output and the
+corrected Phase-42 TEDS sidecars.  Compare them against the committed full
+910B reference at three separate levels:
+
+1. raw per-crop recognizer generations;
+2. exact page-level contribution to every official OmniDocBench metric;
+3. evaluator sample rows used only to localize the page-level changes.
+
+This phase is CPU-only.  Do not source `npu-setup`, reserve an NPU, load the
+model, rerun inference, rerun matching, or rerun TEDS.  Do not modify source,
+commit, or push.  The work-server agent remains pull-only.
+
+Important interpretation boundaries:
+
+- Page-level contribution is exact and additive.  Sample-level contribution is
+  denominator-coupled localization evidence, not proof that one block caused a
+  page score.
+- Reading order is content-match-coupled.  It is not a pure layout metric.
+- A `(page, block_index)` table transition without exact input fingerprints is
+  a stable-key observation, not proof of a hardware-only numerical change.
+- Heuristic runaway/repetition flags are review candidates, not confirmed
+  degeneration labels.
+- Do not convert pipe/plain tables or otherwise change predictions.
+
+### 44.1 Pull and preflight the frozen evidence
+
+```sh
+set -o pipefail
+
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git pull --ff-only origin main
+git status --short
+test -z "$(git status --porcelain)"
+
+PHASE41=tmp/09_persistent_page_engine/310p_phase41_full_eval_7bda07e
+E2E_OUTPUT="$PHASE41/e2e/output"
+EVAL_DIR="$PHASE41/evaluation/work/result"
+PHASE42="$PHASE41/evaluation_teds_process_3c24d44/work"
+TABLE_SCORES="$PHASE42/result/teds_recomputed_per_table_TEDS.json"
+TEDS_SUMMARY="$PHASE42/teds_only_summary.json"
+
+REFERENCE=tmp/09_persistent_page_engine/910b_generation_difference_reference_ab00d1f/omnidocbench_v1_6_910b2_full_8634d3a.gdatlas.zip
+EXPORTER=09_persistent_page_engine/scripts/export_generation_difference_bundle.py
+ATLAS_SCRIPT=09_persistent_page_engine/scripts/generation_difference_atlas.py
+ROOT="$PHASE41/generation_difference_atlas_$(git rev-parse --short HEAD)"
+CANDIDATE="$ROOT/omnidocbench_v1_6_310p3_full_phase41_phase42.gdatlas.zip"
+ATLAS="$ROOT/atlas"
+
+test -f "$E2E_OUTPUT/recognition_trace.jsonl"
+test -f "$E2E_OUTPUT/run_summary.json"
+test -f "$EVAL_DIR/predictions_quick_match_text_block_result.json"
+test -f "$EVAL_DIR/predictions_quick_match_display_formula_result.json"
+test -f "$EVAL_DIR/predictions_quick_match_table_result.json"
+test -f "$EVAL_DIR/predictions_quick_match_reading_order_result.json"
+test -f "$EVAL_DIR/predictions_quick_match_metric_result.json"
+test -f "$TABLE_SCORES"
+test -f "$TEDS_SUMMARY"
+test -f "$REFERENCE"
+test -f "$EXPORTER"
+test -f "$ATLAS_SCRIPT"
+test ! -e "$ROOT"
+mkdir -p "$ROOT"
+
+REFERENCE_SHA=$(sha256sum "$REFERENCE" | awk '{print $1}')
+test "$REFERENCE_SHA" = a1c2ec99b8aa2b0a18f26cedc9fa7383aa42c78620224aed497035b46bb1ba84
+
+{
+  date -Is
+  hostname
+  git rev-parse HEAD
+  sha256sum \
+    "$E2E_OUTPUT/recognition_trace.jsonl" \
+    "$E2E_OUTPUT/run_summary.json" \
+    "$EVAL_DIR/predictions_quick_match_text_block_result.json" \
+    "$EVAL_DIR/predictions_quick_match_display_formula_result.json" \
+    "$EVAL_DIR/predictions_quick_match_table_result.json" \
+    "$EVAL_DIR/predictions_quick_match_reading_order_result.json" \
+    "$EVAL_DIR/predictions_quick_match_metric_result.json" \
+    "$TABLE_SCORES" \
+    "$TEDS_SUMMARY" \
+    "$REFERENCE"
+} 2>&1 | tee "$ROOT/preflight.log"
+```
+
+Hard contracts for this comparison:
+
+```text
+pages                         1651 on each side
+910B recognition requests    30557
+310P recognition requests    30568
+raw table requests            751 on each side
+text evaluator rows         19689 on each side
+formula evaluator rows       2352 on each side
+table evaluator rows          665 on each side, across 458 pages
+reading-order rows           1638 on each side
+evaluator commit             2b161d010d2e3aff77a0edef359ea3a6411d23cd
+```
+
+The exporter validates that all evaluator pages belong to the exact ordered
+1,651-image run, that corrected TEDS has complete 665-key coverage, and that
+the corrected score summary names the exact frozen table-result file.  It must
+stop rather than fall back to the Phase-41 TEDS values containing 134 worker
+errors.
+
+### 44.2 Export the frozen 310P bundle
+
+```sh
+PYTHONUNBUFFERED=1 /usr/local/python3.12.13/bin/python \
+  "$EXPORTER" \
+  --e2e-output "$E2E_OUTPUT" \
+  --eval-dir "$EVAL_DIR" \
+  --output "$CANDIDATE" \
+  --label 310P3 \
+  --project-commit 7bda07e662f855d5988552e9fb6bce81a11a330f \
+  --evaluator-commit 2b161d010d2e3aff77a0edef359ea3a6411d23cd \
+  --table-scores "$TABLE_SCORES" \
+  --teds-summary "$TEDS_SUMMARY" \
+  --require-corrected-teds \
+  --expected-pages 1651 \
+  --expected-requests 30568 \
+  --expected-table-requests 751 \
+  --expected-text-rows 19689 \
+  --expected-formula-rows 2352 \
+  --expected-table-rows 665 \
+  --expected-reading-order-rows 1638 \
+  --expected-table-pages 458 \
+  2>&1 | tee "$ROOT/export.log"
+test "${PIPESTATUS[0]}" -eq 0
+
+sha256sum "$CANDIDATE" | tee "$ROOT/candidate_bundle.sha256"
+unzip -p "$CANDIDATE" manifest.json \
+  | /usr/local/python3.12.13/bin/python -m json.tool \
+  | tee "$ROOT/candidate_manifest.json"
+```
+
+Report this checkpoint immediately in the live progress stream:
+
+```text
+310P PHASE 44 EXPORT: PASS | EXPORT_CONTRACT_FAILURE
+```
+
+Include the bundle SHA-256 and byte size.  If export fails, report the first
+failed contract and stop; do not weaken a count, provenance, or corrected-TEDS
+check.
+
+### 44.3 Run the bundle-to-bundle atlas
+
+```sh
+PYTHONUNBUFFERED=1 /usr/local/python3.12.13/bin/python \
+  "$ATLAS_SCRIPT" \
+  --reference-bundle "$REFERENCE" \
+  --candidate-bundle "$CANDIDATE" \
+  --reference-label 910B2 \
+  --candidate-label 310P3 \
+  --output-dir "$ATLAS" \
+  --expected-pages 1651 \
+  --expected-reference-table-requests 751 \
+  --expected-candidate-table-requests 751 \
+  --review-limit 200 \
+  2>&1 | tee "$ROOT/atlas.log"
+test "${PIPESTATUS[0]}" -eq 0
+
+test -f "$ATLAS/report.json"
+test -f "$ATLAS/generation_records.jsonl"
+test -f "$ATLAS/metric_records.jsonl"
+test -f "$ATLAS/page_metric_records.jsonl"
+test -f "$ATLAS/table_relevance_pages.jsonl"
+test -f "$ATLAS/table_logit_candidates.json"
+test -f "$ATLAS/review.html"
+
+jq -e '.teds_authority_audit.reference.authority == "corrected_process_isolated"' \
+  "$ATLAS/report.json"
+jq -e '.teds_authority_audit.candidate.authority == "corrected_process_isolated"' \
+  "$ATLAS/report.json"
+jq -e '.generation.reference_requests == 30557' "$ATLAS/report.json"
+jq -e '.generation.candidate_requests == 30568' "$ATLAS/report.json"
+```
+
+The command prints progress after generation pairing, each evaluator family,
+each TEDS view, and artifact writing.  It must not be silent for the whole run.
+
+### 44.4 Produce the compact evidence summary
+
+```sh
+/usr/local/python3.12.13/bin/python - "$ATLAS/report.json" <<'PY' \
+  | tee "$ROOT/headline.json"
+import json
+import sys
+from pathlib import Path
+
+report = json.loads(Path(sys.argv[1]).read_text())
+metrics = {}
+for name, value in report["metrics"].items():
+    metrics[name] = {
+        "reference": value.get("official_reference"),
+        "candidate": value.get("official_candidate"),
+        "candidate_minus_reference": value.get("official_candidate_minus_reference"),
+        "page_concentration": value.get("page_concentration"),
+        "pair_status": value.get("pair_status"),
+        "raw_difference_class": value.get("raw_difference_class"),
+        "normalized_difference_class": value.get("normalized_difference_class"),
+    }
+
+out = {
+    "generation": report["generation"],
+    "metrics": metrics,
+    "teds_authority_audit": report["teds_authority_audit"],
+    "table_format_to_omnidocbench": report["table_format_to_omnidocbench"],
+    "reading_order_evaluator_pred_idx_zero_audit": report["reading_order_evaluator_pred_idx_zero_audit"],
+    "table_logit_candidates": report["table_logit_candidates"],
+    "top_harmful_pages": {
+        name: rows[:20] for name, rows in report["top_harmful_pages"].items()
+    },
+    "top_harmful_samples": {
+        name: rows[:20] for name, rows in report["top_harmful_samples"].items()
+    },
+}
+print(json.dumps(out, indent=2, ensure_ascii=False))
+PY
+```
+
+### 44.5 Manual review questions
+
+Read `headline.json`, `report.json`, and the relevant full JSONL rows.  Review
+the largest positive page/sample contributors instead of treating all 30,000+
+string differences alike.
+
+Answer these questions with concrete page/block examples:
+
+1. How many raw generations are exact, whitespace/NFKC/wrapper-only, small
+   content changes, substantial content changes, and heuristic runaway or
+   repetition candidates?  Split by text/formula/table label.
+2. For text and formulas, do a few pages dominate the score delta?  Manually
+   classify the ten largest positive-loss samples as one of:
+   `syntax/spacing only`, `310P clearly better`, `910B clearly better`,
+   `both wrong`, `real 310P degeneration`, or `evaluator/matching confound`.
+   Specifically search for the observed `minus -> \\quad` substitutions.
+3. For tables, report the independent raw format counts on each device, the
+   stable-key transition matrix, how many transitions have exact input proof,
+   and the table Edit/TEDS loss grouped by transition signature.  Do not call
+   unverified stable-key rows hardware-caused.
+4. For reading order, report how much of the +delta is concentrated in the top
+   10/25/50 pages.  Separate missing members from actual inversions and report
+   the `pred_idx=0` evaluator-defect counts on both sides.
+5. Identify exact-target-input `910B fcel -> 310P pipe/plain` cases whose first
+   token diverges.  These are candidate leads only; a later replay must first
+   reconstruct the complete vision/text pack companions, order, and offsets.
+
+Do not infer semantic dominance from Edit distance alone.  Include examples
+where the 310P syntax differs but is equally correct or closer to GT.
+
+### 44.6 Report and stop
+
+Write `$ROOT/agent_report.md`, beginning with exactly one classification:
+
+```text
+310P PHASE 44 DIFFERENCE ATLAS: PASS | EXPORT_CONTRACT_FAILURE |
+REFERENCE_BUNDLE_MISMATCH | ATLAS_RECONCILIATION_FAILURE
+```
+
+For PASS, report:
+
+- project/evaluator commits and both bundle SHA-256 values;
+- paired/reference-only/candidate-only generation counts;
+- generation difference/triage counts by label;
+- every official 910B/310P score and signed delta;
+- page-level concentration for text, formula, table Edit, corrected page TEDS,
+  and reading order;
+- the table-format transition/relevance results;
+- the manual ten-example disposition for text/formula and the true degeneration
+  count found in this review;
+- reading-order missing/inversion split and evaluator-defect audit;
+- the top exact-target table leads for a later token-zero logit replay;
+- `what is proven` and `what remains unresolved`.
+
+Paste `agent_report.md` plus `headline.json`.  Full bundle, JSONL, and HTML
+artifacts remain local on the work server.  Do not use an NPU or begin the logit
+replay.  Then **stop**.
