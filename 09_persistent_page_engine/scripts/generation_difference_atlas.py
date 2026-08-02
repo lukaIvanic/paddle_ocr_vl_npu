@@ -135,7 +135,10 @@ def _load_side(
             if missing:
                 raise ValueError(f"bundle {bundle} is missing members: {sorted(missing)}")
             manifest = _zip_json(archive, "manifest.json")
-            if manifest.get("schema_version") != 1:
+            if (
+                manifest.get("schema_version") != 1
+                or manifest.get("kind") != "experiment09_generation_difference_bundle"
+            ):
                 raise ValueError(f"unsupported bundle schema: {manifest}")
             embedded_scores = (
                 _zip_json(archive, "corrected_table_scores.json")
@@ -149,7 +152,7 @@ def _load_side(
             )
             if bool(embedded_scores) != bool(embedded_teds):
                 raise ValueError("bundle has incomplete corrected TEDS evidence")
-            return {
+            loaded = {
                 "source": str(bundle),
                 "manifest": manifest,
                 "trace": _zip_jsonl(archive, "recognition_trace.jsonl"),
@@ -162,6 +165,28 @@ def _load_side(
                 "table_scores": embedded_scores,
                 "teds_summary": embedded_teds,
             }
+        counts = manifest.get("counts") or {}
+        run_images = loaded["run_summary"].get("images")
+        run_page_count = len(run_images) if isinstance(run_images, list) else int(loaded["run_summary"].get("count", 0))
+        actual = {
+            "pages_in_run_summary": run_page_count,
+            "recognition_requests": len(loaded["trace"]),
+            "table_recognition_requests": sum(row.get("label") == "table" for row in loaded["trace"]),
+            "table_pages": len({
+                _page_name(str(row.get("img_id") or row.get("image_name") or ""))
+                for row in loaded["eval"]["table"]
+            }),
+        }
+        for name, value in actual.items():
+            if int(counts.get(name, -1)) != value:
+                raise ValueError(
+                    f"bundle manifest count mismatch for {name}: {counts.get(name)} vs {value}"
+                )
+        expected_rows = counts.get("evaluator_rows") or {}
+        for kind in EVAL_KINDS:
+            if int(expected_rows.get(kind, -1)) != len(loaded["eval"][kind]):
+                raise ValueError(f"bundle manifest evaluator-row mismatch for {kind}")
+        return loaded
 
     assert output is not None and eval_dir is not None
     output = _require_output(output)
@@ -494,8 +519,16 @@ def _analyze_generations(reference_rows: list[dict[str, Any]], candidate_rows: l
             if pair_status == "paired"
             else {"overall": "missing_side", "crop": "missing_side", "prepared": "missing_side", "tensors": {}}
         )
-        text_ratio = _sequence_ratio(left_text, right_text) if pair_status == "paired" else None
-        token_ratio = _sequence_ratio(left_tokens, right_tokens) if pair_status == "paired" else None
+        text_ratio = (
+            (1.0 if left_text == right_text else _sequence_ratio(left_text, right_text))
+            if pair_status == "paired"
+            else None
+        )
+        token_ratio = (
+            (1.0 if left_tokens == right_tokens else _sequence_ratio(left_tokens, right_tokens))
+            if pair_status == "paired"
+            else None
+        )
         record = {
             "source_image_name": key[0],
             "block_index": key[1],
@@ -582,6 +615,11 @@ def _analyze_generations(reference_rows: list[dict[str, Any]], candidate_rows: l
         "reference_only": len(reference.keys() - candidate.keys()),
         "candidate_only": len(candidate.keys() - reference.keys()),
         "pair_status": _counter(record["pair_status"] for record in records),
+        "ambiguous_duplicate_identity_rows": {
+            "reference": sum("duplicate_lane" in key for key in reference),
+            "candidate": sum("duplicate_lane" in key for key in candidate),
+            "note": "lane-only localization rows; not interpreted as cross-device harms",
+        },
         "difference_class": _counter(record["difference_class"] for record in records),
         "input_status": _counter(record["input_status"] for record in records),
         "triage_flag": _counter(flag for record in records for flag in record["triage_flags"]),
@@ -597,8 +635,8 @@ def _analyze_generations(reference_rows: list[dict[str, Any]], candidate_rows: l
             f"{left}->{right}": count
             for (left, right), count in sorted(table_transitions.items(), key=lambda item: (-item[1], item[0]))
         },
-        "exact_input_table_logit_candidates": len(logit_candidates),
-        "exact_input_table_logit_candidates_token0": sum(
+        "exact_target_input_table_candidates": len(logit_candidates),
+        "exact_target_input_table_candidates_token0": sum(
             record["first_divergence_token"] == 0 for record in logit_candidates
         ),
     }
@@ -609,10 +647,12 @@ def _gt_base_key(sample: dict[str, Any], lane: str) -> tuple[str, ...]:
     indices = sample.get("gt_idx")
     if indices is None:
         indices = []
+    normalized_indices = indices if isinstance(indices, list) else [indices]
+    has_gt_index = any(value not in (None, "") for value in normalized_indices)
     page = _page_name(str(sample.get("img_id") or sample.get("image_name") or ""))
     raw_gt = _raw_sample_text(sample, "gt")
     normalized_gt = _normalized_sample_text(sample, "gt")
-    if not indices and not raw_gt and not normalized_gt:
+    if not has_gt_index and not raw_gt and not normalized_gt:
         run_specific = {
             key: sample.get(key)
             for key in (
@@ -682,7 +722,7 @@ def _normalized_sample_text(sample: dict[str, Any] | None, name: str) -> str:
     if sample is None:
         return ""
     normalized_key = f"norm_{name}"
-    if normalized_key in sample and sample[normalized_key] is not None:
+    if normalized_key in sample and sample[normalized_key] not in (None, ""):
         return str(sample[normalized_key])
     return str(sample.get(name) or "")
 
@@ -918,10 +958,50 @@ def _validate_teds_evidence(
         raise ValueError("corrected TEDS summary sample_count mismatch")
     if int(summary.get("page_count", -1)) != len(pages):
         raise ValueError("corrected TEDS summary page_count mismatch")
+    execution = summary.get("execution") or {}
+    if execution.get("scheduler") != "process_isolated_parent_timeout":
+        raise ValueError("corrected TEDS summary did not use the process-isolated scheduler")
+    if int(execution.get("sample_count", -1)) != len(samples):
+        raise ValueError("corrected TEDS execution sample_count mismatch")
+    if int(execution.get("error_case_count", -1)) != 0:
+        raise ValueError("corrected TEDS summary still contains metric execution errors")
+    for metric in ("TEDS", "TEDS_structure_only"):
+        for value in (
+            summary["sample_aggregate"][metric]["all"],
+            summary["page_aggregate"][metric]["ALL"],
+        ):
+            if not math.isfinite(float(value)):
+                raise ValueError(f"corrected TEDS summary has non-finite {metric}")
     for key, payload in scores.items():
         for metric in ("TEDS", "TEDS_structure_only"):
             if metric not in payload or not math.isfinite(float(payload[metric])):
                 raise ValueError(f"invalid corrected score {key}.{metric}")
+
+
+def _validate_frozen_teds_authority(
+    official: dict[str, Any],
+    corrected_summary: dict[str, Any] | None,
+) -> dict[str, Any]:
+    if corrected_summary is not None:
+        execution = corrected_summary.get("execution") or {}
+        return {
+            "authority": "corrected_process_isolated",
+            "timeout_case_count": int(execution.get("timeout_case_count", 0)),
+            "error_case_count": int(execution.get("error_case_count", 0)),
+            "timeout_cases": execution.get("timeout_cases") or [],
+        }
+    debug = (((official.get("table") or {}).get("metric_debug") or {}).get("TEDS") or {})
+    errors = int(debug.get("error_case_count", 0))
+    if errors:
+        raise ValueError(
+            "frozen evaluator TEDS contains execution errors; corrected sidecars are required"
+        )
+    return {
+        "authority": "frozen_evaluator",
+        "timeout_case_count": int(debug.get("timeout_case_count", 0)),
+        "error_case_count": errors,
+        "timeout_cases": debug.get("timeout_cases") or [],
+    }
 
 
 def _concentration(losses: list[float]) -> dict[str, Any]:
@@ -1019,6 +1099,10 @@ def _metric_record(key: Any, reference: dict[str, Any] | None, candidate: dict[s
         "normalized_gt": gt_normalized,
         "normalized_reference_pred": ref_pred_normalized,
         "normalized_candidate_pred": cand_pred_normalized,
+        "stored_reference_norm_gt": reference.get("norm_gt") if reference else None,
+        "stored_candidate_norm_gt": candidate.get("norm_gt") if candidate else None,
+        "stored_reference_norm_pred": reference.get("norm_pred") if reference else None,
+        "stored_candidate_norm_pred": candidate.get("norm_pred") if candidate else None,
         "reference_edit_num": reference.get("Edit_num") if reference else None,
         "candidate_edit_num": candidate.get("Edit_num") if candidate else None,
         "reference_upper_len": reference.get("upper_len") if reference else None,
@@ -1245,6 +1329,39 @@ def _audit_pred_index_zero(eval_side: dict[str, list[dict[str, Any]]]) -> dict[s
     }
 
 
+def _validate_evaluator_gt_universes(
+    reference: dict[str, list[dict[str, Any]]],
+    candidate: dict[str, list[dict[str, Any]]],
+) -> None:
+    for kind in EVAL_KINDS:
+        if kind == "reading_order":
+            left = {
+                _page_name(str(row.get("img_id") or row.get("image_name") or "")): list(row.get("gt") or ())
+                for row in reference[kind]
+            }
+            right = {
+                _page_name(str(row.get("img_id") or row.get("image_name") or "")): list(row.get("gt") or ())
+                for row in candidate[kind]
+            }
+            if left != right:
+                raise ValueError("reading-order GT page sequences differ between sides")
+            continue
+
+        def atoms(rows: list[dict[str, Any]]) -> dict[str, collections.Counter[str]]:
+            result: dict[str, collections.Counter[str]] = collections.defaultdict(collections.Counter)
+            for row in rows:
+                page = _page_name(str(row.get("img_id") or row.get("image_name") or ""))
+                indices = row.get("gt_idx")
+                indices = indices if isinstance(indices, list) else [indices]
+                for value in indices:
+                    if value not in (None, ""):
+                        result[page][json.dumps(value, ensure_ascii=False, sort_keys=True)] += 1
+            return dict(result)
+
+        if atoms(reference[kind]) != atoms(candidate[kind]):
+            raise ValueError(f"{kind} concrete GT-index atom universes differ between sides")
+
+
 def _compact_for_review(record: dict[str, Any]) -> dict[str, Any]:
     compact = dict(record)
     for field in (
@@ -1279,7 +1396,12 @@ def _compact_for_review(record: dict[str, Any]) -> dict[str, Any]:
 
 def _top_records(records: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
     selected = sorted(
-        (record for record in records if record["candidate_loss_contribution"] > 0),
+        (
+            record
+            for record in records
+            if record["candidate_loss_contribution"] > 0
+            and record.get("pair_status", "paired") == "paired"
+        ),
         key=lambda record: (
             -record["candidate_loss_contribution"],
             record["image_name"],
@@ -1432,6 +1554,10 @@ def main() -> None:
     for kind in EVAL_KINDS:
         if not isinstance(reference_eval[kind], list) or not isinstance(candidate_eval[kind], list):
             raise TypeError(f"{kind} evaluator results must be JSON lists")
+    _validate_evaluator_gt_universes(reference_eval, candidate_eval)
+    if reference_side["manifest"] and candidate_side["manifest"]:
+        if reference_side["manifest"].get("evaluator_commit") != candidate_side["manifest"].get("evaluator_commit"):
+            raise ValueError("reference and candidate bundles use different evaluator commits")
 
     print("[atlas] pairing raw recognizer generations", flush=True)
     generation_summary, generation_records, logit_candidates = _analyze_generations(reference_trace, candidate_trace)
@@ -1449,6 +1575,14 @@ def main() -> None:
 
     reference_pages = run_pages(reference_side)
     candidate_pages = run_pages(candidate_side)
+    reference_images = reference_side["run_summary"].get("images")
+    candidate_images = candidate_side["run_summary"].get("images")
+    if isinstance(reference_images, list) and isinstance(candidate_images, list):
+        if reference_images != candidate_images:
+            raise ValueError("reference and candidate run_summary image lists/order differ")
+        generation_summary["ordered_page_set_sha256"] = _sha256_text(
+            json.dumps(reference_images, ensure_ascii=False, separators=(",", ":"))
+        )
     if args.expected_pages is not None:
         if reference_pages != args.expected_pages or candidate_pages != args.expected_pages:
             raise ValueError(
@@ -1485,6 +1619,14 @@ def main() -> None:
     candidate_teds_summary = candidate_side["teds_summary"]
     _validate_teds_evidence(reference_eval["table"], reference_scores, reference_teds_summary)
     _validate_teds_evidence(candidate_eval["table"], candidate_scores, candidate_teds_summary)
+    teds_authority_audit = {
+        "reference": _validate_frozen_teds_authority(
+            reference_official, reference_teds_summary
+        ),
+        "candidate": _validate_frozen_teds_authority(
+            candidate_official, candidate_teds_summary
+        ),
+    }
     for metric in ("TEDS", "TEDS_structure_only"):
         for page_weighted in (False, True):
             name = f"table.{metric}.{'page' if page_weighted else 'sample'}"
@@ -1522,6 +1664,7 @@ def main() -> None:
         },
         "generation": generation_summary,
         "metrics": metric_summaries,
+        "teds_authority_audit": teds_authority_audit,
         "reading_order_evaluator_pred_idx_zero_audit": {
             "reference": _audit_pred_index_zero(reference_eval),
             "candidate": _audit_pred_index_zero(candidate_eval),
@@ -1529,6 +1672,7 @@ def main() -> None:
         "table_format_to_omnidocbench": table_relevance["by_transition_signature"],
         "table_logit_candidates": {
             "count": len(logit_candidates),
+            "evidence_boundary": "target crop/prepared tensors are exact; full vision/text pack companion membership, order, and offsets must be reconstructed before a replay is considered faithful",
             "first_25": [
                 _compact_for_review(record) for record in logit_candidates[:25]
             ],

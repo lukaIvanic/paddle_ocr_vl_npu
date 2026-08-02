@@ -13,9 +13,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import subprocess
 import tempfile
-import time
 import zipfile
 from pathlib import Path
 from typing import Any, Iterable
@@ -55,10 +53,11 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--eval-dir", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--label", required=True)
-    parser.add_argument("--project-commit")
+    parser.add_argument("--project-commit", required=True)
     parser.add_argument("--evaluator-commit", required=True)
     parser.add_argument("--table-scores", type=Path)
     parser.add_argument("--teds-summary", type=Path)
+    parser.add_argument("--require-corrected-teds", action="store_true")
     parser.add_argument("--expected-pages", type=int)
     parser.add_argument("--expected-requests", type=int)
     parser.add_argument("--expected-table-requests", type=int)
@@ -70,6 +69,8 @@ def _parse_args() -> argparse.Namespace:
     args = parser.parse_args()
     if bool(args.table_scores) != bool(args.teds_summary):
         parser.error("--table-scores and --teds-summary must be supplied together")
+    if args.require_corrected_teds and not args.table_scores:
+        parser.error("--require-corrected-teds requires both corrected TEDS sidecars")
     return args
 
 
@@ -100,16 +101,6 @@ def _find_one(root: Path, pattern: str) -> Path:
     return matches[0]
 
 
-def _git_commit(path: Path) -> str:
-    completed = subprocess.run(
-        ["git", "-C", str(path), "rev-parse", "HEAD"],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return completed.stdout.strip()
-
-
 def _trace_rows(path: Path) -> list[dict[str, Any]]:
     return [
         {field: row[field] for field in TRACE_FIELDS if field in row}
@@ -136,7 +127,20 @@ def _validate_corrected_teds(
     table_rows: list[dict[str, Any]],
     scores: dict[str, dict[str, Any]],
     summary: dict[str, Any],
+    table_result_path: Path,
 ) -> None:
+    source_table_result = summary.get("source_table_result")
+    if not source_table_result:
+        raise ValueError("TEDS summary does not identify its source_table_result")
+    source_table_path = Path(str(source_table_result)).expanduser().resolve()
+    if not source_table_path.is_file():
+        raise FileNotFoundError(
+            f"TEDS summary source_table_result does not exist: {source_table_path}"
+        )
+    if _sha256(source_table_path) != _sha256(table_result_path):
+        raise ValueError(
+            "corrected TEDS sidecars are not bound to the selected frozen table result"
+        )
     expected_keys = {_table_score_key(row) for row in table_rows}
     actual_keys = set(scores)
     if actual_keys != expected_keys:
@@ -154,6 +158,13 @@ def _validate_corrected_teds(
         raise ValueError("TEDS summary sample_count does not match table rows")
     if int(summary.get("page_count", -1)) != len(pages):
         raise ValueError("TEDS summary page_count does not match table page universe")
+    execution = summary.get("execution") or {}
+    if execution.get("scheduler") != "process_isolated_parent_timeout":
+        raise ValueError("corrected TEDS summary did not use the process-isolated scheduler")
+    if int(execution.get("sample_count", -1)) != len(table_rows):
+        raise ValueError("corrected TEDS execution sample_count mismatch")
+    if int(execution.get("error_case_count", -1)) != 0:
+        raise ValueError("corrected TEDS summary still contains metric execution errors")
     for metric in ("TEDS", "TEDS_structure_only"):
         _finite_number(
             summary["sample_aggregate"][metric]["all"],
@@ -222,7 +233,8 @@ def main() -> None:
     if any(not isinstance(rows, list) for rows in evaluator.values()):
         raise TypeError("all evaluator result artifacts must be JSON arrays")
 
-    page_count = len(set(map(_page_name, trace)))
+    trace_pages = set(map(_page_name, trace))
+    page_count = len(trace_pages)
     summary_images = run_summary.get("images")
     summary_page_count = (
         len(summary_images)
@@ -231,6 +243,17 @@ def main() -> None:
     )
     if page_count > summary_page_count:
         raise ValueError("recognition trace contains more pages than run_summary")
+    if isinstance(summary_images, list):
+        run_page_set = {str(value) for value in summary_images}
+        if not trace_pages <= run_page_set:
+            raise ValueError("recognition trace contains pages outside run_summary.images")
+        for kind, rows in evaluator.items():
+            evaluator_pages = {
+                str(row.get("img_id") or row.get("image_name") or "")
+                for row in rows
+            }
+            if not evaluator_pages <= run_page_set:
+                raise ValueError(f"{kind} evaluator contains pages outside run_summary.images")
     _assert_expected("pages", summary_page_count, args.expected_pages)
     _assert_expected("requests", len(trace), args.expected_requests)
     table_requests = sum(row.get("label") == "table" for row in trace)
@@ -255,7 +278,18 @@ def main() -> None:
         print("[bundle] validating corrected TEDS sidecars", flush=True)
         table_scores = _read_json(args.table_scores.expanduser().resolve())
         teds_summary = _read_json(args.teds_summary.expanduser().resolve())
-        _validate_corrected_teds(evaluator["table"], table_scores, teds_summary)
+        _validate_corrected_teds(
+            evaluator["table"],
+            table_scores,
+            teds_summary,
+            eval_paths["table"],
+        )
+    else:
+        frozen_debug = (((metric_result.get("table") or {}).get("metric_debug") or {}).get("TEDS") or {})
+        if int(frozen_debug.get("error_case_count", 0)):
+            raise ValueError(
+                "frozen evaluator TEDS contains metric execution errors; corrected sidecars are required"
+            )
 
     source_paths = {
         "recognition_trace": trace_path,
@@ -268,13 +302,11 @@ def main() -> None:
         source_paths["teds_summary"] = args.teds_summary.expanduser().resolve()
     print("[bundle] hashing source artifacts", flush=True)
     hashes = {name: _sha256(path) for name, path in source_paths.items()}
-    project_commit = args.project_commit or _git_commit(Path(__file__).resolve().parents[2])
     manifest = {
         "schema_version": SCHEMA_VERSION,
         "kind": "experiment09_generation_difference_bundle",
         "label": args.label,
-        "created_unix_s": int(time.time()),
-        "project_commit": project_commit,
+        "project_commit": args.project_commit,
         "evaluator_commit": args.evaluator_commit,
         "source_paths": {name: str(path) for name, path in source_paths.items()},
         "source_sha256": hashes,
