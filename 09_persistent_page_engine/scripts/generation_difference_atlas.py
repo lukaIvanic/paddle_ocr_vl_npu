@@ -1355,10 +1355,12 @@ def _audit_pred_index_zero(eval_side: dict[str, list[dict[str, Any]]]) -> dict[s
     }
 
 
-def _validate_evaluator_gt_universes(
+def _audit_evaluator_gt_universes(
     reference: dict[str, list[dict[str, Any]]],
     candidate: dict[str, list[dict[str, Any]]],
-) -> None:
+) -> dict[str, Any]:
+    by_kind: dict[str, dict[str, Any]] = {}
+    difference_records: list[dict[str, Any]] = []
     for kind in EVAL_KINDS:
         if kind == "reading_order":
             left = {
@@ -1369,8 +1371,29 @@ def _validate_evaluator_gt_universes(
                 _page_name(str(row.get("img_id") or row.get("image_name") or "")): list(row.get("gt") or ())
                 for row in candidate[kind]
             }
-            if left != right:
-                raise ValueError("reading-order GT page sequences differ between sides")
+            differing_pages = []
+            for page in sorted(set(left) | set(right)):
+                if left.get(page) == right.get(page):
+                    continue
+                differing_pages.append(page)
+                difference_records.append(
+                    {
+                        "kind": kind,
+                        "image_name": page,
+                        "difference_type": "reading_order_gt_sequence",
+                        "reference_gt_sequence": left.get(page),
+                        "candidate_gt_sequence": right.get(page),
+                    }
+                )
+            by_kind[kind] = {
+                "exact": not differing_pages,
+                "reference_pages": len(left),
+                "candidate_pages": len(right),
+                "reference_only_pages": sorted(set(left) - set(right)),
+                "candidate_only_pages": sorted(set(right) - set(left)),
+                "pages_with_different_gt_sequences": differing_pages,
+                "difference_page_count": len(differing_pages),
+            }
             continue
 
         def atoms(rows: list[dict[str, Any]]) -> dict[str, collections.Counter[str]]:
@@ -1384,8 +1407,58 @@ def _validate_evaluator_gt_universes(
                         result[page][json.dumps(value, ensure_ascii=False, sort_keys=True)] += 1
             return dict(result)
 
-        if atoms(reference[kind]) != atoms(candidate[kind]):
-            raise ValueError(f"{kind} concrete GT-index atom universes differ between sides")
+        left = atoms(reference[kind])
+        right = atoms(candidate[kind])
+        differing_pages = []
+        reference_only_atoms = 0
+        candidate_only_atoms = 0
+        for page in sorted(set(left) | set(right)):
+            left_counter = left.get(page, collections.Counter())
+            right_counter = right.get(page, collections.Counter())
+            if left_counter == right_counter:
+                continue
+            differing_pages.append(page)
+            left_only = left_counter - right_counter
+            right_only = right_counter - left_counter
+            reference_only_atoms += sum(left_only.values())
+            candidate_only_atoms += sum(right_only.values())
+            difference_records.append(
+                {
+                    "kind": kind,
+                    "image_name": page,
+                    "difference_type": "concrete_gt_index_atom_membership",
+                    "reference_only_atoms": [
+                        {"gt_idx": json.loads(value), "count": count}
+                        for value, count in sorted(left_only.items())
+                    ],
+                    "candidate_only_atoms": [
+                        {"gt_idx": json.loads(value), "count": count}
+                        for value, count in sorted(right_only.items())
+                    ],
+                }
+            )
+        by_kind[kind] = {
+            "exact": not differing_pages,
+            "reference_pages_with_concrete_atoms": len(left),
+            "candidate_pages_with_concrete_atoms": len(right),
+            "reference_concrete_atom_count": sum(sum(counter.values()) for counter in left.values()),
+            "candidate_concrete_atom_count": sum(sum(counter.values()) for counter in right.values()),
+            "difference_page_count": len(differing_pages),
+            "difference_pages": differing_pages,
+            "reference_only_atom_count": reference_only_atoms,
+            "candidate_only_atom_count": candidate_only_atoms,
+        }
+    return {
+        "exact_all_kinds": not difference_records,
+        "difference_record_count": len(difference_records),
+        "by_kind": by_kind,
+        "differences": difference_records,
+        "interpretation": (
+            "This audits prediction-dependent evaluator result membership, not source-dataset identity. "
+            "Differences are preserved as evidence and excluded from forced element pairing; exact "
+            "page-level metric recomposition remains authoritative."
+        ),
+    }
 
 
 def _compact_for_review(record: dict[str, Any]) -> dict[str, Any]:
@@ -1581,7 +1654,16 @@ def main() -> None:
     for kind in EVAL_KINDS:
         if not isinstance(reference_eval[kind], list) or not isinstance(candidate_eval[kind], list):
             raise TypeError(f"{kind} evaluator results must be JSON lists")
-    _validate_evaluator_gt_universes(reference_eval, candidate_eval)
+    print("[atlas] auditing evaluator GT-result universes", flush=True)
+    evaluator_gt_universe_audit = _audit_evaluator_gt_universes(
+        reference_eval, candidate_eval
+    )
+    if not evaluator_gt_universe_audit["exact_all_kinds"]:
+        print(
+            "[atlas] preserving evaluator GT-result membership differences: "
+            f"records={evaluator_gt_universe_audit['difference_record_count']}",
+            flush=True,
+        )
     if reference_side["manifest"] and candidate_side["manifest"]:
         if reference_side["manifest"].get("evaluator_commit") != candidate_side["manifest"].get("evaluator_commit"):
             raise ValueError("reference and candidate bundles use different evaluator commits")
@@ -1697,6 +1779,7 @@ def main() -> None:
         },
         "generation": generation_summary,
         "metrics": metric_summaries,
+        "evaluator_gt_universe_audit": evaluator_gt_universe_audit,
         "teds_authority_audit": teds_authority_audit,
         "reading_order_evaluator_pred_idx_zero_audit": {
             "reference": _audit_pred_index_zero(reference_eval),
@@ -1722,6 +1805,10 @@ def main() -> None:
     _write_jsonl(output_dir / "generation_records.jsonl", generation_records)
     _write_jsonl(output_dir / "metric_records.jsonl", (record for records in metric_records.values() for record in records))
     _write_jsonl(output_dir / "page_metric_records.jsonl", (record for records in metric_page_records.values() for record in records))
+    _write_jsonl(
+        output_dir / "evaluator_gt_universe_differences.jsonl",
+        evaluator_gt_universe_audit["differences"],
+    )
     _write_jsonl(output_dir / "table_relevance_pages.jsonl", table_relevance["pages"])
     (output_dir / "table_logit_candidates.json").write_text(json.dumps(logit_candidates, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     _render_html(report, top_by_metric, generation_records, output_dir / "review.html")

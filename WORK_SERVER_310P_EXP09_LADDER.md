@@ -16390,8 +16390,10 @@ Phase-44 attempt proved that the 310P evaluator contains 19,728 rows across the
 same 1,557 text-scored pages, while the 910B bundle contains 19,689.  Evaluator
 rows are prediction-dependent match groups, so this `+39` difference is not by
 itself proof of 39 extra layout detections.  The atlas must preserve it and use
-the shared concrete GT-atom universe plus exact page-level recomposition to
-distinguish grouping changes from meaningful score changes.
+the concrete GT-atom membership audit plus exact page-level recomposition to
+distinguish grouping changes, missing matches, and meaningful score changes.
+GT atoms present on only one side are evidence to report, not a reason to drop
+the affected page or abort the page-level comparison.
 
 ### 44.2 Export the frozen 310P bundle
 
@@ -16455,6 +16457,7 @@ test -f "$ATLAS/report.json"
 test -f "$ATLAS/generation_records.jsonl"
 test -f "$ATLAS/metric_records.jsonl"
 test -f "$ATLAS/page_metric_records.jsonl"
+test -f "$ATLAS/evaluator_gt_universe_differences.jsonl"
 test -f "$ATLAS/table_relevance_pages.jsonl"
 test -f "$ATLAS/table_logit_candidates.json"
 test -f "$ATLAS/review.html"
@@ -16495,6 +16498,7 @@ for name, value in report["metrics"].items():
 out = {
     "generation": report["generation"],
     "metrics": metrics,
+    "evaluator_gt_universe_audit": report["evaluator_gt_universe_audit"],
     "teds_authority_audit": report["teds_authority_audit"],
     "table_format_to_omnidocbench": report["table_format_to_omnidocbench"],
     "reading_order_evaluator_pred_idx_zero_audit": report["reading_order_evaluator_pred_idx_zero_audit"],
@@ -16521,6 +16525,9 @@ Answer these questions with concrete page/block examples:
 1. How many raw generations are exact, whitespace/NFKC/wrapper-only, small
    content changes, substantial content changes, and heuristic runaway or
    repetition candidates?  Split by text/formula/table label.
+   Also report every evaluator GT-result membership difference.  These are
+   reference-only/candidate-only localization records; do not force-pair them
+   or remove their pages from the exact page-level comparison.
 2. For text and formulas, do a few pages dominate the score delta?  Manually
    classify the ten largest positive-loss samples as one of:
    `syntax/spacing only`, `310P clearly better`, `910B clearly better`,
@@ -16557,6 +16564,8 @@ For PASS, report:
 - every official 910B/310P score and signed delta;
 - page-level concentration for text, formula, table Edit, corrected page TEDS,
   and reading order;
+- the evaluator GT-result universe audit, including every one-sided atom or
+  reading-order GT-sequence difference;
 - the table-format transition/relevance results;
 - the manual ten-example disposition for text/formula and the true degeneration
   count found in this review;
