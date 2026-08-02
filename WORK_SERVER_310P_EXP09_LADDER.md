@@ -16371,7 +16371,8 @@ pages                         1651 on each side
 910B recognition requests    30557
 310P recognition requests    30568
 raw table requests            751 on each side
-text evaluator rows         19689 on each side
+910B text evaluator rows    19689
+310P text evaluator rows    19728
 formula evaluator rows       2352 on each side
 table evaluator rows          665 on each side, across 458 pages
 reading-order rows           1638 on each side
@@ -16383,6 +16384,14 @@ The exporter validates that all evaluator pages belong to the exact ordered
 the corrected score summary names the exact frozen table-result file.  It must
 stop rather than fall back to the Phase-41 TEDS values containing 134 worker
 errors.
+
+The asymmetric text-row counts are deliberate frozen contracts.  The initial
+Phase-44 attempt proved that the 310P evaluator contains 19,728 rows across the
+same 1,557 text-scored pages, while the 910B bundle contains 19,689.  Evaluator
+rows are prediction-dependent match groups, so this `+39` difference is not by
+itself proof of 39 extra layout detections.  The atlas must preserve it and use
+the shared concrete GT-atom universe plus exact page-level recomposition to
+distinguish grouping changes from meaningful score changes.
 
 ### 44.2 Export the frozen 310P bundle
 
@@ -16401,7 +16410,7 @@ PYTHONUNBUFFERED=1 /usr/local/python3.12.13/bin/python \
   --expected-pages 1651 \
   --expected-requests 30568 \
   --expected-table-requests 751 \
-  --expected-text-rows 19689 \
+  --expected-text-rows 19728 \
   --expected-formula-rows 2352 \
   --expected-table-rows 665 \
   --expected-reading-order-rows 1638 \
