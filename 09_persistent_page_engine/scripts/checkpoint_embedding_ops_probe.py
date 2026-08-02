@@ -35,8 +35,6 @@ REPO_ROOT = EXPERIMENT_ROOT.parent
 sys.path.insert(0, str(EXPERIMENT_ROOT))
 
 from paddleocr_vl.model.modeling import LocalPaddleOCRVLForConditionalGeneration
-from table_token0_replay import tensor_comparison, tensor_summary
-from vision_embedding_debug import deterministic_sample
 
 
 DEFAULT_MODEL_DIR = Path("/workspace/models/PaddleOCR-VL-1.6")
@@ -129,6 +127,102 @@ def sha256_file(path: Path) -> str:
 def tensor_sha256(tensor: torch.Tensor) -> str:
     value = tensor.detach().cpu().contiguous()
     return hashlib.sha256(value.view(torch.uint8).numpy().tobytes()).hexdigest()
+
+
+def tensor_bytes(tensor: torch.Tensor) -> bytes:
+    value = tensor.detach().cpu().contiguous()
+    return value.view(torch.uint8).numpy().tobytes()
+
+
+def tensor_summary(tensor: torch.Tensor) -> dict[str, Any]:
+    value = tensor.detach().cpu().contiguous()
+    as_float = value.float()
+    finite = torch.isfinite(as_float)
+    finite_values = as_float[finite]
+    return {
+        "shape": list(value.shape),
+        "dtype": str(value.dtype).removeprefix("torch."),
+        "numel": int(value.numel()),
+        "bytes": int(value.numel() * value.element_size()),
+        "sha256": hashlib.sha256(tensor_bytes(value)).hexdigest(),
+        "finite_fraction": float(finite.float().mean().item()) if value.numel() else 1.0,
+        "min": float(finite_values.min().item()) if finite_values.numel() else None,
+        "max": float(finite_values.max().item()) if finite_values.numel() else None,
+        "mean": float(finite_values.mean().item()) if finite_values.numel() else None,
+        "abs_mean": (
+            float(finite_values.abs().mean().item()) if finite_values.numel() else None
+        ),
+        "l2": (
+            float(torch.linalg.vector_norm(finite_values).item())
+            if finite_values.numel()
+            else None
+        ),
+    }
+
+
+def tensor_comparison(
+    candidate: torch.Tensor,
+    reference: torch.Tensor,
+) -> dict[str, Any]:
+    if tuple(candidate.shape) != tuple(reference.shape):
+        return {
+            "shape_exact": False,
+            "candidate_shape": list(candidate.shape),
+            "reference_shape": list(reference.shape),
+        }
+    left = candidate.float().reshape(-1)
+    right = reference.float().reshape(-1)
+    delta = (left - right).abs()
+    left_l2 = torch.linalg.vector_norm(left)
+    right_l2 = torch.linalg.vector_norm(right)
+    delta_l2 = torch.linalg.vector_norm(left - right)
+    denominator = left_l2 * right_l2
+    cosine = (
+        float(torch.dot(left, right).item() / denominator.item())
+        if denominator.item() != 0.0
+        else None
+    )
+    quantiles = (
+        torch.quantile(delta, torch.tensor([0.5, 0.95, 0.99]))
+        if delta.numel()
+        else torch.zeros(3)
+    )
+    return {
+        "shape_exact": True,
+        "dtype_exact": candidate.dtype == reference.dtype,
+        "byte_exact": tensor_bytes(candidate) == tensor_bytes(reference),
+        "max_abs": float(delta.max().item()) if delta.numel() else 0.0,
+        "mean_abs": float(delta.mean().item()) if delta.numel() else 0.0,
+        "rms_abs": (
+            float(torch.sqrt(torch.mean(delta.square())).item())
+            if delta.numel()
+            else 0.0
+        ),
+        "p50_abs": float(quantiles[0].item()),
+        "p95_abs": float(quantiles[1].item()),
+        "p99_abs": float(quantiles[2].item()),
+        "relative_l2": (
+            float(delta_l2.item() / right_l2.item())
+            if right_l2.item() != 0.0
+            else None
+        ),
+        "cosine_similarity": cosine,
+    }
+
+
+def deterministic_sample(tensor: torch.Tensor, limit: int) -> torch.Tensor:
+    flat = tensor.detach().cpu().contiguous().reshape(-1)
+    if flat.numel() <= limit:
+        return flat
+    if limit == 1:
+        return flat[:1]
+    positions = torch.arange(limit, dtype=torch.int64)
+    indices = torch.div(
+        positions * (flat.numel() - 1),
+        limit - 1,
+        rounding_mode="floor",
+    )
+    return flat.index_select(0, indices).contiguous()
 
 
 def compact_tensor(tensor: torch.Tensor) -> dict[str, Any]:
