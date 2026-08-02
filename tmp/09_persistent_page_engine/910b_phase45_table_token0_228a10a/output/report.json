@@ -1,0 +1,559 @@
+{
+  "schema_version": 1,
+  "kind": "experiment09_table_token0_prefill_replay_report",
+  "case_id": "table_token0_11_3",
+  "source_image_name": "page-573c437e-c309-4483-a038-ef2f440b104a.png",
+  "source_page_index": 11,
+  "block_index": 3,
+  "request_id": "page_000011_block_000003",
+  "elapsed_s": 57.57423819391988,
+  "contract": {
+    "status": "PASS",
+    "checks": {
+      "prompt": true,
+      "input_tokens": true,
+      "projected_image_tokens": true,
+      "vision_singleton": true,
+      "vision_real_tokens": true,
+      "text_singleton": true,
+      "crop_sha256": true,
+      "prepared_inputs_sha256": true,
+      "expected_input_tokens": true,
+      "expected_projected_image_tokens": true,
+      "expected_vision_route": true,
+      "expected_text_route": true
+    }
+  },
+  "input_fingerprints": {
+    "schema_version": 1,
+    "crop": {
+      "mode": "RGB",
+      "size": [
+        1022,
+        772
+      ],
+      "nbytes": 2366952,
+      "sha256": "62359561cc5557d9a1972c23f0915ab37c77feb7b6c1aac4f86d320bfde1af2f"
+    },
+    "prepared_inputs_sha256": "ad925263b4f156d3d11b3367f7fc2b09c77abdbac53cb5ec9bf37007e38c291e",
+    "tensors": {
+      "attention_mask": {
+        "dtype": "torch.int64",
+        "shape": [
+          1,
+          1021
+        ],
+        "nbytes": 8168,
+        "sha256": "fa6073a1a1e219fef6c69ad065323853ae05dbc731d66c842cef83490d00c1df"
+      },
+      "image_grid_thw": {
+        "dtype": "torch.int64",
+        "shape": [
+          1,
+          3
+        ],
+        "nbytes": 24,
+        "sha256": "a7e75a34f1d8ae223e9ce344508adf4a8196552c2ec33720d57bdcf74f1b23ba"
+      },
+      "input_ids": {
+        "dtype": "torch.int64",
+        "shape": [
+          1,
+          1021
+        ],
+        "nbytes": 8168,
+        "sha256": "b0ba761d51a3b32d3146e7dc440f2af4e5d3f2df000989062628777e3a4f6133"
+      },
+      "pixel_values": {
+        "dtype": "torch.float32",
+        "shape": [
+          4032,
+          3,
+          14,
+          14
+        ],
+        "nbytes": 9483264,
+        "sha256": "fda4c717d744d924dba092a866f1ca093d16717567c619773d0c6856fd3dc05b"
+      },
+      "position_ids": {
+        "dtype": "torch.int64",
+        "shape": [
+          3,
+          1,
+          1021
+        ],
+        "nbytes": 24504,
+        "sha256": "d5ea3a215294beefac29744778ea72f8f8b5f12ca1d6c058080b3c5bc2d2d196"
+      },
+      "rope_deltas": {
+        "dtype": "torch.int64",
+        "shape": [
+          1,
+          1
+        ],
+        "nbytes": 8,
+        "sha256": "3613c351c19bc252a1c3a25852a617a14c3878106bc7b04024205386a9d827fa"
+      }
+    }
+  },
+  "vision_route": {
+    "execution": "compiled",
+    "real_vision_tokens": 4032,
+    "physical_vision_tokens": 4992,
+    "padding_vision_tokens": 960,
+    "useful_token_fraction": 0.8076923076923077,
+    "bucket": 4992,
+    "packing": "single",
+    "pack_group_id": 1,
+    "pack_crops": 1,
+    "pack_real_vision_tokens": 4032,
+    "pack_physical_vision_tokens": 4992,
+    "pack_batch_size": 1,
+    "pack_sequence_length": 4992,
+    "pack_row_sizes": [
+      1
+    ],
+    "router_visible_crops": null
+  },
+  "text_prefill_route": {
+    "execution": "compiled_packed",
+    "real_text_tokens": 1021,
+    "physical_text_tokens": 1024,
+    "padding_text_tokens": 3,
+    "useful_token_fraction": 0.9970703125,
+    "bucket": 1024,
+    "pack_members": 1,
+    "segment_lengths": [
+      1021
+    ],
+    "packing": "production_group",
+    "pack_group_id": 1,
+    "text_pack_index": 0,
+    "pack_real_text_tokens": 1021,
+    "pack_physical_text_tokens": 1024,
+    "private_cache_slot_index": 0,
+    "private_cache_generation": 1
+  },
+  "first_token": 101309,
+  "first_token_decoded": "<fcel>",
+  "decision": {
+    "top1_id": 101309,
+    "top1_token": "<fcel>",
+    "top1_logit": 28.5,
+    "top1_margin": 10.546875,
+    "top20": [
+      {
+        "rank": 1,
+        "token_id": 101309,
+        "logit": 28.5,
+        "token": "<fcel>"
+      },
+      {
+        "rank": 2,
+        "token_id": 101308,
+        "logit": 17.953125,
+        "token": "<ecel>"
+      },
+      {
+        "rank": 3,
+        "token_id": 93980,
+        "logit": 11.1484375,
+        "token": "\\"
+      },
+      {
+        "rank": 4,
+        "token_id": 101311,
+        "logit": 10.8671875,
+        "token": "<lcel>"
+      },
+      {
+        "rank": 5,
+        "token_id": 2812,
+        "logit": 10.8671875,
+        "token": "\\["
+      },
+      {
+        "rank": 6,
+        "token_id": 101313,
+        "logit": 10.03125,
+        "token": "<nl>"
+      },
+      {
+        "rank": 7,
+        "token_id": 101312,
+        "logit": 8.703125,
+        "token": "<ucel>"
+      },
+      {
+        "rank": 8,
+        "token_id": 576,
+        "logit": 8.6484375,
+        "token": " \\"
+      },
+      {
+        "rank": 9,
+        "token_id": 97898,
+        "logit": 8.34375,
+        "token": "̄"
+      },
+      {
+        "rank": 10,
+        "token_id": 1305,
+        "logit": 8.25,
+        "token": "^{"
+      },
+      {
+        "rank": 11,
+        "token_id": 100807,
+        "logit": 7.8984375,
+        "token": "<|LOC_510|>"
+      },
+      {
+        "rank": 12,
+        "token_id": 253,
+        "logit": 7.68359375,
+        "token": "�"
+      },
+      {
+        "rank": 13,
+        "token_id": 100591,
+        "logit": 7.64453125,
+        "token": "<|LOC_294|>"
+      },
+      {
+        "rank": 14,
+        "token_id": 94651,
+        "logit": 7.6171875,
+        "token": "照"
+      },
+      {
+        "rank": 15,
+        "token_id": 100357,
+        "logit": 7.44140625,
+        "token": "<|LOC_60|>"
+      },
+      {
+        "rank": 16,
+        "token_id": 712,
+        "logit": 7.421875,
+        "token": "{\\"
+      },
+      {
+        "rank": 17,
+        "token_id": 100790,
+        "logit": 7.40625,
+        "token": "<|LOC_493|>"
+      },
+      {
+        "rank": 18,
+        "token_id": 100881,
+        "logit": 7.37109375,
+        "token": "<|LOC_584|>"
+      },
+      {
+        "rank": 19,
+        "token_id": 58913,
+        "logit": 7.37109375,
+        "token": " صح"
+      },
+      {
+        "rank": 20,
+        "token_id": 100682,
+        "logit": 7.3515625,
+        "token": "<|LOC_385|>"
+      }
+    ]
+  },
+  "tensor_summaries": {
+    "vision_embeddings": {
+      "shape": [
+        4032,
+        1152
+      ],
+      "dtype": "float16",
+      "numel": 4644864,
+      "bytes": 9289728,
+      "sha256": "4905de2b0abc3b1013c7c558f1d025e7d2f6f19011f8c0f771b8e1e04877991f",
+      "finite_fraction": 1.0,
+      "min": -50.9375,
+      "max": 171.0,
+      "mean": 1.0093214511871338,
+      "abs_mean": 1.0727094411849976,
+      "l2": 2658.545166015625
+    },
+    "vision_graph_input": {
+      "shape": [
+        1,
+        4992,
+        1152
+      ],
+      "dtype": "float16",
+      "numel": 5750784,
+      "bytes": 11501568,
+      "sha256": "bfdf8ffc09fe05acd99f9f6d52bf905e5f5fcbfc14103d9d9602deec59906571",
+      "finite_fraction": 1.0,
+      "min": -50.9375,
+      "max": 171.0,
+      "mean": 0.8152211904525757,
+      "abs_mean": 0.86641925573349,
+      "l2": 2658.545166015625
+    },
+    "vision_prefill_output": {
+      "shape": [
+        4032,
+        1152
+      ],
+      "dtype": "float16",
+      "numel": 4644864,
+      "bytes": 9289728,
+      "sha256": "54ea43798ada894e1048e2164f7ce816d9cafb8a4d2d1ea23b0b3afe004290f0",
+      "finite_fraction": 1.0,
+      "min": -160.875,
+      "max": 14.453125,
+      "mean": -0.08399739116430283,
+      "abs_mean": 0.5970299243927002,
+      "l2": 9091.37890625
+    },
+    "projector_output": {
+      "shape": [
+        1008,
+        1024
+      ],
+      "dtype": "float16",
+      "numel": 1032192,
+      "bytes": 2064384,
+      "sha256": "4b4259335117fdd9124c2362afbad74221215563bf17cd0d6771b464f7e68592",
+      "finite_fraction": 1.0,
+      "min": -11.5625,
+      "max": 10.6015625,
+      "mean": -0.013098815456032753,
+      "abs_mean": 0.46023014187812805,
+      "l2": 719.2216796875
+    },
+    "multimodal_inputs_embeds": {
+      "shape": [
+        1,
+        1021,
+        1024
+      ],
+      "dtype": "float16",
+      "numel": 1045504,
+      "bytes": 2091008,
+      "sha256": "4828fc62169fdaadfe64709e78efed3cf9a51fd5480bf36ed4583d4dda3692c2",
+      "finite_fraction": 1.0,
+      "min": -11.5625,
+      "max": 10.6015625,
+      "mean": -0.01293196715414524,
+      "abs_mean": 0.45450079441070557,
+      "l2": 719.2223510742188
+    },
+    "packed_text_graph_input": {
+      "shape": [
+        1,
+        1024,
+        1024
+      ],
+      "dtype": "float16",
+      "numel": 1048576,
+      "bytes": 2097152,
+      "sha256": "42ca0a4e6dc73097192f215f07d8974cea5bdd99b285ab2efcb92dfd32b1d55e",
+      "finite_fraction": 1.0,
+      "min": -11.5625,
+      "max": 10.6015625,
+      "mean": -0.012894080951809883,
+      "abs_mean": 0.4531692564487457,
+      "l2": 719.2223510742188
+    },
+    "text_prefill_last_hidden": {
+      "shape": [
+        1,
+        1,
+        1024
+      ],
+      "dtype": "float16",
+      "numel": 1024,
+      "bytes": 2048,
+      "sha256": "6b81afab7fab8186235ecfdb6c2501dad0768c5a93bfeaffd6cea186600d7e48",
+      "finite_fraction": 1.0,
+      "min": -32.75,
+      "max": 25.265625,
+      "mean": -0.008271701633930206,
+      "abs_mean": 5.525412559509277,
+      "l2": 224.50624084472656
+    },
+    "token0_logits": {
+      "shape": [
+        1,
+        1,
+        103424
+      ],
+      "dtype": "float16",
+      "numel": 103424,
+      "bytes": 206848,
+      "sha256": "6e024ea5779fac9d8cb6ff209ac94cf5c89103d9ef1e60d726804cf11a966365",
+      "finite_fraction": 1.0,
+      "min": -12.90625,
+      "max": 28.5,
+      "mean": -1.8537569046020508,
+      "abs_mean": 2.120914936065674,
+      "l2": 804.3822021484375
+    }
+  },
+  "graph_input_summaries": {
+    "vision_graph_inputs": {
+      "prefix_hidden_states": {
+        "shape": [
+          1,
+          4992,
+          1152
+        ],
+        "dtype": "float16",
+        "numel": 5750784,
+        "bytes": 11501568,
+        "sha256": "bfdf8ffc09fe05acd99f9f6d52bf905e5f5fcbfc14103d9d9602deec59906571",
+        "finite_fraction": 1.0,
+        "min": -50.9375,
+        "max": 171.0,
+        "mean": 0.8152211904525757,
+        "abs_mean": 0.86641925573349,
+        "l2": 2658.545166015625
+      },
+      "rope_cos": {
+        "shape": [
+          1,
+          4992,
+          72
+        ],
+        "dtype": "float32",
+        "numel": 359424,
+        "bytes": 1437696,
+        "sha256": "552ecbd6da3ecd3a7a8817c56f0ff38aea152f9dbd690d9359092011f56419b7",
+        "finite_fraction": 1.0,
+        "min": -0.9999608397483826,
+        "max": 1.0,
+        "mean": 0.6555650234222412,
+        "abs_mean": 0.8551779985427856,
+        "l2": 535.0146484375
+      },
+      "rope_sin": {
+        "shape": [
+          1,
+          4992,
+          72
+        ],
+        "dtype": "float32",
+        "numel": 359424,
+        "bytes": 1437696,
+        "sha256": "951c08950687404e77de3ec07cbd2609165920647c2017b9696fffb594c33624",
+        "finite_fraction": 1.0,
+        "min": -0.9999901652336121,
+        "max": 0.9999729990959167,
+        "mean": 0.13457299768924713,
+        "abs_mean": 0.285152405500412,
+        "l2": 270.5359191894531
+      },
+      "attention_mask": {
+        "shape": [
+          1,
+          1,
+          4992,
+          4992
+        ],
+        "dtype": "bool",
+        "numel": 24920064,
+        "bytes": 24920064,
+        "sha256": "bd1efa22d8dc50f3d0e39d615eb8c5ab24002b161ac3e28f15d7883a25e4c748",
+        "finite_fraction": 1.0,
+        "min": 0.0,
+        "max": 1.0,
+        "mean": 0.31065088510513306,
+        "abs_mean": 0.31065088510513306,
+        "l2": 2782.34423828125
+      }
+    },
+    "packed_text_graph_inputs": {
+      "inputs_embeds": {
+        "shape": [
+          1,
+          1024,
+          1024
+        ],
+        "dtype": "float16",
+        "numel": 1048576,
+        "bytes": 2097152,
+        "sha256": "42ca0a4e6dc73097192f215f07d8974cea5bdd99b285ab2efcb92dfd32b1d55e",
+        "finite_fraction": 1.0,
+        "min": -11.5625,
+        "max": 10.6015625,
+        "mean": -0.012894080951809883,
+        "abs_mean": 0.4531692564487457,
+        "l2": 719.2223510742188
+      },
+      "position_ids": {
+        "shape": [
+          3,
+          1,
+          1024
+        ],
+        "dtype": "int64",
+        "numel": 3072,
+        "bytes": 24576,
+        "sha256": "fcc0c68f43dcb221d22a4971b413fac0ac6fc75d1389dafef3d06062ac12aec5",
+        "finite_fraction": 1.0,
+        "min": 0.0,
+        "max": 48.0,
+        "mean": 15.4541015625,
+        "abs_mean": 15.4541015625,
+        "l2": 1050.1385498046875
+      },
+      "segment_ids": {
+        "shape": [
+          1024
+        ],
+        "dtype": "int64",
+        "numel": 1024,
+        "bytes": 8192,
+        "sha256": "ecc1e47e4b4215fed7d2310b8777815c15a2e4a357088ad51e2f789a50529afe",
+        "finite_fraction": 1.0,
+        "min": -1.0,
+        "max": 0.0,
+        "mean": -0.0029296875,
+        "abs_mean": 0.0029296875,
+        "l2": 1.7320507764816284
+      },
+      "local_positions": {
+        "shape": [
+          1024
+        ],
+        "dtype": "int64",
+        "numel": 1024,
+        "bytes": 8192,
+        "sha256": "2d35d21025963d7990f1cbe5c39fec2be36a81f3a0eb391f24fd1f3e750c5d1d",
+        "finite_fraction": 1.0,
+        "min": 0.0,
+        "max": 1020.0,
+        "mean": 508.505859375,
+        "abs_mean": 508.505859375,
+        "l2": 18821.69140625
+      },
+      "last_token_indices": {
+        "shape": [
+          32
+        ],
+        "dtype": "int64",
+        "numel": 32,
+        "bytes": 256,
+        "sha256": "3a8bed85179d1fbafc8016aa4499936297b60b684e5a681f5a5fe77b572e9b61",
+        "finite_fraction": 1.0,
+        "min": 0.0,
+        "max": 1020.0,
+        "mean": 31.875,
+        "abs_mean": 31.875,
+        "l2": 1020.0
+      }
+    }
+  },
+  "reference_bundle": null,
+  "comparisons": null,
+  "tensor_bundle": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_phase45_table_token0_228a10a/output/tensor_bundle.pt"
+}

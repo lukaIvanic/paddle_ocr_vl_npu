@@ -1,0 +1,8 @@
+PHASE45 step=layout_setup_begin
+Loading weights:   0%|          | 0/858 [00:00<?, ?it/s]Loading weights:  53%|█████▎    | 456/858 [00:00<00:00, 4557.45it/s]Loading weights: 100%|██████████| 858/858 [00:00<00:00, 4640.47it/s]
+PHASE45 step=layout_prepare_begin
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/pipeline/layout_frontend.py:344: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  return pixel_values.to(
+PHASE45 step=recognizer_setup_begin request_id=page_000011_block_000003 crop=(1022, 772)
+PHASE45 step=prefill_replay_begin
+PHASE45 status=PASS case=table_token0_11_3 token=101309 decoded='<fcel>' report=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_phase45_table_token0_228a10a/output/report.json

@@ -1,0 +1,4 @@
+228a10af427177a1a32fecfe9415c66332dfa627
+liteserver-c001-4
+ASCEND_RT_VISIBLE_DEVICES=2
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python 09_persistent_page_engine/scripts/table_token0_replay.py --output-dir tmp/09_persistent_page_engine/910b_phase45_table_token0_228a10a/output
