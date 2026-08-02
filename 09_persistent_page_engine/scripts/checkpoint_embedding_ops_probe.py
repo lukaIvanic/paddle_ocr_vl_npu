@@ -83,6 +83,12 @@ OP_BOUNDARIES = (
     "rope_cos",
     "rope_sin",
 )
+OP_LANES = (
+    ("fp16", torch.float16, None),
+    ("bf16", torch.bfloat16, None),
+    ("fp32", torch.float32, None),
+    ("fp32_hf32_off", torch.float32, False),
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -336,6 +342,15 @@ def runtime_environment(torch_npu: Any, device: torch.device) -> dict[str, Any]:
         "allow_internal_format": safe_value(
             lambda: torch_npu.npu.config.allow_internal_format
         ),
+        "raw_allow_internal_format": safe_value(
+            lambda: torch_npu._C._npu_getOption("ALLOW_INTERNAL_FORMAT")
+        ),
+        "raw_allow_conv_hf32": safe_value(
+            lambda: torch_npu._C._npu_getOption("ALLOW_CONV_HF32")
+        ),
+        "raw_allow_matmul_hf32": safe_value(
+            lambda: torch_npu._C._npu_getOption("ALLOW_MATMUL_HF32")
+        ),
         "aclnn_allow_hf32": safe_value(
             lambda: torch_npu.npu.aclnn.allow_hf32
         ),
@@ -568,12 +583,18 @@ def run_embedding_ops(
     cpu_reference: dict[str, torch.Tensor],
     sample_elements: int,
 ) -> tuple[dict[str, Any], dict[str, dict[str, torch.Tensor]]]:
+    import torch_npu
+
     report: dict[str, Any] = {}
     samples: dict[str, dict[str, torch.Tensor]] = {}
-    for dtype_name, dtype in DTYPES.items():
-        print(f"CHECKPOINT_PROBE step=embedding_ops dtype={dtype_name}", flush=True)
+    for lane_name, dtype, requested_hf32 in OP_LANES:
+        print(f"CHECKPOINT_PROBE step=embedding_ops lane={lane_name}", flush=True)
         started = time.perf_counter()
+        original_hf32 = None
         try:
+            if requested_hf32 is not None:
+                original_hf32 = torch_npu.npu.aclnn.allow_hf32
+                torch_npu.npu.aclnn.allow_hf32 = requested_hf32
             inputs = conv_input.to(device=device, dtype=dtype)
             weight = patch_weight.to(device=device, dtype=dtype)
             bias = patch_bias.to(device=device, dtype=dtype)
@@ -599,9 +620,14 @@ def run_embedding_ops(
             }
             torch.npu.synchronize()
             cpu_outputs = {name: value.cpu() for name, value in outputs.items()}
-            report[dtype_name] = {
+            report[lane_name] = {
                 "supported": True,
                 "elapsed_s": time.perf_counter() - started,
+                "dtype": str(dtype).removeprefix("torch."),
+                "requested_conv_hf32": requested_hf32,
+                "observed_conv_hf32": safe_value(
+                    lambda: torch_npu.npu.aclnn.allow_hf32
+                ),
                 "boundaries": {
                     name: {
                         "summary": compact_tensor(value),
@@ -612,18 +638,23 @@ def run_embedding_ops(
                     for name, value in cpu_outputs.items()
                 },
             }
-            samples[dtype_name] = {
+            samples[lane_name] = {
                 name: deterministic_sample(value, sample_elements)
                 for name, value in cpu_outputs.items()
             }
             del inputs, weight, bias, pos_weight, angles, outputs, cpu_outputs
         except Exception as exc:
-            report[dtype_name] = {
+            report[lane_name] = {
                 "supported": False,
                 "elapsed_s": time.perf_counter() - started,
+                "dtype": str(dtype).removeprefix("torch."),
+                "requested_conv_hf32": requested_hf32,
                 "error": repr(exc),
             }
-            samples[dtype_name] = {}
+            samples[lane_name] = {}
+        finally:
+            if original_hf32 is not None:
+                torch_npu.npu.aclnn.allow_hf32 = original_hf32
         torch.npu.empty_cache()
     return report, samples
 
@@ -663,11 +694,29 @@ def compare_reference(
     operation_comparisons: dict[str, Any] = {}
     for dtype_name, candidate_samples in candidate["operation_samples"].items():
         reference_samples = reference["operation_samples"].get(dtype_name, {})
-        operation_comparisons[dtype_name] = {
-            name: tensor_comparison(candidate_samples[name], reference_samples[name])
-            for name in OP_BOUNDARIES
-            if name in candidate_samples and name in reference_samples
-        }
+        candidate_matrix = candidate["operation_matrix"].get(dtype_name, {})
+        reference_matrix = reference["operation_matrix"].get(dtype_name, {})
+        operation_comparisons[dtype_name] = {}
+        for name in OP_BOUNDARIES:
+            if name not in candidate_samples or name not in reference_samples:
+                continue
+            candidate_boundary = candidate_matrix.get("boundaries", {}).get(name, {})
+            reference_boundary = reference_matrix.get("boundaries", {}).get(name, {})
+            candidate_summary = candidate_boundary.get("summary", {})
+            reference_summary = reference_boundary.get("summary", {})
+            operation_comparisons[dtype_name][name] = {
+                "full_output_hash_exact": (
+                    candidate_summary.get("sha256")
+                    == reference_summary.get("sha256")
+                ),
+                "candidate_summary": candidate_summary,
+                "reference_summary": reference_summary,
+                "candidate_vs_cpu_fp32": candidate_boundary.get("vs_cpu_fp32"),
+                "reference_vs_cpu_fp32": reference_boundary.get("vs_cpu_fp32"),
+                "sample_comparison": tensor_comparison(
+                    candidate_samples[name], reference_samples[name]
+                ),
+            }
     roundtrip_comparisons: dict[str, Any] = {}
     for name in SELECTED_TENSORS:
         roundtrip_comparisons[name] = {}
@@ -760,6 +809,83 @@ def compare_reference(
         "direct_npu_safetensors": direct_comparisons,
         "production_model_loads": production_comparisons,
         "operation_samples": operation_comparisons,
+    }
+
+
+def classify_reference_comparison(comparison: dict[str, Any]) -> dict[str, Any]:
+    model_file_exact = comparison["file_comparisons"]["model.safetensors"][
+        "exact"
+    ]
+    config_file_differences = [
+        name
+        for name, row in comparison["file_comparisons"].items()
+        if name != "model.safetensors" and not row["exact"]
+    ]
+    manifest = comparison["tensor_manifest"]
+    manifest_exact = (
+        manifest["candidate_tensors"] == manifest["reference_tensors"]
+        and not manifest["different"]
+    )
+    casts_exact = all(
+        exact
+        for per_tensor in comparison["selected_casts_exact"].values()
+        for exact in per_tensor.values()
+    )
+    roundtrips_exact = all(
+        row["candidate_supported"]
+        and row["reference_supported"]
+        and row["returned_hash_exact"]
+        and row["candidate_byte_exact_to_its_cpu"]
+        for per_tensor in comparison["npu_roundtrips"].values()
+        for row in per_tensor.values()
+    )
+    direct_exact = all(
+        row["candidate_supported"]
+        and row["reference_supported"]
+        and row["exact"]
+        for row in comparison["direct_npu_safetensors"].values()
+    )
+    production_exact = all(
+        row["candidate_supported"]
+        and row["reference_supported"]
+        and all(weight["exact"] for weight in row["weights"].values())
+        for row in comparison["production_model_loads"].values()
+    )
+    operator_exact = all(
+        row["full_output_hash_exact"]
+        for per_dtype in comparison["operation_samples"].values()
+        for row in per_dtype.values()
+    )
+
+    if not model_file_exact:
+        classification = "CHECKPOINT_FILE_DIFFERENCE"
+    elif not manifest_exact:
+        classification = "SOURCE_TENSOR_DIFFERENCE"
+    elif not casts_exact:
+        classification = "CPU_CAST_DIFFERENCE"
+    elif not roundtrips_exact or not direct_exact:
+        classification = "NPU_TRANSFER_DIFFERENCE"
+    elif not production_exact:
+        classification = "PRODUCTION_LOAD_DIFFERENCE"
+    elif not operator_exact:
+        classification = "OPERATOR_OUTPUT_DIFFERENCE"
+    else:
+        classification = "EXACT_MATCH"
+    return {
+        "classification": classification,
+        "model_file_exact": model_file_exact,
+        "config_file_differences": config_file_differences,
+        "source_manifest_exact": manifest_exact,
+        "selected_cpu_casts_exact": casts_exact,
+        "npu_roundtrips_exact": roundtrips_exact,
+        "direct_npu_safetensors_exact": direct_exact,
+        "production_model_loads_exact": production_exact,
+        "operator_outputs_byte_exact": operator_exact,
+        "operator_output_note": (
+            "Non-byte-exact operator output is a localization result, not by "
+            "itself evidence of unacceptable numerical error; inspect each "
+            "dtype's candidate-vs-CPU and candidate-vs-910B metrics."
+        ),
     }
 
 
@@ -863,6 +989,11 @@ def main() -> None:
         if reference.get("kind") != bundle["kind"]:
             raise ValueError("reference bundle kind mismatch")
         reference_comparison = compare_reference(bundle, reference)
+    reference_classification = (
+        classify_reference_comparison(reference_comparison)
+        if reference_comparison is not None
+        else None
+    )
 
     bundle_path = args.output_dir / "probe_bundle.pt"
     torch.save(bundle, bundle_path)
@@ -872,6 +1003,7 @@ def main() -> None:
             str(args.reference_bundle) if args.reference_bundle is not None else None
         ),
         "reference_comparison": reference_comparison,
+        "reference_classification": reference_classification,
         "probe_bundle": str(bundle_path),
     }
     (args.output_dir / "report.json").write_text(
