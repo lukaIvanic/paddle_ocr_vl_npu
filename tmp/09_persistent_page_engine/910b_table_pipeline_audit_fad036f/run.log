@@ -1,0 +1,196 @@
+{
+  "inputs": {
+    "e2e_output": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_full_e2e_eval_8634d3a_r1/output",
+    "table_result": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_full_e2e_eval_8634d3a_r1/evaluation/work/result/predictions_quick_match_table_result.json"
+  },
+  "contracts": {
+    "page_count": 1651,
+    "page_regions_count": 1651,
+    "recognition_request_count": 30557,
+    "gt_table_count": 665,
+    "table_result_sample_count": 665,
+    "table_result_gt_key_count": 665
+  },
+  "whole_run": {
+    "layout_label_histogram": {
+      "text": 19673,
+      "paragraph_title": 3172,
+      "display_formula": 1666,
+      "image": 1566,
+      "header": 1395,
+      "number": 1248,
+      "doc_title": 1040,
+      "figure_title": 770,
+      "table": 751,
+      "vision_footnote": 693,
+      "footer": 651,
+      "formula_number": 300,
+      "header_image": 273,
+      "reference_content": 265,
+      "chart": 218,
+      "aside_text": 156,
+      "vertical_text": 105,
+      "footnote": 90,
+      "footer_image": 38,
+      "algorithm": 24,
+      "abstract": 21,
+      "content": 16,
+      "inline_formula": 15,
+      "seal": 2
+    },
+    "recognition_label_histogram": {
+      "text": 28125,
+      "formula": 1681,
+      "table": 751
+    },
+    "recognition_prompt_histogram": {
+      "OCR:": 28125,
+      "Formula Recognition:": 1681,
+      "Table Recognition:": 751
+    }
+  },
+  "gt_table_path": {
+    "iou_band": {
+      "good_ge_0.5": 657,
+      "low_0.1_to_0.5": 5,
+      "none_lt_0.1": 3
+    },
+    "best_block_label": {
+      "table": 657,
+      "content": 3,
+      "header": 2,
+      "image": 1,
+      "number": 1,
+      "text": 1
+    },
+    "recognition_label": {
+      "table": 641,
+      "text": 21,
+      "": 3
+    },
+    "recognition_prompt": {
+      "Table Recognition:": 641,
+      "OCR:": 21,
+      "": 3
+    },
+    "recognition_text_nonempty": {
+      "True": 662,
+      "False": 3
+    },
+    "recognition_text_format": {
+      "fcel": 641,
+      "other": 21,
+      "empty": 3
+    },
+    "final_block_content_format": {
+      "html_table": 657,
+      "other": 7,
+      "empty": 1
+    },
+    "evaluator_pred_nonempty": {
+      "True": 657,
+      "False": 8
+    },
+    "evaluator_pred_format": {
+      "html_table": 657,
+      "empty": 8
+    },
+    "failure_stage": {
+      "matched": 637,
+      "recognition_route": 14,
+      "layout_localization": 8,
+      "layout_label": 4,
+      "recognition_request_missing": 2
+    },
+    "stage_paths": [
+      {
+        "count": 639,
+        "best_block_label": "table",
+        "recognition_label": "table",
+        "recognition_text_nonempty": true,
+        "evaluator_pred_nonempty": true
+      },
+      {
+        "count": 14,
+        "best_block_label": "table",
+        "recognition_label": "text",
+        "recognition_text_nonempty": true,
+        "evaluator_pred_nonempty": true
+      },
+      {
+        "count": 3,
+        "best_block_label": "content",
+        "recognition_label": "text",
+        "recognition_text_nonempty": true,
+        "evaluator_pred_nonempty": false
+      },
+      {
+        "count": 2,
+        "best_block_label": "header",
+        "recognition_label": "text",
+        "recognition_text_nonempty": true,
+        "evaluator_pred_nonempty": true
+      },
+      {
+        "count": 2,
+        "best_block_label": "table",
+        "recognition_label": "",
+        "recognition_text_nonempty": false,
+        "evaluator_pred_nonempty": true
+      },
+      {
+        "count": 2,
+        "best_block_label": "table",
+        "recognition_label": "table",
+        "recognition_text_nonempty": true,
+        "evaluator_pred_nonempty": false
+      },
+      {
+        "count": 1,
+        "best_block_label": "image",
+        "recognition_label": "",
+        "recognition_text_nonempty": false,
+        "evaluator_pred_nonempty": false
+      },
+      {
+        "count": 1,
+        "best_block_label": "number",
+        "recognition_label": "text",
+        "recognition_text_nonempty": true,
+        "evaluator_pred_nonempty": false
+      },
+      {
+        "count": 1,
+        "best_block_label": "text",
+        "recognition_label": "text",
+        "recognition_text_nonempty": true,
+        "evaluator_pred_nonempty": false
+      }
+    ]
+  },
+  "empty_evaluator_predictions": {
+    "count": 8,
+    "failure_stage": {
+      "layout_label": 4,
+      "layout_localization": 4
+    },
+    "best_block_label": {
+      "content": 3,
+      "table": 2,
+      "image": 1,
+      "number": 1,
+      "text": 1
+    },
+    "recognition_label": {
+      "text": 5,
+      "table": 2,
+      "": 1
+    },
+    "recognition_text_format": {
+      "other": 5,
+      "fcel": 2,
+      "empty": 1
+    }
+  }
+}
+[table-pipeline-audit] saved to /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_table_pipeline_audit_fad036f/report.json
