@@ -182,9 +182,14 @@ def tensor_comparison(
         if denominator.item() != 0.0
         else None
     )
+    quantile_values = (
+        deterministic_sample(delta, 1_000_000)
+        if delta.numel() > 1_000_000
+        else delta
+    )
     quantiles = (
-        torch.quantile(delta, torch.tensor([0.5, 0.95, 0.99]))
-        if delta.numel()
+        torch.quantile(quantile_values, torch.tensor([0.5, 0.95, 0.99]))
+        if quantile_values.numel()
         else torch.zeros(3)
     )
     return {
