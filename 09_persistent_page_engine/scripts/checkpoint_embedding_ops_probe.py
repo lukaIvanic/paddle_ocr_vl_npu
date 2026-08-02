@@ -19,6 +19,8 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
+import platform
 import sys
 import time
 from pathlib import Path
@@ -260,6 +262,110 @@ def hash_files(model_dir: Path) -> dict[str, Any]:
             "sha256": sha256_file(path),
         }
     return rows
+
+
+def safe_value(getter: Any) -> dict[str, Any]:
+    try:
+        value = getter()
+        if callable(value):
+            value = value()
+        if isinstance(value, (str, int, float, bool)) or value is None:
+            serialized = value
+        else:
+            serialized = repr(value)
+        return {"supported": True, "value": serialized}
+    except Exception as exc:
+        return {"supported": False, "error": repr(exc)}
+
+
+def checkpoint_provenance(model_dir: Path, checkpoint: Path) -> dict[str, Any]:
+    with safe_open(checkpoint, framework="pt", device="cpu") as handle:
+        metadata = handle.metadata()
+    cache_metadata = []
+    for path in sorted(model_dir.glob(".cache/huggingface/download/*.metadata")):
+        cache_metadata.append(
+            {
+                "path": str(path),
+                "size": path.stat().st_size,
+                "sha256": sha256_file(path),
+                "text": path.read_text(encoding="utf-8", errors="replace"),
+            }
+        )
+    return {
+        "model_dir": str(model_dir),
+        "model_dir_resolved": str(model_dir.resolve()),
+        "checkpoint": str(checkpoint),
+        "checkpoint_resolved": str(checkpoint.resolve()),
+        "checkpoint_is_symlink": checkpoint.is_symlink(),
+        "checkpoint_symlink_target": (
+            os.readlink(checkpoint) if checkpoint.is_symlink() else None
+        ),
+        "safetensors_metadata": metadata,
+        "huggingface_cache_metadata": cache_metadata,
+    }
+
+
+def runtime_environment(torch_npu: Any, device: torch.device) -> dict[str, Any]:
+    dispatch = {}
+    for op_name in (
+        "aten::convolution",
+        "aten::conv2d",
+        "aten::upsample_bilinear2d",
+        "aten::add.Tensor",
+        "aten::cos",
+        "aten::sin",
+    ):
+        row = safe_value(lambda name=op_name: torch._C._dispatch_dump_table(name))
+        if row.get("supported"):
+            table = str(row["value"])
+            row["value"] = [
+                line
+                for line in table.splitlines()
+                if "PrivateUse1" in line or "NPU" in line
+            ]
+        dispatch[op_name] = row
+    return {
+        "python": platform.python_version(),
+        "platform": platform.platform(),
+        "torch": torch.__version__,
+        "torch_npu": getattr(torch_npu, "__version__", None),
+        "device": str(device),
+        "device_name": safe_value(
+            lambda: torch_npu.npu.get_device_name(torch_npu.npu.current_device())
+        ),
+        "allow_internal_format": safe_value(
+            lambda: torch_npu.npu.config.allow_internal_format
+        ),
+        "aclnn_allow_hf32": safe_value(
+            lambda: torch_npu.npu.aclnn.allow_hf32
+        ),
+        "npu_conv_allow_hf32": safe_value(
+            lambda: torch_npu.npu.conv.allow_hf32
+        ),
+        "npu_matmul_allow_hf32": safe_value(
+            lambda: torch_npu.npu.matmul.allow_hf32
+        ),
+        "conv_allow_hf32": safe_value(lambda: torch.backends.npu.conv.allow_hf32),
+        "matmul_allow_hf32": safe_value(
+            lambda: torch.backends.npu.matmul.allow_hf32
+        ),
+        "jit_compile_false": safe_value(
+            lambda: torch_npu.npu.is_jit_compile_false()
+        ),
+        "precision_environment": {
+            name: os.environ.get(name)
+            for name in (
+                "ACL_PRECISION_MODE",
+                "ALLOW_HF32",
+                "ASCEND_GLOBAL_LOG_LEVEL",
+                "ASCEND_RT_VISIBLE_DEVICES",
+                "ASCEND_VISIBLE_DEVICES",
+                "HCCL_DETERMINISTIC",
+                "PYTORCH_NPU_ALLOC_CONF",
+            )
+        },
+        "dispatch": dispatch,
+    }
 
 
 def source_manifest(checkpoint: Path) -> tuple[dict[str, Any], dict[str, torch.Tensor]]:
@@ -625,6 +731,10 @@ def compare_reference(
         for name in SELECTED_TENSORS
     }
     return {
+        "candidate_environment": candidate.get("environment"),
+        "reference_environment": reference.get("environment"),
+        "candidate_checkpoint_provenance": candidate.get("checkpoint_provenance"),
+        "reference_checkpoint_provenance": reference.get("checkpoint_provenance"),
         "file_comparisons": {
             name: {
                 "candidate": candidate["files"].get(name),
@@ -682,6 +792,8 @@ def main() -> None:
     torch.npu.set_compile_mode(jit_compile=False)
     device = torch.device(args.device)
 
+    provenance = checkpoint_provenance(args.model_dir, checkpoint)
+    environment = runtime_environment(torch_npu, device)
     files = hash_files(args.model_dir)
     tensor_manifest, selected = source_manifest(checkpoint)
     selected_values = selected_casts(selected)
@@ -722,13 +834,15 @@ def main() -> None:
     )
 
     bundle = {
-        "schema_version": 1,
+        "schema_version": 2,
         "kind": "checkpoint_embedding_ops_probe",
         "model_dir": str(args.model_dir),
         "checkpoint": str(checkpoint),
         "device": str(device),
         "phase46_exact_bundle": str(args.phase46_exact_bundle),
         "sample_elements": args.sample_elements,
+        "checkpoint_provenance": provenance,
+        "environment": environment,
         "files": files,
         "tensor_manifest": tensor_manifest,
         "selected_casts": selected_values,
