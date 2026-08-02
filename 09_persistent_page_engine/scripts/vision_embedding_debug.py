@@ -262,6 +262,7 @@ def stable_requests(pages: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
     return rows
 
 
+@torch.inference_mode()
 def capture_pretransformer(
     recognizer: ContinuousRecognizer,
     request: Any,
