@@ -16920,3 +16920,391 @@ For either PASS classification, include:
 Paste `agent_report.md` and `headline.json`.  Do not paste or attempt to push
 the 35 MB candidate tensor bundle.  Do not run decode, another crop, or a model
 variant.  Then **stop**.
+
+---
+
+## Phase 46: pre-transformer vision divergence localization and corpus correlation
+
+### Goal and interpretation boundary
+
+Phase 45 showed that the selected table crop already differs at the vision
+embedding boundary, before the compiled 27-layer vision transformer is called.
+It did **not** isolate whether that difference comes from the patch Conv2d, the
+interpolated learned position embedding, their fp16 addition, or the separately
+constructed vision RoPE tensors.  It also did not establish whether the size of
+that early difference predicts which crops later generate different tokens.
+
+Phase 46 answers both questions without running a vision-transformer layer:
+
+1. `exact` mode captures full tensors for the same Phase-45 table crop at every
+   pre-transformer boundary;
+2. `corpus` mode captures deterministic 8,192-element samples at those
+   boundaries for all 106 crops in the fixed seven-page Phase-39 corpus and
+   compares the numerical errors with the already-recorded 910B/310P token
+   divergence.
+
+The captured controls and outputs are:
+
+```text
+prepared pixel_values
+  -> reshape                       conv_input
+  -> patch Conv2d                  patch_embeddings
+
+learned position_embedding.weight
+  -> bilinear interpolate          position_embeddings
+
+patch_embeddings + position_embeddings
+  ->                              summed_embeddings
+
+rotary_inv_freq
+  -> base angle table              rotary_base_angles
+  -> grid-index selection/repeat   rotary_selected_angles
+  -> cos / sin                     rope_cos / rope_sin
+```
+
+The script uses the real owned layout frontend and production recognizer CPU
+preparation, but stops before transformer layer 0.  It does not execute the
+vision transformer, projector, text prefill, LM head, or decode.  Do not edit
+model code, change dtype, change resize/min-pixels policy, change a route, add a
+graph shape, or regenerate the Phase-39 generations.  Do not call the first
+non-byte-exact floating-point result a bug merely because it is nonexact;
+report its magnitude and how it changes at the next boundary.
+
+The two committed 910B2 reference artifacts were produced by behavior commit
+`edc0e49` and recorded by artifact commits `8e5c16d` and `244e1b5`.  Repeated
+910B2 validation was byte-exact for every full-tensor exact boundary and for
+all seven sampled corpus boundaries on all 106 crops.
+
+### 46.1 Pull and verify both 910B references
+
+```sh
+set -o pipefail
+
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git pull --ff-only origin main
+git status --short
+test -z "$(git status --porcelain)"
+source npu-setup
+
+PYTHON_BIN=/usr/local/python3.12.13/bin/python
+PROBE=09_persistent_page_engine/scripts/vision_embedding_debug.py
+EXACT_REFERENCE=tmp/09_persistent_page_engine/910b_phase46_vision_embedding_exact_edc0e49/output/tensor_bundle.pt
+CORPUS_REFERENCE=tmp/09_persistent_page_engine/910b_phase46_vision_embedding_corpus_8e5c16d/output/corpus_bundle.pt
+GENERATION_OUTPUT=tmp/09_persistent_page_engine/310p_phase39_accuracy_lab_8e19fdc/310p_e2e/output
+ROOT="tmp/09_persistent_page_engine/310p_phase46_vision_embedding_$(git rev-parse --short HEAD)"
+
+test -f "$PROBE"
+test -f "$EXACT_REFERENCE"
+test -f "$CORPUS_REFERENCE"
+test -f "$GENERATION_OUTPUT/recognition_trace.jsonl"
+test ! -e "$ROOT"
+mkdir -p "$ROOT"
+
+test "$(sha256sum "$EXACT_REFERENCE" | awk '{print $1}')" = \
+  2eac0b9f4995b4c24b92d15631f36901a5cec6c0c6f7923875cfbd5d83e1324a
+test "$(stat -c %s "$EXACT_REFERENCE")" -eq 39143083
+test "$(sha256sum "$CORPUS_REFERENCE" | awk '{print $1}')" = \
+  59cb70fd4eb71e9cabce7c750eb06bb3ba72ea2414c0e8afa95cedc9c24936b0
+test "$(stat -c %s "$CORPUS_REFERENCE")" -eq 16566651
+
+"$PYTHON_BIN" - "$EXACT_REFERENCE" "$CORPUS_REFERENCE" <<'PY'
+import sys
+import torch
+
+exact = torch.load(sys.argv[1], map_location="cpu", weights_only=False)
+corpus = torch.load(sys.argv[2], map_location="cpu", weights_only=False)
+assert exact["mode"] == "exact"
+assert exact["case_id"] == "table_token0_11_3"
+assert exact["metadata"]["real_vision_tokens"] == 4032
+assert exact["metadata"]["physical_vision_tokens"] == 4992
+assert exact["metadata"]["sum_reconstruction_exact"] is True
+assert corpus["mode"] == "corpus"
+assert corpus["sample_elements"] == 8192
+assert len(corpus["records"]) == 106
+print("PHASE46_REFERENCE_CONTRACT: PASS")
+PY
+```
+
+If a reference, Phase-39 generation output, hash, size, or contract is missing,
+report `310P PHASE 46: REFERENCE_OR_INPUT_MISMATCH` and stop.  Do not
+substitute a different run or regenerate anything.
+
+### 46.2 Record environment and warm-cache evidence
+
+Use the same four already-validated production cache roots as Phase 45.  This
+probe does not invoke a compiled graph, but recognizer construction still loads
+the production runtime and its cached artifacts.
+
+```sh
+{
+  date -Is
+  hostname
+  git rev-parse HEAD
+  printf 'ASCEND_RT_VISIBLE_DEVICES=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"
+  "$PYTHON_BIN" -V
+  "$PYTHON_BIN" - <<'PY'
+import torch, torch_npu
+print("torch", torch.__version__)
+print("torch_npu", torch_npu.__version__)
+print("device", torch.npu.current_device())
+print("device_name", torch.npu.get_device_name(torch.npu.current_device()))
+PY
+  npu-smi info
+  sha256sum "$EXACT_REFERENCE" "$CORPUS_REFERENCE"
+} 2>&1 | tee "$ROOT/preflight.log"
+
+for cache in \
+  .runtime_cache/310p_phase36_static_actual_b32 \
+  .runtime_cache/09_persistent_page_engine_vision_torchair \
+  .runtime_cache/09_persistent_page_engine_text_torchair \
+  .runtime_cache/310p_text_packed_4789067
+do
+  test -d "$cache"
+  test -n "$(find "$cache" -type f -print -quit)"
+  printf '%s\tfiles=%s\tbytes=%s\n' \
+    "$cache" \
+    "$(find "$cache" -type f | wc -l)" \
+    "$(du -sb "$cache" | cut -f1)"
+done | tee "$ROOT/cache_before.txt"
+```
+
+Report `310P PHASE 46 PREFLIGHT: PASS` immediately, with the exact commit,
+physical NPU, software versions, both reference hashes, and cache counts.
+
+### 46.3 Exact full-tensor decomposition for the table crop
+
+Run this lane first and report it before starting the corpus lane.  Path
+adaptations are allowed only for dataset/model roots and must be recorded.
+
+```sh
+EXACT_OUTPUT="$ROOT/exact/output"
+mkdir -p "$ROOT/exact"
+
+printf '%q ' timeout --signal=TERM --kill-after=15s 1200 \
+  "$PYTHON_BIN" "$PROBE" \
+  --mode exact \
+  --images-dir /workspace/datasets/OmniDocBench/images \
+  --layout-model /workspace/models/PP-DocLayoutV3_safetensors \
+  --recognizer-model /workspace/models/PaddleOCR-VL-1.6 \
+  --reference-bundle "$EXACT_REFERENCE" \
+  --torchair-cache-dir .runtime_cache/310p_phase36_static_actual_b32 \
+  --vision-torchair-cache-dir .runtime_cache/09_persistent_page_engine_vision_torchair \
+  --text-torchair-cache-dir .runtime_cache/09_persistent_page_engine_text_torchair \
+  --text-packed-cache-dir .runtime_cache/310p_text_packed_4789067 \
+  --output-dir "$EXACT_OUTPUT" > "$ROOT/exact/command.sh"
+printf '\n' >> "$ROOT/exact/command.sh"
+
+set +e
+PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=15s 1200 \
+  "$PYTHON_BIN" "$PROBE" \
+  --mode exact \
+  --images-dir /workspace/datasets/OmniDocBench/images \
+  --layout-model /workspace/models/PP-DocLayoutV3_safetensors \
+  --recognizer-model /workspace/models/PaddleOCR-VL-1.6 \
+  --reference-bundle "$EXACT_REFERENCE" \
+  --torchair-cache-dir .runtime_cache/310p_phase36_static_actual_b32 \
+  --vision-torchair-cache-dir .runtime_cache/09_persistent_page_engine_vision_torchair \
+  --text-torchair-cache-dir .runtime_cache/09_persistent_page_engine_text_torchair \
+  --text-packed-cache-dir .runtime_cache/310p_text_packed_4789067 \
+  --output-dir "$EXACT_OUTPUT" 2>&1 | tee "$ROOT/exact/run.log"
+exact_exit="${PIPESTATUS[0]}"
+set -e
+printf '%s\n' "$exact_exit" > "$ROOT/exact/exit_code.txt"
+test "$exact_exit" -eq 0
+test -f "$EXACT_OUTPUT/report.json"
+test -f "$EXACT_OUTPUT/tensor_bundle.pt"
+```
+
+The terminal success line begins `VISION_EMBED status=PASS mode=exact`.  The
+script hard-fails unless the Phase-39 crop hash, prepared-input hash, token
+counts, 4032-to-4992 route, and exact reconstruction of the embedding sum all
+hold.
+
+Create a compact exact headline:
+
+```sh
+"$PYTHON_BIN" - "$EXACT_OUTPUT/report.json" <<'PY' \
+  | tee "$ROOT/exact/headline.json"
+import json
+import sys
+
+d = json.load(open(sys.argv[1]))
+assert all(d["contract"].values())
+assert d["comparisons"] is not None
+ordered = [
+    "conv_input",
+    "patch_embedding_weight",
+    "patch_embedding_bias",
+    "position_embedding_weight",
+    "rotary_inv_freq",
+    "patch_embeddings",
+    "position_embeddings",
+    "summed_embeddings",
+    "rotary_base_angles",
+    "rotary_selected_angles",
+    "rope_cos",
+    "rope_sin",
+]
+print(json.dumps({
+    "contract": d["contract"],
+    "input_hashes": d["input_hashes"],
+    "metadata": d["metadata"],
+    "boundaries": {name: d["comparisons"][name] for name in ordered},
+}, indent=2, ensure_ascii=False))
+PY
+```
+
+Before continuing, report one compact table in that order containing shape,
+dtype, byte exactness, mean/max/RMS/p95/p99 absolute error, relative L2, and
+cosine.  Apply this decision tree mechanically:
+
+1. `conv_input` or any model control weight/frequency is non-byte-exact:
+   classify `CONTROL_OR_INPUT_DIFFERENCE`, list it, and stop before corpus;
+2. controls are exact and `patch_embeddings` first differs:
+   classify the first arithmetic divergence as `PATCH_CONV2D`;
+3. patch output is exact and `position_embeddings` first differs:
+   classify it as `POSITION_INTERPOLATION`;
+4. both components are exact and only `summed_embeddings` differs:
+   classify it as `FP16_EMBEDDING_ADD`;
+5. embedding sum is exact but the RoPE chain differs:
+   name the first of base-angle construction, grid selection/repeat, or
+   cos/sin where it differs;
+6. more than one independent branch differs, report every branch.  Do not
+   force a single-cause label.
+
+This label identifies the earliest observed arithmetic divergence for this
+crop, not yet a universal model bug.
+
+### 46.4 Fixed 106-crop correlation lane
+
+Run only after the exact lane has valid exact controls and inputs.  Use the
+already-completed Phase-39 310P generation trace.  Do not generate tokens in
+this phase.
+
+```sh
+CORPUS_OUTPUT="$ROOT/corpus/output"
+mkdir -p "$ROOT/corpus"
+
+printf '%q ' timeout --signal=TERM --kill-after=15s 1800 \
+  "$PYTHON_BIN" "$PROBE" \
+  --mode corpus \
+  --images-dir /workspace/datasets/OmniDocBench/images \
+  --layout-model /workspace/models/PP-DocLayoutV3_safetensors \
+  --recognizer-model /workspace/models/PaddleOCR-VL-1.6 \
+  --generation-output "$GENERATION_OUTPUT" \
+  --reference-bundle "$CORPUS_REFERENCE" \
+  --sample-elements 8192 \
+  --torchair-cache-dir .runtime_cache/310p_phase36_static_actual_b32 \
+  --vision-torchair-cache-dir .runtime_cache/09_persistent_page_engine_vision_torchair \
+  --text-torchair-cache-dir .runtime_cache/09_persistent_page_engine_text_torchair \
+  --text-packed-cache-dir .runtime_cache/310p_text_packed_4789067 \
+  --output-dir "$CORPUS_OUTPUT" > "$ROOT/corpus/command.sh"
+printf '\n' >> "$ROOT/corpus/command.sh"
+
+set +e
+PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=15s 1800 \
+  "$PYTHON_BIN" "$PROBE" \
+  --mode corpus \
+  --images-dir /workspace/datasets/OmniDocBench/images \
+  --layout-model /workspace/models/PP-DocLayoutV3_safetensors \
+  --recognizer-model /workspace/models/PaddleOCR-VL-1.6 \
+  --generation-output "$GENERATION_OUTPUT" \
+  --reference-bundle "$CORPUS_REFERENCE" \
+  --sample-elements 8192 \
+  --torchair-cache-dir .runtime_cache/310p_phase36_static_actual_b32 \
+  --vision-torchair-cache-dir .runtime_cache/09_persistent_page_engine_vision_torchair \
+  --text-torchair-cache-dir .runtime_cache/09_persistent_page_engine_text_torchair \
+  --text-packed-cache-dir .runtime_cache/310p_text_packed_4789067 \
+  --output-dir "$CORPUS_OUTPUT" 2>&1 | tee "$ROOT/corpus/run.log"
+corpus_exit="${PIPESTATUS[0]}"
+set -e
+printf '%s\n' "$corpus_exit" > "$ROOT/corpus/exit_code.txt"
+test "$corpus_exit" -eq 0
+test -f "$CORPUS_OUTPUT/report.json"
+test -f "$CORPUS_OUTPUT/corpus_bundle.pt"
+```
+
+The script prints one flushed `capture_crop position=N/106` line per crop and
+finishes with `VISION_EMBED status=PASS mode=corpus`.  Create the compact
+headline below; it deliberately excludes the large per-crop arrays.
+
+```sh
+"$PYTHON_BIN" - "$CORPUS_OUTPUT/report.json" <<'PY' \
+  | tee "$ROOT/corpus/headline.json"
+import json
+import sys
+
+d = json.load(open(sys.argv[1]))
+c = d["comparison"]
+assert d["requests"] == 106
+assert c is not None
+print(json.dumps({
+    "requests": c["requests"],
+    "crop_hash_exact": c["crop_hash_exact"],
+    "prepared_inputs_exact": c["prepared_inputs_exact"],
+    "route_exact": c["route_exact"],
+    "boundary_shapes_exact": c["boundary_shapes_exact"],
+    "model_execution_eligible": c["model_execution_eligible"],
+    "eligible_token_exact": c["eligible_token_exact"],
+    "eligible_token_divergent": c["eligible_token_divergent"],
+    "eligible_first_token_divergent": c["eligible_first_token_divergent"],
+    "correlation": c["correlation"],
+}, indent=2, ensure_ascii=False))
+PY
+```
+
+Only `model_execution_eligible` crops enter the correlation.  Eligibility
+requires exact crop hash, prepared-input hash, vision route, and every boundary
+shape.  If fewer than 106 are eligible, identify every excluded page/block and
+which contract failed; do not mix those crops into a model-execution claim.
+
+For every one of the seven output boundaries, report:
+
+- Spearman correlation of relative L2 with token-sequence generation distance;
+- Spearman correlation of cosine with generation distance;
+- ROC-AUC of relative L2 for any token divergence and for first-token
+  divergence;
+- mean relative L2 split by token-exact/divergent and by first-token
+  exact/divergent;
+- the ten crops with highest relative L2, including page/block/label,
+  generation lengths, first divergence, token-sequence ratio, and numerical
+  metrics.
+
+Interpret correlations directionally.  AUC near 0.5 is nonpredictive; above
+0.5 means larger early error ranks divergent crops higher.  Do not invent a
+universal numeric-correctness threshold, and do not infer causation solely from
+correlation.  The important question is whether the same earliest branch found
+in the exact crop also varies across the corpus and strongly separates
+token-exact from token-divergent generations.
+
+### 46.5 Final report and stop
+
+Write `$ROOT/agent_report.md`.  Begin with one overall classification:
+
+```text
+310P PHASE 46: PATCH_CONV2D | POSITION_INTERPOLATION |
+FP16_EMBEDDING_ADD | VISION_ROPE | MULTIPLE_PRETRANSFORMER_BRANCHES |
+NO_PRETRANSFORMER_DIFFERENCE | CONTROL_OR_INPUT_DIFFERENCE | RUNTIME_FAILURE
+```
+
+Include:
+
+- exact commit, host/NPU/software, both exact commands, both reference hashes,
+  cache evidence, wall times, and artifact paths;
+- the exact-lane contract and complete 12-row numerical table;
+- the first differing arithmetic operation and why the preceding boundary is
+  ruled out;
+- all 106-crop eligibility and generation counts;
+- one compact seven-row correlation table with both Spearman values, both AUC
+  values, and all four group means;
+- the top ten crops for the earliest differing branch and for
+  `summed_embeddings`, with generation outcomes;
+- an explicit answer to: `Does pre-transformer error magnitude predict later
+  generation divergence in this fixed corpus?`;
+- `What is proven` and `What remains unresolved`.
+
+Paste `agent_report.md`, `exact/headline.json`, and `corpus/headline.json`.
+Do not paste, commit, or push either candidate tensor bundle.  Do not run a
+transformer variant, change a model operation, or start a corrective experiment
+in this phase.  Then **stop**.
