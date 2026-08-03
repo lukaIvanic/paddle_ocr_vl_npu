@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "kind": "text_decode_lab_result",
+  "configuration": {
+    "mode": "profile",
+    "corpus": null,
+    "corpus_sha256": null,
+    "batch_size": 64,
+    "cache_length": 2048,
+    "dtype": "fp16",
+    "backend": "torchair",
+    "decode_optimization": "combined_apply_static_actual",
+    "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/910b_decode_length_modes_k2048_24acb27",
+    "active_slots": 64,
+    "profile_position": 1024,
+    "profile_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/npu_profiles",
+    "profile_metric": "pipe",
+    "warmup": 3,
+    "repeats": 30,
+    "overflow_policy": "error",
+    "allow_compile": true
+  },
+  "corpus_contract": {
+    "corpus_used": false,
+    "scope": "synthetic full-decoder throughput profile"
+  },
+  "result": {
+    "shape": {
+      "batch_size": 64,
+      "cache_length": 2048,
+      "active_slots": 64,
+      "initial_cache_position": 1024
+    },
+    "warmup": 3,
+    "repeats": 30,
+    "device_s": {
+      "full_production_step": 0.1288234004974365,
+      "model_and_argmax": 0.12832092046737673,
+      "post_graph_state_update": 0.0005024800300597876
+    },
+    "latency_ms": {
+      "mean": 4.294113349914551,
+      "median": 4.320230007171631,
+      "p95": 4.33864188194275,
+      "min": 4.204999923706055,
+      "max": 4.762760162353516
+    },
+    "throughput": {
+      "raw_physical_tok_per_s": 14904.124503670484,
+      "active_tok_per_s": 14904.124503670484,
+      "graph_calls_per_s": 232.8769453698513
+    },
+    "memory_bytes": {
+      "baseline_allocated": 4356830208,
+      "peak_delta": 40503808
+    },
+    "host_wall_s": 0.12944193906150758
+  },
+  "setup": {
+    "total_s": 52.28304732707329,
+    "model_load_s": 10.2346027540043,
+    "weight_format_s": 4.658063427079469,
+    "runtime_setup_s": 36.67047866107896,
+    "weight_format": {
+      "requested_mode": "decode_nz",
+      "mode": "decode_native_fallback",
+      "effective_mode": "decode_native_fallback",
+      "target_format": "FRACTAL_NZ",
+      "target_format_code": 29,
+      "target_count": 145,
+      "cast_count": 1,
+      "converted_count": 0,
+      "already_nz_count": 0,
+      "converted_modules_sample": [],
+      "before_formats_sample": {
+        "model.layers.0.self_attn.q_proj": 2
+      },
+      "after_formats_sample": {
+        "model.layers.0.self_attn.q_proj": 2
+      },
+      "all_after_are_nz": false,
+      "fallback_reason": "npu_format_cast_did_not_produce_fractal_nz",
+      "failures_sample": [
+        {
+          "module": "model.layers.0.self_attn.q_proj",
+          "before_format": 2,
+          "after_format": 2,
+          "error": "npu_format_cast_did_not_produce_fractal_nz"
+        }
+      ]
+    },
+    "runtime_metadata": {
+      "backend": "torchair",
+      "enabled": true,
+      "boundary": "token_embedding_text_transformer_lm_head_static_step",
+      "linear_weight_format": "decode_native_fallback",
+      "decode_attention": "increfa",
+      "decode_cache_update": "npu_scatter",
+      "decode_optimization": "combined_apply_static_actual",
+      "decode_optimization_config": {
+        "hoist_mrope": true,
+        "packed_qkv": true,
+        "rms_norm": "npu",
+        "rotary": "npu_apply",
+        "packed_mlp": false,
+        "npu_swiglu": false,
+        "add_rms_norm": true,
+        "attention": "gqa",
+        "increfa_length_mode": "static_actual"
+      },
+      "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/910b_decode_length_modes_k2048_24acb27/decode_native_fallback_increfa_npu_scatter_optcombined_apply_static_actual_modeinference_dtypefloat16_bs64_cache2048_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcdd27ab0f67ba",
+      "torchair_ge_cache": true,
+      "compile_api": "torchair.inference.cache_compile",
+      "cache_key_fields": {
+        "batch_size": 64,
+        "cache_length": 2048,
+        "dtype": "torch.float16",
+        "model_config_hash": "6d2211febbe9",
+        "torch": "2.10.0+cpu",
+        "torch_npu": "2.10.0",
+        "torchair": "unknown",
+        "decode_source_hash": "dd27ab0f67ba",
+        "linear_weight_format": "decode_native_fallback",
+        "decode_attention": "increfa",
+        "decode_cache_update": "npu_scatter",
+        "execution_mode": "inference",
+        "decode_optimization": "combined_apply_static_actual"
+      },
+      "cache_num_key_value_heads": 2,
+      "cache_allocated_bytes": 2415919104
+    },
+    "runtime_setup_detail_s": {
+      "compile_wrapper": 0.0018058910500258207,
+      "compile_first_call": 36.6433525190223
+    }
+  }
+}

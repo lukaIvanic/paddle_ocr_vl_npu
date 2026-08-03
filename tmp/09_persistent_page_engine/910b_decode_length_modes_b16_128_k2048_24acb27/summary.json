@@ -1,0 +1,330 @@
+{
+  "schema_version": 1,
+  "kind": "910b_text_decode_length_mode_matrix",
+  "commit": "24acb27989bcc02a89813d284ad5c2747aa24b97",
+  "chip": "Ascend 910B2",
+  "cache_length": 2048,
+  "profile_position": 1024,
+  "warmup": 3,
+  "repeats": 30,
+  "rows": [
+    {
+      "batch_size": 16,
+      "optimization": "combined_apply",
+      "latency_ms": {
+        "mean": 1.9912133296330767,
+        "median": 1.9763000011444094,
+        "p95": 1.9799879908561704,
+        "min": 1.9696999788284304,
+        "max": 2.433300018310547
+      },
+      "raw_physical_tok_per_s": 8035.301773993416,
+      "full_production_step_device_s": 0.05973639988899231,
+      "model_and_argmax_device_s": 0.059334800362586974,
+      "peak_memory_delta_bytes": 10813952,
+      "cache_allocated_bytes": 603979776,
+      "linear_weight_format": "decode_native_fallback",
+      "compile_first_call_s": 13.40302860410884,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/910b_decode_length_modes_k2048_24acb27/decode_native_fallback_increfa_npu_scatter_optcombined_apply_modeinference_dtypefloat16_bs16_cache2048_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcdd27ab0f67ba",
+      "throughput_delta_vs_control_percent": 0.0,
+      "latency_delta_vs_control_percent": 0.0
+    },
+    {
+      "batch_size": 16,
+      "optimization": "combined_apply_static_actual",
+      "latency_ms": {
+        "mean": 2.1183866898218793,
+        "median": 2.102180004119873,
+        "p95": 2.1075880646705625,
+        "min": 2.0940799713134766,
+        "max": 2.5899600982666016
+      },
+      "raw_physical_tok_per_s": 7552.917546581324,
+      "full_production_step_device_s": 0.06355160069465637,
+      "model_and_argmax_device_s": 0.06315183997154236,
+      "peak_memory_delta_bytes": 10813952,
+      "cache_allocated_bytes": 603979776,
+      "linear_weight_format": "decode_native_fallback",
+      "compile_first_call_s": 37.408306089928374,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/910b_decode_length_modes_k2048_24acb27/decode_native_fallback_increfa_npu_scatter_optcombined_apply_static_actual_modeinference_dtypefloat16_bs16_cache2048_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcdd27ab0f67ba",
+      "throughput_delta_vs_control_percent": -6.003311897673191,
+      "latency_delta_vs_control_percent": 6.38672704206118
+    },
+    {
+      "batch_size": 16,
+      "optimization": "combined_apply_pse_sentinel",
+      "latency_ms": {
+        "mean": 2.0520786762237546,
+        "median": 2.0363800525665283,
+        "p95": 2.0412120580673214,
+        "min": 2.0282599925994873,
+        "max": 2.5172200202941895
+      },
+      "raw_physical_tok_per_s": 7796.972009593354,
+      "full_production_step_device_s": 0.06156236028671264,
+      "model_and_argmax_device_s": 0.0611587200164795,
+      "peak_memory_delta_bytes": 10813952,
+      "cache_allocated_bytes": 603979776,
+      "linear_weight_format": "decode_native_fallback",
+      "compile_first_call_s": 36.170890810200945,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/910b_decode_length_modes_k2048_24acb27/decode_native_fallback_increfa_npu_scatter_optcombined_apply_pse_sentinel_modeinference_dtypefloat16_bs16_cache2048_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcdd27ab0f67ba",
+      "throughput_delta_vs_control_percent": -2.966033773260701,
+      "latency_delta_vs_control_percent": 3.0566964214674863
+    },
+    {
+      "batch_size": 32,
+      "optimization": "combined_apply",
+      "latency_ms": {
+        "mean": 2.9846960067749024,
+        "median": 2.9668099880218506,
+        "p95": 2.9745640635490416,
+        "min": 2.9583399295806885,
+        "max": 3.4969000816345215
+      },
+      "raw_physical_tok_per_s": 10721.35987295317,
+      "full_production_step_device_s": 0.08954088020324708,
+      "model_and_argmax_device_s": 0.08911935997009277,
+      "peak_memory_delta_bytes": 19859968,
+      "cache_allocated_bytes": 1207959552,
+      "linear_weight_format": "decode_native_fallback",
+      "compile_first_call_s": 13.375775570981205,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/910b_decode_length_modes_k2048_24acb27/decode_native_fallback_increfa_npu_scatter_optcombined_apply_modeinference_dtypefloat16_bs32_cache2048_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcdd27ab0f67ba",
+      "throughput_delta_vs_control_percent": 0.0,
+      "latency_delta_vs_control_percent": 0.0
+    },
+    {
+      "batch_size": 32,
+      "optimization": "combined_apply_static_actual",
+      "latency_ms": {
+        "mean": 3.043421991666158,
+        "median": 3.0262300968170166,
+        "p95": 3.033736050128937,
+        "min": 3.0195999145507812,
+        "max": 3.547760009765625
+      },
+      "raw_physical_tok_per_s": 10514.48011075231,
+      "full_production_step_device_s": 0.09130265974998474,
+      "model_and_argmax_device_s": 0.09088084030151367,
+      "peak_memory_delta_bytes": 19859968,
+      "cache_allocated_bytes": 1207959552,
+      "linear_weight_format": "decode_native_fallback",
+      "compile_first_call_s": 13.432453913846985,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/910b_decode_length_modes_k2048_24acb27/decode_native_fallback_increfa_npu_scatter_optcombined_apply_static_actual_modeinference_dtypefloat16_bs32_cache2048_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcdd27ab0f67ba",
+      "throughput_delta_vs_control_percent": -1.9296037503857666,
+      "latency_delta_vs_control_percent": 1.9675700559773857
+    },
+    {
+      "batch_size": 32,
+      "optimization": "combined_apply_pse_sentinel",
+      "latency_ms": {
+        "mean": 3.057138673464457,
+        "median": 3.0396500825881954,
+        "p95": 3.047980034351349,
+        "min": 3.0331599712371826,
+        "max": 3.5423998832702637
+      },
+      "raw_physical_tok_per_s": 10467.304044057795,
+      "full_production_step_device_s": 0.09171416020393372,
+      "model_and_argmax_device_s": 0.0912785201072693,
+      "peak_memory_delta_bytes": 19859968,
+      "cache_allocated_bytes": 1207959552,
+      "linear_weight_format": "decode_native_fallback",
+      "compile_first_call_s": 35.46824922808446,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/910b_decode_length_modes_k2048_24acb27/decode_native_fallback_increfa_npu_scatter_optcombined_apply_pse_sentinel_modeinference_dtypefloat16_bs32_cache2048_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcdd27ab0f67ba",
+      "throughput_delta_vs_control_percent": -2.3696231812559754,
+      "latency_delta_vs_control_percent": 2.4271371866722236
+    },
+    {
+      "batch_size": 64,
+      "optimization": "combined_apply",
+      "latency_ms": {
+        "mean": 4.155517323811849,
+        "median": 4.138360023498535,
+        "p95": 4.150772976875305,
+        "min": 4.122399806976318,
+        "max": 4.680659770965576
+      },
+      "raw_physical_tok_per_s": 15401.211212204238,
+      "full_production_step_device_s": 0.12466551971435547,
+      "model_and_argmax_device_s": 0.12419840002059934,
+      "peak_memory_delta_bytes": 40503808,
+      "cache_allocated_bytes": 2415919104,
+      "linear_weight_format": "decode_native_fallback",
+      "compile_first_call_s": 13.43357816315256,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/910b_decode_length_modes_k2048_24acb27/decode_native_fallback_increfa_npu_scatter_optcombined_apply_modeinference_dtypefloat16_bs64_cache2048_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcdd27ab0f67ba",
+      "throughput_delta_vs_control_percent": 0.0,
+      "latency_delta_vs_control_percent": 0.0
+    },
+    {
+      "batch_size": 64,
+      "optimization": "combined_apply_static_actual",
+      "latency_ms": {
+        "mean": 4.294113349914551,
+        "median": 4.320230007171631,
+        "p95": 4.33864188194275,
+        "min": 4.204999923706055,
+        "max": 4.762760162353516
+      },
+      "raw_physical_tok_per_s": 14904.124503670484,
+      "full_production_step_device_s": 0.1288234004974365,
+      "model_and_argmax_device_s": 0.12832092046737673,
+      "peak_memory_delta_bytes": 40503808,
+      "cache_allocated_bytes": 2415919104,
+      "linear_weight_format": "decode_native_fallback",
+      "compile_first_call_s": 36.6433525190223,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/910b_decode_length_modes_k2048_24acb27/decode_native_fallback_increfa_npu_scatter_optcombined_apply_static_actual_modeinference_dtypefloat16_bs64_cache2048_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcdd27ab0f67ba",
+      "throughput_delta_vs_control_percent": -3.227581919919731,
+      "latency_delta_vs_control_percent": 3.335229173718579
+    },
+    {
+      "batch_size": 64,
+      "optimization": "combined_apply_pse_sentinel",
+      "latency_ms": {
+        "mean": 4.253874683380127,
+        "median": 4.234400033950806,
+        "p95": 4.246702027320862,
+        "min": 4.2210001945495605,
+        "max": 4.813199996948242
+      },
+      "raw_physical_tok_per_s": 15045.107052647267,
+      "full_production_step_device_s": 0.1276162405014038,
+      "model_and_argmax_device_s": 0.12712852001190186,
+      "peak_memory_delta_bytes": 40503808,
+      "cache_allocated_bytes": 2415919104,
+      "linear_weight_format": "decode_native_fallback",
+      "compile_first_call_s": 36.256453203968704,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/910b_decode_length_modes_k2048_24acb27/decode_native_fallback_increfa_npu_scatter_optcombined_apply_pse_sentinel_modeinference_dtypefloat16_bs64_cache2048_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcdd27ab0f67ba",
+      "throughput_delta_vs_control_percent": -2.312182818938213,
+      "latency_delta_vs_control_percent": 2.3669101077902654
+    },
+    {
+      "batch_size": 128,
+      "optimization": "combined_apply",
+      "latency_ms": {
+        "mean": 6.294781319300334,
+        "median": 6.2711100578308105,
+        "p95": 6.303373956680297,
+        "min": 6.255199909210205,
+        "max": 6.943699836730957
+      },
+      "raw_physical_tok_per_s": 20334.30448291208,
+      "full_production_step_device_s": 0.18884343957901,
+      "model_and_argmax_device_s": 0.1882930407524109,
+      "peak_memory_delta_bytes": 79433728,
+      "cache_allocated_bytes": 4831838208,
+      "linear_weight_format": "decode_native_fallback",
+      "compile_first_call_s": 52.49301499617286,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/910b_decode_length_modes_k2048_24acb27/decode_native_fallback_increfa_npu_scatter_optcombined_apply_modeinference_dtypefloat16_bs128_cache2048_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcdd27ab0f67ba",
+      "throughput_delta_vs_control_percent": 0.0,
+      "latency_delta_vs_control_percent": 0.0
+    },
+    {
+      "batch_size": 128,
+      "optimization": "combined_apply_static_actual",
+      "latency_ms": {
+        "mean": 6.138152011235555,
+        "median": 6.113379955291748,
+        "p95": 6.137416076660156,
+        "min": 6.095880031585693,
+        "max": 6.7971601486206055
+      },
+      "raw_physical_tok_per_s": 20853.18183155173,
+      "full_production_step_device_s": 0.18414456033706667,
+      "model_and_argmax_device_s": 0.18356977987289433,
+      "peak_memory_delta_bytes": 79433728,
+      "cache_allocated_bytes": 4831838208,
+      "linear_weight_format": "decode_native_fallback",
+      "compile_first_call_s": 36.62585403211415,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/910b_decode_length_modes_k2048_24acb27/decode_native_fallback_increfa_npu_scatter_optcombined_apply_static_actual_modeinference_dtypefloat16_bs128_cache2048_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcdd27ab0f67ba",
+      "throughput_delta_vs_control_percent": 2.5517339384570015,
+      "latency_delta_vs_control_percent": -2.4882406571383187
+    },
+    {
+      "batch_size": 128,
+      "optimization": "combined_apply_pse_sentinel",
+      "latency_ms": {
+        "mean": 6.2770706494649255,
+        "median": 6.257839918136597,
+        "p95": 6.2735519170761105,
+        "min": 6.240099906921387,
+        "max": 6.8847198486328125
+      },
+      "raw_physical_tok_per_s": 20391.677447650058,
+      "full_production_step_device_s": 0.18831211948394774,
+      "model_and_argmax_device_s": 0.18776347970962526,
+      "peak_memory_delta_bytes": 79433728,
+      "cache_allocated_bytes": 4831838208,
+      "linear_weight_format": "decode_native_fallback",
+      "compile_first_call_s": 37.50396388606168,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/910b_decode_length_modes_k2048_24acb27/decode_native_fallback_increfa_npu_scatter_optcombined_apply_pse_sentinel_modeinference_dtypefloat16_bs128_cache2048_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcdd27ab0f67ba",
+      "throughput_delta_vs_control_percent": 0.28214864583242516,
+      "latency_delta_vs_control_percent": -0.2813548070543126
+    }
+  ],
+  "boundary_gates": [
+    {
+      "batch_size": 16,
+      "optimization": "combined_apply_static_actual",
+      "cache_position": 1279,
+      "effective_length": 1280,
+      "elapsed_s": 0.013629981083795428,
+      "passed": true
+    },
+    {
+      "batch_size": 16,
+      "optimization": "combined_apply_pse_sentinel",
+      "cache_position": 1279,
+      "effective_length": 1280,
+      "elapsed_s": 0.013089183019474149,
+      "passed": true
+    },
+    {
+      "batch_size": 32,
+      "optimization": "combined_apply_static_actual",
+      "cache_position": 1279,
+      "effective_length": 1280,
+      "elapsed_s": 0.013900625985115767,
+      "passed": true
+    },
+    {
+      "batch_size": 32,
+      "optimization": "combined_apply_pse_sentinel",
+      "cache_position": 1279,
+      "effective_length": 1280,
+      "elapsed_s": 0.013408638071268797,
+      "passed": true
+    },
+    {
+      "batch_size": 64,
+      "optimization": "combined_apply_static_actual",
+      "cache_position": 1279,
+      "effective_length": 1280,
+      "elapsed_s": 0.013683303026482463,
+      "passed": true
+    },
+    {
+      "batch_size": 64,
+      "optimization": "combined_apply_pse_sentinel",
+      "cache_position": 1279,
+      "effective_length": 1280,
+      "elapsed_s": 0.013313415925949812,
+      "passed": true
+    },
+    {
+      "batch_size": 128,
+      "optimization": "combined_apply_static_actual",
+      "cache_position": 1279,
+      "effective_length": 1280,
+      "elapsed_s": 0.013481358997523785,
+      "passed": true
+    },
+    {
+      "batch_size": 128,
+      "optimization": "combined_apply_pse_sentinel",
+      "cache_position": 1279,
+      "effective_length": 1280,
+      "elapsed_s": 0.013382558012381196,
+      "passed": true
+    }
+  ]
+}

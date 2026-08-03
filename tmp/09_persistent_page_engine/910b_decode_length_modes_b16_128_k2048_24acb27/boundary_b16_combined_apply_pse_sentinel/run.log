@@ -1,0 +1,7 @@
+[W803 20:00:47.040871263 TensorFactories.cpp:340] Warning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (function operator())
+TEXT_DECODE_BOUNDARY {"active_slots": 16, "attention": "gqa", "backend": "torchair", "batch_size": 16, "cache_length": 2048, "cache_position": 1279, "decode_optimization": "combined_apply_pse_sentinel", "effective_length": 1280, "event": "step_begin"}
+TEXT_DECODE_BOUNDARY {"active_slots": 16, "attention": "gqa", "backend": "torchair", "batch_size": 16, "cache_length": 2048, "cache_position": 1279, "decode_optimization": "combined_apply_pse_sentinel", "effective_length": 1280, "event": "step_returned"}
+TEXT_DECODE_BOUNDARY {"active_slots": 16, "attention": "gqa", "backend": "torchair", "batch_size": 16, "cache_length": 2048, "cache_position": 1279, "decode_optimization": "combined_apply_pse_sentinel", "effective_length": 1280, "event": "sync_begin"}
+TEXT_DECODE_BOUNDARY {"active_slots": 16, "attention": "gqa", "backend": "torchair", "batch_size": 16, "cache_length": 2048, "cache_position": 1279, "decode_optimization": "combined_apply_pse_sentinel", "effective_length": 1280, "elapsed_s": 0.013089183019474149, "event": "sync_end"}
+DECODE_BOUNDARY position=1279 effective_length=1280 attention=gqa elapsed_s=0.013089
+output=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_decode_length_modes_b16_128_k2048_24acb27/boundary_b16_combined_apply_pse_sentinel/result.json

@@ -1,0 +1,44 @@
+MATRIX_START root=tmp/09_persistent_page_engine/910b_decode_length_modes_b16_128_k2048_24acb27 cache=.runtime_cache/910b_decode_length_modes_k2048_24acb27 physical_npu=5 time=2026-08-03T19:46:49+00:00
+LANE_START lane=b16_combined_apply time=2026-08-03T19:46:49+00:00
+LANE_END lane=b16_combined_apply exit=0 time=2026-08-03T19:47:34+00:00
+LANE_START lane=b16_combined_apply_static_actual time=2026-08-03T19:47:34+00:00
+LANE_END lane=b16_combined_apply_static_actual exit=0 time=2026-08-03T19:48:42+00:00
+LANE_START lane=b16_combined_apply_pse_sentinel time=2026-08-03T19:48:42+00:00
+LANE_END lane=b16_combined_apply_pse_sentinel exit=0 time=2026-08-03T19:49:50+00:00
+LANE_START lane=b32_combined_apply time=2026-08-03T19:49:50+00:00
+LANE_END lane=b32_combined_apply exit=0 time=2026-08-03T19:50:40+00:00
+LANE_START lane=b32_combined_apply_static_actual time=2026-08-03T19:50:40+00:00
+LANE_END lane=b32_combined_apply_static_actual exit=0 time=2026-08-03T19:51:30+00:00
+LANE_START lane=b32_combined_apply_pse_sentinel time=2026-08-03T19:51:30+00:00
+LANE_END lane=b32_combined_apply_pse_sentinel exit=0 time=2026-08-03T19:52:37+00:00
+LANE_START lane=b64_combined_apply time=2026-08-03T19:52:37+00:00
+LANE_END lane=b64_combined_apply exit=0 time=2026-08-03T19:53:22+00:00
+LANE_START lane=b64_combined_apply_static_actual time=2026-08-03T19:53:22+00:00
+LANE_END lane=b64_combined_apply_static_actual exit=0 time=2026-08-03T19:54:30+00:00
+LANE_START lane=b64_combined_apply_pse_sentinel time=2026-08-03T19:54:30+00:00
+LANE_END lane=b64_combined_apply_pse_sentinel exit=0 time=2026-08-03T19:55:41+00:00
+LANE_START lane=b128_combined_apply time=2026-08-03T19:55:41+00:00
+LANE_END lane=b128_combined_apply exit=0 time=2026-08-03T19:57:06+00:00
+LANE_START lane=b128_combined_apply_static_actual time=2026-08-03T19:57:06+00:00
+LANE_END lane=b128_combined_apply_static_actual exit=0 time=2026-08-03T19:58:15+00:00
+LANE_START lane=b128_combined_apply_pse_sentinel time=2026-08-03T19:58:15+00:00
+LANE_END lane=b128_combined_apply_pse_sentinel exit=0 time=2026-08-03T19:59:24+00:00
+PROFILES_COMPLETE time=2026-08-03T19:59:24+00:00
+BOUNDARIES_START physical_npu=5 time=2026-08-03T19:59:56+00:00
+BOUNDARY_START lane=boundary_b16_combined_apply_static_actual time=2026-08-03T19:59:56+00:00
+BOUNDARY_END lane=boundary_b16_combined_apply_static_actual exit=0 time=2026-08-03T20:00:28+00:00
+BOUNDARY_START lane=boundary_b16_combined_apply_pse_sentinel time=2026-08-03T20:00:28+00:00
+BOUNDARY_END lane=boundary_b16_combined_apply_pse_sentinel exit=0 time=2026-08-03T20:00:58+00:00
+BOUNDARY_START lane=boundary_b32_combined_apply_static_actual time=2026-08-03T20:00:58+00:00
+BOUNDARY_END lane=boundary_b32_combined_apply_static_actual exit=0 time=2026-08-03T20:01:31+00:00
+BOUNDARY_START lane=boundary_b32_combined_apply_pse_sentinel time=2026-08-03T20:01:31+00:00
+BOUNDARY_END lane=boundary_b32_combined_apply_pse_sentinel exit=0 time=2026-08-03T20:02:01+00:00
+BOUNDARY_START lane=boundary_b64_combined_apply_static_actual time=2026-08-03T20:02:01+00:00
+BOUNDARY_END lane=boundary_b64_combined_apply_static_actual exit=0 time=2026-08-03T20:02:33+00:00
+BOUNDARY_START lane=boundary_b64_combined_apply_pse_sentinel time=2026-08-03T20:02:33+00:00
+BOUNDARY_END lane=boundary_b64_combined_apply_pse_sentinel exit=0 time=2026-08-03T20:03:04+00:00
+BOUNDARY_START lane=boundary_b128_combined_apply_static_actual time=2026-08-03T20:03:04+00:00
+BOUNDARY_END lane=boundary_b128_combined_apply_static_actual exit=0 time=2026-08-03T20:03:40+00:00
+BOUNDARY_START lane=boundary_b128_combined_apply_pse_sentinel time=2026-08-03T20:03:40+00:00
+BOUNDARY_END lane=boundary_b128_combined_apply_pse_sentinel exit=0 time=2026-08-03T20:04:11+00:00
+BOUNDARIES_COMPLETE time=2026-08-03T20:04:11+00:00
