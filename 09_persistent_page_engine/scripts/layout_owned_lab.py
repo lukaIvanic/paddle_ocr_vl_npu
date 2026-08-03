@@ -69,6 +69,18 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--limit", type=int, default=32)
     parser.add_argument("--workers", type=int, choices=(1, 2, 4, 8), default=1)
     parser.add_argument(
+        "--input-workers",
+        type=int,
+        choices=(1, 2, 4, 8),
+        help="Override workers for page decode, resize, and H2D prefetch.",
+    )
+    parser.add_argument(
+        "--page-prepare-workers",
+        type=int,
+        choices=(1, 2, 4, 8),
+        help="Override workers for polygon, crop, and request preparation.",
+    )
+    parser.add_argument(
         "--torch-cpu-threads",
         type=int,
         default=64,
@@ -118,6 +130,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("--offset must be non-negative and --limit positive")
     if args.torch_cpu_threads <= 0:
         parser.error("--torch-cpu-threads must be positive")
+    if args.workers == 1 and (
+        args.input_workers is not None
+        or args.page_prepare_workers is not None
+    ):
+        parser.error("worker-pool overrides require --workers greater than 1")
     if args.model_backend == "owned" and args.graph_capture:
         parser.error(
             "--model-backend owned requires --no-graph-capture"
@@ -287,6 +304,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     def prepare_with_staged_workers() -> list[Any]:
         """Overlap bounded page decode and crop work around one NPU detector."""
 
+        input_workers = args.input_workers or args.workers
+        page_prepare_workers = args.page_prepare_workers or args.workers
         prepared: list[Any] = []
         decode_futures: dict[int, Any] = {}
         prepare_futures: deque[Any] = deque()
@@ -321,15 +340,15 @@ def main(argv: Sequence[str] | None = None) -> None:
 
         with (
             ThreadPoolExecutor(
-                max_workers=args.workers,
+                max_workers=input_workers,
                 thread_name_prefix="layout-input",
             ) as decode_executor,
             ThreadPoolExecutor(
-                max_workers=args.workers,
+                max_workers=page_prepare_workers,
                 thread_name_prefix="layout-page-prepare",
             ) as prepare_executor,
         ):
-            for _ in range(min(args.workers, len(image_paths))):
+            for _ in range(min(input_workers, len(image_paths))):
                 submit_decode(decode_executor)
 
             for ordinal in range(len(image_paths)):
@@ -346,7 +365,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                         min_pixels=args.preprocessor_min_pixels,
                     )
                 )
-                if len(prepare_futures) >= args.workers:
+                if len(prepare_futures) >= page_prepare_workers:
                     collect_oldest()
 
             while prepare_futures:
@@ -355,9 +374,12 @@ def main(argv: Sequence[str] | None = None) -> None:
         worker_pipeline.update(
             {
                 "strategy": "bounded_staged_cpu_pipeline",
-                "decode_workers": args.workers,
-                "page_prepare_workers": args.workers,
-                "max_inflight_pages": args.workers,
+                "decode_workers": input_workers,
+                "page_prepare_workers": page_prepare_workers,
+                "max_inflight_pages": max(
+                    input_workers,
+                    page_prepare_workers,
+                ),
                 "decode_wait_s": decode_wait_s,
                 "page_prepare_wait_s": page_prepare_wait_s,
             }
