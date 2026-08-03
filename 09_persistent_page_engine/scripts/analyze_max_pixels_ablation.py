@@ -81,22 +81,35 @@ def distribution(values: Iterable[float]) -> dict[str, float | int | None]:
 
 
 def levenshtein(left: Sequence[Any], right: Sequence[Any]) -> int:
-    """Exact insertion/deletion/substitution distance with linear memory."""
+    """Exact Myers bit-vector distance for arbitrary hashable sequences."""
     if len(left) > len(right):
         left, right = right, left
-    previous = list(range(len(left) + 1))
-    for right_index, right_value in enumerate(right, 1):
-        current = [right_index]
-        for left_index, left_value in enumerate(left, 1):
-            current.append(
-                min(
-                    current[-1] + 1,
-                    previous[left_index] + 1,
-                    previous[left_index - 1] + (left_value != right_value),
-                )
-            )
-        previous = current
-    return previous[-1]
+    width = len(left)
+    if width == 0:
+        return len(right)
+    equality_masks: dict[Any, int] = {}
+    for index, value in enumerate(left):
+        equality_masks[value] = equality_masks.get(value, 0) | (1 << index)
+    mask = (1 << width) - 1
+    high_bit = 1 << (width - 1)
+    positive = mask
+    negative = 0
+    distance = width
+    for value in right:
+        equal = equality_masks.get(value, 0)
+        vertical = equal | negative
+        horizontal = (((equal & positive) + positive) ^ positive) | equal
+        positive_horizontal = negative | ~(horizontal | positive)
+        negative_horizontal = positive & horizontal
+        if positive_horizontal & high_bit:
+            distance += 1
+        elif negative_horizontal & high_bit:
+            distance -= 1
+        positive_horizontal = (positive_horizontal << 1) | 1
+        negative_horizontal <<= 1
+        positive = (negative_horizontal | ~(vertical | positive_horizontal)) & mask
+        negative = (positive_horizontal & vertical) & mask
+    return distance
 
 
 def normalized_distance(left: Sequence[Any], right: Sequence[Any]) -> tuple[int, float]:
