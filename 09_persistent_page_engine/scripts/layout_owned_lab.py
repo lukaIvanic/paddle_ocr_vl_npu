@@ -69,6 +69,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--limit", type=int, default=32)
     parser.add_argument("--workers", type=int, choices=(1, 2, 4, 8), default=1)
     parser.add_argument(
+        "--worker-strategy",
+        choices=("staged", "replicated"),
+        default="staged",
+        help=(
+            "Pipeline CPU stages around one detector or give every worker an "
+            "independent detector replay lane."
+        ),
+    )
+    parser.add_argument(
         "--torch-cpu-threads",
         type=int,
         default=64,
@@ -228,20 +237,28 @@ def main(argv: Sequence[str] | None = None) -> None:
         else 0
     )
     setup_started = time.perf_counter()
-    frontend = OwnedLayoutFrontend(
-        model_dir,
-        device,
-        timeline=timeline,
-        graph_capture=device.type == "npu" and args.graph_capture,
-        device_stage_timing=device.type == "npu",
-        npu_indexput_compat=args.layout_indexput_compat,
-        model_backend=args.model_backend,
-        model_dtype=(
-            torch.float16
-            if args.model_dtype == "fp16"
-            else torch.float32
-        ),
-    )
+    frontends = [
+        OwnedLayoutFrontend(
+            model_dir,
+            device,
+            timeline=timeline,
+            graph_capture=device.type == "npu" and args.graph_capture,
+            device_stage_timing=device.type == "npu",
+            npu_indexput_compat=args.layout_indexput_compat,
+            model_backend=args.model_backend,
+            model_dtype=(
+                torch.float16
+                if args.model_dtype == "fp16"
+                else torch.float32
+            ),
+        )
+        for _ in range(
+            args.workers
+            if args.worker_strategy == "replicated" and args.workers > 1
+            else 1
+        )
+    ]
+    frontend = frontends[0]
     torch.set_num_threads(args.torch_cpu_threads)
     setup_s = time.perf_counter() - setup_started
     memory_after_setup = (
@@ -362,12 +379,53 @@ def main(argv: Sequence[str] | None = None) -> None:
         )
         return prepared
 
+    def prepare_with_replicated_frontends() -> list[Any]:
+        """Run independent page lanes with separate graph input/output state."""
+
+        def prepare_worker(worker_index: int) -> list[Any]:
+            worker_frontend = frontends[worker_index]
+            return [
+                page_record(
+                    worker_frontend.prepare_page(
+                        image_paths[ordinal],
+                        ordinal,
+                        min_pixels=args.preprocessor_min_pixels,
+                    )
+                )
+                for ordinal in range(
+                    worker_index,
+                    len(image_paths),
+                    args.workers,
+                )
+            ]
+
+        with ThreadPoolExecutor(
+            max_workers=args.workers,
+            thread_name_prefix="layout-page-lane",
+        ) as executor:
+            worker_pages = list(
+                executor.map(prepare_worker, range(args.workers))
+            )
+        worker_pipeline.update(
+            {
+                "strategy": "replicated_detector_lanes",
+                "decode_workers": args.workers,
+                "page_prepare_workers": args.workers,
+                "max_inflight_pages": args.workers,
+            }
+        )
+        return sorted(
+            (page for pages in worker_pages for page in pages),
+            key=lambda page: page[0],
+        )
+
     frontend_started = time.perf_counter()
-    prepared_pages = (
-        prepare_serial()
-        if args.workers == 1
-        else prepare_with_staged_workers()
-    )
+    if args.workers == 1:
+        prepared_pages = prepare_serial()
+    elif args.worker_strategy == "replicated":
+        prepared_pages = prepare_with_replicated_frontends()
+    else:
+        prepared_pages = prepare_with_staged_workers()
     frontend_wall_s = time.perf_counter() - frontend_started
 
     requests: list[RecognitionRequest] = []
@@ -386,7 +444,21 @@ def main(argv: Sequence[str] | None = None) -> None:
             }
         )
 
-    mask_fast_path = frontend.mask_fast_path.snapshot()
+    mask_snapshots = [
+        worker_frontend.mask_fast_path.snapshot()
+        for worker_frontend in frontends
+    ]
+    mask_fast_path = {
+        name: sum(snapshot[name] for snapshot in mask_snapshots)
+        for name in mask_snapshots[0]
+        if name != "coverage"
+    }
+    mask_fast_path["coverage"] = (
+        mask_fast_path["rectangle_fast_paths"]
+        / mask_fast_path["detections"]
+        if mask_fast_path["detections"]
+        else 0.0
+    )
 
     records = [
         _request_record(request, index, image_paths)
@@ -441,11 +513,14 @@ def main(argv: Sequence[str] | None = None) -> None:
         "graph_capture": bool(frontend.graph_capture),
         "npu_indexput_compat": bool(frontend.npu_indexput_compat),
         "workers": args.workers,
+        "worker_strategy_requested": args.worker_strategy,
         "torch_cpu_threads": torch.get_num_threads(),
         "worker_strategy": worker_pipeline["strategy"],
         "worker_pipeline": worker_pipeline,
         "setup_s": setup_s,
-        "setup_by_worker_s": [frontend.setup_s],
+        "setup_by_worker_s": [
+            worker_frontend.setup_s for worker_frontend in frontends
+        ],
         "npu_memory_allocated_bytes": {
             "before_setup": memory_before_setup,
             "after_setup": memory_after_setup,
