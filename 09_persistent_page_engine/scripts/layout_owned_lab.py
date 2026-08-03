@@ -68,6 +68,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--limit", type=int, default=32)
     parser.add_argument("--workers", type=int, choices=(1, 2, 4, 8), default=1)
+    parser.add_argument(
+        "--torch-cpu-threads",
+        type=int,
+        default=64,
+        help="PyTorch intra-op threads used by the fixed 800x800 layout resize.",
+    )
     parser.add_argument("--preprocessor-min-pixels", type=int)
     parser.add_argument("--reference-requests", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
@@ -110,6 +116,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     args = parser.parse_args(argv)
     if args.offset < 0 or args.limit <= 0:
         parser.error("--offset must be non-negative and --limit positive")
+    if args.torch_cpu_threads <= 0:
+        parser.error("--torch-cpu-threads must be positive")
     if args.model_backend == "owned" and args.graph_capture:
         parser.error(
             "--model-backend owned requires --no-graph-capture"
@@ -234,6 +242,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             else torch.float32
         ),
     )
+    torch.set_num_threads(args.torch_cpu_threads)
     setup_s = time.perf_counter() - setup_started
     memory_after_setup = (
         int(torch.npu.memory_allocated(device))
@@ -427,6 +436,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         "graph_capture": bool(frontend.graph_capture),
         "npu_indexput_compat": bool(frontend.npu_indexput_compat),
         "workers": args.workers,
+        "torch_cpu_threads": torch.get_num_threads(),
         "worker_strategy": worker_pipeline["strategy"],
         "worker_pipeline": worker_pipeline,
         "setup_s": setup_s,
