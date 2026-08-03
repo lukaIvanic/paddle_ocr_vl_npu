@@ -82,7 +82,7 @@ class DetectedLayoutPage:
     """A decoded page whose device-backed layout detection has completed."""
 
     decoded: DecodedLayoutPage
-    boxes: list[dict[str, Any]]
+    prediction: dict[str, Any]
     detect_timing: dict[str, float]
 
 
@@ -375,7 +375,7 @@ class OwnedLayoutFrontend:
         flow_id: str,
         prepared_pixel_values: torch.Tensor | None = None,
         preprocess_cpu_s: float = 0.0,
-    ) -> tuple[list[dict[str, Any]], dict[str, float]]:
+    ) -> tuple[dict[str, Any], dict[str, float]]:
         timing: dict[str, float] = {}
         height, width = image_rgb.shape[:2]
 
@@ -461,24 +461,17 @@ class OwnedLayoutFrontend:
                 )
                 / 1000.0
             )
-        postprocessor_started = time.perf_counter()
-        boxes = self.postprocessor(
-            predictions[0],
-            (width, height),
-            timing=timing if self.device_stage_timing else None,
+        timing["layout_selected_mask_postprocess_s"] = (
+            time.perf_counter() - started
         )
-        timing["layout_structural_postprocess_cpu_s"] = (
-            time.perf_counter() - postprocessor_started
-        )
-        timing["layout_postprocess_s"] = time.perf_counter() - started
         self._span(
             "Layout postprocess",
-            "Owned detector postprocessing",
+            "Select layout metadata and masks",
             started_ns,
             flow_id=flow_id,
-            args={"boxes": len(boxes)},
+            args={"predictions": len(predictions[0]["boxes"])},
         )
-        return boxes, timing
+        return predictions[0], timing
 
     def decode_page(
         self,
@@ -550,13 +543,13 @@ class OwnedLayoutFrontend:
         self,
         decoded: DecodedLayoutPage,
     ) -> DetectedLayoutPage:
-        boxes, detect_timing = self._detect(
+        prediction, detect_timing = self._detect(
             decoded.image,
             flow_id=f"page:{decoded.ordinal}",
         )
         return DetectedLayoutPage(
             decoded=decoded,
-            boxes=boxes,
+            prediction=prediction,
             detect_timing=detect_timing,
         )
 
@@ -577,7 +570,7 @@ class OwnedLayoutFrontend:
         preprocessed: PreprocessedLayoutPage,
     ) -> DetectedLayoutPage:
         decoded = preprocessed.decoded
-        boxes, detect_timing = self._detect(
+        prediction, detect_timing = self._detect(
             decoded.image,
             flow_id=f"page:{decoded.ordinal}",
             prepared_pixel_values=preprocessed.pixel_values,
@@ -585,7 +578,7 @@ class OwnedLayoutFrontend:
         )
         return DetectedLayoutPage(
             decoded=decoded,
-            boxes=boxes,
+            prediction=prediction,
             detect_timing=detect_timing,
         )
 
@@ -605,8 +598,27 @@ class OwnedLayoutFrontend:
         decode = decoded.decode_timing
         flow_id = f"page:{ordinal}"
 
-        boxes = detected.boxes
         detect_timing = detected.detect_timing
+        postprocessor_started = time.perf_counter()
+        postprocessor_started_ns = time.perf_counter_ns()
+        boxes = self.postprocessor(
+            detected.prediction,
+            (image.shape[1], image.shape[0]),
+            timing=detect_timing if self.device_stage_timing else None,
+        )
+        structural_s = time.perf_counter() - postprocessor_started
+        detect_timing["layout_structural_postprocess_cpu_s"] = structural_s
+        detect_timing["layout_postprocess_s"] = (
+            detect_timing.pop("layout_selected_mask_postprocess_s")
+            + structural_s
+        )
+        self._span(
+            "Layout postprocess",
+            "Normalize and order layout boxes",
+            postprocessor_started_ns,
+            flow_id=flow_id,
+            args={"boxes": len(boxes)},
+        )
         preparation_started = time.perf_counter()
         preparation_started_ns = time.perf_counter_ns()
         document_images = gather_document_images(image, boxes)
