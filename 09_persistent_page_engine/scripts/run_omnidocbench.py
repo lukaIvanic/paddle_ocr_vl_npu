@@ -136,6 +136,25 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="Override the global recognition max_pixels; omit for the model default.",
     )
     parser.add_argument(
+        "--text-preprocessor-max-pixels",
+        type=int,
+        default=None,
+        help=(
+            "Override max_pixels only for requests routed to the OCR: text "
+            "prompt; formula, table, chart, spotting, and seal keep the global "
+            "recognition max_pixels."
+        ),
+    )
+    parser.add_argument(
+        "--text-crop-scale",
+        type=float,
+        default=1.0,
+        help=(
+            "Downscale only OCR:-routed crops before normal recognition "
+            "preprocessing. Use 0.5 to model half-width/half-height text crops."
+        ),
+    )
+    parser.add_argument(
         "--decode-backend",
         default=DEFAULT_DECODE_BACKEND,
         choices=DECODE_BACKEND_CHOICES,
@@ -381,6 +400,26 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--preprocessor-min-pixels must be positive")
     if args.preprocessor_max_pixels is not None and args.preprocessor_max_pixels <= 0:
         raise ValueError("--preprocessor-max-pixels must be positive")
+    if (
+        args.text_preprocessor_max_pixels is not None
+        and args.text_preprocessor_max_pixels <= 0
+    ):
+        raise ValueError("--text-preprocessor-max-pixels must be positive")
+    effective_min_pixels = (
+        args.preprocessor_min_pixels
+        if args.preprocessor_min_pixels is not None
+        else PADDLEOCR_DEFAULT_MIN_PIXELS
+    )
+    if (
+        args.text_preprocessor_max_pixels is not None
+        and args.text_preprocessor_max_pixels < effective_min_pixels
+    ):
+        raise ValueError(
+            "--text-preprocessor-max-pixels must not be smaller than the "
+            f"effective min_pixels ({effective_min_pixels})"
+        )
+    if not 0.0 < args.text_crop_scale <= 1.0:
+        raise ValueError("--text-crop-scale must be in (0, 1]")
     if (
         args.preprocessor_min_pixels is not None
         and args.preprocessor_max_pixels is not None
@@ -695,6 +734,8 @@ def main() -> None:
         trace_path=output_dir / "recognition_trace.jsonl",
         min_pixels=args.preprocessor_min_pixels,
         max_pixels=args.preprocessor_max_pixels,
+        text_max_pixels=args.text_preprocessor_max_pixels,
+        text_crop_scale=args.text_crop_scale,
         timeline=timeline,
     )
     setup_s = time.perf_counter() - setup_started
@@ -723,6 +764,8 @@ def main() -> None:
             "recognition_input_fingerprints": bool(
                 args.recognition_input_fingerprints
             ),
+            "text_preprocessor_max_pixels": args.text_preprocessor_max_pixels,
+            "text_crop_scale": args.text_crop_scale,
             "vision_route_plan": (
                 str(vision_route_plan_path)
                 if vision_route_plan_path is not None
@@ -799,6 +842,8 @@ def main() -> None:
             "decode_optimization": recognizer_configuration["decode_optimization"],
             "preprocessor_min_pixels": args.preprocessor_min_pixels,
             "preprocessor_max_pixels": args.preprocessor_max_pixels,
+            "text_preprocessor_max_pixels": args.text_preprocessor_max_pixels,
+            "text_crop_scale": args.text_crop_scale,
             "effective_global_min_pixels": (
                 args.preprocessor_min_pixels
                 if args.preprocessor_min_pixels is not None

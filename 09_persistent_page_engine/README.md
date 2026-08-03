@@ -928,6 +928,17 @@ the model's maximum remains unchanged. The model default, requested override,
 effective bounds, resize factor, and nominal minimum image-token count are
 recorded under `configuration.preprocessor` in `run.json`.
 
+Resolution ablations can target only requests routed to the normal `OCR:`
+prompt while leaving formula, table, chart, spotting, and seal recognition at
+the global pixel profile. `--text-preprocessor-max-pixels N` changes the
+request-specific maximum for that text route. `--text-crop-scale 0.5`
+downsamples those text crops to half width and half height before the unchanged
+recognizer preprocessing recipe. These are distinct experiments: the former
+changes the final resize ceiling in one resampling step, while the latter
+models a lower-resolution source crop and then runs normal preprocessing.
+Recognition traces record both `source_crop_size` and the crop size actually
+given to preprocessing.
+
 The measured packed min-pixels/4 operating point is explicit rather than a
 default change:
 

@@ -16,6 +16,7 @@ class RecognitionRequest:
     skip_special_tokens: bool = True
     min_pixels: int | None = None
     max_pixels: int | None = None
+    source_crop_size: tuple[int, int] | None = None
 
 
 @dataclass

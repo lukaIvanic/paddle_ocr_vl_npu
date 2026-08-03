@@ -49,6 +49,7 @@ class _RequestOwner:
     block_index: int
     request_index: int
     pixel_profile: tuple[int, int]
+    source_crop_size: tuple[int, int]
 
 
 @dataclass
@@ -76,6 +77,8 @@ class OwnedPageEngine:
         trace_path: Path,
         min_pixels: int | None,
         max_pixels: int | None = None,
+        text_max_pixels: int | None = None,
+        text_crop_scale: float = 1.0,
         timeline: TimelineRecorder | None = None,
     ) -> None:
         self.frontend = frontend
@@ -83,6 +86,8 @@ class OwnedPageEngine:
         self.trace_path = trace_path.expanduser().resolve()
         self.min_pixels = min_pixels
         self.max_pixels = max_pixels
+        self.text_max_pixels = text_max_pixels
+        self.text_crop_scale = float(text_crop_scale)
         self.timeline = timeline
 
     @staticmethod
@@ -99,6 +104,7 @@ class OwnedPageEngine:
             "label": PROMPT_LABELS.get(result.prompt, "unknown"),
             "prompt": result.prompt,
             "crop_size": list(result.crop_size),
+            "source_crop_size": list(owner.source_crop_size),
             "min_pixels": owner.pixel_profile[0],
             "max_pixels": owner.pixel_profile[1],
             "input_tokens": result.input_tokens,
@@ -298,6 +304,12 @@ class OwnedPageEngine:
                             int(request.min_pixels or 112_896),
                             int(request.max_pixels or 1_003_520),
                         ),
+                        source_crop_size=tuple(
+                            int(value)
+                            for value in (
+                                request.source_crop_size or request.crop.size
+                            )
+                        ),
                     )
                     next_request += 1
                     profiles[
@@ -347,6 +359,8 @@ class OwnedPageEngine:
                                 if self.max_pixels is not None
                                 else 1_003_520
                             ),
+                            text_max_pixels=self.text_max_pixels,
+                            text_crop_scale=self.text_crop_scale,
                         )
                     layout_stream.synchronize()
                     for name, seconds in prepared.timing_s.items():
