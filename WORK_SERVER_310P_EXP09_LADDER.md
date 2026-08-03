@@ -18940,3 +18940,316 @@ Paste `agent_report.md`, `comparison.json`, and `progress.log` back to Luka.
 Keep caches and full per-shape logs on the work server.  Do not profile, alter
 the model, change PromptFA settings, run B2/B4, integrate into E2E, or start a
 new optimization experiment.  Then **stop**.
+
+## Phase 50.5: project the measured B1 curve over the full crop corpus
+
+### Goal and interpretation
+
+Run this only after both Phase 49 and Phase 50 report `PASS`.  This is an
+analysis-only follow-up: it must not select an NPU, import torch, load a model,
+compile a graph, or execute a vision layer.
+
+Use the corrected Phase-49 full-run trace to assign each of the 30,557 real
+OmniDocBench crops to the smallest Phase-50 B1 bucket that fits it.  Then sum
+`crop_count[bucket] * measured_median_ms[bucket]` to obtain the literal
+theoretical time for executing every crop separately with the optimized
+4352/FRACTAL_NZ implementation.  Report both:
+
+- effective throughput: real crop tokens divided by projected time; and
+- raw throughput: padded bucket tokens divided by projected time.
+
+Also apply the measured curve to the frozen 910B reference's B1 greedy-packing
+group histogram.  This second number answers a different question: what the
+same recorded B1 packing plan would cost if every packed graph ran at the
+isolated optimized median.  It is an estimate, because the isolated lab uses a
+single synthetic grid and an all-false attention mask while production packs
+use block-structured masks.  Do not present it as a measured E2E result.
+
+The analysis must independently reproduce these frozen corpus facts before it
+is allowed to emit a projection:
+
+```text
+pages                         1,651
+crops                         30,557
+real vision tokens            18,805,052
+per-crop B1 physical tokens   22,503,424
+reference B1 packed groups    9,665
+reference packed physical     21,310,208
+910B optimized B1 projection  528.074783506 s
+910B packed-plan estimate     334.186300341 s
+```
+
+### 50.5.1 Locate the completed inputs
+
+The work-server agent remains pull-only.  Do not edit tracked files, create a
+branch, commit, or push.
+
+```sh
+set -euo pipefail
+
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git pull --ff-only origin main
+test -z "$(git status --porcelain)"
+
+PYTHON=/usr/local/python3.12.13/bin/python
+PHASE49="$(find tmp/09_persistent_page_engine -maxdepth 1 -type d \
+  -name '310p_phase49_v16_full_*' | sort | tail -n 1)"
+PHASE50="$(find tmp/09_persistent_page_engine -maxdepth 1 -type d \
+  -name '310p_phase50_b1_4352_nz_*' | sort | tail -n 1)"
+REFERENCE_SWEEP=tmp/09_persistent_page_engine/vision_matmul_lab/910b_b1_4352_nz_sequence_sweep_e1ffd91_r2/sweep_summary.json
+REFERENCE_RUN=tmp/09_persistent_page_engine/910b_full_e2e_eval_8634d3a_r1/output/run_summary.json
+TRACE="$PHASE49/e2e/output/recognition_trace.jsonl"
+CANDIDATE_RUN="$PHASE49/e2e/output/run_summary.json"
+CANDIDATE_SWEEP="$PHASE50/comparison.json"
+OUT="$PHASE50/corpus_projection"
+
+test -x "$PYTHON"
+test -n "$PHASE49" && test -n "$PHASE50"
+test -f "$PHASE49/agent_report.md"
+test -f "$PHASE50/agent_report.md"
+rg -n '^310P PHASE 49 FULL V1.6: PASS' "$PHASE49/agent_report.md"
+rg -n '^310P PHASE 50 B1 4352/NZ SWEEP: PASS' "$PHASE50/agent_report.md"
+test -f "$TRACE"
+test -f "$CANDIDATE_RUN"
+test -f "$CANDIDATE_SWEEP"
+test -f "$REFERENCE_SWEEP"
+test -f "$REFERENCE_RUN"
+test ! -e "$OUT"
+mkdir -p "$OUT"
+
+printf '%s\n' \
+  "phase49=$PHASE49" \
+  "phase50=$PHASE50" \
+  "trace=$TRACE" \
+  "candidate_run=$CANDIDATE_RUN" \
+  "candidate_sweep=$CANDIDATE_SWEEP" \
+  "reference_sweep=$REFERENCE_SWEEP" \
+  "reference_run=$REFERENCE_RUN" \
+  | tee "$OUT/inputs.txt"
+```
+
+If either phase is not a pass, or any exact input is missing, report
+`310P PHASE 50.5 FULL-CORPUS PROJECTION: INPUT_FAILURE` with the first missing
+contract and stop.  Do not substitute an older v1 trace or a rounded table from
+an agent report.
+
+### 50.5.2 Calculate both projections
+
+```sh
+"$PYTHON" - \
+  "$TRACE" "$CANDIDATE_RUN" "$CANDIDATE_SWEEP" \
+  "$REFERENCE_RUN" "$REFERENCE_SWEEP" <<'PY' \
+  | tee "$OUT/projection.json"
+import collections
+import json
+import math
+import sys
+
+(
+    trace_path,
+    candidate_run_path,
+    candidate_sweep_path,
+    reference_run_path,
+    reference_sweep_path,
+) = sys.argv[1:]
+
+candidate_run = json.load(open(candidate_run_path))
+candidate_sweep = json.load(open(candidate_sweep_path))
+reference_run = json.load(open(reference_run_path))
+reference_sweep = json.load(open(reference_sweep_path))
+
+candidate_ms = {
+    int(point["sequence_length"]): float(point["310P_device_median_ms"])
+    for point in candidate_sweep["points"]
+}
+reference_ms = {
+    int(point["sequence_length"]): float(point["device_median_ms"])
+    for point in reference_sweep["points"]
+}
+buckets = sorted(reference_ms)
+assert buckets == [
+    128, 256, 384, 512, 640, 768, 1408,
+    1920, 2048, 2944, 4096, 4992, 5120,
+]
+assert sorted(candidate_ms) == buckets
+
+crop_counts = collections.Counter()
+real_tokens = 0
+crops = 0
+for line in open(trace_path):
+    if not line.strip():
+        continue
+    row = json.loads(line)
+    tokens = int(row["vision"]["real_vision_tokens"])
+    bucket = next((value for value in buckets if value >= tokens), None)
+    assert bucket is not None, (row["request_id"], tokens)
+    crop_counts[bucket] += 1
+    real_tokens += tokens
+    crops += 1
+
+expected_crop_counts = {
+    256: 16812,
+    384: 3001,
+    512: 1992,
+    640: 1589,
+    768: 1303,
+    1408: 2927,
+    1920: 951,
+    2048: 129,
+    2944: 585,
+    4096: 321,
+    4992: 683,
+    5120: 264,
+}
+assert dict(crop_counts) == expected_crop_counts
+assert crops == 30557
+assert real_tokens == 18805052
+crop_physical_tokens = sum(bucket * count for bucket, count in crop_counts.items())
+assert crop_physical_tokens == 22503424
+
+reference_recognition = reference_run["recognition"]
+reference_histogram = reference_recognition["vision_packing"]["graph_shape_histogram"]
+packed_counts = collections.Counter()
+for name, count in reference_histogram.items():
+    if name == "eager_overflow":
+        # The full trace proves all 264 old overflow calls are exactly S5120.
+        packed_counts[5120] += int(count)
+    else:
+        prefix = "b1_s"
+        assert name.startswith(prefix), name
+        packed_counts[int(name[len(prefix):])] += int(count)
+assert sum(packed_counts.values()) == 9665
+packed_physical_tokens = sum(bucket * count for bucket, count in packed_counts.items())
+assert packed_physical_tokens == 21310208
+
+def projection(counts, medians_ms, physical_tokens):
+    rows = []
+    total_s = 0.0
+    for bucket in buckets:
+        count = int(counts.get(bucket, 0))
+        time_s = count * medians_ms[bucket] / 1000.0
+        total_s += time_s
+        rows.append({
+            "bucket": bucket,
+            "calls": count,
+            "median_ms": medians_ms[bucket],
+            "time_s": time_s,
+            "physical_tokens": count * bucket,
+        })
+    return {
+        "calls": sum(counts.values()),
+        "time_s": total_s,
+        "seconds_per_page": total_s / 1651,
+        "real_tokens": real_tokens,
+        "physical_tokens": physical_tokens,
+        "padding_tokens": physical_tokens - real_tokens,
+        "useful_token_fraction": real_tokens / physical_tokens,
+        "effective_real_tokens_per_s": real_tokens / total_s,
+        "raw_physical_tokens_per_s": physical_tokens / total_s,
+        "per_bucket": rows,
+    }
+
+direct_310 = projection(crop_counts, candidate_ms, crop_physical_tokens)
+direct_910 = projection(crop_counts, reference_ms, crop_physical_tokens)
+packed_310 = projection(packed_counts, candidate_ms, packed_physical_tokens)
+packed_910 = projection(packed_counts, reference_ms, packed_physical_tokens)
+
+assert math.isclose(direct_910["time_s"], 528.0747835060118, abs_tol=1e-9)
+assert math.isclose(packed_910["time_s"], 334.1863003410339, abs_tol=1e-9)
+
+def actual(summary):
+    recognition = summary["recognition"]
+    seconds = float(recognition["device_stage_s"]["vision_prefill"])
+    real = int(recognition["real_vision_tokens"])
+    physical = int(recognition["physical_vision_tokens"])
+    return {
+        "time_s": seconds,
+        "seconds_per_page": seconds / 1651,
+        "real_tokens": real,
+        "physical_tokens": physical,
+        "effective_real_tokens_per_s": real / seconds,
+        "raw_physical_tokens_per_s": physical / seconds,
+        "vision_packing": recognition["vision_packing"],
+    }
+
+actual_310 = actual(candidate_run)
+actual_910 = actual(reference_run)
+assert actual_310["real_tokens"] == real_tokens
+assert actual_910["real_tokens"] == real_tokens
+
+out = {
+    "schema_version": 1,
+    "classification": "310P_PHASE50_5_FULL_CORPUS_PROJECTION_PASS",
+    "semantics": {
+        "direct_b1": "Each real crop separately, assigned to the smallest fitting Phase-50 bucket.",
+        "reference_b1_packed_plan": "Frozen 910B B1 greedy-group histogram replayed with isolated sweep medians; estimate, not measured production.",
+        "actual": "Measured device-event total from each full production run.",
+    },
+    "corpus": {
+        "pages": 1651,
+        "crops": crops,
+        "real_vision_tokens": real_tokens,
+        "direct_b1_bucket_counts": dict(sorted(crop_counts.items())),
+        "reference_b1_packed_group_counts": dict(sorted(packed_counts.items())),
+    },
+    "projection": {
+        "310P_direct_b1": direct_310,
+        "910B2_direct_b1": direct_910,
+        "310P_reference_b1_packed_plan": packed_310,
+        "910B2_reference_b1_packed_plan": packed_910,
+    },
+    "actual_full_run": {
+        "310P3_phase49": actual_310,
+        "910B2_8634d3a": actual_910,
+    },
+    "comparison": {
+        "direct_b1_310P_over_910B_time": direct_310["time_s"] / direct_910["time_s"],
+        "direct_b1_310P_over_910B_effective_tps": direct_310["effective_real_tokens_per_s"] / direct_910["effective_real_tokens_per_s"],
+        "packed_plan_310P_over_910B_time": packed_310["time_s"] / packed_910["time_s"],
+        "packed_plan_310P_over_910B_effective_tps": packed_310["effective_real_tokens_per_s"] / packed_910["effective_real_tokens_per_s"],
+        "310P_direct_b1_over_310P_actual_time": direct_310["time_s"] / actual_310["time_s"],
+        "310P_packed_plan_over_310P_actual_time": packed_310["time_s"] / actual_310["time_s"],
+        "910B_direct_b1_over_910B_actual_time": direct_910["time_s"] / actual_910["time_s"],
+        "910B_packed_plan_over_910B_actual_time": packed_910["time_s"] / actual_910["time_s"],
+    },
+}
+print(json.dumps(out, indent=2))
+PY
+```
+
+This command should finish in seconds and produce incremental terminal output
+only at completion because it reads and aggregates JSONL without any NPU work.
+If desired, observe the output file from another shell with:
+
+```sh
+ls -lh "$OUT/projection.json"
+```
+
+### 50.5.3 Report and stop
+
+Write `$OUT/agent_report.md` beginning with exactly one classification:
+
+```text
+310P PHASE 50.5 FULL-CORPUS PROJECTION: PASS | INPUT_FAILURE |
+CORPUS_MISMATCH | CALCULATION_FAILURE
+```
+
+For a pass, paste two compact tables:
+
+1. 310P optimized direct B1, 910B optimized direct B1, measured 310P
+   production, and measured 910B production: calls/groups where meaningful,
+   total vision seconds, seconds/page, effective real tokens/s, and raw
+   physical tokens/s;
+2. the 310P and 910B estimates under the frozen reference B1 packing plan,
+   including seconds and both throughput definitions.
+
+State explicitly that the direct-B1 number is a literal sum of measured B1
+medians, while the packed-plan number is only a shape-histogram estimate.  Give
+the 310P/910B slowdown for both projections and explain how much of the gap
+between direct B1 and actual production comes from reducing 30,557 crop calls
+to 9,665 packed calls.  Include concise `What is proven` and `What remains an
+estimate` sections.
+
+Paste `agent_report.md` and `projection.json` back to Luka.  Do not run another
+NPU experiment, recompile anything, or modify the pipeline.  Then **stop**.
