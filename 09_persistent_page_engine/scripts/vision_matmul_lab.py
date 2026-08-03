@@ -73,7 +73,21 @@ DEFAULT_PROFILE_ROOT = (
     REPO_ROOT
     / ".runtime_cache/09_persistent_page_engine_vision_matmul_profiles"
 )
-SEQUENCE_LENGTHS = (512, 2048)
+SEQUENCE_LENGTHS = (
+    128,
+    256,
+    384,
+    512,
+    640,
+    768,
+    1408,
+    1920,
+    2048,
+    2944,
+    4096,
+    4992,
+    5120,
+)
 BATCH_SIZES = (1, 4)
 INTERMEDIATE_SIZES = (4304, 4352)
 WEIGHT_FORMATS = ("native", "fractal_nz")
