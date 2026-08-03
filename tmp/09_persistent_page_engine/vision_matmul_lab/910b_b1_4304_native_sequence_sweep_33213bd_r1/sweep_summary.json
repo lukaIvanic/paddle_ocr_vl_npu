@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "purpose": "910B2 serial B1 native-4304 baseline vision sequence sweep",
+  "commit": "33213bdae4d2ac2efcdfb4739133c9bf5c32b40d",
+  "device": "Ascend910B2",
+  "fixed_configuration": {
+    "batch_size": 1,
+    "intermediate_size": 4304,
+    "weight_format": "native",
+    "attention": "prompt_flash_attention",
+    "attention_head_padding": "runtime",
+    "execution": "torchair",
+    "warmup": 3,
+    "samples": 10,
+    "calls_per_sample": 5
+  },
+  "points": [
+    {
+      "sequence_length": 128,
+      "device_median_ms": 10.34275588989258,
+      "physical_tokens_per_s": 12375.811762616144,
+      "linear_tflop_per_s": 10.174661367270552,
+      "all_linear_weights_native": true,
+      "cache_existed_before": false,
+      "first_call_s": 30.420217812992632
+    },
+    {
+      "sequence_length": 256,
+      "device_median_ms": 12.628158187866212,
+      "physical_tokens_per_s": 20272.15657196772,
+      "linear_tflop_per_s": 16.66656961663884,
+      "all_linear_weights_native": true,
+      "cache_existed_before": false,
+      "first_call_s": 30.93391383299604
+    },
+    {
+      "sequence_length": 384,
+      "device_median_ms": 14.276628112792968,
+      "physical_tokens_per_s": 26897.107423839538,
+      "linear_tflop_per_s": 22.113212857951126,
+      "all_linear_weights_native": true,
+      "cache_existed_before": false,
+      "first_call_s": 30.60864461492747
+    },
+    {
+      "sequence_length": 512,
+      "device_median_ms": 16.399627685546875,
+      "physical_tokens_per_s": 31220.220959725186,
+      "linear_tflop_per_s": 25.667421432193514,
+      "all_linear_weights_native": true,
+      "cache_existed_before": false,
+      "first_call_s": 30.234526816988364
+    },
+    {
+      "sequence_length": 640,
+      "device_median_ms": 17.316286468505858,
+      "physical_tokens_per_s": 36959.42551909183,
+      "linear_tflop_per_s": 30.38585639461304,
+      "all_linear_weights_native": true,
+      "cache_existed_before": false,
+      "first_call_s": 30.958017193013802
+    },
+    {
+      "sequence_length": 768,
+      "device_median_ms": 19.612577819824217,
+      "physical_tokens_per_s": 39158.544432833936,
+      "linear_tflop_per_s": 32.19384205913933,
+      "all_linear_weights_native": true,
+      "cache_existed_before": false,
+      "first_call_s": 31.37570503191091
+    },
+    {
+      "sequence_length": 1408,
+      "device_median_ms": 27.10736846923828,
+      "physical_tokens_per_s": 51941.59667685238,
+      "linear_tflop_per_s": 42.703312493709134,
+      "all_linear_weights_native": true,
+      "cache_existed_before": false,
+      "first_call_s": 30.668609204003587
+    },
+    {
+      "sequence_length": 1920,
+      "device_median_ms": 29.857723999023435,
+      "physical_tokens_per_s": 64304.96845850668,
+      "linear_tflop_per_s": 52.86774644348741,
+      "all_linear_weights_native": true,
+      "cache_existed_before": false,
+      "first_call_s": 32.613910956075415
+    },
+    {
+      "sequence_length": 2048,
+      "device_median_ms": 31.536524963378906,
+      "physical_tokens_per_s": 64940.572950830654,
+      "linear_tflop_per_s": 53.39030291064761,
+      "all_linear_weights_native": true,
+      "cache_existed_before": false,
+      "first_call_s": 30.886064749909565
+    },
+    {
+      "sequence_length": 2944,
+      "device_median_ms": 45.95059051513672,
+      "physical_tokens_per_s": 64068.81754936769,
+      "linear_tflop_per_s": 52.673597115899845,
+      "all_linear_weights_native": true,
+      "cache_existed_before": false,
+      "first_call_s": 30.088558815885335
+    },
+    {
+      "sequence_length": 4096,
+      "device_median_ms": 63.49896240234375,
+      "physical_tokens_per_s": 64504.99102720482,
+      "linear_tflop_per_s": 53.03219318373785,
+      "all_linear_weights_native": true,
+      "cache_existed_before": false,
+      "first_call_s": 30.576190384104848
+    },
+    {
+      "sequence_length": 4992,
+      "device_median_ms": 83.11015930175782,
+      "physical_tokens_per_s": 60064.85900087087,
+      "linear_tflop_per_s": 49.381778919165136,
+      "all_linear_weights_native": true,
+      "cache_existed_before": false,
+      "first_call_s": 32.476770715089515
+    },
+    {
+      "sequence_length": 5120,
+      "device_median_ms": 85.42953796386719,
+      "physical_tokens_per_s": 59932.43229485248,
+      "linear_tflop_per_s": 49.272905504187186,
+      "all_linear_weights_native": true,
+      "cache_existed_before": false,
+      "first_call_s": 30.8906823778525
+    }
+  ]
+}

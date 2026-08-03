@@ -1,0 +1,4 @@
+commit=33213bdae4d2ac2efcdfb4739133c9bf5c32b40d
+device=7
+configuration=B1 I4304 native PromptFA head-runtime TorchAir
+shapes=128 256 384 512 640 768 1408 1920 2048 2944 4096 4992 5120

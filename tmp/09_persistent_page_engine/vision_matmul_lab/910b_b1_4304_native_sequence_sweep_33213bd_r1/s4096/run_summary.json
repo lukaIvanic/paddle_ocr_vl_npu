@@ -1,0 +1,163 @@
+{
+  "schema_version": 5,
+  "status": "completed",
+  "purpose": "exact production 27-layer vision attention comparison using synthetic shape inputs",
+  "boundary": "VisionPrefillStage: 27 x (LayerNorm1 + Q/K/V + RoPE + selected attention core + out projection + residual + LayerNorm2 + FC1/GELU/FC2 + residual) + post-LayerNorm",
+  "production_stage": true,
+  "synthetic_shape_inputs": true,
+  "attention": {
+    "implementation": "prompt_flash_attention",
+    "core": "PromptFlashAttention",
+    "input_layout": "BNSD",
+    "mask_sparse_mode": 1,
+    "pre_tokens": 2147483647,
+    "next_tokens": 2147483647,
+    "inner_precise": 1,
+    "inner_precise_semantics": "installed high-performance control",
+    "model_head_dim": 72,
+    "promptfa_call_head_dim": 80,
+    "attention_mask_all_false": true,
+    "materializes_score_tensor": false,
+    "head_padding": {
+      "mode": "runtime",
+      "real_head_dim": 72,
+      "padded_head_dim": 80,
+      "runtime_pad_operations_per_layer": 3,
+      "runtime_slice_operations_per_layer": 1
+    },
+    "rotary": {
+      "implementation": "separate_manual",
+      "custom_op_enabled": null,
+      "portable_to_310p": true
+    }
+  },
+  "shape": {
+    "batch_size": 1,
+    "sequence_length": 4096,
+    "physical_tokens_per_call": 4096,
+    "hidden_size": 1152,
+    "source_intermediate_size": 4304,
+    "candidate_intermediate_size": 4304,
+    "layers": 27,
+    "linear_calls_per_layer": 6,
+    "linear_calls_per_full_stack": 162
+  },
+  "requested": {
+    "weight_format": "native",
+    "attention_head_padding": "runtime",
+    "attention_implementation": "prompt_flash_attention",
+    "promptfa_inner_precise": 1,
+    "rotary_implementation": "separate_manual",
+    "execution": "torchair",
+    "profile_metric": "pipe"
+  },
+  "weight_format": {
+    "requested": "native",
+    "target_format": "unchanged",
+    "target_format_code": null,
+    "linear_weight_count": 162,
+    "before_format_histogram": {
+      "2": 162
+    },
+    "converted_count": 0,
+    "status": "ready",
+    "failures": [],
+    "after_format_histogram": {
+      "2": 162
+    },
+    "all_after_are_nz": false,
+    "runtime_gate": {
+      "torch_npu_allow_internal_format_enabled_before_npu_allocation": false,
+      "mm_bmm_format_nd": true,
+      "manual_cast_after_model_load": false
+    }
+  },
+  "setup_s_through_format_preparation": 13.000750866020098,
+  "environment": {
+    "commit": "33213bdae4d2ac2efcdfb4739133c9bf5c32b40d",
+    "device": "npu:0",
+    "device_name": "Ascend910B2",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "npu_smi": "+------------------------------------------------------------------------------------------------+\n| npu-smi 25.0.rc1.1               Version: 25.0.rc1.1                                           |\n+---------------------------+---------------+----------------------------------------------------+\n| NPU   Name                | Health        | Power(W)    Temp(C)           Hugepages-Usage(page)|\n| Chip                      | Bus-Id        | AICore(%)   Memory-Usage(MB)  HBM-Usage(MB)        |\n+===========================+===============+====================================================+\n| 0     910B2               | OK            | 108.0       47                0    / 0             |\n| 0                         | 0000:C1:00.0  | 0           0    / 0          55710/ 65536         |\n+===========================+===============+====================================================+\n| 1     910B2               | OK            | 102.6       48                0    / 0             |\n| 0                         | 0000:01:00.0  | 0           0    / 0          55706/ 65536         |\n+===========================+===============+====================================================+\n| 2     910B2               | OK            | 103.6       47                0    / 0             |\n| 0                         | 0000:C2:00.0  | 0           0    / 0          55711/ 65536         |\n+===========================+===============+====================================================+\n| 3     910B2               | OK            | 102.0       46                0    / 0             |\n| 0                         | 0000:02:00.0  | 0           0    / 0          3414 / 65536         |\n+===========================+===============+====================================================+\n| 4     910B2               | OK            | 101.9       48                0    / 0             |\n| 0                         | 0000:81:00.0  | 0           0    / 0          3410 / 65536         |\n+===========================+===============+====================================================+\n| 5     910B2               | OK            | 101.3       47                0    / 0             |\n| 0                         | 0000:41:00.0  | 0           0    / 0          55713/ 65536         |\n+===========================+===============+====================================================+\n| 6     910B2               | OK            | 102.2       48                0    / 0             |\n| 0                         | 0000:82:00.0  | 0           0    / 0          3410 / 65536         |\n+===========================+===============+====================================================+\n| 7     910B2               | OK            | 111.2       49                0    / 0             |\n| 0                         | 0000:42:00.0  | 0           0    / 0          7242 / 65536         |\n+===========================+===============+====================================================+\n+---------------------------+---------------+----------------------------------------------------+\n| NPU     Chip              | Process id    | Process name             | Process memory(MB)      |\n+===========================+===============+====================================================+\n| 0       0                 | 3564916       |                          | 52333                   |\n+===========================+===============+====================================================+\n| 1       0                 | 3565202       |                          | 52334                   |\n+===========================+===============+====================================================+\n| 2       0                 | 3565436       |                          | 52333                   |\n+===========================+===============+====================================================+\n| No running processes found in NPU 3                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 4                                                            |\n+===========================+===============+====================================================+\n| 5       0                 | 3566236       |                          | 52333                   |\n+===========================+===============+====================================================+\n| No running processes found in NPU 6                                                            |\n+===========================+===============+====================================================+\n| 7       0                 | 3580192       |                          | 3879                    |\n+===========================+===============+====================================================+\n",
+    "hostname": "liteserver-c001-4",
+    "ascend_rt_visible_devices": "7",
+    "npu_visible_devices": null,
+    "ascend_home_path": "/usr/local/Ascend/cann-9.0.0",
+    "ascend_toolkit_home": "/usr/local/Ascend/cann-9.0.0"
+  },
+  "compile": {
+    "api": "torchair.inference.cache_compile",
+    "dynamic": false,
+    "fullgraph": true,
+    "ge_cache": true,
+    "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_lab/baseline_b1_4304_native_33213bd_r1/vision_pfa_b1_s4096_i4304_native_hpruntime_909789226230ac05",
+    "cache_existed_before": false,
+    "compile_was_permitted": true,
+    "wrapper_s": 0.0006406710017472506,
+    "first_call_s": 30.576190384104848
+  },
+  "linear_flops_per_full_stack_call": 3367489241088,
+  "measurements": {
+    "samples": 10,
+    "calls_per_sample": 5,
+    "total_measured_full_stack_calls": 50,
+    "device_event_per_call_ms": {
+      "samples": [
+        63.477593994140626,
+        63.5015625,
+        63.49805908203125,
+        63.485498046875,
+        63.49986572265625,
+        63.50731201171875,
+        63.497137451171874,
+        63.504400634765624,
+        63.48842163085938,
+        63.50587158203125
+      ],
+      "mean": 63.496572265625,
+      "median": 63.49896240234375,
+      "p05": 63.4811508178711,
+      "p95": 63.50666381835937
+    },
+    "synchronized_wall_per_call_ms": {
+      "samples": [
+        63.77628403715789,
+        63.551100017502904,
+        63.53742377832532,
+        63.524395786225796,
+        63.541623996570706,
+        63.54720597155392,
+        63.540038000792265,
+        63.5414298158139,
+        63.53378780186176,
+        63.55290417559445
+      ],
+      "mean": 63.56461933813989,
+      "median": 63.5415269061923,
+      "p05": 63.52862219326198,
+      "p95": 63.67576309945434
+    },
+    "physical_tokens_per_s_device_median": 64504.99102720482,
+    "physical_tokens_per_s_wall_median": 64461.78112853679,
+    "linear_tflop_per_s_device_median": 53.03219318373785
+  },
+  "numerics": {
+    "raw_candidate_vs_native_4304": {
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "left_finite": true,
+      "right_finite": true,
+      "same_shape": true
+    },
+    "raw_candidate_vs_weight_padded_manual": null,
+    "measured_output_vs_raw_candidate": {
+      "max_abs": 1.68359375,
+      "mean_abs": 0.005624609068036079,
+      "left_finite": true,
+      "right_finite": true,
+      "same_shape": true
+    },
+    "measured_output_finite": true
+  }
+}
