@@ -20529,3 +20529,506 @@ Paste `agent_report.md`, `cache_prepare/compile_contract.json`,
 predictions, traces, logs, and compiler caches local on the work server.  Do not
 edit source, commit, push, start a different bucket sweep, or begin another
 optimization phase.  Then **stop**.
+
+## Phase 53: 310P compiled decode length-mode throughput matrix
+
+### 53.0 Goal, exact scope, and interpretation
+
+Measure the cost of the two compiled masked-GQA workarounds on one Atlas
+310P3, against the normal masked-GQA control, at the same static text-decode
+shape matrix already measured on one Ascend 910B2:
+
+```text
+batch sizes        16, 32, 64, 128
+KV/cache length    2048
+dtype              fp16
+backend            TorchAir, full static graph
+active slots       equal to batch size
+profile position   1024
+warmup             3 complete decode steps
+timed steps        30 complete decode steps
+```
+
+The three implementation lanes are:
+
+```text
+combined_apply
+  Normal optimized masked GQA.  No PSE and no actual_seq_lengths.
+
+combined_apply_static_actual
+  The same optimized GQA, always passing the compile-time constant
+  actual_seq_lengths=[2048] * batch_size.  The boolean mask still carries
+  each row's logical prefix.
+
+combined_apply_pse_sentinel
+  The same optimized GQA with one always-present PSE graph.  Away from the
+  1280 boundary the PSE is all zero.  At effective length 1280, the otherwise
+  masked position 1280 is exposed in the boolean mask and suppressed with
+  -inf in PSE, preserving the logical attention result while avoiding the
+  310P masked-GQA kernel boundary.
+```
+
+This phase has two distinct questions:
+
+1. At safe positions, what physical tok/s and full-step latency does each
+   length-mode graph achieve?
+2. Do static-actual and PSE both synchronize at the exact failing
+   `cache_position=1279` / effective-length-1280 boundary for every B?
+
+The normal control must **never** be executed at position 1279 on 310P.  Its
+throughput profile begins at position 1024 and the measured steps remain far
+below 1279.  Do not infer that normal masked GQA is safe at 1279 from a safe
+profile result.
+
+This is a synthetic full-decoder lab, not an E2E OCR run.  The measured call is
+the complete optimized production decode step: token embedding, all 18 text
+decoder layers, LM head, argmax, KV update, and the decode-arena step.  With
+every slot active, physical tok/s and active tok/s are equal.  There is no
+scheduler effective-tok/s metric in this phase.
+
+The committed 910B2 reference is:
+
+```text
+tmp/09_persistent_page_engine/
+  910b_decode_length_modes_b16_128_k2048_24acb27/
+    summary.json
+    REPORT.md
+```
+
+Its measured physical tok/s values are:
+
+| B | normal | static actual | static vs normal | PSE | PSE vs normal |
+|---:|---:|---:|---:|---:|---:|
+| 16 | 8035.3 | 7552.9 | -6.00% | 7797.0 | -2.97% |
+| 32 | 10721.4 | 10514.5 | -1.93% | 10467.3 | -2.37% |
+| 64 | 15401.2 | 14904.1 | -3.23% | 15045.1 | -2.31% |
+| 128 | 20334.3 | 20853.2 | +2.55% | 20391.7 | +0.28% |
+
+All eight 910B2 workaround boundary gates passed.  The 910B2 runtime reported
+`decode_native_fallback`: it did not materialize FRACTAL_NZ decoder weights.
+The 310P is expected to report `decode_nz` and all selected decoder weights in
+format 29.  Therefore:
+
+- within-310P comparisons between normal/static/PSE are the primary result;
+- absolute 310P/910B tok/s ratios are still useful device-level observations,
+  but the report must state the different effective weight formats instead of
+  pretending the two runtimes used the same internal format.
+
+Execute batch sizes strictly in this order: B16, B32, B64, B128.  Finish all
+three safe profiles and both workaround boundary gates for one B, write and
+print that batch's compact report, and only then begin the next B.  Do not run
+lanes concurrently.  Do not hide progress until the end.
+
+### 53.1 Persistent shell and preflight
+
+The work-server agent is pull-only.  Do not edit tracked files, create a
+branch, commit, or push.  Run the whole phase from one persistent shell so
+`ASCEND_RT_VISIBLE_DEVICES` cannot change between lanes.
+
+```sh
+set -eo pipefail
+
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git pull --ff-only origin main
+git status --short --branch
+test -z "$(git status --porcelain)"
+git merge-base --is-ancestor \
+  4905f75cf2520549f640ec0c29c8f3846d51b1a1 HEAD
+
+source npu-setup
+test -n "${ASCEND_RT_VISIBLE_DEVICES:-}"
+
+PYTHON_BIN=/usr/local/python3.12.13/bin/python
+LAB=09_persistent_page_engine/scripts/text_decode_lab.py
+MODEL=/home/lukaiv/models/PaddleOCR-VL-1.6
+REFERENCE=tmp/09_persistent_page_engine/910b_decode_length_modes_b16_128_k2048_24acb27/summary.json
+COMMIT="$(git rev-parse HEAD)"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+ROOT="tmp/09_persistent_page_engine/310p_phase53_decode_length_modes_${COMMIT_SHORT}"
+CACHE=".runtime_cache/310p_phase53_decode_length_modes_k2048_${COMMIT_SHORT}"
+BATCHES="16 32 64 128"
+OPTIMIZATIONS="combined_apply combined_apply_static_actual combined_apply_pse_sentinel"
+
+test -x "$PYTHON_BIN"
+test -f "$LAB"
+test -f "$MODEL/config.json"
+test -f "$MODEL/model.safetensors"
+test -f "$REFERENCE"
+test ! -e "$ROOT"
+test ! -e "$CACHE"
+mkdir -p "$ROOT" "$CACHE"
+
+{
+  date -Is
+  hostname
+  printf 'commit=%s\n' "$COMMIT"
+  printf 'ASCEND_RT_VISIBLE_DEVICES=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"
+  "$PYTHON_BIN" -V
+  "$PYTHON_BIN" - <<'PY'
+import torch
+import torch_npu
+import torchair
+
+print("torch", torch.__version__)
+print("torch_npu", torch_npu.__version__)
+print("torch_npu_git", getattr(torch_npu.version, "git_version", None))
+print("torchair", getattr(torchair, "__version__", "unknown"))
+print("logical_device", torch.npu.current_device())
+print("device_name", torch.npu.get_device_name(torch.npu.current_device()))
+assert "310P" in torch.npu.get_device_name(torch.npu.current_device())
+PY
+  npu-smi info
+  sha256sum "$MODEL/config.json" "$MODEL/model.safetensors" "$REFERENCE"
+  df -h "$WORK_SERVER_REPO"
+} 2>&1 | tee "$ROOT/preflight.log"
+
+available_kb="$(df -Pk "$WORK_SERVER_REPO" | awk 'NR==2 {print $4}')"
+test "$available_kb" -ge 8388608
+
+printf '%s\n' \
+  "commit=$COMMIT" \
+  "device=$ASCEND_RT_VISIBLE_DEVICES" \
+  "model=$MODEL" \
+  "reference=$REFERENCE" \
+  "batch_sizes=$BATCHES" \
+  "cache_length=2048" \
+  "profile_position=1024" \
+  "warmup=3" \
+  "repeats=30" \
+  "optimizations=$OPTIMIZATIONS" \
+  "cache=$CACHE" \
+  >"$ROOT/contract.txt"
+```
+
+If checkout cleanliness, required commit ancestry, imports, exact 310P device,
+model/reference paths, fresh artifact/cache roots, or the 8-GiB disk check
+fails, report `310P PHASE 53 PREFLIGHT: FAILURE` with the first causal error
+and stop.  Do not switch Python, model, device, cache length, or reference.
+
+Report `310P PHASE 53 PREFLIGHT: PASS` immediately with commit, host, exact
+physical NPU, software versions, checkpoint hash, free disk, and artifact/cache
+paths.
+
+### 53.2 Define the profile and boundary helpers
+
+Keep these definitions in the same persistent shell.  Each command has a hard
+timeout, a timestamped progress record, its exact shell command, an exit-code
+file, and a live `tee` log.  Compilation/first-call time is setup metadata in
+`result.json`; it is never the throughput denominator.
+
+```sh
+run_profile() {
+  B="$1"
+  OPT="$2"
+  LANE="b${B}_${OPT}"
+  DIR="$ROOT/$LANE"
+  test ! -e "$DIR"
+  mkdir -p "$DIR"
+
+  printf '[%s] PROFILE_BEGIN B=%s optimization=%s\n' \
+    "$(date -Is)" "$B" "$OPT" | tee -a "$ROOT/progress.log"
+  npu-smi info >"$DIR/npu_before.log" 2>&1
+
+  printf '%q ' \
+    timeout --signal=TERM --kill-after=30s 3600 \
+    "$PYTHON_BIN" "$LAB" \
+    --mode profile --backend torchair --allow-compile \
+    --model "$MODEL" --cache-dir "$CACHE" \
+    --batch-size "$B" --active-slots "$B" --cache-length 2048 \
+    --profile-position 1024 --warmup 3 --repeats 30 \
+    --decode-optimization "$OPT" \
+    --output "$DIR/result.json" \
+    >"$DIR/command.sh"
+  printf '\n' >>"$DIR/command.sh"
+
+  set +e
+  PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 3600 \
+    "$PYTHON_BIN" "$LAB" \
+    --mode profile --backend torchair --allow-compile \
+    --model "$MODEL" --cache-dir "$CACHE" \
+    --batch-size "$B" --active-slots "$B" --cache-length 2048 \
+    --profile-position 1024 --warmup 3 --repeats 30 \
+    --decode-optimization "$OPT" \
+    --output "$DIR/result.json" \
+    2>&1 | tee "$DIR/run.log"
+  CODE="${PIPESTATUS[0]}"
+  set -e
+  printf '%s\n' "$CODE" >"$DIR/exit_code.txt"
+  npu-smi info >"$DIR/npu_after.log" 2>&1 || true
+  printf '[%s] PROFILE_END B=%s optimization=%s exit=%s\n' \
+    "$(date -Is)" "$B" "$OPT" "$CODE" | tee -a "$ROOT/progress.log"
+  test "$CODE" -eq 0
+  test -f "$DIR/result.json"
+}
+
+run_boundary() {
+  B="$1"
+  OPT="$2"
+  LANE="boundary_b${B}_${OPT}"
+  DIR="$ROOT/$LANE"
+  test ! -e "$DIR"
+  mkdir -p "$DIR"
+
+  printf '[%s] BOUNDARY_BEGIN B=%s optimization=%s position=1279\n' \
+    "$(date -Is)" "$B" "$OPT" | tee -a "$ROOT/progress.log"
+
+  printf '%q ' \
+    timeout --signal=TERM --kill-after=30s 300 \
+    "$PYTHON_BIN" "$LAB" \
+    --mode boundary --backend torchair \
+    --model "$MODEL" --cache-dir "$CACHE" \
+    --batch-size "$B" --active-slots "$B" --cache-length 2048 \
+    --profile-position 1279 \
+    --decode-optimization "$OPT" \
+    --output "$DIR/result.json" \
+    >"$DIR/command.sh"
+  printf '\n' >>"$DIR/command.sh"
+
+  set +e
+  PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 300 \
+    "$PYTHON_BIN" "$LAB" \
+    --mode boundary --backend torchair \
+    --model "$MODEL" --cache-dir "$CACHE" \
+    --batch-size "$B" --active-slots "$B" --cache-length 2048 \
+    --profile-position 1279 \
+    --decode-optimization "$OPT" \
+    --output "$DIR/result.json" \
+    2>&1 | tee "$DIR/run.log"
+  CODE="${PIPESTATUS[0]}"
+  set -e
+  printf '%s\n' "$CODE" >"$DIR/exit_code.txt"
+  printf '[%s] BOUNDARY_END B=%s optimization=%s exit=%s\n' \
+    "$(date -Is)" "$B" "$OPT" "$CODE" | tee -a "$ROOT/progress.log"
+  test "$CODE" -eq 0
+  test -f "$DIR/result.json"
+  grep -q '"event": "step_begin"' "$DIR/run.log"
+  grep -q '"event": "step_returned"' "$DIR/run.log"
+  grep -q '"event": "sync_begin"' "$DIR/run.log"
+  grep -q '"event": "sync_end"' "$DIR/run.log"
+  if grep -qiE 'sync_error|AICore|5070|RuntimeError|Traceback' "$DIR/run.log"; then
+    echo "boundary log contains a runtime error" >&2
+    return 1
+  fi
+}
+```
+
+Do not add `--allow-compile` to `run_boundary`: every boundary call must reuse
+the graph created by that mode's safe profile.  If it tries to compile, the
+cache contract is broken.
+
+### 53.3 Execute and report one complete batch at a time
+
+Run this block once for B16, inspect and report it, then repeat for B32, B64,
+and B128.  Do not put the four B values in a background or parallel loop.
+
+```sh
+run_one_batch() {
+  B="$1"
+  run_profile "$B" combined_apply
+  run_profile "$B" combined_apply_static_actual
+  run_profile "$B" combined_apply_pse_sentinel
+
+  # Never call normal combined_apply at position 1279 on 310P.
+  run_boundary "$B" combined_apply_static_actual
+  run_boundary "$B" combined_apply_pse_sentinel
+
+  "$PYTHON_BIN" - "$ROOT" "$REFERENCE" "$B" <<'PY' \
+    | tee "$ROOT/b${B}_compact_report.json"
+import json
+import pathlib
+import sys
+
+root = pathlib.Path(sys.argv[1])
+reference = json.load(open(sys.argv[2]))
+batch = int(sys.argv[3])
+optimizations = (
+    "combined_apply",
+    "combined_apply_static_actual",
+    "combined_apply_pse_sentinel",
+)
+reference_rows = {
+    (int(row["batch_size"]), row["optimization"]): row
+    for row in reference["rows"]
+}
+rows = []
+for optimization in optimizations:
+    path = root / f"b{batch}_{optimization}" / "result.json"
+    payload = json.load(open(path))
+    result = payload["result"]
+    setup = payload["setup"]
+    metadata = setup["runtime_metadata"]
+    weight = setup["weight_format"]
+    row = {
+        "batch_size": batch,
+        "optimization": optimization,
+        "mean_ms": result["latency_ms"]["mean"],
+        "median_ms": result["latency_ms"]["median"],
+        "p95_ms": result["latency_ms"]["p95"],
+        "min_ms": result["latency_ms"]["min"],
+        "max_ms": result["latency_ms"]["max"],
+        "physical_tok_per_s": result["throughput"]["raw_physical_tok_per_s"],
+        "model_and_argmax_s": result["device_s"]["model_and_argmax"],
+        "full_step_s": result["device_s"]["full_production_step"],
+        "peak_delta_mib": result["memory_bytes"]["peak_delta"] / 2**20,
+        "kv_cache_mib": metadata["cache_allocated_bytes"] / 2**20,
+        "compile_first_call_s": setup["runtime_setup_detail_s"]["compile_first_call"],
+        "weight_format": metadata["linear_weight_format"],
+        "weight_target_format_code": weight["target_format_code"],
+        "weight_target_count": weight["target_count"],
+        "weight_converted_count": weight["converted_count"],
+        "weight_already_nz_count": weight["already_nz_count"],
+        "all_after_are_nz": weight["all_after_are_nz"],
+        "after_formats_sample": weight["after_formats_sample"],
+    }
+    ref = reference_rows[(batch, optimization)]
+    row["reference_910b_tok_per_s"] = ref["raw_physical_tok_per_s"]
+    row["310p_over_910b"] = row["physical_tok_per_s"] / ref["raw_physical_tok_per_s"]
+    row["910b_over_310p"] = ref["raw_physical_tok_per_s"] / row["physical_tok_per_s"]
+    rows.append(row)
+
+control = rows[0]["physical_tok_per_s"]
+for row in rows:
+    row["throughput_delta_vs_310p_control_percent"] = (
+        row["physical_tok_per_s"] / control - 1.0
+    ) * 100.0
+
+boundaries = []
+for optimization in optimizations[1:]:
+    path = root / f"boundary_b{batch}_{optimization}" / "result.json"
+    payload = json.load(open(path))
+    result = payload["result"]
+    assert result["shape"]["cache_position"] == 1279
+    assert result["shape"]["effective_length"] == 1280
+    boundaries.append({
+        "optimization": optimization,
+        "passed": True,
+        "elapsed_s": result["elapsed_s"],
+    })
+
+assert all(row["weight_format"] == rows[0]["weight_format"] for row in rows)
+assert all(row["weight_format"] == "decode_nz" for row in rows)
+assert all(row["weight_target_format_code"] == 29 for row in rows)
+assert all(row["all_after_are_nz"] for row in rows)
+out = {
+    "batch_size": batch,
+    "cache_length": 2048,
+    "safe_profile_position": 1024,
+    "rows": rows,
+    "boundary_gates": boundaries,
+}
+print(json.dumps(out, indent=2))
+PY
+}
+```
+
+Execute and report in this exact order:
+
+```sh
+run_one_batch 16
+```
+
+Immediately report `310P PHASE 53 B16: PASS` with the three latency
+distributions, physical tok/s, within-310P deltas, 910B ratios, memory, weight
+format, compile/cache state, and both boundary results.  If it passes and no
+other process has taken the selected NPU, continue:
+
+If the B16 compact-report assertions show native fallback, any non-29 selected
+weight, or `all_after_are_nz=false`, report
+`310P PHASE 53 B16: WEIGHT_FORMAT_MISMATCH` and stop.  Do not benchmark later
+batch sizes under a different weight-format contract.
+
+```sh
+run_one_batch 32
+```
+
+Report `310P PHASE 53 B32: PASS` in the same format, then continue:
+
+```sh
+run_one_batch 64
+```
+
+Report `310P PHASE 53 B64: PASS`.  Before B128, explicitly state that its
+GQA KV cache is expected to be 4,608 MiB and show `npu-smi info`.  If another
+process has appeared on the selected NPU, stop rather than competing with it.
+Otherwise run:
+
+```sh
+run_one_batch 128
+```
+
+Report `310P PHASE 53 B128: PASS` in the same format.  If B128 OOMs, times out,
+or fails compilation, retain B16-B64 as valid results, classify B128 precisely,
+and do not reduce B, KV length, model, or repeats to manufacture a pass.
+
+For any failed lane, report its exact command, exit code, last 100 log lines,
+first Python/CANN/plog error, NPU state, and whether it failed during model
+load, NZ formatting, graph compilation/first call, warmup, timed steps, or
+boundary synchronization.  Then stop; do not skip to later batches.
+
+### 53.4 Final cross-platform summary and required report
+
+After all four batches pass, combine the four compact reports:
+
+```sh
+"$PYTHON_BIN" - "$ROOT" <<'PY' | tee "$ROOT/summary.json"
+import json
+import pathlib
+import sys
+
+root = pathlib.Path(sys.argv[1])
+batches = [16, 32, 64, 128]
+reports = [json.load(open(root / f"b{batch}_compact_report.json")) for batch in batches]
+out = {
+    "schema_version": 1,
+    "kind": "310p_text_decode_length_mode_matrix",
+    "batch_reports": reports,
+    "all_profile_lanes_passed": True,
+    "all_boundary_gates_passed": all(
+        boundary["passed"]
+        for report in reports
+        for boundary in report["boundary_gates"]
+    ),
+}
+print(json.dumps(out, indent=2))
+PY
+
+grep -RniE 'Traceback|AICore|5070|RuntimeError|out of memory|timed out' \
+  "$ROOT" --include='*.log' >"$ROOT/error_scan.txt" || true
+```
+
+Write `$ROOT/agent_report.md` beginning with exactly one classification:
+
+```text
+310P PHASE 53 DECODE LENGTH MODES: PASS | PREFLIGHT_FAILURE |
+PROFILE_FAILURE | BOUNDARY_FAILURE | WEIGHT_FORMAT_MISMATCH |
+B128_RESOURCE_FAILURE | RUNTIME_ERROR
+```
+
+For a pass, include:
+
+1. project commit, host, exact physical/logical NPU, CANN/driver/firmware,
+   Python, torch, torch_npu, and TorchAir;
+2. model/config hashes, committed 910B reference hash, cache root, and proof
+   all work was sequential on one NPU;
+3. one table containing B, mode, mean/median/p95/min/max latency, physical
+   tok/s, percentage versus the same-B 310P normal control, 910B tok/s,
+   310P/910B ratio, and reciprocal 910B slowdown;
+4. per-lane model-and-argmax/full-step device totals, peak memory delta, exact
+   KV-cache bytes, compile-first-call time, and cache directory;
+5. effective decoder weight format for every lane, format-29 proof, selected/
+   converted/already-NZ counts, and an explicit note that the 910B reference
+   used native fallback;
+6. all eight boundary results with complete `step_begin`, `step_returned`,
+   `sync_begin`, `sync_end` evidence and synchronized elapsed time;
+7. a direct answer to which workaround is faster at B16/B32/B64/B128, whether
+   its cost changes with B, and whether either workaround ever beats the
+   normal safe-position control beyond plausible run noise;
+8. `What is proven`, `What is not proven`, and the first causal error if any
+   lane failed.
+
+Paste back `agent_report.md`, `summary.json`, the four
+`b<B>_compact_report.json` files, and the complete `progress.log`.  Keep raw
+logs and compiler caches on the work server.  Do not run E2E OCR, do not test
+normal masked GQA at position 1279, do not promote PSE to production, and do
+not begin another batch/KV sweep.  Then **stop**.
