@@ -18598,3 +18598,345 @@ Paste `agent_report.md`, `e2e/compact_summary.json`,
 `head_to_head.json`.  Keep large outputs/caches local; do not commit or push
 them.  Do not begin another accuracy-debugging or optimization phase.  Then
 **stop**.
+
+## Phase 50: optimized B1 vision-transformer sequence sweep on 310P
+
+### Goal and fixed experiment boundary
+
+Reproduce the committed 910B2 B1 sequence sweep on one Atlas 310P3.  This is a
+vision-transformer throughput experiment only.  Do not run layout, crop
+preprocessing, the projector, text prefill, decode, or OmniDocBench evaluation.
+
+The measured boundary is the exact compiled `VisionPrefillStage`: all 27 vision
+encoder layers, production PromptFA with runtime D72-to-D80 head padding, RoPE,
+LayerNorms and residuals, Q/K/V/output projections, FC1/GELU/FC2, and the final
+post-LayerNorm.  Every lane is fixed to:
+
+```text
+batch size                 1
+sequence lengths           128,256,384,512,640,768,1408,1920,2048,
+                           2944,4096,4992,5120
+source intermediate width  4304
+candidate width            4352, zero-extended exactly
+Linear weight format       FRACTAL_NZ, all 162 weights verified as format 29
+execution                  TorchAir fullgraph, static, inference cache
+attention                  prompt_flash_attention
+attention head padding     runtime
+PromptFA inner precise     1
+RoPE                       separate_manual
+dtype                      fp16
+measurement                3 warmups, 10 samples, 5 complete stage calls/sample
+metric of interest         physical tokens/s from median NPU-event time
+```
+
+Run the 13 shapes **strictly sequentially in the listed order**.  Do not use
+`&`, `xargs -P`, GNU Parallel, multiple tmux panes, or multiple NPU processes.
+One shape must exit and release its process before the next process starts.
+
+The committed 910B2 comparison source is:
+
+```text
+tmp/09_persistent_page_engine/vision_matmul_lab/
+  910b_b1_4352_nz_sequence_sweep_e1ffd91_r2/sweep_summary.json
+```
+
+That run peaked at 68.48k physical tokens/s at S2944 and was effectively
+saturated from roughly S1920 onward.  Read the committed JSON for exact values;
+do not transcribe rounded numbers into the comparison logic.
+
+### 50.1 Pull, verify the checkpoint, and establish fresh caches
+
+The work-server agent remains pull-only.  Do not edit tracked files, create a
+branch, commit, or push.
+
+Run Sections 50.1 through 50.3 in one persistent shell so the selected NPU and
+the variables below remain fixed.  If the agent's terminal tool starts a fresh
+shell for every command, open one interactive shell first and execute all three
+sections inside it.
+
+```sh
+set -euo pipefail
+
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git pull --ff-only origin main
+git status --short
+test -z "$(git status --porcelain)"
+source npu-setup
+
+PYTHON=/usr/local/python3.12.13/bin/python
+LAB=09_persistent_page_engine/scripts/vision_matmul_lab.py
+MODEL=/home/lukaiv/models/PaddleOCR-VL-1.6
+REFERENCE=tmp/09_persistent_page_engine/vision_matmul_lab/910b_b1_4352_nz_sequence_sweep_e1ffd91_r2/sweep_summary.json
+ROOT="tmp/09_persistent_page_engine/310p_phase50_b1_4352_nz_$(git rev-parse --short HEAD)"
+CACHE=.runtime_cache/310p_phase50_v16_b1_4352_nz
+SHAPES="128 256 384 512 640 768 1408 1920 2048 2944 4096 4992 5120"
+
+test -x "$PYTHON"
+test -f "$LAB"
+test -f "$MODEL/model.safetensors"
+test -f "$MODEL/config.json"
+test -f "$REFERENCE"
+test ! -e "$ROOT"
+test ! -e "$CACHE"
+test "$(sha256sum "$MODEL/model.safetensors" | awk '{print $1}')" = \
+  85a479d506a11e724e7285d395c551be69f41dbc16b6342d3cacfb189aed71db
+
+mkdir -p "$ROOT"
+
+{
+  date -Is
+  hostname
+  git rev-parse HEAD
+  printf 'ASCEND_RT_VISIBLE_DEVICES=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"
+  "$PYTHON" -V
+  "$PYTHON" - <<'PY'
+import torch
+import torch_npu
+import torchair
+
+print("torch", torch.__version__)
+print("torch_npu", torch_npu.__version__)
+print("torchair", getattr(torchair, "__version__", "unknown"))
+print("logical_device", torch.npu.current_device())
+print("device_name", torch.npu.get_device_name(torch.npu.current_device()))
+assert "310P" in torch.npu.get_device_name(torch.npu.current_device())
+PY
+  npu-smi info
+  sha256sum "$MODEL/model.safetensors" "$MODEL/config.json" "$REFERENCE"
+  df -h "$WORK_SERVER_REPO"
+} 2>&1 | tee "$ROOT/preflight.log"
+
+available_kb="$(df -Pk "$WORK_SERVER_REPO" | awk 'NR==2 {print $4}')"
+test "$available_kb" -ge 8388608
+
+printf '%s\n' \
+  "commit=$(git rev-parse HEAD)" \
+  "device=$ASCEND_RT_VISIBLE_DEVICES" \
+  "model=$MODEL" \
+  "model_sha256=85a479d506a11e724e7285d395c551be69f41dbc16b6342d3cacfb189aed71db" \
+  "shapes=$SHAPES" \
+  "batch_size=1" \
+  "intermediate_size=4352" \
+  "weight_format=fractal_nz" \
+  "execution=torchair" \
+  "attention=prompt_flash_attention" \
+  "head_padding=runtime" \
+  "warmup=3 samples=10 calls_per_sample=5" \
+  "cache=$CACHE" \
+  >"$ROOT/command.txt"
+```
+
+If the checkout, checkpoint hash, 310P device assertion, TorchAir import, free
+NPU, reference JSON, clean worktree, fresh root/cache, or 8-GiB disk check
+fails, report `310P PHASE 50 PREFLIGHT: FAILURE` with the first causal error and
+stop.  Never fall back to the old v1 checkpoint, native weights, width 4304,
+raw eager, manual attention, or an existing cache root.
+
+Report `310P PHASE 50 PREFLIGHT: PASS` immediately with commit, exact device,
+software versions, checkpoint hash, free disk, and the two fresh paths.
+
+### 50.2 Run the thirteen shapes serially
+
+The result directory for a shape must not exist before invoking the lab.  Keep
+the wrapper log beside the lab-owned directory; creating `s${S}/run.log` before
+launch would correctly trigger the lab's non-empty-output safety check.
+
+```sh
+cd "$WORK_SERVER_REPO"
+set -o pipefail
+
+for S in $SHAPES; do
+  OUT="$ROOT/s${S}"
+  test ! -e "$OUT"
+
+  printf '[%s] BEGIN B1xS%s\n' "$(date -Is)" "$S" \
+    | tee -a "$ROOT/progress.log"
+
+  set +e
+  PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 3600 \
+    "$PYTHON" "$LAB" \
+      --batch-size 1 \
+      --sequence-length "$S" \
+      --intermediate-size 4352 \
+      --weight-format fractal_nz \
+      --execution torchair \
+      --attention-implementation prompt_flash_attention \
+      --attention-head-padding runtime \
+      --promptfa-inner-precise 1 \
+      --rotary-implementation separate_manual \
+      --model "$MODEL" \
+      --cache-dir "$CACHE" \
+      --allow-compile-if-missing \
+      --warmup 3 --samples 10 --calls-per-sample 5 \
+      --output-dir "$OUT" \
+      2>&1 | tee "$ROOT/s${S}.log"
+  code="${PIPESTATUS[0]}"
+  set -e
+
+  printf '%s\n' "$code" >"$ROOT/s${S}.exit_code.txt"
+  printf '[%s] END B1xS%s exit=%s\n' "$(date -Is)" "$S" "$code" \
+    | tee -a "$ROOT/progress.log"
+
+  if [ "$code" -ne 0 ]; then
+    printf 'PHASE50_STOP first_failed_shape=%s exit=%s\n' "$S" "$code" \
+      | tee -a "$ROOT/progress.log"
+    exit "$code"
+  fi
+
+  "$PYTHON" - "$OUT/run_summary.json" "$S" <<'PY' \
+    | tee -a "$ROOT/progress.log"
+import json, sys
+
+path, expected_s = sys.argv[1], int(sys.argv[2])
+d = json.load(open(path))
+shape = d["shape"]
+weights = d["weight_format"]
+compile_meta = d["compile"]
+measurements = d["measurements"]
+
+assert shape["batch_size"] == 1
+assert shape["sequence_length"] == expected_s
+assert shape["candidate_intermediate_size"] == 4352
+assert shape["linear_calls_per_full_stack"] == 162
+assert weights["requested"] == "fractal_nz"
+assert weights["converted_count"] == 162
+assert weights["all_after_are_nz"] is True
+assert weights["after_format_histogram"] == {"29": 162}
+assert compile_meta["cache_existed_before"] is False
+
+print(
+    "PHASE50_PROGRESS",
+    f"S={expected_s}",
+    f"median_ms={measurements['device_event_per_call_ms']['median']:.6f}",
+    f"physical_tps={measurements['physical_tokens_per_s_device_median']:.3f}",
+    f"compile_first_call_s={compile_meta['first_call_s']:.3f}",
+    "weights_nz=162/162",
+)
+PY
+done
+
+printf '[%s] SWEEP COMPLETE\n' "$(date -Is)" \
+  | tee -a "$ROOT/progress.log"
+```
+
+The process loop itself is the serialization guarantee.  The `BEGIN` for shape
+N+1 must appear only after the `END ... exit=0` and `PHASE50_PROGRESS` lines for
+shape N.  If a shape fails, times out, reports any native-format Linear, or says
+its cache existed before, stop at that shape.  Do not skip it and do not continue
+with later shapes.
+
+For live progress, use:
+
+```sh
+tail -n 40 -f "$ROOT/progress.log"
+```
+
+### 50.3 Aggregate and compare directly with 910B2
+
+Run this only after all 13 exit files contain zero:
+
+```sh
+cd "$WORK_SERVER_REPO"
+
+"$PYTHON" - "$ROOT" "$REFERENCE" <<'PY' \
+  | tee "$ROOT/comparison.json"
+import json
+import pathlib
+import sys
+
+root = pathlib.Path(sys.argv[1])
+reference_path = pathlib.Path(sys.argv[2])
+expected = [128, 256, 384, 512, 640, 768, 1408, 1920, 2048, 2944, 4096, 4992, 5120]
+
+reference = json.load(reference_path.open())
+reference_by_s = {int(p["sequence_length"]): p for p in reference["points"]}
+assert sorted(reference_by_s) == sorted(expected)
+
+points = []
+for sequence_length in expected:
+    exit_path = root / f"s{sequence_length}.exit_code.txt"
+    assert exit_path.read_text().strip() == "0"
+    path = root / f"s{sequence_length}" / "run_summary.json"
+    d = json.load(path.open())
+    shape = d["shape"]
+    weights = d["weight_format"]
+    compile_meta = d["compile"]
+    measurements = d["measurements"]
+
+    assert shape["batch_size"] == 1
+    assert shape["sequence_length"] == sequence_length
+    assert shape["candidate_intermediate_size"] == 4352
+    assert weights["all_after_are_nz"] is True
+    assert weights["after_format_histogram"] == {"29": 162}
+    assert compile_meta["cache_existed_before"] is False
+
+    tps_310 = float(measurements["physical_tokens_per_s_device_median"])
+    tps_910 = float(reference_by_s[sequence_length]["physical_tokens_per_s"])
+    points.append({
+        "sequence_length": sequence_length,
+        "310P_device_median_ms": float(measurements["device_event_per_call_ms"]["median"]),
+        "310P_physical_tokens_per_s": tps_310,
+        "910B2_device_median_ms": float(reference_by_s[sequence_length]["device_median_ms"]),
+        "910B2_physical_tokens_per_s": tps_910,
+        "310P_over_910B_tps": tps_310 / tps_910,
+        "910B_over_310P_slowdown": tps_910 / tps_310,
+        "310P_linear_tflop_per_s": float(measurements["linear_tflop_per_s_device_median"]),
+        "compile_first_call_s": float(compile_meta["first_call_s"]),
+        "all_162_linear_weights_nz": True,
+    })
+
+peak_310 = max(points, key=lambda p: p["310P_physical_tokens_per_s"])
+peak_910 = max(points, key=lambda p: p["910B2_physical_tokens_per_s"])
+out = {
+    "schema_version": 1,
+    "classification": "310P_PHASE50_B1_4352_NZ_SWEEP_PASS",
+    "fixed_configuration": {
+        "batch_size": 1,
+        "intermediate_size": 4352,
+        "weight_format": "fractal_nz",
+        "attention": "prompt_flash_attention",
+        "attention_head_padding": "runtime",
+        "execution": "torchair",
+        "warmup": 3,
+        "samples": 10,
+        "calls_per_sample": 5,
+    },
+    "points": points,
+    "310P_peak": peak_310,
+    "910B2_peak": peak_910,
+}
+print(json.dumps(out, indent=2))
+PY
+
+test "$(find "$ROOT" -name '*.exit_code.txt' -exec cat {} \; | sort -u)" = 0
+test "$(find "$ROOT" -mindepth 1 -maxdepth 1 -type d -name 's*' | wc -l)" -eq 13
+```
+
+### 50.4 Report and stop
+
+Write `$ROOT/agent_report.md` beginning with exactly one classification:
+
+```text
+310P PHASE 50 B1 4352/NZ SWEEP: PASS | PREFLIGHT_FAILURE |
+SHAPE_FAILURE | FORMAT_FAILURE | COMPARISON_FAILURE
+```
+
+For a pass, include:
+
+1. commit, host, exact physical/logical NPU, CANN/driver/firmware, Python,
+   torch, torch_npu, TorchAir, and the verified v1.6 model hash;
+2. the exact fixed configuration and proof all 13 runs were serial;
+3. one table with sequence length, 310P median milliseconds, 310P physical
+   tokens/s, 910B2 physical tokens/s, 310P/910B ratio, and slowdown;
+4. proof every lane converted and retained 162/162 FRACTAL_NZ weights;
+5. proof every cache was fresh and a count/size summary of `$CACHE`;
+6. the 310P peak shape/tokens/s, where the curve approximately saturates, and
+   whether long sequences improve, plateau, or regress;
+7. concise `What is proven`, `What remains unresolved`, and the first causal
+   error if anything failed.
+
+Paste `agent_report.md`, `comparison.json`, and `progress.log` back to Luka.
+Keep caches and full per-shape logs on the work server.  Do not profile, alter
+the model, change PromptFA settings, run B2/B4, integrate into E2E, or start a
+new optimization experiment.  Then **stop**.
