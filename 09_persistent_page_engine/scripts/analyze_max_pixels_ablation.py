@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Analyze paired Experiment 09 runs that differ only in ``max_pixels``.
+"""Analyze paired Experiment 09 OCR-resolution ablations.
 
-The report separates crops whose resized vision grid changed from crops whose
-own input grid stayed fixed but whose execution route may have changed because
-production packing was rerouted around the smaller crops.
+For max-pixels candidates, a crop is affected when its resized vision grid
+changes.  For text-crop-scale candidates, a text crop is also affected when its
+pixel input changes even if alignment produces the same final vision grid.  The
+report separates those crops from unaffected crops whose execution route may
+still change because production packing was rerouted around them.
 """
 
 from __future__ import annotations
@@ -151,6 +153,13 @@ def route_signature(row: dict[str, Any]) -> tuple[Any, ...]:
     )
 
 
+def crop_size(row: dict[str, Any]) -> tuple[int, int] | None:
+    value = row.get("crop_size")
+    if not isinstance(value, (list, tuple)) or len(value) != 2:
+        return None
+    return int(value[0]), int(value[1])
+
+
 def compare_row(reference: dict[str, Any], candidate: dict[str, Any]) -> dict[str, Any]:
     reference_tokens = [int(value) for value in reference.get("token_ids", ())]
     candidate_tokens = [int(value) for value in candidate.get("token_ids", ())]
@@ -169,6 +178,22 @@ def compare_row(reference: dict[str, Any], candidate: dict[str, Any]) -> dict[st
     token_edits, token_distance = normalized_distance(reference_tokens, candidate_tokens)
     reference_vision = int(reference["vision"]["real_vision_tokens"])
     candidate_vision = int(candidate["vision"]["real_vision_tokens"])
+    reference_physical_vision = int(
+        reference["vision"]["physical_vision_tokens"]
+    )
+    candidate_physical_vision = int(
+        candidate["vision"]["physical_vision_tokens"]
+    )
+    label = str(reference["label"])
+    reference_crop_size = crop_size(reference)
+    candidate_crop_size = crop_size(candidate)
+    crop_pixel_input_changed = reference_crop_size != candidate_crop_size
+    vision_grid_changed = reference_vision != candidate_vision
+    affected_reasons: list[str] = []
+    if vision_grid_changed:
+        affected_reasons.append("vision_grid_changed")
+    if label == "text" and crop_pixel_input_changed:
+        affected_reasons.append("text_crop_pixel_input_changed")
     reference_repetition = repetition_fraction(reference_tokens)
     candidate_repetition = repetition_fraction(candidate_tokens)
     runaway = (
@@ -203,9 +228,14 @@ def compare_row(reference: dict[str, Any], candidate: dict[str, Any]) -> dict[st
         "page_input_index": int(reference["page_input_index"]),
         "source_image_name": str(reference["source_image_name"]),
         "block_index": int(reference["block_index"]),
-        "label": str(reference["label"]),
-        "crop_size": reference["crop_size"],
-        "vision_grid_changed": reference_vision != candidate_vision,
+        "label": label,
+        "crop_size": reference.get("crop_size"),
+        "reference_crop_size": reference_crop_size,
+        "candidate_crop_size": candidate_crop_size,
+        "crop_pixel_input_changed": crop_pixel_input_changed,
+        "vision_grid_changed": vision_grid_changed,
+        "affected_by_ablation": bool(affected_reasons),
+        "affected_reasons": affected_reasons,
         "reference_real_vision_tokens": reference_vision,
         "candidate_real_vision_tokens": candidate_vision,
         "vision_tokens_saved": reference_vision - candidate_vision,
@@ -213,6 +243,11 @@ def compare_row(reference: dict[str, Any], candidate: dict[str, Any]) -> dict[st
             (reference_vision - candidate_vision) / reference_vision
             if reference_vision
             else 0.0
+        ),
+        "reference_physical_vision_tokens": reference_physical_vision,
+        "candidate_physical_vision_tokens": candidate_physical_vision,
+        "physical_vision_tokens_saved": (
+            reference_physical_vision - candidate_physical_vision
         ),
         "vision_route_exact": route_signature(reference) == route_signature(candidate),
         "token_ids_exact": reference_tokens == candidate_tokens,
@@ -244,6 +279,18 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
         selected = [row for row in rows if row["label"] == label]
         by_label[label] = {
             "crops": len(selected),
+            "reference_real_vision_tokens": sum(
+                row["reference_real_vision_tokens"] for row in selected
+            ),
+            "candidate_real_vision_tokens": sum(
+                row["candidate_real_vision_tokens"] for row in selected
+            ),
+            "reference_physical_vision_tokens": sum(
+                row["reference_physical_vision_tokens"] for row in selected
+            ),
+            "candidate_physical_vision_tokens": sum(
+                row["candidate_physical_vision_tokens"] for row in selected
+            ),
             "token_exact": sum(row["token_ids_exact"] for row in selected),
             "compact_text_exact": sum(row["compact_text_exact"] for row in selected),
             "flagged": sum(bool(row["manual_review_flags"]) for row in selected),
@@ -263,6 +310,15 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "reference_real_vision_tokens": sum(row["reference_real_vision_tokens"] for row in rows),
         "candidate_real_vision_tokens": sum(row["candidate_real_vision_tokens"] for row in rows),
         "vision_tokens_saved": sum(row["vision_tokens_saved"] for row in rows),
+        "reference_physical_vision_tokens": sum(
+            row["reference_physical_vision_tokens"] for row in rows
+        ),
+        "candidate_physical_vision_tokens": sum(
+            row["candidate_physical_vision_tokens"] for row in rows
+        ),
+        "physical_vision_tokens_saved": sum(
+            row["physical_vision_tokens_saved"] for row in rows
+        ),
         "token_exact": sum(row["token_ids_exact"] for row in rows),
         "text_exact": sum(row["text_exact"] for row in rows),
         "compact_text_exact": sum(row["compact_text_exact"] for row in rows),
@@ -285,20 +341,24 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 def render_markdown(report: dict[str, Any]) -> str:
     affected = report["affected"]
+    all_crops = report["all_crops"]
     spillover = report["unaffected_with_generation_difference"]
     timing = report["timing"]
     lines = [
-        "# Max-pixels OCR ablation",
+        "# OCR resolution ablation",
         "",
         f"- Reference: `{report['reference_output']}`",
         f"- Candidate: `{report['candidate_output']}`",
         f"- Shared crops: **{report['shared_crops']}**",
-        f"- Vision-grid-affected crops: **{affected['crops']} across {affected['pages']} pages**",
+        f"- Affected crops: **{affected['crops']} across {affected['pages']} pages**",
+        f"- Affected because the vision grid changed: **{report['affected_reason_counts'].get('vision_grid_changed', 0)}**",
+        f"- Affected because the text-crop pixel input changed: **{report['affected_reason_counts'].get('text_crop_pixel_input_changed', 0)}**",
         f"- Real vision tokens: **{affected['reference_real_vision_tokens']:,} -> {affected['candidate_real_vision_tokens']:,}** ({affected['vision_tokens_saved']:,} saved)",
+        f"- Physical vision tokens: **{affected['reference_physical_vision_tokens']:,} -> {affected['candidate_physical_vision_tokens']:,}** ({affected['physical_vision_tokens_saved']:,} saved)",
         f"- Token streams exact among affected crops: **{affected['token_exact']}/{affected['crops']}**",
         f"- Whitespace-insensitive text exact: **{affected['compact_text_exact']}/{affected['crops']}**",
         f"- Automatically flagged for manual review: **{affected['flagged']}**",
-        f"- Unaffected-grid crops whose generation changed: **{spillover['crops']}**",
+        f"- Unaffected crops whose generation changed: **{spillover['crops']}**",
         "",
         "## Runtime",
         "",
@@ -306,16 +366,34 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Candidate pipeline: **{timing['candidate_pipeline_e2e_s']:.3f}s**",
         f"- Delta: **{timing['candidate_minus_reference_s']:+.3f}s ({timing['candidate_vs_reference_percent']:+.2f}%)**",
         "",
-        "## Affected crops by label",
+        "## Affected crops by recognizer route",
         "",
-        "| Label | Crops | Token exact | Compact-text exact | Flagged | Mean normalized character edit |",
-        "|---|---:|---:|---:|---:|---:|",
+        "| Route | Crops | Real vision tokens | Physical vision tokens | Token exact | Compact-text exact | Flagged | Mean normalized character edit |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for label, row in affected["by_label"].items():
         lines.append(
-            f"| {label} | {row['crops']} | {row['token_exact']} | "
+            f"| {label} | {row['crops']} | "
+            f"{row['reference_real_vision_tokens']:,} -> {row['candidate_real_vision_tokens']:,} | "
+            f"{row['reference_physical_vision_tokens']:,} -> {row['candidate_physical_vision_tokens']:,} | "
+            f"{row['token_exact']} | "
             f"{row['compact_text_exact']} | {row['flagged']} | "
             f"{row['normalized_compact_character_edit_distance']['mean']:.4f} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## All crops by recognizer route",
+            "",
+            "| Route | Crops | Real vision tokens | Physical vision tokens |",
+            "|---|---:|---:|---:|",
+        ]
+    )
+    for label, row in all_crops["by_label"].items():
+        lines.append(
+            f"| {label} | {row['crops']} | "
+            f"{row['reference_real_vision_tokens']:,} -> {row['candidate_real_vision_tokens']:,} | "
+            f"{row['reference_physical_vision_tokens']:,} -> {row['candidate_physical_vision_tokens']:,} |"
         )
     lines.extend(
         [
@@ -377,11 +455,11 @@ def main(argv: Sequence[str] | None = None) -> None:
             f"candidate_only={len(candidate.keys() - reference.keys())}"
         )
     rows = [compare_row(reference[str(row["request_id"])], candidate[str(row["request_id"])]) for row in reference_rows]
-    affected_rows = [row for row in rows if row["vision_grid_changed"]]
+    affected_rows = [row for row in rows if row["affected_by_ablation"]]
     unaffected_different = [
         row
         for row in rows
-        if not row["vision_grid_changed"] and not row["token_ids_exact"]
+        if not row["affected_by_ablation"] and not row["token_ids_exact"]
     ]
     reference_summary = read_json(reference_root / SUMMARY_NAME)
     candidate_summary = read_json(candidate_root / SUMMARY_NAME)
@@ -402,8 +480,20 @@ def main(argv: Sequence[str] | None = None) -> None:
         "reference_output": str(reference_root),
         "candidate_output": str(candidate_root),
         "shared_crops": len(rows),
+        "affected_reason_counts": dict(
+            sorted(
+                Counter(
+                    reason
+                    for row in affected_rows
+                    for reason in row["affected_reasons"]
+                ).items()
+            )
+        ),
+        "all_crops": summarize(rows),
         "affected": summarize(affected_rows),
-        "unaffected": summarize([row for row in rows if not row["vision_grid_changed"]]),
+        "unaffected": summarize(
+            [row for row in rows if not row["affected_by_ablation"]]
+        ),
         "unaffected_with_generation_difference": summarize(unaffected_different),
         "timing": {
             "reference_pipeline_e2e_s": reference_e2e,
@@ -418,8 +508,10 @@ def main(argv: Sequence[str] | None = None) -> None:
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
     with (output_dir / "manual_review.csv").open("w", encoding="utf-8", newline="") as handle:
         fields = (
-            "request_id", "source_image_name", "label", "crop_size",
+            "request_id", "source_image_name", "label", "reference_crop_size",
+            "candidate_crop_size", "affected_reasons",
             "reference_real_vision_tokens", "candidate_real_vision_tokens",
+            "reference_physical_vision_tokens", "candidate_physical_vision_tokens",
             "reference_output_tokens", "candidate_output_tokens",
             "normalized_compact_character_edit_distance",
             "normalized_word_edit_distance", "manual_review_flags",
@@ -430,6 +522,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         for row in worst:
             serialized = dict(row)
             serialized["manual_review_flags"] = ";".join(row["manual_review_flags"])
+            serialized["affected_reasons"] = ";".join(row["affected_reasons"])
             writer.writerow(serialized)
     (output_dir / "summary.json").write_text(
         json.dumps(report, indent=2, ensure_ascii=False) + "\n",
