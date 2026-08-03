@@ -100,6 +100,8 @@ def levenshtein(left: Sequence[Any], right: Sequence[Any]) -> int:
 
 
 def normalized_distance(left: Sequence[Any], right: Sequence[Any]) -> tuple[int, float]:
+    if left == right:
+        return 0, 0.0
     distance = levenshtein(left, right)
     return distance, distance / max(1, len(left), len(right))
 
