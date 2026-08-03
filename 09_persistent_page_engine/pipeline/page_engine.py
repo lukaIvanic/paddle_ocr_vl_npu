@@ -75,12 +75,14 @@ class OwnedPageEngine:
         *,
         trace_path: Path,
         min_pixels: int | None,
+        max_pixels: int | None = None,
         timeline: TimelineRecorder | None = None,
     ) -> None:
         self.frontend = frontend
         self.recognizer = recognizer
         self.trace_path = trace_path.expanduser().resolve()
         self.min_pixels = min_pixels
+        self.max_pixels = max_pixels
         self.timeline = timeline
 
     @staticmethod
@@ -340,6 +342,11 @@ class OwnedPageEngine:
                             path,
                             ordinal,
                             min_pixels=self.min_pixels,
+                            max_pixels=(
+                                self.max_pixels
+                                if self.max_pixels is not None
+                                else 1_003_520
+                            ),
                         )
                     layout_stream.synchronize()
                     for name, seconds in prepared.timing_s.items():

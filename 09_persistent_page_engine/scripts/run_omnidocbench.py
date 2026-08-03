@@ -130,6 +130,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="Override the global recognition min_pixels; omit for the v1.6 default.",
     )
     parser.add_argument(
+        "--preprocessor-max-pixels",
+        type=int,
+        default=None,
+        help="Override the global recognition max_pixels; omit for the model default.",
+    )
+    parser.add_argument(
         "--decode-backend",
         default=DEFAULT_DECODE_BACKEND,
         choices=DECODE_BACKEND_CHOICES,
@@ -373,6 +379,16 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--cache-length and --max-new-tokens must be positive")
     if args.preprocessor_min_pixels is not None and args.preprocessor_min_pixels <= 0:
         raise ValueError("--preprocessor-min-pixels must be positive")
+    if args.preprocessor_max_pixels is not None and args.preprocessor_max_pixels <= 0:
+        raise ValueError("--preprocessor-max-pixels must be positive")
+    if (
+        args.preprocessor_min_pixels is not None
+        and args.preprocessor_max_pixels is not None
+        and args.preprocessor_min_pixels > args.preprocessor_max_pixels
+    ):
+        raise ValueError(
+            "--preprocessor-min-pixels must not exceed --preprocessor-max-pixels"
+        )
     if args.vision_pack_target <= 0:
         raise ValueError("--vision-pack-target must be positive")
     if args.vision_router_lookahead <= 0:
@@ -660,6 +676,7 @@ def main() -> None:
         text_pack_max_members=args.text_pack_max_members,
         text_packed_cache_dir=args.text_packed_cache_dir.expanduser().resolve(),
         preprocessor_min_pixels=args.preprocessor_min_pixels,
+        preprocessor_max_pixels=args.preprocessor_max_pixels,
         vision_route_plan=vision_route_plan,
         timeline=timeline,
         scheduler_progress=args.scheduler_progress,
@@ -677,6 +694,7 @@ def main() -> None:
         recognizer,
         trace_path=output_dir / "recognition_trace.jsonl",
         min_pixels=args.preprocessor_min_pixels,
+        max_pixels=args.preprocessor_max_pixels,
         timeline=timeline,
     )
     setup_s = time.perf_counter() - setup_started
@@ -780,10 +798,16 @@ def main() -> None:
             "decode_backend": args.decode_backend,
             "decode_optimization": recognizer_configuration["decode_optimization"],
             "preprocessor_min_pixels": args.preprocessor_min_pixels,
+            "preprocessor_max_pixels": args.preprocessor_max_pixels,
             "effective_global_min_pixels": (
                 args.preprocessor_min_pixels
                 if args.preprocessor_min_pixels is not None
                 else PADDLEOCR_DEFAULT_MIN_PIXELS
+            ),
+            "effective_global_max_pixels": (
+                args.preprocessor_max_pixels
+                if args.preprocessor_max_pixels is not None
+                else recognizer_configuration["preprocessor"]["effective_max_pixels"]
             ),
             "vision_backend": args.vision_backend,
             "vision_attention": args.vision_attention,

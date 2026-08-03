@@ -35,7 +35,7 @@ from ..model.text_decode import (
     prepare_decode_optimization_modules,
 )
 from ..model.preprocessing import (
-    apply_min_pixels_override,
+    apply_pixel_overrides,
     build_inputs,
     load_preprocessor_config,
     preprocess_pil_image,
@@ -428,6 +428,7 @@ class ContinuousRecognizer:
         text_pack_max_members: int = DEFAULT_TEXT_PACK_MAX_MEMBERS,
         text_packed_cache_dir: Path | None = None,
         preprocessor_min_pixels: int | None = None,
+        preprocessor_max_pixels: int | None = None,
         vision_route_plan: dict[str, Any] | None = None,
         timeline: TimelineRecorder | None = None,
         scheduler_progress: bool = False,
@@ -583,12 +584,17 @@ class ContinuousRecognizer:
 
         model_preprocessor_config = load_preprocessor_config(self.model_dir)
         self.model_preprocessor_min_pixels = int(model_preprocessor_config["min_pixels"])
+        self.model_preprocessor_max_pixels = int(model_preprocessor_config["max_pixels"])
         self.preprocessor_min_pixels_override = (
             None if preprocessor_min_pixels is None else int(preprocessor_min_pixels)
         )
-        self.preprocessor_config = apply_min_pixels_override(
+        self.preprocessor_max_pixels_override = (
+            None if preprocessor_max_pixels is None else int(preprocessor_max_pixels)
+        )
+        self.preprocessor_config = apply_pixel_overrides(
             model_preprocessor_config,
-            self.preprocessor_min_pixels_override,
+            min_pixels=self.preprocessor_min_pixels_override,
+            max_pixels=self.preprocessor_max_pixels_override,
         )
         # Encoding runs continuously on the CPU preparation thread while this
         # tokenizer remains owned by the NPU thread for result decoding.
@@ -2768,7 +2774,9 @@ class ContinuousRecognizer:
             },
             "preprocessor": {
                 "model_default_min_pixels": self.model_preprocessor_min_pixels,
+                "model_default_max_pixels": self.model_preprocessor_max_pixels,
                 "min_pixels_override": self.preprocessor_min_pixels_override,
+                "max_pixels_override": self.preprocessor_max_pixels_override,
                 "effective_min_pixels": min_pixels,
                 "effective_max_pixels": int(self.preprocessor_config["max_pixels"]),
                 "patch_size": patch_size,

@@ -71,23 +71,42 @@ def load_preprocessor_config(model_dir: Path) -> dict:
     return defaults
 
 
-def apply_min_pixels_override(cfg: dict, min_pixels: int | None) -> dict:
-    """Return a copied preprocessor config with only ``min_pixels`` changed."""
+def apply_pixel_overrides(
+    cfg: dict,
+    *,
+    min_pixels: int | None = None,
+    max_pixels: int | None = None,
+) -> dict:
+    """Return a copied preprocessor config with validated pixel overrides."""
     effective = dict(cfg)
-    if min_pixels is None:
-        return effective
-
-    min_pixels = int(min_pixels)
-    if min_pixels <= 0:
+    effective_min_pixels = (
+        int(effective["min_pixels"])
+        if min_pixels is None
+        else int(min_pixels)
+    )
+    effective_max_pixels = (
+        int(effective["max_pixels"])
+        if max_pixels is None
+        else int(max_pixels)
+    )
+    if effective_min_pixels <= 0:
         raise ValueError("preprocessor min_pixels override must be positive")
-    max_pixels = int(effective["max_pixels"])
-    if min_pixels > max_pixels:
+    if effective_max_pixels <= 0:
+        raise ValueError("preprocessor max_pixels override must be positive")
+    if effective_min_pixels > effective_max_pixels:
         raise ValueError(
-            "preprocessor min_pixels override must not exceed max_pixels: "
-            f"min_pixels={min_pixels}, max_pixels={max_pixels}"
+            "preprocessor min_pixels must not exceed max_pixels: "
+            f"min_pixels={effective_min_pixels}, "
+            f"max_pixels={effective_max_pixels}"
         )
-    effective["min_pixels"] = min_pixels
+    effective["min_pixels"] = effective_min_pixels
+    effective["max_pixels"] = effective_max_pixels
     return effective
+
+
+def apply_min_pixels_override(cfg: dict, min_pixels: int | None) -> dict:
+    """Backward-compatible wrapper for callers overriding only ``min_pixels``."""
+    return apply_pixel_overrides(cfg, min_pixels=min_pixels)
 
 
 def image_grid_thw_from_size(
