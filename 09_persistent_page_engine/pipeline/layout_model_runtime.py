@@ -757,6 +757,7 @@ def _post_process_selected_masks_only(
     *,
     timing: dict[str, float] | None = None,
     device_timing_events: dict[str, Any] | None = None,
+    defer_polygon_extraction: bool = False,
 ) -> list[dict[str, Any]]:
     """Preserve detector results while processing masks after selection."""
 
@@ -876,23 +877,27 @@ def _post_process_selected_masks_only(
                     + time.perf_counter()
                     - mask_d2h_started
                 )
-            polygon_started = time.perf_counter()
-            result["polygon_points"] = (
-                processor._extract_polygon_points_by_masks(
-                    cpu_boxes.numpy(),
-                    cpu_masks.numpy(),
-                    [
-                        processor.size["width"] / target_size[1],
-                        processor.size["height"] / target_size[0],
-                    ],
-                )
+            polygon_inputs = (
+                cpu_boxes.numpy(),
+                cpu_masks.numpy(),
+                [
+                    processor.size["width"] / target_size[1],
+                    processor.size["height"] / target_size[0],
+                ],
             )
-            if timing is not None:
-                timing["layout_mask_polygon_cpu_s"] = (
-                    timing.get("layout_mask_polygon_cpu_s", 0.0)
-                    + time.perf_counter()
-                    - polygon_started
+            if defer_polygon_extraction:
+                result["_deferred_polygon_inputs"] = polygon_inputs
+            else:
+                polygon_started = time.perf_counter()
+                result["polygon_points"] = (
+                    processor._extract_polygon_points_by_masks(*polygon_inputs)
                 )
+                if timing is not None:
+                    timing["layout_mask_polygon_cpu_s"] = (
+                        timing.get("layout_mask_polygon_cpu_s", 0.0)
+                        + time.perf_counter()
+                        - polygon_started
+                    )
         results.append(result)
 
     return results

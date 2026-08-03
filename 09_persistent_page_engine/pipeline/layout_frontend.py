@@ -435,6 +435,7 @@ class OwnedLayoutFrontend:
             target_sizes=[[height, width]],
             timing=timing,
             device_timing_events=device_events,
+            defer_polygon_extraction=True,
         )
         if device_events is not None:
             timing["layout_model_device_s"] = (
@@ -601,8 +602,18 @@ class OwnedLayoutFrontend:
         detect_timing = detected.detect_timing
         postprocessor_started = time.perf_counter()
         postprocessor_started_ns = time.perf_counter_ns()
+        prediction = detected.prediction
+        polygon_inputs = prediction.pop("_deferred_polygon_inputs", None)
+        if polygon_inputs is not None:
+            polygon_started = time.perf_counter()
+            prediction["polygon_points"] = (
+                self.processor._extract_polygon_points_by_masks(*polygon_inputs)
+            )
+            detect_timing["layout_mask_polygon_cpu_s"] = (
+                time.perf_counter() - polygon_started
+            )
         boxes = self.postprocessor(
-            detected.prediction,
+            prediction,
             (image.shape[1], image.shape[0]),
             timing=detect_timing if self.device_stage_timing else None,
         )
