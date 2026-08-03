@@ -459,6 +459,12 @@ class _MaskRectangleFastPath:
         self._wall_ns = 0
         self._predicate_ns = 0
         self._fallback_ns = 0
+        self._fallback_parallelism = 4
+
+    def set_fallback_parallelism(self, workers: int) -> None:
+        if workers not in (1, 2, 4):
+            raise ValueError("mask fallback workers must be 1, 2, or 4")
+        self._fallback_parallelism = workers
 
     @staticmethod
     def _is_full_external_rectangle(
@@ -550,14 +556,17 @@ class _MaskRectangleFastPath:
         if fallback_indices:
             fallback_boxes = boxes_np[fallback_indices]
             fallback_masks = masks_np[fallback_indices]
-            if len(fallback_indices) < 4:
+            if len(fallback_indices) < 4 or self._fallback_parallelism == 1:
                 fallback_polygons = self.original(
                     fallback_boxes,
                     fallback_masks,
                     scale_ratio,
                 )
             else:
-                worker_count = min(4, len(fallback_indices))
+                worker_count = min(
+                    self._fallback_parallelism,
+                    len(fallback_indices),
+                )
                 chunk_size = (
                     len(fallback_indices) + worker_count - 1
                 ) // worker_count

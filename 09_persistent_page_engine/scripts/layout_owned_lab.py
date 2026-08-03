@@ -306,6 +306,10 @@ def main(argv: Sequence[str] | None = None) -> None:
 
         input_workers = args.input_workers or args.workers
         page_prepare_workers = args.page_prepare_workers or args.workers
+        # Page finalization already parallelizes independent masks. Avoid a
+        # second four-way executor inside every page, which only oversubscribes
+        # the same OpenCV work and inflates its critical-path latency.
+        frontend.mask_fast_path.set_fallback_parallelism(1)
         prepared: list[Any] = []
         decode_futures: dict[int, Any] = {}
         prepare_futures: deque[Any] = deque()
