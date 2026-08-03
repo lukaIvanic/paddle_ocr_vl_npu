@@ -427,6 +427,27 @@ EOS or until its next token would exceed that request's KV capacity; the latter
 is returned normally with `stop_reason="kv_cache_full"`. The global
 `max_new_tokens` setting remains only a secondary safety ceiling.
 
+Production decode also stops a request when its generated-token tail remains
+exactly periodic for at least 128 tokens (six or more copies, period at most
+32). The per-slot detector is incremental: it retains 32 token IDs and does
+O(32) integer comparisons for each sampled token. On the full 910B
+OmniDocBench trace (30,557 crops), it selected 11/11 requests that otherwise
+ran to `kv_cache_full`, selected no EOS-terminated request, and would have
+avoided 38,928 decode tokens. The output keeps the prefix and one copy of the
+detected cycle, records `stop_reason="repetition"`, and stores the detector
+evidence in `recognition_trace.jsonl`.
+
+The audit deliberately retains broader candidate rules for comparison. In
+particular, the literal "one token occupies 20 of the last 30 positions" rule
+selected 13 requests, nine of which terminated normally at EOS. It is
+therefore evidence, not a production stop condition. Re-run the audit with:
+
+```sh
+python 09_persistent_page_engine/scripts/audit_repetition_stops.py \
+  --input <run-output-or-generation-atlas.zip> \
+  --output-dir tmp/09_persistent_page_engine/repetition_audit
+```
+
 TorchAir graph creation is opt-in. A missing shape fails unless
 `--allow-compile` is explicit, and each invocation profiles only the requested
 shape rather than expanding a hidden matrix. The default decode cache root is

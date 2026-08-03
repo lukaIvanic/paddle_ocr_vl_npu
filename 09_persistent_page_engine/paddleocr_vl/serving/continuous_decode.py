@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import time
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Callable, Iterable
 
 import torch
 
 from ..model.text_decode import LocalPaddleOCRVLStaticCache
+from .repetition import ExactCycleTracker, RepetitionEvidence
 from utils.timing import synchronize
 from utils.timeline import TimelineRecorder
 
@@ -48,6 +49,14 @@ class DecodeSlotState:
     admitted_at: float
     first_decode_launched_at: float | None = None
     iterations_launched: int = 0
+    repetition_tracker: ExactCycleTracker = field(
+        default_factory=ExactCycleTracker,
+    )
+    repetition_evidence: RepetitionEvidence | None = None
+
+    def __post_init__(self) -> None:
+        for token_id in self.token_ids:
+            self.repetition_tracker.update(token_id)
 
 
 @dataclass
@@ -61,6 +70,7 @@ class DecodeCompletion:
     first_decode_launched_at: float | None
     completed_at: float
     iterations_launched: int
+    repetition_evidence: dict[str, int | str | None] | None = None
 
 
 @dataclass
@@ -525,6 +535,7 @@ class ContinuousDecodeScheduler:
         completion_policy: (
             Callable[[DecodeSlotState, int], str | None] | None
         ) = None,
+        stop_repetitions: bool = False,
         progress: Callable[..., None] | None = None,
         diagnostic_effective_length: int | None = None,
         diagnostic_request_id: str | None = None,
@@ -537,6 +548,7 @@ class ContinuousDecodeScheduler:
         self.eos_token_id = arena.eos_token_id
         self.timeline = timeline
         self.completion_policy = completion_policy
+        self.stop_repetitions = bool(stop_repetitions)
         self.progress = progress
         if (
             diagnostic_effective_length is not None
@@ -588,6 +600,11 @@ class ContinuousDecodeScheduler:
             return reason
         if token_id == self.eos_token_id:
             return "eos"
+        if self.stop_repetitions:
+            evidence = state.repetition_tracker.update(token_id)
+            if evidence is not None:
+                state.repetition_evidence = evidence
+                return "repetition"
         if cache_is_full:
             return "kv_cache_full"
         if generated_tokens >= self.max_new_tokens:
@@ -1112,10 +1129,16 @@ class ContinuousDecodeScheduler:
                 stop_reason = self._completion_reason(state, token_id)
                 if stop_reason is not None:
                     released = self.arena.release(slot_index)
+                    completion_tokens = list(released.token_ids)
+                    repetition_evidence = released.repetition_evidence
+                    if repetition_evidence is not None:
+                        completion_tokens = completion_tokens[
+                            : repetition_evidence.trim_length
+                        ]
                     record_completion(
                         DecodeCompletion(
                             ready=released.ready,
-                            token_ids=list(released.token_ids),
+                            token_ids=completion_tokens,
                             stop_reason=stop_reason,
                             slot_index=slot_index,
                             slot_epoch=released.epoch,
@@ -1123,6 +1146,11 @@ class ContinuousDecodeScheduler:
                             first_decode_launched_at=released.first_decode_launched_at,
                             completed_at=time.perf_counter(),
                             iterations_launched=released.iterations_launched,
+                            repetition_evidence=(
+                                repetition_evidence.to_dict()
+                                if repetition_evidence is not None
+                                else None
+                            ),
                         )
                     )
             progress(

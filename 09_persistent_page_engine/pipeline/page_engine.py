@@ -112,6 +112,7 @@ class OwnedPageEngine:
             "token_ids": result.token_ids,
             "text": result.text,
             "stop_reason": result.stop_reason,
+            "repetition": dict(result.repetition),
             "spotting_group_size": 1,
             "generated_tokens_including_eos": (
                 result.generated_tokens_including_eos

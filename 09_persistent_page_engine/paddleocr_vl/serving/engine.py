@@ -815,6 +815,7 @@ class ContinuousRecognizer:
             decode_fn=self.decode_fn,
             max_new_tokens=self.max_new_tokens,
             timeline=self.timeline,
+            stop_repetitions=True,
             progress=self._emit_scheduler_progress,
             diagnostic_effective_length=(
                 self.diagnostic_decode_effective_length
@@ -1671,6 +1672,11 @@ class ContinuousRecognizer:
             vision=dict(state.vision),
             text_prefill=dict(state.text_prefill),
             input_fingerprints=dict(state.input_fingerprints),
+            repetition=(
+                dict(completion.repetition_evidence)
+                if completion.repetition_evidence is not None
+                else {}
+            ),
         )
 
     @torch.inference_mode()
