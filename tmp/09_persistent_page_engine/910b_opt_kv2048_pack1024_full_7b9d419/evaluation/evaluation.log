@@ -1,0 +1,755 @@
+[process-match] workers=24 pages=1651 primary_timeout=120s fallback_timeout=180s
+Matching pages (process-isolated):   0%|                                                                           | 0/1651 [00:00<?, ?it/s]2026-08-03 17:03:41.680 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-ba4443e6-f432-435f-89e7-ddf0a571d2cd.png: choose=hungarian_unsplit page_cost=3.4026
+2026-08-03 17:03:41.734 | INFO     | src.dataset.end2end_dataset:_maybe_apply_local_text_span_fallback:639 - [text-fallback] page-14cd673f-d86d-45a7-a13e-2b4e1d91c08f.png: gt_idx=[10] edit=0.5306->0.2692 pred_idx=[23]
+Matching pages (process-isolated):   0%|                                                                   | 1/1651 [00:00<08:13,  3.34it/s]2026-08-03 17:03:41.897 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-52875b3d-f4dc-44c2-a9bb-514b0763833d.png: choose=logic_norm_quick_unsplit page_cost=25.0000
+2026-08-03 17:03:41.919 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-1c08a4a2-8163-44d3-93f0-9449457dbba3.png: choose=logic_norm_quick_unsplit page_cost=43.0000
+2026-08-03 17:03:41.930 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-14cd673f-d86d-45a7-a13e-2b4e1d91c08f.png: choose=quick_unsplit page_cost=21.0770
+Matching pages (process-isolated):   1%|4                                                                 | 11/1651 [00:00<00:54, 29.83it/s]2026-08-03 17:03:42.054 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-30aa7cae-34fd-4b0b-b01a-fd35ff3bdfea.png: choose=split_hungarian page_cost=0.6099
+2026-08-03 17:03:42.077 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-49776237-a9be-441d-a326-002eb7084385.png: choose=split_hungarian page_cost=1.3694
+Matching pages (process-isolated):   1%|7                                                                 | 18/1651 [00:00<00:41, 39.71it/s]2026-08-03 17:03:42.183 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-b21c7247-a843-4316-a44d-c3365077f077.png: choose=logic_norm_quick_unsplit page_cost=11.0331
+2026-08-03 17:03:42.348 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-d43b98f8-6a96-44f8-a3cf-65de9397f582.png: choose=logic_norm_quick_unsplit page_cost=14.2656
+Matching pages (process-isolated):   2%|9                                                                 | 25/1651 [00:00<00:46, 35.14it/s]2026-08-03 17:03:42.597 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-4b8f8a9d-e061-4207-a42e-ebf9b7090099.png: choose=split_hungarian page_cost=14.5985
+Matching pages (process-isolated):   2%|#1                                                                | 30/1651 [00:01<01:01, 26.27it/s]2026-08-03 17:03:42.849 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-74c7629d-b064-4b8f-8667-bf943f5ba367.png: choose=split_hungarian page_cost=12.1472
+2026-08-03 17:03:42.849 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-67013be9-58e5-4842-809d-7a3c1fc91fc7.png: choose=quick_unsplit page_cost=34.2897
+Matching pages (process-isolated):   2%|#3                                                                | 34/1651 [00:01<01:06, 24.21it/s]2026-08-03 17:03:43.089 | INFO     | src.dataset.end2end_dataset:_maybe_apply_local_text_span_fallback:639 - [text-fallback] page-c7fec126-2adb-4094-8110-5d81a92e05b0.png: gt_idx=[3] edit=0.4737->0.2456 pred_idx=[3]
+Matching pages (process-isolated):   2%|#5                                                                | 39/1651 [00:01<01:19, 20.25it/s]2026-08-03 17:03:43.255 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-c6168ed8-ca6a-4ddd-8bfc-92dec77f1870.png: choose=split_hungarian page_cost=5.1911
+2026-08-03 17:03:43.264 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-21967f5d-667d-488e-a5b3-76b9d6f53656.png: choose=split_hungarian page_cost=14.3900
+Matching pages (process-isolated):   3%|#7                                                                | 44/1651 [00:01<01:16, 20.88it/s]2026-08-03 17:03:43.690 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-ad5a110f-a4b4-430b-b5db-ecd0ee394451.png: choose=split_hungarian page_cost=7.3358
+Matching pages (process-isolated):   3%|#8                                                                | 47/1651 [00:02<01:30, 17.79it/s]Matching pages (process-isolated):   3%|##                                                                | 52/1651 [00:02<01:31, 17.40it/s]Matching pages (process-isolated):   3%|##1                                                               | 55/1651 [00:02<01:31, 17.49it/s]2026-08-03 17:03:44.283 | INFO     | src.dataset.end2end_dataset:_maybe_apply_local_text_span_fallback:639 - [text-fallback] page-aae359c6-5e6e-4e18-9187-2e9d55b6e9bd.png: gt_idx=[2] edit=0.5288->0.3186 pred_idx=[0]
+2026-08-03 17:03:44.324 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-3ec8e45c-1c38-41d2-bb9d-c50745232f2a.png: choose=quick_unsplit page_cost=20.8504
+2026-08-03 17:03:44.336 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-ae356bde-652d-44a9-9e21-76cadf5a9dea.png: choose=quick_unsplit page_cost=7.8697
+Matching pages (process-isolated):   3%|##2                                                               | 57/1651 [00:02<01:38, 16.23it/s]Matching pages (process-isolated):   4%|##4                                                               | 61/1651 [00:02<01:20, 19.73it/s]2026-08-03 17:03:44.657 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-a32698bb-e3ae-49bc-b3af-203fb77b2bdf.png: choose=split_hungarian page_cost=5.9522
+Matching pages (process-isolated):   4%|##5                                                               | 64/1651 [00:03<01:26, 18.31it/s]Matching pages (process-isolated):   4%|##7                                                               | 69/1651 [00:03<01:05, 24.16it/s]Matching pages (process-isolated):   4%|##8                                                               | 72/1651 [00:03<01:22, 19.21it/s]2026-08-03 17:03:45.205 | INFO     | src.dataset.end2end_dataset:_maybe_apply_local_text_span_fallback:639 - [text-fallback] page-27a46d41-49b5-4562-a546-6cbbafd23a81.png: gt_idx=[2] edit=0.5431->0.3118 pred_idx=[2]
+2026-08-03 17:03:45.368 | INFO     | src.dataset.end2end_dataset:_maybe_apply_local_text_span_fallback:639 - [text-fallback] page-dad0f4e5-290f-496f-bbdd-099ad75c6ff0.png: gt_idx=[21] edit=0.4512->0.2317 pred_idx=[20]
+Matching pages (process-isolated):   5%|##9                                                               | 75/1651 [00:03<01:54, 13.74it/s]Matching pages (process-isolated):   5%|###1                                                              | 78/1651 [00:03<01:41, 15.54it/s]2026-08-03 17:03:45.590 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-bbe2b2d5-1e02-4d53-ba1c-158eaab2e6d5.png: choose=quick_unsplit page_cost=22.3597
+Matching pages (process-isolated):   5%|###2                                                              | 82/1651 [00:04<01:22, 19.07it/s]Matching pages (process-isolated):   5%|###5                                                              | 89/1651 [00:04<01:00, 26.02it/s]2026-08-03 17:03:45.900 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-404e0471-bd71-426a-8e5a-81b8327f88e5.png: choose=split_hungarian page_cost=7.0862
+Matching pages (process-isolated):   6%|###7                                                              | 95/1651 [00:04<00:50, 30.87it/s]2026-08-03 17:03:46.242 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-a976a26e-4dbb-492a-a380-b923b87ed496.png: choose=split_hungarian page_cost=38.7451
+2026-08-03 17:03:46.258 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-268266af-56c0-4b3b-9d07-73c6e50feb58.png: choose=quick_unsplit page_cost=17.8550
+Matching pages (process-isolated):   6%|###9                                                              | 99/1651 [00:04<01:17, 19.96it/s]2026-08-03 17:03:46.464 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-8f6792bd-b5e4-435e-b1b0-1b2daa3f7234.png: choose=quick_unsplit page_cost=9.0000
+Matching pages (process-isolated):   7%|####3                                                            | 111/1651 [00:04<00:45, 33.70it/s]2026-08-03 17:03:46.475 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-b13fef06-6ae9-4b2d-a948-0340e03f97ce.png: choose=quick_unsplit page_cost=2.1665
+Matching pages (process-isolated):   8%|#####                                                            | 127/1651 [00:05<00:30, 49.61it/s]2026-08-03 17:03:46.703 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-89180317-baf8-4c13-9b21-722e7d634eeb.png: choose=quick_unsplit page_cost=22.2813
+2026-08-03 17:03:46.734 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-aee8f1d9-7240-4517-b615-389594556d57.png: choose=split_hungarian page_cost=1.9588
+2026-08-03 17:03:46.755 | INFO     | src.dataset.end2end_dataset:_maybe_apply_local_text_span_fallback:639 - [text-fallback] page-961a543b-d09d-4fd8-944a-1a38d67bb3bc.png: gt_idx=[7] edit=0.5825->0.3621 pred_idx=[9]
+Matching pages (process-isolated):   8%|#####5                                                           | 140/1651 [00:05<00:24, 62.75it/s]2026-08-03 17:03:46.768 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-961a543b-d09d-4fd8-944a-1a38d67bb3bc.png: choose=quick_unsplit page_cost=6.4621
+2026-08-03 17:03:46.793 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-21ad32ba-fd62-43e5-964a-f5e95c0e0441.png: choose=quick_unsplit page_cost=6.9060
+Matching pages (process-isolated):   9%|#####9                                                           | 151/1651 [00:05<00:21, 70.33it/s]2026-08-03 17:03:46.978 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-af9aded3-1faf-4d12-ad5f-28a66d0a9114.png: choose=quick_unsplit page_cost=7.6959
+Matching pages (process-isolated):  10%|######5                                                          | 166/1651 [00:05<00:18, 80.50it/s]2026-08-03 17:03:47.130 | INFO     | src.dataset.end2end_dataset:_maybe_apply_local_text_span_fallback:639 - [text-fallback] page-9e69b0ce-dcd8-4b13-a5fb-a0bd6f85f77d.png: gt_idx=[4] edit=1.0000->0.2609 pred_idx=[4]
+2026-08-03 17:03:47.130 | INFO     | src.dataset.end2end_dataset:_maybe_apply_local_text_span_fallback:639 - [text-fallback] page-9e69b0ce-dcd8-4b13-a5fb-a0bd6f85f77d.png: gt_idx=[5] edit=0.6931->0.3800 pred_idx=[5]
+Matching pages (process-isolated):  11%|#######2                                                         | 185/1651 [00:05<00:15, 92.68it/s]Matching pages (process-isolated):  12%|########                                                         | 204/1651 [00:05<00:15, 93.83it/s]Matching pages (process-isolated):  13%|########5                                                        | 217/1651 [00:05<00:14, 95.71it/s]2026-08-03 17:03:47.631 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] page-28657a85-95cc-4bfa-8156-cc98518a0b4c.png: choose=quick_unsplit page_cost=0.0000
+Matching pages (process-isolated):  14%|#########3                                                       | 237/1651 [00:06<00:15, 94.19it/s]Matching pages (process-isolated):  15%|##########                                                       | 254/1651 [00:06<00:14, 97.49it/s]Matching pages (process-isolated):  16%|##########4                                                      | 265/1651 [00:06<00:13, 99.28it/s]Matching pages (process-isolated):  17%|##########7                                                     | 278/1651 [00:06<00:13, 101.14it/s]Matching pages (process-isolated):  18%|###########4                                                     | 290/1651 [00:06<00:14, 93.20it/s]2026-08-03 17:03:48.408 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] yanbaopptmerge_yanbaoPPT_1465.jpg: choose=quick_unsplit page_cost=4.0500
+Matching pages (process-isolated):  19%|############2                                                    | 310/1651 [00:06<00:13, 95.92it/s]2026-08-03 17:03:48.579 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] yanbaopptmerge_yanbaoPPT_2460.jpg: choose=logic_norm_quick_unsplit page_cost=4.7393
+Matching pages (process-isolated):  20%|############8                                                   | 331/1651 [00:07<00:12, 104.45it/s]2026-08-03 17:03:48.684 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] yanbaopptmerge_yanbaoPPT_4310.jpg: choose=split_hungarian page_cost=0.0000
+2026-08-03 17:03:48.759 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] yanbaopptmerge_yanbaoPPT_4710.jpg: choose=quick_unsplit page_cost=0.2222
+Matching pages (process-isolated):  21%|#############5                                                  | 350/1651 [00:07<00:11, 111.47it/s]Matching pages (process-isolated):  23%|##############4                                                 | 372/1651 [00:07<00:11, 112.60it/s]Matching pages (process-isolated):  24%|###############2                                                | 394/1651 [00:07<00:10, 114.47it/s]Matching pages (process-isolated):  25%|################1                                               | 416/1651 [00:07<00:10, 113.28it/s]2026-08-03 17:03:49.375 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] docstructbench_llm-raw-scihub-o.O-ceat.200600410.pdf_5.jpg: choose=quick_unsplit page_cost=0.0278
+Matching pages (process-isolated):  26%|################7                                               | 433/1651 [00:07<00:11, 108.46it/s]Matching pages (process-isolated):  27%|#################3                                              | 447/1651 [00:08<00:11, 108.06it/s]Matching pages (process-isolated):  28%|#################7                                              | 459/1651 [00:08<00:11, 103.33it/s]2026-08-03 17:03:49.838 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] docstructbench_llm-raw-scihub-o.O-j.jcp.2010.12.006.pdf_14.jpg: choose=quick_unsplit page_cost=10.6982
+2026-08-03 17:03:49.919 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] docstructbench_llm-raw-scihub-o.O-j.snb.2004.05.025.pdf_5.jpg: choose=split_hungarian page_cost=5.1158
+Matching pages (process-isolated):  29%|##################7                                              | 476/1651 [00:08<00:11, 99.71it/s]Matching pages (process-isolated):  30%|###################2                                             | 490/1651 [00:08<00:11, 98.87it/s]2026-08-03 17:03:50.133 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] docstructbench_dianzishu_zhongwenzaixian-o.O-61520788.pdf_391.jpg: choose=quick_unsplit page_cost=0.0000
+Matching pages (process-isolated):  30%|###################4                                            | 502/1651 [00:08<00:11, 103.30it/s]2026-08-03 17:03:50.254 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] docstructbench_llm-raw-scihub-o.O-j.physletb.2004.11.060.pdf_2.jpg: choose=split_hungarian page_cost=10.2203
+2026-08-03 17:03:50.268 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] docstructbench_dianzishu_zhongwenzaixian-o.O-61569751.pdf_155.jpg: choose=split_hungarian page_cost=9.5786
+Matching pages (process-isolated):  31%|###################9                                            | 514/1651 [00:08<00:11, 100.52it/s]Matching pages (process-isolated):  32%|####################9                                            | 532/1651 [00:08<00:12, 91.06it/s]2026-08-03 17:03:50.654 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] yanbaopptmerge_3aa9b6677e17fd012b0a7a230b9f18db.pdf_1327.jpg: choose=quick_unsplit page_cost=9.1561
+Matching pages (process-isolated):  33%|#####################4                                           | 544/1651 [00:09<00:13, 83.49it/s]Matching pages (process-isolated):  34%|#####################8                                           | 555/1651 [00:09<00:13, 82.12it/s]Matching pages (process-isolated):  35%|######################4                                          | 571/1651 [00:09<00:12, 84.94it/s]Matching pages (process-isolated):  36%|#######################1                                         | 587/1651 [00:09<00:13, 81.53it/s]2026-08-03 17:03:51.292 | INFO     | src.dataset.end2end_dataset:_maybe_apply_local_text_span_fallback:639 - [text-fallback] jiaocai_71434495.pdf_0.jpg: gt_idx=[10] edit=0.5941->0.0000 pred_idx=[10]
+2026-08-03 17:03:51.293 | INFO     | src.dataset.end2end_dataset:_maybe_apply_local_text_span_fallback:639 - [text-fallback] jiaocai_71434495.pdf_0.jpg: gt_idx=[9] edit=0.6979->0.3095 pred_idx=[9]
+Matching pages (process-isolated):  36%|#######################6                                         | 601/1651 [00:09<00:12, 81.44it/s]Matching pages (process-isolated):  37%|########################2                                        | 616/1651 [00:10<00:12, 80.47it/s]Matching pages (process-isolated):  38%|########################6                                        | 625/1651 [00:10<00:12, 79.47it/s]Matching pages (process-isolated):  38%|########################9                                        | 633/1651 [00:10<00:12, 79.18it/s]Matching pages (process-isolated):  39%|#########################2                                       | 641/1651 [00:10<00:14, 69.91it/s]Matching pages (process-isolated):  39%|#########################5                                       | 650/1651 [00:10<00:14, 70.24it/s]Matching pages (process-isolated):  40%|##########################                                       | 662/1651 [00:10<00:15, 63.90it/s]2026-08-03 17:03:52.405 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] jiaocaineedrop_chem-203343.pdf_121.jpg: choose=quick_unsplit page_cost=3.5834
+Matching pages (process-isolated):  41%|##########################4                                      | 672/1651 [00:10<00:14, 65.98it/s]2026-08-03 17:03:52.531 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] jiaocaineedrop_j70ke43p.pdf_69.jpg: choose=quick_unsplit page_cost=1.4591
+2026-08-03 17:03:52.717 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] jiaocaineedrop_jiaocai_needrop_en_1253.jpg: choose=quick_unsplit page_cost=0.0476
+Matching pages (process-isolated):  41%|##########################8                                      | 682/1651 [00:11<00:16, 59.76it/s]Matching pages (process-isolated):  42%|###########################2                                     | 693/1651 [00:11<00:13, 68.90it/s]Matching pages (process-isolated):  42%|###########################5                                     | 701/1651 [00:11<00:13, 68.88it/s]2026-08-03 17:03:52.979 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] jiaocaineedrop_jiaocai_needrop_en_1276.jpg: choose=quick_unsplit page_cost=20.1858
+2026-08-03 17:03:53.020 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] jiaocaineedrop_jiaocai_needrop_en_1539.jpg: choose=quick_unsplit page_cost=2.0000
+Matching pages (process-isolated):  43%|###########################9                                     | 709/1651 [00:11<00:13, 70.91it/s]2026-08-03 17:03:53.101 | INFO     | src.dataset.end2end_dataset:_maybe_apply_local_text_span_fallback:639 - [text-fallback] jiaocaineedrop_jiaocai_needrop_en_1198.jpg: gt_idx=[0] edit=0.5652->0.2105 pred_idx=[0]
+Matching pages (process-isolated):  43%|############################2                                    | 717/1651 [00:11<00:12, 72.76it/s]2026-08-03 17:03:53.199 | INFO     | src.dataset.end2end_dataset:_maybe_apply_local_text_span_fallback:639 - [text-fallback] jiaocaineedrop_jiaocai_needrop_en_1435.jpg: gt_idx=[9] edit=0.6228->0.2317 pred_idx=[8]
+2026-08-03 17:03:53.201 | INFO     | src.dataset.end2end_dataset:_maybe_apply_local_text_span_fallback:639 - [text-fallback] jiaocaineedrop_jiaocai_needrop_en_1761.jpg: gt_idx=[8] edit=0.6154->0.2857 pred_idx=[5]
+Matching pages (process-isolated):  44%|############################5                                    | 725/1651 [00:11<00:13, 69.80it/s]2026-08-03 17:03:53.419 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] jiaocaineedrop_jiaocai_needrop_en_1349.jpg: choose=quick_unsplit page_cost=40.0000
+Matching pages (process-isolated):  44%|############################8                                    | 733/1651 [00:11<00:15, 60.12it/s]Matching pages (process-isolated):  45%|#############################2                                   | 742/1651 [00:11<00:14, 64.58it/s]Matching pages (process-isolated):  46%|#############################6                                   | 752/1651 [00:12<00:12, 72.68it/s]2026-08-03 17:03:53.756 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] jiaocaineedrop_jiaocai_needrop_en_250.jpg: choose=quick_unsplit page_cost=1.0000
+Matching pages (process-isolated):  46%|#############################9                                   | 760/1651 [00:12<00:14, 62.36it/s]2026-08-03 17:03:53.890 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] jiaocaineedrop_jiaocai_needrop_en_1363.jpg: choose=quick_unsplit page_cost=45.2203
+2026-08-03 17:03:53.908 | INFO     | src.dataset.end2end_dataset:_maybe_apply_local_text_span_fallback:639 - [text-fallback] jiaocaineedrop_jiaocai_needrop_en_2263.jpg: gt_idx=[7] edit=0.5067->0.2759 pred_idx=[15, 16, 17, 18, 19, 20, 21]
+2026-08-03 17:03:53.937 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] jiaocaineedrop_jiaocai_needrop_en_2718.jpg: choose=quick_unsplit page_cost=5.0833
+Matching pages (process-isolated):  46%|##############################1                                  | 767/1651 [00:12<00:14, 62.02it/s]2026-08-03 17:03:54.069 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] jiaocaineedrop_jiaocai_needrop_en_1198.jpg: choose=quick_unsplit page_cost=70.1118
+Matching pages (process-isolated):  47%|##############################4                                  | 774/1651 [00:12<00:14, 60.29it/s]2026-08-03 17:03:54.108 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] jiaocaineedrop_jiaocai_needrop_en_2893.jpg: choose=quick_unsplit page_cost=6.0392
+Matching pages (process-isolated):  47%|##############################7                                  | 782/1651 [00:12<00:13, 62.72it/s]2026-08-03 17:03:54.245 | INFO     | src.dataset.end2end_dataset:_maybe_apply_local_text_span_fallback:639 - [text-fallback] jiaocaineedrop_jiaocai_needrop_en_2732.jpg: gt_idx=[13] edit=0.5926->0.3641 pred_idx=[16, 17, 18]
+Matching pages (process-isolated):  48%|###############################2                                 | 795/1651 [00:12<00:12, 69.27it/s]2026-08-03 17:03:54.396 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] jiaocaineedrop_jiaocai_needrop_en_2518.jpg: choose=quick_unsplit page_cost=1.8243
+Matching pages (process-isolated):  49%|###############################6                                 | 804/1651 [00:12<00:11, 74.17it/s]2026-08-03 17:03:54.625 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] jiaocaineedrop_jiaocai_needrop_en_3303.jpg: choose=quick_unsplit page_cost=9.0196
+Matching pages (process-isolated):  49%|################################                                 | 813/1651 [00:13<00:13, 61.91it/s]2026-08-03 17:03:54.792 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] jiaocaineedrop_jiaocai_needrop_en_1290.jpg: choose=quick_unsplit page_cost=92.0665
+Matching pages (process-isolated):  50%|################################3                                | 821/1651 [00:13<00:13, 61.76it/s]Matching pages (process-isolated):  51%|################################9                                | 836/1651 [00:13<00:12, 67.28it/s]Matching pages (process-isolated):  51%|#################################3                               | 848/1651 [00:13<00:10, 75.88it/s]2026-08-03 17:03:55.150 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] jiaocaineedrop_math-134115.pdf_670.jpg: choose=quick_unsplit page_cost=12.0000
+Matching pages (process-isolated):  52%|#################################8                               | 860/1651 [00:13<00:09, 85.60it/s]2026-08-03 17:03:55.327 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] jiaocaineedrop_jiaocai_needrop_en_546.jpg: choose=quick_unsplit page_cost=9.5882
+Matching pages (process-isolated):  53%|##################################2                              | 870/1651 [00:13<00:10, 76.35it/s]2026-08-03 17:03:55.429 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] jiaocaineedrop_jiaocai_needrop_en_3458.jpg: choose=quick_unsplit page_cost=58.4225
+Matching pages (process-isolated):  53%|##################################6                              | 880/1651 [00:13<00:10, 74.36it/s]2026-08-03 17:03:55.613 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] jiaocaineedrop_jiaocai_needrop_en_999.jpg: choose=quick_unsplit page_cost=27.0834
+2026-08-03 17:03:55.625 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] jiaocaineedrop_jiaocai_needrop_en_3063.jpg: choose=quick_unsplit page_cost=86.1218
+Matching pages (process-isolated):  54%|###################################                              | 889/1651 [00:14<00:10, 74.13it/s]Matching pages (process-isolated):  55%|###################################4                             | 900/1651 [00:14<00:09, 79.05it/s]2026-08-03 17:03:55.795 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] notes_1ba14cb325bc448f7201b20502ecf2b5_16.jpg: choose=quick_unsplit page_cost=1.4074
+Matching pages (process-isolated):  55%|###################################9                             | 912/1651 [00:14<00:09, 81.88it/s]Matching pages (process-isolated):  56%|####################################3                            | 923/1651 [00:14<00:08, 82.48it/s]Matching pages (process-isolated):  57%|####################################7                            | 934/1651 [00:14<00:08, 83.52it/s]2026-08-03 17:03:56.190 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] notes_9e951846094758afac08c620144e3a76_14.jpg: choose=hungarian_unsplit page_cost=6.8836
+2026-08-03 17:03:56.225 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] notes_9e951846094758afac08c620144e3a76_16.jpg: choose=quick_unsplit page_cost=8.3017
+2026-08-03 17:03:56.228 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] notes_9e951846094758afac08c620144e3a76_10.jpg: choose=quick_unsplit page_cost=9.5711
+Matching pages (process-isolated):  58%|#####################################4                           | 951/1651 [00:14<00:07, 88.04it/s]2026-08-03 17:03:56.419 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] notes_9e951846094758afac08c620144e3a76_15.jpg: choose=quick_unsplit page_cost=14.8979
+Matching pages (process-isolated):  58%|#####################################8                           | 962/1651 [00:14<00:07, 91.97it/s]Matching pages (process-isolated):  59%|######################################2                          | 972/1651 [00:15<00:08, 81.05it/s]Matching pages (process-isolated):  59%|######################################6                          | 981/1651 [00:15<00:08, 78.01it/s]Matching pages (process-isolated):  60%|######################################9                          | 989/1651 [00:15<00:09, 68.53it/s]Matching pages (process-isolated):  60%|#######################################2                         | 997/1651 [00:15<00:12, 51.40it/s]2026-08-03 17:03:57.285 | INFO     | src.dataset.end2end_dataset:_maybe_apply_local_text_span_fallback:639 - [text-fallback] jiaocaineedrop_jiaocai_needrop_en_349.jpg: gt_idx=[23] edit=0.7840->0.1610 pred_idx=[184, 185]
+2026-08-03 17:03:57.286 | INFO     | src.dataset.end2end_dataset:_maybe_apply_local_text_span_fallback:639 - [text-fallback] jiaocaineedrop_jiaocai_needrop_en_349.jpg: gt_idx=[33] edit=0.7305->0.3623 pred_idx=[255]
+Matching pages (process-isolated):  61%|######################################8                         | 1003/1651 [00:15<00:13, 49.18it/s]Matching pages (process-isolated):  61%|#######################################1                        | 1009/1651 [00:15<00:13, 48.65it/s]Matching pages (process-isolated):  62%|#######################################3                        | 1016/1651 [00:15<00:12, 51.30it/s]Matching pages (process-isolated):  62%|#######################################6                        | 1022/1651 [00:16<00:12, 51.78it/s]Matching pages (process-isolated):  62%|#######################################8                        | 1029/1651 [00:16<00:11, 52.85it/s]Matching pages (process-isolated):  63%|########################################1                       | 1036/1651 [00:16<00:10, 56.75it/s]Matching pages (process-isolated):  63%|########################################3                       | 1042/1651 [00:16<00:11, 54.21it/s]Matching pages (process-isolated):  64%|########################################8                       | 1053/1651 [00:16<00:10, 58.42it/s]Matching pages (process-isolated):  64%|#########################################2                      | 1063/1651 [00:16<00:08, 66.38it/s]Matching pages (process-isolated):  65%|#########################################5                      | 1072/1651 [00:16<00:10, 56.33it/s]Matching pages (process-isolated):  65%|#########################################9                      | 1081/1651 [00:17<00:09, 61.76it/s]Matching pages (process-isolated):  66%|##########################################1                     | 1088/1651 [00:17<00:09, 59.18it/s]Matching pages (process-isolated):  66%|##########################################5                     | 1097/1651 [00:17<00:10, 52.24it/s]Matching pages (process-isolated):  67%|##########################################9                     | 1107/1651 [00:17<00:10, 51.20it/s]Matching pages (process-isolated):  68%|###########################################3                    | 1118/1651 [00:17<00:08, 60.36it/s]Matching pages (process-isolated):  68%|###########################################6                    | 1127/1651 [00:17<00:07, 66.08it/s]Matching pages (process-isolated):  69%|############################################                    | 1136/1651 [00:17<00:08, 64.14it/s]Matching pages (process-isolated):  70%|############################################5                   | 1148/1651 [00:18<00:07, 67.60it/s]Matching pages (process-isolated):  70%|#############################################                   | 1161/1651 [00:18<00:07, 69.92it/s]Matching pages (process-isolated):  71%|#############################################4                  | 1172/1651 [00:18<00:06, 76.56it/s]Matching pages (process-isolated):  71%|#############################################7                  | 1180/1651 [00:18<00:06, 67.55it/s]Matching pages (process-isolated):  72%|##############################################                  | 1188/1651 [00:18<00:08, 55.52it/s]Matching pages (process-isolated):  72%|##############################################3                 | 1195/1651 [00:18<00:09, 49.17it/s]Matching pages (process-isolated):  73%|##############################################5                 | 1201/1651 [00:19<00:11, 40.37it/s]2026-08-03 17:04:00.962 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] scihub_j.conbuildmat.2019.117698.pdf_5.jpg: choose=quick_unsplit page_cost=5.1771
+Matching pages (process-isolated):  73%|##############################################7                 | 1206/1651 [00:19<00:12, 36.34it/s]Matching pages (process-isolated):  73%|##############################################9                 | 1211/1651 [00:19<00:11, 38.01it/s]Matching pages (process-isolated):  74%|###############################################1                | 1216/1651 [00:19<00:11, 37.46it/s]Matching pages (process-isolated):  74%|###############################################4                | 1223/1651 [00:19<00:10, 40.40it/s]Matching pages (process-isolated):  75%|###############################################6                | 1230/1651 [00:19<00:09, 45.98it/s]Matching pages (process-isolated):  75%|################################################                | 1240/1651 [00:20<00:08, 49.17it/s]Matching pages (process-isolated):  76%|################################################4               | 1249/1651 [00:20<00:07, 57.33it/s]Matching pages (process-isolated):  76%|################################################7               | 1258/1651 [00:20<00:06, 60.85it/s]Matching pages (process-isolated):  77%|#################################################               | 1265/1651 [00:20<00:07, 50.82it/s]Matching pages (process-isolated):  77%|#################################################2              | 1271/1651 [00:20<00:07, 50.64it/s]2026-08-03 17:04:02.293 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] PPT_ch7_page_020.png: choose=quick_unsplit page_cost=0.0000
+2026-08-03 17:04:02.303 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] PPT_StewartCalcET7e_03_02_page_007.png: choose=split_hungarian page_cost=2.1470
+2026-08-03 17:04:02.304 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] PPT_StewartCalcET7e_03_02_page_010.png: choose=split_hungarian page_cost=5.0000
+2026-08-03 17:04:02.331 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] PPT_fundamental_theorem_of_calculus___page_006.png: choose=split_hungarian page_cost=0.0227
+Matching pages (process-isolated):  77%|#################################################5              | 1277/1651 [00:20<00:07, 51.68it/s]2026-08-03 17:04:02.445 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] PPT_StewartCalcET7e_03_02_page_012.png: choose=quick_unsplit page_cost=1.0000
+Matching pages (process-isolated):  78%|#################################################8              | 1285/1651 [00:20<00:07, 50.86it/s]Matching pages (process-isolated):  78%|##################################################1             | 1293/1651 [00:21<00:06, 55.35it/s]2026-08-03 17:04:02.773 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] PPT_lecture1_page_022.png: choose=quick_unsplit page_cost=0.3821
+2026-08-03 17:04:02.794 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] PPT_MMAT5390Lecture1_page_023.png: choose=quick_unsplit page_cost=4.0476
+Matching pages (process-isolated):  79%|##################################################3             | 1299/1651 [00:21<00:07, 46.30it/s]2026-08-03 17:04:02.850 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] yanbaopptmerge_abef2a4978ae4d13e931f0392502bd40.pdf_1287.jpg: choose=quick_unsplit page_cost=89.4286
+2026-08-03 17:04:02.951 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] PPT_ch7_page_030.png: choose=quick_unsplit page_cost=1.0000
+2026-08-03 17:04:02.984 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] PPT_lay_linalg5_01_05_page_003.png: choose=split_hungarian page_cost=1.0000
+Matching pages (process-isolated):  79%|##################################################7             | 1308/1651 [00:21<00:07, 46.26it/s]2026-08-03 17:04:03.181 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] PPT_linear-algebra primer_page_007.png: choose=quick_unsplit page_cost=1.0000
+Matching pages (process-isolated):  80%|###################################################1            | 1320/1651 [00:21<00:06, 51.87it/s]Matching pages (process-isolated):  80%|###################################################4            | 1326/1651 [00:21<00:06, 52.65it/s]2026-08-03 17:04:03.488 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] PPT_ch7_page_034.png: choose=quick_unsplit page_cost=2.0414
+2026-08-03 17:04:03.510 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] PPT_ch7_page_090.png: choose=quick_unsplit page_cost=1.1035
+2026-08-03 17:04:03.549 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] PPT_StewartCalcET7e_03_02_page_015.png: choose=quick_unsplit page_cost=2.2884
+Matching pages (process-isolated):  81%|###################################################6            | 1332/1651 [00:22<00:08, 39.46it/s]Matching pages (process-isolated):  81%|###################################################8            | 1337/1651 [00:22<00:08, 35.33it/s]2026-08-03 17:04:03.895 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] PPT_linear-algebra primer_page_016.png: choose=quick_unsplit page_cost=1.2133
+2026-08-03 17:04:03.912 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] PPT_lay_linalg5_01_05_page_008.png: choose=quick_unsplit page_cost=0.0000
+2026-08-03 17:04:03.971 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] PPT_MMAT5390Lecture1_page_024.png: choose=quick_unsplit page_cost=1.0000
+2026-08-03 17:04:04.061 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] PPT_ch7_page_132.png: choose=quick_unsplit page_cost=1.0000
+2026-08-03 17:04:04.096 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] PPT_CalculusReview_page_014.png: choose=quick_unsplit page_cost=1.0000
+2026-08-03 17:04:04.221 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] PPT_linear-algebra primer_page_008.png: choose=quick_unsplit page_cost=1.1034
+Matching pages (process-isolated):  81%|####################################################            | 1342/1651 [00:22<00:13, 22.86it/s]Matching pages (process-isolated):  82%|####################################################4           | 1354/1651 [00:22<00:08, 33.55it/s]Matching pages (process-isolated):  83%|####################################################9           | 1365/1651 [00:22<00:06, 45.09it/s]Matching pages (process-isolated):  83%|#####################################################1          | 1372/1651 [00:23<00:05, 49.28it/s]Matching pages (process-isolated):  84%|#####################################################4          | 1379/1651 [00:23<00:05, 51.54it/s]2026-08-03 17:04:04.815 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] book_zh_DLT10562007_extracted_page_17.png: choose=quick_unsplit page_cost=1.0000
+Matching pages (process-isolated):  84%|#####################################################7          | 1386/1651 [00:23<00:04, 54.74it/s]2026-08-03 17:04:04.904 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] book_zh_GB115041989_extracted_page_9.png: choose=quick_unsplit page_cost=1.8390
+2026-08-03 17:04:04.938 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] book_zh_GBT 50744-2011_extracted_page_67.png: choose=quick_unsplit page_cost=0.0455
+Matching pages (process-isolated):  84%|#####################################################9          | 1393/1651 [00:23<00:04, 54.97it/s]2026-08-03 17:04:04.965 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] book_zh_SYT57941993_extracted_page_3.png: choose=quick_unsplit page_cost=8.0000
+2026-08-03 17:04:04.976 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] book_zh_CNASGL0262018_extracted_page_82.png: choose=quick_unsplit page_cost=5.3801
+2026-08-03 17:04:05.007 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] book_zh_GB12082006_extracted_page_8.png: choose=quick_unsplit page_cost=6.0263
+2026-08-03 17:04:05.045 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] book_zh_CNASGL082006_extracted_page_50.png: choose=quick_unsplit page_cost=3.5906
+2026-08-03 17:04:05.049 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] book_zh_GB14536.11998_extracted_page_145.png: choose=quick_unsplit page_cost=4.0303
+2026-08-03 17:04:05.069 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] book_zh_GB14930.21994_extracted_page_4.png: choose=quick_unsplit page_cost=2.0833
+2026-08-03 17:04:05.074 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] book_zh_CNASGL0072018_extracted_page_48.png: choose=split_dp page_cost=1.8369
+Matching pages (process-isolated):  85%|######################################################2         | 1400/1651 [00:23<00:04, 56.18it/s]2026-08-03 17:04:05.104 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] book_zh_JJD10031991_extracted_page_6.png: choose=quick_unsplit page_cost=2.2753
+2026-08-03 17:04:05.121 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] book_zh_GB149361994_extracted_page_7.png: choose=quick_unsplit page_cost=14.0196
+2026-08-03 17:04:05.123 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] book_zh_JGJ1022003_extracted_page_27.png: choose=quick_unsplit page_cost=5.7455
+Matching pages (process-isolated):  85%|######################################################5         | 1407/1651 [00:23<00:04, 55.34it/s]2026-08-03 17:04:05.223 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] yanbaopptmerge_9081a70ff98b3e7d640660a9412c447d.pdf_1287.jpg: choose=split_hungarian page_cost=47.8602
+2026-08-03 17:04:05.224 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] book_en_国外数学教材-数论-Melvyn B. Nathanson—Elementary Methods in Number Theory_0017.png: choose=quick_unsplit page_cost=1.0000
+2026-08-03 17:04:05.248 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] book_en_6.Complex.Analysis.-.Elias.M..Stein_page_051.png: choose=quick_unsplit page_cost=3.0000
+2026-08-03 17:04:05.353 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] book_zh_CNASGL0092018_extracted_page_69.png: choose=quick_unsplit page_cost=8.9449
+Matching pages (process-isolated):  86%|######################################################8         | 1414/1651 [00:23<00:04, 51.76it/s]Matching pages (process-isolated):  86%|#######################################################         | 1420/1651 [00:23<00:04, 46.93it/s]2026-08-03 17:04:05.560 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] book_en_国外数学教材-An Excursion through Elementary Mathematics（初等数学漫游）-An excursion through elementary mathematics, Vol.3 (Caminha Muniz Neto A)_0242.png: choose=split_hungarian page_cost=3.2045
+Matching pages (process-isolated):  86%|#######################################################2        | 1425/1651 [00:24<00:05, 44.56it/s]2026-08-03 17:04:05.719 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] book_en_A.Concise.Introduction.to.Linear.Algebra,.Geza.Schay,.Birkhauser,.2012_page_065.png: choose=quick_unsplit page_cost=1.0878
+2026-08-03 17:04:05.782 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] book_en_国外数学教材-非数学专业教材-线性代数-Gilbert Strang—Linear Algebra and Its Applications 4e_0007.png: choose=quick_unsplit page_cost=4.2353
+Matching pages (process-isolated):  87%|#######################################################4        | 1431/1651 [00:24<00:04, 44.05it/s]2026-08-03 17:04:05.809 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] book_en_国外数学教材-非数学专业教材-线性代数-Gilbert Strang—Linear Algebra and Its Applications 4e_0017.png: choose=quick_unsplit page_cost=4.0357
+Matching pages (process-isolated):  87%|#######################################################7        | 1439/1651 [00:24<00:04, 47.91it/s]2026-08-03 17:04:06.046 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] book_en_国外数学教材-数论-Melvyn B. Nathanson—Elementary Methods in Number Theory_0085.png: choose=quick_unsplit page_cost=10.0504
+2026-08-03 17:04:06.092 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] book_en_国外数学教材-数论-Melvyn B. Nathanson—Elementary Methods in Number Theory_0119.png: choose=quick_unsplit page_cost=14.0000
+2026-08-03 17:04:06.109 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] book_en_国外数学教材-数论-Melvyn B. Nathanson—Elementary Methods in Number Theory_0451.png: choose=split_hungarian page_cost=1.0101
+Matching pages (process-isolated):  87%|#######################################################9        | 1444/1651 [00:24<00:05, 38.85it/s]2026-08-03 17:04:06.266 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] book_en_国外数学教材-非数学专业教材-线性代数-Gilbert Strang—Linear Algebra and Its Applications 4e_0035.png: choose=quick_unsplit page_cost=2.2647
+Matching pages (process-isolated):  88%|########################################################2       | 1451/1651 [00:24<00:04, 42.89it/s]Matching pages (process-isolated):  88%|########################################################4       | 1457/1651 [00:24<00:04, 45.96it/s]Matching pages (process-isolated):  89%|########################################################8       | 1467/1651 [00:24<00:03, 52.10it/s]2026-08-03 17:04:06.597 | INFO     | src.dataset.end2end_dataset:_maybe_apply_local_text_span_fallback:639 - [text-fallback] color_textbook_zhonggaokao_小学_KET听说读写逐项突破_KET听说读写逐项突破之轻松搞定KET阅读25分【10讲 褚连一 】_第01讲第一课阅读题型综述_第一课阅读题型综述_page_004.png: gt_idx=[9] edit=1.0000->0.0000 pred_idx=[8]
+2026-08-03 17:04:06.615 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] book_en_国外数学教材-An Excursion through Elementary Mathematics（初等数学漫游）-An excursion through elementary mathematics, Vol.3 (Caminha Muniz Neto A)_0085.png: choose=quick_unsplit page_cost=21.1870
+Matching pages (process-isolated):  90%|#########################################################2      | 1478/1651 [00:25<00:02, 64.80it/s]2026-08-03 17:04:06.668 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] book_en_国外数学教材-非数学专业教材-线性代数-Gilbert Strang—Linear Algebra and Its Applications 4e_0363.png: choose=quick_unsplit page_cost=22.1551
+2026-08-03 17:04:06.680 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] book_en_5.Advanced.Modern.Algebra.-.J.Rotman.2003_page_887.png: choose=quick_unsplit page_cost=33.3121
+Matching pages (process-isolated):  90%|#########################################################6      | 1487/1651 [00:25<00:02, 65.44it/s]Matching pages (process-isolated):  91%|##########################################################      | 1497/1651 [00:25<00:02, 70.80it/s]Matching pages (process-isolated):  91%|##########################################################4     | 1508/1651 [00:25<00:02, 62.93it/s]2026-08-03 17:04:07.542 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] exam_paper_en-file-putnam-archive_2008_Problems_2008_page_001.png: choose=quick_unsplit page_cost=36.0333
+Matching pages (process-isolated):  92%|##########################################################7     | 1515/1651 [00:26<00:03, 34.48it/s]Matching pages (process-isolated):  92%|##########################################################9     | 1521/1651 [00:26<00:06, 19.63it/s]Matching pages (process-isolated):  92%|###########################################################1    | 1525/1651 [00:27<00:07, 16.35it/s]2026-08-03 17:04:08.907 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] exam_paper_en-file-putnam-archive_1993_Problems_1993_page_001.png: choose=hungarian_unsplit page_cost=33.6516
+Matching pages (process-isolated):  93%|###########################################################2    | 1528/1651 [00:27<00:07, 15.70it/s]Matching pages (process-isolated):  93%|###########################################################3    | 1531/1651 [00:27<00:07, 16.09it/s]2026-08-03 17:04:09.682 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] exam_paper_en-file-putnam-archive_2015_Problems_2015_page_001.png: choose=quick_unsplit page_cost=35.2833
+Matching pages (process-isolated):  93%|###########################################################4    | 1534/1651 [00:28<00:09, 11.85it/s]Matching pages (process-isolated):  93%|###########################################################5    | 1536/1651 [00:28<00:09, 12.28it/s]2026-08-03 17:04:10.094 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] exam_paper_en-file-putnam-archive_2006_Problems_2006_page_001.png: choose=quick_unsplit page_cost=47.0000
+Matching pages (process-isolated):  93%|###########################################################6    | 1538/1651 [00:28<00:10, 10.56it/s]2026-08-03 17:04:10.163 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] exam_paper_en-file-putnam-archive_2003_Solutions_2003s_page_001.png: choose=split_hungarian page_cost=25.3178
+2026-08-03 17:04:10.430 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] exam_paper_en-file-putnam-archive_2007_Solutions_2007s_page_004.png: choose=split_hungarian page_cost=41.4921
+Matching pages (process-isolated):  93%|###########################################################7    | 1542/1651 [00:28<00:10, 10.85it/s]Matching pages (process-isolated):  94%|###########################################################8    | 1544/1651 [00:29<00:09, 10.70it/s]Matching pages (process-isolated):  94%|###########################################################9    | 1546/1651 [00:29<00:12,  8.46it/s]Matching pages (process-isolated):  94%|############################################################    | 1548/1651 [00:29<00:13,  7.62it/s]Matching pages (process-isolated):  94%|############################################################    | 1549/1651 [00:29<00:13,  7.80it/s]Matching pages (process-isolated):  94%|############################################################    | 1550/1651 [00:30<00:13,  7.44it/s]2026-08-03 17:04:11.986 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] exam_paper_en-file-putnam-archive_2007_Solutions_2007s_page_003.png: choose=split_hungarian page_cost=82.0000
+Matching pages (process-isolated):  94%|############################################################1   | 1551/1651 [00:30<00:17,  5.82it/s]Matching pages (process-isolated):  94%|############################################################2   | 1553/1651 [00:30<00:12,  7.80it/s]Matching pages (process-isolated):  94%|############################################################3   | 1556/1651 [00:30<00:08, 10.75it/s]Matching pages (process-isolated):  94%|############################################################4   | 1560/1651 [00:30<00:05, 15.61it/s]Matching pages (process-isolated):  95%|############################################################5   | 1562/1651 [00:31<00:08, 10.72it/s]Matching pages (process-isolated):  95%|############################################################6   | 1564/1651 [00:31<00:11,  7.59it/s]Matching pages (process-isolated):  95%|############################################################7   | 1566/1651 [00:31<00:10,  8.11it/s]Matching pages (process-isolated):  95%|############################################################8   | 1569/1651 [00:31<00:07, 10.56it/s]Matching pages (process-isolated):  95%|############################################################9   | 1572/1651 [00:32<00:05, 13.56it/s]Matching pages (process-isolated):  96%|#############################################################2  | 1579/1651 [00:32<00:03, 22.81it/s]Matching pages (process-isolated):  96%|#############################################################4  | 1584/1651 [00:32<00:02, 26.15it/s]Matching pages (process-isolated):  96%|#############################################################6  | 1590/1651 [00:32<00:01, 32.43it/s]Matching pages (process-isolated):  97%|#############################################################9  | 1599/1651 [00:32<00:01, 44.45it/s]Matching pages (process-isolated):  97%|##############################################################3 | 1608/1651 [00:32<00:00, 49.90it/s]Matching pages (process-isolated):  98%|##############################################################7 | 1619/1651 [00:32<00:00, 61.10it/s]2026-08-03 17:04:14.483 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] PPT_CalculusReview_page_033.png: choose=split_hungarian page_cost=0.0000
+Matching pages (process-isolated):  99%|###############################################################1| 1629/1651 [00:32<00:00, 68.75it/s]2026-08-03 17:04:14.713 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] exam_paper_en-file-putnam-archive_1999_Solutions_1999s_page_002.png: choose=split_hungarian page_cost=40.0767
+Matching pages (process-isolated):  99%|###############################################################4| 1637/1651 [00:33<00:00, 57.02it/s]2026-08-03 17:04:15.405 | INFO     | src.dataset.end2end_dataset:_match_display_formula_candidates:1568 - [formula-match-candidate] exam_paper_en-file-putnam-archive_2011_Solutions_2011s_page_003.png: choose=split_hungarian page_cost=37.1505
+Matching pages (process-isolated): 100%|###############################################################7| 1644/1651 [00:34<00:00, 17.50it/s]Matching pages (process-isolated): 100%|###############################################################8| 1648/1651 [00:50<00:00, 17.50it/s][process-match-timeout] docstructbench_enbook-zlib-o.O-17208435.pdf_105.jpg: primary exceeded 120s; retrying bounded fallback
+[timeout-fallback] docstructbench_enbook-zlib-o.O-17208435.pdf_105.jpg: gt=7 pred=187 chunk=50 short<=24 target=48 max=96 span=10 window=14
+[timeout-fallback] docstructbench_enbook-zlib-o.O-17208435.pdf_105.jpg: gt=0 pred=1 chunk=1 short<=54 target=114 max=162 span=10 window=6
+[process-match-timeout] docstructbench_enbook-zlib-o.O-17208435.pdf_57.jpg: primary exceeded 120s; retrying bounded fallback
+Matching pages (process-isolated): 100%|###############################################################9| 1649/1651 [02:09<00:08,  4.04s/it][timeout-fallback] docstructbench_enbook-zlib-o.O-17208435.pdf_57.jpg: gt=7 pred=194 chunk=66 short<=24 target=48 max=96 span=10 window=17
+[timeout-fallback] docstructbench_enbook-zlib-o.O-17208435.pdf_57.jpg: gt=0 pred=1 chunk=1 short<=54 target=114 max=162 span=10 window=6
+Matching pages (process-isolated): 100%|###############################################################9| 1650/1651 [02:09<00:03,  3.82s/it][process-match-timeout] newspaper_0b1bb8d03b4287eb95f67b68c2cf9f92_1.jpg: primary exceeded 120s; retrying bounded fallback
+[timeout-fallback] newspaper_0b1bb8d03b4287eb95f67b68c2cf9f92_1.jpg: gt=31 pred=1140 chunk=115 short<=72 target=207 max=294 span=10 window=25
+2026-08-03 17:06:01.132 | INFO     | src.dataset.end2end_dataset:_maybe_apply_local_text_span_fallback:639 - [text-fallback] newspaper_0b1bb8d03b4287eb95f67b68c2cf9f92_1.jpg: gt_idx=[7] edit=1.0000->0.0000 pred_idx=[198]
+2026-08-03 17:06:01.132 | INFO     | src.dataset.end2end_dataset:_maybe_apply_local_text_span_fallback:639 - [text-fallback] newspaper_0b1bb8d03b4287eb95f67b68c2cf9f92_1.jpg: gt_idx=[10] edit=1.0000->0.0000 pred_idx=[60]
+2026-08-03 17:06:01.133 | INFO     | src.dataset.end2end_dataset:_maybe_apply_local_text_span_fallback:639 - [text-fallback] newspaper_0b1bb8d03b4287eb95f67b68c2cf9f92_1.jpg: gt_idx=[12] edit=1.0000->0.0000 pred_idx=[61]
+2026-08-03 17:06:01.133 | INFO     | src.dataset.end2end_dataset:_maybe_apply_local_text_span_fallback:639 - [text-fallback] newspaper_0b1bb8d03b4287eb95f67b68c2cf9f92_1.jpg: gt_idx=[14] edit=1.0000->0.0000 pred_idx=[90]
+2026-08-03 17:06:01.133 | INFO     | src.dataset.end2end_dataset:_maybe_apply_local_text_span_fallback:639 - [text-fallback] newspaper_0b1bb8d03b4287eb95f67b68c2cf9f92_1.jpg: gt_idx=[17] edit=1.0000->0.0000 pred_idx=[155]
+2026-08-03 17:06:01.133 | INFO     | src.dataset.end2end_dataset:_maybe_apply_local_text_span_fallback:639 - [text-fallback] newspaper_0b1bb8d03b4287eb95f67b68c2cf9f92_1.jpg: gt_idx=[25] edit=1.0000->0.0000 pred_idx=[641]
+2026-08-03 17:06:01.133 | INFO     | src.dataset.end2end_dataset:_maybe_apply_local_text_span_fallback:639 - [text-fallback] newspaper_0b1bb8d03b4287eb95f67b68c2cf9f92_1.jpg: gt_idx=[8] edit=1.0000->0.0714 pred_idx=[0]
+Matching pages (process-isolated): 100%|################################################################| 1651/1651 [02:19<00:00, 11.83it/s]
+###### Process:  predictions_quick_match
+【text_block】
+Edit_dist:
+---------------  ---------
+ALL_page_avg     0.0504265
+edit_whole       0.0796197
+edit_sample_avg  0.051201
+---------------  ---------
+====================================================================================================
+----Anno Attribute---------------
+sample_count:
+
+====================================================================================================
+Edit_dist:
+--------------------------------  ----------
+ALL                               0.0504265
+None                              0.0475732
+colorful_backgroud                0.0426433
+data_source: PPT2PDF              0.0299039
+data_source: academic_literature  0.0464369
+data_source: book                 0.0534953
+data_source: colorful_textbook    0.0792779
+data_source: exam_paper           0.0626782
+data_source: historical_document  0.24411
+data_source: magazine             0.0499273
+data_source: newspaper            0.0676893
+data_source: note                 0.043393
+data_source: research_report      0.00855949
+fuzzy_content                     0.032582
+fuzzy_scan                        0.0470444
+geometric_deformation             0.0736448
+handwriting                       0.416692
+language: en_ch_mixed             0.0397841
+language: english                 0.0464892
+language: other                   0.00128205
+language: simplified_chinese      0.0550224
+language: traditional_chinese     0.122586
+layout: 1andmore_column           0.0275854
+layout: double_column             0.0454631
+layout: other_layout              0.0807198
+layout: single_column             0.0405627
+layout: three_column              0.0749982
+subset: equation_hard             0.117751
+subset: layout_hard               0.0799031
+subset: table_hard                0.00666975
+subset: v1.5                      0.0453087
+text_L-shaped_wrap                0.0968363
+text_O-shaped_wrap                0.131313
+text_embedded_in_image            0.0127389
+transparent_pages                 0.0870285
+watermark                         0.0706639
+with_watermark                    0.0152874
+--------------------------------  ----------
+====================================================================================================
+【display_formula】
+Edit_dist:
+---------------  ---------
+ALL_page_avg     0.0912944
+edit_whole       0.127168
+edit_sample_avg  0.0848261
+---------------  ---------
+====================================================================================================
+----Anno Attribute---------------
+sample_count:
+
+====================================================================================================
+Edit_dist:
+--------------------------------  ----------
+ALL                               0.0912944
+None                              0.051567
+colorful_backgroud                0.108265
+data_source: PPT2PDF              0.0768631
+data_source: academic_literature  0.110977
+data_source: book                 0.112204
+data_source: colorful_textbook    0.0873284
+data_source: exam_paper           0.0474898
+data_source: note                 0.219236
+fuzzy_content                     0.203297
+fuzzy_scan                        0.0657659
+geometric_deformation             0.114829
+handwriting                       0.0726268
+language: en_ch_mixed             0.473958
+language: english                 0.0844621
+language: simplified_chinese      0.104114
+layout: 1andmore_column           0.0553571
+layout: double_column             0.0448496
+layout: other_layout              0.129634
+layout: single_column             0.105556
+layout: three_column              0.142574
+subset: equation_hard             0.150152
+subset: layout_hard               0.138578
+subset: table_hard                0.00520833
+subset: v1.5                      0.0632823
+text_L-shaped_wrap                0.0518507
+text_O-shaped_wrap                0
+watermark                         0.0738164
+with_watermark                    0.0825906
+--------------------------------  ----------
+====================================================================================================
+[process-TEDS] workers=12 samples=665 exact=181 timeout=120.0s
+TEDS (process-isolated):  27%|######################8                                                             | 181/665 [00:00<?, ?it/s]TEDS (process-isolated):  28%|####################9                                                       | 183/665 [00:00<00:24, 19.39it/s]TEDS (process-isolated):  29%|#####################8                                                      | 191/665 [00:00<00:08, 54.05it/s]TEDS (process-isolated):  31%|#######################2                                                    | 203/665 [00:00<00:06, 73.62it/s]TEDS (process-isolated):  32%|########################1                                                   | 211/665 [00:00<00:06, 64.99it/s]TEDS (process-isolated):  33%|########################9                                                   | 218/665 [00:00<00:09, 48.15it/s]TEDS (process-isolated):  34%|#########################5                                                  | 224/665 [00:00<00:08, 49.61it/s]TEDS (process-isolated):  35%|##########################6                                                 | 233/665 [00:00<00:07, 54.77it/s]TEDS (process-isolated):  36%|###########################6                                                | 242/665 [00:01<00:07, 58.06it/s]TEDS (process-isolated):  37%|############################4                                               | 249/665 [00:01<00:07, 54.91it/s]TEDS (process-isolated):  38%|#############################1                                              | 255/665 [00:01<00:08, 48.70it/s]TEDS (process-isolated):  39%|#############################8                                              | 261/665 [00:01<00:11, 35.07it/s]TEDS (process-isolated):  40%|##############################5                                             | 267/665 [00:01<00:10, 39.29it/s]TEDS (process-isolated):  41%|###############################                                             | 272/665 [00:02<00:13, 28.08it/s]TEDS (process-isolated):  42%|###############################5                                            | 276/665 [00:02<00:14, 27.35it/s]TEDS (process-isolated):  42%|################################                                            | 280/665 [00:03<00:36, 10.62it/s]TEDS (process-isolated):  43%|################################3                                           | 283/665 [00:04<00:56,  6.81it/s]TEDS (process-isolated):  43%|################################5                                           | 285/665 [00:04<00:53,  7.09it/s]TEDS (process-isolated):  43%|################################8                                           | 287/665 [00:04<00:53,  7.08it/s]TEDS (process-isolated):  43%|#################################                                           | 289/665 [00:05<00:57,  6.55it/s]TEDS (process-isolated):  44%|#################################2                                          | 291/665 [00:06<01:36,  3.86it/s]TEDS (process-isolated):  44%|#################################4                                          | 293/665 [00:07<01:41,  3.67it/s]TEDS (process-isolated):  44%|#################################6                                          | 294/665 [00:07<02:01,  3.06it/s]TEDS (process-isolated):  44%|#################################7                                          | 295/665 [00:08<02:03,  3.00it/s]TEDS (process-isolated):  45%|#################################8                                          | 296/665 [00:08<01:50,  3.35it/s]TEDS (process-isolated):  45%|#################################9                                          | 297/665 [00:09<02:38,  2.33it/s]TEDS (process-isolated):  45%|##################################                                          | 298/665 [00:09<02:10,  2.80it/s]TEDS (process-isolated):  45%|##################################1                                         | 299/665 [00:09<01:53,  3.24it/s]TEDS (process-isolated):  45%|##################################2                                         | 300/665 [00:09<01:32,  3.94it/s]TEDS (process-isolated):  45%|##################################5                                         | 302/665 [00:09<01:00,  5.99it/s]TEDS (process-isolated):  46%|##################################7                                         | 304/665 [00:09<00:44,  8.10it/s]TEDS (process-isolated):  46%|##################################9                                         | 306/665 [00:10<00:44,  8.00it/s]TEDS (process-isolated):  46%|###################################2                                        | 308/665 [00:10<00:37,  9.63it/s]TEDS (process-isolated):  47%|###################################6                                        | 312/665 [00:10<00:26, 13.42it/s]TEDS (process-isolated):  47%|###################################8                                        | 314/665 [00:10<00:34, 10.17it/s]TEDS (process-isolated):  48%|####################################1                                       | 316/665 [00:12<02:10,  2.68it/s]TEDS (process-isolated):  48%|####################################3                                       | 318/665 [00:13<01:43,  3.34it/s]TEDS (process-isolated):  48%|####################################4                                       | 319/665 [00:15<03:22,  1.71it/s]TEDS (process-isolated):  48%|####################################5                                       | 320/665 [00:15<03:07,  1.84it/s]TEDS (process-isolated):  49%|####################################9                                       | 323/665 [00:15<01:49,  3.12it/s]TEDS (process-isolated):  49%|#####################################1                                      | 325/665 [00:16<01:41,  3.36it/s]TEDS (process-isolated):  49%|#####################################2                                      | 326/665 [00:16<01:55,  2.94it/s]TEDS (process-isolated):  49%|#####################################3                                      | 327/665 [00:16<01:38,  3.43it/s]TEDS (process-isolated):  49%|#####################################4                                      | 328/665 [00:17<01:28,  3.80it/s]TEDS (process-isolated):  49%|#####################################6                                      | 329/665 [00:17<01:16,  4.38it/s]TEDS (process-isolated):  50%|#####################################9                                      | 332/665 [00:17<00:46,  7.12it/s]TEDS (process-isolated):  50%|######################################1                                     | 334/665 [00:18<01:44,  3.17it/s]TEDS (process-isolated):  50%|######################################2                                     | 335/665 [00:18<01:41,  3.24it/s]TEDS (process-isolated):  51%|######################################5                                     | 337/665 [00:19<01:18,  4.17it/s]TEDS (process-isolated):  51%|######################################6                                     | 338/665 [00:19<01:15,  4.31it/s]TEDS (process-isolated):  51%|######################################8                                     | 340/665 [00:19<00:56,  5.78it/s]TEDS (process-isolated):  51%|######################################9                                     | 341/665 [00:19<00:55,  5.80it/s]TEDS (process-isolated):  51%|#######################################                                     | 342/665 [00:20<01:44,  3.09it/s]TEDS (process-isolated):  52%|#######################################3                                    | 344/665 [00:20<01:19,  4.01it/s]TEDS (process-isolated):  52%|#######################################6                                    | 347/665 [00:20<00:48,  6.52it/s]TEDS (process-isolated):  53%|########################################1                                   | 351/665 [00:21<00:29, 10.61it/s]TEDS (process-isolated):  53%|########################################3                                   | 353/665 [00:21<00:27, 11.22it/s]TEDS (process-isolated):  54%|########################################8                                   | 357/665 [00:21<00:21, 14.55it/s]TEDS (process-isolated):  54%|#########################################1                                  | 360/665 [00:21<00:20, 15.24it/s]TEDS (process-isolated):  55%|#########################################4                                  | 363/665 [00:21<00:20, 14.66it/s]TEDS (process-isolated):  55%|#########################################7                                  | 365/665 [00:21<00:19, 15.18it/s]TEDS (process-isolated):  55%|#########################################9                                  | 367/665 [00:22<00:54,  5.51it/s]TEDS (process-isolated):  55%|##########################################1                                 | 369/665 [00:23<00:43,  6.76it/s]TEDS (process-isolated):  56%|##########################################4                                 | 371/665 [00:23<00:38,  7.72it/s]TEDS (process-isolated):  56%|##########################################6                                 | 373/665 [00:23<00:37,  7.74it/s]TEDS (process-isolated):  56%|##########################################8                                 | 375/665 [00:23<00:39,  7.35it/s]TEDS (process-isolated):  57%|###########################################                                 | 377/665 [00:24<00:52,  5.48it/s]TEDS (process-isolated):  57%|###########################################3                                | 379/665 [00:24<00:41,  6.83it/s]TEDS (process-isolated):  58%|###########################################7                                | 383/665 [00:24<00:33,  8.37it/s]TEDS (process-isolated):  58%|############################################                                | 385/665 [00:24<00:29,  9.63it/s]TEDS (process-isolated):  58%|############################################2                               | 387/665 [00:25<00:34,  8.00it/s]TEDS (process-isolated):  58%|############################################4                               | 389/665 [00:25<00:30,  9.02it/s]TEDS (process-isolated):  59%|#############################################                               | 394/665 [00:25<00:18, 14.95it/s]TEDS (process-isolated):  60%|#############################################8                              | 401/665 [00:25<00:11, 22.21it/s]TEDS (process-isolated):  61%|##############################################6                             | 408/665 [00:25<00:08, 29.18it/s]TEDS (process-isolated):  63%|###############################################7                            | 418/665 [00:25<00:05, 41.25it/s]TEDS (process-isolated):  64%|################################################3                           | 423/665 [00:26<00:05, 42.14it/s]TEDS (process-isolated):  64%|################################################9                           | 428/665 [00:26<00:05, 43.26it/s]TEDS (process-isolated):  65%|#################################################4                          | 433/665 [00:26<00:05, 43.16it/s]TEDS (process-isolated):  66%|##################################################4                         | 441/665 [00:26<00:04, 51.39it/s]TEDS (process-isolated):  67%|###################################################                         | 447/665 [00:26<00:04, 52.29it/s]TEDS (process-isolated):  68%|###################################################8                        | 454/665 [00:26<00:04, 50.33it/s]TEDS (process-isolated):  69%|####################################################6                       | 461/665 [00:26<00:03, 53.06it/s]TEDS (process-isolated):  70%|#####################################################3                      | 467/665 [00:26<00:04, 47.78it/s]TEDS (process-isolated):  71%|#####################################################9                      | 472/665 [00:27<00:04, 44.69it/s]TEDS (process-isolated):  72%|######################################################5                     | 477/665 [00:27<00:05, 37.44it/s]TEDS (process-isolated):  72%|######################################################9                     | 481/665 [00:27<00:06, 28.02it/s]TEDS (process-isolated):  73%|#######################################################4                    | 485/665 [00:27<00:06, 26.23it/s]TEDS (process-isolated):  73%|#######################################################7                    | 488/665 [00:27<00:07, 25.17it/s]TEDS (process-isolated):  74%|########################################################1                   | 491/665 [00:28<00:12, 14.16it/s]TEDS (process-isolated):  74%|########################################################4                   | 494/665 [00:28<00:14, 12.16it/s]TEDS (process-isolated):  75%|########################################################8                   | 497/665 [00:28<00:11, 14.03it/s]TEDS (process-isolated):  75%|#########################################################1                  | 500/665 [00:28<00:10, 15.28it/s]TEDS (process-isolated):  75%|#########################################################3                  | 502/665 [00:29<00:11, 14.77it/s]TEDS (process-isolated):  76%|#########################################################6                  | 504/665 [00:29<00:20,  7.91it/s]TEDS (process-isolated):  76%|##########################################################                  | 508/665 [00:29<00:13, 11.38it/s]TEDS (process-isolated):  77%|##########################################################4                 | 511/665 [00:30<00:11, 13.81it/s]TEDS (process-isolated):  77%|##########################################################8                 | 515/665 [00:30<00:08, 17.82it/s]TEDS (process-isolated):  78%|###########################################################2                | 518/665 [00:30<00:10, 13.74it/s]TEDS (process-isolated):  79%|###########################################################7                | 523/665 [00:30<00:07, 18.59it/s]TEDS (process-isolated):  79%|############################################################2               | 527/665 [00:30<00:06, 22.21it/s]TEDS (process-isolated):  80%|############################################################6               | 531/665 [00:30<00:05, 25.10it/s]TEDS (process-isolated):  81%|#############################################################2              | 536/665 [00:30<00:04, 30.18it/s]TEDS (process-isolated):  82%|#############################################################9              | 542/665 [00:31<00:03, 37.15it/s]TEDS (process-isolated):  82%|##############################################################5             | 547/665 [00:31<00:04, 27.81it/s]TEDS (process-isolated):  83%|##############################################################9             | 551/665 [00:31<00:05, 21.60it/s]TEDS (process-isolated):  83%|###############################################################4            | 555/665 [00:31<00:04, 23.63it/s]TEDS (process-isolated):  84%|###############################################################7            | 558/665 [00:32<00:06, 15.29it/s]TEDS (process-isolated):  84%|################################################################1           | 561/665 [00:32<00:06, 16.25it/s]TEDS (process-isolated):  85%|################################################################4           | 564/665 [00:32<00:07, 13.97it/s]TEDS (process-isolated):  85%|################################################################6           | 566/665 [00:32<00:09, 10.52it/s]TEDS (process-isolated):  85%|################################################################9           | 568/665 [00:33<00:10,  9.44it/s]TEDS (process-isolated):  86%|#################################################################2          | 571/665 [00:33<00:09, 10.39it/s]TEDS (process-isolated):  86%|#################################################################4          | 573/665 [00:33<00:08, 10.98it/s]TEDS (process-isolated):  87%|#################################################################8          | 576/665 [00:33<00:06, 13.73it/s]TEDS (process-isolated):  87%|##################################################################1         | 579/665 [00:34<00:07, 11.89it/s]TEDS (process-isolated):  87%|##################################################################4         | 581/665 [00:34<00:06, 12.17it/s]TEDS (process-isolated):  88%|##################################################################6         | 583/665 [00:34<00:06, 13.39it/s]TEDS (process-isolated):  88%|##################################################################8         | 585/665 [00:34<00:08,  9.38it/s]TEDS (process-isolated):  88%|###################################################################         | 587/665 [00:35<00:09,  8.51it/s]TEDS (process-isolated):  89%|###################################################################3        | 589/665 [00:35<00:10,  7.00it/s]TEDS (process-isolated):  89%|###################################################################5        | 591/665 [00:35<00:08,  8.52it/s]TEDS (process-isolated):  89%|###################################################################8        | 594/665 [00:35<00:06, 11.34it/s]TEDS (process-isolated):  90%|####################################################################3       | 598/665 [00:35<00:04, 15.94it/s]TEDS (process-isolated):  90%|####################################################################6       | 601/665 [00:36<00:05, 11.07it/s]TEDS (process-isolated):  91%|####################################################################9       | 603/665 [00:36<00:05, 12.19it/s]TEDS (process-isolated):  91%|#####################################################################1      | 605/665 [00:36<00:05, 11.73it/s]TEDS (process-isolated):  91%|#####################################################################4      | 608/665 [00:36<00:04, 13.12it/s]TEDS (process-isolated):  92%|#####################################################################7      | 610/665 [00:36<00:04, 13.38it/s]TEDS (process-isolated):  93%|######################################################################5     | 617/665 [00:36<00:01, 24.08it/s]TEDS (process-isolated):  94%|#######################################################################3    | 624/665 [00:37<00:01, 30.46it/s]TEDS (process-isolated):  94%|#######################################################################7    | 628/665 [00:37<00:01, 27.67it/s]TEDS (process-isolated):  95%|########################################################################2   | 632/665 [00:37<00:01, 22.22it/s]TEDS (process-isolated):  95%|########################################################################5   | 635/665 [00:37<00:01, 19.39it/s]TEDS (process-isolated):  96%|########################################################################9   | 638/665 [00:37<00:01, 20.54it/s]TEDS (process-isolated):  96%|#########################################################################2  | 641/665 [00:38<00:01, 21.92it/s]TEDS (process-isolated):  97%|#########################################################################9  | 647/665 [00:38<00:00, 29.97it/s]TEDS (process-isolated):  98%|##########################################################################4 | 651/665 [00:38<00:00, 26.00it/s]TEDS (process-isolated):  98%|##########################################################################8 | 655/665 [00:38<00:00, 24.34it/s]TEDS (process-isolated):  99%|###########################################################################2| 658/665 [00:38<00:00, 16.30it/s]TEDS (process-isolated):  99%|###########################################################################5| 661/665 [00:40<00:00,  6.01it/s]TEDS (process-isolated): 100%|###########################################################################7| 663/665 [00:40<00:00,  5.43it/s]TEDS (process-isolated): 100%|############################################################################| 665/665 [00:51<00:00,  1.33s/it]TEDS (process-isolated): 100%|############################################################################| 665/665 [00:51<00:00,  9.35it/s]
+【table】
+TEDS:
+---  --------
+all  0.913858
+---  --------
+====================================================================================================
+TEDS_structure_only:
+---  --------
+all  0.941723
+---  --------
+====================================================================================================
+Edit_dist:
+---------------  ---------
+ALL_page_avg     0.0763942
+edit_whole       0.157973
+edit_sample_avg  0.0788036
+---------------  ---------
+====================================================================================================
+----Anno Attribute---------------
+sample_count:
+
+====================================================================================================
+Edit_dist:
+--------------------------------  ---------
+ALL                               0.0763942
+None                              0.171491
+colorful_backgroud                0.0588504
+data_source: PPT2PDF              0.0614611
+data_source: academic_literature  0.154303
+data_source: book                 0.0407787
+data_source: colorful_textbook    0.064848
+data_source: exam_paper           0.0187813
+data_source: magazine             0.105379
+data_source: newspaper            0.177969
+data_source: note                 0.0370146
+data_source: research_report      0.0633525
+fuzzy_scan                        0.0107142
+geometric_deformation             0.069944
+language: en_ch_mixed             0.100142
+language: english                 0.119305
+language: simplified_chinese      0.0512781
+language: traditional_chinese     0.0845335
+layout: 1andmore_column           0.0435752
+layout: double_column             0.0220576
+layout: other_layout              0.143911
+layout: single_column             0.0757652
+layout: three_column              0.039825
+subset: equation_hard             0.0278604
+subset: layout_hard               0.118357
+subset: table_hard                0.172594
+subset: v1.5                      0.0491294
+watermark                         0.0306852
+with_watermark                    0.294328
+--------------------------------  ---------
+====================================================================================================
+TEDS:
+--------------------------------  --------
+ALL                               0.921778
+None                              0.843863
+colorful_backgroud                0.929392
+data_source: PPT2PDF              0.976181
+data_source: academic_literature  0.838353
+data_source: book                 0.958362
+data_source: colorful_textbook    0.953933
+data_source: exam_paper           0.970629
+data_source: magazine             0.909468
+data_source: newspaper            0.80875
+data_source: note                 0.945606
+data_source: research_report      0.934113
+fuzzy_scan                        0.982126
+geometric_deformation             0.991011
+language: en_ch_mixed             0.881285
+language: english                 0.878559
+language: simplified_chinese      0.950003
+language: traditional_chinese     0.858834
+layout: 1andmore_column           0.949765
+layout: double_column             0.970267
+layout: other_layout              0.864031
+layout: single_column             0.921978
+layout: three_column              0.966721
+subset: equation_hard             0.967817
+subset: layout_hard               0.913633
+subset: table_hard                0.828793
+subset: v1.5                      0.947398
+watermark                         0.971919
+with_watermark                    0.693582
+--------------------------------  --------
+====================================================================================================
+TEDS_structure_only:
+--------------------------------  --------
+ALL                               0.94861
+None                              0.866667
+colorful_backgroud                0.96689
+data_source: PPT2PDF              1
+data_source: academic_literature  0.881753
+data_source: book                 0.985282
+data_source: colorful_textbook    0.979678
+data_source: exam_paper           0.989527
+data_source: magazine             0.925103
+data_source: newspaper            0.857625
+data_source: note                 0.959337
+data_source: research_report      0.953806
+fuzzy_scan                        1
+geometric_deformation             1
+language: en_ch_mixed             0.920935
+language: english                 0.913205
+language: simplified_chinese      0.971098
+language: traditional_chinese     0.901815
+layout: 1andmore_column           0.974146
+layout: double_column             0.989413
+layout: other_layout              0.904754
+layout: single_column             0.947345
+layout: three_column              1
+subset: equation_hard             1
+subset: layout_hard               0.979878
+subset: table_hard                0.869488
+subset: v1.5                      0.969471
+watermark                         0.984091
+with_watermark                    0.719679
+--------------------------------  --------
+====================================================================================================
+【reading_order】
+Edit_dist:
+---------------  --------
+ALL_page_avg     0.140173
+edit_whole       0.144767
+edit_sample_avg  0.140173
+---------------  --------
+====================================================================================================
+----Anno Attribute---------------
+sample_count:
+
+====================================================================================================
+Edit_dist:
+--------------------------------  ---------
+ALL                               0.140173
+None                              0.0667042
+colorful_backgroud                0.104202
+data_source: PPT2PDF              0.0832554
+data_source: academic_literature  0.185697
+data_source: book                 0.145159
+data_source: colorful_textbook    0.109583
+data_source: exam_paper           0.0883848
+data_source: historical_document  0.320844
+data_source: magazine             0.106999
+data_source: newspaper            0.178022
+data_source: note                 0.084468
+data_source: research_report      0.312677
+fuzzy_content                     0.172619
+fuzzy_scan                        0.0801148
+geometric_deformation             0.174131
+handwriting                       0.358333
+language: en_ch_mixed             0.105465
+language: english                 0.113337
+language: other                   0
+language: simplified_chinese      0.169895
+language: traditional_chinese     0.288898
+layout: 1andmore_column           0.102618
+layout: double_column             0.0860479
+layout: other_layout              0.159997
+layout: single_column             0.150595
+layout: three_column              0.125353
+subset: equation_hard             0.0327648
+subset: layout_hard               0.132041
+subset: table_hard                0.39836
+subset: v1.5                      0.130515
+text_L-shaped_wrap                0.0454545
+text_O-shaped_wrap                0.555556
+text_embedded_in_image            0.166667
+transparent_pages                 0.0939441
+watermark                         0.134849
+with_watermark                    0.112081
+--------------------------------  ---------
+====================================================================================================
+========== RUNTIME_ENVIRONMENT predictions_quick_match ==========
+save_name: predictions_quick_match
+[system]
+platform: Linux-5.10.0-136.12.0.86.r1526_92.hce2.aarch64-aarch64-with-glibc2.35
+python_version: 3.10.12 (main, Mar  3 2026, 11:56:32) [GCC 11.4.0]
+python_executable: /workspace/venvs/omnidocbench_py310/bin/python
+python_prefix: /workspace/venvs/omnidocbench_py310
+conda_env: 
+conda_prefix: 
+libc: glibc 2.35
+uname: Linux liteserver-c001-4 5.10.0-136.12.0.86.r1526_92.hce2.aarch64 #1 SMP Tue Mar 26 03:00:47 UTC 2024 aarch64 aarch64
+os_release: {"BUG_REPORT_URL": "https://bugs.launchpad.net/ubuntu/", "HOME_URL": "https://www.ubuntu.com/", "ID": "ubuntu", "ID_LIKE": "debian", "NAME": "Ubuntu", "PRETTY_NAME": "Ubuntu 22.04.5 LTS", "PRIVACY_POLICY_URL": "https://www.ubuntu.com/legal/terms-and-policies/privacy-policy", "SUPPORT_URL": "https://help.ubuntu.com/", "UBUNTU_CODENAME": "jammy", "VERSION": "22.04.5 LTS (Jammy Jellyfish)", "VERSION_CODENAME": "jammy", "VERSION_ID": "22.04"}
+[system_packages]
+package_manager: dpkg-query
+fontconfig: fontconfig=2.13.1-4.2ubuntu5
+ghostscript: unavailable (dpkg-query: no packages found matching ghostscript)
+imagemagick: unavailable (dpkg-query: no packages found matching imagemagick)
+latexml: latexml=
+python3: python3=3.10.6-1~22.04.1
+python3-pip: python3-pip=
+python3-setuptools: python3-setuptools=
+python3-wheel: unavailable (dpkg-query: no packages found matching python3-wheel)
+texlive-base: unavailable (dpkg-query: no packages found matching texlive-base)
+texlive-binaries: texlive-binaries=
+texlive-fonts-recommended: unavailable (dpkg-query: no packages found matching texlive-fonts-recommended)
+texlive-lang-chinese: unavailable (dpkg-query: no packages found matching texlive-lang-chinese)
+texlive-lang-cjk: unavailable (dpkg-query: no packages found matching texlive-lang-cjk)
+texlive-latex-base: unavailable (dpkg-query: no packages found matching texlive-latex-base)
+texlive-latex-extra: unavailable (dpkg-query: no packages found matching texlive-latex-extra)
+texlive-plain-generic: unavailable (dpkg-query: no packages found matching texlive-plain-generic)
+[python_packages]
+Levenshtein: 0.25.1
+Pillow: 10.4.0
+PyYAML: 6.0.2
+apted: 1.0.3
+beautifulsoup4: 4.11.1
+evaluate: 0.4.3
+func-timeout: 4.3.5
+loguru: 0.7.2
+lxml: 4.9.1
+matplotlib: 3.7.5
+nltk: 3.9.1
+numpy: 1.24.4
+pandas: 2.0.3
+pip: 26.1.2
+pylatexenc: 2.10
+scipy: 1.10.1
+setuptools: 83.0.0
+tabulate: 0.9.0
+tqdm: 4.67.1
+wheel: 0.47.0
+[external_tools]
+convert: path=convert returncode=None output=unavailable (FileNotFoundError: [Errno 2] No such file or directory: 'convert')
+ghostscript: path=gs returncode=None output=unavailable (FileNotFoundError: [Errno 2] No such file or directory: 'gs')
+identify: path=identify returncode=None output=unavailable (FileNotFoundError: [Errno 2] No such file or directory: 'identify')
+kpsewhich: path=/share/texlive/kpsewhich returncode=None output=unavailable (FileNotFoundError: [Errno 2] No such file or directory: '/share/texlive/kpsewhich')
+latexmlc: path=latexmlc returncode=None output=unavailable (FileNotFoundError: [Errno 2] No such file or directory: 'latexmlc')
+magick: path=magick returncode=None output=unavailable (FileNotFoundError: [Errno 2] No such file or directory: 'magick')
+pdflatex: path=/share/texlive/pdflatex returncode=None output=unavailable (FileNotFoundError: [Errno 2] No such file or directory: '/share/texlive/pdflatex')
+tlmgr: path=tlmgr returncode=None output=unavailable (FileNotFoundError: [Errno 2] No such file or directory: 'tlmgr')
+[texlive]
+cjk_font_family: gkai
+cjk_sty: status=not_found path=unavailable (FileNotFoundError: [Errno 2] No such file or directory: '/share/texlive/kpsewhich') version=unavailable date= header=
+cjk_font_fd: status=not_found path=unavailable (FileNotFoundError: [Errno 2] No such file or directory: '/share/texlive/kpsewhich') version=unavailable date= header=
+
+========== END_RUNTIME_ENVIRONMENT predictions_quick_match ==========
+========== STAGE_EXECUTION predictions_quick_match ==========
+save_name: predictions_quick_match
+[page_match]
+workers: 24
+page_count: 1651
+quick_match_truncated_timeout_sec: 300
+match_timeout_sec: 420
+fallbacks:
+  - page_timeout: count=3
+    case: docstructbench_enbook-zlib-o.O-17208435.pdf_105.jpg
+    case: docstructbench_enbook-zlib-o.O-17208435.pdf_57.jpg
+    case: newspaper_0b1bb8d03b4287eb95f67b68c2cf9f92_1.jpg
+  - quick_match_timeout: count=0
+[table.TEDS]
+workers: 12
+timeout_sec: 120.0
+sample_count: 665
+timeout_case_count: 0
+error_case_count: 0
+exception_case_count: 0
+
+========== END_STAGE_EXECUTION predictions_quick_match ==========
+========== FINAL_EVAL_RUN_REPORT predictions_quick_match ==========
+{
+  "notebook_metric_summary": {
+    "metrics": {
+      "display_formula_CDM": {
+        "notebook_value": null,
+        "page_denominator": null,
+        "raw": null
+      },
+      "reading_order_Edit_dist": {
+        "notebook_value": 0.14017271531734277,
+        "page_denominator": 1638,
+        "raw": 0.14017271531734277
+      },
+      "table_TEDS": {
+        "notebook_value": 92.17778900863787,
+        "page_denominator": 458,
+        "raw": 0.9217778900863787
+      },
+      "table_TEDS_structure_only": {
+        "notebook_value": 94.8610238606826,
+        "page_denominator": 458,
+        "raw": 0.9486102386068259
+      },
+      "text_block_Edit_dist": {
+        "notebook_value": 0.05042648991128957,
+        "page_denominator": 1557,
+        "raw": 0.05042648991128957
+      }
+    },
+    "overall_notebook": null,
+    "source": "tools/generate_result_tables.ipynb#cell-2"
+  },
+  "page_denominators": {
+    "display_formula": {
+      "Edit_dist": {
+        "ALL": 313
+      }
+    },
+    "reading_order": {
+      "Edit_dist": {
+        "ALL": 1638
+      }
+    },
+    "table": {
+      "Edit_dist": {
+        "ALL": 458
+      },
+      "TEDS": {
+        "ALL": 458
+      },
+      "TEDS_structure_only": {
+        "ALL": 458
+      }
+    },
+    "text_block": {
+      "Edit_dist": {
+        "ALL": 1557
+      }
+    }
+  },
+  "runtime_environment": {
+    "external_tools": {
+      "convert": {
+        "output": "unavailable (FileNotFoundError: [Errno 2] No such file or directory: 'convert')",
+        "path": "convert",
+        "returncode": null
+      },
+      "ghostscript": {
+        "output": "unavailable (FileNotFoundError: [Errno 2] No such file or directory: 'gs')",
+        "path": "gs",
+        "returncode": null
+      },
+      "identify": {
+        "output": "unavailable (FileNotFoundError: [Errno 2] No such file or directory: 'identify')",
+        "path": "identify",
+        "returncode": null
+      },
+      "kpsewhich": {
+        "output": "unavailable (FileNotFoundError: [Errno 2] No such file or directory: '/share/texlive/kpsewhich')",
+        "path": "/share/texlive/kpsewhich",
+        "returncode": null
+      },
+      "latexmlc": {
+        "output": "unavailable (FileNotFoundError: [Errno 2] No such file or directory: 'latexmlc')",
+        "path": "latexmlc",
+        "returncode": null
+      },
+      "magick": {
+        "output": "unavailable (FileNotFoundError: [Errno 2] No such file or directory: 'magick')",
+        "path": "magick",
+        "returncode": null
+      },
+      "pdflatex": {
+        "output": "unavailable (FileNotFoundError: [Errno 2] No such file or directory: '/share/texlive/pdflatex')",
+        "path": "/share/texlive/pdflatex",
+        "returncode": null
+      },
+      "tlmgr": {
+        "output": "unavailable (FileNotFoundError: [Errno 2] No such file or directory: 'tlmgr')",
+        "path": "tlmgr",
+        "returncode": null
+      }
+    },
+    "python_packages": {
+      "Levenshtein": "0.25.1",
+      "Pillow": "10.4.0",
+      "PyYAML": "6.0.2",
+      "apted": "1.0.3",
+      "beautifulsoup4": "4.11.1",
+      "evaluate": "0.4.3",
+      "func-timeout": "4.3.5",
+      "loguru": "0.7.2",
+      "lxml": "4.9.1",
+      "matplotlib": "3.7.5",
+      "nltk": "3.9.1",
+      "numpy": "1.24.4",
+      "pandas": "2.0.3",
+      "pip": "26.1.2",
+      "pylatexenc": "2.10",
+      "scipy": "1.10.1",
+      "setuptools": "83.0.0",
+      "tabulate": "0.9.0",
+      "tqdm": "4.67.1",
+      "wheel": "0.47.0"
+    },
+    "system": {
+      "conda_env": "",
+      "conda_prefix": "",
+      "libc": "glibc 2.35",
+      "os_release": {
+        "BUG_REPORT_URL": "https://bugs.launchpad.net/ubuntu/",
+        "HOME_URL": "https://www.ubuntu.com/",
+        "ID": "ubuntu",
+        "ID_LIKE": "debian",
+        "NAME": "Ubuntu",
+        "PRETTY_NAME": "Ubuntu 22.04.5 LTS",
+        "PRIVACY_POLICY_URL": "https://www.ubuntu.com/legal/terms-and-policies/privacy-policy",
+        "SUPPORT_URL": "https://help.ubuntu.com/",
+        "UBUNTU_CODENAME": "jammy",
+        "VERSION": "22.04.5 LTS (Jammy Jellyfish)",
+        "VERSION_CODENAME": "jammy",
+        "VERSION_ID": "22.04"
+      },
+      "platform": "Linux-5.10.0-136.12.0.86.r1526_92.hce2.aarch64-aarch64-with-glibc2.35",
+      "python_executable": "/workspace/venvs/omnidocbench_py310/bin/python",
+      "python_prefix": "/workspace/venvs/omnidocbench_py310",
+      "python_version": "3.10.12 (main, Mar  3 2026, 11:56:32) [GCC 11.4.0]",
+      "uname": "Linux liteserver-c001-4 5.10.0-136.12.0.86.r1526_92.hce2.aarch64 #1 SMP Tue Mar 26 03:00:47 UTC 2024 aarch64 aarch64"
+    },
+    "system_packages": {
+      "package_manager": "dpkg-query",
+      "tracked_packages": {
+        "fontconfig": "fontconfig=2.13.1-4.2ubuntu5",
+        "ghostscript": "unavailable (dpkg-query: no packages found matching ghostscript)",
+        "imagemagick": "unavailable (dpkg-query: no packages found matching imagemagick)",
+        "latexml": "latexml=",
+        "python3": "python3=3.10.6-1~22.04.1",
+        "python3-pip": "python3-pip=",
+        "python3-setuptools": "python3-setuptools=",
+        "python3-wheel": "unavailable (dpkg-query: no packages found matching python3-wheel)",
+        "texlive-base": "unavailable (dpkg-query: no packages found matching texlive-base)",
+        "texlive-binaries": "texlive-binaries=",
+        "texlive-fonts-recommended": "unavailable (dpkg-query: no packages found matching texlive-fonts-recommended)",
+        "texlive-lang-chinese": "unavailable (dpkg-query: no packages found matching texlive-lang-chinese)",
+        "texlive-lang-cjk": "unavailable (dpkg-query: no packages found matching texlive-lang-cjk)",
+        "texlive-latex-base": "unavailable (dpkg-query: no packages found matching texlive-latex-base)",
+        "texlive-latex-extra": "unavailable (dpkg-query: no packages found matching texlive-latex-extra)",
+        "texlive-plain-generic": "unavailable (dpkg-query: no packages found matching texlive-plain-generic)"
+      }
+    },
+    "texlive": {
+      "cjk_font_family": "gkai",
+      "cjk_font_fd": {
+        "date": "",
+        "header": "",
+        "path": "unavailable (FileNotFoundError: [Errno 2] No such file or directory: '/share/texlive/kpsewhich')",
+        "status": "not_found",
+        "version": "unavailable"
+      },
+      "cjk_sty": {
+        "date": "",
+        "header": "",
+        "path": "unavailable (FileNotFoundError: [Errno 2] No such file or directory: '/share/texlive/kpsewhich')",
+        "status": "not_found",
+        "version": "unavailable"
+      }
+    }
+  },
+  "save_name": "predictions_quick_match",
+  "stage_execution": {
+    "metrics": {
+      "table": {
+        "TEDS": {
+          "error_case_count": 0,
+          "error_cases": [],
+          "exception_case_count": 0,
+          "exception_cases": [],
+          "sample_count": 665,
+          "timeout_case_count": 0,
+          "timeout_cases": [],
+          "timeout_sec": 120.0,
+          "workers": 12
+        }
+      }
+    },
+    "page_match": {
+      "fallbacks": {
+        "page_timeout": {
+          "cases": [
+            "docstructbench_enbook-zlib-o.O-17208435.pdf_105.jpg",
+            "docstructbench_enbook-zlib-o.O-17208435.pdf_57.jpg",
+            "newspaper_0b1bb8d03b4287eb95f67b68c2cf9f92_1.jpg"
+          ],
+          "count": 3
+        },
+        "quick_match_timeout": {
+          "cases": [],
+          "count": 0
+        }
+      },
+      "match_timeout_sec": 420,
+      "page_count": 1651,
+      "quick_match_truncated_timeout_sec": 300,
+      "workers": 24
+    }
+  }
+}
+========== END_FINAL_EVAL_RUN_REPORT predictions_quick_match ==========
+[final-eval-run-report] saved to ./result/predictions_quick_match_run_summary.json
+[runtime-environment-json] saved to ./result/predictions_quick_match_runtime_environment.json
+[runtime-environment-log] saved to ./result/predictions_quick_match_runtime_environment.log
+[stage-execution-json] saved to ./result/predictions_quick_match_stage_execution.json
+[stage-execution-log] saved to ./result/predictions_quick_match_stage_execution.log

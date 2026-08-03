@@ -1,0 +1,317 @@
+{
+  "dataset_json": "/workspace/datasets/OmniDocBench/OmniDocBench.json",
+  "images_dir": "/workspace/datasets/OmniDocBench/images",
+  "offset": 0,
+  "count": 1,
+  "images": [
+    "page-d1561665-5359-42fe-920c-d6e3bff81953.png"
+  ],
+  "pipeline": "owned_paddleocr_vl_v1.6",
+  "layout_device": "npu",
+  "layout_graph_capture": false,
+  "page_preprocessing_mode": "all_before_recognition",
+  "configuration": {
+    "layout_model": "/workspace/models/PP-DocLayoutV3_safetensors",
+    "recognizer_model": "/workspace/models/PaddleOCR-VL-1.6",
+    "device": "npu:0",
+    "layout_device": "npu:0",
+    "layout_graph_capture": false,
+    "dtype": "fp16",
+    "batch_size": 32,
+    "cache_length": 2048,
+    "max_new_tokens": 2048,
+    "decode_backend": "torchair",
+    "decode_optimization": "combined_apply_static_actual",
+    "preprocessor_min_pixels": 28224,
+    "preprocessor_max_pixels": 401408,
+    "text_preprocessor_max_pixels": null,
+    "text_crop_scale": 0.5,
+    "effective_global_min_pixels": 28224,
+    "effective_global_max_pixels": 401408,
+    "vision_backend": "torchair",
+    "vision_attention": "prompt_flash_attention",
+    "vision_mlp": {
+      "source_intermediate_size": 4304,
+      "target_intermediate_size": 4352,
+      "layer_count": 27,
+      "zero_extended": true
+    },
+    "vision_linear_weight_format": {
+      "requested": "fractal_nz",
+      "effective_mode": "fractal_nz",
+      "target_format": "FRACTAL_NZ",
+      "target_format_code": 29,
+      "linear_weight_count": 162,
+      "before_format_histogram": {
+        "2": 162
+      },
+      "after_format_histogram": {
+        "29": 162
+      },
+      "converted_count": 162,
+      "all_after_are_nz": true
+    },
+    "vision_padding": "bucket",
+    "vision_packing": "greedy",
+    "vision_pack_target": 1024,
+    "vision_router_lookahead": 32,
+    "vision_batched_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_vision_router_batched",
+    "vision_buckets": [
+      128,
+      256,
+      384,
+      512,
+      640,
+      768,
+      1024,
+      1408,
+      1920,
+      2048
+    ],
+    "text_buckets": [
+      32,
+      64,
+      96,
+      128,
+      160,
+      176,
+      192,
+      208,
+      224,
+      256,
+      320,
+      384,
+      448,
+      576,
+      640,
+      768,
+      896,
+      1024,
+      1152,
+      1280,
+      1312
+    ],
+    "text_packing": "production_group",
+    "text_pack_buckets": [
+      128,
+      256,
+      512,
+      1024
+    ],
+    "text_pack_max_members": 32,
+    "text_packed_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_packed_torchair",
+    "cpu_preprocessing": {
+      "execution": "background_thread",
+      "workers": 1,
+      "max_pending": 32,
+      "ordering": "fifo",
+      "pin_recognition_inputs": "best_effort"
+    },
+    "page_preprocessing_mode": "all_before_recognition",
+    "scheduler_progress": false,
+    "recognition_input_fingerprints": false,
+    "vision_route_plan_input": null
+  },
+  "setup_s": 1090.8110611748416,
+  "recognizer_setup_timing_s": {
+    "recognizer_frontend_setup": 0.8838730321731418,
+    "recognizer_model_load": 9.713507118169218,
+    "vision_mlp_padding": 0.028666377998888493,
+    "vision_weight_format": 5.420500805135816,
+    "decode_optimization_setup": 0.03392393607646227,
+    "decode_weight_format": 0.01733905402943492,
+    "vision_runtime_setup": 274.5422784369439,
+    "text_runtime_setup": 644.3381901769899,
+    "compile_wrapper": 0.0020316250156611204,
+    "compile_first_call": 36.351071680895984,
+    "vision_router_setup": 0.0,
+    "packed_text_runtime_setup": 113.10879591293633,
+    "private_cache_pool_setup": 0.009557532146573067,
+    "decode_control_setup": 0.0038616859819740057,
+    "recognizer_runtime_total": 1084.4735369151458
+  },
+  "pipeline_e2e_s": 7.445892427815124,
+  "pages_per_s": 0.13430223572185473,
+  "s_per_page": 7.445892427815124,
+  "result_count": 1,
+  "prediction_count": 1,
+  "completion_s": [
+    7.440727609908208
+  ],
+  "page_artifact_writer": {
+    "execution": "background_ordered_single_worker",
+    "max_pending": 8,
+    "max_pending_observed": 1,
+    "write_wall_sum_s": 0.001311772,
+    "queue_wait_sum_s": 0.000370187,
+    "producer_backpressure_s": 0.0,
+    "final_drain_s": 7.96e-06
+  },
+  "recognition": {
+    "schedules": 1,
+    "requests": 15,
+    "wall_s": 7.444308331003413,
+    "generated_tokens_including_eos": 1198,
+    "decode_tokens_after_prefill_including_eos": 1183,
+    "input_tokens": 1404,
+    "projected_image_tokens": 1209,
+    "real_vision_tokens": 4836,
+    "physical_vision_tokens": 5504,
+    "real_text_tokens": 1404,
+    "physical_text_tokens": 2176,
+    "decode_graph_calls": 273,
+    "raw_decode_token_slots": 8736,
+    "active_decode_token_slots": 1198,
+    "effective_decode_tokens": 1183,
+    "idle_decode_token_slots": 7538,
+    "lookahead_decode_token_slots": 15,
+    "decode_wall_s": 1.3269676049239933,
+    "run_scoped_scheduler_wall_s": 2.8300150379072875,
+    "kv_prefix_bytes_copied": 25878528,
+    "stop_reason_counts": {
+      "eos": 15
+    },
+    "pixel_profile_request_counts": {
+      "28224:401408": 15
+    },
+    "device_stage_s": {
+      "adaptive_mlp_projector": 0.0129993599280715,
+      "image_embed_scatter": 0.006263880021870136,
+      "prefill_argmax": 0.0007605000212788582,
+      "prefill_lm_head": 0.005157100111246108,
+      "recognition_inputs_h2d": 1.1988860912919048,
+      "static_cache_alloc": 4.3199999636271975e-06,
+      "text_kv_redistribute": 0.05175516146421433,
+      "text_prefill": 0.052324920177459724,
+      "text_prefill_input_prep": 0.003685380011796951,
+      "text_token_embedding": 0.0031607599537819627,
+      "vision_embeddings": 1.179844971001148,
+      "vision_prefill": 0.11983773899078369,
+      "vision_prefill_input_prep": 0.0290964398086071
+    },
+    "vision_packing": {
+      "mode": "greedy",
+      "target": 1024,
+      "lookahead": 32,
+      "groups": 7,
+      "crops": 15,
+      "packed_groups": 3,
+      "singleton_groups": 4,
+      "eager_overflow_groups": 0,
+      "crops_per_group": 2.142857142857143,
+      "group_size_histogram": {
+        "1": 4,
+        "2": 1,
+        "4": 1,
+        "5": 1
+      },
+      "graph_shape_histogram": {
+        "b1_s1024": 3,
+        "b1_s1408": 1,
+        "b1_s256": 2,
+        "b1_s512": 1
+      },
+      "ready_window_histogram": {},
+      "router_cpu_s": 0.0,
+      "packed_real_vision_tokens": 2764,
+      "packed_physical_vision_tokens": 3072,
+      "packed_fill_fraction": 0.8997395833333334
+    },
+    "text_packing": {
+      "mode": "production_group",
+      "buckets": [
+        128,
+        256,
+        512,
+        1024
+      ],
+      "groups": 7,
+      "crops": 15,
+      "packs": 7,
+      "packed_crops": 15,
+      "fallback_crops": 0,
+      "calls": 7,
+      "call_reduction_fraction": 0.5333333333333333,
+      "pack_size_histogram": {
+        "1": 4,
+        "2": 1,
+        "4": 1,
+        "5": 1
+      },
+      "bucket_histogram": {
+        "128": 3,
+        "256": 1,
+        "512": 3
+      },
+      "packed_real_text_tokens": 1404,
+      "packed_physical_text_tokens": 2176,
+      "packed_fill_fraction": 0.6452205882352942,
+      "redistributed_kv_bytes": 25878528,
+      "private_cache_pool": {
+        "storage": "zero_once_fixed_arena",
+        "capacity": 160,
+        "allocated_bytes": 6039797760,
+        "acquisitions": 15,
+        "reuses": 0,
+        "releases": 15,
+        "active_slots": 0,
+        "free_slots": 160,
+        "high_water_active_slots": 15
+      }
+    },
+    "run_output_tok_per_s": 160.92831553076235,
+    "decode_useful_token_fraction": 0.13541666666666666,
+    "vision_useful_token_fraction": 0.8786337209302325,
+    "text_useful_token_fraction": 0.6452205882352942,
+    "trace_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_opt_kv2048_pack1024_smoke_7b9d419/output/recognition_trace.jsonl"
+  },
+  "layout_frontend": {
+    "implementation": "owned_no_paddlex",
+    "device": "npu:0",
+    "graph_capture": false,
+    "npu_indexput_compat": true,
+    "setup_s": 6.322532265912741,
+    "stage_s": {
+      "file_read_s": 0.0006940520834177732,
+      "image_decode_s": 0.09188856184482574,
+      "layout_mask_polygon_cpu_s": 0.08511213609017432,
+      "layout_mask_wait_and_d2h_s": 0.00038890703581273556,
+      "layout_metadata_wait_and_d2h_s": 0.0018073210958391428,
+      "layout_model_submit_s": 4.349811537889764,
+      "layout_postprocess_s": 0.12849732395261526,
+      "layout_preprocess_h2d_s": 0.012910099001601338,
+      "layout_structural_postprocess_cpu_s": 0.007286194013431668,
+      "page_preparation_s": 0.026337217073887587,
+      "page_total_s": 4.610486117890105
+    },
+    "statistics": {
+      "filtered_layout_boxes": 15,
+      "merged_blocks": 15,
+      "raw_layout_boxes": 15,
+      "requests": 15
+    }
+  },
+  "page_completion_order": [
+    "page-d1561665-5359-42fe-920c-d6e3bff81953.png"
+  ],
+  "paddlex_runtime_dependency": false,
+  "loaded_paddlex_modules": [],
+  "layout_mask_guard": {
+    "guard_version": 2,
+    "behavior": "integer_bounding_rectangle_for_empty_scaled_mask_crop",
+    "fallback_calls": 0,
+    "fallback_regions": 0,
+    "events": []
+  },
+  "layout_mask_guard_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_opt_kv2048_pack1024_smoke_7b9d419/output/layout_mask_guard.json",
+  "predictions_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_opt_kv2048_pack1024_smoke_7b9d419/output/predictions",
+  "page_regions_jsonl": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_opt_kv2048_pack1024_smoke_7b9d419/output/page_regions.jsonl",
+  "vision_route_plan": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_opt_kv2048_pack1024_smoke_7b9d419/output/vision_route_plan.json",
+  "timeline": {
+    "enabled": false,
+    "event_count": 0,
+    "trace_json": null,
+    "html": null,
+    "additional_device_synchronization": false
+  }
+}
