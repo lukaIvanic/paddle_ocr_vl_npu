@@ -9,7 +9,7 @@ import json
 import re
 import sys
 import time
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, deque
 from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -67,7 +67,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--limit", type=int, default=32)
-    parser.add_argument("--workers", type=int, choices=(1, 2), default=1)
+    parser.add_argument("--workers", type=int, choices=(1, 2, 4, 8), default=1)
     parser.add_argument("--preprocessor-min-pixels", type=int)
     parser.add_argument("--reference-requests", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
@@ -266,40 +266,93 @@ def main(argv: Sequence[str] | None = None) -> None:
             for ordinal, path in enumerate(image_paths)
         ]
 
-    def prepare_with_decode_prefetch() -> list[Any]:
-        prepared = []
-        with ThreadPoolExecutor(
-            max_workers=1,
-            thread_name_prefix="layout-input",
-        ) as executor:
-            pending = executor.submit(
+    worker_pipeline: dict[str, Any] = {
+        "strategy": "serial",
+        "decode_workers": 0,
+        "page_prepare_workers": 0,
+        "max_inflight_pages": 1,
+        "decode_wait_s": 0.0,
+        "page_prepare_wait_s": 0.0,
+    }
+
+    def prepare_with_staged_workers() -> list[Any]:
+        """Overlap bounded page decode and crop work around one NPU detector."""
+
+        prepared: list[Any] = []
+        decode_futures: dict[int, Any] = {}
+        prepare_futures: deque[Any] = deque()
+        next_decode = 0
+        decode_wait_s = 0.0
+        page_prepare_wait_s = 0.0
+
+        def submit_decode(executor: ThreadPoolExecutor) -> None:
+            nonlocal next_decode
+            if next_decode >= len(image_paths):
+                return
+            ordinal = next_decode
+            decode_futures[ordinal] = executor.submit(
                 frontend.decode_page,
-                image_paths[0],
-                0,
+                image_paths[ordinal],
+                ordinal,
             )
+            next_decode += 1
+
+        def collect_oldest() -> None:
+            nonlocal page_prepare_wait_s
+            started = time.perf_counter()
+            prepared.append(page_record(prepare_futures.popleft().result()))
+            page_prepare_wait_s += time.perf_counter() - started
+
+        with (
+            ThreadPoolExecutor(
+                max_workers=args.workers,
+                thread_name_prefix="layout-input",
+            ) as decode_executor,
+            ThreadPoolExecutor(
+                max_workers=args.workers,
+                thread_name_prefix="layout-page-prepare",
+            ) as prepare_executor,
+        ):
+            for _ in range(min(args.workers, len(image_paths))):
+                submit_decode(decode_executor)
+
             for ordinal in range(len(image_paths)):
-                decoded = pending.result()
-                if ordinal + 1 < len(image_paths):
-                    pending = executor.submit(
-                        frontend.decode_page,
-                        image_paths[ordinal + 1],
-                        ordinal + 1,
-                    )
-                prepared.append(
-                    page_record(
-                        frontend.prepare_decoded_page(
-                            decoded,
-                            min_pixels=args.preprocessor_min_pixels,
-                        )
+                started = time.perf_counter()
+                decoded = decode_futures.pop(ordinal).result()
+                decode_wait_s += time.perf_counter() - started
+                submit_decode(decode_executor)
+
+                detected = frontend.detect_decoded_page(decoded)
+                prepare_futures.append(
+                    prepare_executor.submit(
+                        frontend.prepare_detected_page,
+                        detected,
+                        min_pixels=args.preprocessor_min_pixels,
                     )
                 )
+                if len(prepare_futures) >= args.workers:
+                    collect_oldest()
+
+            while prepare_futures:
+                collect_oldest()
+
+        worker_pipeline.update(
+            {
+                "strategy": "bounded_staged_cpu_pipeline",
+                "decode_workers": args.workers,
+                "page_prepare_workers": args.workers,
+                "max_inflight_pages": args.workers,
+                "decode_wait_s": decode_wait_s,
+                "page_prepare_wait_s": page_prepare_wait_s,
+            }
+        )
         return prepared
 
     frontend_started = time.perf_counter()
     prepared_pages = (
         prepare_serial()
         if args.workers == 1
-        else prepare_with_decode_prefetch()
+        else prepare_with_staged_workers()
     )
     frontend_wall_s = time.perf_counter() - frontend_started
 
@@ -374,9 +427,8 @@ def main(argv: Sequence[str] | None = None) -> None:
         "graph_capture": bool(frontend.graph_capture),
         "npu_indexput_compat": bool(frontend.npu_indexput_compat),
         "workers": args.workers,
-        "worker_strategy": (
-            "serial" if args.workers == 1 else "one_page_decode_prefetch"
-        ),
+        "worker_strategy": worker_pipeline["strategy"],
+        "worker_pipeline": worker_pipeline,
         "setup_s": setup_s,
         "setup_by_worker_s": [frontend.setup_s],
         "npu_memory_allocated_bytes": {

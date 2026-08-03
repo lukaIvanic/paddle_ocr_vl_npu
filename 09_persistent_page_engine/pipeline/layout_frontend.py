@@ -68,6 +68,15 @@ class DecodedLayoutPage:
     page_started_ns: int
 
 
+@dataclass(frozen=True)
+class DetectedLayoutPage:
+    """A decoded page whose device-backed layout detection has completed."""
+
+    decoded: DecodedLayoutPage
+    boxes: list[dict[str, Any]]
+    detect_timing: dict[str, float]
+
+
 def _load_layout_labels(model_dir: Path) -> list[str]:
     metadata_path = model_dir / "inference.yml"
     if not metadata_path.is_file():
@@ -507,13 +516,46 @@ class OwnedLayoutFrontend:
         text_max_pixels: int | None = None,
         text_crop_scale: float = 1.0,
     ) -> PreparedLayoutPage:
+        return self.prepare_detected_page(
+            self.detect_decoded_page(decoded),
+            min_pixels=min_pixels,
+            max_pixels=max_pixels,
+            text_max_pixels=text_max_pixels,
+            text_crop_scale=text_crop_scale,
+        )
+
+    def detect_decoded_page(
+        self,
+        decoded: DecodedLayoutPage,
+    ) -> DetectedLayoutPage:
+        boxes, detect_timing = self._detect(
+            decoded.image,
+            flow_id=f"page:{decoded.ordinal}",
+        )
+        return DetectedLayoutPage(
+            decoded=decoded,
+            boxes=boxes,
+            detect_timing=detect_timing,
+        )
+
+    def prepare_detected_page(
+        self,
+        detected: DetectedLayoutPage,
+        *,
+        min_pixels: int | None = None,
+        max_pixels: int = 1_003_520,
+        text_max_pixels: int | None = None,
+        text_crop_scale: float = 1.0,
+    ) -> PreparedLayoutPage:
+        decoded = detected.decoded
         ordinal = decoded.ordinal
         path = decoded.image_path
         image = decoded.image
         decode = decoded.decode_timing
         flow_id = f"page:{ordinal}"
 
-        boxes, detect_timing = self._detect(image, flow_id=flow_id)
+        boxes = detected.boxes
+        detect_timing = detected.detect_timing
         preparation_started = time.perf_counter()
         preparation_started_ns = time.perf_counter_ns()
         document_images = gather_document_images(image, boxes)
