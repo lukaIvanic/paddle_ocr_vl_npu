@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "purpose": "910B2 serial B1 optimized vision sequence sweep",
+  "commit": "e1ffd9161b17ef15e6195b1eb4a323ef3cc78bcb",
+  "device": "Ascend910B2",
+  "fixed_configuration": {
+    "batch_size": 1,
+    "intermediate_size": 4352,
+    "weight_format": "fractal_nz",
+    "attention": "prompt_flash_attention",
+    "attention_head_padding": "runtime",
+    "execution": "torchair",
+    "warmup": 3,
+    "samples": 10,
+    "calls_per_sample": 5
+  },
+  "points": [
+    {
+      "sequence_length": 128,
+      "device_median_ms": 10.060028076171875,
+      "physical_tokens_per_s": 12723.622541688534,
+      "linear_tflop_per_s": 10.536595910608572,
+      "all_linear_weights_nz": true,
+      "cache_existed_before": false,
+      "first_call_s": 31.138602511957288,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_lab/vision_pfa_b1_s128_i4352_fractal_nz_hpruntime_cb8828f343c51dcb"
+    },
+    {
+      "sequence_length": 256,
+      "device_median_ms": 11.105546188354491,
+      "physical_tokens_per_s": 23051.545206164374,
+      "linear_tflop_per_s": 19.089281857951697,
+      "all_linear_weights_nz": true,
+      "cache_existed_before": false,
+      "first_call_s": 31.63329527992755,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_lab/vision_pfa_b1_s256_i4352_fractal_nz_hpruntime_45fc84f323daa56e"
+    },
+    {
+      "sequence_length": 384,
+      "device_median_ms": 13.369020080566408,
+      "physical_tokens_per_s": 28723.12238936595,
+      "linear_tflop_per_s": 23.785988064020277,
+      "all_linear_weights_nz": true,
+      "cache_existed_before": false,
+      "first_call_s": 31.744999087881297,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_lab/vision_pfa_b1_s384_i4352_fractal_nz_hpruntime_a6b9ea875865175e"
+    },
+    {
+      "sequence_length": 512,
+      "device_median_ms": 13.580270385742187,
+      "physical_tokens_per_s": 37701.75301793288,
+      "linear_tflop_per_s": 31.221307875957137,
+      "all_linear_weights_nz": true,
+      "cache_existed_before": true,
+      "first_call_s": 0.7322453449014574,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_lab/vision_pfa_b1_s512_i4352_fractal_nz_hpruntime_a181b786cc8574c2"
+    },
+    {
+      "sequence_length": 640,
+      "device_median_ms": 15.972731781005859,
+      "physical_tokens_per_s": 40068.28692641435,
+      "linear_tflop_per_s": 33.18106512439193,
+      "all_linear_weights_nz": true,
+      "cache_existed_before": false,
+      "first_call_s": 32.03187329391949,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_lab/vision_pfa_b1_s640_i4352_fractal_nz_hpruntime_dac69fc12803d27d"
+    },
+    {
+      "sequence_length": 768,
+      "device_median_ms": 16.490267944335937,
+      "physical_tokens_per_s": 46572.924260081054,
+      "linear_tflop_per_s": 38.567639184204374,
+      "all_linear_weights_nz": true,
+      "cache_existed_before": false,
+      "first_call_s": 31.378560829907656,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_lab/vision_pfa_b1_s768_i4352_fractal_nz_hpruntime_dc829be741bbffd8"
+    },
+    {
+      "sequence_length": 1408,
+      "device_median_ms": 25.68828430175781,
+      "physical_tokens_per_s": 54810.97855584122,
+      "linear_tflop_per_s": 45.38967818447157,
+      "all_linear_weights_nz": true,
+      "cache_existed_before": false,
+      "first_call_s": 32.379906059009954,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_lab/vision_pfa_b1_s1408_i4352_fractal_nz_hpruntime_5c4eca15893fae2a"
+    },
+    {
+      "sequence_length": 1920,
+      "device_median_ms": 28.129043579101562,
+      "physical_tokens_per_s": 68256.85326274163,
+      "linear_tflop_per_s": 56.52438042725603,
+      "all_linear_weights_nz": true,
+      "cache_existed_before": false,
+      "first_call_s": 33.014556414913386,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_lab/vision_pfa_b1_s1920_i4352_fractal_nz_hpruntime_18abadecd92781cd"
+    },
+    {
+      "sequence_length": 2048,
+      "device_median_ms": 31.309730529785156,
+      "physical_tokens_per_s": 65410.97496996098,
+      "linear_tflop_per_s": 54.16767191255791,
+      "all_linear_weights_nz": true,
+      "cache_existed_before": true,
+      "first_call_s": 0.7488148869015276,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_lab/vision_pfa_b1_s2048_i4352_fractal_nz_hpruntime_81e3883078692cdc"
+    },
+    {
+      "sequence_length": 2944,
+      "device_median_ms": 42.987850952148435,
+      "physical_tokens_per_s": 68484.46560580775,
+      "linear_tflop_per_s": 56.71286914383786,
+      "all_linear_weights_nz": true,
+      "cache_existed_before": false,
+      "first_call_s": 33.192797725088894,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_lab/vision_pfa_b1_s2944_i4352_fractal_nz_hpruntime_df3d44bc8963ca27"
+    },
+    {
+      "sequence_length": 4096,
+      "device_median_ms": 62.34407958984375,
+      "physical_tokens_per_s": 65699.90329390098,
+      "linear_tflop_per_s": 54.40693718363227,
+      "all_linear_weights_nz": true,
+      "cache_existed_before": false,
+      "first_call_s": 32.04174182191491,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_lab/vision_pfa_b1_s4096_i4352_fractal_nz_hpruntime_01c6dbfadfdd7bef"
+    },
+    {
+      "sequence_length": 4992,
+      "device_median_ms": 79.2567626953125,
+      "physical_tokens_per_s": 62985.16152105268,
+      "linear_tflop_per_s": 52.158824512226694,
+      "all_linear_weights_nz": true,
+      "cache_existed_before": false,
+      "first_call_s": 32.97051010699943,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_lab/vision_pfa_b1_s4992_i4352_fractal_nz_hpruntime_d199d5f74f536eab"
+    },
+    {
+      "sequence_length": 5120,
+      "device_median_ms": 83.54745483398438,
+      "physical_tokens_per_s": 61282.537094323925,
+      "linear_tflop_per_s": 50.74885926740801,
+      "all_linear_weights_nz": true,
+      "cache_existed_before": false,
+      "first_call_s": 33.39857900189236,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_matmul_lab/vision_pfa_b1_s5120_i4352_fractal_nz_hpruntime_4c9a8849d7b43c29"
+    }
+  ]
+}

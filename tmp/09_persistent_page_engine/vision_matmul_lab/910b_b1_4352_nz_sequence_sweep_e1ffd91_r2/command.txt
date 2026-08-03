@@ -1,0 +1,10 @@
+commit=e1ffd9161b17ef15e6195b1eb4a323ef3cc78bcb
+device=7
+shapes=128,256,384,512,640,768,1408,1920,2048,2944,4096,4992,5120
+batch_size=1
+intermediate_size=4352
+weight_format=fractal_nz
+execution=torchair
+attention=prompt_flash_attention
+head_padding=runtime
+warmup=3 samples=10 calls_per_sample=5
