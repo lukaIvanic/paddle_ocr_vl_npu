@@ -576,6 +576,23 @@ real/physical packed tokens, and fill fraction. The timeline shows one
 `Packed vision transformer` device span with every member crop as a flow ID,
 while downstream spans retain their individual crop IDs.
 
+The production runner can opt into the validated vision-MatMul alignment
+without changing the represented model function:
+
+```sh
+--vision-mlp-intermediate-size 4352 \
+--vision-linear-weight-format fractal_nz
+```
+
+The first flag zero-extends each native 4304-wide FC1/FC2 pair to 4352 and
+copies the checkpoint weights into the original subspace. The second enables
+torch-npu internal formats before the process's first NPU allocation, precasts
+all six Linear weights in each of the 27 vision layers, and fails unless all
+162 weights report FRACTAL_NZ format code 29. Both values are part of the
+per-bucket TorchAir cache identity and are recorded in the run configuration.
+These flags do not enable the separate experimental D80 attention-weight or
+joint-RoPE paths described below.
+
 ### Vision MatMul format/alignment lab
 
 `scripts/vision_matmul_lab.py` measures the exact production

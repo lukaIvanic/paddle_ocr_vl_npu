@@ -11,6 +11,7 @@ from __future__ import annotations
 import os
 import time
 import types
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Iterable
@@ -48,6 +49,8 @@ VISION_PROMPT_FA_310P_SEQ_ALIGNMENT = 128
 VISION_PROMPT_FA_FULL_ATTENTION_TOKENS = (1 << 31) - 1
 VISION_SOFTMAX_DTYPE_ENV = "PADDLE_OCR_VL_VISION_SOFTMAX_DTYPE"
 SOFTMAX_DTYPE_CHOICES = ("fp32", "model")
+VISION_LINEAR_WEIGHT_FORMAT_CHOICES = ("native", "fractal_nz")
+VISION_FRACTAL_NZ_FORMAT = 29
 
 
 def get_vision_attention_impl() -> str:
@@ -119,6 +122,176 @@ def align_vision_buckets(
     return tuple(
         sorted({align_vision_seq_len(bucket, alignment) for bucket in parsed})
     )
+
+
+def prepare_vision_mlp_intermediate(
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    *,
+    target_intermediate_size: int | None,
+) -> dict[str, Any]:
+    """Zero-extend every vision MLP without changing the represented function."""
+    layers = tuple(model.visual.vision_model.encoder.layers)
+    if not layers:
+        raise RuntimeError("the vision encoder has no layers")
+    source_sizes = {int(layer.mlp.fc1.out_features) for layer in layers}
+    if len(source_sizes) != 1:
+        raise RuntimeError(
+            "vision MLP layers disagree on their intermediate size: "
+            f"{sorted(source_sizes)}"
+        )
+    source_intermediate_size = source_sizes.pop()
+    target = (
+        source_intermediate_size
+        if target_intermediate_size is None
+        else int(target_intermediate_size)
+    )
+    if target < source_intermediate_size:
+        raise ValueError(
+            "vision MLP intermediate padding cannot shrink the checkpoint: "
+            f"source={source_intermediate_size} target={target}"
+        )
+    if target == source_intermediate_size:
+        return {
+            "source_intermediate_size": source_intermediate_size,
+            "target_intermediate_size": target,
+            "layer_count": len(layers),
+            "zero_extended": False,
+        }
+
+    for layer in layers:
+        source_fc1 = layer.mlp.fc1
+        source_fc2 = layer.mlp.fc2
+        hidden_size = int(source_fc1.in_features)
+        if int(source_fc2.in_features) != source_intermediate_size:
+            raise RuntimeError("vision FC1/FC2 intermediate dimensions disagree")
+        if int(source_fc2.out_features) != hidden_size:
+            raise RuntimeError("vision FC1/FC2 hidden dimensions disagree")
+        device = source_fc1.weight.device
+        dtype = source_fc1.weight.dtype
+        fc1 = nn.Linear(
+            hidden_size,
+            target,
+            bias=source_fc1.bias is not None,
+            device=device,
+            dtype=dtype,
+        )
+        fc2 = nn.Linear(
+            target,
+            hidden_size,
+            bias=source_fc2.bias is not None,
+            device=device,
+            dtype=dtype,
+        )
+        with torch.no_grad():
+            fc1.weight.zero_()
+            fc1.weight[:source_intermediate_size].copy_(source_fc1.weight)
+            if fc1.bias is not None:
+                fc1.bias.zero_()
+                fc1.bias[:source_intermediate_size].copy_(source_fc1.bias)
+            fc2.weight.zero_()
+            fc2.weight[:, :source_intermediate_size].copy_(source_fc2.weight)
+            if fc2.bias is not None:
+                fc2.bias.copy_(source_fc2.bias)
+        layer.mlp.fc1 = fc1
+        layer.mlp.fc2 = fc2
+
+    return {
+        "source_intermediate_size": source_intermediate_size,
+        "target_intermediate_size": target,
+        "layer_count": len(layers),
+        "zero_extended": True,
+    }
+
+
+def prepare_vision_linear_weight_format(
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    *,
+    requested: str,
+) -> dict[str, Any]:
+    """Precast all six vision Linear weights per layer to FRACTAL_NZ."""
+    requested = str(requested)
+    if requested not in VISION_LINEAR_WEIGHT_FORMAT_CHOICES:
+        raise ValueError(
+            "vision linear weight format must be one of "
+            f"{VISION_LINEAR_WEIGHT_FORMAT_CHOICES}, got {requested!r}"
+        )
+    import torch_npu
+
+    layers = tuple(model.visual.vision_model.encoder.layers)
+    modules: list[tuple[str, nn.Linear]] = []
+    for layer_index, layer in enumerate(layers):
+        modules.extend(
+            (
+                (f"layers.{layer_index}.self_attn.q_proj", layer.self_attn.q_proj),
+                (f"layers.{layer_index}.self_attn.k_proj", layer.self_attn.k_proj),
+                (f"layers.{layer_index}.self_attn.v_proj", layer.self_attn.v_proj),
+                (f"layers.{layer_index}.self_attn.out_proj", layer.self_attn.out_proj),
+                (f"layers.{layer_index}.mlp.fc1", layer.mlp.fc1),
+                (f"layers.{layer_index}.mlp.fc2", layer.mlp.fc2),
+            )
+        )
+    expected = len(layers) * 6
+    if len(modules) != expected:
+        raise RuntimeError(
+            f"expected {expected} vision Linear modules, found {len(modules)}"
+        )
+
+    def histogram() -> dict[str, int]:
+        return dict(
+            sorted(
+                Counter(
+                    str(int(torch_npu.get_npu_format(module.weight)))
+                    for _name, module in modules
+                ).items()
+            )
+        )
+
+    before = histogram()
+    converted = 0
+    if requested == "fractal_nz":
+        for name, module in modules:
+            before_code = int(torch_npu.get_npu_format(module.weight))
+            if before_code == VISION_FRACTAL_NZ_FORMAT:
+                continue
+            module.weight.data = torch_npu.npu_format_cast(
+                module.weight.data,
+                VISION_FRACTAL_NZ_FORMAT,
+            )
+            after_code = int(torch_npu.get_npu_format(module.weight))
+            if after_code != VISION_FRACTAL_NZ_FORMAT:
+                raise RuntimeError(
+                    "vision linear format cast did not produce FRACTAL_NZ: "
+                    f"module={name} before={before_code} after={after_code}"
+                )
+            converted += 1
+    after = histogram()
+    all_after_are_nz = all(
+        int(torch_npu.get_npu_format(module.weight))
+        == VISION_FRACTAL_NZ_FORMAT
+        for _name, module in modules
+    )
+    if requested == "fractal_nz" and not all_after_are_nz:
+        raise RuntimeError(
+            "not all vision Linear weights are FRACTAL_NZ after conversion: "
+            f"{after}"
+        )
+    return {
+        "requested": requested,
+        "effective_mode": (
+            "fractal_nz" if requested == "fractal_nz" else "native"
+        ),
+        "target_format": (
+            "FRACTAL_NZ" if requested == "fractal_nz" else "unchanged"
+        ),
+        "target_format_code": (
+            VISION_FRACTAL_NZ_FORMAT if requested == "fractal_nz" else None
+        ),
+        "linear_weight_count": len(modules),
+        "before_format_histogram": before,
+        "after_format_histogram": after,
+        "converted_count": converted,
+        "all_after_are_nz": all_after_are_nz,
+    }
 
 
 def get_vision_softmax_dtype_mode() -> str:
@@ -1040,6 +1213,8 @@ def vision_cache_dir_for_bucket(
     model_dir: Path,
     attention_impl: str,
     head_dim: int,
+    mlp_intermediate_size: int,
+    linear_weight_format: str,
 ) -> Path:
     attention_key = (
         "manual_bmm"
@@ -1054,6 +1229,8 @@ def vision_cache_dir_for_bucket(
             f"encoder_postln_{attention_key}",
             f"mode{cache_key_part(TORCHAIR_EXECUTION_MODE)}",
             f"softmax{cache_key_part(get_vision_softmax_dtype_mode())}",
+            f"mlp{int(mlp_intermediate_size)}",
+            f"weight{cache_key_part(linear_weight_format)}",
             "bs1",
             f"seq{int(bucket)}",
             f"dtype{cache_key_part(dtype)}",
@@ -1083,6 +1260,8 @@ class VisionPrefillRuntime:
         attention_impl: str = "manual",
         padding: str = "auto",
         seq_alignment: int = 1,
+        mlp_intermediate_size: int | None = None,
+        linear_weight_format: str = "native",
     ):
         self.model = model
         self.backend = str(backend)
@@ -1125,6 +1304,34 @@ class VisionPrefillRuntime:
         self.device = device
         self.dtype = dtype
         self.cache_root = cache_root.expanduser().resolve()
+        actual_mlp_intermediate_sizes = {
+            int(layer.mlp.fc1.out_features)
+            for layer in model.visual.vision_model.encoder.layers
+        }
+        if len(actual_mlp_intermediate_sizes) != 1:
+            raise RuntimeError(
+                "vision MLP layers disagree on their intermediate size: "
+                f"{sorted(actual_mlp_intermediate_sizes)}"
+            )
+        actual_mlp_intermediate_size = actual_mlp_intermediate_sizes.pop()
+        self.mlp_intermediate_size = int(
+            actual_mlp_intermediate_size
+            if mlp_intermediate_size is None
+            else mlp_intermediate_size
+        )
+        if self.mlp_intermediate_size != actual_mlp_intermediate_size:
+            raise RuntimeError(
+                "vision cache identity does not match the loaded model MLP: "
+                f"cache={self.mlp_intermediate_size} "
+                f"model={actual_mlp_intermediate_size}"
+            )
+        self.linear_weight_format = str(linear_weight_format)
+        if self.linear_weight_format not in VISION_LINEAR_WEIGHT_FORMAT_CHOICES:
+            raise ValueError(
+                "vision linear weight format must be one of "
+                f"{VISION_LINEAR_WEIGHT_FORMAT_CHOICES}, "
+                f"got {self.linear_weight_format!r}"
+            )
         hidden_size = int(model.config.vision_config.hidden_size)
         head_dim = hidden_size // int(
             model.config.vision_config.num_attention_heads
@@ -1152,6 +1359,8 @@ class VisionPrefillRuntime:
                 else None
             ),
             "vision_head_dim": head_dim,
+            "mlp_intermediate_size": self.mlp_intermediate_size,
+            "linear_weight_format": self.linear_weight_format,
             "prompt_flash_attention_call_head_dim": (
                 prompt_flash_attention_call_head_dim(head_dim)
                 if self.attention_impl == "prompt_flash_attention"
@@ -1191,6 +1400,8 @@ class VisionPrefillRuntime:
                 model_dir=model_dir,
                 attention_impl=self.attention_impl,
                 head_dim=head_dim,
+                mlp_intermediate_size=self.mlp_intermediate_size,
+                linear_weight_format=self.linear_weight_format,
             )
             cache_dir.mkdir(parents=True, exist_ok=True)
             config = CompilerConfig()

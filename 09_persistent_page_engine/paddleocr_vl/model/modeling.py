@@ -461,6 +461,8 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
         vision_cache_root: Path,
         vision_padding: str,
         vision_seq_alignment: int,
+        vision_mlp_intermediate_size: int,
+        vision_linear_weight_format: str,
         text_backend: str,
         text_buckets: str | Iterable[int],
         text_cache_root: Path,
@@ -499,6 +501,8 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
             model_dir=model_dir,
             padding=vision_padding,
             seq_alignment=vision_seq_alignment,
+            mlp_intermediate_size=vision_mlp_intermediate_size,
+            linear_weight_format=vision_linear_weight_format,
         )
         synchronize(device)
         setup_timing_s["vision_runtime_setup"] = time.perf_counter() - started

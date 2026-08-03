@@ -67,10 +67,13 @@ from utils.input_fingerprints import fingerprint_recognition_inputs
 from ..model.vision_prefill import (
     PreparedVisionPrefill,
     VISION_ATTENTION_CHOICES,
+    VISION_LINEAR_WEIGHT_FORMAT_CHOICES,
     VISION_PROMPT_FA_310P_SEQ_ALIGNMENT,
     align_vision_buckets,
     align_vision_seq_len,
     get_vision_prompt_fa_layout,
+    prepare_vision_linear_weight_format,
+    prepare_vision_mlp_intermediate,
 )
 from .vision_router import BatchedVisionGraphRuntime, select_profiled_vision_route
 
@@ -415,6 +418,8 @@ class ContinuousRecognizer:
         vision_torchair_cache_dir: Path | None = None,
         vision_padding: str = "auto",
         vision_promptfa_align_128: bool = False,
+        vision_mlp_intermediate_size: int | None = None,
+        vision_linear_weight_format: str = "native",
         vision_packing: str = DEFAULT_VISION_PACKING,
         vision_pack_target: int = DEFAULT_VISION_PACK_TARGET,
         vision_router_lookahead: int = DEFAULT_VISION_ROUTER_LOOKAHEAD,
@@ -444,6 +449,25 @@ class ContinuousRecognizer:
         # and recompiles the vision, text-prefill, and decode boundaries.
         runtime_started = time.perf_counter()
         import torch_npu
+
+        self.vision_linear_weight_format_requested = str(
+            vision_linear_weight_format
+        )
+        if (
+            self.vision_linear_weight_format_requested
+            not in VISION_LINEAR_WEIGHT_FORMAT_CHOICES
+        ):
+            raise ValueError(
+                "vision_linear_weight_format must be one of "
+                f"{VISION_LINEAR_WEIGHT_FORMAT_CHOICES}, "
+                f"got {self.vision_linear_weight_format_requested!r}"
+            )
+        if self.vision_linear_weight_format_requested == "fractal_nz":
+            # torch-npu 2.10 keeps npu_format_cast in ND unless this is set
+            # before the first NPU allocation in the process. The production
+            # runner sets it before layout setup; this makes direct recognizer
+            # construction obey the same contract.
+            torch.npu.config.allow_internal_format = True
 
         self.model_dir = _resolve_model_dir(model)
         self.device = torch.device("npu:0")
@@ -482,6 +506,11 @@ class ContinuousRecognizer:
             recognition_input_fingerprints
         )
         self.vision_backend = str(vision_backend)
+        self.vision_mlp_intermediate_size_requested = (
+            None
+            if vision_mlp_intermediate_size is None
+            else int(vision_mlp_intermediate_size)
+        )
         self.vision_attention = str(vision_attention)
         if self.vision_attention not in VISION_ATTENTION_CHOICES:
             raise ValueError(
@@ -616,6 +645,26 @@ class ContinuousRecognizer:
 
         synchronize(self.device)
         started = time.perf_counter()
+        self.vision_mlp = prepare_vision_mlp_intermediate(
+            self.model,
+            target_intermediate_size=(
+                self.vision_mlp_intermediate_size_requested
+            ),
+        )
+        synchronize(self.device)
+        vision_mlp_setup_s = time.perf_counter() - started
+
+        synchronize(self.device)
+        started = time.perf_counter()
+        self.vision_weight_format = prepare_vision_linear_weight_format(
+            self.model,
+            requested=self.vision_linear_weight_format_requested,
+        )
+        synchronize(self.device)
+        vision_weight_format_s = time.perf_counter() - started
+
+        synchronize(self.device)
+        started = time.perf_counter()
         decode_optimization_config = prepare_decode_optimization_modules(
             self.model,
             self.decode_optimization,
@@ -640,6 +689,12 @@ class ContinuousRecognizer:
             ),
             vision_padding=self.vision_padding,
             vision_seq_alignment=self.vision_seq_alignment,
+            vision_mlp_intermediate_size=int(
+                self.vision_mlp["target_intermediate_size"]
+            ),
+            vision_linear_weight_format=str(
+                self.vision_weight_format["effective_mode"]
+            ),
             text_backend=self.text_backend,
             text_buckets=self.text_buckets,
             text_cache_root=(
@@ -771,6 +826,8 @@ class ContinuousRecognizer:
         self.setup_timing_s = {
             "recognizer_frontend_setup": float(frontend_setup_s),
             "recognizer_model_load": float(model_load_s),
+            "vision_mlp_padding": float(vision_mlp_setup_s),
+            "vision_weight_format": float(vision_weight_format_s),
             "decode_optimization_setup": float(decode_optimization_setup_s),
             "decode_weight_format": float(weight_format_s),
             **self.stages.setup_timing_s,
@@ -2734,6 +2791,8 @@ class ContinuousRecognizer:
             ),
             "diagnostic_decode_request_id": self.diagnostic_decode_request_id,
             "vision_prefill": self.vision_prefill.metadata,
+            "vision_mlp": dict(self.vision_mlp),
+            "vision_linear_weight_format": dict(self.vision_weight_format),
             "vision_backend": self.vision_backend,
             "vision_attention": vision_attention,
             "vision_promptfa_align_128": self.vision_promptfa_align_128,

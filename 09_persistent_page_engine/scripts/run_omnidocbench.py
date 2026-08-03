@@ -41,6 +41,7 @@ from paddleocr_vl.model.text_prefill import TEXT_PADDING_CHOICES, parse_text_buc
 from paddleocr_vl.model.vision_prefill import (
     VISION_ATTENTION_CHOICES,
     VISION_BACKEND_CHOICES,
+    VISION_LINEAR_WEIGHT_FORMAT_CHOICES,
     VISION_PADDING_CHOICES,
     parse_vision_buckets,
 )
@@ -191,6 +192,25 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help=(
             "Pad every PromptFA vision sequence to a 128-token multiple; "
             "required by the masked 310P PromptFA path."
+        ),
+    )
+    parser.add_argument(
+        "--vision-mlp-intermediate-size",
+        type=int,
+        default=None,
+        help=(
+            "Zero-extend every vision MLP intermediate dimension to this "
+            "size before building eager or compiled stages. Omit to retain "
+            "the checkpoint's native 4304-wide MLP."
+        ),
+    )
+    parser.add_argument(
+        "--vision-linear-weight-format",
+        default="native",
+        choices=VISION_LINEAR_WEIGHT_FORMAT_CHOICES,
+        help=(
+            "Precast all six Linear weights per vision layer to FRACTAL_NZ "
+            "before building the vision runtime."
         ),
     )
     parser.add_argument(
@@ -430,6 +450,11 @@ def validate_args(args: argparse.Namespace) -> None:
         )
     if args.vision_pack_target <= 0:
         raise ValueError("--vision-pack-target must be positive")
+    if (
+        args.vision_mlp_intermediate_size is not None
+        and args.vision_mlp_intermediate_size <= 0
+    ):
+        raise ValueError("--vision-mlp-intermediate-size must be positive")
     if args.vision_router_lookahead <= 0:
         raise ValueError("--vision-router-lookahead must be positive")
     if args.text_pack_max_members <= 0:
@@ -667,6 +692,10 @@ def main() -> None:
 
     import torch_npu  # noqa: F401
 
+    if args.vision_linear_weight_format == "fractal_nz":
+        # This must precede layout setup and therefore every NPU allocation in
+        # the process; otherwise torch-npu 2.10 leaves npu_format_cast in ND.
+        torch.npu.config.allow_internal_format = True
     if not torch.npu.is_available():
         raise RuntimeError("Experiment 09 requires an available NPU")
     torch.npu.set_compile_mode(jit_compile=False)
@@ -695,6 +724,8 @@ def main() -> None:
         vision_backend=args.vision_backend,
         vision_attention=args.vision_attention,
         vision_promptfa_align_128=args.vision_promptfa_align_128,
+        vision_mlp_intermediate_size=args.vision_mlp_intermediate_size,
+        vision_linear_weight_format=args.vision_linear_weight_format,
         vision_buckets=vision_buckets,
         vision_torchair_cache_dir=(
             args.vision_torchair_cache_dir.expanduser().resolve()
@@ -753,6 +784,12 @@ def main() -> None:
             "vision_backend": args.vision_backend,
             "vision_attention": args.vision_attention,
             "vision_promptfa_align_128": args.vision_promptfa_align_128,
+            "vision_mlp_intermediate_size": (
+                args.vision_mlp_intermediate_size
+            ),
+            "vision_linear_weight_format": (
+                args.vision_linear_weight_format
+            ),
             "vision_packing": args.vision_packing,
             "vision_pack_target": args.vision_pack_target,
             "vision_router_lookahead": args.vision_router_lookahead,
@@ -856,6 +893,10 @@ def main() -> None:
             ),
             "vision_backend": args.vision_backend,
             "vision_attention": args.vision_attention,
+            "vision_mlp": recognizer_configuration["vision_mlp"],
+            "vision_linear_weight_format": (
+                recognizer_configuration["vision_linear_weight_format"]
+            ),
             "vision_padding": args.vision_padding,
             "vision_packing": args.vision_packing,
             "vision_pack_target": args.vision_pack_target,
