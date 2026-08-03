@@ -367,6 +367,13 @@ class OwnedLayoutFrontend:
             dtype=self.model_dtype,
         )
 
+    def _prepare_pixel_values(self, image_rgb: np.ndarray) -> torch.Tensor:
+        """Prepare the detector input synchronously for standalone probes."""
+
+        return self._move_pixel_values(
+            self._prepare_pixel_values_cpu(image_rgb)
+        )
+
     @torch.inference_mode()
     def _detect(
         self,
