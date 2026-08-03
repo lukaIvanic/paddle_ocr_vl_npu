@@ -21972,3 +21972,306 @@ Paste back `agent_report.md`, `gate8/contract.json`,
 work server.  Do not edit source, create another cache, change B/KV/pixels,
 start another sweep, or rerun a failed full job under altered settings.  Then
 **stop**.
+
+## Phase 55: dense vision buckets and 768-token packing target
+
+### 55.0 Goal and fixed comparison
+
+Repeat the Phase-54 production run with exactly two vision-routing changes:
+
+```text
+vision pack target      1024 -> 768
+vision bucket ladder    128,256,384,512,640,768,896,1024,
+                        1152,1280,1408,1536,1664,1792,1920,2048
+```
+
+Everything else remains fixed: all 1,651 pages are prepared before OCR; staged
+layout uses four input workers and eight page-finalization workers; decode is
+B64/KV2048 with the PSE sentinel workaround; global pixels are
+28224..401408; text crops use scale 0.5; vision uses compiled PromptFA, the
+4352-wide zero-extended MLP, and FRACTAL_NZ weights; text prefill uses
+production-group packing; timeline tracing stays off.
+
+The denser ladder does not resize, clip, or discard any crop.  It only reduces
+padding for a singleton crop or packed group whose real length lies between
+two old graph shapes.  Crops larger than the 768-token packing target remain
+singleton groups and route to the smallest fitting dense bucket.
+
+This phase permits one deliberate vision-cache materialization gate because
+896, 1152, 1280, 1536, 1664, and 1792 are new graph shapes.  It then requires
+an identical warm gate with zero cache growth before the full run.  Do not call
+the first gate a failure merely because those six graphs are compiled.  Decode,
+text, and packed-text caches must not grow.
+
+The 910B2 control for this exact target and ladder completed all 1,651 pages on
+commit `c06a9cf` under:
+
+```text
+tmp/09_persistent_page_engine/
+  910b_full_b64_pse_layout8_target768_dense_c06a9cf/
+```
+
+| Metric | old target-1024 | dense target-768 | signed delta |
+|---|---:|---:|---:|
+| pipeline E2E | 717.705 s | 727.988 s | +10.283 s |
+| pages/s | 2.30039 | 2.26790 | -0.03249 |
+| vision prefill | 178.088 s | 203.540 s | +25.452 s |
+| physical vision tokens | 9,512,832 | 9,274,368 | -238,464 |
+| vision fill | 90.416% | 92.352% | +1.936 pp |
+| vision groups | 8,781 | 11,230 | +2,449 |
+| text prefill | 74.936 s | 76.407 s | +1.471 s |
+| physical text tokens | 3,997,056 | 3,214,080 | -782,976 |
+| text fill | 64.049% | 79.652% | +15.603 pp |
+| decode | 124.087 s | 126.486 s | +2.399 s |
+
+Thus dense-768 is a measured regression on 910B2: lower padding did not repay
+the 27.9% increase in graph calls.  This does **not** settle the 310P question,
+because the measured optimized 310P physical-tok/s curve peaks at different
+shapes and degrades much more strongly above 768.  Phase 55 is the direct 310P
+test of that hypothesis, not an assumption that the 910B result transfers.
+Read the exact values from the committed compact evidence; do not substitute
+the older target-1024 reference or claim that padding reduction alone implies a
+speedup.
+
+### 55.1 Preflight and cache resolution
+
+Use one persistent shell.  The work-server checkout is pull-only.
+
+```sh
+set -uo pipefail
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git pull --ff-only origin main
+test -z "$(git status --porcelain)"
+source npu-setup
+set -e
+
+PYTHON_BIN=/usr/local/python3.12.13/bin/python
+EVAL_PYTHON=/workspace/venvs/omnidocbench_py310/bin/python
+E2E=09_persistent_page_engine/scripts/run_omnidocbench.py
+EVAL_WRAPPER=09_persistent_page_engine/scripts/run_omnidocbench_eval.py
+MODEL=/home/lukaiv/models/PaddleOCR-VL-1.6
+LAYOUT_MODEL=/home/lukaiv/models/PP-DocLayoutV3_safetensors
+DATASET_JSON=/home/lukaiv/datasets/OmniDocBench/OmniDocBench.json
+IMAGES_DIR=/home/lukaiv/datasets/OmniDocBench/images
+EVALUATOR_ROOT=/workspace/repos/OmniDocBench_eval
+
+COMMIT="$(git rev-parse HEAD)"
+SHORT="$(git rev-parse --short HEAD)"
+ROOT="tmp/09_persistent_page_engine/310p_phase55_dense768_${SHORT}"
+MAT="$ROOT/materialize_gate"
+WARM="$ROOT/warm_gate"
+FULL="$ROOT/full"
+test ! -e "$ROOT"
+mkdir -p "$MAT" "$WARM" "$FULL/evaluation/work"
+
+PHASE52_ROOT="$(find tmp/09_persistent_page_engine -maxdepth 1 -type d \
+  -name '310p_phase52_opt_kv2048_*' | sort | tail -n 1)"
+PHASE53_ROOT="$(find tmp/09_persistent_page_engine -maxdepth 1 -type d \
+  -name '310p_phase53_decode_length_modes_*' | sort | tail -n 1)"
+PHASE54_ROOT="$(find tmp/09_persistent_page_engine -maxdepth 1 -type d \
+  -name '310p_phase54_b64_pse_layout8_*' | sort | tail -n 1)"
+test -n "$PHASE52_ROOT" && test -n "$PHASE53_ROOT"
+
+DECODE_CACHE="$(awk -F= '$1 == "cache" {print substr($0,index($0,"=")+1)}' \
+  "$PHASE53_ROOT/contract.txt")"
+VISION_CACHE=.runtime_cache/310p_phase52_v16_vision_4352_nz
+BATCHED_CACHE=.runtime_cache/310p_phase52_v16_vision_batched_unused
+TEXT_CACHE=.runtime_cache/310p_phase52_v16_text
+PACKED_CACHE=.runtime_cache/310p_phase52_v16_text_packed
+
+for cache in "$DECODE_CACHE" "$VISION_CACHE" "$TEXT_CACHE" "$PACKED_CACHE"
+do
+  test -d "$cache"
+  test -n "$(find "$cache" -type f -print -quit)"
+done
+test "$(sha256sum "$MODEL/model.safetensors" | awk '{print $1}')" = \
+  85a479d506a11e724e7285d395c551be69f41dbc16b6342d3cacfb189aed71db
+df -h . "$VISION_CACHE" | tee "$ROOT/df_preflight.txt"
+npu-smi info | tee "$ROOT/npu_preflight.txt"
+```
+
+Define the production command once:
+
+```sh
+PRODUCTION_ARGS=(
+  "$E2E"
+  --dataset-json "$DATASET_JSON" --images-dir "$IMAGES_DIR"
+  --layout-model "$LAYOUT_MODEL" --recognizer-model "$MODEL"
+  --batch-size 64 --cache-length 2048 --max-new-tokens 2048
+  --preprocessor-min-pixels 28224 --preprocessor-max-pixels 401408
+  --text-crop-scale 0.5
+  --decode-backend torchair
+  --decode-optimization combined_apply_pse_sentinel
+  --torchair-cache-dir "$DECODE_CACHE"
+  --vision-backend torchair --vision-attention prompt_flash_attention
+  --vision-buckets 128,256,384,512,640,768,896,1024,1152,1280,1408,1536,1664,1792,1920,2048
+  --vision-torchair-cache-dir "$VISION_CACHE"
+  --vision-batched-cache-dir "$BATCHED_CACHE"
+  --vision-promptfa-align-128
+  --vision-mlp-intermediate-size 4352
+  --vision-linear-weight-format fractal_nz
+  --vision-padding bucket --vision-packing greedy
+  --vision-pack-target 768 --vision-router-lookahead 32
+  --text-buckets 32,64,96,128,160,176,192,208,224,256,320,384,448,576,640,768,896,1024,1152,1280,1312
+  --text-packing production_group
+  --text-pack-buckets 128,256,512,1024 --text-pack-max-members 32
+  --text-torchair-cache-dir "$TEXT_CACHE"
+  --text-packed-cache-dir "$PACKED_CACHE"
+  --layout-device npu --no-layout-graph-capture
+  --preprocess-all-pages-first --layout-workers 8 --no-timeline
+)
+
+record_caches() {
+  out="$1"; : >"$out"
+  for cache in "$DECODE_CACHE" "$VISION_CACHE" "$BATCHED_CACHE" \
+               "$TEXT_CACHE" "$PACKED_CACHE"; do
+    if test -d "$cache"; then
+      printf '%s\tfiles=%s\tbytes=%s\n' "$cache" \
+        "$(find "$cache" -type f | wc -l)" "$(du -sb "$cache" | cut -f1)"
+    else
+      printf '%s\tfiles=0\tbytes=0\n' "$cache"
+    fi
+  done >"$out"
+}
+```
+
+### 55.2 Materialize once, then prove warm replay
+
+Run both gates on the first eight pages.  Capture the exact command, log, exit
+code, wall, and cache inventory before and after each gate.
+
+```sh
+run_gate() {
+  lane="$1"
+  record_caches "$lane/cache_before.txt"
+  printf '%q ' "$PYTHON_BIN" "${PRODUCTION_ARGS[@]}" \
+    --offset 0 --limit 8 --output-dir "$lane/output" >"$lane/command.sh"
+  printf '\n' >>"$lane/command.sh"
+  SECONDS=0; set +e; set -o pipefail
+  PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 3600 \
+    "$PYTHON_BIN" "${PRODUCTION_ARGS[@]}" \
+    --offset 0 --limit 8 --output-dir "$lane/output" \
+    2>&1 | tee "$lane/run.log"
+  ec="${PIPESTATUS[0]}"; set -e
+  printf '%s\n' "$ec" >"$lane/exit_code.txt"
+  printf '%s\n' "$SECONDS" >"$lane/wall_s.txt"
+  record_caches "$lane/cache_after.txt"
+  test "$ec" -eq 0
+}
+
+run_gate "$MAT"
+run_gate "$WARM"
+```
+
+Validate mechanically:
+
+```sh
+"$PYTHON_BIN" - "$MAT" "$WARM" "$VISION_CACHE" <<'PY' \
+  | tee "$ROOT/gate_contract.json"
+import json, pathlib, sys
+
+def inventory(path):
+    out = {}
+    for line in open(path):
+        cache, files, size = line.rstrip().split("\t")
+        out[cache] = (int(files.split("=",1)[1]), int(size.split("=",1)[1]))
+    return out
+
+lanes = [pathlib.Path(x) for x in sys.argv[1:3]]
+vision_cache = sys.argv[3]
+summaries = [json.load(open(x / "output/run_summary.json")) for x in lanes]
+for d in summaries:
+    c, r = d["configuration"], d["recognition"]
+    assert d["count"] == d["result_count"] == d["prediction_count"] == 8
+    assert c["batch_size"] == 64 and c["cache_length"] == 2048
+    assert c["decode_optimization"] == "combined_apply_pse_sentinel"
+    assert c["vision_pack_target"] == 768
+    assert c["vision_buckets"] == [128,256,384,512,640,768,896,1024,
+                                    1152,1280,1408,1536,1664,1792,1920,2048]
+    assert c["vision_linear_weight_format"]["after_format_histogram"] == {"29":162}
+    assert set(r["stop_reason_counts"]) <= {"eos","kv_cache_full","repetition"}
+
+before0, after0 = inventory(lanes[0]/"cache_before.txt"), inventory(lanes[0]/"cache_after.txt")
+before1, after1 = inventory(lanes[1]/"cache_before.txt"), inventory(lanes[1]/"cache_after.txt")
+growth0 = {k: after0[k][0]-before0[k][0] for k in before0}
+growth1 = {k: after1[k][0]-before1[k][0] for k in before1}
+assert all(v == 0 for k,v in growth0.items() if k != vision_cache), growth0
+assert growth0[vision_cache] > 0, growth0
+assert all(v == 0 for v in growth1.values()), growth1
+print(json.dumps({"materialization_file_deltas":growth0,
+                  "warm_file_deltas":growth1,
+                  "materialization_setup_s":summaries[0]["setup_s"],
+                  "warm_setup_s":summaries[1]["setup_s"],
+                  "warm_e2e_s":summaries[1]["pipeline_e2e_s"]}, indent=2))
+PY
+```
+
+If the materialization gate grows anything except the vision cache, or the
+warm gate grows any cache, report `GATE_CACHE_MISS` and stop.  Otherwise report
+`310P PHASE 55 WARM GATE: PASS` immediately and continue.
+
+### 55.3 Full E2E and official evaluation
+
+```sh
+record_caches "$FULL/cache_before.txt"
+printf '%q ' "$PYTHON_BIN" "${PRODUCTION_ARGS[@]}" \
+  --offset 0 --limit 1651 --output-dir "$FULL/output" >"$FULL/command.sh"
+printf '\n' >>"$FULL/command.sh"
+SECONDS=0; set +e; set -o pipefail
+PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 7200 \
+  "$PYTHON_BIN" "${PRODUCTION_ARGS[@]}" \
+  --offset 0 --limit 1651 --output-dir "$FULL/output" \
+  2>&1 | tee "$FULL/run.log"
+ec="${PIPESTATUS[0]}"; set -e
+printf '%s\n' "$ec" >"$FULL/exit_code.txt"
+printf '%s\n' "$SECONDS" >"$FULL/wall_s.txt"
+record_caches "$FULL/cache_after.txt"
+test "$ec" -eq 0
+
+"$EVAL_PYTHON" "$EVAL_WRAPPER" \
+  --config "$FULL/evaluation/config.yaml" \
+  --evaluator-root "$EVALUATOR_ROOT" \
+  --match-workers 24 --teds-workers 12 \
+  --page-timeout-sec 120 --fallback-timeout-sec 180 \
+  --fallback-latex-timeout-sec 30 --teds-timeout-sec 120 \
+  2>&1 | tee "$FULL/evaluation/run.log"
+```
+
+Create the evaluator config exactly as in Phase 54, changing only its
+prediction/result paths to `$FULL`.  Do not change matching semantics or omit
+problem pages.  The full run must add zero cache files.
+
+### 55.4 Required report
+
+Write `$ROOT/agent_report.md` and report one of:
+
+```text
+310P PHASE 55 DENSE768 FULL: PASS | PREFLIGHT_FAILURE |
+GATE_CACHE_MISS | GATE_RUNTIME_FAILURE | E2E_FAILURE |
+COMPILE_CONTAMINATED | STRUCTURAL_MISMATCH | EVALUATOR_FAILURE
+```
+
+For a pass, include:
+
+1. exact commit, host/NPU/software/model SHA, all commands, cache paths, and
+   materialization/warm/full cache deltas;
+2. setup, pipeline E2E, pages/s, layout wall and every layout stage total;
+3. vision/text/decode wall, real/physical/effective tok/s, all token totals,
+   decode useful fraction, calls, and stop reasons;
+4. vision group count, crops/group, real/physical tokens, fill fraction, and
+   complete dense-bucket histogram; text groups/tokens/fill/histogram;
+5. signed deltas against Phase 52 and Phase 54 for layout, vision, text,
+   decode, E2E, and pages/s;
+6. all six official metrics and signed deltas against Phase 52/54 and the
+   committed 910B2 dense-768 authority;
+7. an explicit decomposition of savings from B64-PSE decode, staged-W8
+   layout, dense vision buckets, and target 768.  Label measured deltas versus
+   projections; do not add independently timed overlapping stages;
+8. `What is proven`, `What differs`, `What remains unresolved`, and the first
+   causal error if anything failed.
+
+Keep large predictions, compiler caches, and raw logs on the work server.
+Paste back `agent_report.md`, `gate_contract.json`, the full compact summary,
+evaluation compact summary, and the head-to-head JSON.  Do not alter another
+parameter or start a follow-up sweep.  Then **stop**.
