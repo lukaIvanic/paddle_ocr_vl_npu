@@ -101,6 +101,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "ACLGraph capture rejects otherwise-supported eager operators."
         ),
     )
+    parser.add_argument(
+        "--layout-workers",
+        type=int,
+        choices=(1, 2, 4, 8),
+        default=1,
+        help=(
+            "Page-level CPU workers around the single layout detector. "
+            "Values above one require --preprocess-all-pages-first."
+        ),
+    )
     parser.add_argument("--recognizer-model", type=Path, default=DEFAULT_RECOGNIZER_MODEL)
     parser.add_argument(
         "--dtype",
@@ -412,6 +422,11 @@ def append_compact_page_result(handle: Any, result: Any) -> None:
 def validate_args(args: argparse.Namespace) -> None:
     if args.offset < 0 or args.limit <= 0:
         raise ValueError("--offset must be non-negative and --limit must be positive")
+    if args.layout_workers > 1 and not args.preprocess_all_pages_first:
+        raise ValueError(
+            "--layout-workers greater than one requires "
+            "--preprocess-all-pages-first"
+        )
     if args.batch_size <= 0 or args.batch_size & (args.batch_size - 1):
         raise ValueError("--batch-size must be a positive power of two")
     if args.cache_length <= 0 or args.max_new_tokens <= 0:
@@ -676,6 +691,7 @@ def main() -> None:
         "pipeline": "owned_paddleocr_vl_v1.6",
         "layout_device": args.layout_device,
         "layout_graph_capture": args.layout_graph_capture,
+        "layout_workers": args.layout_workers,
         "page_preprocessing_mode": (
             "all_before_recognition"
             if args.preprocess_all_pages_first
@@ -767,6 +783,7 @@ def main() -> None:
         max_pixels=args.preprocessor_max_pixels,
         text_max_pixels=args.text_preprocessor_max_pixels,
         text_crop_scale=args.text_crop_scale,
+        layout_workers=args.layout_workers,
         timeline=timeline,
     )
     setup_s = time.perf_counter() - setup_started
@@ -796,6 +813,7 @@ def main() -> None:
             "text_packing": args.text_packing,
             "text_pack_buckets": list(text_pack_buckets),
             "layout_frontend": "owned_no_paddlex",
+            "layout_workers": args.layout_workers,
             "page_preprocessing_mode": manifest["page_preprocessing_mode"],
             "scheduler_progress": bool(args.scheduler_progress),
             "recognition_input_fingerprints": bool(

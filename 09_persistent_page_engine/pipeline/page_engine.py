@@ -8,6 +8,7 @@ import threading
 import time
 from collections import Counter, defaultdict, deque
 from collections.abc import Callable, Iterable
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -79,6 +80,7 @@ class OwnedPageEngine:
         max_pixels: int | None = None,
         text_max_pixels: int | None = None,
         text_crop_scale: float = 1.0,
+        layout_workers: int = 1,
         timeline: TimelineRecorder | None = None,
     ) -> None:
         self.frontend = frontend
@@ -88,6 +90,9 @@ class OwnedPageEngine:
         self.max_pixels = max_pixels
         self.text_max_pixels = text_max_pixels
         self.text_crop_scale = float(text_crop_scale)
+        if layout_workers not in (1, 2, 4, 8):
+            raise ValueError("layout_workers must be 1, 2, 4, or 8")
+        self.layout_workers = int(layout_workers)
         self.timeline = timeline
 
     @staticmethod
@@ -258,6 +263,12 @@ class OwnedPageEngine:
         producer_errors: list[BaseException] = []
         producer_thread: threading.Thread | None = None
         layout_stream = torch.npu.Stream()
+        layout_worker_pipeline = {
+            "strategy": "serial",
+            "input_workers": 0,
+            "page_prepare_workers": 0,
+            "max_inflight_pages": 1,
+        }
 
         def complete_page(page: _PageState) -> None:
             nonlocal completed_pages
@@ -344,16 +355,123 @@ class OwnedPageEngine:
                     except queue.Empty:
                         pass
 
-        def produce_pages() -> None:
-            try:
-                for ordinal, path in enumerate(paths):
+        def accept_prepared_page(prepared: PreparedLayoutPage) -> bool:
+            for name, seconds in prepared.timing_s.items():
+                frontend_stage_s[name] += float(seconds)
+            for name, value in prepared.statistics.items():
+                frontend_statistics[name] += int(value)
+            if self.timeline is not None:
+                finished_ns = time.perf_counter_ns()
+                started_ns = finished_ns - int(
+                    prepared.timing_s["page_total_s"] * 1_000_000_000
+                )
+                self.timeline.record_span(
+                    "Page input",
+                    "Prepare owned page",
+                    started_ns,
+                    finished_ns,
+                    flow_id=f"page:{prepared.ordinal}",
+                    event_type="scope",
+                    args={"input_path": str(prepared.image_path)},
+                )
+            state = _PageState(
+                prepared=prepared,
+                remaining=len(prepared.requests),
+            )
+            return put_page(_QueuedPage(state))
+
+        def prepare_page_serial(path: Path, ordinal: int) -> PreparedLayoutPage:
+            with torch.npu.stream(layout_stream):
+                prepared = self.frontend.prepare_page(
+                    path,
+                    ordinal,
+                    min_pixels=self.min_pixels,
+                    max_pixels=(
+                        self.max_pixels
+                        if self.max_pixels is not None
+                        else 1_003_520
+                    ),
+                    text_max_pixels=self.text_max_pixels,
+                    text_crop_scale=self.text_crop_scale,
+                )
+            layout_stream.synchronize()
+            return prepared
+
+        def produce_pages_serial() -> None:
+            for ordinal, path in enumerate(paths):
+                if stop.is_set():
+                    break
+                if not accept_prepared_page(
+                    prepare_page_serial(path, ordinal)
+                ):
+                    break
+
+        def produce_pages_staged() -> None:
+            input_workers = min(4, self.layout_workers)
+            page_prepare_workers = self.layout_workers
+            layout_worker_pipeline.update(
+                {
+                    "strategy": "bounded_staged_cpu_pipeline",
+                    "input_workers": input_workers,
+                    "page_prepare_workers": page_prepare_workers,
+                    "max_inflight_pages": page_prepare_workers,
+                }
+            )
+            self.frontend.mask_fast_path.set_fallback_parallelism(1)
+            input_futures: dict[int, Any] = {}
+            prepare_futures: deque[Any] = deque()
+            next_input = 0
+
+            def input_stage(path: Path, ordinal: int) -> Any:
+                return self.frontend.transfer_preprocessed_page(
+                    self.frontend.preprocess_decoded_page(
+                        self.frontend.decode_page(path, ordinal)
+                    )
+                )
+
+            def submit_input(executor: ThreadPoolExecutor) -> None:
+                nonlocal next_input
+                if next_input >= len(paths):
+                    return
+                ordinal = next_input
+                input_futures[ordinal] = executor.submit(
+                    input_stage,
+                    paths[ordinal],
+                    ordinal,
+                )
+                next_input += 1
+
+            def accept_oldest() -> bool:
+                return accept_prepared_page(
+                    prepare_futures.popleft().result()
+                )
+
+            with (
+                ThreadPoolExecutor(
+                    max_workers=input_workers,
+                    thread_name_prefix="layout-input",
+                ) as input_executor,
+                ThreadPoolExecutor(
+                    max_workers=page_prepare_workers,
+                    thread_name_prefix="layout-page-prepare",
+                ) as prepare_executor,
+            ):
+                for _ in range(min(input_workers, len(paths))):
+                    submit_input(input_executor)
+
+                for ordinal in range(len(paths)):
                     if stop.is_set():
                         break
-                    started_ns = time.perf_counter_ns()
+                    transferred = input_futures.pop(ordinal).result()
+                    submit_input(input_executor)
                     with torch.npu.stream(layout_stream):
-                        prepared = self.frontend.prepare_page(
-                            path,
-                            ordinal,
+                        detected = self.frontend.detect_transferred_page(
+                            transferred
+                        )
+                    prepare_futures.append(
+                        prepare_executor.submit(
+                            self.frontend.prepare_detected_page,
+                            detected,
                             min_pixels=self.min_pixels,
                             max_pixels=(
                                 self.max_pixels
@@ -363,27 +481,21 @@ class OwnedPageEngine:
                             text_max_pixels=self.text_max_pixels,
                             text_crop_scale=self.text_crop_scale,
                         )
-                    layout_stream.synchronize()
-                    for name, seconds in prepared.timing_s.items():
-                        frontend_stage_s[name] += float(seconds)
-                    for name, value in prepared.statistics.items():
-                        frontend_statistics[name] += int(value)
-                    if self.timeline is not None:
-                        self.timeline.record_span(
-                            "Page input",
-                            "Prepare owned page",
-                            started_ns,
-                            time.perf_counter_ns(),
-                            flow_id=f"page:{ordinal}",
-                            event_type="scope",
-                            args={"input_path": str(path)},
-                        )
-                    state = _PageState(
-                        prepared=prepared,
-                        remaining=len(prepared.requests),
                     )
-                    if not put_page(_QueuedPage(state)):
-                        break
+                    if len(prepare_futures) >= page_prepare_workers:
+                        if not accept_oldest():
+                            return
+
+                while prepare_futures and not stop.is_set():
+                    if not accept_oldest():
+                        return
+
+        def produce_pages() -> None:
+            try:
+                if self.layout_workers == 1:
+                    produce_pages_serial()
+                else:
+                    produce_pages_staged()
             except BaseException as exception:
                 producer_errors.append(exception)
             finally:
@@ -522,6 +634,7 @@ class OwnedPageEngine:
                     self.frontend.npu_indexput_compat
                 ),
                 "setup_s": self.frontend.setup_s,
+                "worker_pipeline": layout_worker_pipeline,
                 "stage_s": dict(sorted(frontend_stage_s.items())),
                 "statistics": dict(sorted(frontend_statistics.items())),
             },
