@@ -69,6 +69,15 @@ class DecodedLayoutPage:
 
 
 @dataclass(frozen=True)
+class PreprocessedLayoutPage:
+    """A decoded page with its fixed 800x800 detector input on CPU."""
+
+    decoded: DecodedLayoutPage
+    pixel_values: torch.Tensor
+    preprocess_cpu_s: float
+
+
+@dataclass(frozen=True)
 class DetectedLayoutPage:
     """A decoded page whose device-backed layout detection has completed."""
 
@@ -338,7 +347,7 @@ class OwnedLayoutFrontend:
                 args=args or {},
             )
 
-    def _prepare_pixel_values(self, image_rgb: np.ndarray) -> torch.Tensor:
+    def _prepare_pixel_values_cpu(self, image_rgb: np.ndarray) -> torch.Tensor:
         """Run the processor's exact singleton math without batch plumbing."""
 
         pixel_values = torch.from_numpy(image_rgb).permute(2, 0, 1).unsqueeze(0)
@@ -350,6 +359,9 @@ class OwnedLayoutFrontend:
         )
         pixel_values = pixel_values.to(dtype=torch.float32)
         pixel_values.div_(self._normalization_divisor)
+        return pixel_values
+
+    def _move_pixel_values(self, pixel_values: torch.Tensor) -> torch.Tensor:
         return pixel_values.to(
             device=self.device,
             dtype=self.model_dtype,
@@ -361,14 +373,24 @@ class OwnedLayoutFrontend:
         image_rgb: np.ndarray,
         *,
         flow_id: str,
+        prepared_pixel_values: torch.Tensor | None = None,
+        preprocess_cpu_s: float = 0.0,
     ) -> tuple[list[dict[str, Any]], dict[str, float]]:
         timing: dict[str, float] = {}
         height, width = image_rgb.shape[:2]
 
         started = time.perf_counter()
         started_ns = time.perf_counter_ns()
-        inputs = {"pixel_values": self._prepare_pixel_values(image_rgb)}
-        timing["layout_preprocess_h2d_s"] = time.perf_counter() - started
+        if prepared_pixel_values is None:
+            cpu_started = time.perf_counter()
+            prepared_pixel_values = self._prepare_pixel_values_cpu(image_rgb)
+            preprocess_cpu_s = time.perf_counter() - cpu_started
+        h2d_started = time.perf_counter()
+        inputs = {"pixel_values": self._move_pixel_values(prepared_pixel_values)}
+        h2d_s = time.perf_counter() - h2d_started
+        timing["layout_preprocess_cpu_s"] = preprocess_cpu_s
+        timing["layout_input_h2d_s"] = h2d_s
+        timing["layout_preprocess_h2d_s"] = preprocess_cpu_s + h2d_s
         self._span(
             "Layout detection",
             "Owned layout preprocessing and H2D",
@@ -531,6 +553,35 @@ class OwnedLayoutFrontend:
         boxes, detect_timing = self._detect(
             decoded.image,
             flow_id=f"page:{decoded.ordinal}",
+        )
+        return DetectedLayoutPage(
+            decoded=decoded,
+            boxes=boxes,
+            detect_timing=detect_timing,
+        )
+
+    def preprocess_decoded_page(
+        self,
+        decoded: DecodedLayoutPage,
+    ) -> PreprocessedLayoutPage:
+        started = time.perf_counter()
+        pixel_values = self._prepare_pixel_values_cpu(decoded.image)
+        return PreprocessedLayoutPage(
+            decoded=decoded,
+            pixel_values=pixel_values,
+            preprocess_cpu_s=time.perf_counter() - started,
+        )
+
+    def detect_preprocessed_page(
+        self,
+        preprocessed: PreprocessedLayoutPage,
+    ) -> DetectedLayoutPage:
+        decoded = preprocessed.decoded
+        boxes, detect_timing = self._detect(
+            decoded.image,
+            flow_id=f"page:{decoded.ordinal}",
+            prepared_pixel_values=preprocessed.pixel_values,
+            preprocess_cpu_s=preprocessed.preprocess_cpu_s,
         )
         return DetectedLayoutPage(
             decoded=decoded,

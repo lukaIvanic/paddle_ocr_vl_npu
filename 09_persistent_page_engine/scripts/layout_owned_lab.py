@@ -294,13 +294,18 @@ def main(argv: Sequence[str] | None = None) -> None:
         decode_wait_s = 0.0
         page_prepare_wait_s = 0.0
 
+        def decode_and_preprocess(path: Path, ordinal: int) -> Any:
+            return frontend.preprocess_decoded_page(
+                frontend.decode_page(path, ordinal)
+            )
+
         def submit_decode(executor: ThreadPoolExecutor) -> None:
             nonlocal next_decode
             if next_decode >= len(image_paths):
                 return
             ordinal = next_decode
             decode_futures[ordinal] = executor.submit(
-                frontend.decode_page,
+                decode_and_preprocess,
                 image_paths[ordinal],
                 ordinal,
             )
@@ -327,11 +332,11 @@ def main(argv: Sequence[str] | None = None) -> None:
 
             for ordinal in range(len(image_paths)):
                 started = time.perf_counter()
-                decoded = decode_futures.pop(ordinal).result()
+                preprocessed = decode_futures.pop(ordinal).result()
                 decode_wait_s += time.perf_counter() - started
                 submit_decode(decode_executor)
 
-                detected = frontend.detect_decoded_page(decoded)
+                detected = frontend.detect_preprocessed_page(preprocessed)
                 prepare_futures.append(
                     prepare_executor.submit(
                         frontend.prepare_detected_page,
