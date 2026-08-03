@@ -21032,3 +21032,851 @@ Paste back `agent_report.md`, `summary.json`, the four
 logs and compiler caches on the work server.  Do not run E2E OCR, do not test
 normal masked GQA at position 1279, do not promote PSE to production, and do
 not begin another batch/KV sweep.  Then **stop**.
+
+## Phase 54: B64 PSE plus staged-W8 full production run on 310P
+
+### 54.0 Goal and frozen comparison
+
+Run the exact production configuration that has now completed on one 910B2,
+but on one 310P3:
+
+```text
+pages                         1,651, offset 0
+page frontend                 all pages prepared before OCR begins
+layout                        owned NPU frontend, eager model execution,
+                              staged CPU pipeline with 4 input workers and
+                              8 page-finalization workers
+decode                        B64, KV2048, TorchAir,
+                              combined_apply_pse_sentinel
+global crop preprocessing     min_pixels=28224, max_pixels=401408
+text crops                    additional linear scale=0.5
+vision                        TorchAir PromptFA, align-128 on 310P,
+                              buckets 128,256,384,512,640,768,1024,
+                              1408,1920,2048
+vision Linear weights         4304 -> 4352 zero extension and FRACTAL_NZ
+vision packing                greedy, target 1024, lookahead 32
+text prefill                  production-group packing,
+                              buckets 128,256,512,1024
+timeline/scheduler tracing    disabled
+```
+
+This phase answers four questions:
+
+1. Does the Phase-53 B64 PSE graph replay unchanged in the real production
+   runner, including the formerly failing effective-length-1280 boundary?
+2. Does B64 improve 310P decode and full-pipeline throughput over the completed
+   Phase-52 B32 static-actual run?
+3. Does the staged W8 layout frontend transfer to 310P without changing the
+   30,557-request page contract?
+4. Does official OmniDocBench quality remain consistent with the corrected
+   checkpoint and the 910B2 B64-PSE reference?
+
+The committed 910B2 authority is:
+
+```text
+tmp/09_persistent_page_engine/
+  910b_full_b64_pse_layout8_def2260/full/
+```
+
+Its clean, warm-cache result is:
+
+| Metric | 910B2 B64 PSE + W8 |
+|---|---:|
+| setup | 42.489 s |
+| pipeline E2E | 717.705 s |
+| pages/s | 2.30039 |
+| vision prefill | 178.088 s |
+| text prefill | 74.936 s |
+| decode wall | 124.087 s |
+| raw decode tok/s | 13,372.8 |
+| effective decode tok/s | 12,668.8 |
+| useful decode slots | 94.735% |
+| stop reasons | 30,470 EOS; 29 KV-full; 58 repetition |
+
+The committed official metrics are read from the reference JSON during the
+phase.  Do not transcribe or round them by hand.
+
+The prior 310P authority is the completed Phase-52 run.  Phase 54 must compare
+against both it and the 910B2 reference.  This is a production validation, not
+a new sweep: do not try B32/B128, a different KV length, another layout-worker
+count, different pixels, or a different bucket list.
+
+This phase is checkpointed.  Report immediately after preflight, after the
+8-page replay gate, after the full E2E run, and after evaluation.  Do not wait
+until the end to provide the first update.
+
+### 54.1 Pull, resolve proven caches, and preflight
+
+The work-server agent is pull-only.  Do not edit tracked files, commit, push,
+or create branches.  Use one persistent shell for the whole phase.
+
+```sh
+set -uo pipefail
+
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git pull --ff-only origin main
+test -z "$(git status --porcelain)"
+git merge-base --is-ancestor \
+  78b3dbf86a3c8e515f2c51775a0598c66b01b725 HEAD
+
+source npu-setup
+set -e
+test -n "${ASCEND_RT_VISIBLE_DEVICES:-}"
+
+PYTHON_BIN=/usr/local/python3.12.13/bin/python
+EVAL_PYTHON=/workspace/venvs/omnidocbench_py310/bin/python
+E2E=09_persistent_page_engine/scripts/run_omnidocbench.py
+EVAL_WRAPPER=09_persistent_page_engine/scripts/run_omnidocbench_eval.py
+MODEL=/home/lukaiv/models/PaddleOCR-VL-1.6
+LAYOUT_MODEL=/home/lukaiv/models/PP-DocLayoutV3_safetensors
+DATASET_JSON=/home/lukaiv/datasets/OmniDocBench/OmniDocBench.json
+IMAGES_DIR=/home/lukaiv/datasets/OmniDocBench/images
+
+COMMIT="$(git rev-parse HEAD)"
+COMMIT_SHORT="$(git rev-parse --short HEAD)"
+ROOT="tmp/09_persistent_page_engine/310p_phase54_b64_pse_layout8_${COMMIT_SHORT}"
+GATE="$ROOT/gate8"
+LANE="$ROOT/full"
+OUTPUT="$LANE/output"
+EVAL="$LANE/evaluation"
+
+REFERENCE_ROOT=tmp/09_persistent_page_engine/910b_full_b64_pse_layout8_def2260/full
+REFERENCE_RUN="$REFERENCE_ROOT/output/run_summary.json"
+REFERENCE_METRIC="$REFERENCE_ROOT/evaluation/work/result/predictions_quick_match_metric_result.json"
+REFERENCE_EVAL_SUMMARY="$REFERENCE_ROOT/evaluation/work/result/predictions_quick_match_run_summary.json"
+
+PHASE52_ROOT="$(find tmp/09_persistent_page_engine -maxdepth 1 -type d \
+  -name '310p_phase52_opt_kv2048_*' | sort | tail -n 1)"
+test -n "$PHASE52_ROOT"
+test -f "$PHASE52_ROOT/agent_report.md"
+rg -ni 'phase 52.*pass|classification.*pass' "$PHASE52_ROOT/agent_report.md"
+PHASE52_RUN="$("$PYTHON_BIN" - "$PHASE52_ROOT" <<'PY'
+import json, pathlib, sys
+root = pathlib.Path(sys.argv[1])
+matches = []
+for path in root.rglob("run_summary.json"):
+    try:
+        payload = json.load(open(path))
+    except Exception:
+        continue
+    config = payload.get("configuration", {})
+    if (
+        payload.get("count") == 1651
+        and payload.get("result_count") == 1651
+        and config.get("batch_size") == 32
+        and config.get("decode_optimization") == "combined_apply_static_actual"
+    ):
+        matches.append(path)
+assert len(matches) == 1, matches
+print(matches[0])
+PY
+)"
+PHASE52_METRIC="$(find "$PHASE52_ROOT" -type f \
+  -name 'predictions_quick_match_metric_result.json' | sort | tail -n 1)"
+test -f "$PHASE52_RUN"
+test -f "$PHASE52_METRIC"
+
+PHASE53_ROOT="$(find tmp/09_persistent_page_engine -maxdepth 1 -type d \
+  -name '310p_phase53_decode_length_modes_*' | sort | tail -n 1)"
+test -n "$PHASE53_ROOT"
+test -f "$PHASE53_ROOT/agent_report.md"
+test -f "$PHASE53_ROOT/contract.txt"
+test -f "$PHASE53_ROOT/b64_combined_apply_pse_sentinel/result.json"
+test -f "$PHASE53_ROOT/boundary_b64_combined_apply_pse_sentinel/result.json"
+rg -ni 'phase 53.*pass|classification.*pass' "$PHASE53_ROOT/agent_report.md"
+
+DECODE_CACHE="$(awk -F= '$1 == "cache" {print substr($0, index($0,"=")+1)}' \
+  "$PHASE53_ROOT/contract.txt")"
+VISION_CACHE=.runtime_cache/310p_phase52_v16_vision_4352_nz
+BATCHED_CACHE=.runtime_cache/310p_phase52_v16_vision_batched_unused
+TEXT_CACHE=.runtime_cache/310p_phase52_v16_text
+PACKED_CACHE=.runtime_cache/310p_phase52_v16_text_packed
+
+test -n "$DECODE_CACHE"
+for cache in "$DECODE_CACHE" "$VISION_CACHE" "$TEXT_CACHE" "$PACKED_CACHE"
+do
+  test -d "$cache"
+  test -n "$(find "$cache" -type f -print -quit)"
+done
+
+test ! -e "$ROOT"
+mkdir -p "$GATE" "$LANE" "$EVAL/work"
+test -x "$PYTHON_BIN"
+test -x "$EVAL_PYTHON"
+test -f "$E2E"
+test -f "$EVAL_WRAPPER"
+test -f "$MODEL/model.safetensors"
+test -d "$LAYOUT_MODEL"
+test -f "$DATASET_JSON"
+test -d "$IMAGES_DIR"
+test -f "$REFERENCE_RUN"
+test -f "$REFERENCE_METRIC"
+test -f "$REFERENCE_EVAL_SUMMARY"
+
+test "$(sha256sum "$MODEL/model.safetensors" | awk '{print $1}')" = \
+  85a479d506a11e724e7285d395c551be69f41dbc16b6342d3cacfb189aed71db
+
+{
+  date -Is
+  hostname
+  printf 'commit=%s\n' "$COMMIT"
+  printf 'ASCEND_RT_VISIBLE_DEVICES=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"
+  printf 'phase52_root=%s\n' "$PHASE52_ROOT"
+  printf 'phase53_root=%s\n' "$PHASE53_ROOT"
+  printf 'decode_cache=%s\n' "$DECODE_CACHE"
+  printf 'vision_cache=%s\n' "$VISION_CACHE"
+  printf 'text_cache=%s\n' "$TEXT_CACHE"
+  printf 'packed_cache=%s\n' "$PACKED_CACHE"
+  "$PYTHON_BIN" -V
+  "$PYTHON_BIN" - <<'PY'
+import torch
+import torch_npu
+import torchair
+
+print("torch", torch.__version__)
+print("torch_npu", torch_npu.__version__)
+print("torch_npu_git", getattr(torch_npu.version, "git_version", None))
+print("torchair", getattr(torchair, "__version__", "unknown"))
+print("logical_device", torch.npu.current_device())
+print("device_name", torch.npu.get_device_name(torch.npu.current_device()))
+assert "310P" in torch.npu.get_device_name(torch.npu.current_device())
+PY
+  npu-smi info
+  sha256sum \
+    "$MODEL/model.safetensors" \
+    "$PHASE52_RUN" "$PHASE52_METRIC" \
+    "$PHASE53_ROOT/b64_combined_apply_pse_sentinel/result.json" \
+    "$PHASE53_ROOT/boundary_b64_combined_apply_pse_sentinel/result.json" \
+    "$REFERENCE_RUN" "$REFERENCE_METRIC" "$REFERENCE_EVAL_SUMMARY"
+  df -h "$WORK_SERVER_REPO" /home/lukaiv/models
+} 2>&1 | tee "$ROOT/preflight.log"
+
+available_kb="$(df -Pk "$WORK_SERVER_REPO" | awk 'NR==2 {print $4}')"
+test "$available_kb" -ge 8388608
+
+"$PYTHON_BIN" - \
+  "$PHASE53_ROOT/b64_combined_apply_pse_sentinel/result.json" \
+  "$PHASE53_ROOT/boundary_b64_combined_apply_pse_sentinel/result.json" <<'PY' \
+  | tee "$ROOT/phase53_b64_contract.json"
+import json, sys
+profile, boundary = [json.load(open(path)) for path in sys.argv[1:]]
+pr = profile["result"]
+br = boundary["result"]
+assert pr["shape"]["batch_size"] == 64
+assert pr["shape"]["cache_length"] == 2048
+assert profile["setup"]["runtime_metadata"]["decode_optimization"] == "combined_apply_pse_sentinel"
+assert br["shape"]["cache_position"] == 1279
+assert br["shape"]["effective_length"] == 1280
+print(json.dumps({
+    "profile_physical_tok_per_s": pr["throughput"]["raw_physical_tok_per_s"],
+    "boundary_cache_position": br["shape"]["cache_position"],
+    "boundary_effective_length": br["shape"]["effective_length"],
+    "boundary_elapsed_s": br["elapsed_s"],
+}, indent=2))
+PY
+```
+
+If the checkout is dirty, required commit ancestry fails, the v1.6 hash is
+wrong, Phase 52 or Phase 53 is not a pass, the Phase-53 B64 PSE boundary result
+is absent, any proven cache is empty, the selected device is not a 310P3, or
+less than 8 GiB is free, report `310P PHASE 54 PREFLIGHT: FAILURE` with the
+first causal error and stop.  Do not delete caches or switch devices silently.
+
+Otherwise report `310P PHASE 54 PREFLIGHT: PASS` immediately with commit,
+host, exact NPU, software versions, checkpoint hash, free disk, Phase-52 and
+Phase-53 roots, all cache paths, the Phase-53 B64 PSE tok/s, and its successful
+1279/1280 boundary gate.
+
+### 54.2 Freeze one production argument array and run the 8-page replay gate
+
+The gate and full run must use this same array.  Only `--limit` and
+`--output-dir` may differ.
+
+```sh
+PRODUCTION_ARGS=(
+  "$E2E"
+  --dataset-json "$DATASET_JSON"
+  --images-dir "$IMAGES_DIR"
+  --layout-model "$LAYOUT_MODEL"
+  --recognizer-model "$MODEL"
+  --batch-size 64 --cache-length 2048 --max-new-tokens 2048
+  --preprocessor-min-pixels 28224
+  --preprocessor-max-pixels 401408
+  --text-crop-scale 0.5
+  --decode-backend torchair
+  --decode-optimization combined_apply_pse_sentinel
+  --torchair-cache-dir "$DECODE_CACHE"
+  --vision-backend torchair
+  --vision-attention prompt_flash_attention
+  --vision-buckets 128,256,384,512,640,768,1024,1408,1920,2048
+  --vision-torchair-cache-dir "$VISION_CACHE"
+  --vision-batched-cache-dir "$BATCHED_CACHE"
+  --vision-promptfa-align-128
+  --vision-mlp-intermediate-size 4352
+  --vision-linear-weight-format fractal_nz
+  --vision-padding bucket
+  --vision-packing greedy --vision-pack-target 1024
+  --vision-router-lookahead 32
+  --text-buckets 32,64,96,128,160,176,192,208,224,256,320,384,448,576,640,768,896,1024,1152,1280,1312
+  --text-packing production_group
+  --text-pack-buckets 128,256,512,1024
+  --text-pack-max-members 32
+  --text-torchair-cache-dir "$TEXT_CACHE"
+  --text-packed-cache-dir "$PACKED_CACHE"
+  --layout-device npu --no-layout-graph-capture
+  --preprocess-all-pages-first --layout-workers 8
+  --no-timeline
+)
+
+record_caches() {
+  OUT="$1"
+  : >"$OUT"
+  for cache in \
+    "$DECODE_CACHE" "$VISION_CACHE" "$BATCHED_CACHE" \
+    "$TEXT_CACHE" "$PACKED_CACHE"
+  do
+    if test -d "$cache"; then
+      printf '%s\tfiles=%s\tbytes=%s\n' \
+        "$cache" "$(find "$cache" -type f | wc -l)" \
+        "$(du -sb "$cache" | cut -f1)" >>"$OUT"
+    else
+      printf '%s\tfiles=0\tbytes=0\n' "$cache" >>"$OUT"
+    fi
+  done
+}
+
+record_caches "$GATE/cache_before.txt"
+printf '%q ' "$PYTHON_BIN" "${PRODUCTION_ARGS[@]}" \
+  --offset 0 --limit 8 --output-dir "$GATE/output" \
+  >"$GATE/command.sh"
+printf '\n' >>"$GATE/command.sh"
+
+SECONDS=0
+set +e
+set -o pipefail
+PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 1800 \
+  "$PYTHON_BIN" "${PRODUCTION_ARGS[@]}" \
+  --offset 0 --limit 8 --output-dir "$GATE/output" \
+  2>&1 | tee "$GATE/run.log"
+gate_exit="${PIPESTATUS[0]}"
+gate_wall_s="$SECONDS"
+set -e
+printf '%s\n' "$gate_exit" >"$GATE/exit_code.txt"
+printf '%s\n' "$gate_wall_s" >"$GATE/wall_s.txt"
+record_caches "$GATE/cache_after.txt"
+test "$gate_exit" -eq 0
+
+"$PYTHON_BIN" - "$GATE/output/run_summary.json" <<'PY' \
+  | tee "$GATE/contract.json"
+import json, sys
+d = json.load(open(sys.argv[1]))
+c = d["configuration"]
+r = d["recognition"]
+w = d["layout_frontend"]["worker_pipeline"]
+fmt = c["vision_linear_weight_format"]
+assert d["offset"] == 0 and d["count"] == 8
+assert d["result_count"] == d["prediction_count"] == 8
+assert d["page_preprocessing_mode"] == "all_before_recognition"
+assert d["layout_workers"] == 8
+assert w == {
+    "strategy": "bounded_staged_cpu_pipeline",
+    "input_workers": 4,
+    "page_prepare_workers": 8,
+    "max_inflight_pages": 8,
+}
+assert c["batch_size"] == 64 and c["cache_length"] == 2048
+assert c["max_new_tokens"] == 2048
+assert c["decode_optimization"] == "combined_apply_pse_sentinel"
+assert c["preprocessor_min_pixels"] == 28224
+assert c["preprocessor_max_pixels"] == 401408
+assert c["text_crop_scale"] == 0.5
+assert c["vision_buckets"] == [128,256,384,512,640,768,1024,1408,1920,2048]
+assert c["vision_pack_target"] == 1024
+assert c["vision_mlp"] == {
+    "source_intermediate_size": 4304,
+    "target_intermediate_size": 4352,
+    "layer_count": 27,
+    "zero_extended": True,
+}
+assert fmt["target_format_code"] == 29
+assert fmt["linear_weight_count"] == 162
+assert fmt["after_format_histogram"] == {"29": 162}
+assert fmt["all_after_are_nz"] is True
+assert set(r["stop_reason_counts"]) <= {"eos", "kv_cache_full", "repetition"}
+compile_s = d["recognizer_setup_timing_s"]["compile_first_call"]
+assert compile_s < 5.0, compile_s
+print(json.dumps({
+    "setup_s": d["setup_s"],
+    "pipeline_e2e_s": d["pipeline_e2e_s"],
+    "pages_per_s": d["pages_per_s"],
+    "compile_first_call_s": compile_s,
+    "result_count": d["result_count"],
+    "requests": r["requests"],
+    "worker_pipeline": w,
+    "stop_reasons": r["stop_reason_counts"],
+    "decode_raw_tps": r["raw_decode_token_slots"] / r["decode_wall_s"],
+    "decode_effective_tps": r["effective_decode_tokens"] / r["decode_wall_s"],
+}, indent=2))
+PY
+
+"$PYTHON_BIN" - "$GATE/cache_before.txt" "$GATE/cache_after.txt" <<'PY' \
+  | tee "$GATE/cache_contract.json"
+import json, sys
+
+def load(path):
+    rows = {}
+    for line in open(path):
+        cache, files, size = line.rstrip().split("\t")
+        rows[cache] = {
+            "files": int(files.split("=", 1)[1]),
+            "bytes": int(size.split("=", 1)[1]),
+        }
+    return rows
+
+before, after = map(load, sys.argv[1:])
+assert before.keys() == after.keys()
+deltas = {
+    cache: {
+        "file_delta": after[cache]["files"] - before[cache]["files"],
+        "byte_delta": after[cache]["bytes"] - before[cache]["bytes"],
+    }
+    for cache in before
+}
+assert all(row["file_delta"] == 0 for row in deltas.values()), deltas
+print(json.dumps({"cache_deltas": deltas, "no_new_files": True}, indent=2))
+PY
+```
+
+Report `310P PHASE 54 GATE8: PASS` immediately with gate wall/setup/E2E,
+requests, worker-pipeline proof, compile-first-call time, decode tok/s, stop
+reasons, and all cache file/byte deltas.  Byte-only metadata changes are
+acceptable; any new cache file or `compile_first_call >= 5 s` means this was
+not the intended warm replay.  In that case report
+`310P PHASE 54 GATE8: CACHE_MISS`, preserve the output, and stop before the
+full run.  Do not compile a replacement cache under a new path.
+
+### 54.3 Full 1,651-page production run
+
+Before launching, show `npu-smi info` and verify no other process appeared on
+the selected NPU.  Then:
+
+```sh
+record_caches "$LANE/cache_before.txt"
+printf '%q ' "$PYTHON_BIN" "${PRODUCTION_ARGS[@]}" \
+  --offset 0 --limit 1651 --output-dir "$OUTPUT" \
+  >"$LANE/command.sh"
+printf '\n' >>"$LANE/command.sh"
+
+SECONDS=0
+set +e
+set -o pipefail
+PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 10800 \
+  "$PYTHON_BIN" "${PRODUCTION_ARGS[@]}" \
+  --offset 0 --limit 1651 --output-dir "$OUTPUT" \
+  2>&1 | tee "$LANE/run.log"
+run_exit="${PIPESTATUS[0]}"
+run_wall_s="$SECONDS"
+set -e
+printf '%s\n' "$run_exit" >"$LANE/exit_code.txt"
+printf '%s\n' "$run_wall_s" >"$LANE/launcher_wall_s.txt"
+record_caches "$LANE/cache_after.txt"
+test "$run_exit" -eq 0
+```
+
+The foreground log is the progress source.  From another shell:
+
+```sh
+tail -n 60 -f "$LANE/run.log"
+```
+
+The runner prints completed-page progress.  Do not enable the timeline or
+scheduler diagnostics.  If no page completes for five minutes, capture the
+last 120 log lines and `npu-smi info`; do not broadly kill Python processes.
+
+Validate and summarize the completed run:
+
+```sh
+"$PYTHON_BIN" - "$OUTPUT/run_summary.json" "$REFERENCE_RUN" <<'PY' \
+  | tee "$LANE/compact_summary.json"
+import json, sys
+d, ref = [json.load(open(path)) for path in sys.argv[1:]]
+c = d["configuration"]
+r = d["recognition"]
+s = r["device_stage_s"]
+w = d["layout_frontend"]["worker_pipeline"]
+fmt = c["vision_linear_weight_format"]
+
+assert d["offset"] == 0 and d["count"] == 1651
+assert d["result_count"] == d["prediction_count"] == 1651
+assert d["page_preprocessing_mode"] == "all_before_recognition"
+assert d["layout_workers"] == 8
+assert w["input_workers"] == 4 and w["page_prepare_workers"] == 8
+assert c["batch_size"] == 64 and c["cache_length"] == 2048
+assert c["max_new_tokens"] == 2048
+assert c["decode_optimization"] == "combined_apply_pse_sentinel"
+assert c["preprocessor_min_pixels"] == 28224
+assert c["preprocessor_max_pixels"] == 401408
+assert c["text_crop_scale"] == 0.5
+assert c["vision_pack_target"] == 1024
+assert c["vision_mlp"]["target_intermediate_size"] == 4352
+assert c["vision_mlp"]["zero_extended"] is True
+assert fmt["after_format_histogram"] == {"29": 162}
+assert fmt["all_after_are_nz"] is True
+assert d["recognizer_setup_timing_s"]["compile_first_call"] < 5.0
+assert set(r["stop_reason_counts"]) <= {"eos", "kv_cache_full", "repetition"}
+
+expected = {
+    "requests": 30557,
+    "input_tokens": 2560072,
+    "projected_image_tokens": 2162831,
+    "real_vision_tokens": 8651324,
+    "physical_vision_tokens": 9512832,
+    "real_text_tokens": 2560072,
+    "physical_text_tokens": 3997056,
+}
+contract_deltas = {key: int(r[key]) - value for key, value in expected.items()}
+assert all(value == 0 for value in contract_deltas.values()), contract_deltas
+
+ref_r = ref["recognition"]
+packing = {
+    "vision_groups_exact": r["vision_packing"]["groups"] == ref_r["vision_packing"]["groups"],
+    "vision_histogram_exact": r["vision_packing"]["graph_shape_histogram"] == ref_r["vision_packing"]["graph_shape_histogram"],
+    "vision_no_eager_overflow": r["vision_packing"]["eager_overflow_groups"] == 0,
+    "text_groups_exact": r["text_packing"]["groups"] == ref_r["text_packing"]["groups"],
+    "text_histogram_exact": r["text_packing"]["bucket_histogram"] == ref_r["text_packing"]["bucket_histogram"],
+    "text_no_fallback": r["text_packing"]["fallback_crops"] == 0,
+}
+assert all(packing.values()), packing
+
+out = {
+    "setup_s": d["setup_s"],
+    "compile_first_call_s": d["recognizer_setup_timing_s"]["compile_first_call"],
+    "pipeline_e2e_s": d["pipeline_e2e_s"],
+    "pages_per_s": d["pages_per_s"],
+    "s_per_page": d["s_per_page"],
+    "layout_workers": d["layout_workers"],
+    "layout_worker_pipeline": w,
+    "layout_stage_s": d["layout_frontend"]["stage_s"],
+    "ocr_scheduler_wall_s": r["run_scoped_scheduler_wall_s"],
+    "requests": r["requests"],
+    "contract_deltas_vs_910b": contract_deltas,
+    "packing_contract_vs_910b": packing,
+    "stop_reasons": r["stop_reason_counts"],
+    "vision": {
+        "real_tokens": r["real_vision_tokens"],
+        "physical_tokens": r["physical_vision_tokens"],
+        "seconds": s["vision_prefill"],
+        "real_tps": r["real_vision_tokens"] / s["vision_prefill"],
+        "physical_tps": r["physical_vision_tokens"] / s["vision_prefill"],
+    },
+    "text": {
+        "real_tokens": r["real_text_tokens"],
+        "physical_tokens": r["physical_text_tokens"],
+        "seconds": s["text_prefill"],
+        "real_tps": r["real_text_tokens"] / s["text_prefill"],
+        "physical_tps": r["physical_text_tokens"] / s["text_prefill"],
+    },
+    "decode": {
+        "generated_including_eos": r["generated_tokens_including_eos"],
+        "effective_tokens": r["effective_decode_tokens"],
+        "raw_slots": r["raw_decode_token_slots"],
+        "active_slots": r["active_decode_token_slots"],
+        "idle_slots": r["idle_decode_token_slots"],
+        "lookahead_slots": r["lookahead_decode_token_slots"],
+        "graph_calls": r["decode_graph_calls"],
+        "seconds": r["decode_wall_s"],
+        "effective_tps": r["effective_decode_tokens"] / r["decode_wall_s"],
+        "raw_tps": r["raw_decode_token_slots"] / r["decode_wall_s"],
+        "useful_fraction": r["decode_useful_token_fraction"],
+    },
+    "device_stage_s": s,
+    "vision_packing": r["vision_packing"],
+    "text_packing": r["text_packing"],
+}
+print(json.dumps(out, indent=2))
+PY
+
+"$PYTHON_BIN" - "$LANE/cache_before.txt" "$LANE/cache_after.txt" <<'PY' \
+  | tee "$LANE/cache_contract.json"
+import json, sys
+
+def load(path):
+    rows = {}
+    for line in open(path):
+        cache, files, size = line.rstrip().split("\t")
+        rows[cache] = {
+            "files": int(files.split("=", 1)[1]),
+            "bytes": int(size.split("=", 1)[1]),
+        }
+    return rows
+
+before, after = map(load, sys.argv[1:])
+deltas = {
+    cache: {
+        "file_delta": after[cache]["files"] - before[cache]["files"],
+        "byte_delta": after[cache]["bytes"] - before[cache]["bytes"],
+    }
+    for cache in before
+}
+assert all(row["file_delta"] == 0 for row in deltas.values()), deltas
+print(json.dumps({"cache_deltas": deltas, "no_new_files": True}, indent=2))
+PY
+```
+
+Report `310P PHASE 54 E2E: PASS` immediately with setup and launcher wall,
+pipeline E2E, pages/s, seconds/page, complete layout stage totals, OCR scheduler
+wall, every device-stage total, vision/text real and physical tok/s, decode raw
+and effective tok/s, useful fraction, graph calls and slot counts, packing
+histograms/fill fractions, stop reasons, private-cache high-water/bytes, and
+cache deltas.  State explicitly whether the run was warm or compile
+contaminated.
+
+### 54.4 Guarded official evaluation
+
+Use the permanent evaluator wrapper.  Do not invoke `pdf_validation.py`
+directly and do not exclude any page.
+
+```sh
+EVALUATOR_ROOT=
+for candidate in \
+  /workspace/repos/OmniDocBench_eval \
+  /home/lukaiv/repos/OmniDocBench_eval \
+  "$HOME/repos/OmniDocBench_eval" \
+  "$HOME/OmniDocBench_eval" \
+  "$HOME/OmniDocBench"
+do
+  if test -f "$candidate/pdf_validation.py"; then
+    EVALUATOR_ROOT="$candidate"
+    break
+  fi
+done
+test -n "$EVALUATOR_ROOT"
+test "$(git -C "$EVALUATOR_ROOT" rev-parse HEAD)" = \
+  2b161d010d2e3aff77a0edef359ea3a6411d23cd
+
+cat >"$EVAL/work/config.yaml" <<EOF
+end2end_eval:
+  metrics:
+    text_block:
+      metric:
+      - Edit_dist
+    display_formula:
+      metric:
+      - Edit_dist
+    table:
+      metric:
+      - TEDS
+      - Edit_dist
+      teds_workers: 12
+    reading_order:
+      metric:
+      - Edit_dist
+  dataset:
+    dataset_name: end2end_dataset
+    ground_truth:
+      data_path: $WORK_SERVER_REPO/$OUTPUT/OmniDocBench_subset.json
+    prediction:
+      data_path: $WORK_SERVER_REPO/$OUTPUT/predictions
+    match_method: quick_match
+    match_workers: 24
+    quick_match_truncated_timeout_sec: 300
+    match_timeout_sec: 420
+    timeout_fallback_max_chunk_span: 10
+    timeout_fallback_order_penalty: 0.10
+EOF
+
+cd "$EVAL/work"
+ulimit -n 65536
+SECONDS=0
+set +e
+set -o pipefail
+PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 3600 \
+  "$EVAL_PYTHON" "$WORK_SERVER_REPO/$EVAL_WRAPPER" \
+  --config config.yaml \
+  --evaluator-root "$EVALUATOR_ROOT" \
+  --match-workers 24 --teds-workers 12 \
+  --page-timeout-sec 120 \
+  --fallback-timeout-sec 180 \
+  --fallback-latex-timeout-sec 30 \
+  --teds-timeout-sec 120 \
+  2>&1 | tee evaluation.log
+eval_exit="${PIPESTATUS[0]}"
+eval_wall_s="$SECONDS"
+set -e
+printf '%s\n' "$eval_exit" >../exit_code.txt
+printf '%s\n' "$eval_wall_s" >../wall_s.txt
+cd "$WORK_SERVER_REPO"
+test "$eval_exit" -eq 0
+
+RESULT="$EVAL/work/result"
+METRIC="$RESULT/predictions_quick_match_metric_result.json"
+EVAL_SUMMARY="$RESULT/predictions_quick_match_run_summary.json"
+test -f "$METRIC"
+test -f "$EVAL_SUMMARY"
+
+"$EVAL_PYTHON" - "$METRIC" "$EVAL_SUMMARY" <<'PY' \
+  | tee "$EVAL/compact_eval_summary.json"
+import json, sys
+m, e = [json.load(open(path)) for path in sys.argv[1:]]
+stage = e["stage_execution"]
+assert stage["page_match"]["page_count"] == 1651
+print(json.dumps({
+    "text_block_Edit_dist": m["text_block"]["all"]["Edit_dist"]["ALL_page_avg"],
+    "display_formula_Edit_dist": m["display_formula"]["all"]["Edit_dist"]["ALL_page_avg"],
+    "table_Edit_dist": m["table"]["all"]["Edit_dist"]["ALL_page_avg"],
+    "table_TEDS": m["table"]["page"]["TEDS"]["ALL"],
+    "table_TEDS_structure_only": m["table"]["page"]["TEDS_structure_only"]["ALL"],
+    "reading_order_Edit_dist": m["reading_order"]["all"]["Edit_dist"]["ALL_page_avg"],
+    "page_denominators": e["page_denominators"],
+    "page_match": stage["page_match"],
+    "table_TEDS_execution": stage["metrics"]["table"]["TEDS"],
+}, indent=2, ensure_ascii=False))
+PY
+```
+
+Report `310P PHASE 54 EVALUATION: PASS` immediately with wall time, all six
+metrics, page denominators, match fallbacks/timeouts, and TEDS
+samples/timeouts/errors.  Timeouts handled by the wrapper are evidence and must
+be reported; an unbounded hang or missing final result is a failure.
+
+### 54.5 Three-way report: 310P before, 310P after, and 910B2 reference
+
+```sh
+"$PYTHON_BIN" - \
+  "$PHASE52_RUN" "$PHASE52_METRIC" \
+  "$OUTPUT/run_summary.json" "$METRIC" \
+  "$REFERENCE_RUN" "$REFERENCE_METRIC" <<'PY' \
+  | tee "$ROOT/head_to_head.json"
+import json, sys
+old_run, old_metric, new_run, new_metric, ref_run, ref_metric = [
+    json.load(open(path)) for path in sys.argv[1:]
+]
+
+def performance(d):
+    r = d["recognition"]
+    s = r["device_stage_s"]
+    return {
+        "pipeline_e2e_s": d["pipeline_e2e_s"],
+        "pages_per_s": d["pages_per_s"],
+        "seconds_per_page": d["s_per_page"],
+        "layout_workers": d["layout_workers"],
+        "layout_summed_page_stage_s": d["layout_frontend"]["stage_s"]["page_total_s"],
+        "vision_s": s["vision_prefill"],
+        "vision_real_tps": r["real_vision_tokens"] / s["vision_prefill"],
+        "vision_physical_tps": r["physical_vision_tokens"] / s["vision_prefill"],
+        "text_s": s["text_prefill"],
+        "text_real_tps": r["real_text_tokens"] / s["text_prefill"],
+        "text_physical_tps": r["physical_text_tokens"] / s["text_prefill"],
+        "decode_s": r["decode_wall_s"],
+        "decode_effective_tps": r["effective_decode_tokens"] / r["decode_wall_s"],
+        "decode_raw_tps": r["raw_decode_token_slots"] / r["decode_wall_s"],
+        "decode_useful_fraction": r["decode_useful_token_fraction"],
+        "generated_including_eos": r["generated_tokens_including_eos"],
+        "stop_reasons": r["stop_reason_counts"],
+    }
+
+def quality(m):
+    return {
+        "text_block_Edit_dist": m["text_block"]["all"]["Edit_dist"]["ALL_page_avg"],
+        "display_formula_Edit_dist": m["display_formula"]["all"]["Edit_dist"]["ALL_page_avg"],
+        "table_Edit_dist": m["table"]["all"]["Edit_dist"]["ALL_page_avg"],
+        "table_TEDS": m["table"]["page"]["TEDS"]["ALL"],
+        "table_TEDS_structure_only": m["table"]["page"]["TEDS_structure_only"]["ALL"],
+        "reading_order_Edit_dist": m["reading_order"]["all"]["Edit_dist"]["ALL_page_avg"],
+    }
+
+perf = {
+    "310P_phase52_B32_static_actual": performance(old_run),
+    "310P_phase54_B64_PSE_W8": performance(new_run),
+    "910B2_B64_PSE_W8": performance(ref_run),
+}
+qual = {
+    "310P_phase52_B32_static_actual": quality(old_metric),
+    "310P_phase54_B64_PSE_W8": quality(new_metric),
+    "910B2_B64_PSE_W8": quality(ref_metric),
+}
+
+def deltas(a, b):
+    out = {}
+    for key, av in a.items():
+        bv = b[key]
+        if isinstance(av, (int, float)) and isinstance(bv, (int, float)):
+            out[key] = {
+                "from": av,
+                "to": bv,
+                "absolute": bv - av,
+                "ratio": bv / av if av else None,
+                "percent": (bv / av - 1.0) * 100.0 if av else None,
+            }
+    return out
+
+out = {
+    "performance": perf,
+    "quality": qual,
+    "phase54_vs_phase52_performance": deltas(
+        perf["310P_phase52_B32_static_actual"],
+        perf["310P_phase54_B64_PSE_W8"],
+    ),
+    "310P_vs_910B2_performance": deltas(
+        perf["910B2_B64_PSE_W8"],
+        perf["310P_phase54_B64_PSE_W8"],
+    ),
+    "phase54_vs_phase52_quality": deltas(
+        qual["310P_phase52_B32_static_actual"],
+        qual["310P_phase54_B64_PSE_W8"],
+    ),
+    "310P_vs_910B2_quality": deltas(
+        qual["910B2_B64_PSE_W8"],
+        qual["310P_phase54_B64_PSE_W8"],
+    ),
+}
+print(json.dumps(out, indent=2, ensure_ascii=False))
+PY
+
+grep -RniE 'Traceback|AICore|5070|RuntimeError|out of memory|timed out' \
+  "$ROOT" --include='*.log' >"$ROOT/error_scan.txt" || true
+```
+
+Write `$ROOT/agent_report.md` beginning with exactly one classification:
+
+```text
+310P PHASE 54 B64 PSE LAYOUT8 FULL: PASS | PREFLIGHT_FAILURE |
+GATE_CACHE_MISS | GATE_RUNTIME_FAILURE | E2E_FAILURE | OOM_FAILURE |
+COMPILE_CONTAMINATED | STRUCTURAL_MISMATCH | EVALUATOR_FAILURE
+```
+
+For a pass, include:
+
+1. project/evaluator commits, host, exact physical/logical NPU,
+   CANN/driver/firmware, Python/torch/torch_npu/TorchAir, dataset/model paths,
+   and model SHA;
+2. exact Phase-52, Phase-53, decode-cache, prefill-cache, and committed 910B2
+   reference paths;
+3. exact gate, full-E2E, and evaluator commands;
+4. gate wall/setup/E2E, worker-pipeline proof, compile-first-call time, cache
+   deltas, and proof the Phase-53 B64 PSE graph replayed without compilation;
+5. setup, pipeline E2E, pages/s, seconds/page, launcher wall, all layout stage
+   totals, and OCR scheduler wall;
+6. every request/token total, every device-stage total, vision/text packing
+   histograms and fill fractions, private-cache capacity/high-water/bytes,
+   decode calls/slots/useful fraction, KV bytes copied, and stop reasons by
+   crop label;
+7. exact preprocessing and packing contract comparison against 910B2;
+8. Phase-54 versus Phase-52 310P deltas for E2E, pages/s, vision/text times and
+   tok/s, decode time/raw/effective tok/s/useful fraction, and layout;
+9. Phase-54 310P versus 910B2 ratios and reciprocal slowdowns for those same
+   performance metrics;
+10. all six official metrics for all three runs, signed deltas with the
+    correct better direction, denominators, page fallbacks, TEDS
+    samples/timeouts/errors, and evaluator wall;
+11. `What is proven`, `What differs`, `What remains unresolved`, and the first
+    causal error if anything failed.
+
+Paste back `agent_report.md`, `gate8/contract.json`,
+`gate8/cache_contract.json`, `full/compact_summary.json`,
+`full/cache_contract.json`, `full/evaluation/compact_eval_summary.json`, and
+`head_to_head.json`.  Keep large predictions, logs, and compiler caches on the
+work server.  Do not edit source, create another cache, change B/KV/pixels,
+start another sweep, or rerun a failed full job under altered settings.  Then
+**stop**.
