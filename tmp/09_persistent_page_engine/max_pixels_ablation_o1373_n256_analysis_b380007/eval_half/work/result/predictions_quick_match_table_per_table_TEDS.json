@@ -1,0 +1,66 @@
+{
+    "newspaper_Daily Star 2025-1-8@magazinesclubnew_page_060.png_[0]": {
+        "TEDS": 0.5,
+        "TEDS_structure_only": 0.5
+    },
+    "newspaper_Daily Star 2025-1-8@magazinesclubnew_page_060.png_[1]": {
+        "TEDS": 0.26,
+        "TEDS_structure_only": 0.364
+    },
+    "newspaper_The Guardian UK_0801@magazinesclubnew_page_052.png_[0]": {
+        "TEDS": 1.0,
+        "TEDS_structure_only": 1.0
+    },
+    "newspaper_The Guardian UK_0801@magazinesclubnew_page_052.png_[1]": {
+        "TEDS": 1.0,
+        "TEDS_structure_only": 1.0
+    },
+    "book_zh_GB115041989_extracted_page_9.png_[0]": {
+        "TEDS": 0.9727746212121212,
+        "TEDS_structure_only": 1.0
+    },
+    "color_textbook_zhonggaokao_小学_13.人教新起点英语（4-5年级）_人教新起点五年级英语下册_课本_人教新起点英语5B电子课本_page_076.png_[0]": {
+        "TEDS": 1.0,
+        "TEDS_structure_only": 1.0
+    },
+    "color_textbook_教材全解1+1二年级下册英语上海牛津版_page_006.png_[0]": {
+        "TEDS": 0.981719901106904,
+        "TEDS_structure_only": 1.0
+    },
+    "color_textbook_zhonggaokao_小学_13.人教新起点英语（4-5年级）_人教新起点五年级英语下册_课本_人教新起点英语5B电子课本_page_011.png_[0]": {
+        "TEDS": 0.9923996431757359,
+        "TEDS_structure_only": 1.0
+    },
+    "color_textbook_教材全解1+1二年级下册英语上海牛津版_page_081.png_[0]": {
+        "TEDS": 0.9287669093241848,
+        "TEDS_structure_only": 1.0
+    },
+    "color_textbook_教材全解1+1二年级下册英语上海牛津版_page_066.png_[0]": {
+        "TEDS": 0.9298540965207632,
+        "TEDS_structure_only": 1.0
+    },
+    "exam_paper_2018年广西北海、钦州、南宁、来宾、崇左、防城港、北部湾经济区中考英语试题（空白卷）_page_003.png_[0]": {
+        "TEDS": 0.9949989209955254,
+        "TEDS_structure_only": 1.0
+    },
+    "magazine_TheEconomist.2024.02.24_page_076.png_[0]": {
+        "TEDS": 0.7260355603831163,
+        "TEDS_structure_only": 0.8732394366197183
+    },
+    "magazine_TheEconomist.2024.02.24_page_076.png_[1]": {
+        "TEDS": 0.9947478070175438,
+        "TEDS_structure_only": 1.0
+    },
+    "magazine_TheEconomist.2024.02.24_page_076.png_[2]": {
+        "TEDS": 0.9829169406092483,
+        "TEDS_structure_only": 1.0
+    },
+    "magazine_TheEconomist.2024.02.24_page_076.png_[3]": {
+        "TEDS": 0.9861111111111112,
+        "TEDS_structure_only": 1.0
+    },
+    "magazine_TheEconomist.2024.02.24_page_076.png_[4]": {
+        "TEDS": 0.6703243249054007,
+        "TEDS_structure_only": 0.6875
+    }
+}
