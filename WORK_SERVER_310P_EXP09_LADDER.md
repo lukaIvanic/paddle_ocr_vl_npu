@@ -19253,3 +19253,454 @@ estimate` sections.
 
 Paste `agent_report.md` and `projection.json` back to Luka.  Do not run another
 NPU experiment, recompile anything, or modify the pipeline.  Then **stop**.
+
+## Phase 51: native-4304 B1 vision baseline and optimized ablation on 310P
+
+### Goal and fixed comparison boundary
+
+Run the exact Phase-50 B1 sequence sweep again on the same Atlas 310P3, changing
+only the two coupled vision-Linear choices:
+
+```text
+Phase 51 baseline       intermediate_size=4304, weight_format=native/ND
+Phase 50 optimized      intermediate_size=4352, weight_format=FRACTAL_NZ
+```
+
+Keep runtime D72-to-D80 attention-head padding enabled in both lanes.  It is a
+PromptFA correctness requirement and is not the MLP weight-padding ablation
+being tested here.  Everything else must remain identical: B1, the same 13
+sequence lengths, all 27 vision layers, PromptFA, separate-manual RoPE,
+TorchAir fullgraph, fp16, three warmups, ten samples, and five complete stage
+calls per sample.
+
+The committed 910B2 evidence for the same pair is:
+
+```text
+baseline native 4304
+  tmp/09_persistent_page_engine/vision_matmul_lab/
+  910b_b1_4304_native_sequence_sweep_33213bd_r1/sweep_summary.json
+optimized 4352 + NZ
+  tmp/09_persistent_page_engine/vision_matmul_lab/
+  910b_b1_4352_nz_sequence_sweep_e1ffd91_r2/sweep_summary.json
+direct comparison
+  tmp/09_persistent_page_engine/vision_matmul_lab/
+  910b_b1_4304_native_sequence_sweep_33213bd_r1/
+  comparison_to_4352_nz.json
+```
+
+Phase 51 must produce both the per-shape 310P comparison and the same
+full-OmniDocBench theoretical projections used in Phase 50.5.  It does not run
+layout, OCR E2E, evaluation, B2/B4, profiling, or any additional ablation.
+
+### 51.1 Pull, locate the passes, and establish a fresh native cache
+
+The work-server agent remains pull-only.  Do not edit tracked files, create a
+branch, commit, or push.  Run Sections 51.1 through 51.3 in one persistent
+shell so the selected NPU and variables remain fixed.
+
+```sh
+set -uo pipefail
+
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git pull --ff-only origin main
+test -z "$(git status --porcelain)"
+source npu-setup
+set -e
+test -n "${ASCEND_RT_VISIBLE_DEVICES:-}"
+
+PYTHON=/usr/local/python3.12.13/bin/python
+LAB=09_persistent_page_engine/scripts/vision_matmul_lab.py
+MODEL=/home/lukaiv/models/PaddleOCR-VL-1.6
+PHASE49="$(find tmp/09_persistent_page_engine -maxdepth 1 -type d \
+  -name '310p_phase49_v16_full_*' | sort | tail -n 1)"
+PHASE50="$(find tmp/09_persistent_page_engine -maxdepth 1 -type d \
+  -name '310p_phase50_b1_4352_nz_*' | sort | tail -n 1)"
+ROOT="tmp/09_persistent_page_engine/310p_phase51_b1_4304_native_$(git rev-parse --short HEAD)"
+CACHE=.runtime_cache/310p_phase51_v16_b1_4304_native
+SHAPES="128 256 384 512 640 768 1408 1920 2048 2944 4096 4992 5120"
+
+REFERENCE_BASELINE=tmp/09_persistent_page_engine/vision_matmul_lab/910b_b1_4304_native_sequence_sweep_33213bd_r1/sweep_summary.json
+REFERENCE_OPTIMIZED=tmp/09_persistent_page_engine/vision_matmul_lab/910b_b1_4352_nz_sequence_sweep_e1ffd91_r2/sweep_summary.json
+REFERENCE_RUN=tmp/09_persistent_page_engine/910b_full_e2e_eval_8634d3a_r1/output/run_summary.json
+PHASE50_COMPARISON="$PHASE50/comparison.json"
+PHASE49_RUN="$PHASE49/e2e/output/run_summary.json"
+PHASE49_TRACE="$PHASE49/e2e/output/recognition_trace.jsonl"
+
+test -x "$PYTHON"
+test -f "$LAB"
+test -f "$MODEL/model.safetensors"
+test -n "$PHASE49" && test -n "$PHASE50"
+test -f "$PHASE49/agent_report.md"
+test -f "$PHASE50/agent_report.md"
+rg -n '^310P PHASE 49 FULL V1.6: PASS' "$PHASE49/agent_report.md"
+rg -n '^310P PHASE 50 B1 4352/NZ SWEEP: PASS' "$PHASE50/agent_report.md"
+test -f "$PHASE50_COMPARISON"
+test -f "$PHASE49_RUN"
+test -f "$PHASE49_TRACE"
+test -f "$REFERENCE_BASELINE"
+test -f "$REFERENCE_OPTIMIZED"
+test -f "$REFERENCE_RUN"
+test ! -e "$ROOT"
+test ! -e "$CACHE"
+test "$(sha256sum "$MODEL/model.safetensors" | awk '{print $1}')" = \
+  85a479d506a11e724e7285d395c551be69f41dbc16b6342d3cacfb189aed71db
+
+mkdir -p "$ROOT"
+
+{
+  date -Is
+  hostname
+  git rev-parse HEAD
+  printf 'ASCEND_RT_VISIBLE_DEVICES=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"
+  "$PYTHON" -V
+  "$PYTHON" - <<'PY'
+import torch
+import torch_npu
+import torchair
+
+print("torch", torch.__version__)
+print("torch_npu", torch_npu.__version__)
+print("torchair", getattr(torchair, "__version__", "unknown"))
+print("logical_device", torch.npu.current_device())
+print("device_name", torch.npu.get_device_name(torch.npu.current_device()))
+assert "310P" in torch.npu.get_device_name(torch.npu.current_device())
+PY
+  npu-smi info
+  sha256sum \
+    "$MODEL/model.safetensors" \
+    "$REFERENCE_BASELINE" "$REFERENCE_OPTIMIZED" \
+    "$PHASE50_COMPARISON" "$PHASE49_RUN"
+  df -h "$WORK_SERVER_REPO"
+} 2>&1 | tee "$ROOT/preflight.log"
+
+available_kb="$(df -Pk "$WORK_SERVER_REPO" | awk 'NR==2 {print $4}')"
+test "$available_kb" -ge 8388608
+
+printf '%s\n' \
+  "commit=$(git rev-parse HEAD)" \
+  "device=$ASCEND_RT_VISIBLE_DEVICES" \
+  "model=$MODEL" \
+  "model_sha256=85a479d506a11e724e7285d395c551be69f41dbc16b6342d3cacfb189aed71db" \
+  "shapes=$SHAPES" \
+  "batch_size=1 intermediate_size=4304 weight_format=native" \
+  "execution=torchair attention=prompt_flash_attention head_padding=runtime" \
+  "warmup=3 samples=10 calls_per_sample=5" \
+  "cache=$CACHE" \
+  >"$ROOT/command.txt"
+```
+
+If the clean checkout, v1.6 hash, Phase-49 pass, Phase-50 pass, 310P device,
+TorchAir import, reference files, fresh root/cache, or 8-GiB disk check fails,
+report `310P PHASE 51 PREFLIGHT: FAILURE` with the first causal error and stop.
+Never reuse the Phase-50 optimized cache, an old v1 cache, or any existing
+native cache.  Report `310P PHASE 51 PREFLIGHT: PASS` immediately with the
+exact commit, NPU, software, checkpoint hash, and paths.
+
+### 51.2 Run all thirteen native-4304 shapes serially
+
+The output directory for each shape must not exist before the lab starts.  Keep
+the wrapper log beside it, not inside it.
+
+```sh
+cd "$WORK_SERVER_REPO"
+set -o pipefail
+
+for S in $SHAPES; do
+  OUT="$ROOT/s${S}"
+  test ! -e "$OUT"
+  printf '[%s] BEGIN BASELINE B1xS%s\n' "$(date -Is)" "$S" \
+    | tee -a "$ROOT/progress.log"
+
+  set +e
+  PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 3600 \
+    "$PYTHON" "$LAB" \
+      --batch-size 1 \
+      --sequence-length "$S" \
+      --intermediate-size 4304 \
+      --weight-format native \
+      --execution torchair \
+      --attention-implementation prompt_flash_attention \
+      --attention-head-padding runtime \
+      --promptfa-inner-precise 1 \
+      --rotary-implementation separate_manual \
+      --model "$MODEL" \
+      --cache-dir "$CACHE" \
+      --allow-compile-if-missing \
+      --warmup 3 --samples 10 --calls-per-sample 5 \
+      --output-dir "$OUT" \
+      2>&1 | tee "$ROOT/s${S}.log"
+  code="${PIPESTATUS[0]}"
+  set -e
+
+  printf '%s\n' "$code" >"$ROOT/s${S}.exit_code.txt"
+  printf '[%s] END BASELINE B1xS%s exit=%s\n' \
+    "$(date -Is)" "$S" "$code" | tee -a "$ROOT/progress.log"
+  if [ "$code" -ne 0 ]; then
+    printf 'PHASE51_STOP first_failed_shape=%s exit=%s\n' "$S" "$code" \
+      | tee -a "$ROOT/progress.log"
+    exit "$code"
+  fi
+
+  "$PYTHON" - "$OUT/run_summary.json" "$S" <<'PY' \
+    | tee -a "$ROOT/progress.log"
+import json, sys
+
+d = json.load(open(sys.argv[1]))
+expected_s = int(sys.argv[2])
+shape = d["shape"]
+weights = d["weight_format"]
+compile_meta = d["compile"]
+m = d["measurements"]
+assert shape["batch_size"] == 1
+assert shape["sequence_length"] == expected_s
+assert shape["candidate_intermediate_size"] == 4304
+assert shape["linear_calls_per_full_stack"] == 162
+assert weights["requested"] == "native"
+assert weights["converted_count"] == 0
+assert weights["after_format_histogram"] == {"2": 162}
+assert weights["all_after_are_nz"] is False
+assert compile_meta["cache_existed_before"] is False
+print(
+    "PHASE51_PROGRESS",
+    f"S={expected_s}",
+    f"median_ms={m['device_event_per_call_ms']['median']:.6f}",
+    f"physical_tps={m['physical_tokens_per_s_device_median']:.3f}",
+    f"compile_first_call_s={compile_meta['first_call_s']:.3f}",
+    "native_weights=162/162",
+)
+PY
+done
+
+printf '[%s] BASELINE SWEEP COMPLETE\n' "$(date -Is)" \
+  | tee -a "$ROOT/progress.log"
+```
+
+The loop itself is the serialization guarantee.  Stop on the first nonzero
+exit, timeout, non-4304 shape, converted weight, non-native format, or stale
+cache.  Do not skip a shape or continue after a failed contract.
+
+For live progress:
+
+```sh
+tail -n 40 -f "$ROOT/progress.log"
+```
+
+### 51.3 Compare four curves and project the full corpus
+
+Run this only after all 13 shapes pass:
+
+```sh
+"$PYTHON" - \
+  "$ROOT" "$PHASE50_COMPARISON" \
+  "$REFERENCE_BASELINE" "$REFERENCE_OPTIMIZED" \
+  "$PHASE49_RUN" "$REFERENCE_RUN" "$PHASE49_TRACE" <<'PY' \
+  | tee "$ROOT/comparison.json"
+import collections
+import json
+import math
+import pathlib
+import sys
+
+(
+    root_path,
+    phase50_path,
+    reference_baseline_path,
+    reference_optimized_path,
+    phase49_run_path,
+    reference_run_path,
+    trace_path,
+) = sys.argv[1:]
+root = pathlib.Path(root_path)
+phase50 = json.load(open(phase50_path))
+reference_baseline = json.load(open(reference_baseline_path))
+reference_optimized = json.load(open(reference_optimized_path))
+phase49_run = json.load(open(phase49_run_path))
+reference_run = json.load(open(reference_run_path))
+
+shapes = [128, 256, 384, 512, 640, 768, 1408, 1920, 2048, 2944, 4096, 4992, 5120]
+
+baseline_310 = {}
+for sequence_length in shapes:
+    assert (root / f"s{sequence_length}.exit_code.txt").read_text().strip() == "0"
+    d = json.load((root / f"s{sequence_length}" / "run_summary.json").open())
+    assert d["shape"]["candidate_intermediate_size"] == 4304
+    assert d["weight_format"]["requested"] == "native"
+    assert d["weight_format"]["converted_count"] == 0
+    assert d["weight_format"]["after_format_histogram"] == {"2": 162}
+    baseline_310[sequence_length] = {
+        "median_ms": float(d["measurements"]["device_event_per_call_ms"]["median"]),
+        "physical_tps": float(d["measurements"]["physical_tokens_per_s_device_median"]),
+        "linear_tflop_per_s": float(d["measurements"]["linear_tflop_per_s_device_median"]),
+    }
+
+optimized_310 = {
+    int(p["sequence_length"]): {
+        "median_ms": float(p["310P_device_median_ms"]),
+        "physical_tps": float(p["310P_physical_tokens_per_s"]),
+        "linear_tflop_per_s": float(p["310P_linear_tflop_per_s"]),
+    }
+    for p in phase50["points"]
+}
+baseline_910 = {
+    int(p["sequence_length"]): {
+        "median_ms": float(p["device_median_ms"]),
+        "physical_tps": float(p["physical_tokens_per_s"]),
+    }
+    for p in reference_baseline["points"]
+}
+optimized_910 = {
+    int(p["sequence_length"]): {
+        "median_ms": float(p["device_median_ms"]),
+        "physical_tps": float(p["physical_tokens_per_s"]),
+    }
+    for p in reference_optimized["points"]
+}
+assert sorted(baseline_310) == sorted(optimized_310) == shapes
+assert sorted(baseline_910) == sorted(optimized_910) == shapes
+
+rows = []
+for sequence_length in shapes:
+    b310 = baseline_310[sequence_length]
+    o310 = optimized_310[sequence_length]
+    b910 = baseline_910[sequence_length]
+    o910 = optimized_910[sequence_length]
+    rows.append({
+        "sequence_length": sequence_length,
+        "310P_baseline_native_4304_ms": b310["median_ms"],
+        "310P_optimized_4352_nz_ms": o310["median_ms"],
+        "310P_baseline_native_4304_physical_tps": b310["physical_tps"],
+        "310P_optimized_4352_nz_physical_tps": o310["physical_tps"],
+        "310P_optimized_over_baseline_tps": o310["physical_tps"] / b310["physical_tps"],
+        "310P_optimized_time_reduction_fraction": 1.0 - o310["median_ms"] / b310["median_ms"],
+        "910B2_baseline_native_4304_physical_tps": b910["physical_tps"],
+        "910B2_optimized_4352_nz_physical_tps": o910["physical_tps"],
+        "910B2_optimized_over_baseline_tps": o910["physical_tps"] / b910["physical_tps"],
+        "310P_over_910B_baseline_tps": b310["physical_tps"] / b910["physical_tps"],
+        "310P_over_910B_optimized_tps": o310["physical_tps"] / o910["physical_tps"],
+    })
+
+crop_counts = collections.Counter()
+real_tokens = 0
+for line in open(trace_path):
+    if not line.strip():
+        continue
+    row = json.loads(line)
+    tokens = int(row["vision"]["real_vision_tokens"])
+    bucket = next((value for value in shapes if value >= tokens), None)
+    assert bucket is not None, (row["request_id"], tokens)
+    crop_counts[bucket] += 1
+    real_tokens += tokens
+expected_crop_counts = {
+    256: 16812, 384: 3001, 512: 1992, 640: 1589, 768: 1303,
+    1408: 2927, 1920: 951, 2048: 129, 2944: 585, 4096: 321,
+    4992: 683, 5120: 264,
+}
+assert dict(crop_counts) == expected_crop_counts
+assert sum(crop_counts.values()) == 30557
+assert real_tokens == 18805052
+
+reference_histogram = reference_run["recognition"]["vision_packing"]["graph_shape_histogram"]
+packed_counts = collections.Counter()
+for name, count in reference_histogram.items():
+    if name == "eager_overflow":
+        packed_counts[5120] += int(count)
+    else:
+        assert name.startswith("b1_s"), name
+        packed_counts[int(name[4:])] += int(count)
+assert sum(packed_counts.values()) == 9665
+
+def project(counts, curve):
+    physical = sum(bucket * count for bucket, count in counts.items())
+    seconds = sum(count * curve[bucket]["median_ms"] / 1000.0 for bucket, count in counts.items())
+    return {
+        "calls": sum(counts.values()),
+        "time_s": seconds,
+        "seconds_per_page": seconds / 1651,
+        "real_tokens": real_tokens,
+        "physical_tokens": physical,
+        "effective_real_tokens_per_s": real_tokens / seconds,
+        "raw_physical_tokens_per_s": physical / seconds,
+    }
+
+projections = {
+    "310P_baseline_direct_b1": project(crop_counts, baseline_310),
+    "310P_optimized_direct_b1": project(crop_counts, optimized_310),
+    "910B2_baseline_direct_b1": project(crop_counts, baseline_910),
+    "910B2_optimized_direct_b1": project(crop_counts, optimized_910),
+    "310P_baseline_reference_packed_plan": project(packed_counts, baseline_310),
+    "310P_optimized_reference_packed_plan": project(packed_counts, optimized_310),
+    "910B2_baseline_reference_packed_plan": project(packed_counts, baseline_910),
+    "910B2_optimized_reference_packed_plan": project(packed_counts, optimized_910),
+}
+assert math.isclose(projections["910B2_baseline_direct_b1"]["time_s"], 579.2756568290711, abs_tol=1e-9)
+assert math.isclose(projections["910B2_optimized_direct_b1"]["time_s"], 528.074783506012, abs_tol=1e-9)
+assert math.isclose(projections["910B2_baseline_reference_packed_plan"]["time_s"], 353.54757228775026, abs_tol=1e-9)
+assert math.isclose(projections["910B2_optimized_reference_packed_plan"]["time_s"], 334.1863003410339, abs_tol=1e-9)
+
+def actual(summary):
+    recognition = summary["recognition"]
+    seconds = float(recognition["device_stage_s"]["vision_prefill"])
+    real = int(recognition["real_vision_tokens"])
+    physical = int(recognition["physical_vision_tokens"])
+    assert real == real_tokens
+    return {
+        "time_s": seconds,
+        "effective_real_tokens_per_s": real / seconds,
+        "raw_physical_tokens_per_s": physical / seconds,
+        "physical_tokens": physical,
+        "vision_packing": recognition["vision_packing"],
+    }
+
+out = {
+    "schema_version": 1,
+    "classification": "310P_PHASE51_NATIVE_4304_BASELINE_PASS",
+    "fixed_boundary": {
+        "shared": "B1, full 27-layer VisionPrefillStage, PromptFA, runtime D80 head padding, TorchAir, fp16, 3x10x5 timing",
+        "baseline": "intermediate_size=4304, 162 native/ND Linear weights",
+        "optimized": "intermediate_size=4352 zero-extension, 162 FRACTAL_NZ Linear weights",
+    },
+    "per_shape": rows,
+    "full_corpus_projection": projections,
+    "actual_full_run": {
+        "310P3_phase49": actual(phase49_run),
+        "910B2_8634d3a": actual(reference_run),
+    },
+}
+print(json.dumps(out, indent=2))
+PY
+```
+
+### 51.4 Report and stop
+
+Write `$ROOT/agent_report.md` beginning with exactly one classification:
+
+```text
+310P PHASE 51 NATIVE-4304 BASELINE: PASS | PREFLIGHT_FAILURE |
+SHAPE_FAILURE | FORMAT_FAILURE | COMPARISON_FAILURE | CORPUS_MISMATCH
+```
+
+For a pass, include:
+
+1. commit, host, exact NPU, software, checkpoint hash, fresh cache proof, and
+   proof all 13 processes ran strictly serially;
+2. one per-shape table containing both 310P configurations, optimized/baseline
+   throughput gain, both 910B configurations, and the 310P/910B ratio before
+   and after optimization;
+3. proof all baseline lanes stayed 4304 with 162/162 native format-2 Linear
+   weights and zero conversions;
+4. direct-B1 full-corpus seconds and effective/raw throughput for all four
+   hardware/configuration pairs;
+5. frozen-reference-packing-plan seconds and throughput for all four pairs;
+6. the measured Phase-49 310P and measured full-run 910B vision totals, kept
+   explicitly separate from projections;
+7. where the optimization helps most, where it is negligible, the
+   corpus-weighted time reduction on 310P versus 910B, and whether 4352+NZ
+   closes or widens the hardware gap;
+8. concise `What is proven`, `What remains an estimate`, and the first causal
+   error if anything failed.
+
+Paste `agent_report.md`, `comparison.json`, and `progress.log` back to Luka.
+Do not attribute the combined gain separately to width padding or NZ; that
+would require two additional ablation lanes.  Do not run those lanes, profile,
+or integrate the optimization into production.  Then **stop**.
