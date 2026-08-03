@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -75,6 +76,16 @@ class PreprocessedLayoutPage:
     decoded: DecodedLayoutPage
     pixel_values: torch.Tensor
     preprocess_cpu_s: float
+
+
+@dataclass(frozen=True)
+class TransferredLayoutPage:
+    """A preprocessed page whose detector input is queued on the NPU."""
+
+    preprocessed: PreprocessedLayoutPage
+    pixel_values: torch.Tensor
+    ready_event: Any | None
+    h2d_host_s: float
 
 
 @dataclass(frozen=True)
@@ -237,6 +248,12 @@ class OwnedLayoutFrontend:
         self.graph_capture = bool(
             graph_capture and self.device.type == "npu"
         )
+        self._input_transfer_lock = threading.Lock()
+        self._input_transfer_stream = (
+            torch.npu.Stream(device=self.device)
+            if self.device.type == "npu"
+            else None
+        )
         self.labels = _load_layout_labels(self.model_dir)
 
         setup_started = time.perf_counter()
@@ -381,20 +398,26 @@ class OwnedLayoutFrontend:
         *,
         flow_id: str,
         prepared_pixel_values: torch.Tensor | None = None,
+        prepared_device_pixel_values: torch.Tensor | None = None,
         preprocess_cpu_s: float = 0.0,
+        h2d_host_s: float | None = None,
     ) -> tuple[dict[str, Any], dict[str, float]]:
         timing: dict[str, float] = {}
         height, width = image_rgb.shape[:2]
 
         started = time.perf_counter()
         started_ns = time.perf_counter_ns()
-        if prepared_pixel_values is None:
-            cpu_started = time.perf_counter()
-            prepared_pixel_values = self._prepare_pixel_values_cpu(image_rgb)
-            preprocess_cpu_s = time.perf_counter() - cpu_started
-        h2d_started = time.perf_counter()
-        inputs = {"pixel_values": self._move_pixel_values(prepared_pixel_values)}
-        h2d_s = time.perf_counter() - h2d_started
+        if prepared_device_pixel_values is not None:
+            inputs = {"pixel_values": prepared_device_pixel_values}
+            h2d_s = float(h2d_host_s or 0.0)
+        else:
+            if prepared_pixel_values is None:
+                cpu_started = time.perf_counter()
+                prepared_pixel_values = self._prepare_pixel_values_cpu(image_rgb)
+                preprocess_cpu_s = time.perf_counter() - cpu_started
+            h2d_started = time.perf_counter()
+            inputs = {"pixel_values": self._move_pixel_values(prepared_pixel_values)}
+            h2d_s = time.perf_counter() - h2d_started
         timing["layout_preprocess_cpu_s"] = preprocess_cpu_s
         timing["layout_input_h2d_s"] = h2d_s
         timing["layout_preprocess_h2d_s"] = preprocess_cpu_s + h2d_s
@@ -583,6 +606,54 @@ class OwnedLayoutFrontend:
             flow_id=f"page:{decoded.ordinal}",
             prepared_pixel_values=preprocessed.pixel_values,
             preprocess_cpu_s=preprocessed.preprocess_cpu_s,
+        )
+        return DetectedLayoutPage(
+            decoded=decoded,
+            prediction=prediction,
+            detect_timing=detect_timing,
+        )
+
+    def transfer_preprocessed_page(
+        self,
+        preprocessed: PreprocessedLayoutPage,
+    ) -> TransferredLayoutPage:
+        started = time.perf_counter()
+        if self._input_transfer_stream is None:
+            pixel_values = self._move_pixel_values(preprocessed.pixel_values)
+            ready_event = None
+        else:
+            with self._input_transfer_lock:
+                with torch.npu.stream(self._input_transfer_stream):
+                    pixel_values = preprocessed.pixel_values.to(
+                        device=self.device,
+                        dtype=self.model_dtype,
+                        non_blocking=True,
+                    )
+                    ready_event = torch.npu.Event()
+                    ready_event.record(self._input_transfer_stream)
+        return TransferredLayoutPage(
+            preprocessed=preprocessed,
+            pixel_values=pixel_values,
+            ready_event=ready_event,
+            h2d_host_s=time.perf_counter() - started,
+        )
+
+    def detect_transferred_page(
+        self,
+        transferred: TransferredLayoutPage,
+    ) -> DetectedLayoutPage:
+        preprocessed = transferred.preprocessed
+        decoded = preprocessed.decoded
+        if transferred.ready_event is not None:
+            torch.npu.current_stream(self.device).wait_event(
+                transferred.ready_event
+            )
+        prediction, detect_timing = self._detect(
+            decoded.image,
+            flow_id=f"page:{decoded.ordinal}",
+            prepared_device_pixel_values=transferred.pixel_values,
+            preprocess_cpu_s=preprocessed.preprocess_cpu_s,
+            h2d_host_s=transferred.h2d_host_s,
         )
         return DetectedLayoutPage(
             decoded=decoded,
