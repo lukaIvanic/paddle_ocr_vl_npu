@@ -15,7 +15,6 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
-import cv2
 import torch
 
 HERE = Path(__file__).resolve().parent
@@ -87,15 +86,6 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default=64,
         help="PyTorch intra-op threads used by the fixed 800x800 layout resize.",
     )
-    parser.add_argument(
-        "--opencv-threads",
-        type=int,
-        default=1,
-        help=(
-            "OpenCV internal workers. Keep this at one when page-level "
-            "workers provide the outer parallelism."
-        ),
-    )
     parser.add_argument("--preprocessor-min-pixels", type=int)
     parser.add_argument("--reference-requests", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
@@ -140,8 +130,6 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("--offset must be non-negative and --limit positive")
     if args.torch_cpu_threads <= 0:
         parser.error("--torch-cpu-threads must be positive")
-    if args.opencv_threads <= 0:
-        parser.error("--opencv-threads must be positive")
     if args.workers == 1 and (
         args.input_workers is not None
         or args.page_prepare_workers is not None
@@ -219,7 +207,6 @@ def _request_record(
 
 def main(argv: Sequence[str] | None = None) -> None:
     args = parse_args(argv)
-    cv2.setNumThreads(args.opencv_threads)
     dataset_json = args.dataset_json.expanduser().resolve()
     images_dir = args.images_dir.expanduser().resolve()
     model_dir = args.layout_model.expanduser().resolve()
@@ -483,7 +470,6 @@ def main(argv: Sequence[str] | None = None) -> None:
         "npu_indexput_compat": bool(frontend.npu_indexput_compat),
         "workers": args.workers,
         "torch_cpu_threads": torch.get_num_threads(),
-        "opencv_threads": cv2.getNumThreads(),
         "worker_strategy": worker_pipeline["strategy"],
         "worker_pipeline": worker_pipeline,
         "setup_s": setup_s,
