@@ -1,0 +1,1 @@
+/workspace/venvs/omnidocbench_py310/bin/python /workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/run_omnidocbench_eval.py --config config.yaml --evaluator-root /workspace/repos/OmniDocBench_eval --match-workers 24 --teds-workers 12 --page-timeout-sec 120 --fallback-timeout-sec 180 --fallback-latex-timeout-sec 30
