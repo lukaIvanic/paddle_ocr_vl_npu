@@ -1,0 +1,1254 @@
+[cdm-direct] samples=2352 workers=96 save_vis=False output=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_full_e2e_eval_8634d3a_r1/cdm_native_full_w96
+[CDM] texlive_root=/workspace/.tools/omnidocbench_eval/texlive/2025
+[CDM] texlive_bin=/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux
+[CDM] pdflatex=/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/pdflatex
+[CDM] pdflatex_version=pdfTeX 3.141592653-2.6-1.40.28 (TeX Live 2025)
+[CDM] kpsewhich=/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/kpsewhich
+[CDM] kpsewhich_texmfroot=/workspace/.tools/omnidocbench_eval/texlive/2025
+[CDM] texmfcnf=/workspace/.tools/omnidocbench_eval/texlive/2025:/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/web2c
+[CDM] cjk_font=gkai
+[CDM] cjk_sty=/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/cjk/texinput/CJK.sty
+[CDM] cjk_font_fd=/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/cjk/texinput/UTF8/c70gkai.fd
+[CDM] workers=96 samples=2352
+CDM:   0%|                                                                                                         | 0/2352 [00:00<?, ?it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:   0%|                                                                                               | 1/2352 [00:02<1:50:51,  2.83s/it]CDM:   0%|                                                                                                 | 2/2352 [00:03<59:01,  1.51s/it]CDM:   0%|1                                                                                                | 3/2352 [00:03<36:53,  1.06it/s]CDM:   0%|2                                                                                                | 6/2352 [00:03<13:28,  2.90it/s]CDM:   0%|3                                                                                                | 8/2352 [00:03<09:11,  4.25it/s]CDM:   1%|4                                                                                               | 12/2352 [00:04<05:13,  7.46it/s]CDM:   1%|6                                                                                               | 17/2352 [00:04<03:09, 12.29it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:   1%|9                                                                                               | 24/2352 [00:04<01:56, 20.01it/s]CDM:   1%|#3                                                                                              | 33/2352 [00:04<01:13, 31.35it/s]CDM:   2%|#9                                                                                              | 48/2352 [00:04<00:43, 52.60it/s]CDM:   3%|##8                                                                                             | 69/2352 [00:04<00:26, 84.81it/s]CDM:   3%|###3                                                                                            | 81/2352 [00:04<00:25, 89.73it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:   4%|###7                                                                                            | 93/2352 [00:06<02:17, 16.38it/s]CDM:   4%|####                                                                                           | 101/2352 [00:07<02:12, 16.96it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:   5%|####3                                                                                          | 108/2352 [00:07<01:56, 19.23it/s]CDM:   5%|####6                                                                                          | 114/2352 [00:07<01:46, 20.94it/s]CDM:   5%|####8                                                                                          | 121/2352 [00:07<01:27, 25.46it/s]CDM:   5%|#####1                                                                                         | 127/2352 [00:07<01:15, 29.39it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:   6%|#####3                                                                                         | 133/2352 [00:08<01:08, 32.37it/s]CDM:   6%|#####6                                                                                         | 141/2352 [00:08<00:54, 40.20it/s]CDM:   6%|######1                                                                                        | 152/2352 [00:08<00:41, 53.47it/s]CDM:   7%|######5                                                                                        | 163/2352 [00:08<00:33, 65.00it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:   7%|######9                                                                                        | 172/2352 [00:09<02:19, 15.61it/s]CDM:   8%|#######2                                                                                       | 179/2352 [00:10<01:59, 18.13it/s]CDM:   8%|#######4                                                                                       | 185/2352 [00:10<01:53, 19.15it/s]CDM:   8%|#######6                                                                                       | 190/2352 [00:10<01:41, 21.40it/s]CDM:   8%|#######9                                                                                       | 198/2352 [00:10<01:16, 28.24it/s]CDM:   9%|########2                                                                                      | 204/2352 [00:10<01:17, 27.81it/s]CDM:   9%|########4                                                                                      | 209/2352 [00:11<01:14, 28.76it/s]CDM:   9%|########7                                                                                      | 217/2352 [00:11<00:57, 36.86it/s]CDM:   9%|#########                                                                                      | 223/2352 [00:11<00:54, 39.02it/s]CDM:  10%|#########2                                                                                     | 230/2352 [00:11<00:48, 44.15it/s]CDM:  10%|#########5                                                                                     | 236/2352 [00:11<00:50, 41.83it/s]CDM:  10%|#########8                                                                                     | 244/2352 [00:11<00:43, 47.94it/s]CDM:  11%|##########1                                                                                    | 252/2352 [00:11<00:39, 53.21it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  11%|##########4                                                                                    | 258/2352 [00:11<00:41, 49.94it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  11%|##########6                                                                                    | 264/2352 [00:12<02:06, 16.54it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  11%|##########8                                                                                    | 268/2352 [00:13<02:34, 13.45it/s]CDM:  12%|###########                                                                                    | 274/2352 [00:13<01:59, 17.39it/s]CDM:  12%|###########2                                                                                   | 278/2352 [00:13<01:47, 19.38it/s]CDM:  12%|###########6                                                                                   | 288/2352 [00:13<01:08, 30.16it/s]CDM:  12%|###########8                                                                                   | 294/2352 [00:13<01:04, 32.13it/s]CDM:  13%|############1                                                                                  | 300/2352 [00:14<01:00, 33.89it/s]CDM:  13%|############3                                                                                  | 305/2352 [00:14<00:57, 35.41it/s]CDM:  13%|############5                                                                                  | 310/2352 [00:14<00:54, 37.44it/s]CDM:  13%|############7                                                                                  | 315/2352 [00:14<01:19, 25.67it/s]CDM:  14%|#############                                                                                  | 322/2352 [00:14<01:01, 32.85it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  14%|#############2                                                                                 | 328/2352 [00:14<00:53, 37.97it/s]CDM:  14%|#############4                                                                                 | 334/2352 [00:15<00:48, 41.59it/s]CDM:  15%|#############9                                                                                 | 346/2352 [00:15<00:38, 52.49it/s]CDM:  15%|##############2                                                                                | 352/2352 [00:15<00:48, 41.44it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  15%|##############4                                                                                | 357/2352 [00:16<02:19, 14.33it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  15%|##############5                                                                                | 361/2352 [00:16<02:07, 15.60it/s]CDM:  16%|##############7                                                                                | 365/2352 [00:16<01:56, 17.05it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  16%|##############9                                                                                | 369/2352 [00:16<01:40, 19.73it/s]CDM:  16%|###############3                                                                               | 379/2352 [00:17<01:04, 30.50it/s]CDM:  17%|###############7                                                                               | 389/2352 [00:17<00:46, 42.25it/s]CDM:  17%|################                                                                               | 397/2352 [00:17<00:40, 48.32it/s]CDM:  17%|################3                                                                              | 404/2352 [00:17<00:39, 49.01it/s]CDM:  17%|################6                                                                              | 411/2352 [00:17<00:56, 34.18it/s]CDM:  18%|################8                                                                              | 418/2352 [00:17<00:48, 39.80it/s]CDM:  18%|#################1                                                                             | 424/2352 [00:18<00:45, 42.05it/s]CDM:  18%|#################3                                                                             | 430/2352 [00:18<00:46, 41.67it/s]CDM:  18%|#################5                                                                             | 435/2352 [00:18<00:50, 38.07it/s]CDM:  19%|#################8                                                                             | 441/2352 [00:18<00:47, 39.98it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  19%|##################                                                                             | 446/2352 [00:18<00:51, 37.23it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  19%|##################2                                                                            | 451/2352 [00:19<01:51, 17.10it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  19%|##################3                                                                            | 455/2352 [00:19<02:12, 14.34it/s]CDM:  19%|##################4                                                                            | 458/2352 [00:19<02:00, 15.71it/s]CDM:  20%|##################6                                                                            | 461/2352 [00:20<01:59, 15.77it/s]CDM:  20%|##################8                                                                            | 466/2352 [00:20<01:31, 20.66it/s]magick: profile 'icc': 'RGB ': RGB color space not permitted on grayscale PNG `result/predictions_quick_match_cdm/CDM/cdm_calc_r0vv_cfv/pred/vis/sample_0_base.tmp.1267356.1785833971955446231.png' @ warning/png.c/MagickPNGWarningHandler/1531.
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+magick: profile 'icc': 'RGB ': RGB color space not permitted on grayscale PNG `result/predictions_quick_match_cdm/CDM/cdm_calc_s0o9q2u1/pred/vis/sample_0_base.tmp.1267348.1785833972013388796.png' @ warning/png.c/MagickPNGWarningHandler/1531.
+CDM:  20%|###################                                                                            | 472/2352 [00:20<01:09, 27.21it/s]magick: profile 'icc': 'RGB ': RGB color space not permitted on grayscale PNG `result/predictions_quick_match_cdm/CDM/cdm_calc_z8vhjt_r/pred/vis/sample_0_base.tmp.1267427.1785833972129362657.png' @ warning/png.c/MagickPNGWarningHandler/1531.
+CDM:  20%|###################4                                                                           | 481/2352 [00:20<00:48, 38.59it/s]magick: profile 'icc': 'RGB ': RGB color space not permitted on grayscale PNG `result/predictions_quick_match_cdm/CDM/cdm_calc_3v7roe4i/pred/vis/sample_0_base.tmp.1267390.1785833972165492171.png' @ warning/png.c/MagickPNGWarningHandler/1531.
+CDM:  21%|###################7                                                                           | 488/2352 [00:20<00:42, 44.34it/s]CDM:  21%|###################9                                                                           | 495/2352 [00:20<00:37, 49.31it/s]CDM:  21%|####################2                                                                          | 501/2352 [00:20<00:36, 50.78it/s]CDM:  22%|####################4                                                                          | 507/2352 [00:20<00:41, 44.19it/s]CDM:  22%|####################8                                                                          | 516/2352 [00:21<00:37, 48.60it/s]CDM:  22%|#####################1                                                                         | 524/2352 [00:21<00:36, 50.13it/s]CDM:  23%|#####################4                                                                         | 530/2352 [00:21<00:54, 33.41it/s]CDM:  23%|#####################6                                                                         | 535/2352 [00:21<00:50, 35.90it/s]CDM:  23%|#####################8                                                                         | 540/2352 [00:21<01:02, 29.11it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  23%|#####################9                                                                         | 544/2352 [00:22<01:36, 18.72it/s]CDM:  23%|######################                                                                         | 547/2352 [00:22<01:49, 16.46it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  23%|######################2                                                                        | 550/2352 [00:22<01:54, 15.74it/s]CDM:  23%|######################2                                                                        | 552/2352 [00:23<02:02, 14.75it/s]CDM:  24%|######################4                                                                        | 555/2352 [00:23<01:52, 15.92it/s]CDM:  24%|######################6                                                                        | 560/2352 [00:23<01:22, 21.60it/s]CDM:  24%|######################9                                                                        | 567/2352 [00:23<01:06, 26.66it/s]CDM:  24%|#######################                                                                        | 571/2352 [00:23<01:02, 28.29it/s]CDM:  24%|#######################2                                                                       | 575/2352 [00:23<00:58, 30.46it/s]CDM:  25%|#######################5                                                                       | 584/2352 [00:23<00:40, 43.67it/s]CDM:  25%|#######################9                                                                       | 593/2352 [00:23<00:32, 54.45it/s]CDM:  26%|########################2                                                                      | 600/2352 [00:24<00:33, 51.54it/s]CDM:  26%|########################4                                                                      | 606/2352 [00:24<00:33, 51.76it/s]CDM:  26%|########################8                                                                      | 614/2352 [00:24<00:34, 51.08it/s]CDM:  26%|#########################                                                                      | 620/2352 [00:24<00:36, 47.20it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  27%|#########################2                                                                     | 625/2352 [00:24<00:58, 29.52it/s]CDM:  27%|#########################4                                                                     | 629/2352 [00:25<00:59, 29.00it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  27%|#########################5                                                                     | 633/2352 [00:25<01:25, 20.07it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  27%|#########################6                                                                     | 636/2352 [00:25<01:24, 20.30it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  27%|#########################8                                                                     | 639/2352 [00:25<01:55, 14.86it/s]CDM:  27%|#########################9                                                                     | 642/2352 [00:26<01:49, 15.58it/s]CDM:  27%|##########################                                                                     | 645/2352 [00:26<01:37, 17.42it/s]CDM:  28%|##########################2                                                                    | 651/2352 [00:26<01:15, 22.57it/s]CDM:  28%|##########################4                                                                    | 656/2352 [00:26<01:02, 27.02it/s]CDM:  28%|##########################7                                                                    | 662/2352 [00:26<00:52, 31.94it/s]CDM:  28%|##########################9                                                                    | 666/2352 [00:26<00:54, 30.84it/s]CDM:  29%|###########################1                                                                   | 672/2352 [00:26<00:48, 34.40it/s]CDM:  29%|###########################4                                                                   | 679/2352 [00:27<00:42, 39.76it/s]CDM:  29%|###########################6                                                                   | 684/2352 [00:27<00:42, 38.83it/s]CDM:  29%|###########################9                                                                   | 693/2352 [00:27<00:32, 50.75it/s]CDM:  30%|############################2                                                                  | 699/2352 [00:27<00:31, 52.60it/s]CDM:  30%|############################4                                                                  | 705/2352 [00:27<00:32, 50.13it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  30%|############################7                                                                  | 711/2352 [00:27<00:50, 32.68it/s]CDM:  30%|############################9                                                                  | 716/2352 [00:28<01:03, 25.83it/s]CDM:  31%|#############################                                                                  | 720/2352 [00:28<01:18, 20.66it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  31%|#############################2                                                                 | 723/2352 [00:28<01:30, 18.06it/s]CDM:  31%|#############################3                                                                 | 726/2352 [00:28<01:29, 18.16it/s]CDM:  31%|#############################4                                                                 | 729/2352 [00:29<01:22, 19.72it/s]CDM:  31%|#############################5                                                                 | 732/2352 [00:29<01:21, 19.87it/s]CDM:  31%|#############################6                                                                 | 735/2352 [00:29<01:30, 17.81it/s]CDM:  31%|#############################8                                                                 | 738/2352 [00:29<01:28, 18.31it/s]CDM:  32%|#############################9                                                                 | 741/2352 [00:29<01:24, 19.01it/s]CDM:  32%|##############################                                                                 | 745/2352 [00:29<01:15, 21.39it/s]CDM:  32%|##############################2                                                                | 749/2352 [00:29<01:09, 23.00it/s]CDM:  32%|##############################5                                                                | 757/2352 [00:30<00:46, 34.24it/s]CDM:  32%|##############################7                                                                | 761/2352 [00:30<00:45, 35.01it/s]CDM:  33%|##############################9                                                                | 766/2352 [00:30<00:41, 38.66it/s]CDM:  33%|###############################2                                                               | 773/2352 [00:30<00:36, 43.68it/s]CDM:  33%|###############################5                                                               | 780/2352 [00:30<00:34, 46.17it/s]CDM:  33%|###############################7                                                               | 785/2352 [00:30<00:40, 38.99it/s]CDM:  34%|###############################9                                                               | 790/2352 [00:30<00:41, 37.86it/s]CDM:  34%|################################1                                                              | 795/2352 [00:31<00:39, 39.07it/s]CDM:  34%|################################3                                                              | 800/2352 [00:31<00:47, 32.75it/s]CDM:  34%|################################4                                                              | 804/2352 [00:31<00:52, 29.24it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  34%|################################6                                                              | 808/2352 [00:31<01:25, 17.98it/s]CDM:  35%|################################7                                                              | 812/2352 [00:32<01:24, 18.27it/s]CDM:  35%|################################9                                                              | 815/2352 [00:32<01:19, 19.32it/s]CDM:  35%|#################################                                                              | 818/2352 [00:32<01:14, 20.55it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  35%|#################################1                                                             | 821/2352 [00:32<01:19, 19.23it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  35%|#################################2                                                             | 824/2352 [00:32<01:13, 20.79it/s]CDM:  35%|#################################4                                                             | 827/2352 [00:32<01:08, 22.36it/s]CDM:  35%|#################################5                                                             | 830/2352 [00:32<01:10, 21.64it/s]CDM:  35%|#################################6                                                             | 833/2352 [00:33<01:08, 22.12it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  36%|#################################7                                                             | 836/2352 [00:33<01:11, 21.09it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  36%|##################################1                                                            | 846/2352 [00:33<00:41, 36.71it/s]CDM:  36%|##################################3                                                            | 850/2352 [00:33<00:45, 33.35it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  36%|##################################4                                                            | 854/2352 [00:33<00:51, 29.23it/s]CDM:  37%|##################################8                                                            | 863/2352 [00:33<00:35, 42.28it/s]CDM:  37%|###################################                                                            | 868/2352 [00:33<00:37, 39.06it/s]CDM:  37%|###################################2                                                           | 873/2352 [00:33<00:35, 41.11it/s]CDM:  37%|###################################5                                                           | 879/2352 [00:34<00:32, 44.77it/s]CDM:  38%|###################################7                                                           | 885/2352 [00:34<00:30, 47.88it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  38%|###################################9                                                           | 891/2352 [00:34<00:38, 38.21it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  38%|####################################1                                                          | 896/2352 [00:34<00:50, 29.04it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  38%|####################################3                                                          | 900/2352 [00:34<01:01, 23.76it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  38%|####################################5                                                          | 904/2352 [00:35<00:55, 26.25it/s]CDM:  39%|####################################6                                                          | 908/2352 [00:35<00:51, 27.82it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  39%|####################################8                                                          | 912/2352 [00:35<00:55, 26.15it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  39%|####################################9                                                          | 915/2352 [00:35<01:36, 14.84it/s]CDM:  39%|#####################################2                                                         | 921/2352 [00:35<01:08, 21.03it/s]CDM:  39%|#####################################4                                                         | 928/2352 [00:36<00:50, 27.97it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  40%|#####################################8                                                         | 937/2352 [00:36<00:37, 38.07it/s]
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+CDM:  40%|######################################                                                         | 943/2352 [00:36<00:43, 32.64it/s]
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+CDM:  40%|######################################3                                                        | 950/2352 [00:36<00:36, 38.37it/s]
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+CDM:  41%|######################################5                                                        | 955/2352 [00:37<00:54, 25.42it/s]CDM:  41%|######################################8                                                        | 961/2352 [00:37<00:47, 29.18it/s]
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+CDM:  41%|#######################################                                                        | 966/2352 [00:37<00:42, 32.70it/s]
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+CDM:  41%|#######################################2                                                       | 971/2352 [00:37<00:49, 27.67it/s]
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+CDM:  41%|#######################################3                                                       | 975/2352 [00:37<00:49, 27.82it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+mktexpk: Running mf-nowin -progname=mf \mode:=ljfour; mag:=1+0/600; nonstopmode; input tcrm1200
+mktexpk: Running mf-nowin -progname=mf \mode:=ljfour; mag:=1+0/600; nonstopmode; input tcrm1200
+mktexpk: Running mf-nowin -progname=mf \mode:=ljfour; mag:=1+0/600; nonstopmode; input tcrm1200
+This is METAFONT, Version 2.71828182 (TeX Live 2025) (preloaded base=mf)
+
+
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm1200.mf
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exbase.mf)
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm.mfCDM:  42%|#######################################5                                                       | 979/2352 [00:37<00:56, 24.43it/s]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymb.mf
+ Ok
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exaccess.mfmktexpk: Running mf-nowin -progname=mf \mode:=ljfour; mag:=1+0/600; nonstopmode; input tcrm1200
+
+ Ok)
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txpseudo.mf
+ Ok)mktexpk: Running mf-nowin -progname=mf \mode:=ljfour; mag:=1+0/600; nonstopmode; input tcrm1200
+
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txaccent.mf
+ Ok [0] [1] [2] [3] [4] [5] [6]mktexpk: Running mf-nowin -progname=mf \mode:=ljfour; mag:=1+0/600; nonstopmode; input tcrm1200
+ [7] [8] [9] [10] [11] [12] [27] [29])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txgen.mf
+ Ok [100] [109] [98] [99] [108])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymbol.mfmktexpk: Running mf-nowin -progname=mf \mode:=ljfour; mag:=1+0/600; nonstopmode; input tcrm1200
+
+ Ok [13] [18] [21] [22] [23] [24] [25] [26] [28] [31] [32] [36] [39] [44]
+[45] [46] [42] [47] [60] [61] [62] [77] [79] [87] [110] [91] [93] [94] [95]
+[96]This is METAFONT, Version 2.71828182 (TeX Live 2025) (preloaded base=mf)
+ [126] [127] [128] [129] [130] [131] [132] [133] [134]mktexpk: Running mf-nowin -progname=mf \mode:=ljfour; mag:=1+0/600; nonstopmode; input tcrm1200
+
+
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm1200.mf [135]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exbase.mf [136] [137]
+[138] [139])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm.mf [140] [141]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymb.mf
+ Ok
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exaccess.mf
+ Ok) [142]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txpseudo.mf
+ Ok)
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txaccent.mf [143] [144] [145
+ Ok [0]] [146] [1] [2] [3] [147] [4] [148] [149] [5]
+[150] [6] [151] [7] [8] [9] [152] [153] [10] [11] [12] [154 [27]] [29])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txgen.mf
+ Ok [100] [155] [109] [156] [98] [157] [158] [99] [159] [108])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymbol.mf [160]
+ Ok [13] [18] [161 [21]] [22] [23] [24]
+[162] [25] [26] [163 [28]] [31]mktexpk: Running mf-nowin -progname=mf \mode:=ljfour; mag:=1+0/600; nonstopmode; input tcrm1200
+ [164] [32] [165] [166] [36] [39] [44]
+[45 [167]] [46] [168] [42] [47] [60] [61] [62 [169]] [77] [171] [172] [79] [87] [110] [173] [91] [93] [94] [95]
+[96] [174]
+[175] [126] [177] [176] [127] [180] [128] [129] [130] [131] [132] [181] [182] [183] [133] [134] [184] [187] [191] [214] [135] [136] [246])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txromod.mfThis is METAFONT, Version 2.71828182 (TeX Live 2025) (preloaded base=mf)
+ [137]
+ Ok [48] [49]
+[138] [50] [139] [51] [140] [52] [141]
+
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm1200.mf
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exbase.mf [53] [54] [55] [142] [56])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm.mf [143] [57])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrsuper.mf [144]
+ Ok [185] [178]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymb.mf [145
+ Ok
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exaccess.mf] [179] [146]
+ Ok)
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txpseudo.mf
+ Ok) [170] [186])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrfract.mf [147]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txaccent.mf [148]This is METAFONT, Version 2.71828182 (TeX Live 2025) (preloaded base=mf)
+
+ Ok [188] [149]This is METAFONT, Version 2.71828182 (TeX Live 2025) (preloaded base=mf)
+
+ Ok [0] [189]
+[150] [151] [1] [2] [190]) [152 [3]] [153 [4]]
+
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm1200.mf
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exbase.mf ) ) )
+(some charht values had to be adjusted by as much as 0.06665pt)
+Font metrics written on tcrm1200.tfm.
+Output written on tcrm1200.600gf (128 characters, 28032 bytes).
+Transcript written on tcrm1200.log.
+
+
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm1200.mf
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exbase.mf [154] [5]) [6] [155
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm.mf] [7] [8] [156] [9])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm.mf [157] [158] [159]This is METAFONT, Version 2.71828182 (TeX Live 2025) (preloaded base=mf)
+ [10]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymb.mf
+ Ok
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exaccess.mf [11] [160] [12] [27] [161]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymb.mf [29])
+ Ok
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exaccess.mf
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txgen.mf
+ Ok)
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txpseudo.mf
+[162]
+ Ok)
+ Ok [100]
+ Ok) [163]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txaccent.mf
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txpseudo.mf [109]
+ Ok) [164] [98]
+
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm1200.mf
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exbase.mf
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txaccent.mf [99] [108]) [165]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymbol.mf [166]
+ Ok [0]
+ Ok [13]This is METAFONT, Version 2.71828182 (TeX Live 2025) (preloaded base=mf)
+ [18] [21] [22] [23] [167] [168] [24]
+ Ok [0]) [25]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm.mf [26] [169] [1] [28] [2] [31] [3] [4] [171] [172] [1] [2] [32]This is METAFONT, Version 2.71828182 (TeX Live 2025) (preloaded base=mf)
+ [3]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymb.mf
+
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm1200.mf [4]
+ Ok
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exaccess.mf [173]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exbase.mf [36] [39] [44] [5]
+[45]
+ Ok) [46]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txpseudo.mf [6]
+ Ok) [174]
+[175] [42] [7] [177] [47] [60] [8] [176] [61] [62] [9] [180]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txaccent.mf [5]) [77] [6]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm.mf [79] [7] [8] [9]
+
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm1200.mf [10] [181] [87]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exbase.mf [11] [182] [110] [183] [12] [91] [27] [184]
+ Ok [0] [93] [29]) [187]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymb.mf
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txgen.mf [94] [10]
+ Ok
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exaccess.mf
+ Ok [100] [95 [11]]
+[96] [12] [191] [126] [214] [27] [127] [246]) [109]
+ Ok) [29])) [128]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txromod.mf [1]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txpseudo.mf [98]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txgen.mf
+ Ok) [129]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm.mf [2] [130]
+ Ok [100
+ Ok [48 [3]]] [131] [4]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txaccent.mf [132] [99] [49] [109] [108]) [133]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymbol.mf [98] [134 [50]]
+ Ok [13] [18]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymb.mf [21]
+ Ok
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exaccess.mf [22] [23] [99] [51] [24] [5] [108
+ Ok [0]]) [25]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymbol.mf [6] [26] [52]
+ Ok)
+ Ok [13] [7] [135] [28]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txpseudo.mf [31] [18] [8]
+ Ok) [136] [21] [9] [22] [23] [53] [24] [137]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txaccent.mf [1] [25] [32] [2] [26] [54] [3] [28] [10 [4] [31]]
+[138] [11] [55 [36]] [12] [39] [139] [27] [44] [56] [29])
+[45] [32] [46]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txgen.mf
+ Ok [0] [42]
+ Ok [100] [140] [47] [60 [57]]) [61] [62]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrsuper.mf [36] [5] [39] [141] [109] [44] [6] [77]
+ Ok [185] [98]
+[45] [7] [79] [46] [8] [1] [9] [2] [178] [42] [47] [87 [3]] [60] [99] [61] [110] [62] [4] [108]) [91]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymbol.mf [179] [142] [93
+ Ok [13]] [77] [10] [18] [79 [94]] [21] [11] [22] [23] [95] [12] [170]
+[96] [24] [27 [87]] [126 [143]] [110] [25] [186]) [29 [127]])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrfract.mf [26]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txgen.mf [91 [128]] [5] [129] [28] [31]
+ Ok [100] [93] [130] [6] [144] [131 [7]] [94] [8] [132 [95]] [9] [109]
+[96]
+ Ok [188] [32] [98] [126] [145] [133] [127] [134] [128] [129] [36] [99 [146]] [39] [130] [10] [189] [131] [108 [44]]) [11]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymbol.mf
+[45] [12] [132] [46]
+ Ok [13] [135] [27] [18] [136 [42]] [47] [21] [29]) [60] [22] [23 [61]] [133] [147] [62]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txgen.mf [134] [24] [137] [190]
+ Ok [100)] [25] [77] [148] [26] [79] ) ) )
+(some charht values had to be adjusted by as much as 0.06665pt)
+Font metrics written on tcrm1200.tfm.
+Output written on tcrm1200.600gf (128 characters, 28032 bytes).
+Transcript written on tcrm1200.log.
+ [28] [31]
+[138] [109] [149] [98] [87 [135]] [110] [139] [136] [91] [32] [99] [93] [137
+[150]] [140] [94] [108]) [151]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymbol.mf [36 [95]] [39
+[96]]
+ Ok [13] [141] [126] [18] [44]
+[138] [21] [127]
+[45] [22] [23] [46] [128] [152] [24 [129]] [42 [153] [139]] [47] [130] [60] [25] [61] [131 [62]] [26] [132] [28] [31] [140 [77]] [142] [154] [79] [133] [134] [141]This is METAFONT, Version 2.71828182 (TeX Live 2025) (preloaded base=mf)
+ [87] [32] [110] [143] [91] [155] [93] [36 [135]] [156] [39] [136 [94]] [144] [44] [95] [157]
+[96]
+[45] [46] [158 [137]] [126] [142] [127] [42] [159 [47] [145]] [60 [128]] [61] [62] [129]
+[138] [130] [160] [146] [131] [143] [77] [161] [139] [132] [79]
+
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm1200.mf
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exbase.mf
+[162 [133]] [134] [87] [144 [140]] [110] [147] [91 [163]] [141] [164] [93] [148] [94] [145] [135] [95] [136]
+[96] [149]) [126] [146]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm.mf [127] [137] [165] [128] [166] [129] [142] [130]
+[150]
+[138] [131] [151] [167] [132] [168] [147] [139] [143]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymb.mf [133] [169]
+ Ok
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exaccess.mf [134] [152 [148]] [153] [140] [171] [144] [172] [149]
+ Ok) [141]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txpseudo.mf
+ Ok) [135 [154]] [136 [145]] [173]
+[150
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txaccent.mf] [151] [146 [137]] [155] [142] [174] [156
+[175]]
+[138 [177]] [152 [176]] [180] [153] [147] [157] [139] [158] [143]
+ Ok [0] [159] [148] [181] [140] [154] [160] [182] [144] [149] [183] [161] [141] [184 [1]] [2] [187] [145]
+[162] [3]
+[150] [4] [155] [151] [191] [146] [156 [163] [214]] [246]) [164]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txromod.mf [157] [142] [152 [158]]
+ Ok [48] [153] [159 [147]] [49] [5] [165] [166] [160] [143] [6] [148] [50] [7] [154] [8] [161] [9] [167] [149] [168] [51] [144
+[162]] [169] [52 [155]] [163]
+[150] [10] [156] [145 [164 [151]]] [11] [171] [172 [12]] [53] [157] [27] [158] [146] [29]) [159
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txgen.mf [152 [54]]] [173] [153
+ Ok [100]] [165] [166] [160 [55]] [109 [161] [147]] [56] [167] [98] [154] [174]
+[175] [168]
+[162 [177]] [148] [176] [57]) [180]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrsuper.mf [99] [169] [163] [149] [108]) [164]
+ Ok [185] [155]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymbol.mf [171]
+ Ok [13] [156] [172] [181] [18] [178] [182] [21] [183] [22] [23] [157]
+[150] [158] [24] [184] [151] [165] [173] [179] [166] [159 [25] [187]] [26] [28] [31] [160] [167] [191] [170] [214] [152] [168] [161] [246]) [174] [153] [186])
+[175]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txromod.mf [177]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrfract.mf [176] [169 [32]
+[162]] [180]
+ Ok [48] [171 [49 [154]]] [163] [172] [36] [164]
+ Ok [188 [39]] [181] [50] [44] [182] [183]
+[45] [46] [173] [184] [42] [51] [155] [189 [47]] [60] [187] [61] [165 [156]] [62] [166] [52] [191 [174 [157]]] [77]
+[175] [214] [167 [177 [158]]] [79] [246]) [176] [168] [53] [159 [180] [190])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txromod.mf] [87]
+ Ok [48 [169 [110]]] [54 [160]] ) ) )
+(some charht values had to be adjusted by as much as 0.06665pt)
+Font metrics written on tcrm1200.tfm.
+Output written on tcrm1200.600gf (128 characters, 28032 bytes).
+Transcript written on tcrm1200.log.
+ [91] [181 [49]] [161] [55 [93 [171]]] [182] [172] [183] [94] [50] [56
+[162] [95]] [184]
+[96] [187] [126] [173] [127] [163 [51]] [57]) [128]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrsuper.mf [164] [191 [129]] [214] [130] [52] [246])
+ Ok [185] [131]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txromod.mf [174]
+[175] [132] [177]
+ Ok [48] [178] [176] [53] [180] [133] [165] [134] [49 [166]] [179] [54] [50] [181 [167]] [55] [182] [168] [170] [183] [135] [51] [56] [186]) [136] [184]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrfract.mf [169] [187] [52] [137 [57]]) [171]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrsuper.mf [191] [172] [214] [53]
+ Ok [188] [246])
+ Ok [185]
+[138]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txromod.mf [54]
+ Ok [48] [178] [173 [139]] [189] [55] [49] [179] [56 [140]] [50] [174]
+[175] [177] [141] [170] [57 [176]]) [51 [190]]) [180]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrsuper.mf [186])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrfract.mf ) ) )
+(some charht values had to be adjusted by as much as 0.06665pt)
+Font metrics written on tcrm1200.tfm.
+Output written on tcrm1200.600gf (128 characters, 28032 bytes).
+Transcript written on tcrm1200.log.
+
+ Ok [185] [52] [178 [181]] [53] [182] [183] [142]
+ Ok [188] [179] [184] [54] [187] [55] [143 [189 [170]]] [191] [56 [214]] [186])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrfract.mf [246])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txromod.mf [57] [144)]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrsuper.mf
+ Ok [48] [190])
+ Ok [188]
+ Ok [185] [49] [145] ) ) )
+(some charht values had to be adjusted by as much as 0.06665pt)
+Font metrics written on tcrm1200.tfm.
+Output written on tcrm1200.600gf (128 characters, 28032 bytes).
+Transcript written on tcrm1200.log.
+ [178] [50] [146] [189] [179] [51] [170] [52] [147] [190]) [186])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrfract.mf [53] ) ) )
+(some charht values had to be adjusted by as much as 0.06665pt)
+Font metrics written on tcrm1200.tfm.
+Output written on tcrm1200.600gf (128 characters, 28032 bytes).
+Transcript written on tcrm1200.log.
+ [148] [54] [149]
+ Ok [188] [55] [56]
+[150] [189] [151] [57])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrsuper.mf [152]
+ Ok [185] [190]) [153] [178] ) ) )
+(some charht values had to be adjusted by as much as 0.06665pt)
+Font metrics written on tcrm1200.tfm.
+Output written on tcrm1200.600gf (128 characters, 28032 bytes).
+Transcript written on tcrm1200.log.
+ [154] [179] [170] [186]) [155]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrfract.mf [156] [157] [158]
+ Ok [188] [159] [160] [189] [161]
+[162] [163] [190mktexpk: Running mf-nowin -progname=mf \mode:=ljfour; mag:=1+0/600; nonstopmode; input tcrm1200
+]) [164] ) ) )
+(some charht values had to be adjusted by as much as 0.06665pt)
+Font metrics written on tcrm1200.tfm.
+Output written on tcrm1200.600gf (128 characters, 28032 bytes).
+Transcript written on tcrm1200.log.
+ [165] [166] [167] [168] [169] [171] [172] [173] [174]
+[175] [177] [176] [180] [181] [182] [183] [184] [187] [191] [214] [246])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txromod.mf
+ Ok [48] [49]CDM:  42%|#######################################6                                                       | 982/2352 [00:37<00:56, 24.46it/s] [50] [51] [52] [53]
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+ [54] [55] [56] [57])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrsuper.mf
+ Ok [185] [178] [179] [170] [186])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrfract.mf
+ Ok [188] [189] [190]) ) ) )
+(some charht values had to be adjusted by as much as 0.06665pt)
+Font metrics written on tcrm1200.tfm.
+Output written on tcrm1200.600gf (128 characters, 28032 bytes).
+Transcript written on tcrm1200.log.
+mktexpk: Running mf-nowin -progname=mf \mode:=ljfour; mag:=1+0/600; nonstopmode; input tcrm1200
+This is METAFONT, Version 2.71828182 (TeX Live 2025) (preloaded base=mf)
+
+
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm1200.mf
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exbase.mf)
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm.mf
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymb.mf
+ Ok
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exaccess.mf
+ Ok)
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txpseudo.mf
+ Ok)
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txaccent.mf
+ Ok [0] [1] [2] [3] [4] [5] [6] [7] [8] [9] [10] [11] [12] [27] [29])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txgen.mf
+ Ok [100] [109] [98] [99] [108])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymbol.mf
+ Ok [13] [18] [21] [22] [23] [24] [25] [26] [28] [31] [32] [36] [39] [44]
+[45] [46] [42] [47] [60] [61] [62] [77] [79] [87] [110] [91] [93] [94] [95]
+[96] [126] [127] [128] [129] [130] [131] [132] [133] [134] [135] [136]mktexpk: Running mf-nowin -progname=mf \mode:=ljfour; mag:=1+0/600; nonstopmode; input tcrm1200
+ [137]
+[138] [139] [140] [141] [142] [143]
+kpathsea: Running mktexpk --mfmode / --bdpi 600 --mag 1+0/600 --dpi 600 tcrm1200
+ [144] [145] [146]mktexpk: Running mf-nowin -progname=mf \mode:=ljfour; mag:=1+0/600; nonstopmode; input tcrm1200
+ [147] [148] [149]
+[150] [151] [152] [153] [154] [155] [156] [157] [158] [159] [160] [161]
+[162]This is METAFONT, Version 2.71828182 (TeX Live 2025) (preloaded base=mf)
+ [163] [164] [165] [166] [167]
+
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm1200.mf [168]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exbase.mf [169] [171] [172])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm.mf [173] [174]
+[175] [177]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymb.mf [176] [180]
+ Ok
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exaccess.mf
+ Ok)
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txpseudo.mf [181]
+ Ok) [182] [183]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txaccent.mf [184] [187] [191] [214] [246])mktexpk: Running mf-nowin -progname=mf \mode:=ljfour; mag:=1+0/600; nonstopmode; input tcrm1200
+
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txromod.mf
+ Ok [0]
+ Ok [48] [49] [1] [50] [2] [3] [4] [51] [52] [53] [5] [54] [6] [7] [8] [55] [9] [56] [10 [57]]) [11]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrsuper.mf [12] [27]
+ Ok [185] [29])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txgen.mf
+ Ok [100] [178] [109] [179] [98] [170] [99] [108] [186)])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymbol.mf
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrfract.mf
+ Ok [13] [18] [21] [22] [23] [24] [25
+ Ok [188]] [26] [28] [31] [189] [32] [36] [39] [190]) [44]
+[45] [46] [42] ) ) )
+(some charht values had to be adjusted by as much as 0.06665pt)
+Font metrics written on tcrm1200.tfm.
+Output written on tcrm1200.600gf (128 characters, 28032 bytes).
+Transcript written on tcrm1200.log.
+ [47] [60] [61] [62] [77] [79] [87] [110] [91] [93] [94] [95]
+[96] [126] [127] [128] [129] [130] [131] [132] [133]CDM:  42%|#######################################7                                                       | 985/2352 [00:38<00:53, 25.45it/s] [134] [135] [136] [137]
+[138] [139] [140] [141] [142] [143] [144] [145] [146] [147] [148] [149]
+[150] [151]This is METAFONT, Version 2.71828182 (TeX Live 2025) (preloaded base=mf)
+ [152] [153] [154]
+
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm1200.mf [155]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exbase.mf [156] [157] [158] [159] [160]) [161]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm.mf
+[162] [163]This is METAFONT, Version 2.71828182 (TeX Live 2025) (preloaded base=mf)
+ [164]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymb.mf
+ Ok
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exaccess.mf [165]
+ Ok) [166]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txpseudo.mf
+ Ok) [167]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txaccent.mf [168]
+
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm1200.mf [169]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exbase.mf [171] [172]
+ Ok [0] [173])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm.mf [1] [2] [174]
+[175] [3] [177] [176] [4] [180]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymb.mf
+ Ok
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exaccess.mf [181] [182] [183]
+ Ok) [5]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txpseudo.mf [184]
+ Ok) [187 [6]] [7] [8]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txaccent.mf [9] [191] [214] [246])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txromod.mf
+ Ok [48] [10] [11] [12] [49
+ Ok [0]] [27] [29]) [50]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txgen.mf
+ Ok [100] [51] [1] [2] [109] [3] [98] [52] [4] [99 [53]] [108])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymbol.mf [54]
+ Ok [13] [18] [21] [5] [55] [22] [23] [6] [24] [56 [7]] [25] [8] [9] [26] [28] [31] [57])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrsuper.mf
+ Ok [185] [10] [32] [11] [12] [178] [27] [36] [29]) [39]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txgen.mf [44] [179]
+ Ok [100]
+[45] [46] [42] [47] [60] [109] [61] [170] [62] [98] [186])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrfract.mf [77] [79] [99] [108]) [87]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymbol.mf [110]
+ Ok [13]
+ Ok [188] [91] [18] [21] [93] [22] [23] [94] [24] [95] [189] [25]
+[96] [26] [126] [127 [28]] [31] [128] [129] [130] [131] [190]) [32] [132] ) ) )
+(some charht values had to be adjusted by as much as 0.06665pt)
+Font metrics written on tcrm1200.tfm.
+Output written on tcrm1200.600gf (128 characters, 28032 bytes).
+Transcript written on tcrm1200.log.
+ [133] [134] [36] [39] [44]
+[45] [46] [42] [47] [135] [60] [61] [136] [62]This is METAFONT, Version 2.71828182 (TeX Live 2025) (preloaded base=mf)
+ [137] [77] [79]
+[138] [87] [110] [91] [139] [93] [94] [95 [140]]
+[96] [126]
+
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm1200.mf [141 [127]]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exbase.mf [128] [129] [130] [131] [132] [133] [142] [134])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm.mf [143] [135] [136] [144] [137]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymb.mf
+ Ok
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exaccess.mf [145]
+[138]
+ Ok) [146] [139]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txpseudo.mf
+ Ok) [140]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txaccent.mf [147] [141] [148] [149]
+ Ok [0] [142]
+[150] [151] [1] [143] [2] [3] [4] [152] [153] [144] [154] [145] [5] [146] [6] [7] [155] [8] [9] [156] [147] [157] [158] [159 [10] [148]] [11] [12] [160] [27 [149]] [29]) [161]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txgen.mf
+ Ok [100]
+[162]
+[150] [151] [109] [163] [98] [164] [152] [99] [153] [108])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymbol.mf [165]
+ Ok [13 [166]] [18] [21] [154] [22] [23] [167] [24] [168] [25] [26] [28] [31] [169] [155] [156] [171] [172] [32] [157] [158] [159] [36] [173] [39] [160] [44]
+[45] [46] [161] [42] [47] [174] [60]
+[175] [61] [177] [62
+[162]] [176] [180] [77] [163] [79] [164] [181] [87] [182] [110 [183]] [91] [184] [165 [93]] [187 [166]] [94] [95]
+[96] [191] [167] [214] [126] [168] [246 [127]]) [128]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txromod.mf [129] [169 [130]]
+ Ok [48] [131] [132] [49] [171] [172] [133] [50] [134] [173] [51] [135] [52] [136] [174 [137]]
+[175] [53] [177] [176] [180]
+[138] [54] [55] [139] [181] [182 [56]] [183] [140] [184] [57]) [187] [141]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrsuper.mf [191
+ Ok [185]] [214] [246]) [178]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txromod.mf
+ Ok [48] [142] [179] [49] [170 [143] [50]] [186])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrfract.mf [51] [144] [52]
+ Ok [188] [145] [53] [146] [189] [54] [55] [147] [56] [190]) [148] [57]) ) ) )
+(some charht values had to be adjusted by as much as 0.06665pt)
+Font metrics written on tcrm1200.tfm.
+Output written on tcrm1200.600gf (128 characters, 28032 bytes).
+Transcript written on tcrm1200.log.
+
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrsuper.mf [149]
+ Ok [185]
+[150] [178] [151] [179] [152] [153] [170] [186])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrfract.mf [154]
+ Ok [188] [155] [156] [189] [157] [158] [159] [160] [190]) [161]
+[162] ) ) )
+(some charht values had to be adjusted by as much as 0.06665pt)
+Font metrics written on tcrm1200.tfm.
+Output written on tcrm1200.600gf (128 characters, 28032 bytes).
+Transcript written on tcrm1200.log.
+ [163] [164] [165] [166] [167] [168] [169] [171] [172] [173] [174]
+[175] [177] [176] [180] [181] [182] [183] [184] [187] [191] [214] [246])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txromod.mf
+ Ok [48] [49] [50] [51] [52] [53] [54] [55] [56] [57])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrsuper.mf
+ Ok [185] [178] [179] [170] [186])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrfract.mf
+ Ok [188] [189] [190]) ) ) )
+(some charht values had to be adjusted by as much as 0.06665pt)
+Font metrics written on tcrm1200.tfm.
+Output written on tcrm1200.600gf (128 characters, 28032 bytes).
+Transcript written on tcrm1200.log.
+mktexpk: Running mf-nowin -progname=mf \mode:=ljfour; mag:=1+0/600; nonstopmode; input tcrm1200
+mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk already exists.
+mktexpk: Running mf-nowin -progname=mf \mode:=ljfour; mag:=1+0/600; nonstopmode; input tcrm1200
+This is METAFONT, Version 2.71828182 (TeX Live 2025) (preloaded base=mf)
+
+
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm1200.mf
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exbase.mf)
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm.mf
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymb.mf
+ Ok
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exaccess.mf
+ Ok)
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txpseudo.mf
+ Ok)
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txaccent.mf
+ Ok [0] [1] [2] [3] [4] [5] [6] [7] [8] [9] [10] [11] [12] [27] [29])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txgen.mf
+ Ok [100] [109] [98] [99] [108])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymbol.mf
+ Ok [13] [18] [21] [22] [23] [24] [25] [26] [28] [31] [32] [36] [39] [44]
+[45] [46] [42] [47] [60] [61] [62] [77] [79] [87] [110] [91] [93] [94] [95]
+[96] [126] [127] [128] [129] [130] [131] [132] [133] [134] [135] [136] [137]
+[138] [139] [140] [141] [142] [143] [144] [145]This is METAFONT, Version 2.71828182 (TeX Live 2025) (preloaded base=mf)
+ [146] [147] [148]CDM:  42%|#######################################9                                                       | 988/2352 [00:38<01:00, 22.62it/s]
+
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm1200.mf [149]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exbase.mf
+[150] [151]) [152]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm.mf [153] [154]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymb.mf
+ Ok
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exaccess.mf [155] [156]
+ Ok)
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txpseudo.mf
+ Ok) [157] [158] [159
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txaccent.mf] [160] [161]
+[162]
+ Ok [0] [163] [164] [1] [2] [165] [166] [3] [4] [167] [168] [169] [171] [5] [172] [6] [7] [8] [9] [173] [10] [174]
+[175] [11] [177] [12] [176] [180] [27] [29])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txgen.mf
+ Ok [100] [181] [182] [183] [109] [184] [98] [187] [99] [191] [214] [108]) [246])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymbol.mf
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txromod.mf
+ Ok [13] [18]
+ Ok [48] [21] [22] [23] [24] [49] [25] [26 [50]] [28] [31] [51] [32] [52] [36] [53 [39]] [44]
+[45] [46] [54] [42] [47] [60] [55 [61]] [62] [56] [77] [79] [57])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrsuper.mf [87] [110] [91]
+ Ok [185] [93] [94] [178] [95]
+[96] [126] [179] [127] [128] [129] [130] [170] [131] [132] [186])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrfract.mf [133] [134]
+ Ok [188] [135] [136] [189] [137]
+[138] [190]) [139] ) ) )
+(some charht values had to be adjusted by as much as 0.06665pt)
+Font metrics written on tcrm1200.tfm.
+Output written on tcrm1200.600gf (128 characters, 28032 bytes).
+Transcript written on tcrm1200.log.
+ [140] [141] [142] [143] [144] [145] [146] [147] [148] [149]
+[150] [151] [152] [153] [154] [155] [156] [157] [158] [159] [160] [161]
+[162] [163] [164] [165] [166] [167] [168] [169] [171] [172] [173] [174]
+[175] [177] [176] [180] [181] [182] [183] [184] [187] [191] [214] [246])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txromod.mf
+ Ok [48] [49] [50] [51] [52] [53] [54] [55] [56] [57])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrsuper.mf
+ Ok [185] [178] [179] [170] [186])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrfract.mf
+ Ok [188] [189] [190]) ) ) )
+(some charht values had to be adjusted by as much as 0.06665pt)
+Font metrics written on tcrm1200.tfm.
+Output written on tcrm1200.600gf (128 characters, 28032 bytes).
+Transcript written on tcrm1200.log.
+mktexpk: Running mf-nowin -progname=mf \mode:=ljfour; mag:=1+0/600; nonstopmode; input tcrm1200
+mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk already exists.
+mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk already exists.
+mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk already exists.
+mktexpk: Running mf-nowin -progname=mf \mode:=ljfour; mag:=1+0/600; nonstopmode; input tcrm1200
+This is METAFONT, Version 2.71828182 (TeX Live 2025) (preloaded base=mf)
+
+
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm1200.mf
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exbase.mf)
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm.mf
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymb.mf
+ Ok
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exaccess.mf
+ Ok)
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txpseudo.mf
+ Ok)
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txaccent.mf
+ Ok [0] [1] [2] [3] [4] [5] [6] [7] [8] [9] [10] [11] [12] [27] [29])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txgen.mf
+ Ok [100] [109]mktexpk: Running mf-nowin -progname=mf \mode:=ljfour; mag:=1+0/600; nonstopmode; input tcrm1200
+ [98] [99] [108])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymbol.mf
+ Ok [13] [18] [21] [22] [23] [24] [25] [26] [28] [31] [32] [36] [39]mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk: successfully generated.
+ [44]
+[45] [46] [42] [47] [60] [61] [62] [77] [79] [87] [110] [91] [93] [94] [95]
+[96] [126] [127] [128]mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk already exists.
+ [129] [130] [131] [132] [133] [134] [135] [136] [137]
+[138] [139] [140] [141] [142] [143]mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk: successfully generated.
+ [144] [145] [146] [147]mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk: successfully generated.
+ [148] [149]
+[150] [151]CDM:  42%|########################################                                                       | 991/2352 [00:38<01:04, 21.22it/s]mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk: successfully generated.
+ [152] [153] [154] [155] [156] [157] [158] [159] [160] [161]
+[162] [163] [164] [165] [166] [167] [168] [169] [171] [172] [173] [174]
+[175] [177] [176] [180] [181] [182] [183] [184] [187] [191] [214] [246])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txromod.mf
+ Ok [48] [49] [50]mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk: successfully generated.
+ [51] [52]mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk: successfully generated.
+ [53]mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk: successfully generated.
+ [54]This is METAFONT, Version 2.71828182 (TeX Live 2025) (preloaded base=mf)
+ [55] [56] [57])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrsuper.mf
+ Ok [185] [178] [179]
+
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm1200.mf
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exbase.mf [170] [186])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrfract.mf
+ Ok [188])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm.mf [189]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymb.mf [190])
+ Ok
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exaccess.mf ) ) )
+(some charht values had to be adjusted by as much as 0.06665pt)
+Font metrics written on tcrm1200.tfm.
+Output written on tcrm1200.600gf (128 characters, 28032 bytes).
+Transcript written on tcrm1200.log.
+
+ Ok)
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txpseudo.mf
+ Ok)
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txaccent.mfmktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk: successfully generated.
+
+ Ok [0]mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk: successfully generated.
+ [1] [2] [3] [4] [5]This is METAFONT, Version 2.71828182 (TeX Live 2025) (preloaded base=mf)
+ [6] [7] [8] [9] [10] [11] [12] [27] [29])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txgen.mf
+
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm1200.mf
+ Ok [100]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exbase.mf [109] [98] [99] [108]))
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymbol.mf
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/tcrm.mf
+ Ok [13] [18] [21] [22] [23] [24] [25] [26] [28]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymb.mf [31]
+ Ok
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/exaccess.mf [32]
+ Ok)
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txpseudo.mf
+ Ok) [36] [39]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txaccent.mf [44]
+[45] [46] [42] [47] [60] [61] [62] [77] [79
+ Ok [0]] [87] [110] [91] [93] [1] [94] [2] [95] [3]
+[96] [4] [126] [127] [128] [129] [130] [131] [132] [5] [133] [134] [6] [7] [8] [9] [135] [136] [10] [137] [11] [12] [27]
+[138] [29])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txgen.mf [139
+ Ok [100]] [109] [140] [98] [141] [99] [108])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txsymbol.mf
+ Ok [13] [18] [21] [22] [23] [142] [24] [25] [26] [28] [31] [143] [32] [144] [36] [39] [145] [44]
+[45] [46] [146] [42] [47] [60] [61] [62] [77] [147] [79] [148] [87] [110] [91] [149] [93] [94] [95]
+[96]
+[150] [126] [151] [127] [128] [129] [130] [131] [152] [132] [153] [133] [134] [154] [135] [136] [155] [156] [137] [157] [158]
+[138] [159] [139] [160] [161] [140]
+[162] [141] [163] [164] [142] [165] [166] [143] [167] [168] [144] [169] [171] [172] [145] [146] [173] [147] [174]
+[175] [177] [176] [148 [180]] [149] [181] [182] [183]
+[150] [184] [151] [187mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk already exists.
+] [191] [214] [152] [246]) [153]
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txromod.mf
+ Ok [48] [154] [49] [50] [155] [51] [156] [52] [157] [158] [159] [53] [160] [54] [161] [55]
+[162] [56] [163] [164] [57])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrsuper.mf
+ Ok [185] [165] [166] [178] [167] [179] [168] [170] [169] [186])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrfract.mf [171] [172] [173]
+ Ok [188] [189] [174]
+[175] [177] [176] [180] [190]) [181] [182] [183] ) ) )
+(some charht values had to be adjusted by as much as 0.06665pt)
+Font metrics written on tcrm1200.tfm.
+Output written on tcrm1200.600gf (128 characters, 28032 bytes).
+Transcript written on tcrm1200.log.
+ [184] [187] [191] [214] [246])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txromod.mf
+ Ok [48] [49] [50] [51] [52] [53] [54] [55] [56] [57])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrsuper.mf
+ Ok [185] [178] [179] [170] [186])
+(/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/source/jknap
+pen/ec/txrfract.mf
+ Ok [188] [189] [190]) ) ) )
+(some charht values had to be adjusted by as much as 0.06665pt)
+Font metrics written on tcrm1200.tfm.
+Output written on tcrm1200.600gf (128 characters, 28032 bytes).
+Transcript written on tcrm1200.log.
+mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk already exists.
+mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk: successfully generated.
+mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk: successfully generated.
+mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk already exists.
+mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk: successfully generated.
+mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk: successfully generated.
+mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk: successfully generated.
+CDM:  42%|########################################1                                                      | 994/2352 [00:38<01:11, 18.89it/s]mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk: successfully generated.
+mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk: successfully generated.
+mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk already exists.
+mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk: successfully generated.
+mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk already exists.
+CDM:  42%|########################################2                                                      | 997/2352 [00:38<01:18, 17.32it/s]mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk: successfully generated.
+mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk: successfully generated.
+mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk already exists.
+CDM:  42%|########################################3                                                      | 999/2352 [00:39<01:31, 14.79it/s]mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk already exists.
+mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk already exists.
+mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk already exists.
+mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk already exists.
+mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk already exists.
+mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk already exists.
+mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk already exists.
+mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk already exists.
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk already exists.
+mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk already exists.
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  43%|########################################                                                      | 1001/2352 [00:39<01:52, 12.03it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  43%|########################################1                                                     | 1005/2352 [00:39<01:24, 15.95it/s]mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk already exists.
+mktexpk: /root/.texlive2025/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600pk already exists.
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  43%|########################################2                                                     | 1008/2352 [00:39<01:26, 15.52it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  43%|########################################3                                                     | 1010/2352 [00:39<01:57, 11.43it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  43%|########################################4                                                     | 1013/2352 [00:40<02:00, 11.14it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  43%|########################################5                                                     | 1015/2352 [00:40<02:25,  9.22it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  43%|########################################6                                                     | 1017/2352 [00:40<02:14,  9.95it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  43%|########################################8                                                     | 1021/2352 [00:40<01:39, 13.35it/s]CDM:  44%|#########################################                                                     | 1028/2352 [00:41<01:04, 20.43it/s]CDM:  44%|#########################################2                                                    | 1031/2352 [00:41<01:03, 20.74it/s]CDM:  44%|#########################################3                                                    | 1034/2352 [00:41<01:04, 20.43it/s]CDM:  44%|#########################################4                                                    | 1037/2352 [00:41<01:00, 21.57it/s]CDM:  45%|#########################################8                                                    | 1047/2352 [00:41<00:34, 37.74it/s]CDM:  45%|##########################################                                                    | 1053/2352 [00:41<00:30, 42.21it/s]magick: profile 'icc': 'RGB ': RGB color space not permitted on grayscale PNG `result/predictions_quick_match_cdm/CDM/cdm_calc_69q80plg/pred/vis/sample_0_base.tmp.1267356.1785833993331129416.png' @ warning/png.c/MagickPNGWarningHandler/1531.
+CDM:  45%|##########################################4                                                   | 1062/2352 [00:41<00:25, 51.06it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  46%|##########################################9                                                   | 1075/2352 [00:41<00:18, 70.52it/s]CDM:  46%|###########################################2                                                  | 1083/2352 [00:42<00:19, 66.26it/s]CDM:  46%|###########################################6                                                  | 1091/2352 [00:42<00:19, 64.04it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  47%|###########################################9                                                  | 1099/2352 [00:42<00:22, 55.11it/s]CDM:  47%|############################################1                                                 | 1105/2352 [00:43<01:00, 20.60it/s]CDM:  47%|############################################3                                                 | 1110/2352 [00:43<01:08, 18.13it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  47%|############################################5                                                 | 1114/2352 [00:43<01:03, 19.60it/s]CDM:  48%|############################################8                                                 | 1123/2352 [00:43<00:47, 25.89it/s]CDM:  48%|#############################################                                                 | 1127/2352 [00:44<00:50, 24.23it/s]CDM:  48%|#############################################3                                                | 1134/2352 [00:44<00:44, 27.66it/s]CDM:  49%|#############################################6                                                | 1141/2352 [00:44<00:38, 31.65it/s]CDM:  49%|#############################################8                                                | 1148/2352 [00:44<00:36, 32.82it/s]CDM:  49%|##############################################                                                | 1152/2352 [00:44<00:37, 31.64it/s]CDM:  49%|##############################################2                                               | 1156/2352 [00:44<00:37, 31.85it/s]CDM:  49%|##############################################3                                               | 1160/2352 [00:45<00:35, 33.12it/s]CDM:  49%|##############################################5                                               | 1164/2352 [00:45<00:35, 33.50it/s]CDM:  50%|##############################################9                                               | 1175/2352 [00:45<00:23, 50.18it/s]CDM:  50%|###############################################3                                              | 1186/2352 [00:45<00:19, 59.87it/s]/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+CDM:  51%|###############################################6                                              | 1193/2352 [00:46<00:53, 21.66it/s]CDM:  51%|###############################################8                                              | 1198/2352 [00:46<01:11, 16.22it/s]CDM:  51%|################################################                                              | 1202/2352 [00:47<01:05, 17.67it/s]CDM:  51%|################################################1                                             | 1206/2352 [00:47<00:59, 19.31it/s]CDM:  52%|################################################5                                             | 1216/2352 [00:47<00:37, 29.92it/s]CDM:  52%|################################################8                                             | 1222/2352 [00:47<00:35, 32.11it/s]CDM:  52%|#################################################1                                            | 1229/2352 [00:47<00:29, 38.62it/s]CDM:  53%|#################################################3                                            | 1236/2352 [00:47<00:25, 43.86it/s]CDM:  53%|#################################################7                                            | 1245/2352 [00:47<00:21, 51.96it/s]CDM:  53%|##################################################                                            | 1252/2352 [00:48<00:27, 40.15it/s]CDM:  53%|##################################################2                                           | 1258/2352 [00:48<00:34, 31.90it/s]CDM:  54%|##################################################4                                           | 1263/2352 [00:48<00:31, 34.64it/s]CDM:  54%|##################################################6                                           | 1268/2352 [00:48<00:31, 34.59it/s]CDM:  54%|##################################################9                                           | 1276/2352 [00:48<00:24, 43.06it/s]CDM:  55%|###################################################2                                          | 1282/2352 [00:49<00:37, 28.51it/s]CDM:  55%|###################################################4                                          | 1287/2352 [00:49<00:56, 18.93it/s]CDM:  55%|###################################################5                                          | 1291/2352 [00:49<00:58, 18.23it/s]CDM:  55%|###################################################7                                          | 1294/2352 [00:49<00:54, 19.34it/s]CDM:  55%|###################################################8                                          | 1297/2352 [00:50<01:01, 17.24it/s]CDM:  56%|####################################################1                                         | 1306/2352 [00:50<00:37, 27.95it/s]CDM:  56%|####################################################7                                         | 1319/2352 [00:50<00:22, 45.77it/s]CDM:  56%|####################################################9                                         | 1326/2352 [00:50<00:23, 44.39it/s]CDM:  57%|#####################################################3                                        | 1334/2352 [00:50<00:21, 47.85it/s]CDM:  57%|#####################################################5                                        | 1340/2352 [00:50<00:20, 49.98it/s]CDM:  57%|#####################################################7                                        | 1346/2352 [00:51<00:22, 44.40it/s]CDM:  57%|######################################################                                        | 1352/2352 [00:51<00:23, 42.24it/s]CDM:  58%|######################################################2                                       | 1357/2352 [00:51<00:30, 33.00it/s]CDM:  58%|######################################################3                                       | 1361/2352 [00:51<00:29, 33.96it/s]CDM:  58%|######################################################5                                       | 1365/2352 [00:51<00:28, 34.12it/s]CDM:  58%|######################################################7                                       | 1369/2352 [00:51<00:29, 33.85it/s]CDM:  58%|######################################################8                                       | 1373/2352 [00:52<00:38, 25.66it/s]CDM:  59%|######################################################9                                       | 1376/2352 [00:52<00:53, 18.19it/s]CDM:  59%|#######################################################1                                      | 1379/2352 [00:52<01:13, 13.16it/s]CDM:  59%|#######################################################3                                      | 1384/2352 [00:52<00:54, 17.72it/s]CDM:  59%|#######################################################4                                      | 1387/2352 [00:53<00:51, 18.85it/s]CDM:  59%|#######################################################5                                      | 1390/2352 [00:53<00:48, 19.96it/s]CDM:  59%|#######################################################6                                      | 1393/2352 [00:53<00:45, 21.11it/s]CDM:  59%|#######################################################8                                      | 1397/2352 [00:53<00:39, 24.27it/s]CDM:  60%|########################################################                                      | 1403/2352 [00:53<00:31, 30.45it/s]CDM:  60%|########################################################2                                     | 1407/2352 [00:53<00:30, 31.18it/s]CDM:  60%|########################################################7                                     | 1419/2352 [00:53<00:17, 52.02it/s]CDM:  61%|#########################################################                                     | 1427/2352 [00:53<00:15, 58.22it/s]CDM:  61%|#########################################################3                                    | 1434/2352 [00:54<00:18, 49.99it/s]CDM:  61%|#########################################################5                                    | 1440/2352 [00:54<00:21, 42.07it/s]CDM:  61%|#########################################################7                                    | 1445/2352 [00:54<00:29, 30.82it/s]CDM:  62%|#########################################################9                                    | 1449/2352 [00:54<00:33, 27.22it/s]CDM:  62%|##########################################################                                    | 1453/2352 [00:55<00:41, 21.45it/s]CDM:  62%|##########################################################1                                   | 1456/2352 [00:55<00:47, 18.67it/s]CDM:  62%|##########################################################3                                   | 1459/2352 [00:56<01:31,  9.73it/s]CDM:  62%|##########################################################5                                   | 1464/2352 [00:56<01:07, 13.13it/s]CDM:  62%|##########################################################7                                   | 1469/2352 [00:56<00:52, 16.72it/s]CDM:  63%|###########################################################                                   | 1478/2352 [00:56<00:34, 25.00it/s]CDM:  63%|###########################################################3                                  | 1484/2352 [00:56<00:29, 29.29it/s]CDM:  63%|###########################################################5                                  | 1491/2352 [00:56<00:23, 36.23it/s]CDM:  64%|###########################################################7                                  | 1496/2352 [00:56<00:25, 34.00it/s]CDM:  64%|###########################################################9                                  | 1501/2352 [00:57<00:23, 36.86it/s]CDM:  64%|############################################################2                                 | 1508/2352 [00:57<00:19, 43.58it/s]CDM:  64%|############################################################6                                 | 1517/2352 [00:57<00:15, 54.42it/s]CDM:  65%|############################################################9                                 | 1524/2352 [00:57<00:16, 51.34it/s]CDM:  65%|#############################################################1                                | 1530/2352 [00:57<00:16, 50.74it/s]CDM:  65%|#############################################################3                                | 1536/2352 [00:57<00:23, 34.76it/s]CDM:  66%|#############################################################5                                | 1541/2352 [00:58<00:33, 24.16it/s]CDM:  66%|#############################################################7                                | 1545/2352 [00:58<00:45, 17.85it/s]CDM:  66%|#############################################################8                                | 1548/2352 [00:58<00:44, 18.20it/s]CDM:  66%|#############################################################9                                | 1551/2352 [00:59<00:45, 17.72it/s]CDM:  66%|##############################################################1                               | 1555/2352 [00:59<00:38, 20.87it/s]CDM:  66%|##############################################################2                               | 1558/2352 [00:59<00:42, 18.53it/s]CDM:  66%|##############################################################3                               | 1561/2352 [00:59<00:42, 18.69it/s]CDM:  67%|##############################################################6                               | 1567/2352 [00:59<00:30, 25.35it/s]CDM:  67%|##############################################################9                               | 1576/2352 [00:59<00:21, 36.02it/s]CDM:  67%|###############################################################3                              | 1584/2352 [00:59<00:17, 43.86it/s]CDM:  68%|###############################################################5                              | 1589/2352 [00:59<00:16, 45.18it/s]CDM:  68%|###############################################################7                              | 1596/2352 [01:00<00:15, 47.98it/s]CDM:  68%|################################################################                              | 1602/2352 [01:00<00:21, 35.39it/s]CDM:  69%|################################################################4                             | 1613/2352 [01:00<00:16, 45.55it/s]CDM:  69%|################################################################7                             | 1619/2352 [01:00<00:16, 43.41it/s]CDM:  69%|################################################################9                             | 1624/2352 [01:00<00:23, 31.61it/s]CDM:  69%|#################################################################                             | 1628/2352 [01:01<00:27, 26.63it/s]CDM:  69%|#################################################################2                            | 1632/2352 [01:01<00:44, 16.04it/s]CDM:  70%|#################################################################3                            | 1635/2352 [01:02<00:47, 14.99it/s]CDM:  70%|#################################################################5                            | 1641/2352 [01:02<00:34, 20.42it/s]CDM:  70%|#################################################################7                            | 1645/2352 [01:02<00:42, 16.69it/s]CDM:  70%|#################################################################9                            | 1649/2352 [01:02<00:36, 19.48it/s]CDM:  70%|##################################################################1                           | 1654/2352 [01:02<00:28, 24.19it/s]CDM:  71%|##################################################################3                           | 1660/2352 [01:02<00:22, 30.34it/s]CDM:  71%|##################################################################6                           | 1667/2352 [01:03<00:22, 31.00it/s]CDM:  71%|##################################################################8                           | 1673/2352 [01:03<00:18, 36.47it/s]CDM:  71%|###################################################################                           | 1678/2352 [01:03<00:20, 32.14it/s]CDM:  72%|###################################################################2                          | 1682/2352 [01:03<00:22, 29.62it/s]CDM:  72%|###################################################################3                          | 1686/2352 [01:03<00:30, 21.72it/s]CDM:  72%|###################################################################5                          | 1689/2352 [01:04<00:48, 13.54it/s]CDM:  72%|###################################################################6                          | 1692/2352 [01:04<01:01, 10.73it/s]CDM:  72%|###################################################################7                          | 1694/2352 [01:05<00:59, 11.02it/s]CDM:  72%|###################################################################8                          | 1697/2352 [01:05<00:51, 12.74it/s]CDM:  72%|####################################################################                          | 1703/2352 [01:05<00:33, 19.59it/s]CDM:  73%|####################################################################3                         | 1711/2352 [01:05<00:22, 29.07it/s]CDM:  73%|####################################################################5                         | 1716/2352 [01:05<00:21, 29.74it/s]CDM:  73%|####################################################################7                         | 1720/2352 [01:05<00:21, 29.13it/s]CDM:  73%|####################################################################9                         | 1726/2352 [01:05<00:18, 34.65it/s]CDM:  74%|#####################################################################2                        | 1733/2352 [01:05<00:14, 41.82it/s]CDM:  74%|#####################################################################4                        | 1738/2352 [01:06<00:14, 41.83it/s]CDM:  74%|#####################################################################8                        | 1747/2352 [01:06<00:11, 52.04it/s]CDM:  75%|######################################################################                        | 1753/2352 [01:06<00:11, 52.32it/s]CDM:  75%|######################################################################3                       | 1759/2352 [01:06<00:18, 32.12it/s]CDM:  75%|######################################################################5                       | 1764/2352 [01:06<00:18, 31.29it/s]CDM:  75%|######################################################################6                       | 1768/2352 [01:07<00:22, 26.02it/s]CDM:  75%|######################################################################8                       | 1772/2352 [01:07<00:21, 27.33it/s]CDM:  76%|######################################################################9                       | 1776/2352 [01:07<00:31, 18.19it/s]CDM:  76%|#######################################################################1                      | 1781/2352 [01:07<00:25, 22.17it/s]CDM:  76%|#######################################################################3                      | 1785/2352 [01:07<00:23, 24.37it/s]CDM:  76%|#######################################################################4                      | 1789/2352 [01:08<00:24, 22.79it/s]CDM:  76%|#######################################################################6                      | 1792/2352 [01:08<00:25, 22.32it/s]CDM:  76%|#######################################################################7                      | 1795/2352 [01:08<00:25, 22.06it/s]CDM:  77%|########################################################################                      | 1802/2352 [01:08<00:17, 31.67it/s]CDM:  77%|########################################################################2                     | 1808/2352 [01:08<00:14, 37.57it/s]CDM:  77%|########################################################################4                     | 1813/2352 [01:08<00:16, 33.43it/s]CDM:  77%|########################################################################6                     | 1817/2352 [01:08<00:19, 27.30it/s]CDM:  78%|########################################################################8                     | 1824/2352 [01:09<00:14, 35.56it/s]CDM:  78%|#########################################################################2                    | 1833/2352 [01:09<00:11, 46.97it/s]CDM:  78%|#########################################################################5                    | 1840/2352 [01:09<00:10, 49.30it/s]CDM:  78%|#########################################################################7                    | 1846/2352 [01:09<00:11, 44.68it/s]CDM:  79%|#########################################################################9                    | 1851/2352 [01:09<00:13, 37.22it/s]CDM:  79%|##########################################################################1                   | 1856/2352 [01:09<00:17, 28.26it/s]CDM:  79%|##########################################################################3                   | 1860/2352 [01:10<00:24, 19.71it/s]CDM:  79%|##########################################################################4                   | 1863/2352 [01:10<00:28, 17.38it/s]CDM:  79%|##########################################################################5                   | 1866/2352 [01:10<00:28, 16.84it/s]CDM:  80%|##########################################################################7                   | 1870/2352 [01:10<00:23, 20.30it/s]CDM:  80%|##########################################################################9                   | 1876/2352 [01:11<00:17, 26.81it/s]CDM:  80%|###########################################################################1                  | 1881/2352 [01:11<00:17, 27.64it/s]CDM:  80%|###########################################################################3                  | 1886/2352 [01:11<00:14, 31.68it/s]CDM:  80%|###########################################################################5                  | 1891/2352 [01:11<00:13, 34.56it/s]CDM:  81%|###########################################################################7                  | 1896/2352 [01:11<00:11, 38.00it/s]CDM:  81%|############################################################################                  | 1903/2352 [01:11<00:09, 45.07it/s]CDM:  81%|############################################################################2                 | 1908/2352 [01:11<00:14, 30.15it/s]CDM:  81%|############################################################################4                 | 1912/2352 [01:12<00:15, 27.95it/s]CDM:  81%|############################################################################5                 | 1916/2352 [01:12<00:14, 29.85it/s]CDM:  82%|############################################################################9                 | 1925/2352 [01:12<00:11, 38.28it/s]CDM:  82%|#############################################################################1                | 1930/2352 [01:12<00:11, 37.99it/s]CDM:  82%|#############################################################################3                | 1935/2352 [01:12<00:10, 38.85it/s]CDM:  82%|#############################################################################5                | 1940/2352 [01:12<00:10, 40.82it/s]CDM:  83%|#############################################################################7                | 1945/2352 [01:13<00:14, 28.81it/s]CDM:  83%|#############################################################################8                | 1949/2352 [01:13<00:17, 22.78it/s]CDM:  83%|##############################################################################                | 1952/2352 [01:13<00:17, 22.40it/s]CDM:  83%|##############################################################################1               | 1955/2352 [01:13<00:23, 16.78it/s]CDM:  83%|##############################################################################2               | 1958/2352 [01:13<00:22, 17.83it/s]CDM:  83%|##############################################################################4               | 1962/2352 [01:14<00:19, 20.06it/s]CDM:  84%|##############################################################################6               | 1967/2352 [01:14<00:15, 24.27it/s]CDM:  84%|##############################################################################8               | 1972/2352 [01:14<00:13, 28.35it/s]CDM:  84%|###############################################################################               | 1977/2352 [01:14<00:12, 31.01it/s]CDM:  84%|###############################################################################3              | 1986/2352 [01:14<00:08, 43.75it/s]CDM:  85%|###############################################################################5              | 1991/2352 [01:14<00:08, 43.29it/s]CDM:  85%|###############################################################################7              | 1996/2352 [01:14<00:08, 40.85it/s]CDM:  85%|###############################################################################9              | 2001/2352 [01:14<00:08, 39.59it/s]CDM:  85%|################################################################################1             | 2006/2352 [01:15<00:11, 30.67it/s]CDM:  85%|################################################################################3             | 2010/2352 [01:15<00:11, 29.62it/s]CDM:  86%|################################################################################5             | 2016/2352 [01:15<00:09, 35.31it/s]CDM:  86%|################################################################################7             | 2020/2352 [01:15<00:09, 33.43it/s]CDM:  86%|################################################################################9             | 2026/2352 [01:15<00:08, 36.82it/s]CDM:  86%|#################################################################################1            | 2030/2352 [01:15<00:08, 37.43it/s]CDM:  86%|#################################################################################2            | 2034/2352 [01:16<00:12, 25.53it/s]CDM:  87%|#################################################################################4            | 2038/2352 [01:16<00:11, 26.55it/s]CDM:  87%|#################################################################################6            | 2042/2352 [01:16<00:14, 21.46it/s]CDM:  87%|#################################################################################7            | 2045/2352 [01:16<00:16, 18.54it/s]CDM:  87%|#################################################################################8            | 2049/2352 [01:16<00:16, 18.91it/s]CDM:  87%|##################################################################################            | 2054/2352 [01:17<00:12, 23.81it/s]CDM:  88%|##################################################################################2           | 2058/2352 [01:17<00:12, 23.80it/s]CDM:  88%|##################################################################################3           | 2061/2352 [01:17<00:12, 23.58it/s]CDM:  88%|##################################################################################5           | 2065/2352 [01:17<00:12, 23.48it/s]CDM:  88%|##################################################################################8           | 2073/2352 [01:17<00:08, 32.67it/s]CDM:  88%|###################################################################################           | 2078/2352 [01:17<00:07, 35.44it/s]CDM:  89%|###################################################################################4          | 2087/2352 [01:17<00:05, 46.12it/s]CDM:  89%|###################################################################################7          | 2095/2352 [01:18<00:06, 42.06it/s]CDM:  89%|###################################################################################9          | 2100/2352 [01:18<00:07, 34.04it/s]CDM:  89%|####################################################################################1         | 2105/2352 [01:18<00:06, 36.61it/s]CDM:  90%|####################################################################################4         | 2112/2352 [01:18<00:05, 42.49it/s]CDM:  90%|####################################################################################6         | 2117/2352 [01:18<00:07, 30.88it/s]CDM:  90%|####################################################################################7         | 2121/2352 [01:19<00:08, 26.22it/s]CDM:  90%|####################################################################################9         | 2125/2352 [01:19<00:09, 24.79it/s]CDM:  91%|#####################################################################################         | 2129/2352 [01:19<00:08, 27.19it/s]CDM:  91%|#####################################################################################2        | 2133/2352 [01:19<00:08, 24.79it/s]CDM:  91%|#####################################################################################3        | 2136/2352 [01:19<00:09, 22.98it/s]CDM:  91%|#####################################################################################4        | 2139/2352 [01:19<00:09, 22.48it/s]CDM:  91%|#####################################################################################6        | 2144/2352 [01:20<00:09, 22.38it/s]CDM:  91%|#####################################################################################8        | 2147/2352 [01:20<00:08, 23.48it/s]CDM:  91%|#####################################################################################9        | 2150/2352 [01:20<00:08, 24.39it/s]CDM:  92%|######################################################################################        | 2153/2352 [01:20<00:08, 23.01it/s]CDM:  92%|######################################################################################2       | 2159/2352 [01:20<00:06, 31.18it/s]magick: profile 'icc': 'RGB ': RGB color space not permitted on grayscale PNG `result/predictions_quick_match_cdm/CDM/cdm_calc_w0wzyhif/pred/vis/sample_0_base.tmp.1267346.1785834019686541745.png' @ warning/png.c/MagickPNGWarningHandler/1531.
+CDM:  92%|######################################################################################4       | 2163/2352 [01:20<00:06, 31.04it/s]CDM:  92%|######################################################################################7       | 2170/2352 [01:20<00:04, 40.05it/s]CDM:  92%|######################################################################################9       | 2175/2352 [01:20<00:04, 41.38it/s]CDM:  93%|#######################################################################################2      | 2183/2352 [01:21<00:03, 47.10it/s]CDM:  93%|#######################################################################################4      | 2188/2352 [01:21<00:04, 36.13it/s]CDM:  93%|#######################################################################################6      | 2193/2352 [01:21<00:04, 38.11it/s]CDM:  93%|#######################################################################################8      | 2198/2352 [01:21<00:04, 33.51it/s]CDM:  94%|########################################################################################2     | 2208/2352 [01:21<00:03, 47.13it/s]CDM:  94%|########################################################################################4     | 2214/2352 [01:22<00:04, 27.67it/s]CDM:  94%|########################################################################################6     | 2219/2352 [01:22<00:05, 24.68it/s]CDM:  95%|########################################################################################9     | 2225/2352 [01:22<00:04, 27.94it/s]CDM:  95%|#########################################################################################     | 2229/2352 [01:22<00:04, 27.36it/s]CDM:  95%|#########################################################################################2    | 2233/2352 [01:22<00:04, 29.23it/s]CDM:  95%|#########################################################################################4    | 2237/2352 [01:23<00:04, 25.23it/s]CDM:  95%|#########################################################################################5    | 2240/2352 [01:23<00:04, 23.10it/s]CDM:  95%|#########################################################################################7    | 2245/2352 [01:23<00:04, 26.24it/s]CDM:  96%|#########################################################################################9    | 2250/2352 [01:23<00:03, 30.35it/s]CDM:  96%|##########################################################################################    | 2254/2352 [01:23<00:03, 30.01it/s]CDM:  96%|##########################################################################################2   | 2258/2352 [01:23<00:03, 29.16it/s]CDM:  96%|##########################################################################################4   | 2263/2352 [01:23<00:02, 32.18it/s]CDM:  96%|##########################################################################################6   | 2269/2352 [01:24<00:02, 35.29it/s]CDM:  97%|##########################################################################################8   | 2273/2352 [01:24<00:02, 35.78it/s]CDM:  97%|###########################################################################################2  | 2282/2352 [01:24<00:01, 41.38it/s]CDM:  97%|###########################################################################################4  | 2287/2352 [01:24<00:01, 34.66it/s]CDM:  97%|###########################################################################################5  | 2291/2352 [01:24<00:01, 35.32it/s]CDM:  98%|###########################################################################################8  | 2298/2352 [01:24<00:01, 39.45it/s]CDM:  98%|############################################################################################  | 2303/2352 [01:24<00:01, 38.25it/s]CDM:  98%|############################################################################################2 | 2307/2352 [01:25<00:01, 27.35it/s]CDM:  98%|############################################################################################3 | 2311/2352 [01:25<00:01, 26.36it/s]CDM:  98%|############################################################################################4 | 2314/2352 [01:25<00:01, 24.96it/s]CDM:  99%|############################################################################################8 | 2323/2352 [01:25<00:00, 37.74it/s]CDM:  99%|############################################################################################# | 2328/2352 [01:25<00:00, 29.65it/s]CDM:  99%|#############################################################################################2| 2332/2352 [01:26<00:00, 29.02it/s]CDM:  99%|#############################################################################################3| 2336/2352 [01:26<00:00, 27.98it/s]CDM: 100%|#############################################################################################6| 2342/2352 [01:26<00:00, 32.28it/s]CDM: 100%|#############################################################################################8| 2348/2352 [01:26<00:00, 29.06it/s]CDM: 100%|#############################################################################################9| 2351/2352 [01:40<00:00, 29.06it/s]CDM: 100%|##############################################################################################| 2352/2352 [01:47<00:00,  1.28s/it]CDM: 100%|##############################################################################################| 2352/2352 [01:47<00:00, 21.87it/s]
+{
+  "debug": {
+    "exception_case_count": 0,
+    "exception_cases": [],
+    "sample_count": 2352,
+    "stage": "CDM",
+    "timeout_case_count": 0,
+    "timeout_cases": [],
+    "workers": 96
+  },
+  "evaluated_samples": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_full_e2e_eval_8634d3a_r1/cdm_native_full_w96/result/predictions_quick_match_cdm_result.json",
+  "evaluator_root": "/workspace/repos/OmniDocBench_eval",
+  "input": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_full_e2e_eval_8634d3a_r1/evaluation/work/result/predictions_quick_match_display_formula_result.json",
+  "per_sample_scores": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_full_e2e_eval_8634d3a_r1/cdm_native_full_w96/result/predictions_quick_match_cdm_per_sample_CDM.json",
+  "sample_count": 2352,
+  "samples_per_s": 21.827977644766655,
+  "save_vis": false,
+  "scores": {
+    "CDM": {
+      "all": 0.9747142857142862
+    }
+  },
+  "wall_s": 107.75162217393517,
+  "workers": 96
+}
+[cdm-direct] summary=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_full_e2e_eval_8634d3a_r1/cdm_native_full_w96/cdm_run_summary.json
