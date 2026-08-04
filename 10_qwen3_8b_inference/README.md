@@ -19,6 +19,10 @@ MODEL_DIR=/workspace/models/Qwen3-8B
 checkpoint. Every NPU entrypoint explicitly disables torch-npu JIT compilation;
 TorchAir compilation is enabled only by the corresponding command-line option.
 
+Prefill deliberately produces KV state only. Generation re-feeds the final
+prompt token through decode to obtain the first output token, so the first and
+all subsequent decode iterations use one identical static graph contract.
+
 ## Transformers Reference
 
 Use this as the correctness reference before comparing the local runtime.

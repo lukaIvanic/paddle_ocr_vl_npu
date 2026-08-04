@@ -248,7 +248,7 @@ def prepare_decode_state(runner: LocalQwen30Runner, input_ids: torch.Tensor):
     with torch.inference_mode():
         key_caches, value_caches = runner.model.prefill(input_ids, static_kv_cache_len=runner.static_kv_cache_len)
     runner.mark_static_decode_state(key_caches, value_caches)
-    return input_ids[:, -1:], key_caches, value_caches
+    return input_ids[:, -1:].contiguous(), key_caches, value_caches
 
 
 def run_decode_loop(
@@ -259,13 +259,16 @@ def run_decode_loop(
     value_caches: tuple[torch.Tensor, ...],
     *,
     decode_steps: int,
+    decode_one=None,
 ) -> torch.Tensor:
+    if decode_one is None:
+        decode_one = runner.decode_one
     with torch.inference_mode():
         generated = []
         for decode_position in range(input_ids.shape[1] - 1, input_ids.shape[1] - 1 + decode_steps):
             cache_position = torch.tensor([decode_position], device=input_ids.device, dtype=torch.long)
             actual_seq_length = decode_position + 1 if runner.decode_increfa_mode == "actual_seq_lengths" else None
-            next_id, key_caches, value_caches = runner.decode_one(
+            next_id, key_caches, value_caches = decode_one(
                 next_id,
                 cache_position,
                 key_caches,
@@ -435,6 +438,59 @@ def benchmark_decode(
     decode_steps: int,
     log: StageLogger,
 ) -> dict:
+    compile_first_call_sec = None
+    parity = None
+    if runner.compile_decode:
+        log.log(f"checking compiled/eager decode parity: steps={decode_steps}")
+        eager_next_id, eager_key_caches, eager_value_caches = prepare_decode_state(
+            runner, input_ids
+        )
+        compiled_next_id, compiled_key_caches, compiled_value_caches = (
+            prepare_decode_state(runner, input_ids)
+        )
+        eager_tokens = run_decode_loop(
+            runner,
+            input_ids,
+            eager_next_id,
+            eager_key_caches,
+            eager_value_caches,
+            decode_steps=decode_steps,
+            decode_one=runner.decode_one_eager,
+        )
+        sync()
+        started = time.perf_counter()
+        compiled_tokens = run_decode_loop(
+            runner,
+            input_ids,
+            compiled_next_id,
+            compiled_key_caches,
+            compiled_value_caches,
+            decode_steps=decode_steps,
+        )
+        sync()
+        compile_first_call_sec = time.perf_counter() - started
+        token_mismatch_count = int((compiled_tokens != eager_tokens).sum().item())
+        kv_max_abs = 0.0
+        for eager_cache, compiled_cache in zip(
+            (*eager_key_caches, *eager_value_caches),
+            (*compiled_key_caches, *compiled_value_caches),
+        ):
+            kv_max_abs = max(
+                kv_max_abs,
+                float((compiled_cache.float() - eager_cache.float()).abs().max().item()),
+            )
+        parity = {
+            "steps": int(decode_steps),
+            "token_mismatch_count": token_mismatch_count,
+            "token_exact_match": token_mismatch_count == 0,
+            "kv_max_abs": kv_max_abs,
+        }
+        if token_mismatch_count:
+            raise RuntimeError(
+                "compiled decode token mismatch: "
+                f"token_mismatch_count={token_mismatch_count}"
+            )
+
     log.log(f"warming up decode: runs={warmups} steps={decode_steps}")
     warmup_timings = []
     for _ in range(warmups):
@@ -468,7 +524,9 @@ def benchmark_decode(
             )
     )
     summary = summarize_seconds(timings, tokens=decode_steps)
-    summary["compile_decode_first_call_sec"] = warmup_timings[0] if runner.compile_decode and warmup_timings else None
+    summary["compile_decode_first_call_sec"] = compile_first_call_sec
+    if parity is not None:
+        summary["compiled_eager_parity"] = parity
     return summary
 
 

@@ -40,13 +40,14 @@ class LocalQwen30Runner:
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_dir)
         self.config = LocalQwen3Config.from_model_dir(self.model_dir)
         self.model = self.load_model()
+        self.eager_decode = self.model.decode
         if compile_decode:
             compiler_config = CompilerConfig()
             if compile_decode_dynamic:
                 compiler_config.experimental_config.tiling_schedule_optimize = True
             backend = torchair.get_npu_backend(compiler_config=compiler_config)
             self.model.decode = torch.compile(
-                self.model.decode,
+                self.eager_decode,
                 backend=backend,
                 dynamic=compile_decode_dynamic,
                 fullgraph=True,
@@ -165,6 +166,23 @@ class LocalQwen30Runner:
             actual_seq_length,
         )
 
+    def decode_one_eager(
+        self,
+        next_id: torch.Tensor,
+        cache_position: torch.Tensor,
+        key_caches: tuple[torch.Tensor, ...],
+        value_caches: tuple[torch.Tensor, ...],
+        *,
+        actual_seq_length: int | None,
+    ) -> tuple[torch.Tensor, tuple[torch.Tensor, ...], tuple[torch.Tensor, ...]]:
+        return self.eager_decode(
+            next_id,
+            cache_position,
+            key_caches,
+            value_caches,
+            actual_seq_length,
+        )
+
     def encode_prompt(self, prompt: str) -> torch.Tensor:
         messages = [{"role": "user", "content": prompt}]
         if self.tokenizer.chat_template:
@@ -177,21 +195,25 @@ class LocalQwen30Runner:
     def generate_ids(self, input_ids: torch.Tensor, *, max_new_tokens: int) -> torch.Tensor:
         max_generated_tokens = min(max_new_tokens, max(0, self.static_kv_cache_len - input_ids.shape[1]))
         with torch.inference_mode():
+            # Deliberate contract: prefill is cache-only and never supplies a
+            # sampled "free" token. Re-feed the final prompt token through the
+            # same decode graph used for every later step. This recomputes one
+            # token, but gives static TorchAir one uniform decode contract.
             key_caches, value_caches = self.model.prefill(input_ids, static_kv_cache_len=self.static_kv_cache_len)
             self.mark_static_decode_state(key_caches, value_caches)
-            next_id = input_ids[:, -1:]
+            decode_input_id = input_ids[:, -1:].contiguous()
             generated = [input_ids]
             for decode_position in range(input_ids.shape[1] - 1, input_ids.shape[1] - 1 + max_generated_tokens):
                 cache_position = torch.tensor([decode_position], device=input_ids.device, dtype=torch.long)
                 actual_seq_length = decode_position + 1 if self.decode_increfa_mode == "actual_seq_lengths" else None
-                next_id, key_caches, value_caches = self.decode_one(
-                    next_id,
+                decode_input_id, key_caches, value_caches = self.decode_one(
+                    decode_input_id,
                     cache_position,
                     key_caches,
                     value_caches,
                     actual_seq_length=actual_seq_length,
                 )
-                generated.append(next_id)
+                generated.append(decode_input_id)
         return torch.cat(generated, dim=-1)
 
     def generate(self, prompt: str, *, max_new_tokens: int) -> str:
