@@ -23347,3 +23347,222 @@ Write `$ROOT/agent_report.md` after the mechanical comparison.  Include:
 Return the exact `FULL: PASS` sentence first, then paste `agent_report.md` and
 `final_comparison.json`.  Keep raw predictions, logs and compiler caches on the
 work server.  Do not launch a fallback or follow-up lane.  Then stop.
+
+## Phase 57R: isolate the one pathological evaluation page
+
+Run this only when Phase 57 inference completed but official evaluation stopped
+with:
+
+```text
+bounded fallback exceeded 180s for book_zh_DLT10902008_extracted_page_8.png
+```
+
+Do **not** rerun layout, OCR, the 1,651-page inference, or CDM.  This phase uses
+the already-written Phase-57 ground truth, prediction Markdown, and recognition
+trace to evaluate exactly one page.  It first records whether the page contains
+a runaway/repetitive crop, then retries the same bounded matcher in isolation.
+If isolation alone is insufficient, it increases only the fallback chunk span;
+it does not edit predictions or suppress the page.
+
+Use one persistent shell.  The checkout remains pull-only.
+
+```sh
+set -euo pipefail
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git pull --ff-only origin main
+test -z "$(git status --porcelain)"
+
+PYTHON_BIN=/usr/local/python3.12.13/bin/python
+EVAL_WRAPPER="$WORK_SERVER_REPO/09_persistent_page_engine/scripts/run_omnidocbench_eval.py"
+REPETITION_AUDIT="$WORK_SERVER_REPO/09_persistent_page_engine/scripts/audit_repetition_stops.py"
+PAGE=book_zh_DLT10902008_extracted_page_8.png
+PREDICTION_NAME="${PAGE%.png}.md"
+
+CDM_ROOT=tmp/09_persistent_page_engine/310p_phase56_cdm
+test -s "$CDM_ROOT/runtime_paths.env"
+. "$CDM_ROOT/runtime_paths.env"
+EVAL_PYTHON="$OMNIDOCBENCH_EVAL_PYTHON"
+EVALUATOR_ROOT="$OMNIDOCBENCH_EVALUATOR_ROOT"
+test -x "$EVAL_PYTHON"
+test -f "$EVALUATOR_ROOT/pdf_validation.py"
+
+# Select the most recently modified completed Phase-57 full-run directory.
+FULL="$("$PYTHON_BIN" - <<'PY'
+from pathlib import Path
+roots = [
+    path for path in Path("tmp/09_persistent_page_engine").glob(
+        "310p_phase57_cap4096_b64_pse_*/full"
+    )
+    if (path / "output" / "run_summary.json").is_file()
+]
+if not roots:
+    raise SystemExit("no completed Phase-57 full run found")
+print(max(roots, key=lambda path: path.stat().st_mtime))
+PY
+)"
+test -n "$FULL"
+test -s "$FULL/output/run_summary.json"
+test -s "$FULL/output/OmniDocBench_subset.json"
+test -s "$FULL/output/recognition_trace.jsonl"
+test -s "$FULL/output/predictions/$PREDICTION_NAME"
+
+SHORT="$(git rev-parse --short HEAD)"
+ROOT="${FULL%/full}/phase57r_single_page_${SHORT}"
+test ! -e "$ROOT"
+mkdir -p "$ROOT/input/predictions"
+
+jq --arg page "$PAGE" \
+  '[.[] | select(.page_info.image_path == $page)]' \
+  "$FULL/output/OmniDocBench_subset.json" >"$ROOT/input/ground_truth.json"
+test "$(jq length "$ROOT/input/ground_truth.json")" -eq 1
+cp "$FULL/output/predictions/$PREDICTION_NAME" \
+  "$ROOT/input/predictions/$PREDICTION_NAME"
+
+jq -c --arg page "$PAGE" \
+  'select(.source_image_name == $page)' \
+  "$FULL/output/recognition_trace.jsonl" >"$ROOT/input/recognition_trace.jsonl"
+test -s "$ROOT/input/recognition_trace.jsonl"
+
+jq -s '{
+  page: .[0].source_image_name,
+  crops: length,
+  total_generated_tokens: (map(.token_ids | length) | add),
+  maximum_crop_tokens: (map(.token_ids | length) | max),
+  labels: (group_by(.label) | map({label: .[0].label, count: length})),
+  stop_reasons: (group_by(.stop_reason) | map({reason: .[0].stop_reason, count: length})),
+  long_crops: (map(select((.token_ids | length) >= 512) | {
+    request_id, label, generated_tokens: (.token_ids | length),
+    stop_reason, repetition
+  }))
+}' "$ROOT/input/recognition_trace.jsonl" \
+  | tee "$ROOT/page_generation_summary.json"
+
+"$PYTHON_BIN" "$REPETITION_AUDIT" \
+  --input "$ROOT/input/recognition_trace.jsonl" \
+  --output-dir "$ROOT/repetition_audit" --case-limit 50 \
+  2>&1 | tee "$ROOT/repetition_audit.log"
+
+grep -F "$PAGE" "$FULL/evaluation/run.log" \
+  | tail -n 20 | tee "$ROOT/original_evaluator_page_lines.log" || true
+wc -c "$ROOT/input/predictions/$PREDICTION_NAME" \
+  | tee "$ROOT/prediction_bytes.txt"
+```
+
+Now run isolated matching lanes.  A one-second primary deadline deliberately
+enters the already-required bounded fallback immediately; this avoids spending
+another 120 seconds reproving that primary matching is pathological.  Lane A
+uses the production span 10.  Run lane B (span 32) only if A fails, and lane C
+(span 64) only if B fails.  Stop on the first pass.
+
+```sh
+run_single_page_eval() {
+  span="$1"
+  lane="$ROOT/span_${span}"
+  mkdir -p "$lane/work"
+  cat >"$lane/work/config.yaml" <<EOF
+end2end_eval:
+  metrics:
+    text_block:
+      metric: [Edit_dist]
+    display_formula:
+      metric: [Edit_dist]
+    table:
+      metric: [TEDS, Edit_dist]
+      teds_workers: 1
+    reading_order:
+      metric: [Edit_dist]
+  dataset:
+    dataset_name: end2end_dataset
+    ground_truth:
+      data_path: $(realpath "$ROOT/input/ground_truth.json")
+    prediction:
+      data_path: $(realpath "$ROOT/input/predictions")
+    match_method: quick_match
+    match_workers: 1
+    quick_match_truncated_timeout_sec: 300
+    match_timeout_sec: 420
+    timeout_fallback_max_chunk_span: $span
+    timeout_fallback_order_penalty: 0.10
+EOF
+
+  SECONDS=0
+  set +e
+  set -o pipefail
+  (
+    cd "$lane/work"
+    PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 420 \
+      "$EVAL_PYTHON" "$EVAL_WRAPPER" \
+      --config config.yaml --evaluator-root "$EVALUATOR_ROOT" \
+      --match-workers 1 --teds-workers 1 \
+      --page-timeout-sec 1 --fallback-timeout-sec 180 \
+      --fallback-latex-timeout-sec 30 --teds-timeout-sec 120
+  ) 2>&1 | tee "$lane/run.log"
+  ec="${PIPESTATUS[0]}"
+  set -e
+  printf '%s\n' "$ec" >"$lane/exit_code.txt"
+  printf '%s\n' "$SECONDS" >"$lane/wall_s.txt"
+  return "$ec"
+}
+
+passed_span=""
+for span in 10 32 64; do
+  if run_single_page_eval "$span"; then
+    passed_span="$span"
+    break
+  fi
+done
+
+if test -z "$passed_span"; then
+  printf '%s\n' \
+    "310P PHASE 57R: FAIL page=$PAGE spans=10,32,64 artifact=$ROOT" \
+    | tee "$ROOT/result_sentence.txt"
+  exit 0
+fi
+
+LANE="$ROOT/span_${passed_span}"
+RESULT="$LANE/work/result"
+METRIC="$RESULT/predictions_quick_match_metric_result.json"
+STAGES="$RESULT/predictions_quick_match_stage_execution.json"
+test -s "$METRIC"
+test -s "$STAGES"
+
+"$EVAL_PYTHON" - \
+  "$METRIC" "$STAGES" "$ROOT/page_generation_summary.json" \
+  "$ROOT/repetition_audit/report.json" "$passed_span" "$LANE/wall_s.txt" <<'PY' \
+  | tee "$ROOT/result_sentence.txt"
+import json
+import pathlib
+import sys
+
+metric_path, stages_path, generation_path, repetition_path, span, wall_path = sys.argv[1:]
+m = json.load(open(metric_path))
+s = json.load(open(stages_path))
+g = json.load(open(generation_path))
+r = json.load(open(repetition_path))
+teds = s["metrics"]["table"]["TEDS"]
+assert s["page_match"]["page_count"] == 1, s
+assert teds["timeout_case_count"] == 0, teds
+assert teds["error_case_count"] == 0, teds
+assert teds["exception_case_count"] == 0, teds
+fallback = s["page_match"]["fallbacks"]
+repetition_hits = {
+    name: summary["hits"] for name, summary in r["rules"].items()
+    if summary["hits"]
+}
+print(
+    "310P PHASE 57R: PASS "
+    f"page={g['page']} span={span} wall_s={pathlib.Path(wall_path).read_text().strip()} "
+    f"crops={g['crops']} total_tokens={g['total_generated_tokens']} "
+    f"max_crop_tokens={g['maximum_crop_tokens']} "
+    f"repetition_hits={json.dumps(repetition_hits, separators=(',', ':'))} "
+    f"page_timeouts={fallback['page_timeout']['count']} "
+    f"teds_samples={teds['sample_count']} teds_errors=0 artifact={pathlib.Path(metric_path).parents[3]}"
+)
+PY
+```
+
+Return only the exact `310P PHASE 57R: ...` sentence.  Do not paste the large
+prediction, token stream, evaluator log, or repetition report unless every lane
+fails.  Do not rerun the full evaluation yet; the passing span is evidence for
+the next full-evaluation command.  Then stop.
