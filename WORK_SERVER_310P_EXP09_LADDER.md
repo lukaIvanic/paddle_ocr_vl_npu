@@ -22362,8 +22362,10 @@ OmniDocBench evaluator, or CDM over the saved corpus yet.
 The install is expected to take roughly 10--20 minutes because pinned
 ImageMagick is built once from source and the frozen TeX Live package set is
 downloaded once.  The command prints `[1/5]` through `[5/5]` progress into a
-live log and has a 40-minute hard timeout.  Re-running is safe: completed
-ImageMagick, TeX Live, Python, and download artifacts are reused.
+live log and emits a heartbeat every 30 seconds containing elapsed time, the
+current stage, log size, and last output line.  It has a 40-minute hard
+timeout.  Re-running is safe: completed ImageMagick, TeX Live, Python, and
+download artifacts are reused.
 
 Pull `main`, then run this exact block from the checkout root:
 
@@ -22408,13 +22410,35 @@ export OMNIDOCBENCH_EVALUATOR_ROOT="$EVALUATOR_ROOT"
 export OMNIDOCBENCH_BUILD_JOBS="$JOBS"
 
 SECONDS=0
-set +e
-set -o pipefail
-timeout --signal=TERM --kill-after=30s 2400 \
-  bash 09_persistent_page_engine/scripts/setup_omnidocbench_eval_runtime.sh \
-  2>&1 | tee "$INSTALL_LOG"
-ec="${PIPESTATUS[0]}"
-set -e
+STATUS_FILE="$ROOT/install_exit_code.txt"
+PROGRESS_LOG="$ROOT/install_progress.log"
+rm -f "$STATUS_FILE" "$PROGRESS_LOG"
+(
+  set +e
+  set -o pipefail
+  timeout --signal=TERM --kill-after=30s 2400 \
+    bash 09_persistent_page_engine/scripts/setup_omnidocbench_eval_runtime.sh \
+    2>&1 | tee "$INSTALL_LOG"
+  printf '%s\n' "${PIPESTATUS[0]}" >"$STATUS_FILE"
+) &
+install_pid="$!"
+(
+  while sleep 30; do
+    kill -0 "$install_pid" 2>/dev/null || exit 0
+    stage="$(grep -E '^\[[1-5]/5\]' "$INSTALL_LOG" 2>/dev/null | tail -n 1 || true)"
+    test -n "$stage" || stage=startup
+    bytes="$(wc -c <"$INSTALL_LOG" 2>/dev/null || printf 0)"
+    last="$(tail -n 1 "$INSTALL_LOG" 2>/dev/null | tr '\r\n' ' ' | tr -s ' ' | cut -c1-180)"
+    printf '%s\n' \
+      "CDM_PROGRESS utc=$(date -u +%H:%M:%S) elapsed_s=$SECONDS log_bytes=$bytes stage=$stage last=$last" \
+      | tee -a "$PROGRESS_LOG"
+  done
+) &
+heartbeat_pid="$!"
+wait "$install_pid" || true
+kill "$heartbeat_pid" 2>/dev/null || true
+wait "$heartbeat_pid" 2>/dev/null || true
+ec="$(cat "$STATUS_FILE")"
 wall="$SECONDS"
 
 if test "$ec" -ne 0; then
