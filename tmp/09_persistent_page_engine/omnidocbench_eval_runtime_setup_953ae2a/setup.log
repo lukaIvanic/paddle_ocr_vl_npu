@@ -1,0 +1,190 @@
+[1/5] Installing Ubuntu build/runtime packages (no apt upgrade)
+Hit:1 http://ports.ubuntu.com/ubuntu-ports jammy InRelease
+Hit:2 http://ports.ubuntu.com/ubuntu-ports jammy-updates InRelease
+Hit:3 http://ports.ubuntu.com/ubuntu-ports jammy-backports InRelease
+Hit:4 http://ports.ubuntu.com/ubuntu-ports jammy-security InRelease
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+build-essential is already the newest version (12.9ubuntu3).
+fontconfig is already the newest version (2.13.1-4.2ubuntu5).
+libfontconfig-dev is already the newest version (2.13.1-4.2ubuntu5).
+libfontconfig1 is already the newest version (2.13.1-4.2ubuntu5).
+libjpeg-dev is already the newest version (8c-2ubuntu10).
+pkg-config is already the newest version (0.29.2-1ubuntu3).
+ca-certificates is already the newest version (20260601~22.04.1).
+ghostscript is already the newest version (9.55.0~dfsg1-0ubuntu5.13).
+git is already the newest version (1:2.34.1-1ubuntu1.17).
+libcairo2-dev is already the newest version (1.16.0-5ubuntu2.1).
+libfreetype6-dev is already the newest version (2.11.1+dfsg-1ubuntu0.3).
+libjbig-dev is already the newest version (2.1-3.1ubuntu0.22.04.1).
+liblzma-dev is already the newest version (5.2.5-2ubuntu1.1).
+libpango1.0-dev is already the newest version (1.50.6+ds-2ubuntu1).
+libpng-dev is already the newest version (1.6.37-3ubuntu0.5).
+libtiff-dev is already the newest version (4.3.0-6ubuntu0.13).
+libx11-dev is already the newest version (2:1.7.5-1ubuntu0.3).
+perl is already the newest version (5.34.0-3ubuntu1.7).
+uuid-dev is already the newest version (2.37.2-4ubuntu3.5).
+wget is already the newest version (1.21.2-2ubuntu1.4).
+xz-utils is already the newest version (5.2.5-2ubuntu1.1).
+zlib1g-dev is already the newest version (1:1.2.11.dfsg-2ubuntu9.2).
+The following packages were automatically installed and are no longer required:
+  adwaita-icon-theme at-spi2-core autoconf automake autotools-dev
+  dbus-user-session dconf-gsettings-backend dconf-service file
+  gsettings-desktop-schemas gtk-update-icon-cache gyp hicolor-icon-theme
+  humanity-icon-theme javascript-common libatk-bridge2.0-0 libatk1.0-0
+  libatk1.0-data libatspi2.0-0 libauthen-sasl-perl libboost-atomic-dev
+  libboost-atomic1.74-dev libboost-atomic1.74.0 libboost-chrono-dev
+  libboost-chrono1.74-dev libboost-chrono1.74.0 libboost-container-dev
+  libboost-container1.74-dev libboost-container1.74.0 libboost-context-dev
+  libboost-context1.74-dev libboost-context1.74.0 libboost-coroutine-dev
+  libboost-coroutine1.74-dev libboost-coroutine1.74.0 libboost-date-time-dev
+  libboost-date-time1.74-dev libboost-date-time1.74.0 libboost-dev
+  libboost-exception-dev libboost-exception1.74-dev libboost-fiber-dev
+  libboost-fiber1.74-dev libboost-fiber1.74.0 libboost-filesystem-dev
+  libboost-filesystem1.74-dev libboost-filesystem1.74.0 libboost-graph-dev
+  libboost-graph-parallel-dev libboost-graph-parallel1.74-dev
+  libboost-graph-parallel1.74.0 libboost-graph1.74-dev libboost-graph1.74.0
+  libboost-iostreams-dev libboost-iostreams1.74-dev libboost-iostreams1.74.0
+  libboost-locale-dev libboost-locale1.74-dev libboost-locale1.74.0
+  libboost-log-dev libboost-log1.74-dev libboost-log1.74.0 libboost-math-dev
+  libboost-math1.74-dev libboost-math1.74.0 libboost-mpi1.74.0
+  libboost-nowide-dev libboost-nowide1.74-dev libboost-nowide1.74.0
+  libboost-numpy-dev libboost-numpy1.74-dev libboost-numpy1.74.0
+  libboost-program-options-dev libboost-program-options1.74-dev
+  libboost-program-options1.74.0 libboost-python-dev libboost-python1.74-dev
+  libboost-python1.74.0 libboost-random-dev libboost-random1.74-dev
+  libboost-random1.74.0 libboost-regex-dev libboost-regex1.74-dev
+  libboost-regex1.74.0 libboost-serialization-dev
+  libboost-serialization1.74-dev libboost-serialization1.74.0
+  libboost-stacktrace-dev libboost-stacktrace1.74-dev
+  libboost-stacktrace1.74.0 libboost-system-dev libboost-system1.74-dev
+  libboost-system1.74.0 libboost-test-dev libboost-test1.74-dev
+  libboost-test1.74.0 libboost-thread-dev libboost-thread1.74-dev
+  libboost-thread1.74.0 libboost-timer-dev libboost-timer1.74-dev
+  libboost-timer1.74.0 libboost-tools-dev libboost-type-erasure-dev
+  libboost-type-erasure1.74-dev libboost-type-erasure1.74.0 libboost-wave-dev
+  libboost-wave1.74-dev libboost-wave1.74.0 libboost1.74-dev
+  libboost1.74-tools-dev libcaf-openmpi-3 libclone-perl libcoarrays-dev
+  libcolord2 libdata-dump-perl libdconf1 libdrm-amdgpu1 libdrm-common
+  libdrm-nouveau2 libdrm-radeon1 libdrm2 libencode-locale-perl libepoxy0
+  libevent-2.1-7 libevent-core-2.1-7 libevent-dev libevent-extra-2.1-7
+  libevent-openssl-2.1-7 libevent-pthreads-2.1-7 libfile-basedir-perl
+  libfile-desktopentry-perl libfile-listing-perl libfile-mimeinfo-perl
+  libfont-afm-perl libfontenc1 libgdk-pixbuf-2.0-0 libgdk-pixbuf2.0-bin
+  libgdk-pixbuf2.0-common libgl1 libgl1-amber-dri libgl1-mesa-dri
+  libglapi-mesa libglvnd0 libglx-mesa0 libglx0 libgtk-3-0 libgtk-3-bin
+  libgtk-3-common libgtkd-3-0 libhtml-form-perl libhtml-format-perl
+  libhtml-parser-perl libhtml-tagset-perl libhtml-tree-perl
+  libhttp-cookies-perl libhttp-daemon-perl libhttp-date-perl
+  libhttp-message-perl libhttp-negotiate-perl libhwloc-dev libio-html-perl
+  libio-socket-ssl-perl libio-stringy-perl libipc-system-simple-perl
+  libjs-events libjs-highlight.js libjs-inherits libjs-is-typedarray
+  libjs-jquery libjs-jquery-ui libjs-psl libjs-source-map libjs-sphinxdoc
+  libjs-sprintf-js libjs-typedarray-to-buffer libjs-underscore liblcms2-2
+  libllvm11 libltdl-dev libltdl7 liblwp-mediatypes-perl
+  liblwp-protocol-https-perl libmagic-mgc libmagic1 libmailtools-perl
+  libnet-dbus-perl libnet-http-perl libnet-smtp-ssl-perl libnet-ssleay-perl
+  libnode-dev libnode72 libnotify-bin libnotify4 libopenmpi3
+  libphobos2-ldc-shared98 libpmix-dev libpmix2 librsvg2-2 librsvg2-common
+  libsensors-config libsensors5 libsigsegv2 libtext-iconv-perl
+  libtie-ixhash-perl libtimedate-perl libtool libtry-tiny-perl libucx0
+  liburi-perl libuv1-dev libvte-2.91-0 libvte-2.91-common libvted-3-0
+  libwayland-client0 libwayland-cursor0 libwayland-egl1 libwww-perl
+  libwww-robotrules-perl libx11-protocol-perl libx11-xcb1 libxaw7
+  libxcb-dri2-0 libxcb-dri3-0 libxcb-glx0 libxcb-present0 libxcb-randr0
+  libxcb-shape0 libxcb-sync1 libxcb-xfixes0 libxcomposite1 libxcursor1
+  libxdamage1 libxfixes3 libxi6 libxinerama1 libxkbcommon0 libxkbfile1
+  libxml-parser-perl libxml-twig-perl libxml-xpathengine-perl libxmu6 libxpm4
+  libxrandr2 libxshmfence1 libxt6 libxtst6 libxv1 libxxf86dga1 libxxf86vm1 m4
+  node-abbrev node-ansi-regex node-ansi-styles node-ansistyles
+  node-are-we-there-yet node-arrify node-asap node-asynckit
+  node-balanced-match node-brace-expansion node-chownr node-clean-yaml-object
+  node-color-convert node-color-name node-commander node-core-util-is
+  node-decompress-response node-delayed-stream node-delegates node-depd
+  node-diff node-encoding node-end-of-stream node-err-code
+  node-escape-string-regexp node-fancy-log node-foreground-child
+  node-fs.realpath node-function-bind node-get-stream node-glob node-growl
+  node-has-flag node-has-unicode node-hosted-git-info node-iconv-lite
+  node-iferr node-imurmurhash node-indent-string node-inflight node-inherits
+  node-ini node-ip node-ip-regex node-is-buffer node-is-plain-obj
+  node-is-typedarray node-isarray node-isexe node-json-parse-better-errors
+  node-jsonparse node-kind-of node-lodash-packages node-lowercase-keys
+  node-lru-cache node-mimic-response node-minimatch node-minimist
+  node-minipass node-mute-stream node-negotiator node-npm-bundled node-once
+  node-osenv node-p-cancelable node-p-map node-path-is-absolute
+  node-process-nextick-args node-promise-inflight node-promise-retry
+  node-promzard node-pump node-quick-lru node-read node-readable-stream
+  node-resolve node-retry node-safe-buffer node-set-blocking node-signal-exit
+  node-slash node-slice-ansi node-source-map node-spdx-correct
+  node-spdx-exceptions node-spdx-expression-parse node-spdx-license-ids
+  node-sprintf-js node-stealthy-require node-string-decoder
+  node-supports-color node-text-table node-time-stamp node-tmatch
+  node-typedarray-to-buffer node-universalify node-util-deprecate
+  node-validate-npm-package-license node-webidl-conversions node-whatwg-fetch
+  node-wrappy node-yallist nodejs-doc openmpi-common perl-openssl-defaults
+  python3-dev python3.10-dev session-migration tilix tilix-common ubuntu-mono
+  x11-utils x11-xserver-utils xdg-utils xkb-data
+Use 'apt autoremove' to remove them.
+0 upgraded, 0 newly installed, 0 to remove and 56 not upgraded.
+[2/5] Installing ImageMagick 7.1.1-47 at /workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47
+[3/5] Installing the frozen TeX Live 2025 CDM package set
+tlmgr: setting default package repository to https://ftp.tu-chemnitz.de/pub/tug/historic/systems/texlive/2025/tlnet-final
+tlmgr: updating /workspace/.tools/omnidocbench_eval/texlive/2025/tlpkg/texlive.tlpdb
+TeX Live 2025 is frozen
+and will no longer be routinely updated.  This happens when a new
+release is made, or will be made shortly.
+
+For general status information about TeX Live, see its home page:
+https://tug.org/texlive
+
+tlmgr: package repository https://ftp.tu-chemnitz.de/pub/tug/historic/systems/texlive/2025/tlnet-final (not verified: gpg unavailable)
+tlmgr install: package already present: amsfonts
+tlmgr install: package already present: amsmath
+tlmgr install: package already present: arphic
+tlmgr install: package already present: booktabs
+tlmgr install: package already present: cjk
+tlmgr install: package already present: cjkutils
+tlmgr install: package already present: geometry
+tlmgr install: package already present: multirow
+tlmgr install: package already present: xcolor
+[1/1, ??:??/??:??] install: was [2k]
+running mktexlsr ...
+done running mktexlsr.
+tlmgr: package log updated: /workspace/.tools/omnidocbench_eval/texlive/2025/texmf-var/web2c/tlmgr.log
+tlmgr: command log updated: /workspace/.tools/omnidocbench_eval/texlive/2025/texmf-var/web2c/tlmgr-commands.log
+[4/5] Preparing the isolated Python 3.10 evaluator environment
+Python evaluator dependencies: PASS
+[5/5] Verifying exact critical versions and CDM resources
+Python 3.10.12
+pip 26.1.2 from /workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/pip (python 3.10)
+pdfTeX 3.141592653-2.6-1.40.28 (TeX Live 2025)
+kpathsea version 6.4.1
+kpathsea version 6.4.1
+Copyright 2023 Karl Berry & Olaf Weber.
+/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/cjk/texinput/CJK.sty
+/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/cjk/texinput/UTF8/c70gkai.fd
+Version: ImageMagick 7.1.1-47 Q16-HDRI aarch64 c8f4e8cb7:20250329 https://imagemagick.org
+Copyright: (C) 1999 ImageMagick Studio LLC
+9.55.0
+/workspace/venvs/omnidocbench_py310/lib/python3.10/site-packages/PIL/Image.py:1056: UserWarning: Palette images with Transparency expressed in bytes should be converted to RGBA images
+  warnings.warn(
+{
+  "bbox_count": 10,
+  "status": "pass",
+  "tex_runtime": {
+    "cjk_font": "gkai",
+    "cjk_font_fd": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/cjk/texinput/UTF8/c70gkai.fd",
+    "cjk_sty": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/cjk/texinput/CJK.sty",
+    "kpsewhich": "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/kpsewhich",
+    "kpsewhich_texmfroot": "/workspace/.tools/omnidocbench_eval/texlive/2025",
+    "pdflatex": "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/pdflatex",
+    "pdflatex_version": "pdfTeX 3.141592653-2.6-1.40.28 (TeX Live 2025)",
+    "texlive_bin_dir": "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux",
+    "texlive_root": "/workspace/.tools/omnidocbench_eval/texlive/2025",
+    "texmfcnf": "/workspace/.tools/omnidocbench_eval/texlive/2025:/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/web2c"
+  }
+}
+Runtime ready. Before evaluation, run:
+  source /workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/omnidocbench_eval_env.sh
