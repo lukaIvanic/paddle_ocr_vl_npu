@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import collections
+import faulthandler
 import json
 import multiprocessing
 import os
@@ -37,6 +38,8 @@ from typing import Any
 _DATASET: Any = None
 _PRIMARY_LATEX_TIMEOUT_SEC = "0"
 _FALLBACK_LATEX_TIMEOUT_SEC = "30"
+_PAGE_DEBUG_STACK_INTERVAL_SEC = 0.0
+_PAGE_DEBUG_IMAGE_NAME = ""
 
 
 @dataclass
@@ -74,6 +77,200 @@ def _image_name(sample: dict[str, Any]) -> str:
     return os.path.basename(sample.get("page_info", {}).get("image_path", ""))
 
 
+def _page_debug_enabled(img_name: str) -> bool:
+    return bool(
+        _PAGE_DEBUG_STACK_INTERVAL_SEC > 0
+        and (
+            not _PAGE_DEBUG_IMAGE_NAME
+            or img_name == _PAGE_DEBUG_IMAGE_NAME
+        )
+    )
+
+
+def _item_text(item: dict[str, Any]) -> str:
+    for key in ("content", "text", "latex", "html"):
+        value = item.get(key)
+        if value is not None:
+            return str(value)
+    return ""
+
+
+def _item_summary(items) -> dict[str, Any]:
+    resolved = list(items or [])
+    lengths = [len(_item_text(item)) for item in resolved]
+    categories = collections.Counter(
+        item.get("fine_category_type")
+        or item.get("category_type")
+        or ""
+        for item in resolved
+    )
+    return {
+        "items": len(resolved),
+        "content_chars": sum(lengths),
+        "empty_items": sum(length == 0 for length in lengths),
+        "largest_item_chars": max(lengths, default=0),
+        "categories": dict(sorted(categories.items())),
+    }
+
+
+def _install_matcher_debug_telemetry(img_name: str) -> None:
+    if not _page_debug_enabled(img_name):
+        return
+
+    import src.core.matching.match as matching_module
+
+    if getattr(matching_module, "_exp09_debug_telemetry_installed", False):
+        return
+    original_distance = matching_module.compute_edit_distance_matrix_new
+    original_assignment = matching_module.linear_sum_assignment
+    original_table_to_text = matching_module.table_to_text_lines
+
+    def debug_distance(gt_lines, matched_lines):
+        gt_chars = sum(len(line) for line in gt_lines)
+        pred_chars = sum(len(line) for line in matched_lines)
+        distance_calls = len(gt_lines) * len(matched_lines)
+        character_product = gt_chars * pred_chars
+        started = time.monotonic()
+        print(
+            "[page-debug-distance-begin] "
+            f"image={img_name} gt_records={len(gt_lines)} "
+            f"pred_records={len(matched_lines)} gt_chars={gt_chars} "
+            f"pred_chars={pred_chars} distance_calls={distance_calls} "
+            f"character_product={character_product}",
+            flush=True,
+        )
+        try:
+            return original_distance(gt_lines, matched_lines)
+        finally:
+            print(
+                "[page-debug-distance-end] "
+                f"image={img_name} elapsed_s={time.monotonic() - started:.6f}",
+                flush=True,
+            )
+
+    def debug_assignment(cost_matrix):
+        started = time.monotonic()
+        print(
+            "[page-debug-assignment-begin] "
+            f"image={img_name} shape={tuple(cost_matrix.shape)}",
+            flush=True,
+        )
+        try:
+            return original_assignment(cost_matrix)
+        finally:
+            print(
+                "[page-debug-assignment-end] "
+                f"image={img_name} elapsed_s={time.monotonic() - started:.6f}",
+                flush=True,
+            )
+
+    def debug_table_to_text(content):
+        raw = str(content or "")
+        started = time.monotonic()
+        print(
+            "[page-debug-table-to-text-begin] "
+            f"image={img_name} input_chars={len(raw)} "
+            f"table_tags={raw.lower().count('<table')} "
+            f"tr_tags={raw.lower().count('<tr')} "
+            f"td_tags={raw.lower().count('<td')}",
+            flush=True,
+        )
+        try:
+            lines = original_table_to_text(content)
+            return lines
+        finally:
+            if "lines" in locals():
+                line_chars = sum(len(str(line or "")) for line in lines)
+                empty_lines = sum(not str(line or "") for line in lines)
+                line_count = len(lines)
+            else:
+                line_chars = -1
+                empty_lines = -1
+                line_count = -1
+            print(
+                "[page-debug-table-to-text-end] "
+                f"image={img_name} elapsed_s={time.monotonic() - started:.6f} "
+                f"lines={line_count} line_chars={line_chars} "
+                f"empty_lines={empty_lines}",
+                flush=True,
+            )
+
+    matching_module.compute_edit_distance_matrix_new = debug_distance
+    matching_module.linear_sum_assignment = debug_assignment
+    matching_module.table_to_text_lines = debug_table_to_text
+    matching_module._exp09_debug_telemetry_installed = True
+
+
+def _install_page_parser_debug_telemetry(img_name: str) -> None:
+    if not _page_debug_enabled(img_name):
+        return
+
+    import src.dataset.end2end_dataset as dataset_module
+
+    if getattr(dataset_module, "_exp09_parser_debug_installed", False):
+        return
+    original_md_tex_filter = dataset_module.md_tex_filter
+    original_simple_match = dataset_module.match_gt2pred_simple
+
+    def debug_md_tex_filter(pred_content):
+        raw = str(pred_content or "")
+        started = time.monotonic()
+        print(
+            "[page-debug-md-filter-begin] "
+            f"image={img_name} input_chars={len(raw)} "
+            f"input_bytes={len(raw.encode('utf-8'))} "
+            f"table_tags={raw.lower().count('<table')} "
+            f"tr_tags={raw.lower().count('<tr')} "
+            f"td_tags={raw.lower().count('<td')}",
+            flush=True,
+        )
+        try:
+            parsed = original_md_tex_filter(pred_content)
+            return parsed
+        finally:
+            if "parsed" in locals():
+                summary = {
+                    category: _item_summary(items)
+                    for category, items in parsed.items()
+                }
+            else:
+                summary = {"error_before_result": True}
+            print(
+                "[page-debug-md-filter-end] "
+                f"image={img_name} elapsed_s={time.monotonic() - started:.6f} "
+                f"summary={json.dumps(summary, ensure_ascii=False, separators=(',', ':'))}",
+                flush=True,
+            )
+
+    def debug_simple_match(gt_items, pred_items, line_type, match_img_name):
+        started = time.monotonic()
+        print(
+            "[page-debug-simple-match-begin] "
+            f"image={match_img_name} line_type={line_type} "
+            f"gt={json.dumps(_item_summary(gt_items), ensure_ascii=False, separators=(',', ':'))} "
+            f"pred={json.dumps(_item_summary(pred_items), ensure_ascii=False, separators=(',', ':'))}",
+            flush=True,
+        )
+        try:
+            return original_simple_match(
+                gt_items,
+                pred_items,
+                line_type,
+                match_img_name,
+            )
+        finally:
+            print(
+                "[page-debug-simple-match-end] "
+                f"image={match_img_name} line_type={line_type} "
+                f"elapsed_s={time.monotonic() - started:.6f}",
+                flush=True,
+            )
+
+    dataset_module.md_tex_filter = debug_md_tex_filter
+    dataset_module.match_gt2pred_simple = debug_simple_match
+    dataset_module._exp09_parser_debug_installed = True
+
+
 def _install_timeout_safe_matcher() -> None:
     import src.dataset.end2end_dataset as dataset_module
     from src.core.matching import match_gt2pred_timeout_safe
@@ -93,6 +290,14 @@ def _install_timeout_safe_matcher() -> None:
         split_pred_formula=True,
     ):
         del line_type, truncated_timeout_sec, split_pred_formula
+        _install_matcher_debug_telemetry(img_name)
+        print(
+            "[page-debug-fallback-input] "
+            f"image={img_name} "
+            f"gt={json.dumps(_item_summary(gt_items), ensure_ascii=False, separators=(',', ':'))} "
+            f"pred={json.dumps(_item_summary(pred_items), ensure_ascii=False, separators=(',', ':'))}",
+            flush=True,
+        )
         return match_gt2pred_timeout_safe(
             gt_items,
             pred_items,
@@ -110,7 +315,21 @@ def _install_timeout_safe_matcher() -> None:
 
 
 def _page_process_entry(sender, task: _PageTask, pred_folder: str) -> None:
+    img_name = _image_name(task.sample)
+    debug_stack = _page_debug_enabled(img_name)
     try:
+        if debug_stack:
+            faulthandler.enable()
+            faulthandler.dump_traceback_later(
+                _PAGE_DEBUG_STACK_INTERVAL_SEC,
+                repeat=True,
+            )
+            print(
+                "[page-debug-stack-enabled] "
+                f"image={_image_name(task.sample)} mode={task.mode} "
+                f"interval_s={_PAGE_DEBUG_STACK_INTERVAL_SEC:g}",
+                flush=True,
+            )
         if task.mode == "fallback":
             os.environ["OMNIDOCBENCH_LATEX_TO_TEXT_TIMEOUT_SEC"] = (
                 _FALLBACK_LATEX_TIMEOUT_SEC
@@ -120,6 +339,9 @@ def _page_process_entry(sender, task: _PageTask, pred_folder: str) -> None:
             os.environ["OMNIDOCBENCH_LATEX_TO_TEXT_TIMEOUT_SEC"] = (
                 _PRIMARY_LATEX_TIMEOUT_SEC
             )
+        if debug_stack:
+            _install_matcher_debug_telemetry(img_name)
+            _install_page_parser_debug_telemetry(img_name)
         page_result = _DATASET._match_single_page(
             task.index,
             task.sample,
@@ -129,6 +351,8 @@ def _page_process_entry(sender, task: _PageTask, pred_folder: str) -> None:
     except BaseException:
         sender.send(("error", traceback.format_exc()))
     finally:
+        if debug_stack:
+            faulthandler.cancel_dump_traceback_later()
         sender.close()
 
 
@@ -670,6 +894,20 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--fallback-timeout-sec", type=float, default=180.0)
     parser.add_argument("--fallback-latex-timeout-sec", type=float, default=30.0)
     parser.add_argument(
+        "--page-debug-stack-interval-sec",
+        type=float,
+        default=0.0,
+        help=(
+            "Dump the selected page child process stack at this interval; "
+            "zero disables diagnostic stack dumps."
+        ),
+    )
+    parser.add_argument(
+        "--page-debug-image-name",
+        default="",
+        help="Restrict page diagnostics to this image basename.",
+    )
+    parser.add_argument(
         "--teds-only-input",
         help="Recompute TEDS from an existing matched table-result JSON.",
     )
@@ -682,6 +920,8 @@ def _parse_args() -> argparse.Namespace:
 
 def main() -> None:
     global _FALLBACK_LATEX_TIMEOUT_SEC
+    global _PAGE_DEBUG_IMAGE_NAME
+    global _PAGE_DEBUG_STACK_INTERVAL_SEC
     args = _parse_args()
     if args.match_workers <= 0 or args.teds_workers <= 0:
         raise ValueError("worker counts must be positive")
@@ -689,6 +929,8 @@ def main() -> None:
         raise ValueError("page timeouts must be positive")
     if args.teds_timeout_sec <= 0:
         raise ValueError("TEDS timeout must be positive")
+    if args.page_debug_stack_interval_sec < 0:
+        raise ValueError("page debug stack interval must be non-negative")
     if bool(args.teds_only_input) != bool(args.teds_only_output_dir):
         raise ValueError(
             "--teds-only-input and --teds-only-output-dir must be used together"
@@ -714,6 +956,10 @@ def main() -> None:
         args.fallback_timeout_sec
     )
     _FALLBACK_LATEX_TIMEOUT_SEC = str(args.fallback_latex_timeout_sec)
+    _PAGE_DEBUG_STACK_INTERVAL_SEC = float(
+        args.page_debug_stack_interval_sec
+    )
+    _PAGE_DEBUG_IMAGE_NAME = os.path.basename(args.page_debug_image_name)
 
     from src.core.pipeline import load_config, run_config
     from src.dataset.end2end_dataset import End2EndDataset

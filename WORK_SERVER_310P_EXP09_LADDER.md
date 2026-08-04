@@ -23566,3 +23566,150 @@ Return only the exact `310P PHASE 57R: ...` sentence.  Do not paste the large
 prediction, token stream, evaluator log, or repetition report unless every lane
 fails.  Do not rerun the full evaluation yet; the passing span is evidence for
 the next full-evaluation command.  Then stop.
+
+## Phase 57D: locate the 600-second single-page evaluator stall
+
+Run this after all Phase-57R spans and a separate 600-second isolated attempt
+time out on `book_zh_DLT10902008_extracted_page_8.png`.  Do not try a longer
+timeout.  Do not rerun inference.  The fallback resolver clamps
+`max_chunk_span` to 32, so the nominal Phase-57R span-64 lane was effectively
+another span-32 lane; that does not explain where the time is spent.
+
+This diagnostic adds no score fallback and changes no matching result.  It
+forces the known fallback after one second and traces the actual prediction
+through raw Markdown, ``md_tex_filter``, table matching, table-to-text
+expansion, bounded-fallback item construction, Levenshtein, and Hungarian
+assignment.  It also dumps the child stack every 20 seconds.  Ninety seconds
+is enough to identify the blocking transformation or function.
+
+A 910B-side synthetic control using the reported page totals established the
+scale of the matrix work itself.  It deliberately retained all 22 GT items and
+all 12,410 predicted elements, including the 11,611 semantically empty
+``<td>`` cells; nothing was discarded.  With 368 total normalized GT
+characters and 750,000 total prediction characters, that is 273,020
+Levenshtein calls and 276,000,000 classical dynamic-programming character
+pairs.  The exact randomized Levenshtein loop took 0.448 s, its 22 x 12,410
+float64 matrix occupied 2.08 MiB, and Hungarian assignment took 0.0045 s.
+Therefore a missing ``page-debug-distance-begin`` marker or a quick matching
+``distance-end`` proves the 600-second stall is elsewhere; do not attribute it
+to the nominal all-pairs calculation alone.
+
+A second control modified this exact 910B page prediction by inserting 12,410
+literal empty ``<td></td>`` cells into its existing table.  The real parser
+finished in 0.475 s, page matching in 1.73 s, TEDS in 12.03 s, and the complete
+one-page evaluation passed.  A valid large empty-cell table is therefore not a
+reproduction.  The work-server diagnostic must locate how the actual
+2,586-token output becomes 12,410+ prediction items carrying 750,000+
+characters; report the transformation, not merely that the final evaluation
+timed out.
+
+```sh
+set -euo pipefail
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git pull --ff-only origin main
+test -z "$(git status --porcelain)"
+
+PAGE=book_zh_DLT10902008_extracted_page_8.png
+EVAL_WRAPPER="$WORK_SERVER_REPO/09_persistent_page_engine/scripts/run_omnidocbench_eval.py"
+CDM_ROOT=tmp/09_persistent_page_engine/310p_phase56_cdm
+test -s "$CDM_ROOT/runtime_paths.env"
+. "$CDM_ROOT/runtime_paths.env"
+EVAL_PYTHON="$OMNIDOCBENCH_EVAL_PYTHON"
+EVALUATOR_ROOT="$OMNIDOCBENCH_EVALUATOR_ROOT"
+test -x "$EVAL_PYTHON"
+test -f "$EVALUATOR_ROOT/pdf_validation.py"
+
+RECOVERY="$(/usr/local/python3.12.13/bin/python - <<'PY'
+from pathlib import Path
+roots = [
+    path for path in Path("tmp/09_persistent_page_engine").glob(
+        "310p_phase57_cap4096_b64_pse_*/phase57r_single_page_*"
+    )
+    if (path / "input" / "ground_truth.json").is_file()
+]
+if not roots:
+    raise SystemExit("no Phase-57R single-page input found")
+print(max(roots, key=lambda path: path.stat().st_mtime))
+PY
+)"
+test -s "$RECOVERY/input/ground_truth.json"
+test -s "$RECOVERY/input/predictions/${PAGE%.png}.md"
+
+SHORT="$(git rev-parse --short HEAD)"
+LANE="$RECOVERY/stack_diagnostic_${SHORT}"
+test ! -e "$LANE"
+mkdir -p "$LANE/work"
+cat >"$LANE/work/config.yaml" <<EOF
+end2end_eval:
+  metrics:
+    text_block:
+      metric: [Edit_dist]
+    display_formula:
+      metric: [Edit_dist]
+    table:
+      metric: [TEDS, Edit_dist]
+      teds_workers: 1
+    reading_order:
+      metric: [Edit_dist]
+  dataset:
+    dataset_name: end2end_dataset
+    ground_truth:
+      data_path: $(realpath "$RECOVERY/input/ground_truth.json")
+    prediction:
+      data_path: $(realpath "$RECOVERY/input/predictions")
+    match_method: quick_match
+    match_workers: 1
+    quick_match_truncated_timeout_sec: 300
+    match_timeout_sec: 420
+    timeout_fallback_max_chunk_span: 10
+    timeout_fallback_order_penalty: 0.10
+EOF
+
+SECONDS=0
+set +e
+set -o pipefail
+(
+  cd "$LANE/work"
+  PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 110 \
+    "$EVAL_PYTHON" "$EVAL_WRAPPER" \
+    --config config.yaml --evaluator-root "$EVALUATOR_ROOT" \
+    --match-workers 1 --teds-workers 1 \
+    --page-timeout-sec 1 --fallback-timeout-sec 90 \
+    --fallback-latex-timeout-sec 30 --teds-timeout-sec 120 \
+    --page-debug-image-name "$PAGE" \
+    --page-debug-stack-interval-sec 20
+) 2>&1 | tee "$LANE/run.log"
+ec="${PIPESTATUS[0]}"
+set -e
+printf '%s\n' "$ec" >"$LANE/exit_code.txt"
+printf '%s\n' "$SECONDS" >"$LANE/wall_s.txt"
+
+grep -E '^\[page-debug|^\[timeout-fallback' "$LANE/run.log" \
+  | tee "$LANE/telemetry.log" || true
+grep -A40 '^Timeout (0:' "$LANE/run.log" \
+  | tail -n 120 | tee "$LANE/stack_tail.log" || true
+test -s "$LANE/stack_tail.log"
+```
+
+Read `telemetry.log` and `stack_tail.log`; do not speculate from the outer
+timeout alone.  Return a maximum five-sentence report containing:
+
+1. Raw prediction characters/bytes and literal table/row/cell tag counts from
+   `page-debug-md-filter-begin`.
+2. The per-category item counts, empty-item counts, content-character totals,
+   and largest item from `page-debug-md-filter-end`.
+3. The table matcher input summaries and whether `table-to-text` began/ended;
+   if it ended, include its line count, empty-line count, and character total.
+4. The bounded fallback input item summaries and the exact `gt_records`,
+   `pred_records`, `gt_chars`, `pred_chars`, `distance_calls`, and
+   `character_product`; state which begin/end marker was the last one reached.
+5. The deepest repeated stack frame (`file`, `line`, `function`) and artifact
+   path, followed by one mechanical sentence naming the exact transformation
+   that first expands the data.  If the expansion is not reached before the
+   stall, say so explicitly rather than guessing.
+
+The expected process exit is nonzero because the diagnostic deliberately stops
+after 90 seconds.  A nonzero exit is not the result; the telemetry and stack are
+the result.  Do not rerun evaluation or modify evaluator/model source.  Then
+stop.
