@@ -79,6 +79,7 @@ class OwnedPageEngine:
         min_pixels: int | None,
         max_pixels: int | None = None,
         text_max_pixels: int | None = None,
+        table_max_pixels: int | None = None,
         text_crop_scale: float = 1.0,
         layout_workers: int = 1,
         timeline: TimelineRecorder | None = None,
@@ -89,6 +90,7 @@ class OwnedPageEngine:
         self.min_pixels = min_pixels
         self.max_pixels = max_pixels
         self.text_max_pixels = text_max_pixels
+        self.table_max_pixels = table_max_pixels
         self.text_crop_scale = float(text_crop_scale)
         if layout_workers not in (1, 2, 4, 8):
             raise ValueError("layout_workers must be 1, 2, 4, or 8")
@@ -392,6 +394,7 @@ class OwnedPageEngine:
                         else 1_003_520
                     ),
                     text_max_pixels=self.text_max_pixels,
+                    table_max_pixels=self.table_max_pixels,
                     text_crop_scale=self.text_crop_scale,
                 )
             layout_stream.synchronize()
@@ -479,6 +482,7 @@ class OwnedPageEngine:
                                 else 1_003_520
                             ),
                             text_max_pixels=self.text_max_pixels,
+                            table_max_pixels=self.table_max_pixels,
                             text_crop_scale=self.text_crop_scale,
                         )
                     )

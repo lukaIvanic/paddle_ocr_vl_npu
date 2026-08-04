@@ -158,6 +158,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--table-preprocessor-max-pixels",
+        type=int,
+        default=None,
+        help=(
+            "Override max_pixels only for Table Recognition: requests; all "
+            "other prompts keep their normal pixel profile."
+        ),
+    )
+    parser.add_argument(
         "--text-crop-scale",
         type=float,
         default=1.0,
@@ -443,6 +452,11 @@ def validate_args(args: argparse.Namespace) -> None:
         and args.text_preprocessor_max_pixels <= 0
     ):
         raise ValueError("--text-preprocessor-max-pixels must be positive")
+    if (
+        args.table_preprocessor_max_pixels is not None
+        and args.table_preprocessor_max_pixels <= 0
+    ):
+        raise ValueError("--table-preprocessor-max-pixels must be positive")
     effective_min_pixels = (
         args.preprocessor_min_pixels
         if args.preprocessor_min_pixels is not None
@@ -454,6 +468,14 @@ def validate_args(args: argparse.Namespace) -> None:
     ):
         raise ValueError(
             "--text-preprocessor-max-pixels must not be smaller than the "
+            f"effective min_pixels ({effective_min_pixels})"
+        )
+    if (
+        args.table_preprocessor_max_pixels is not None
+        and args.table_preprocessor_max_pixels < effective_min_pixels
+    ):
+        raise ValueError(
+            "--table-preprocessor-max-pixels must not be smaller than the "
             f"effective min_pixels ({effective_min_pixels})"
         )
     if not 0.0 < args.text_crop_scale <= 1.0:
@@ -785,6 +807,7 @@ def main() -> None:
         min_pixels=args.preprocessor_min_pixels,
         max_pixels=args.preprocessor_max_pixels,
         text_max_pixels=args.text_preprocessor_max_pixels,
+        table_max_pixels=args.table_preprocessor_max_pixels,
         text_crop_scale=args.text_crop_scale,
         layout_workers=args.layout_workers,
         timeline=timeline,

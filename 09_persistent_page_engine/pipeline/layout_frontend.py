@@ -543,6 +543,7 @@ class OwnedLayoutFrontend:
         min_pixels: int | None = None,
         max_pixels: int = 1_003_520,
         text_max_pixels: int | None = None,
+        table_max_pixels: int | None = None,
         text_crop_scale: float = 1.0,
     ) -> PreparedLayoutPage:
         return self.prepare_decoded_page(
@@ -550,6 +551,7 @@ class OwnedLayoutFrontend:
             min_pixels=min_pixels,
             max_pixels=max_pixels,
             text_max_pixels=text_max_pixels,
+            table_max_pixels=table_max_pixels,
             text_crop_scale=text_crop_scale,
         )
 
@@ -560,6 +562,7 @@ class OwnedLayoutFrontend:
         min_pixels: int | None = None,
         max_pixels: int = 1_003_520,
         text_max_pixels: int | None = None,
+        table_max_pixels: int | None = None,
         text_crop_scale: float = 1.0,
     ) -> PreparedLayoutPage:
         return self.prepare_detected_page(
@@ -567,6 +570,7 @@ class OwnedLayoutFrontend:
             min_pixels=min_pixels,
             max_pixels=max_pixels,
             text_max_pixels=text_max_pixels,
+            table_max_pixels=table_max_pixels,
             text_crop_scale=text_crop_scale,
         )
 
@@ -668,6 +672,7 @@ class OwnedLayoutFrontend:
         min_pixels: int | None = None,
         max_pixels: int = 1_003_520,
         text_max_pixels: int | None = None,
+        table_max_pixels: int | None = None,
         text_crop_scale: float = 1.0,
     ) -> PreparedLayoutPage:
         decoded = detected.decoded
@@ -724,10 +729,16 @@ class OwnedLayoutFrontend:
 
         effective_min_pixels = int(min_pixels or 112_896)
         effective_text_max_pixels = int(text_max_pixels or max_pixels)
+        effective_table_max_pixels = int(table_max_pixels or max_pixels)
         if effective_text_max_pixels < effective_min_pixels:
             raise ValueError(
                 "text max_pixels must not be smaller than min_pixels: "
                 f"min={effective_min_pixels} max={effective_text_max_pixels}"
+            )
+        if effective_table_max_pixels < effective_min_pixels:
+            raise ValueError(
+                "table max_pixels must not be smaller than min_pixels: "
+                f"min={effective_min_pixels} max={effective_table_max_pixels}"
             )
         if not 0.0 < text_crop_scale <= 1.0:
             raise ValueError(
@@ -806,7 +817,11 @@ class OwnedLayoutFrontend:
                     max_pixels=(
                         effective_text_max_pixels
                         if prompt == "OCR:"
-                        else int(max_pixels)
+                        else (
+                            effective_table_max_pixels
+                            if prompt == "Table Recognition:"
+                            else int(max_pixels)
+                        )
                     ),
                     source_crop_size=source_crop_size,
                 )
