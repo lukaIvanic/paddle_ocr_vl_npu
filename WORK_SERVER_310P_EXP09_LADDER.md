@@ -22470,3 +22470,236 @@ not improvise or install an alternative package set; the next pushed revision
 will address the exact reported blocker.  On `PASS`, do not score the saved
 formulas yet; Phase 56C will do a tiny timing pilot and then the full direct CDM
 run without rerunning OCR or matching.
+
+## Phase 56C: validate and score the saved full-run formulas
+
+Run this only after Phase 56B reports `CDM_INSTALL PASS`.  It does **not** run
+OCR, layout, page matching, TEDS, or the full evaluator.  It first scores 32
+already-matched formulas as a bounded functional/timing pilot, then scores the
+complete formula match artifact from the newest successful 1,651-page 310P
+run.  It reports both the per-formula diagnostic CDM and the page-level CDM
+used by OmniDocBench's official Overall formula.
+
+Pull `main`, require a clean checkout, and run this exact block from the
+repository root:
+
+```sh
+set -eu
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git pull --ff-only origin main
+test -z "$(git status --porcelain)"
+
+ROOT=tmp/09_persistent_page_engine/310p_phase56_cdm
+RUNTIME_ENV="$ROOT/runtime_paths.env"
+test -s "$RUNTIME_ENV"
+. "$RUNTIME_ENV"
+
+PY="$OMNIDOCBENCH_EVAL_PYTHON"
+EVALUATOR_ROOT="$OMNIDOCBENCH_EVALUATOR_ROOT"
+RUNNER=09_persistent_page_engine/scripts/run_cdm_from_matched_formulas.py
+test -x "$PY"
+test -f "$EVALUATOR_ROOT/pdf_validation.py"
+test -f "$RUNNER"
+
+# Prefer the newest completed Phase 55 run, then Phase 54, then Phase 52.
+# Require the associated pipeline and metric artifacts to prove this is a full
+# 1,651-page result rather than a smoke or partial run.
+"$PY" - "$WORK_SERVER_REPO" "$ROOT/matched_path.txt" <<'PY'
+import json
+import pathlib
+import sys
+
+repo = pathlib.Path(sys.argv[1])
+output = pathlib.Path(sys.argv[2])
+patterns = (
+    "tmp/09_persistent_page_engine/310p_phase55_dense768_*/full/evaluation/work/result/predictions_quick_match_display_formula_result.json",
+    "tmp/09_persistent_page_engine/310p_phase54_b64_pse_layout8_*/full/evaluation/work/result/predictions_quick_match_display_formula_result.json",
+    "tmp/09_persistent_page_engine/310p_phase52_opt_kv2048_*/evaluation/work/result/predictions_quick_match_display_formula_result.json",
+    "tmp/09_persistent_page_engine/310p_phase52_opt_kv2048_*/full/evaluation/work/result/predictions_quick_match_display_formula_result.json",
+)
+selected = None
+for pattern in patterns:
+    candidates = sorted(
+        repo.glob(pattern), key=lambda path: path.stat().st_mtime, reverse=True
+    )
+    for matched in candidates:
+        metric = matched.with_name(
+            matched.name.replace("_display_formula_result", "_metric_result")
+        )
+        full_root = matched.parents[3]
+        run_summary = full_root / "output" / "run_summary.json"
+        if not run_summary.is_file() or not metric.is_file():
+            continue
+        run = json.loads(run_summary.read_text())
+        samples = json.loads(matched.read_text())
+        if (
+            run.get("result_count") == 1651
+            and run.get("prediction_count") == 1651
+            and isinstance(samples, list)
+            and len(samples) > 1000
+        ):
+            selected = matched.resolve()
+            break
+    if selected is not None:
+        break
+if selected is None:
+    raise SystemExit("no completed 1651-page matched-formula artifact found")
+output.parent.mkdir(parents=True, exist_ok=True)
+output.write_text(str(selected) + "\n")
+print(f"CDM_CORPUS selected={selected}")
+PY
+
+MATCHED="$(cat "$ROOT/matched_path.txt")"
+METRIC="${MATCHED%_display_formula_result.json}_metric_result.json"
+test -s "$MATCHED"
+test -s "$METRIC"
+
+nproc_count="$(nproc)"
+mem_gib="$(awk '/MemAvailable:/ {printf "%d", $2/1024/1024}' /proc/meminfo)"
+PILOT_WORKERS="$nproc_count"
+test "$PILOT_WORKERS" -le 16 || PILOT_WORKERS=16
+FULL_WORKERS="$nproc_count"
+test "$FULL_WORKERS" -le 96 || FULL_WORKERS=96
+mem_workers="$((mem_gib / 2))"
+test "$mem_workers" -ge 1 || mem_workers=1
+test "$FULL_WORKERS" -le "$mem_workers" || FULL_WORKERS="$mem_workers"
+
+PILOT="$ROOT/pilot32"
+FULL="$ROOT/full"
+rm -rf "$PILOT" "$FULL"
+mkdir -p "$PILOT" "$FULL"
+
+SECONDS=0
+set +e
+set -o pipefail
+PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=20s 300 \
+  "$PY" "$RUNNER" \
+  --input "$MATCHED" --output-dir "$PILOT" \
+  --evaluator-root "$EVALUATOR_ROOT" --workers "$PILOT_WORKERS" \
+  --sample-limit 32 \
+  2>&1 | tee "$PILOT/run.log"
+pilot_ec="${PIPESTATUS[0]}"
+set -e
+printf '%s\n' "$pilot_ec" >"$PILOT/exit_code.txt"
+printf '%s\n' "$SECONDS" >"$PILOT/outer_wall_s.txt"
+
+if test "$pilot_ec" -ne 0; then
+  last="$(tail -n 3 "$PILOT/run.log" | tr '\n' ' ' | tr -s ' ' | cut -c1-300)"
+  printf '%s\n' \
+    "CDM_FULL FAIL stage=pilot exit=$pilot_ec last=$last" \
+    | tee "$ROOT/full_sentence.txt"
+  exit 0
+fi
+
+"$PY" - "$PILOT/cdm_run_summary.json" <<'PY'
+import json
+import sys
+s = json.load(open(sys.argv[1]))
+assert s["sample_count"] == 32, s
+assert s["debug"]["exception_case_count"] == 0, s["debug"]
+assert s["debug"]["timeout_case_count"] == 0, s["debug"]
+score = float(s["scores"]["CDM"]["all"])
+assert 0.0 <= score <= 1.0, score
+print(
+    f"CDM_PILOT PASS samples=32 score={score:.6f} "
+    f"wall_s={s['wall_s']:.3f} workers={s['workers']}"
+)
+PY
+
+SECONDS=0
+STATUS_FILE="$FULL/exit_code.txt"
+rm -f "$STATUS_FILE"
+(
+  set +e
+  set -o pipefail
+  PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 1800 \
+    "$PY" "$RUNNER" \
+    --input "$MATCHED" --output-dir "$FULL" \
+    --evaluator-root "$EVALUATOR_ROOT" --workers "$FULL_WORKERS" \
+    2>&1 | tee "$FULL/run.log"
+  printf '%s\n' "${PIPESTATUS[0]}" >"$STATUS_FILE"
+) &
+full_pid="$!"
+(
+  while sleep 30; do
+    kill -0 "$full_pid" 2>/dev/null || exit 0
+    bytes="$(wc -c <"$FULL/run.log" 2>/dev/null || printf 0)"
+    last="$(tail -n 1 "$FULL/run.log" 2>/dev/null | tr '\r\n' ' ' | tr -s ' ' | cut -c1-180)"
+    printf '%s\n' \
+      "CDM_PROGRESS utc=$(date -u +%H:%M:%S) elapsed_s=$SECONDS log_bytes=$bytes last=$last"
+  done
+) &
+heartbeat_pid="$!"
+wait "$full_pid" || true
+kill "$heartbeat_pid" 2>/dev/null || true
+wait "$heartbeat_pid" 2>/dev/null || true
+full_ec="$(cat "$STATUS_FILE")"
+printf '%s\n' "$SECONDS" >"$FULL/outer_wall_s.txt"
+
+if test "$full_ec" -ne 0; then
+  last="$(tail -n 3 "$FULL/run.log" | tr '\n' ' ' | tr -s ' ' | cut -c1-300)"
+  printf '%s\n' \
+    "CDM_FULL FAIL stage=full exit=$full_ec wall_s=$SECONDS last=$last" \
+    | tee "$ROOT/full_sentence.txt"
+  exit 0
+fi
+
+"$PY" - "$FULL/cdm_run_summary.json" "$METRIC" "$ROOT/final_summary.json" <<'PY'
+import json
+import pathlib
+import sys
+
+summary_path, metric_path, output_path = map(pathlib.Path, sys.argv[1:])
+summary = json.loads(summary_path.read_text())
+metric = json.loads(metric_path.read_text())
+evaluated = json.loads(pathlib.Path(summary["evaluated_samples"]).read_text())
+assert summary["sample_count"] == len(evaluated) > 1000
+assert summary["debug"]["exception_case_count"] == 0, summary["debug"]
+assert summary["debug"]["timeout_case_count"] == 0, summary["debug"]
+
+by_page = {}
+for sample in evaluated:
+    by_page.setdefault(sample["img_id"], []).append(
+        float(sample["metric"]["CDM"])
+    )
+sample_cdm = sum(value for values in by_page.values() for value in values) / len(evaluated)
+page_cdm = sum(sum(values) / len(values) for values in by_page.values()) / len(by_page)
+reported_sample = float(summary["scores"]["CDM"]["all"])
+assert abs(sample_cdm - reported_sample) < 1e-12
+
+text_edit = float(metric["text_block"]["all"]["Edit_dist"]["ALL_page_avg"])
+page_teds = float(metric["table"]["page"]["TEDS"]["ALL"])
+overall = ((1.0 - text_edit) + page_cdm + page_teds) / 3.0
+out = {
+    "matched_input": summary["input"],
+    "samples": len(evaluated),
+    "formula_pages": len(by_page),
+    "workers": summary["workers"],
+    "wall_s": summary["wall_s"],
+    "samples_per_s": summary["samples_per_s"],
+    "sample_cdm": sample_cdm,
+    "page_cdm": page_cdm,
+    "text_edit": text_edit,
+    "page_teds": page_teds,
+    "official_overall": overall,
+    "exceptions": summary["debug"]["exception_case_count"],
+    "timeouts": summary["debug"]["timeout_case_count"],
+}
+output_path.write_text(json.dumps(out, indent=2, sort_keys=True) + "\n")
+print(
+    "CDM_FULL PASS "
+    f"samples={out['samples']} pages={out['formula_pages']} "
+    f"sample_cdm={out['sample_cdm']:.6f} page_cdm={out['page_cdm']:.6f} "
+    f"text_edit={out['text_edit']:.6f} page_teds={out['page_teds']:.6f} "
+    f"official_overall={100*out['official_overall']:.4f} "
+    f"wall_s={out['wall_s']:.3f} workers={out['workers']} "
+    "errors=0 timeouts=0"
+)
+PY
+```
+
+Return exactly the `CDM_PILOT ...` sentence as soon as it appears, then return
+exactly the final `CDM_FULL ...` sentence when the full run finishes.  Do not
+paste logs or JSON unless either sentence says `FAIL`.  Do not rerun OCR,
+matching, TEDS, or another formula corpus.  Then stop.
