@@ -58,6 +58,7 @@ MODES = (
     "profile",
     "torch_profile",
     "boundary",
+    "tail_invariance",
     "replay",
     "correctness",
 )
@@ -88,6 +89,20 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--active-slots", type=int)
     parser.add_argument("--profile-position", type=int, default=1024)
+    parser.add_argument(
+        "--tail-positions",
+        default="64,80,113",
+        help=(
+            "Comma-separated non-boundary cache positions for "
+            "tail_invariance mode."
+        ),
+    )
+    parser.add_argument(
+        "--tail-canary-value",
+        type=float,
+        default=0.25,
+        help="Value written only into masked KV-tail positions.",
+    )
     parser.add_argument(
         "--profile-dir",
         type=Path,
@@ -135,6 +150,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("--active-slots must be in [1, batch-size]")
     if args.profile_position < 0:
         parser.error("--profile-position must be non-negative")
+    try:
+        args.tail_positions = tuple(
+            int(value) for value in args.tail_positions.split(",") if value
+        )
+    except ValueError:
+        parser.error("--tail-positions must be comma-separated integers")
+    if not args.tail_positions:
+        parser.error("--tail-positions must not be empty")
+    if any(position < 0 for position in args.tail_positions):
+        parser.error("--tail-positions must be non-negative")
     if args.correctness_items <= 0 or args.correctness_items > args.batch_size:
         parser.error("--correctness-items must be in [1, batch-size]")
     if args.correctness_steps <= 0:
@@ -702,6 +727,202 @@ class TextDecodeLab:
             "model_and_argmax_device_s": model_and_argmax_s,
         }
 
+    def tail_invariance(self) -> dict[str, Any]:
+        """Prove whether masked KV-tail contents can affect compiled decode.
+
+        Every compared lane has identical tokens, cache positions, RoPE deltas,
+        and valid KV prefixes.  Only positions strictly after each row's
+        current cache position differ.  The decode graph overwrites the current
+        position before attention, so those differing values are all masked.
+        """
+
+        positions_to_test = tuple(int(value) for value in self.args.tail_positions)
+        if any(position >= self.args.cache_length - 1 for position in positions_to_test):
+            raise ValueError("tail test positions must leave a non-empty KV tail")
+        pse_boundaries = tuple(
+            position
+            for position in positions_to_test
+            if (position + 1) % 1280 == 0
+        )
+        if pse_boundaries:
+            raise ValueError(
+                "tail invariance deliberately excludes PSE-sentinel boundaries: "
+                f"{pse_boundaries}"
+            )
+
+        cache = self.model.allocate_static_cache(
+            batch_size=self.args.batch_size,
+            cache_length=self.args.cache_length,
+            device=self.device,
+            dtype=self.dtype,
+            init_mode="zeros",
+            num_key_value_heads=self.runtime.cache_num_key_value_heads,
+        )
+        input_ids = (
+            torch.arange(
+                1,
+                self.args.batch_size + 1,
+                device=self.device,
+                dtype=torch.int64,
+            )
+            % int(self.model.config.vocab_size)
+        ).view(-1, 1)
+        rope_deltas = torch.zeros(
+            (self.args.batch_size, 1),
+            device=self.device,
+            dtype=torch.int64,
+        )
+        physical_positions = torch.arange(
+            self.args.cache_length,
+            device=self.device,
+            dtype=torch.int64,
+        ).view(1, 1, self.args.cache_length, 1)
+
+        def reset_cache() -> None:
+            for tensor in cache.flat_tensors():
+                tensor.zero_()
+
+        def set_masked_tail(
+            cache_positions: torch.Tensor,
+            *,
+            rows: str,
+        ) -> None:
+            tail_mask = physical_positions > cache_positions.view(-1, 1, 1, 1)
+            if rows == "row0":
+                row_mask = torch.zeros(
+                    (self.args.batch_size, 1, 1, 1),
+                    device=self.device,
+                    dtype=torch.bool,
+                )
+                row_mask[0].fill_(True)
+                tail_mask = tail_mask & row_mask
+            elif rows != "all":
+                raise ValueError(f"unknown tail row selection: {rows}")
+            for tensor in cache.flat_tensors():
+                tensor.masked_fill_(tail_mask, self.args.tail_canary_value)
+
+        def execute(cache_positions: torch.Tensor) -> torch.Tensor:
+            logits = self.runtime.fn(
+                input_ids,
+                cache_positions,
+                rope_deltas,
+                *cache.flat_tensors(),
+            )
+            synchronize(self.device)
+            return logits[:, -1, :].float().cpu()
+
+        def compare(
+            reference: torch.Tensor,
+            candidate: torch.Tensor,
+        ) -> dict[str, Any]:
+            diff = (candidate - reference).abs()
+            reference_top1 = torch.argmax(reference, dim=-1)
+            candidate_top1 = torch.argmax(candidate, dim=-1)
+            per_row_max = diff.amax(dim=-1)
+            changed_rows = torch.nonzero(per_row_max > 0, as_tuple=False).reshape(-1)
+            return {
+                "max_abs": float(diff.max().item()),
+                "mean_abs": float(diff.mean().item()),
+                "exact": bool(torch.equal(reference, candidate)),
+                "top1_matches": int((reference_top1 == candidate_top1).sum().item()),
+                "top1_total": self.args.batch_size,
+                "changed_rows": [int(value) for value in changed_rows.tolist()],
+                "per_row_max_abs_first_16": [
+                    float(value) for value in per_row_max[:16].tolist()
+                ],
+            }
+
+        scenarios: list[tuple[str, torch.Tensor]] = []
+        for position in positions_to_test:
+            scenarios.append(
+                (
+                    f"uniform_{position}",
+                    torch.full(
+                        (self.args.batch_size,),
+                        position,
+                        device=self.device,
+                        dtype=torch.int64,
+                    ),
+                )
+            )
+        if self.args.batch_size > 1 and len(positions_to_test) > 1:
+            scenarios.append(
+                (
+                    "mixed",
+                    torch.tensor(
+                        [
+                            positions_to_test[index % len(positions_to_test)]
+                            for index in range(self.args.batch_size)
+                        ],
+                        device=self.device,
+                        dtype=torch.int64,
+                    ),
+                )
+            )
+
+        rows = []
+        for scenario, cache_positions in scenarios:
+            print(
+                "DECODE_TAIL_INVARIANCE "
+                f"scenario={scenario} state=zero_reference_begin",
+                flush=True,
+            )
+            reset_cache()
+            zero_reference = execute(cache_positions)
+
+            reset_cache()
+            set_masked_tail(cache_positions, rows="row0")
+            row0_stale = execute(cache_positions)
+
+            reset_cache()
+            set_masked_tail(cache_positions, rows="all")
+            all_stale = execute(cache_positions)
+
+            reset_cache()
+            zero_repeat = execute(cache_positions)
+            row = {
+                "scenario": scenario,
+                "cache_positions": [int(value) for value in cache_positions.cpu().tolist()],
+                "zero_repeat": compare(zero_reference, zero_repeat),
+                "row0_stale_tail": compare(zero_reference, row0_stale),
+                "all_rows_stale_tail": compare(zero_reference, all_stale),
+            }
+            rows.append(row)
+            print(
+                "DECODE_TAIL_INVARIANCE "
+                f"scenario={scenario} "
+                f"zero_repeat_exact={row['zero_repeat']['exact']} "
+                f"row0_exact={row['row0_stale_tail']['exact']} "
+                f"all_exact={row['all_rows_stale_tail']['exact']}",
+                flush=True,
+            )
+
+        return {
+            "contract": {
+                "graph": "production compiled 27-layer text decode",
+                "identical": (
+                    "tokens, cache positions, RoPE deltas, and valid KV prefix"
+                ),
+                "only_difference": (
+                    "masked KV positions strictly after cache_position"
+                ),
+                "tail_canary_value": self.args.tail_canary_value,
+            },
+            "batch_size": self.args.batch_size,
+            "cache_length": self.args.cache_length,
+            "decode_optimization": self.optimization.name,
+            "scenarios": rows,
+            "all_zero_repeats_exact": all(
+                row["zero_repeat"]["exact"] for row in rows
+            ),
+            "all_row0_stale_exact": all(
+                row["row0_stale_tail"]["exact"] for row in rows
+            ),
+            "all_rows_stale_exact": all(
+                row["all_rows_stale_tail"]["exact"] for row in rows
+            ),
+        }
+
     def replay(
         self,
         items: list[dict[str, Any]],
@@ -1135,6 +1356,8 @@ def _write_report(
             "cache_dir": str(args.cache_dir.expanduser().resolve()),
             "active_slots": args.active_slots,
             "profile_position": args.profile_position,
+            "tail_positions": list(args.tail_positions),
+            "tail_canary_value": args.tail_canary_value,
             "profile_dir": str(args.profile_dir.expanduser().resolve()),
             "profile_metric": args.profile_metric,
             "warmup": args.warmup,
@@ -1193,6 +1416,14 @@ def _print_result(mode: str, result: dict[str, Any]) -> None:
             f"attention={result['attention']} "
             f"elapsed_s={result['elapsed_s']:.6f}"
         )
+    elif mode == "tail_invariance":
+        print(
+            "DECODE_TAIL_INVARIANCE_RESULT "
+            f"batch_size={result['batch_size']} "
+            f"zero_repeat_exact={result['all_zero_repeats_exact']} "
+            f"row0_stale_exact={result['all_row0_stale_exact']} "
+            f"all_stale_exact={result['all_rows_stale_exact']}"
+        )
     elif mode == "replay":
         scheduler = result["scheduler"]
         throughput = result["throughput"]
@@ -1220,14 +1451,18 @@ def _print_result(mode: str, result: dict[str, Any]) -> None:
 @torch.inference_mode()
 def main(argv: Sequence[str] | None = None) -> None:
     args = parse_args(argv)
-    if args.mode in ("profile", "torch_profile", "boundary"):
+    if args.mode in ("profile", "torch_profile", "boundary", "tail_invariance"):
         corpus: dict[str, Any] = {
             "contract": {
                 "corpus_used": False,
                 "scope": (
-                    "synthetic full-decoder cache-position boundary"
-                    if args.mode == "boundary"
-                    else "synthetic full-decoder throughput profile"
+                    "compiled full-decoder masked-tail invariance"
+                    if args.mode == "tail_invariance"
+                    else (
+                        "synthetic full-decoder cache-position boundary"
+                        if args.mode == "boundary"
+                        else "synthetic full-decoder throughput profile"
+                    )
                 ),
             }
         }
@@ -1236,14 +1471,16 @@ def main(argv: Sequence[str] | None = None) -> None:
         corpus, selected_items = _load_corpus(args.corpus, args.max_items)
 
     lab: TextDecodeLab | None = None
-    if args.mode in ("profile", "torch_profile", "boundary"):
+    if args.mode in ("profile", "torch_profile", "boundary", "tail_invariance"):
         lab = TextDecodeLab(args)
         if args.mode == "profile":
             result: dict[str, Any] = lab.profile()
         elif args.mode == "torch_profile":
             result = lab.torch_profile()
-        else:
+        elif args.mode == "boundary":
             result = lab.boundary()
+        else:
+            result = lab.tail_invariance()
     else:
         items, overflow = _filter_for_cache(
             selected_items,
@@ -1276,7 +1513,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             },
             "production_reference": reference,
         }
-    elif args.mode not in ("profile", "torch_profile", "boundary"):
+    elif args.mode not in ("profile", "torch_profile", "boundary", "tail_invariance"):
         lab = TextDecodeLab(args)
         if args.mode == "replay":
             result = lab.replay(items, overflow)
