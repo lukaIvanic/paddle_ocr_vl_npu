@@ -38,8 +38,8 @@ stream of full PIL pages
          B=1 text-prefill calls, then split their KV prefixes back to each crop
        eager LM head, first-token argmax, and ready B=1 KV-arena view
   -> bounded cross-page ready reservoir
-       high watermark = 4B prepared requests
-       low watermark = B prepared requests
+       high watermark = B prepared requests
+       low watermark = B/2 prepared requests
        refill in bursts rather than after every completion
   -> persistent power-of-two compiled decode arena
        fill free slots with one full-cache ForeachCopy from ready KV rows
@@ -92,7 +92,10 @@ boundaries; it is not a competing production path.
 Prefills are produced lazily for one run-scoped decode scheduler instead of
 draining decode at every page boundary. Decode owns one persistent fixed-shape
 arena, and queued prefills lease rows from a second zero-once arena sized for
-the ready reservoir plus one production window. Slot indices stay stable; a
+the ready reservoir plus one maximum text-pack group of staging headroom. At
+B=64 with the production 32-member text-pack bound, that is 64 + 32 = 96
+private rows rather than the superseded 4B reservoir plus CPU-preparation
+capacity. Slot indices stay stable; a
 finished request is replaced in place without moving other active requests or
 rebuilding the batch. Admission copies the full initialized KV row with one
 ForeachCopy. The real cache position still hides finite stale tail values.

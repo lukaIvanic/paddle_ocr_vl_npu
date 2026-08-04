@@ -54,6 +54,7 @@ from .runtime_defaults import (
     OPTIMIZED_TEXT_BUCKETS,
     OPTIMIZED_VISION_BUCKETS,
     READY_BUFFER_BATCH_MULTIPLIER,
+    READY_BUFFER_LOW_WATERMARK_DIVISOR,
     TEXT_PACKING_CHOICES,
     VISION_PACKING_CHOICES,
 )
@@ -764,6 +765,18 @@ class ContinuousRecognizer:
                 else 0
             ),
         )
+        self.ready_buffer_capacity = (
+            READY_BUFFER_BATCH_MULTIPLIER * self.batch_size
+        )
+        self.ready_buffer_low_watermark = max(
+            1,
+            self.ready_buffer_capacity // READY_BUFFER_LOW_WATERMARK_DIVISOR,
+        )
+        # A refill may suspend ready_stream() partway through yielding one
+        # already-prefilled production group.  Keep one maximum text-pack
+        # group's worth of leases beyond the bounded ready reservoir so that
+        # those not-yet-yielded members cannot exhaust the arena.
+        self.private_cache_staging_headroom = self.text_pack_max_members
         self.prefill_host_tokens = torch.empty(
             (self.cpu_preprocess_max_pending + 1,),
             dtype=torch.int64,
@@ -783,8 +796,7 @@ class ContinuousRecognizer:
 
         private_cache_pool_started = time.perf_counter()
         private_cache_capacity = (
-            READY_BUFFER_BATCH_MULTIPLIER * self.batch_size
-            + self.cpu_preprocess_max_pending
+            self.ready_buffer_capacity + self.private_cache_staging_headroom
         )
         private_cache_storage = self.model.allocate_static_cache(
             batch_size=private_cache_capacity,
@@ -1074,8 +1086,8 @@ class ContinuousRecognizer:
         decoded = self.decode_scheduler.run_stream(
             ready_stream(),
             on_completion=handle_completion,
-            ready_buffer_capacity=READY_BUFFER_BATCH_MULTIPLIER * self.batch_size,
-            ready_buffer_low_watermark=self.batch_size,
+            ready_buffer_capacity=self.ready_buffer_capacity,
+            ready_buffer_low_watermark=self.ready_buffer_low_watermark,
         )
         decode_wall_s = decoded.timing_s["continuous_decode_wall"]
         private_cache_pool_stats = self.prefill_cache_pool.stats()
@@ -2866,8 +2878,11 @@ class ContinuousRecognizer:
             "prefill_transfer": "dedicated_stream_event_dependencies",
             "decode": decode_label,
             "decode_schedule": "run_scoped_persistent_slots_iteration_hot_swap",
-            "ready_buffer_capacity": READY_BUFFER_BATCH_MULTIPLIER * self.batch_size,
-            "ready_buffer_low_watermark": self.batch_size,
+            "ready_buffer_capacity": self.ready_buffer_capacity,
+            "ready_buffer_low_watermark": self.ready_buffer_low_watermark,
+            "private_cache_staging_headroom": (
+                self.private_cache_staging_headroom
+            ),
             "decode_completion_detection": "queue_depth_one_async_token_copy",
             "private_prefill_cache": self.prefill_cache_pool.stats(),
             "kv_admission": "full_prefill_cache_foreach_copy_into_fixed_slot",
