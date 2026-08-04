@@ -1,0 +1,5 @@
+physical_npu=5
+commit=898ced73e4a13208e7d2d6af757daaa0d5f988d1
+started_utc=2026-08-04T11:03:46Z
+finished_utc=2026-08-04T11:21:48Z
+outer_wall_s=1082

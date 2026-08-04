@@ -1,0 +1,25 @@
+{
+  "debug": {
+    "exception_case_count": 0,
+    "exception_cases": [],
+    "sample_count": 2352,
+    "stage": "CDM",
+    "timeout_case_count": 0,
+    "timeout_cases": [],
+    "workers": 96
+  },
+  "evaluated_samples": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_full_cap4096_text05_b64_pse_target768_898ced7/evaluation/cdm_native_w96/result/predictions_quick_match_cdm_result.json",
+  "evaluator_root": "/workspace/repos/OmniDocBench_eval",
+  "input": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_full_cap4096_text05_b64_pse_target768_898ced7/evaluation/work/result/predictions_quick_match_display_formula_result.json",
+  "per_sample_scores": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_full_cap4096_text05_b64_pse_target768_898ced7/evaluation/cdm_native_w96/result/predictions_quick_match_cdm_per_sample_CDM.json",
+  "sample_count": 2352,
+  "samples_per_s": 26.5299572091223,
+  "save_vis": false,
+  "scores": {
+    "CDM": {
+      "all": 0.9705238095238099
+    }
+  },
+  "wall_s": 88.65449655498378,
+  "workers": 96
+}
