@@ -27,6 +27,7 @@ import faulthandler
 import json
 import multiprocessing
 import os
+import re
 import sys
 import time
 import traceback
@@ -40,6 +41,11 @@ _PRIMARY_LATEX_TIMEOUT_SEC = "0"
 _FALLBACK_LATEX_TIMEOUT_SEC = "30"
 _PAGE_DEBUG_STACK_INTERVAL_SEC = 0.0
 _PAGE_DEBUG_IMAGE_NAME = ""
+
+
+_LINE_BOUNDED_MARKDOWN_TABLE_PATTERN = re.compile(
+    r"\|[^\r\n]*\|[^\S\r\n]*(?:\r?\n|$)"
+)
 
 
 @dataclass
@@ -75,6 +81,19 @@ class _ActiveTeds:
 
 def _image_name(sample: dict[str, Any]) -> str:
     return os.path.basename(sample.get("page_info", {}).get("image_path", ""))
+
+
+def _install_line_bounded_markdown_table_pattern() -> None:
+    """Prevent catastrophic cross-line backtracking in OmniDocBench parsing.
+
+    Upstream uses ``r'\|\s*.*?\s*\|\n'`` with ``re.DOTALL`` merely to decide
+    whether at least two Markdown-table rows exist.  After a large HTML table
+    is space-masked, every stray pipe can make that expression rescan the
+    entire masked region.  This equivalent row detector never crosses a line.
+    """
+    import src.core.preprocess.extract as extract_module
+
+    extract_module.md_table_reg = _LINE_BOUNDED_MARKDOWN_TABLE_PATTERN
 
 
 def _page_debug_enabled(img_name: str) -> bool:
@@ -318,6 +337,7 @@ def _page_process_entry(sender, task: _PageTask, pred_folder: str) -> None:
     img_name = _image_name(task.sample)
     debug_stack = _page_debug_enabled(img_name)
     try:
+        _install_line_bounded_markdown_table_pattern()
         if debug_stack:
             faulthandler.enable()
             faulthandler.dump_traceback_later(

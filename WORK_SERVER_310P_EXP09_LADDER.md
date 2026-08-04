@@ -23713,3 +23713,108 @@ The expected process exit is nonzero because the diagnostic deliberately stops
 after 90 seconds.  A nonzero exit is not the result; the telemetry and stack are
 the result.  Do not rerun evaluation or modify evaluator/model source.  Then
 stop.
+
+## Phase 57F: validate the line-bounded Markdown-table parser fix
+
+Run this after Phase 57D proves that ``md_table_reg.findall`` in
+``src/core/preprocess/extract.py`` is the sole blocking operation.  Do not edit
+the evaluator checkout.  The project wrapper now replaces only that compiled
+regex at runtime with an equivalent line-bounded row detector; ordinary
+Markdown-table extraction remains in the upstream evaluator.
+
+The fix was validated on 910B before being sent here.  Parser output was
+exactly equal with the old and new patterns for both the real page prediction
+and a control made by inserting 12,410 empty ``<td></td>`` cells into the real
+table.  The control completed page matching in 1.73 s and TEDS in 12.03 s.
+
+Use the Phase-57R single-page input.  Do not rerun inference or the full
+evaluation in this phase.
+
+```sh
+set -euo pipefail
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git pull --ff-only origin main
+test -z "$(git status --porcelain)"
+
+PAGE=book_zh_DLT10902008_extracted_page_8.png
+CDM_ROOT=tmp/09_persistent_page_engine/310p_phase56_cdm
+. "$CDM_ROOT/runtime_paths.env"
+EVAL_PYTHON="$OMNIDOCBENCH_EVAL_PYTHON"
+EVALUATOR_ROOT="$OMNIDOCBENCH_EVALUATOR_ROOT"
+EVAL_WRAPPER="$WORK_SERVER_REPO/09_persistent_page_engine/scripts/run_omnidocbench_eval.py"
+
+RECOVERY="$(/usr/local/python3.12.13/bin/python - <<'PY'
+from pathlib import Path
+roots = [
+    path for path in Path("tmp/09_persistent_page_engine").glob(
+        "310p_phase57_cap4096_b64_pse_*/phase57r_single_page_*"
+    )
+    if (path / "input" / "ground_truth.json").is_file()
+]
+if not roots:
+    raise SystemExit("no Phase-57R single-page input found")
+print(max(roots, key=lambda path: path.stat().st_mtime))
+PY
+)"
+SHORT="$(git rev-parse --short HEAD)"
+LANE="$RECOVERY/line_bounded_md_table_${SHORT}"
+test ! -e "$LANE"
+mkdir -p "$LANE/work"
+cat >"$LANE/work/config.yaml" <<EOF
+end2end_eval:
+  metrics:
+    text_block:
+      metric: [Edit_dist]
+    display_formula:
+      metric: [Edit_dist]
+    table:
+      metric: [TEDS, Edit_dist]
+      teds_workers: 1
+    reading_order:
+      metric: [Edit_dist]
+  dataset:
+    dataset_name: end2end_dataset
+    ground_truth:
+      data_path: $(realpath "$RECOVERY/input/ground_truth.json")
+    prediction:
+      data_path: $(realpath "$RECOVERY/input/predictions")
+    match_method: quick_match
+    match_workers: 1
+    match_timeout_sec: 120
+    timeout_fallback_max_chunk_span: 10
+EOF
+
+SECONDS=0
+set +e
+set -o pipefail
+(
+  cd "$LANE/work"
+  PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 240 \
+    "$EVAL_PYTHON" "$EVAL_WRAPPER" \
+    --config config.yaml --evaluator-root "$EVALUATOR_ROOT" \
+    --match-workers 1 --teds-workers 1 \
+    --page-timeout-sec 120 --fallback-timeout-sec 120 \
+    --teds-timeout-sec 120 \
+    --page-debug-image-name "$PAGE" \
+    --page-debug-stack-interval-sec 20
+) 2>&1 | tee "$LANE/run.log"
+ec="${PIPESTATUS[0]}"
+set -e
+printf '%s\n' "$ec" >"$LANE/exit_code.txt"
+printf '%s\n' "$SECONDS" >"$LANE/wall_s.txt"
+test "$ec" -eq 0
+test -s "$LANE/work/result/predictions_quick_match_metric_result.json"
+
+grep -E '^\[page-debug-md-filter-(begin|end)' "$LANE/run.log" \
+  | tee "$LANE/md_filter_telemetry.log"
+test "$(wc -l <"$LANE/md_filter_telemetry.log")" -eq 2
+printf '310P PHASE 57F: PASS page=%s wall_s=%s artifact=%s\n' \
+  "$PAGE" "$(cat "$LANE/wall_s.txt")" "$LANE" \
+  | tee "$LANE/result_sentence.txt"
+```
+
+Return the exact `310P PHASE 57F: PASS ...` sentence, followed by the two
+``page-debug-md-filter`` lines.  If it fails, return the first causal error and
+last repeated stack frame instead.  Do not launch the full evaluation yet;
+then stop.
