@@ -186,5 +186,8 @@ $PYTHON ./benchmark_local_qwen3_0.py \
 ## Notes
 
 - `float16` is the default NPU dtype to test first.
+- Checkpoint shards are streamed into the final NPU-resident dtype; the local
+  runtime does not retain a second complete CPU state dictionary while loading
+  the 8B model.
 - `--compile-decode-dynamic --decode-increfa-mode actual_seq_lengths` avoids attending over the full static KV cache during decode.
 - Keep `prefill_tokens + decode_steps <= static_kv_cache_len` for benchmark runs.

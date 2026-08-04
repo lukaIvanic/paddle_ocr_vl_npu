@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
 import torch
@@ -52,27 +53,83 @@ class LocalQwen30Runner:
             )
 
     def load_model(self) -> LocalQwen3ForCausalLM:
-        model = LocalQwen3ForCausalLM(self.config, decode_increfa_mode=self.decode_increfa_mode)
-        state = {}
         weight_files = sorted(self.model_dir.glob("*.safetensors"))
         if not weight_files:
             raise FileNotFoundError(f"No safetensors weights found in {self.model_dir}")
-        for weights_path in weight_files:
-            shard = load_file(str(weights_path), device="cpu")
-            for key, value in shard.items():
-                if key.startswith("model."):
-                    state[key[len("model.") :]] = value
-                elif key == "lm_head.weight":
-                    state[key] = value
 
-        missing, unexpected = model.load_state_dict(state, strict=False)
-        if self.config.tie_word_embeddings and missing == ["lm_head.weight"]:
+        # Construct without allocating or initializing a second, float32 copy of
+        # the model on the host. Allocate the final dtype directly on the target
+        # device, then copy one checkpoint shard at a time. This matters for 8B:
+        # the naive model + complete state_dict path temporarily retains roughly
+        # 48 GiB of host tensors before the NPU copy even starts.
+        with torch.device("meta"):
+            model = LocalQwen3ForCausalLM(
+                self.config,
+                decode_increfa_mode=self.decode_increfa_mode,
+            )
+        model = model.to(dtype=self.dtype)
+        model.to_empty(device=self.device)
+
+        # ``inv_freq`` is a non-persistent buffer, so it is deliberately absent
+        # from the checkpoint and must be restored after ``to_empty``.
+        inv_freq = 1.0 / (
+            self.config.rope_theta
+            ** (
+                torch.arange(
+                    0,
+                    self.config.head_dim,
+                    2,
+                    dtype=torch.float32,
+                    device=self.device,
+                )
+                / self.config.head_dim
+            )
+        )
+        model.rotary_emb.inv_freq.copy_(inv_freq)
+
+        parameters = dict(model.named_parameters(remove_duplicate=False))
+        expected = set(parameters)
+        if self.config.tie_word_embeddings:
+            expected.discard("lm_head.weight")
+        loaded: set[str] = set()
+        unexpected: list[str] = []
+
+        for shard_index, weights_path in enumerate(weight_files, start=1):
+            print(
+                f"loading checkpoint shard {shard_index}/{len(weight_files)}: "
+                f"{weights_path.name}",
+                file=sys.stderr,
+                flush=True,
+            )
+            shard = load_file(str(weights_path), device="cpu")
+            with torch.no_grad():
+                for checkpoint_key, value in shard.items():
+                    if checkpoint_key.startswith("model."):
+                        model_key = checkpoint_key[len("model.") :]
+                    elif checkpoint_key == "lm_head.weight":
+                        model_key = checkpoint_key
+                    else:
+                        unexpected.append(checkpoint_key)
+                        continue
+                    target = parameters.get(model_key)
+                    if target is None:
+                        unexpected.append(checkpoint_key)
+                        continue
+                    if target.shape != value.shape:
+                        raise RuntimeError(
+                            f"shape mismatch for {checkpoint_key}: "
+                            f"checkpoint={tuple(value.shape)} model={tuple(target.shape)}"
+                        )
+                    target.copy_(value.to(device=self.device, dtype=target.dtype))
+                    loaded.add(model_key)
+            del shard
+
+        if self.config.tie_word_embeddings:
             model.lm_head.weight = model.embed_tokens.weight
-            missing = []
+        missing = sorted(expected - loaded)
         if missing or unexpected:
             raise RuntimeError(f"state_dict mismatch: missing={missing}, unexpected={unexpected}")
 
-        model.to(device=self.device, dtype=self.dtype)
         model.eval()
         return model
 
