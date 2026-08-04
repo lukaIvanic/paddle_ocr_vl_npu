@@ -1,0 +1,26 @@
+{
+  "aggregation": {
+    "formula_cdm": "page average across formula-bearing pages",
+    "overall": "((1 - text_edit) + page_cdm + page_teds) / 3",
+    "table_teds": "page average"
+  },
+  "display_formula": {
+    "page_cdm": 0.9740800537093018,
+    "sample_cdm": 0.9705238095238099
+  },
+  "official_overall": 0.9559345467308266,
+  "reading_order": {
+    "edit_distance": 0.14059605608029002,
+    "included_in_overall": false
+  },
+  "source_run": "910b_full_cap4096_text05_b64_pse_target768_898ced7",
+  "table": {
+    "page_teds": 0.9444252611065791,
+    "page_teds_structure_only": 0.9687623943678403,
+    "sample_teds": 0.9305146917283665,
+    "sample_teds_structure_only": 0.9569214971331408
+  },
+  "text_block": {
+    "edit_distance": 0.050701674623400764
+  }
+}

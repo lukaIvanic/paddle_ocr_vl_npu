@@ -22703,3 +22703,615 @@ Return exactly the `CDM_PILOT ...` sentence as soon as it appears, then return
 exactly the final `CDM_FULL ...` sentence when the full run finishes.  Do not
 paste logs or JSON unless either sentence says `FAIL`.  Do not rerun OCR,
 matching, TEDS, or another formula corpus.  Then stop.
+
+## Phase 57: exact 310P reproduction of the 910B cap4096 authority
+
+### 57.0 Goal, authority, and non-negotiable comparison contract
+
+Reproduce the completed 910B2 full run recorded under:
+
+```text
+tmp/09_persistent_page_engine/
+  910b_full_cap4096_text05_b64_pse_target768_898ced7/
+```
+
+The committed authorities are `output/run_summary.json`,
+`evaluation/work/result/predictions_quick_match_metric_result.json`,
+`evaluation/cdm_native_w96/cdm_run_summary.json`, and
+`official_score_summary.json`.  The 910B2 reference is 800.4945 s pipeline
+wall, 2.06248 pages/s, and official Overall 95.5935.
+
+Phase 57 must use the same algorithmic configuration on 310P:
+
+- all 1,651 OmniDocBench v1.6 pages, with all layout/page preparation finished
+  before recognition;
+- staged layout with four input workers and eight page-finalization workers;
+- B64 decode, KV4096, max-new-tokens 4096, compiled PSE-sentinel attention;
+- min pixels 28,224; global max pixels 802,816 (4,096 raw vision tokens);
+  text crops scaled by 0.5;
+- compiled PromptFA vision, 4352-wide zero-extended MLP, FRACTAL_NZ weights;
+- vision buckets `256,384,512,640,768,1408,1920,2048,2944,4096`, greedy
+  target-768 packing, lookahead 32;
+- text fallback bucket 1152 and packed buckets
+  `128,256,384,512,768,1024`, with at most 32 members;
+- the production repetition guard, no timeline, no layout graph capture.
+
+There is **no fallback lane** in this phase.  In particular, do not silently
+change B64 to B32, KV4096 to KV2048, remove buckets, lower pixels, change the
+packing target, or use MHA/static-actual attention.  If materialization or
+replay OOMs, preserve memory/cache/log evidence and stop.  An OOM is a useful
+diagnostic result, not permission to change the experiment.
+
+Quality is a comparison, not a pass gate.  The 310P score need not equal
+95.5935.  Report signed deltas for every metric.  Highlight an Overall delta
+whose magnitude exceeds 0.5 percentage points, but do not relabel an otherwise
+complete run as failed solely because of numerical model-output differences.
+
+### 57.1 Preflight and exact command
+
+Use one persistent shell.  Pull-only checkout; do not edit source on the work
+server.
+
+```sh
+set -uo pipefail
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git pull --ff-only origin main
+test -z "$(git status --porcelain)"
+source npu-setup
+set -e
+
+PYTHON_BIN=/usr/local/python3.12.13/bin/python
+E2E="$WORK_SERVER_REPO/09_persistent_page_engine/scripts/run_omnidocbench.py"
+EVAL_WRAPPER="$WORK_SERVER_REPO/09_persistent_page_engine/scripts/run_omnidocbench_eval.py"
+CDM_RUNNER="$WORK_SERVER_REPO/09_persistent_page_engine/scripts/run_cdm_from_matched_formulas.py"
+MODEL=/home/lukaiv/models/PaddleOCR-VL-1.6
+LAYOUT_MODEL=/home/lukaiv/models/PP-DocLayoutV3_safetensors
+DATASET_JSON=/home/lukaiv/datasets/OmniDocBench/OmniDocBench.json
+IMAGES_DIR=/home/lukaiv/datasets/OmniDocBench/images
+
+CDM_ROOT=tmp/09_persistent_page_engine/310p_phase56_cdm
+test -s "$CDM_ROOT/runtime_paths.env"
+. "$CDM_ROOT/runtime_paths.env"
+EVAL_PYTHON="$OMNIDOCBENCH_EVAL_PYTHON"
+EVALUATOR_ROOT="$OMNIDOCBENCH_EVALUATOR_ROOT"
+test -x "$EVAL_PYTHON"
+test -f "$EVALUATOR_ROOT/pdf_validation.py"
+
+REFERENCE=tmp/09_persistent_page_engine/910b_full_cap4096_text05_b64_pse_target768_898ced7
+test -s "$REFERENCE/output/run_summary.json"
+test -s "$REFERENCE/evaluation/work/result/predictions_quick_match_metric_result.json"
+test -s "$REFERENCE/official_score_summary.json"
+
+test "$(sha256sum "$MODEL/model.safetensors" | awk '{print $1}')" = \
+  85a479d506a11e724e7285d395c551be69f41dbc16b6342d3cacfb189aed71db
+test -s "$DATASET_JSON"
+test -d "$IMAGES_DIR"
+
+COMMIT="$(git rev-parse HEAD)"
+SHORT="$(git rev-parse --short HEAD)"
+ROOT="tmp/09_persistent_page_engine/310p_phase57_cap4096_b64_pse_${SHORT}"
+MAT="$ROOT/materialize_gate"
+WARM="$ROOT/warm_gate"
+FULL="$ROOT/full"
+test ! -e "$ROOT"
+mkdir -p "$MAT" "$WARM" "$FULL/evaluation/work"
+
+# Reuse compatible optimized vision/text caches.  B64-KV4096-PSE has a
+# distinct decode graph and therefore receives its own deliberate cache.
+DECODE_CACHE=.runtime_cache/310p_phase57_decode_b64_k4096_pse
+VISION_CACHE=.runtime_cache/310p_phase52_v16_vision_4352_nz
+BATCHED_CACHE=.runtime_cache/310p_phase57_vision_batched_unused
+TEXT_CACHE=.runtime_cache/310p_phase52_v16_text
+PACKED_CACHE=.runtime_cache/310p_phase52_v16_text_packed
+mkdir -p "$DECODE_CACHE" "$BATCHED_CACHE"
+for cache in "$VISION_CACHE" "$TEXT_CACHE" "$PACKED_CACHE"; do
+  test -d "$cache"
+  test -n "$(find "$cache" -type f -print -quit)"
+done
+
+df -h . "$DECODE_CACHE" "$VISION_CACHE" | tee "$ROOT/df_preflight.txt"
+npu-smi info | tee "$ROOT/npu_preflight.txt"
+
+PRODUCTION_ARGS=(
+  "$E2E"
+  --dataset-json "$DATASET_JSON" --images-dir "$IMAGES_DIR"
+  --layout-model "$LAYOUT_MODEL" --recognizer-model "$MODEL"
+  --batch-size 64 --cache-length 4096 --max-new-tokens 4096
+  --preprocessor-min-pixels 28224 --preprocessor-max-pixels 802816
+  --text-crop-scale 0.5
+  --decode-backend torchair
+  --decode-optimization combined_apply_pse_sentinel
+  --torchair-cache-dir "$DECODE_CACHE"
+  --vision-backend torchair --vision-attention prompt_flash_attention
+  --vision-buckets 256,384,512,640,768,1408,1920,2048,2944,4096
+  --vision-torchair-cache-dir "$VISION_CACHE"
+  --vision-batched-cache-dir "$BATCHED_CACHE"
+  --vision-promptfa-align-128
+  --vision-mlp-intermediate-size 4352
+  --vision-linear-weight-format fractal_nz
+  --vision-padding bucket --vision-packing greedy
+  --vision-pack-target 768 --vision-router-lookahead 32
+  --text-buckets 1152
+  --text-packing production_group
+  --text-pack-buckets 128,256,384,512,768,1024
+  --text-pack-max-members 32
+  --text-torchair-cache-dir "$TEXT_CACHE"
+  --text-packed-cache-dir "$PACKED_CACHE"
+  --layout-device npu --no-layout-graph-capture
+  --preprocess-all-pages-first --layout-workers 8 --no-timeline
+)
+
+record_caches() {
+  out="$1"
+  : >"$out"
+  for cache in "$DECODE_CACHE" "$VISION_CACHE" "$BATCHED_CACHE" \
+               "$TEXT_CACHE" "$PACKED_CACHE"; do
+    if test -d "$cache"; then
+      printf '%s\tfiles=%s\tbytes=%s\n' "$cache" \
+        "$(find "$cache" -type f | wc -l)" \
+        "$(du -sb "$cache" | cut -f1)"
+    else
+      printf '%s\tfiles=0\tbytes=0\n' "$cache"
+    fi
+  done >"$out"
+}
+
+run_lane() {
+  lane="$1"
+  limit="$2"
+  timeout_s="$3"
+  record_caches "$lane/cache_before.txt"
+  printf '%q ' "$PYTHON_BIN" "${PRODUCTION_ARGS[@]}" \
+    --offset 0 --limit "$limit" --output-dir "$lane/output" \
+    >"$lane/command.sh"
+  printf '\n' >>"$lane/command.sh"
+  npu-smi info >"$lane/npu_before.txt"
+  SECONDS=0
+  rm -f "$lane/exit_code.txt"
+  (
+    set +e
+    set -o pipefail
+    PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s "$timeout_s" \
+      "$PYTHON_BIN" "${PRODUCTION_ARGS[@]}" \
+      --offset 0 --limit "$limit" --output-dir "$lane/output" \
+      2>&1 | tee "$lane/run.log"
+    printf '%s\n' "${PIPESTATUS[0]}" >"$lane/exit_code.txt"
+  ) &
+  lane_pid="$!"
+  (
+    while sleep 60; do
+      kill -0 "$lane_pid" 2>/dev/null || exit 0
+      completed="$(grep -Eo 'completed=[0-9]+/[0-9]+' "$lane/run.log" 2>/dev/null | tail -n 1 || true)"
+      test -n "$completed" || completed=setup_or_layout
+      last="$(tail -n 1 "$lane/run.log" 2>/dev/null | tr '\r\n' ' ' | tr -s ' ' | cut -c1-160)"
+      printf '%s\n' \
+        "PHASE57_PROGRESS lane=$(basename "$lane") elapsed_s=$SECONDS state=$completed last=$last"
+    done
+  ) &
+  heartbeat_pid="$!"
+  wait "$lane_pid" || true
+  kill "$heartbeat_pid" 2>/dev/null || true
+  wait "$heartbeat_pid" 2>/dev/null || true
+  printf '%s\n' "$SECONDS" >"$lane/outer_wall_s.txt"
+  npu-smi info >"$lane/npu_after.txt" || true
+  record_caches "$lane/cache_after.txt"
+}
+```
+
+### 57.2 Materialization and warm-replay gates
+
+The first lane may compile the new B64-KV4096-PSE decode graph and any missing
+4096-cap vision or packed-text graphs.  The second lane must be a zero-growth
+warm replay of exactly the same eight pages.
+
+```sh
+run_lane "$MAT" 8 5400
+mat_ec="$(cat "$MAT/exit_code.txt")"
+if test "$mat_ec" -ne 0; then
+  npu-smi info >"$MAT/npu_failure.txt" || true
+  printf '%s\n' \
+    "310P PHASE 57 MATERIALIZATION: FAIL exit=$mat_ec wall_s=$(cat "$MAT/outer_wall_s.txt") log=$MAT/run.log" \
+    | tee "$ROOT/materialization_sentence.txt"
+  exit 0
+fi
+
+run_lane "$WARM" 8 1800
+warm_ec="$(cat "$WARM/exit_code.txt")"
+if test "$warm_ec" -ne 0; then
+  npu-smi info >"$WARM/npu_failure.txt" || true
+  printf '%s\n' \
+    "310P PHASE 57 WARM GATE: FAIL exit=$warm_ec wall_s=$(cat "$WARM/outer_wall_s.txt") log=$WARM/run.log" \
+    | tee "$ROOT/warm_sentence.txt"
+  exit 0
+fi
+
+"$PYTHON_BIN" - "$MAT" "$WARM" \
+  "$DECODE_CACHE" "$VISION_CACHE" "$TEXT_CACHE" "$PACKED_CACHE" <<'PY' \
+  | tee "$ROOT/gate_contract.json"
+import json
+import pathlib
+import sys
+
+mat, warm = map(pathlib.Path, sys.argv[1:3])
+allowed_growth = set(sys.argv[3:7])
+
+def inventory(path):
+    out = {}
+    for line in path.read_text().splitlines():
+        cache, files, size = line.split("\t")
+        out[cache] = (
+            int(files.split("=", 1)[1]),
+            int(size.split("=", 1)[1]),
+        )
+    return out
+
+def growth(lane):
+    before = inventory(lane / "cache_before.txt")
+    after = inventory(lane / "cache_after.txt")
+    return {
+        cache: {
+            "files": after[cache][0] - before[cache][0],
+            "bytes": after[cache][1] - before[cache][1],
+        }
+        for cache in before
+    }
+
+def validate(summary_path):
+    s = json.loads(summary_path.read_text())
+    c = s["configuration"]
+    assert s["count"] == s["result_count"] == s["prediction_count"] == 8
+    assert c["batch_size"] == 64 and c["cache_length"] == 4096
+    assert c["max_new_tokens"] == 4096
+    assert c["decode_optimization"] == "combined_apply_pse_sentinel"
+    assert c["preprocessor_min_pixels"] == 28224
+    assert c["preprocessor_max_pixels"] == 802816
+    assert c["text_crop_scale"] == 0.5
+    assert c["vision_buckets"] == [256,384,512,640,768,1408,1920,2048,2944,4096]
+    assert c["vision_pack_target"] == 768
+    assert c["vision_router_lookahead"] == 32
+    assert c["text_buckets"] == [1152]
+    assert c["text_pack_buckets"] == [128,256,384,512,768,1024]
+    assert c["page_preprocessing_mode"] == "all_before_recognition"
+    assert c["vision_mlp"]["target_intermediate_size"] == 4352
+    assert c["vision_mlp"]["zero_extended"] is True
+    assert c["vision_linear_weight_format"]["effective_mode"] == "fractal_nz"
+    assert c["vision_linear_weight_format"]["after_format_histogram"] == {"29": 162}
+    assert set(s["recognition"]["stop_reason_counts"]) <= {
+        "eos", "kv_cache_full", "repetition"
+    }
+    return s
+
+mat_summary = validate(mat / "output/run_summary.json")
+warm_summary = validate(warm / "output/run_summary.json")
+mat_growth = growth(mat)
+warm_growth = growth(warm)
+unexpected = {
+    cache: delta for cache, delta in mat_growth.items()
+    if delta["files"] != 0 and cache not in allowed_growth
+}
+assert not unexpected, unexpected
+assert all(delta["files"] == 0 for delta in warm_growth.values()), warm_growth
+out = {
+    "materialization_growth": mat_growth,
+    "warm_growth": warm_growth,
+    "materialization_setup_s": mat_summary["setup_s"],
+    "materialization_e2e_s": mat_summary["pipeline_e2e_s"],
+    "warm_setup_s": warm_summary["setup_s"],
+    "warm_e2e_s": warm_summary["pipeline_e2e_s"],
+}
+print(json.dumps(out, indent=2, sort_keys=True))
+PY
+
+printf '%s\n' \
+  "310P PHASE 57 WARM GATE: PASS materialization_wall_s=$(cat "$MAT/outer_wall_s.txt") warm_wall_s=$(cat "$WARM/outer_wall_s.txt") contract=$ROOT/gate_contract.json" \
+  | tee "$ROOT/warm_sentence.txt"
+```
+
+Return the `WARM GATE` sentence immediately.  If it says `FAIL`, stop and do
+not attempt B32 or another cache.  If it says `PASS`, continue.
+
+### 57.3 Full 1,651-page run
+
+```sh
+run_lane "$FULL" 1651 10800
+full_ec="$(cat "$FULL/exit_code.txt")"
+if test "$full_ec" -ne 0; then
+  npu-smi info >"$FULL/npu_failure.txt" || true
+  printf '%s\n' \
+    "310P PHASE 57 E2E: FAIL exit=$full_ec wall_s=$(cat "$FULL/outer_wall_s.txt") log=$FULL/run.log" \
+    | tee "$ROOT/e2e_sentence.txt"
+  exit 0
+fi
+
+"$PYTHON_BIN" - "$FULL" <<'PY' | tee "$ROOT/full_contract.json"
+import json
+import pathlib
+import sys
+
+lane = pathlib.Path(sys.argv[1])
+s = json.loads((lane / "output/run_summary.json").read_text())
+
+def inventory(path):
+    out = {}
+    for line in path.read_text().splitlines():
+        cache, files, size = line.split("\t")
+        out[cache] = (
+            int(files.split("=", 1)[1]),
+            int(size.split("=", 1)[1]),
+        )
+    return out
+
+before = inventory(lane / "cache_before.txt")
+after = inventory(lane / "cache_after.txt")
+growth = {
+    cache: {
+        "files": after[cache][0] - before[cache][0],
+        "bytes": after[cache][1] - before[cache][1],
+    }
+    for cache in before
+}
+assert all(delta["files"] == 0 for delta in growth.values()), growth
+assert s["count"] == s["result_count"] == s["prediction_count"] == 1651
+assert s["configuration"]["batch_size"] == 64
+assert s["configuration"]["cache_length"] == 4096
+assert s["configuration"]["decode_optimization"] == "combined_apply_pse_sentinel"
+assert s["configuration"]["preprocessor_max_pixels"] == 802816
+assert s["configuration"]["vision_pack_target"] == 768
+print(json.dumps({
+    "cache_growth": growth,
+    "setup_s": s["setup_s"],
+    "pipeline_e2e_s": s["pipeline_e2e_s"],
+    "pages_per_s": s["pages_per_s"],
+    "result_count": s["result_count"],
+    "stop_reason_counts": s["recognition"]["stop_reason_counts"],
+}, indent=2, sort_keys=True))
+PY
+
+"$PYTHON_BIN" - "$FULL/output/run_summary.json" <<'PY' \
+  | tee "$ROOT/e2e_sentence.txt"
+import json
+import sys
+s = json.load(open(sys.argv[1]))
+print(
+    "310P PHASE 57 E2E: PASS "
+    f"pages={s['result_count']} e2e_s={s['pipeline_e2e_s']:.3f} "
+    f"pages_per_s={s['pages_per_s']:.6f} setup_s={s['setup_s']:.3f} "
+    f"stops={json.dumps(s['recognition']['stop_reason_counts'], separators=(',', ':'))}"
+)
+PY
+```
+
+Return the `E2E: PASS` sentence immediately, then continue to evaluation.
+
+### 57.4 Official matching/TEDS and direct CDM
+
+Create the same evaluator configuration used for the 910B authority.  CDM is
+run separately afterward so page matching/TEDS and the rendering pool cannot
+deadlock or distort one another.
+
+```sh
+cat >"$FULL/evaluation/work/config.yaml" <<EOF
+end2end_eval:
+  metrics:
+    text_block:
+      metric: [Edit_dist]
+    display_formula:
+      metric: [Edit_dist]
+    table:
+      metric: [TEDS, Edit_dist]
+      teds_workers: 12
+    reading_order:
+      metric: [Edit_dist]
+  dataset:
+    dataset_name: end2end_dataset
+    ground_truth:
+      data_path: $(realpath "$FULL/output/OmniDocBench_subset.json")
+    prediction:
+      data_path: $(realpath "$FULL/output/predictions")
+    match_method: quick_match
+    match_workers: 24
+    quick_match_truncated_timeout_sec: 300
+    match_timeout_sec: 420
+    timeout_fallback_max_chunk_span: 10
+    timeout_fallback_order_penalty: 0.10
+EOF
+
+SECONDS=0
+set +e
+set -o pipefail
+EVAL_WORK="$(realpath "$FULL/evaluation/work")"
+(
+  cd "$EVAL_WORK"
+  PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 3600 \
+    "$EVAL_PYTHON" "$EVAL_WRAPPER" \
+    --config config.yaml \
+    --evaluator-root "$EVALUATOR_ROOT" \
+    --match-workers 24 --teds-workers 12 \
+    --page-timeout-sec 120 --fallback-timeout-sec 180 \
+    --fallback-latex-timeout-sec 30 --teds-timeout-sec 120
+) 2>&1 | tee "$FULL/evaluation/run.log"
+eval_ec="${PIPESTATUS[0]}"
+set -e
+printf '%s\n' "$eval_ec" >"$FULL/evaluation/exit_code.txt"
+printf '%s\n' "$SECONDS" >"$FULL/evaluation/outer_wall_s.txt"
+if test "$eval_ec" -ne 0; then
+  printf '%s\n' \
+    "310P PHASE 57 EVALUATION: FAIL exit=$eval_ec wall_s=$SECONDS log=$FULL/evaluation/run.log" \
+    | tee "$ROOT/evaluation_sentence.txt"
+  exit 0
+fi
+
+MATCHED="$FULL/evaluation/work/result/predictions_quick_match_display_formula_result.json"
+METRIC="$FULL/evaluation/work/result/predictions_quick_match_metric_result.json"
+STAGES="$FULL/evaluation/work/result/predictions_quick_match_stage_execution.json"
+test -s "$MATCHED" && test -s "$METRIC" && test -s "$STAGES"
+
+nproc_count="$(nproc)"
+mem_gib="$(awk '/MemAvailable:/ {printf "%d", $2/1024/1024}' /proc/meminfo)"
+CDM_WORKERS="$nproc_count"
+test "$CDM_WORKERS" -le 96 || CDM_WORKERS=96
+mem_workers="$((mem_gib / 2))"
+test "$mem_workers" -ge 1 || mem_workers=1
+test "$CDM_WORKERS" -le "$mem_workers" || CDM_WORKERS="$mem_workers"
+
+CDM_OUT="$FULL/evaluation/cdm_native"
+SECONDS=0
+set +e
+set -o pipefail
+PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 1800 \
+  "$EVAL_PYTHON" "$CDM_RUNNER" \
+  --input "$MATCHED" --output-dir "$CDM_OUT" \
+  --evaluator-root "$EVALUATOR_ROOT" --workers "$CDM_WORKERS" \
+  2>&1 | tee "$CDM_OUT.run.log"
+cdm_ec="${PIPESTATUS[0]}"
+set -e
+printf '%s\n' "$cdm_ec" >"$FULL/evaluation/cdm_exit_code.txt"
+printf '%s\n' "$SECONDS" >"$FULL/evaluation/cdm_outer_wall_s.txt"
+if test "$cdm_ec" -ne 0; then
+  printf '%s\n' \
+    "310P PHASE 57 CDM: FAIL exit=$cdm_ec wall_s=$SECONDS log=$CDM_OUT.run.log" \
+    | tee "$ROOT/cdm_sentence.txt"
+  exit 0
+fi
+```
+
+### 57.5 Mechanical comparison and required report
+
+```sh
+"$EVAL_PYTHON" - \
+  "$FULL/output/run_summary.json" \
+  "$METRIC" \
+  "$STAGES" \
+  "$CDM_OUT/cdm_run_summary.json" \
+  "$REFERENCE/output/run_summary.json" \
+  "$REFERENCE/evaluation/work/result/predictions_quick_match_metric_result.json" \
+  "$REFERENCE/official_score_summary.json" \
+  "$ROOT/final_comparison.json" <<'PY' \
+  | tee "$ROOT/final_sentence.txt"
+import json
+import pathlib
+import sys
+
+(
+    run_path,
+    metric_path,
+    stages_path,
+    cdm_summary_path,
+    ref_run_path,
+    ref_metric_path,
+    ref_score_path,
+    output_path,
+) = map(pathlib.Path, sys.argv[1:])
+run = json.loads(run_path.read_text())
+metric = json.loads(metric_path.read_text())
+stages = json.loads(stages_path.read_text())
+cdm_summary = json.loads(cdm_summary_path.read_text())
+ref_run = json.loads(ref_run_path.read_text())
+ref_metric = json.loads(ref_metric_path.read_text())
+ref_score = json.loads(ref_score_path.read_text())
+evaluated = json.loads(pathlib.Path(cdm_summary["evaluated_samples"]).read_text())
+
+assert run["result_count"] == run["prediction_count"] == 1651
+assert stages["page_match"]["page_count"] == 1651
+teds_debug = stages["metrics"]["table"]["TEDS"]
+assert teds_debug["timeout_case_count"] == 0, teds_debug
+assert teds_debug["error_case_count"] == 0, teds_debug
+assert teds_debug["exception_case_count"] == 0, teds_debug
+assert cdm_summary["debug"]["timeout_case_count"] == 0, cdm_summary["debug"]
+assert cdm_summary["debug"]["exception_case_count"] == 0, cdm_summary["debug"]
+assert len(evaluated) == cdm_summary["sample_count"] > 1000
+
+by_page = {}
+for sample in evaluated:
+    by_page.setdefault(sample["img_id"], []).append(float(sample["metric"]["CDM"]))
+sample_cdm = sum(value for values in by_page.values() for value in values) / len(evaluated)
+page_cdm = sum(sum(values) / len(values) for values in by_page.values()) / len(by_page)
+assert abs(sample_cdm - float(cdm_summary["scores"]["CDM"]["all"])) < 1e-12
+
+text_edit = float(metric["text_block"]["all"]["Edit_dist"]["ALL_page_avg"])
+formula_edit = float(metric["display_formula"]["all"]["Edit_dist"]["ALL_page_avg"])
+page_teds = float(metric["table"]["page"]["TEDS"]["ALL"])
+sample_teds = float(metric["table"]["all"]["TEDS"]["all"])
+page_teds_s = float(metric["table"]["page"]["TEDS_structure_only"]["ALL"])
+reading_edit = float(metric["reading_order"]["all"]["Edit_dist"]["ALL_page_avg"])
+official_overall = ((1.0 - text_edit) + page_cdm + page_teds) / 3.0
+
+current = {
+    "pipeline_e2e_s": run["pipeline_e2e_s"],
+    "pages_per_s": run["pages_per_s"],
+    "setup_s": run["setup_s"],
+    "text_edit": text_edit,
+    "formula_edit": formula_edit,
+    "sample_cdm": sample_cdm,
+    "page_cdm": page_cdm,
+    "sample_teds": sample_teds,
+    "page_teds": page_teds,
+    "page_teds_structure_only": page_teds_s,
+    "reading_order_edit": reading_edit,
+    "official_overall": official_overall,
+}
+reference = {
+    "pipeline_e2e_s": ref_run["pipeline_e2e_s"],
+    "pages_per_s": ref_run["pages_per_s"],
+    "setup_s": ref_run["setup_s"],
+    "text_edit": ref_score["text_block"]["edit_distance"],
+    "formula_edit": ref_metric["display_formula"]["all"]["Edit_dist"]["ALL_page_avg"],
+    "sample_cdm": ref_score["display_formula"]["sample_cdm"],
+    "page_cdm": ref_score["display_formula"]["page_cdm"],
+    "sample_teds": ref_score["table"]["sample_teds"],
+    "page_teds": ref_score["table"]["page_teds"],
+    "page_teds_structure_only": ref_score["table"]["page_teds_structure_only"],
+    "reading_order_edit": ref_score["reading_order"]["edit_distance"],
+    "official_overall": ref_score["official_overall"],
+}
+deltas = {key: current[key] - reference[key] for key in current}
+out = {
+    "classification": "PASS",
+    "current_310p": current,
+    "reference_910b": reference,
+    "signed_delta_310p_minus_910b": deltas,
+    "official_overall_delta_percentage_points": 100.0 * deltas["official_overall"],
+    "quality_warning_over_0_5pp": abs(100.0 * deltas["official_overall"]) > 0.5,
+    "formula_samples": len(evaluated),
+    "formula_pages": len(by_page),
+    "teds_samples": teds_debug["sample_count"],
+    "match_fallbacks": stages["page_match"]["fallbacks"],
+    "cdm_wall_s": cdm_summary["wall_s"],
+    "cdm_workers": cdm_summary["workers"],
+}
+output_path.write_text(json.dumps(out, indent=2, sort_keys=True) + "\n")
+print(
+    "310P PHASE 57 FULL: PASS "
+    f"pages_per_s={current['pages_per_s']:.6f} "
+    f"e2e_s={current['pipeline_e2e_s']:.3f} "
+    f"text_edit={text_edit:.6f} page_cdm={page_cdm:.6f} "
+    f"page_teds={page_teds:.6f} overall={100*official_overall:.4f} "
+    f"overall_delta_pp={100*deltas['official_overall']:+.4f} "
+    f"quality_warning={out['quality_warning_over_0_5pp']} "
+    "teds_errors=0 cdm_errors=0"
+)
+PY
+```
+
+Write `$ROOT/agent_report.md` after the mechanical comparison.  Include:
+
+1. exact commit, host, physical 310P, software versions, model SHA, commands,
+   cache paths, materialization/warm/full cache deltas, and any compile work;
+2. setup, outer wall, pipeline E2E, pages/s and seconds/page;
+3. layout `stage_s` totals explicitly labeled **summed concurrent worker
+   work**, not critical-path wall; do not call `page_total_s` layout wall;
+4. every recognition device-stage total; all vision/text/decode real,
+   physical, raw and effective token counts/rates; packing histograms/fill;
+5. stop reasons, KV-full/repetition cases, cache-pool high-water and copied
+   bytes;
+6. all official evaluation metrics using page TEDS/page CDM for Overall, plus
+   diagnostic sample TEDS/sample CDM; match/TEDS/CDM error/timeout counts;
+7. signed 310P-minus-910B deltas for every performance and quality field,
+   with no claim that token parity is required;
+8. `What is proven`, `What differs`, `What remains unresolved`, and the first
+   causal error if any stage failed.
+
+Return the exact `FULL: PASS` sentence first, then paste `agent_report.md` and
+`final_comparison.json`.  Keep raw predictions, logs and compiler caches on the
+work server.  Do not launch a fallback or follow-up lane.  Then stop.
