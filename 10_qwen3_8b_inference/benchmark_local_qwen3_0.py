@@ -52,6 +52,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--prompt", default="Write a tiny Python function that adds two numbers.")
     parser.add_argument("--prefill-tokens", type=int, default=512)
     parser.add_argument("--decode-steps", type=int, default=64)
+    parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--static-kv-cache-len", type=int, default=65536)
     parser.add_argument("--dtype", choices=("float16", "float32"), default="float16")
     parser.add_argument("--device", default="npu:0")
@@ -221,7 +222,12 @@ def print_dynamo_counters(counters: dict[str, dict[str, int]]) -> None:
         print(f"  {group}: {compact}")
 
 
-def summarize_seconds(values: list[float], *, tokens: int) -> dict[str, float]:
+def summarize_seconds(
+    values: list[float],
+    *,
+    tokens: int,
+    batches: int = 1,
+) -> dict[str, float]:
     total = sum(values)
     return {
         "runs": len(values),
@@ -230,13 +236,20 @@ def summarize_seconds(values: list[float], *, tokens: int) -> dict[str, float]:
         "max_sec": max(values) if values else 0.0,
         "total_sec": total,
         "tok_s": (tokens * len(values) / total) if total > 0.0 else 0.0,
+        "batch_s": (batches * len(values) / total) if total > 0.0 else 0.0,
     }
 
 
-def build_prefill_input_ids(runner: LocalQwen30Runner, prompt: str, prefill_tokens: int) -> torch.Tensor:
+def build_prefill_input_ids(
+    runner: LocalQwen30Runner,
+    prompt: str,
+    prefill_tokens: int,
+    batch_size: int,
+) -> torch.Tensor:
     input_ids = runner.encode_prompt(prompt)
     repeats = (prefill_tokens + input_ids.shape[1] - 1) // input_ids.shape[1]
-    return input_ids.repeat(1, repeats)[:, :prefill_tokens].contiguous()
+    input_ids = input_ids.repeat(1, repeats)[:, :prefill_tokens]
+    return input_ids.expand(batch_size, -1).contiguous()
 
 
 def run_prefill_once(runner: LocalQwen30Runner, input_ids: torch.Tensor):
@@ -267,7 +280,12 @@ def run_decode_loop(
     with torch.inference_mode():
         generated = []
         for decode_position in range(input_ids.shape[1] - 1, input_ids.shape[1] - 1 + decode_steps):
-            cache_position = torch.tensor([decode_position], device=input_ids.device, dtype=torch.long)
+            cache_position = torch.full(
+                (input_ids.shape[0],),
+                decode_position,
+                device=input_ids.device,
+                dtype=torch.long,
+            )
             actual_seq_length = decode_position + 1 if runner.decode_increfa_mode == "actual_seq_lengths" else None
             next_id, key_caches, value_caches = decode_one(
                 next_id,
@@ -405,7 +423,11 @@ def benchmark_decode_npugraph(
         graph_runner = prepare_npugraph_decode_runner(runner, input_ids, decode_steps=decode_steps)
         capture_timings.append(graph_runner.capture_sec)
         timings.append(time_call(graph_runner.run_loop))
-    summary = summarize_seconds(timings, tokens=decode_steps)
+    summary = summarize_seconds(
+        timings,
+        tokens=int(input_ids.shape[0]) * decode_steps,
+        batches=decode_steps,
+    )
     summary["npugraph_capture_sec_mean"] = mean(capture_timings) if capture_timings else 0.0
     summary["npugraph_capture_sec_min"] = min(capture_timings) if capture_timings else 0.0
     summary["npugraph_capture_sec_max"] = max(capture_timings) if capture_timings else 0.0
@@ -427,7 +449,11 @@ def benchmark_prefill(
         run_prefill_once(runner, input_ids)
     log.log(f"timing prefill: repeats={repeats}")
     timings = [time_call(lambda: run_prefill_once(runner, input_ids)) for _ in range(repeats)]
-    return summarize_seconds(timings, tokens=int(input_ids.shape[1]))
+    return summarize_seconds(
+        timings,
+        tokens=int(input_ids.numel()),
+        batches=1,
+    )
 
 
 def benchmark_decode(
@@ -524,7 +550,11 @@ def benchmark_decode(
                 )
             )
     )
-    summary = summarize_seconds(timings, tokens=decode_steps)
+    summary = summarize_seconds(
+        timings,
+        tokens=int(input_ids.shape[0]) * decode_steps,
+        batches=decode_steps,
+    )
     summary["compile_decode_first_call_sec"] = compile_first_call_sec
     if parity is not None:
         summary["compiled_eager_parity"] = parity
@@ -871,7 +901,7 @@ def print_timing(label: str, summary: dict) -> None:
     print(
         f"{label}: mean={summary['mean_sec']:.6f}s "
         f"min={summary['min_sec']:.6f}s max={summary['max_sec']:.6f}s "
-        f"tok/s={summary['tok_s']:.2f}"
+        f"tok/s={summary['tok_s']:.2f} batch/s={summary['batch_s']:.2f}"
     )
     if summary.get("compile_decode_first_call_sec") is not None:
         print(f"{label}: compile_first_call={summary['compile_decode_first_call_sec']:.6f}s")
@@ -968,7 +998,14 @@ def main() -> None:
     memory_snapshots = {"after_load": npu_memory_snapshot("after_load")}
     print_memory_snapshot(memory_snapshots["after_load"])
     log.log("building benchmark input ids")
-    input_ids = build_prefill_input_ids(runner, args.prompt, args.prefill_tokens)
+    if args.batch_size < 1:
+        raise ValueError(f"batch_size must be positive, got {args.batch_size}")
+    input_ids = build_prefill_input_ids(
+        runner,
+        args.prompt,
+        args.prefill_tokens,
+        args.batch_size,
+    )
     attributor = KernelAttributor(runner.config)
 
     result = {
@@ -979,6 +1016,7 @@ def main() -> None:
         "compile_decode_dynamic": bool(args.compile_decode_dynamic),
         "npugraph_decode": bool(args.npugraph_decode),
         "decode_increfa_mode": args.decode_increfa_mode,
+        "batch_size": int(args.batch_size),
         "prefill_tokens": int(args.prefill_tokens),
         "decode_steps": int(args.decode_steps),
         "static_kv_cache_len": int(args.static_kv_cache_len),
