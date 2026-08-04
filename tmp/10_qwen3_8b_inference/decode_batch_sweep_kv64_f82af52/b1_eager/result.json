@@ -1,0 +1,80 @@
+{
+  "model_dir": "/workspace/models/Qwen3-8B",
+  "device": "npu:0",
+  "dtype": "float16",
+  "compile_decode": false,
+  "compile_decode_dynamic": false,
+  "npugraph_decode": false,
+  "decode_increfa_mode": "mask",
+  "batch_size": 1,
+  "prefill_tokens": 32,
+  "decode_steps": 32,
+  "static_kv_cache_len": 64,
+  "prefill": {
+    "runs": 0,
+    "mean_sec": 0.0,
+    "min_sec": 0.0,
+    "max_sec": 0.0,
+    "total_sec": 0,
+    "tok_s": 0.0,
+    "batch_s": 0.0
+  },
+  "decode": {
+    "runs": 3,
+    "mean_sec": 2.0121957186299064,
+    "min_sec": 1.9721728879958391,
+    "max_sec": 2.067346435971558,
+    "total_sec": 6.03658715588972,
+    "tok_s": 15.903025587286624,
+    "batch_s": 15.903025587286624,
+    "compile_decode_first_call_sec": null
+  },
+  "dynamo_counters_after_decode": {},
+  "npu_memory": {
+    "after_load": {
+      "label": "after_load",
+      "allocated_bytes": 16383753216,
+      "reserved_bytes": 18159239168,
+      "max_allocated_bytes": 17629462016,
+      "max_reserved_bytes": 18159239168,
+      "free_bytes": 46915588096,
+      "total_bytes": 65452113920,
+      "allocated_gib": 15.258559226989746,
+      "reserved_gib": 16.912109375,
+      "max_allocated_gib": 16.418715953826904,
+      "max_reserved_gib": 16.912109375,
+      "free_gib": 43.693546295166016,
+      "total_gib": 60.95703125
+    },
+    "after_prefill_benchmark": {
+      "label": "after_prefill_benchmark",
+      "allocated_bytes": 16383753728,
+      "reserved_bytes": 18159239168,
+      "max_allocated_bytes": 17629462016,
+      "max_reserved_bytes": 18159239168,
+      "free_bytes": 46915588096,
+      "total_bytes": 65452113920,
+      "allocated_gib": 15.258559703826904,
+      "reserved_gib": 16.912109375,
+      "max_allocated_gib": 16.418715953826904,
+      "max_reserved_gib": 16.912109375,
+      "free_gib": 43.693546295166016,
+      "total_gib": 60.95703125
+    },
+    "after_decode_benchmark": {
+      "label": "after_decode_benchmark",
+      "allocated_bytes": 16383753728,
+      "reserved_bytes": 18184404992,
+      "max_allocated_bytes": 17629462016,
+      "max_reserved_bytes": 18184404992,
+      "free_bytes": 46869450752,
+      "total_bytes": 65452113920,
+      "allocated_gib": 15.258559703826904,
+      "reserved_gib": 16.935546875,
+      "max_allocated_gib": 16.418715953826904,
+      "max_reserved_gib": 16.935546875,
+      "free_gib": 43.650577545166016,
+      "total_gib": 60.95703125
+    }
+  }
+}

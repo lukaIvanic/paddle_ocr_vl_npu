@@ -1,0 +1,24 @@
+[start] 2026-08-04T15:24:36
+[stage 01 +0.807s total=0.807s]	loading runner and model
+loading checkpoint shard 1/5: model-00001-of-00005.safetensors
+loading checkpoint shard 2/5: model-00002-of-00005.safetensors
+loading checkpoint shard 3/5: model-00003-of-00005.safetensors
+loading checkpoint shard 4/5: model-00004-of-00005.safetensors
+loading checkpoint shard 5/5: model-00005-of-00005.safetensors
+memory after_load: alloc=15.26GiB reserved=16.91GiB max_alloc=16.42GiB max_reserved=16.91GiB free=43.69GiB/60.96GiB
+[stage 02 +4.957s total=5.764s]	building benchmark input ids
+[stage 03 +0.047s total=5.811s]	running prefill benchmark
+[stage 04 +0.000s total=5.811s]	warming up prefill: runs=0
+[stage 05 +0.000s total=5.811s]	timing prefill: repeats=0
+prefill: mean=0.000000s min=0.000000s max=0.000000s tok/s=0.00 batch/s=0.00
+memory after_prefill_benchmark: alloc=15.26GiB reserved=16.91GiB max_alloc=16.42GiB max_reserved=16.91GiB free=43.69GiB/60.96GiB
+[stage 06 +0.004s total=5.815s]	running decode benchmark
+[stage 07 +0.000s total=5.815s]	warming up decode: runs=1 steps=32
+/workspace/repos/paddle_ocr_vl_npu/10_qwen3_8b_inference/local_modeling_qwen3_0.py:170: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  value_caches.append(torch.zeros_like(key_cache))
+[stage 08 +2.704s total=8.519s]	timing decode: repeats=3 steps=32
+decode: mean=2.012196s min=1.972173s max=2.067346s tok/s=15.90 batch/s=15.90
+dynamo counters: <empty>
+memory after_decode_benchmark: alloc=15.26GiB reserved=16.94GiB max_alloc=16.42GiB max_reserved=16.94GiB free=43.65GiB/60.96GiB
+[stage 09 +6.249s total=14.768s]	wrote json output to tmp/10_qwen3_8b_inference/decode_batch_sweep_kv64_f82af52/b1_eager/result.json
+[stage 10 +0.000s total=14.768s]	benchmark complete
