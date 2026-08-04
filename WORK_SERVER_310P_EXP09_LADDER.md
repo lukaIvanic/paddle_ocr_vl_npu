@@ -23818,3 +23818,177 @@ Return the exact `310P PHASE 57F: PASS ...` sentence, followed by the two
 ``page-debug-md-filter`` lines.  If it fails, return the first causal error and
 last repeated stack frame instead.  Do not launch the full evaluation yet;
 then stop.
+
+## Phase 57G: finish full matching, TEDS, CDM, and official score
+
+Run this only after Phase 57F passes.  Reuse the already-completed 1,651-page
+Phase-57 prediction set.  Do not rerun layout, OCR, model loading, compilation,
+or any NPU work.  The line-bounded Markdown-table parser is installed by the
+project evaluator wrapper automatically; do not edit the evaluator checkout or
+the saved predictions.
+
+Use one persistent shell and preserve progress in the log.  The wrapper prints
+page-matching and TEDS progress continuously.
+
+```sh
+set -euo pipefail
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git pull --ff-only origin main
+test -z "$(git status --porcelain)"
+ulimit -n 65536
+
+PYTHON_BIN=/usr/local/python3.12.13/bin/python
+EVAL_WRAPPER="$WORK_SERVER_REPO/09_persistent_page_engine/scripts/run_omnidocbench_eval.py"
+CDM_RUNNER="$WORK_SERVER_REPO/09_persistent_page_engine/scripts/run_cdm_from_matched_formulas.py"
+CDM_ROOT=tmp/09_persistent_page_engine/310p_phase56_cdm
+. "$CDM_ROOT/runtime_paths.env"
+EVAL_PYTHON="$OMNIDOCBENCH_EVAL_PYTHON"
+EVALUATOR_ROOT="$OMNIDOCBENCH_EVALUATOR_ROOT"
+test -x "$EVAL_PYTHON"
+test -f "$EVALUATOR_ROOT/pdf_validation.py"
+
+FULL="$($PYTHON_BIN - <<'PY'
+import json
+from pathlib import Path
+roots = []
+for path in Path("tmp/09_persistent_page_engine").glob(
+    "310p_phase57_cap4096_b64_pse_*/full"
+):
+    summary = path / "output" / "run_summary.json"
+    if not summary.is_file():
+        continue
+    data = json.loads(summary.read_text())
+    if data.get("result_count") == 1651 and data.get("prediction_count") == 1651:
+        roots.append(path)
+if not roots:
+    raise SystemExit("no completed 1,651-page Phase-57 run found")
+print(max(roots, key=lambda path: path.stat().st_mtime))
+PY
+)"
+test -s "$FULL/output/OmniDocBench_subset.json"
+test -d "$FULL/output/predictions"
+test "$(find "$FULL/output/predictions" -type f -name '*.md' | wc -l)" -eq 1651
+
+REFERENCE=tmp/09_persistent_page_engine/910b_full_cap4096_text05_b64_pse_target768_898ced7
+test -s "$REFERENCE/output/run_summary.json"
+test -s "$REFERENCE/evaluation/work/result/predictions_quick_match_metric_result.json"
+test -s "$REFERENCE/official_score_summary.json"
+
+SHORT="$(git rev-parse --short HEAD)"
+ROOT="${FULL%/full}"
+EVALUATION="$FULL/evaluation_line_bounded_${SHORT}"
+test ! -e "$EVALUATION"
+mkdir -p "$EVALUATION/work"
+
+cat >"$EVALUATION/work/config.yaml" <<EOF
+end2end_eval:
+  metrics:
+    text_block:
+      metric: [Edit_dist]
+    display_formula:
+      metric: [Edit_dist]
+    table:
+      metric: [TEDS, Edit_dist]
+      teds_workers: 12
+    reading_order:
+      metric: [Edit_dist]
+  dataset:
+    dataset_name: end2end_dataset
+    ground_truth:
+      data_path: $(realpath "$FULL/output/OmniDocBench_subset.json")
+    prediction:
+      data_path: $(realpath "$FULL/output/predictions")
+    match_method: quick_match
+    match_workers: 24
+    quick_match_truncated_timeout_sec: 300
+    match_timeout_sec: 420
+    timeout_fallback_max_chunk_span: 10
+    timeout_fallback_order_penalty: 0.10
+EOF
+
+SECONDS=0
+set +e
+set -o pipefail
+(
+  cd "$EVALUATION/work"
+  PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 3600 \
+    "$EVAL_PYTHON" "$EVAL_WRAPPER" \
+    --config config.yaml --evaluator-root "$EVALUATOR_ROOT" \
+    --match-workers 24 --teds-workers 12 \
+    --page-timeout-sec 120 --fallback-timeout-sec 180 \
+    --fallback-latex-timeout-sec 30 --teds-timeout-sec 120
+) 2>&1 | tee "$EVALUATION/run.log"
+eval_ec="${PIPESTATUS[0]}"
+set -e
+printf '%s\n' "$eval_ec" >"$EVALUATION/exit_code.txt"
+printf '%s\n' "$SECONDS" >"$EVALUATION/outer_wall_s.txt"
+if test "$eval_ec" -ne 0; then
+  printf '310P PHASE 57G MATCHING: FAIL exit=%s wall_s=%s log=%s\n' \
+    "$eval_ec" "$SECONDS" "$EVALUATION/run.log"
+  exit 0
+fi
+
+MATCHED="$EVALUATION/work/result/predictions_quick_match_display_formula_result.json"
+METRIC="$EVALUATION/work/result/predictions_quick_match_metric_result.json"
+STAGES="$EVALUATION/work/result/predictions_quick_match_stage_execution.json"
+test -s "$MATCHED" && test -s "$METRIC" && test -s "$STAGES"
+"$EVAL_PYTHON" - "$STAGES" <<'PY'
+import json, sys
+s = json.load(open(sys.argv[1]))
+assert s["page_match"]["page_count"] == 1651, s["page_match"]
+t = s["metrics"]["table"]["TEDS"]
+assert t["timeout_case_count"] == 0, t
+assert t["error_case_count"] == 0, t
+assert t["exception_case_count"] == 0, t
+PY
+printf '310P PHASE 57G MATCHING: PASS pages=1651 wall_s=%s artifact=%s\n' \
+  "$(cat "$EVALUATION/outer_wall_s.txt")" "$EVALUATION" \
+  | tee "$EVALUATION/matching_sentence.txt"
+
+nproc_count="$(nproc)"
+mem_gib="$(awk '/MemAvailable:/ {printf "%d", $2/1024/1024}' /proc/meminfo)"
+CDM_WORKERS="$nproc_count"
+test "$CDM_WORKERS" -le 96 || CDM_WORKERS=96
+mem_workers="$((mem_gib / 2))"
+test "$mem_workers" -ge 1 || mem_workers=1
+test "$CDM_WORKERS" -le "$mem_workers" || CDM_WORKERS="$mem_workers"
+
+CDM_OUT="$EVALUATION/cdm_native"
+SECONDS=0
+set +e
+set -o pipefail
+PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 1800 \
+  "$EVAL_PYTHON" "$CDM_RUNNER" \
+  --input "$MATCHED" --output-dir "$CDM_OUT" \
+  --evaluator-root "$EVALUATOR_ROOT" --workers "$CDM_WORKERS" \
+  2>&1 | tee "$EVALUATION/cdm_native.run.log"
+cdm_ec="${PIPESTATUS[0]}"
+set -e
+printf '%s\n' "$cdm_ec" >"$EVALUATION/cdm_exit_code.txt"
+printf '%s\n' "$SECONDS" >"$EVALUATION/cdm_outer_wall_s.txt"
+if test "$cdm_ec" -ne 0; then
+  printf '310P PHASE 57G CDM: FAIL exit=%s wall_s=%s log=%s\n' \
+    "$cdm_ec" "$SECONDS" "$EVALUATION/cdm_native.run.log"
+  exit 0
+fi
+printf '310P PHASE 57G CDM: PASS wall_s=%s workers=%s artifact=%s\n' \
+  "$(cat "$EVALUATION/cdm_outer_wall_s.txt")" "$CDM_WORKERS" "$CDM_OUT" \
+  | tee "$EVALUATION/cdm_sentence.txt"
+```
+
+Return the exact `MATCHING: PASS` sentence immediately when matching/TEDS
+finishes, and the exact `CDM: PASS` sentence immediately when CDM finishes.
+Then run the **unchanged Phase 57.5 mechanical comparison block** above with
+these variables already set by this shell:
+
+```text
+FULL, ROOT, REFERENCE, METRIC, STAGES, CDM_OUT, EVAL_PYTHON
+```
+
+Write its output to `$ROOT/final_comparison.json` and
+`$ROOT/final_sentence.txt`, replacing the earlier absent/partial evaluation
+result.  Return the exact `310P PHASE 57 FULL: PASS ...` sentence first,
+followed by `final_comparison.json`.  Report any nonzero TEDS/CDM error or
+timeout count instead of suppressing samples.  Do not rerun inference or apply
+another fallback; then stop.
