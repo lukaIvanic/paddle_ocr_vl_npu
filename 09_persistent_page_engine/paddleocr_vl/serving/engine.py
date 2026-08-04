@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import sys
 import time
@@ -2572,6 +2573,27 @@ class ContinuousRecognizer:
                         "count": count,
                     }
                 )
+        digest_limit = min(cache_length, 1152)
+        digest_chunk_size = 128
+        chunk_hashes = [
+            hashlib.sha256()
+            for _start in range(0, digest_limit, digest_chunk_size)
+        ]
+        for kind, tensors in (
+            ("key", member.cache.key_caches),
+            ("value", member.cache.value_caches),
+        ):
+            for layer, tensor in enumerate(tensors):
+                cpu = tensor[..., :digest_limit, :].detach().contiguous().cpu()
+                for chunk_index, start in enumerate(
+                    range(0, digest_limit, digest_chunk_size)
+                ):
+                    end = min(start + digest_chunk_size, digest_limit)
+                    digest = chunk_hashes[chunk_index]
+                    digest.update(f"{kind}:{layer}:{start}:{end}|".encode())
+                    digest.update(
+                        cpu[..., start:end, :].contiguous().numpy().tobytes()
+                    )
         print(
             "EXP09_PREFILL_KV_DIAGNOSTIC "
             + json.dumps(
@@ -2583,6 +2605,19 @@ class ContinuousRecognizer:
                     "private_cache_generation": member.cache_lease.generation,
                     "totals": totals,
                     "nonfinite_layers": nonfinite_layers,
+                    "sha256_by_absolute_token_chunk": [
+                        {
+                            "start": start,
+                            "end": min(
+                                start + digest_chunk_size,
+                                digest_limit,
+                            ),
+                            "sha256": chunk_hashes[index].hexdigest(),
+                        }
+                        for index, start in enumerate(
+                            range(0, digest_limit, digest_chunk_size)
+                        )
+                    ],
                 },
                 ensure_ascii=False,
                 separators=(",", ":"),
