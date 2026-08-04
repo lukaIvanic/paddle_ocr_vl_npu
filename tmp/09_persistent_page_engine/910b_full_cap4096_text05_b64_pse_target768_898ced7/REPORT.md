@@ -35,7 +35,7 @@ Official evaluator wall: 255 s, exit 0.
 - Display-formula Edit distance: 0.0903191.
 - Table TEDS (official page aggregate): 0.944425.
 - Table TEDS (per-table sample aggregate, diagnostic): 0.930515.
-- Table structure-only TEDS (sample): 0.956921.
+- Table structure-only TEDS (official page aggregate): 0.968762; per-table sample aggregate: 0.956921.
 - Table Edit distance: 0.0541462.
 - Reading-order Edit distance: 0.140596.
 - Matching: 1651 pages; four process-isolated fallback pages; no quick-match timeouts.
@@ -52,4 +52,4 @@ Official OmniDocBench overall `((1-text_edit)*100 + page_CDM*100 + page_TEDS*100
 - Later B64/PSE execution of that KV2048/cap2048 regime: 717.705 s, 2.300 pages/s; its official edit-distance/TEDS metrics were essentially the same, but that run did not record a direct CDM artifact.
 - This run: 800.495 s, 2.062 pages/s, page TEDS 0.944425, official Overall 95.5935.
 
-This run is 24.2% less wall time / 31.9% higher pages/s than the old quality-first run while retaining most of its quality. Relative to the aggressive KV2048 result, it restores table TEDS from 0.913860 to 0.930515 and CDM from 0.964700 to 0.970524.
+This run is 24.2% less wall time / 31.9% higher pages/s than the old quality-first run while retaining most of its quality. Relative to the aggressive KV2048 result, it restores official page TEDS from 0.921781 to 0.944425; the direct CDM sample aggregate rises from 0.964700 to 0.970524.
