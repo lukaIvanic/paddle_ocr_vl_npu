@@ -53,7 +53,7 @@ if [[ ! -x "$OMNIDOCBENCH_PDFLATEX" ]]; then
   mkdir -p "$BUILD_ROOT/install-tl"
   tar -xzf "$INSTALLER" -C "$BUILD_ROOT/install-tl" --strip-components=1
   cat > "$BUILD_ROOT/texlive.profile" <<EOF
-selected_scheme scheme-small
+selected_scheme scheme-basic
 TEXDIR $OMNIDOCBENCH_TEXLIVE_ROOT
 TEXMFCONFIG $OMNIDOCBENCH_TEXLIVE_ROOT/texmf-config
 TEXMFHOME $OMNIDOCBENCH_TEXLIVE_ROOT/texmf-home
