@@ -1,0 +1,48 @@
+[bundle] reading frozen recognition trace
+[bundle] hashing source artifacts
+[bundle] writing compact deterministic ZIP
+{
+  "bundle": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_phase57_authority_898ced7/phase57_910b_authority.gdatlas.zip",
+  "sha256": "580dc77ffd0c48e6291d46a7d0346e8ee804ceb29ba5b237eb9973e6aed74cca",
+  "bytes": 13477679,
+  "manifest": {
+    "schema_version": 1,
+    "kind": "experiment09_generation_difference_bundle",
+    "label": "910B2_phase57_cap4096_text05",
+    "project_commit": "898ced7",
+    "evaluator_commit": "2b161d010d2e3aff77a0edef359ea3a6411d23cd",
+    "source_paths": {
+      "recognition_trace": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_full_cap4096_text05_b64_pse_target768_898ced7/output/recognition_trace.jsonl",
+      "run_summary": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_full_cap4096_text05_b64_pse_target768_898ced7/output/run_summary.json",
+      "metric_result": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_full_cap4096_text05_b64_pse_target768_898ced7/evaluation/work/result/predictions_quick_match_metric_result.json",
+      "evaluator_text_block": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_full_cap4096_text05_b64_pse_target768_898ced7/evaluation/work/result/predictions_quick_match_text_block_result.json",
+      "evaluator_display_formula": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_full_cap4096_text05_b64_pse_target768_898ced7/evaluation/work/result/predictions_quick_match_display_formula_result.json",
+      "evaluator_table": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_full_cap4096_text05_b64_pse_target768_898ced7/evaluation/work/result/predictions_quick_match_table_result.json",
+      "evaluator_reading_order": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_full_cap4096_text05_b64_pse_target768_898ced7/evaluation/work/result/predictions_quick_match_reading_order_result.json"
+    },
+    "source_sha256": {
+      "recognition_trace": "d26e3877a80f9bc6c029dcf861381978e5b105b29689313d9d2bd3e23d23c00b",
+      "run_summary": "81efccd01bb2b2f8f1cd5cd1cc73ad45e7457fd305791b5ad2ed7d03c646bd18",
+      "metric_result": "789f5d8d86459947fdb090dad17eafce866f7f26835bd37de71c0fbcd50f2c16",
+      "evaluator_text_block": "4ab9a4fc34d852268f6ffe71e4eea596c266787a417b1ebd080d0e1f2bb54888",
+      "evaluator_display_formula": "21cb6bcb7e70733a57dc7ce598487a593e7d23dadc6193c4a76cddd3ec844786",
+      "evaluator_table": "7b176c97a04fc818b18f7b5bd4873f908192d5ba7e17fbdf7ab0dae05c0d074a",
+      "evaluator_reading_order": "100a60fa3f37fd2f1a599b4fa88f9de6629d7ac131f49a6ede8cd6b74ad4ae9e"
+    },
+    "counts": {
+      "pages_in_run_summary": 1651,
+      "pages_with_recognition_requests": 1649,
+      "recognition_requests": 30557,
+      "table_recognition_requests": 751,
+      "evaluator_rows": {
+        "text_block": 19688,
+        "display_formula": 2352,
+        "table": 665,
+        "reading_order": 1638
+      },
+      "table_pages": 458
+    },
+    "teds_authority": "frozen_evaluator"
+  }
+}
+[bundle] PASS
