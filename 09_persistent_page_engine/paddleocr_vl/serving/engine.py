@@ -441,6 +441,7 @@ class ContinuousRecognizer:
         scheduler_progress_events: Iterable[str] | None = None,
         diagnostic_decode_effective_length: int | None = None,
         diagnostic_decode_request_id: str | None = None,
+        diagnostic_prefill_kv_request_ids: Iterable[str] | None = None,
         decode_optimization: str = DEFAULT_DECODE_OPTIMIZATION,
         recognition_input_fingerprints: bool = False,
     ):
@@ -499,6 +500,10 @@ class ContinuousRecognizer:
             None
             if diagnostic_decode_request_id is None
             else str(diagnostic_decode_request_id)
+        )
+        self.diagnostic_prefill_kv_request_ids = frozenset(
+            str(request_id)
+            for request_id in (diagnostic_prefill_kv_request_ids or ())
         )
         self.batch_size = int(batch_size)
         self.cache_length = int(cache_length)
@@ -2507,6 +2512,86 @@ class ContinuousRecognizer:
         )
 
     @torch.inference_mode()
+    def _diagnose_prefill_kv_finiteness(
+        self,
+        member: _InFlightPrefillMember,
+    ) -> None:
+        """Synchronously inspect one explicitly targeted private KV row."""
+
+        request_id = member.prepared.request_id
+        if request_id not in self.diagnostic_prefill_kv_request_ids:
+            return
+        prefix_length = int(member.input_tokens)
+        cache_length = int(member.cache.cache_length)
+        pending: list[tuple[str, int, str, str, torch.Tensor]] = []
+        for kind, tensors in (
+            ("key", member.cache.key_caches),
+            ("value", member.cache.value_caches),
+        ):
+            for layer, tensor in enumerate(tensors):
+                for scope, view in (
+                    ("prefix", tensor[..., :prefix_length, :]),
+                    ("tail", tensor[..., prefix_length:, :]),
+                ):
+                    pending.append(
+                        (
+                            kind,
+                            layer,
+                            scope,
+                            "nan",
+                            torch.count_nonzero(torch.isnan(view)),
+                        )
+                    )
+                    pending.append(
+                        (
+                            kind,
+                            layer,
+                            scope,
+                            "inf",
+                            torch.count_nonzero(torch.isinf(view)),
+                        )
+                    )
+        counts = torch.stack([item[-1] for item in pending]).cpu().tolist()
+        totals = {
+            "prefix": {"nan": 0, "inf": 0},
+            "tail": {"nan": 0, "inf": 0},
+        }
+        nonfinite_layers: list[dict[str, int | str]] = []
+        for (kind, layer, scope, value_kind, _tensor), count in zip(
+            pending, counts
+        ):
+            count = int(count)
+            totals[scope][value_kind] += count
+            if count:
+                nonfinite_layers.append(
+                    {
+                        "kind": kind,
+                        "layer": layer,
+                        "scope": scope,
+                        "value_kind": value_kind,
+                        "count": count,
+                    }
+                )
+        print(
+            "EXP09_PREFILL_KV_DIAGNOSTIC "
+            + json.dumps(
+                {
+                    "request_id": request_id,
+                    "input_tokens": prefix_length,
+                    "cache_length": cache_length,
+                    "private_cache_slot": member.cache_lease.slot_index,
+                    "private_cache_generation": member.cache_lease.generation,
+                    "totals": totals,
+                    "nonfinite_layers": nonfinite_layers,
+                },
+                ensure_ascii=False,
+                separators=(",", ":"),
+            ),
+            file=sys.stderr,
+            flush=True,
+        )
+
+    @torch.inference_mode()
     def _finalize_prefill_group(
         self,
         inflight: _InFlightPrefillGroup,
@@ -2526,6 +2611,8 @@ class ContinuousRecognizer:
             first_tokens_ready = self.prefill_transfer_stream.record_event()
         first_tokens_ready.synchronize()
         first_tokens = [int(value) for value in self.prefill_host_tokens[:count].tolist()]
+        for member in inflight.members:
+            self._diagnose_prefill_kv_finiteness(member)
         first_token_d2h_s = time.perf_counter() - started
         resolve_finished = time.perf_counter()
         request_ids = [member.prepared.request_id for member in inflight.members]
@@ -2808,6 +2895,9 @@ class ContinuousRecognizer:
                 else sorted(self.scheduler_progress_events)
             ),
             "diagnostic_decode_request_id": self.diagnostic_decode_request_id,
+            "diagnostic_prefill_kv_request_ids": sorted(
+                self.diagnostic_prefill_kv_request_ids
+            ),
             "vision_prefill": self.vision_prefill.metadata,
             "vision_mlp": dict(self.vision_mlp),
             "vision_linear_weight_format": dict(self.vision_weight_format),

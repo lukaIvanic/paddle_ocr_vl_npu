@@ -353,6 +353,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--diagnostic-prefill-kv-request-id",
+        action="append",
+        default=[],
+        help=(
+            "After the named request's prefill completes, count NaN and Inf "
+            "values separately in its valid private-KV prefix and masked tail. "
+            "Repeat for multiple request IDs. This synchronizes only targets."
+        ),
+    )
+    parser.add_argument(
         "--preprocess-all-pages-first",
         action="store_true",
         help=(
@@ -795,6 +805,9 @@ def main() -> None:
             args.diagnostic_decode_effective_length
         ),
         diagnostic_decode_request_id=args.diagnostic_decode_request_id,
+        diagnostic_prefill_kv_request_ids=(
+            args.diagnostic_prefill_kv_request_id
+        ),
         recognition_input_fingerprints=(
             args.recognition_input_fingerprints
         ),
