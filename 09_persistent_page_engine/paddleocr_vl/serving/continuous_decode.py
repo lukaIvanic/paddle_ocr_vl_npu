@@ -11,7 +11,7 @@ import torch
 
 from ..model.text_decode import LocalPaddleOCRVLStaticCache
 from .repetition import ExactCycleTracker, RepetitionEvidence
-from utils.timing import synchronize
+from utils.timing import stream_synchronize, synchronize
 from utils.timeline import TimelineRecorder
 
 
@@ -769,6 +769,7 @@ class ContinuousDecodeScheduler:
         hot_swap_kv_bytes = 0
         d2h_wait_wall_s = 0.0
         retire_and_refill_wall_s = 0.0
+        hot_swap_safety_sync_wall_s = 0.0
         ready_source_wall_s = 0.0
         completion_callback_wall_s = 0.0
         ready_queued_ns: dict[str, int] = {}
@@ -1026,6 +1027,7 @@ class ContinuousDecodeScheduler:
             refill_reason: str,
         ) -> None:
             nonlocal d2h_wait_wall_s, retire_and_refill_wall_s
+            nonlocal hot_swap_safety_sync_wall_s
             progress(
                 "pending_token_wait_begin",
                 iteration=iteration,
@@ -1159,6 +1161,31 @@ class ContinuousDecodeScheduler:
                 pending_iteration=pending_copy.iteration,
                 newly_completed=len(completions) - completed_before,
             )
+            newly_completed = len(completions) - completed_before
+            if newly_completed and (ready_queue or not source_exhausted):
+                # The next decode graph is submitted before the previous
+                # sampled tokens are retired so its D2H can overlap compute.
+                # A slot that just completed therefore still participates in
+                # that speculative graph.  TorchAir's in-place KV writes are
+                # not reliably protected from an immediately following
+                # hot-swap copy by enqueue order alone on every Ascend target.
+                # Resolve only the compute stream at an actual replacement
+                # boundary; iterations without a hot swap remain pipelined.
+                progress(
+                    "hot_swap_safety_sync_begin",
+                    iteration=iteration,
+                    newly_completed=newly_completed,
+                )
+                safety_started = time.perf_counter()
+                stream_synchronize(self.device)
+                safety_wait_s = time.perf_counter() - safety_started
+                hot_swap_safety_sync_wall_s += safety_wait_s
+                progress(
+                    "hot_swap_safety_sync_end",
+                    iteration=iteration,
+                    newly_completed=newly_completed,
+                    wait_s=safety_wait_s,
+                )
             progress("hot_swap_admission_begin", iteration=iteration)
             fill_free_slots(hot_swap=True)
             progress("hot_swap_admission_end", iteration=iteration)
@@ -1360,5 +1387,8 @@ class ContinuousDecodeScheduler:
                 "slot_admission_enqueue_wall": float(self.arena.admission_enqueue_wall_s),
                 "d2h_wait_wall": float(d2h_wait_wall_s),
                 "retire_and_refill_host_wall": float(retire_and_refill_wall_s),
+                "hot_swap_safety_sync_wall": float(
+                    hot_swap_safety_sync_wall_s
+                ),
             },
         )
