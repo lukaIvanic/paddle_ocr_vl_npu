@@ -22350,3 +22350,99 @@ explanation, Markdown fence, or additional investigation.  Then stop.  In
 particular, do not run `setup_omnidocbench_eval_runtime.sh` yet: its current
 defaults target the 910B `/workspace` layout and the next revision will adapt
 them from this preflight rather than guessing.
+
+## Phase 56B: install and smoke-test native Formula CDM
+
+Run this only after Phase 56A reports: ARM64 Ubuntu 22.04, UID 0, `apt-get`,
+Python 3.10, evaluator source, a saved display-formula match JSON, working apt
+and TeX-mirror network access, and enough free disk.  Those conditions were
+reported.  This phase installs and verifies CDM only.  Do not run OCR, the full
+OmniDocBench evaluator, or CDM over the saved corpus yet.
+
+The install is expected to take roughly 10--20 minutes because pinned
+ImageMagick is built once from source and the frozen TeX Live package set is
+downloaded once.  The command prints `[1/5]` through `[5/5]` progress into a
+live log and has a 40-minute hard timeout.  Re-running is safe: completed
+ImageMagick, TeX Live, Python, and download artifacts are reused.
+
+Pull `main`, then run this exact block from the checkout root:
+
+```sh
+set -eu
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git pull --ff-only origin main
+test -z "$(git status --porcelain)"
+
+ROOT=tmp/09_persistent_page_engine/310p_phase56_cdm
+PREFLIGHT="$ROOT/preflight_sentence.txt"
+INSTALL_LOG="$ROOT/install.log"
+test -s "$PREFLIGHT"
+
+field() {
+  key="$1"
+  tr ' ' '\n' <"$PREFLIGHT" | sed -n "s/^${key}=//p" | head -n 1
+}
+
+EVALUATOR_PDF="$(field evaluator_path)"
+EVAL_PY="$(field eval_py)"
+test -f "$EVALUATOR_PDF"
+EVALUATOR_ROOT="$(dirname "$EVALUATOR_PDF")"
+if test "$EVAL_PY" = NONE || ! test -x "$EVAL_PY"; then
+  EVAL_PY="$WORK_SERVER_REPO/.runtime_cache/omnidocbench_eval/venv/bin/python"
+fi
+
+if ! test -f "$EVALUATOR_ROOT/src/metrics/cdm/modules/texlive_env.py"; then
+  printf '%s\n' \
+    "CDM_INSTALL BLOCKED missing_texlive_env_patch evaluator_root=$EVALUATOR_ROOT" \
+    | tee "$ROOT/install_sentence.txt"
+  exit 0
+fi
+
+JOBS="$(nproc)"
+test "$JOBS" -le 16 || JOBS=16
+export OMNIDOCBENCH_WORKSPACE_ROOT="$(dirname "$WORK_SERVER_REPO")"
+export OMNIDOCBENCH_EVAL_TOOLS_ROOT="$WORK_SERVER_REPO/.runtime_cache/omnidocbench_eval/tools"
+export OMNIDOCBENCH_EVAL_PYTHON="$EVAL_PY"
+export OMNIDOCBENCH_EVALUATOR_ROOT="$EVALUATOR_ROOT"
+export OMNIDOCBENCH_BUILD_JOBS="$JOBS"
+
+SECONDS=0
+set +e
+set -o pipefail
+timeout --signal=TERM --kill-after=30s 2400 \
+  bash 09_persistent_page_engine/scripts/setup_omnidocbench_eval_runtime.sh \
+  2>&1 | tee "$INSTALL_LOG"
+ec="${PIPESTATUS[0]}"
+set -e
+wall="$SECONDS"
+
+if test "$ec" -ne 0; then
+  last="$(tail -n 3 "$INSTALL_LOG" | tr '\n' ' ' | tr -s ' ' | cut -c1-300)"
+  printf '%s\n' \
+    "CDM_INSTALL FAIL exit=$ec wall_s=$wall last=$last log=$INSTALL_LOG" \
+    | tee "$ROOT/install_sentence.txt"
+  exit 0
+fi
+
+# Persist only non-secret, relocatable runtime choices for Phase 56C.
+{
+  printf 'export OMNIDOCBENCH_WORKSPACE_ROOT=%q\n' "$OMNIDOCBENCH_WORKSPACE_ROOT"
+  printf 'export OMNIDOCBENCH_EVAL_TOOLS_ROOT=%q\n' "$OMNIDOCBENCH_EVAL_TOOLS_ROOT"
+  printf 'export OMNIDOCBENCH_EVAL_PYTHON=%q\n' "$OMNIDOCBENCH_EVAL_PYTHON"
+  printf 'export OMNIDOCBENCH_EVALUATOR_ROOT=%q\n' "$OMNIDOCBENCH_EVALUATOR_ROOT"
+} >"$ROOT/runtime_paths.env"
+
+# setup_omnidocbench_eval_runtime.sh already ran the representative CJK CDM
+# rendering smoke and asserted the pinned critical versions.
+printf '%s\n' \
+  "CDM_INSTALL PASS wall_s=$wall arch=$(uname -m) python=$OMNIDOCBENCH_EVAL_PYTHON texlive=2025 pdftex=1.40.28 imagemagick=7.1.1-47 gs=9.55.0 smoke=pass" \
+  | tee "$ROOT/install_sentence.txt"
+```
+
+Return **exactly the single `CDM_INSTALL ...` sentence printed at the end**,
+with no Markdown fence or explanation, then stop.  On `FAIL` or `BLOCKED`, do
+not improvise or install an alternative package set; the next pushed revision
+will address the exact reported blocker.  On `PASS`, do not score the saved
+formulas yet; Phase 56C will do a tiny timing pilot and then the full direct CDM
+run without rerunning OCR or matching.
