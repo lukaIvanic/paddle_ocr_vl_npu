@@ -195,6 +195,8 @@ def main() -> None:
             {
                 "source_image_name": stable[0],
                 "block_index": stable[1],
+                "page_input_index": int(right["page_input_index"]),
+                "request_id": str(right["request_id"]),
                 "global_request_index": int(right["global_request_index"]),
                 "label": right.get("label"),
                 "reference_tokens": len(left_tokens),

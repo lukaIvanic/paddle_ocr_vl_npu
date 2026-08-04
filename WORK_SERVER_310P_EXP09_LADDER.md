@@ -24161,3 +24161,210 @@ compiled graph are identical.  Return the final
 `runaway_rate_by_private_tail` rows, and the strict divergence-category counts.
 If B64 fails or OOMs, stop before B1 and return the first causal error plus
 `npu-smi info`.  Do not run any page benchmark.  Then stop.
+
+## Phase 57M: prove and eliminate production decode-slot contamination
+
+Run this after Phase 57L.  This validates the permanent scheduler fix that
+waits for the already-enqueued speculative decode graph before a completed
+slot is reused.  The experiment keeps the exact Phase-57 B64 production
+contract and 96-row prefill arena.  It first reruns only through the earliest
+known strict runaway page; the full 1,651-page lane runs only if that bounded
+gate eliminates the runaway.  No evaluation is needed in this phase.
+
+On 910B2 the same fix was validated twice: a 940-page B64 prefix had zero broad
+or strict runaways, and the full 1,651-page B64 run had zero broad or strict
+runaways across 30,485 authority-EOS crops.  The full run was 30,479/30,485
+token-exact; the six residual differences comprised two corrupt authority-side
+generations corrected by the new run and four ordinary OCR variations.  The
+fence cost 60.535 s and changed throughput from 2.092 to 1.962 pages/s.
+
+Use one persistent shell.  Do not edit source or change batch size, cache
+length, pools, buckets, packing, attention, pixels, or model paths.
+
+```sh
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+git pull --ff-only origin main
+test -z "$(git status --porcelain)"
+grep -q 'hot_swap_safety_sync_wall' \
+  09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py
+
+PYTHON=/usr/local/python3.12.13/bin/python
+E2E=09_persistent_page_engine/scripts/run_omnidocbench.py
+AUDIT=09_persistent_page_engine/scripts/audit_phase57_state_contamination.py
+
+OLD_TRACE="$(ls -1dt \
+  tmp/09_persistent_page_engine/310p_phase57_cap4096_b64_pse_*/full/output/recognition_trace.jsonl \
+  | head -n 1)"
+test -s "$OLD_TRACE"
+
+SHORT="$(git rev-parse --short HEAD)"
+ROOT="tmp/09_persistent_page_engine/310p_phase57m_hotswap_fence_${SHORT}"
+test ! -e "$ROOT"
+mkdir -p "$ROOT" "$ROOT/prefix" "$ROOT/full"
+
+$PYTHON "$AUDIT" --candidate-trace "$OLD_TRACE" \
+  --output "$ROOT/old_state_contamination_audit.json" \
+  2>&1 | tee "$ROOT/old_state_contamination_audit.log"
+
+PREFIX_LIMIT="$($PYTHON - "$ROOT/old_state_contamination_audit.json" <<'PY'
+import json,sys
+d=json.load(open(sys.argv[1]))
+cases=d['strict_cases']
+assert cases, 'the old Phase-57 trace has no strict runaway to reproduce'
+print(min(int(x['page_input_index']) for x in cases)+1)
+PY
+)"
+printf 'PHASE57M bounded_prefix_pages=%s\n' "$PREFIX_LIMIT" \
+  | tee "$ROOT/progress.log"
+
+source npu-setup
+MODEL=/home/lukaiv/models/PaddleOCR-VL-1.6
+LAYOUT_MODEL=/home/lukaiv/models/PP-DocLayoutV3_safetensors
+DATASET_JSON=/home/lukaiv/datasets/OmniDocBench/OmniDocBench.json
+IMAGES_DIR=/home/lukaiv/datasets/OmniDocBench/images
+DECODE_CACHE=.runtime_cache/310p_phase57_decode_b64_k4096_pse
+VISION_CACHE=.runtime_cache/310p_phase52_v16_vision_4352_nz
+BATCHED_CACHE=.runtime_cache/310p_phase57_vision_batched_unused
+TEXT_CACHE=.runtime_cache/310p_phase52_v16_text
+PACKED_CACHE=.runtime_cache/310p_phase52_v16_text_packed
+
+for path in "$MODEL/model.safetensors" "$LAYOUT_MODEL/model.safetensors" \
+            "$DATASET_JSON"; do
+  test -s "$path"
+done
+for cache in "$DECODE_CACHE" "$VISION_CACHE" "$TEXT_CACHE" "$PACKED_CACHE"; do
+  test -d "$cache"
+  test -n "$(find "$cache" -type f -print -quit)"
+done
+
+PRODUCTION_ARGS=(
+  "$E2E"
+  --dataset-json "$DATASET_JSON" --images-dir "$IMAGES_DIR"
+  --layout-model "$LAYOUT_MODEL" --recognizer-model "$MODEL"
+  --batch-size 64 --cache-length 4096 --max-new-tokens 4096
+  --preprocessor-min-pixels 28224 --preprocessor-max-pixels 802816
+  --text-crop-scale 0.5
+  --decode-backend torchair
+  --decode-optimization combined_apply_pse_sentinel
+  --torchair-cache-dir "$DECODE_CACHE"
+  --vision-backend torchair --vision-attention prompt_flash_attention
+  --vision-buckets 256,384,512,640,768,1408,1920,2048,2944,4096
+  --vision-torchair-cache-dir "$VISION_CACHE"
+  --vision-batched-cache-dir "$BATCHED_CACHE"
+  --vision-promptfa-align-128
+  --vision-mlp-intermediate-size 4352
+  --vision-linear-weight-format fractal_nz
+  --vision-padding bucket --vision-packing greedy
+  --vision-pack-target 768 --vision-router-lookahead 32
+  --text-buckets 1152
+  --text-packing production_group
+  --text-pack-buckets 128,256,384,512,768,1024
+  --text-pack-max-members 32
+  --text-torchair-cache-dir "$TEXT_CACHE"
+  --text-packed-cache-dir "$PACKED_CACHE"
+  --layout-device npu --no-layout-graph-capture
+  --preprocess-all-pages-first --layout-workers 8 --no-timeline
+)
+
+run_lane() {
+  lane="$1"
+  limit="$2"
+  timeout_s="$3"
+  printf '%q ' "$PYTHON" "${PRODUCTION_ARGS[@]}" \
+    --offset 0 --limit "$limit" --output-dir "$lane/output" \
+    >"$lane/command.sh"
+  printf '\n' >>"$lane/command.sh"
+  npu-smi info >"$lane/npu_before.txt"
+  SECONDS=0
+  (
+    set +e
+    set -o pipefail
+    PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s "$timeout_s" \
+      "$PYTHON" "${PRODUCTION_ARGS[@]}" \
+      --offset 0 --limit "$limit" --output-dir "$lane/output" \
+      2>&1 | tee "$lane/run.log"
+    printf '%s\n' "${PIPESTATUS[0]}" >"$lane/exit_code.txt"
+  ) &
+  lane_pid="$!"
+  (
+    while sleep 60; do
+      kill -0 "$lane_pid" 2>/dev/null || exit 0
+      completed="$(grep -Eo 'completed=[0-9]+/[0-9]+' "$lane/run.log" 2>/dev/null | tail -n 1 || true)"
+      test -n "$completed" || completed=setup_or_layout
+      printf 'PHASE57M_PROGRESS lane=%s elapsed_s=%s state=%s\n' \
+        "$(basename "$lane")" "$SECONDS" "$completed"
+    done
+  ) &
+  heartbeat_pid="$!"
+  wait "$lane_pid" || true
+  kill "$heartbeat_pid" 2>/dev/null || true
+  wait "$heartbeat_pid" 2>/dev/null || true
+  printf '%s\n' "$SECONDS" >"$lane/outer_wall_s.txt"
+  npu-smi info >"$lane/npu_after.txt" || true
+  test "$(cat "$lane/exit_code.txt")" -eq 0
+}
+
+run_lane "$ROOT/prefix" "$PREFIX_LIMIT" 5400
+$PYTHON "$AUDIT" \
+  --candidate-trace "$ROOT/prefix/output/recognition_trace.jsonl" \
+  --output "$ROOT/prefix/state_contamination_audit.json" \
+  2>&1 | tee "$ROOT/prefix/state_contamination_audit.log"
+
+$PYTHON - "$ROOT" "$PREFIX_LIMIT" <<'PY' | tee "$ROOT/prefix_sentence.txt"
+import json,sys
+from pathlib import Path
+root=Path(sys.argv[1]); limit=int(sys.argv[2])
+old=json.load(open(root/'old_state_contamination_audit.json'))
+new=json.load(open(root/'prefix/state_contamination_audit.json'))
+s=json.load(open(root/'prefix/output/run_summary.json'))
+assert old['strict_runaways']['count'] > 0
+assert new['broad_runaways']['count'] == 0, new['broad_runaways']
+assert new['strict_runaways']['count'] == 0, new['strict_runaways']
+wait=float(s['recognition']['hot_swap_safety_sync_wall_s'])
+assert wait > 0.0, wait
+assert s['configuration']['batch_size'] == 64
+assert s['recognition']['text_packing']['private_cache_pool']['capacity'] == 96
+print(
+  '310P PHASE57M PREFIX: PASS '
+  f'pages={limit} old_strict={old["strict_runaways"]["count"]} '
+  f'new_broad=0 new_strict=0 safety_wait_s={wait:.3f} '
+  f'e2e_s={s["pipeline_e2e_s"]:.3f} root={root}'
+)
+PY
+
+# The bounded gate is decisive and cheap.  Only after it passes, validate all
+# known and previously unseen reuse histories in one full B64 production run.
+run_lane "$ROOT/full" 1651 10800
+$PYTHON "$AUDIT" \
+  --candidate-trace "$ROOT/full/output/recognition_trace.jsonl" \
+  --output "$ROOT/full/state_contamination_audit.json" \
+  2>&1 | tee "$ROOT/full/state_contamination_audit.log"
+
+$PYTHON - "$ROOT" <<'PY' | tee "$ROOT/full_sentence.txt"
+import json,sys
+from pathlib import Path
+root=Path(sys.argv[1])
+old=json.load(open(root/'old_state_contamination_audit.json'))
+new=json.load(open(root/'full/state_contamination_audit.json'))
+s=json.load(open(root/'full/output/run_summary.json'))
+assert new['broad_runaways']['count'] == 0, new['broad_runaways']
+assert new['strict_runaways']['count'] == 0, new['strict_runaways']
+wait=float(s['recognition']['hot_swap_safety_sync_wall_s'])
+controls=new['non_runaway_reference_eos_controls']
+print(
+  '310P PHASE57M FULL: PASS '
+  f'pages={s["result_count"]} old_strict={old["strict_runaways"]["count"]} '
+  f'new_broad=0 new_strict=0 exact={controls["divergence_categories"].get("exact",0)} '
+  f'nonexact={len(new["nonexact_reference_eos_cases"])} '
+  f'safety_wait_s={wait:.3f} e2e_s={s["pipeline_e2e_s"]:.3f} '
+  f'pages_per_s={s["pages_per_s"]:.6f} root={root}'
+)
+PY
+```
+
+Return the exact `310P PHASE57M PREFIX: ...` sentence as soon as it appears.
+If it says `PASS`, continue without waiting for another instruction and return
+the exact `310P PHASE57M FULL: ...` sentence when finished.  If either lane
+fails, return its first causal error, last 40 log lines, and `npu-smi info`,
+then stop.  Do not run evaluation, CDM, B32, or a changed configuration.
