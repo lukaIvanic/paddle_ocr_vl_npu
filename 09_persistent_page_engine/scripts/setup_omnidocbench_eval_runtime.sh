@@ -10,8 +10,8 @@ CACHE_ROOT="$TOOLS_ROOT/cache/downloads"
 BUILD_ROOT="$TOOLS_ROOT/build"
 BUILD_JOBS="${OMNIDOCBENCH_BUILD_JOBS:-16}"
 
-TEXLIVE_INSTALLER_URL="https://ftp.math.utah.edu/pub/tex/historic/systems/texlive/2025/tlnet-final/install-tl-unx.tar.gz"
-TEXLIVE_REPOSITORY_URL="https://ftp.math.utah.edu/pub/tex/historic/systems/texlive/2025/tlnet-final"
+TEXLIVE_INSTALLER_URL="https://ftp.tu-chemnitz.de/pub/tug/historic/systems/texlive/2025/tlnet-final/install-tl-unx.tar.gz"
+TEXLIVE_REPOSITORY_URL="https://ftp.tu-chemnitz.de/pub/tug/historic/systems/texlive/2025/tlnet-final"
 TEXLIVE_INSTALLER_SHA256="311df9f1477fd90c520159d1feddc2d6270f010d8349d1f6bdb9461a93b48a5c"
 IMAGEMAGICK_TAG="7.1.1-47"
 IMAGEMAGICK_COMMIT="82572afc879b439cbf8c9c6f3a9ac7626adf98fb"
@@ -70,7 +70,7 @@ fi
 
 "$OMNIDOCBENCH_TEXLIVE_BIN/tlmgr" option repository "$TEXLIVE_REPOSITORY_URL"
 "$OMNIDOCBENCH_TEXLIVE_BIN/tlmgr" install \
-  amsmath amsfonts booktabs cjk cjkutils geometry gkai multirow upgreek xcolor
+  amsmath amsfonts arphic booktabs cjk cjkutils geometry gkai multirow upgreek xcolor
 
 echo "[4/5] Preparing the isolated Python 3.10 evaluator environment"
 if [[ ! -x "$OMNIDOCBENCH_EVAL_PYTHON" ]]; then
