@@ -1,0 +1,7 @@
+loading checkpoint shard 1/5: model-00001-of-00005.safetensors
+loading checkpoint shard 2/5: model-00002-of-00005.safetensors
+loading checkpoint shard 3/5: model-00003-of-00005.safetensors
+loading checkpoint shard 4/5: model-00004-of-00005.safetensors
+loading checkpoint shard 5/5: model-00005-of-00005.safetensors
+/workspace/repos/paddle_ocr_vl_npu/10_qwen3_8b_inference/local_modeling_qwen3_0.py:170: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  value_caches.append(torch.zeros_like(key_cache))
