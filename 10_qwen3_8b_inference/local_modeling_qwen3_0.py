@@ -446,9 +446,9 @@ class LocalQwen3ForCausalLM(nn.Module):
         key_caches: tuple[torch.Tensor, ...],
         value_caches: tuple[torch.Tensor, ...],
         actual_seq_length: int | None = None,
-    ) -> tuple[torch.Tensor, tuple[torch.Tensor, ...], tuple[torch.Tensor, ...]]:
+    ) -> torch.Tensor:
         position_ids = cache_position.view(1, 1)
-        logits, key_caches, value_caches = self.forward_decode(
+        logits, _key_caches, _value_caches = self.forward_decode(
             input_ids,
             position_ids,
             cache_position,
@@ -456,5 +456,4 @@ class LocalQwen3ForCausalLM(nn.Module):
             value_caches,
             actual_seq_length,
         )
-        next_id = logits[:, -1, :].argmax(dim=-1, keepdim=True)
-        return next_id, key_caches, value_caches
+        return logits[:, -1, :].argmax(dim=-1, keepdim=True)

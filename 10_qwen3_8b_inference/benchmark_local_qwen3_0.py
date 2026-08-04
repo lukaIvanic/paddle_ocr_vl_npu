@@ -320,7 +320,7 @@ class NPUGraphDecodeRunner:
         with torch.npu.stream(side_stream):
             with torch.inference_mode():
                 self.graph.capture_begin()
-                self.output_next_id, self.output_key_caches, self.output_value_caches = self.runner.model.decode(
+                self.output_next_id = self.runner.model.decode(
                     self.static_input_ids,
                     self.static_cache_position,
                     self.key_caches,

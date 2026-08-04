@@ -158,13 +158,14 @@ class LocalQwen30Runner:
         if self.compile_decode_dynamic:
             torch._dynamo.mark_static(next_id)
             torch._dynamo.mark_static(cache_position)
-        return self.model.decode(
+        output_next_id = self.model.decode(
             next_id,
             cache_position,
             key_caches,
             value_caches,
             actual_seq_length,
         )
+        return output_next_id, key_caches, value_caches
 
     def decode_one_eager(
         self,
@@ -175,13 +176,14 @@ class LocalQwen30Runner:
         *,
         actual_seq_length: int | None,
     ) -> tuple[torch.Tensor, tuple[torch.Tensor, ...], tuple[torch.Tensor, ...]]:
-        return self.eager_decode(
+        output_next_id = self.eager_decode(
             next_id,
             cache_position,
             key_caches,
             value_caches,
             actual_seq_length,
         )
+        return output_next_id, key_caches, value_caches
 
     def encode_prompt(self, prompt: str) -> torch.Tensor:
         messages = [{"role": "user", "content": prompt}]
