@@ -22275,3 +22275,78 @@ Keep large predictions, compiler caches, and raw logs on the work server.
 Paste back `agent_report.md`, `gate_contract.json`, the full compact summary,
 evaluation compact summary, and the head-to-head JSON.  Do not alter another
 parameter or start a follow-up sweep.  Then **stop**.
+
+## Phase 56A: CDM runtime preflight only
+
+This is the first, deliberately short feedback cycle for installing the native
+OmniDocBench Formula CDM runtime in the existing work-server container.  Do not
+run OCR, do not run evaluation, do not install packages, and do not download
+anything in this phase.  Its only purpose is to discover the exact environment
+so the next pushed revision can choose the fastest valid installation path.
+
+Pull `main`, require a clean checkout, and run the following from the repository
+root.  It is CPU-only and must finish in well under one minute:
+
+```sh
+set -eu
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git pull --ff-only origin main
+test -z "$(git status --porcelain)"
+
+ROOT=tmp/09_persistent_page_engine/310p_phase56_cdm
+mkdir -p "$ROOT"
+
+arch="$(uname -m)"
+os="$(. /etc/os-release 2>/dev/null && printf '%s-%s' "${ID:-unknown}" "${VERSION_ID:-unknown}" || printf unknown)"
+uid="$(id -u)"
+apt=no; command -v apt-get >/dev/null 2>&1 && apt=yes
+py310="$(command -v python3.10 2>/dev/null || true)"
+eval_py=NONE
+for candidate in \
+  /workspace/venvs/omnidocbench_py310/bin/python \
+  "$WORK_SERVER_REPO"/../venvs/omnidocbench_py310/bin/python \
+  "$WORK_SERVER_REPO"/.venv_eval/bin/python; do
+  if test -x "$candidate"; then eval_py="$candidate"; break; fi
+done
+evaluator=NONE
+for candidate in \
+  /workspace/repos/OmniDocBench_eval \
+  "$WORK_SERVER_REPO"/../OmniDocBench_eval \
+  /home/lukaiv/OmniDocBench_eval; do
+  if test -f "$candidate/pdf_validation.py"; then evaluator="$candidate/pdf_validation.py"; break; fi
+done
+matched="$(find "$WORK_SERVER_REPO/tmp/09_persistent_page_engine" \
+  -type f -name 'predictions_quick_match_display_formula_result.json' \
+  -print -quit 2>/dev/null || true)"
+pdflatex_v="$(pdflatex --version 2>/dev/null | head -n 1 || true)"
+kpsewhich_v="$(kpsewhich --version 2>/dev/null | head -n 1 || true)"
+magick_v="$(magick --version 2>/dev/null | head -n 1 || true)"
+convert_v="$(convert --version 2>/dev/null | head -n 1 || true)"
+gs_v="$(gs --version 2>/dev/null | head -n 1 || true)"
+free_gb="$(df -Pk "$WORK_SERVER_REPO" | awk 'NR==2 {printf "%.1f", $4/1024/1024}')"
+
+probe() {
+  url="$1"
+  if command -v curl >/dev/null 2>&1; then
+    curl -LIsS --connect-timeout 5 --max-time 12 "$url" >/dev/null 2>&1
+  elif command -v wget >/dev/null 2>&1; then
+    wget --spider -T 12 "$url" >/dev/null 2>&1
+  else
+    return 1
+  fi
+}
+github=no; probe https://github.com/ImageMagick/ImageMagick && github=yes
+texmirror=no; probe https://ftp.tu-chemnitz.de/pub/tug/historic/systems/texlive/2025/tlnet-final/install-tl-unx.tar.gz && texmirror=yes
+apt_net=no; probe http://ports.ubuntu.com/ubuntu-ports/ && apt_net=yes
+
+printf '%s\n' \
+  "CDM_PREFLIGHT arch=$arch os=$os uid=$uid apt=$apt py310=${py310:-NONE} eval_py=$eval_py evaluator=$([ "$evaluator" != NONE ] && echo yes || echo no) matched=$([ -n "$matched" ] && echo yes || echo no) pdflatex=$([ -n "$pdflatex_v" ] && echo yes || echo no) kpsewhich=$([ -n "$kpsewhich_v" ] && echo yes || echo no) magick=$([ -n "$magick_v" ] && echo yes || echo no) convert=$([ -n "$convert_v" ] && echo yes || echo no) gs=$([ -n "$gs_v" ] && echo yes || echo no) github=$github texmirror=$texmirror apt_net=$apt_net free_gb=$free_gb evaluator_path=$evaluator matched_path=${matched:-NONE}" \
+  | tee "$ROOT/preflight_sentence.txt"
+```
+
+Return **exactly the one sentence printed by the command**, with no report,
+explanation, Markdown fence, or additional investigation.  Then stop.  In
+particular, do not run `setup_omnidocbench_eval_runtime.sh` yet: its current
+defaults target the 910B `/workspace` layout and the next revision will adapt
+them from this preflight rather than guessing.
