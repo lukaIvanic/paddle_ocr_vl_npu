@@ -22736,6 +22736,19 @@ Phase 57 must use the same algorithmic configuration on 310P:
   `128,256,384,512,768,1024`, with at most 32 members;
 - the production repetition guard, no timeline, no layout graph capture.
 
+The ready reservoir is intentionally right-sized for this B64 lane: 64
+decode-ready crops, refill at 32, and 32 rows of staging headroom.  The private
+prefill KV arena must therefore contain exactly 96 rows (6.75 GiB at KV4096),
+while the separate 64-row decode arena is unchanged.  This replaces the
+superseded 320-row private arena that caused the earlier 310P OOM; it does not
+change any model, graph, packing, or admission math.
+
+The exact first-16-page 910B2 gate at commit `7c368fc` completed 16/16 pages
+and 244/244 crops.  Against the full 910B2 authority, all 244 generated token
+streams and texts, all 16 layout geometries, and all 16 assembled Markdown
+pages were exact.  The private pool reported capacity 96, allocated bytes
+7,247,757,312, high-water 66, and zero active leases after completion.
+
 There is **no fallback lane** in this phase.  In particular, do not silently
 change B64 to B32, KV4096 to KV2048, remove buckets, lower pixels, change the
 packing target, or use MHA/static-actual attention.  If materialization or
@@ -22986,6 +22999,11 @@ def validate(summary_path):
     assert c["vision_mlp"]["zero_extended"] is True
     assert c["vision_linear_weight_format"]["effective_mode"] == "fractal_nz"
     assert c["vision_linear_weight_format"]["after_format_histogram"] == {"29": 162}
+    pool = s["recognition"]["text_packing"]["private_cache_pool"]
+    assert pool["capacity"] == 96, pool
+    assert pool["allocated_bytes"] == 7_247_757_312, pool
+    assert pool["active_slots"] == 0 and pool["free_slots"] == 96, pool
+    assert pool["high_water_active_slots"] <= 96, pool
     assert set(s["recognition"]["stop_reason_counts"]) <= {
         "eos", "kv_cache_full", "repetition"
     }
@@ -23067,6 +23085,10 @@ assert s["configuration"]["cache_length"] == 4096
 assert s["configuration"]["decode_optimization"] == "combined_apply_pse_sentinel"
 assert s["configuration"]["preprocessor_max_pixels"] == 802816
 assert s["configuration"]["vision_pack_target"] == 768
+pool = s["recognition"]["text_packing"]["private_cache_pool"]
+assert pool["capacity"] == 96, pool
+assert pool["allocated_bytes"] == 7_247_757_312, pool
+assert pool["active_slots"] == 0 and pool["free_slots"] == 96, pool
 print(json.dumps({
     "cache_growth": growth,
     "setup_s": s["setup_s"],
@@ -23074,6 +23096,7 @@ print(json.dumps({
     "pages_per_s": s["pages_per_s"],
     "result_count": s["result_count"],
     "stop_reason_counts": s["recognition"]["stop_reason_counts"],
+    "private_cache_pool": pool,
 }, indent=2, sort_keys=True))
 PY
 
