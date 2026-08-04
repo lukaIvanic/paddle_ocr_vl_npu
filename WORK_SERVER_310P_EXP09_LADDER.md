@@ -23992,3 +23992,27 @@ result.  Return the exact `310P PHASE 57 FULL: PASS ...` sentence first,
 followed by `final_comparison.json`.  Report any nonzero TEDS/CDM error or
 timeout count instead of suppressing samples.  Do not rerun inference or apply
 another fallback; then stop.
+
+## Phase 57H: one-command exact 910B authority audit
+
+Run this after Phase 57G produces the final 310P score.  This is CPU-only and
+does not rerun layout, OCR, compilation, or any NPU work.  It reevaluates the
+exact committed 910B predictions with the same work-server evaluator, compares
+all 30,557 crop generations and all 1,651 final Markdown pages, checks the
+production run contract and crop inputs, then attributes metric losses.  Do not
+read the implementation or reconstruct its commands manually.
+
+```sh
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+git pull --ff-only origin main
+test -z "$(git status --porcelain)"
+bash 09_persistent_page_engine/scripts/run_phase57_authority_audit.sh
+```
+
+The command prints progress at extraction, 910B matching/TEDS, CDM, mechanical
+comparison, and metric attribution.  Return only the final
+`PHASE57_AUTHORITY_AUDIT ... agent_report=...` sentence, then paste the small
+`agent_report.md` it names.  Do not paste logs, `authority_audit.json`, the
+bundle, raw predictions, token streams, or atlas JSON.  If the command fails,
+return only the first causal error plus the last 30 log lines.  Then stop.

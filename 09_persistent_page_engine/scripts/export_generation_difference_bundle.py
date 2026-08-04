@@ -57,7 +57,17 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--evaluator-commit", required=True)
     parser.add_argument("--table-scores", type=Path)
     parser.add_argument("--teds-summary", type=Path)
+    parser.add_argument(
+        "--official-score-summary",
+        type=Path,
+        help="Optional page-CDM/page-TEDS Overall authority to embed.",
+    )
     parser.add_argument("--require-corrected-teds", action="store_true")
+    parser.add_argument(
+        "--include-predictions",
+        action="store_true",
+        help="Embed the final top-level Markdown prediction set in the bundle.",
+    )
     parser.add_argument("--expected-pages", type=int)
     parser.add_argument("--expected-requests", type=int)
     parser.add_argument("--expected-table-requests", type=int)
@@ -202,6 +212,16 @@ def _write_member(archive: zipfile.ZipFile, name: str, payload: bytes) -> None:
     archive.writestr(info, payload, compresslevel=9)
 
 
+def _prediction_markdown_files(output_root: Path) -> list[Path]:
+    prediction_root = output_root / "predictions"
+    if not prediction_root.is_dir():
+        raise FileNotFoundError(prediction_root)
+    files = sorted(prediction_root.glob("*.md"), key=lambda path: path.name)
+    if not files:
+        raise ValueError(f"no top-level Markdown predictions under {prediction_root}")
+    return files
+
+
 def _assert_expected(name: str, actual: int, expected: int | None) -> None:
     if expected is not None and actual != expected:
         raise ValueError(f"expected {expected} {name}, got {actual}")
@@ -233,6 +253,12 @@ def main() -> None:
     if any(not isinstance(rows, list) for rows in evaluator.values()):
         raise TypeError("all evaluator result artifacts must be JSON arrays")
 
+    prediction_files = (
+        _prediction_markdown_files(output_root)
+        if args.include_predictions
+        else []
+    )
+
     trace_pages = set(map(_page_name, trace))
     page_count = len(trace_pages)
     summary_images = run_summary.get("images")
@@ -255,6 +281,11 @@ def main() -> None:
             if not evaluator_pages <= run_page_set:
                 raise ValueError(f"{kind} evaluator contains pages outside run_summary.images")
     _assert_expected("pages", summary_page_count, args.expected_pages)
+    if prediction_files and len(prediction_files) != summary_page_count:
+        raise ValueError(
+            "Markdown prediction count does not match run_summary: "
+            f"{len(prediction_files)} vs {summary_page_count}"
+        )
     _assert_expected("requests", len(trace), args.expected_requests)
     table_requests = sum(row.get("label") == "table" for row in trace)
     _assert_expected("table requests", table_requests, args.expected_table_requests)
@@ -300,6 +331,11 @@ def main() -> None:
     if args.table_scores:
         source_paths["corrected_table_scores"] = args.table_scores.expanduser().resolve()
         source_paths["teds_summary"] = args.teds_summary.expanduser().resolve()
+    official_score_summary = None
+    if args.official_score_summary:
+        score_path = args.official_score_summary.expanduser().resolve()
+        official_score_summary = _read_json(score_path)
+        source_paths["official_score_summary"] = score_path
     print("[bundle] hashing source artifacts", flush=True)
     hashes = {name: _sha256(path) for name, path in source_paths.items()}
     manifest = {
@@ -317,6 +353,10 @@ def main() -> None:
             "table_recognition_requests": table_requests,
             "evaluator_rows": {kind: len(rows) for kind, rows in evaluator.items()},
             "table_pages": len(table_pages),
+            "prediction_markdown_files": len(prediction_files),
+        },
+        "prediction_markdown_sha256": {
+            path.name: _sha256(path) for path in prediction_files
         },
         "teds_authority": "corrected_process_isolated" if table_scores else "frozen_evaluator",
     }
@@ -341,6 +381,14 @@ def main() -> None:
             if table_scores is not None:
                 _write_member(archive, "corrected_table_scores.json", _json_bytes(table_scores))
                 _write_member(archive, "teds_summary.json", _json_bytes(teds_summary))
+            if official_score_summary is not None:
+                _write_member(
+                    archive,
+                    "official_score_summary.json",
+                    _json_bytes(official_score_summary),
+                )
+            for path in prediction_files:
+                _write_member(archive, f"predictions/{path.name}", path.read_bytes())
         temporary.replace(output)
     finally:
         if temporary.exists():
