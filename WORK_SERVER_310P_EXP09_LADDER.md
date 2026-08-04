@@ -24034,3 +24034,25 @@ test -z "$(git status --porcelain)"
 Return only the final `PHASE57_GAP_LOCALIZATION ...` sentence and paste the
 small Markdown report it names.  Do not paste JSON or rerun any prior phase.
 Then stop.
+
+## Phase 57J: fresh-process replay of representative runaways
+
+Run after Phase 57I.  The checked-in runner automatically selects two
+metadata-exact KV-full cases and two metadata-exact repetition-stopped cases,
+all from pages with at most 64 recognition requests.  It replays each page in a
+separate fresh process with the unchanged Phase-57 production configuration and
+warm caches.  This is the shortest decisive split between a runaway that
+survives fresh state and one that requires the original production context.
+
+```sh
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+git pull --ff-only origin main
+test -z "$(git status --porcelain)"
+bash 09_persistent_page_engine/scripts/run_phase57_fresh_runaway_replay.sh
+```
+
+The script reports progress after every case and refuses compiler-cache growth.
+Return the final `PHASE57_FRESH_RUNAWAY_REPLAY ...` sentence and paste only the
+small `report.json` it names.  If it fails, return the first causal error and
+the relevant case's last 30 log lines.  Do not run another lane.  Then stop.
