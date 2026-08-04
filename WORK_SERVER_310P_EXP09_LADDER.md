@@ -24016,3 +24016,21 @@ comparison, and metric attribution.  Return only the final
 `agent_report.md` it names.  Do not paste logs, `authority_audit.json`, the
 bundle, raw predictions, token streams, or atlas JSON.  If the command fails,
 return only the first causal error plus the last 30 log lines.  Then stop.
+
+## Phase 57I: localize the remaining 0.95 quality gap
+
+Run only after Phase 57H passes.  This reads the already-produced audit and
+atlas; it performs no inference, matching, TEDS, CDM, or NPU work.
+
+```sh
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+git pull --ff-only origin main
+test -z "$(git status --porcelain)"
+/usr/local/python3.12.13/bin/python \
+  09_persistent_page_engine/scripts/localize_phase57_quality_gap.py
+```
+
+Return only the final `PHASE57_GAP_LOCALIZATION ...` sentence and paste the
+small Markdown report it names.  Do not paste JSON or rerun any prior phase.
+Then stop.
