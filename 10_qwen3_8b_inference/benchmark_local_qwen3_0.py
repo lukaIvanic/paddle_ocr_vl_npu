@@ -248,7 +248,7 @@ def prepare_decode_state(runner: LocalQwen30Runner, input_ids: torch.Tensor):
     with torch.inference_mode():
         key_caches, value_caches = runner.model.prefill(input_ids, static_kv_cache_len=runner.static_kv_cache_len)
     runner.mark_static_decode_state(key_caches, value_caches)
-    return input_ids[:, -1:].contiguous(), key_caches, value_caches
+    return runner.make_initial_decode_input(input_ids), key_caches, value_caches
 
 
 def run_decode_loop(

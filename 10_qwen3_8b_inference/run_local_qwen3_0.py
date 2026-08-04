@@ -192,6 +192,17 @@ class LocalQwen30Runner:
         encoded = self.tokenizer(text, return_tensors="pt")
         return encoded["input_ids"].to(self.device)
 
+    def make_initial_decode_input(self, input_ids: torch.Tensor) -> torch.Tensor:
+        # A size-1 slice can report contiguous while retaining the prompt's
+        # larger row stride. Copy into the exact layout produced by argmax so
+        # the first and later calls share one static graph specialization.
+        decode_input = torch.empty(
+            (input_ids.shape[0], 1),
+            device=input_ids.device,
+            dtype=input_ids.dtype,
+        )
+        return decode_input.copy_(input_ids[:, -1:])
+
     def generate_ids(self, input_ids: torch.Tensor, *, max_new_tokens: int) -> torch.Tensor:
         max_generated_tokens = min(max_new_tokens, max(0, self.static_kv_cache_len - input_ids.shape[1]))
         with torch.inference_mode():
@@ -201,7 +212,7 @@ class LocalQwen30Runner:
             # token, but gives static TorchAir one uniform decode contract.
             key_caches, value_caches = self.model.prefill(input_ids, static_kv_cache_len=self.static_kv_cache_len)
             self.mark_static_decode_state(key_caches, value_caches)
-            decode_input_id = input_ids[:, -1:].contiguous()
+            decode_input_id = self.make_initial_decode_input(input_ids)
             generated = [input_ids]
             for decode_position in range(input_ids.shape[1] - 1, input_ids.shape[1] - 1 + max_generated_tokens):
                 cache_position = torch.tensor([decode_position], device=input_ids.device, dtype=torch.long)
