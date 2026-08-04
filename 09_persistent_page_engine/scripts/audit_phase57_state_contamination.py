@@ -98,6 +98,7 @@ def _private_predecessors(
     rows: list[dict[str, Any]],
 ) -> dict[tuple[str, int], dict[str, Any] | None]:
     previous_by_slot: dict[int, dict[str, Any]] = {}
+    maximum_prompt_by_slot: dict[int, int] = {}
     result: dict[tuple[str, int], dict[str, Any] | None] = {}
     for row in sorted(rows, key=lambda item: int(item["global_request_index"])):
         route = row.get("text_prefill") or {}
@@ -106,8 +107,14 @@ def _private_predecessors(
             result[_key(row)] = None
             continue
         slot = int(slot)
-        result[_key(row)] = previous_by_slot.get(slot)
+        result[_key(row)] = {
+            "previous_row": previous_by_slot.get(slot),
+            "previous_maximum_prompt_length": maximum_prompt_by_slot.get(slot),
+        }
         previous_by_slot[slot] = row
+        maximum_prompt_by_slot[slot] = max(
+            maximum_prompt_by_slot.get(slot, 0), int(row["input_tokens"])
+        )
     return result
 
 
@@ -144,15 +151,39 @@ def main() -> None:
         broad = str(right.get("stop_reason")) in RUNAWAY_STOPS and extra > 0
         strict = broad and extra >= int(args.strict_extra_tokens)
         route = right.get("text_prefill") or {}
-        predecessor = predecessors.get(stable)
+        history = predecessors.get(stable)
+        predecessor = None if history is None else history["previous_row"]
         prior_prompt = (
             int(predecessor["input_tokens"]) if predecessor is not None else None
         )
+        prior_maximum_prompt = (
+            None
+            if history is None or history["previous_maximum_prompt_length"] is None
+            else int(history["previous_maximum_prompt_length"])
+        )
         current_prompt = int(right["input_tokens"])
         stale_tail = (
-            max(0, prior_prompt - current_prompt)
-            if prior_prompt is not None
+            max(0, prior_maximum_prompt - current_prompt)
+            if prior_maximum_prompt is not None
             else 0
+        )
+        left_text_route = left.get("text_prefill") or {}
+        right_text_route = right.get("text_prefill") or {}
+        left_vision_route = left.get("vision") or {}
+        right_vision_route = right.get("vision") or {}
+        text_pack_fields = (
+            "bucket",
+            "pack_members",
+            "segment_lengths",
+            "text_pack_index",
+            "physical_text_tokens",
+        )
+        vision_pack_fields = (
+            "bucket",
+            "pack_crops",
+            "pack_row_sizes",
+            "pack_sequence_length",
+            "physical_vision_tokens",
         )
         records.append(
             {
@@ -183,8 +214,17 @@ def main() -> None:
                     None if predecessor is None else predecessor.get("request_id")
                 ),
                 "previous_prompt_length": prior_prompt,
+                "previous_maximum_prompt_length": prior_maximum_prompt,
                 "current_prompt_length": current_prompt,
                 "stale_private_tail_tokens": stale_tail,
+                "text_pack_contract_exact": all(
+                    left_text_route.get(field) == right_text_route.get(field)
+                    for field in text_pack_fields
+                ),
+                "vision_pack_contract_exact": all(
+                    left_vision_route.get(field) == right_vision_route.get(field)
+                    for field in vision_pack_fields
+                ),
                 "decode_slot_index": right.get("decode_slot_index"),
                 "decode_slot_epoch": right.get("decode_slot_epoch"),
                 "text_pack_members": route.get("pack_members"),
@@ -213,6 +253,12 @@ def main() -> None:
             "first_use_private_cache": sum(value == 1 for value in generations),
             "reused_private_cache": sum(value > 1 for value in generations),
             "positive_stale_private_tail": sum(value > 0 for value in stale),
+            "text_pack_contract_exact": sum(
+                bool(row["text_pack_contract_exact"]) for row in selected
+            ),
+            "vision_pack_contract_exact": sum(
+                bool(row["vision_pack_contract_exact"]) for row in selected
+            ),
             "stale_private_tail_tokens": _percentiles(stale),
             "first_divergence": _percentiles(
                 [
