@@ -24056,3 +24056,25 @@ The script reports progress after every case and refuses compiler-cache growth.
 Return the final `PHASE57_FRESH_RUNAWAY_REPLAY ...` sentence and paste only the
 small `report.json` it names.  If it fails, return the first causal error and
 the relevant case's last 30 log lines.  Do not run another lane.  Then stop.
+
+## Phase 57K: EOS/PSE-boundary audit
+
+Run after Phase 57J.  This is a CPU-only join of the existing 910B authority,
+the completed 310P Phase-57 trace, and the four-case fresh replay.  It performs
+no inference, compilation, matching, TEDS, CDM, or NPU work.  It distinguishes
+EOS sampled *by* the graph at cache position 1279 from EOS already sampled one
+step earlier followed by the scheduler's discarded speculative 1279 step.
+
+```sh
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+git pull --ff-only origin main
+test -z "$(git status --porcelain)"
+/usr/local/python3.12.13/bin/python \
+  09_persistent_page_engine/scripts/audit_phase57_eos_boundaries.py
+```
+
+This should finish in seconds.  Return only the final
+`PHASE57_EOS_BOUNDARY_AUDIT ...` sentence and the `fresh_replay_cases` plus
+`candidate_310p_runaways.all` objects from the named JSON report.  Do not paste
+the whole report and do not rerun any earlier phase.  Then stop.
