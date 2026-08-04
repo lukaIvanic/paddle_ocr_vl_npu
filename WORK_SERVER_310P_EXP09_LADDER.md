@@ -22777,6 +22777,15 @@ EVAL_PYTHON="$OMNIDOCBENCH_EVAL_PYTHON"
 EVALUATOR_ROOT="$OMNIDOCBENCH_EVALUATOR_ROOT"
 test -x "$EVAL_PYTHON"
 test -f "$EVALUATOR_ROOT/pdf_validation.py"
+test -s "$CDM_ROOT/final_summary.json"
+"$EVAL_PYTHON" - "$CDM_ROOT/final_summary.json" <<'PY'
+import json
+import sys
+s = json.load(open(sys.argv[1]))
+assert s["samples"] > 1000
+assert s["exceptions"] == 0 and s["timeouts"] == 0
+assert 0.0 <= s["page_cdm"] <= 1.0
+PY
 
 REFERENCE=tmp/09_persistent_page_engine/910b_full_cap4096_text05_b64_pse_target768_898ced7
 test -s "$REFERENCE/output/run_summary.json"
