@@ -24368,3 +24368,191 @@ If it says `PASS`, continue without waiting for another instruction and return
 the exact `310P PHASE57M FULL: ...` sentence when finished.  If either lane
 fails, return its first causal error, last 40 log lines, and `npu-smi info`,
 then stop.  Do not run evaluation, CDM, B32, or a changed configuration.
+
+## Phase 58: full n+2 sacrificial-final-position run and official evaluation
+
+Phase 58 measures the **n+2 technique**, not the Phase-57M global stream
+fence and not commit `929dfd0`'s wait-before-launch defer.  When token n is
+retired as EOS, graph n+1 is already in flight.  The completed row remains an
+active draining tombstone for one more scheduler turn; n+2 is launched with
+`cache_position=cache_length-1`, then the normal n+1 token event is consumed
+and the row is hot-swapped.  There is no broad compute-stream synchronize.
+
+The 910B2 940-page gate at commit `d9197ea` completed in 385.106 s at
+2.44089 pages/s, versus 385.115 s and 2.44083 pages/s for the global fence.
+It removed the explicit safety wait, but it was **not token exact**: 33 of
+13,294 crop generations differed from the global-fence authority, including
+4 broad and 2 strict runaways.  Phase 58 therefore measures 310P quality; it
+must not assume that Overall exceeds 95.5 or call the technique correct merely
+because inference completes.  The desired target remains >95.5%, but the
+fresh official metrics and degeneration audit are the result.
+
+The full 1,651-page 910B2 n+2 reference completed in 805.528 s at 2.04959
+pages/s.  This is 36.093 s faster (+4.48% pages/s) than the full global-fence
+authority at 841.621 s and 1.96169 pages/s.  Its official results were:
+
+- text-block page Edit distance: 0.0520895;
+- display-formula page Edit distance: 0.0956847;
+- formula sample CDM / page CDM: 0.958170 / 0.967050;
+- table sample TEDS / page TEDS / structure-only page TEDS: 0.927261 /
+  0.941330 / 0.966199;
+- table Edit distance / reading-order Edit distance: 0.0571529 / 0.141631;
+- Overall: 95.2097%;
+- audit: 5 broad and 4 strict runaways;
+- matching: 3 bounded page-timeout fallbacks and 0 quick-match timeouts;
+- TEDS/CDM: 0 errors and 0 timeouts.
+
+This is the direct reference for Phase 58.  It shows that n+2 is a real
+throughput improvement over the fence, but not an accuracy-safe replacement on
+910B2.  The 310P experiment is still valuable because the platform's generation
+history and numerical behavior differ, but a passing run alone is insufficient.
+
+Use one persistent shell.  Pull only; do not edit source or change any
+production setting.  The checked-out commit may be newer than `d9197ea`, but
+must contain it and must still expose the n+2 implementation:
+
+```sh
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+git pull --ff-only origin main
+test -z "$(git status --porcelain)"
+git merge-base --is-ancestor d9197ea HEAD
+grep -q 'prepare_sacrificial_drain' \
+  09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py
+
+source npu-setup
+PYTHON=/usr/local/python3.12.13/bin/python
+E2E=09_persistent_page_engine/scripts/run_omnidocbench.py
+AUDIT=09_persistent_page_engine/scripts/audit_phase57_state_contamination.py
+EVAL_WRAPPER=09_persistent_page_engine/scripts/run_omnidocbench_eval.py
+CDM_RUNNER=09_persistent_page_engine/scripts/run_cdm_from_matched_formulas.py
+
+MODEL=/home/lukaiv/models/PaddleOCR-VL-1.6
+LAYOUT_MODEL=/home/lukaiv/models/PP-DocLayoutV3_safetensors
+DATASET_JSON=/home/lukaiv/datasets/OmniDocBench/OmniDocBench.json
+IMAGES_DIR=/home/lukaiv/datasets/OmniDocBench/images
+DECODE_CACHE=.runtime_cache/310p_phase57_decode_b64_k4096_pse
+VISION_CACHE=.runtime_cache/310p_phase52_v16_vision_4352_nz
+BATCHED_CACHE=.runtime_cache/310p_phase57_vision_batched_unused
+TEXT_CACHE=.runtime_cache/310p_phase52_v16_text
+PACKED_CACHE=.runtime_cache/310p_phase52_v16_text_packed
+
+CDM_ROOT=tmp/09_persistent_page_engine/310p_phase56_cdm
+. "$CDM_ROOT/runtime_paths.env"
+EVAL_PYTHON="$OMNIDOCBENCH_EVAL_PYTHON"
+EVALUATOR_ROOT="$OMNIDOCBENCH_EVALUATOR_ROOT"
+test -x "$EVAL_PYTHON"
+test -f "$EVALUATOR_ROOT/pdf_validation.py"
+for cache in "$DECODE_CACHE" "$VISION_CACHE" "$TEXT_CACHE" "$PACKED_CACHE"; do
+  test -d "$cache"
+  test -n "$(find "$cache" -type f -print -quit)"
+done
+
+SHORT="$(git rev-parse --short HEAD)"
+ROOT="tmp/09_persistent_page_engine/310p_phase58_nplus2_${SHORT}"
+FULL="$ROOT/full"
+test ! -e "$ROOT"
+mkdir -p "$FULL/evaluation/work"
+
+PRODUCTION_ARGS=(
+  "$E2E"
+  --dataset-json "$DATASET_JSON" --images-dir "$IMAGES_DIR"
+  --layout-model "$LAYOUT_MODEL" --recognizer-model "$MODEL"
+  --batch-size 64 --cache-length 4096 --max-new-tokens 4096
+  --preprocessor-min-pixels 28224 --preprocessor-max-pixels 802816
+  --text-crop-scale 0.5
+  --decode-backend torchair
+  --decode-optimization combined_apply_pse_sentinel
+  --torchair-cache-dir "$DECODE_CACHE"
+  --vision-backend torchair --vision-attention prompt_flash_attention
+  --vision-buckets 256,384,512,640,768,1408,1920,2048,2944,4096
+  --vision-torchair-cache-dir "$VISION_CACHE"
+  --vision-batched-cache-dir "$BATCHED_CACHE"
+  --vision-promptfa-align-128
+  --vision-mlp-intermediate-size 4352
+  --vision-linear-weight-format fractal_nz
+  --vision-padding bucket --vision-packing greedy
+  --vision-pack-target 768 --vision-router-lookahead 32
+  --text-buckets 1152
+  --text-packing production_group
+  --text-pack-buckets 128,256,384,512,768,1024
+  --text-pack-max-members 32
+  --text-torchair-cache-dir "$TEXT_CACHE"
+  --text-packed-cache-dir "$PACKED_CACHE"
+  --layout-device npu --no-layout-graph-capture
+  --preprocess-all-pages-first --layout-workers 8 --no-timeline
+)
+
+printf '%q ' "$PYTHON" "${PRODUCTION_ARGS[@]}" \
+  --offset 0 --limit 1651 --output-dir "$FULL/output" >"$FULL/command.sh"
+printf '\n' >>"$FULL/command.sh"
+npu-smi info >"$FULL/npu_before.txt"
+SECONDS=0
+set +e
+set -o pipefail
+PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 10800 \
+  "$PYTHON" "${PRODUCTION_ARGS[@]}" \
+  --offset 0 --limit 1651 --output-dir "$FULL/output" \
+  2>&1 | tee "$FULL/run.log"
+e2e_ec="${PIPESTATUS[0]}"
+set -e
+printf '%s\n' "$e2e_ec" >"$FULL/exit_code.txt"
+printf '%s\n' "$SECONDS" >"$FULL/outer_wall_s.txt"
+npu-smi info >"$FULL/npu_after.txt" || true
+if test "$e2e_ec" -ne 0; then
+  printf '310P PHASE 58 E2E: FAIL exit=%s wall_s=%s log=%s\n' \
+    "$e2e_ec" "$SECONDS" "$FULL/run.log"
+  exit 0
+fi
+
+"$PYTHON" "$AUDIT" \
+  --candidate-trace "$FULL/output/recognition_trace.jsonl" \
+  --output "$FULL/state_contamination_audit.json" \
+  2>&1 | tee "$FULL/state_contamination_audit.log"
+
+"$PYTHON" - "$FULL/output/run_summary.json" \
+  "$FULL/state_contamination_audit.json" <<'PY' | tee "$ROOT/e2e_sentence.txt"
+import json,sys
+s=json.load(open(sys.argv[1])); a=json.load(open(sys.argv[2]))
+assert s['result_count'] == s['prediction_count'] == 1651
+r=s['recognition']
+assert r['hot_swap_safety_sync_wall_s'] == 0.0
+print(
+  '310P PHASE 58 E2E: PASS '
+  f'pages_per_s={s["pages_per_s"]:.6f} e2e_s={s["pipeline_e2e_s"]:.3f} '
+  f'decode_s={r["decode_wall_s"]:.3f} graph_calls={r["decode_graph_calls"]} '
+  f'lookahead_slots={r["lookahead_decode_token_slots"]} '
+  f'broad={a["broad_runaways"]["count"]} '
+  f'strict={a["strict_runaways"]["count"]} safety_sync_s=0'
+)
+PY
+```
+
+Return the exact `310P PHASE 58 E2E: ...` sentence immediately, then continue
+without waiting for another instruction.  Run the **exact Phase 57.4 official
+matching/TEDS and direct-CDM block** above with this Phase-58 `$ROOT`, `$FULL`,
+`$EVAL_PYTHON`, `$EVALUATOR_ROOT`, `$EVAL_WRAPPER`, and `$CDM_RUNNER`.  Then run
+the **exact Phase 57.5 mechanical comparison block**, changing only the printed
+label and output filename from Phase 57 to Phase 58.  The authority remains:
+
+```sh
+REFERENCE=tmp/09_persistent_page_engine/910b_full_cap4096_text05_b64_pse_target768_898ced7
+```
+
+The final report must contain all of these, even if Overall is below target:
+
+- pipeline E2E, pages/s, setup, layout totals, vision/text/decode times and
+  physical/effective token rates;
+- graph calls, raw/active/effective/idle/lookahead slots, stop counts, and
+  broad/strict degeneration counts;
+- text-block page Edit distance, display-formula page Edit distance, formula
+  sample CDM and page CDM, table sample TEDS, page TEDS and structure-only page
+  TEDS, table Edit distance, and reading-order Edit distance;
+- `Overall = ((1 - text_block_page_edit) + page_CDM + page_TEDS) / 3`, reported
+  as a percentage, plus signed deltas against the 910B authority;
+- page-match fallback/error/timeout counts and TEDS/CDM error/timeout counts.
+
+Return the one-line `310P PHASE 58 FULL: PASS ...` summary first, followed by
+`$ROOT/final_comparison.json` and the concise agent report.  Do not hide a score
+below 95.5%, and do not rerun inference or change the configuration if matching,
+TEDS, or CDM needs bounded recovery.
