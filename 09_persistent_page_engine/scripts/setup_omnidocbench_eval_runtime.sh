@@ -70,7 +70,7 @@ fi
 
 "$OMNIDOCBENCH_TEXLIVE_BIN/tlmgr" option repository "$TEXLIVE_REPOSITORY_URL"
 "$OMNIDOCBENCH_TEXLIVE_BIN/tlmgr" install \
-  amsmath amsfonts arphic booktabs cjk cjkutils geometry gkai multirow upgreek xcolor
+  amsmath amsfonts arphic booktabs cjk cjkutils geometry multirow was xcolor
 
 echo "[4/5] Preparing the isolated Python 3.10 evaluator environment"
 if [[ ! -x "$OMNIDOCBENCH_EVAL_PYTHON" ]]; then
