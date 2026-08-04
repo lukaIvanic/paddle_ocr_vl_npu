@@ -1,0 +1,19 @@
+end2end_eval:
+  metrics:
+    table:
+      metric:
+      - TEDS
+      - Edit_dist
+      teds_workers: 8
+  dataset:
+    dataset_name: end2end_dataset
+    ground_truth:
+      data_path: /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_table_cap_sweep_d88d6ed/cap2048/output/OmniDocBench_subset.json
+    prediction:
+      data_path: /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/910b_table_cap_sweep_d88d6ed/cap2048/output/predictions
+    match_method: quick_match
+    match_workers: 12
+    quick_match_truncated_timeout_sec: 300
+    match_timeout_sec: 420
+    timeout_fallback_max_chunk_span: 10
+    timeout_fallback_order_penalty: 0.10
