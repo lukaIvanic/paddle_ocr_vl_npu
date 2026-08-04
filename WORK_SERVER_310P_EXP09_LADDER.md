@@ -24078,3 +24078,86 @@ This should finish in seconds.  Return only the final
 `PHASE57_EOS_BOUNDARY_AUDIT ...` sentence and the `fresh_replay_cases` plus
 `candidate_310p_runaways.all` objects from the named JSON report.  Do not paste
 the whole report and do not rerun any earlier phase.  Then stop.
+
+## Phase 57L: production-state contamination split
+
+Run after Phase 57K.  This phase has one seconds-long CPU trace audit followed
+by two compiled full-decoder masked-tail invariance lanes.  It does not rerun
+pages or evaluation.  The B64 lane reuses the exact Phase-57 production graph;
+the B1 lane may compile exactly one new graph and exists to distinguish a
+platform effect from a batch-dependent effect.  The probe reuses the runtime
+cache arena, so it does not allocate a second B64 KV arena.
+
+```sh
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+git pull --ff-only origin main
+test -z "$(git status --porcelain)"
+
+ROOT="tmp/09_persistent_page_engine/310p_phase57_state_contamination_$(git rev-parse --short HEAD)"
+test ! -e "$ROOT"
+mkdir -p "$ROOT"
+
+/usr/local/python3.12.13/bin/python \
+  09_persistent_page_engine/scripts/audit_phase57_state_contamination.py \
+  --output "$ROOT/state_contamination_audit.json" \
+  2>&1 | tee "$ROOT/state_contamination_audit.log"
+
+source npu-setup
+PYTHON=/usr/local/python3.12.13/bin/python
+LAB=09_persistent_page_engine/scripts/text_decode_lab.py
+CACHE=.runtime_cache/310p_phase57_decode_b64_k4096_pse
+
+echo 'PHASE57L lane=B64 state=begin' | tee "$ROOT/progress.log"
+$PYTHON "$LAB" \
+  --mode tail_invariance \
+  --batch-size 64 --cache-length 4096 \
+  --backend torchair \
+  --decode-optimization combined_apply_pse_sentinel \
+  --cache-dir "$CACHE" \
+  --tail-positions 64,80,113 \
+  --output "$ROOT/tail_invariance_b64.json" \
+  2>&1 | tee "$ROOT/tail_invariance_b64.log"
+echo 'PHASE57L lane=B64 state=pass' | tee -a "$ROOT/progress.log"
+
+echo 'PHASE57L lane=B1 state=begin one_compile_allowed=true' | tee -a "$ROOT/progress.log"
+$PYTHON "$LAB" \
+  --mode tail_invariance \
+  --batch-size 1 --cache-length 4096 \
+  --backend torchair \
+  --decode-optimization combined_apply_pse_sentinel \
+  --cache-dir "$CACHE" \
+  --tail-positions 64,80,113 \
+  --allow-compile \
+  --output "$ROOT/tail_invariance_b1.json" \
+  2>&1 | tee "$ROOT/tail_invariance_b1.log"
+echo 'PHASE57L lane=B1 state=pass' | tee -a "$ROOT/progress.log"
+
+$PYTHON - "$ROOT" <<'PY'
+import json,sys
+from pathlib import Path
+root=Path(sys.argv[1])
+state=json.load(open(root/'state_contamination_audit.json'))
+b64=json.load(open(root/'tail_invariance_b64.json'))['result']
+b1=json.load(open(root/'tail_invariance_b1.json'))['result']
+print(
+    'PHASE57_STATE_CONTAMINATION_SPLIT PASS '
+    f"broad={state['broad_runaways']['count']} "
+    f"strict={state['strict_runaways']['count']} "
+    f"strict_divergence={state['strict_runaways']['divergence_categories']} "
+    f"strict_positive_stale={state['strict_runaways']['positive_stale_private_tail']} "
+    f"b64_row0_exact={b64['all_row0_stale_exact']} "
+    f"b64_all_exact={b64['all_rows_stale_exact']} "
+    f"b1_all_exact={b1['all_rows_stale_exact']} "
+    f"root={root}"
+)
+PY
+```
+
+The canary changes only masked positions strictly after each row's current
+cache position; tokens, positions, RoPE deltas, valid prefixes, weights, and
+compiled graph are identical.  Return the final
+`PHASE57_STATE_CONTAMINATION_SPLIT ...` sentence, the two
+`runaway_rate_by_private_tail` rows, and the strict divergence-category counts.
+If B64 fails or OOMs, stop before B1 and return the first causal error plus
+`npu-smi info`.  Do not run any page benchmark.  Then stop.

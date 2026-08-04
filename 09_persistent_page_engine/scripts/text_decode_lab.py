@@ -754,14 +754,10 @@ class TextDecodeLab:
                 f"{pse_boundaries}"
             )
 
-        cache = self.model.allocate_static_cache(
-            batch_size=self.args.batch_size,
-            cache_length=self.args.cache_length,
-            device=self.device,
-            dtype=self.dtype,
-            init_mode="zeros",
-            num_key_value_heads=self.runtime.cache_num_key_value_heads,
-        )
+        # Reuse the runtime's shape-owning cache.  A second B64xKV4096 arena is
+        # several GiB and would make this diagnostic unrepresentative or OOM on
+        # a 21-GiB 310P even though production itself fits.
+        cache = self.runtime.warm_cache
         input_ids = (
             torch.arange(
                 1,
