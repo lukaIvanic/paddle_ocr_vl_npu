@@ -99,6 +99,7 @@ def _private_predecessors(
 ) -> dict[tuple[str, int], dict[str, Any] | None]:
     previous_by_slot: dict[int, dict[str, Any]] = {}
     maximum_prompt_by_slot: dict[int, int] = {}
+    maximum_prompt_row_by_slot: dict[int, dict[str, Any]] = {}
     result: dict[tuple[str, int], dict[str, Any] | None] = {}
     for row in sorted(rows, key=lambda item: int(item["global_request_index"])):
         route = row.get("text_prefill") or {}
@@ -110,11 +111,13 @@ def _private_predecessors(
         result[_key(row)] = {
             "previous_row": previous_by_slot.get(slot),
             "previous_maximum_prompt_length": maximum_prompt_by_slot.get(slot),
+            "previous_maximum_prompt_row": maximum_prompt_row_by_slot.get(slot),
         }
         previous_by_slot[slot] = row
-        maximum_prompt_by_slot[slot] = max(
-            maximum_prompt_by_slot.get(slot, 0), int(row["input_tokens"])
-        )
+        prompt_length = int(row["input_tokens"])
+        if prompt_length > maximum_prompt_by_slot.get(slot, 0):
+            maximum_prompt_by_slot[slot] = prompt_length
+            maximum_prompt_row_by_slot[slot] = row
     return result
 
 
@@ -153,6 +156,9 @@ def main() -> None:
         route = right.get("text_prefill") or {}
         history = predecessors.get(stable)
         predecessor = None if history is None else history["previous_row"]
+        maximum_predecessor = (
+            None if history is None else history["previous_maximum_prompt_row"]
+        )
         prior_prompt = (
             int(predecessor["input_tokens"]) if predecessor is not None else None
         )
@@ -215,6 +221,26 @@ def main() -> None:
                 ),
                 "previous_prompt_length": prior_prompt,
                 "previous_maximum_prompt_length": prior_maximum_prompt,
+                "previous_maximum_prompt_request": (
+                    None
+                    if maximum_predecessor is None
+                    else maximum_predecessor.get("request_id")
+                ),
+                "previous_maximum_prompt_source_image_name": (
+                    None
+                    if maximum_predecessor is None
+                    else maximum_predecessor.get("source_image_name")
+                ),
+                "previous_maximum_prompt_block_index": (
+                    None
+                    if maximum_predecessor is None
+                    else int(maximum_predecessor["block_index"])
+                ),
+                "previous_maximum_prompt_global_request_index": (
+                    None
+                    if maximum_predecessor is None
+                    else int(maximum_predecessor["global_request_index"])
+                ),
                 "current_prompt_length": current_prompt,
                 "stale_private_tail_tokens": stale_tail,
                 "text_pack_contract_exact": all(
