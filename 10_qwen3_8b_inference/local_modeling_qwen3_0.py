@@ -141,6 +141,13 @@ def build_static_decode_mask(
     return kv_positions.unsqueeze(0) > cache_position.unsqueeze(1)
 
 
+def linear_tokenwise(linear: nn.Linear, hidden_states: torch.Tensor) -> torch.Tensor:
+    """Apply a Linear through TorchAir's unambiguous 2-D MatMul contract."""
+    leading_shape = hidden_states.shape[:-1]
+    output = linear(hidden_states.reshape(-1, hidden_states.shape[-1]))
+    return output.reshape(*leading_shape, output.shape[-1])
+
+
 class LocalQwen3StaticCache:
     def __init__(
         self,
@@ -176,7 +183,9 @@ class LocalQwen3MLP(nn.Module):
         self.down_proj = nn.Linear(config.intermediate_size, config.hidden_size, bias=False)
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
-        return self.down_proj(F.silu(self.gate_proj(hidden_states)) * self.up_proj(hidden_states))
+        gate = linear_tokenwise(self.gate_proj, hidden_states)
+        up = linear_tokenwise(self.up_proj, hidden_states)
+        return linear_tokenwise(self.down_proj, F.silu(gate) * up)
 
 
 class LocalQwen3Attention(nn.Module):
@@ -200,9 +209,15 @@ class LocalQwen3Attention(nn.Module):
 
     def project_qkv(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         batch, sequence_length, _hidden = hidden_states.shape
-        query_states = self.q_proj(hidden_states).view(batch, sequence_length, self.num_heads, self.head_dim)
-        key_states = self.k_proj(hidden_states).view(batch, sequence_length, self.num_key_value_heads, self.head_dim)
-        value_states = self.v_proj(hidden_states).view(batch, sequence_length, self.num_key_value_heads, self.head_dim)
+        query_states = linear_tokenwise(self.q_proj, hidden_states).view(
+            batch, sequence_length, self.num_heads, self.head_dim
+        )
+        key_states = linear_tokenwise(self.k_proj, hidden_states).view(
+            batch, sequence_length, self.num_key_value_heads, self.head_dim
+        )
+        value_states = linear_tokenwise(self.v_proj, hidden_states).view(
+            batch, sequence_length, self.num_key_value_heads, self.head_dim
+        )
         query_states = self.q_norm(query_states).transpose(1, 2)
         key_states = self.k_norm(key_states).transpose(1, 2)
         value_states = value_states.transpose(1, 2)
@@ -230,7 +245,7 @@ class LocalQwen3Attention(nn.Module):
         attn_output = torch.matmul(probs, full_value_states)
         batch, _heads, sequence_length, _dim = attn_output.shape
         attn_output = attn_output.transpose(1, 2).reshape(batch, sequence_length, self.num_heads * self.head_dim)
-        return self.o_proj(attn_output)
+        return linear_tokenwise(self.o_proj, attn_output)
 
     def forward_decode(
         self,
@@ -269,7 +284,7 @@ class LocalQwen3Attention(nn.Module):
             scale_value=float(self.scaling),
         ).transpose(1, 2).contiguous()
         attn_output = attn_output.reshape(hidden_states.shape[0], 1, self.num_heads * self.head_dim)
-        return self.o_proj(attn_output), key_cache, value_cache
+        return linear_tokenwise(self.o_proj, attn_output), key_cache, value_cache
 
 
 class LocalQwen3DecoderLayer(nn.Module):
@@ -421,7 +436,7 @@ class LocalQwen3ForCausalLM(nn.Module):
             )
             next_key_caches.append(layer_key_cache)
             next_value_caches.append(layer_value_cache)
-        logits = self.lm_head(self.norm(hidden_states))
+        logits = linear_tokenwise(self.lm_head, self.norm(hidden_states))
         return logits, tuple(next_key_caches), tuple(next_value_caches)
 
     def decode(
