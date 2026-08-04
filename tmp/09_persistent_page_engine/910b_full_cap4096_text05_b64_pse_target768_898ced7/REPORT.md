@@ -49,6 +49,7 @@ Calculated four-component composite `(1-text_edit + CDM + table_TEDS + 1-reading
 
 - Old quality-first KV4096/default-pixels run: 1055.523 s, 1.564 pages/s, composite 0.931321.
 - Aggressive KV2048/cap2048/text-scale-0.5 run: 866.768 s, 1.905 pages/s, composite 0.922053.
+- Later B64/PSE execution of that KV2048/cap2048 regime: 717.705 s, 2.300 pages/s; its official edit-distance/TEDS metrics were essentially the same, but that run did not record a direct CDM artifact.
 - This run: 800.495 s, 2.062 pages/s, composite 0.927435.
 
 This run is 24.2% less wall time / 31.9% higher pages/s than the old quality-first run while retaining most of its quality. Relative to the aggressive KV2048 result, it restores table TEDS from 0.913860 to 0.930515 and CDM from 0.964700 to 0.970524.
