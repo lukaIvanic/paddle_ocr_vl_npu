@@ -355,6 +355,10 @@ class TextDecodeLab:
     def __init__(self, args: argparse.Namespace):
         import torch_npu  # noqa: F401
 
+        # Match the production runner before the first NPU allocation.  On
+        # torch-npu 2.10, setting this later leaves npu_format_cast in ND and
+        # selects a different compiled graph/cache from production.
+        torch.npu.config.allow_internal_format = True
         self.args = args
         self.device = torch.device("npu:0")
         if not torch.npu.is_available():
