@@ -11,7 +11,7 @@ import torch
 
 from ..model.text_decode import LocalPaddleOCRVLStaticCache
 from .repetition import ExactCycleTracker, RepetitionEvidence
-from utils.timing import stream_synchronize, synchronize
+from utils.timing import synchronize
 from utils.timeline import TimelineRecorder
 
 
@@ -1025,7 +1025,8 @@ class ContinuousDecodeScheduler:
             *,
             iteration: int,
             refill_reason: str,
-        ) -> None:
+            allow_hot_swap: bool,
+        ) -> bool:
             nonlocal d2h_wait_wall_s, retire_and_refill_wall_s
             nonlocal hot_swap_safety_sync_wall_s
             progress(
@@ -1162,33 +1163,25 @@ class ContinuousDecodeScheduler:
                 newly_completed=len(completions) - completed_before,
             )
             newly_completed = len(completions) - completed_before
-            if newly_completed and (ready_queue or not source_exhausted):
-                # The next decode graph is submitted before the previous
-                # sampled tokens are retired so its D2H can overlap compute.
-                # A slot that just completed therefore still participates in
-                # that speculative graph.  TorchAir's in-place KV writes are
-                # not reliably protected from an immediately following
-                # hot-swap copy by enqueue order alone on every Ascend target.
-                # Resolve only the compute stream at an actual replacement
-                # boundary; iterations without a hot swap remain pipelined.
+            defer_hot_swap = bool(
+                newly_completed
+                and (ready_queue or not source_exhausted)
+                and not allow_hot_swap
+            )
+            if defer_hot_swap:
+                # The next graph was already submitted before these sampled
+                # tokens were retired.  Keep completed rows quarantined until
+                # that graph's existing D2H event is consumed on the next
+                # scheduler turn; only then may a new request overwrite them.
                 progress(
-                    "hot_swap_safety_sync_begin",
+                    "hot_swap_deferred",
                     iteration=iteration,
                     newly_completed=newly_completed,
                 )
-                safety_started = time.perf_counter()
-                stream_synchronize(self.device)
-                safety_wait_s = time.perf_counter() - safety_started
-                hot_swap_safety_sync_wall_s += safety_wait_s
-                progress(
-                    "hot_swap_safety_sync_end",
-                    iteration=iteration,
-                    newly_completed=newly_completed,
-                    wait_s=safety_wait_s,
-                )
-            progress("hot_swap_admission_begin", iteration=iteration)
-            fill_free_slots(hot_swap=True)
-            progress("hot_swap_admission_end", iteration=iteration)
+            else:
+                progress("hot_swap_admission_begin", iteration=iteration)
+                fill_free_slots(hot_swap=True)
+                progress("hot_swap_admission_end", iteration=iteration)
             if len(ready_queue) < low_watermark:
                 refill_ready_queue(reason=refill_reason)
             finished = time.perf_counter()
@@ -1206,6 +1199,7 @@ class ContinuousDecodeScheduler:
                         "ready_queue_depth": len(ready_queue),
                     },
                 )
+            return defer_hot_swap
 
         progress("scheduler_device_sync_begin", phase="before_initial_fill")
         synchronize(self.device)
@@ -1223,6 +1217,7 @@ class ContinuousDecodeScheduler:
         progress("initial_admission_end")
         refill_ready_queue(reason="initial_top_up")
         pending: PendingTokenCopy | None = None
+        drain_before_next_step = False
         iteration = 0
 
         while self.arena.num_active > 0:
@@ -1233,6 +1228,27 @@ class ContinuousDecodeScheduler:
                     None if pending is None else pending.iteration
                 ),
             )
+            if pending is not None and drain_before_next_step:
+                progress(
+                    "deferred_hot_swap_drain_begin",
+                    iteration=iteration,
+                    pending_iteration=pending.iteration,
+                )
+                retire_pending(
+                    pending,
+                    iteration=iteration,
+                    refill_reason="deferred_hot_swap",
+                    allow_hot_swap=True,
+                )
+                progress(
+                    "deferred_hot_swap_drain_end",
+                    iteration=iteration,
+                    pending_iteration=pending.iteration,
+                )
+                pending = None
+                drain_before_next_step = False
+                if self.arena.num_active == 0:
+                    break
             boundary_slots = [
                 index
                 for index, state in enumerate(self.arena.slots)
@@ -1251,6 +1267,7 @@ class ContinuousDecodeScheduler:
                     pending,
                     iteration=iteration,
                     refill_reason="kv_cache_boundary",
+                    allow_hot_swap=True,
                 )
                 progress(
                     "kv_cache_boundary_drain_end",
@@ -1268,14 +1285,17 @@ class ContinuousDecodeScheduler:
             current = self._schedule_token_copy(step, iteration)
             progress("token_copy_schedule_end", iteration=iteration)
 
+            defer_hot_swap = False
             if pending is not None:
-                retire_pending(
+                defer_hot_swap = retire_pending(
                     pending,
                     iteration=iteration,
                     refill_reason="steady_low_watermark",
+                    allow_hot_swap=False,
                 )
 
             pending = current
+            drain_before_next_step = defer_hot_swap
             iteration += 1
             progress(
                 "iteration_end",
