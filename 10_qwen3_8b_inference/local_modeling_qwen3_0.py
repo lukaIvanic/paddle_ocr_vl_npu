@@ -84,9 +84,13 @@ class LocalQwen3RotaryEmbedding(nn.Module):
         self.register_buffer("inv_freq", inv_freq, persistent=False)
 
     def forward(self, position_ids: torch.Tensor, *, dtype: torch.dtype, device: torch.device) -> tuple[torch.Tensor, torch.Tensor]:
-        inv_freq = self.inv_freq.to(device=device)[None, :, None].float()
-        position_ids = position_ids.to(device=device, dtype=torch.float32)[:, None, :]
-        freqs = (inv_freq @ position_ids).transpose(1, 2)
+        inv_freq = self.inv_freq.to(device=device, dtype=torch.float32).view(1, 1, -1)
+        position_ids = position_ids.to(device=device, dtype=torch.float32).unsqueeze(-1)
+        # This is an outer product over positions and inverse frequencies. Use
+        # explicit broadcasting rather than a K=1 MatMul: the math is identical,
+        # while TorchAir can infer the fixed decode shape without interpreting
+        # the head dimension as the reduction axis.
+        freqs = position_ids * inv_freq
         emb = torch.cat((freqs, freqs), dim=-1)
         return emb.cos().to(dtype=dtype), emb.sin().to(dtype=dtype)
 
