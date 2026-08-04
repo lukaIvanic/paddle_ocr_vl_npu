@@ -208,6 +208,9 @@ class OwnedPageEngine:
             "run_scoped_scheduler_wall_s": schedule.timing_s[
                 "run_scoped_scheduler_wall"
             ],
+            "hot_swap_safety_sync_wall_s": schedule.timing_s.get(
+                "hot_swap_safety_sync_wall", 0.0
+            ),
             "kv_prefix_bytes_copied": schedule.kv_prefix_bytes_copied,
             "stop_reason_counts": dict(
                 sorted(

@@ -548,6 +548,9 @@ def aggregate_pages(
         "run_scoped_scheduler_wall_s": float(
             decode_schedule.timing_s["run_scoped_scheduler_wall"]
         ),
+        "hot_swap_safety_sync_wall_s": float(
+            decode_schedule.timing_s.get("hot_swap_safety_sync_wall", 0.0)
+        ),
         "rates": {
             "pages_per_s": per_second(len(pages), run_wall_s),
             "regions_per_s": per_second(len(recognized), run_wall_s),
