@@ -64,6 +64,29 @@ $PYTHON ./run_local_qwen3_0.py \
   --static-kv-cache-len 4096
 ```
 
+Minimal fixed-shape static-graph validation (64 prompt tokens, 64 decode
+iterations, KV length 128):
+
+```bash
+$PYTHON ./benchmark_local_qwen3_0.py \
+  --model-dir "$MODEL_DIR" \
+  --dtype float16 \
+  --device npu:0 \
+  --compile-decode \
+  --prefill-tokens 64 \
+  --decode-steps 64 \
+  --static-kv-cache-len 128 \
+  --prefill-warmups 1 \
+  --prefill-repeats 1 \
+  --decode-warmups 1 \
+  --decode-repeats 2
+```
+
+For compiled decode, the benchmark first runs the full multi-step eager and
+compiled lanes from independent prefills. It requires exact generated-token
+parity and records the final KV-cache maximum absolute difference before
+reporting warmed replay throughput.
+
 Compiled decode with `actual_seq_lengths`:
 
 ```bash
