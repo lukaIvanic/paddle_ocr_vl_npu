@@ -298,6 +298,9 @@ def main() -> None:
     broad = [row for row in records if row["broad_runaway"]]
     strict = [row for row in records if row["strict_runaway"]]
     controls = [row for row in records if not row["broad_runaway"]]
+    nonexact_controls = [
+        row for row in controls if row["divergence_category"] != "exact"
+    ]
     control_by_stale = collections.Counter()
     runaway_by_stale = collections.Counter()
     for row in records:
@@ -313,6 +316,10 @@ def main() -> None:
         "broad_runaways": summarize(broad),
         "strict_runaways": summarize(strict),
         "non_runaway_reference_eos_controls": summarize(controls),
+        "nonexact_reference_eos_cases": sorted(
+            nonexact_controls,
+            key=lambda row: (row["global_request_index"], row["block_index"]),
+        ),
         "runaway_rate_by_private_tail": {
             bucket: {
                 "reference_eos_rows": control_by_stale[bucket],
