@@ -1714,12 +1714,17 @@ class OptimizedUniRecRunner:
                 if profile_device_stages
                 else None
             )
-            prefill_outputs = self.model.prefill_with_cache(
-                pixel_values=pixel_values,
-                decoder_input_ids=decoder_input_ids,
-                cross_cache_len=cross_cache_len,
-                device_timeline=device_timeline,
-            )
+            timing_hooks = self._install_encoder_timing_hooks(device_timeline)
+            try:
+                prefill_outputs = self.model.prefill_with_cache(
+                    pixel_values=pixel_values,
+                    decoder_input_ids=decoder_input_ids,
+                    cross_cache_len=cross_cache_len,
+                    device_timeline=device_timeline,
+                )
+            finally:
+                for hook in timing_hooks:
+                    hook.remove()
             measure = device_timeline.measure if device_timeline is not None else lambda _name, fn: fn()
             next_token = measure(
                 "first_token_argmax",
@@ -1743,6 +1748,61 @@ class OptimizedUniRecRunner:
             prefill_s=prefill_s,
             prefill_device_stage_s=prefill_device_stage_s,
         )
+
+    def _install_encoder_timing_hooks(
+        self,
+        timeline: PrefillDeviceTimeline | None,
+    ) -> list[Any]:
+        """Instrument disjoint FocalSVTR submodules without changing execution."""
+        if timeline is None:
+            return []
+
+        hooks = []
+
+        def instrument(module: nn.Module, stage_name: str) -> None:
+            marker_stack: list[tuple[str, Any] | None] = []
+
+            def before(_module: nn.Module, _inputs: tuple[Any, ...]) -> None:
+                marker_stack.append(timeline.begin(stage_name))
+
+            def after(
+                _module: nn.Module,
+                _inputs: tuple[Any, ...],
+                _output: Any,
+            ) -> None:
+                marker = marker_stack.pop()
+                if marker is not None:
+                    timeline.end(marker)
+
+            hooks.append(module.register_forward_pre_hook(before))
+            hooks.append(module.register_forward_hook(after))
+
+        vision_encoder = self.model.encoder.vision_encoder
+        instrument(vision_encoder.patch_embed, "detail_vision_patch_stem_2d")
+        for layer in vision_encoder.layers:
+            for block in layer.blocks:
+                instrument(block.mlp, "detail_vision_flat_mlp")
+                instrument(
+                    block.modulation.f,
+                    "detail_vision_pointwise_linear",
+                )
+                instrument(
+                    block.modulation.h,
+                    "detail_vision_pointwise_conv_1x1",
+                )
+                instrument(
+                    block.modulation.proj,
+                    "detail_vision_pointwise_linear",
+                )
+                for focal_layer in block.modulation.focal_layers:
+                    instrument(
+                        focal_layer,
+                        "detail_vision_spatial_depthwise_focal",
+                    )
+            if layer.downsample is not None:
+                instrument(layer.downsample, "detail_vision_downsample_2d")
+        instrument(self.model.encoder.vision_fc, "detail_vision_flat_projection")
+        return hooks
 
     @staticmethod
     def _stack_prefilled_caches(

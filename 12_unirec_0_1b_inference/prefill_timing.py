@@ -25,15 +25,27 @@ class PrefillDeviceTimeline:
         return None
 
     def measure(self, name: str, fn: Callable[[], Any]) -> Any:
-        start = self._event()
-        end = self._event()
-        if start is None or end is None:
+        marker = self.begin(name)
+        if marker is None:
             return fn()
-        start.record()
         result = fn()
+        self.end(marker)
+        return result
+
+    def begin(self, name: str) -> tuple[str, Any] | None:
+        start = self._event()
+        if start is None:
+            return None
+        start.record()
+        return name, start
+
+    def end(self, marker: tuple[str, Any]) -> None:
+        name, start = marker
+        end = self._event()
+        if end is None:
+            return
         end.record()
         self._events.append((name, start, end))
-        return result
 
     def resolve(self) -> dict[str, float]:
         if not self._events:
