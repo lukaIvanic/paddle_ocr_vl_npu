@@ -1,0 +1,141 @@
+[
+  {
+    "type": "text",
+    "bbox": [
+      0.111,
+      0.188,
+      0.451,
+      0.24
+    ],
+    "angle": 0,
+    "content": "原模型 \\(x(k + 1) = Lx(k)\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.233,
+      0.28,
+      0.402,
+      0.33
+    ],
+    "angle": 0,
+    "content": "\\[\nb _ {i} (k) = \\beta (k) h _ {i}\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.497,
+      0.083,
+      0.862,
+      0.364
+    ],
+    "angle": 0,
+    "content": "\\[\nL = \\left[ \\begin{array}{c c c c c} b _ {1} & b _ {2} & \\dots & b _ {n - 1} & b _ {n} \\\\ s _ {1} & 0 & \\dots & 0 & 0 \\\\ 0 & s _ {2} & & \\dots & 0 \\\\ \\vdots & & \\ddots & & \\vdots \\\\ 0 & 0 & \\dots & s _ {n - 1} & 0 \\end{array} \\right]\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.092,
+      0.357,
+      0.45,
+      0.632
+    ],
+    "angle": 0,
+    "content": "\\[\nA = \\left[ \\begin{array}{c c c c c} 0 & 0 & \\dots & \\dots & 0 \\\\ s _ {1} & 0 & \\dots & \\dots & 0 \\\\ 0 & s _ {2} & \\dots & \\dots & 0 \\\\ \\vdots & & \\ddots & & \\vdots \\\\ 0 & 0 & \\dots & s _ {n - 1} & 0 \\end{array} \\right]\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.16,
+      0.642,
+      0.322,
+      0.69
+    ],
+    "angle": 0,
+    "content": "存活率矩阵",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.483,
+      0.376,
+      0.908,
+      0.625
+    ],
+    "angle": 0,
+    "content": "\\[\nB = \\left[ \\begin{array}{c c c c c} 0 \\dots 0 & h _ {i _ {1}} & \\dots & h _ {i _ {2}} & 0 \\dots 0 \\\\ 0 \\dots & & & & \\dots 0 \\\\ \\vdots & & & & \\vdots \\\\ 0 \\dots & & & & \\dots 0 \\end{array} \\right]\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.582,
+      0.633,
+      0.773,
+      0.682
+    ],
+    "angle": 0,
+    "content": "生育模式矩阵",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.201,
+      0.723,
+      0.634,
+      0.774
+    ],
+    "angle": 0,
+    "content": "\\[\nx (k + 1) = A x (k) + \\beta (k) B x (k)\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.264,
+      0.793,
+      0.498,
+      0.842
+    ],
+    "angle": 0,
+    "content": "\\(x(k)\\) — 状态变量",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.264,
+      0.849,
+      0.498,
+      0.899
+    ],
+    "angle": 0,
+    "content": "\\(\\beta (k)\\) — 控制变量",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.691,
+      0.733,
+      0.899,
+      0.781
+    ],
+    "angle": 0,
+    "content": "双线性方程(对",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.688,
+      0.796,
+      0.891,
+      0.846
+    ],
+    "angle": 0,
+    "content": "\\(x(k),\\beta (k)\\) 线性）",
+    "merge_prev": false
+  }
+]

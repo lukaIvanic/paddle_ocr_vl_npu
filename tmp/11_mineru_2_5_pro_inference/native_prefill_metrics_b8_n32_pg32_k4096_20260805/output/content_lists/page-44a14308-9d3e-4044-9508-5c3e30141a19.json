@@ -1,0 +1,176 @@
+[
+  {
+    "type": "title",
+    "bbox": [
+      0.407,
+      0.09,
+      0.584,
+      0.107
+    ],
+    "angle": 0,
+    "content": "2.11.3【能成立求参】"
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.148,
+      0.119,
+      0.248,
+      0.134
+    ],
+    "angle": 0,
+    "content": "▲适用题型："
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.147,
+      0.603,
+      0.163
+    ],
+    "angle": 0,
+    "content": "一元二次不等式能成立（存在性或有解问题）求参数问题；",
+    "merge_prev": false
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.148,
+      0.175,
+      0.248,
+      0.19
+    ],
+    "angle": 0,
+    "content": "▲方法原理："
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.197,
+      0.374,
+      0.212
+    ],
+    "angle": 0,
+    "content": "1. 参数一次时考虑分参处理；",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.221,
+      0.479,
+      0.236
+    ],
+    "angle": 0,
+    "content": "2. 二次项系数未知时可考虑讨论或者分参；",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.245,
+      0.834,
+      0.286
+    ],
+    "angle": 0,
+    "content": "3. 还可考虑转化为恒成立问题，利用命题的否定与原命题所计算的答案互补为 R 来处理；\n比如: 若关于 x 的不等式  \\( ax^{2} + 3x + 1 < 0 \\)  有实数解，则 a 的取值范围是 ____.",
+    "merge_prev": false
+  },
+  {
+    "type": "list",
+    "bbox": [
+      0.146,
+      0.197,
+      0.834,
+      0.286
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.148,
+      0.297,
+      0.177,
+      0.311
+    ],
+    "angle": 0,
+    "content": "解：",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.185,
+      0.307,
+      0.791,
+      0.384
+    ],
+    "angle": 0,
+    "content": "\\[\n\\left\\{ \\begin{array}{l} \\exists x \\in R, a x ^ {2} + 3 x + 1 <   0 \\text {成立} \\\\ \\Rightarrow \\text {否定：} \\forall x \\in R, a x ^ {2} + 3 x + 1 \\geq 0 \\text {成立} \\Rightarrow \\left\\{ \\begin{array}{l} a = 0, 3 x + 1 \\geq 0 \\text {不恒成立，舍} \\\\ a > 0, \\Delta \\leq 0 \\Rightarrow a \\geq \\frac {9}{4} \\end{array} \\right. \\end{array} \\right\\} \\Rightarrow a <   \\frac {9}{4}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.393,
+      0.848,
+      0.436
+    ],
+    "angle": 0,
+    "content": "例题1.（全国·高三专题练习）若关于 \\(x\\) 的不等式 \\(ax^2 + 2x + 1 < 0\\) 有实数解，则 \\(a\\) 的取值范围是____.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.531,
+      0.848,
+      0.576
+    ],
+    "angle": 0,
+    "content": "例题2.（全国·高三专题练习）不等式 \\(x^{2} + ax - 2 > 0\\) 在区间[1,5]上有解，则 \\(\\pmb{a}\\) 的取值范围是",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.674,
+      0.85,
+      0.724
+    ],
+    "angle": 0,
+    "content": "例题3.（全国·高一课时练习）若不等式 \\( ax^{2}+x+1>0 \\) 在 \\( x\\in[1,2] \\) 时有解，则实数a的取值范围为____.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.795,
+      0.848,
+      0.845
+    ],
+    "angle": 0,
+    "content": "例题4.（江苏·高一单元测试）若关于 \\(x\\) 的不等式 \\(x^{2} + (m - 1)x + 1 \\leq 0\\) 在区间(0，2]上有解，则实数 \\(m\\) 的取值范围是",
+    "merge_prev": false
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.487,
+      0.929,
+      0.511,
+      0.94
+    ],
+    "angle": 0,
+    "content": "255"
+  }
+]

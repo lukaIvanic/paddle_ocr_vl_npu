@@ -1,0 +1,238 @@
+[
+  {
+    "type": "text",
+    "bbox": [
+      0.088,
+      0.069,
+      0.125,
+      0.084
+    ],
+    "angle": 0,
+    "content": "A. 2",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.293,
+      0.069,
+      0.326,
+      0.083
+    ],
+    "angle": 0,
+    "content": "B. 3",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.497,
+      0.069,
+      0.532,
+      0.083
+    ],
+    "angle": 0,
+    "content": "C. 4",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.702,
+      0.058,
+      0.766,
+      0.083
+    ],
+    "angle": 0,
+    "content": "D. \\(2\\sqrt{5}\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.097,
+      0.103,
+      0.175,
+      0.119
+    ],
+    "angle": 0,
+    "content": "【答案】C",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.097,
+      0.131,
+      0.152,
+      0.147
+    ],
+    "angle": 0,
+    "content": "【解析】",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.095,
+      0.158,
+      0.764,
+      0.175
+    ],
+    "angle": 0,
+    "content": "【分析】结合等差数列性质将 \\(C\\) 代换，求出直线恒过的定点，采用数形结合法即可求解.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.094,
+      0.185,
+      0.834,
+      0.213
+    ],
+    "angle": 0,
+    "content": "【详解】因为 \\(a, b, c\\) 成等差数列，所以 \\(2b = a + c\\)，\\(c = 2b - a\\)，代入直线方程 \\(ax + by + c = 0\\) 得",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.088,
+      0.23,
+      0.688,
+      0.273
+    ],
+    "angle": 0,
+    "content": "\\(ax + by + 2b - a = 0\\) ，即 \\(a(x - 1) + b(y + 2) = 0\\) ，令 \\(\\begin{cases} x - 1 = 0 \\\\ y + 2 = 0 \\end{cases}\\) 得 \\(\\begin{cases} x = 1 \\\\ y = -2, \\end{cases}\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.086,
+      0.296,
+      0.687,
+      0.323
+    ],
+    "angle": 0,
+    "content": "故直线恒过 \\((1, -2)\\)，设 \\(P(1, -2)\\)，圆化为标准方程得：\\(C: x^2 + (y + 2)^2 = 5\\)，",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.086,
+      0.343,
+      0.682,
+      0.369
+    ],
+    "angle": 0,
+    "content": "设圆心为 \\(C\\) ，画出直线与圆的图形，由图可知，当 \\(PC \\perp AB\\) 时，\\(\\left|AB\\right|\\) 最小，",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.088,
+      0.388,
+      0.691,
+      0.415
+    ],
+    "angle": 0,
+    "content": "\\[\n\\left| P C \\right| = 1, \\left| A C \\right| = \\left| r \\right| = \\sqrt {5}    ,    \\text {此时} \\left| A B \\right| = 2 \\left| A P \\right| = 2 \\sqrt {A C ^ {2} - P C ^ {2}} = 2 \\sqrt {5 - 1} = 4.\n\\]"
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.088,
+      0.43,
+      0.264,
+      0.582
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.087,
+      0.591,
+      0.158,
+      0.606
+    ],
+    "angle": 0,
+    "content": "故选：C",
+    "merge_prev": false
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.086,
+      0.626,
+      0.547,
+      0.645
+    ],
+    "angle": 0,
+    "content": "二、填空题：本题共4小题，每小题5分，共20分."
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.087,
+      0.669,
+      0.52,
+      0.711
+    ],
+    "angle": 0,
+    "content": "13. \\( \\left(\\frac{1}{3}+x\\right)^{10} \\) 的展开式中，各项系数的最大值是____.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.097,
+      0.73,
+      0.172,
+      0.746
+    ],
+    "angle": 0,
+    "content": "【答案】5",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.097,
+      0.758,
+      0.152,
+      0.774
+    ],
+    "angle": 0,
+    "content": "【解析】",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.095,
+      0.792,
+      0.911,
+      0.884
+    ],
+    "angle": 0,
+    "content": "【分析】先设展开式中第 项系数最大，则根据通项公式有 \\(\\left\\{ \\begin{array}{l} C_{10}^{r} \\left( \\frac{1}{3} \\right)^{10 - r} \\geq C_{10}^{r + 1} \\left( \\frac{1}{3} \\right)^{9 - r} \\\\ C_{10}^{r} \\left( \\frac{1}{3} \\right)^{10 - r} \\geq C_{10}^{r - 1} \\left( \\frac{1}{3} \\right)^{11 - r} \\end{array} \\right.\\)，进而求出即 \\(r + 1\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.439,
+      0.97,
+      0.558,
+      0.985
+    ],
+    "angle": 0,
+    "content": "第9页/共25页"
+  }
+]

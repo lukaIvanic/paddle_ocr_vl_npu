@@ -1,0 +1,104 @@
+[
+  {
+    "type": "header",
+    "bbox": [
+      0.216,
+      0.12,
+      0.34,
+      0.136
+    ],
+    "angle": 0,
+    "content": "第二章 行列式"
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.761,
+      0.123,
+      0.781,
+      0.135
+    ],
+    "angle": 0,
+    "content": "23"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.334,
+      0.156,
+      0.667,
+      0.287
+    ],
+    "angle": 0,
+    "content": "\\[\n\\left| \\begin{array}{c c c c c c} \\binom {r + 1} {r} & \\binom {r} {r} & 0 & \\dots & 0 & 0 \\\\ \\binom {r + 1} {r - 1} & \\binom {r + 1} {r} & \\binom {r + 1} {r + 1} & \\dots & 0 & 0 \\\\ \\vdots & \\vdots & \\vdots & & \\vdots & \\vdots \\\\ \\binom {n - 3} {r - 1} & \\binom {n - 3} {r} & \\binom {n - 3} {r + 1} & \\dots & \\binom {n - 3} {n - 3} & 0 \\\\ \\binom {n - 2} {r - 1} & \\binom {n - 2} {r} & \\binom {n - 2} {r + 1} & \\dots & \\binom {n - 2} {n - 3} & \\binom {n - 2} {n - 2} \\\\ \\binom {n - 1} {r - 1} & \\binom {n - 1} {r} & \\binom {n - 1} {r + 1} & \\dots & \\binom {n - 1} {n - 3} & \\binom {n - 1} {n - 2} \\end{array} \\right| =\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.218,
+      0.292,
+      0.862,
+      0.446
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\left| \\begin{array}{c c c c c c} \\binom {r} {r - 1} & \\binom {r} {r} & 0 & \\dots & 0 & 0 \\\\ \\binom {r + 1} {r - 1} & \\binom {r + 1} {r} & \\binom {r + 1} {r + 1} & \\dots & 0 & 0 \\\\ \\vdots & \\vdots & \\vdots & & \\vdots & \\vdots \\\\ \\binom {n - 3} {r - 1} & \\binom {n - 3} {r} & \\binom {n - 3} {r + 1} & \\dots & \\binom {n - 3} {n - 3} & 0 \\\\ \\binom {n - 2} {r - 1} & \\binom {n - 2} {r} & \\binom {n - 2} {r + 1} & \\dots & \\binom {n - 2} {n - 3} & \\binom {n - 2} {n - 2} \\\\ \\binom {n - 1} {r - 1} & \\binom {n - 1} {r} & \\binom {n - 1} {r + 1} & \\dots & \\binom {n - 1} {n - 3} & \\binom {n - 1} {n - 2} \\end{array} \\right| + \\left| \\begin{array}{c c c c c c} \\binom {r} {r} & 0 & 0 & \\dots & 0 & 0 \\\\ \\binom {r + 1} {r - 1} & \\binom {r + 1} {r} & \\binom {r + 1} {r + 1} & \\dots & 0 & 0 \\\\ \\vdots & \\vdots & \\vdots & & \\vdots & \\vdots \\\\ \\binom {n - 3} {r - 1} & \\binom {n - 3} {r} & \\binom {n - 3} {r + 1} & \\dots & \\binom {n - 3} {n - 3} & 0 \\\\ \\binom {n - 2} {r - 1} & \\binom {n - 2} {r} & \\binom {n - 2} {r + 1} & \\dots & \\binom {n - 2} {n - 3} & \\binom {n - 2} {n - 2} \\\\ \\binom {n - 1} {r - 1} & \\binom {n - 1} {r} & \\binom {n - 1} {r + 1} & \\dots & \\binom {n - 1} {n - 3} & \\binom {n - 1} {n - 2} \\end{array} \\right| \\\\ = D (n - 1, r - 1) + D (n - 1, r). \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.217,
+      0.452,
+      0.839,
+      0.584
+    ],
+    "angle": 0,
+    "content": "因为 \\( D(n,n-1)=\\left|\\binom{n}{n-1}\\right|=\\binom{n}{n-1},D(n,0)=\\left|\\begin{array}{cccccc}1&\\binom{1}{1}&0&\\cdots&0&0\\\\1&\\binom{2}{1}&\\binom{2}{2}&\\cdots&0&0\\\\\\vdots&\\vdots&\\vdots&&\\vdots&\\vdots\\\\1&\\binom{n-2}{1}&\\binom{n-2}{2}&\\cdots&\\binom{n-2}{n-2}&0\\\\1&\\binom{n-1}{1}&\\binom{n-1}{2}&\\cdots&\\binom{n-1}{n-2}&\\binom{n-1}{n-1}\\\\1&\\binom{n}{1}&\\binom{n}{2}&\\cdots&\\binom{n}{n-2}&\\binom{n}{n-1}\\end{array}\\right|\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.291,
+      0.594,
+      0.707,
+      0.726
+    ],
+    "angle": 0,
+    "content": "\\[\n= \\left| \\begin{array}{c c c c c c} 1 & 1 & 0 & \\dots & 0 & 0 \\\\ 0 & 1 & \\binom {1} {1} & \\dots & 0 & 0 \\\\ \\vdots & \\vdots & \\vdots & & \\vdots & \\vdots \\\\ 0 & 1 & \\binom {n - 3} {1} & \\dots & \\binom {n - 3} {n - 3} & 0 \\\\ 0 & 1 & \\binom {n - 2} {1} & \\dots & \\binom {n - 2} {n - 3} & \\binom {n - 2} {n - 2} \\\\ 0 & 1 & \\binom {n - 1} {1} & \\dots & \\binom {n - 1} {n - 3} & \\binom {n - 1} {n - 2} \\end{array} \\right| = D (n - 1, 0) = 1.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.215,
+      0.736,
+      0.414,
+      0.751
+    ],
+    "angle": 0,
+    "content": "所以通过数学归纳法即得.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.214,
+      0.767,
+      0.384,
+      0.783
+    ],
+    "angle": 0,
+    "content": "2.0.47 (例2.72). 因为",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.357,
+      0.797,
+      0.64,
+      0.832
+    ],
+    "angle": 0,
+    "content": "\\[\nD = \\sum_ {i _ {1} i _ {2} \\dots i _ {p}} (- 1) ^ {\\tau (i _ {1} i _ {2} \\dots i _ {p})} a _ {i _ {1}} ^ {b _ {1}} a _ {i _ {2}} ^ {b _ {2}} \\dots a _ {i _ {p}} ^ {b _ {p}},\n\\]"
+  }
+]
