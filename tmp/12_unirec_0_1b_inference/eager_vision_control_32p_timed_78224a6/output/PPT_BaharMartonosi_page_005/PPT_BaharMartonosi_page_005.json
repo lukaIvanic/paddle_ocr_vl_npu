@@ -1,0 +1,156 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_005.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "paragraph_title_01",
+      "bbox": [
+        104.26968383789062,
+        205.58128356933594,
+        1502.418701171875,
+        301.9931945800781
+      ],
+      "score": 0.6467798352241516,
+      "text": "TOP 10 POINTERS FOR A GOOD TALK",
+      "text_unirec": "TOP 10 POINTERS FOR A GOOD TALK",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_02",
+      "bbox": [
+        103.75890350341797,
+        361.8276672363281,
+        911.1813354492188,
+        455.8929138183594
+      ],
+      "score": 0.9079714417457581,
+      "text": "6. Use color to emphasize",
+      "text_unirec": "6. Use color to emphasize",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_03",
+      "bbox": [
+        107.0430908203125,
+        556.423095703125,
+        1146.8548583984375,
+        710.4978637695312
+      ],
+      "score": 0.8845154047012329,
+      "text": "7. Use illustrations to get across key concepts",
+      "text_unirec": "7. Use illustrations to get across key concepts",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_04",
+      "bbox": [
+        188.3992919921875,
+        715.06201171875,
+        1144.8502197265625,
+        789.3545532226562
+      ],
+      "score": 0.8486568331718445,
+      "text": "May include limited animation",
+      "text_unirec": "May include limited animation",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "image_05",
+      "bbox": [
+        1238.1051025390625,
+        526.1550903320312,
+        1799.12451171875,
+        795.4558715820312
+      ],
+      "score": 0.9107818603515625,
+      "text": "",
+      "text_unirec": "",
+      "is_image": true,
+      "img_path": "imgs/img_in_image_box_1238_526_1799_795.jpg",
+      "is_merged_continuation": false,
+      "in_table": false
+    },
+    {
+      "label": "text_06",
+      "bbox": [
+        105.0885009765625,
+        971.80419921875,
+        766.0385131835938,
+        1053.7510986328125
+      ],
+      "score": 0.8973109126091003,
+      "text": "8. Make eye contact",
+      "text_unirec": "8. Make eye contact",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "image_07",
+      "bbox": [
+        806.4284057617188,
+        950.2332763671875,
+        1105.303466796875,
+        1045.4259033203125
+      ],
+      "score": 0.8637655973434448,
+      "text": "",
+      "text_unirec": "",
+      "is_image": true,
+      "img_path": "imgs/img_in_image_box_806_950_1105_1045.jpg",
+      "is_merged_continuation": false,
+      "in_table": false
+    },
+    {
+      "label": "text_08",
+      "bbox": [
+        103.28996276855469,
+        1148.9666748046875,
+        1394.0888671875,
+        1232.43896484375
+      ],
+      "score": 0.9255498647689819,
+      "text": "9. Be ready to skip slides if time is short",
+      "text_unirec": "9. Be ready to skip slides if time is short",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_09",
+      "bbox": [
+        108.74974822998047,
+        1326.50634765625,
+        541.7353515625,
+        1406.047607421875
+      ],
+      "score": 0.8839470148086548,
+      "text": "10. Practice !!",
+      "text_unirec": "10. Practice !!",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "image_10",
+      "bbox": [
+        1773.55126953125,
+        1240.9739990234375,
+        1912.861328125,
+        1375.520751953125
+      ],
+      "score": 0.6258715987205505,
+      "text": "",
+      "text_unirec": "",
+      "is_image": true,
+      "img_path": "imgs/img_in_image_box_1773_1240_1912_1375.jpg",
+      "is_merged_continuation": false,
+      "in_table": false
+    }
+  ],
+  "timing": {
+    "total": 3.83121216413565
+  }
+}

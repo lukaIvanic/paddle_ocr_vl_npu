@@ -1,0 +1,84 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_B14_Claeys_Consistent Presentation of Images_v2_page_006.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "paragraph_title_01",
+      "bbox": [
+        344.9090270996094,
+        78.17552947998047,
+        1656.1951904296875,
+        194.10626220703125
+      ],
+      "score": 0.9611448645591736,
+      "text": "Problems of Inconsistency",
+      "text_unirec": "Problems of Inconsistency",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "image_02",
+      "bbox": [
+        232.68646240234375,
+        211.5400848388672,
+        918.1708984375,
+        952.2633056640625
+      ],
+      "score": 0.9846060276031494,
+      "text": "",
+      "text_unirec": "",
+      "is_image": true,
+      "img_path": "imgs/img_in_image_box_232_211_918_952.jpg",
+      "is_merged_continuation": false,
+      "in_table": false
+    },
+    {
+      "label": "image_03",
+      "bbox": [
+        1045.780029296875,
+        211.9261474609375,
+        1732.1041259765625,
+        951.1812133789062
+      ],
+      "score": 0.9841139316558838,
+      "text": "",
+      "text_unirec": "",
+      "is_image": true,
+      "img_path": "imgs/img_in_image_box_1045_211_1732_951.jpg",
+      "is_merged_continuation": false,
+      "in_table": false
+    },
+    {
+      "label": "paragraph_title_04",
+      "bbox": [
+        632.6663818359375,
+        1070.1051025390625,
+        1422.9197998046875,
+        1231.079833984375
+      ],
+      "score": 0.888726532459259,
+      "text": "·Printed images don't look like displayed images",
+      "text_unirec": "·Printed images don't look like displayed images",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_05",
+      "bbox": [
+        328.3314208984375,
+        1284.1910400390625,
+        1719.564208984375,
+        1349.4564208984375
+      ],
+      "score": 0.9542738199234009,
+      "text": "Slide Provided by David Clunie, Quintiles Intelligent Imaging",
+      "text_unirec": "Slide Provided by David Clunie, Quintiles Intelligent Imaging",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 2.340523458784446
+  }
+}

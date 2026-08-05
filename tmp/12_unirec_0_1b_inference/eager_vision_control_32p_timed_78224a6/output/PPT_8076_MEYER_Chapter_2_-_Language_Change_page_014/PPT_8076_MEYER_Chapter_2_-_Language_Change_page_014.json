@@ -1,0 +1,94 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_8076_MEYER_Chapter_2_-_Language_Change_page_014.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "header_01",
+      "bbox": [
+        63.5319938659668,
+        44.61008071899414,
+        423.1195983886719,
+        96.62262725830078
+      ],
+      "score": 0.7789612412452698,
+      "text": "CAMBRIDGE",
+      "text_unirec": "CAMBRIDGE",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "paragraph_title_02",
+      "bbox": [
+        162.48580932617188,
+        307.8160095214844,
+        1155.592041015625,
+        374.93304443359375
+      ],
+      "score": 0.805804967880249,
+      "text": "Verb Endings in Romance Languages",
+      "text_unirec": "Verb Endings in Romance Languages",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_03",
+      "bbox": [
+        157.53977966308594,
+        523.05029296875,
+        1780.55859375,
+        616.8904418945312
+      ],
+      "score": 0.9619587063789368,
+      "text": "Verb Inflections in Four Italic Languages (taken from Rebecca Posner 1996 TheRomance Languages. Cambridge University Press, p. 40)",
+      "text_unirec": "Verb Inflections in Four Italic Languages (taken from Rebecca Posner 1996 TheRomance Languages. Cambridge University Press, p. 40)",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "figure_title_04",
+      "bbox": [
+        191.5202178955078,
+        734.36962890625,
+        1488.7305908203125,
+        822.8193969726562
+      ],
+      "score": 0.9534686803817749,
+      "text": "Table 1.1 Regular present indicative person endings in Latin, Spanish, Portuguese and Italian",
+      "text_unirec": "Table 1.1 Regular present indicative person endings in Latin, Spanish, Portuguese and Italian",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "table_05",
+      "bbox": [
+        196.08056640625,
+        842.9274291992188,
+        1485.7523193359375,
+        1158.92919921875
+      ],
+      "score": 0.9778533577919006,
+      "text": "<table>\n<tr>\n<td></td>\n<td>Latin</td>\n<td>Spanish</td>\n<td>Portuguese</td>\n<td>Italian</td>\n</tr>\n<tr>\n<td>1</td>\n<td>-o</td>\n<td>-o</td>\n<td>-o [u]</td>\n<td>-o</td>\n</tr>\n<tr>\n<td>2</td>\n<td>-s</td>\n<td>-s</td>\n<td>-s [J]</td>\n<td>-i</td>\n</tr>\n<tr>\n<td>3</td>\n<td>-T</td>\n<td>$\\emptyset$</td>\n<td>$\\emptyset$</td>\n<td>$\\emptyset$</td>\n</tr>\n<tr>\n<td>4</td>\n<td>-MUS</td>\n<td>-mos</td>\n<td>-mos [muJ]</td>\n<td>-iamo</td>\n</tr>\n<tr>\n<td>5</td>\n<td>-TIS</td>\n<td>-is</td>\n<td>-is [jJ]</td>\n<td>-te</td>\n</tr>\n<tr>\n<td>6</td>\n<td>-NT</td>\n<td>-n</td>\n<td>-m [$^{-}$]</td>\n<td>-no</td>\n</tr>\n</table>\n\n\n",
+      "text_unirec": "<table>\n<tr>\n<td></td>\n<td>Latin</td>\n<td>Spanish</td>\n<td>Portuguese</td>\n<td>Italian</td>\n</tr>\n<tr>\n<td>1</td>\n<td>-o</td>\n<td>-o</td>\n<td>-o [u]</td>\n<td>-o</td>\n</tr>\n<tr>\n<td>2</td>\n<td>-s</td>\n<td>-s</td>\n<td>-s [J]</td>\n<td>-i</td>\n</tr>\n<tr>\n<td>3</td>\n<td>-T</td>\n<td>$\\emptyset$</td>\n<td>$\\emptyset$</td>\n<td>$\\emptyset$</td>\n</tr>\n<tr>\n<td>4</td>\n<td>-MUS</td>\n<td>-mos</td>\n<td>-mos [muJ]</td>\n<td>-iamo</td>\n</tr>\n<tr>\n<td>5</td>\n<td>-TIS</td>\n<td>-is</td>\n<td>-is [jJ]</td>\n<td>-te</td>\n</tr>\n<tr>\n<td>6</td>\n<td>-NT</td>\n<td>-n</td>\n<td>-m [$^{-}$]</td>\n<td>-no</td>\n</tr>\n</table>\n\n\n",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "footer_06",
+      "bbox": [
+        1453.12939453125,
+        1355.5753173828125,
+        1955.6973876953125,
+        1463.7325439453125
+      ],
+      "score": 0.7646491527557373,
+      "text": "GAMBRIDGEUNIVERSITY PRESS",
+      "text_unirec": "GAMBRIDGEUNIVERSITY PRESS",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 3.5836318670772016
+  }
+}

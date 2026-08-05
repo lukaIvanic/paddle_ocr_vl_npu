@@ -1,0 +1,112 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_002.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "image_01",
+      "bbox": [
+        1776.2401123046875,
+        1241.4456787109375,
+        1911.079833984375,
+        1375.148681640625
+      ],
+      "score": 0.4391869008541107,
+      "text": "",
+      "text_unirec": "",
+      "is_image": true,
+      "img_path": "imgs/img_in_image_box_1776_1241_1911_1375.jpg",
+      "is_merged_continuation": false,
+      "in_table": false
+    },
+    {
+      "label": "paragraph_title_02",
+      "bbox": [
+        109.32850646972656,
+        208.3355712890625,
+        1513.201416015625,
+        298.0499267578125
+      ],
+      "score": 0.9487707614898682,
+      "text": "WHY BOTHER GIVING A GOOD TALK?",
+      "text_unirec": "WHY BOTHER GIVING A GOOD TALK?",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_03",
+      "bbox": [
+        109.97998809814453,
+        365.9293212890625,
+        977.1909790039062,
+        442.52044677734375
+      ],
+      "score": 0.9548192024230957,
+      "text": "o First impressions matter!",
+      "text_unirec": "o First impressions matter!",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_04",
+      "bbox": [
+        110.99040222167969,
+        461.29296875,
+        1665.9332275390625,
+        620.1342163085938
+      ],
+      "score": 0.9734442234039307,
+      "text": "○ There’s no point doing good work if others don’t know about it or can’t understand what you did.",
+      "text_unirec": "○ There’s no point doing good work if others don’t know about it or can’t understand what you did.",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_05",
+      "bbox": [
+        111.1883544921875,
+        639.0711059570312,
+        1717.1151123046875,
+        795.7990112304688
+      ],
+      "score": 0.9778297543525696,
+      "text": "Good practice for a teaching career! Good practice for any career!",
+      "text_unirec": "Good practice for a teaching career! Good practice for any career!",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "image_06",
+      "bbox": [
+        27.121379852294922,
+        805.0553588867188,
+        166.5272674560547,
+        907.1032104492188
+      ],
+      "score": 0.7924014329910278,
+      "text": "",
+      "text_unirec": "",
+      "is_image": true,
+      "img_path": "imgs/img_in_image_box_27_805_166_907.jpg",
+      "is_merged_continuation": false,
+      "in_table": false
+    },
+    {
+      "label": "text_07",
+      "bbox": [
+        161.36419677734375,
+        813.61767578125,
+        1452.401123046875,
+        974.54541015625
+      ],
+      "score": 0.9473130702972412,
+      "text": "Helps you sort out what you’ve done, and understand it better yourself.",
+      "text_unirec": "Helps you sort out what you’ve done, and understand it better yourself.",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 3.9867843880783767
+  }
+}
