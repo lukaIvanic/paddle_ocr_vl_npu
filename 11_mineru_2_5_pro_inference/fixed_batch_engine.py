@@ -1,9 +1,11 @@
-"""Request-owned KV slots and fixed-batch compiled decode for MinerU.
+"""Request-owned KV slots and compiled decode scheduling for MinerU.
 
 This is the first scheduler-shaped inference engine.  Each request is
 prefilled independently into a view of its own row in a shared KV arena, so
 prompt padding never enters decode.  Full groups use one compiled graph;
-incomplete tails deliberately reuse the established B1 path.
+incomplete tails deliberately reuse the established B1 path.  The continuous
+variant keeps the same compiled batch shape and replaces a completed slot with
+the next waiting request.
 """
 
 from __future__ import annotations
@@ -242,6 +244,244 @@ class FixedBatchDecodeEngine:
             "graph_calls": graph_calls,
             "decode_calls": effective_decode_tokens,
             "raw_decode_token_slots": graph_calls * self.batch_size,
+            "decode_s": float(decode_s),
+            "prefill_s": float(prefill_s),
+            "generation_wall_s": float(time.perf_counter() - started),
+            "compile_wrapper_s": float(compile_wrapper_s),
+            "compiled_first_call_s": float(first_call_s),
+            "compile": dict(compile_meta),
+        }
+
+
+class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
+    """Continuously refill request-owned slots in one static decode arena.
+
+    This first implementation intentionally retains synchronous token
+    completion checks.  It isolates the benefit of slot refill from any future
+    stream/event or D2H-pipelining optimization.
+    """
+
+    @torch.inference_mode()
+    def generate_many(
+        self,
+        requests: Sequence[PreparedGeneration],
+    ) -> tuple[list[torch.Tensor], dict[str, Any]]:
+        if len(requests) < self.batch_size:
+            return super().generate_many(requests)
+        return self._generate_continuous(requests)
+
+    def _validate_request(self, request: PreparedGeneration) -> None:
+        if request.input_ids.shape[0] != 1:
+            raise ValueError("each continuous request must be prepared at B1")
+        if request.input_ids.shape[1] + request.max_new_tokens > self.cache_length:
+            raise ValueError(
+                "request exceeds static cache capacity: "
+                f"input={int(request.input_ids.shape[1])} "
+                f"max_new={request.max_new_tokens} cache={self.cache_length}"
+            )
+
+    @torch.inference_mode()
+    def _prefill_slot(
+        self,
+        arena: LocalMinerUStaticCache,
+        slot: int,
+        request: PreparedGeneration,
+    ) -> tuple[dict[str, Any], float]:
+        self._validate_request(request)
+        started = time.perf_counter()
+        prefill = self.model.forward_static_prefill(
+            input_ids=request.input_ids,
+            attention_mask=request.attention_mask,
+            pixel_values=request.pixel_values,
+            image_grid_thw=request.image_grid_thw,
+            cache_length=self.cache_length,
+            cache=self._slot_view(arena, slot),
+            logits_to_keep=1,
+        )
+        token = torch.argmax(prefill.logits[:, -1, :].float(), dim=-1, keepdim=True)
+        # The scheduler intentionally makes completion state host-visible in
+        # this version.  This synchronization matches the fixed-cohort path's
+        # semantics; only slot refill is under test.
+        token_id = int(token[0, 0].item())
+        return {
+            "token": token,
+            "token_id": token_id,
+            "cache_position": prefill.next_cache_position,
+            "rope_delta": prefill.rope_deltas,
+        }, float(time.perf_counter() - started)
+
+    @torch.inference_mode()
+    def _generate_continuous(
+        self,
+        requests: Sequence[PreparedGeneration],
+    ) -> tuple[list[torch.Tensor], dict[str, Any]]:
+        started = time.perf_counter()
+        arena = self._arena_for_batch()
+        request_count = len(requests)
+        generated: list[list[int] | None] = [None] * request_count
+        outputs: list[torch.Tensor | None] = [None] * request_count
+        slot_requests: list[int | None] = [None] * self.batch_size
+        next_request = 0
+        prefill_s = 0.0
+        refill_count = 0
+        immediate_completion_count = 0
+
+        def admit(slot: int) -> dict[str, Any] | None:
+            nonlocal next_request, prefill_s, refill_count, immediate_completion_count
+            while next_request < request_count:
+                request_index = next_request
+                next_request += 1
+                state, elapsed_s = self._prefill_slot(
+                    arena,
+                    slot,
+                    requests[request_index],
+                )
+                prefill_s += elapsed_s
+                token_id = int(state["token_id"])
+                generated[request_index] = [token_id]
+                if (
+                    token_id == self.eos_token_id
+                    or requests[request_index].max_new_tokens <= 1
+                ):
+                    outputs[request_index] = torch.tensor([[token_id]], dtype=torch.long)
+                    immediate_completion_count += 1
+                    continue
+                slot_requests[slot] = request_index
+                refill_count += 1
+                return state
+            slot_requests[slot] = None
+            return None
+
+        initial_states = [admit(slot) for slot in range(self.batch_size)]
+        template = next((state for state in initial_states if state is not None), None)
+        if template is None:
+            if not all(output is not None for output in outputs):
+                raise RuntimeError("continuous scheduler lost an immediate result")
+            return [output for output in outputs if output is not None], {
+                "enabled": True,
+                "mode": "continuous_refill",
+                "batch_size": self.batch_size,
+                "cache_length": self.cache_length,
+                "request_count": request_count,
+                "graph_calls": 0,
+                "decode_calls": 0,
+                "raw_decode_token_slots": 0,
+                "active_decode_token_slots": 0,
+                "idle_decode_token_slots": 0,
+                "refill_count": refill_count,
+                "immediate_completion_count": immediate_completion_count,
+                "decode_s": 0.0,
+                "prefill_s": prefill_s,
+                "generation_wall_s": float(time.perf_counter() - started),
+                "compile_wrapper_s": 0.0,
+                "compiled_first_call_s": 0.0,
+            }
+
+        def state_or_dummy(state: dict[str, Any] | None, key: str) -> torch.Tensor:
+            if state is not None:
+                return state[key]
+            if key == "token":
+                return torch.full_like(template["token"], self.pad_token_id)
+            return torch.zeros_like(template[key])
+
+        next_token = torch.cat(
+            [state_or_dummy(state, "token") for state in initial_states], dim=0
+        )
+        cache_position = torch.cat(
+            [state_or_dummy(state, "cache_position") for state in initial_states],
+            dim=0,
+        )
+        rope_delta = torch.cat(
+            [state_or_dummy(state, "rope_delta") for state in initial_states], dim=0
+        )
+
+        compile_started = time.perf_counter()
+        compiled_decode, compile_meta = self.compiled_decoder.compiled_decode_for(
+            batch_size=self.batch_size,
+            cache_length=self.cache_length,
+        )
+        compile_wrapper_s = time.perf_counter() - compile_started
+
+        graph_calls = 0
+        first_call_s = 0.0
+        decode_s = 0.0
+        active_decode_token_slots = 0
+        while any(request_index is not None for request_index in slot_requests):
+            active_decode_token_slots += sum(
+                request_index is not None for request_index in slot_requests
+            )
+            call_started = time.perf_counter()
+            logits = compiled_decode(
+                next_token,
+                cache_position,
+                rope_delta,
+                *arena.flat_tensors(),
+            )
+            candidate = torch.argmax(logits[:, -1, :].float(), dim=-1, keepdim=True)
+            candidate_ids = [int(value) for value in candidate[:, 0].cpu().tolist()]
+            call_s = time.perf_counter() - call_started
+            decode_s += call_s
+            if graph_calls == 0:
+                first_call_s = call_s
+            graph_calls += 1
+
+            for slot, request_index in enumerate(tuple(slot_requests)):
+                if request_index is None:
+                    continue
+                request_tokens = generated[request_index]
+                if request_tokens is None:
+                    raise RuntimeError("active request has no generated-token state")
+                token_id = candidate_ids[slot]
+                request_tokens.append(token_id)
+                is_finished = (
+                    token_id == self.eos_token_id
+                    or len(request_tokens) >= requests[request_index].max_new_tokens
+                )
+                if not is_finished:
+                    next_token[slot : slot + 1].copy_(candidate[slot : slot + 1])
+                    cache_position[slot].add_(1)
+                    continue
+
+                outputs[request_index] = torch.tensor(
+                    [request_tokens], dtype=torch.long
+                )
+                slot_requests[slot] = None
+                replacement = admit(slot)
+                if replacement is None:
+                    next_token[slot].fill_(self.pad_token_id)
+                    cache_position[slot].zero_()
+                    rope_delta[slot].zero_()
+                else:
+                    next_token[slot : slot + 1].copy_(replacement["token"])
+                    cache_position[slot : slot + 1].copy_(
+                        replacement["cache_position"]
+                    )
+                    rope_delta[slot : slot + 1].copy_(replacement["rope_delta"])
+
+        maybe_sync_device(self.model.device)
+        if not all(output is not None for output in outputs):
+            missing = [index for index, output in enumerate(outputs) if output is None]
+            raise RuntimeError(f"continuous scheduler lost outputs: {missing}")
+
+        effective_decode_tokens = sum(
+            max(0, len(tokens or ()) - 1) for tokens in generated
+        )
+        raw_decode_token_slots = graph_calls * self.batch_size
+        return [output for output in outputs if output is not None], {
+            "enabled": True,
+            "mode": "continuous_refill",
+            "batch_size": self.batch_size,
+            "cache_length": self.cache_length,
+            "request_count": request_count,
+            "graph_calls": graph_calls,
+            "decode_calls": effective_decode_tokens,
+            "raw_decode_token_slots": raw_decode_token_slots,
+            "active_decode_token_slots": active_decode_token_slots,
+            "idle_decode_token_slots": (
+                raw_decode_token_slots - active_decode_token_slots
+            ),
+            "refill_count": refill_count,
+            "immediate_completion_count": immediate_completion_count,
             "decode_s": float(decode_s),
             "prefill_s": float(prefill_s),
             "generation_wall_s": float(time.perf_counter() - started),

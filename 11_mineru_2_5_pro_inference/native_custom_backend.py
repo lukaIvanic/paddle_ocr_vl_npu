@@ -10,9 +10,12 @@ but invokes ``generate_ids`` directly.
 from __future__ import annotations
 
 import time
+from collections.abc import Sequence
+from io import BytesIO
 from typing import Any
 
 import torch
+from PIL import Image
 
 
 class LocalMinerUGenerateAdapter:
@@ -220,13 +223,16 @@ def make_local_fixed_batch_vlm_client(
     engine: Any,
     *,
     batch_size: int,
+    continuous_refill: bool = False,
     system_prompt: str,
     allow_truncated_content: bool,
 ):
     """Build the compatibility wrapper around the request-owned KV engine."""
 
     from fixed_batch_engine import PreparedGeneration
+    from mineru_vl_utils.vlm_client.base_client import SingleImageType, UnsupportedError
     from mineru_vl_utils.vlm_client.transformers_client import TransformersVlmClient
+    from mineru_vl_utils.vlm_client.utils import get_rgb_image, load_resource
 
     class LocalFixedBatchMinerUVlmClient(TransformersVlmClient):
         def __init__(self, **kwargs: Any) -> None:
@@ -240,9 +246,19 @@ def make_local_fixed_batch_vlm_client(
             sampling_params,
             **kwargs,
         ):
-            params = self.build_sampling_params(sampling_params)
             prepared: list[PreparedGeneration] = []
-            for image, chat_prompt in zip(image_objs, chat_prompts):
+            if isinstance(sampling_params, Sequence):
+                request_params = list(sampling_params)
+            else:
+                request_params = [sampling_params] * len(chat_prompts)
+            if len(request_params) != len(chat_prompts):
+                raise ValueError("sampling-parameter count must match request count")
+            for image, chat_prompt, sampling_param in zip(
+                image_objs,
+                chat_prompts,
+                request_params,
+            ):
+                params = self.build_sampling_params(sampling_param)
                 inputs = self.processor(
                     text=[chat_prompt],
                     images=[image] if image is not None else None,
@@ -283,6 +299,82 @@ def make_local_fixed_batch_vlm_client(
                 rows,
                 skip_special_tokens=False,
                 clean_up_tokenization_spaces=False,
+            )
+
+        def batch_predict(
+            self,
+            images,
+            prompts="",
+            sampling_params=None,
+            priority=None,
+            **kwargs,
+        ):
+            if not continuous_refill:
+                return super().batch_predict(
+                    images,
+                    prompts=prompts,
+                    sampling_params=sampling_params,
+                    priority=priority,
+                    **kwargs,
+                )
+
+            if not isinstance(prompts, str) and len(prompts) != len(images):
+                raise ValueError("prompt count must match image count")
+            if (
+                isinstance(sampling_params, Sequence)
+                and len(sampling_params) != len(images)
+            ):
+                raise ValueError("sampling-parameter count must match image count")
+            if isinstance(priority, Sequence) and len(priority) != len(images):
+                raise ValueError("priority count must match image count")
+
+            image_objs: list[Image.Image | None] = []
+            for image in images:
+                if image is None:
+                    image_objs.append(None)
+                    continue
+                if not isinstance(image, SingleImageType):
+                    raise UnsupportedError(
+                        "continuous MinerU client requires single-image requests"
+                    )
+                if isinstance(image, str):
+                    image = load_resource(image)
+                if not isinstance(image, Image.Image):
+                    image = Image.open(BytesIO(image))
+                image_objs.append(get_rgb_image(image))
+
+            if isinstance(prompts, str):
+                chat_prompts = [
+                    self.processor.apply_chat_template(
+                        self.build_messages(
+                            prompts,
+                            has_image=image_obj is not None,
+                        ),
+                        tokenize=False,
+                        add_generation_prompt=True,
+                    )
+                    for image_obj in image_objs
+                ]
+            else:
+                chat_prompts = [
+                    self.processor.apply_chat_template(
+                        self.build_messages(
+                            prompt,
+                            has_image=image_obj is not None,
+                        ),
+                        tokenize=False,
+                        add_generation_prompt=True,
+                    )
+                    for prompt, image_obj in zip(prompts, image_objs)
+                ]
+
+            if not isinstance(sampling_params, Sequence):
+                sampling_params = [sampling_params] * len(images)
+            return self._predict_one_batch(
+                image_objs=image_objs,
+                chat_prompts=chat_prompts,
+                sampling_params=sampling_params,
+                **kwargs,
             )
 
     adapter = LocalMinerUGenerateAdapter(model)
