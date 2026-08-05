@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Serve the full owned PaddleOCR-VL page pipeline over HTTP."""
+"""Serve the persistent full-page PaddleOCR-VL pipeline over HTTP."""
 
 from __future__ import annotations
 
@@ -280,7 +280,7 @@ class _State:
         self.paths: dict[str, Path] = {}
         self.lock = threading.Lock()
         self.accepting = True
-        self.draining = False
+        self.worker_stop_sent = False
         self.summary: dict[str, Any] | None = None
         self.summary_ready = threading.Event()
         self.stopping = threading.Event()
@@ -329,7 +329,7 @@ class _State:
         image_path.write_bytes(body)
         with self.lock:
             if not self.accepting:
-                raise RuntimeError("page service is draining")
+                raise RuntimeError("page service is shutting down")
             if request_id in self.waiters:
                 raise ValueError(f"duplicate in-flight request_id: {request_id}")
             self.waiters[request_id] = waiter
@@ -348,15 +348,15 @@ class _State:
             with self.lock:
                 self.waiters.pop(request_id, None)
 
-    def drain(self) -> dict[str, Any]:
+    def shutdown_worker(self) -> dict[str, Any]:
         with self.lock:
             self.accepting = False
-            first = not self.draining
-            self.draining = True
+            first = not self.worker_stop_sent
+            self.worker_stop_sent = True
         if first:
             self.jobs.put(None, timeout=1.0)
         if not self.summary_ready.wait(timeout=self.timeout_s):
-            raise queue.Empty("timed out waiting for page service drain")
+            raise queue.Empty("timed out waiting for page worker shutdown")
         assert self.summary is not None
         return self.summary
 
@@ -390,12 +390,6 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
-        if parsed.path == "/v1/drain":
-            try:
-                self._json(HTTPStatus.OK, {"drained": True, "summary": self.state.drain()})
-            except Exception as exc:
-                self._json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
-            return
         if parsed.path not in {"/v1/pages", "/v1/parse"}:
             self._json(HTTPStatus.NOT_FOUND, {"error": "not found"})
             return
@@ -467,7 +461,7 @@ def main() -> None:
         server.serve_forever(poll_interval=0.25)
     finally:
         try:
-            state.drain()
+            state.shutdown_worker()
         except (queue.Empty, queue.Full):
             worker.terminate()
         worker.join(timeout=10.0)

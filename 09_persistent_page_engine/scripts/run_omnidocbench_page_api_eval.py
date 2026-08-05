@@ -88,10 +88,6 @@ def parse_args() -> argparse.Namespace:
     advanced.add_argument("--teds-timeout-s", type=float, default=120.0)
     advanced.add_argument("--cdm-workers", type=int)
     advanced.add_argument(
-        "--drain-server", action=argparse.BooleanOptionalAction, default=True,
-        help="Drain the inference worker after the benchmark (default: true).",
-    )
-    advanced.add_argument(
         "--skip-image-fingerprint",
         action="store_true",
         help="Check paths and JSON, but skip hashing all image bytes.",
@@ -578,8 +574,6 @@ def main() -> None:
             "--timeout-s", str(args.request_timeout_s),
             "--output-dir", str(generation_dir),
         ]
-        if args.drain_server:
-            generation_command.append("--drain-server")
         _run(
             generation_command,
             cwd=HERE.parent.parent,

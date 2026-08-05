@@ -30,7 +30,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--limit", type=int, default=32)
     parser.add_argument("--http-workers", type=int, default=64)
     parser.add_argument("--timeout-s", type=float, default=1800.0)
-    parser.add_argument("--drain-server", action="store_true")
     parser.add_argument("--output-dir", type=Path, required=True)
     return parser.parse_args()
 
@@ -46,16 +45,6 @@ def _post(url: str, image_path: Path, timeout_s: float) -> dict[str, Any]:
         method="POST",
         headers={"Content-Type": "application/octet-stream"},
     )
-    with urllib.request.urlopen(request, timeout=timeout_s) as response:
-        return json.loads(response.read())
-
-
-def _drain(api_url: str, timeout_s: float) -> dict[str, Any]:
-    parsed = urllib.parse.urlsplit(api_url)
-    url = urllib.parse.urlunsplit(
-        (parsed.scheme, parsed.netloc, "/v1/drain", "", "")
-    )
-    request = urllib.request.Request(url, data=b"{}", method="POST")
     with urllib.request.urlopen(request, timeout=timeout_s) as response:
         return json.loads(response.read())
 
@@ -117,8 +106,6 @@ def main() -> None:
         "max_response_s": max(response_s),
         "predictions_dir": str(predictions_dir),
     }
-    if args.drain_server:
-        summary["server_drain"] = _drain(args.api_url, args.timeout_s)
     (output_dir / "run_summary.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",

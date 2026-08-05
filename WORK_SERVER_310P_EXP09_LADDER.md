@@ -25433,6 +25433,12 @@ free, stop and report that fact. Do not terminate another user's process.
 
 ## Phase 62: full persistent page-API benchmark and official evaluation
 
+> Historical benchmark procedure: Phase 62 used the former one-shot drain
+> endpoint to capture run-scoped scheduler metrics. The current page API is a
+> persistent product service and no longer exposes that endpoint. Do not rerun
+> the Phase 62 client command against current source. Use
+> `09_persistent_page_engine/PAGE_API_README.md` for the current API workflow.
+
 Phase 62 reproduces the completed 910B2 full-page HTTP benchmark on 310P. It
 tests the real persistent `/v1/pages` service, not the direct scheduler and not
 the crop-only API. It sends all 1,651 OmniDocBench pages through 64 independent

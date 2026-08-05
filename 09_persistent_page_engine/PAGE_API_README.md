@@ -59,8 +59,8 @@ source 09_persistent_page_engine/scripts/omnidocbench_eval_env.sh
 ```
 
 The benchmark uses 64 independent HTTP requests. The server schedules layout,
-prefill, and decode work. The client drains the inference worker after the last
-page. Restart the API before another inference run.
+prefill, and decode work. The server stays ready after the benchmark. You can
+send more pages or run another benchmark without restarting it.
 
 The script checks the dataset and evaluator before inference. A dataset mismatch
 prints a red warning and continues. An evaluator commit or source mismatch stops
