@@ -1,0 +1,108 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_1637904769_page_008.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "text_01",
+      "bbox": [
+        136.96360778808594,
+        65.40188598632812,
+        1857.6087646484375,
+        324.1776123046875
+      ],
+      "score": 0.8177473545074463,
+      "text": "OBJECTIVES OF TEACHING/LEARNING ENGLISH",
+      "text_unirec": "OBJECTIVES OF TEACHING/LEARNING ENGLISH",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_02",
+      "bbox": [
+        107.40423583984375,
+        366.2220764160156,
+        1106.8890380859375,
+        475.2850341796875
+      ],
+      "score": 0.9320433139801025,
+      "text": "- Linguistic competence.",
+      "text_unirec": "- Linguistic competence.",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_03",
+      "bbox": [
+        107.2845458984375,
+        495.55987548828125,
+        1326.0172119140625,
+        603.3810424804688
+      ],
+      "score": 0.9336075186729431,
+      "text": "• Socio-linguistic competence.",
+      "text_unirec": "• Socio-linguistic competence.",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_04",
+      "bbox": [
+        107.0109634399414,
+        623.9173583984375,
+        1203.1678466796875,
+        730.403564453125
+      ],
+      "score": 0.9494916796684265,
+      "text": "• Pragmatical competence.",
+      "text_unirec": "• Pragmatical competence.",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_05",
+      "bbox": [
+        107.42354583740234,
+        753.353759765625,
+        1041.6275634765625,
+        857.8016357421875
+      ],
+      "score": 0.9459367990493774,
+      "text": "• Cultural competence.",
+      "text_unirec": "• Cultural competence.",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_06",
+      "bbox": [
+        107.76069641113281,
+        883.2382202148438,
+        1033.570068359375,
+        989.0819091796875
+      ],
+      "score": 0.9400714635848999,
+      "text": "Literary competence.",
+      "text_unirec": "Literary competence.",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_07",
+      "bbox": [
+        107.92472839355469,
+        1008.7265014648438,
+        1076.5458984375,
+        1113.9058837890625
+      ],
+      "score": 0.9375829696655273,
+      "text": "Practical competence.",
+      "text_unirec": "Practical competence.",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 24.12258823099546
+  }
+}

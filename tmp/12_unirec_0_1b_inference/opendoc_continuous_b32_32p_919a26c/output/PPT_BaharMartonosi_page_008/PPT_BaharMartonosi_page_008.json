@@ -1,0 +1,122 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_008.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "paragraph_title_01",
+      "bbox": [
+        111.57190704345703,
+        212.89476013183594,
+        1201.2464599609375,
+        296.5805358886719
+      ],
+      "score": 0.9531951546669006,
+      "text": "OTHER THINGS TO CONSIDER",
+      "text_unirec": "OTHER THINGS TO CONSIDER",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_02",
+      "bbox": [
+        111.16873931884766,
+        365.0552673339844,
+        1577.449462890625,
+        519.6319580078125
+      ],
+      "score": 0.9708787202835083,
+      "text": "Oral communication is different from written communication",
+      "text_unirec": "Oral communication is different from written communication",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_03",
+      "bbox": [
+        190.15127563476562,
+        538.3535766601562,
+        1462.4573974609375,
+        609.3373413085938
+      ],
+      "score": 0.9633085131645203,
+      "text": "Keep it simple and focus on a few key points",
+      "text_unirec": "Keep it simple and focus on a few key points",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_04",
+      "bbox": [
+        190.53050231933594,
+        622.3189086914062,
+        802.877197265625,
+        691.8755493164062
+      ],
+      "score": 0.9615118503570557,
+      "text": "• Repeat key insights",
+      "text_unirec": "• Repeat key insights",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_05",
+      "bbox": [
+        112.0035629272461,
+        710.982421875,
+        1089.604736328125,
+        785.2656860351562
+      ],
+      "score": 0.9648160934448242,
+      "text": "Be sensitive to your audience",
+      "text_unirec": "Be sensitive to your audience",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_06",
+      "bbox": [
+        190.23626708984375,
+        801.9594116210938,
+        1707.5731201171875,
+        939.014892578125
+      ],
+      "score": 0.9768841862678528,
+      "text": "The same talk may need to be adjusted for a different audience",
+      "text_unirec": "The same talk may need to be adjusted for a different audience",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_07",
+      "bbox": [
+        111.33628845214844,
+        961.6228637695312,
+        1377.989990234375,
+        1036.642822265625
+      ],
+      "score": 0.9660743474960327,
+      "text": "o Make the audience want to learn more",
+      "text_unirec": "o Make the audience want to learn more",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_08",
+      "bbox": [
+        111.1084213256836,
+        1057.47216796875,
+        1701.4156494140625,
+        1210.4971923828125
+      ],
+      "score": 0.9746418595314026,
+      "text": "o Handling Q&A is as important as the formal talk itself",
+      "text_unirec": "o Handling Q&A is as important as the formal talk itself",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 10.77642300282605
+  }
+}
