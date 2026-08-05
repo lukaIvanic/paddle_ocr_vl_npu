@@ -31,7 +31,7 @@ local_modeling_mineru.py
 
 run_local_model_two_step_extract.py
   Inspectable two-stage page flow: eager layout detection, block parsing and
-  cropping, then static-cache compiled recognition decode.
+  cropping, then eager or static-cache compiled recognition decode.
 
 bench_compiled_batch_decode.py
   Fixed-step compiled decode throughput over distinct real crop inputs.
@@ -86,6 +86,7 @@ $PYTHON 11_mineru_2_5_pro_inference/run_local_model_two_step_extract.py \
   --no-use-fast \
   --image crops/crop_01_text_block_en.png \
   --max-new-tokens 128 \
+  --recognition-decode eager \
   --cache-length 512 \
   --decode-weight-format decode_nz \
   --decode-rotary-impl manual \
@@ -96,8 +97,9 @@ $PYTHON 11_mineru_2_5_pro_inference/run_local_model_two_step_extract.py \
   --output tmp/11_mineru_2_5_pro_inference/two_step_smoke.json
 ```
 
-The layout stage remains eager and dynamic. Only one-token recognition decode
-is compiled; vision, projector, processor work and recognition prefill remain
+This smoke is fully eager and does not import or invoke TorchAir. Pass
+`--recognition-decode compiled` to use the static-cache compiled recognition
+decode path; vision, projector, processor work and recognition prefill remain
 outside that graph.
 
 ## Compiled batch-decode benchmark

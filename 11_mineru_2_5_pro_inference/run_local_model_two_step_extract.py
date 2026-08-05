@@ -1178,9 +1178,11 @@ class LocalMinerUTwoStepClient:
         predictor: Any,
         *,
         layout_image_size: tuple[int, int] = (1036, 1036),
+        recognition_decode: str = "eager",
     ) -> None:
         self.predictor = predictor
         self.layout_image_size = layout_image_size
+        self.recognition_decode = str(recognition_decode)
 
     def layout_detect(self, image: Image.Image) -> dict[str, Any]:
         prompt = DEFAULT_PROMPTS["[layout]"]
@@ -1227,7 +1229,11 @@ class LocalMinerUTwoStepClient:
         }
 
     def recognize_crop(self, crop: Image.Image, prompt: str, block: dict[str, Any]) -> dict[str, Any]:
-        prediction = self.predictor.predict(crop, prompt, use_compiled_recognition_decode=True)
+        prediction = self.predictor.predict(
+            crop,
+            prompt,
+            use_compiled_recognition_decode=self.recognition_decode == "compiled",
+        )
         return {
             "selected_block": block,
             "prompt": prompt,
@@ -1304,6 +1310,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--layout-image-size", type=int, nargs=2, default=(1036, 1036), metavar=("W", "H"))
     parser.add_argument("--block-index", type=int, default=0)
     parser.add_argument("--max-new-tokens", type=int, default=512)
+    parser.add_argument(
+        "--recognition-decode",
+        choices=("eager", "compiled"),
+        default="eager",
+        help="Recognition decode implementation. Eager avoids TorchAir entirely; compiled uses the static-cache TorchAir path.",
+    )
     parser.add_argument("--cache-length", type=int, default=None, help="Static KV cache length for compiled recognition decode; defaults to input tokens + max new tokens.")
     parser.add_argument("--torchair-cache-dir", type=Path, default=DEFAULT_TORCHAIR_CACHE_DIR)
     parser.add_argument(
@@ -1401,6 +1413,7 @@ def main() -> None:
     client = LocalMinerUTwoStepClient(
         predictor,
         layout_image_size=(int(args.layout_image_size[0]), int(args.layout_image_size[1])),
+        recognition_decode=str(args.recognition_decode),
     )
     setup_s = time.perf_counter() - setup_start
 
@@ -1434,12 +1447,14 @@ def main() -> None:
         "decode_weight_format": decode_weight_format,
         "decode_rotary_impl": decode_rotary_impl,
         "recognition_compiled_decode": {
-            "enabled": True,
+            "enabled": args.recognition_decode == "compiled",
             "batch_size": 1,
             "cache_length_arg": None if args.cache_length is None else int(args.cache_length),
             "torchair_cache_dir": str(args.torchair_cache_dir),
             "layout_decode": "dynamic_eager",
-            "recognition_decode": "static_cache_compiled",
+            "recognition_decode": (
+                "static_cache_compiled" if args.recognition_decode == "compiled" else "dynamic_eager"
+            ),
             "decode_weight_format_requested": str(args.decode_weight_format),
             "decode_weight_format_effective": effective_decode_weight_format,
             "decode_rotary_impl_requested": str(args.decode_rotary_impl),
