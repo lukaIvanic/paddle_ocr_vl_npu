@@ -1819,10 +1819,13 @@ class OptimizedUniRecRunner:
                         self_attention_backend="eager",
                     )
                 else:
+                    graph_active_length = (
+                        active_length if self_attention_backend == "increfa" else 0
+                    )
                     logits = decode_module(
                         next_token,
                         cache_position,
-                        active_length,
+                        graph_active_length,
                         cache.key_cache,
                         cache.value_cache,
                         cache.cross_key_cache,
@@ -1981,10 +1984,13 @@ class OptimizedUniRecRunner:
                         self_attention_backend="eager",
                     )
                 else:
+                    graph_active_length = (
+                        active_length if self_attention_backend == "increfa" else 0
+                    )
                     logits = decode_module(
                         next_token,
                         cache_position,
-                        active_length,
+                        graph_active_length,
                         kv_cache.key_cache,
                         kv_cache.value_cache,
                         kv_cache.cross_key_cache,
