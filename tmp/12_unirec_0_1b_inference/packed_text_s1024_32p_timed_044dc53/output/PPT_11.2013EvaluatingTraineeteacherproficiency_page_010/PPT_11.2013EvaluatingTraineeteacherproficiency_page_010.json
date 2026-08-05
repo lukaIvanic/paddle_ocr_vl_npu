@@ -1,0 +1,110 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_11.2013EvaluatingTraineeteacherproficiency_page_010.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "header_image_01",
+      "bbox": [
+        1412.61572265625,
+        91.62653350830078,
+        1930.7899169921875,
+        253.27626037597656
+      ],
+      "score": 0.47548213601112366,
+      "text": "",
+      "text_unirec": "",
+      "is_image": true,
+      "img_path": "imgs/img_in_header_image_box_1412_91_1930_253.jpg",
+      "is_merged_continuation": false,
+      "in_table": false
+    },
+    {
+      "label": "header_02",
+      "bbox": [
+        71.12670135498047,
+        169.74363708496094,
+        988.056640625,
+        256.8330383300781
+      ],
+      "score": 0.6506627798080444,
+      "text": "Good Language Teachers",
+      "text_unirec": "Good Language Teachers",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_03",
+      "bbox": [
+        65.30052185058594,
+        370.5744323730469,
+        1864.0291748046875,
+        531.2584838867188
+      ],
+      "score": 0.976514458656311,
+      "text": "Mostly based on asking language learners and showed that language proficiency was seen as one important factor",
+      "text_unirec": "Mostly based on asking language learners and showed that language proficiency was seen as one important factor",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_04",
+      "bbox": [
+        66.36625671386719,
+        561.3556518554688,
+        1891.458984375,
+        723.6992797851562
+      ],
+      "score": 0.9775069952011108,
+      "text": "Eg: Girard (1977- French learners of English), teaches good pronunciation, explains clearly, speaks good English,",
+      "text_unirec": "Eg: Girard (1977- French learners of English), teaches good pronunciation, explains clearly, speaks good English,",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_05",
+      "bbox": [
+        69.35435485839844,
+        752.9091186523438,
+        585.8959350585938,
+        833.0154418945312
+      ],
+      "score": 0.9581058025360107,
+      "text": "Eg: Brosh (1996)",
+      "text_unirec": "Eg: Brosh (1996)",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_06",
+      "bbox": [
+        67.25836181640625,
+        866.6881713867188,
+        1607.4498291015625,
+        945.5048828125
+      ],
+      "score": 0.9600335359573364,
+      "text": "• knowledge and command of the target language;",
+      "text_unirec": "• knowledge and command of the target language;",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_07",
+      "bbox": [
+        63.480079650878906,
+        978.100341796875,
+        1869.097412109375,
+        1217.9039306640625
+      ],
+      "score": 0.9774566292762756,
+      "text": "Teacher Evaluation – context universal- Evaluation fairly simple - based on visible behaviours / learner outcomes in ‘objective’ tests",
+      "text_unirec": "Teacher Evaluation – context universal- Evaluation fairly simple - based on visible behaviours / learner outcomes in ‘objective’ tests",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 9.578580914065242
+  }
+}

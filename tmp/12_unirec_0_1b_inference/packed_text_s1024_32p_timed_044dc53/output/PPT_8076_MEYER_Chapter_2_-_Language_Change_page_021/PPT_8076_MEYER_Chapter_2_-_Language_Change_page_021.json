@@ -1,0 +1,82 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_8076_MEYER_Chapter_2_-_Language_Change_page_021.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "header_01",
+      "bbox": [
+        64.11896514892578,
+        45.42104721069336,
+        422.59014892578125,
+        95.70763397216797
+      ],
+      "score": 0.9491605758666992,
+      "text": "CAMBRIDGE",
+      "text_unirec": "CAMBRIDGE",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "paragraph_title_02",
+      "bbox": [
+        162.91761779785156,
+        292.5330810546875,
+        722.8616943359375,
+        390.8228759765625
+      ],
+      "score": 0.9674170017242432,
+      "text": "Syntax (cont.)",
+      "text_unirec": "Syntax (cont.)",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_03",
+      "bbox": [
+        111.17291259765625,
+        443.90582275390625,
+        1833.89599609375,
+        562.2538452148438
+      ],
+      "score": 0.977436900138855,
+      "text": "In Jack Hawkins’ sample of 149 languages, 6 of the 16 possible combinations did not occur:",
+      "text_unirec": "In Jack Hawkins’ sample of 149 languages, 6 of the 16 possible combinations did not occur:",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "table_04",
+      "bbox": [
+        109.2177963256836,
+        580.0606079101562,
+        623.2568969726562,
+        1019.36962890625
+      ],
+      "score": 0.9783852696418762,
+      "text": "<table>\n<tr>\n<td>VO</td>\n<td>Pr</td>\n<td>NG</td>\n<td>RelN</td>\n</tr>\n<tr>\n<td>VO</td>\n<td>Pr</td>\n<td>GN</td>\n<td>RelN</td>\n</tr>\n<tr>\n<td>VO</td>\n<td>Po</td>\n<td>NG</td>\n<td>NRel</td>\n</tr>\n<tr>\n<td>VO</td>\n<td>Po</td>\n<td>NG</td>\n<td>RelN</td>\n</tr>\n<tr>\n<td>OV</td>\n<td>Po</td>\n<td>NG</td>\n<td>RelN</td>\n</tr>\n<tr>\n<td>OV</td>\n<td>Pr</td>\n<td>NG</td>\n<td>RelN</td>\n</tr>\n</table>\n\n\n",
+      "text_unirec": "<table>\n<tr>\n<td>VO</td>\n<td>Pr</td>\n<td>NG</td>\n<td>RelN</td>\n</tr>\n<tr>\n<td>VO</td>\n<td>Pr</td>\n<td>GN</td>\n<td>RelN</td>\n</tr>\n<tr>\n<td>VO</td>\n<td>Po</td>\n<td>NG</td>\n<td>NRel</td>\n</tr>\n<tr>\n<td>VO</td>\n<td>Po</td>\n<td>NG</td>\n<td>RelN</td>\n</tr>\n<tr>\n<td>OV</td>\n<td>Po</td>\n<td>NG</td>\n<td>RelN</td>\n</tr>\n<tr>\n<td>OV</td>\n<td>Pr</td>\n<td>NG</td>\n<td>RelN</td>\n</tr>\n</table>\n\n\n",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "footer_image_05",
+      "bbox": [
+        1453.257080078125,
+        1355.6292724609375,
+        1954.6380615234375,
+        1464.173828125
+      ],
+      "score": 0.7356631755828857,
+      "text": "",
+      "text_unirec": "",
+      "is_image": true,
+      "img_path": "imgs/img_in_footer_image_box_1453_1355_1954_1464.jpg",
+      "is_merged_continuation": false,
+      "in_table": false
+    }
+  ],
+  "timing": {
+    "total": 7.246786154108122
+  }
+}

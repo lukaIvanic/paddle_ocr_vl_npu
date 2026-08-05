@@ -1,0 +1,178 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_011.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "paragraph_title_01",
+      "bbox": [
+        625.106689453125,
+        134.08680725097656,
+        1378.5491943359375,
+        252.82064819335938
+      ],
+      "score": 0.9710053205490112,
+      "text": "English Writing",
+      "text_unirec": "English Writing",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_02",
+      "bbox": [
+        109.8261489868164,
+        296.3989562988281,
+        1734.9202880859375,
+        436.9905090332031
+      ],
+      "score": 0.9773440957069397,
+      "text": "• You should have received enough grammar knowledge from your high school English classes",
+      "text_unirec": "• You should have received enough grammar knowledge from your high school English classes",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_03",
+      "bbox": [
+        111.42322540283203,
+        450.2457580566406,
+        1056.3914794921875,
+        518.19189453125
+      ],
+      "score": 0.9586526155471802,
+      "text": "• Never trust Google translation",
+      "text_unirec": "• Never trust Google translation",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_04",
+      "bbox": [
+        208.04446411132812,
+        530.7855224609375,
+        892.0689086914062,
+        590.5185546875
+      ],
+      "score": 0.9482345581054688,
+      "text": "– Better choices out there",
+      "text_unirec": "– Better choices out there",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_05",
+      "bbox": [
+        311.019287109375,
+        598.8794555664062,
+        1001.2831420898438,
+        659.3002319335938
+      ],
+      "score": 0.951473593711853,
+      "text": "• http://www.grammarly.com/",
+      "text_unirec": "• http://www.grammarly.com/",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_06",
+      "bbox": [
+        311.2641296386719,
+        663.9774780273438,
+        1067.0166015625,
+        722.6742553710938
+      ],
+      "score": 0.9514505863189697,
+      "text": "• http://www.grammarcheck.net/",
+      "text_unirec": "• http://www.grammarcheck.net/",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_07",
+      "bbox": [
+        111.97942352294922,
+        734.8177490234375,
+        1016.3748168945312,
+        802.7874755859375
+      ],
+      "score": 0.9649887681007385,
+      "text": "• How to improve your writing",
+      "text_unirec": "• How to improve your writing",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_08",
+      "bbox": [
+        207.3688201904297,
+        812.9165649414062,
+        1178.6219482421875,
+        877.201416015625
+      ],
+      "score": 0.9616680145263672,
+      "text": "– Reading, reading, and more reading",
+      "text_unirec": "– Reading, reading, and more reading",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_09",
+      "bbox": [
+        206.7737579345703,
+        885.2706909179688,
+        1646.632568359375,
+        951.8137817382812
+      ],
+      "score": 0.961391270160675,
+      "text": "– Spelling and grammar check tools are your best friends",
+      "text_unirec": "– Spelling and grammar check tools are your best friends",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_10",
+      "bbox": [
+        206.70843505859375,
+        961.6159057617188,
+        883.3182983398438,
+        1019.91015625
+      ],
+      "score": 0.956798791885376,
+      "text": "– Imitate Good Sentences",
+      "text_unirec": "– Imitate Good Sentences",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_11",
+      "bbox": [
+        111.99927520751953,
+        1033.3719482421875,
+        1706.330078125,
+        1245.8582763671875
+      ],
+      "score": 0.40847525000572205,
+      "text": "• Write English emails (and do it w/ care) daily/often to – International Pen Pals • http://www.interpals.net/",
+      "text_unirec": "• Write English emails (and do it w/ care) daily/often to – International Pen Pals • http://www.interpals.net/",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_12",
+      "bbox": [
+        207.37307739257812,
+        1252.414306640625,
+        1881.0064697265625,
+        1376.7733154296875
+      ],
+      "score": 0.9730443954467773,
+      "text": "– Your professors/advisors (and ask them to correct your grammar whenever there is a mistake)",
+      "text_unirec": "– Your professors/advisors (and ask them to correct your grammar whenever there is a mistake)",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 10.250452332897112
+  }
+}

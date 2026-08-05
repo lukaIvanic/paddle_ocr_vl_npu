@@ -1,0 +1,136 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_004.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "paragraph_title_01",
+      "bbox": [
+        493.23736572265625,
+        129.52981567382812,
+        1508.5443115234375,
+        248.98651123046875
+      ],
+      "score": 0.9736484289169312,
+      "text": "Derivative of a line",
+      "text_unirec": "Derivative of a line",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_02",
+      "bbox": [
+        111.22715759277344,
+        363.2054138183594,
+        574.5615234375,
+        444.93438720703125
+      ],
+      "score": 0.9624137878417969,
+      "text": "•  $y = mx + b$ ",
+      "text_unirec": "•  $y = mx + b$ ",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_03",
+      "bbox": [
+        108.06507110595703,
+        461.88922119140625,
+        1242.7373046875,
+        548.9592895507812
+      ],
+      "score": 0.9718508124351501,
+      "text": "• slope m and y axis intercept b",
+      "text_unirec": "• slope m and y axis intercept b",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_04",
+      "bbox": [
+        107.9356689453125,
+        565.278564453125,
+        1620.6734619140625,
+        650.2957153320312
+      ],
+      "score": 0.9699632525444031,
+      "text": "• derivative of  $y = ax^{n} + b$  with respect to x:",
+      "text_unirec": "• derivative of  $y = ax^{n} + b$  with respect to x:",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_05",
+      "bbox": [
+        109.7051773071289,
+        665.8163452148438,
+        758.6427001953125,
+        750.2754516601562
+      ],
+      "score": 0.9683161377906799,
+      "text": "• dy/dx = a n x(n-1)",
+      "text_unirec": "• dy/dx = a n x(n-1)",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_06",
+      "bbox": [
+        108.42192077636719,
+        768.2551879882812,
+        1844.6895751953125,
+        935.474853515625
+      ],
+      "score": 0.9830744862556458,
+      "text": "• Because b is a constant -- think of it as  $bx^{o}$  -- its derivative is 0bx-1 = 0",
+      "text_unirec": "• Because b is a constant -- think of it as  $bx^{o}$  -- its derivative is 0bx-1 = 0",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_07",
+      "bbox": [
+        107.95587158203125,
+        956.2048950195312,
+        1499.5489501953125,
+        1040.450927734375
+      ],
+      "score": 0.9728521108627319,
+      "text": "• For a straight line,  $a = m$  and  $n = 1$  so",
+      "text_unirec": "• For a straight line,  $a = m$  and  $n = 1$  so",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_08",
+      "bbox": [
+        108.55746459960938,
+        1056.1722412109375,
+        1394.4083251953125,
+        1144.3658447265625
+      ],
+      "score": 0.9680129885673523,
+      "text": "• dy/dx = m 1  $x^{(0)}$ , or because  $x^{0} = 1$ ,",
+      "text_unirec": "• dy/dx = m 1  $x^{(0)}$ , or because  $x^{0} = 1$ ,",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_09",
+      "bbox": [
+        111.02654266357422,
+        1163.2176513671875,
+        550.5250854492188,
+        1247.912353515625
+      ],
+      "score": 0.9666743874549866,
+      "text": "• dy/dx = m",
+      "text_unirec": "• dy/dx = m",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 2.4727349751628935
+  }
+}

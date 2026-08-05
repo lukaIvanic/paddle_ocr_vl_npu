@@ -1,0 +1,94 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_007.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "paragraph_title_01",
+      "bbox": [
+        107.68896484375,
+        207.34298706054688,
+        1521.5989990234375,
+        299.6348571777344
+      ],
+      "score": 0.7309920191764832,
+      "text": "A \"TYPICAL\" PROJECT TALK OUTLINE",
+      "text_unirec": "A \"TYPICAL\" PROJECT TALK OUTLINE",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "paragraph_title_02",
+      "bbox": [
+        111.87979888916016,
+        364.1543273925781,
+        796.4157104492188,
+        439.3642578125
+      ],
+      "score": 0.9016762375831604,
+      "text": "o Results (2-6 slides)",
+      "text_unirec": "o Results (2-6 slides)",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_03",
+      "bbox": [
+        145.55459594726562,
+        445.49774169921875,
+        1675.2071533203125,
+        680.4552612304688
+      ],
+      "score": 0.9621191024780273,
+      "text": "Present key results and key insights. This is main body of the talk, but don’t try to show ALL results.",
+      "text_unirec": "Present key results and key insights. This is main body of the talk, but don’t try to show ALL results.",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_04",
+      "bbox": [
+        111.88211822509766,
+        700.9210815429688,
+        784.582275390625,
+        781.1137084960938
+      ],
+      "score": 0.9422178268432617,
+      "text": "o Summary (1 slide)",
+      "text_unirec": "o Summary (1 slide)",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_05",
+      "bbox": [
+        1160.176513671875,
+        712.4898681640625,
+        1893.2930908203125,
+        793.206787109375
+      ],
+      "score": 0.9135934710502625,
+      "text": "3 Things to Remember!",
+      "text_unirec": "3 Things to Remember!",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_06",
+      "bbox": [
+        109.64387512207031,
+        798.1246337890625,
+        1568.6712646484375,
+        1120.112548828125
+      ],
+      "score": 0.5544702410697937,
+      "text": "Future Work (0-1 slides)Backup Slides (0-3 slides)Optionally have a few slides ready to answerexpected questions.",
+      "text_unirec": "Future Work (0-1 slides)Backup Slides (0-3 slides)Optionally have a few slides ready to answerexpected questions.",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 7.481269208947197
+  }
+}
