@@ -101,10 +101,42 @@ Cached TorchAir decode:
 
 ## Official OpenDoc full-page pipeline
 
-OpenOCR documents `tools/infer_doc.py` as the reference path for reproducing
-its OmniDocBench v1.5 score. The adapter below preserves that pipeline and uses
-the exact `model.pth` checkpoint while placing only UniRec on the NPU. Layout
-detection remains on the official PaddleX CPU path.
+OpenOCR provides two full-page implementations:
+
+- `openocr.py --task doc`: the packaged ONNX path. It runs PP-DocLayoutV2 and
+  up to four UniRec crop workers. This path is validated in the Blue Zone ARM
+  container.
+- `tools/infer_doc.py`: the PaddleX + PyTorch path used by the OpenOCR and
+  OmniDocBench source trees. The two repositories contain byte-identical
+  scripts. PaddlePaddle 3.2.0 currently segfaults while loading the Paddle
+  PP-DocLayoutV2 parameters on this ARM container, before page inference.
+
+The official ONNX UniRec export produced exact text parity with the OpenDoc
+`model.pth` checkpoint on the same table crop through the tested 128-token
+generation. Use the committed full-run wrapper for OmniDocBench v1.6:
+
+```sh
+bash 12_unirec_0_1b_inference/run_official_opendoc_omnidocbench.sh
+```
+
+The wrapper runs the official CLI over the complete image directory and saves
+the exact command, continuous log, exit code, wall time, JSON, and Markdown.
+The current official OmniDocBench v1.6 target is:
+
+```text
+Overall:       90.67
+Text Edit:      0.049
+Formula CDM:   93.02
+Table TEDS:    83.88
+Reading Edit:   0.140
+```
+
+The 90.57 figure in OpenOCR's document is the older OmniDocBench v1.5 result.
+The installed 1,651-page dataset is v1.6.
+
+The source-pipeline adapter remains available for environments where the
+Paddle predictor loads correctly. It preserves OpenOCR's pipeline and places
+only UniRec on the NPU:
 
 ```sh
 /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
@@ -117,9 +149,8 @@ detection remains on the official PaddleX CPU path.
 ```
 
 Use `--limit 1` for a smoke. Omit `--limit` for the complete image directory.
-The runner saves official OpenDoc JSON and Markdown plus a compact run summary.
-It does not replace the OmniDocBench evaluator; score the Markdown outputs with
-the standard evaluator after inference.
+Neither runner replaces the OmniDocBench evaluator. Score the Markdown outputs
+with the standard evaluator after inference.
 
 ## Artifacts
 
