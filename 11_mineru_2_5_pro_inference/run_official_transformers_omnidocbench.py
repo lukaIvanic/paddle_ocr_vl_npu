@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Run the official MinerU Transformers client over OmniDocBench pages.
+"""Run an official MinerU local client over OmniDocBench pages.
 
-The runner preserves the model-card baseline contract: stock Transformers,
-the official ``mineru-vl-utils`` two-step client, the fast processor, BF16,
-greedy generation, image analysis disabled, and official ``json2md`` output.
-It adds only corpus selection, deterministic sharding, durable checkpoints,
-and explicit progress/timing records.
+The runner supports the stock Transformers and synchronous vLLM engines while
+preserving the remaining model-card contract: the official
+``mineru-vl-utils`` two-step client, BF16, greedy generation, image analysis
+disabled, and official ``json2md`` output.  It adds only corpus selection,
+deterministic sharding, durable checkpoints, and explicit progress/timing
+records.
 """
 
 from __future__ import annotations
@@ -38,6 +39,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dataset-json", type=Path, default=DEFAULT_DATASET_JSON)
     parser.add_argument("--images-dir", type=Path, default=DEFAULT_IMAGES_DIR)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument(
+        "--backend",
+        choices=("transformers", "vllm-engine"),
+        default="transformers",
+    )
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--limit", type=int)
     parser.add_argument("--shard-count", type=int, default=1)
@@ -46,7 +52,10 @@ def parse_args() -> argparse.Namespace:
         "--batch-size",
         type=int,
         default=1,
-        help="Stock Transformers model batch size; one is the fidelity baseline.",
+        help=(
+            "Maximum requests per backend call. Zero keeps the official "
+            "backend default: B1 for Transformers and unbounded for vLLM."
+        ),
     )
     parser.add_argument(
         "--page-batch-size",
@@ -60,6 +69,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--resume", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--fail-fast", action="store_true")
     parser.add_argument("--hash-model-files", action="store_true")
+    parser.add_argument(
+        "--vllm-enforce-eager",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Disable vLLM graph capture for the compatibility baseline.",
+    )
+    parser.add_argument("--vllm-gpu-memory-utilization", type=float, default=0.8)
+    parser.add_argument("--vllm-max-model-len", type=int, default=32768)
+    parser.add_argument("--vllm-max-num-seqs", type=int, default=64)
     return parser.parse_args()
 
 
@@ -111,8 +129,8 @@ def main() -> None:
         raise ValueError("shard-count must be positive")
     if not 0 <= args.shard_index < args.shard_count:
         raise ValueError("shard-index must be in [0, shard-count)")
-    if args.batch_size <= 0 or args.page_batch_size <= 0:
-        raise ValueError("batch-size and page-batch-size must be positive")
+    if args.batch_size < 0 or args.page_batch_size <= 0:
+        raise ValueError("batch-size must be non-negative and page-batch-size must be positive")
 
     model_dir = args.model.expanduser().resolve()
     dataset_json = args.dataset_json.expanduser().resolve()
@@ -140,7 +158,6 @@ def main() -> None:
     import transformers
     from mineru_vl_utils import MinerUClient, __version__ as mineru_utils_version
     from mineru_vl_utils.post_process import json2md
-    from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
 
     setup_started = time.perf_counter()
     print(
@@ -148,29 +165,57 @@ def main() -> None:
         f"model={model_dir}",
         flush=True,
     )
-    model = Qwen2VLForConditionalGeneration.from_pretrained(
-        model_dir,
-        dtype=torch.bfloat16,
-        attn_implementation="eager",
-        local_files_only=True,
-    )
-    # The checkpoint stores the tied embedding matrix once.  Transformers
-    # otherwise initializes the absent lm_head independently.
-    model.lm_head.weight = model.model.language_model.embed_tokens.weight
-    model = model.to("npu:0").eval()
-    processor = AutoProcessor.from_pretrained(
-        model_dir,
-        use_fast=True,
-        local_files_only=True,
-    )
-    client = MinerUClient(
-        backend="transformers",
-        model=model,
-        processor=processor,
-        image_analysis=False,
-        batch_size=args.batch_size,
-        use_tqdm=False,
-    )
+    if args.backend == "transformers":
+        from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
+
+        model = Qwen2VLForConditionalGeneration.from_pretrained(
+            model_dir,
+            dtype=torch.bfloat16,
+            attn_implementation="eager",
+            local_files_only=True,
+        )
+        # The checkpoint stores the tied embedding matrix once.  Transformers
+        # otherwise initializes the absent lm_head independently.
+        model.lm_head.weight = model.model.language_model.embed_tokens.weight
+        model = model.to("npu:0").eval()
+        processor = AutoProcessor.from_pretrained(
+            model_dir,
+            use_fast=True,
+            local_files_only=True,
+        )
+        client = MinerUClient(
+            backend="transformers",
+            model=model,
+            processor=processor,
+            image_analysis=False,
+            batch_size=args.batch_size,
+            use_tqdm=False,
+        )
+        attention = "eager"
+        processor_fast: bool | None = True
+    else:
+        from mineru_vl_utils import MinerULogitsProcessor
+        from vllm import LLM
+
+        model = LLM(
+            model=str(model_dir),
+            dtype="bfloat16",
+            enforce_eager=args.vllm_enforce_eager,
+            gpu_memory_utilization=args.vllm_gpu_memory_utilization,
+            max_model_len=args.vllm_max_model_len,
+            max_num_seqs=args.vllm_max_num_seqs,
+            limit_mm_per_prompt={"image": 1},
+            logits_processors=[MinerULogitsProcessor],
+        )
+        client = MinerUClient(
+            backend="vllm-engine",
+            vllm_llm=model,
+            image_analysis=False,
+            batch_size=args.batch_size,
+            use_tqdm=False,
+        )
+        attention = "vllm-selected"
+        processor_fast = None
     synchronize()
     setup_s = time.perf_counter() - setup_started
 
@@ -183,7 +228,7 @@ def main() -> None:
         "schema_version": 1,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "git_commit": git_commit(),
-        "backend": "official_mineru_transformers",
+        "backend": f"official_mineru_{args.backend}",
         "model": str(model_dir),
         "dataset_json": str(dataset_json),
         "images_dir": str(images_dir),
@@ -193,12 +238,24 @@ def main() -> None:
         "transformers": transformers.__version__,
         "mineru_vl_utils": mineru_utils_version,
         "dtype": "bfloat16",
-        "attention": "eager",
-        "processor_fast": True,
+        "attention": attention,
+        "processor_fast": processor_fast,
         "npu_jit_compile": False,
         "image_analysis": False,
         "batch_size": args.batch_size,
         "page_batch_size": args.page_batch_size,
+        "vllm_enforce_eager": (
+            args.vllm_enforce_eager if args.backend == "vllm-engine" else None
+        ),
+        "vllm_gpu_memory_utilization": (
+            args.vllm_gpu_memory_utilization if args.backend == "vllm-engine" else None
+        ),
+        "vllm_max_model_len": (
+            args.vllm_max_model_len if args.backend == "vllm-engine" else None
+        ),
+        "vllm_max_num_seqs": (
+            args.vllm_max_num_seqs if args.backend == "vllm-engine" else None
+        ),
         "offset": args.offset,
         "limit": args.limit,
         "shard_count": args.shard_count,
