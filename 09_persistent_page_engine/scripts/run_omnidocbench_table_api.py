@@ -423,6 +423,7 @@ def _score(
 
     timeout_count = 0
     error_count = 0
+    timeout_pages: set[str] = set()
     for index, record in enumerate(records):
         process_result = process_results[index]
         score = float(process_result["score"])
@@ -434,6 +435,7 @@ def _score(
             error = json.dumps(case_record, ensure_ascii=False)
             if status == "timeout":
                 timeout_count += 1
+                timeout_pages.add(record["page_name"])
             else:
                 error_count += 1
         page_scores.setdefault(record["page_name"], []).append(score)
@@ -466,6 +468,7 @@ def _score(
         / len(page_structure_means),
         "teds_timeout_s": timeout_s,
         "teds_timeout_count": timeout_count,
+        "teds_timeout_pages": sorted(timeout_pages),
         "teds_error_count": error_count,
         "per_page_TEDS": page_means,
         "per_table": scored,
@@ -480,6 +483,27 @@ def _score(
         f"sample_TEDS={result['sample_TEDS']:.6f} output={score_output}",
         flush=True,
     )
+    if timeout_count:
+        recommended_timeout_s = max(120.0, timeout_s * 2.0)
+        page_preview = ", ".join(sorted(timeout_pages)[:10])
+        if len(timeout_pages) > 10:
+            page_preview += f", ... (+{len(timeout_pages) - 10} more)"
+        print(
+            "\033[1;31m\n"
+            "!!!!!!!!!!!!!!!!!!! TEDS TIMEOUT WARNING !!!!!!!!!!!!!!!!!!\n"
+            f"{timeout_count} table score(s) on {len(timeout_pages)} page(s) "
+            f"timed out after {timeout_s:g} seconds.\n"
+            "Each timed-out table was scored as zero, so the reported "
+            "TEDS values are artificially low.\n"
+            f"Affected pages: {page_preview}\n"
+            "Re-run scoring only with the same output directory and "
+            f"--teds-timeout-s {recommended_timeout_s:g}.\n"
+            "No OCR inference rerun is needed.\n"
+            "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+            "\033[0m\n",
+            file=sys.stderr,
+            flush=True,
+        )
 
 
 def _distribution(values: list[float]) -> dict[str, float]:
@@ -593,6 +617,18 @@ def _benchmark_summary_markdown(summary: dict[str, Any]) -> str:
     fingerprint = summary["dataset_fingerprint"]
     scheduler = summary.get("service_scheduler") or {}
     rates = scheduler.get("rates") or {}
+    timeout_warning: list[str] = []
+    if metrics["teds_timeout_count"]:
+        recommended_timeout_s = max(
+            120.0,
+            float(metrics["teds_timeout_s"]) * 2.0,
+        )
+        timeout_warning = [
+            "- **WARNING:** Timed-out tables were scored as zero; the TEDS "
+            "values are artificially low.",
+            "- Re-run `--score-only` with "
+            f"`--teds-timeout-s {recommended_timeout_s:g}`.",
+        ]
     lines = [
         "# OmniDocBench table OCR summary",
         "",
@@ -607,6 +643,7 @@ def _benchmark_summary_markdown(summary: dict[str, Any]) -> str:
         ),
         f"- TEDS timeouts: {metrics['teds_timeout_count']}",
         f"- TEDS errors: {metrics['teds_error_count']}",
+        *timeout_warning,
         f"- Stop reasons: {summary['stop_reasons']}",
         "",
         "## Dataset fingerprint",
