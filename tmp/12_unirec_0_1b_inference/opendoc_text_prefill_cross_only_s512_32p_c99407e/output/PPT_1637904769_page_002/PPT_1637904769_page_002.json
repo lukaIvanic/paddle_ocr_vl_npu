@@ -1,0 +1,80 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_1637904769_page_002.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "text_01",
+      "bbox": [
+        160.6632537841797,
+        44.3570556640625,
+        1840.673583984375,
+        346.1148681640625
+      ],
+      "score": 0.7204368710517883,
+      "text": "ENGLISH COMMUNICATION: WHAT, WHY, AND HOW?",
+      "text_unirec": "ENGLISH COMMUNICATION: WHAT, WHY, AND HOW?",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_02",
+      "bbox": [
+        106.42576599121094,
+        432.7891845703125,
+        1685.3260498046875,
+        563.4130249023438
+      ],
+      "score": 0.6373584866523743,
+      "text": "ENGLISH COMMUNICATION",
+      "text_unirec": "ENGLISH COMMUNICATION",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_03",
+      "bbox": [
+        105.2001724243164,
+        580.8623046875,
+        1859.1435546875,
+        797.89501953125
+      ],
+      "score": 0.7170029282569885,
+      "text": "COMMUNICATION THROUGH ENGLISH LANGUAGE",
+      "text_unirec": "COMMUNICATION THROUGH ENGLISH LANGUAGE",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_04",
+      "bbox": [
+        103.05667114257812,
+        816.2056884765625,
+        1889.601318359375,
+        931.5853881835938
+      ],
+      "score": 0.6645865440368652,
+      "text": "• COMMAND OVER ENGLISH LANGUAGE",
+      "text_unirec": "• COMMAND OVER ENGLISH LANGUAGE",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_05",
+      "bbox": [
+        95.56085205078125,
+        944.5091552734375,
+        1602.744873046875,
+        1156.79541015625
+      ],
+      "score": 0.6331822872161865,
+      "text": "COMPETENT USER OF ENGLISH LANGUAGE",
+      "text_unirec": "COMPETENT USER OF ENGLISH LANGUAGE",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 2.6710686760488898
+  }
+}
