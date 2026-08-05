@@ -350,6 +350,33 @@ Throughput excludes model load, processor work, per-crop eager prefill, cache
 assembly, compilation and warmup. Do not trust throughput unless
 `validation.token_match_all` is true.
 
+## Text-decode lab
+
+`text_decode_lab.py` isolates the complete 24-layer static decode step. It
+keeps the real model weights, rotary encoding, KV-cache update, decoder
+layers, LM head, token feedback, and TorchAir graph. It excludes image work
+and prefill. The default lanes compare the existing manual GQA attention with
+`torch_npu.npu_incre_flash_attention` and save a Torch-NPU pipe profile for
+both lanes.
+
+```sh
+$PYTHON 11_mineru_2_5_pro_inference/text_decode_lab.py \
+  --batch-size 1 \
+  --cache-length 4096 \
+  --profile-position 2048 \
+  --warmup-steps 8 \
+  --measure-steps 64 \
+  --validation-steps 8 \
+  --profile \
+  --profile-steps 2 \
+  --profile-metric pipe \
+  --output tmp/11_mineru_2_5_pro_inference/text_decode_lab/result.json
+```
+
+Use `parse_npu_profile.py` on each emitted `profile_*` directory for ranked
+kernel and operator summaries. Profile wall time includes profiler overhead;
+only the separate warmed `measure` section is a throughput measurement.
+
 ## Current validation status
 
 This commit transfers the previously developed implementation but does not

@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import shutil
 import time
 from pathlib import Path
@@ -237,7 +236,7 @@ def main() -> None:
 
     lanes: dict[str, Any] = {}
     validation: dict[str, dict[str, Any]] = {}
-    for lane_index, attention in enumerate(args.attention):
+    for attention in args.attention:
         progress("lane_begin", attention=attention)
         attention_meta = configure_decode_attention_impl(model, attention)
         flat_decode = model.make_flat_static_decode_module(
