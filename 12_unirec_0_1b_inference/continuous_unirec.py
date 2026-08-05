@@ -117,6 +117,7 @@ class ContinuousUniRecDecoder:
             "prefill_generated_token_count": 1 if len(token_ids) > 1 else 0,
             "decode_generated_token_count": int(decode_token_count),
             "ttft_s": ready.prefilled.prefill_s,
+            "prefill_device_stage_s": ready.prefilled.prefill_device_stage_s,
             "decode_s": float(decode_active_s),
             "total_latency_s": (
                 float(prep["prepare_total_s"])

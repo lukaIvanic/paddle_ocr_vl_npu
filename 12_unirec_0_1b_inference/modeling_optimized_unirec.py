@@ -13,6 +13,8 @@ import torch.nn as nn
 from PIL import Image
 from transformers import PreTrainedTokenizerFast
 
+from prefill_timing import PrefillDeviceTimeline
+
 try:
     import torch_npu
 except Exception:
@@ -394,6 +396,7 @@ class UniRecPrefilledItem:
     generated_ids: torch.Tensor
     next_token: torch.Tensor
     prefill_s: float
+    prefill_device_stage_s: dict[str, float] | None = None
 
 
 class LocalScaledWordEmbedding(nn.Embedding):
@@ -956,40 +959,68 @@ class LocalUniRecDecoder(nn.Module):
         encoder_attention_mask: torch.Tensor,
         cache_len: int = LOCAL_UNIREC_STATIC_CACHE_LEN,
         cross_cache_len: int | None = None,
+        device_timeline: PrefillDeviceTimeline | None = None,
     ) -> tuple[torch.Tensor, LocalUniRecStaticCache]:
-        hidden_states = self.build_decoder_input_hidden_states(decoder_input_ids)
-        self_attention_mask = self.build_decoder_attention_mask(decoder_input_ids)
-        full_cross_attention_mask = self.build_cross_attention_mask(
-            encoder_attention_mask=encoder_attention_mask,
-            target_length=decoder_input_ids.shape[1],
-        )
-        decode_cross_attention_mask = self.build_cross_attention_mask(
-            encoder_attention_mask=encoder_attention_mask,
-            target_length=1,
-        )
-        cross_key_cache, cross_value_cache = self.build_cross_attention_cache(encoder_hidden_states)
+        measure = device_timeline.measure if device_timeline is not None else lambda _name, fn: fn()
 
-        layer_keys = []
-        layer_values = []
-        for layer in self.layers:
-            hidden_states, key_states, value_states = layer.forward_prefill(
-                hidden_states=hidden_states,
-                self_attention_mask=self_attention_mask,
-                encoder_hidden_states=encoder_hidden_states,
-                encoder_attention_mask=full_cross_attention_mask,
+        def build_inputs_and_masks():
+            return (
+                self.build_decoder_input_hidden_states(decoder_input_ids),
+                self.build_decoder_attention_mask(decoder_input_ids),
+                self.build_cross_attention_mask(
+                    encoder_attention_mask=encoder_attention_mask,
+                    target_length=decoder_input_ids.shape[1],
+                ),
+                self.build_cross_attention_mask(
+                    encoder_attention_mask=encoder_attention_mask,
+                    target_length=1,
+                ),
             )
-            layer_keys.append(key_states)
-            layer_values.append(value_states)
 
-        return self.layer_norm(hidden_states), LocalUniRecStaticCache.from_prefill(
-            layer_keys=tuple(layer_keys),
-            layer_values=tuple(layer_values),
-            cross_key_cache=cross_key_cache,
-            cross_value_cache=cross_value_cache,
-            cross_attention_mask=decode_cross_attention_mask,
-            cache_len=cache_len,
-            cross_cache_len=cross_cache_len,
+        (
+            hidden_states,
+            self_attention_mask,
+            full_cross_attention_mask,
+            decode_cross_attention_mask,
+        ) = measure("decoder_input_and_masks", build_inputs_and_masks)
+        cross_key_cache, cross_value_cache = measure(
+            "flat_cross_kv_projection",
+            lambda: self.build_cross_attention_cache(encoder_hidden_states),
         )
+
+        def run_decoder_prefill():
+            current_hidden_states = hidden_states
+            layer_keys = []
+            layer_values = []
+            for layer in self.layers:
+                current_hidden_states, key_states, value_states = layer.forward_prefill(
+                    hidden_states=current_hidden_states,
+                    self_attention_mask=self_attention_mask,
+                    encoder_hidden_states=encoder_hidden_states,
+                    encoder_attention_mask=full_cross_attention_mask,
+                )
+                layer_keys.append(key_states)
+                layer_values.append(value_states)
+            return self.layer_norm(current_hidden_states), tuple(layer_keys), tuple(layer_values)
+
+        hidden_states, layer_keys, layer_values = measure(
+            "flat_decoder_prefill",
+            run_decoder_prefill,
+        )
+
+        kv_cache = measure(
+            "static_cache_build_and_padding",
+            lambda: LocalUniRecStaticCache.from_prefill(
+                layer_keys=layer_keys,
+                layer_values=layer_values,
+                cross_key_cache=cross_key_cache,
+                cross_value_cache=cross_value_cache,
+                cross_attention_mask=decode_cross_attention_mask,
+                cache_len=cache_len,
+                cross_cache_len=cross_cache_len,
+            ),
+        )
+        return hidden_states, kv_cache
 
     def forward_cached(
         self,
@@ -1104,22 +1135,34 @@ class LocalUniRecModel(nn.Module):
         pixel_values: torch.Tensor,
         decoder_input_ids: torch.Tensor,
         cross_cache_len: int | None = None,
+        device_timeline: PrefillDeviceTimeline | None = None,
     ) -> dict[str, object]:
         if pixel_values.shape[0] != 1:
             raise ValueError(
                 f"Local UniRec cached decode currently supports only batch size 1, got {pixel_values.shape[0]}"
             )
 
-        encoder_hidden_states = self.forward_encoder(pixel_values)
-        encoder_attention_mask = self.build_encoder_attention_mask(encoder_hidden_states)
+        measure = device_timeline.measure if device_timeline is not None else lambda _name, fn: fn()
+        encoder_hidden_states = measure(
+            "spatial_focalsvtr_encoder",
+            lambda: self.forward_encoder(pixel_values),
+        )
+        encoder_attention_mask = measure(
+            "encoder_attention_mask",
+            lambda: self.build_encoder_attention_mask(encoder_hidden_states),
+        )
         decoder_output, kv_cache = self.decoder.prefill_with_cache(
             decoder_input_ids=decoder_input_ids,
             encoder_hidden_states=encoder_hidden_states,
             encoder_attention_mask=encoder_attention_mask,
             cache_len=LOCAL_UNIREC_STATIC_CACHE_LEN,
             cross_cache_len=cross_cache_len,
+            device_timeline=device_timeline,
         )
-        logits = LocalDecoderAttention.apply_linear_3d(self.lm_head, decoder_output)
+        logits = measure(
+            "prefill_lm_head",
+            lambda: LocalDecoderAttention.apply_linear_3d(self.lm_head, decoder_output),
+        )
         return {
             "logits": logits,
             "kv_cache": kv_cache,
@@ -1653,6 +1696,7 @@ class OptimizedUniRecRunner:
         image: Image.Image,
         *,
         image_source: str = "<pil_image>",
+        profile_device_stages: bool = False,
     ) -> UniRecPrefilledItem:
         """Run the exact B1 image and decoder prefill used by normal generation."""
         inputs, prep = self.prepare_pil_image(image, image_source=image_source)
@@ -1665,14 +1709,31 @@ class OptimizedUniRecRunner:
         with torch.inference_mode():
             synchronize_device(self.device)
             started = time.perf_counter()
+            device_timeline = (
+                PrefillDeviceTimeline(torch.device(self.device))
+                if profile_device_stages
+                else None
+            )
             prefill_outputs = self.model.prefill_with_cache(
                 pixel_values=pixel_values,
                 decoder_input_ids=decoder_input_ids,
                 cross_cache_len=cross_cache_len,
+                device_timeline=device_timeline,
             )
-            next_token = self.model.select_next_token(prefill_outputs["logits"])
-            generated_ids = torch.cat((decoder_input_ids, next_token), dim=1)
-            synchronize_device(self.device)
+            measure = device_timeline.measure if device_timeline is not None else lambda _name, fn: fn()
+            next_token = measure(
+                "first_token_argmax",
+                lambda: self.model.select_next_token(prefill_outputs["logits"]),
+            )
+            generated_ids = measure(
+                "first_token_assembly",
+                lambda: torch.cat((decoder_input_ids, next_token), dim=1),
+            )
+            if device_timeline is None:
+                synchronize_device(self.device)
+                prefill_device_stage_s = None
+            else:
+                prefill_device_stage_s = device_timeline.resolve()
             prefill_s = time.perf_counter() - started
         return UniRecPrefilledItem(
             prep=prep,
@@ -1680,6 +1741,7 @@ class OptimizedUniRecRunner:
             generated_ids=generated_ids,
             next_token=next_token,
             prefill_s=prefill_s,
+            prefill_device_stage_s=prefill_device_stage_s,
         )
 
     @staticmethod
@@ -1871,6 +1933,7 @@ class OptimizedUniRecRunner:
                     "prefill_generated_token_count": 1 if len(token_ids) > 1 else 0,
                     "decode_generated_token_count": decode_tokens,
                     "ttft_s": item.prefill_s,
+                    "prefill_device_stage_s": item.prefill_device_stage_s,
                     "decode_s": decode_s,
                     "total_latency_s": (
                         float(item.prep["prepare_total_s"])

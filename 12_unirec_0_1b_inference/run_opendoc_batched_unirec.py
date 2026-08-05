@@ -75,6 +75,7 @@ class RunMetrics:
     page_prepare_total_s: float = 0.0
     prepare_s: float = 0.0
     prefill_s: float = 0.0
+    prefill_device_stage_s: dict[str, float] = field(default_factory=dict)
     decode_s: float = 0.0
     output_assembly_s: float = 0.0
     output_write_s: float = 0.0
@@ -144,7 +145,22 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--limit", type=int)
     parser.add_argument("--layout-threshold", type=float, default=0.4)
+    parser.add_argument(
+        "--prefill-device-timing",
+        action="store_true",
+        help="Record NPU event timing for each recognition-prefill stage",
+    )
     return parser.parse_args()
+
+
+def accumulate_stage_seconds(
+    destination: dict[str, float],
+    source: dict[str, float] | None,
+) -> None:
+    if source is None:
+        return
+    for name, seconds in source.items():
+        destination[name] = destination.get(name, 0.0) + float(seconds)
 
 
 def _base_label(label: str) -> str:
@@ -381,10 +397,15 @@ def recognize_cohort(
         item = runner.prefill_image_for_cohort(
             crop.image,
             image_source=crop.request_id,
+            profile_device_stages=args.prefill_device_timing,
         )
         prefilled.append(item)
         metrics.prepare_s += float(item.prep["prepare_total_s"])
         metrics.prefill_s += item.prefill_s
+        accumulate_stage_seconds(
+            metrics.prefill_device_stage_s,
+            item.prefill_device_stage_s,
+        )
     decoded = runner.generate_prefilled_cohort(
         prefilled,
         max_length=args.max_length,
@@ -421,6 +442,7 @@ def recognize_cohort(
                 "token_count": result["generated_token_count"],
                 "decode_token_count": result["decode_generated_token_count"],
                 "prefill_s": result["ttft_s"],
+                "prefill_device_stage_s": result.get("prefill_device_stage_s"),
                 "cohort_index": cohort_index,
             }
         )
@@ -572,9 +594,14 @@ def main() -> None:
                     item = runner.prefill_image_for_cohort(
                         crop.image,
                         image_source=crop.request_id,
+                        profile_device_stages=args.prefill_device_timing,
                     )
                     metrics.prepare_s += float(item.prep["prepare_total_s"])
                     metrics.prefill_s += item.prefill_s
+                    accumulate_stage_seconds(
+                        metrics.prefill_device_stage_s,
+                        item.prefill_device_stage_s,
+                    )
                     yield ContinuousReadyItem(
                         request_id=crop.request_id,
                         payload=crop,
@@ -605,6 +632,7 @@ def main() -> None:
                     "token_count": result["generated_token_count"],
                     "decode_token_count": result["decode_generated_token_count"],
                     "prefill_s": result["ttft_s"],
+                    "prefill_device_stage_s": result.get("prefill_device_stage_s"),
                     "decode_slot": completed_item.slot,
                     "admission_index": completed_item.admission_index,
                     "completion_index": completed_item.completion_index,
@@ -727,6 +755,7 @@ def main() -> None:
         "page_frontend_other_s": metrics.page_prepare_total_s - metrics.layout_s,
         "prepare_s": metrics.prepare_s,
         "prefill_s": metrics.prefill_s,
+        "prefill_device_stage_s": metrics.prefill_device_stage_s,
         "decode_s": metrics.decode_s,
         "output_assembly_s": metrics.output_assembly_s,
         "output_write_s": metrics.output_write_s,
