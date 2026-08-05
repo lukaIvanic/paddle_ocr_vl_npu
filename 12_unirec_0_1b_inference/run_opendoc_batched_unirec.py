@@ -65,6 +65,7 @@ class CropRequest:
 class PageRequest:
     page_index: int
     image_path: Path
+    image: np.ndarray
     width: int
     height: int
     layout_results: dict[str, Any]
@@ -97,6 +98,9 @@ class RunMetrics:
     decode_s: float = 0.0
     output_assembly_s: float = 0.0
     output_write_s: float = 0.0
+    output_write_backpressure_s: float = 0.0
+    output_write_final_drain_s: float = 0.0
+    output_write_max_pending: int = 0
     raw_decode_token_slots: int = 0
     effective_decode_tokens: int = 0
     padding_decode_token_slots: int = 0
@@ -634,6 +638,7 @@ def prepare_page(
     return PageRequest(
         page_index=page_index,
         image_path=image_path,
+        image=image,
         width=width,
         height=height,
         layout_results=layout_results,
@@ -735,6 +740,7 @@ def assemble_page(
 
     return {
         "input_path": str(page.image_path),
+        "_page_image": page.image,
         "width": page.width,
         "height": page.height,
         "layout_results": page.layout_results,
@@ -936,12 +942,75 @@ def main() -> None:
     metrics = RunMetrics()
     pending_crops: deque[CropRequest] = deque()
     pending_pages: deque[PageRequest] = deque()
+    pending_writes: deque[
+        tuple[PageRequest, Future[tuple[float, float]]]
+    ] = deque()
+    write_executor = ThreadPoolExecutor(
+        max_workers=1,
+        thread_name_prefix="unirec-page-writer",
+    )
+    max_pending_writes = 8
     pipeline_started = time.perf_counter()
     written_pages = 0
     continuous_decode: dict[str, Any] | None = None
 
-    def flush_ready_pages() -> None:
+    def write_page(result: dict[str, Any]) -> tuple[float, float]:
+        started = time.perf_counter()
+        pipeline.save_to_json(result, str(output_dir))
+        pipeline.save_to_markdown(result, str(output_dir))
+        completed_at = time.perf_counter()
+        return completed_at - started, completed_at
+
+    def record_completed_write(
+        page: PageRequest,
+        future: Future[tuple[float, float]],
+    ) -> None:
         nonlocal written_pages
+        write_s, completed_at = future.result()
+        metrics.output_write_s += write_s
+        written_pages += 1
+        page_s = completed_at - page.started_at
+        metrics.page_records.append(
+            {
+                "page_index": page.page_index,
+                "image": str(page.image_path),
+                "crop_count": len(page.crops),
+                "layout_s": page.layout_s,
+                "wall_s": page_s,
+            }
+        )
+        print(
+            f"OPENDOC_BATCHED_PAGE_END index={written_pages}/{len(image_paths)} "
+            f"image={page.image_path.name} crops={len(page.crops)} wall_s={page_s:.3f}",
+            flush=True,
+        )
+
+    def drain_completed_writes(*, wait: bool, count: int | None = None) -> None:
+        drained = 0
+        while pending_writes and (count is None or drained < count):
+            page, future = pending_writes[0]
+            if not wait and not future.done():
+                break
+            pending_writes.popleft()
+            record_completed_write(page, future)
+            drained += 1
+
+    def submit_page_write(page: PageRequest, result: dict[str, Any]) -> None:
+        drain_completed_writes(wait=False)
+        if len(pending_writes) >= max_pending_writes:
+            wait_started = time.perf_counter()
+            drain_completed_writes(wait=True, count=1)
+            metrics.output_write_backpressure_s += (
+                time.perf_counter() - wait_started
+            )
+        pending_writes.append((page, write_executor.submit(write_page, result)))
+        metrics.output_write_max_pending = max(
+            metrics.output_write_max_pending,
+            len(pending_writes),
+        )
+
+    def flush_ready_pages() -> None:
+        drain_completed_writes(wait=False)
         while pending_pages and pending_pages[0].is_ready():
             page = pending_pages.popleft()
             assembly_started = time.perf_counter()
@@ -951,26 +1020,7 @@ def main() -> None:
                 infer_doc_onnx=infer_doc_onnx,
             )
             metrics.output_assembly_s += time.perf_counter() - assembly_started
-            write_started = time.perf_counter()
-            pipeline.save_to_json(result, str(output_dir))
-            pipeline.save_to_markdown(result, str(output_dir))
-            metrics.output_write_s += time.perf_counter() - write_started
-            written_pages += 1
-            page_s = time.perf_counter() - page.started_at
-            metrics.page_records.append(
-                {
-                    "page_index": page.page_index,
-                    "image": str(page.image_path),
-                    "crop_count": len(page.crops),
-                    "layout_s": page.layout_s,
-                    "wall_s": page_s,
-                }
-            )
-            print(
-                f"OPENDOC_BATCHED_PAGE_END index={written_pages}/{len(image_paths)} "
-                f"image={page.image_path.name} crops={len(page.crops)} wall_s={page_s:.3f}",
-                flush=True,
-            )
+            submit_page_write(page, result)
 
     if args.decode_scheduling == "continuous":
         def crop_source():
@@ -1157,6 +1207,14 @@ def main() -> None:
     flush_ready_pages()
     if pending_pages:
         raise RuntimeError(f"Unfinished pages remain after final cohort: {len(pending_pages)}")
+    final_drain_started = time.perf_counter()
+    drain_completed_writes(wait=True)
+    metrics.output_write_final_drain_s = time.perf_counter() - final_drain_started
+    write_executor.shutdown(wait=True)
+    if written_pages != len(image_paths):
+        raise RuntimeError(
+            f"Written page count mismatch: {written_pages} != {len(image_paths)}"
+        )
 
     pipeline_wall_s = time.perf_counter() - pipeline_started
     trace_path = output_dir / "recognition_trace.jsonl"
@@ -1216,6 +1274,9 @@ def main() -> None:
         "decode_s": metrics.decode_s,
         "output_assembly_s": metrics.output_assembly_s,
         "output_write_s": metrics.output_write_s,
+        "output_write_backpressure_s": metrics.output_write_backpressure_s,
+        "output_write_final_drain_s": metrics.output_write_final_drain_s,
+        "output_write_max_pending": metrics.output_write_max_pending,
         "raw_decode_token_slots": metrics.raw_decode_token_slots,
         "effective_decode_tokens": metrics.effective_decode_tokens,
         "padding_decode_token_slots": metrics.padding_decode_token_slots,
