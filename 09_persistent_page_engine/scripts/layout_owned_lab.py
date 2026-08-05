@@ -98,6 +98,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="Record layout device-event stage times. Disable for production parity.",
     )
     parser.add_argument(
+        "--allow-internal-format",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help=(
+            "Enable torch-npu internal tensor formats before layout setup, as "
+            "the FRACTAL_NZ production runner does."
+        ),
+    )
+    parser.add_argument(
         "--progress-every",
         type=int,
         default=0,
@@ -246,6 +255,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     if device.type == "npu":
         import torch_npu  # noqa: F401
 
+        if args.allow_internal_format:
+            torch.npu.config.allow_internal_format = True
         if not torch.npu.is_available():
             raise RuntimeError("owned layout lab requires an NPU")
         torch.npu.set_compile_mode(jit_compile=False)
@@ -530,6 +541,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         "table_preprocessor_max_pixels": args.table_preprocessor_max_pixels,
         "text_crop_scale": args.text_crop_scale,
         "device_stage_timing": bool(args.device_stage_timing),
+        "allow_internal_format": bool(args.allow_internal_format),
         "worker_strategy": worker_pipeline["strategy"],
         "worker_pipeline": worker_pipeline,
         "setup_s": setup_s,
