@@ -1,0 +1,34 @@
+{
+  "status": "ok",
+  "mode": "custom",
+  "openocr_root": "/workspace/repos/OpenOCR",
+  "model_path": "/workspace/models/unirec-0.1b",
+  "device": "npu:0",
+  "dtype": "float16",
+  "decode_mode": "compiled",
+  "compile_backend": "torchair",
+  "compile_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_explicit_model_pth_decode_fp16",
+  "max_parallel_blocks": 1,
+  "max_length": 256,
+  "setup_s": 10.995873942039907,
+  "pipeline_wall_s": 16.988068403908983,
+  "page_count": 2,
+  "crop_count": 14,
+  "preprocess_exact_count": 0,
+  "token_exact_count": 0,
+  "raw_text_exact_count": 0,
+  "postprocessed_text_exact_count": 0,
+  "pages": [
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_003.png",
+      "wall_s": 11.742176576983184,
+      "recognized_crops": 6
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_005.png",
+      "wall_s": 5.245891826925799,
+      "recognized_crops": 8
+    }
+  ],
+  "trace_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/opendoc_explicit_fp16_compiled_two_page_d470301/output/recognition_comparison.jsonl"
+}

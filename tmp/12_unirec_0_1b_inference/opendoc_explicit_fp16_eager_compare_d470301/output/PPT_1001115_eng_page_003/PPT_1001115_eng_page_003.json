@@ -1,0 +1,94 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_003.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "paragraph_title_01",
+      "bbox": [
+        717.4606323242188,
+        131.40126037597656,
+        1280.0330810546875,
+        244.16378784179688
+      ],
+      "score": 0.9372248649597168,
+      "text": "Who Am I?",
+      "text_unirec": "Who Am I?",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "paragraph_title_02",
+      "bbox": [
+        112.36930084228516,
+        370.7193603515625,
+        974.7233276367188,
+        457.03314208984375
+      ],
+      "score": 0.8836582899093628,
+      "text": "• Min-Te Sun (Peter) Sun",
+      "text_unirec": "• Min-Te Sun (Peter) Sun",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_03",
+      "bbox": [
+        206.79808044433594,
+        485.9200744628906,
+        1826.48486328125,
+        654.1431884765625
+      ],
+      "score": 0.9709317088127136,
+      "text": "– An associate professor of Computer Science &Information Engineering, National Central University",
+      "text_unirec": "– An associate professor of Computer Science &Information Engineering, National Central University",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_04",
+      "bbox": [
+        207.0252227783203,
+        676.1353759765625,
+        1126.9964599609375,
+        841.6825561523438
+      ],
+      "score": 0.9688974022865295,
+      "text": "– Studied in US for a long time (from 1993 ~ 2002)",
+      "text_unirec": "– Studied in US for a long time (from 1993 ~ 2002)",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_05",
+      "bbox": [
+        207.87310791015625,
+        867.1555786132812,
+        1886.5601806640625,
+        1118.31494140625
+      ],
+      "score": 0.9818019270896912,
+      "text": "– Worked as a CS professor at Auburn University, Alabama between 2002 and 2008 (before coming back to Taiwan)",
+      "text_unirec": "– Worked as a CS professor at Auburn University, Alabama between 2002 and 2008 (before coming back to Taiwan)",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_06",
+      "bbox": [
+        207.09300231933594,
+        1144.2432861328125,
+        1778.87109375,
+        1310.1585693359375
+      ],
+      "score": 0.97017502784729,
+      "text": "– Have taught CS courses in English for more than 10 years",
+      "text_unirec": "– Have taught CS courses in English for more than 10 years",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 31.189013481140137
+  }
+}
