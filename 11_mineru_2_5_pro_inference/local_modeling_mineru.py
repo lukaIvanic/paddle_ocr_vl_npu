@@ -330,6 +330,17 @@ def configure_decode_weight_format(
     lm_head_copy.requires_grad_(False)
     model.decode_lm_head_weight = lm_head_copy
     lm_head_after = int(torch_npu.get_npu_format(model.decode_lm_head_weight))
+    failed_formats = [
+        name for name, actual_format in after_formats.items()
+        if actual_format != FRACTAL_NZ
+    ]
+    if failed_formats or lm_head_after != FRACTAL_NZ:
+        raise RuntimeError(
+            "decode_nz format conversion did not produce FRACTAL_NZ weights; "
+            "set torch.npu.config.allow_internal_format=True before conversion. "
+            f"failed_decoder_linears={failed_formats[:4]} "
+            f"lm_head_format={lm_head_after}"
+        )
 
     metadata.update(
         {

@@ -271,6 +271,7 @@ def main() -> None:
     import torch
     import torch_npu
     import transformers
+    torch.npu.config.allow_internal_format = True
     from mineru_vl_utils import MinerUClient, __version__ as mineru_utils_version
     from mineru_vl_utils.post_process import json2md
 

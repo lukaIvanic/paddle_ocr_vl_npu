@@ -451,6 +451,7 @@ def main() -> None:
         import torch_npu  # noqa: F401
 
         torch.npu.set_device(args.device)
+        torch.npu.config.allow_internal_format = True
         configure_npu_jit_compile(args.npu_jit_compile, device=args.device, verbose=True)
         configure_npu_conv3d_mode(args.npu_conv3d_mode, device=args.device, verbose=True)
 
