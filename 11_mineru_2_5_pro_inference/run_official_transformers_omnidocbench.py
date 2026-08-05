@@ -113,7 +113,11 @@ def parse_args() -> argparse.Namespace:
 
 def atomic_write_text(path: Path, value: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(f".{path.name}.tmp-{os.getpid()}")
+    # Some OmniDocBench stems already approach the filesystem's 255-byte
+    # component limit.  Repeating the destination name in the temporary file
+    # can therefore fail even though the final path itself is valid.
+    name_digest = hashlib.sha256(path.name.encode("utf-8")).hexdigest()[:16]
+    temporary = path.with_name(f".tmp-{os.getpid()}-{name_digest}")
     temporary.write_text(value, encoding="utf-8")
     temporary.replace(path)
 
