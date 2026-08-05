@@ -149,20 +149,33 @@ class ContinuousUniRecDecoder:
         *,
         on_complete: Callable[[ContinuousCompletedItem], None],
     ) -> dict[str, Any]:
+        run_started = time.perf_counter()
         iterator = iter(source)
         source_exhausted = False
         submitted = 0
         completed = 0
+        source_pull_s = 0.0
+        initial_cache_stack_s = 0.0
+        initial_state_build_s = 0.0
+        cache_refill_copy_enqueue_s = 0.0
+        cache_refill_row_bytes = 0
+        result_build_s = 0.0
+        completion_callback_s = 0.0
+        decode_input_build_s = 0.0
+        pre_decode_sync_s = 0.0
 
         def next_ready() -> ContinuousReadyItem | None:
-            nonlocal source_exhausted, submitted
+            nonlocal source_exhausted, source_pull_s, submitted
             if source_exhausted:
                 return None
+            pull_started = time.perf_counter()
             try:
                 ready = next(iterator)
             except StopIteration:
                 source_exhausted = True
+                source_pull_s += time.perf_counter() - pull_started
                 return None
+            source_pull_s += time.perf_counter() - pull_started
             submitted += 1
             return ready
 
@@ -196,9 +209,12 @@ class ContinuousUniRecDecoder:
         padded_initial = list(initial)
         while len(padded_initial) < self.batch_size:
             padded_initial.append(initial[-1])
+        cache_stack_started = time.perf_counter()
         cache = self.runner._stack_prefilled_caches(
             [item.prefilled for item in padded_initial]
         )
+        initial_cache_stack_s = time.perf_counter() - cache_stack_started
+        state_build_started = time.perf_counter()
         slots: list[ContinuousReadyItem | None] = [
             initial[index] if index < len(initial) else None
             for index in range(self.batch_size)
@@ -224,6 +240,7 @@ class ContinuousUniRecDecoder:
         next_admission_index = len(initial)
         slot_refills = 0
         eos_token_id = int(self.runner.config.eos_token_id)
+        initial_state_build_s = time.perf_counter() - state_build_started
 
         self_attention_backend = (
             "increfa" if self.decode_mode == "compiled_ifa" else "eager"
@@ -244,10 +261,11 @@ class ContinuousUniRecDecoder:
             compile_wrap_s = time.perf_counter() - compile_started
 
         def complete_slot(slot: int) -> None:
-            nonlocal completed
+            nonlocal completed, completion_callback_s, result_build_s
             ready = slots[slot]
             if ready is None:
                 return
+            result_started = time.perf_counter()
             result = self._build_result(
                 ready=ready,
                 token_ids=token_ids[slot],
@@ -256,6 +274,8 @@ class ContinuousUniRecDecoder:
                 compile_wrap_s=compile_wrap_s,
                 compile_meta=compile_meta,
             )
+            result_build_s += time.perf_counter() - result_started
+            callback_started = time.perf_counter()
             on_complete(
                 ContinuousCompletedItem(
                     request_id=ready.request_id,
@@ -266,10 +286,12 @@ class ContinuousUniRecDecoder:
                     completion_index=completed,
                 )
             )
+            completion_callback_s += time.perf_counter() - callback_started
             completed += 1
             slots[slot] = None
 
         def refill_slot(slot: int) -> None:
+            nonlocal cache_refill_copy_enqueue_s, cache_refill_row_bytes
             nonlocal next_admission_index, slot_refills
             while slots[slot] is None:
                 ready = next_ready()
@@ -281,7 +303,25 @@ class ContinuousUniRecDecoder:
                     last_tokens[slot] = eos_token_id
                     cache_positions[slot] = 1
                     return
+                if cache_refill_row_bytes == 0:
+                    cache_refill_row_bytes = sum(
+                        int(tensor[slot : slot + 1].numel() * tensor.element_size())
+                        for tensor_group in (
+                            cache.key_cache,
+                            cache.value_cache,
+                            cache.cross_key_cache or (),
+                            cache.cross_value_cache or (),
+                        )
+                        for tensor in tensor_group
+                    )
+                    if cache.cross_attention_mask is not None:
+                        mask_row = cache.cross_attention_mask[slot : slot + 1]
+                        cache_refill_row_bytes += int(
+                            mask_row.numel() * mask_row.element_size()
+                        )
+                copy_started = time.perf_counter()
                 self._copy_cache_row(cache, slot, ready.prefilled.kv_cache)
+                cache_refill_copy_enqueue_s += time.perf_counter() - copy_started
                 slots[slot] = ready
                 token_ids[slot] = [
                     int(token)
@@ -315,6 +355,7 @@ class ContinuousUniRecDecoder:
         with torch.inference_mode():
             while any(slot is not None for slot in slots):
                 active_slots = [slot is not None for slot in slots]
+                input_build_started = time.perf_counter()
                 next_token_tensor = torch.tensor(
                     last_tokens,
                     dtype=torch.long,
@@ -325,7 +366,10 @@ class ContinuousUniRecDecoder:
                     dtype=torch.int64,
                     device=self.runner.device,
                 )
+                decode_input_build_s += time.perf_counter() - input_build_started
+                sync_started = time.perf_counter()
                 synchronize_device(self.runner.device)
+                pre_decode_sync_s += time.perf_counter() - sync_started
                 step_started = time.perf_counter()
                 if decode_module is None:
                     logits = self.runner.model.forward_cached_logits(
@@ -386,6 +430,21 @@ class ContinuousUniRecDecoder:
         steady_raw_slots = max(0, raw_decode_token_slots - self.batch_size)
         first_active = min(self.batch_size, len(initial))
         steady_effective_tokens = max(0, effective_decode_tokens - first_active)
+        run_wall_s = time.perf_counter() - run_started
+        directly_accounted_s = sum(
+            (
+                source_pull_s,
+                initial_cache_stack_s,
+                initial_state_build_s,
+                compile_wrap_s or 0.0,
+                cache_refill_copy_enqueue_s,
+                result_build_s,
+                completion_callback_s,
+                decode_input_build_s,
+                pre_decode_sync_s,
+                decode_s,
+            )
+        )
         return {
             "batch_size": self.batch_size,
             "submitted": submitted,
@@ -414,4 +473,21 @@ class ContinuousUniRecDecoder:
             "slot_refills": slot_refills,
             "compile_wrap_s": compile_wrap_s,
             "compile": compile_meta,
+            "timing_detail": {
+                "run_wall_s": run_wall_s,
+                "source_pull_s": source_pull_s,
+                "initial_cache_stack_s": initial_cache_stack_s,
+                "initial_state_build_s": initial_state_build_s,
+                "cache_refill_copy_enqueue_s": cache_refill_copy_enqueue_s,
+                "cache_refill_row_bytes": cache_refill_row_bytes,
+                "cache_refill_total_bytes": cache_refill_row_bytes * slot_refills,
+                "result_build_s": result_build_s,
+                "completion_callback_s": completion_callback_s,
+                "decode_input_build_s": decode_input_build_s,
+                "pre_decode_sync_s": pre_decode_sync_s,
+                "decode_s": decode_s,
+                "scheduler_bookkeeping_residual_s": max(
+                    0.0, run_wall_s - directly_accounted_s
+                ),
+            },
         }

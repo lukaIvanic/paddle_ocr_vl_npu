@@ -60,6 +60,7 @@ class PageRequest:
     drop_figures_set: set[str]
     started_at: float
     layout_s: float
+    prepare_page_total_s: float
 
     def is_ready(self) -> bool:
         return all(crop.result is not None for crop in self.crops)
@@ -71,9 +72,12 @@ class RunMetrics:
     crop_records: list[dict[str, Any]] = field(default_factory=list)
     page_records: list[dict[str, Any]] = field(default_factory=list)
     layout_s: float = 0.0
+    page_prepare_total_s: float = 0.0
     prepare_s: float = 0.0
     prefill_s: float = 0.0
     decode_s: float = 0.0
+    output_assembly_s: float = 0.0
+    output_write_s: float = 0.0
     raw_decode_token_slots: int = 0
     effective_decode_tokens: int = 0
     padding_decode_token_slots: int = 0
@@ -245,6 +249,7 @@ def prepare_page(
         vlm_block_ids.append(block_index)
         drop_figures_set.update(drop_figures)
 
+    prepare_page_total_s = time.perf_counter() - started_at
     return PageRequest(
         page_index=page_index,
         image_path=image_path,
@@ -257,6 +262,7 @@ def prepare_page(
         drop_figures_set=drop_figures_set,
         started_at=started_at,
         layout_s=layout_s,
+        prepare_page_total_s=prepare_page_total_s,
     )
 
 
@@ -514,13 +520,17 @@ def main() -> None:
         nonlocal written_pages
         while pending_pages and pending_pages[0].is_ready():
             page = pending_pages.popleft()
+            assembly_started = time.perf_counter()
             result = assemble_page(
                 page=page,
                 pipeline=pipeline,
                 infer_doc_onnx=infer_doc_onnx,
             )
+            metrics.output_assembly_s += time.perf_counter() - assembly_started
+            write_started = time.perf_counter()
             pipeline.save_to_json(result, str(output_dir))
             pipeline.save_to_markdown(result, str(output_dir))
+            metrics.output_write_s += time.perf_counter() - write_started
             written_pages += 1
             page_s = time.perf_counter() - page.started_at
             metrics.page_records.append(
@@ -549,6 +559,7 @@ def main() -> None:
                     layout_threshold=args.layout_threshold,
                 )
                 metrics.layout_s += page.layout_s
+                metrics.page_prepare_total_s += page.prepare_page_total_s
                 pending_pages.append(page)
                 print(
                     f"OPENDOC_CONTINUOUS_PAGE_READY "
@@ -648,6 +659,7 @@ def main() -> None:
                 layout_threshold=args.layout_threshold,
             )
             metrics.layout_s += page.layout_s
+            metrics.page_prepare_total_s += page.prepare_page_total_s
             pending_pages.append(page)
             pending_crops.extend(page.crops)
             print(
@@ -711,9 +723,13 @@ def main() -> None:
         "crop_count": len(metrics.crop_records),
         "cohort_count": len(metrics.cohort_records),
         "layout_s": metrics.layout_s,
+        "page_prepare_total_s": metrics.page_prepare_total_s,
+        "page_frontend_other_s": metrics.page_prepare_total_s - metrics.layout_s,
         "prepare_s": metrics.prepare_s,
         "prefill_s": metrics.prefill_s,
         "decode_s": metrics.decode_s,
+        "output_assembly_s": metrics.output_assembly_s,
+        "output_write_s": metrics.output_write_s,
         "raw_decode_token_slots": metrics.raw_decode_token_slots,
         "effective_decode_tokens": metrics.effective_decode_tokens,
         "padding_decode_token_slots": metrics.padding_decode_token_slots,
