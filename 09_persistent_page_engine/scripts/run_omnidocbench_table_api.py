@@ -81,6 +81,14 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--teds-workers", type=int, default=12)
     parser.add_argument("--teds-timeout-s", type=float, default=30.0)
+    parser.add_argument(
+        "--score-only",
+        action="store_true",
+        help=(
+            "Score existing tables.jsonl in --output-dir without contacting "
+            "the OCR server. Valid only with --omnidocbench."
+        ),
+    )
     parser.add_argument("--resume", action=argparse.BooleanOptionalAction, default=True)
     return parser.parse_args()
 
@@ -208,56 +216,55 @@ def _score(
     timeout_s: float,
 ) -> None:
     sys.path.insert(0, str(evaluator_root.resolve()))
+    import src.metrics.cal_metric as metric_module
     from src.core.preprocess import normalized_table
-    from src.metrics.cal_metric import _evaluate_teds_pair_with_timeout
+    from run_omnidocbench_eval import _collect_teds_process_isolated
 
     records = list(_read_completed(output).values())
     page_scores: dict[str, list[float]] = {}
     page_structure_scores: dict[str, list[float]] = {}
     scored: list[dict[str, Any]] = []
-    started = time.perf_counter()
-
     def document(table_html: str) -> str:
         table_html = normalized_table(table_html, "html")
         if "<html" in table_html.lower():
             return table_html
         return f"<html><body>{table_html}</body></html>"
 
-    pairs: list[tuple[int, dict[str, Any], str, str]] = []
+    samples: list[dict[str, Any]] = []
     for index, record in enumerate(records):
         pred_html = document(record["pred_html"])
         gt_html = document(record["gt_html"])
-        pairs.append((index, record, pred_html, gt_html))
-
-    results: dict[int, tuple[float, float, str | None]] = {}
-
-    def evaluate(pair: tuple[int, dict[str, Any], str, str]) -> tuple[int, float, float, str | None]:
-        index, _record, pred_html, gt_html = pair
-        score, structure, error = _evaluate_teds_pair_with_timeout(
-            pred_html,
-            gt_html,
-            timeout_s,
+        samples.append(
+            {
+                "img_id": record["page_name"],
+                "gt_idx": record.get("annotation_index", index),
+                "pred_idx": record.get("annotation_index", index),
+                "gt": gt_html,
+                "pred": pred_html,
+                "norm_gt": gt_html,
+                "norm_pred": pred_html,
+            }
         )
-        return index, float(score), float(structure), error
 
-    with ThreadPoolExecutor(max_workers=workers) as executor:
-        futures = [executor.submit(evaluate, pair) for pair in pairs]
-        for completed, future in enumerate(as_completed(futures), start=1):
-            index, score, structure, error = future.result()
-            results[index] = (score, structure, error)
-            if completed % 25 == 0 or completed == len(records):
-                print(
-                    f"scored={completed}/{len(records)} "
-                    f"elapsed_s={time.perf_counter() - started:.1f}",
-                    flush=True,
-                )
+    process_results = _collect_teds_process_isolated(
+        samples,
+        workers,
+        timeout_s,
+        metric_module,
+    )
 
     timeout_count = 0
     error_count = 0
     for index, record in enumerate(records):
-        score, structure, error = results[index]
-        if error:
-            if str(error).startswith("timeout:"):
+        process_result = process_results[index]
+        score = float(process_result["score"])
+        structure = float(process_result["score_structure_only"])
+        status = str(process_result["status"])
+        case_record = process_result.get("case_record")
+        error = None
+        if status != "ok":
+            error = json.dumps(case_record, ensure_ascii=False)
+            if status == "timeout":
                 timeout_count += 1
             else:
                 error_count += 1
@@ -623,6 +630,41 @@ def _run_omnidocbench(args: argparse.Namespace) -> None:
     score_output = args.output_dir / "scores.json"
     summary_output = args.output_dir / "run_summary.json"
     args.output_dir.mkdir(parents=True, exist_ok=True)
+    if args.score_only:
+        if not output.is_file():
+            raise FileNotFoundError(f"score-only input does not exist: {output}")
+        _score(
+            output,
+            score_output,
+            args.evaluator_root,
+            workers=args.teds_workers,
+            timeout_s=args.teds_timeout_s,
+        )
+        metrics = json.loads(score_output.read_text(encoding="utf-8"))
+        summary_markdown = "\n".join(
+            [
+                "# OmniDocBench table OCR score",
+                "",
+                f"- Tables: {metrics['table_count']}",
+                f"- Table pages: {metrics['table_page_count']}",
+                f"- Page-TEDS: {metrics['page_TEDS']:.6f}",
+                f"- Sample TEDS: {metrics['sample_TEDS']:.6f}",
+                (
+                    "- Page structure-only TEDS: "
+                    f"{metrics['page_TEDS_structure_only']:.6f}"
+                ),
+                f"- TEDS timeouts: {metrics['teds_timeout_count']}",
+                f"- TEDS errors: {metrics['teds_error_count']}",
+                "",
+            ]
+        )
+        (args.output_dir / "score_summary.md").write_text(
+            summary_markdown,
+            encoding="utf-8",
+        )
+        print(f"\n{summary_markdown}", end="", flush=True)
+        return
+
     pages = json.loads(args.dataset_json.read_text(encoding="utf-8"))
     selected = pages[args.offset :]
     if args.limit_pages is not None:
@@ -710,6 +752,8 @@ def _run_omnidocbench(args: argparse.Namespace) -> None:
 
 def main() -> None:
     args = parse_args()
+    if args.score_only and not args.omnidocbench:
+        raise ValueError("--score-only requires --omnidocbench")
     if args.drain_server is None:
         args.drain_server = args.omnidocbench
     if args.omnidocbench:

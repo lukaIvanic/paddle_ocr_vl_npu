@@ -1173,6 +1173,19 @@ prompt selection, vision preparation, MRoPE construction, and inference stay
 inside the API worker. The caller supplies an already-cropped image and its
 type; this endpoint does not run page layout detection.
 
+Table scoring uses the evaluator wrapper's parent-owned process scheduler.
+The parent runs at most `--teds-workers` direct TEDS children and owns their
+timeouts; it does not fork subprocesses from a thread pool. If generation is
+already complete, scoring can be resumed without the API server:
+
+```sh
+python scripts/run_omnidocbench_table_api.py \
+  --omnidocbench --score-only \
+  --output-dir tmp/table_api_benchmark \
+  --evaluator-root /workspace/repos/OmniDocBench_eval \
+  --teds-workers 12 --teds-timeout-s 120
+```
+
 The production runtime packages do not import `scripts/` entrypoints or probes.
 Those scripts consume the same preprocessing and model-stage modules as the
 E2E engine, so diagnostic code cannot silently become a runtime dependency or
