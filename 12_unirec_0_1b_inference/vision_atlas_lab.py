@@ -160,10 +160,15 @@ class GuardedAtlasStage(nn.Module):
         normalized_membership: torch.Tensor,
     ) -> torch.Tensor:
         batch, channels, height, width = ctx.shape
-        flat = ctx.reshape(batch, channels, height * width)
-        means = torch.matmul(flat, normalized_membership.transpose(0, 1))
-        return torch.matmul(means, membership).reshape(
-            batch,
+        if batch != 1:
+            raise ValueError(f"guarded atlas requires batch size 1, got {batch}")
+        flat = ctx.reshape(channels, height * width)
+        means = torch.mm(
+            flat,
+            normalized_membership.transpose(0, 1).contiguous(),
+        )
+        return torch.mm(means, membership).reshape(
+            1,
             channels,
             height,
             width,
