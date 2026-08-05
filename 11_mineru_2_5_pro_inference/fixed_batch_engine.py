@@ -318,6 +318,7 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
             cache_length=self.cache_length,
             cache=self._slot_view(arena, slot),
             logits_to_keep=1,
+            collect_prefill_metrics=True,
         )
         token = torch.argmax(prefill.logits[:, -1, :].float(), dim=-1, keepdim=True)
         # The scheduler intentionally makes completion state host-visible in
@@ -329,6 +330,7 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
             "token_id": token_id,
             "cache_position": prefill.next_cache_position,
             "rope_delta": prefill.rope_deltas,
+            "prefill_metrics": prefill.prefill_metrics,
         }, float(time.perf_counter() - started)
 
     @torch.inference_mode()
@@ -348,6 +350,7 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
         prefill_s = 0.0
         refill_count = 0
         immediate_completion_count = 0
+        prefill_metrics: dict[str, float | int] = {}
 
         def admit(slot: int) -> dict[str, Any] | None:
             nonlocal next_request, prefill_s, refill_count, immediate_completion_count
@@ -362,6 +365,8 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
                     request,
                 )
                 prefill_s += elapsed_s
+                for name, value in (state.get("prefill_metrics") or {}).items():
+                    prefill_metrics[name] = prefill_metrics.get(name, 0) + value
                 token_id = int(state["token_id"])
                 generated[request_index] = [token_id]
                 if (
@@ -397,6 +402,7 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
                 "immediate_completion_count": immediate_completion_count,
                 "decode_s": 0.0,
                 "prefill_s": prefill_s,
+                "prefill_metrics": prefill_metrics,
                 "generation_wall_s": float(time.perf_counter() - started),
                 "compile_wrapper_s": 0.0,
                 "compiled_first_call_s": 0.0,
@@ -512,6 +518,7 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
             "immediate_completion_count": immediate_completion_count,
             "decode_s": float(decode_s),
             "prefill_s": float(prefill_s),
+            "prefill_metrics": prefill_metrics,
             "generation_wall_s": float(time.perf_counter() - started),
             "compile_wrapper_s": float(compile_wrapper_s),
             "compiled_first_call_s": float(first_call_s),

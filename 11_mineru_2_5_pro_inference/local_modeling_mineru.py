@@ -18,6 +18,7 @@ import torch.nn.functional as F
 from torch import nn
 
 from config import MinerUConfig, MinerUTextConfig, MinerUVisionConfig
+from prefill_timing import PrefillDeviceTimeline
 
 
 FRACTAL_NZ = 29
@@ -342,6 +343,7 @@ class LocalMinerUStaticOutput:
     cache: "LocalMinerUStaticCache"
     rope_deltas: torch.Tensor
     next_cache_position: torch.Tensor
+    prefill_metrics: dict[str, float | int] | None = None
 
 
 @dataclass
@@ -964,19 +966,47 @@ class MinerUVisionTransformer(nn.Module):
         rotary_pos_emb_full = self.rotary_pos_emb(max_grid_size)
         return rotary_pos_emb_full[pos_ids_tensor].flatten(1)
 
-    def forward(self, hidden_states: torch.Tensor, grid_thw: torch.Tensor) -> torch.Tensor:
-        hidden_states = self.patch_embed(hidden_states)
-        rotary_pos_emb = self.rot_pos_emb(grid_thw)
-        emb = torch.cat((rotary_pos_emb, rotary_pos_emb), dim=-1)
-        position_embeddings = (emb.cos(), emb.sin())
-        cu_seqlens = torch.repeat_interleave(grid_thw[:, 1] * grid_thw[:, 2], grid_thw[:, 0]).cumsum(
-            dim=0,
-            dtype=torch.int32,
+    def forward(
+        self,
+        hidden_states: torch.Tensor,
+        grid_thw: torch.Tensor,
+        *,
+        device_timeline: PrefillDeviceTimeline | None = None,
+    ) -> torch.Tensor:
+        measure = (
+            (lambda name, fn: device_timeline.measure(name, fn))
+            if device_timeline is not None
+            else (lambda _name, fn: fn())
         )
-        cu_seqlens = F.pad(cu_seqlens, (1, 0), value=0)
-        for block in self.blocks:
-            hidden_states = block(hidden_states, cu_seqlens=cu_seqlens, position_embeddings=position_embeddings)
-        return self.merger(hidden_states)
+        hidden_states = measure("vision_patch_embed", lambda: self.patch_embed(hidden_states))
+
+        def prepare_positions() -> tuple[tuple[torch.Tensor, torch.Tensor], torch.Tensor]:
+            rotary_pos_emb = self.rot_pos_emb(grid_thw)
+            emb = torch.cat((rotary_pos_emb, rotary_pos_emb), dim=-1)
+            position_embeddings = (emb.cos(), emb.sin())
+            cu_seqlens = torch.repeat_interleave(
+                grid_thw[:, 1] * grid_thw[:, 2],
+                grid_thw[:, 0],
+            ).cumsum(dim=0, dtype=torch.int32)
+            return position_embeddings, F.pad(cu_seqlens, (1, 0), value=0)
+
+        position_embeddings, cu_seqlens = measure(
+            "vision_position_prepare",
+            prepare_positions,
+        )
+
+        def run_blocks() -> torch.Tensor:
+            block_hidden_states = hidden_states
+            for block in self.blocks:
+                block_hidden_states = block(
+                    block_hidden_states,
+                    cu_seqlens=cu_seqlens,
+                    position_embeddings=position_embeddings,
+                )
+            return block_hidden_states
+
+        hidden_states = measure("vision_transformer_blocks", run_blocks)
+        return measure("vision_merger", lambda: self.merger(hidden_states))
 
 
 class LocalMinerU2_5ForConditionalGeneration(nn.Module):
@@ -1038,9 +1068,19 @@ class LocalMinerU2_5ForConditionalGeneration(nn.Module):
             if isinstance(module, (MinerURotaryEmbedding, MinerUVisionRotaryEmbedding)):
                 module.reset_inv_freq(device=module.inv_freq.device)
 
-    def get_image_features(self, pixel_values: torch.Tensor, image_grid_thw: torch.Tensor) -> torch.Tensor:
+    def get_image_features(
+        self,
+        pixel_values: torch.Tensor,
+        image_grid_thw: torch.Tensor,
+        *,
+        device_timeline: PrefillDeviceTimeline | None = None,
+    ) -> torch.Tensor:
         pixel_values = pixel_values.type(self.visual.dtype)
-        return self.visual(pixel_values, grid_thw=image_grid_thw)
+        return self.visual(
+            pixel_values,
+            grid_thw=image_grid_thw,
+            device_timeline=device_timeline,
+        )
 
     def get_rope_index(
         self,
@@ -1105,13 +1145,27 @@ class LocalMinerU2_5ForConditionalGeneration(nn.Module):
         input_ids: torch.Tensor,
         pixel_values: torch.Tensor | None,
         image_grid_thw: torch.Tensor | None,
+        *,
+        device_timeline: PrefillDeviceTimeline | None = None,
     ) -> torch.Tensor:
-        inputs_embeds = self.model.embed_tokens(input_ids)
+        measure = (
+            (lambda name, fn: device_timeline.measure(name, fn))
+            if device_timeline is not None
+            else (lambda _name, fn: fn())
+        )
+        inputs_embeds = measure("token_embedding", lambda: self.model.embed_tokens(input_ids))
         if pixel_values is None:
             return inputs_embeds
         if image_grid_thw is None:
             raise ValueError("image_grid_thw is required when pixel_values is provided")
-        image_embeds = self.get_image_features(pixel_values, image_grid_thw)
+        image_embeds = measure(
+            "vision_tower_and_merger",
+            lambda: self.get_image_features(
+                pixel_values,
+                image_grid_thw,
+                device_timeline=device_timeline,
+            ),
+        )
         image_embeds = image_embeds.to(device=inputs_embeds.device, dtype=inputs_embeds.dtype)
         image_token_count = int((input_ids == self.config.image_token_id).sum().item())
         if image_token_count * inputs_embeds.shape[-1] != image_embeds.numel():
@@ -1121,7 +1175,10 @@ class LocalMinerU2_5ForConditionalGeneration(nn.Module):
                 f"features={int(image_embeds.shape[0])}"
             )
         image_mask = (input_ids == self.config.image_token_id).unsqueeze(-1).expand_as(inputs_embeds)
-        return inputs_embeds.masked_scatter(image_mask, image_embeds)
+        return measure(
+            "image_embed_scatter",
+            lambda: inputs_embeds.masked_scatter(image_mask, image_embeds),
+        )
 
     def allocate_static_cache(
         self,
@@ -1152,12 +1209,27 @@ class LocalMinerU2_5ForConditionalGeneration(nn.Module):
         cache: LocalMinerUStaticCache | None = None,
         cache_init_mode: str = "zeros",
         logits_to_keep: int = 0,
+        collect_prefill_metrics: bool = False,
     ) -> LocalMinerUStaticOutput:
-        inputs_embeds = self.build_inputs_embeds(input_ids, pixel_values, image_grid_thw)
+        timeline = PrefillDeviceTimeline(self.device) if collect_prefill_metrics else None
+        measure = (
+            (lambda name, fn: timeline.measure(name, fn))
+            if timeline is not None
+            else (lambda _name, fn: fn())
+        )
+        inputs_embeds = self.build_inputs_embeds(
+            input_ids,
+            pixel_values,
+            image_grid_thw,
+            device_timeline=timeline,
+        )
         batch_size, sequence_length, _hidden = inputs_embeds.shape
         if int(sequence_length) > int(cache_length):
             raise ValueError(f"prefill sequence length {sequence_length} exceeds static cache length {cache_length}")
-        position_ids, rope_deltas = self.get_rope_index(input_ids, image_grid_thw, attention_mask)
+        position_ids, rope_deltas = measure(
+            "mrope_prepare",
+            lambda: self.get_rope_index(input_ids, image_grid_thw, attention_mask),
+        )
         if cache is None:
             cache = self.allocate_static_cache(
                 batch_size=int(batch_size),
@@ -1166,14 +1238,20 @@ class LocalMinerU2_5ForConditionalGeneration(nn.Module):
                 dtype=inputs_embeds.dtype,
                 init_mode=cache_init_mode,
             )
-        hidden_states = self.model.forward_prefill_static(
-            inputs_embeds=inputs_embeds,
-            attention_mask=attention_mask,
-            position_ids=position_ids,
-            cache=cache,
+        hidden_states = measure(
+            "text_transformer_prefill",
+            lambda: self.model.forward_prefill_static(
+                inputs_embeds=inputs_embeds,
+                attention_mask=attention_mask,
+                position_ids=position_ids,
+                cache=cache,
+            ),
         )
         slice_indices = slice(-logits_to_keep, None) if isinstance(logits_to_keep, int) and logits_to_keep > 0 else slice(None)
-        logits = F.linear(hidden_states[:, slice_indices, :], self.model.embed_tokens.weight)
+        logits = measure(
+            "prefill_lm_head",
+            lambda: F.linear(hidden_states[:, slice_indices, :], self.model.embed_tokens.weight),
+        )
         next_cache_position = torch.full(
             (int(batch_size),),
             int(sequence_length),
@@ -1181,11 +1259,25 @@ class LocalMinerU2_5ForConditionalGeneration(nn.Module):
             dtype=torch.int64,
         )
         self.rope_deltas = rope_deltas
+        prefill_metrics: dict[str, float | int] | None = None
+        if timeline is not None:
+            stage_s = timeline.resolve()
+            raw_vision_tokens = 0 if pixel_values is None else int(pixel_values.shape[0])
+            merge_factor = int(self.config.vision_config.spatial_merge_size) ** 2
+            merged_vision_tokens = raw_vision_tokens // merge_factor
+            prefill_metrics = {
+                "request_count": 1,
+                "raw_vision_tokens": raw_vision_tokens,
+                "merged_vision_tokens": merged_vision_tokens,
+                "text_prefill_tokens": int(sequence_length),
+                **stage_s,
+            }
         return LocalMinerUStaticOutput(
             logits=logits,
             cache=cache,
             rope_deltas=rope_deltas,
             next_cache_position=next_cache_position,
+            prefill_metrics=prefill_metrics,
         )
 
     def forward_static_decode(

@@ -742,6 +742,33 @@ def main() -> None:
                 if item.get("compile_warmup", {}).get("ran_this_call")
             ),
         }
+        prefill_metrics: dict[str, float | int] = {}
+        for item in generation_metrics:
+            for name, value in item.get("prefill_metrics", {}).items():
+                prefill_metrics[name] = prefill_metrics.get(name, 0) + value
+        if prefill_metrics:
+            vision_s = float(prefill_metrics.get("vision_tower_and_merger", 0.0))
+            text_s = float(prefill_metrics.get("text_transformer_prefill", 0.0))
+            raw_vision_tokens = int(prefill_metrics.get("raw_vision_tokens", 0))
+            merged_vision_tokens = int(prefill_metrics.get("merged_vision_tokens", 0))
+            text_prefill_tokens = int(prefill_metrics.get("text_prefill_tokens", 0))
+            prefill_metrics.update(
+                {
+                    "raw_vision_tok_s": raw_vision_tokens / vision_s if vision_s > 0 else 0.0,
+                    "merged_vision_tok_s": merged_vision_tokens / vision_s if vision_s > 0 else 0.0,
+                    "text_prefill_tok_s": text_prefill_tokens / text_s if text_s > 0 else 0.0,
+                }
+            )
+            summary["local_compiled_generation"]["prefill_metrics"] = prefill_metrics
+            summary["local_compiled_generation"]["prefill_calls"] = [
+                {
+                    "call_index": call_index,
+                    "request_count": int(item.get("request_count", 0)),
+                    "prefill_s": float(item.get("prefill_s", 0.0)),
+                    "prefill_metrics": item.get("prefill_metrics", {}),
+                }
+                for call_index, item in enumerate(generation_metrics)
+            ]
     summary_path = output_dir / f"run_summary_shard_{args.shard_index:02d}.json"
     atomic_write_text(summary_path, json.dumps(summary, ensure_ascii=False, indent=2) + "\n")
     print(f"[summary] {json.dumps(summary, ensure_ascii=False)}", flush=True)
