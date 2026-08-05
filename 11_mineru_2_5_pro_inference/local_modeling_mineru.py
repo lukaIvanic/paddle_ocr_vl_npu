@@ -1597,4 +1597,4 @@ class MinerUFlatStaticDecodeModule(nn.Module):
         lm_head_weight = self.model.decode_lm_head_weight
         if lm_head_weight is None:
             lm_head_weight = self.model.model.embed_tokens.weight
-        return F.linear(hidden_states[:, -1:, :], lm_head_weight)
+        return F.linear(hidden_states[:, -1, :], lm_head_weight).unsqueeze(1)
