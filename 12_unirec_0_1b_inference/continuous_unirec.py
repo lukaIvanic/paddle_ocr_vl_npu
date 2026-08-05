@@ -118,6 +118,13 @@ class ContinuousUniRecDecoder:
             "decode_generated_token_count": int(decode_token_count),
             "ttft_s": ready.prefilled.prefill_s,
             "prefill_device_stage_s": ready.prefilled.prefill_device_stage_s,
+            "text_prefill_execution": ready.prefilled.text_prefill_execution,
+            "text_prefill_real_source_tokens": (
+                ready.prefilled.text_prefill_real_source_tokens
+            ),
+            "text_prefill_physical_source_tokens": (
+                ready.prefilled.text_prefill_physical_source_tokens
+            ),
             "decode_s": float(decode_active_s),
             "total_latency_s": (
                 float(prep["prepare_total_s"])

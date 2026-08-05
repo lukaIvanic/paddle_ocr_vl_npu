@@ -14,6 +14,7 @@ from PIL import Image
 from transformers import PreTrainedTokenizerFast
 
 from prefill_timing import PrefillDeviceTimeline
+from text_prefill import UniRecTextPrefillRuntime
 
 try:
     import torch_npu
@@ -397,6 +398,9 @@ class UniRecPrefilledItem:
     next_token: torch.Tensor
     prefill_s: float
     prefill_device_stage_s: dict[str, float] | None = None
+    text_prefill_execution: str = "eager"
+    text_prefill_real_source_tokens: int | None = None
+    text_prefill_physical_source_tokens: int | None = None
 
 
 class LocalScaledWordEmbedding(nn.Embedding):
@@ -1422,6 +1426,7 @@ class OptimizedUniRecRunner:
         self.processor = UniRecImageProcessor()
         self._compiled_decode_modules: dict[str, nn.Module] = {}
         self._compiled_decode_metadata: dict[str, dict[str, Any]] = {}
+        self._compiled_text_prefill_runtime: UniRecTextPrefillRuntime | None = None
         self._static_cross_cache_len_by_processor_max_side: dict[tuple[int, int], int] = {}
         self.compile_cache_dir = Path(compile_cache_dir).expanduser().resolve() if compile_cache_dir else None
 
@@ -1697,6 +1702,7 @@ class OptimizedUniRecRunner:
         *,
         image_source: str = "<pil_image>",
         profile_device_stages: bool = False,
+        text_prefill_mode: str = "eager",
     ) -> UniRecPrefilledItem:
         """Run the exact B1 image and decoder prefill used by normal generation."""
         inputs, prep = self.prepare_pil_image(image, image_source=image_source)
@@ -1705,6 +1711,13 @@ class OptimizedUniRecRunner:
         decoder_input_ids = self.model.decoder_start_ids(
             batch_size=1,
             device=pixel_values.device,
+        )
+        if text_prefill_mode not in {"eager", "compiled_s512"}:
+            raise ValueError(f"Unsupported UniRec text prefill mode: {text_prefill_mode}")
+        text_prefill_runtime = (
+            self._get_compiled_text_prefill_runtime()
+            if text_prefill_mode == "compiled_s512"
+            else None
         )
         with torch.inference_mode():
             synchronize_device(self.device)
@@ -1716,12 +1729,75 @@ class OptimizedUniRecRunner:
             )
             timing_hooks = self._install_encoder_timing_hooks(device_timeline)
             try:
-                prefill_outputs = self.model.prefill_with_cache(
-                    pixel_values=pixel_values,
-                    decoder_input_ids=decoder_input_ids,
-                    cross_cache_len=cross_cache_len,
-                    device_timeline=device_timeline,
-                )
+                if text_prefill_runtime is None:
+                    prefill_outputs = self.model.prefill_with_cache(
+                        pixel_values=pixel_values,
+                        decoder_input_ids=decoder_input_ids,
+                        cross_cache_len=cross_cache_len,
+                        device_timeline=device_timeline,
+                    )
+                    text_prefill_real_source_tokens = int(
+                        prefill_outputs["kv_cache"].actual_cross_attention_length
+                    )
+                    text_prefill_physical_source_tokens = (
+                        text_prefill_real_source_tokens
+                    )
+                else:
+                    measure = (
+                        device_timeline.measure
+                        if device_timeline is not None
+                        else lambda _name, fn: fn()
+                    )
+                    encoder_hidden_states = measure(
+                        "spatial_focalsvtr_encoder",
+                        lambda: self.model.forward_encoder(pixel_values),
+                    )
+                    encoder_attention_mask = measure(
+                        "encoder_attention_mask",
+                        lambda: self.model.build_encoder_attention_mask(
+                            encoder_hidden_states
+                        ),
+                    )
+                    text_outputs = measure(
+                        "compiled_text_prefill_s512",
+                        lambda: text_prefill_runtime.run(
+                            decoder_input_ids=decoder_input_ids,
+                            encoder_hidden_states=encoder_hidden_states,
+                            encoder_attention_mask=encoder_attention_mask,
+                        ),
+                    )
+                    decode_cross_attention_mask = (
+                        self.model.decoder.build_cross_attention_mask(
+                            encoder_attention_mask=encoder_attention_mask,
+                            target_length=1,
+                        )
+                    )
+                    kv_cache = measure(
+                        "static_cache_build_and_padding",
+                        lambda: LocalUniRecStaticCache.from_prefill(
+                            layer_keys=text_outputs.layer_keys,
+                            layer_values=text_outputs.layer_values,
+                            cross_key_cache=text_outputs.cross_key_cache,
+                            cross_value_cache=text_outputs.cross_value_cache,
+                            cross_attention_mask=decode_cross_attention_mask,
+                            cache_len=LOCAL_UNIREC_STATIC_CACHE_LEN,
+                            cross_cache_len=cross_cache_len,
+                        ),
+                    )
+                    logits = measure(
+                        "prefill_lm_head",
+                        lambda: LocalDecoderAttention.apply_linear_3d(
+                            self.model.lm_head,
+                            text_outputs.decoder_output,
+                        ),
+                    )
+                    prefill_outputs = {"logits": logits, "kv_cache": kv_cache}
+                    text_prefill_real_source_tokens = (
+                        text_outputs.real_source_tokens
+                    )
+                    text_prefill_physical_source_tokens = (
+                        text_outputs.physical_source_tokens
+                    )
             finally:
                 for hook in timing_hooks:
                     hook.remove()
@@ -1747,7 +1823,28 @@ class OptimizedUniRecRunner:
             next_token=next_token,
             prefill_s=prefill_s,
             prefill_device_stage_s=prefill_device_stage_s,
+            text_prefill_execution=text_prefill_mode,
+            text_prefill_real_source_tokens=text_prefill_real_source_tokens,
+            text_prefill_physical_source_tokens=(
+                text_prefill_physical_source_tokens
+            ),
         )
+
+    def _get_compiled_text_prefill_runtime(self) -> UniRecTextPrefillRuntime:
+        if self._compiled_text_prefill_runtime is not None:
+            return self._compiled_text_prefill_runtime
+        if not self.device.startswith("npu"):
+            raise ValueError("compiled UniRec text prefill requires an NPU device")
+        if self.compile_cache_dir is None:
+            raise ValueError(
+                "compiled UniRec text prefill requires compile_cache_dir"
+            )
+        self._compiled_text_prefill_runtime = UniRecTextPrefillRuntime(
+            self.model.decoder,
+            cache_root=self.compile_cache_dir,
+            dtype_name=self.dtype_name,
+        )
+        return self._compiled_text_prefill_runtime
 
     def _install_encoder_timing_hooks(
         self,
@@ -1994,6 +2091,13 @@ class OptimizedUniRecRunner:
                     "decode_generated_token_count": decode_tokens,
                     "ttft_s": item.prefill_s,
                     "prefill_device_stage_s": item.prefill_device_stage_s,
+                    "text_prefill_execution": item.text_prefill_execution,
+                    "text_prefill_real_source_tokens": (
+                        item.text_prefill_real_source_tokens
+                    ),
+                    "text_prefill_physical_source_tokens": (
+                        item.text_prefill_physical_source_tokens
+                    ),
                     "decode_s": decode_s,
                     "total_latency_s": (
                         float(item.prep["prepare_total_s"])

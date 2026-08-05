@@ -76,6 +76,8 @@ class RunMetrics:
     prepare_s: float = 0.0
     prefill_s: float = 0.0
     prefill_device_stage_s: dict[str, float] = field(default_factory=dict)
+    text_prefill_real_source_tokens: int = 0
+    text_prefill_physical_source_tokens: int = 0
     decode_s: float = 0.0
     output_assembly_s: float = 0.0
     output_write_s: float = 0.0
@@ -145,6 +147,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--limit", type=int)
     parser.add_argument("--layout-threshold", type=float, default=0.4)
+    parser.add_argument(
+        "--text-prefill-mode",
+        choices=("eager", "compiled_s512"),
+        default="eager",
+        help="Recognition text-prefill execution; compiled_s512 pads B1 source tokens to 512",
+    )
     parser.add_argument(
         "--prefill-device-timing",
         action="store_true",
@@ -398,10 +406,17 @@ def recognize_cohort(
             crop.image,
             image_source=crop.request_id,
             profile_device_stages=args.prefill_device_timing,
+            text_prefill_mode=args.text_prefill_mode,
         )
         prefilled.append(item)
         metrics.prepare_s += float(item.prep["prepare_total_s"])
         metrics.prefill_s += item.prefill_s
+        metrics.text_prefill_real_source_tokens += int(
+            item.text_prefill_real_source_tokens or 0
+        )
+        metrics.text_prefill_physical_source_tokens += int(
+            item.text_prefill_physical_source_tokens or 0
+        )
         accumulate_stage_seconds(
             metrics.prefill_device_stage_s,
             item.prefill_device_stage_s,
@@ -443,6 +458,13 @@ def recognize_cohort(
                 "decode_token_count": result["decode_generated_token_count"],
                 "prefill_s": result["ttft_s"],
                 "prefill_device_stage_s": result.get("prefill_device_stage_s"),
+                "text_prefill_execution": result.get("text_prefill_execution"),
+                "text_prefill_real_source_tokens": result.get(
+                    "text_prefill_real_source_tokens"
+                ),
+                "text_prefill_physical_source_tokens": result.get(
+                    "text_prefill_physical_source_tokens"
+                ),
                 "cohort_index": cohort_index,
             }
         )
@@ -519,7 +541,10 @@ def main() -> None:
         dtype=args.dtype,
         compile_cache_dir=(
             args.compile_cache_dir.expanduser().resolve()
-            if args.decode_mode.startswith("compiled")
+            if (
+                args.decode_mode.startswith("compiled")
+                or args.text_prefill_mode == "compiled_s512"
+            )
             else None
         ),
     )
@@ -595,9 +620,16 @@ def main() -> None:
                         crop.image,
                         image_source=crop.request_id,
                         profile_device_stages=args.prefill_device_timing,
+                        text_prefill_mode=args.text_prefill_mode,
                     )
                     metrics.prepare_s += float(item.prep["prepare_total_s"])
                     metrics.prefill_s += item.prefill_s
+                    metrics.text_prefill_real_source_tokens += int(
+                        item.text_prefill_real_source_tokens or 0
+                    )
+                    metrics.text_prefill_physical_source_tokens += int(
+                        item.text_prefill_physical_source_tokens or 0
+                    )
                     accumulate_stage_seconds(
                         metrics.prefill_device_stage_s,
                         item.prefill_device_stage_s,
@@ -633,6 +665,13 @@ def main() -> None:
                     "decode_token_count": result["decode_generated_token_count"],
                     "prefill_s": result["ttft_s"],
                     "prefill_device_stage_s": result.get("prefill_device_stage_s"),
+                    "text_prefill_execution": result.get("text_prefill_execution"),
+                    "text_prefill_real_source_tokens": result.get(
+                        "text_prefill_real_source_tokens"
+                    ),
+                    "text_prefill_physical_source_tokens": result.get(
+                        "text_prefill_physical_source_tokens"
+                    ),
                     "decode_slot": completed_item.slot,
                     "admission_index": completed_item.admission_index,
                     "completion_index": completed_item.completion_index,
@@ -741,6 +780,7 @@ def main() -> None:
         "decode_mode": args.decode_mode,
         "decode_scheduling": args.decode_scheduling,
         "decode_batch_size": args.decode_batch_size,
+        "text_prefill_mode": args.text_prefill_mode,
         "max_length": args.max_length,
         "layout_backend": args.layout_backend,
         "layout_dtype": args.layout_dtype if not use_onnx_layout else None,
@@ -756,6 +796,18 @@ def main() -> None:
         "prepare_s": metrics.prepare_s,
         "prefill_s": metrics.prefill_s,
         "prefill_device_stage_s": metrics.prefill_device_stage_s,
+        "text_prefill_real_source_tokens": (
+            metrics.text_prefill_real_source_tokens
+        ),
+        "text_prefill_physical_source_tokens": (
+            metrics.text_prefill_physical_source_tokens
+        ),
+        "text_prefill_useful_token_fraction": (
+            metrics.text_prefill_real_source_tokens
+            / metrics.text_prefill_physical_source_tokens
+            if metrics.text_prefill_physical_source_tokens > 0
+            else None
+        ),
         "decode_s": metrics.decode_s,
         "output_assembly_s": metrics.output_assembly_s,
         "output_write_s": metrics.output_write_s,
