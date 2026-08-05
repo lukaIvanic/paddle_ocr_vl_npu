@@ -573,16 +573,33 @@ class MinerUAttention(nn.Module):
         key_states: torch.Tensor,
         position_embeddings: tuple[torch.Tensor, torch.Tensor],
     ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Apply decode RoPE to factors prepared once by the text model.
+
+        Static decode uses the same position for every decoder layer.  Keep the
+        MRoPE split/select/concat work outside the layer loop instead of
+        repeating it 24 times.
+        """
         cos, sin = position_embeddings
         if self.decode_rotary_impl == DECODE_ROTARY_IMPL_NPU:
-            return apply_multimodal_rotary_pos_emb_npu(
-                query_states,
-                key_states,
-                cos,
-                sin,
-                self.mrope_section,
+            import torch_npu
+
+            return (
+                torch_npu.npu_rotary_mul(
+                    query_states.contiguous(),
+                    cos.contiguous(),
+                    sin.contiguous(),
+                    rotary_mode="half",
+                ),
+                torch_npu.npu_rotary_mul(
+                    key_states.contiguous(),
+                    cos.contiguous(),
+                    sin.contiguous(),
+                    rotary_mode="half",
+                ),
             )
-        return self.apply_rotary(query_states, key_states, position_embeddings)
+        query_embed = (query_states * cos) + (rotate_half(query_states) * sin)
+        key_embed = (key_states * cos) + (rotate_half(key_states) * sin)
+        return query_embed, key_embed
 
     def attend(
         self,
@@ -879,7 +896,10 @@ class MinerUTextModel(nn.Module):
             attention_mask = build_static_decode_mask(inputs_embeds, cache_position, cache_length)
         position_ids = cache_position.view(batch_size, 1) + rope_deltas.to(device=inputs_embeds.device, dtype=torch.int64)
         position_ids = position_ids.unsqueeze(0).expand(3, -1, -1)
-        position_embeddings = self.rotary_emb(inputs_embeds, position_ids)
+        position_embeddings = prepare_multimodal_rotary_factors(
+            *self.rotary_emb(inputs_embeds, position_ids),
+            self.layers[0].self_attn.mrope_section,
+        )
         hidden_states = inputs_embeds
         for layer_idx, layer in enumerate(self.layers):
             hidden_states = layer.forward_decode_static(
