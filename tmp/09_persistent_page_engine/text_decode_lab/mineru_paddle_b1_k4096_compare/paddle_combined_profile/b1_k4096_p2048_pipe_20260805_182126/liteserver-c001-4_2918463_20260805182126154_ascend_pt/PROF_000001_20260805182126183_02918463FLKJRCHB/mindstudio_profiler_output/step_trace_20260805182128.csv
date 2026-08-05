@@ -1,0 +1,3 @@
+Device_id,Iteration ID,FP Start(us),BP End(us),Iteration End(us),Iteration Time(us),FP to BP Time(us),Iteration Refresh(us),Data Aug Bound(us),Model ID
+6,1,0.000	,0.000	,1785954086257601.845	,1483.260,0.000,0.000,0.000,2
+6,2,0.000	,0.000	,1785954086260971.765	,1465.580,0.000,0.000,0.000,2

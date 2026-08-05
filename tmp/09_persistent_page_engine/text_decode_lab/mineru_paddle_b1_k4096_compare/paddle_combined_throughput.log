@@ -1,0 +1,2 @@
+.DECODE_PROFILE mean_ms=1.4120 raw_tok_s=708.2 active_tok_s=708.2
+output=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/mineru_paddle_b1_k4096_compare/paddle_combined_throughput.json

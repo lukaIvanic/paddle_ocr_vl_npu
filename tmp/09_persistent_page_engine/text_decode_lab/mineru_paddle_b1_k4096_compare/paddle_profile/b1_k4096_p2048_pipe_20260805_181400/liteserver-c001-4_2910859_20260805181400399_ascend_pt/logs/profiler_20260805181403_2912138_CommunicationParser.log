@@ -1,0 +1,3 @@
+[2026-08-05-18:14:03.976] [INFO] [AscendProfiler_CommunicationParser:97] Profiler logger initialized at: /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/mineru_paddle_b1_k4096_compare/paddle_profile/b1_k4096_p2048_pipe_20260805_181400/liteserver-c001-4_2910859_20260805181400399_ascend_pt/logs/profiler_20260805181403_2912138_CommunicationParser.log
+[2026-08-05-18:14:03.976] [INFO] [AscendProfiler_CommunicationParser:66] CommunicationParser start.
+[2026-08-05-18:14:03.979] [INFO] [AscendProfiler_CommunicationParser:73] CommunicationParser finish.

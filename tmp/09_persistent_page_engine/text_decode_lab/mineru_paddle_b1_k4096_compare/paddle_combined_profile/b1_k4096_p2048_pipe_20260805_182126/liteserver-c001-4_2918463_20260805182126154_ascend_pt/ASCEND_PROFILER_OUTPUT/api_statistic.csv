@@ -1,0 +1,18 @@
+Device_id,Level,API Name,Time(us),Count,Avg(us),Min(us),Max(us),Variance
+host,model,InputCopy,114.48,2,57.24,32.5,81.98,612.068
+host,model,ModelExecute,43.7,2,21.85,10.99,32.71,117.94
+host,model,ModelLoad,51796.08,1,51796.08,51796.08,51796.08,0
+host,model,OutputCopy,1.44,2,0.72,0.3,1.14,0.176
+host,acl,aclnnAdds,20.46,2,10.23,7.5,12.96,7.453
+host,acl,aclnnArgMax,46.26,2,23.13,20.96,25.3,4.709
+host,acl,aclnnInplaceCopy,56.02,2,28.01,9.02,47,360.62
+host,acl,aclnnInplaceFillScalar,35.34,2,17.67,10.47,24.87,51.84
+host,acl,aclnnInplaceZero,27.87,2,13.935,7.38,20.49,42.968
+host,acl,aclnnSWhere,39.63,4,9.908,7.71,12.52,2.98
+host,acl,aclrtCreateEventExWithFlag,25.84,4,6.46,4.45,12.05,10.427
+host,acl,aclrtGetStreamAttribute,7.78,14,0.556,0.33,2.14,0.198
+host,acl,aclrtLaunchKernelWithHostArgs,138.88,18,7.716,3.18,24.35,29.071
+host,acl,aclrtRecordEvent,68.99,4,17.248,7.98,41.77,200.902
+host,acl,aclrtSynchronizeDeviceWithTimeout,176.68,2,88.34,10.72,165.96,6024.864
+host,node,launch,4061.66,284,14.302,4.79,79.9,161.825
+host,node,step_info,12.44,4,3.11,1.32,6.37,3.998

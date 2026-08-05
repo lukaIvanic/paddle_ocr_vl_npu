@@ -1,0 +1,3 @@
+[2026-08-05-18:21:27.057] [INFO] [AscendProfiler_CANNExportParser:97] Profiler logger initialized at: /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/mineru_paddle_b1_k4096_compare/paddle_combined_profile/b1_k4096_p2048_pipe_20260805_182126/liteserver-c001-4_2918463_20260805182126154_ascend_pt/logs/profiler_20260805182127_2919134_CANNExportParser.log
+[2026-08-05-18:21:27.057] [INFO] [AscendProfiler_CANNExportParser:51] CANNExportParser start.
+[2026-08-05-18:21:29.086] [INFO] [AscendProfiler_CANNExportParser:79] CANNExportParser finish.

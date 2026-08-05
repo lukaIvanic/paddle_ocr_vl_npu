@@ -1,0 +1,3 @@
+[2026-08-05-18:15:49.509] [INFO] [AscendProfiler_TraceViewParser:97] Profiler logger initialized at: /workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/text_decode_lab/mineru_paddle_b1_k4096_compare/profile_increfa_pipe/liteserver-c001-4_2912362_20260805181545932_ascend_pt/logs/profiler_20260805181549_2914374_TraceViewParser.log
+[2026-08-05-18:15:49.509] [INFO] [AscendProfiler_TraceViewParser:53] TraceViewParser start.
+[2026-08-05-18:15:49.650] [INFO] [AscendProfiler_TraceViewParser:68] TraceViewParser finish.
