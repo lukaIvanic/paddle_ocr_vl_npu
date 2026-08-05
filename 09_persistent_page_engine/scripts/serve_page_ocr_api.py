@@ -218,11 +218,12 @@ def _worker_main(jobs: Any, results: Any, config: dict[str, Any]) -> None:
                 }
             )
 
-        summary = engine.serve(
-            PageQueue(),
-            emit_page=emit_page,
-            emit_page_error=emit_error,
-        )
+        with torch.inference_mode():
+            summary = engine.serve(
+                PageQueue(),
+                emit_page=emit_page,
+                emit_page_error=emit_error,
+            )
         results.put(
             {
                 "kind": "service_summary",
