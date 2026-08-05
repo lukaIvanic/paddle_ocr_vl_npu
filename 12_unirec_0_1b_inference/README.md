@@ -257,6 +257,57 @@ soon as all their crops finish. The initial implementation performs replacement
 prefill synchronously between decode iterations. It does not yet overlap NPU
 prefill with decode.
 
+## Guarded-atlas vision lab
+
+`vision_atlas_lab.py` tests a fixed-shape representation for the spatial
+FocalSVTR stages. It places variable crop feature maps in one 2D atlas and
+surrounds each crop with a zero guard. The crop mask is reapplied after every
+focal convolution. This preserves each crop's independent zero-padding
+boundary while all crops use one fixed graph shape.
+
+The default lab lane targets stage 2, which contains nine focal blocks. It uses
+a 64x192 atlas, a three-cell guard, first-fit-decreasing placement, and at most
+16 crops per atlas. A static permutation gathers a padded flat token reservoir
+into the atlas. A second permutation returns the output to crop-token order.
+The compiled graph includes both permutations. The lab also times a
+pessimistic integration path that copies today's separate crop tensors into
+the reusable reservoir before each stage call.
+
+```sh
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
+  12_unirec_0_1b_inference/vision_atlas_lab.py \
+  --stage 2 --atlas-height 64 --atlas-width 192 --guard 3 \
+  --max-members 16 --limit 186 --packing ffd \
+  --routing permutation --execution torchair \
+  --cache-dir .runtime_cache/12_unirec_0_1b_inference/vision_atlas_lab \
+  --output tmp/12_unirec_0_1b_inference/vision_atlas_lab/result.json
+```
+
+The validated 32-page shape corpus contains 186 crops and 54,880 real stage-2
+tokens. The atlas path used 14 fixed graph calls and 172,032 physical atlas
+cells. Median timings on Ascend 910B2 were:
+
+```text
+Independent per-crop stage 2:       2041.55 ms
+Compiled routed atlas stage 2:       147.02 ms
+Separate-crop reservoir assembly:      7.64 ms
+Combined routed path:                 154.66 ms
+Combined speedup:                      13.20x
+```
+
+The compiled lane's mean per-crop mean-absolute difference was 0.00313. Its
+worst relative L2 difference was 0.00787, worst cosine similarity was 0.999969,
+and worst maximum absolute difference was 1.125. These are intermediate-stage
+statistics on deterministic random feature tensors, not an end-to-end OCR
+accuracy result.
+
+The 1.887-second stage-2 saving is a measured upper bound for integration. It
+would reduce the earlier 32-page 39.84-second pipeline to approximately 37.95
+seconds if the surrounding schedule remains unchanged. The lab does not yet
+replace stages 0, 1, or 3, the patch stem, stage downsampling, or the final
+projection. Use `--routing prebuilt_atlas` only to measure the stage-compute
+upper bound without permutation or separate-crop assembly costs.
+
 ## Artifacts
 
 - Run JSON: `tmp/12_unirec_0_1b_inference/`
