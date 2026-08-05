@@ -40,6 +40,11 @@ bench_compiled_batch_decode.py
 
 parse_npu_profile.py
   Parser for torch-npu profiler output from the compiled decode path.
+
+run_official_transformers_omnidocbench.py
+  Fidelity-first corpus runner around the stock Transformers model and the
+  official mineru-vl-utils two-step page client. It writes official json2md
+  Markdown, content lists, per-page checkpoints, shard progress, and timing.
 ```
 
 The experiment reuses the repository-level `crops/` corpus. Its manifest and
@@ -73,6 +78,44 @@ MODEL_DIR=/workspace/models/MinerU2.5-Pro-2605-1.2B
 ```
 
 Verify `MODEL_DIR` against the actual installed model path before running.
+
+The official Transformers baseline uses a separate environment so its pinned
+Transformers 4.x dependency does not disturb vLLM-Ascend's Transformers 5.x
+environment:
+
+```sh
+bash 11_mineru_2_5_pro_inference/setup_official_transformers_env.sh
+OFFICIAL_PYTHON=/workspace/venvs/mineru_pro_transformers_py312/bin/python
+```
+
+## Official Transformers OmniDocBench lane
+
+The fidelity baseline follows the checkpoint model card: BF16 stock
+Transformers, the fast processor, eager attention, official
+`MinerUClient(backend="transformers")`, `image_analysis=False`, greedy
+generation, and official `json2md`. The default client batch size is one.
+
+Run a small prefix:
+
+```sh
+$OFFICIAL_PYTHON \
+  11_mineru_2_5_pro_inference/run_official_transformers_omnidocbench.py \
+  --model "$MODEL_DIR" \
+  --output-dir tmp/11_mineru_2_5_pro_inference/official_transformers_n8 \
+  --limit 8 \
+  --batch-size 1
+```
+
+Large accuracy runs may shard pages across independent NPUs without changing
+the per-page B1 inference contract. Every shard receives the same global
+`--offset`/`--limit`, plus a common `--shard-count` and distinct
+`--shard-index`. Shards safely share one output directory because image names
+are unique. `--resume` is enabled by default: a page is skipped only after its
+Markdown, content list, and page record all exist.
+
+The evaluator consumes the generated `predictions/` directory. Use the pinned
+Experiment-09 OmniDocBench evaluator wrapper after every shard completes; do
+not score partial output as a full-corpus result.
 
 ## Two-step single-page smoke
 

@@ -1,0 +1,5 @@
+mineru-vl-utils[transformers]==1.0.5
+transformers==4.57.6
+accelerate==1.14.0
+huggingface-hub==0.36.2
+httpx-retries==0.6.0
