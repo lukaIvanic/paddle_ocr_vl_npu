@@ -149,13 +149,21 @@ class OpenDocUniRecAdapter:
                 "token_count": len(stock_ids),
             }
 
-        custom_result = self.custom_runner.generate_image(
-            image.copy(),
-            max_length=max_length,
-            decode_mode=self.decode_mode,
-            compile_backend=self.compile_backend,
-            image_source=crop_name,
-        )
+        try:
+            custom_result = self.custom_runner.generate_image(
+                image.copy(),
+                max_length=max_length,
+                decode_mode=self.decode_mode,
+                compile_backend=self.compile_backend,
+                image_source=crop_name,
+            )
+        except Exception as exc:
+            record["custom_error"] = {
+                "type": type(exc).__name__,
+                "message": str(exc),
+            }
+            self._pending_record = record
+            raise
         custom_ids = [int(token) for token in custom_result["generated_ids"]]
         record["custom"] = {
             "text": custom_result["text"],
@@ -186,11 +194,22 @@ class OpenDocUniRecAdapter:
         self._pending_record = record
         return custom_result["text"], custom_ids
 
-    def finish_block(self, block_label: str, custom_postprocessed_text: str) -> None:
+    def finish_block(self, block_label: str, custom_postprocessed_text: str) -> bool:
         if self._pending_record is None:
             raise RuntimeError("No pending recognition record to finalize")
         record = self._pending_record
         record["block_label"] = block_label
+        if "custom_error" in record:
+            with self.trace_path.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+            self.records.append(record)
+            self._pending_record = None
+            print(
+                f"UNIREC_CROP_ERROR page={self.page} crop={self.crop_index} "
+                f"label={block_label} error={record['custom_error']['type']}",
+                flush=True,
+            )
+            return False
         record["custom"]["postprocessed_text"] = custom_postprocessed_text
         if self.stock_recognizer is not None:
             stock_postprocessed = _postprocess_text(
@@ -218,6 +237,7 @@ class OpenDocUniRecAdapter:
             f"custom_s={record['custom']['timing_s']['total']:.3f} {comparison_text}",
             flush=True,
         )
+        return True
 
 
 def _install_block_trace(pipeline: Any, adapter: OpenDocUniRecAdapter) -> None:
@@ -231,7 +251,11 @@ def _install_block_trace(pipeline: Any, adapter: OpenDocUniRecAdapter) -> None:
         max_length: int,
     ) -> tuple[int, str]:
         result_index, text = original(block_img, block_label, block_index, max_length)
-        adapter.finish_block(block_label, text)
+        succeeded = adapter.finish_block(block_label, text)
+        if not succeeded:
+            raise RuntimeError(
+                "Custom UniRec recognition failed; see recognition_comparison.jsonl"
+            )
         return result_index, text
 
     pipeline._recognize_single_block = types.MethodType(
