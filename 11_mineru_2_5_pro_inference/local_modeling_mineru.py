@@ -422,9 +422,10 @@ class MinerURotaryEmbedding(nn.Module):
         self.register_buffer("inv_freq", self._compute_inv_freq().to(device=device), persistent=False)
 
     def forward(self, x: torch.Tensor, position_ids: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        inv_freq = self.inv_freq[None, None, :, None].float().expand(3, position_ids.shape[1], -1, 1)
-        position_ids = position_ids[:, :, None, :].float()
-        freqs = (inv_freq @ position_ids).transpose(2, 3)
+        # The inner dimension of this outer product is one, so express it as
+        # broadcast multiplication. TorchAir/CANN 9 otherwise mis-infers the
+        # B1 decode MatMul as K=1 versus K=3 during graph shape inference.
+        freqs = position_ids[..., None].float() * self.inv_freq[None, None, None, :].float()
         emb = torch.cat((freqs, freqs), dim=-1)
         cos = emb.cos() * self.attention_scaling
         sin = emb.sin() * self.attention_scaling
