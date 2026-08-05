@@ -76,7 +76,7 @@ def parse_args() -> argparse.Namespace:
         help="Disable vLLM graph capture for the compatibility baseline.",
     )
     parser.add_argument("--vllm-gpu-memory-utilization", type=float, default=0.8)
-    parser.add_argument("--vllm-max-model-len", type=int, default=32768)
+    parser.add_argument("--vllm-max-model-len", type=int, default=8192)
     parser.add_argument("--vllm-max-num-seqs", type=int, default=64)
     return parser.parse_args()
 

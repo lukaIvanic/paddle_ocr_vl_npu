@@ -1,8 +1,9 @@
 # Experiment 11: MinerU2.5-Pro Local Inference
 
 This experiment is the current custom MinerU2.5-Pro implementation transferred
-from the standalone `mineru_25_pro_npu` repository at commit `b08ae14`. It does
-not import vLLM or vLLM-Ascend.
+from the standalone `mineru_25_pro_npu` repository at commit `b08ae14`. The
+custom implementation does not import vLLM or vLLM-Ascend. Separate official
+baseline lanes use stock Transformers or stock vLLM.
 
 The model itself is implemented locally in PyTorch. Transformers remains only
 at the processor boundary through `AutoProcessor`, for tokenization and
@@ -42,9 +43,10 @@ parse_npu_profile.py
   Parser for torch-npu profiler output from the compiled decode path.
 
 run_official_transformers_omnidocbench.py
-  Fidelity-first corpus runner around the stock Transformers model and the
-  official mineru-vl-utils two-step page client. It writes official json2md
-  Markdown, content lists, per-page checkpoints, shard progress, and timing.
+  Fidelity-first corpus runner around the official mineru-vl-utils two-step
+  page client. It supports stock Transformers and synchronous vLLM engines and
+  writes official json2md Markdown, content lists, per-page checkpoints, shard
+  progress, and timing.
 ```
 
 The experiment reuses the repository-level `crops/` corpus. Its manifest and
@@ -88,6 +90,17 @@ bash 11_mineru_2_5_pro_inference/setup_official_transformers_env.sh
 OFFICIAL_PYTHON=/workspace/venvs/mineru_pro_transformers_py312/bin/python
 ```
 
+The official vLLM lane uses the installed vLLM-Ascend 0.21 stack and a small
+environment that adds MinerU utilities without changing its dependencies:
+
+```sh
+bash 11_mineru_2_5_pro_inference/setup_official_vllm_env.sh
+VLLM_PYTHON=/workspace/venvs/mineru_pro_vllm_py312/bin/python
+```
+
+The validated version contract is vLLM 0.21.0, vLLM-Ascend 0.21.0rc1,
+Transformers 5.5.4, Torch 2.10.0, torch-npu 2.10.0, and CANN/NNAL 9.0.0.
+
 ## Official Transformers OmniDocBench lane
 
 The fidelity baseline follows the checkpoint model card: BF16 stock
@@ -116,6 +129,28 @@ Markdown, content list, and page record all exist.
 The evaluator consumes the generated `predictions/` directory. Use the pinned
 Experiment-09 OmniDocBench evaluator wrapper after every shard completes; do
 not score partial output as a full-corpus result.
+
+## Official synchronous vLLM lane
+
+Start with eager vLLM to separate compatibility from graph compilation:
+
+```sh
+$VLLM_PYTHON \
+  11_mineru_2_5_pro_inference/run_official_transformers_omnidocbench.py \
+  --backend vllm-engine \
+  --model "$MODEL_DIR" \
+  --output-dir tmp/11_mineru_2_5_pro_inference/official_vllm_eager_n1 \
+  --limit 1 \
+  --batch-size 0 \
+  --page-batch-size 1 \
+  --vllm-enforce-eager \
+  --vllm-max-model-len 8192 \
+  --vllm-max-num-seqs 64
+```
+
+`--batch-size 0` keeps the official synchronous vLLM behavior: every request
+prepared by the current layout/page group is submitted to one vLLM generate
+call. The vLLM scheduler then performs continuous batching within that call.
 
 ## Two-step single-page smoke
 

@@ -1,0 +1,2 @@
+mineru-vl-utils==1.0.5
+httpx-retries==0.6.0
