@@ -79,6 +79,7 @@ def main() -> None:
     args = parse_args()
     if args.bucket <= 0 or args.warmup < 0 or args.repeats <= 0:
         raise ValueError("bucket and repeats must be positive; warmup must be non-negative")
+    print("[setup] configure NPU and load processor/model", flush=True)
     configure_npu()
     import torch_npu  # noqa: F401
     from transformers import AutoProcessor
@@ -96,6 +97,7 @@ def main() -> None:
         device="npu:0",
     )
     model.set_vision_attention_impl("prompt_flash_attention")
+    print("[setup] model loaded", flush=True)
 
     with Image.open(args.image) as source:
         image = source.convert("RGB")
@@ -116,8 +118,13 @@ def main() -> None:
         raise ValueError(
             f"real vision tokens {real_tokens} exceed requested bucket {args.bucket}"
         )
+    print(
+        f"[input] size={processed_size} real_tokens={real_tokens} bucket={args.bucket}",
+        flush=True,
+    )
 
     model.set_vision_prefill_runtime(None)
+    print("[eager] warmup and measurement", flush=True)
     eager_features, eager_samples = timed_vision(
         model,
         pixel_values,
@@ -135,6 +142,7 @@ def main() -> None:
         dtype=model.dtype,
     )
     model.set_vision_prefill_runtime(runtime)
+    print("[compiled] first call may compile or restore the static graph", flush=True)
     compiled_features, compiled_samples = timed_vision(
         model,
         pixel_values,
@@ -164,7 +172,9 @@ def main() -> None:
         synchronize()
         return tokens.detach().cpu(), time.perf_counter() - started
 
+    print("[accuracy] eager generation", flush=True)
     eager_tokens, eager_generation_s = generate(None)
+    print("[accuracy] compiled-vision generation", flush=True)
     compiled_tokens, compiled_generation_s = generate(runtime)
     eager_timing = summarize(eager_samples)
     compiled_timing = summarize(compiled_samples)
