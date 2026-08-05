@@ -23,6 +23,14 @@ from typing import Any
 from PIL import Image
 
 
+OMNIDOCBENCH_V16_JSON_SHA256 = (
+    "a45cd84b04ad8b793e775089640e6b681209abea33ead54c1828ddca35fae496"
+)
+OMNIDOCBENCH_V16_IMAGES_AGGREGATE_SHA256 = (
+    "58feeb96c60fcfab12ba4348c4e093ceaf1b707658dbfd0e08c24d7821d4c221"
+)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group(required=True)
@@ -183,6 +191,19 @@ def _write_dataset_manifest(
             "entries": entries,
         },
     }
+    manifest["repository_authority"] = {
+        "name": "OmniDocBench v1.6 910B benchmark inputs",
+        "expected_dataset_json_sha256": OMNIDOCBENCH_V16_JSON_SHA256,
+        "expected_referenced_images_aggregate_sha256": (
+            OMNIDOCBENCH_V16_IMAGES_AGGREGATE_SHA256
+        ),
+        "matches": (
+            manifest["dataset_json"]["sha256"]
+            == OMNIDOCBENCH_V16_JSON_SHA256
+            and manifest["referenced_images"]["aggregate_sha256"]
+            == OMNIDOCBENCH_V16_IMAGES_AGGREGATE_SHA256
+        ),
+    }
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
@@ -194,6 +215,7 @@ def _write_dataset_manifest(
         f"images={manifest['referenced_images']['count']} "
         "images_aggregate_sha256="
         f"{manifest['referenced_images']['aggregate_sha256']} "
+        f"matches_repository_authority={manifest['repository_authority']['matches']} "
         f"output={output_path}",
         flush=True,
     )
@@ -497,6 +519,12 @@ def _write_summary(
             "referenced_images_aggregate_sha256": dataset_manifest[
                 "referenced_images"
             ]["aggregate_sha256"],
+            "matches_repository_authority": (
+                dataset_manifest["dataset_json"]["sha256"]
+                == OMNIDOCBENCH_V16_JSON_SHA256
+                and dataset_manifest["referenced_images"]["aggregate_sha256"]
+                == OMNIDOCBENCH_V16_IMAGES_AGGREGATE_SHA256
+            ),
         },
     }
     summary_output.parent.mkdir(parents=True, exist_ok=True)
@@ -541,6 +569,10 @@ def _benchmark_summary_markdown(summary: dict[str, Any]) -> str:
         (
             "- Referenced-images aggregate SHA-256: "
             f"`{fingerprint['referenced_images_aggregate_sha256']}`"
+        ),
+        (
+            "- Matches repository authority: "
+            f"{fingerprint['matches_repository_authority']}"
         ),
     ]
     if stages:

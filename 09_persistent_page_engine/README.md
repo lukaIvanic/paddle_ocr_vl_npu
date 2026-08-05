@@ -1186,6 +1186,29 @@ python scripts/run_omnidocbench_table_api.py \
   --teds-workers 12 --teds-timeout-s 120
 ```
 
+The repository's OmniDocBench v1.6 input authority is:
+
+- `OmniDocBench.json`: 42,208,096 bytes, SHA-256
+  `a45cd84b04ad8b793e775089640e6b681209abea33ead54c1828ddca35fae496`;
+- 1,651 JSON-referenced page images: 1,446,322,066 total bytes, aggregate
+  SHA-256 `58feeb96c60fcfab12ba4348c4e093ceaf1b707658dbfd0e08c24d7821d4c221`.
+
+The image aggregate hashes each image first, then hashes sorted canonical JSONL
+records containing its basename, byte count, and SHA-256. Every OmniDocBench
+client run writes the complete per-image `dataset_manifest.json` and records
+whether both headline hashes match. The canonical per-image authority is
+retained in
+[`dataset_manifest.json`](../tmp/09_persistent_page_engine/omnidocbench_v16_input_fingerprint_a88c47b/dataset_manifest.json).
+This check can run without the API, model, or NPU:
+
+```sh
+python scripts/run_omnidocbench_table_api.py \
+  --omnidocbench --fingerprint-only \
+  --dataset-json /path/to/OmniDocBench.json \
+  --images-dir /path/to/images \
+  --output-dir tmp/omnidocbench_input_check
+```
+
 The production runtime packages do not import `scripts/` entrypoints or probes.
 Those scripts consume the same preprocessing and model-stage modules as the
 E2E engine, so diagnostic code cannot silently become a runtime dependency or
