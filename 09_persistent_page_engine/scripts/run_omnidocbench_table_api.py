@@ -45,6 +45,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--limit-pages", type=int)
     parser.add_argument("--timeout-s", type=float, default=900.0)
+    parser.add_argument("--http-workers", type=int, default=64)
+    parser.add_argument(
+        "--drain-server",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Close the open recognizer session and collect exact scheduler metrics.",
+    )
     parser.add_argument("--teds-workers", type=int, default=12)
     parser.add_argument("--teds-timeout-s", type=float, default=30.0)
     parser.add_argument("--resume", action=argparse.BooleanOptionalAction, default=True)
@@ -78,6 +85,57 @@ def _post_crop(api_url: str, request_id: str, crop: Image.Image, timeout_s: floa
     except urllib.error.HTTPError as exc:
         body = exc.read().decode("utf-8", errors="replace")
         raise RuntimeError(f"API HTTP {exc.code}: {body}") from exc
+
+
+def _drain_api(api_url: str, timeout_s: float) -> dict[str, Any]:
+    parsed = urllib.parse.urlparse(api_url)
+    drain_url = urllib.parse.urlunparse(parsed._replace(path="/v1/drain", query=""))
+    request = urllib.request.Request(drain_url, data=b"", method="POST")
+    with urllib.request.urlopen(request, timeout=timeout_s) as response:
+        payload = json.loads(response.read())
+    return payload["summary"]
+
+
+def _recognize_job(
+    job: tuple[int, dict[str, Any], int, dict[str, Any]],
+    *,
+    images_dir: Path,
+    crop_padding: int,
+    api_url: str,
+    timeout_s: float,
+) -> dict[str, Any]:
+    page_index, page, annotation_index, annotation = job
+    page_name = Path(page["page_info"]["image_path"]).name
+    annotation_id = str(annotation.get("anno_id", annotation_index))
+    request_id = f"page_{page_index:06d}_table_{annotation_id}"
+    image_path = images_dir / page_name
+    with Image.open(image_path) as opened:
+        image = opened.convert("RGB")
+    bbox = _bbox(annotation["poly"], image.width, image.height, crop_padding)
+    crop = image.crop(bbox)
+    response = _post_crop(api_url, request_id, crop, timeout_s)
+    return {
+        "request_id": request_id,
+        "page_index": page_index,
+        "page_name": page_name,
+        "annotation_index": annotation_index,
+        "anno_id": annotation.get("anno_id"),
+        "bbox_xyxy": list(bbox),
+        "crop_size": list(crop.size),
+        "gt_html": annotation.get("html") or annotation.get("text") or "",
+        "pred_html": response["text"],
+        "stop_reason": response["stop_reason"],
+        "input_tokens": response["input_tokens"],
+        "projected_image_tokens": response["projected_image_tokens"],
+        "output_tokens": response["generated_tokens_including_eos"],
+        "worker_wall_s": response["worker_wall_s"],
+        "http_wall_s": response["http_wall_s"],
+        "timing_s": response["timing_s"],
+        "device_stage_s": response["device_stage_s"],
+        "rates": response["rates"],
+        "vision": response["vision"],
+        "text_prefill": response["text_prefill"],
+    }
 
 
 def _read_completed(path: Path) -> dict[str, dict[str, Any]]:
@@ -220,6 +278,7 @@ def _write_summary(
     *,
     generation_wall_s: float,
     score_output: Path | None,
+    service_summary: dict[str, Any] | None,
 ) -> None:
     records = list(_read_completed(output).values())
     http = [float(record["http_wall_s"]) for record in records]
@@ -244,6 +303,36 @@ def _write_summary(
             int(record["output_tokens"]) for record in records
         ),
         "stop_reasons": dict(Counter(record["stop_reason"] for record in records)),
+        "device_stage_s": {
+            stage: sum(
+                float(record.get("device_stage_s", {}).get(stage, 0.0))
+                for record in records
+            )
+            for stage in sorted(
+                {
+                    stage
+                    for record in records
+                    for stage in record.get("device_stage_s", {})
+                }
+            )
+        },
+        "physical_vision_tokens": sum(
+            int(record.get("vision", {}).get("physical_vision_tokens", 0))
+            for record in records
+        ),
+        "real_vision_tokens": sum(
+            int(record.get("vision", {}).get("real_vision_tokens", 0))
+            for record in records
+        ),
+        "physical_text_tokens": sum(
+            int(record.get("text_prefill", {}).get("physical_text_tokens", 0))
+            for record in records
+        ),
+        "real_text_tokens": sum(
+            int(record.get("text_prefill", {}).get("real_text_tokens", 0))
+            for record in records
+        ),
+        "service_scheduler": service_summary,
         "metrics": metrics,
     }
     summary_output.parent.mkdir(parents=True, exist_ok=True)
@@ -269,50 +358,57 @@ def main() -> None:
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     completed = _read_completed(args.output) if args.resume else {}
+    pending_jobs = []
+    for job in jobs:
+        page_index, _page, annotation_index, annotation = job
+        annotation_id = str(annotation.get("anno_id", annotation_index))
+        request_id = f"page_{page_index:06d}_table_{annotation_id}"
+        if request_id not in completed:
+            pending_jobs.append(job)
     mode = "a" if args.resume else "w"
     started = time.perf_counter()
-    done = 0
+    done = len(jobs) - len(pending_jobs)
     with args.output.open(mode, encoding="utf-8") as output:
-        for page_index, page, annotation_index, annotation in jobs:
-            page_name = Path(page["page_info"]["image_path"]).name
-            annotation_id = str(annotation.get("anno_id", annotation_index))
-            request_id = f"page_{page_index:06d}_table_{annotation_id}"
-            if request_id in completed:
-                done += 1
-                continue
-            image_path = args.images_dir / page_name
-            with Image.open(image_path) as opened:
-                image = opened.convert("RGB")
-            bbox = _bbox(annotation["poly"], image.width, image.height, args.crop_padding)
-            crop = image.crop(bbox)
-            response = _post_crop(args.api_url, request_id, crop, args.timeout_s)
-            record = {
-                "request_id": request_id,
-                "page_index": page_index,
-                "page_name": page_name,
-                "annotation_index": annotation_index,
-                "anno_id": annotation.get("anno_id"),
-                "bbox_xyxy": list(bbox),
-                "crop_size": list(crop.size),
-                "gt_html": annotation.get("html") or annotation.get("text") or "",
-                "pred_html": response["text"],
-                "stop_reason": response["stop_reason"],
-                "input_tokens": response["input_tokens"],
-                "output_tokens": response["generated_tokens_including_eos"],
-                "worker_wall_s": response["worker_wall_s"],
-                "http_wall_s": response["http_wall_s"],
+        with ThreadPoolExecutor(max_workers=args.http_workers) as executor:
+            futures = {
+                executor.submit(
+                    _recognize_job,
+                    job,
+                    images_dir=args.images_dir,
+                    crop_padding=args.crop_padding,
+                    api_url=args.api_url,
+                    timeout_s=args.timeout_s,
+                ): job
+                for job in pending_jobs
             }
-            output.write(json.dumps(record, ensure_ascii=False) + "\n")
-            output.flush()
-            done += 1
-            elapsed = time.perf_counter() - started
             print(
-                f"completed={done}/{len(jobs)} page={page_index} "
-                f"elapsed_s={elapsed:.1f} tables_per_s={done / elapsed:.3f}",
+                f"submitted={len(futures)} http_workers={args.http_workers}",
                 flush=True,
             )
+            for future in as_completed(futures):
+                record = future.result()
+                output.write(json.dumps(record, ensure_ascii=False) + "\n")
+                output.flush()
+                done += 1
+                elapsed = time.perf_counter() - started
+                print(
+                    f"completed={done}/{len(jobs)} page={record['page_index']} "
+                    f"elapsed_s={elapsed:.1f} tables_per_s={done / elapsed:.3f}",
+                    flush=True,
+                )
     print(f"DONE tables={len(jobs)} output={args.output}", flush=True)
     generation_wall_s = time.perf_counter() - started
+    service_summary = None
+    if args.drain_server:
+        service_summary = _drain_api(args.api_url, args.timeout_s)
+        print(
+            "DRAINED "
+            f"requests={service_summary['requests']} "
+            f"decode_batch_size={service_summary['batch_size']} "
+            f"effective_decode_tok_per_s="
+            f"{service_summary['rates']['effective_decode_tok_per_s']:.3f}",
+            flush=True,
+        )
     if args.score_output is not None:
         _score(
             args.output,
@@ -327,6 +423,7 @@ def main() -> None:
             args.summary_output,
             generation_wall_s=generation_wall_s,
             score_output=args.score_output,
+            service_summary=service_summary,
         )
 
 

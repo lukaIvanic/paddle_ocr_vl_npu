@@ -5,7 +5,7 @@ from __future__ import annotations
 import time
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Any, Callable, Iterable
+from typing import Any, Callable, Iterable, Protocol
 
 import torch
 
@@ -118,6 +118,37 @@ class ContinuousDecodeRun:
     initial_kv_prefix_bytes_copied: int
     hot_swap_kv_prefix_bytes_copied: int
     timing_s: dict[str, float]
+
+
+class OpenReadyDecodeSource(Protocol):
+    """A request source that can be temporarily empty without being closed."""
+
+    @property
+    def closed(self) -> bool: ...
+
+    def pull(self, *, block: bool) -> ReadyDecodeRequest | None: ...
+
+
+class _IterableReadyDecodeSource:
+    """Adapt the existing finite iterable contract to the open-source API."""
+
+    def __init__(self, items: Iterable[ReadyDecodeRequest]):
+        self._items = iter(items)
+        self._closed = False
+
+    @property
+    def closed(self) -> bool:
+        return self._closed
+
+    def pull(self, *, block: bool) -> ReadyDecodeRequest | None:
+        del block
+        if self._closed:
+            return None
+        try:
+            return next(self._items)
+        except StopIteration:
+            self._closed = True
+            return None
 
 
 @dataclass
@@ -721,7 +752,7 @@ class ContinuousDecodeScheduler:
 
     def run_stream(
         self,
-        ready_requests: Iterable[ReadyDecodeRequest],
+        ready_requests: Iterable[ReadyDecodeRequest] | OpenReadyDecodeSource,
         *,
         on_completion: Callable[[DecodeCompletion], None] | None = None,
         ready_buffer_capacity: int | None = None,
@@ -733,10 +764,17 @@ class ContinuousDecodeScheduler:
         private ready reservoir keeps at most ``ready_buffer_capacity`` NPU KV
         prefixes waiting behind the fixed decode arena.  This makes page
         boundaries irrelevant without materializing an unbounded document.
+
+        A source with ``pull(block=...)`` and ``closed`` may stay open while it
+        is temporarily empty. Decode continues while slots are active. The
+        scheduler blocks for another request only when the arena is idle.
         """
 
         self.arena.begin_run()
-        ready_source = iter(ready_requests)
+        if hasattr(ready_requests, "pull") and hasattr(ready_requests, "closed"):
+            ready_source = ready_requests
+        else:
+            ready_source = _IterableReadyDecodeSource(ready_requests)
         buffer_capacity = (
             self.batch_size
             if ready_buffer_capacity is None
@@ -754,7 +792,7 @@ class ContinuousDecodeScheduler:
                 "ready_buffer_low_watermark must be in [1, ready_buffer_capacity]"
             )
         ready_queue: deque[ReadyDecodeRequest] = deque()
-        source_exhausted = False
+        source_exhausted = bool(ready_source.closed)
         submitted_order: list[str] = []
         submitted_ids: set[str] = set()
         max_ready_queue_depth = 0
@@ -846,7 +884,11 @@ class ContinuousDecodeScheduler:
                         flow_id=completion.ready.request_id,
                     )
 
-        def refill_ready_queue(*, reason: str) -> None:
+        def refill_ready_queue(
+            *,
+            reason: str,
+            block_if_idle: bool = False,
+        ) -> None:
             nonlocal source_exhausted, ready_source_wall_s
             nonlocal max_ready_queue_depth, ready_source_refill_count
             nonlocal refill_sequence
@@ -867,28 +909,14 @@ class ContinuousDecodeScheduler:
                     reason=reason,
                     pull_index=pulled,
                 )
+                should_block = (
+                    block_if_idle
+                    and pulled == 0
+                    and not ready_queue
+                    and self.arena.num_active == 0
+                )
                 try:
-                    ready = next(ready_source)
-                except StopIteration:
-                    source_exhausted = True
-                    finished = time.perf_counter()
-                    ready_source_wall_s += finished - started
-                    progress(
-                        "ready_source_exhausted",
-                        refill_id=refill_id,
-                        reason=reason,
-                        pull_index=pulled,
-                        wait_s=finished - started,
-                    )
-                    if self.timeline is not None:
-                        self.timeline.record_span_seconds(
-                            "Decode control / wait",
-                            "Drain ready-request source",
-                            started,
-                            finished,
-                            event_type="scope",
-                        )
-                    break
+                    ready = ready_source.pull(block=should_block)
                 except BaseException as exc:
                     progress(
                         "ready_source_next_error",
@@ -901,6 +929,32 @@ class ContinuousDecodeScheduler:
                     raise
                 finished = time.perf_counter()
                 ready_source_wall_s += finished - started
+                if ready is None:
+                    source_exhausted = bool(ready_source.closed)
+                    progress(
+                        (
+                            "ready_source_exhausted"
+                            if source_exhausted
+                            else "ready_source_temporarily_empty"
+                        ),
+                        refill_id=refill_id,
+                        reason=reason,
+                        pull_index=pulled,
+                        wait_s=finished - started,
+                    )
+                    if self.timeline is not None:
+                        self.timeline.record_span_seconds(
+                            "Decode control / wait",
+                            (
+                                "Drain ready-request source"
+                                if source_exhausted
+                                else "Wait for an arriving ready request"
+                            ),
+                            started,
+                            finished,
+                            event_type="wait" if should_block else "scope",
+                        )
+                    break
                 progress(
                     "ready_source_next_end",
                     refill_id=refill_id,
@@ -1217,7 +1271,10 @@ class ContinuousDecodeScheduler:
             low_watermark=low_watermark,
         )
         if len(ready_queue) < low_watermark:
-            refill_ready_queue(reason="initial_low_watermark")
+            refill_ready_queue(
+                reason="initial_low_watermark",
+                block_if_idle=True,
+            )
         progress("initial_admission_begin")
         fill_free_slots(hot_swap=False)
         progress("initial_admission_end")
@@ -1225,7 +1282,22 @@ class ContinuousDecodeScheduler:
         pending: PendingTokenCopy | None = None
         iteration = 0
 
-        while self.arena.num_active > 0:
+        while True:
+            if self.arena.num_active == 0:
+                if not ready_queue and not source_exhausted:
+                    refill_ready_queue(
+                        reason="idle_wait_for_request",
+                        block_if_idle=True,
+                    )
+                if ready_queue:
+                    progress("idle_admission_begin", iteration=iteration)
+                    fill_free_slots(hot_swap=graph_calls > 0)
+                    progress("idle_admission_end", iteration=iteration)
+                    refill_ready_queue(reason="idle_top_up")
+                if self.arena.num_active == 0:
+                    if source_exhausted:
+                        break
+                    continue
             progress(
                 "iteration_begin",
                 iteration=iteration,
@@ -1307,7 +1379,7 @@ class ContinuousDecodeScheduler:
                         event_type="wait",
                     )
                 pending = None
-                break
+                continue
 
         progress("scheduler_device_sync_begin", phase="after_decode_loop")
         synchronize(self.device)

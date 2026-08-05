@@ -393,6 +393,87 @@ class PrefilledRecognition:
         )
 
 
+class _OpenPrefillSource:
+    """Turn an open crop source into ready decode requests on demand."""
+
+    def __init__(
+        self,
+        recognizer: Any,
+        requests: Any,
+        *,
+        on_request_error: Callable[[str, BaseException], None],
+    ):
+        self.recognizer = recognizer
+        self.requests = requests
+        self.on_request_error = on_request_error
+        self.pending: deque[tuple[str, Future[CpuPreparedRecognition]]] = deque()
+        self.executor = ThreadPoolExecutor(
+            max_workers=1,
+            thread_name_prefix="paddleocr-vl-open-cpu-prepare",
+        )
+        self._executor_closed = False
+
+    @property
+    def closed(self) -> bool:
+        return bool(self.requests.closed) and not self.pending
+
+    def _submit_available(self, *, block_for_first: bool) -> None:
+        while len(self.pending) < self.recognizer.cpu_preprocess_max_pending:
+            request = self.requests.pull(
+                block=block_for_first and not self.pending,
+            )
+            block_for_first = False
+            if request is None:
+                break
+            submitted_at = time.perf_counter()
+            self.pending.append(
+                (
+                    request.request_id,
+                    self.executor.submit(
+                        self.recognizer._prepare_cpu,
+                        request,
+                        submitted_at,
+                    ),
+                )
+            )
+
+    def pull(self, *, block: bool) -> ReadyDecodeRequest | None:
+        while True:
+            self._submit_available(block_for_first=block and not self.pending)
+            if not self.pending:
+                return None
+            request_id, future = self.pending.popleft()
+            wait_started = time.perf_counter()
+            try:
+                prepared = future.result()
+            except BaseException as exc:
+                self.on_request_error(request_id, exc)
+                block = False
+                continue
+            consumer_wait_s = time.perf_counter() - wait_started
+            # Refill the CPU lane before NPU prefill so host preparation for
+            # later HTTP requests overlaps the current crop's device work.
+            self._submit_available(block_for_first=False)
+            group = self.recognizer._prepared_group(
+                [(prepared, consumer_wait_s)]
+            )
+            staged = self.recognizer._stage_prefill_group(group)
+            inflight = self.recognizer._enqueue_staged_prefill_group(staged)
+            finalized = self.recognizer._finalize_prefill_group(inflight)
+            if len(finalized) != 1:
+                raise RuntimeError(
+                    "open single-crop prefill produced "
+                    f"{len(finalized)} ready states"
+                )
+            return self.recognizer._ready_from_prefilled(finalized[0])
+
+    def close(self) -> None:
+        if self._executor_closed:
+            return
+        self._executor_closed = True
+        self.executor.shutdown(wait=True, cancel_futures=True)
+
+
 class ContinuousRecognizer:
     """One persistent model with sequential prefill and continuous decode.
 
@@ -882,6 +963,122 @@ class ContinuousRecognizer:
             flush=True,
         )
 
+    def _begin_decode_schedule(self) -> None:
+        self._vision_pack_sequence = 0
+        self._captured_vision_route_groups = []
+        self._vision_packing_stats = _VisionPackingRunStats(
+            self.vision_packing,
+            self.vision_pack_target,
+            self.vision_router_lookahead,
+        )
+        self._text_packing_stats = _TextPackingRunStats(
+            self.text_packing,
+            self.text_pack_buckets,
+        )
+
+    @staticmethod
+    def _ready_from_prefilled(state: PrefilledRecognition) -> ReadyDecodeRequest:
+        cache, rope_deltas, cache_position, first_token_tensor, cache_release = (
+            state.take_device_state()
+        )
+        return ReadyDecodeRequest(
+            request_id=state.request_id,
+            payload=state,
+            cache=cache,
+            rope_deltas=rope_deltas,
+            cache_position=cache_position,
+            first_token_tensor=first_token_tensor,
+            first_token=state.first_token,
+            prompt_length=state.input_tokens,
+            cache_release=cache_release,
+        )
+
+    def _decode_ready_source(
+        self,
+        ready_source: Any,
+        *,
+        schedule_id: str,
+        emit_result: Callable[[RecognitionResult], None],
+    ) -> ContinuousDecodeResult:
+        def handle_completion(completion: DecodeCompletion) -> None:
+            result = self._result_from_completion(
+                completion,
+                schedule_id=schedule_id,
+            )
+            emit_result(result)
+
+        decoded = self.decode_scheduler.run_stream(
+            ready_source,
+            on_completion=handle_completion,
+            ready_buffer_capacity=self.ready_buffer_capacity,
+            ready_buffer_low_watermark=self.ready_buffer_low_watermark,
+        )
+        decode_wall_s = decoded.timing_s["continuous_decode_wall"]
+        private_cache_pool_stats = self.prefill_cache_pool.stats()
+        if int(private_cache_pool_stats["active_slots"]) != 0:
+            raise RuntimeError(
+                "prefill KV cache arena still owns active request slots after decode: "
+                f"{private_cache_pool_stats}"
+            )
+
+        return ContinuousDecodeResult(
+            schedule_id=schedule_id,
+            batch_size=self.batch_size,
+            requests=decoded.submitted_requests,
+            ready_buffer_capacity=decoded.ready_buffer_capacity,
+            ready_buffer_low_watermark=decoded.ready_buffer_low_watermark,
+            max_ready_queue_depth=decoded.max_ready_queue_depth,
+            ready_source_refill_count=decoded.ready_source_refill_count,
+            graph_calls=decoded.graph_calls,
+            initial_admissions=decoded.initial_admissions,
+            hot_swap_admissions=decoded.hot_swap_admissions,
+            prefill_only_completions=decoded.prefill_only_completions,
+            raw_decode_token_slots=decoded.raw_decode_token_slots,
+            active_decode_token_slots=decoded.active_decode_token_slots,
+            effective_decode_tokens=decoded.effective_decode_tokens,
+            idle_decode_token_slots=decoded.idle_decode_token_slots,
+            lookahead_decode_token_slots=decoded.lookahead_decode_token_slots,
+            kv_prefix_bytes_copied=decoded.kv_prefix_bytes_copied,
+            initial_kv_prefix_bytes_copied=decoded.initial_kv_prefix_bytes_copied,
+            hot_swap_kv_prefix_bytes_copied=decoded.hot_swap_kv_prefix_bytes_copied,
+            timing_s=dict(decoded.timing_s),
+            vision_packing=self._vision_packing_stats.summary(),
+            text_packing={
+                **self._text_packing_stats.summary(),
+                "private_cache_pool": private_cache_pool_stats,
+            },
+            rates={
+                "raw_decode_tok_per_s": per_second(
+                    decoded.raw_decode_token_slots,
+                    decode_wall_s,
+                ),
+                "effective_decode_tok_per_s": per_second(
+                    decoded.effective_decode_tokens,
+                    decode_wall_s,
+                ),
+                "effective_fraction": (
+                    float(decoded.effective_decode_tokens)
+                    / float(decoded.raw_decode_token_slots)
+                    if decoded.raw_decode_token_slots > 0
+                    else None
+                ),
+                "active_slot_fraction": (
+                    float(decoded.active_decode_token_slots)
+                    / float(decoded.raw_decode_token_slots)
+                    if decoded.raw_decode_token_slots > 0
+                    else None
+                ),
+                "effective_device_tok_per_s": per_second(
+                    decoded.effective_decode_tokens,
+                    decoded.timing_s["decode_model_and_argmax_device"],
+                ),
+                "scheduler_effective_tok_per_s": per_second(
+                    decoded.effective_decode_tokens,
+                    decoded.timing_s["run_scoped_scheduler_wall"],
+                ),
+            },
+        )
+
     @torch.inference_mode()
     def run(
         self,
@@ -897,33 +1094,7 @@ class ContinuousRecognizer:
         final after the input stream is drained.
         """
 
-        self._vision_pack_sequence = 0
-        self._captured_vision_route_groups = []
-        self._vision_packing_stats = _VisionPackingRunStats(
-            self.vision_packing,
-            self.vision_pack_target,
-            self.vision_router_lookahead,
-        )
-        self._text_packing_stats = _TextPackingRunStats(
-            self.text_packing,
-            self.text_pack_buckets,
-        )
-
-        def ready_from(state: PrefilledRecognition) -> ReadyDecodeRequest:
-            cache, rope_deltas, cache_position, first_token_tensor, cache_release = (
-                state.take_device_state()
-            )
-            return ReadyDecodeRequest(
-                request_id=state.request_id,
-                payload=state,
-                cache=cache,
-                rope_deltas=rope_deltas,
-                cache_position=cache_position,
-                first_token_tensor=first_token_tensor,
-                first_token=state.first_token,
-                prompt_length=state.input_tokens,
-                cache_release=cache_release,
-            )
+        self._begin_decode_schedule()
 
         def ready_stream() -> Iterable[ReadyDecodeRequest]:
             current_staged: _StagedPrefillGroup | None = None
@@ -1051,7 +1222,7 @@ class ContinuousRecognizer:
                             group_id=final.group_id,
                             request_id=state.request_id,
                         )
-                        yield ready_from(state)
+                        yield self._ready_from_prefilled(state)
                     self._emit_scheduler_progress(
                         "prefill_group_yield_complete",
                         group_id=final.group_id,
@@ -1082,85 +1253,47 @@ class ContinuousRecognizer:
                     drained_normally=drained_normally,
                 )
 
-        def handle_completion(completion: DecodeCompletion) -> None:
-            result = self._result_from_completion(
-                completion,
-                schedule_id=schedule_id,
-            )
-            emit_result(result)
-
-        decoded = self.decode_scheduler.run_stream(
+        return self._decode_ready_source(
             ready_stream(),
-            on_completion=handle_completion,
-            ready_buffer_capacity=self.ready_buffer_capacity,
-            ready_buffer_low_watermark=self.ready_buffer_low_watermark,
-        )
-        decode_wall_s = decoded.timing_s["continuous_decode_wall"]
-        private_cache_pool_stats = self.prefill_cache_pool.stats()
-        if int(private_cache_pool_stats["active_slots"]) != 0:
-            raise RuntimeError(
-                "prefill KV cache arena still owns active request slots after decode: "
-                f"{private_cache_pool_stats}"
-            )
-
-        schedule_result = ContinuousDecodeResult(
             schedule_id=schedule_id,
-            batch_size=self.batch_size,
-            requests=decoded.submitted_requests,
-            ready_buffer_capacity=decoded.ready_buffer_capacity,
-            ready_buffer_low_watermark=decoded.ready_buffer_low_watermark,
-            max_ready_queue_depth=decoded.max_ready_queue_depth,
-            ready_source_refill_count=decoded.ready_source_refill_count,
-            graph_calls=decoded.graph_calls,
-            initial_admissions=decoded.initial_admissions,
-            hot_swap_admissions=decoded.hot_swap_admissions,
-            prefill_only_completions=decoded.prefill_only_completions,
-            raw_decode_token_slots=decoded.raw_decode_token_slots,
-            active_decode_token_slots=decoded.active_decode_token_slots,
-            effective_decode_tokens=decoded.effective_decode_tokens,
-            idle_decode_token_slots=decoded.idle_decode_token_slots,
-            lookahead_decode_token_slots=decoded.lookahead_decode_token_slots,
-            kv_prefix_bytes_copied=decoded.kv_prefix_bytes_copied,
-            initial_kv_prefix_bytes_copied=decoded.initial_kv_prefix_bytes_copied,
-            hot_swap_kv_prefix_bytes_copied=decoded.hot_swap_kv_prefix_bytes_copied,
-            timing_s=dict(decoded.timing_s),
-            vision_packing=self._vision_packing_stats.summary(),
-            text_packing={
-                **self._text_packing_stats.summary(),
-                "private_cache_pool": private_cache_pool_stats,
-            },
-            rates={
-                "raw_decode_tok_per_s": per_second(
-                    decoded.raw_decode_token_slots,
-                    decode_wall_s,
-                ),
-                "effective_decode_tok_per_s": per_second(
-                    decoded.effective_decode_tokens,
-                    decode_wall_s,
-                ),
-                "effective_fraction": (
-                    float(decoded.effective_decode_tokens)
-                    / float(decoded.raw_decode_token_slots)
-                    if decoded.raw_decode_token_slots > 0
-                    else None
-                ),
-                "active_slot_fraction": (
-                    float(decoded.active_decode_token_slots)
-                    / float(decoded.raw_decode_token_slots)
-                    if decoded.raw_decode_token_slots > 0
-                    else None
-                ),
-                "effective_device_tok_per_s": per_second(
-                    decoded.effective_decode_tokens,
-                    decoded.timing_s["decode_model_and_argmax_device"],
-                ),
-                "scheduler_effective_tok_per_s": per_second(
-                    decoded.effective_decode_tokens,
-                    decoded.timing_s["run_scoped_scheduler_wall"],
-                ),
-            },
+            emit_result=emit_result,
         )
-        return schedule_result
+
+    @torch.inference_mode()
+    def serve(
+        self,
+        requests: Any,
+        *,
+        schedule_id: str,
+        emit_result: Callable[[RecognitionResult], None],
+        on_request_error: Callable[[str, BaseException], None],
+    ) -> ContinuousDecodeResult:
+        """Serve an open stream whose input can be temporarily empty.
+
+        Each arrival remains one independent crop request. The model stages
+        stay unchanged, while ready crops enter the same fixed decode arena
+        and can hot-swap into free slots until the caller closes the source.
+        """
+
+        if self.vision_packing != "off" or self.text_packing != "off":
+            raise ValueError(
+                "open crop serving currently requires independent vision and "
+                "text prefill (vision_packing='off', text_packing='off')"
+            )
+        self._begin_decode_schedule()
+        ready_source = _OpenPrefillSource(
+            self,
+            requests,
+            on_request_error=on_request_error,
+        )
+        try:
+            return self._decode_ready_source(
+                ready_source,
+                schedule_id=schedule_id,
+                emit_result=emit_result,
+            )
+        finally:
+            ready_source.close()
 
     def vision_route_plan(self) -> dict[str, Any]:
         return {

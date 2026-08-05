@@ -52,12 +52,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--request-timeout-s", type=float, default=900.0)
     parser.add_argument("--max-image-bytes", type=int, default=64 * 1024 * 1024)
-    parser.add_argument("--queue-capacity", type=int, default=16)
+    parser.add_argument("--queue-capacity", type=int, default=256)
     parser.add_argument("--model", type=Path, default=Path("/workspace/models/PaddleOCR-VL-1.6"))
     parser.add_argument("--dtype", default="fp16")
     parser.add_argument("--decode-backend", default="torchair")
     parser.add_argument("--decode-optimization", default="combined_apply_pse_sentinel")
-    parser.add_argument("--decode-batch-size", type=int, default=1)
+    parser.add_argument("--decode-batch-size", type=int, default=64)
     parser.add_argument("--cache-length", type=int, default=4096)
     parser.add_argument("--max-new-tokens", type=int, default=4096)
     parser.add_argument("--min-pixels", type=int, default=28224)
@@ -120,53 +120,107 @@ def _worker_main(
             }
         )
 
-        while True:
-            job = jobs.get()
-            if job is None:
-                return
-            request_id = job["request_id"]
-            started = time.perf_counter()
-            try:
-                with Image.open(io.BytesIO(job["image_bytes"])) as opened:
-                    crop = opened.convert("RGB")
-                emitted: list[Any] = []
-                run_summary = recognizer.run(
-                    [
-                        RecognitionRequest(
-                            request_id=request_id,
-                            crop=crop,
-                            prompt=job["prompt"],
-                            min_pixels=config["min_pixels"],
-                            max_pixels=config["max_pixels"],
-                            source_crop_size=crop.size,
+        request_jobs: dict[str, dict[str, Any]] = {}
+
+        class QueueRecognitionSource:
+            def __init__(self) -> None:
+                self._closed = False
+
+            @property
+            def closed(self) -> bool:
+                return self._closed
+
+            def pull(self, *, block: bool) -> Any | None:
+                while not self._closed:
+                    try:
+                        job = jobs.get() if block else jobs.get_nowait()
+                    except queue.Empty:
+                        return None
+                    if job is None:
+                        self._closed = True
+                        return None
+                    request_id = job["request_id"]
+                    try:
+                        with Image.open(io.BytesIO(job["image_bytes"])) as opened:
+                            crop = opened.convert("RGB")
+                    except BaseException as exc:
+                        results.put(
+                            {
+                                "kind": "result",
+                                "request_id": request_id,
+                                "ok": False,
+                                "error": f"{type(exc).__name__}: {exc}",
+                                "traceback": traceback.format_exc(),
+                            }
                         )
-                    ],
-                    schedule_id=f"http:{request_id}",
-                    emit_result=emitted.append,
-                )
-                if len(emitted) != 1:
-                    raise RuntimeError(
-                        f"expected one recognition result, got {len(emitted)}"
+                        block = False
+                        continue
+                    request_jobs[request_id] = job
+                    return RecognitionRequest(
+                        request_id=request_id,
+                        crop=crop,
+                        prompt=job["prompt"],
+                        min_pixels=config["min_pixels"],
+                        max_pixels=config["max_pixels"],
+                        source_crop_size=crop.size,
                     )
-                payload = asdict(emitted[0])
-                payload["raw_text"] = payload["text"]
-                payload["text"] = normalize_recognition_text(
-                    job["crop_type"],
-                    payload["raw_text"],
-                )
-                payload.update(
-                    {
-                        "crop_type": job["crop_type"],
-                        "worker_wall_s": time.perf_counter() - started,
-                        "scheduler": {
-                            "graph_calls": run_summary.graph_calls,
-                            "raw_decode_token_slots": run_summary.raw_decode_token_slots,
-                            "effective_decode_tokens": run_summary.effective_decode_tokens,
-                        },
-                    }
-                )
-                results.put({"kind": "result", "request_id": request_id, "ok": True, "payload": payload})
-            except BaseException as exc:
+                return None
+
+        def emit_result(recognition: Any) -> None:
+            request_id = recognition.request_id
+            job = request_jobs.pop(request_id)
+            payload = asdict(recognition)
+            payload["raw_text"] = payload["text"]
+            payload["text"] = normalize_recognition_text(
+                job["crop_type"],
+                payload["raw_text"],
+            )
+            payload.update(
+                {
+                    "crop_type": job["crop_type"],
+                    "worker_wall_s": (
+                        time.perf_counter() - job["submitted_monotonic_s"]
+                    ),
+                }
+            )
+            results.put(
+                {
+                    "kind": "result",
+                    "request_id": request_id,
+                    "ok": True,
+                    "payload": payload,
+                }
+            )
+
+        def emit_error(request_id: str, exc: BaseException) -> None:
+            request_jobs.pop(request_id, None)
+            results.put(
+                {
+                    "kind": "result",
+                    "request_id": request_id,
+                    "ok": False,
+                    "error": f"{type(exc).__name__}: {exc}",
+                    "traceback": "".join(
+                        traceback.format_exception(type(exc), exc, exc.__traceback__)
+                    ),
+                }
+            )
+
+        try:
+            run_summary = recognizer.serve(
+                QueueRecognitionSource(),
+                schedule_id="http:open",
+                emit_result=emit_result,
+                on_request_error=emit_error,
+            )
+            results.put(
+                {
+                    "kind": "service_summary",
+                    "payload": asdict(run_summary),
+                }
+            )
+        except BaseException as exc:
+            for request_id in list(request_jobs):
                 results.put(
                     {
                         "kind": "result",
@@ -176,6 +230,7 @@ def _worker_main(
                         "traceback": traceback.format_exc(),
                     }
                 )
+            raise
     except BaseException as exc:
         results.put(
             {
@@ -199,6 +254,10 @@ class _State:
         self.worker_pid: int | None = None
         self.waiters: dict[str, queue.Queue[dict[str, Any]]] = {}
         self.lock = threading.Lock()
+        self.accepting = True
+        self.drain_started = False
+        self.service_summary: dict[str, Any] | None = None
+        self.service_summary_ready = threading.Event()
         self.stopping = threading.Event()
         self.dispatcher = threading.Thread(target=self._dispatch, name="ocr-result-dispatch", daemon=True)
         self.dispatcher.start()
@@ -222,19 +281,37 @@ class _State:
                     waiter = self.waiters.get(message["request_id"])
                 if waiter is not None:
                     waiter.put(message)
+            elif kind == "service_summary":
+                self.service_summary = message["payload"]
+                self.service_summary_ready.set()
 
     def submit(self, job: dict[str, Any]) -> dict[str, Any]:
         waiter: queue.Queue[dict[str, Any]] = queue.Queue(maxsize=1)
         with self.lock:
+            if not self.accepting:
+                raise RuntimeError("recognition service is draining")
             if job["request_id"] in self.waiters:
                 raise ValueError(f"duplicate in-flight request_id: {job['request_id']}")
             self.waiters[job["request_id"]] = waiter
         try:
+            job["submitted_monotonic_s"] = time.perf_counter()
             self.jobs.put(job, timeout=1.0)
             return waiter.get(timeout=self.timeout_s)
         finally:
             with self.lock:
                 self.waiters.pop(job["request_id"], None)
+
+    def drain(self) -> dict[str, Any]:
+        with self.lock:
+            self.accepting = False
+            should_close = not self.drain_started
+            self.drain_started = True
+        if should_close:
+            self.jobs.put(None, timeout=1.0)
+        if not self.service_summary_ready.wait(timeout=self.timeout_s):
+            raise queue.Empty("timed out waiting for recognizer drain")
+        assert self.service_summary is not None
+        return self.service_summary
 
 
 class _Handler(BaseHTTPRequestHandler):
@@ -264,6 +341,23 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
+        if parsed.path == "/v1/drain":
+            try:
+                summary = self.state.drain()
+            except queue.Empty:
+                self._json(
+                    HTTPStatus.GATEWAY_TIMEOUT,
+                    {"error": "recognizer drain timed out"},
+                )
+                return
+            except Exception as exc:
+                self._json(
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                    {"error": f"{type(exc).__name__}: {exc}"},
+                )
+                return
+            self._json(HTTPStatus.OK, {"drained": True, "summary": summary})
+            return
         if parsed.path != "/v1/ocr":
             self._json(HTTPStatus.NOT_FOUND, {"error": "not found"})
             return
@@ -310,6 +404,11 @@ class _Handler(BaseHTTPRequestHandler):
         print(f"HTTP {self.address_string()} {format % args}", flush=True)
 
 
+class _Server(ThreadingHTTPServer):
+    daemon_threads = True
+    request_queue_size = 256
+
+
 def main() -> None:
     args = parse_args()
     context = mp.get_context("spawn")
@@ -342,7 +441,7 @@ def main() -> None:
     if not state.ready.is_set() or not worker.is_alive():
         raise RuntimeError("NPU worker did not become ready")
 
-    server = ThreadingHTTPServer((args.host, args.port), _Handler)
+    server = _Server((args.host, args.port), _Handler)
     server.state = state  # type: ignore[attr-defined]
     stop_once = threading.Event()
 
@@ -358,15 +457,15 @@ def main() -> None:
     try:
         server.serve_forever(poll_interval=0.25)
     finally:
-        state.stopping.set()
         try:
-            jobs.put(None, timeout=1.0)
-        except queue.Full:
+            state.drain()
+        except (queue.Empty, queue.Full):
             worker.terminate()
         worker.join(timeout=10.0)
         if worker.is_alive():
             worker.terminate()
             worker.join(timeout=5.0)
+        state.stopping.set()
         server.server_close()
 
 
