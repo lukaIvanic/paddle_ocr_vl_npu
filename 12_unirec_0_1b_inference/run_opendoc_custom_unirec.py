@@ -42,6 +42,17 @@ def parse_args() -> argparse.Namespace:
         default="bfloat16",
     )
     parser.add_argument("--max-length", type=int, default=2048)
+    parser.add_argument(
+        "--decode-mode",
+        choices=("eager", "compiled", "compiled_ifa"),
+        default="eager",
+    )
+    parser.add_argument("--compile-backend", choices=("torchair",), default="torchair")
+    parser.add_argument(
+        "--compile-cache-dir",
+        type=Path,
+        default=Path(".runtime_cache/12_unirec_0_1b_inference/opendoc_model_pth_decode"),
+    )
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--limit", type=int)
     parser.add_argument("--layout-threshold", type=float, default=0.5)
@@ -80,11 +91,15 @@ class OpenDocUniRecAdapter:
         stock_recognizer: Any | None,
         trace_path: Path,
         markdown_converter: Any,
+        decode_mode: str,
+        compile_backend: str,
     ) -> None:
         self.custom_runner = custom_runner
         self.stock_recognizer = stock_recognizer
         self.trace_path = trace_path
         self.markdown_converter = markdown_converter
+        self.decode_mode = decode_mode
+        self.compile_backend = compile_backend
         self.page = "<unset>"
         self.crop_index = 0
         self.records: list[dict[str, Any]] = []
@@ -107,6 +122,7 @@ class OpenDocUniRecAdapter:
             "crop_size": [int(image.width), int(image.height)],
             "crop_rgb_sha256": _sha256_array(rgb_array),
             "max_length": int(max_length),
+            "decode_mode": self.decode_mode,
         }
 
         if self.stock_recognizer is not None:
@@ -136,8 +152,8 @@ class OpenDocUniRecAdapter:
         custom_result = self.custom_runner.generate_image(
             image.copy(),
             max_length=max_length,
-            decode_mode="eager",
-            compile_backend="torchair",
+            decode_mode=self.decode_mode,
+            compile_backend=self.compile_backend,
             image_source=crop_name,
         )
         custom_ids = [int(token) for token in custom_result["generated_ids"]]
@@ -152,6 +168,8 @@ class OpenDocUniRecAdapter:
                 "total": custom_result["total_latency_s"],
             },
             "decode_tokens_per_s": custom_result["decode_tokens_per_s"],
+            "compile_wrap_s": custom_result["compile_wrap_s"],
+            "compile": custom_result["compile"],
             "processed_image_size": custom_result["prep"]["processed_image_size"],
             "encoder_seq_len_hint": custom_result["prep"]["encoder_seq_len_hint"],
         }
@@ -259,7 +277,7 @@ def main() -> None:
     trace_path = output_dir / "recognition_comparison.jsonl"
     print(
         f"OPENDOC_CUSTOM_SETUP_BEGIN mode={args.mode} pages={len(image_paths)} "
-        f"max_parallel_blocks=1",
+        f"max_parallel_blocks=1 decode_mode={args.decode_mode}",
         flush=True,
     )
     setup_started = time.perf_counter()
@@ -279,13 +297,19 @@ def main() -> None:
         model_path=model_path,
         device=args.device,
         dtype=args.dtype,
-        compile_cache_dir=None,
+        compile_cache_dir=(
+            args.compile_cache_dir.expanduser().resolve()
+            if args.decode_mode.startswith("compiled")
+            else None
+        ),
     )
     adapter = OpenDocUniRecAdapter(
         custom_runner=custom_runner,
         stock_recognizer=stock_recognizer,
         trace_path=trace_path,
         markdown_converter=infer_doc_onnx.markdown_converter,
+        decode_mode=args.decode_mode,
+        compile_backend=args.compile_backend,
     )
     pipeline.vlm_recognizer = adapter
     _install_block_trace(pipeline, adapter)
@@ -330,6 +354,13 @@ def main() -> None:
         "model_path": str(model_path),
         "device": args.device,
         "dtype": args.dtype,
+        "decode_mode": args.decode_mode,
+        "compile_backend": args.compile_backend if args.decode_mode.startswith("compiled") else None,
+        "compile_cache_dir": (
+            str(args.compile_cache_dir.expanduser().resolve())
+            if args.decode_mode.startswith("compiled")
+            else None
+        ),
         "max_parallel_blocks": 1,
         "max_length": args.max_length,
         "setup_s": setup_s,

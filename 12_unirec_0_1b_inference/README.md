@@ -183,6 +183,10 @@ token, raw-text, and label-postprocessed parity:
 
 Use `--mode custom` for timing without the stock recognizer call. The page path
 still fixes `max_parallel_blocks=1`; no crop-level concurrency is introduced.
+Add `--decode-mode compiled --compile-backend torchair` to compile only the
+static-cache decoder step. Image preprocessing, the vision encoder, and decoder
+prefill remain eager. Compiled graphs are cached under
+`.runtime_cache/12_unirec_0_1b_inference/opendoc_model_pth_decode` by default.
 
 ## Artifacts
 
