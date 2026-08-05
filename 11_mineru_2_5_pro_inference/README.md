@@ -193,6 +193,14 @@ cross-page run took 375.790 seconds; the earlier four-group continuous run took
 across the three scheduling arrangements. The compact run summary is under
 `tmp/11_mineru_2_5_pro_inference/native_continuous_prefetch16_b8_n32_pg32_k4096_20260805/`.
 
+Local MinerU backends accept `--local-vision-attention manual` and
+`--local-vision-attention prompt_flash_attention`. The PromptFA lane is eager:
+it uses one unmasked, full-attention `BNSD` operator call for each image segment
+defined by the existing vision `cu_seqlens`. MinerU's vision head dimension is
+80, so this path does not pad or slice attention heads. Local backends default
+to `--local-dtype float16`; this is the common PromptFA dtype supported by both
+910B and 310P. `bfloat16` remains an explicit 910B-only comparison option.
+
 ## Official synchronous vLLM lane
 
 Start with eager vLLM to separate compatibility from graph compilation:

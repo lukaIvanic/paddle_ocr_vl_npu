@@ -28,6 +28,8 @@ DECODE_WEIGHT_FORMAT_CHOICES = (DECODE_WEIGHT_FORMAT_NONE, DECODE_WEIGHT_FORMAT_
 DECODE_ROTARY_IMPL_MANUAL = "manual"
 DECODE_ROTARY_IMPL_NPU = "npu_rotary_mul"
 DECODE_ROTARY_IMPL_CHOICES = (DECODE_ROTARY_IMPL_MANUAL, DECODE_ROTARY_IMPL_NPU)
+VISION_ATTENTION_CHOICES = ("manual", "prompt_flash_attention")
+VISION_PROMPT_FA_FULL_ATTENTION_TOKENS = (1 << 31) - 1
 
 
 def _resolve_model_dir(model_dir: str | Path) -> Path:
@@ -66,6 +68,34 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     batch, num_key_value_heads, seq_len, head_dim = hidden_states.shape
     hidden_states = hidden_states[:, :, None, :, :].expand(batch, num_key_value_heads, n_rep, seq_len, head_dim)
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, seq_len, head_dim)
+
+
+def vision_prompt_flash_attention_bnsd(
+    query_states: torch.Tensor,
+    key_states: torch.Tensor,
+    value_states: torch.Tensor,
+    *,
+    num_heads: int,
+    scale: float,
+) -> torch.Tensor:
+    """Run the same unmasked BNSD PromptFA form used by experiment 09."""
+    if query_states.device.type != "npu":
+        raise RuntimeError(
+            "vision prompt_flash_attention requires NPU tensors plus torch_npu"
+        )
+    import torch_npu
+
+    return torch_npu.npu_prompt_flash_attention(
+        query_states.contiguous(),
+        key_states.contiguous(),
+        value_states.contiguous(),
+        num_heads=int(num_heads),
+        input_layout="BNSD",
+        scale_value=float(scale),
+        pre_tokens=VISION_PROMPT_FA_FULL_ATTENTION_TOKENS,
+        next_tokens=VISION_PROMPT_FA_FULL_ATTENTION_TOKENS,
+        sparse_mode=0,
+    )
 
 
 def apply_multimodal_rotary_pos_emb(
@@ -846,6 +876,7 @@ class MinerUVisionAttention(nn.Module):
         self.head_dim = self.dim // self.num_heads
         self.num_key_value_groups = 1
         self.scaling = self.head_dim**-0.5
+        self.attention_impl = "manual"
         self.qkv = nn.Linear(self.dim, self.dim * 3, bias=True)
         self.proj = nn.Linear(self.dim, self.dim, bias=True)
 
@@ -870,9 +901,23 @@ class MinerUVisionAttention(nn.Module):
         ]
         outputs = []
         for q, k, v in zip(q_splits, k_splits, v_splits):
-            scores = torch.matmul(q, k.transpose(2, 3)) * self.scaling
-            probs = F.softmax(scores, dim=-1, dtype=torch.float32).to(q.dtype)
-            outputs.append(torch.matmul(probs, v).transpose(1, 2).contiguous())
+            if self.attention_impl == "prompt_flash_attention":
+                attention_output = vision_prompt_flash_attention_bnsd(
+                    q,
+                    k,
+                    v,
+                    num_heads=self.num_heads,
+                    scale=self.scaling,
+                )
+            elif self.attention_impl == "manual":
+                scores = torch.matmul(q, k.transpose(2, 3)) * self.scaling
+                probs = F.softmax(scores, dim=-1, dtype=torch.float32).to(q.dtype)
+                attention_output = torch.matmul(probs, v)
+            else:
+                raise ValueError(
+                    f"unknown vision attention implementation: {self.attention_impl!r}"
+                )
+            outputs.append(attention_output.transpose(1, 2).contiguous())
         attn_output = torch.cat(outputs, dim=1).reshape(seq_length, -1).contiguous()
         return self.proj(attn_output)
 
@@ -1067,6 +1112,15 @@ class LocalMinerU2_5ForConditionalGeneration(nn.Module):
         for module in self.modules():
             if isinstance(module, (MinerURotaryEmbedding, MinerUVisionRotaryEmbedding)):
                 module.reset_inv_freq(device=module.inv_freq.device)
+
+    def set_vision_attention_impl(self, attention_impl: str) -> None:
+        if attention_impl not in VISION_ATTENTION_CHOICES:
+            raise ValueError(
+                "vision attention must be one of "
+                f"{VISION_ATTENTION_CHOICES}, got {attention_impl!r}"
+            )
+        for block in self.visual.blocks:
+            block.attn.attention_impl = attention_impl
 
     def get_image_features(
         self,

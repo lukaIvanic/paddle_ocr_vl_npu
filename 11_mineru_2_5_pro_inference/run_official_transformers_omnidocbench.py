@@ -83,6 +83,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--resume", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--fail-fast", action="store_true")
     parser.add_argument("--hash-model-files", action="store_true")
+    parser.add_argument(
+        "--local-dtype",
+        choices=("float16", "bfloat16"),
+        default="float16",
+        help=(
+            "Model dtype for local MinerU backends. Use float16 for the "
+            "PromptFA path shared by 910B and 310P."
+        ),
+    )
     parser.add_argument("--local-compiled-cache-length", type=int, default=8192)
     parser.add_argument(
         "--local-prepare-prefetch-depth",
@@ -97,6 +106,12 @@ def parse_args() -> argparse.Namespace:
         "--local-prefill-metrics",
         action="store_true",
         help="Record opt-in NPU-event timings and token counts for local prefill.",
+    )
+    parser.add_argument(
+        "--local-vision-attention",
+        choices=("manual", "prompt_flash_attention"),
+        default="manual",
+        help="Vision attention implementation for local MinerU backends.",
     )
     parser.add_argument(
         "--local-torchair-cache-dir",
@@ -274,11 +289,17 @@ def main() -> None:
                 make_local_fixed_batch_vlm_client,
             )
 
+            local_dtype = (
+                torch.float16
+                if args.local_dtype == "float16"
+                else torch.bfloat16
+            )
             local_model = LocalMinerU2_5ForConditionalGeneration.from_pretrained(
                 model_dir,
-                dtype=torch.bfloat16,
+                dtype=local_dtype,
                 device="npu:0",
             )
+            local_model.set_vision_attention_impl(args.local_vision_attention)
             model = LocalMinerUGenerateAdapter(local_model)
         client = MinerUClient(
             backend="transformers",
@@ -365,14 +386,14 @@ def main() -> None:
                 allow_truncated_content=client.client.allow_truncated_content,
             )
         attention = (
-            "eager-prefill-torchair-static-decode"
+            f"{args.local_vision_attention}-prefill-torchair-static-decode"
             if args.backend
             in (
                 "local-compiled-client",
                 "local-fixed-batch-client",
                 "local-continuous-client",
             )
-            else "eager-local"
+            else f"{args.local_vision_attention}-local"
             if args.backend.startswith("local-")
             else "eager"
         )
@@ -472,7 +493,9 @@ def main() -> None:
         "torch_npu": torch_npu.__version__,
         "transformers": transformers.__version__,
         "mineru_vl_utils": mineru_utils_version,
-        "dtype": "bfloat16",
+        "dtype": (
+            args.local_dtype if args.backend.startswith("local-") else "bfloat16"
+        ),
         "attention": attention,
         "processor_fast": processor_fast,
         "npu_jit_compile": False,
@@ -498,6 +521,9 @@ def main() -> None:
             args.local_prefill_metrics
             if args.backend == "local-continuous-client"
             else None
+        ),
+        "local_vision_attention": (
+            args.local_vision_attention if args.backend.startswith("local-") else None
         ),
         "local_torchair_cache_dir": (
             str(args.local_torchair_cache_dir)
