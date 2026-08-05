@@ -36,6 +36,12 @@ DEFAULT_LOCAL_TORCHAIR_CACHE_DIR = (
     / "11_mineru_2_5_pro_inference"
     / "native_compiled_decode_b1_k8192_bf16"
 )
+DEFAULT_LOCAL_VISION_TORCHAIR_CACHE_DIR = (
+    Path(".runtime_cache")
+    / "11_mineru_2_5_pro_inference"
+    / "vision_prefill_b1_fp16"
+)
+DEFAULT_LOCAL_VISION_BUCKETS = "384,512,768,1024,1536,2048,3072,4224,5632"
 
 
 def parse_args() -> argparse.Namespace:
@@ -112,6 +118,22 @@ def parse_args() -> argparse.Namespace:
         choices=("manual", "prompt_flash_attention"),
         default="manual",
         help="Vision attention implementation for local MinerU backends.",
+    )
+    parser.add_argument(
+        "--local-vision-backend",
+        choices=("eager", "torchair"),
+        default="eager",
+        help="Run B=1 vision transformer blocks eagerly or through padded static TorchAir graphs.",
+    )
+    parser.add_argument(
+        "--local-vision-buckets",
+        default=DEFAULT_LOCAL_VISION_BUCKETS,
+        help="Comma-separated physical sequence lengths for compiled B=1 vision prefill.",
+    )
+    parser.add_argument(
+        "--local-vision-torchair-cache-dir",
+        type=Path,
+        default=DEFAULT_LOCAL_VISION_TORCHAIR_CACHE_DIR,
     )
     parser.add_argument(
         "--local-torchair-cache-dir",
@@ -235,6 +257,7 @@ def main() -> None:
     from mineru_vl_utils.post_process import json2md
 
     setup_started = time.perf_counter()
+    local_vision_runtime = None
     print(
         f"[setup] shard={args.shard_index}/{args.shard_count} pages={len(shard)} "
         f"model={model_dir}",
@@ -300,6 +323,23 @@ def main() -> None:
                 device="npu:0",
             )
             local_model.set_vision_attention_impl(args.local_vision_attention)
+            if args.local_vision_backend == "torchair":
+                if args.local_vision_attention != "prompt_flash_attention":
+                    raise ValueError(
+                        "compiled MinerU vision prefill currently requires "
+                        "--local-vision-attention prompt_flash_attention"
+                    )
+                from vision_prefill_compile import MinerUVisionPrefillRuntime
+
+                local_vision_runtime = MinerUVisionPrefillRuntime(
+                    local_model.visual,
+                    buckets=args.local_vision_buckets,
+                    cache_root=args.local_vision_torchair_cache_dir,
+                    model_dir=model_dir,
+                    device=local_model.device,
+                    dtype=local_dtype,
+                )
+                local_model.set_vision_prefill_runtime(local_vision_runtime)
             model = LocalMinerUGenerateAdapter(local_model)
         client = MinerUClient(
             backend="transformers",
@@ -386,7 +426,7 @@ def main() -> None:
                 allow_truncated_content=client.client.allow_truncated_content,
             )
         attention = (
-            f"{args.local_vision_attention}-prefill-torchair-static-decode"
+            f"{args.local_vision_attention}-{args.local_vision_backend}-prefill-torchair-static-decode"
             if args.backend
             in (
                 "local-compiled-client",
@@ -524,6 +564,17 @@ def main() -> None:
         ),
         "local_vision_attention": (
             args.local_vision_attention if args.backend.startswith("local-") else None
+        ),
+        "local_vision_backend": (
+            args.local_vision_backend if args.backend.startswith("local-") else None
+        ),
+        "local_vision_buckets": (
+            args.local_vision_buckets if args.backend.startswith("local-") else None
+        ),
+        "local_vision_torchair_cache_dir": (
+            str(args.local_vision_torchair_cache_dir)
+            if args.backend.startswith("local-") and args.local_vision_backend == "torchair"
+            else None
         ),
         "local_torchair_cache_dir": (
             str(args.local_torchair_cache_dir)
@@ -715,6 +766,8 @@ def main() -> None:
         "measured_group_wall_s": sum(batch_times),
         "measured_group_pages_per_s": completed / sum(batch_times) if batch_times else None,
     }
+    if local_vision_runtime is not None:
+        summary["local_compiled_vision"] = local_vision_runtime.metadata()
     generation_metrics = getattr(client.client, "generation_metrics", None)
     if generation_metrics is not None:
         decode_calls = sum(int(item["decode_calls"]) for item in generation_metrics)

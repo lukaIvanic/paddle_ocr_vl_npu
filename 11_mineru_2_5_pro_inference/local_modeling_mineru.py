@@ -77,14 +77,19 @@ def vision_prompt_flash_attention_bnsd(
     *,
     num_heads: int,
     scale: float,
+    atten_mask: torch.Tensor | None = None,
+    sparse_mode: int = 0,
 ) -> torch.Tensor:
-    """Run the same unmasked BNSD PromptFA form used by experiment 09."""
+    """Run BNSD PromptFA, optionally with the bool padding mask used by experiment 09."""
     if query_states.device.type != "npu":
         raise RuntimeError(
             "vision prompt_flash_attention requires NPU tensors plus torch_npu"
         )
     import torch_npu
 
+    mask_kwargs = {}
+    if atten_mask is not None:
+        mask_kwargs["atten_mask"] = atten_mask.to(torch.bool).contiguous()
     return torch_npu.npu_prompt_flash_attention(
         query_states.contiguous(),
         key_states.contiguous(),
@@ -94,7 +99,8 @@ def vision_prompt_flash_attention_bnsd(
         scale_value=float(scale),
         pre_tokens=VISION_PROMPT_FA_FULL_ATTENTION_TOKENS,
         next_tokens=VISION_PROMPT_FA_FULL_ATTENTION_TOKENS,
-        sparse_mode=0,
+        sparse_mode=int(sparse_mode),
+        **mask_kwargs,
     )
 
 
@@ -977,6 +983,7 @@ class MinerUVisionTransformer(nn.Module):
         self.rotary_pos_emb = MinerUVisionRotaryEmbedding(head_dim // 2)
         self.blocks = nn.ModuleList([MinerUVisionBlock(config) for _ in range(config.depth)])
         self.merger = MinerUPatchMerger(config)
+        self.prefill_runtime = None
 
     @property
     def dtype(self) -> torch.dtype:
@@ -1041,6 +1048,12 @@ class MinerUVisionTransformer(nn.Module):
         )
 
         def run_blocks() -> torch.Tensor:
+            if self.prefill_runtime is not None:
+                return self.prefill_runtime.run(
+                    hidden_states,
+                    position_embeddings,
+                    cu_seqlens,
+                )
             block_hidden_states = hidden_states
             for block in self.blocks:
                 block_hidden_states = block(
@@ -1121,6 +1134,9 @@ class LocalMinerU2_5ForConditionalGeneration(nn.Module):
             )
         for block in self.visual.blocks:
             block.attn.attention_impl = attention_impl
+
+    def set_vision_prefill_runtime(self, runtime: object | None) -> None:
+        self.visual.prefill_runtime = runtime
 
     def get_image_features(
         self,
