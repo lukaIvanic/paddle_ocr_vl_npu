@@ -1433,7 +1433,10 @@ def main() -> None:
     canonical_reference = canonical_crop_01_reference_validation(image_path, recognition)
     payload = {
         "experiment": "11_mineru_2_5_pro_inference",
-        "scope": "Manual local MinerU two-step protocol; layout stays dynamic eager, recognition uses static-cache compiled single-batch decode.",
+        "scope": (
+            "Manual local MinerU two-step protocol; layout stays dynamic eager; "
+            f"recognition decode is {args.recognition_decode}."
+        ),
         "model": str(model_dir),
         "model_identity": model_identity,
         "processor": str(processor_dir),
