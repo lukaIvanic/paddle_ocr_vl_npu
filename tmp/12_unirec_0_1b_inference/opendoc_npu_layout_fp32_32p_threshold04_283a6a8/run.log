@@ -1,0 +1,625 @@
+OPENDOC_CUSTOM_SETUP_BEGIN mode=custom pages=32 max_parallel_blocks=1 decode_mode=compiled
+Loading ONNX models...
+🔧 User specified: Using CPU
+Using execution providers: ['CPUExecutionProvider']
+Loading tokenizer from mapping file: /root/.cache/openocr/unirec_0_1b_onnx/unirec_tokenizer_mapping.json
+✅ Loaded vocabulary with 56371 tokens
+
+✅ Models loaded successfully!
+   Number of decoder layers: 6
+   Number of attention heads: 6
+   Head dimension: 128
+   Model dimension (d_model): 768
+   Vocabulary size: 56371
+Loading weights:   0%|          | 0/961 [00:00<?, ?it/s]Loading weights: 100%|██████████| 961/961 [00:00<00:00, 13447.23it/s]
+OPENDOC_CUSTOM_SETUP_END setup_s=20.179
+OPENDOC_CUSTOM_PAGE_BEGIN index=1/32 image=PPT_1001115_eng_page_003.png
+/usr/local/python3.12.13/lib/python3.12/site-packages/transformers/models/pp_doclayout_v2/modeling_pp_doclayout_v2.py:2088: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  wh = torch.ones_like(grid_xy) * grid_size * (2.0**level)
+[2026/08/05 13:06:26] opendoc_onnx INFO:   VLM recognition: processing 6 block(s) sequentially
+UNIREC_CROP_END page=PPT_1001115_eng_page_003.png crop=1 label=paragraph_title_01 custom_tokens=7 custom_s=6.393 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_003.png crop=2 label=paragraph_title_02 custom_tokens=15 custom_s=0.168 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_003.png crop=3 label=text_03 custom_tokens=26 custom_s=0.108 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_003.png crop=4 label=text_04 custom_tokens=29 custom_s=0.195 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_003.png crop=5 label=text_05 custom_tokens=47 custom_s=0.168 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_003.png crop=6 label=text_06 custom_tokens=28 custom_s=0.088 custom_only
+[2026/08/05 13:06:37] opendoc_onnx INFO:   Total time:  13.044s
+OPENDOC_CUSTOM_PAGE_END index=1/32 wall_s=13.082 recognized_crops=6
+OPENDOC_CUSTOM_PAGE_BEGIN index=2/32 image=PPT_1001115_eng_page_005.png
+[2026/08/05 13:06:38] opendoc_onnx INFO:   VLM recognition: processing 8 block(s) sequentially
+UNIREC_CROP_END page=PPT_1001115_eng_page_005.png crop=1 label=paragraph_title_01 custom_tokens=13 custom_s=0.069 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_005.png crop=2 label=paragraph_title_02 custom_tokens=7 custom_s=0.066 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_005.png crop=3 label=text_03 custom_tokens=48 custom_s=0.181 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_005.png crop=4 label=text_04 custom_tokens=28 custom_s=0.163 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_005.png crop=5 label=text_05 custom_tokens=24 custom_s=0.175 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_005.png crop=6 label=text_06 custom_tokens=34 custom_s=0.138 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_005.png crop=7 label=paragraph_title_07 custom_tokens=7 custom_s=0.087 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_005.png crop=8 label=text_08 custom_tokens=20 custom_s=0.079 custom_only
+[2026/08/05 13:06:39] opendoc_onnx INFO:   Total time:  1.384s
+OPENDOC_CUSTOM_PAGE_END index=2/32 wall_s=1.424 recognized_crops=8
+OPENDOC_CUSTOM_PAGE_BEGIN index=3/32 image=PPT_1001115_eng_page_011.png
+[2026/08/05 13:06:39] opendoc_onnx INFO:   VLM recognition: processing 12 block(s) sequentially
+UNIREC_CROP_END page=PPT_1001115_eng_page_011.png crop=1 label=paragraph_title_01 custom_tokens=8 custom_s=0.070 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_011.png crop=2 label=text_02 custom_tokens=31 custom_s=0.095 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_011.png crop=3 label=text_03 custom_tokens=11 custom_s=0.077 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_011.png crop=4 label=text_04 custom_tokens=11 custom_s=0.117 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_011.png crop=5 label=text_05 custom_tokens=17 custom_s=0.054 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_011.png crop=6 label=text_06 custom_tokens=18 custom_s=0.072 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_011.png crop=7 label=text_07 custom_tokens=14 custom_s=0.084 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_011.png crop=8 label=text_08 custom_tokens=14 custom_s=0.059 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_011.png crop=9 label=text_09 custom_tokens=21 custom_s=0.142 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_011.png crop=10 label=text_10 custom_tokens=11 custom_s=0.101 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_011.png crop=11 label=text_11 custom_tokens=55 custom_s=0.238 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_011.png crop=12 label=text_12 custom_tokens=38 custom_s=0.189 custom_only
+[2026/08/05 13:06:41] opendoc_onnx INFO:   Total time:  1.684s
+OPENDOC_CUSTOM_PAGE_END index=3/32 wall_s=1.746 recognized_crops=12
+OPENDOC_CUSTOM_PAGE_BEGIN index=4/32 image=PPT_1001115_eng_page_015.png
+[2026/08/05 13:06:41] opendoc_onnx INFO:   VLM recognition: processing 5 block(s) sequentially
+UNIREC_CROP_END page=PPT_1001115_eng_page_015.png crop=1 label=paragraph_title_01 custom_tokens=19 custom_s=0.212 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_015.png crop=2 label=paragraph_title_02 custom_tokens=5 custom_s=0.102 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_015.png crop=3 label=text_03 custom_tokens=36 custom_s=0.155 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_015.png crop=4 label=paragraph_title_04 custom_tokens=5 custom_s=0.150 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_015.png crop=5 label=text_05 custom_tokens=6 custom_s=0.134 custom_only
+[2026/08/05 13:06:42] opendoc_onnx INFO:   Total time:  1.288s
+OPENDOC_CUSTOM_PAGE_END index=4/32 wall_s=1.377 recognized_crops=5
+OPENDOC_CUSTOM_PAGE_BEGIN index=5/32 image=PPT_11.2013EvaluatingTraineeteacherproficiency_page_010.png
+[2026/08/05 13:06:43] opendoc_onnx INFO:   VLM recognition: processing 6 block(s) sequentially
+UNIREC_CROP_END page=PPT_11.2013EvaluatingTraineeteacherproficiency_page_010.png crop=1 label=header_02 custom_tokens=9 custom_s=0.082 custom_only
+UNIREC_CROP_END page=PPT_11.2013EvaluatingTraineeteacherproficiency_page_010.png crop=2 label=text_03 custom_tokens=39 custom_s=0.193 custom_only
+UNIREC_CROP_END page=PPT_11.2013EvaluatingTraineeteacherproficiency_page_010.png crop=3 label=text_04 custom_tokens=51 custom_s=0.185 custom_only
+UNIREC_CROP_END page=PPT_11.2013EvaluatingTraineeteacherproficiency_page_010.png crop=4 label=text_05 custom_tokens=15 custom_s=0.098 custom_only
+UNIREC_CROP_END page=PPT_11.2013EvaluatingTraineeteacherproficiency_page_010.png crop=5 label=text_06 custom_tokens=15 custom_s=0.099 custom_only
+UNIREC_CROP_END page=PPT_11.2013EvaluatingTraineeteacherproficiency_page_010.png crop=6 label=text_07 custom_tokens=51 custom_s=0.233 custom_only
+[2026/08/05 13:06:44] opendoc_onnx INFO:   Total time:  1.479s
+OPENDOC_CUSTOM_PAGE_END index=5/32 wall_s=1.541 recognized_crops=6
+OPENDOC_CUSTOM_PAGE_BEGIN index=6/32 image=PPT_11.2013EvaluatingTraineeteacherproficiency_page_029.png
+[2026/08/05 13:06:44] opendoc_onnx INFO:   VLM recognition: processing 4 block(s) sequentially
+UNIREC_CROP_END page=PPT_11.2013EvaluatingTraineeteacherproficiency_page_029.png crop=1 label=paragraph_title_02 custom_tokens=5 custom_s=0.074 custom_only
+UNIREC_CROP_END page=PPT_11.2013EvaluatingTraineeteacherproficiency_page_029.png crop=2 label=header_03 custom_tokens=12 custom_s=0.094 custom_only
+UNIREC_CROP_END page=PPT_11.2013EvaluatingTraineeteacherproficiency_page_029.png crop=3 label=text_04 custom_tokens=62 custom_s=0.211 custom_only
+UNIREC_CROP_END page=PPT_11.2013EvaluatingTraineeteacherproficiency_page_029.png crop=4 label=text_05 custom_tokens=36 custom_s=0.176 custom_only
+[2026/08/05 13:06:44] opendoc_onnx INFO:   Total time:  0.846s
+OPENDOC_CUSTOM_PAGE_END index=6/32 wall_s=0.881 recognized_crops=4
+OPENDOC_CUSTOM_PAGE_BEGIN index=7/32 image=PPT_13 fallacies LALT2012_page_001.png
+[2026/08/05 13:06:45] opendoc_onnx INFO:   VLM recognition: processing 5 block(s) sequentially
+UNIREC_CROP_END page=PPT_13 fallacies LALT2012_page_001.png crop=1 label=paragraph_title_01 custom_tokens=19 custom_s=0.121 custom_only
+UNIREC_CROP_END page=PPT_13 fallacies LALT2012_page_001.png crop=2 label=text_02 custom_tokens=21 custom_s=0.150 custom_only
+UNIREC_CROP_END page=PPT_13 fallacies LALT2012_page_001.png crop=3 label=paragraph_title_03 custom_tokens=31 custom_s=0.122 custom_only
+UNIREC_CROP_END page=PPT_13 fallacies LALT2012_page_001.png crop=4 label=text_04 custom_tokens=7 custom_s=0.064 custom_only
+UNIREC_CROP_END page=PPT_13 fallacies LALT2012_page_001.png crop=5 label=text_05 custom_tokens=13 custom_s=0.069 custom_only
+[2026/08/05 13:06:45] opendoc_onnx INFO:   Total time:  0.971s
+OPENDOC_CUSTOM_PAGE_END index=7/32 wall_s=1.068 recognized_crops=5
+OPENDOC_CUSTOM_PAGE_BEGIN index=8/32 image=PPT_13 fallacies LALT2012_page_009.png
+[2026/08/05 13:06:46] opendoc_onnx INFO:   VLM recognition: processing 5 block(s) sequentially
+UNIREC_CROP_END page=PPT_13 fallacies LALT2012_page_009.png crop=1 label=paragraph_title_01 custom_tokens=23 custom_s=0.093 custom_only
+UNIREC_CROP_END page=PPT_13 fallacies LALT2012_page_009.png crop=2 label=text_02 custom_tokens=6 custom_s=0.057 custom_only
+UNIREC_CROP_END page=PPT_13 fallacies LALT2012_page_009.png crop=3 label=text_03 custom_tokens=22 custom_s=0.071 custom_only
+UNIREC_CROP_END page=PPT_13 fallacies LALT2012_page_009.png crop=4 label=text_04 custom_tokens=16 custom_s=0.063 custom_only
+UNIREC_CROP_END page=PPT_13 fallacies LALT2012_page_009.png crop=5 label=text_05 custom_tokens=164 custom_s=0.299 custom_only
+[2026/08/05 13:06:46] opendoc_onnx INFO:   Total time:  0.918s
+OPENDOC_CUSTOM_PAGE_END index=8/32 wall_s=0.973 recognized_crops=5
+OPENDOC_CUSTOM_PAGE_BEGIN index=9/32 image=PPT_13 fallacies LALT2012_page_010.png
+[2026/08/05 13:06:47] opendoc_onnx INFO:   VLM recognition: processing 9 block(s) sequentially
+UNIREC_CROP_END page=PPT_13 fallacies LALT2012_page_010.png crop=1 label=paragraph_title_01 custom_tokens=23 custom_s=0.065 custom_only
+UNIREC_CROP_END page=PPT_13 fallacies LALT2012_page_010.png crop=2 label=paragraph_title_02 custom_tokens=7 custom_s=0.078 custom_only
+UNIREC_CROP_END page=PPT_13 fallacies LALT2012_page_010.png crop=3 label=text_03 custom_tokens=79 custom_s=0.115 custom_only
+UNIREC_CROP_END page=PPT_13 fallacies LALT2012_page_010.png crop=4 label=text_04 custom_tokens=136 custom_s=0.226 custom_only
+UNIREC_CROP_END page=PPT_13 fallacies LALT2012_page_010.png crop=5 label=text_05 custom_tokens=124 custom_s=0.157 custom_only
+UNIREC_CROP_END page=PPT_13 fallacies LALT2012_page_010.png crop=6 label=text_06 custom_tokens=61 custom_s=0.138 custom_only
+UNIREC_CROP_END page=PPT_13 fallacies LALT2012_page_010.png crop=7 label=text_07 custom_tokens=62 custom_s=0.179 custom_only
+UNIREC_CROP_END page=PPT_13 fallacies LALT2012_page_010.png crop=8 label=text_08 custom_tokens=113 custom_s=0.294 custom_only
+UNIREC_CROP_END page=PPT_13 fallacies LALT2012_page_010.png crop=9 label=text_09 custom_tokens=90 custom_s=0.246 custom_only
+[2026/08/05 13:06:48] opendoc_onnx INFO:   Total time:  1.888s
+OPENDOC_CUSTOM_PAGE_END index=9/32 wall_s=2.004 recognized_crops=9
+OPENDOC_CUSTOM_PAGE_BEGIN index=10/32 image=PPT_1637904769_page_001.png
+[2026/08/05 13:06:49] opendoc_onnx INFO:   VLM recognition: processing 2 block(s) sequentially
+UNIREC_CROP_END page=PPT_1637904769_page_001.png crop=1 label=paragraph_title_01 custom_tokens=31 custom_s=0.093 custom_only
+UNIREC_CROP_END page=PPT_1637904769_page_001.png crop=2 label=text_02 custom_tokens=36 custom_s=0.090 custom_only
+[2026/08/05 13:06:49] opendoc_onnx INFO:   Total time:  0.573s
+OPENDOC_CUSTOM_PAGE_END index=10/32 wall_s=0.612 recognized_crops=2
+OPENDOC_CUSTOM_PAGE_BEGIN index=11/32 image=PPT_1637904769_page_002.png
+[2026/08/05 13:06:50] opendoc_onnx INFO:   VLM recognition: processing 5 block(s) sequentially
+UNIREC_CROP_END page=PPT_1637904769_page_002.png crop=1 label=text_01 custom_tokens=23 custom_s=0.091 custom_only
+UNIREC_CROP_END page=PPT_1637904769_page_002.png crop=2 label=text_02 custom_tokens=10 custom_s=0.111 custom_only
+UNIREC_CROP_END page=PPT_1637904769_page_002.png crop=3 label=text_03 custom_tokens=18 custom_s=0.097 custom_only
+UNIREC_CROP_END page=PPT_1637904769_page_002.png crop=4 label=text_04 custom_tokens=16 custom_s=0.075 custom_only
+UNIREC_CROP_END page=PPT_1637904769_page_002.png crop=5 label=text_05 custom_tokens=18 custom_s=0.074 custom_only
+[2026/08/05 13:06:50] opendoc_onnx INFO:   Total time:  1.066s
+OPENDOC_CUSTOM_PAGE_END index=11/32 wall_s=1.104 recognized_crops=5
+OPENDOC_CUSTOM_PAGE_BEGIN index=12/32 image=PPT_1637904769_page_008.png
+[2026/08/05 13:06:51] opendoc_onnx INFO:   VLM recognition: processing 7 block(s) sequentially
+UNIREC_CROP_END page=PPT_1637904769_page_008.png crop=1 label=text_01 custom_tokens=22 custom_s=0.072 custom_only
+UNIREC_CROP_END page=PPT_1637904769_page_008.png crop=2 label=text_02 custom_tokens=10 custom_s=0.056 custom_only
+UNIREC_CROP_END page=PPT_1637904769_page_008.png crop=3 label=text_03 custom_tokens=14 custom_s=0.052 custom_only
+UNIREC_CROP_END page=PPT_1637904769_page_008.png crop=4 label=text_04 custom_tokens=11 custom_s=0.052 custom_only
+UNIREC_CROP_END page=PPT_1637904769_page_008.png crop=5 label=text_05 custom_tokens=10 custom_s=0.055 custom_only
+UNIREC_CROP_END page=PPT_1637904769_page_008.png crop=6 label=text_06 custom_tokens=9 custom_s=0.051 custom_only
+UNIREC_CROP_END page=PPT_1637904769_page_008.png crop=7 label=text_07 custom_tokens=9 custom_s=0.074 custom_only
+[2026/08/05 13:06:51] opendoc_onnx INFO:   Total time:  0.701s
+OPENDOC_CUSTOM_PAGE_END index=12/32 wall_s=0.739 recognized_crops=7
+OPENDOC_CUSTOM_PAGE_BEGIN index=13/32 image=PPT_1637904769_page_017.png
+[2026/08/05 13:06:51] opendoc_onnx INFO:   VLM recognition: processing 5 block(s) sequentially
+UNIREC_CROP_END page=PPT_1637904769_page_017.png crop=1 label=paragraph_title_01 custom_tokens=6 custom_s=0.050 custom_only
+UNIREC_CROP_END page=PPT_1637904769_page_017.png crop=2 label=text_02 custom_tokens=14 custom_s=0.068 custom_only
+UNIREC_CROP_END page=PPT_1637904769_page_017.png crop=3 label=text_03 custom_tokens=124 custom_s=0.176 custom_only
+UNIREC_CROP_END page=PPT_1637904769_page_017.png crop=4 label=text_04 custom_tokens=110 custom_s=0.166 custom_only
+UNIREC_CROP_END page=PPT_1637904769_page_017.png crop=5 label=text_05 custom_tokens=77 custom_s=0.133 custom_only
+[2026/08/05 13:06:52] opendoc_onnx INFO:   Total time:  0.886s
+OPENDOC_CUSTOM_PAGE_END index=13/32 wall_s=0.926 recognized_crops=5
+OPENDOC_CUSTOM_PAGE_BEGIN index=14/32 image=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_012.png
+[2026/08/05 13:06:52] opendoc_onnx INFO:   VLM recognition: processing 3 block(s) sequentially
+UNIREC_CROP_END page=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_012.png crop=1 label=header_01 custom_tokens=6 custom_s=0.041 custom_only
+UNIREC_CROP_END page=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_012.png crop=2 label=paragraph_title_02 custom_tokens=30 custom_s=0.077 custom_only
+UNIREC_CROP_END page=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_012.png crop=3 label=table_03 custom_tokens=117 custom_s=0.234 custom_only
+[2026/08/05 13:06:53] opendoc_onnx INFO:   Total time:  0.577s
+OPENDOC_CUSTOM_PAGE_END index=14/32 wall_s=0.615 recognized_crops=3
+OPENDOC_CUSTOM_PAGE_BEGIN index=15/32 image=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_014.png
+[2026/08/05 13:06:53] opendoc_onnx INFO:   VLM recognition: processing 6 block(s) sequentially
+UNIREC_CROP_END page=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_014.png crop=1 label=header_01 custom_tokens=6 custom_s=0.046 custom_only
+UNIREC_CROP_END page=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_014.png crop=2 label=paragraph_title_02 custom_tokens=14 custom_s=0.072 custom_only
+UNIREC_CROP_END page=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_014.png crop=3 label=text_03 custom_tokens=55 custom_s=0.101 custom_only
+UNIREC_CROP_END page=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_014.png crop=4 label=figure_title_04 custom_tokens=35 custom_s=0.125 custom_only
+UNIREC_CROP_END page=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_014.png crop=5 label=table_05 custom_tokens=136 custom_s=0.209 custom_only
+UNIREC_CROP_END page=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_014.png crop=6 label=footer_06 custom_tokens=13 custom_s=0.085 custom_only
+[2026/08/05 13:06:53] opendoc_onnx INFO:   Total time:  0.924s
+OPENDOC_CUSTOM_PAGE_END index=15/32 wall_s=0.967 recognized_crops=6
+OPENDOC_CUSTOM_PAGE_BEGIN index=16/32 image=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_017.png
+[2026/08/05 13:06:54] opendoc_onnx INFO:   VLM recognition: processing 3 block(s) sequentially
+UNIREC_CROP_END page=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_017.png crop=1 label=header_01 custom_tokens=6 custom_s=0.049 custom_only
+UNIREC_CROP_END page=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_017.png crop=2 label=paragraph_title_02 custom_tokens=10 custom_s=0.060 custom_only
+UNIREC_CROP_END page=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_017.png crop=3 label=text_03 custom_tokens=98 custom_s=0.229 custom_only
+[2026/08/05 13:06:54] opendoc_onnx INFO:   Total time:  0.615s
+OPENDOC_CUSTOM_PAGE_END index=16/32 wall_s=0.768 recognized_crops=3
+OPENDOC_CUSTOM_PAGE_BEGIN index=17/32 image=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_021.png
+[2026/08/05 13:06:55] opendoc_onnx INFO:   VLM recognition: processing 4 block(s) sequentially
+UNIREC_CROP_END page=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_021.png crop=1 label=header_01 custom_tokens=6 custom_s=0.127 custom_only
+UNIREC_CROP_END page=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_021.png crop=2 label=paragraph_title_02 custom_tokens=10 custom_s=0.144 custom_only
+UNIREC_CROP_END page=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_021.png crop=3 label=text_03 custom_tokens=39 custom_s=0.250 custom_only
+UNIREC_CROP_END page=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_021.png crop=4 label=table_04 custom_tokens=57 custom_s=0.258 custom_only
+[2026/08/05 13:06:56] opendoc_onnx INFO:   Total time:  1.488s
+OPENDOC_CUSTOM_PAGE_END index=17/32 wall_s=1.557 recognized_crops=4
+OPENDOC_CUSTOM_PAGE_BEGIN index=18/32 image=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_006.png
+[2026/08/05 13:06:56] opendoc_onnx INFO:   VLM recognition: processing 3 block(s) sequentially
+UNIREC_CROP_END page=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_006.png crop=1 label=paragraph_title_01 custom_tokens=8 custom_s=0.132 custom_only
+UNIREC_CROP_END page=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_006.png crop=2 label=paragraph_title_04 custom_tokens=21 custom_s=0.186 custom_only
+UNIREC_CROP_END page=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_006.png crop=3 label=text_05 custom_tokens=24 custom_s=0.160 custom_only
+[2026/08/05 13:06:57] opendoc_onnx INFO:   Total time:  1.160s
+OPENDOC_CUSTOM_PAGE_END index=18/32 wall_s=1.281 recognized_crops=3
+OPENDOC_CUSTOM_PAGE_BEGIN index=19/32 image=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_010.png
+[2026/08/05 13:06:58] opendoc_onnx INFO:   VLM recognition: processing 4 block(s) sequentially
+UNIREC_CROP_END page=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_010.png crop=1 label=paragraph_title_01 custom_tokens=10 custom_s=0.118 custom_only
+UNIREC_CROP_END page=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_010.png crop=2 label=figure_title_02 custom_tokens=10 custom_s=0.096 custom_only
+<table>
+<tr>
+<td></td>
+<td>Luminance</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>100</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>
+
+Luminance
+100
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+
+UNIREC_CROP_END page=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_010.png crop=3 label=chart_03 custom_tokens=256 custom_s=0.724 custom_only
+UNIREC_CROP_END page=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_010.png crop=4 label=footer_04 custom_tokens=24 custom_s=0.077 custom_only
+[2026/08/05 13:06:59] opendoc_onnx INFO:   Total time:  1.563s
+OPENDOC_CUSTOM_PAGE_END index=19/32 wall_s=1.609 recognized_crops=4
+OPENDOC_CUSTOM_PAGE_BEGIN index=20/32 image=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_013.png
+[2026/08/05 13:06:59] opendoc_onnx INFO:   VLM recognition: processing 7 block(s) sequentially
+UNIREC_CROP_END page=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_013.png crop=1 label=text_01 custom_tokens=10 custom_s=0.172 custom_only
+UNIREC_CROP_END page=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_013.png crop=2 label=text_02 custom_tokens=21 custom_s=0.185 custom_only
+UNIREC_CROP_END page=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_013.png crop=3 label=text_03 custom_tokens=11 custom_s=0.080 custom_only
+UNIREC_CROP_END page=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_013.png crop=4 label=text_04 custom_tokens=20 custom_s=0.125 custom_only
+UNIREC_CROP_END page=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_013.png crop=5 label=text_05 custom_tokens=13 custom_s=0.103 custom_only
+UNIREC_CROP_END page=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_013.png crop=6 label=text_06 custom_tokens=9 custom_s=0.075 custom_only
+UNIREC_CROP_END page=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_013.png crop=7 label=text_07 custom_tokens=15 custom_s=0.077 custom_only
+[2026/08/05 13:07:00] opendoc_onnx INFO:   Total time:  1.359s
+OPENDOC_CUSTOM_PAGE_END index=20/32 wall_s=1.391 recognized_crops=7
+OPENDOC_CUSTOM_PAGE_BEGIN index=21/32 image=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_024.png
+[2026/08/05 13:07:01] opendoc_onnx INFO:   VLM recognition: processing 5 block(s) sequentially
+UNIREC_CROP_END page=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_024.png crop=1 label=paragraph_title_01 custom_tokens=10 custom_s=0.064 custom_only
+UNIREC_CROP_END page=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_024.png crop=2 label=text_02 custom_tokens=45 custom_s=0.170 custom_only
+UNIREC_CROP_END page=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_024.png crop=3 label=text_03 custom_tokens=19 custom_s=0.092 custom_only
+UNIREC_CROP_END page=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_024.png crop=4 label=text_04 custom_tokens=29 custom_s=0.178 custom_only
+UNIREC_CROP_END page=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_024.png crop=5 label=text_05 custom_tokens=42 custom_s=0.128 custom_only
+[2026/08/05 13:07:01] opendoc_onnx INFO:   Total time:  1.065s
+OPENDOC_CUSTOM_PAGE_END index=21/32 wall_s=1.095 recognized_crops=5
+OPENDOC_CUSTOM_PAGE_BEGIN index=22/32 image=PPT_BaharMartonosi_page_002.png
+[2026/08/05 13:07:02] opendoc_onnx INFO:   VLM recognition: processing 5 block(s) sequentially
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_002.png crop=1 label=paragraph_title_02 custom_tokens=18 custom_s=0.177 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_002.png crop=2 label=text_03 custom_tokens=11 custom_s=0.204 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_002.png crop=3 label=text_04 custom_tokens=42 custom_s=0.242 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_002.png crop=4 label=text_05 custom_tokens=28 custom_s=0.249 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_002.png crop=5 label=text_07 custom_tokens=28 custom_s=0.236 custom_only
+[2026/08/05 13:07:03] opendoc_onnx INFO:   Total time:  1.918s
+OPENDOC_CUSTOM_PAGE_END index=22/32 wall_s=1.989 recognized_crops=5
+OPENDOC_CUSTOM_PAGE_BEGIN index=23/32 image=PPT_BaharMartonosi_page_005.png
+[2026/08/05 13:07:04] opendoc_onnx INFO:   VLM recognition: processing 7 block(s) sequentially
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_005.png crop=1 label=paragraph_title_01 custom_tokens=20 custom_s=0.084 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_005.png crop=2 label=text_02 custom_tokens=12 custom_s=0.078 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_005.png crop=3 label=text_03 custom_tokens=20 custom_s=0.092 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_005.png crop=4 label=text_04 custom_tokens=12 custom_s=0.097 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_005.png crop=5 label=text_06 custom_tokens=10 custom_s=0.140 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_005.png crop=6 label=text_08 custom_tokens=18 custom_s=0.119 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_005.png crop=7 label=text_09 custom_tokens=11 custom_s=0.140 custom_only
+[2026/08/05 13:07:05] opendoc_onnx INFO:   Total time:  1.421s
+OPENDOC_CUSTOM_PAGE_END index=23/32 wall_s=1.463 recognized_crops=7
+OPENDOC_CUSTOM_PAGE_BEGIN index=24/32 image=PPT_BaharMartonosi_page_006.png
+[2026/08/05 13:07:05] opendoc_onnx INFO:   VLM recognition: processing 13 block(s) sequentially
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_006.png crop=1 label=paragraph_title_01 custom_tokens=20 custom_s=0.121 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_006.png crop=2 label=paragraph_title_02 custom_tokens=18 custom_s=0.096 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_006.png crop=3 label=text_03 custom_tokens=7 custom_s=0.114 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_006.png crop=4 label=text_04 custom_tokens=26 custom_s=0.154 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_006.png crop=5 label=text_05 custom_tokens=9 custom_s=0.096 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_006.png crop=6 label=text_06 custom_tokens=12 custom_s=0.090 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_006.png crop=7 label=paragraph_title_07 custom_tokens=6 custom_s=0.068 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_006.png crop=8 label=text_08 custom_tokens=19 custom_s=0.116 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_006.png crop=9 label=text_09 custom_tokens=14 custom_s=0.145 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_006.png crop=10 label=text_10 custom_tokens=24 custom_s=0.160 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_006.png crop=11 label=text_11 custom_tokens=10 custom_s=0.099 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_006.png crop=12 label=text_12 custom_tokens=12 custom_s=0.102 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_006.png crop=13 label=text_13 custom_tokens=9 custom_s=0.088 custom_only
+[2026/08/05 13:07:07] opendoc_onnx INFO:   Total time:  1.969s
+OPENDOC_CUSTOM_PAGE_END index=24/32 wall_s=2.036 recognized_crops=13
+OPENDOC_CUSTOM_PAGE_BEGIN index=25/32 image=PPT_BaharMartonosi_page_007.png
+[2026/08/05 13:07:07] opendoc_onnx INFO:   VLM recognition: processing 6 block(s) sequentially
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_007.png crop=1 label=paragraph_title_01 custom_tokens=20 custom_s=0.065 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_007.png crop=2 label=paragraph_title_02 custom_tokens=13 custom_s=0.052 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_007.png crop=3 label=text_03 custom_tokens=42 custom_s=0.090 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_007.png crop=4 label=text_04 custom_tokens=12 custom_s=0.096 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_007.png crop=5 label=text_05 custom_tokens=11 custom_s=0.046 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_007.png crop=6 label=text_06 custom_tokens=49 custom_s=0.097 custom_only
+[2026/08/05 13:07:07] opendoc_onnx INFO:   Total time:  0.790s
+OPENDOC_CUSTOM_PAGE_END index=25/32 wall_s=0.826 recognized_crops=6
+OPENDOC_CUSTOM_PAGE_BEGIN index=26/32 image=PPT_BaharMartonosi_page_008.png
+[2026/08/05 13:07:08] opendoc_onnx INFO:   VLM recognition: processing 8 block(s) sequentially
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_008.png crop=1 label=paragraph_title_01 custom_tokens=12 custom_s=0.201 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_008.png crop=2 label=text_02 custom_tokens=18 custom_s=0.196 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_008.png crop=3 label=text_03 custom_tokens=19 custom_s=0.100 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_008.png crop=4 label=text_04 custom_tokens=10 custom_s=0.056 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_008.png crop=5 label=text_05 custom_tokens=12 custom_s=0.072 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_008.png crop=6 label=text_06 custom_tokens=23 custom_s=0.122 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_008.png crop=7 label=text_07 custom_tokens=16 custom_s=0.149 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_008.png crop=8 label=text_08 custom_tokens=23 custom_s=0.160 custom_only
+[2026/08/05 13:07:09] opendoc_onnx INFO:   Total time:  1.531s
+OPENDOC_CUSTOM_PAGE_END index=26/32 wall_s=1.604 recognized_crops=8
+OPENDOC_CUSTOM_PAGE_BEGIN index=27/32 image=PPT_BaharMartonosi_page_010.png
+[2026/08/05 13:07:10] opendoc_onnx INFO:   VLM recognition: processing 4 block(s) sequentially
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_010.png crop=1 label=paragraph_title_02 custom_tokens=24 custom_s=0.219 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_010.png crop=2 label=text_03 custom_tokens=29 custom_s=0.097 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_010.png crop=3 label=text_04 custom_tokens=17 custom_s=0.069 custom_only
+UNIREC_CROP_END page=PPT_BaharMartonosi_page_010.png crop=4 label=text_05 custom_tokens=36 custom_s=0.085 custom_only
+[2026/08/05 13:07:10] opendoc_onnx INFO:   Total time:  1.058s
+OPENDOC_CUSTOM_PAGE_END index=27/32 wall_s=1.098 recognized_crops=4
+OPENDOC_CUSTOM_PAGE_BEGIN index=28/32 image=PPT_CalculusReview_page_002.png
+[2026/08/05 13:07:11] opendoc_onnx INFO:   VLM recognition: processing 7 block(s) sequentially
+UNIREC_CROP_END page=PPT_CalculusReview_page_002.png crop=1 label=paragraph_title_01 custom_tokens=4 custom_s=0.130 custom_only
+UNIREC_CROP_END page=PPT_CalculusReview_page_002.png crop=2 label=text_02 custom_tokens=12 custom_s=0.131 custom_only
+UNIREC_CROP_END page=PPT_CalculusReview_page_002.png crop=3 label=text_03 custom_tokens=13 custom_s=0.190 custom_only
+UNIREC_CROP_END page=PPT_CalculusReview_page_002.png crop=4 label=display_formula_04 custom_tokens=35 custom_s=0.190 custom_only
+UNIREC_CROP_END page=PPT_CalculusReview_page_002.png crop=5 label=text_05 custom_tokens=30 custom_s=0.297 custom_only
+UNIREC_CROP_END page=PPT_CalculusReview_page_002.png crop=6 label=text_06 custom_tokens=22 custom_s=0.138 custom_only
+UNIREC_CROP_END page=PPT_CalculusReview_page_002.png crop=7 label=text_07 custom_tokens=40 custom_s=0.277 custom_only
+[2026/08/05 13:07:12] opendoc_onnx INFO:   Total time:  1.884s
+OPENDOC_CUSTOM_PAGE_END index=28/32 wall_s=1.957 recognized_crops=7
+OPENDOC_CUSTOM_PAGE_BEGIN index=29/32 image=PPT_CalculusReview_page_004.png
+[2026/08/05 13:07:13] opendoc_onnx INFO:   VLM recognition: processing 9 block(s) sequentially
+UNIREC_CROP_END page=PPT_CalculusReview_page_004.png crop=1 label=paragraph_title_01 custom_tokens=9 custom_s=0.118 custom_only
+UNIREC_CROP_END page=PPT_CalculusReview_page_004.png crop=2 label=text_02 custom_tokens=16 custom_s=0.069 custom_only
+UNIREC_CROP_END page=PPT_CalculusReview_page_004.png crop=3 label=text_03 custom_tokens=13 custom_s=0.084 custom_only
+UNIREC_CROP_END page=PPT_CalculusReview_page_004.png crop=4 label=text_04 custom_tokens=29 custom_s=0.112 custom_only
+UNIREC_CROP_END page=PPT_CalculusReview_page_004.png crop=5 label=text_05 custom_tokens=17 custom_s=0.114 custom_only
+UNIREC_CROP_END page=PPT_CalculusReview_page_004.png crop=6 label=text_06 custom_tokens=46 custom_s=0.229 custom_only
+UNIREC_CROP_END page=PPT_CalculusReview_page_004.png crop=7 label=text_07 custom_tokens=33 custom_s=0.317 custom_only
+UNIREC_CROP_END page=PPT_CalculusReview_page_004.png crop=8 label=text_08 custom_tokens=42 custom_s=0.499 custom_only
+UNIREC_CROP_END page=PPT_CalculusReview_page_004.png crop=9 label=text_09 custom_tokens=10 custom_s=0.182 custom_only
+[2026/08/05 13:07:15] opendoc_onnx INFO:   Total time:  2.856s
+OPENDOC_CUSTOM_PAGE_END index=29/32 wall_s=2.947 recognized_crops=9
+OPENDOC_CUSTOM_PAGE_BEGIN index=30/32 image=PPT_CalculusReview_page_009.png
+[2026/08/05 13:07:16] opendoc_onnx INFO:   VLM recognition: processing 4 block(s) sequentially
+UNIREC_CROP_END page=PPT_CalculusReview_page_009.png crop=1 label=paragraph_title_01 custom_tokens=8 custom_s=0.253 custom_only
+UNIREC_CROP_END page=PPT_CalculusReview_page_009.png crop=2 label=table_03 custom_tokens=96 custom_s=0.570 custom_only
+UNIREC_CROP_END page=PPT_CalculusReview_page_009.png crop=3 label=text_04 custom_tokens=14 custom_s=0.263 custom_only
+UNIREC_CROP_END page=PPT_CalculusReview_page_009.png crop=4 label=text_05 custom_tokens=33 custom_s=0.294 custom_only
+[2026/08/05 13:07:17] opendoc_onnx INFO:   Total time:  2.114s
+OPENDOC_CUSTOM_PAGE_END index=30/32 wall_s=2.219 recognized_crops=4
+OPENDOC_CUSTOM_PAGE_BEGIN index=31/32 image=PPT_CalculusReview_page_014.png
+[2026/08/05 13:07:18] opendoc_onnx INFO:   VLM recognition: processing 5 block(s) sequentially
+UNIREC_CROP_END page=PPT_CalculusReview_page_014.png crop=1 label=paragraph_title_01 custom_tokens=5 custom_s=0.053 custom_only
+UNIREC_CROP_END page=PPT_CalculusReview_page_014.png crop=2 label=text_02 custom_tokens=12 custom_s=0.200 custom_only
+UNIREC_CROP_END page=PPT_CalculusReview_page_014.png crop=3 label=display_formula_03 custom_tokens=32 custom_s=0.430 custom_only
+UNIREC_CROP_END page=PPT_CalculusReview_page_014.png crop=4 label=text_04 custom_tokens=19 custom_s=0.222 custom_only
+UNIREC_CROP_END page=PPT_CalculusReview_page_014.png crop=5 label=display_formula_05 custom_tokens=9 custom_s=0.124 custom_only
+[2026/08/05 13:07:19] opendoc_onnx INFO:   Total time:  1.804s
+OPENDOC_CUSTOM_PAGE_END index=31/32 wall_s=1.890 recognized_crops=5
+OPENDOC_CUSTOM_PAGE_BEGIN index=32/32 image=PPT_CalculusReview_page_033.png
+[2026/08/05 13:07:20] opendoc_onnx INFO:   VLM recognition: processing 4 block(s) sequentially
+UNIREC_CROP_END page=PPT_CalculusReview_page_033.png crop=1 label=paragraph_title_01 custom_tokens=8 custom_s=0.108 custom_only
+UNIREC_CROP_END page=PPT_CalculusReview_page_033.png crop=2 label=display_formula_02 custom_tokens=32 custom_s=0.188 custom_only
+UNIREC_CROP_END page=PPT_CalculusReview_page_033.png crop=3 label=display_formula_03 custom_tokens=23 custom_s=0.207 custom_only
+UNIREC_CROP_END page=PPT_CalculusReview_page_033.png crop=4 label=display_formula_04 custom_tokens=26 custom_s=0.156 custom_only
+[2026/08/05 13:07:21] opendoc_onnx INFO:   Total time:  1.443s
+OPENDOC_CUSTOM_PAGE_END index=32/32 wall_s=1.494 recognized_crops=4
+OPENDOC_CUSTOM_RUN_END {"status": "ok", "mode": "custom", "openocr_root": "/workspace/repos/OpenOCR", "model_path": "/workspace/models/unirec-0.1b", "device": "npu:0", "dtype": "float16", "decode_mode": "compiled", "compile_backend": "torchair", "compile_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_explicit_model_pth_decode_fp16", "max_parallel_blocks": 1, "layout_backend": "transformers_npu", "layout_dtype": "float32", "layout_transformers_model": "/workspace/models/PP-DocLayoutV2_safetensors", "layout_timing": {"setup_s": 3.4422167430166155, "page_count": 32, "forward_s": 5.337577547412366, "postprocess_s": 0.35115556814707816}, "max_length": 256, "setup_s": 20.178993506124243, "pipeline_wall_s": 56.283274601679295, "page_count": 32, "crop_count": 186, "preprocess_exact_count": 0, "token_exact_count": 0, "raw_text_exact_count": 0, "postprocessed_text_exact_count": 0, "pages": [{"image": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_003.png", "wall_s": 13.081979897106066, "recognized_crops": 6}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_005.png", "wall_s": 1.4241730750072747, "recognized_crops": 8}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_011.png", "wall_s": 1.7457032499369234, "recognized_crops": 12}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_015.png", "wall_s": 1.3769436618313193, "recognized_crops": 5}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_11.2013EvaluatingTraineeteacherproficiency_page_010.png", "wall_s": 1.540598823921755, "recognized_crops": 6}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_11.2013EvaluatingTraineeteacherproficiency_page_029.png", "wall_s": 0.8814735810738057, "recognized_crops": 4}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_13 fallacies LALT2012_page_001.png", "wall_s": 1.0679222610779107, "recognized_crops": 5}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_13 fallacies LALT2012_page_009.png", "wall_s": 0.9732894310727715, "recognized_crops": 5}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_13 fallacies LALT2012_page_010.png", "wall_s": 2.0043653449974954, "recognized_crops": 9}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_1637904769_page_001.png", "wall_s": 0.611949180951342, "recognized_crops": 2}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_1637904769_page_002.png", "wall_s": 1.1036285569425672, "recognized_crops": 5}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_1637904769_page_008.png", "wall_s": 0.7394192470237613, "recognized_crops": 7}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_1637904769_page_017.png", "wall_s": 0.9255203399807215, "recognized_crops": 5}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_8076_MEYER_Chapter_2_-_Language_Change_page_012.png", "wall_s": 0.6151152139063925, "recognized_crops": 3}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_8076_MEYER_Chapter_2_-_Language_Change_page_014.png", "wall_s": 0.96675343089737, "recognized_crops": 6}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_8076_MEYER_Chapter_2_-_Language_Change_page_017.png", "wall_s": 0.7676284059416503, "recognized_crops": 3}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_8076_MEYER_Chapter_2_-_Language_Change_page_021.png", "wall_s": 1.556892680004239, "recognized_crops": 4}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_B14_Claeys_Consistent Presentation of Images_v2_page_006.png", "wall_s": 1.280694796005264, "recognized_crops": 3}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_B14_Claeys_Consistent Presentation of Images_v2_page_010.png", "wall_s": 1.6089610948693007, "recognized_crops": 4}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_B14_Claeys_Consistent Presentation of Images_v2_page_013.png", "wall_s": 1.391339726978913, "recognized_crops": 7}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_B14_Claeys_Consistent Presentation of Images_v2_page_024.png", "wall_s": 1.0948707379866391, "recognized_crops": 5}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_002.png", "wall_s": 1.9886830889154226, "recognized_crops": 5}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_005.png", "wall_s": 1.4627956708427519, "recognized_crops": 7}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_006.png", "wall_s": 2.0363138790708035, "recognized_crops": 13}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_007.png", "wall_s": 0.8263152141589671, "recognized_crops": 6}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_008.png", "wall_s": 1.6044402378611267, "recognized_crops": 8}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_010.png", "wall_s": 1.0981738839764148, "recognized_crops": 4}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_002.png", "wall_s": 1.9567582160234451, "recognized_crops": 7}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_004.png", "wall_s": 2.9470422570593655, "recognized_crops": 9}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_009.png", "wall_s": 2.2192968481685966, "recognized_crops": 4}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_014.png", "wall_s": 1.8903874889947474, "recognized_crops": 5}, {"image": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_033.png", "wall_s": 1.4938450790941715, "recognized_crops": 4}], "trace_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/opendoc_npu_layout_fp32_32p_threshold04_283a6a8/output/recognition_comparison.jsonl"}

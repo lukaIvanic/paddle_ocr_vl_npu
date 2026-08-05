@@ -1,0 +1,94 @@
+{
+  "commit": "283a6a8",
+  "reference": "opendoc_onnx_v16_full",
+  "configuration": {
+    "layout_backend": "transformers_npu",
+    "layout_dtype": "float32",
+    "layout_threshold": 0.4,
+    "recognizer": "custom_unirec_compiled_fp16",
+    "pages": 32
+  },
+  "timing": {
+    "pipeline_wall_s": 56.283274601679295,
+    "layout_setup_s": 3.4422167430166155,
+    "layout_forward_s": 5.337577547412366,
+    "layout_forward_s_per_page": 0.16679929835663643,
+    "layout_postprocess_s": 0.35115556814707816,
+    "crop_count": 186
+  },
+  "parity": {
+    "markdown_byte_exact_pages": 26,
+    "json_text_sequence_exact_pages": 28,
+    "box_count_exact_pages": 31,
+    "label_order_exact_pages": 30,
+    "bbox_abs_mean": 0.08778018393415085,
+    "bbox_abs_max": 2.1139984130859375,
+    "score_abs_mean": 0.0037613836057642674,
+    "score_abs_max": 0.06932294368743896,
+    "mismatches": [
+      {
+        "page": "PPT_13 fallacies LALT2012_page_010",
+        "markdown_byte_exact": false,
+        "box_count_exact": false,
+        "label_order_exact": false,
+        "text_sequence_exact": false,
+        "npu_box_count": 9,
+        "stock_box_count": 8
+      },
+      {
+        "page": "PPT_8076_MEYER_Chapter_2_-_Language_Change_page_014",
+        "markdown_byte_exact": false,
+        "box_count_exact": true,
+        "label_order_exact": false,
+        "text_sequence_exact": false,
+        "npu_box_count": 6,
+        "stock_box_count": 6
+      },
+      {
+        "page": "PPT_B14_Claeys_Consistent Presentation of Images_v2_page_010",
+        "markdown_byte_exact": true,
+        "box_count_exact": true,
+        "label_order_exact": true,
+        "text_sequence_exact": false,
+        "npu_box_count": 4,
+        "stock_box_count": 4
+      },
+      {
+        "page": "PPT_BaharMartonosi_page_002",
+        "markdown_byte_exact": false,
+        "box_count_exact": true,
+        "label_order_exact": true,
+        "text_sequence_exact": true,
+        "npu_box_count": 7,
+        "stock_box_count": 7
+      },
+      {
+        "page": "PPT_BaharMartonosi_page_005",
+        "markdown_byte_exact": false,
+        "box_count_exact": true,
+        "label_order_exact": true,
+        "text_sequence_exact": true,
+        "npu_box_count": 10,
+        "stock_box_count": 10
+      },
+      {
+        "page": "PPT_BaharMartonosi_page_010",
+        "markdown_byte_exact": false,
+        "box_count_exact": true,
+        "label_order_exact": true,
+        "text_sequence_exact": true,
+        "npu_box_count": 6,
+        "stock_box_count": 6
+      },
+      {
+        "page": "PPT_CalculusReview_page_009",
+        "markdown_byte_exact": false,
+        "box_count_exact": true,
+        "label_order_exact": true,
+        "text_sequence_exact": false,
+        "npu_box_count": 5,
+        "stock_box_count": 5
+      }
+    ]
+  }
+}
