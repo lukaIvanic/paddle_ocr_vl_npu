@@ -250,6 +250,7 @@ class LayoutFullGraphRuntime:
         cache_root: Path,
         dtype: torch.dtype,
         device: torch.device,
+        sample_pixel_values: torch.Tensor,
         warmup_passes: int = 2,
     ) -> None:
         make_compile_compatible(model)
@@ -273,16 +274,17 @@ class LayoutFullGraphRuntime:
             fullgraph=True,
         )
         self.warmup = self._warmup(
-            passes=warmup_passes, dtype=dtype, device=device
+            passes=warmup_passes, sample_pixel_values=sample_pixel_values
         )
 
-    def _warmup(self, *, passes: int, dtype: torch.dtype, device: torch.device) -> dict[str, Any]:
-        sample = torch.zeros((1, 3, 800, 800), dtype=dtype, device=device)
+    def _warmup(
+        self, *, passes: int, sample_pixel_values: torch.Tensor
+    ) -> dict[str, Any]:
         pass_wall_s = []
         with torch.inference_mode():
             for index in range(passes):
                 started = time.perf_counter()
-                self.compiled(sample)
+                self.compiled(sample_pixel_values)
                 torch.npu.synchronize()
                 elapsed = time.perf_counter() - started
                 pass_wall_s.append(elapsed)

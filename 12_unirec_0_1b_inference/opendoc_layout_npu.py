@@ -92,11 +92,20 @@ class PPDocLayoutV2NpuAdapter:
         if execution == "torchair":
             from layout_torchair import LayoutFullGraphRuntime
 
+            warmup_inputs = self.processor(
+                images=np.zeros((800, 800, 3), dtype=np.uint8),
+                return_tensors="pt",
+            )
+            warmup_pixel_values = warmup_inputs["pixel_values"].to(
+                device=self.device,
+                dtype=self.dtype,
+            )
             self.compiled_runtime = LayoutFullGraphRuntime(
                 self.model,
                 cache_root=Path(compile_cache_dir),
                 dtype=self.dtype,
                 device=self.device,
+                sample_pixel_values=warmup_pixel_values,
                 warmup_passes=graph_warmup_passes,
             )
             self.graph_warmup = self.compiled_runtime.warmup
