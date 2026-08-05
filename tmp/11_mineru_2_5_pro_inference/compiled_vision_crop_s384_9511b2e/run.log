@@ -1,0 +1,14 @@
+[setup] configure NPU and load processor/model
+[npu] jit_compile=False; Conv3D NPU inference patch enabled
+The `use_fast` parameter is deprecated and will be removed in a future version. Use `backend="torchvision"` instead of `use_fast=True`, or `backend="pil"` instead of `use_fast=False`.
+[setup] model loaded
+Traceback (most recent call last):
+  File "/workspace/repos/paddle_ocr_vl_npu/11_mineru_2_5_pro_inference/bench_compiled_vision_prefill.py", line 240, in <module>
+    main()
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/repos/paddle_ocr_vl_npu/11_mineru_2_5_pro_inference/bench_compiled_vision_prefill.py", line 118, in main
+    raise ValueError(
+ValueError: real vision tokens 960 exceed requested bucket 384
+[ERROR] 2026-08-05-17:13:42 (PID:2845725, Device:0, RankID:-1) ERR99999 UNKNOWN applicaiton exception

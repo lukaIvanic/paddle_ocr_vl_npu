@@ -1,0 +1,273 @@
+[setup] configure NPU and load processor/model
+[npu] jit_compile=False; Conv3D NPU inference patch enabled
+The `use_fast` parameter is deprecated and will be removed in a future version. Use `backend="torchvision"` instead of `use_fast=True`, or `backend="pil"` instead of `use_fast=False`.
+[setup] model loaded
+[input] size=(1133, 172) real_tokens=960 bucket=1024
+[eager] warmup and measurement
+[W805 17:14:57.414604749 OpInterface.cpp:19419] Warning: torch_npu.npu_conv3d is deprecated and will be removed in future version. Use torch.nn.functional.conv3d instead. (function operator())
+[W805 17:14:57.414699131 TensorFactories.cpp:340] Warning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (function operator())
+[compiled] first call may compile or restore the static graph
+.start compile Ascend C operator AddLayerNorm. kernel name is te_addlayernorm_72d70b7fb49ee58a3e90b7f678eb218f21abf1d58f3a7469cd11b4a0c5f79a5f
+[2026-08-05 17:15:59] [WARNING] [ascend910b] cube_te In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm.cpp:16:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_special_kernel.h:19:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_base.h:21:
+/usr/local/Ascend/cann-9.0.0/aarch64-linux/asc/../tikcpp/tikcfw/impl/dav_c220/kernel_operator_reg_others_impl.h:16:9: warning: impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use "#include "basic_api/kernel_operator_intf.h"" and use public functions or variables defined in interface headers files. [-W#pragma-messages]
+#pragma message("impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use \"#include \"basic_api/kernel_operator_intf.h\"\" and use public functions or variables defined in interface headers files.")
+        ^
+1 warning generated.
+
+[2026-08-05 17:15:59] [WARNING] [ascend910b] vec_te In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm.cpp:16:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_special_kernel.h:19:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_base.h:21:
+/usr/local/Ascend/cann-9.0.0/aarch64-linux/asc/../tikcpp/tikcfw/impl/dav_c220/kernel_operator_reg_others_impl.h:16:9: warning: impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use "#include "basic_api/kernel_operator_intf.h"" and use public functions or variables defined in interface headers files. [-W#pragma-messages]
+#pragma message("impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use \"#include \"basic_api/kernel_operator_intf.h\"\" and use public functions or variables defined in interface headers files.")
+        ^
+1 warning generated.
+
+.[2026-08-05 17:16:15] [WARNING] [ascend910b] 0_te In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm.cpp:16:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_special_kernel.h:19:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_base.h:21:
+/usr/local/Ascend/cann-9.0.0/aarch64-linux/asc/../tikcpp/tikcfw/impl/dav_c220/kernel_operator_reg_others_impl.h:16:9: warning: impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use "#include "basic_api/kernel_operator_intf.h"" and use public functions or variables defined in interface headers files. [-W#pragma-messages]
+#pragma message("impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use \"#include \"basic_api/kernel_operator_intf.h\"\" and use public functions or variables defined in interface headers files.")
+        ^
+1 warning generated.
+
+.[2026-08-05 17:16:23] [WARNING] [ascend910b] 0_te In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm.cpp:16:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_special_kernel.h:19:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_base.h:21:
+/usr/local/Ascend/cann-9.0.0/aarch64-linux/asc/../tikcpp/tikcfw/impl/dav_c220/kernel_operator_reg_others_impl.h:16:9: warning: impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use "#include "basic_api/kernel_operator_intf.h"" and use public functions or variables defined in interface headers files. [-W#pragma-messages]
+#pragma message("impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use \"#include \"basic_api/kernel_operator_intf.h\"\" and use public functions or variables defined in interface headers files.")
+        ^
+1 warning generated.
+
+.[2026-08-05 17:16:34] [WARNING] [ascend910b] 72d70b7fb49ee58a3e90b7f678eb218f21abf1d58f3a7469cd11b4a0c5f79a5f_te In file included from /workspace/repos/paddle_ocr_vl_npu/kernel_meta/kernel_meta_18273447162234169008/kernel_meta/te_addlayernorm_72d70b7fb49ee58a3e90b7f678eb218f21abf1d58f3a7469cd11b4a0c5f79a5f_2847651_kernel.cpp:6:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm.cpp:16:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_special_kernel.h:19:
+In file included from /usr/local/Ascend/cann-9.0.0/opp/built-in/op_impl/ai_core/tbe/impl/ops_nn/dynamic/../ascendc/add_layer_norm/add_layer_norm_base.h:21:
+/usr/local/Ascend/cann-9.0.0/aarch64-linux/asc/../tikcpp/tikcfw/impl/dav_c220/kernel_operator_reg_others_impl.h:16:9: warning: impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use "#include "basic_api/kernel_operator_intf.h"" and use public functions or variables defined in interface headers files. [-W#pragma-messages]
+#pragma message("impl/basic_api/dav_c220/kernel_operator_reg_others_impl.h is an internal header file and must not be used directly. Functions or variables defined in this file may be removed in the future. Please use \"#include \"basic_api/kernel_operator_intf.h\"\" and use public functions or variables defined in interface headers files.")
+        ^
+1 warning generated.
+
+.[accuracy] eager generation
+[accuracy] compiled-vision generation
+{
+  "model": "/workspace/models/MinerU2.5-Pro-2605-1.2B",
+  "image": "/workspace/repos/paddle_ocr_vl_npu/crops/crop_01_text_block_en.png",
+  "prompt": "Text Recognition:",
+  "original_size_wh": [
+    1133,
+    172
+  ],
+  "processed_size_wh": [
+    1133,
+    172
+  ],
+  "grid_thw": [
+    [
+      1,
+      12,
+      80
+    ]
+  ],
+  "real_vision_tokens": 960,
+  "physical_vision_tokens": 1024,
+  "useful_token_fraction": 0.9375,
+  "eager_full_vision": {
+    "mean_s": 0.1442374372621998,
+    "min_s": 0.08204006403684616,
+    "median_s": 0.14631649712100625,
+    "max_s": 0.20169423799961805,
+    "effective_tok_s": 6655.692296133067,
+    "physical_tok_s": 6655.692296133067
+  },
+  "compiled_full_vision": {
+    "mean_s": 0.039043115661479534,
+    "min_s": 0.035132566932588816,
+    "median_s": 0.03822725987993181,
+    "max_s": 0.04487838293425739,
+    "effective_tok_s": 24588.20162621266,
+    "physical_tok_s": 26227.41506796017
+  },
+  "speedup": 3.6943116556782996,
+  "feature_comparison": {
+    "shape": [
+      240,
+      896
+    ],
+    "max_abs": 32.0,
+    "mean_abs": 0.040660757571458817,
+    "relative_l2": 0.001758092556326743,
+    "cosine": 0.9999985694885254,
+    "nonfinite_eager": 0,
+    "nonfinite_compiled": 0
+  },
+  "generation_comparison": {
+    "requested_tokens": 64,
+    "eager_tokens": [
+      [
+        4498,
+        458,
+        4774,
+        374,
+        1865,
+        311,
+        1352,
+        279,
+        1985,
+        17767,
+        33489,
+        1124,
+        701,
+        582,
+        6997,
+        429,
+        279,
+        15336,
+        525,
+        537,
+        18146,
+        304,
+        419,
+        1973,
+        1576,
+        279,
+        6978,
+        315,
+        17767,
+        425,
+        1124,
+        8,
+        525,
+        2326,
+        32420,
+        22879,
+        323,
+        279,
+        8147,
+        315,
+        17767,
+        362,
+        1124,
+        8,
+        525,
+        1378,
+        32420,
+        22879,
+        13,
+        31040,
+        279,
+        12756,
+        1985,
+        315,
+        279,
+        17767,
+        502,
+        1124,
+        8,
+        339,
+        2802,
+        315,
+        17767,
+        425
+      ]
+    ],
+    "compiled_tokens": [
+      [
+        4498,
+        458,
+        4774,
+        374,
+        1865,
+        311,
+        1352,
+        279,
+        1985,
+        17767,
+        33489,
+        1124,
+        701,
+        582,
+        6997,
+        429,
+        279,
+        15336,
+        525,
+        537,
+        18146,
+        304,
+        419,
+        1973,
+        1576,
+        279,
+        6978,
+        315,
+        17767,
+        425,
+        1124,
+        8,
+        525,
+        2326,
+        32420,
+        22879,
+        323,
+        279,
+        8147,
+        315,
+        17767,
+        362,
+        1124,
+        8,
+        525,
+        1378,
+        32420,
+        22879,
+        13,
+        31040,
+        279,
+        12756,
+        1985,
+        315,
+        279,
+        17767,
+        502,
+        1124,
+        8,
+        339,
+        2802,
+        315,
+        17767,
+        425
+      ]
+    ],
+    "exact": true,
+    "first_difference": null,
+    "eager_generation_s": 8.020011056214571,
+    "compiled_generation_s": 2.65057959780097
+  },
+  "runtime": {
+    "backend": "torchair",
+    "boundary": "32_vision_transformer_blocks",
+    "batch_size": 1,
+    "attention": "prompt_flash_attention",
+    "mask_sparse_mode": 1,
+    "padding": "bucket",
+    "buckets": [
+      1024
+    ],
+    "overflow": "eager_unpadded",
+    "route_counts": {
+      "1024": 14
+    },
+    "real_tokens": 13440,
+    "physical_tokens": 14336,
+    "useful_token_fraction": 0.9375,
+    "compile_records": {
+      "1024": {
+        "compile_wrapper_s": 0.00017890287563204765,
+        "first_call_s": 86.93466539611109,
+        "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/11_mineru_2_5_pro_inference/vision_prefill_b1_fp16_9511b2e/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq1024_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383"
+      }
+    }
+  }
+}
