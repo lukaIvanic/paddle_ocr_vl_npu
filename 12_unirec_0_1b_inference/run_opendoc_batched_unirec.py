@@ -32,6 +32,7 @@ from continuous_unirec import (
 from modeling_optimized_unirec import (
     LOCAL_UNIREC_STATIC_CACHE_LEN,
     OptimizedUniRecRunner,
+    synchronize_device,
 )
 from opendoc_layout_npu import PPDocLayoutV2NpuAdapter
 from text_packed_prefill import PACKED_TEXT_PREFILL_BUCKET
