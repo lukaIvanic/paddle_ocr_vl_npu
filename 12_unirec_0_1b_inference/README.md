@@ -87,3 +87,11 @@ Cached TorchAir decode:
 
 `source npu-setup` is mandatory. It selects a free physical NPU and exposes it
 as logical `npu:0`.
+
+## Validation
+
+Verified on Ascend 910B2 at commit `5985cf3` with one text crop and eager
+decode. Both implementations completed successfully on the same checkpoint.
+The official OpenOCR output was an exact prefix of the longer local output.
+OpenOCR stopped at its internal default generation length; the local runner
+continued to the requested 64-token limit.
