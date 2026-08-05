@@ -4,16 +4,20 @@
 from __future__ import annotations
 
 import argparse
+import collections
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
 import hashlib
 import io
 import json
 import math
+import multiprocessing
 import os
 import shutil
 import sys
 import time
+import traceback
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -30,6 +34,233 @@ OMNIDOCBENCH_V16_IMAGES_AGGREGATE_SHA256 = (
     "58feeb96c60fcfab12ba4348c4e093ceaf1b707658dbfd0e08c24d7821d4c221"
 )
 OMNIDOCBENCH_V16_IMAGE_COUNT = 1651
+
+
+@dataclass
+class _TedsTask:
+    index: int
+    sample: dict[str, Any]
+    pred: str
+    gt: str
+
+
+@dataclass
+class _ActiveTeds:
+    task: _TedsTask
+    process: multiprocessing.Process
+    receiver: Any
+    started_at: float
+
+
+def _stop_process(process: multiprocessing.Process) -> None:
+    process.join(timeout=0.2)
+    if process.is_alive():
+        process.terminate()
+        process.join(timeout=2)
+    if process.is_alive():
+        process.kill()
+        process.join(timeout=2)
+
+
+def _teds_process_entry(sender: Any, pred: str, gt: str) -> None:
+    try:
+        from src.metrics.table_metric import TEDS
+
+        score = TEDS(structure_only=False).evaluate(pred, gt)
+        structure_score = TEDS(structure_only=True).evaluate(pred, gt)
+        sender.send(("ok", (score, structure_score)))
+    except BaseException:
+        sender.send(("metric_error", traceback.format_exc()))
+    finally:
+        sender.close()
+
+
+def _start_teds_process(
+    context: multiprocessing.context.BaseContext,
+    task: _TedsTask,
+) -> _ActiveTeds:
+    receiver, sender = context.Pipe(duplex=False)
+    process = context.Process(
+        target=_teds_process_entry,
+        args=(sender, task.pred, task.gt),
+        name=f"omnidoc-teds-{task.index}",
+    )
+    try:
+        process.start()
+    except BaseException as exc:
+        sender.close()
+        receiver.close()
+        raise RuntimeError(
+            "failed to start TEDS worker for "
+            f"{task.sample.get('img_id')} gt_idx={task.sample.get('gt_idx')} "
+            f"pred_idx={task.sample.get('pred_idx')}: "
+            f"{type(exc).__name__}: {exc}"
+        ) from exc
+    sender.close()
+    return _ActiveTeds(
+        task=task,
+        process=process,
+        receiver=receiver,
+        started_at=time.monotonic(),
+    )
+
+
+def _collect_teds_process_isolated(
+    samples: list[dict[str, Any]],
+    worker_count: int,
+    timeout_sec: float | None,
+    metric_module: Any,
+) -> list[dict[str, Any]]:
+    """Score tables with bounded, parent-owned worker processes."""
+
+    from tqdm import tqdm
+
+    context = multiprocessing.get_context("fork")
+    pending: collections.deque[_TedsTask] = collections.deque()
+    results: list[dict[str, Any]] = []
+    exact_count = 0
+    for index, sample in enumerate(samples):
+        gt = sample["norm_gt"] if sample.get("norm_gt") else sample["gt"]
+        pred = sample["norm_pred"] if sample.get("norm_pred") else sample["pred"]
+        if pred and gt and pred == gt:
+            exact_count += 1
+            results.append(
+                {
+                    "original_index": index,
+                    "score": 1.0,
+                    "score_structure_only": 1.0,
+                    "status": "ok",
+                    "case_record": None,
+                }
+            )
+        else:
+            pending.append(
+                _TedsTask(index=index, sample=sample, pred=pred, gt=gt)
+            )
+
+    print(
+        "[process-TEDS] "
+        f"workers={worker_count} samples={len(samples)} exact={exact_count} "
+        f"timeout={timeout_sec if timeout_sec is not None else 'none'}s",
+        flush=True,
+    )
+    active: list[_ActiveTeds] = []
+    progress = tqdm(
+        total=len(samples),
+        initial=exact_count,
+        ascii=True,
+        ncols=140,
+        desc="TEDS (process-isolated)",
+    )
+    try:
+        while pending or active:
+            while len(active) < worker_count and pending:
+                active.append(_start_teds_process(context, pending.popleft()))
+
+            made_progress = False
+            now = time.monotonic()
+            for running in list(active):
+                task = running.task
+                if running.receiver.poll():
+                    made_progress = True
+                    status, payload = running.receiver.recv()
+                    running.receiver.close()
+                    _stop_process(running.process)
+                    active.remove(running)
+                    if status == "ok":
+                        score, structure_score = payload
+                        results.append(
+                            {
+                                "original_index": task.index,
+                                "score": score,
+                                "score_structure_only": structure_score,
+                                "status": "ok",
+                                "case_record": None,
+                            }
+                        )
+                    else:
+                        reason = str(payload)
+                        print(
+                            "TEDS score error for table "
+                            f"{task.sample.get('gt_idx')} in "
+                            f"{task.sample.get('img_id')}: {reason}. "
+                            "The score is set to 0.",
+                            flush=True,
+                        )
+                        results.append(
+                            {
+                                "original_index": task.index,
+                                "score": 0.0,
+                                "score_structure_only": 0.0,
+                                "status": "error",
+                                "case_record": metric_module._build_case_record(
+                                    task.sample,
+                                    reason=reason,
+                                ),
+                            }
+                        )
+                    progress.update(1)
+                    continue
+
+                if not running.process.is_alive():
+                    made_progress = True
+                    exit_code = running.process.exitcode
+                    running.receiver.close()
+                    active.remove(running)
+                    raise RuntimeError(
+                        "TEDS worker exited without a result for "
+                        f"{task.sample.get('img_id')} "
+                        f"gt_idx={task.sample.get('gt_idx')} "
+                        f"pred_idx={task.sample.get('pred_idx')} "
+                        f"exit_code={exit_code}"
+                    )
+
+                if timeout_sec is None:
+                    continue
+                elapsed = now - running.started_at
+                if elapsed <= timeout_sec:
+                    continue
+
+                made_progress = True
+                running.receiver.close()
+                _stop_process(running.process)
+                active.remove(running)
+                reason = f"timeout:{timeout_sec}"
+                metric_module._log_teds_timeout(
+                    task.sample,
+                    task.gt,
+                    task.pred,
+                    timeout_sec,
+                    reason,
+                )
+                results.append(
+                    {
+                        "original_index": task.index,
+                        "score": 0.0,
+                        "score_structure_only": 0.0,
+                        "status": "timeout",
+                        "case_record": metric_module._build_case_record(
+                            task.sample,
+                            reason=reason,
+                            timeout_sec=timeout_sec,
+                            gt_length=len(task.gt),
+                            pred_length=len(task.pred),
+                        ),
+                    }
+                )
+                progress.update(1)
+
+            if not made_progress:
+                time.sleep(0.01)
+    finally:
+        progress.close()
+        for running in active:
+            running.receiver.close()
+            _stop_process(running.process)
+
+    assert len(results) == len(samples), (len(results), len(samples))
+    results.sort(key=lambda item: item["original_index"])
+    return results
 
 
 def parse_args() -> argparse.Namespace:
@@ -386,7 +617,6 @@ def _score(
     sys.path.insert(0, str(evaluator_root.resolve()))
     import src.metrics.cal_metric as metric_module
     from src.core.preprocess import normalized_table
-    from run_omnidocbench_eval import _collect_teds_process_isolated
 
     records = list(_read_completed(output).values())
     page_scores: dict[str, list[float]] = {}
