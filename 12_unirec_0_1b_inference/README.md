@@ -121,6 +121,10 @@ bash 12_unirec_0_1b_inference/run_official_opendoc_omnidocbench.sh
 
 The wrapper runs the official CLI over the complete image directory and saves
 the exact command, continuous log, exit code, wall time, JSON, and Markdown.
+Each page is written immediately. On restart, the wrapper constructs a
+symlink-only input directory and processes only pages that do not already have
+both final artifacts. Set `RESUME=0` only when deliberate full recomputation is
+required.
 The current official OmniDocBench v1.6 target is:
 
 ```text
