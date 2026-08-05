@@ -1,0 +1,98 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_010.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "image_01",
+      "bbox": [
+        1775.3770751953125,
+        1241.6339111328125,
+        1911.794677734375,
+        1375.6998291015625
+      ],
+      "score": 0.49001625180244446,
+      "text": "",
+      "text_unirec": "",
+      "is_image": true,
+      "img_path": "imgs/img_in_image_box_1775_1241_1911_1375.jpg",
+      "is_merged_continuation": false,
+      "in_table": false
+    },
+    {
+      "label": "paragraph_title_02",
+      "bbox": [
+        106.7530517578125,
+        108.03315734863281,
+        1513.804931640625,
+        301.49737548828125
+      ],
+      "score": 0.7414976954460144,
+      "text": "THE BIGGER PICTURE: COMMUNICATION AND YOUR CAREER",
+      "text_unirec": "THE BIGGER PICTURE: COMMUNICATION AND YOUR CAREER",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_03",
+      "bbox": [
+        78.7724838256836,
+        364.14410400390625,
+        1117.2357177734375,
+        610.127197265625
+      ],
+      "score": 0.9679594039916992,
+      "text": "Expressing yourself technically helps you make and use professional connections wisely",
+      "text_unirec": "Expressing yourself technically helps you make and use professional connections wisely",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_04",
+      "bbox": [
+        76.91011047363281,
+        717.5291137695312,
+        939.5823364257812,
+        880.5095825195312
+      ],
+      "score": 0.9577620625495911,
+      "text": "You are joining a long-term community...",
+      "text_unirec": "You are joining a long-term community...",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_05",
+      "bbox": [
+        78.01079559326172,
+        990.1101684570312,
+        1108.108642578125,
+        1314.916748046875
+      ],
+      "score": 0.9709151387214661,
+      "text": "Communicate your ideas to forge mentoring and technical relationships in the service of professional goals",
+      "text_unirec": "Communicate your ideas to forge mentoring and technical relationships in the service of professional goals",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "image_06",
+      "bbox": [
+        1190.14794921875,
+        343.7535400390625,
+        1889.104248046875,
+        966.4700317382812
+      ],
+      "score": 0.9701647162437439,
+      "text": "",
+      "text_unirec": "",
+      "is_image": true,
+      "img_path": "imgs/img_in_image_box_1190_343_1889_966.jpg",
+      "is_merged_continuation": false,
+      "in_table": false
+    }
+  ],
+  "timing": {
+    "total": 1.957757893949747
+  }
+}

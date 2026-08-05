@@ -1,0 +1,80 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_B14_Claeys_Consistent Presentation of Images_v2_page_024.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "paragraph_title_01",
+      "bbox": [
+        532.6385498046875,
+        134.87353515625,
+        1474.76220703125,
+        247.48863220214844
+      ],
+      "score": 0.9359303116798401,
+      "text": "What about color ?",
+      "text_unirec": "What about color ?",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_02",
+      "bbox": [
+        160.896484375,
+        372.48980712890625,
+        1618.8890380859375,
+        675.3099365234375
+      ],
+      "score": 0.5919828414916992,
+      "text": " Consistency is harder to achieve\n- Gamut of devices much more variable\n- Greater influence of psychovisual effects",
+      "text_unirec": " Consistency is harder to achieve\n- Gamut of devices much more variable\n- Greater influence of psychovisual effects",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_03",
+      "bbox": [
+        162.2015838623047,
+        694.8580932617188,
+        1541.165771484375,
+        791.2537841796875
+      ],
+      "score": 0.9487176537513733,
+      "text": " Extensive standards efforts e.g. ICC",
+      "text_unirec": " Extensive standards efforts e.g. ICC",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_04",
+      "bbox": [
+        162.53834533691406,
+        813.1679077148438,
+        1808.979736328125,
+        1007.0052490234375
+      ],
+      "score": 0.9699636101722717,
+      "text": "DICOM recently defined color presentation in a manner very similar to grayscale.",
+      "text_unirec": "DICOM recently defined color presentation in a manner very similar to grayscale.",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_05",
+      "bbox": [
+        257.0561828613281,
+        1021.8414306640625,
+        1792.2493896484375,
+        1278.6871337890625
+      ],
+      "score": 0.9677048325538635,
+      "text": "— Many display and print devices already have ICC profiles, but few medical imaging devices support color presentation state.",
+      "text_unirec": "— Many display and print devices already have ICC profiles, but few medical imaging devices support color presentation state.",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 12.538703334052116
+  }
+}

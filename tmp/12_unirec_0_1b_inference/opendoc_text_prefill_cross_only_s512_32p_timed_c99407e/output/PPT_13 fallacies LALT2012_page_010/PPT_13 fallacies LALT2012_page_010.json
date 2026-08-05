@@ -1,0 +1,136 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_13 fallacies LALT2012_page_010.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "paragraph_title_01",
+      "bbox": [
+        410.0402526855469,
+        76.67428588867188,
+        1682.7811279296875,
+        138.11700439453125
+      ],
+      "score": 0.6944667100906372,
+      "text": "Thirteen Fallacies about the Users and Uses of EIL",
+      "text_unirec": "Thirteen Fallacies about the Users and Uses of EIL",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "paragraph_title_02",
+      "bbox": [
+        104.7579345703125,
+        277.1097717285156,
+        358.4392395019531,
+        325.79840087890625
+      ],
+      "score": 0.9269629716873169,
+      "text": "9, References",
+      "text_unirec": "9, References",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_03",
+      "bbox": [
+        104.01296997070312,
+        385.41845703125,
+        1875.003173828125,
+        486.69097900390625
+      ],
+      "score": 0.5332987904548645,
+      "text": "Baxter, J. 1991. 'How should I speak English? American-ly, Japanese-ly, or internationally?' in Brown, A. (ed.) 1991: op. cit. (53-71).",
+      "text_unirec": "Baxter, J. 1991. 'How should I speak English? American-ly, Japanese-ly, or internationally?' in Brown, A. (ed.) 1991: op. cit. (53-71).",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_04",
+      "bbox": [
+        105.20255279541016,
+        489.3548278808594,
+        1889.3311767578125,
+        647.8250122070312
+      ],
+      "score": 0.4189155399799347,
+      "text": "Brown, A. (ed.) 1991. Teaching English Pronunciation: a book of readings, London; Routledge.Campbell, D., P. Eknyom, A. Hague, and L. E. Smith, 1983, English in International settings; problemsand their causes' In Smith, L. E. (ed.) 1983: 09. c/t. (35-47).",
+      "text_unirec": "Brown, A. (ed.) 1991. Teaching English Pronunciation: a book of readings, London; Routledge.Campbell, D., P. Eknyom, A. Hague, and L. E. Smith, 1983, English in International settings; problemsand their causes' In Smith, L. E. (ed.) 1983: 09. c/t. (35-47).",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_05",
+      "bbox": [
+        105.1117172241211,
+        649.950927734375,
+        1892.8243408203125,
+        805.846435546875
+      ],
+      "score": 0.4032858908176422,
+      "text": "Smith, L. E. (ed.) 1983, Readings in English as an international language. Oxford: Pergamon Press. Gnutzmann, C. 1999. English as a global language: Perspectives for English language teaching and for teacher education in Germany in C. Gnutzmann (ed.) 1999: op. ed. (157-169).",
+      "text_unirec": "Smith, L. E. (ed.) 1983, Readings in English as an international language. Oxford: Pergamon Press. Gnutzmann, C. 1999. English as a global language: Perspectives for English language teaching and for teacher education in Germany in C. Gnutzmann (ed.) 1999: op. ed. (157-169).",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_06",
+      "bbox": [
+        105.58253479003906,
+        807.2630004882812,
+        1902.9874267578125,
+        907.4710693359375
+      ],
+      "score": 0.47180604934692383,
+      "text": "Gnutzmann, C. (ed.) 1999, Teaching and learning English as a Global Language.: native and non-native perspectives, Tübingen: Stauffenburg-Verlag.",
+      "text_unirec": "Gnutzmann, C. (ed.) 1999, Teaching and learning English as a Global Language.: native and non-native perspectives, Tübingen: Stauffenburg-Verlag.",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_07",
+      "bbox": [
+        105.51458740234375,
+        910.2921142578125,
+        1791.837646484375,
+        1009.924560546875
+      ],
+      "score": 0.5662713646888733,
+      "text": "Guerra, L. 2009, Teaching and Learning English as an International Language in Portugal: Policy, practice and perceptions, Saarbrucken: VDM Verlag Dr. Muller.",
+      "text_unirec": "Guerra, L. 2009, Teaching and Learning English as an International Language in Portugal: Policy, practice and perceptions, Saarbrucken: VDM Verlag Dr. Muller.",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_08",
+      "bbox": [
+        104.28142547607422,
+        1012.8530883789062,
+        1875.2335205078125,
+        1163.75732421875
+      ],
+      "score": 0.5757692456245422,
+      "text": "Kachru, B. B. 1992. Teaching World Englishes' in B. B. Kachru (ed.) 1992: op. cit. (355-365).Kachru, B. B. (ed.) 1992, The Other Tongue: English across Cultures, Urbana & Chicago: University ofTilinois Press.",
+      "text_unirec": "Kachru, B. B. 1992. Teaching World Englishes' in B. B. Kachru (ed.) 1992: op. cit. (355-365).Kachru, B. B. (ed.) 1992, The Other Tongue: English across Cultures, Urbana & Chicago: University ofTilinois Press.",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_09",
+      "bbox": [
+        104.21585845947266,
+        1171.6292724609375,
+        1813.2120361328125,
+        1327.869384765625
+      ],
+      "score": 0.7891733646392822,
+      "text": "McArthur, T. 1998. The English Languages. Cambridge: Cambridge University Press.Modiano, M. 1999. Standard English(es) and educational practices for the world's lingua franca’inEnglish Today 60: 3-13.",
+      "text_unirec": "McArthur, T. 1998. The English Languages. Cambridge: Cambridge University Press.Modiano, M. 1999. Standard English(es) and educational practices for the world's lingua franca’inEnglish Today 60: 3-13.",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 8.129726281156763
+  }
+}
