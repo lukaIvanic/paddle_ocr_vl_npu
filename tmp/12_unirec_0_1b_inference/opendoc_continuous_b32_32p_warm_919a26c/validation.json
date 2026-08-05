@@ -1,0 +1,36 @@
+{
+  "source_commit": "919a26c",
+  "device": "Ascend 910B2",
+  "page_count": 32,
+  "crop_count": 186,
+  "token_parity_with_continuous_b4": "186/186 exact",
+  "cold_b32": {
+    "pipeline_wall_s": 136.15200078790076,
+    "first_decode_step_s": 90.11077915597707,
+    "steady_decode_s": 1.6108010686002672,
+    "steady_effective_decode_tokens_per_s": 3013.4074868835078
+  },
+  "warm_b32": {
+    "pipeline_wall_s": 49.83071825793013,
+    "pages_per_s": 0.6421741672348357,
+    "layout_s": 10.257928892970085,
+    "prepare_s": 5.092923036077991,
+    "prefill_s": 13.11954817455262,
+    "decode_s": 9.050483607919887,
+    "first_decode_step_s": 7.781287468969822,
+    "steady_decode_s": 1.2691961389500648,
+    "raw_decode_token_slots": 9792,
+    "effective_decode_tokens": 4886,
+    "idle_decode_token_slots": 4906,
+    "useful_slot_fraction": 0.49897875816993464,
+    "steady_raw_decode_tokens_per_s": 7689.906784678611,
+    "steady_effective_decode_tokens_per_s": 3824.4679849211043
+  },
+  "warm_b4_reference": {
+    "pipeline_wall_s": 46.376648692879826,
+    "pages_per_s": 0.6900024236747606,
+    "steady_decode_s": 2.375829838681966,
+    "useful_slot_fraction": 0.9906731549067316,
+    "steady_effective_decode_tokens_per_s": 2054.860967108813
+  }
+}
