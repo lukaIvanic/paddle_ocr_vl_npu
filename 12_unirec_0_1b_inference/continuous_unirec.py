@@ -114,7 +114,7 @@ class ContinuousUniRecDecoder:
             "text": text,
             "generated_ids": token_ids,
             "generated_token_count": max(0, len(token_ids) - 1),
-            "prefill_generated_token_count": 1 if len(token_ids) > 1 else 0,
+            "prefill_generated_token_count": 0,
             "decode_generated_token_count": int(decode_token_count),
             "ttft_s": ready.prefilled.prefill_s,
             "prefill_device_stage_s": ready.prefilled.prefill_device_stage_s,
@@ -239,7 +239,10 @@ class ContinuousUniRecDecoder:
             for index in range(self.batch_size)
         ]
         last_tokens = [row[-1] for row in token_ids]
-        cache_positions = [1 for _ in range(self.batch_size)]
+        cache_positions = [
+            len(row) - 1 if slots[index] is not None else 1
+            for index, row in enumerate(token_ids)
+        ]
         slot_decode_counts = [0 for _ in range(self.batch_size)]
         slot_active_decode_s = [0.0 for _ in range(self.batch_size)]
         slot_admission_indices = [
@@ -336,7 +339,7 @@ class ContinuousUniRecDecoder:
                     for token in ready.prefilled.generated_ids[0].detach().cpu().tolist()
                 ]
                 last_tokens[slot] = token_ids[slot][-1]
-                cache_positions[slot] = 1
+                cache_positions[slot] = len(token_ids[slot]) - 1
                 slot_decode_counts[slot] = 0
                 slot_active_decode_s[slot] = 0.0
                 slot_admission_indices[slot] = next_admission_index

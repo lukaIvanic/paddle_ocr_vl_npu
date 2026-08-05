@@ -35,11 +35,12 @@ def _import_cache_compile() -> tuple[Any, str]:
 
 def _source_hash() -> str:
     payload = Path(__file__).read_bytes()
+    payload += Path(__file__).with_name("modeling_optimized_unirec.py").read_bytes()
     return hashlib.sha256(payload).hexdigest()[:12]
 
 
 class UniRecTextPrefillStage(nn.Module):
-    """Cross-KV projection and one-token decoder prefill at a static source S."""
+    """Cross-KV projection at one static encoder-source length."""
 
     def __init__(self, decoder: nn.Module):
         super().__init__()
@@ -48,47 +49,16 @@ class UniRecTextPrefillStage(nn.Module):
 
     def forward(
         self,
-        decoder_input_ids: torch.Tensor,
         encoder_hidden_states: torch.Tensor,
-        encoder_attention_mask: torch.Tensor,
     ) -> tuple[torch.Tensor, ...]:
-        decoder = self.decoder
-        hidden_states = decoder.build_decoder_input_hidden_states(decoder_input_ids)
-        self_attention_mask = decoder.build_decoder_attention_mask(decoder_input_ids)
-        cross_attention_mask = decoder.build_cross_attention_mask(
-            encoder_attention_mask=encoder_attention_mask,
-            target_length=decoder_input_ids.shape[1],
-        )
-        cross_key_cache, cross_value_cache = decoder.build_cross_attention_cache(
+        cross_key_cache, cross_value_cache = self.decoder.build_cross_attention_cache(
             encoder_hidden_states
         )
-
-        layer_keys = []
-        layer_values = []
-        for layer in decoder.layers:
-            hidden_states, key_states, value_states = layer.forward_prefill(
-                hidden_states=hidden_states,
-                self_attention_mask=self_attention_mask,
-                encoder_hidden_states=encoder_hidden_states,
-                encoder_attention_mask=cross_attention_mask,
-            )
-            layer_keys.append(key_states)
-            layer_values.append(value_states)
-
-        return (
-            decoder.layer_norm(hidden_states),
-            *layer_keys,
-            *layer_values,
-            *cross_key_cache,
-            *cross_value_cache,
-        )
+        return (*cross_key_cache, *cross_value_cache)
 
 
 @dataclass(frozen=True)
 class UniRecTextPrefillOutput:
-    decoder_output: torch.Tensor
-    layer_keys: tuple[torch.Tensor, ...]
-    layer_values: tuple[torch.Tensor, ...]
     cross_key_cache: tuple[torch.Tensor, ...]
     cross_value_cache: tuple[torch.Tensor, ...]
     real_source_tokens: int
@@ -144,15 +114,8 @@ class UniRecTextPrefillRuntime:
     def run(
         self,
         *,
-        decoder_input_ids: torch.Tensor,
         encoder_hidden_states: torch.Tensor,
-        encoder_attention_mask: torch.Tensor,
     ) -> UniRecTextPrefillOutput:
-        if tuple(decoder_input_ids.shape) != (1, 1):
-            raise ValueError(
-                "compiled UniRec text prefill expects decoder_input_ids [1, 1], "
-                f"got {tuple(decoder_input_ids.shape)}"
-            )
         if encoder_hidden_states.ndim != 3 or encoder_hidden_states.shape[0] != 1:
             raise ValueError(
                 "compiled UniRec text prefill expects encoder states [1, S, H], "
@@ -164,21 +127,10 @@ class UniRecTextPrefillRuntime:
                 f"encoder source length {real_source_tokens} exceeds "
                 f"compiled bucket {self.bucket}"
             )
-        if tuple(encoder_attention_mask.shape) != (1, real_source_tokens):
-            raise ValueError(
-                "encoder_attention_mask must match the real source length, got "
-                f"{tuple(encoder_attention_mask.shape)}"
-            )
-
         pad_tokens = self.bucket - real_source_tokens
         padded_hidden_states = F.pad(
             encoder_hidden_states,
             (0, 0, 0, pad_tokens),
-        ).contiguous()
-        padded_attention_mask = F.pad(
-            encoder_attention_mask,
-            (0, pad_tokens),
-            value=0,
         ).contiguous()
         if self._first_call:
             print(
@@ -187,11 +139,7 @@ class UniRecTextPrefillRuntime:
                 flush=True,
             )
             first_call_started = time.perf_counter()
-        flat_outputs = self.compiled(
-            decoder_input_ids,
-            padded_hidden_states,
-            padded_attention_mask,
-        )
+        flat_outputs = self.compiled(padded_hidden_states)
         if self._first_call:
             print(
                 "UNIREC_TEXT_PREFILL_FIRST_CALL_RETURN "
@@ -200,11 +148,7 @@ class UniRecTextPrefillRuntime:
             )
             self._first_call = False
 
-        offset = 1
-        layer_keys = tuple(flat_outputs[offset : offset + self.num_layers])
-        offset += self.num_layers
-        layer_values = tuple(flat_outputs[offset : offset + self.num_layers])
-        offset += self.num_layers
+        offset = 0
         padded_cross_keys = tuple(
             flat_outputs[offset : offset + self.num_layers]
         )
@@ -224,9 +168,6 @@ class UniRecTextPrefillRuntime:
             for tensor in padded_cross_values
         )
         return UniRecTextPrefillOutput(
-            decoder_output=flat_outputs[0],
-            layer_keys=layer_keys,
-            layer_values=layer_values,
             cross_key_cache=cross_key_cache,
             cross_value_cache=cross_value_cache,
             real_source_tokens=real_source_tokens,

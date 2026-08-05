@@ -387,6 +387,32 @@ class LocalUniRecStaticCache:
             actual_cross_attention_length=actual_cross_attention_length,
         )
 
+    @classmethod
+    def from_cross_prefill(
+        cls,
+        cross_key_cache: tuple[torch.Tensor, ...],
+        cross_value_cache: tuple[torch.Tensor, ...],
+        cross_attention_mask: torch.Tensor,
+        cache_len: int,
+        cross_cache_len: int | None = None,
+    ) -> "LocalUniRecStaticCache":
+        """Build an empty self-KV cache plus a populated cross-KV cache."""
+        empty_layer_keys = tuple(
+            tensor[:, :, :0, :] for tensor in cross_key_cache
+        )
+        empty_layer_values = tuple(
+            tensor[:, :, :0, :] for tensor in cross_value_cache
+        )
+        return cls.from_prefill(
+            layer_keys=empty_layer_keys,
+            layer_values=empty_layer_values,
+            cross_key_cache=cross_key_cache,
+            cross_value_cache=cross_value_cache,
+            cross_attention_mask=cross_attention_mask,
+            cache_len=cache_len,
+            cross_cache_len=cross_cache_len,
+        )
+
 
 @dataclass
 class UniRecPrefilledItem:
@@ -1704,14 +1730,10 @@ class OptimizedUniRecRunner:
         profile_device_stages: bool = False,
         text_prefill_mode: str = "eager",
     ) -> UniRecPrefilledItem:
-        """Run the exact B1 image and decoder prefill used by normal generation."""
+        """Build B1 encoder cross-KV; decode processes the start token."""
         inputs, prep = self.prepare_pil_image(image, image_source=image_source)
         pixel_values = inputs["pixel_values"]
         cross_cache_len = self._get_static_cross_cache_len()
-        decoder_input_ids = self.model.decoder_start_ids(
-            batch_size=1,
-            device=pixel_values.device,
-        )
         if text_prefill_mode not in {"eager", "compiled_s512"}:
             raise ValueError(f"Unsupported UniRec text prefill mode: {text_prefill_mode}")
         text_prefill_runtime = (
@@ -1729,87 +1751,73 @@ class OptimizedUniRecRunner:
             )
             timing_hooks = self._install_encoder_timing_hooks(device_timeline)
             try:
+                measure = (
+                    device_timeline.measure
+                    if device_timeline is not None
+                    else lambda _name, fn: fn()
+                )
+                encoder_hidden_states = measure(
+                    "spatial_focalsvtr_encoder",
+                    lambda: self.model.forward_encoder(pixel_values),
+                )
+                encoder_attention_mask = measure(
+                    "encoder_attention_mask",
+                    lambda: self.model.build_encoder_attention_mask(
+                        encoder_hidden_states
+                    ),
+                )
                 if text_prefill_runtime is None:
-                    prefill_outputs = self.model.prefill_with_cache(
-                        pixel_values=pixel_values,
-                        decoder_input_ids=decoder_input_ids,
-                        cross_cache_len=cross_cache_len,
-                        device_timeline=device_timeline,
+                    cross_key_cache, cross_value_cache = measure(
+                        "flat_cross_kv_projection",
+                        lambda: self.model.decoder.build_cross_attention_cache(
+                            encoder_hidden_states
+                        ),
                     )
                     text_prefill_real_source_tokens = int(
-                        prefill_outputs["kv_cache"].actual_cross_attention_length
+                        encoder_hidden_states.shape[1]
                     )
                     text_prefill_physical_source_tokens = (
                         text_prefill_real_source_tokens
                     )
                 else:
-                    measure = (
-                        device_timeline.measure
-                        if device_timeline is not None
-                        else lambda _name, fn: fn()
-                    )
-                    encoder_hidden_states = measure(
-                        "spatial_focalsvtr_encoder",
-                        lambda: self.model.forward_encoder(pixel_values),
-                    )
-                    encoder_attention_mask = measure(
-                        "encoder_attention_mask",
-                        lambda: self.model.build_encoder_attention_mask(
-                            encoder_hidden_states
-                        ),
-                    )
                     text_outputs = measure(
                         "compiled_text_prefill_s512",
                         lambda: text_prefill_runtime.run(
-                            decoder_input_ids=decoder_input_ids,
                             encoder_hidden_states=encoder_hidden_states,
-                            encoder_attention_mask=encoder_attention_mask,
                         ),
                     )
-                    decode_cross_attention_mask = (
-                        self.model.decoder.build_cross_attention_mask(
-                            encoder_attention_mask=encoder_attention_mask,
-                            target_length=1,
-                        )
-                    )
-                    kv_cache = measure(
-                        "static_cache_build_and_padding",
-                        lambda: LocalUniRecStaticCache.from_prefill(
-                            layer_keys=text_outputs.layer_keys,
-                            layer_values=text_outputs.layer_values,
-                            cross_key_cache=text_outputs.cross_key_cache,
-                            cross_value_cache=text_outputs.cross_value_cache,
-                            cross_attention_mask=decode_cross_attention_mask,
-                            cache_len=LOCAL_UNIREC_STATIC_CACHE_LEN,
-                            cross_cache_len=cross_cache_len,
-                        ),
-                    )
-                    logits = measure(
-                        "prefill_lm_head",
-                        lambda: LocalDecoderAttention.apply_linear_3d(
-                            self.model.lm_head,
-                            text_outputs.decoder_output,
-                        ),
-                    )
-                    prefill_outputs = {"logits": logits, "kv_cache": kv_cache}
+                    cross_key_cache = text_outputs.cross_key_cache
+                    cross_value_cache = text_outputs.cross_value_cache
                     text_prefill_real_source_tokens = (
                         text_outputs.real_source_tokens
                     )
                     text_prefill_physical_source_tokens = (
                         text_outputs.physical_source_tokens
                     )
+                decode_cross_attention_mask = (
+                    self.model.decoder.build_cross_attention_mask(
+                        encoder_attention_mask=encoder_attention_mask,
+                        target_length=1,
+                    )
+                )
+                kv_cache = measure(
+                    "static_cache_build_and_padding",
+                    lambda: LocalUniRecStaticCache.from_cross_prefill(
+                        cross_key_cache=cross_key_cache,
+                        cross_value_cache=cross_value_cache,
+                        cross_attention_mask=decode_cross_attention_mask,
+                        cache_len=LOCAL_UNIREC_STATIC_CACHE_LEN,
+                        cross_cache_len=cross_cache_len,
+                    ),
+                )
             finally:
                 for hook in timing_hooks:
                     hook.remove()
-            measure = device_timeline.measure if device_timeline is not None else lambda _name, fn: fn()
-            next_token = measure(
-                "first_token_argmax",
-                lambda: self.model.select_next_token(prefill_outputs["logits"]),
+            generated_ids = self.model.decoder_start_ids(
+                batch_size=1,
+                device=pixel_values.device,
             )
-            generated_ids = measure(
-                "first_token_assembly",
-                lambda: torch.cat((decoder_input_ids, next_token), dim=1),
-            )
+            next_token = generated_ids
             if device_timeline is None:
                 synchronize_device(self.device)
                 prefill_device_stage_s = None
@@ -1818,7 +1826,7 @@ class OptimizedUniRecRunner:
             prefill_s = time.perf_counter() - started
         return UniRecPrefilledItem(
             prep=prep,
-            kv_cache=prefill_outputs["kv_cache"],
+            kv_cache=kv_cache,
             generated_ids=generated_ids,
             next_token=next_token,
             prefill_s=prefill_s,
@@ -2080,14 +2088,14 @@ class OptimizedUniRecRunner:
         raw_decode_token_slots = raw_decode_iterations * batch_size
         results = []
         for item, token_ids, text in zip(items, trimmed_rows, texts):
-            decode_tokens = max(0, len(token_ids) - 2)
+            decode_tokens = max(0, len(token_ids) - 1)
             results.append(
                 {
                     "image": str(item.prep["image"]),
                     "text": text,
                     "generated_ids": token_ids,
                     "generated_token_count": max(0, len(token_ids) - 1),
-                    "prefill_generated_token_count": 1 if len(token_ids) > 1 else 0,
+                    "prefill_generated_token_count": 0,
                     "decode_generated_token_count": decode_tokens,
                     "ttft_s": item.prefill_s,
                     "prefill_device_stage_s": item.prefill_device_stage_s,
