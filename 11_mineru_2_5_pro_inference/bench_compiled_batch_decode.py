@@ -20,10 +20,13 @@ from PIL import Image
 import torch
 
 from local_modeling_mineru import (
+    DECODE_ATTENTION_CHOICES,
+    DECODE_ATTENTION_MANUAL,
     DECODE_ROTARY_IMPL_CHOICES,
     DECODE_ROTARY_IMPL_MANUAL,
     DECODE_WEIGHT_FORMAT_CHOICES,
     LocalMinerU2_5ForConditionalGeneration,
+    configure_decode_attention_impl,
     configure_decode_packed_projections,
     configure_decode_rotary_impl,
     configure_decode_weight_format,
@@ -319,9 +322,26 @@ def set_decode_rotary_impl_for_validation(
     return previous
 
 
+def set_decode_attention_impl_for_validation(
+    model: LocalMinerU2_5ForConditionalGeneration,
+    mode: str,
+) -> list[tuple[Any, str]]:
+    previous: list[tuple[Any, str]] = []
+    for module in model.modules():
+        if hasattr(module, "decode_attention_impl"):
+            previous.append((module, str(module.decode_attention_impl)))
+            module.decode_attention_impl = str(mode)
+    return previous
+
+
 def restore_decode_rotary_impl(previous: list[tuple[Any, str]]) -> None:
     for module, mode in previous:
         module.decode_rotary_impl = mode
+
+
+def restore_decode_attention_impl(previous: list[tuple[Any, str]]) -> None:
+    for module, mode in previous:
+        module.decode_attention_impl = mode
 
 
 def first_mismatch(left: list[int], right: list[int]) -> int | None:
@@ -353,12 +373,16 @@ def validate_batched_decode(
     )
     maybe_sync_device(model.device)
     previous_rotary = set_decode_rotary_impl_for_validation(model, DECODE_ROTARY_IMPL_MANUAL)
+    previous_attention = set_decode_attention_impl_for_validation(
+        model, DECODE_ATTENTION_MANUAL
+    )
     try:
         references = [
             run_single_static_reference(model, prepared, cache_length=cache_length, steps=int(steps))
             for prepared in prepared_crops
         ]
     finally:
+        restore_decode_attention_impl(previous_attention)
         restore_decode_rotary_impl(previous_rotary)
     per_item = []
     for idx, (batched, reference) in enumerate(zip(batched_tokens or [], references)):
@@ -403,6 +427,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--torchair-cache-dir", type=Path, default=DEFAULT_TORCHAIR_CACHE_DIR)
     parser.add_argument("--decode-weight-format", choices=DECODE_WEIGHT_FORMAT_CHOICES, default="none")
     parser.add_argument("--decode-rotary-impl", choices=DECODE_ROTARY_IMPL_CHOICES, default=DECODE_ROTARY_IMPL_MANUAL)
+    parser.add_argument("--decode-attention", choices=DECODE_ATTENTION_CHOICES, default=DECODE_ATTENTION_MANUAL)
     parser.add_argument("--hash-model-files", action="store_true")
     parser.add_argument("--output", type=Path, default=None)
     return parser.parse_args()
@@ -450,6 +475,8 @@ def main() -> None:
     maybe_sync_device(model.device)
     decode_rotary_impl["setup_s"] = float(time.perf_counter() - rotary_start)
     effective_decode_rotary_impl = str(decode_rotary_impl.get("effective_mode", DECODE_ROTARY_IMPL_MANUAL))
+    decode_attention = configure_decode_attention_impl(model, str(args.decode_attention))
+    effective_decode_attention = str(decode_attention.get("effective_mode", DECODE_ATTENTION_MANUAL))
     processor = AutoProcessor.from_pretrained(
         processor_dir,
         use_fast=bool(args.use_fast),
@@ -469,6 +496,7 @@ def main() -> None:
         cache_length=int(args.cache_length),
         decode_weight_format=effective_decode_weight_format,
         decode_rotary_impl=effective_decode_rotary_impl,
+        decode_attention_impl=effective_decode_attention,
     )
     maybe_sync_device(model.device)
     compile_wrapper_s = time.perf_counter() - compile_wrapper_start
@@ -529,6 +557,7 @@ def main() -> None:
         "decode_weight_format": decode_weight_format,
         "decode_packed_projections": decode_packed_projections,
         "decode_rotary_impl": decode_rotary_impl,
+        "decode_attention": decode_attention,
         "compile": {
             **dict(compile_meta),
             "compile_wrapper_s": float(compile_wrapper_s),

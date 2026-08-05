@@ -880,7 +880,14 @@ def main() -> None:
             ),
             "prefill_s": sum(float(item["prefill_s"]) for item in generation_metrics),
             "generation_wall_s": sum(
-                float(item["generation_wall_s"]) for item in generation_metrics
+                float(
+                    item.get(
+                        "generation_wall_s",
+                        float(item.get("prefill_s", 0.0))
+                        + float(item.get("decode_s", 0.0)),
+                    )
+                )
+                for item in generation_metrics
             ),
             "compile_wrapper_s": sum(
                 float(item["compile_wrapper_s"])
