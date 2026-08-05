@@ -1,0 +1,1197 @@
+{
+  "status": "ok",
+  "openocr_root": "/workspace/repos/OpenOCR",
+  "model_path": "/workspace/models/unirec-0.1b",
+  "device": "npu:0",
+  "dtype": "float16",
+  "decode_mode": "compiled",
+  "decode_scheduling": "fixed",
+  "decode_batch_size": 4,
+  "max_length": 256,
+  "layout_backend": "transformers_npu",
+  "layout_dtype": "float32",
+  "setup_s": 21.15070185996592,
+  "pipeline_wall_s": 49.21898751100525,
+  "pages_per_s": 0.6501555927546229,
+  "page_count": 32,
+  "crop_count": 186,
+  "cohort_count": 47,
+  "layout_s": 10.897368904203176,
+  "prepare_s": 5.20617083273828,
+  "prefill_s": 10.957659245235845,
+  "decode_s": 12.288779558846727,
+  "raw_decode_token_slots": 9656,
+  "effective_decode_tokens": 4886,
+  "padding_decode_token_slots": 4770,
+  "idle_decode_token_slots": 0,
+  "raw_decode_tokens_per_s": 785.7574426948377,
+  "effective_decode_tokens_per_s": 397.59847400652205,
+  "cohorts": [
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 27,
+      "raw_decode_token_slots": 108,
+      "effective_decode_tokens": 69,
+      "padding_decode_token_slots": 39,
+      "decode_s": 8.089629969093949,
+      "raw_decode_tokens_per_s": 13.350425224961949,
+      "effective_decode_tokens_per_s": 8.529438338170134,
+      "compile_wrap_s": 1.2090928091201931,
+      "cohort_index": 0,
+      "request_ids": [
+        "page_000000_crop_0000",
+        "page_000000_crop_0001",
+        "page_000000_crop_0002",
+        "page_000000_crop_0003"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 45,
+      "raw_decode_token_slots": 180,
+      "effective_decode_tokens": 87,
+      "padding_decode_token_slots": 93,
+      "decode_s": 0.0508175240829587,
+      "raw_decode_tokens_per_s": 3542.085200887655,
+      "effective_decode_tokens_per_s": 1712.0078470956998,
+      "compile_wrap_s": 3.71001660823822e-05,
+      "cohort_index": 1,
+      "request_ids": [
+        "page_000000_crop_0004",
+        "page_000000_crop_0005",
+        "page_000001_crop_0000",
+        "page_000001_crop_0001"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 46,
+      "raw_decode_token_slots": 184,
+      "effective_decode_tokens": 126,
+      "padding_decode_token_slots": 58,
+      "decode_s": 0.10038897604681551,
+      "raw_decode_tokens_per_s": 1832.8705725038296,
+      "effective_decode_tokens_per_s": 1255.117892040666,
+      "compile_wrap_s": 1.2449920177459717e-05,
+      "cohort_index": 2,
+      "request_ids": [
+        "page_000001_crop_0002",
+        "page_000001_crop_0003",
+        "page_000001_crop_0004",
+        "page_000001_crop_0005"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 29,
+      "raw_decode_token_slots": 116,
+      "effective_decode_tokens": 58,
+      "padding_decode_token_slots": 58,
+      "decode_s": 0.03132549300789833,
+      "raw_decode_tokens_per_s": 3703.0542494814704,
+      "effective_decode_tokens_per_s": 1851.5271247407352,
+      "compile_wrap_s": 1.3120006769895554e-05,
+      "cohort_index": 3,
+      "request_ids": [
+        "page_000001_crop_0006",
+        "page_000001_crop_0007",
+        "page_000002_crop_0000",
+        "page_000002_crop_0001"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 16,
+      "raw_decode_token_slots": 64,
+      "effective_decode_tokens": 49,
+      "padding_decode_token_slots": 15,
+      "decode_s": 0.017331893788650632,
+      "raw_decode_tokens_per_s": 3692.614366348635,
+      "effective_decode_tokens_per_s": 2827.1578742356737,
+      "compile_wrap_s": 1.1719996109604836e-05,
+      "cohort_index": 4,
+      "request_ids": [
+        "page_000002_crop_0002",
+        "page_000002_crop_0003",
+        "page_000002_crop_0004",
+        "page_000002_crop_0005"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 19,
+      "raw_decode_token_slots": 76,
+      "effective_decode_tokens": 52,
+      "padding_decode_token_slots": 24,
+      "decode_s": 0.0200896211899817,
+      "raw_decode_tokens_per_s": 3783.0479371059378,
+      "effective_decode_tokens_per_s": 2588.4012201251153,
+      "compile_wrap_s": 1.0340940207242966e-05,
+      "cohort_index": 5,
+      "request_ids": [
+        "page_000002_crop_0006",
+        "page_000002_crop_0007",
+        "page_000002_crop_0008",
+        "page_000002_crop_0009"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 53,
+      "raw_decode_token_slots": 212,
+      "effective_decode_tokens": 109,
+      "padding_decode_token_slots": 103,
+      "decode_s": 0.055346091045066714,
+      "raw_decode_tokens_per_s": 3830.4421504198835,
+      "effective_decode_tokens_per_s": 1969.4254452630532,
+      "compile_wrap_s": 1.1410098522901535e-05,
+      "cohort_index": 6,
+      "request_ids": [
+        "page_000002_crop_0010",
+        "page_000002_crop_0011",
+        "page_000003_crop_0000",
+        "page_000003_crop_0001"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 34,
+      "raw_decode_token_slots": 136,
+      "effective_decode_tokens": 48,
+      "padding_decode_token_slots": 88,
+      "decode_s": 0.07731822412461042,
+      "raw_decode_tokens_per_s": 1758.964352062907,
+      "effective_decode_tokens_per_s": 620.8109477869084,
+      "compile_wrap_s": 1.6029924154281616e-05,
+      "cohort_index": 7,
+      "request_ids": [
+        "page_000003_crop_0002",
+        "page_000003_crop_0003",
+        "page_000003_crop_0004",
+        "page_000004_crop_0000"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 49,
+      "raw_decode_token_slots": 196,
+      "effective_decode_tokens": 112,
+      "padding_decode_token_slots": 84,
+      "decode_s": 0.2610734070185572,
+      "raw_decode_tokens_per_s": 750.7467046847412,
+      "effective_decode_tokens_per_s": 428.9981169627093,
+      "compile_wrap_s": 1.4279969036579132e-05,
+      "cohort_index": 8,
+      "request_ids": [
+        "page_000004_crop_0001",
+        "page_000004_crop_0002",
+        "page_000004_crop_0003",
+        "page_000004_crop_0004"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 60,
+      "raw_decode_token_slots": 240,
+      "effective_decode_tokens": 122,
+      "padding_decode_token_slots": 118,
+      "decode_s": 0.11072071199305356,
+      "raw_decode_tokens_per_s": 2167.616118789565,
+      "effective_decode_tokens_per_s": 1101.8715270513624,
+      "compile_wrap_s": 4.474981687963009e-05,
+      "cohort_index": 9,
+      "request_ids": [
+        "page_000004_crop_0005",
+        "page_000005_crop_0000",
+        "page_000005_crop_0001",
+        "page_000005_crop_0002"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 34,
+      "raw_decode_token_slots": 136,
+      "effective_decode_tokens": 99,
+      "padding_decode_token_slots": 37,
+      "decode_s": 0.08893513190560043,
+      "raw_decode_tokens_per_s": 1529.2044559438698,
+      "effective_decode_tokens_per_s": 1113.1708907238465,
+      "compile_wrap_s": 2.2031133994460106e-05,
+      "cohort_index": 10,
+      "request_ids": [
+        "page_000005_crop_0003",
+        "page_000006_crop_0000",
+        "page_000006_crop_0001",
+        "page_000006_crop_0002"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 21,
+      "raw_decode_token_slots": 84,
+      "effective_decode_tokens": 41,
+      "padding_decode_token_slots": 43,
+      "decode_s": 0.060669810976833105,
+      "raw_decode_tokens_per_s": 1384.5436247044775,
+      "effective_decode_tokens_per_s": 675.7891501533759,
+      "compile_wrap_s": 1.4499993994832039e-05,
+      "cohort_index": 11,
+      "request_ids": [
+        "page_000006_crop_0003",
+        "page_000006_crop_0004",
+        "page_000007_crop_0000",
+        "page_000007_crop_0001"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 162,
+      "raw_decode_token_slots": 648,
+      "effective_decode_tokens": 217,
+      "padding_decode_token_slots": 431,
+      "decode_s": 0.4240283870603889,
+      "raw_decode_tokens_per_s": 1528.1995728925424,
+      "effective_decode_tokens_per_s": 511.7581903050644,
+      "compile_wrap_s": 1.189112663269043e-05,
+      "cohort_index": 12,
+      "request_ids": [
+        "page_000007_crop_0002",
+        "page_000007_crop_0003",
+        "page_000007_crop_0004",
+        "page_000008_crop_0000"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 134,
+      "raw_decode_token_slots": 536,
+      "effective_decode_tokens": 338,
+      "padding_decode_token_slots": 198,
+      "decode_s": 0.17270432505756617,
+      "raw_decode_tokens_per_s": 3103.5702193407105,
+      "effective_decode_tokens_per_s": 1957.1021159275376,
+      "compile_wrap_s": 9.829876944422722e-06,
+      "cohort_index": 13,
+      "request_ids": [
+        "page_000008_crop_0001",
+        "page_000008_crop_0002",
+        "page_000008_crop_0003",
+        "page_000008_crop_0004"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 111,
+      "raw_decode_token_slots": 444,
+      "effective_decode_tokens": 318,
+      "padding_decode_token_slots": 126,
+      "decode_s": 0.11781628197059035,
+      "raw_decode_tokens_per_s": 3768.579287800243,
+      "effective_decode_tokens_per_s": 2699.117598019093,
+      "compile_wrap_s": 1.3520009815692902e-05,
+      "cohort_index": 14,
+      "request_ids": [
+        "page_000008_crop_0005",
+        "page_000008_crop_0006",
+        "page_000008_crop_0007",
+        "page_000008_crop_0008"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 34,
+      "raw_decode_token_slots": 136,
+      "effective_decode_tokens": 92,
+      "padding_decode_token_slots": 44,
+      "decode_s": 0.03567609586752951,
+      "raw_decode_tokens_per_s": 3812.076313086152,
+      "effective_decode_tokens_per_s": 2578.7575059112205,
+      "compile_wrap_s": 1.2381002306938171e-05,
+      "cohort_index": 15,
+      "request_ids": [
+        "page_000009_crop_0000",
+        "page_000009_crop_0001",
+        "page_000010_crop_0000",
+        "page_000010_crop_0001"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 20,
+      "raw_decode_token_slots": 80,
+      "effective_decode_tokens": 66,
+      "padding_decode_token_slots": 14,
+      "decode_s": 0.02158341696485877,
+      "raw_decode_tokens_per_s": 3706.549344353246,
+      "effective_decode_tokens_per_s": 3057.903209091428,
+      "compile_wrap_s": 1.303013414144516e-05,
+      "cohort_index": 16,
+      "request_ids": [
+        "page_000010_crop_0002",
+        "page_000010_crop_0003",
+        "page_000010_crop_0004",
+        "page_000011_crop_0000"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 12,
+      "raw_decode_token_slots": 48,
+      "effective_decode_tokens": 37,
+      "padding_decode_token_slots": 11,
+      "decode_s": 0.014364553848281503,
+      "raw_decode_tokens_per_s": 3341.558708121134,
+      "effective_decode_tokens_per_s": 2575.7848375100407,
+      "compile_wrap_s": 1.3120006769895554e-05,
+      "cohort_index": 17,
+      "request_ids": [
+        "page_000011_crop_0001",
+        "page_000011_crop_0002",
+        "page_000011_crop_0003",
+        "page_000011_crop_0004"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 12,
+      "raw_decode_token_slots": 48,
+      "effective_decode_tokens": 30,
+      "padding_decode_token_slots": 18,
+      "decode_s": 0.014103149995207787,
+      "raw_decode_tokens_per_s": 3403.494965047544,
+      "effective_decode_tokens_per_s": 2127.184353154715,
+      "compile_wrap_s": 1.3150041922926903e-05,
+      "cohort_index": 18,
+      "request_ids": [
+        "page_000011_crop_0005",
+        "page_000011_crop_0006",
+        "page_000012_crop_0000",
+        "page_000012_crop_0001"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 122,
+      "raw_decode_token_slots": 488,
+      "effective_decode_tokens": 309,
+      "padding_decode_token_slots": 179,
+      "decode_s": 0.13329498609527946,
+      "raw_decode_tokens_per_s": 3661.052934513057,
+      "effective_decode_tokens_per_s": 2318.1667146814234,
+      "compile_wrap_s": 1.2279953807592392e-05,
+      "cohort_index": 19,
+      "request_ids": [
+        "page_000012_crop_0002",
+        "page_000012_crop_0003",
+        "page_000012_crop_0004",
+        "page_000013_crop_0000"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 115,
+      "raw_decode_token_slots": 460,
+      "effective_decode_tokens": 159,
+      "padding_decode_token_slots": 301,
+      "decode_s": 0.16541758202947676,
+      "raw_decode_tokens_per_s": 2780.841034890897,
+      "effective_decode_tokens_per_s": 961.2037490166362,
+      "compile_wrap_s": 2.8589973226189613e-05,
+      "cohort_index": 20,
+      "request_ids": [
+        "page_000013_crop_0001",
+        "page_000013_crop_0002",
+        "page_000014_crop_0000",
+        "page_000014_crop_0001"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 134,
+      "raw_decode_token_slots": 536,
+      "effective_decode_tokens": 231,
+      "padding_decode_token_slots": 305,
+      "decode_s": 0.3753649890422821,
+      "raw_decode_tokens_per_s": 1427.9435100422313,
+      "effective_decode_tokens_per_s": 615.4010276487975,
+      "compile_wrap_s": 2.0771054551005363e-05,
+      "cohort_index": 21,
+      "request_ids": [
+        "page_000014_crop_0002",
+        "page_000014_crop_0003",
+        "page_000014_crop_0004",
+        "page_000014_crop_0005"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 96,
+      "raw_decode_token_slots": 384,
+      "effective_decode_tokens": 112,
+      "padding_decode_token_slots": 272,
+      "decode_s": 0.16207075398415327,
+      "raw_decode_tokens_per_s": 2369.3355559852967,
+      "effective_decode_tokens_per_s": 691.0562038290448,
+      "compile_wrap_s": 2.2181076928973198e-05,
+      "cohort_index": 22,
+      "request_ids": [
+        "page_000015_crop_0000",
+        "page_000015_crop_0001",
+        "page_000015_crop_0002",
+        "page_000016_crop_0000"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 55,
+      "raw_decode_token_slots": 220,
+      "effective_decode_tokens": 106,
+      "padding_decode_token_slots": 114,
+      "decode_s": 0.11148391501046717,
+      "raw_decode_tokens_per_s": 1973.3788500282244,
+      "effective_decode_tokens_per_s": 950.8098095590535,
+      "compile_wrap_s": 1.35800801217556e-05,
+      "cohort_index": 23,
+      "request_ids": [
+        "page_000016_crop_0001",
+        "page_000016_crop_0002",
+        "page_000016_crop_0003",
+        "page_000017_crop_0000"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 22,
+      "raw_decode_token_slots": 88,
+      "effective_decode_tokens": 57,
+      "padding_decode_token_slots": 31,
+      "decode_s": 0.057006418937817216,
+      "raw_decode_tokens_per_s": 1543.6858101188689,
+      "effective_decode_tokens_per_s": 999.8873997360855,
+      "compile_wrap_s": 1.582014374434948e-05,
+      "cohort_index": 24,
+      "request_ids": [
+        "page_000017_crop_0001",
+        "page_000017_crop_0002",
+        "page_000018_crop_0000",
+        "page_000018_crop_0001"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 254,
+      "raw_decode_token_slots": 1016,
+      "effective_decode_tokens": 303,
+      "padding_decode_token_slots": 713,
+      "decode_s": 0.5035401580389589,
+      "raw_decode_tokens_per_s": 2017.7139474968988,
+      "effective_decode_tokens_per_s": 601.7394941846065,
+      "compile_wrap_s": 1.6639940440654755e-05,
+      "cohort_index": 25,
+      "request_ids": [
+        "page_000018_crop_0002",
+        "page_000018_crop_0003",
+        "page_000019_crop_0000",
+        "page_000019_crop_0001"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 18,
+      "raw_decode_token_slots": 72,
+      "effective_decode_tokens": 45,
+      "padding_decode_token_slots": 27,
+      "decode_s": 0.018802118953317404,
+      "raw_decode_tokens_per_s": 3829.355626286817,
+      "effective_decode_tokens_per_s": 2393.347266429261,
+      "compile_wrap_s": 1.56499445438385e-05,
+      "cohort_index": 26,
+      "request_ids": [
+        "page_000019_crop_0002",
+        "page_000019_crop_0003",
+        "page_000019_crop_0004",
+        "page_000019_crop_0005"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 43,
+      "raw_decode_token_slots": 172,
+      "effective_decode_tokens": 81,
+      "padding_decode_token_slots": 91,
+      "decode_s": 0.1090087431948632,
+      "raw_decode_tokens_per_s": 1577.8550872064832,
+      "effective_decode_tokens_per_s": 743.0596631611926,
+      "compile_wrap_s": 1.322990283370018e-05,
+      "cohort_index": 27,
+      "request_ids": [
+        "page_000019_crop_0006",
+        "page_000020_crop_0000",
+        "page_000020_crop_0001",
+        "page_000020_crop_0002"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 40,
+      "raw_decode_token_slots": 160,
+      "effective_decode_tokens": 92,
+      "padding_decode_token_slots": 68,
+      "decode_s": 0.04334988701157272,
+      "raw_decode_tokens_per_s": 3690.897739993792,
+      "effective_decode_tokens_per_s": 2122.2662004964304,
+      "compile_wrap_s": 1.856079325079918e-05,
+      "cohort_index": 28,
+      "request_ids": [
+        "page_000020_crop_0003",
+        "page_000020_crop_0004",
+        "page_000021_crop_0000",
+        "page_000021_crop_0001"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 40,
+      "raw_decode_token_slots": 160,
+      "effective_decode_tokens": 110,
+      "padding_decode_token_slots": 50,
+      "decode_s": 0.044813632033765316,
+      "raw_decode_tokens_per_s": 3570.3421646218335,
+      "effective_decode_tokens_per_s": 2454.6102381775104,
+      "compile_wrap_s": 1.6700010746717453e-05,
+      "cohort_index": 29,
+      "request_ids": [
+        "page_000021_crop_0002",
+        "page_000021_crop_0003",
+        "page_000021_crop_0004",
+        "page_000022_crop_0000"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 18,
+      "raw_decode_token_slots": 72,
+      "effective_decode_tokens": 46,
+      "padding_decode_token_slots": 26,
+      "decode_s": 0.020575009984895587,
+      "raw_decode_tokens_per_s": 3499.3907683571597,
+      "effective_decode_tokens_per_s": 2235.721879783741,
+      "compile_wrap_s": 1.4730961993336678e-05,
+      "cohort_index": 30,
+      "request_ids": [
+        "page_000022_crop_0001",
+        "page_000022_crop_0002",
+        "page_000022_crop_0003",
+        "page_000022_crop_0004"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 18,
+      "raw_decode_token_slots": 72,
+      "effective_decode_tokens": 59,
+      "padding_decode_token_slots": 13,
+      "decode_s": 0.0424445120152086,
+      "raw_decode_tokens_per_s": 1696.3323780045146,
+      "effective_decode_tokens_per_s": 1390.050143087033,
+      "compile_wrap_s": 1.3299984857439995e-05,
+      "cohort_index": 31,
+      "request_ids": [
+        "page_000022_crop_0005",
+        "page_000022_crop_0006",
+        "page_000023_crop_0000",
+        "page_000023_crop_0001"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 24,
+      "raw_decode_token_slots": 96,
+      "effective_decode_tokens": 46,
+      "padding_decode_token_slots": 50,
+      "decode_s": 0.028360972180962563,
+      "raw_decode_tokens_per_s": 3384.9333297692965,
+      "effective_decode_tokens_per_s": 1621.9472205144548,
+      "compile_wrap_s": 1.234002411365509e-05,
+      "cohort_index": 32,
+      "request_ids": [
+        "page_000023_crop_0002",
+        "page_000023_crop_0003",
+        "page_000023_crop_0004",
+        "page_000023_crop_0005"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 22,
+      "raw_decode_token_slots": 88,
+      "effective_decode_tokens": 55,
+      "padding_decode_token_slots": 33,
+      "decode_s": 0.023978538112714887,
+      "raw_decode_tokens_per_s": 3669.948500877834,
+      "effective_decode_tokens_per_s": 2293.717813048646,
+      "compile_wrap_s": 1.3379845768213272e-05,
+      "cohort_index": 33,
+      "request_ids": [
+        "page_000023_crop_0006",
+        "page_000023_crop_0007",
+        "page_000023_crop_0008",
+        "page_000023_crop_0009"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 18,
+      "raw_decode_token_slots": 72,
+      "effective_decode_tokens": 43,
+      "padding_decode_token_slots": 29,
+      "decode_s": 0.019913787953555584,
+      "raw_decode_tokens_per_s": 3615.5853506085205,
+      "effective_decode_tokens_per_s": 2159.307917724533,
+      "compile_wrap_s": 1.267995685338974e-05,
+      "cohort_index": 34,
+      "request_ids": [
+        "page_000023_crop_0010",
+        "page_000023_crop_0011",
+        "page_000023_crop_0012",
+        "page_000024_crop_0000"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 40,
+      "raw_decode_token_slots": 160,
+      "effective_decode_tokens": 70,
+      "padding_decode_token_slots": 90,
+      "decode_s": 0.04637611797079444,
+      "raw_decode_tokens_per_s": 3450.0515998506103,
+      "effective_decode_tokens_per_s": 1509.397574934642,
+      "compile_wrap_s": 1.3880198821425438e-05,
+      "cohort_index": 35,
+      "request_ids": [
+        "page_000024_crop_0001",
+        "page_000024_crop_0002",
+        "page_000024_crop_0003",
+        "page_000024_crop_0004"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 47,
+      "raw_decode_token_slots": 188,
+      "effective_decode_tokens": 90,
+      "padding_decode_token_slots": 98,
+      "decode_s": 0.06636369717307389,
+      "raw_decode_tokens_per_s": 2832.8741165475376,
+      "effective_decode_tokens_per_s": 1356.163140900417,
+      "compile_wrap_s": 0.00041961693204939365,
+      "cohort_index": 36,
+      "request_ids": [
+        "page_000024_crop_0005",
+        "page_000025_crop_0000",
+        "page_000025_crop_0001",
+        "page_000025_crop_0002"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 21,
+      "raw_decode_token_slots": 84,
+      "effective_decode_tokens": 53,
+      "padding_decode_token_slots": 31,
+      "decode_s": 0.027247922960668802,
+      "raw_decode_tokens_per_s": 3082.803783659047,
+      "effective_decode_tokens_per_s": 1945.1023873086842,
+      "compile_wrap_s": 2.125999890267849e-05,
+      "cohort_index": 37,
+      "request_ids": [
+        "page_000025_crop_0003",
+        "page_000025_crop_0004",
+        "page_000025_crop_0005",
+        "page_000025_crop_0006"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 27,
+      "raw_decode_token_slots": 108,
+      "effective_decode_tokens": 85,
+      "padding_decode_token_slots": 23,
+      "decode_s": 0.037727670976892114,
+      "raw_decode_tokens_per_s": 2862.6203845487603,
+      "effective_decode_tokens_per_s": 2252.98826561708,
+      "compile_wrap_s": 1.850980333983898e-05,
+      "cohort_index": 38,
+      "request_ids": [
+        "page_000025_crop_0007",
+        "page_000026_crop_0000",
+        "page_000026_crop_0001",
+        "page_000026_crop_0002"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 34,
+      "raw_decode_token_slots": 136,
+      "effective_decode_tokens": 57,
+      "padding_decode_token_slots": 79,
+      "decode_s": 0.06308856210671365,
+      "raw_decode_tokens_per_s": 2155.699788655151,
+      "effective_decode_tokens_per_s": 903.4918231863501,
+      "compile_wrap_s": 1.2150034308433533e-05,
+      "cohort_index": 39,
+      "request_ids": [
+        "page_000026_crop_0003",
+        "page_000027_crop_0000",
+        "page_000027_crop_0001",
+        "page_000027_crop_0002"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 38,
+      "raw_decode_token_slots": 152,
+      "effective_decode_tokens": 119,
+      "padding_decode_token_slots": 33,
+      "decode_s": 0.04689935687929392,
+      "raw_decode_tokens_per_s": 3240.9826085932546,
+      "effective_decode_tokens_per_s": 2537.348226464456,
+      "compile_wrap_s": 1.2960052117705345e-05,
+      "cohort_index": 40,
+      "request_ids": [
+        "page_000027_crop_0003",
+        "page_000027_crop_0004",
+        "page_000027_crop_0005",
+        "page_000027_crop_0006"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 27,
+      "raw_decode_token_slots": 108,
+      "effective_decode_tokens": 59,
+      "padding_decode_token_slots": 49,
+      "decode_s": 0.029527032049372792,
+      "raw_decode_tokens_per_s": 3657.6652817462605,
+      "effective_decode_tokens_per_s": 1998.1689965095313,
+      "compile_wrap_s": 1.554097980260849e-05,
+      "cohort_index": 41,
+      "request_ids": [
+        "page_000028_crop_0000",
+        "page_000028_crop_0001",
+        "page_000028_crop_0002",
+        "page_000028_crop_0003"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 44,
+      "raw_decode_token_slots": 176,
+      "effective_decode_tokens": 130,
+      "padding_decode_token_slots": 46,
+      "decode_s": 0.0634454779792577,
+      "raw_decode_tokens_per_s": 2774.035370299202,
+      "effective_decode_tokens_per_s": 2049.003398516456,
+      "compile_wrap_s": 2.238992601633072e-05,
+      "cohort_index": 42,
+      "request_ids": [
+        "page_000028_crop_0004",
+        "page_000028_crop_0005",
+        "page_000028_crop_0006",
+        "page_000028_crop_0007"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 94,
+      "raw_decode_token_slots": 376,
+      "effective_decode_tokens": 120,
+      "padding_decode_token_slots": 256,
+      "decode_s": 0.11250265198759735,
+      "raw_decode_tokens_per_s": 3342.143437129388,
+      "effective_decode_tokens_per_s": 1066.6415224881027,
+      "compile_wrap_s": 3.4970929846167564e-05,
+      "cohort_index": 43,
+      "request_ids": [
+        "page_000028_crop_0008",
+        "page_000029_crop_0000",
+        "page_000029_crop_0001",
+        "page_000029_crop_0002"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 31,
+      "raw_decode_token_slots": 124,
+      "effective_decode_tokens": 74,
+      "padding_decode_token_slots": 50,
+      "decode_s": 0.035104406997561455,
+      "raw_decode_tokens_per_s": 3532.3200306050953,
+      "effective_decode_tokens_per_s": 2107.99743761917,
+      "compile_wrap_s": 1.3360055163502693e-05,
+      "cohort_index": 44,
+      "request_ids": [
+        "page_000029_crop_0003",
+        "page_000030_crop_0000",
+        "page_000030_crop_0001",
+        "page_000030_crop_0002"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 4,
+      "dummy_batch_size": 0,
+      "decode_iterations": 30,
+      "raw_decode_token_slots": 120,
+      "effective_decode_tokens": 60,
+      "padding_decode_token_slots": 60,
+      "decode_s": 0.07442283513955772,
+      "raw_decode_tokens_per_s": 1612.4083391203246,
+      "effective_decode_tokens_per_s": 806.2041695601623,
+      "compile_wrap_s": 1.8770107999444008e-05,
+      "cohort_index": 45,
+      "request_ids": [
+        "page_000030_crop_0003",
+        "page_000030_crop_0004",
+        "page_000031_crop_0000",
+        "page_000031_crop_0001"
+      ]
+    },
+    {
+      "batch_size": 4,
+      "real_batch_size": 2,
+      "dummy_batch_size": 2,
+      "decode_iterations": 24,
+      "raw_decode_token_slots": 96,
+      "effective_decode_tokens": 45,
+      "padding_decode_token_slots": 51,
+      "decode_s": 0.06272475700825453,
+      "raw_decode_tokens_per_s": 1530.4961641759166,
+      "effective_decode_tokens_per_s": 717.4200769574609,
+      "compile_wrap_s": 1.0540010407567024e-05,
+      "cohort_index": 46,
+      "request_ids": [
+        "page_000031_crop_0002",
+        "page_000031_crop_0003"
+      ]
+    }
+  ],
+  "continuous_decode": null,
+  "pages": [
+    {
+      "page_index": 0,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_003.png",
+      "crop_count": 6,
+      "layout_s": 2.259270607959479,
+      "wall_s": 14.01138787297532
+    },
+    {
+      "page_index": 1,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_005.png",
+      "crop_count": 8,
+      "layout_s": 0.2798721259459853,
+      "wall_s": 2.2692977690603584
+    },
+    {
+      "page_index": 2,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_011.png",
+      "crop_count": 12,
+      "layout_s": 0.31586660793982446,
+      "wall_s": 2.072122287005186
+    },
+    {
+      "page_index": 3,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_015.png",
+      "crop_count": 5,
+      "layout_s": 0.16276566591113806,
+      "wall_s": 2.264800901990384
+    },
+    {
+      "page_index": 4,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_11.2013EvaluatingTraineeteacherproficiency_page_010.png",
+      "crop_count": 6,
+      "layout_s": 0.4582506089936942,
+      "wall_s": 3.4667870812118053
+    },
+    {
+      "page_index": 5,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_11.2013EvaluatingTraineeteacherproficiency_page_029.png",
+      "crop_count": 4,
+      "layout_s": 0.2872108209412545,
+      "wall_s": 2.4662334348540753
+    },
+    {
+      "page_index": 6,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_13 fallacies LALT2012_page_001.png",
+      "crop_count": 5,
+      "layout_s": 0.29211748391389847,
+      "wall_s": 2.6773875241633505
+    },
+    {
+      "page_index": 7,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_13 fallacies LALT2012_page_009.png",
+      "crop_count": 5,
+      "layout_s": 0.4324025488458574,
+      "wall_s": 2.9897321921307594
+    },
+    {
+      "page_index": 8,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_13 fallacies LALT2012_page_010.png",
+      "crop_count": 9,
+      "layout_s": 0.36761872796341777,
+      "wall_s": 2.6858517681248486
+    },
+    {
+      "page_index": 9,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_1637904769_page_001.png",
+      "crop_count": 2,
+      "layout_s": 0.19555407389998436,
+      "wall_s": 1.0050093110185117
+    },
+    {
+      "page_index": 10,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_1637904769_page_002.png",
+      "crop_count": 5,
+      "layout_s": 0.20329763507470489,
+      "wall_s": 1.3221166098956019
+    },
+    {
+      "page_index": 11,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_1637904769_page_008.png",
+      "crop_count": 7,
+      "layout_s": 0.20789436413906515,
+      "wall_s": 1.3702701590955257
+    },
+    {
+      "page_index": 12,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_1637904769_page_017.png",
+      "crop_count": 5,
+      "layout_s": 0.13763065892271698,
+      "wall_s": 1.1939412921201438
+    },
+    {
+      "page_index": 13,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_8076_MEYER_Chapter_2_-_Language_Change_page_012.png",
+      "crop_count": 3,
+      "layout_s": 0.14043283695355058,
+      "wall_s": 1.4671558749396354
+    },
+    {
+      "page_index": 14,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_8076_MEYER_Chapter_2_-_Language_Change_page_014.png",
+      "crop_count": 6,
+      "layout_s": 0.17491760314442217,
+      "wall_s": 1.9260518848896027
+    },
+    {
+      "page_index": 15,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_8076_MEYER_Chapter_2_-_Language_Change_page_017.png",
+      "crop_count": 3,
+      "layout_s": 0.6183664898853749,
+      "wall_s": 2.325834908988327
+    },
+    {
+      "page_index": 16,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_8076_MEYER_Chapter_2_-_Language_Change_page_021.png",
+      "crop_count": 4,
+      "layout_s": 0.46527934703044593,
+      "wall_s": 2.8459769699256867
+    },
+    {
+      "page_index": 17,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_B14_Claeys_Consistent Presentation of Images_v2_page_006.png",
+      "crop_count": 3,
+      "layout_s": 0.4432916138321161,
+      "wall_s": 2.295947471167892
+    },
+    {
+      "page_index": 18,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_B14_Claeys_Consistent Presentation of Images_v2_page_010.png",
+      "crop_count": 4,
+      "layout_s": 0.19437041296623647,
+      "wall_s": 2.2480739569291472
+    },
+    {
+      "page_index": 19,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_B14_Claeys_Consistent Presentation of Images_v2_page_013.png",
+      "crop_count": 7,
+      "layout_s": 0.33734300290234387,
+      "wall_s": 2.5706192599609494
+    },
+    {
+      "page_index": 20,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_B14_Claeys_Consistent Presentation of Images_v2_page_024.png",
+      "crop_count": 5,
+      "layout_s": 0.22654463001526892,
+      "wall_s": 1.6089782458730042
+    },
+    {
+      "page_index": 21,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_002.png",
+      "crop_count": 5,
+      "layout_s": 0.20326141407713294,
+      "wall_s": 1.2097171798814088
+    },
+    {
+      "page_index": 22,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_005.png",
+      "crop_count": 7,
+      "layout_s": 0.14681096491403878,
+      "wall_s": 1.3057458619587123
+    },
+    {
+      "page_index": 23,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_006.png",
+      "crop_count": 13,
+      "layout_s": 0.147962013958022,
+      "wall_s": 1.5239878210704774
+    },
+    {
+      "page_index": 24,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_007.png",
+      "crop_count": 6,
+      "layout_s": 0.1253689699806273,
+      "wall_s": 1.6247278931550682
+    },
+    {
+      "page_index": 25,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_008.png",
+      "crop_count": 8,
+      "layout_s": 0.13346506794914603,
+      "wall_s": 2.4111575190909207
+    },
+    {
+      "page_index": 26,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_010.png",
+      "crop_count": 4,
+      "layout_s": 0.29818543791770935,
+      "wall_s": 2.348128727870062
+    },
+    {
+      "page_index": 27,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_002.png",
+      "crop_count": 7,
+      "layout_s": 0.5887279759626836,
+      "wall_s": 1.8138393480330706
+    },
+    {
+      "page_index": 28,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_004.png",
+      "crop_count": 9,
+      "layout_s": 0.273352756164968,
+      "wall_s": 2.4132638049777597
+    },
+    {
+      "page_index": 29,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_009.png",
+      "crop_count": 4,
+      "layout_s": 0.37613426288589835,
+      "wall_s": 1.8654966161120683
+    },
+    {
+      "page_index": 30,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_014.png",
+      "crop_count": 5,
+      "layout_s": 0.21485728211700916,
+      "wall_s": 1.5922857020050287
+    },
+    {
+      "page_index": 31,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_033.png",
+      "crop_count": 4,
+      "layout_s": 0.18894489109516144,
+      "wall_s": 1.1787952450104058
+    }
+  ],
+  "trace_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/opendoc_fixed_b4_32p_warm_control_7477463/output/recognition_trace.jsonl"
+}

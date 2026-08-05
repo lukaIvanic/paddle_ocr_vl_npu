@@ -1,0 +1,66 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_033.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "paragraph_title_01",
+      "bbox": [
+        532.947509765625,
+        123.34280395507812,
+        1466.0594482421875,
+        266.947509765625
+      ],
+      "score": 0.7964611053466797,
+      "text": "Integral Calculus",
+      "text_unirec": "Integral Calculus",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "display_formula_02",
+      "bbox": [
+        434.5791931152344,
+        351.89697265625,
+        1513.6978759765625,
+        673.3630981445312
+      ],
+      "score": 0.9633077383041382,
+      "text": "$$\\int ax^{n}\\partial x=a\\frac{x^{(n+1)}}{n+1}+C$$\n\n",
+      "text_unirec": "$$\\int ax^{n}\\partial x=a\\frac{x^{(n+1)}}{n+1}+C$$\n\n",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "display_formula_03",
+      "bbox": [
+        534.2352294921875,
+        736.18115234375,
+        1464.0867919921875,
+        1053.9080810546875
+      ],
+      "score": 0.9597377777099609,
+      "text": "$$ \\int ax\\partial x=a\\frac{x^{2}}{2}+C$$\n\n",
+      "text_unirec": "$$ \\int ax\\partial x=a\\frac{x^{2}}{2}+C$$\n\n",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "display_formula_04",
+      "bbox": [
+        525.4451904296875,
+        1106.7357177734375,
+        1463.68212890625,
+        1426.856689453125
+      ],
+      "score": 0.9615522623062134,
+      "text": "$$ \\int ax^{2}\\partial x=a\\frac{x^{3}}{3}+C$$\n\n",
+      "text_unirec": "$$ \\int ax^{2}\\partial x=a\\frac{x^{3}}{3}+C$$\n\n",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 1.499496984994039
+  }
+}
