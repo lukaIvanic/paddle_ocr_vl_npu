@@ -29,6 +29,7 @@ OMNIDOCBENCH_V16_JSON_SHA256 = (
 OMNIDOCBENCH_V16_IMAGES_AGGREGATE_SHA256 = (
     "58feeb96c60fcfab12ba4348c4e093ceaf1b707658dbfd0e08c24d7821d4c221"
 )
+OMNIDOCBENCH_V16_IMAGE_COUNT = 1651
 
 
 def parse_args() -> argparse.Namespace:
@@ -89,7 +90,7 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--teds-workers", type=int, default=12)
-    parser.add_argument("--teds-timeout-s", type=float, default=30.0)
+    parser.add_argument("--teds-timeout-s", type=float, default=120.0)
     parser.add_argument(
         "--score-only",
         action="store_true",
@@ -138,12 +139,25 @@ def _write_dataset_manifest(
     images_dir: Path,
     output_path: Path,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    print(
+        "DATASET_CHECK_START "
+        "checking OmniDocBench.json and all referenced image files; "
+        "inference will start after this check",
+        flush=True,
+    )
     dataset_bytes = dataset_json.read_bytes()
     pages = json.loads(dataset_bytes)
     image_names = [
         Path(page["page_info"]["image_path"]).name
         for page in pages
     ]
+    image_count_matches = len(image_names) == OMNIDOCBENCH_V16_IMAGE_COUNT
+    print(
+        "DATASET_IMAGE_COUNT "
+        f"found={len(image_names)} expected={OMNIDOCBENCH_V16_IMAGE_COUNT} "
+        f"matches={image_count_matches}",
+        flush=True,
+    )
     if len(image_names) != len(set(image_names)):
         duplicates = sorted(
             name for name, count in Counter(image_names).items() if count > 1
@@ -193,12 +207,23 @@ def _write_dataset_manifest(
     }
     manifest["repository_authority"] = {
         "name": "OmniDocBench v1.6 910B benchmark inputs",
+        "expected_referenced_image_count": OMNIDOCBENCH_V16_IMAGE_COUNT,
         "expected_dataset_json_sha256": OMNIDOCBENCH_V16_JSON_SHA256,
         "expected_referenced_images_aggregate_sha256": (
             OMNIDOCBENCH_V16_IMAGES_AGGREGATE_SHA256
         ),
-        "matches": (
+        "image_count_matches": image_count_matches,
+        "dataset_json_matches": (
             manifest["dataset_json"]["sha256"]
+            == OMNIDOCBENCH_V16_JSON_SHA256
+        ),
+        "referenced_images_aggregate_matches": (
+            manifest["referenced_images"]["aggregate_sha256"]
+            == OMNIDOCBENCH_V16_IMAGES_AGGREGATE_SHA256
+        ),
+        "matches": (
+            image_count_matches
+            and manifest["dataset_json"]["sha256"]
             == OMNIDOCBENCH_V16_JSON_SHA256
             and manifest["referenced_images"]["aggregate_sha256"]
             == OMNIDOCBENCH_V16_IMAGES_AGGREGATE_SHA256
@@ -219,6 +244,31 @@ def _write_dataset_manifest(
         f"output={output_path}",
         flush=True,
     )
+    if manifest["repository_authority"]["matches"]:
+        print(
+            "DATASET_CHECK_RESULT PASS: input count and fingerprints match "
+            "the repository authority",
+            flush=True,
+        )
+    else:
+        authority = manifest["repository_authority"]
+        print(
+            "\033[1;31m\n"
+            "!!!!!!!!!!!!!!!! DATASET AUTHORITY WARNING !!!!!!!!!!!!!!!!\n"
+            "The supplied OmniDocBench inputs do not match the validated "
+            "repository authority.\n"
+            f"Image count: {len(image_names)} "
+            f"(expected {OMNIDOCBENCH_V16_IMAGE_COUNT}); "
+            f"count_match={authority['image_count_matches']}\n"
+            f"JSON fingerprint match={authority['dataset_json_matches']}; "
+            "image aggregate fingerprint match="
+            f"{authority['referenced_images_aggregate_matches']}\n"
+            "The run will continue with the supplied inputs.\n"
+            "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+            "\033[0m\n",
+            file=sys.stderr,
+            flush=True,
+        )
     return pages, manifest
 
 
@@ -515,16 +565,17 @@ def _write_summary(
         "dataset_fingerprint": {
             "dataset_json_sha256": dataset_manifest["dataset_json"]["sha256"],
             "referenced_image_count": dataset_manifest["referenced_images"]["count"],
+            "expected_referenced_image_count": OMNIDOCBENCH_V16_IMAGE_COUNT,
+            "referenced_image_count_matches": dataset_manifest[
+                "repository_authority"
+            ]["image_count_matches"],
             "referenced_images_total_bytes": dataset_manifest["referenced_images"]["total_bytes"],
             "referenced_images_aggregate_sha256": dataset_manifest[
                 "referenced_images"
             ]["aggregate_sha256"],
-            "matches_repository_authority": (
-                dataset_manifest["dataset_json"]["sha256"]
-                == OMNIDOCBENCH_V16_JSON_SHA256
-                and dataset_manifest["referenced_images"]["aggregate_sha256"]
-                == OMNIDOCBENCH_V16_IMAGES_AGGREGATE_SHA256
-            ),
+            "matches_repository_authority": dataset_manifest[
+                "repository_authority"
+            ]["matches"],
         },
     }
     summary_output.parent.mkdir(parents=True, exist_ok=True)
@@ -564,6 +615,8 @@ def _benchmark_summary_markdown(summary: dict[str, Any]) -> str:
         (
             "- Referenced images: "
             f"{fingerprint['referenced_image_count']} files, "
+            f"expected {fingerprint['expected_referenced_image_count']}, "
+            f"count matches: {fingerprint['referenced_image_count_matches']}; "
             f"{fingerprint['referenced_images_total_bytes']} bytes"
         ),
         (
