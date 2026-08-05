@@ -37,13 +37,7 @@ from modeling_optimized_unirec import (
 )
 from opendoc_layout_npu import PPDocLayoutV2NpuAdapter
 from text_packed_prefill import PACKED_TEXT_PREFILL_BUCKET
-from vision_atlas import (
-    ATLAS_CHANNELS,
-    ATLAS_HEIGHT,
-    ATLAS_MAX_MEMBERS,
-    ATLAS_WIDTH,
-    UniRecVisionAtlasRuntime,
-)
+from vision_atlas import UniRecVisionAtlasRuntime
 
 
 @dataclass
@@ -312,32 +306,7 @@ def warmup_configured_graphs(
 
     with torch.inference_mode():
         if vision_atlas_runtime is not None:
-            cells = ATLAS_HEIGHT * ATLAS_WIDTH
-            identity = torch.arange(cells, dtype=torch.long, device=device)
-            valid_mask = torch.ones(
-                (1, 1, ATLAS_HEIGHT, ATLAS_WIDTH),
-                dtype=runner.dtype,
-                device=device,
-            )
-            membership = torch.zeros(
-                (ATLAS_MAX_MEMBERS, cells),
-                dtype=runner.dtype,
-                device=device,
-            )
-            membership[0].fill_(1)
-            normalized_membership = membership / float(cells)
-            atlas_inputs = (
-                torch.zeros(
-                    (1, cells, ATLAS_CHANNELS),
-                    dtype=runner.dtype,
-                    device=device,
-                ),
-                identity,
-                identity,
-                valid_mask,
-                membership,
-                normalized_membership,
-            )
+            atlas_inputs = vision_atlas_runtime.warmup_inputs()
             pass_times = []
             for pass_index in range(passes):
                 started = time.perf_counter()
@@ -347,12 +316,13 @@ def warmup_configured_graphs(
                 pass_times.append(elapsed)
                 print(
                     "UNIREC_GRAPH_WARMUP_PASS "
-                    f"graph=vision_atlas_stage2 pass={pass_index + 1}/{passes} "
+                    f"graph=vision_atlas_stages0_2 "
+                    f"pass={pass_index + 1}/{passes} "
                     f"wall_s={elapsed:.3f}",
                     flush=True,
                 )
             vision_atlas_runtime.first_call = False
-            report["graphs"]["vision_atlas_stage2"] = {
+            report["graphs"]["vision_atlas_stages0_2"] = {
                 "pass_wall_s": pass_times,
                 "cache_dir": str(vision_atlas_runtime.cache_dir),
             }
