@@ -28,6 +28,9 @@ DECODE_WEIGHT_FORMAT_CHOICES = (DECODE_WEIGHT_FORMAT_NONE, DECODE_WEIGHT_FORMAT_
 DECODE_ROTARY_IMPL_MANUAL = "manual"
 DECODE_ROTARY_IMPL_NPU = "npu_rotary_mul"
 DECODE_ROTARY_IMPL_CHOICES = (DECODE_ROTARY_IMPL_MANUAL, DECODE_ROTARY_IMPL_NPU)
+DECODE_ATTENTION_MANUAL = "manual"
+DECODE_ATTENTION_INCREFA = "increfa"
+DECODE_ATTENTION_CHOICES = (DECODE_ATTENTION_MANUAL, DECODE_ATTENTION_INCREFA)
 VISION_ATTENTION_CHOICES = ("manual", "prompt_flash_attention")
 VISION_PROMPT_FA_FULL_ATTENTION_TOKENS = (1 << 31) - 1
 
@@ -366,6 +369,32 @@ def configure_decode_rotary_impl(
     }
 
 
+def configure_decode_attention_impl(
+    model: "LocalMinerU2_5ForConditionalGeneration",
+    mode: str,
+) -> dict[str, object]:
+    """Select the one-token static-decode attention implementation."""
+    if mode not in DECODE_ATTENTION_CHOICES:
+        raise ValueError(
+            f"unsupported decode attention impl {mode!r}; expected {DECODE_ATTENTION_CHOICES}"
+        )
+    if mode == DECODE_ATTENTION_INCREFA and model.device.type != "npu":
+        raise RuntimeError(
+            f"IncreFA decode attention requires NPU tensors, got device={model.device.type}"
+        )
+    updated_layers = 0
+    for module in model.modules():
+        if isinstance(module, MinerUAttention):
+            module.decode_attention_impl = str(mode)
+            updated_layers += 1
+    return {
+        "requested_mode": str(mode),
+        "effective_mode": str(mode),
+        "scope": "decode_static_only",
+        "updated_attention_layers": int(updated_layers),
+    }
+
+
 @dataclass
 class LocalMinerUOutput:
     logits: torch.Tensor
@@ -504,6 +533,7 @@ class MinerUAttention(nn.Module):
         self.scaling = self.head_dim**-0.5
         self.mrope_section = list((config.rope_scaling or {}).get("mrope_section", [8, 12, 12]))
         self.decode_rotary_impl = DECODE_ROTARY_IMPL_MANUAL
+        self.decode_attention_impl = DECODE_ATTENTION_MANUAL
         self.q_proj = nn.Linear(config.hidden_size, config.num_attention_heads * self.head_dim, bias=True)
         self.k_proj = nn.Linear(config.hidden_size, config.num_key_value_heads * self.head_dim, bias=True)
         self.v_proj = nn.Linear(config.hidden_size, config.num_key_value_heads * self.head_dim, bias=True)
@@ -581,6 +611,35 @@ class MinerUAttention(nn.Module):
     ) -> torch.Tensor:
         """Compile-friendly equivalent of rank-4 attention for one-token decode."""
         batch, heads, query_length, head_dim = query_states.shape
+        if self.decode_attention_impl == DECODE_ATTENTION_INCREFA:
+            if query_states.device.type != "npu":
+                raise RuntimeError("IncreFA decode attention requires NPU tensors")
+            import torch_npu
+
+            bool_mask = None
+            if attention_mask is not None:
+                bool_mask = (attention_mask < 0).to(torch.bool).contiguous()
+            attn_output = torch_npu.npu_incre_flash_attention(
+                query_states.contiguous(),
+                key_states.contiguous(),
+                value_states.contiguous(),
+                atten_mask=bool_mask,
+                actual_seq_lengths=None,
+                num_heads=int(self.num_heads),
+                num_key_value_heads=int(self.num_key_value_heads),
+                input_layout="BNSD",
+                scale_value=float(self.scaling),
+            )
+            attn_output = (
+                attn_output.transpose(1, 2)
+                .contiguous()
+                .reshape(batch, query_length, heads * head_dim)
+            )
+            return linear_last_dim(self.o_proj, attn_output)
+        if self.decode_attention_impl != DECODE_ATTENTION_MANUAL:
+            raise ValueError(
+                f"unsupported decode attention implementation: {self.decode_attention_impl!r}"
+            )
         key_for_attn = repeat_kv(key_states, self.num_key_value_groups)
         value_for_attn = repeat_kv(value_states, self.num_key_value_groups)
         key_length = key_for_attn.shape[-2]
