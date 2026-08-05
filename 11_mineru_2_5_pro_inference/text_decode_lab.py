@@ -29,6 +29,7 @@ from local_modeling_mineru import (
     LocalMinerU2_5ForConditionalGeneration,
     LocalMinerUStaticCache,
     configure_decode_attention_impl,
+    configure_decode_packed_projections,
     configure_decode_rotary_impl,
     configure_decode_weight_format,
 )
@@ -231,6 +232,7 @@ def main() -> None:
     maybe_sync_device(device)
     model_load_s = time.perf_counter() - load_started
     progress("model_load_end", seconds=model_load_s)
+    packed_projections = configure_decode_packed_projections(model)
     weight_format = configure_decode_weight_format(model, args.decode_weight_format)
     rotary = configure_decode_rotary_impl(model, args.decode_rotary_impl)
 
@@ -378,6 +380,7 @@ def main() -> None:
             "initial_cache_position": int(args.profile_position),
         },
         "model_load_s": float(model_load_s),
+        "packed_projections": packed_projections,
         "weight_format": weight_format,
         "rotary": rotary,
         "lanes": lanes,

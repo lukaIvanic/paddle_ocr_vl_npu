@@ -287,10 +287,27 @@ def configure_decode_weight_format(
     after_formats: dict[str, int | None] = {}
 
     decoder_linears: list[tuple[str, nn.Linear]] = []
-    for layer_idx, layer in enumerate(model.model.layers):
-        for name, module in layer.named_modules():
-            if isinstance(module, nn.Linear):
-                decoder_linears.append((f"model.layers.{layer_idx}.{name}", module))
+    packed_decode = all(
+        hasattr(layer.self_attn, "decode_qkv_proj")
+        and hasattr(layer.mlp, "decode_gate_up_proj")
+        for layer in model.model.layers
+    )
+    if packed_decode:
+        for layer_idx, layer in enumerate(model.model.layers):
+            decoder_linears.extend(
+                (
+                    (f"model.layers.{layer_idx}.self_attn.decode_qkv_proj", layer.self_attn.decode_qkv_proj),
+                    (f"model.layers.{layer_idx}.self_attn.o_proj", layer.self_attn.o_proj),
+                    (f"model.layers.{layer_idx}.mlp.decode_gate_up_proj", layer.mlp.decode_gate_up_proj),
+                    (f"model.layers.{layer_idx}.mlp.down_proj", layer.mlp.down_proj),
+                )
+            )
+    else:
+        for layer_idx, layer in enumerate(model.model.layers):
+            for name, module in layer.named_modules():
+                if isinstance(module, nn.Linear):
+                    decoder_linears.append((f"model.layers.{layer_idx}.{name}", module))
+    metadata["packed_decode_projections"] = bool(packed_decode)
 
     for name, module in decoder_linears:
         weight = module.weight
@@ -478,6 +495,53 @@ def linear_last_dim(module: nn.Linear, inputs: torch.Tensor) -> torch.Tensor:
     return outputs.reshape(*leading_shape, module.out_features)
 
 
+def _packed_decode_linear(modules: tuple[nn.Linear, ...]) -> nn.Linear:
+    """Make one decode-only Linear with exact concatenated projections."""
+    first = modules[0]
+    if any(module.in_features != first.in_features for module in modules):
+        raise ValueError("packed decode Linear inputs must share in_features")
+    biases = tuple(module.bias for module in modules)
+    if any(bias is None for bias in biases) and not all(bias is None for bias in biases):
+        raise ValueError("packed decode Linear inputs must share the bias contract")
+    packed = nn.Linear(
+        first.in_features,
+        sum(module.out_features for module in modules),
+        bias=biases[0] is not None,
+        device=first.weight.device,
+        dtype=first.weight.dtype,
+    )
+    with torch.no_grad():
+        packed.weight.copy_(torch.cat([module.weight for module in modules], dim=0))
+        if packed.bias is not None:
+            packed.bias.copy_(torch.cat([bias for bias in biases if bias is not None], dim=0))
+    return packed
+
+
+def configure_decode_packed_projections(
+    model: "LocalMinerU2_5ForConditionalGeneration",
+) -> dict[str, object]:
+    """Create packed decode projections without changing eager/prefill modules."""
+    created_qkv = 0
+    created_gate_up = 0
+    for layer in model.model.layers:
+        attention = layer.self_attn
+        if not hasattr(attention, "decode_qkv_proj"):
+            attention.decode_qkv_proj = _packed_decode_linear(
+                (attention.q_proj, attention.k_proj, attention.v_proj)
+            )
+            created_qkv += 1
+        mlp = layer.mlp
+        if not hasattr(mlp, "decode_gate_up_proj"):
+            mlp.decode_gate_up_proj = _packed_decode_linear((mlp.gate_proj, mlp.up_proj))
+            created_gate_up += 1
+    return {
+        "enabled": True,
+        "layer_count": len(model.model.layers),
+        "created_qkv": created_qkv,
+        "created_gate_up": created_gate_up,
+    }
+
+
 class MinerURotaryEmbedding(nn.Module):
     def __init__(self, config: MinerUTextConfig):
         super().__init__()
@@ -520,6 +584,11 @@ class MinerUMLP(nn.Module):
         up = linear_last_dim(self.up_proj, x)
         return linear_last_dim(self.down_proj, gate * up)
 
+    def forward_decode_static(self, x: torch.Tensor) -> torch.Tensor:
+        packed = linear_last_dim(self.decode_gate_up_proj, x)
+        gate, up = packed.chunk(2, dim=-1)
+        return linear_last_dim(self.down_proj, _activation(self.hidden_act, gate) * up)
+
 
 class MinerUAttention(nn.Module):
     def __init__(self, config: MinerUTextConfig, layer_idx: int):
@@ -548,6 +617,27 @@ class MinerUAttention(nn.Module):
             batch, query_length, self.num_key_value_heads, self.head_dim
         ).transpose(1, 2)
         value_states = linear_last_dim(self.v_proj, hidden_states).view(
+            batch, query_length, self.num_key_value_heads, self.head_dim
+        ).transpose(1, 2)
+        return query_states, key_states, value_states
+
+    def project_qkv_decode_static(
+        self, hidden_states: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        batch, query_length, _hidden = hidden_states.shape
+        packed = linear_last_dim(self.decode_qkv_proj, hidden_states)
+        query_size = self.num_heads * self.head_dim
+        kv_size = self.num_key_value_heads * self.head_dim
+        query_states, key_states, value_states = packed.split(
+            (query_size, kv_size, kv_size), dim=-1
+        )
+        query_states = query_states.view(
+            batch, query_length, self.num_heads, self.head_dim
+        ).transpose(1, 2)
+        key_states = key_states.view(
+            batch, query_length, self.num_key_value_heads, self.head_dim
+        ).transpose(1, 2)
+        value_states = value_states.view(
             batch, query_length, self.num_key_value_heads, self.head_dim
         ).transpose(1, 2)
         return query_states, key_states, value_states
@@ -712,7 +802,7 @@ class MinerUAttention(nn.Module):
         value_cache: torch.Tensor,
         cache_position: torch.Tensor,
     ) -> torch.Tensor:
-        query_states, key_states, value_states = self.project_qkv(hidden_states)
+        query_states, key_states, value_states = self.project_qkv_decode_static(hidden_states)
         query_states, key_states = self.apply_decode_rotary(query_states, key_states, position_embeddings)
         update_decode_kv_cache_(
             key_cache,
@@ -762,6 +852,13 @@ class MinerUDecoderLayer(nn.Module):
         hidden_states = self.mlp(hidden_states)
         return residual + hidden_states
 
+    def apply_decode_blocks(self, residual: torch.Tensor, attn_output: torch.Tensor) -> torch.Tensor:
+        hidden_states = residual + attn_output
+        residual = hidden_states
+        hidden_states = self.post_attention_layernorm(hidden_states)
+        hidden_states = self.mlp.forward_decode_static(hidden_states)
+        return residual + hidden_states
+
     def forward_prefill_static(
         self,
         hidden_states: torch.Tensor,
@@ -800,7 +897,7 @@ class MinerUDecoderLayer(nn.Module):
             value_cache,
             cache_position,
         )
-        return self.apply_blocks(residual, attn_output)
+        return self.apply_decode_blocks(residual, attn_output)
 
 
 class MinerUTextModel(nn.Module):

@@ -24,6 +24,7 @@ from local_modeling_mineru import (
     DECODE_ROTARY_IMPL_MANUAL,
     DECODE_WEIGHT_FORMAT_CHOICES,
     LocalMinerU2_5ForConditionalGeneration,
+    configure_decode_packed_projections,
     configure_decode_rotary_impl,
     configure_decode_weight_format,
 )
@@ -439,6 +440,7 @@ def main() -> None:
     )
     maybe_sync_device(model.device)
     format_start = time.perf_counter()
+    decode_packed_projections = configure_decode_packed_projections(model)
     decode_weight_format = configure_decode_weight_format(model, str(args.decode_weight_format))
     maybe_sync_device(model.device)
     decode_weight_format["setup_s"] = float(time.perf_counter() - format_start)
@@ -525,6 +527,7 @@ def main() -> None:
         "warmup_steps_after_compile_call": int(remaining_warmup),
         "validation_steps": int(args.validation_steps),
         "decode_weight_format": decode_weight_format,
+        "decode_packed_projections": decode_packed_projections,
         "decode_rotary_impl": decode_rotary_impl,
         "compile": {
             **dict(compile_meta),
