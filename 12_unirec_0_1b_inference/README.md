@@ -19,9 +19,9 @@ The local model implementation is copied without architectural changes from
 
 ```text
 Model:       /workspace/models/unirec_0_1b_1217
-OpenOCR:     /workspace/repos/OpenOCR
-Python:      /workspace/venvs/unirec_npu_py312/bin/python
-Transformers: 5.2.0
+Official Python: /workspace/venvs/unirec1217_npu_py312/bin/python
+Custom Python:   /workspace/venvs/unirec_npu_py312/bin/python
+Official Transformers: 4.49.0
 ```
 
 The model directory is the official `topdu/unirec_0_1b` checkpoint at revision
@@ -43,6 +43,17 @@ formulas.
 ssh blue_zone_npu_container
 cd /workspace/repos/paddle_ocr_vl_npu
 source npu-setup
+```
+
+Create the isolated official environment once. It inherits the installed
+Torch-NPU runtime but keeps the checkpoint's Transformers version separate
+from vLLM:
+
+```sh
+/usr/local/python3.12.13/bin/python3 -m venv --system-site-packages \
+  /workspace/venvs/unirec1217_npu_py312
+/workspace/venvs/unirec1217_npu_py312/bin/python -m pip install \
+  -r 12_unirec_0_1b_inference/requirements-official.txt
 ```
 
 The commands below use `crops/crop_01_text_block_en.png`. Without an `--image`
@@ -74,7 +85,7 @@ Cached TorchAir decode:
 ## Official bundled Transformers reference
 
 ```sh
-/workspace/venvs/unirec_npu_py312/bin/python \
+/workspace/venvs/unirec1217_npu_py312/bin/python \
   12_unirec_0_1b_inference/run_original_transformers.py \
   --model-path /workspace/models/unirec_0_1b_1217 \
   --image crops/crop_01_text_block_en.png \
@@ -92,5 +103,10 @@ as logical `npu:0`.
 
 ## Validation
 
-The older text-and-formula checkpoint was validated at commit `5985cf3`. The
-current validation target is the table-capable UniRec-0.1B-1217 checkpoint.
+Validated on Ascend 910B2 with the table crop
+`crops/crop_05_table_rwkv_dims.png`, BF16, JIT compile disabled, and a 64-token
+limit. The official bundled Transformers implementation and the local eager
+implementation produced exact token and text parity across all 64 returned
+tokens. Both generated native HTML table markup. The official lane produced
+53.2 generated tokens/s. The local eager decode lane produced 115.5 decode
+tokens/s.
