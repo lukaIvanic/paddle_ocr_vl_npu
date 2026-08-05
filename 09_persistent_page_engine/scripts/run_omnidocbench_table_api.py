@@ -31,7 +31,15 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=Path("/workspace/repos/OmniDocBench_eval"),
     )
-    parser.add_argument("--crop-padding", type=int, default=12)
+    parser.add_argument(
+        "--crop-padding",
+        type=int,
+        default=0,
+        help=(
+            "Pixels added around each GT box. The official OmniDocBench "
+            "component-recognition contract uses zero."
+        ),
+    )
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--limit-pages", type=int)
     parser.add_argument("--timeout-s", type=float, default=900.0)
