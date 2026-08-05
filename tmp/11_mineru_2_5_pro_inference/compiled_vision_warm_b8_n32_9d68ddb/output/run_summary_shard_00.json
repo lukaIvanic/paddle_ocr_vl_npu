@@ -1,0 +1,221 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-08-05T17:48:08.009519+00:00",
+  "git_commit": "9dadd85daa5417218f6f6412b43b4800e384a331",
+  "backend": "official_mineru_local-continuous-client",
+  "model": "/workspace/models/MinerU2.5-Pro-2605-1.2B",
+  "dataset_json": "/workspace/datasets/OmniDocBench/OmniDocBench.json",
+  "images_dir": "/workspace/datasets/OmniDocBench/images",
+  "model_hashes": {
+    "config.json": "22097df08750242647a513043636a8dff16820a09757e9271e220bdea378df28"
+  },
+  "torch": "2.10.0+cpu",
+  "torch_npu": "2.10.0",
+  "transformers": "5.5.4",
+  "mineru_vl_utils": "1.0.5",
+  "dtype": "float16",
+  "attention": "prompt_flash_attention-torchair-prefill-torchair-static-decode",
+  "processor_fast": true,
+  "npu_jit_compile": false,
+  "image_analysis": false,
+  "batch_size": 8,
+  "page_batch_size": 32,
+  "local_compiled_cache_length": 4096,
+  "local_prepare_prefetch_depth": 16,
+  "local_prefill_metrics": true,
+  "local_vision_attention": "prompt_flash_attention",
+  "local_vision_backend": "torchair",
+  "local_vision_buckets": "384,512,768,1024,1536,2048,3072,4224,5632",
+  "local_vision_torchair_cache_dir": ".runtime_cache/11_mineru_2_5_pro_inference/vision_prefill_b1_fp16_9511b2e",
+  "local_torchair_cache_dir": ".runtime_cache/11_mineru_2_5_pro_inference/native_fixed_b8_k4096_fp16",
+  "vllm_enforce_eager": null,
+  "vllm_gpu_memory_utilization": null,
+  "vllm_max_model_len": null,
+  "vllm_max_num_seqs": null,
+  "vllm_max_num_batched_tokens": null,
+  "vllm_full_decode_only": null,
+  "vllm_cudagraph_capture_sizes": null,
+  "vllm_force_tied_embeddings": false,
+  "vllm_raw_multimodal_prompts": false,
+  "offset": 0,
+  "limit": 32,
+  "shard_count": 1,
+  "shard_index": 0,
+  "selected_pages": 32,
+  "shard_pages": 32,
+  "setup_s": 22.058940566843376,
+  "ascend_rt_visible_devices": "7",
+  "pipeline_wall_s": 137.57736495393328,
+  "completed": 32,
+  "skipped": 0,
+  "failed": 0,
+  "measured_page_mean_s": null,
+  "measured_pages_per_s": null,
+  "measured_group_count": 1,
+  "measured_group_wall_s": 137.52346636797301,
+  "measured_group_pages_per_s": 0.23268756122229536,
+  "local_compiled_vision": {
+    "backend": "torchair",
+    "boundary": "32_vision_transformer_blocks",
+    "batch_size": 1,
+    "attention": "prompt_flash_attention",
+    "mask_sparse_mode": 1,
+    "padding": "bucket",
+    "buckets": [
+      384,
+      512,
+      768,
+      1024,
+      1536,
+      2048,
+      3072,
+      4224,
+      5632
+    ],
+    "overflow": "eager_unpadded",
+    "route_counts": {
+      "5632": 32,
+      "384": 387,
+      "1024": 42,
+      "512": 55,
+      "1536": 23,
+      "768": 41,
+      "2048": 8,
+      "4224": 1,
+      "3072": 3
+    },
+    "real_tokens": 437836,
+    "physical_tokens": 496640,
+    "useful_token_fraction": 0.8815963273195876,
+    "compile_records": {
+      "5632": {
+        "compile_wrapper_s": 0.00010902201756834984,
+        "first_call_s": 0.7489875489845872,
+        "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/11_mineru_2_5_pro_inference/vision_prefill_b1_fp16_9511b2e/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq5632_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383"
+      },
+      "384": {
+        "compile_wrapper_s": 0.00025436398573219776,
+        "first_call_s": 0.6882697781547904,
+        "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/11_mineru_2_5_pro_inference/vision_prefill_b1_fp16_9511b2e/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq384_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383"
+      },
+      "1024": {
+        "compile_wrapper_s": 9.29820816963911e-05,
+        "first_call_s": 0.6617449368350208,
+        "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/11_mineru_2_5_pro_inference/vision_prefill_b1_fp16_9511b2e/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq1024_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383"
+      },
+      "512": {
+        "compile_wrapper_s": 9.027193300426006e-05,
+        "first_call_s": 0.6505975381005555,
+        "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/11_mineru_2_5_pro_inference/vision_prefill_b1_fp16_9511b2e/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq512_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383"
+      },
+      "1536": {
+        "compile_wrapper_s": 8.899113163352013e-05,
+        "first_call_s": 0.6726162808481604,
+        "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/11_mineru_2_5_pro_inference/vision_prefill_b1_fp16_9511b2e/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq1536_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383"
+      },
+      "768": {
+        "compile_wrapper_s": 0.0001239120028913021,
+        "first_call_s": 0.657503864960745,
+        "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/11_mineru_2_5_pro_inference/vision_prefill_b1_fp16_9511b2e/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq768_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383"
+      },
+      "2048": {
+        "compile_wrapper_s": 0.00012075202539563179,
+        "first_call_s": 0.6741489879786968,
+        "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/11_mineru_2_5_pro_inference/vision_prefill_b1_fp16_9511b2e/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq2048_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383"
+      },
+      "4224": {
+        "compile_wrapper_s": 9.682215750217438e-05,
+        "first_call_s": 0.7229800478089601,
+        "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/11_mineru_2_5_pro_inference/vision_prefill_b1_fp16_9511b2e/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq4224_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383"
+      },
+      "3072": {
+        "compile_wrapper_s": 0.0001240018755197525,
+        "first_call_s": 0.7038986028637737,
+        "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/11_mineru_2_5_pro_inference/vision_prefill_b1_fp16_9511b2e/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq3072_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383"
+      }
+    }
+  },
+  "local_compiled_generation": {
+    "calls": 2,
+    "decode_calls": 43773,
+    "raw_decode_token_slots": 49408,
+    "active_decode_token_slots": 43773,
+    "idle_decode_token_slots": 5635,
+    "active_slot_fraction": 0.8859496437823834,
+    "refill_count": 592,
+    "prepare_prefetch_depth": 16,
+    "cpu_prepare_worker_s": 19.0805573342368,
+    "cpu_prepare_wait_s": 0.27925752894952893,
+    "request_h2d_submit_s": 6.940563645679504,
+    "decode_s": 61.65343153430149,
+    "decode_tok_s": 709.9848120480766,
+    "raw_decode_tok_s": 801.3828066084428,
+    "prefill_s": 58.480379870859906,
+    "generation_wall_s": 131.0266737891361,
+    "compile_wrapper_s": 0,
+    "compiled_first_call_s": 0,
+    "prefill_metrics": {
+      "request_count": 592,
+      "raw_vision_tokens": 437836,
+      "merged_vision_tokens": 109459,
+      "text_prefill_tokens": 124259,
+      "token_embedding": 0.12063196066021906,
+      "vision_patch_embed": 9.582567895650865,
+      "vision_position_prepare": 0.9635324207544335,
+      "vision_transformer_blocks": 17.81343846702576,
+      "vision_merger": 0.20341961833089597,
+      "vision_tower_and_merger": 28.681664104461653,
+      "image_embed_scatter": 0.18446676006913182,
+      "mrope_prepare": 1.4735994619131099,
+      "text_transformer_prefill": 27.04694565963746,
+      "prefill_lm_head": 0.19609877976775167,
+      "raw_vision_tok_s": 15265.3625119294,
+      "merged_vision_tok_s": 3816.34062798235,
+      "text_prefill_tok_s": 4594.197125386822
+    },
+    "prefill_calls": [
+      {
+        "call_index": 0,
+        "request_count": 32,
+        "prefill_s": 13.734035726636648,
+        "prefill_metrics": {
+          "request_count": 32,
+          "raw_vision_tokens": 175232,
+          "merged_vision_tokens": 43808,
+          "text_prefill_tokens": 44608,
+          "token_embedding": 0.022028340637683864,
+          "vision_patch_embed": 7.080749755859376,
+          "vision_position_prepare": 0.165977940440178,
+          "vision_transformer_blocks": 4.556214431762694,
+          "vision_merger": 0.12239065834879878,
+          "vision_tower_and_merger": 11.931377212524412,
+          "image_embed_scatter": 0.03792229998111725,
+          "mrope_prepare": 0.11159566044807433,
+          "text_transformer_prefill": 1.5509521255493164,
+          "prefill_lm_head": 0.01472968000173569
+        }
+      },
+      {
+        "call_index": 1,
+        "request_count": 560,
+        "prefill_s": 44.74634414422326,
+        "prefill_metrics": {
+          "request_count": 560,
+          "raw_vision_tokens": 262604,
+          "merged_vision_tokens": 65651,
+          "text_prefill_tokens": 79651,
+          "token_embedding": 0.0986036200225352,
+          "vision_patch_embed": 2.501818139791489,
+          "vision_position_prepare": 0.7975544803142555,
+          "vision_transformer_blocks": 13.25722403526307,
+          "vision_merger": 0.08102895998209719,
+          "vision_tower_and_merger": 16.750286891937243,
+          "image_embed_scatter": 0.14654446008801458,
+          "mrope_prepare": 1.3620038014650355,
+          "text_transformer_prefill": 25.495993534088143,
+          "prefill_lm_head": 0.18136909976601598
+        }
+      }
+    ]
+  }
+}
