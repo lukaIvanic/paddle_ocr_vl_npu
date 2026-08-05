@@ -1,0 +1,4764 @@
+{
+  "profile_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/text_decode_lab_b1_k4096_9bc9aff/profile_increfa_pipe",
+  "runs": [
+    {
+      "api_statistic": {
+        "path": "/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/text_decode_lab_b1_k4096_9bc9aff/profile_increfa_pipe/liteserver-c001-4_2895975_20260805180213858_ascend_pt/ASCEND_PROFILER_OUTPUT/api_statistic.csv",
+        "row_count": 12,
+        "top_apis": [
+          {
+            "api_name": "ModelLoad",
+            "avg_us": 234885.695,
+            "count": 2,
+            "level": "model",
+            "max_us": 242803.08,
+            "time_us": 469771.39
+          },
+          {
+            "api_name": "launch",
+            "avg_us": 14.666,
+            "count": 2572,
+            "level": "node",
+            "max_us": 411.48,
+            "time_us": 37722.04
+          },
+          {
+            "api_name": "aclrtSynchronizeDeviceWithTimeout",
+            "avg_us": 2353.375,
+            "count": 2,
+            "level": "acl",
+            "max_us": 4697.66,
+            "time_us": 4706.75
+          },
+          {
+            "api_name": "InputCopy",
+            "avg_us": 84.805,
+            "count": 2,
+            "level": "model",
+            "max_us": 124.56,
+            "time_us": 169.61
+          },
+          {
+            "api_name": "aclrtLaunchKernelWithHostArgs",
+            "avg_us": 12.509,
+            "count": 10,
+            "level": "acl",
+            "max_us": 46.05,
+            "time_us": 125.09
+          },
+          {
+            "api_name": "aclnnInplaceCopy",
+            "avg_us": 57.14,
+            "count": 2,
+            "level": "acl",
+            "max_us": 90.97,
+            "time_us": 114.28
+          },
+          {
+            "api_name": "aclnnArgMax",
+            "avg_us": 24.61,
+            "count": 2,
+            "level": "acl",
+            "max_us": 25.76,
+            "time_us": 49.22
+          },
+          {
+            "api_name": "ModelExecute",
+            "avg_us": 18.155,
+            "count": 2,
+            "level": "model",
+            "max_us": 23.6,
+            "time_us": 36.31
+          },
+          {
+            "api_name": "aclnnInplaceAdds",
+            "avg_us": 10.525,
+            "count": 2,
+            "level": "acl",
+            "max_us": 11.41,
+            "time_us": 21.05
+          },
+          {
+            "api_name": "step_info",
+            "avg_us": 3.34,
+            "count": 4,
+            "level": "node",
+            "max_us": 6.49,
+            "time_us": 13.36
+          },
+          {
+            "api_name": "aclrtGetStreamAttribute",
+            "avg_us": 1.187,
+            "count": 6,
+            "level": "acl",
+            "max_us": 4.68,
+            "time_us": 7.12
+          },
+          {
+            "api_name": "OutputCopy",
+            "avg_us": 0.655,
+            "count": 2,
+            "level": "model",
+            "max_us": 0.95,
+            "time_us": 1.31
+          }
+        ]
+      },
+      "ascend_output_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/text_decode_lab_b1_k4096_9bc9aff/profile_increfa_pipe/liteserver-c001-4_2895975_20260805180213858_ascend_pt/ASCEND_PROFILER_OUTPUT",
+      "files": {
+        "api_statistic": "/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/text_decode_lab_b1_k4096_9bc9aff/profile_increfa_pipe/liteserver-c001-4_2895975_20260805180213858_ascend_pt/ASCEND_PROFILER_OUTPUT/api_statistic.csv",
+        "kernel_details": "/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/text_decode_lab_b1_k4096_9bc9aff/profile_increfa_pipe/liteserver-c001-4_2895975_20260805180213858_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+        "op_statistic": "/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/text_decode_lab_b1_k4096_9bc9aff/profile_increfa_pipe/liteserver-c001-4_2895975_20260805180213858_ascend_pt/ASCEND_PROFILER_OUTPUT/op_statistic.csv",
+        "operator_details": "/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/text_decode_lab_b1_k4096_9bc9aff/profile_increfa_pipe/liteserver-c001-4_2895975_20260805180213858_ascend_pt/ASCEND_PROFILER_OUTPUT/operator_details.csv",
+        "profiler_info": "/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/text_decode_lab_b1_k4096_9bc9aff/profile_increfa_pipe/liteserver-c001-4_2895975_20260805180213858_ascend_pt/profiler_info.json",
+        "profiler_metadata": "/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/text_decode_lab_b1_k4096_9bc9aff/profile_increfa_pipe/liteserver-c001-4_2895975_20260805180213858_ascend_pt/profiler_metadata.json",
+        "step_trace_time": "/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/text_decode_lab_b1_k4096_9bc9aff/profile_increfa_pipe/liteserver-c001-4_2895975_20260805180213858_ascend_pt/ASCEND_PROFILER_OUTPUT/step_trace_time.csv",
+        "trace_view": "/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/text_decode_lab_b1_k4096_9bc9aff/profile_increfa_pipe/liteserver-c001-4_2895975_20260805180213858_ascend_pt/ASCEND_PROFILER_OUTPUT/trace_view.json"
+      },
+      "kernel_details": {
+        "path": "/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/text_decode_lab_b1_k4096_9bc9aff/profile_increfa_pipe/liteserver-c001-4_2895975_20260805180213858_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+        "row_count": 2356,
+        "suspect_kernel_rows": [
+          {
+            "aicore_time_us": 200.336,
+            "count": 1,
+            "duration_us": 208.8,
+            "input_dtypes": "FLOAT16;FLOAT16",
+            "input_formats": "ND;ND",
+            "input_shapes": "\"1,896;151936,896\"",
+            "name": "MatMul_96",
+            "output_formats": "ND",
+            "output_shapes": "\"1,151936\"",
+            "type": "MatMul",
+            "wait_us": 0.05
+          },
+          {
+            "aicore_time_us": 200.637,
+            "count": 1,
+            "duration_us": 207.34,
+            "input_dtypes": "FLOAT16;FLOAT16",
+            "input_formats": "ND;ND",
+            "input_shapes": "\"1,896;151936,896\"",
+            "name": "MatMul_96",
+            "output_formats": "ND",
+            "output_shapes": "\"1,151936\"",
+            "type": "MatMul",
+            "wait_us": 0.18
+          },
+          {
+            "aicore_time_us": 26.812,
+            "count": 1,
+            "duration_us": 30.16,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\"",
+            "name": "IncreFlashAttention",
+            "output_formats": "NCHW",
+            "output_shapes": "\"1,14,1,64\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 1.09
+          },
+          {
+            "aicore_time_us": 26.296,
+            "count": 1,
+            "duration_us": 29.62,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\"",
+            "name": "IncreFlashAttention",
+            "output_formats": "NCHW",
+            "output_shapes": "\"1,14,1,64\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 1.03
+          },
+          {
+            "aicore_time_us": 18.888,
+            "count": 1,
+            "duration_us": 21.3,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\"",
+            "name": "IncreFlashAttention_6",
+            "output_formats": "NCHW",
+            "output_shapes": "\"1,14,1,64\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 1.13
+          },
+          {
+            "aicore_time_us": 18.901,
+            "count": 1,
+            "duration_us": 21.24,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\"",
+            "name": "IncreFlashAttention_6",
+            "output_formats": "NCHW",
+            "output_shapes": "\"1,14,1,64\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 0.94
+          },
+          {
+            "aicore_time_us": 18.102,
+            "count": 1,
+            "duration_us": 20.44,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\"",
+            "name": "IncreFlashAttention_5",
+            "output_formats": "NCHW",
+            "output_shapes": "\"1,14,1,64\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 1.36
+          },
+          {
+            "aicore_time_us": 17.977,
+            "count": 1,
+            "duration_us": 20.3,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\"",
+            "name": "IncreFlashAttention_5",
+            "output_formats": "NCHW",
+            "output_shapes": "\"1,14,1,64\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 0.9
+          },
+          {
+            "aicore_time_us": 17.846,
+            "count": 1,
+            "duration_us": 20.26,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\"",
+            "name": "IncreFlashAttention_1",
+            "output_formats": "NCHW",
+            "output_shapes": "\"1,14,1,64\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 1.28
+          },
+          {
+            "aicore_time_us": 17.966,
+            "count": 1,
+            "duration_us": 20.22,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\"",
+            "name": "IncreFlashAttention_10",
+            "output_formats": "NCHW",
+            "output_shapes": "\"1,14,1,64\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 1.38
+          },
+          {
+            "aicore_time_us": 17.727,
+            "count": 1,
+            "duration_us": 20.14,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\"",
+            "name": "IncreFlashAttention_10",
+            "output_formats": "NCHW",
+            "output_shapes": "\"1,14,1,64\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 1.09
+          },
+          {
+            "aicore_time_us": 17.76,
+            "count": 1,
+            "duration_us": 20.06,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\"",
+            "name": "IncreFlashAttention_9",
+            "output_formats": "NCHW",
+            "output_shapes": "\"1,14,1,64\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 1.42
+          },
+          {
+            "aicore_time_us": 17.636,
+            "count": 1,
+            "duration_us": 19.94,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\"",
+            "name": "IncreFlashAttention_2",
+            "output_formats": "NCHW",
+            "output_shapes": "\"1,14,1,64\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 0.92
+          },
+          {
+            "aicore_time_us": 17.553,
+            "count": 1,
+            "duration_us": 19.86,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\"",
+            "name": "IncreFlashAttention_9",
+            "output_formats": "NCHW",
+            "output_shapes": "\"1,14,1,64\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 0.96
+          },
+          {
+            "aicore_time_us": 17.581,
+            "count": 1,
+            "duration_us": 19.86,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\"",
+            "name": "IncreFlashAttention_21",
+            "output_formats": "NCHW",
+            "output_shapes": "\"1,14,1,64\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 0.92
+          },
+          {
+            "aicore_time_us": 17.368,
+            "count": 1,
+            "duration_us": 19.82,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\"",
+            "name": "IncreFlashAttention_1",
+            "output_formats": "NCHW",
+            "output_shapes": "\"1,14,1,64\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 1.09
+          },
+          {
+            "aicore_time_us": 17.377,
+            "count": 1,
+            "duration_us": 19.78,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\"",
+            "name": "IncreFlashAttention_21",
+            "output_formats": "NCHW",
+            "output_shapes": "\"1,14,1,64\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 1.36
+          },
+          {
+            "aicore_time_us": 17.278,
+            "count": 1,
+            "duration_us": 19.64,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\"",
+            "name": "IncreFlashAttention_12",
+            "output_formats": "NCHW",
+            "output_shapes": "\"1,14,1,64\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 1.11
+          },
+          {
+            "aicore_time_us": 17.228,
+            "count": 1,
+            "duration_us": 19.64,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\"",
+            "name": "IncreFlashAttention_4",
+            "output_formats": "NCHW",
+            "output_shapes": "\"1,14,1,64\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 1.15
+          },
+          {
+            "aicore_time_us": 17.097,
+            "count": 1,
+            "duration_us": 19.54,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\"",
+            "name": "IncreFlashAttention_12",
+            "output_formats": "NCHW",
+            "output_shapes": "\"1,14,1,64\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 1.49
+          },
+          {
+            "aicore_time_us": 16.852,
+            "count": 1,
+            "duration_us": 19.22,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\"",
+            "name": "IncreFlashAttention_2",
+            "output_formats": "NCHW",
+            "output_shapes": "\"1,14,1,64\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 1.38
+          },
+          {
+            "aicore_time_us": 17.213,
+            "count": 1,
+            "duration_us": 19.22,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+            "input_formats": "ND;ND;ND",
+            "input_shapes": "\"1,4864;896,4864;1,1,896\"",
+            "name": "MatMul_23",
+            "output_formats": "ND",
+            "output_shapes": "\"1,896\"",
+            "type": "MatMul",
+            "wait_us": 0.05
+          },
+          {
+            "aicore_time_us": 16.458,
+            "count": 1,
+            "duration_us": 18.96,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\"",
+            "name": "IncreFlashAttention_13",
+            "output_formats": "NCHW",
+            "output_shapes": "\"1,14,1,64\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 1.32
+          },
+          {
+            "aicore_time_us": 16.366,
+            "count": 1,
+            "duration_us": 18.86,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\"",
+            "name": "IncreFlashAttention_13",
+            "output_formats": "NCHW",
+            "output_shapes": "\"1,14,1,64\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 1.3
+          },
+          {
+            "aicore_time_us": 16.382,
+            "count": 1,
+            "duration_us": 18.66,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\"",
+            "name": "IncreFlashAttention_14",
+            "output_formats": "NCHW",
+            "output_shapes": "\"1,14,1,64\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 1.11
+          }
+        ],
+        "top_core_types": [
+          {
+            "aicore_time_us": 0.0,
+            "count": 1970,
+            "duration_us": 2859.659999999971,
+            "input_dtype_samples": [
+              "N/A",
+              "INT32;FLOAT;INT32",
+              "FLOAT"
+            ],
+            "input_format_samples": [
+              "N/A",
+              "NCHW;NCHW;NCHW",
+              "NCHW"
+            ],
+            "input_shape_samples": [
+              "N/A",
+              "\";;\"",
+              "\"4096\""
+            ],
+            "kernel_name_samples": [
+              "UpdateModelParam_static_bin",
+              "Range",
+              "Cast"
+            ],
+            "name": "AI_VECTOR_CORE",
+            "output_format_samples": [
+              "N/A",
+              "NCHW",
+              "ND"
+            ],
+            "output_shape_samples": [
+              "N/A",
+              "\"4096\"",
+              "\"1,1,896\""
+            ],
+            "wait_us": 207.5300000000004
+          },
+          {
+            "aicore_time_us": 2293.675999999999,
+            "count": 338,
+            "duration_us": 2740.2999999999993,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16",
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND",
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,896;128,896;128\"",
+              "\"1,896;896,896;896\"",
+              "\"1,896;896,896;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_2",
+              "MatMulV2_1",
+              "MatMulV2"
+            ],
+            "name": "AI_CORE",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,128\"",
+              "\"1,896\"",
+              "\"1,4864\""
+            ],
+            "wait_us": 60.53999999999999
+          },
+          {
+            "aicore_time_us": 797.1009999999999,
+            "count": 48,
+            "duration_us": 912.9799999999999,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention",
+              "IncreFlashAttention_1",
+              "IncreFlashAttention_2"
+            ],
+            "name": "MIX_AIC",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 55.850000000000016
+          }
+        ],
+        "top_input_dtypes": [
+          {
+            "aicore_time_us": 1276.683,
+            "count": 388,
+            "duration_us": 1937.9400000000023,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND",
+              "NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"896;1,1,896\"",
+              "\"1,2,1,32;1,2,1,32\"",
+              "\"1,14,1,32;1,14,1,32\""
+            ],
+            "kernel_name_samples": [
+              "Mul_4",
+              "ConcatV2_4",
+              "ConcatV2_3"
+            ],
+            "name": "FLOAT16;FLOAT16",
+            "output_format_samples": [
+              "ND",
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,1,896\"",
+              "\"1,2,1,64\"",
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 23.5
+          },
+          {
+            "aicore_time_us": 1016.9929999999998,
+            "count": 240,
+            "duration_us": 1305.88,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,896;128,896;128\"",
+              "\"1,896;896,896;896\"",
+              "\"1,896;896,896;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_2",
+              "MatMulV2_1",
+              "MatMulV2"
+            ],
+            "name": "FLOAT16;FLOAT16;FLOAT16",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,128\"",
+              "\"1,896\""
+            ],
+            "wait_us": 53.70999999999998
+          },
+          {
+            "aicore_time_us": 797.1009999999999,
+            "count": 48,
+            "duration_us": 912.9799999999999,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention",
+              "IncreFlashAttention_1",
+              "IncreFlashAttention_2"
+            ],
+            "name": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 55.850000000000016
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 484,
+            "duration_us": 855.1599999999997,
+            "input_dtype_samples": [
+              "FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND",
+              "NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,1,896\"",
+              "\"1,2,1,64\"",
+              "\"1,2,1,32\""
+            ],
+            "kernel_name_samples": [
+              "Cast_8",
+              "StridedSliceV2_2",
+              "StridedSliceV2_3"
+            ],
+            "name": "FLOAT16",
+            "output_format_samples": [
+              "ND",
+              "NCHW",
+              "NCHW;NCHW;NCHW;NCHW;NCHW;NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,1,896\"",
+              "\"1,2,1,32\"",
+              "\"1,14,1,32\""
+            ],
+            "wait_us": 61.609999999999985
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 580,
+            "duration_us": 703.7000000000003,
+            "input_dtype_samples": [
+              "FLOAT16;INT64;INT64"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND",
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"151936,896;1,1;1\"",
+              "\"3,1,1,8;;1\"",
+              "\"3,1,1,12;;1\""
+            ],
+            "kernel_name_samples": [
+              "GatherV2",
+              "GatherV2_1",
+              "GatherV2_10"
+            ],
+            "name": "FLOAT16;INT64;INT64",
+            "output_format_samples": [
+              "ND",
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,1,896\"",
+              "\"1,1,8\"",
+              "\"1,1,12\""
+            ],
+            "wait_us": 34.29000000000003
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 204,
+            "duration_us": 229.56000000000012,
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ],
+            "input_format_samples": [
+              "ND;ND",
+              "NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,1,1;\"",
+              "\"1,1,896;1,1,1\"",
+              "\"3,1,1,1;1,1,1,32\""
+            ],
+            "kernel_name_samples": [
+              "Add_1Rsqrt",
+              "Mul_3Cast_10",
+              "Mul"
+            ],
+            "name": "FLOAT;FLOAT",
+            "output_format_samples": [
+              "ND",
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,1,1\"",
+              "\"1,1,896\"",
+              "\"3,1,1,32\""
+            ],
+            "wait_us": 12.41
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 96,
+            "duration_us": 128.64,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,1,8;1,1,12;1,1,12;1,1,8;1,1,12;1,1,12\""
+            ],
+            "kernel_name_samples": [
+              "ConcatV2_1",
+              "ConcatV2_10",
+              "ConcatV2_13"
+            ],
+            "name": "FLOAT16;FLOAT16;FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,1,64\""
+            ],
+            "wait_us": 8.669999999999995
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 104,
+            "duration_us": 127.22000000000004,
+            "input_dtype_samples": [
+              "FLOAT"
+            ],
+            "input_format_samples": [
+              "NCHW",
+              "ND"
+            ],
+            "input_shape_samples": [
+              "\"4096\"",
+              "\"1,1,896\"",
+              "\"3,1,1,64\""
+            ],
+            "kernel_name_samples": [
+              "Cast",
+              "Pow/SquareReduceMean",
+              "Cos"
+            ],
+            "name": "FLOAT",
+            "output_format_samples": [
+              "NCHW",
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"4096\"",
+              "\"1,1,1\"",
+              "\"3,1,1,64\""
+            ],
+            "wait_us": 4.99
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 96,
+            "duration_us": 112.94000000000003,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,2,1,64;1,1,1,64;1,2,1,64;1,1,1,64\"",
+              "\"1,14,1,64;1,1,1,64;1,14,1,64;1,1,1,64\""
+            ],
+            "kernel_name_samples": [
+              "Mul_7Mul_8Add_3",
+              "Mul_5Mul_6Add_2",
+              "Mul_16Mul_17Add_9"
+            ],
+            "name": "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,2,1,64\"",
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 5.12
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 96,
+            "duration_us": 107.03999999999999,
+            "input_dtype_samples": [
+              "FLOAT16;INT64;FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,2,4096,64;1;1,2,1,64\""
+            ],
+            "kernel_name_samples": [
+              "Scatter_1",
+              "Scatter",
+              "Scatter_3"
+            ],
+            "name": "FLOAT16;INT64;FLOAT16",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,2,4096,64\""
+            ],
+            "wait_us": 4.979999999999999
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 2,
+            "duration_us": 37.86,
+            "input_dtype_samples": [
+              "FLOAT;INT64"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,151936;\""
+            ],
+            "kernel_name_samples": [
+              "aclnnArgMax_ArgMaxV2AiCore_ArgMaxV2"
+            ],
+            "name": "FLOAT;INT64",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,1\""
+            ],
+            "wait_us": 0.13
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 8,
+            "duration_us": 18.4,
+            "input_dtype_samples": [
+              "INT64;INT64"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW",
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,1;1,1\"",
+              "\"1,1,1;3\"",
+              "\"1,4096;1,1\""
+            ],
+            "kernel_name_samples": [
+              "Add",
+              "BroadcastTo",
+              "LessEqual"
+            ],
+            "name": "INT64;INT64",
+            "output_format_samples": [
+              "NCHW",
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,1\"",
+              "\"3,1,1\"",
+              "\"1,4096\""
+            ],
+            "wait_us": 0.35
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 2,
+            "duration_us": 17.36,
+            "input_dtype_samples": [
+              "INT32;FLOAT;INT32"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\";;\""
+            ],
+            "kernel_name_samples": [
+              "Range"
+            ],
+            "name": "INT32;FLOAT;INT32",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"4096\""
+            ],
+            "wait_us": 55.2
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 2,
+            "duration_us": 10.3,
+            "input_dtype_samples": [
+              "N/A"
+            ],
+            "input_format_samples": [
+              "N/A"
+            ],
+            "input_shape_samples": [
+              "N/A"
+            ],
+            "kernel_name_samples": [
+              "UpdateModelParam_static_bin"
+            ],
+            "name": "N/A",
+            "output_format_samples": [
+              "N/A"
+            ],
+            "output_shape_samples": [
+              "N/A"
+            ],
+            "wait_us": 2.95
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 2,
+            "duration_us": 3.06,
+            "input_dtype_samples": [
+              "BOOL;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,1,1,4096;1,1,1,4096;\""
+            ],
+            "kernel_name_samples": [
+              "LogicalNotMaskedFill"
+            ],
+            "name": "BOOL;FLOAT16;FLOAT16",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,1,1,4096\""
+            ],
+            "wait_us": 0.02
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 2,
+            "duration_us": 2.5,
+            "input_dtype_samples": [
+              "INT64"
+            ],
+            "input_format_samples": [
+              "NCHW"
+            ],
+            "input_shape_samples": [
+              "\"3,1,1,1\""
+            ],
+            "kernel_name_samples": [
+              "Cast_2"
+            ],
+            "name": "INT64",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"3,1,1,1\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 2,
+            "duration_us": 2.4,
+            "input_dtype_samples": [
+              "INT32"
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "input_shape_samples": [
+              "\"1,1\""
+            ],
+            "kernel_name_samples": [
+              "aclnnArgMax_CastAiCore_Cast"
+            ],
+            "name": "INT32",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,1\""
+            ],
+            "wait_us": 0.14
+          }
+        ],
+        "top_input_formats": [
+          {
+            "aicore_time_us": 1276.683,
+            "count": 444,
+            "duration_us": 1898.079999999999,
+            "input_dtype_samples": [
+              "FLOAT;FLOAT",
+              "FLOAT16;FLOAT16",
+              "FLOAT;INT64"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,1,1;\"",
+              "\"1,1,896;1,1,1\"",
+              "\"896;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "Add_1Rsqrt",
+              "Mul_3Cast_10",
+              "Mul_4"
+            ],
+            "name": "ND;ND",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,1,1\"",
+              "\"1,1,896\"",
+              "\"1,4864\""
+            ],
+            "wait_us": 27.240000000000013
+          },
+          {
+            "aicore_time_us": 1016.9929999999998,
+            "count": 244,
+            "duration_us": 1337.54,
+            "input_dtype_samples": [
+              "FLOAT16;INT64;INT64",
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"151936,896;1,1;1\"",
+              "\"1,896;128,896;128\"",
+              "\"1,896;896,896;896\""
+            ],
+            "kernel_name_samples": [
+              "GatherV2",
+              "MatMulV2_2",
+              "MatMulV2_1"
+            ],
+            "name": "ND;ND;ND",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,1,896\"",
+              "\"1,128\"",
+              "\"1,896\""
+            ],
+            "wait_us": 53.87999999999998
+          },
+          {
+            "aicore_time_us": 797.1009999999999,
+            "count": 144,
+            "duration_us": 1025.9200000000005,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,2,1,64;1,1,1,64;1,2,1,64;1,1,1,64\"",
+              "\"1,14,1,64;1,1,1,64;1,14,1,64;1,1,1,64\"",
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "Mul_7Mul_8Add_3",
+              "Mul_5Mul_6Add_2",
+              "IncreFlashAttention"
+            ],
+            "name": "NCHW;NCHW;NCHW;NCHW",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,2,1,64\"",
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 60.97
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 676,
+            "duration_us": 799.5000000000001,
+            "input_dtype_samples": [
+              "INT32;FLOAT;INT32",
+              "FLOAT16;INT64;FLOAT16",
+              "BOOL;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\";;\"",
+              "\"1,2,4096,64;1;1,2,1,64\"",
+              "\"1,1,1,4096;1,1,1,4096;\""
+            ],
+            "kernel_name_samples": [
+              "Range",
+              "Scatter_1",
+              "LogicalNotMaskedFill"
+            ],
+            "name": "NCHW;NCHW;NCHW",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"4096\"",
+              "\"1,2,4096,64\"",
+              "\"1,1,1,4096\""
+            ],
+            "wait_us": 94.31999999999992
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 392,
+            "duration_us": 749.6800000000003,
+            "input_dtype_samples": [
+              "FLOAT",
+              "FLOAT16",
+              "INT64"
+            ],
+            "input_format_samples": [
+              "NCHW"
+            ],
+            "input_shape_samples": [
+              "\"4096\"",
+              "\"1,2,1,64\"",
+              "\"1,2,1,32\""
+            ],
+            "kernel_name_samples": [
+              "Cast",
+              "StridedSliceV2_2",
+              "StridedSliceV2_3"
+            ],
+            "name": "NCHW",
+            "output_format_samples": [
+              "NCHW",
+              "NCHW;NCHW;NCHW;NCHW;NCHW;NCHW"
+            ],
+            "output_shape_samples": [
+              "\"4096\"",
+              "\"1,2,1,32\"",
+              "\"1,14,1,32\""
+            ],
+            "wait_us": 19.529999999999994
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 158,
+            "duration_us": 325.68000000000006,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16",
+              "INT64;INT64",
+              "FLOAT;FLOAT"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,2,1,32;1,2,1,32\"",
+              "\"1,14,1,32;1,14,1,32\"",
+              "\"1,1;1,1\""
+            ],
+            "kernel_name_samples": [
+              "ConcatV2_4",
+              "ConcatV2_3",
+              "Add"
+            ],
+            "name": "NCHW;NCHW",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,2,1,64\"",
+              "\"1,14,1,64\"",
+              "\"1,1\""
+            ],
+            "wait_us": 9.149999999999997
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 200,
+            "duration_us": 237.6000000000001,
+            "input_dtype_samples": [
+              "FLOAT16",
+              "FLOAT",
+              "INT32"
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "input_shape_samples": [
+              "\"1,1,896\"",
+              "\"1,151936\"",
+              "\"1,1\""
+            ],
+            "kernel_name_samples": [
+              "Cast_8",
+              "Pow/SquareReduceMean",
+              "Cast_17"
+            ],
+            "name": "ND",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,1,896\"",
+              "\"1,1,1\"",
+              "\"1,151936\""
+            ],
+            "wait_us": 47.210000000000015
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 96,
+            "duration_us": 128.64,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,1,8;1,1,12;1,1,12;1,1,8;1,1,12;1,1,12\""
+            ],
+            "kernel_name_samples": [
+              "ConcatV2_1",
+              "ConcatV2_10",
+              "ConcatV2_13"
+            ],
+            "name": "NCHW;NCHW;NCHW;NCHW;NCHW;NCHW",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,1,64\""
+            ],
+            "wait_us": 8.669999999999995
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 2,
+            "duration_us": 10.3,
+            "input_dtype_samples": [
+              "N/A"
+            ],
+            "input_format_samples": [
+              "N/A"
+            ],
+            "input_shape_samples": [
+              "N/A"
+            ],
+            "kernel_name_samples": [
+              "UpdateModelParam_static_bin"
+            ],
+            "name": "N/A",
+            "output_format_samples": [
+              "N/A"
+            ],
+            "output_shape_samples": [
+              "N/A"
+            ],
+            "wait_us": 2.95
+          }
+        ],
+        "top_kernel_names": [
+          {
+            "aicore_time_us": 400.973,
+            "count": 2,
+            "duration_us": 416.14,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,896;151936,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_96"
+            ],
+            "name": "MatMul_96",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,151936\""
+            ],
+            "wait_us": 0.22999999999999998
+          },
+          {
+            "aicore_time_us": 53.108000000000004,
+            "count": 2,
+            "duration_us": 59.78,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention"
+            ],
+            "name": "IncreFlashAttention",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 2.12
+          },
+          {
+            "aicore_time_us": 37.789,
+            "count": 2,
+            "duration_us": 42.54,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_6"
+            ],
+            "name": "IncreFlashAttention_6",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 2.07
+          },
+          {
+            "aicore_time_us": 36.079,
+            "count": 2,
+            "duration_us": 40.74,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_5"
+            ],
+            "name": "IncreFlashAttention_5",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 2.2600000000000002
+          },
+          {
+            "aicore_time_us": 35.693,
+            "count": 2,
+            "duration_us": 40.36,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_10"
+            ],
+            "name": "IncreFlashAttention_10",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 2.4699999999999998
+          },
+          {
+            "aicore_time_us": 35.214,
+            "count": 2,
+            "duration_us": 40.08,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_1"
+            ],
+            "name": "IncreFlashAttention_1",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 2.37
+          },
+          {
+            "aicore_time_us": 35.313,
+            "count": 2,
+            "duration_us": 39.92,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_9"
+            ],
+            "name": "IncreFlashAttention_9",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 2.38
+          },
+          {
+            "aicore_time_us": 34.958,
+            "count": 2,
+            "duration_us": 39.64,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_21"
+            ],
+            "name": "IncreFlashAttention_21",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 2.2800000000000002
+          },
+          {
+            "aicore_time_us": 34.375,
+            "count": 2,
+            "duration_us": 39.18,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_12"
+            ],
+            "name": "IncreFlashAttention_12",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 2.6
+          },
+          {
+            "aicore_time_us": 34.488,
+            "count": 2,
+            "duration_us": 39.16,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_2"
+            ],
+            "name": "IncreFlashAttention_2",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 2.3
+          },
+          {
+            "aicore_time_us": 33.157000000000004,
+            "count": 2,
+            "duration_us": 37.980000000000004,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_4"
+            ],
+            "name": "IncreFlashAttention_4",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 2.76
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 2,
+            "duration_us": 37.86,
+            "input_dtype_samples": [
+              "FLOAT;INT64"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,151936;\""
+            ],
+            "kernel_name_samples": [
+              "aclnnArgMax_ArgMaxV2AiCore_ArgMaxV2"
+            ],
+            "name": "aclnnArgMax_ArgMaxV2AiCore_ArgMaxV2",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,1\""
+            ],
+            "wait_us": 0.13
+          },
+          {
+            "aicore_time_us": 32.824,
+            "count": 2,
+            "duration_us": 37.82,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_13"
+            ],
+            "name": "IncreFlashAttention_13",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 2.62
+          },
+          {
+            "aicore_time_us": 32.535,
+            "count": 2,
+            "duration_us": 37.28,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_18"
+            ],
+            "name": "IncreFlashAttention_18",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 2.34
+          },
+          {
+            "aicore_time_us": 32.604,
+            "count": 2,
+            "duration_us": 37.22,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_14"
+            ],
+            "name": "IncreFlashAttention_14",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 2.41
+          },
+          {
+            "aicore_time_us": 31.774,
+            "count": 2,
+            "duration_us": 36.44,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_22"
+            ],
+            "name": "IncreFlashAttention_22",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 2.26
+          },
+          {
+            "aicore_time_us": 31.803,
+            "count": 2,
+            "duration_us": 36.42,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_11"
+            ],
+            "name": "IncreFlashAttention_11",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 2.3
+          },
+          {
+            "aicore_time_us": 31.414,
+            "count": 2,
+            "duration_us": 36.2,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_8"
+            ],
+            "name": "IncreFlashAttention_8",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 2.2199999999999998
+          },
+          {
+            "aicore_time_us": 31.405,
+            "count": 2,
+            "duration_us": 36.1,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_17"
+            ],
+            "name": "IncreFlashAttention_17",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 2.14
+          },
+          {
+            "aicore_time_us": 31.357,
+            "count": 2,
+            "duration_us": 36.04,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_16"
+            ],
+            "name": "IncreFlashAttention_16",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 2.2
+          },
+          {
+            "aicore_time_us": 30.181,
+            "count": 2,
+            "duration_us": 35.06,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_7"
+            ],
+            "name": "IncreFlashAttention_7",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 2.52
+          },
+          {
+            "aicore_time_us": 29.64,
+            "count": 2,
+            "duration_us": 34.32,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_23"
+            ],
+            "name": "IncreFlashAttention_23",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 2.74
+          },
+          {
+            "aicore_time_us": 28.958,
+            "count": 2,
+            "duration_us": 34.040000000000006,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_19"
+            ],
+            "name": "IncreFlashAttention_19",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 2.23
+          },
+          {
+            "aicore_time_us": 28.893,
+            "count": 2,
+            "duration_us": 33.74,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_3"
+            ],
+            "name": "IncreFlashAttention_3",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 1.8900000000000001
+          },
+          {
+            "aicore_time_us": 28.155,
+            "count": 2,
+            "duration_us": 32.879999999999995,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_15"
+            ],
+            "name": "IncreFlashAttention_15",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 2.34
+          }
+        ],
+        "top_kernel_types": [
+          {
+            "aicore_time_us": 1961.7829999999994,
+            "count": 194,
+            "duration_us": 2260.84,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16",
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND",
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,896;896,896;1,1,896\"",
+              "\"1,896;4864,896\"",
+              "\"1,4864;896,4864;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul",
+              "MatMul_1",
+              "MatMul_2"
+            ],
+            "name": "MatMul",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,896\"",
+              "\"1,4864\"",
+              "\"1,151936\""
+            ],
+            "wait_us": 52.690000000000005
+          },
+          {
+            "aicore_time_us": 797.1009999999999,
+            "count": 48,
+            "duration_us": 912.9799999999999,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention",
+              "IncreFlashAttention_1",
+              "IncreFlashAttention_2"
+            ],
+            "name": "IncreFlashAttention",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 55.850000000000016
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 580,
+            "duration_us": 703.7000000000003,
+            "input_dtype_samples": [
+              "FLOAT16;INT64;INT64"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND",
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"151936,896;1,1;1\"",
+              "\"3,1,1,8;;1\"",
+              "\"3,1,1,12;;1\""
+            ],
+            "kernel_name_samples": [
+              "GatherV2",
+              "GatherV2_1",
+              "GatherV2_10"
+            ],
+            "name": "GatherV2",
+            "output_format_samples": [
+              "ND",
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,1,896\"",
+              "\"1,1,8\"",
+              "\"1,1,12\""
+            ],
+            "wait_us": 34.29000000000003
+          },
+          {
+            "aicore_time_us": 331.893,
+            "count": 144,
+            "duration_us": 479.46,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,896;128,896;128\"",
+              "\"1,896;896,896;896\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_2",
+              "MatMulV2_1",
+              "MatMulV2"
+            ],
+            "name": "MatMulV2",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,128\"",
+              "\"1,896\""
+            ],
+            "wait_us": 7.85
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 192,
+            "duration_us": 389.9200000000002,
+            "input_dtype_samples": [
+              "FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,2,1,64\"",
+              "\"1,14,1,64\""
+            ],
+            "kernel_name_samples": [
+              "StridedSliceV2_2",
+              "StridedSliceV2_3",
+              "StridedSliceV2"
+            ],
+            "name": "StridedSliceD",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,2,1,32\"",
+              "\"1,14,1,32\""
+            ],
+            "wait_us": 9.469999999999997
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 194,
+            "duration_us": 370.8600000000001,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16",
+              "FLOAT;FLOAT",
+              "FLOAT16;FLOAT16;FLOAT16;FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW",
+              "NCHW;NCHW;NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,2,1,32;1,2,1,32\"",
+              "\"1,14,1,32;1,14,1,32\"",
+              "\"3,1,1,32;3,1,1,32\""
+            ],
+            "kernel_name_samples": [
+              "ConcatV2_4",
+              "ConcatV2_3",
+              "ConcatV2"
+            ],
+            "name": "ConcatV2D",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,2,1,64\"",
+              "\"1,14,1,64\"",
+              "\"3,1,1,64\""
+            ],
+            "wait_us": 14.629999999999997
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 244,
+            "duration_us": 308.77999999999986,
+            "input_dtype_samples": [
+              "FLOAT;FLOAT",
+              "BOOL;FLOAT16;FLOAT16",
+              "FLOAT16;FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND",
+              "NCHW;NCHW;NCHW",
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,1,1;\"",
+              "\"1,1,1,4096;1,1,1,4096;\"",
+              "\"1,2,1,64;1,1,1,64;1,2,1,64;1,1,1,64\""
+            ],
+            "kernel_name_samples": [
+              "Add_1Rsqrt",
+              "LogicalNotMaskedFill",
+              "Mul_7Mul_8Add_3"
+            ],
+            "name": "AutomaticBufferFusionOp",
+            "output_format_samples": [
+              "ND",
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,1,1\"",
+              "\"1,1,1,4096\"",
+              "\"1,2,1,64\""
+            ],
+            "wait_us": 13.889999999999995
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 96,
+            "duration_us": 240.75999999999993,
+            "input_dtype_samples": [
+              "FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW"
+            ],
+            "input_shape_samples": [
+              "\"3,1,1,64\""
+            ],
+            "kernel_name_samples": [
+              "SplitV",
+              "SplitV_10",
+              "SplitV_12"
+            ],
+            "name": "SplitVD",
+            "output_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW;NCHW;NCHW"
+            ],
+            "output_shape_samples": [
+              "\"3,1,1,8;3,1,1,12;3,1,1,12;3,1,1,8;3,1,1,12;3,1,1,12\""
+            ],
+            "wait_us": 4.7399999999999975
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 202,
+            "duration_us": 234.6800000000001,
+            "input_dtype_samples": [
+              "FLOAT;FLOAT",
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND",
+              "NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,1,896;1,1,1\"",
+              "\"896;1,1,896\"",
+              "\"3,1,1,1;1,1,1,32\""
+            ],
+            "kernel_name_samples": [
+              "Mul_3Cast_10",
+              "Mul_4",
+              "Mul"
+            ],
+            "name": "Mul",
+            "output_format_samples": [
+              "ND",
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,1,896\"",
+              "\"3,1,1,32\"",
+              "\"3,1,1,64\""
+            ],
+            "wait_us": 11.59
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 106,
+            "duration_us": 129.54,
+            "input_dtype_samples": [
+              "FLOAT",
+              "FLOAT16",
+              "INT64"
+            ],
+            "input_format_samples": [
+              "NCHW",
+              "ND"
+            ],
+            "input_shape_samples": [
+              "\"4096\"",
+              "\"1,1,896\"",
+              "\"3,1,1,1\""
+            ],
+            "kernel_name_samples": [
+              "Cast",
+              "Cast_8",
+              "Cast_2"
+            ],
+            "name": "Cast",
+            "output_format_samples": [
+              "NCHW",
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"4096\"",
+              "\"1,1,896\"",
+              "\"3,1,1,1\""
+            ],
+            "wait_us": 42.36
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 98,
+            "duration_us": 115.46000000000002,
+            "input_dtype_samples": [
+              "FLOAT"
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "input_shape_samples": [
+              "\"1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "Pow/SquareReduceMean",
+              "Pow_1/SquareReduceMean_1",
+              "Pow_2/SquareReduceMean_2"
+            ],
+            "name": "Square",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,1,1\""
+            ],
+            "wait_us": 4.859999999999999
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 96,
+            "duration_us": 107.03999999999999,
+            "input_dtype_samples": [
+              "FLOAT16;INT64;FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,2,4096,64;1;1,2,1,64\""
+            ],
+            "kernel_name_samples": [
+              "Scatter_1",
+              "Scatter",
+              "Scatter_3"
+            ],
+            "name": "Scatter",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,2,4096,64\""
+            ],
+            "wait_us": 4.979999999999999
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 96,
+            "duration_us": 104.74000000000002,
+            "input_dtype_samples": [
+              "FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,2,1,32\"",
+              "\"1,14,1,32\""
+            ],
+            "kernel_name_samples": [
+              "Neg_1",
+              "Neg",
+              "Neg_3"
+            ],
+            "name": "Neg",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,2,1,32\"",
+              "\"1,14,1,32\""
+            ],
+            "wait_us": 5.189999999999998
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 48,
+            "duration_us": 63.40000000000002,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,1,1,4096;\""
+            ],
+            "kernel_name_samples": [
+              "Less",
+              "Less_1",
+              "Less_10"
+            ],
+            "name": "Less",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,1,1,4096\""
+            ],
+            "wait_us": 2.7800000000000007
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 2,
+            "duration_us": 37.86,
+            "input_dtype_samples": [
+              "FLOAT;INT64"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,151936;\""
+            ],
+            "kernel_name_samples": [
+              "aclnnArgMax_ArgMaxV2AiCore_ArgMaxV2"
+            ],
+            "name": "ArgMaxV2",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,1\""
+            ],
+            "wait_us": 0.13
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 2,
+            "duration_us": 17.36,
+            "input_dtype_samples": [
+              "INT32;FLOAT;INT32"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\";;\""
+            ],
+            "kernel_name_samples": [
+              "Range"
+            ],
+            "name": "Range",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"4096\""
+            ],
+            "wait_us": 55.2
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 2,
+            "duration_us": 10.3,
+            "input_dtype_samples": [
+              "N/A"
+            ],
+            "input_format_samples": [
+              "N/A"
+            ],
+            "input_shape_samples": [
+              "N/A"
+            ],
+            "kernel_name_samples": [
+              "UpdateModelParam_static_bin"
+            ],
+            "name": "Data",
+            "output_format_samples": [
+              "N/A"
+            ],
+            "output_shape_samples": [
+              "N/A"
+            ],
+            "wait_us": 2.95
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 4,
+            "duration_us": 8.68,
+            "input_dtype_samples": [
+              "INT64;INT64"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW",
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,1;1,1\"",
+              "\"1;\""
+            ],
+            "kernel_name_samples": [
+              "Add",
+              "aclnnAdds_AddAiCore_Add"
+            ],
+            "name": "Add",
+            "output_format_samples": [
+              "NCHW",
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,1\"",
+              "\"1\""
+            ],
+            "wait_us": 0.1
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 2,
+            "duration_us": 7.2,
+            "input_dtype_samples": [
+              "INT64;INT64"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,4096;1,1\""
+            ],
+            "kernel_name_samples": [
+              "LessEqual"
+            ],
+            "name": "LessEqual",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,4096\""
+            ],
+            "wait_us": 0.05
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 2,
+            "duration_us": 3.44,
+            "input_dtype_samples": [
+              "FLOAT"
+            ],
+            "input_format_samples": [
+              "NCHW"
+            ],
+            "input_shape_samples": [
+              "\"3,1,1,64\""
+            ],
+            "kernel_name_samples": [
+              "Sin"
+            ],
+            "name": "Sin",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"3,1,1,64\""
+            ],
+            "wait_us": 0.03
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 2,
+            "duration_us": 3.42,
+            "input_dtype_samples": [
+              "FLOAT"
+            ],
+            "input_format_samples": [
+              "NCHW"
+            ],
+            "input_shape_samples": [
+              "\"3,1,1,64\""
+            ],
+            "kernel_name_samples": [
+              "Cos"
+            ],
+            "name": "Cos",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"3,1,1,64\""
+            ],
+            "wait_us": 0.09
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 2,
+            "duration_us": 2.52,
+            "input_dtype_samples": [
+              "INT64;INT64"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,1,1;3\""
+            ],
+            "kernel_name_samples": [
+              "BroadcastTo"
+            ],
+            "name": "BroadcastTo",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"3,1,1\""
+            ],
+            "wait_us": 0.2
+          }
+        ],
+        "top_matmul_names": [
+          {
+            "aicore_time_us": 400.973,
+            "count": 2,
+            "duration_us": 416.14,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,896;151936,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_96"
+            ],
+            "name": "MatMul_96",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,151936\""
+            ],
+            "wait_us": 0.22999999999999998
+          },
+          {
+            "aicore_time_us": 28.041,
+            "count": 2,
+            "duration_us": 31.6,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,4864;896,4864;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_23"
+            ],
+            "name": "MatMul_23",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,896\""
+            ],
+            "wait_us": 0.05
+          },
+          {
+            "aicore_time_us": 24.975,
+            "count": 2,
+            "duration_us": 27.939999999999998,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,896;4864,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_25"
+            ],
+            "name": "MatMul_25",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,4864\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 24.216,
+            "count": 2,
+            "duration_us": 27.56,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,896;4864,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_21"
+            ],
+            "name": "MatMul_21",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,4864\""
+            ],
+            "wait_us": 0.14
+          },
+          {
+            "aicore_time_us": 22.708,
+            "count": 2,
+            "duration_us": 27.54,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,4864;896,4864;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_3"
+            ],
+            "name": "MatMul_3",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,896\""
+            ],
+            "wait_us": 0.06
+          },
+          {
+            "aicore_time_us": 24.128999999999998,
+            "count": 2,
+            "duration_us": 27.54,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,4864;896,4864;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_19"
+            ],
+            "name": "MatMul_19",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,896\""
+            ],
+            "wait_us": 0.08
+          },
+          {
+            "aicore_time_us": 24.396,
+            "count": 2,
+            "duration_us": 27.5,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,896;4864,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_22"
+            ],
+            "name": "MatMul_22",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,4864\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 23.252,
+            "count": 2,
+            "duration_us": 26.36,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,4864;896,4864;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_27"
+            ],
+            "name": "MatMul_27",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,896\""
+            ],
+            "wait_us": 0.42000000000000004
+          },
+          {
+            "aicore_time_us": 22.533,
+            "count": 2,
+            "duration_us": 25.94,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,896;4864,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_26"
+            ],
+            "name": "MatMul_26",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,4864\""
+            ],
+            "wait_us": 0.31
+          },
+          {
+            "aicore_time_us": 21.490000000000002,
+            "count": 2,
+            "duration_us": 25.020000000000003,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,4864;896,4864;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_39"
+            ],
+            "name": "MatMul_39",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,896\""
+            ],
+            "wait_us": 0.18
+          },
+          {
+            "aicore_time_us": 21.569,
+            "count": 2,
+            "duration_us": 24.880000000000003,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,4864;896,4864;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_11"
+            ],
+            "name": "MatMul_11",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,896\""
+            ],
+            "wait_us": 0.04
+          },
+          {
+            "aicore_time_us": 21.601999999999997,
+            "count": 2,
+            "duration_us": 24.759999999999998,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,4864;896,4864;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_7"
+            ],
+            "name": "MatMul_7",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,896\""
+            ],
+            "wait_us": 0.03
+          },
+          {
+            "aicore_time_us": 21.201999999999998,
+            "count": 2,
+            "duration_us": 24.759999999999998,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,4864;896,4864;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_71"
+            ],
+            "name": "MatMul_71",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,896\""
+            ],
+            "wait_us": 0.05
+          },
+          {
+            "aicore_time_us": 20.908,
+            "count": 2,
+            "duration_us": 24.700000000000003,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,4864;896,4864;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_67"
+            ],
+            "name": "MatMul_67",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,896\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 20.883,
+            "count": 2,
+            "duration_us": 24.7,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,4864;896,4864;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_55"
+            ],
+            "name": "MatMul_55",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,896\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 21.144,
+            "count": 2,
+            "duration_us": 24.68,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,4864;896,4864;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_87"
+            ],
+            "name": "MatMul_87",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,896\""
+            ],
+            "wait_us": 0.09
+          },
+          {
+            "aicore_time_us": 21.281,
+            "count": 2,
+            "duration_us": 24.66,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,4864;896,4864;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_43"
+            ],
+            "name": "MatMul_43",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,896\""
+            ],
+            "wait_us": 0.33
+          },
+          {
+            "aicore_time_us": 21.006999999999998,
+            "count": 2,
+            "duration_us": 24.619999999999997,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,4864;896,4864;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_91"
+            ],
+            "name": "MatMul_91",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,896\""
+            ],
+            "wait_us": 0.07
+          },
+          {
+            "aicore_time_us": 20.695,
+            "count": 2,
+            "duration_us": 24.56,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,4864;896,4864;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_31"
+            ],
+            "name": "MatMul_31",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,896\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 20.933,
+            "count": 2,
+            "duration_us": 24.56,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,4864;896,4864;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_75"
+            ],
+            "name": "MatMul_75",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,896\""
+            ],
+            "wait_us": 0.02
+          },
+          {
+            "aicore_time_us": 21.043,
+            "count": 2,
+            "duration_us": 24.4,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,4864;896,4864;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_59"
+            ],
+            "name": "MatMul_59",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,896\""
+            ],
+            "wait_us": 0.08
+          },
+          {
+            "aicore_time_us": 20.773,
+            "count": 2,
+            "duration_us": 24.32,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,4864;896,4864;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_95"
+            ],
+            "name": "MatMul_95",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,896\""
+            ],
+            "wait_us": 0.08
+          },
+          {
+            "aicore_time_us": 20.609,
+            "count": 2,
+            "duration_us": 24.08,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,4864;896,4864;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_47"
+            ],
+            "name": "MatMul_47",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,896\""
+            ],
+            "wait_us": 0.03
+          },
+          {
+            "aicore_time_us": 21.027,
+            "count": 2,
+            "duration_us": 24.04,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,4864;896,4864;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_15"
+            ],
+            "name": "MatMul_15",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,896\""
+            ],
+            "wait_us": 0.11
+          },
+          {
+            "aicore_time_us": 19.765,
+            "count": 2,
+            "duration_us": 23.86,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,896;4864,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_1"
+            ],
+            "name": "MatMul_1",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,4864\""
+            ],
+            "wait_us": 0.05
+          }
+        ],
+        "top_matmul_shape_signatures": [
+          {
+            "aicore_time_us": 875.7099999999999,
+            "count": 96,
+            "duration_us": 1018.2799999999999,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,896;4864,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_1",
+              "MatMul_2",
+              "MatMul_5"
+            ],
+            "name": "MatMul | \"1,896;4864,896\" -> \"1,4864\" | ND;ND -> ND",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,4864\""
+            ],
+            "wait_us": 6.6
+          },
+          {
+            "aicore_time_us": 516.7819999999998,
+            "count": 48,
+            "duration_us": 599.36,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,4864;896,4864;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_3",
+              "MatMul_7",
+              "MatMul_11"
+            ],
+            "name": "MatMul | \"1,4864;896,4864;1,1,896\" -> \"1,896\" | ND;ND;ND -> ND",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,896\""
+            ],
+            "wait_us": 2.0600000000000005
+          },
+          {
+            "aicore_time_us": 400.973,
+            "count": 2,
+            "duration_us": 416.14,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,896;151936,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_96"
+            ],
+            "name": "MatMul | \"1,896;151936,896\" -> \"1,151936\" | ND;ND -> ND",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,151936\""
+            ],
+            "wait_us": 0.22999999999999998
+          },
+          {
+            "aicore_time_us": 199.93400000000008,
+            "count": 48,
+            "duration_us": 263.74,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,896;896,896;896\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2",
+              "MatMulV2_3",
+              "MatMulV2_6"
+            ],
+            "name": "MatMulV2 | \"1,896;896,896;896\" -> \"1,896\" | ND;ND;ND -> ND",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,896\""
+            ],
+            "wait_us": 2.48
+          },
+          {
+            "aicore_time_us": 168.31799999999998,
+            "count": 48,
+            "duration_us": 227.05999999999997,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,896;896,896;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul",
+              "MatMul_4",
+              "MatMul_8"
+            ],
+            "name": "MatMul | \"1,896;896,896;1,1,896\" -> \"1,896\" | ND;ND;ND -> ND",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,896\""
+            ],
+            "wait_us": 43.8
+          },
+          {
+            "aicore_time_us": 131.95899999999997,
+            "count": 96,
+            "duration_us": 215.71999999999994,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,896;128,896;128\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_2",
+              "MatMulV2_1",
+              "MatMulV2_5"
+            ],
+            "name": "MatMulV2 | \"1,896;128,896;128\" -> \"1,128\" | ND;ND;ND -> ND",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,128\""
+            ],
+            "wait_us": 5.37
+          }
+        ],
+        "top_shape_signatures": [
+          {
+            "aicore_time_us": 875.7099999999999,
+            "count": 96,
+            "duration_us": 1018.2799999999999,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,896;4864,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_1",
+              "MatMul_2",
+              "MatMul_5"
+            ],
+            "name": "MatMul | \"1,896;4864,896\" -> \"1,4864\"",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,4864\""
+            ],
+            "wait_us": 6.6
+          },
+          {
+            "aicore_time_us": 797.1009999999999,
+            "count": 48,
+            "duration_us": 912.9799999999999,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention",
+              "IncreFlashAttention_1",
+              "IncreFlashAttention_2"
+            ],
+            "name": "IncreFlashAttention | \"1,14,1,64;1,2,4096,64;1,2,4096,64;1,1,1,4096\" -> \"1,14,1,64\"",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 55.850000000000016
+          },
+          {
+            "aicore_time_us": 516.7819999999998,
+            "count": 48,
+            "duration_us": 599.36,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,4864;896,4864;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_3",
+              "MatMul_7",
+              "MatMul_11"
+            ],
+            "name": "MatMul | \"1,4864;896,4864;1,1,896\" -> \"1,896\"",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,896\""
+            ],
+            "wait_us": 2.0600000000000005
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 384,
+            "duration_us": 450.3400000000007,
+            "input_dtype_samples": [
+              "FLOAT16;INT64;INT64"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"3,1,1,12;;1\""
+            ],
+            "kernel_name_samples": [
+              "GatherV2_101",
+              "GatherV2_102",
+              "GatherV2_104"
+            ],
+            "name": "GatherV2 | \"3,1,1,12;;1\" -> \"1,1,12\"",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,1,12\""
+            ],
+            "wait_us": 22.85
+          },
+          {
+            "aicore_time_us": 400.973,
+            "count": 2,
+            "duration_us": 416.14,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,896;151936,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul_96"
+            ],
+            "name": "MatMul | \"1,896;151936,896\" -> \"1,151936\"",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,151936\""
+            ],
+            "wait_us": 0.22999999999999998
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 96,
+            "duration_us": 272.6800000000001,
+            "input_dtype_samples": [
+              "FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "kernel_name_samples": [
+              "StridedSliceV2",
+              "StridedSliceV2_1",
+              "StridedSliceV2_4"
+            ],
+            "name": "StridedSliceD | \"1,14,1,64\" -> \"1,14,1,32\"",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,32\""
+            ],
+            "wait_us": 4.739999999999999
+          },
+          {
+            "aicore_time_us": 199.93400000000008,
+            "count": 48,
+            "duration_us": 263.74,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,896;896,896;896\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2",
+              "MatMulV2_3",
+              "MatMulV2_6"
+            ],
+            "name": "MatMulV2 | \"1,896;896,896;896\" -> \"1,896\"",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,896\""
+            ],
+            "wait_us": 2.48
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 96,
+            "duration_us": 240.75999999999993,
+            "input_dtype_samples": [
+              "FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW"
+            ],
+            "input_shape_samples": [
+              "\"3,1,1,64\""
+            ],
+            "kernel_name_samples": [
+              "SplitV",
+              "SplitV_10",
+              "SplitV_12"
+            ],
+            "name": "SplitVD | \"3,1,1,64\" -> \"3,1,1,8;3,1,1,12;3,1,1,12;3,1,1,8;3,1,1,12;3,1,1,12\"",
+            "output_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW;NCHW;NCHW"
+            ],
+            "output_shape_samples": [
+              "\"3,1,1,8;3,1,1,12;3,1,1,12;3,1,1,8;3,1,1,12;3,1,1,12\""
+            ],
+            "wait_us": 4.7399999999999975
+          },
+          {
+            "aicore_time_us": 168.31799999999998,
+            "count": 48,
+            "duration_us": 227.05999999999997,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,896;896,896;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "MatMul",
+              "MatMul_4",
+              "MatMul_8"
+            ],
+            "name": "MatMul | \"1,896;896,896;1,1,896\" -> \"1,896\"",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,896\""
+            ],
+            "wait_us": 43.8
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 192,
+            "duration_us": 221.69999999999982,
+            "input_dtype_samples": [
+              "FLOAT16;INT64;INT64"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"3,1,1,8;;1\""
+            ],
+            "kernel_name_samples": [
+              "GatherV2_1",
+              "GatherV2_10",
+              "GatherV2_100"
+            ],
+            "name": "GatherV2 | \"3,1,1,8;;1\" -> \"1,1,8\"",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,1,8\""
+            ],
+            "wait_us": 11.270000000000005
+          },
+          {
+            "aicore_time_us": 131.95899999999997,
+            "count": 96,
+            "duration_us": 215.71999999999994,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,896;128,896;128\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_2",
+              "MatMulV2_1",
+              "MatMulV2_5"
+            ],
+            "name": "MatMulV2 | \"1,896;128,896;128\" -> \"1,128\"",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,128\""
+            ],
+            "wait_us": 5.37
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 96,
+            "duration_us": 128.64,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,1,8;1,1,12;1,1,12;1,1,8;1,1,12;1,1,12\""
+            ],
+            "kernel_name_samples": [
+              "ConcatV2_1",
+              "ConcatV2_10",
+              "ConcatV2_13"
+            ],
+            "name": "ConcatV2D | \"1,1,8;1,1,12;1,1,12;1,1,8;1,1,12;1,1,12\" -> \"1,1,64\"",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,1,64\""
+            ],
+            "wait_us": 8.669999999999995
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 48,
+            "duration_us": 119.93999999999997,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,32;1,14,1,32\""
+            ],
+            "kernel_name_samples": [
+              "ConcatV2_3",
+              "ConcatV2_7",
+              "ConcatV2_11"
+            ],
+            "name": "ConcatV2D | \"1,14,1,32;1,14,1,32\" -> \"1,14,1,64\"",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,64\""
+            ],
+            "wait_us": 3.759999999999999
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 98,
+            "duration_us": 118.99999999999999,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"896;1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "Mul_4",
+              "Mul_10",
+              "Mul_13"
+            ],
+            "name": "Mul | \"896;1,1,896\" -> \"1,1,896\"",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,1,896\""
+            ],
+            "wait_us": 5.730000000000001
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 96,
+            "duration_us": 117.24000000000001,
+            "input_dtype_samples": [
+              "FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,2,1,64\""
+            ],
+            "kernel_name_samples": [
+              "StridedSliceV2_2",
+              "StridedSliceV2_3",
+              "StridedSliceV2_6"
+            ],
+            "name": "StridedSliceD | \"1,2,1,64\" -> \"1,2,1,32\"",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,2,1,32\""
+            ],
+            "wait_us": 4.729999999999998
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 48,
+            "duration_us": 116.99999999999999,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,2,1,32;1,2,1,32\""
+            ],
+            "kernel_name_samples": [
+              "ConcatV2_4",
+              "ConcatV2_8",
+              "ConcatV2_12"
+            ],
+            "name": "ConcatV2D | \"1,2,1,32;1,2,1,32\" -> \"1,2,1,64\"",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,2,1,64\""
+            ],
+            "wait_us": 1.96
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 98,
+            "duration_us": 115.46000000000002,
+            "input_dtype_samples": [
+              "FLOAT"
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "input_shape_samples": [
+              "\"1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "Pow/SquareReduceMean",
+              "Pow_1/SquareReduceMean_1",
+              "Pow_2/SquareReduceMean_2"
+            ],
+            "name": "Square | \"1,1,896\" -> \"1,1,1\"",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,1,1\""
+            ],
+            "wait_us": 4.859999999999999
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 98,
+            "duration_us": 108.60000000000002,
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,1,1;\""
+            ],
+            "kernel_name_samples": [
+              "Add_1Rsqrt",
+              "Add_5Rsqrt_1",
+              "Add_7Rsqrt_2"
+            ],
+            "name": "AutomaticBufferFusionOp | \"1,1,1;\" -> \"1,1,1\"",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,1,1\""
+            ],
+            "wait_us": 6.31
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 98,
+            "duration_us": 108.14000000000001,
+            "input_dtype_samples": [
+              "FLOAT;FLOAT"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,1,896;1,1,1\""
+            ],
+            "kernel_name_samples": [
+              "Mul_3Cast_10",
+              "Mul_9Cast_19",
+              "Mul_12Cast_24"
+            ],
+            "name": "Mul | \"1,1,896;1,1,1\" -> \"1,1,896\"",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,1,896\""
+            ],
+            "wait_us": 5.700000000000001
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 96,
+            "duration_us": 107.03999999999999,
+            "input_dtype_samples": [
+              "FLOAT16;INT64;FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,2,4096,64;1;1,2,1,64\""
+            ],
+            "kernel_name_samples": [
+              "Scatter_1",
+              "Scatter",
+              "Scatter_3"
+            ],
+            "name": "Scatter | \"1,2,4096,64;1;1,2,1,64\" -> \"1,2,4096,64\"",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,2,4096,64\""
+            ],
+            "wait_us": 4.979999999999999
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 98,
+            "duration_us": 104.62,
+            "input_dtype_samples": [
+              "FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "input_shape_samples": [
+              "\"1,1,896\""
+            ],
+            "kernel_name_samples": [
+              "Cast_8",
+              "Cast_17",
+              "Cast_22"
+            ],
+            "name": "Cast | \"1,1,896\" -> \"1,1,896\"",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,1,896\""
+            ],
+            "wait_us": 6.349999999999999
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 48,
+            "duration_us": 84.18,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,1,4864;1,1,4864\""
+            ],
+            "kernel_name_samples": [
+              "SwishMul_11",
+              "Swish_1Mul_20",
+              "Swish_2Mul_29"
+            ],
+            "name": "AutomaticBufferFusionOp | \"1,1,4864;1,1,4864\" -> \"1,1,4864\"",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"1,1,4864\""
+            ],
+            "wait_us": 2.44
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 48,
+            "duration_us": 63.40000000000002,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,1,1,4096;\""
+            ],
+            "kernel_name_samples": [
+              "Less",
+              "Less_1",
+              "Less_10"
+            ],
+            "name": "Less | \"1,1,1,4096;\" -> \"1,1,1,4096\"",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,1,1,4096\""
+            ],
+            "wait_us": 2.7800000000000007
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 48,
+            "duration_us": 57.919999999999995,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,2,1,64;1,1,1,64;1,2,1,64;1,1,1,64\""
+            ],
+            "kernel_name_samples": [
+              "Mul_7Mul_8Add_3",
+              "Mul_16Mul_17Add_9",
+              "Mul_25Mul_26Add_15"
+            ],
+            "name": "AutomaticBufferFusionOp | \"1,2,1,64;1,1,1,64;1,2,1,64;1,1,1,64\" -> \"1,2,1,64\"",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,2,1,64\""
+            ],
+            "wait_us": 3.110000000000001
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 48,
+            "duration_us": 55.07999999999998,
+            "input_dtype_samples": [
+              "FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,14,1,32\""
+            ],
+            "kernel_name_samples": [
+              "Neg",
+              "Neg_2",
+              "Neg_4"
+            ],
+            "name": "Neg | \"1,14,1,32\" -> \"1,14,1,32\"",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"1,14,1,32\""
+            ],
+            "wait_us": 2.3800000000000003
+          }
+        ],
+        "top_transdata_names": [],
+        "top_transdata_shape_signatures": [],
+        "total_aicore_time_us": 3090.7770000000014,
+        "total_duration_us": 6512.9399999999905,
+        "total_wait_us": 323.9199999999999,
+        "weighted_cube_utilization_pct": 75.15017112293611
+      },
+      "op_statistic": {
+        "path": "/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/text_decode_lab_b1_k4096_9bc9aff/profile_increfa_pipe/liteserver-c001-4_2895975_20260805180213858_ascend_pt/ASCEND_PROFILER_OUTPUT/op_statistic.csv",
+        "row_count": 22,
+        "top_op_types": [
+          {
+            "avg_time_us": 11.653,
+            "core_type": "AI_CORE",
+            "count": 194,
+            "op_type": "MatMul",
+            "ratio_pct": 34.713,
+            "total_time_us": 2260.84
+          },
+          {
+            "avg_time_us": 19.02,
+            "core_type": "MIX_AIC",
+            "count": 48,
+            "op_type": "IncreFlashAttention",
+            "ratio_pct": 14.018,
+            "total_time_us": 912.98
+          },
+          {
+            "avg_time_us": 1.213,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 580,
+            "op_type": "GatherV2",
+            "ratio_pct": 10.805,
+            "total_time_us": 703.7
+          },
+          {
+            "avg_time_us": 3.329,
+            "core_type": "AI_CORE",
+            "count": 144,
+            "op_type": "MatMulV2",
+            "ratio_pct": 7.362,
+            "total_time_us": 479.46
+          },
+          {
+            "avg_time_us": 2.03,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 192,
+            "op_type": "StridedSliceD",
+            "ratio_pct": 5.987,
+            "total_time_us": 389.92
+          },
+          {
+            "avg_time_us": 1.911,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 194,
+            "op_type": "ConcatV2D",
+            "ratio_pct": 5.694,
+            "total_time_us": 370.86
+          },
+          {
+            "avg_time_us": 1.265,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 244,
+            "op_type": "AutomaticBufferFusionOp",
+            "ratio_pct": 4.741,
+            "total_time_us": 308.78
+          },
+          {
+            "avg_time_us": 2.507,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 96,
+            "op_type": "SplitVD",
+            "ratio_pct": 3.697,
+            "total_time_us": 240.76
+          },
+          {
+            "avg_time_us": 1.161,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 202,
+            "op_type": "Mul",
+            "ratio_pct": 3.603,
+            "total_time_us": 234.68
+          },
+          {
+            "avg_time_us": 1.222,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 106,
+            "op_type": "Cast",
+            "ratio_pct": 1.989,
+            "total_time_us": 129.54
+          },
+          {
+            "avg_time_us": 1.178,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 98,
+            "op_type": "Square",
+            "ratio_pct": 1.773,
+            "total_time_us": 115.46
+          },
+          {
+            "avg_time_us": 1.115,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 96,
+            "op_type": "Scatter",
+            "ratio_pct": 1.643,
+            "total_time_us": 107.04
+          },
+          {
+            "avg_time_us": 1.091,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 96,
+            "op_type": "Neg",
+            "ratio_pct": 1.608,
+            "total_time_us": 104.74
+          },
+          {
+            "avg_time_us": 1.32,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 48,
+            "op_type": "Less",
+            "ratio_pct": 0.973,
+            "total_time_us": 63.4
+          },
+          {
+            "avg_time_us": 18.93,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 2,
+            "op_type": "ArgMaxV2",
+            "ratio_pct": 0.581,
+            "total_time_us": 37.86
+          },
+          {
+            "avg_time_us": 8.68,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 2,
+            "op_type": "Range",
+            "ratio_pct": 0.267,
+            "total_time_us": 17.36
+          },
+          {
+            "avg_time_us": 5.15,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 2,
+            "op_type": "Data",
+            "ratio_pct": 0.158,
+            "total_time_us": 10.3
+          },
+          {
+            "avg_time_us": 2.17,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 4,
+            "op_type": "Add",
+            "ratio_pct": 0.133,
+            "total_time_us": 8.68
+          },
+          {
+            "avg_time_us": 3.6,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 2,
+            "op_type": "LessEqual",
+            "ratio_pct": 0.111,
+            "total_time_us": 7.2
+          },
+          {
+            "avg_time_us": 1.72,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 2,
+            "op_type": "Sin",
+            "ratio_pct": 0.053,
+            "total_time_us": 3.44
+          },
+          {
+            "avg_time_us": 1.71,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 2,
+            "op_type": "Cos",
+            "ratio_pct": 0.053,
+            "total_time_us": 3.42
+          },
+          {
+            "avg_time_us": 1.26,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 2,
+            "op_type": "BroadcastTo",
+            "ratio_pct": 0.039,
+            "total_time_us": 2.52
+          }
+        ]
+      },
+      "operator_details": {
+        "path": "/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/text_decode_lab_b1_k4096_9bc9aff/profile_increfa_pipe/liteserver-c001-4_2895975_20260805180213858_ascend_pt/ASCEND_PROFILER_OUTPUT/operator_details.csv",
+        "row_count": 61,
+        "top_by_device_total_us": [
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 3157.93,
+            "host_total_us": 3157.93,
+            "input_shape_samples": [],
+            "name": "mineru.text_decode.increfa"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 2389.63,
+            "host_total_us": 2389.63,
+            "input_shape_samples": [],
+            "name": "cache_compiler inference"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 1107.23,
+            "host_total_us": 1107.23,
+            "input_shape_samples": [],
+            "name": "Torch-Compiled Region: 0/1"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 616.02,
+            "host_total_us": 616.02,
+            "input_shape_samples": [],
+            "name": "TorchNpuGraphBase::Run"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 524.37,
+            "host_total_us": 524.37,
+            "input_shape_samples": [],
+            "name": "TorchDynamo Cache Lookup"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 250.96999999999997,
+            "host_total_us": 250.96999999999997,
+            "input_shape_samples": [],
+            "name": "ExecuteGraph"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 4,
+            "device_total_us": 226.23000000000002,
+            "host_total_us": 226.23000000000002,
+            "input_shape_samples": [
+              "1,151936;\r\n;\r\n",
+              "1,151936;\r\n;\r\n;\r\n1,1"
+            ],
+            "name": "aten::argmax"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 206.82999999999998,
+            "host_total_us": 206.82999999999998,
+            "input_shape_samples": [
+              "1,151936;\r\n;\r\n;\r\n;\r\n"
+            ],
+            "name": "aten::to"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 194.24,
+            "host_total_us": 194.24,
+            "input_shape_samples": [
+              "1,151936;\r\n;\r\n;\r\n;\r\n;\r\n;\r\n"
+            ],
+            "name": "aten::_to_copy"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 6,
+            "device_total_us": 153.9,
+            "host_total_us": 153.9,
+            "input_shape_samples": [
+              ";\r\n;\r\n;\r\n;\r\n;\r\n"
+            ],
+            "name": "aten::empty"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 124.93,
+            "host_total_us": 124.93,
+            "input_shape_samples": [],
+            "name": "RefreshAtTensorFromGeTensor"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 120.47,
+            "host_total_us": 120.47,
+            "input_shape_samples": [
+              "1,151936;\r\n1,151936;\r\n"
+            ],
+            "name": "aten::copy_"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 100.42999999999999,
+            "host_total_us": 100.42999999999999,
+            "input_shape_samples": [],
+            "name": "AssembleInputs"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 6,
+            "device_total_us": 98.30000000000001,
+            "host_total_us": 98.30000000000001,
+            "input_shape_samples": [],
+            "name": "empty_tensor"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 64.88,
+            "host_total_us": 64.88,
+            "input_shape_samples": [
+              "1;\r\n;\r\n"
+            ],
+            "name": "aten::add_"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 51.59,
+            "host_total_us": 51.59,
+            "input_shape_samples": [
+              "1,1,151936;\r\n;\r\n"
+            ],
+            "name": "aten::select"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 42.08,
+            "host_total_us": 42.08,
+            "input_shape_samples": [],
+            "name": "aclnnInplaceCopy"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 40.260000000000005,
+            "host_total_us": 11.21,
+            "input_shape_samples": [],
+            "name": "aclnnArgMax"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 31.79,
+            "host_total_us": 31.79,
+            "input_shape_samples": [],
+            "name": "AssembleOutputs"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 24.009999999999998,
+            "host_total_us": 24.009999999999998,
+            "input_shape_samples": [
+              "1,1,151936;\r\n;\r\n;\r\n"
+            ],
+            "name": "aten::as_strided"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 23.66,
+            "host_total_us": 23.66,
+            "input_shape_samples": [
+              "0;\r\n;\r\n;\r\n;\r\n"
+            ],
+            "name": "aten::set_"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 19.05,
+            "host_total_us": 19.05,
+            "input_shape_samples": [
+              "1,151936;\r\n"
+            ],
+            "name": "aten::reshape"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 15.219999999999999,
+            "host_total_us": 15.219999999999999,
+            "input_shape_samples": [],
+            "name": "aten::item"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 12.42,
+            "host_total_us": 12.42,
+            "input_shape_samples": [],
+            "name": "aclnnInplaceAdds"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 11.75,
+            "host_total_us": 11.75,
+            "input_shape_samples": [
+              "1,151936;\r\n"
+            ],
+            "name": "aten::view"
+          }
+        ],
+        "top_by_host_total_us": [
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 3157.93,
+            "host_total_us": 3157.93,
+            "input_shape_samples": [],
+            "name": "mineru.text_decode.increfa"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 2389.63,
+            "host_total_us": 2389.63,
+            "input_shape_samples": [],
+            "name": "cache_compiler inference"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 1107.23,
+            "host_total_us": 1107.23,
+            "input_shape_samples": [],
+            "name": "Torch-Compiled Region: 0/1"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 616.02,
+            "host_total_us": 616.02,
+            "input_shape_samples": [],
+            "name": "TorchNpuGraphBase::Run"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 524.37,
+            "host_total_us": 524.37,
+            "input_shape_samples": [],
+            "name": "TorchDynamo Cache Lookup"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 250.96999999999997,
+            "host_total_us": 250.96999999999997,
+            "input_shape_samples": [],
+            "name": "ExecuteGraph"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 4,
+            "device_total_us": 226.23000000000002,
+            "host_total_us": 226.23000000000002,
+            "input_shape_samples": [
+              "1,151936;\r\n;\r\n",
+              "1,151936;\r\n;\r\n;\r\n1,1"
+            ],
+            "name": "aten::argmax"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 206.82999999999998,
+            "host_total_us": 206.82999999999998,
+            "input_shape_samples": [
+              "1,151936;\r\n;\r\n;\r\n;\r\n"
+            ],
+            "name": "aten::to"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 194.24,
+            "host_total_us": 194.24,
+            "input_shape_samples": [
+              "1,151936;\r\n;\r\n;\r\n;\r\n;\r\n;\r\n"
+            ],
+            "name": "aten::_to_copy"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 6,
+            "device_total_us": 153.9,
+            "host_total_us": 153.9,
+            "input_shape_samples": [
+              ";\r\n;\r\n;\r\n;\r\n;\r\n"
+            ],
+            "name": "aten::empty"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 124.93,
+            "host_total_us": 124.93,
+            "input_shape_samples": [],
+            "name": "RefreshAtTensorFromGeTensor"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 120.47,
+            "host_total_us": 120.47,
+            "input_shape_samples": [
+              "1,151936;\r\n1,151936;\r\n"
+            ],
+            "name": "aten::copy_"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 100.42999999999999,
+            "host_total_us": 100.42999999999999,
+            "input_shape_samples": [],
+            "name": "AssembleInputs"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 6,
+            "device_total_us": 98.30000000000001,
+            "host_total_us": 98.30000000000001,
+            "input_shape_samples": [],
+            "name": "empty_tensor"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 64.88,
+            "host_total_us": 64.88,
+            "input_shape_samples": [
+              "1;\r\n;\r\n"
+            ],
+            "name": "aten::add_"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 51.59,
+            "host_total_us": 51.59,
+            "input_shape_samples": [
+              "1,1,151936;\r\n;\r\n"
+            ],
+            "name": "aten::select"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 42.08,
+            "host_total_us": 42.08,
+            "input_shape_samples": [],
+            "name": "aclnnInplaceCopy"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 31.79,
+            "host_total_us": 31.79,
+            "input_shape_samples": [],
+            "name": "AssembleOutputs"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 24.009999999999998,
+            "host_total_us": 24.009999999999998,
+            "input_shape_samples": [
+              "1,1,151936;\r\n;\r\n;\r\n"
+            ],
+            "name": "aten::as_strided"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 23.66,
+            "host_total_us": 23.66,
+            "input_shape_samples": [
+              "0;\r\n;\r\n;\r\n;\r\n"
+            ],
+            "name": "aten::set_"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 19.05,
+            "host_total_us": 19.05,
+            "input_shape_samples": [
+              "1,151936;\r\n"
+            ],
+            "name": "aten::reshape"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 15.219999999999999,
+            "host_total_us": 15.219999999999999,
+            "input_shape_samples": [],
+            "name": "aten::item"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 12.42,
+            "host_total_us": 12.42,
+            "input_shape_samples": [],
+            "name": "aclnnInplaceAdds"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 11.75,
+            "host_total_us": 11.75,
+            "input_shape_samples": [
+              "1,151936;\r\n"
+            ],
+            "name": "aten::view"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 40.260000000000005,
+            "host_total_us": 11.21,
+            "input_shape_samples": [],
+            "name": "aclnnArgMax"
+          }
+        ],
+        "total_device_us": 9616.879999999996,
+        "total_host_us": 9587.829999999994
+      },
+      "profiler_info": {
+        "cann_version": "9.0.0",
+        "config": {
+          "common_config": {
+            "activities": [
+              "ProfilerActivity.CPU",
+              "ProfilerActivity.NPU"
+            ],
+            "profile_memory": false,
+            "record_shapes": true,
+            "schedule": {
+              "active": 1,
+              "repeat": 1,
+              "skip_first": 0,
+              "wait": 0,
+              "warmup": 0
+            },
+            "with_flops": false,
+            "with_modules": false,
+            "with_stack": false
+          },
+          "experimental_config": {
+            "_aic_metrics": "ACL_AICORE_PIPE_UTILIZATION",
+            "_data_simplification": true,
+            "_export_type": [
+              "text"
+            ],
+            "_gc_detect_threshold": null,
+            "_host_sys": [],
+            "_l2_cache": false,
+            "_msprof_tx": false,
+            "_mstx": false,
+            "_mstx_domain_exclude": [],
+            "_mstx_domain_include": [],
+            "_op_attr": false,
+            "_profiler_level": "Level1",
+            "_sys_interconnection": false,
+            "_sys_io": false,
+            "record_op_args": false
+          }
+        },
+        "end_info": {
+          "MonotonicTimeEnd": 1646239831502965,
+          "collectionTimeEnd": 1785952934155857555
+        },
+        "start_info": {
+          "freq": 100,
+          "start_cnt": 164640102769440,
+          "start_monotonic": 1646211583916940,
+          "syscnt_enable": true
+        },
+        "torch_npu_version": "2.10.0"
+      },
+      "run_root": "/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/text_decode_lab_b1_k4096_9bc9aff/profile_increfa_pipe/liteserver-c001-4_2895975_20260805180213858_ascend_pt",
+      "step_trace_time": {
+        "path": "/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/text_decode_lab_b1_k4096_9bc9aff/profile_increfa_pipe/liteserver-c001-4_2895975_20260805180213858_ascend_pt/ASCEND_PROFILER_OUTPUT/step_trace_time.csv",
+        "row_count": 1,
+        "totals_us": {
+          "Bubble": 0.0,
+          "Communication": 0.0,
+          "Communication(Not Overlapped and Exclude Receive)": 0.0,
+          "Communication(Not Overlapped)": 0.0,
+          "Computing": 3262.739999999988,
+          "Free": 118.91999999999993,
+          "Overlapped": 0.0,
+          "Preparing": 4698.75,
+          "Stage": 3381.75
+        }
+      }
+    }
+  ],
+  "skip_trace": true,
+  "topn": 25
+}

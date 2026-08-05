@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "kind": "mineru_text_decode_lab",
+  "scope": "warmed full 24-layer one-token static decode; prefill excluded",
+  "model": "/workspace/models/MinerU2.5-Pro-2605-1.2B",
+  "device": "npu:0",
+  "dtype": "torch.float16",
+  "shape": {
+    "batch_size": 1,
+    "cache_length": 4096,
+    "initial_cache_position": 2048
+  },
+  "model_load_s": 13.088955196086317,
+  "weight_format": {
+    "requested_mode": "none",
+    "effective_mode": "none",
+    "target_format": null,
+    "target_format_id": null,
+    "decoder_linear_count": 0,
+    "converted_decoder_linear_count": 0,
+    "already_nz_decoder_linear_count": 0,
+    "lm_head_copy": null,
+    "skipped_reason": null
+  },
+  "rotary": {
+    "requested_mode": "manual",
+    "effective_mode": "manual",
+    "rotary_mode": null,
+    "scope": "decode_static_only",
+    "prefill_rotary_impl": "manual",
+    "updated_attention_layers": 24,
+    "skipped_reason": null
+  },
+  "lanes": {
+    "manual": {
+      "attention": {
+        "requested_mode": "manual",
+        "effective_mode": "manual",
+        "scope": "decode_static_only",
+        "updated_attention_layers": 24
+      },
+      "compile": {
+        "backend": "torchair",
+        "compile_api": "torchair.inference.cache_compile",
+        "fullgraph": true,
+        "dynamic": false,
+        "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/11_mineru_2_5_pro_inference/text_decode_lab/mineru_manual_attention_none_rotary_manual_bs1_cache4096",
+        "torchair_ge_cache": true,
+        "batch_size": 1,
+        "cache_length": 4096,
+        "decode_attention": "manual",
+        "decode_weight_format": "none",
+        "decode_rotary_impl": "manual",
+        "compile_wrapper_s": 0.9651700740214437,
+        "first_call_s": 42.0628298278898
+      },
+      "measure": {
+        "steps": 64,
+        "raw_tokens": 64,
+        "decode_s": 0.2540949988178909,
+        "step_ms": 3.970234356529545,
+        "raw_tok_s": 251.87430015444187
+      },
+      "profile": {
+        "profile_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/text_decode_lab_b1_k4096_9bc9aff/profile_manual_pipe",
+        "profile_steps": 2,
+        "profile_wall_s": 6.5393637211527675,
+        "profile_wall_is_throughput_measurement": false,
+        "metric": "pipe"
+      }
+    },
+    "increfa": {
+      "attention": {
+        "requested_mode": "increfa",
+        "effective_mode": "increfa",
+        "scope": "decode_static_only",
+        "updated_attention_layers": 24
+      },
+      "compile": {
+        "backend": "torchair",
+        "compile_api": "torchair.inference.cache_compile",
+        "fullgraph": true,
+        "dynamic": false,
+        "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/11_mineru_2_5_pro_inference/text_decode_lab/mineru_increfa_attention_none_rotary_manual_bs1_cache4096",
+        "torchair_ge_cache": true,
+        "batch_size": 1,
+        "cache_length": 4096,
+        "decode_attention": "increfa",
+        "decode_weight_format": "none",
+        "decode_rotary_impl": "manual",
+        "compile_wrapper_s": 0.0013207120355218649,
+        "first_call_s": 55.67513664695434
+      },
+      "measure": {
+        "steps": 64,
+        "raw_tokens": 64,
+        "decode_s": 0.19053449807688594,
+        "step_ms": 2.977101532451343,
+        "raw_tok_s": 335.8971768680663
+      },
+      "profile": {
+        "profile_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/text_decode_lab_b1_k4096_9bc9aff/profile_increfa_pipe",
+        "profile_steps": 2,
+        "profile_wall_s": 5.829181100940332,
+        "profile_wall_is_throughput_measurement": false,
+        "metric": "pipe"
+      }
+    }
+  },
+  "comparisons": {
+    "manual_vs_increfa": {
+      "validation_steps": 8,
+      "token_exact": true,
+      "manual_token_ids": [
+        [
+          13,
+          151667,
+          198,
+          151645,
+          198,
+          151645,
+          198,
+          151645
+        ]
+      ],
+      "increfa_token_ids": [
+        [
+          13,
+          151667,
+          198,
+          151645,
+          198,
+          151645,
+          198,
+          151645
+        ]
+      ],
+      "final_logits_max_abs": 0.03857421875,
+      "final_logits_mean_abs": 0.00658833235502243,
+      "final_logits_cosine": 0.999970018863678,
+      "speedup": 1.3335905118628781
+    }
+  }
+}
