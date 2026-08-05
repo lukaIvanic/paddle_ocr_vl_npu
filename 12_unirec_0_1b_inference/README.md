@@ -257,6 +257,31 @@ soon as all their crops finish. The initial implementation performs replacement
 prefill synchronously between decode iterations. It does not yet overlap NPU
 prefill with decode.
 
+## Layout detector lab
+
+`layout_detector_lab.py` isolates the same eager PP-DocLayoutV2 NPU adapter
+used by the full runner. It runs sequential B1 pages and excludes recognition,
+crop construction, and page assembly. The report separates file read, image
+decode, BGR-to-RGB conversion, processor resize/normalize, input H2D, model
+forward, Hugging Face box decode, result D2H, Python result construction,
+overlap filtering, and reading-order labeling. One warmup page is excluded by
+default.
+
+```sh
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
+  12_unirec_0_1b_inference/layout_detector_lab.py \
+  --openocr-root /workspace/repos/OpenOCR \
+  --model-path /workspace/models/PP-DocLayoutV2_safetensors \
+  --input /workspace/datasets/OmniDocBench/images \
+  --device npu:0 --dtype float32 --limit 32 \
+  --output tmp/12_unirec_0_1b_inference/layout_detector_lab/result.json
+```
+
+The JSON contains per-page dimensions, box counts, stage times, aggregate
+totals, means, medians, p90 values, and detector pages/s. Device
+synchronization is enabled only in this profiling lane so asynchronous NPU work
+is charged to the stage that submitted it.
+
 ## Guarded-atlas vision lab
 
 `vision_atlas_lab.py` tests a fixed-shape representation for the spatial

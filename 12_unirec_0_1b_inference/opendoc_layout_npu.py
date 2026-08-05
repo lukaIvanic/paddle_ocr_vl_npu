@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -55,6 +56,7 @@ class PPDocLayoutV2NpuAdapter:
         device: str = "npu:0",
         dtype: str = "float32",
         threshold: float = 0.5,
+        profile_stages: bool = False,
     ) -> None:
         if dtype not in DTYPE_MAP:
             raise ValueError(f"Unsupported layout dtype: {dtype}")
@@ -69,6 +71,7 @@ class PPDocLayoutV2NpuAdapter:
         self.device = torch.device(device)
         self.dtype = DTYPE_MAP[dtype]
         self.threshold = float(threshold)
+        self.profile_stages = bool(profile_stages)
         self._filter_overlap_boxes = filter_overlap_boxes
 
         started = time.perf_counter()
@@ -80,6 +83,18 @@ class PPDocLayoutV2NpuAdapter:
         self.page_count = 0
         self.forward_s = 0.0
         self.postprocess_s = 0.0
+        self.stage_s: dict[str, float] = defaultdict(float)
+
+    def _record_stage(self, name: str, started: float) -> None:
+        if self.profile_stages:
+            self.stage_s[name] += time.perf_counter() - started
+
+    def reset_timing(self) -> None:
+        """Reset measured page work while retaining the loaded model."""
+        self.page_count = 0
+        self.forward_s = 0.0
+        self.postprocess_s = 0.0
+        self.stage_s.clear()
 
     @torch.inference_mode()
     def _predict_one(
@@ -93,8 +108,17 @@ class PPDocLayoutV2NpuAdapter:
                 f"shape={image.shape}"
             )
         height, width = image.shape[:2]
+
+        total_started = time.perf_counter()
+        started = time.perf_counter()
         rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        self._record_stage("bgr_to_rgb_s", started)
+
+        started = time.perf_counter()
         inputs = self.processor(images=rgb, return_tensors="pt")
+        self._record_stage("processor_preprocess_s", started)
+
+        started = time.perf_counter()
         moved = {
             name: tensor.to(
                 device=self.device,
@@ -102,24 +126,40 @@ class PPDocLayoutV2NpuAdapter:
             )
             for name, tensor in inputs.items()
         }
-
         torch.npu.synchronize()
+        self._record_stage("inputs_h2d_s", started)
+
         started = time.perf_counter()
         outputs = self.model(**moved)
         torch.npu.synchronize()
-        self.forward_s += time.perf_counter() - started
+        forward_s = time.perf_counter() - started
+        self.forward_s += forward_s
+        if self.profile_stages:
+            self.stage_s["model_forward_s"] += forward_s
 
-        started = time.perf_counter()
+        postprocess_started = time.perf_counter()
+        started = postprocess_started
         prediction = self.processor.post_process_object_detection(
             outputs,
             threshold=threshold,
             target_sizes=[(height, width)],
         )[0]
-        scores = prediction["scores"].detach().cpu().tolist()
-        labels = prediction["labels"].detach().cpu().tolist()
-        boxes = prediction["boxes"].detach().cpu().tolist()
-        order_sequence = prediction["order_seq"].detach().cpu().tolist()
+        if self.profile_stages:
+            torch.npu.synchronize()
+        self._record_stage("hf_box_decode_s", started)
 
+        started = time.perf_counter()
+        scores_cpu = prediction["scores"].detach().cpu()
+        labels_cpu = prediction["labels"].detach().cpu()
+        boxes_cpu = prediction["boxes"].detach().cpu()
+        order_sequence_cpu = prediction["order_seq"].detach().cpu()
+        scores = scores_cpu.tolist()
+        labels = labels_cpu.tolist()
+        boxes = boxes_cpu.tolist()
+        order_sequence = order_sequence_cpu.tolist()
+        self._record_stage("outputs_d2h_s", started)
+
+        started = time.perf_counter()
         result_boxes: list[dict[str, Any]] = []
         for score, label_id, box, order in zip(
             scores,
@@ -143,15 +183,22 @@ class PPDocLayoutV2NpuAdapter:
                     "custom_value": float(order),
                 }
             )
+        self._record_stage("result_box_build_s", started)
 
+        started = time.perf_counter()
         result = self._filter_overlap_boxes({"boxes": result_boxes})
+        self._record_stage("overlap_filter_s", started)
+
+        started = time.perf_counter()
         result["boxes"] = sorted(
             result["boxes"],
             key=lambda box: box["custom_value"],
         )
         for index, box in enumerate(result["boxes"], start=1):
             box["label"] = f"{box['label']}_{index:02d}"
-        self.postprocess_s += time.perf_counter() - started
+        self._record_stage("order_and_label_s", started)
+        self.postprocess_s += time.perf_counter() - postprocess_started
+        self._record_stage("detector_total_s", total_started)
         self.page_count += 1
         return result
 
@@ -166,9 +213,16 @@ class PPDocLayoutV2NpuAdapter:
         return [self._predict_one(image, active_threshold) for image in images]
 
     def timing_summary(self) -> dict[str, Any]:
+        stage_s = dict(self.stage_s)
         return {
             "setup_s": self.setup_s,
             "page_count": self.page_count,
             "forward_s": self.forward_s,
             "postprocess_s": self.postprocess_s,
+            "stage_s": stage_s,
+            "stage_mean_ms": {
+                name: seconds * 1000.0 / self.page_count
+                for name, seconds in stage_s.items()
+                if self.page_count
+            },
         }
