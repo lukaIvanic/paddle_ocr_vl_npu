@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import io
 import json
@@ -26,6 +27,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--api-url", default="http://127.0.0.1:8765/v1/ocr")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--score-output", type=Path)
+    parser.add_argument("--summary-output", type=Path)
     parser.add_argument(
         "--evaluator-root",
         type=Path,
@@ -98,6 +100,7 @@ def _score(
     timeout_s: float,
 ) -> None:
     sys.path.insert(0, str(evaluator_root.resolve()))
+    from src.core.preprocess import normalized_table
     from src.metrics.cal_metric import _evaluate_teds_pair_with_timeout
 
     records = list(_read_completed(output).values())
@@ -107,6 +110,7 @@ def _score(
     started = time.perf_counter()
 
     def document(table_html: str) -> str:
+        table_html = normalized_table(table_html, "html")
         if "<html" in table_html.lower():
             return table_html
         return f"<html><body>{table_html}</body></html>"
@@ -195,6 +199,61 @@ def _score(
     )
 
 
+def _distribution(values: list[float]) -> dict[str, float]:
+    ordered = sorted(values)
+
+    def percentile(fraction: float) -> float:
+        index = min(len(ordered) - 1, math.ceil(fraction * len(ordered)) - 1)
+        return ordered[index]
+
+    return {
+        "mean": sum(ordered) / len(ordered),
+        "p50": percentile(0.50),
+        "p95": percentile(0.95),
+        "max": ordered[-1],
+    }
+
+
+def _write_summary(
+    output: Path,
+    summary_output: Path,
+    *,
+    generation_wall_s: float,
+    score_output: Path | None,
+) -> None:
+    records = list(_read_completed(output).values())
+    http = [float(record["http_wall_s"]) for record in records]
+    worker = [float(record["worker_wall_s"]) for record in records]
+    overhead = [max(0.0, h - w) for h, w in zip(http, worker)]
+    metrics = None
+    if score_output is not None:
+        metrics = json.loads(score_output.read_text(encoding="utf-8"))
+    summary = {
+        "tables": len(records),
+        "unique_requests": len({record["request_id"] for record in records}),
+        "generation_wall_s": generation_wall_s,
+        "tables_per_s": len(records) / generation_wall_s,
+        "http_latency_s": _distribution(http),
+        "worker_latency_s": _distribution(worker),
+        "http_wrapper_overhead_s": {
+            "sum": sum(overhead),
+            **_distribution(overhead),
+        },
+        "input_tokens": sum(int(record["input_tokens"]) for record in records),
+        "output_tokens_including_eos": sum(
+            int(record["output_tokens"]) for record in records
+        ),
+        "stop_reasons": dict(Counter(record["stop_reason"] for record in records)),
+        "metrics": metrics,
+    }
+    summary_output.parent.mkdir(parents=True, exist_ok=True)
+    summary_output.write_text(
+        json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    print(f"SUMMARY output={summary_output}", flush=True)
+
+
 def main() -> None:
     args = parse_args()
     pages = json.loads(args.dataset_json.read_text(encoding="utf-8"))
@@ -253,6 +312,7 @@ def main() -> None:
                 flush=True,
             )
     print(f"DONE tables={len(jobs)} output={args.output}", flush=True)
+    generation_wall_s = time.perf_counter() - started
     if args.score_output is not None:
         _score(
             args.output,
@@ -260,6 +320,13 @@ def main() -> None:
             args.evaluator_root,
             workers=args.teds_workers,
             timeout_s=args.teds_timeout_s,
+        )
+    if args.summary_output is not None:
+        _write_summary(
+            args.output,
+            args.summary_output,
+            generation_wall_s=generation_wall_s,
+            score_output=args.score_output,
         )
 
 

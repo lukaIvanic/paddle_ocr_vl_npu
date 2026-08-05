@@ -24556,3 +24556,356 @@ Return the one-line `310P PHASE 58 FULL: PASS ...` summary first, followed by
 `$ROOT/final_comparison.json` and the concise agent report.  Do not hide a score
 below 95.5%, and do not rerun inference or change the configuration if matching,
 TEDS, or CDM needs bounded recovery.
+
+## Phase 59: ground-truth table crops through the HTTP OCR API
+
+Phase 59 reproduces the 910B2 crop-API experiment on 310P.  It does not rerun
+layout or the 1,651-page E2E pipeline.  It reads the 665 non-ignored table
+annotations from OmniDocBench v1.6, crops each exact ground-truth box with zero
+padding, sends one PNG per HTTP request, and scores the saved HTML with the
+official OmniDocBench `normalized_table(..., "html")` path before TEDS.
+
+This is a component test.  Its Page-TEDS is grouped by the 458 pages that
+contain those 665 tables, but it uses perfect ground-truth boxes.  Therefore:
+
+- compare its recognition quality with the 910B2 crop-API authority;
+- compare its Page-TEDS with the existing 310P E2E Page-TEDS to measure the
+  combined layout/crop/assembly gap;
+- do **not** compare crop-API tables/s with E2E pages/s as if they were the same
+  unit;
+- do not call a crop-API score an official E2E score.
+
+The corrected 910B2 crop-API authority is:
+
+- 665 tables on 458 pages;
+- generation wall 602.600 s, 1.103551 tables/s;
+- sample TEDS 0.9497333829;
+- Page-TEDS 0.9545542081;
+- sample structure-only TEDS 0.9753250798;
+- page structure-only TEDS 0.9781432023;
+- 657 EOS and 8 KV-cache-full stops;
+- mean HTTP wrapper overhead 1.668 ms, p95 3.501 ms.
+
+The official PaddleOCR-VL-1.6 full-page report is 0.947619 Page-TEDS.  The
+current 910B2 optimized E2E authority is 0.9444252611.  These are context, not
+crop-API pass thresholds.  Numerical differences on 310P are measurements.
+
+Use one persistent shell.  The checkout is pull-only.  Do not edit source,
+commit, create a branch, change model weights, add crop padding, enable API-side
+batching, or rerun E2E.  The HTTP process and the NPU worker must remain separate
+processes as implemented by `serve_crop_ocr_api.py`.  The server must process
+each request immediately with B1 decode, vision packing off, and text packing
+off.
+
+### 59.1 Preflight, cache selection, and server startup
+
+```sh
+set -uo pipefail
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git pull --ff-only origin main
+test -z "$(git status --porcelain)"
+source npu-setup
+set -e
+
+PYTHON_BIN=/usr/local/python3.12.13/bin/python
+SERVER=09_persistent_page_engine/scripts/serve_crop_ocr_api.py
+CLIENT=09_persistent_page_engine/scripts/run_omnidocbench_table_api.py
+MODEL=/home/lukaiv/models/PaddleOCR-VL-1.6
+DATASET_JSON=/home/lukaiv/datasets/OmniDocBench/OmniDocBench.json
+IMAGES_DIR=/home/lukaiv/datasets/OmniDocBench/images
+
+CDM_ROOT=tmp/09_persistent_page_engine/310p_phase56_cdm
+test -s "$CDM_ROOT/runtime_paths.env"
+. "$CDM_ROOT/runtime_paths.env"
+EVAL_PYTHON="$OMNIDOCBENCH_EVAL_PYTHON"
+EVALUATOR_ROOT="$OMNIDOCBENCH_EVALUATOR_ROOT"
+test -x "$EVAL_PYTHON"
+test -f "$EVALUATOR_ROOT/pdf_validation.py"
+
+test -f "$SERVER" && test -f "$CLIENT"
+test -s "$DATASET_JSON" && test -d "$IMAGES_DIR"
+test "$(sha256sum "$MODEL/model.safetensors" | awk '{print $1}')" = \
+  85a479d506a11e724e7285d395c551be69f41dbc16b6342d3cacfb189aed71db
+
+SHORT="$(git rev-parse --short HEAD)"
+ROOT="tmp/09_persistent_page_engine/310p_phase59_crop_api_${SHORT}"
+test ! -e "$ROOT"
+mkdir -p "$ROOT"
+
+# Reuse the compatible B1 optimized vision and text caches from Phase 52.
+# Decode B1-KV4096-PSE has its own cache.  It may compile once if absent.
+DECODE_CACHE=.runtime_cache/310p_phase59_crop_api_decode_b1_k4096_pse
+VISION_CACHE=.runtime_cache/310p_phase52_v16_vision_4352_nz
+TEXT_CACHE=.runtime_cache/310p_phase52_v16_text
+mkdir -p "$DECODE_CACHE"
+for cache in "$VISION_CACHE" "$TEXT_CACHE"; do
+  test -d "$cache"
+  test -n "$(find "$cache" -type f -print -quit)"
+done
+
+cache_inventory() {
+  out="$1"
+  : >"$out"
+  for cache in "$DECODE_CACHE" "$VISION_CACHE" "$TEXT_CACHE"; do
+    printf '%s\tfiles=%s\tbytes=%s\n' "$cache" \
+      "$(find "$cache" -type f | wc -l)" \
+      "$(du -sb "$cache" | cut -f1)" >>"$out"
+  done
+}
+
+cache_inventory "$ROOT/cache_before.txt"
+df -h . "$DECODE_CACHE" "$VISION_CACHE" "$TEXT_CACHE" \
+  | tee "$ROOT/df_before.txt"
+npu-smi info | tee "$ROOT/npu_before.txt"
+
+SERVER_ARGS=(
+  "$SERVER"
+  --host 127.0.0.1 --port 8765
+  --model "$MODEL"
+  --decode-batch-size 1
+  --cache-length 4096 --max-new-tokens 4096
+  --min-pixels 28224 --max-pixels 802816
+  --decode-backend torchair
+  --decode-optimization combined_apply_pse_sentinel
+  --torchair-cache-dir "$DECODE_CACHE"
+  --vision-buckets 256,384,512,640,768,1408,1920,2048,2944,4096
+  --vision-torchair-cache-dir "$VISION_CACHE"
+  --text-buckets 128,256,512,1024,1312
+  --text-torchair-cache-dir "$TEXT_CACHE"
+)
+
+printf '%q ' "$PYTHON_BIN" "${SERVER_ARGS[@]}" >"$ROOT/server_command.sh"
+printf '\n' >>"$ROOT/server_command.sh"
+
+server_started="$(date +%s)"
+PYTHONUNBUFFERED=1 "$PYTHON_BIN" "${SERVER_ARGS[@]}" \
+  >"$ROOT/server.log" 2>&1 &
+API_PID="$!"
+printf '%s\n' "$API_PID" >"$ROOT/server.pid"
+
+cleanup_api() {
+  if kill -0 "$API_PID" 2>/dev/null; then
+    kill "$API_PID"
+    wait "$API_PID" 2>/dev/null || true
+  fi
+}
+trap cleanup_api EXIT INT TERM
+
+ready=0
+for attempt in $(seq 1 540); do
+  if ! kill -0 "$API_PID" 2>/dev/null; then
+    printf '310P PHASE 59 SERVER: FAIL process_exited log=%s\n' "$ROOT/server.log"
+    tail -n 80 "$ROOT/server.log"
+    exit 0
+  fi
+  if /usr/bin/python3 - <<'PY' >/dev/null 2>&1
+import urllib.request
+with urllib.request.urlopen('http://127.0.0.1:8765/ready', timeout=2) as r:
+    assert __import__('json').load(r)['ready'] is True
+PY
+  then
+    ready=1
+    break
+  fi
+  if test $((attempt % 6)) -eq 0; then
+    printf 'PHASE59_STARTUP_PROGRESS elapsed_s=%s last=%s\n' \
+      "$(( $(date +%s) - server_started ))" \
+      "$(tail -n 1 "$ROOT/server.log" | tr '\r\n' ' ' | cut -c1-180)"
+  fi
+  sleep 5
+done
+test "$ready" -eq 1
+printf '%s\n' "$(( $(date +%s) - server_started ))" >"$ROOT/server_startup_s.txt"
+/usr/bin/python3 - <<'PY' >"$ROOT/ready.json"
+import json, urllib.request
+with urllib.request.urlopen('http://127.0.0.1:8765/ready', timeout=5) as r:
+    print(json.dumps(json.load(r), indent=2, sort_keys=True))
+PY
+```
+
+Return one sentence when `/ready` succeeds:
+
+```text
+310P PHASE 59 SERVER: READY startup_s=<seconds> pid=<pid>
+```
+
+Then continue without waiting.  If startup fails, return the first causal error,
+the last 80 server-log lines, cache growth, and `npu-smi info`, then stop.
+
+### 59.2 Send all 665 exact GT table crops and score them
+
+```sh
+CLIENT_ARGS=(
+  "$CLIENT"
+  --dataset-json "$DATASET_JSON"
+  --images-dir "$IMAGES_DIR"
+  --api-url http://127.0.0.1:8765/v1/ocr
+  --output "$ROOT/tables.jsonl"
+  --score-output "$ROOT/scores.json"
+  --summary-output "$ROOT/run_summary.json"
+  --evaluator-root "$EVALUATOR_ROOT"
+  --crop-padding 0
+  --timeout-s 900
+  --teds-workers 12 --teds-timeout-s 120
+  --no-resume
+)
+
+printf '%q ' "$EVAL_PYTHON" "${CLIENT_ARGS[@]}" >"$ROOT/client_command.sh"
+printf '\n' >>"$ROOT/client_command.sh"
+
+SECONDS=0
+set +e
+set -o pipefail
+PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 10800 \
+  "$EVAL_PYTHON" "${CLIENT_ARGS[@]}" 2>&1 | tee "$ROOT/client.log"
+client_ec="${PIPESTATUS[0]}"
+set -e
+printf '%s\n' "$client_ec" >"$ROOT/client_exit_code.txt"
+printf '%s\n' "$SECONDS" >"$ROOT/client_outer_wall_s.txt"
+
+cleanup_api
+trap - EXIT INT TERM
+cache_inventory "$ROOT/cache_after.txt"
+npu-smi info >"$ROOT/npu_after.txt" || true
+
+if test "$client_ec" -ne 0; then
+  printf '310P PHASE 59 CLIENT: FAIL exit=%s wall_s=%s log=%s\n' \
+    "$client_ec" "$SECONDS" "$ROOT/client.log"
+  tail -n 80 "$ROOT/client.log"
+  exit 0
+fi
+```
+
+The client prints one progress line per completed table and one line per 25
+scored tables.  A long period without either line is a stall.  Do not restart
+or change parameters automatically.  Preserve the log and report the last
+completed request.
+
+### 59.3 Validate the contract and compare speed and quality
+
+```sh
+"$EVAL_PYTHON" - "$ROOT" <<'PY' \
+  | tee "$ROOT/final_sentence.txt"
+import glob
+import json
+import pathlib
+import sys
+
+root = pathlib.Path(sys.argv[1])
+summary = json.loads((root / 'run_summary.json').read_text())
+scores = json.loads((root / 'scores.json').read_text())
+ready = json.loads((root / 'ready.json').read_text())
+records = [json.loads(line) for line in (root / 'tables.jsonl').read_text().splitlines() if line]
+
+assert len(records) == summary['tables'] == scores['table_count'] == 665
+assert summary['unique_requests'] == 665
+assert scores['table_page_count'] == 458
+assert scores['teds_timeout_count'] == 0
+assert scores['teds_error_count'] == 0
+assert all(record['bbox_xyxy'] for record in records)
+assert len({record['request_id'] for record in records}) == 665
+
+cfg = ready['configuration']
+assert cfg['batch_size'] == 1
+assert cfg['cache_length'] == 4096
+assert cfg['max_new_tokens'] == 4096
+assert cfg['decode_optimization'] == 'combined_apply_pse_sentinel'
+assert cfg['vision_packing']['mode'] == 'off'
+assert cfg['text_packing']['mode'] == 'off'
+assert cfg['preprocessor']['effective_min_pixels'] == 28224
+assert cfg['preprocessor']['effective_max_pixels'] == 802816
+
+ref_910 = {
+    'generation_wall_s': 602.6,
+    'tables_per_s': 1.1035512777962164,
+    'sample_teds': 0.9497333828910292,
+    'page_teds': 0.9545542081254185,
+    'sample_structure': 0.9753250798052971,
+    'page_structure': 0.9781432023044314,
+    'http_overhead_mean_s': 0.0016681980145604987,
+    'http_overhead_p95_s': 0.003501037834212184,
+}
+
+phase57 = None
+candidates = []
+for path in glob.glob('tmp/09_persistent_page_engine/310p_phase57_cap4096_b64_pse_*/final_comparison.json'):
+    p = pathlib.Path(path)
+    candidates.append(p)
+if candidates:
+    selected = max(candidates, key=lambda p: p.stat().st_mtime)
+    phase57 = json.loads(selected.read_text())['current_310p']
+
+current = {
+    'generation_wall_s': summary['generation_wall_s'],
+    'tables_per_s': summary['tables_per_s'],
+    'sample_teds': scores['sample_TEDS'],
+    'page_teds': scores['page_TEDS'],
+    'sample_structure': scores['sample_TEDS_structure_only'],
+    'page_structure': scores['page_TEDS_structure_only'],
+    'http_overhead_mean_s': summary['http_wrapper_overhead_s']['mean'],
+    'http_overhead_p95_s': summary['http_wrapper_overhead_s']['p95'],
+    'input_tokens': summary['input_tokens'],
+    'output_tokens_including_eos': summary['output_tokens_including_eos'],
+    'stop_reasons': summary['stop_reasons'],
+}
+deltas = {
+    key: current[key] - ref_910[key]
+    for key in ref_910
+}
+comparison = {
+    'classification': 'PASS',
+    'current_310p_crop_api': current,
+    'reference_910b_crop_api': ref_910,
+    'signed_delta_310p_minus_910b': deltas,
+    'speed_ratio_310p_over_910b': current['tables_per_s'] / ref_910['tables_per_s'],
+    'latency_ratio_310p_over_910b': current['generation_wall_s'] / ref_910['generation_wall_s'],
+    'official_e2e_page_teds': 0.947619,
+    'reference_910b_e2e_page_teds': 0.9444252611065791,
+    'current_310p_e2e': phase57,
+    'crop_api_minus_current_310p_e2e_page_teds': (
+        None if phase57 is None else current['page_teds'] - phase57['page_teds']
+    ),
+    'server_startup_s': float((root / 'server_startup_s.txt').read_text()),
+    'client_outer_wall_s': float((root / 'client_outer_wall_s.txt').read_text()),
+}
+(root / 'final_comparison.json').write_text(
+    json.dumps(comparison, indent=2, sort_keys=True) + '\n'
+)
+
+e2e_text = 'unavailable' if phase57 is None else f"{phase57['page_teds']:.6f}"
+e2e_delta = comparison['crop_api_minus_current_310p_e2e_page_teds']
+e2e_delta_text = 'unavailable' if e2e_delta is None else f'{e2e_delta:+.6f}'
+print(
+    '310P PHASE 59 CROP API: PASS '
+    f'tables=665 pages=458 tables_per_s={current["tables_per_s"]:.6f} '
+    f'speed_vs_910b={comparison["speed_ratio_310p_over_910b"]:.3f}x '
+    f'page_teds={current["page_teds"]:.6f} '
+    f'delta_vs_910b={deltas["page_teds"]:+.6f} '
+    f'e2e_page_teds={e2e_text} api_minus_e2e={e2e_delta_text} '
+    f'teds_errors=0 stops={json.dumps(current["stop_reasons"], separators=(",", ":"))}'
+)
+PY
+```
+
+Return that exact one-line result first.  Then write
+`$ROOT/agent_report.md` with only these sections:
+
+1. `Contract`: commit, host, physical NPU, software versions, model SHA, exact
+   commands, exact zero-padding GT crop count, and the `/ready` configuration.
+2. `Startup and cache work`: startup seconds and before/after file/byte deltas
+   for all three caches.  State which graph shapes compiled, if any.
+3. `Speed`: generation wall, tables/s, worker and HTTP p50/p95/max, wrapper
+   overhead, input/output tokens, stop counts, and signed ratios against 910B2.
+4. `Quality`: sample/Page TEDS and structure-only TEDS, signed deltas against
+   the 910B2 crop API, the existing 310P E2E Page-TEDS and crop-API-minus-E2E
+   delta, and the official E2E 0.947619 as labeled context only.
+5. `Differences`: the ten tables with the largest absolute 310P-versus-910B
+   score difference only if an exact 910B per-table authority is locally
+   available.  Otherwise state that per-table cross-chip localization is not
+   available; do not invent it.
+6. `What is proven` and `What is not proven`.
+
+Do not rerun the 665 tables.  If scoring alone fails after all responses are
+saved, fix or rerun only scoring.  Do not change inference output or delete
+`tables.jsonl`.
