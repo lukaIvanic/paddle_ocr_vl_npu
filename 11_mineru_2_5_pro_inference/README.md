@@ -45,8 +45,12 @@ parse_npu_profile.py
 run_official_transformers_omnidocbench.py
   Fidelity-first corpus runner around the official mineru-vl-utils two-step
   page client. It supports stock Transformers plus synchronous and asynchronous
-  vLLM engines. It writes official json2md Markdown, content lists, per-page
-  checkpoints, shard progress, and timing.
+  vLLM engines, plus two local-model lanes. ``local-correctness`` presents the
+  local model through the official Transformers client contract;
+  ``local-eager-client`` is the first direct eager custom VLM client while the
+  official MinerU frontend and post-processing stay unchanged. It writes
+  official json2md Markdown, content lists, per-page checkpoints, shard
+  progress, and timing.
 ```
 
 The experiment reuses the repository-level `crops/` corpus. Its manifest and

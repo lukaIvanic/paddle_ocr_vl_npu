@@ -41,7 +41,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument(
         "--backend",
-        choices=("transformers", "vllm-engine", "vllm-async-engine"),
+        choices=(
+            "transformers",
+            "local-correctness",
+            "local-eager-client",
+            "vllm-engine",
+            "vllm-async-engine",
+        ),
         default="transformers",
     )
     parser.add_argument("--offset", type=int, default=0)
@@ -185,24 +191,41 @@ def main() -> None:
         f"model={model_dir}",
         flush=True,
     )
-    if args.backend == "transformers":
-        from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
+    if args.backend in ("transformers", "local-correctness", "local-eager-client"):
+        from transformers import AutoProcessor
 
-        model = Qwen2VLForConditionalGeneration.from_pretrained(
-            model_dir,
-            dtype=torch.bfloat16,
-            attn_implementation="eager",
-            local_files_only=True,
-        )
-        # The checkpoint stores the tied embedding matrix once.  Transformers
-        # otherwise initializes the absent lm_head independently.
-        model.lm_head.weight = model.model.language_model.embed_tokens.weight
-        model = model.to("npu:0").eval()
         processor = AutoProcessor.from_pretrained(
             model_dir,
             use_fast=True,
             local_files_only=True,
         )
+        if args.backend == "transformers":
+            from transformers import Qwen2VLForConditionalGeneration
+
+            model = Qwen2VLForConditionalGeneration.from_pretrained(
+                model_dir,
+                dtype=torch.bfloat16,
+                attn_implementation="eager",
+                local_files_only=True,
+            )
+            # The checkpoint stores the tied embedding matrix once.
+            model.lm_head.weight = model.model.language_model.embed_tokens.weight
+            model = model.to("npu:0").eval()
+        else:
+            if args.batch_size not in (0, 1):
+                raise ValueError("local MinerU lanes currently require --batch-size 1")
+            from local_modeling_mineru import LocalMinerU2_5ForConditionalGeneration
+            from native_custom_backend import (
+                LocalMinerUGenerateAdapter,
+                make_local_eager_vlm_client,
+            )
+
+            local_model = LocalMinerU2_5ForConditionalGeneration.from_pretrained(
+                model_dir,
+                dtype=torch.bfloat16,
+                device="npu:0",
+            )
+            model = LocalMinerUGenerateAdapter(local_model)
         client = MinerUClient(
             backend="transformers",
             model=model,
@@ -211,7 +234,15 @@ def main() -> None:
             batch_size=args.batch_size,
             use_tqdm=False,
         )
-        attention = "eager"
+        if args.backend == "local-eager-client":
+            client.client = make_local_eager_vlm_client(
+                local_model,
+                processor,
+                batch_size=max(1, args.batch_size),
+                system_prompt=client.client.system_prompt,
+                allow_truncated_content=client.client.allow_truncated_content,
+            )
+        attention = "eager-local" if args.backend.startswith("local-") else "eager"
         processor_fast: bool | None = True
     else:
         from mineru_vl_utils import MinerULogitsProcessor
