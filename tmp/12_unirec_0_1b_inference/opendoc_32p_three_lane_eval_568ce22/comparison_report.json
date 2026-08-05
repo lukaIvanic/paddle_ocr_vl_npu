@@ -1,0 +1,72 @@
+{
+  "scope": {
+    "pages": 32,
+    "dataset": "OmniDocBench v1.6 first 32 sorted input pages",
+    "lower_is_better": [
+      "text_block_edit",
+      "formula_edit",
+      "reading_order_edit"
+    ],
+    "higher_is_better": [
+      "table_teds"
+    ]
+  },
+  "lanes": {
+    "cpu_both": {
+      "text_block_edit": 0.03808660255238594,
+      "formula_edit": 0.039473684210526314,
+      "table_teds": 0.6525868989571136,
+      "reading_order_edit": 0.065625,
+      "pipeline_wall_s": 271.0,
+      "pages_per_s": 0.11808118081180811,
+      "seconds_per_page": 8.46875,
+      "setup_s_approx": 7.0,
+      "max_length": 2048,
+      "recognition_workers": 4
+    },
+    "cpu_layout_npu_recognition": {
+      "text_block_edit": 0.03808660255238594,
+      "formula_edit": 0.039473684210526314,
+      "table_teds": 0.6525868989571136,
+      "reading_order_edit": 0.065625,
+      "pipeline_wall_s": 147.00509622879326,
+      "pages_per_s": 0.2176795282674853,
+      "seconds_per_page": 4.5939092571497895,
+      "setup_s": 24.573758628917858,
+      "max_length": 256,
+      "recognition_workers": 1,
+      "crop_count": 184
+    },
+    "npu_both": {
+      "text_block_edit": 0.03194394988063022,
+      "formula_edit": 0.039473684210526314,
+      "table_teds": 0.6720674184376332,
+      "reading_order_edit": 0.06041666666666667,
+      "pipeline_wall_s": 56.283274601679295,
+      "pages_per_s": 0.5685525624879906,
+      "seconds_per_page": 1.758852331302478,
+      "setup_s": 20.178993506124243,
+      "max_length": 256,
+      "recognition_workers": 1,
+      "crop_count": 186
+    }
+  },
+  "speedups": {
+    "npu_both_vs_cpu_both": 4.81492951357017,
+    "npu_both_vs_cpu_layout_npu_recognition": 2.611878879989814,
+    "cpu_layout_npu_recognition_vs_cpu_both": 1.8434735050152662
+  },
+  "degeneration_check": {
+    "npu_length_capped_crops": 1,
+    "crop": "PPT_B14_Claeys_Consistent Presentation of Images_v2_page_010.png chart_03",
+    "raw_behavior": "repetitive table-like generation reached 256 tokens",
+    "postprocessed_output": "10",
+    "cpu_stock_postprocessed_output": "",
+    "benchmark_impact": "no measured metric regression on this 32-page subset"
+  },
+  "caveats": [
+    "CPU-only uses four parallel recognition workers and max_length 2048; NPU lanes use one recognition stream and static KV256.",
+    "No CPU stock generation in this subset exceeds 164 tokens, so KV256 does not truncate a legitimate stock continuation here.",
+    "Only 3 table samples and 2 display-formula pages occur in this prefix; text and reading-order metrics have 32-page denominators."
+  ]
+}

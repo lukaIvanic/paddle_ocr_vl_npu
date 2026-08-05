@@ -1,0 +1,24 @@
+end2end_eval:
+  metrics:
+    text_block:
+      metric:
+      - Edit_dist
+    display_formula:
+      metric:
+      - Edit_dist
+    table:
+      metric:
+      - TEDS
+      - Edit_dist
+      teds_workers: 8
+    reading_order:
+      metric:
+      - Edit_dist
+  dataset:
+    dataset_name: end2end_dataset
+    ground_truth:
+      data_path: /workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/opendoc_32p_three_lane_eval_568ce22/OmniDocBench_first32.json
+    prediction:
+      data_path: /workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/opendoc_32p_three_lane_eval_568ce22/cpu_layout_npu_recognition/predictions
+    match_method: quick_match
+    match_workers: 8
