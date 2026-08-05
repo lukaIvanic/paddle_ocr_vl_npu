@@ -33,7 +33,7 @@ from paddleocr_vl.serving.types import (
 from .layout_frontend import (
     OwnedLayoutFrontend,
     PreparedLayoutPage,
-    TransferredLayoutPage,
+    PreprocessedLayoutPage,
 )
 from .layout_output import OwnedPageResult, assemble_page_blocks
 
@@ -69,7 +69,7 @@ class _RequestOwner:
 @dataclass(frozen=True)
 class _LayoutReady:
     submission: PageSubmission
-    transferred: TransferredLayoutPage
+    preprocessed: PreprocessedLayoutPage
 
 
 class _UnifiedPageReadySource:
@@ -190,8 +190,7 @@ class _UnifiedPageReadySource:
     ) -> _LayoutReady:
         decoded = self.frontend.decode_page(submission.image_path, ordinal)
         preprocessed = self.frontend.preprocess_decoded_page(decoded)
-        transferred = self.frontend.transfer_preprocessed_page(preprocessed)
-        return _LayoutReady(submission, transferred)
+        return _LayoutReady(submission, preprocessed)
 
     def _input_done(
         self,
@@ -332,7 +331,10 @@ class _UnifiedPageReadySource:
 
     def _run_layout(self, item: _LayoutReady) -> None:
         started = time.perf_counter()
-        detected = self.frontend.detect_transferred_page(item.transferred)
+        transferred = self.frontend.transfer_preprocessed_page(
+            item.preprocessed
+        )
+        detected = self.frontend.detect_transferred_page(transferred)
         with self._condition:
             self._postprocess_outstanding += 1
         future = self._postprocess_executor.submit(
