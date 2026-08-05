@@ -1,0 +1,80 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_13 fallacies LALT2012_page_001.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "paragraph_title_01",
+      "bbox": [
+        224.22850036621094,
+        362.76080322265625,
+        1776.747314453125,
+        548.3411865234375
+      ],
+      "score": 0.8869790434837341,
+      "text": "International Meeting on Languages, Applied Linguistics and Translation",
+      "text_unirec": "International Meeting on Languages, Applied Linguistics and Translation",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_02",
+      "bbox": [
+        599.1109619140625,
+        586.0398559570312,
+        1399.851806640625,
+        642.1046142578125
+      ],
+      "score": 0.9233496785163879,
+      "text": "University of Évora, 6-7 December 2012",
+      "text_unirec": "University of Évora, 6-7 December 2012",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "paragraph_title_03",
+      "bbox": [
+        264.7595520019531,
+        824.4395141601562,
+        1739.2308349609375,
+        988.9109497070312
+      ],
+      "score": 0.8353917598724365,
+      "text": "Thirteen Fallacies about the Users and Usesof English as an International Language",
+      "text_unirec": "Thirteen Fallacies about the Users and Usesof English as an International Language",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_04",
+      "bbox": [
+        878.8908081054688,
+        1105.39013671875,
+        1120.1497802734375,
+        1153.18359375
+      ],
+      "score": 0.9208161234855652,
+      "text": "Luis Guerra",
+      "text_unirec": "Luis Guerra",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_05",
+      "bbox": [
+        714.8077392578125,
+        1155.739501953125,
+        1282.5302734375,
+        1212.093505859375
+      ],
+      "score": 0.9365589618682861,
+      "text": "University of Évora, Portugal",
+      "text_unirec": "University of Évora, Portugal",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 1.4034196219872683
+  }
+}

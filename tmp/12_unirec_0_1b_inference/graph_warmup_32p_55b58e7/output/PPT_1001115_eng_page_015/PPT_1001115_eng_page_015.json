@@ -1,0 +1,96 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_015.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "paragraph_title_01",
+      "bbox": [
+        440.38946533203125,
+        71.26762390136719,
+        1557.8333740234375,
+        311.179931640625
+      ],
+      "score": 0.9325493574142456,
+      "text": "English PronunciationAmerican English Accent",
+      "text_unirec": "English PronunciationAmerican English Accent",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "paragraph_title_02",
+      "bbox": [
+        114.5779037475586,
+        377.8422546386719,
+        567.1807250976562,
+        455.2493591308594
+      ],
+      "score": 0.9326608180999756,
+      "text": "• Resources",
+      "text_unirec": "• Resources",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_03",
+      "bbox": [
+        209.43063354492188,
+        493.0907897949219,
+        1865.1883544921875,
+        670.1213989257812
+      ],
+      "score": 0.9630343317985535,
+      "text": "– http://www.uiowa.edu/~acadtech/phonetics/english/frameset.html",
+      "text_unirec": "– http://www.uiowa.edu/~acadtech/phonetics/english/frameset.html",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "paragraph_title_04",
+      "bbox": [
+        115.53595733642578,
+        709.6593627929688,
+        385.3644714355469,
+        786.1296997070312
+      ],
+      "score": 0.7184228301048279,
+      "text": "• Tools",
+      "text_unirec": "• Tools",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_05",
+      "bbox": [
+        209.2664337158203,
+        832.6730346679688,
+        563.6927490234375,
+        908.2656860351562
+      ],
+      "score": 0.8475725650787354,
+      "text": "– Audacity",
+      "text_unirec": "– Audacity",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "image_06",
+      "bbox": [
+        238.62844848632812,
+        938.5964965820312,
+        1834.034912109375,
+        1304.82958984375
+      ],
+      "score": 0.833716094493866,
+      "text": "",
+      "text_unirec": "",
+      "is_image": true,
+      "img_path": "imgs/img_in_image_box_238_938_1834_1304.jpg",
+      "is_merged_continuation": false,
+      "in_table": false
+    }
+  ],
+  "timing": {
+    "total": 2.471221150131896
+  }
+}

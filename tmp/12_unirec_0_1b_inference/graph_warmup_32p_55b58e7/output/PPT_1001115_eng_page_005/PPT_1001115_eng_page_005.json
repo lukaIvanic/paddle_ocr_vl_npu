@@ -1,0 +1,122 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_005.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "paragraph_title_01",
+      "bbox": [
+        324.88714599609375,
+        133.19403076171875,
+        1674.8658447265625,
+        251.91659545898438
+      ],
+      "score": 0.9634469151496887,
+      "text": "Is Good English Important?",
+      "text_unirec": "Is Good English Important?",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "paragraph_title_02",
+      "bbox": [
+        112.95953369140625,
+        354.4686584472656,
+        662.87255859375,
+        431.46734619140625
+      ],
+      "score": 0.9525507092475891,
+      "text": "• For Individual",
+      "text_unirec": "• For Individual",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_03",
+      "bbox": [
+        205.77061462402344,
+        450.7893981933594,
+        1827.43896484375,
+        664.7821044921875
+      ],
+      "score": 0.9830392599105835,
+      "text": "– Reading – lifelong learning to improve your competiveness, especially when you want to acquire the most up-to-date knowledge",
+      "text_unirec": "– Reading – lifelong learning to improve your competiveness, especially when you want to acquire the most up-to-date knowledge",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_04",
+      "bbox": [
+        206.6631317138672,
+        675.8878784179688,
+        1473.5865478515625,
+        817.6143798828125
+      ],
+      "score": 0.9770836234092712,
+      "text": "– Writing – emails with foreign friends/co-workers/customers",
+      "text_unirec": "– Writing – emails with foreign friends/co-workers/customers",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_05",
+      "bbox": [
+        204.70947265625,
+        831.88720703125,
+        1706.063232421875,
+        908.7058715820312
+      ],
+      "score": 0.9663084745407104,
+      "text": "– Listening – Q/A with foreign customers/boss/etc",
+      "text_unirec": "– Listening – Q/A with foreign customers/boss/etc",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_06",
+      "bbox": [
+        206.84194946289062,
+        920.2407836914062,
+        1529.3519287109375,
+        1063.960205078125
+      ],
+      "score": 0.9784924387931824,
+      "text": "– Speaking – presentation in front of foreign customers/boss/etc, traveling abroad",
+      "text_unirec": "– Speaking – presentation in front of foreign customers/boss/etc, traveling abroad",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "paragraph_title_07",
+      "bbox": [
+        113.52145385742188,
+        1079.4034423828125,
+        811.5023193359375,
+        1159.28271484375
+      ],
+      "score": 0.9387868642807007,
+      "text": "• At University level",
+      "text_unirec": "• At University level",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_08",
+      "bbox": [
+        206.97409057617188,
+        1175.8970947265625,
+        1726.1685791015625,
+        1314.0732421875
+      ],
+      "score": 0.975039541721344,
+      "text": "– Internationalization is one of the most prioritized tasks",
+      "text_unirec": "– Internationalization is one of the most prioritized tasks",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 2.0732735868077725
+  }
+}

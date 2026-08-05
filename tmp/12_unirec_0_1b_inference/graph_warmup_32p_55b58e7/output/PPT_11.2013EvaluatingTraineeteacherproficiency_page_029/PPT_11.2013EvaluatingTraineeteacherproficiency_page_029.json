@@ -1,0 +1,82 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_11.2013EvaluatingTraineeteacherproficiency_page_029.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "header_image_01",
+      "bbox": [
+        1827.9454345703125,
+        94.95684814453125,
+        1922.6689453125,
+        192.30686950683594
+      ],
+      "score": 0.4276946485042572,
+      "text": "",
+      "text_unirec": "",
+      "is_image": true,
+      "img_path": "imgs/img_in_header_image_box_1827_94_1922_192.jpg",
+      "is_merged_continuation": false,
+      "in_table": false
+    },
+    {
+      "label": "paragraph_title_02",
+      "bbox": [
+        71.06222534179688,
+        170.27488708496094,
+        321.4893798828125,
+        257.31573486328125
+      ],
+      "score": 0.8087801933288574,
+      "text": "Turkey",
+      "text_unirec": "Turkey",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "header_03",
+      "bbox": [
+        1412.3465576171875,
+        193.9121856689453,
+        1930.7718505859375,
+        250.41671752929688
+      ],
+      "score": 0.5490038990974426,
+      "text": "UNIVERSITY OF LEEDS",
+      "text_unirec": "UNIVERSITY OF LEEDS",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_04",
+      "bbox": [
+        63.386260986328125,
+        369.9197082519531,
+        1862.9385986328125,
+        612.0838623046875
+      ],
+      "score": 0.9804857969284058,
+      "text": "Yilmaz 2011 looked at the relationships between Turkish primary and secondary school teachers’ perceptions of self-efficacy, English proficiency, and instructional strategies",
+      "text_unirec": "Yilmaz 2011 looked at the relationships between Turkish primary and secondary school teachers’ perceptions of self-efficacy, English proficiency, and instructional strategies",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_05",
+      "bbox": [
+        71.09254455566406,
+        642.8995361328125,
+        1797.3865966796875,
+        803.5147094726562
+      ],
+      "score": 0.9653378129005432,
+      "text": "Results indicated that teachers’ perceived efficacy was correlated with their self-reported English proficiency",
+      "text_unirec": "Results indicated that teachers’ perceived efficacy was correlated with their self-reported English proficiency",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 1.5479889588896185
+  }
+}
