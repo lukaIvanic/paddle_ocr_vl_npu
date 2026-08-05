@@ -1,0 +1,513 @@
+{
+  "request_id": "page-d1561665-5359-42fe-920c-d6e3bff81953.png",
+  "markdown": "that\n\n $$ \\begin{aligned}\\boldsymbol{A}\\boldsymbol{B}&=\\left[\\begin{array}{c c c}{2}&{3}\\\\ {1}&{4}\\end{array}\\right]\\left[\\begin{matrix}{5}&{2}&{1}\\\\ {3}&{8}&{6}\\end{matrix}\\right]\\\\&=\\left[\\begin{array}{c c c c}{10+9}&{4+24}&{2}&{18}\\\\ {5+12}&{2+32}&{1}&{24}\\end{array}\\right]=\\left[\\begin{matrix}{19}&{20}&{16}\\\\ {7}&{34}&{25}\\end{matrix}\\right]=\\boldsymbol{C}.\\end{aligned} $$ \n\nWhen an attempt is made to form the product $BA$, we discover that the dimensions are not compatible in this order because the rows of $B$ are three-dimensional vectors and the columns of $A$ are two-dimensional vectors. Hence the dot product of the $j$th row of $B$ and the $k$th column of $A$ is not defined.\n\nIf it happens that AB = BA, we say that A and B commute. Most often, even when AB and BA are both defined, the products are not necessarily the same.\n\nWe now discuss how to use matrices to represent a linear system of equations. The linear equations in (3) can be written as a matrix product. The coefficients  $ a_{kj} $ are stored in a matrix A (called the coefficient matrix) of dimension  $ M \\times N $, and the unknowns  $ x_i $ are stored in a matrix X of dimension  $ N \\times 1 $. The constants  $ b_k $ are stored in a matrix B of dimension  $ M \\times 1 $. It is conventional to use column matrices for both X and B and write\n\n $$ A X=\\left[\\begin{matrix}{a_{11}}&{a_{12}}&{\\cdots}&{a_{1j}}&{\\cdots}&{a_{1N}}\\\\ {a_{21}}&{a_{22}}&{\\cdots}&{a_{2j}}&{\\cdots}&{a_{2N}}\\\\ {\\vdots}&{\\vdots}&{}&{\\vdots}&{}&{\\vdots}\\\\ {a_{k1}}&{a_{k2}}&{\\cdots}&{a_{k j}}&{\\cdots}&{a_{k N}}\\\\ {\\vdots}&{\\vdots}&{}&{\\vdots}&{}&{\\vdots}\\\\ {a_{M1}}&{a_{M2}}&{\\cdots}&{a_{M j}}&{\\cdots}&{a_{M N}}\\\\ \\end{matrix}\\right]\\left[\\begin{matrix}{x_{1}}\\\\ {x_{2}}\\\\ {\\vdots}\\\\ {x_{j}}\\\\ {\\vdots}\\\\ {x_{N}}\\\\ \\end{matrix}\\right]=\\left[\\begin{matrix}{b_{1}}\\\\ {b_{2}}\\\\ {\\vdots}\\\\ {b_{j}}\\\\ {\\vdots}\\\\ {b_{M}}\\\\ \\end{matrix}\\right]=B. $$ \n\nThe matrix multiplication  $ AX = B $ in (8) is reminiscent of the dot product for ordinary vectors, because each element  $ b_k $ in B is the result obtained by taking the dot product of row k in matrix A with the column matrix X.\n\nExample 3.6. Express the system of linear equations (5) in Example 3.4 as a matrix product. Use matrix multiplication to verify that  $ [4\\ 3\\ 3]' $ is the solution of (5):\n\n $$ \\left[\\begin{matrix}{0.125}&{0.200}&{0.400}\\\\ {0.375}&{0.500}&{0.600}\\\\ {0.500}&{0.300}&{0.000}\\\\ \\end{matrix}\\right]\\left[\\begin{matrix}{x_{1}}\\\\ {x_{2}}\\\\ {x_{3}}\\\\ \\end{matrix}\\right]=\\left[\\begin{matrix}{2.3}\\\\ {4.8}\\\\ {2.9}\\\\ \\end{matrix}\\right]. $$ \n\nTo verify that [4 3 3]' is the solution of (5), we must show that  $ A\\left[4\\ 3\\ 3\\right]'=[\\underline{2.3\\ 4.8\\ 2.9}] $:\n\n $$ \\left[\\begin{matrix}{0.125}&{0.200}&{0.400}\\\\ {0.375}&{0.500}&{0.600}\\\\ {0.500}&{0.300}&{0.000}\\\\ \\end{matrix}\\right]\\left[\\begin{matrix}{4}\\\\ {3}\\\\ {3}\\\\ \\end{matrix}\\right]=\\left[\\begin{matrix}{0.5+0.6+1.2}\\\\ {1.5+1.5+1.8}\\\\ {2.0+0.9+0.0}\\\\ \\end{matrix}\\right]=\\left[\\begin{matrix}{2.3}\\\\ {4.8}\\\\ {2.9}\\\\ \\end{matrix}\\right]. $$ ",
+  "result": {
+    "input_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/persistent_api_smoke_d0eaad4/spool/8263b719a4a241fbab573379c4c61a79/page-d1561665-5359-42fe-920c-d6e3bff81953.png",
+    "page_index": null,
+    "page_count": null,
+    "width": 1653,
+    "height": 2339,
+    "model_settings": {
+      "use_doc_preprocessor": false,
+      "use_layout_detection": true,
+      "use_chart_recognition": false,
+      "use_seal_recognition": false,
+      "use_ocr_for_image_block": false,
+      "format_block_content": false,
+      "merge_layout_blocks": true,
+      "markdown_ignore_labels": [
+        "aside_text",
+        "footer",
+        "footer_image",
+        "footnote",
+        "header",
+        "header_image",
+        "number"
+      ]
+    },
+    "parsing_res_list": [
+      {
+        "block_label": "header",
+        "block_content": "SEC. 3.2 PROPERTIES OF VECTORS AND MATRICES",
+        "block_bbox": [
+          264,
+          239,
+          929,
+          272
+        ],
+        "block_id": 0,
+        "block_order": null,
+        "group_id": 0,
+        "block_polygon_points": [
+          [
+            264.0,
+            239.0
+          ],
+          [
+            929.0,
+            239.0
+          ],
+          [
+            929.0,
+            272.0
+          ],
+          [
+            264.0,
+            272.0
+          ]
+        ]
+      },
+      {
+        "block_label": "number",
+        "block_content": "111",
+        "block_bbox": [
+          1323,
+          238,
+          1375,
+          269
+        ],
+        "block_id": 1,
+        "block_order": null,
+        "group_id": 1,
+        "block_polygon_points": [
+          [
+            1323.0,
+            237.0
+          ],
+          [
+            1373.0,
+            237.0
+          ],
+          [
+            1373.0,
+            267.0
+          ],
+          [
+            1323.0,
+            267.0
+          ]
+        ]
+      },
+      {
+        "block_label": "text",
+        "block_content": "that",
+        "block_bbox": [
+          269,
+          320,
+          327,
+          350
+        ],
+        "block_id": 2,
+        "block_order": 1,
+        "group_id": 2,
+        "block_polygon_points": [
+          [
+            268.0,
+            320.0
+          ],
+          [
+            326.0,
+            320.0
+          ],
+          [
+            326.0,
+            348.0
+          ],
+          [
+            268.0,
+            348.0
+          ]
+        ]
+      },
+      {
+        "block_label": "display_formula",
+        "block_content": " $$ \\begin{aligned}\\boldsymbol{A}\\boldsymbol{B}&=\\left[\\begin{array}{c c c}{2}&{3}\\\\ {1}&{4}\\end{array}\\right]\\left[\\begin{matrix}{5}&{2}&{1}\\\\ {3}&{8}&{6}\\end{matrix}\\right]\\\\&=\\left[\\begin{array}{c c c c}{10+9}&{4+24}&{2}&{18}\\\\ {5+12}&{2+32}&{1}&{24}\\end{array}\\right]=\\left[\\begin{matrix}{19}&{20}&{16}\\\\ {7}&{34}&{25}\\end{matrix}\\right]=\\boldsymbol{C}.\\end{aligned} $$ ",
+        "block_bbox": [
+          406,
+          367,
+          1239,
+          534
+        ],
+        "block_id": 3,
+        "block_order": 2,
+        "group_id": 3,
+        "block_polygon_points": [
+          [
+            406.0,
+            367.0
+          ],
+          [
+            1239.0,
+            367.0
+          ],
+          [
+            1239.0,
+            534.0
+          ],
+          [
+            406.0,
+            534.0
+          ]
+        ]
+      },
+      {
+        "block_label": "text",
+        "block_content": "When an attempt is made to form the product $BA$, we discover that the dimensions are not compatible in this order because the rows of $B$ are three-dimensional vectors and the columns of $A$ are two-dimensional vectors. Hence the dot product of the $j$th row of $B$ and the $k$th column of $A$ is not defined.",
+        "block_bbox": [
+          268,
+          555,
+          1380,
+          701
+        ],
+        "block_id": 4,
+        "block_order": 3,
+        "group_id": 4,
+        "block_polygon_points": [
+          [
+            268.0,
+            555.0
+          ],
+          [
+            1380.0,
+            555.0
+          ],
+          [
+            1380.0,
+            701.0
+          ],
+          [
+            268.0,
+            701.0
+          ]
+        ]
+      },
+      {
+        "block_label": "text",
+        "block_content": "If it happens that AB = BA, we say that A and B commute. Most often, even when AB and BA are both defined, the products are not necessarily the same.",
+        "block_bbox": [
+          271,
+          721,
+          1380,
+          796
+        ],
+        "block_id": 5,
+        "block_order": 4,
+        "group_id": 5,
+        "block_polygon_points": [
+          [
+            271.0,
+            721.0
+          ],
+          [
+            1380.0,
+            721.0
+          ],
+          [
+            1380.0,
+            796.0
+          ],
+          [
+            271.0,
+            796.0
+          ]
+        ]
+      },
+      {
+        "block_label": "text",
+        "block_content": "We now discuss how to use matrices to represent a linear system of equations. The linear equations in (3) can be written as a matrix product. The coefficients  $ a_{kj} $ are stored in a matrix A (called the coefficient matrix) of dimension  $ M \\times N $, and the unknowns  $ x_i $ are stored in a matrix X of dimension  $ N \\times 1 $. The constants  $ b_k $ are stored in a matrix B of dimension  $ M \\times 1 $. It is conventional to use column matrices for both X and B and write",
+        "block_bbox": [
+          272,
+          799,
+          1380,
+          1027
+        ],
+        "block_id": 6,
+        "block_order": 5,
+        "group_id": 6,
+        "block_polygon_points": [
+          [
+            272.0,
+            799.0
+          ],
+          [
+            1380.0,
+            799.0
+          ],
+          [
+            1380.0,
+            1027.0
+          ],
+          [
+            272.0,
+            1027.0
+          ]
+        ]
+      },
+      {
+        "block_label": "formula_number",
+        "block_content": "(8)",
+        "block_bbox": [
+          280,
+          1162,
+          323,
+          1196
+        ],
+        "block_id": 7,
+        "block_order": 6,
+        "group_id": 7,
+        "block_polygon_points": [
+          [
+            279.9999694824219,
+            1161.9998779296875
+          ],
+          [
+            320.9999694824219,
+            1161.9998779296875
+          ],
+          [
+            320.9999694824219,
+            1194.9998779296875
+          ],
+          [
+            279.9999694824219,
+            1194.9998779296875
+          ]
+        ]
+      },
+      {
+        "block_label": "display_formula",
+        "block_content": " $$ A X=\\left[\\begin{matrix}{a_{11}}&{a_{12}}&{\\cdots}&{a_{1j}}&{\\cdots}&{a_{1N}}\\\\ {a_{21}}&{a_{22}}&{\\cdots}&{a_{2j}}&{\\cdots}&{a_{2N}}\\\\ {\\vdots}&{\\vdots}&{}&{\\vdots}&{}&{\\vdots}\\\\ {a_{k1}}&{a_{k2}}&{\\cdots}&{a_{k j}}&{\\cdots}&{a_{k N}}\\\\ {\\vdots}&{\\vdots}&{}&{\\vdots}&{}&{\\vdots}\\\\ {a_{M1}}&{a_{M2}}&{\\cdots}&{a_{M j}}&{\\cdots}&{a_{M N}}\\\\ \\end{matrix}\\right]\\left[\\begin{matrix}{x_{1}}\\\\ {x_{2}}\\\\ {\\vdots}\\\\ {x_{j}}\\\\ {\\vdots}\\\\ {x_{N}}\\\\ \\end{matrix}\\right]=\\left[\\begin{matrix}{b_{1}}\\\\ {b_{2}}\\\\ {\\vdots}\\\\ {b_{j}}\\\\ {\\vdots}\\\\ {b_{M}}\\\\ \\end{matrix}\\right]=B. $$ ",
+        "block_bbox": [
+          383,
+          1041,
+          1276,
+          1320
+        ],
+        "block_id": 8,
+        "block_order": 7,
+        "group_id": 8,
+        "block_polygon_points": [
+          [
+            383.0,
+            1041.0
+          ],
+          [
+            1276.0,
+            1041.0
+          ],
+          [
+            1276.0,
+            1320.0
+          ],
+          [
+            383.0,
+            1320.0
+          ]
+        ]
+      },
+      {
+        "block_label": "text",
+        "block_content": "The matrix multiplication  $ AX = B $ in (8) is reminiscent of the dot product for ordinary vectors, because each element  $ b_k $ in B is the result obtained by taking the dot product of row k in matrix A with the column matrix X.",
+        "block_bbox": [
+          275,
+          1339,
+          1387,
+          1455
+        ],
+        "block_id": 9,
+        "block_order": 8,
+        "group_id": 9,
+        "block_polygon_points": [
+          [
+            275.0,
+            1339.0
+          ],
+          [
+            1387.0,
+            1339.0
+          ],
+          [
+            1387.0,
+            1455.0
+          ],
+          [
+            275.0,
+            1455.0
+          ]
+        ]
+      },
+      {
+        "block_label": "text",
+        "block_content": "Example 3.6. Express the system of linear equations (5) in Example 3.4 as a matrix product. Use matrix multiplication to verify that  $ [4\\ 3\\ 3]' $ is the solution of (5):",
+        "block_bbox": [
+          275,
+          1488,
+          1388,
+          1563
+        ],
+        "block_id": 10,
+        "block_order": 9,
+        "group_id": 10,
+        "block_polygon_points": [
+          [
+            275.0,
+            1488.0
+          ],
+          [
+            1388.0,
+            1488.0
+          ],
+          [
+            1388.0,
+            1563.0
+          ],
+          [
+            275.0,
+            1563.0
+          ]
+        ]
+      },
+      {
+        "block_label": "display_formula",
+        "block_content": " $$ \\left[\\begin{matrix}{0.125}&{0.200}&{0.400}\\\\ {0.375}&{0.500}&{0.600}\\\\ {0.500}&{0.300}&{0.000}\\\\ \\end{matrix}\\right]\\left[\\begin{matrix}{x_{1}}\\\\ {x_{2}}\\\\ {x_{3}}\\\\ \\end{matrix}\\right]=\\left[\\begin{matrix}{2.3}\\\\ {4.8}\\\\ {2.9}\\\\ \\end{matrix}\\right]. $$ ",
+        "block_bbox": [
+          568,
+          1585,
+          1102,
+          1704
+        ],
+        "block_id": 11,
+        "block_order": 10,
+        "group_id": 11,
+        "block_polygon_points": [
+          [
+            568.0,
+            1585.0
+          ],
+          [
+            1102.0,
+            1585.0
+          ],
+          [
+            1102.0,
+            1704.0
+          ],
+          [
+            568.0,
+            1704.0
+          ]
+        ]
+      },
+      {
+        "block_label": "formula_number",
+        "block_content": "(9)",
+        "block_bbox": [
+          282,
+          1628,
+          325,
+          1662
+        ],
+        "block_id": 12,
+        "block_order": 11,
+        "group_id": 12,
+        "block_polygon_points": [
+          [
+            281.9999694824219,
+            1627.0
+          ],
+          [
+            322.9999694824219,
+            1627.0
+          ],
+          [
+            322.9999694824219,
+            1661.0
+          ],
+          [
+            281.9999694824219,
+            1661.0
+          ]
+        ]
+      },
+      {
+        "block_label": "text",
+        "block_content": "To verify that [4 3 3]' is the solution of (5), we must show that  $ A\\left[4\\ 3\\ 3\\right]'=[\\underline{2.3\\ 4.8\\ 2.9}] $:",
+        "block_bbox": [
+          279,
+          1727,
+          1387,
+          1815
+        ],
+        "block_id": 13,
+        "block_order": 12,
+        "group_id": 13,
+        "block_polygon_points": [
+          [
+            279.0,
+            1727.0
+          ],
+          [
+            1387.0,
+            1727.0
+          ],
+          [
+            1387.0,
+            1815.0
+          ],
+          [
+            279.0,
+            1815.0
+          ]
+        ]
+      },
+      {
+        "block_label": "display_formula",
+        "block_content": " $$ \\left[\\begin{matrix}{0.125}&{0.200}&{0.400}\\\\ {0.375}&{0.500}&{0.600}\\\\ {0.500}&{0.300}&{0.000}\\\\ \\end{matrix}\\right]\\left[\\begin{matrix}{4}\\\\ {3}\\\\ {3}\\\\ \\end{matrix}\\right]=\\left[\\begin{matrix}{0.5+0.6+1.2}\\\\ {1.5+1.5+1.8}\\\\ {2.0+0.9+0.0}\\\\ \\end{matrix}\\right]=\\left[\\begin{matrix}{2.3}\\\\ {4.8}\\\\ {2.9}\\\\ \\end{matrix}\\right]. $$ ",
+        "block_bbox": [
+          439,
+          1835,
+          1234,
+          1956
+        ],
+        "block_id": 14,
+        "block_order": 13,
+        "group_id": 14,
+        "block_polygon_points": [
+          [
+            439.0,
+            1835.0
+          ],
+          [
+            1234.0,
+            1835.0
+          ],
+          [
+            1234.0,
+            1956.0
+          ],
+          [
+            439.0,
+            1956.0
+          ]
+        ]
+      }
+    ]
+  },
+  "timing_s": {
+    "page_wall_s": 8.900077213067561,
+    "file_read_s": 0.0004455181770026684,
+    "image_decode_s": 0.09404098801314831,
+    "layout_preprocess_cpu_s": 0.039936748100444674,
+    "layout_input_h2d_s": 0.015520323999226093,
+    "layout_preprocess_h2d_s": 0.05545707209967077,
+    "layout_model_submit_s": 4.739837187109515,
+    "layout_metadata_wait_and_d2h_s": 0.0017632900271564722,
+    "layout_mask_wait_and_d2h_s": 0.0006291510071605444,
+    "layout_mask_polygon_cpu_s": 0.05497640511021018,
+    "layout_structural_postprocess_cpu_s": 0.06345571903511882,
+    "layout_postprocess_s": 0.09780244203284383,
+    "page_preparation_s": 0.05134039209224284,
+    "page_total_s": 5.040778812021017
+  },
+  "http_wall_s": 8.902660966850817
+}

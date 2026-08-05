@@ -1,0 +1,74 @@
+Waiting for NPU worker pid=3120571
+Loading weights:   0%|          | 0/858 [00:00<?, ?it/s]Loading weights:  57%|█████▋    | 490/858 [00:00<00:00, 4887.63it/s]Loading weights: 100%|██████████| 858/858 [00:00<00:00, 5132.95it/s]
+READY http://127.0.0.1:8876 worker_pid=3120571
+.PAGE_SCHEDULER {"mode":"layout","count":1,"wall_s":4.792254767846316,"pages_completed":0}
+PAGE_SCHEDULER {"mode":"prefill","count":1,"wall_s":1.3842326158192009,"pages_completed":0}
+HTTP 127.0.0.1 "POST /v1/pages?request_id=page-d1561665-5359-42fe-920c-d6e3bff81953.png&filename=page-d1561665-5359-42fe-920c-d6e3bff81953.png HTTP/1.1" 200 -
+HTTP 127.0.0.1 "GET /ready HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/pages?request_id=page-bd6eb36e-0856-4d9d-b587-21b4a0209c8b.png&filename=page-bd6eb36e-0856-4d9d-b587-21b4a0209c8b.png HTTP/1.1" 200 -
+HTTP 127.0.0.1 "GET /ready HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/drain HTTP/1.1" 404 -
+[ERROR] TBE Subprocess[task_distribute] raise error[], main process disappeared!
+[ERROR] TBE Subprocess[task_distribute] raise error[], main process disappeared!
+[ERROR] TBE Subprocess[task_distribute] raise error[], main process disappeared!
+[ERROR] TBE Subprocess[task_distribute] raise error[], main process disappeared!
+[ERROR] TBE Subprocess[task_distribute] raise error[], main process disappeared!
+[ERROR] TBE Subprocess[task_distribute] raise error[], main process disappeared!
+[ERROR] TBE Subprocess[task_distribute] raise error[], main process disappeared!
+[ERROR] TBE Subprocess[task_distribute] raise error[], main process disappeared!
+Exception in thread Thread-1:
+Traceback (most recent call last):
+  File "/usr/local/python3.12.13/lib/python3.12/threading.py", line 1075, in _bootstrap_inner
+    self.run()
+  File "/usr/local/Ascend/cann-9.0.0/python/site-packages/tbe/common/repository_manager/utils/multiprocess_util.py", line 68, in run
+    item = self.task_q.get()
+           ^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in get
+  File "/usr/local/python3.12.13/lib/python3.12/multiprocessing/managers.py", line 828, in _callmethod
+    kind, result = conn.recv()
+                   ^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/multiprocessing/connection.py", line 250, in recv
+    buf = self._recv_bytes()
+          ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/multiprocessing/connection.py", line 430, in _recv_bytes
+    buf = self._recv(4)
+          ^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/multiprocessing/connection.py", line 399, in _recv
+    raise EOFError
+EOFError
+Traceback (most recent call last):
+  File "/usr/local/python3.12.13/lib/python3.12/multiprocessing/managers.py", line 820, in _callmethod
+    conn = self._tls.connection
+           ^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ForkAwareLocal' object has no attribute 'connection'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/local/python3.12.13/lib/python3.12/multiprocessing/util.py", line 303, in _run_finalizers
+    finalizer()
+  File "/usr/local/python3.12.13/lib/python3.12/multiprocessing/util.py", line 227, in __call__
+    res = self._callback(*self._args, **self._kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/Ascend/cann-9.0.0/python/site-packages/tbe/common/repository_manager/route.py", line 63, in wrapper
+    return func(cls, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/Ascend/cann-9.0.0/python/site-packages/tbe/common/repository_manager/route.py", line 217, in finalize
+    cls.cann_kb_mgr.finalize()
+  File "/usr/local/Ascend/cann-9.0.0/python/site-packages/tbe/common/repository_manager/cann_kb_manager/knowledge_bank_manager.py", line 42, in finalize
+    self.__static_mgr.close()
+  File "/usr/local/Ascend/cann-9.0.0/python/site-packages/tbe/common/repository_manager/cann_kb_manager/base_manager.py", line 342, in close
+    for name in copy.deepcopy(self.write_kb.keys()):
+                              ^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in keys
+  File "/usr/local/python3.12.13/lib/python3.12/multiprocessing/managers.py", line 824, in _callmethod
+    self._connect()
+  File "/usr/local/python3.12.13/lib/python3.12/multiprocessing/managers.py", line 811, in _connect
+    conn = self._Client(self._token.address, authkey=self._authkey)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/multiprocessing/connection.py", line 519, in Client
+    c = SocketClient(address)
+        ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/multiprocessing/connection.py", line 647, in SocketClient
+    s.connect(address)
+ConnectionRefusedError: [Errno 111] Connection refused

@@ -1,0 +1,9 @@
+{
+  "offset": 1,
+  "count": 1,
+  "wall_s": 1.8338788580149412,
+  "pages_per_s": 0.5452922888714892,
+  "mean_response_s": 1.8239771600347012,
+  "max_response_s": 1.8239771600347012,
+  "predictions_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/persistent_api_smoke_d0eaad4/round2/predictions"
+}
