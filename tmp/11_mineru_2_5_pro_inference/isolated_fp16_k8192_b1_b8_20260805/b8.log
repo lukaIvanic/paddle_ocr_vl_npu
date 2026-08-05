@@ -1,0 +1,436 @@
+[npu] set torch.npu compile mode: jit_compile=False
+[npu] patched torch.nn.functional.conv3d -> torch_npu.npu_conv3d
+The `use_fast` parameter is deprecated and will be removed in a future version. Use `backend="torchvision"` instead of `use_fast=True`, or `backend="pil"` instead of `use_fast=False`.
+[W805 14:47:42.294250060 OpInterface.cpp:19419] Warning: torch_npu.npu_conv3d is deprecated and will be removed in future version. Use torch.nn.functional.conv3d instead. (function operator())
+[W805 14:47:42.294337392 TensorFactories.cpp:340] Warning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (function operator())
+.......{
+  "experiment": "11_mineru_2_5_pro_inference_batch_decode",
+  "scope": "Fixed-step compiled batched recognition decode only; sequential per-crop prefill is outside measured decode.",
+  "model": "/workspace/models/MinerU2.5-Pro-2605-1.2B",
+  "model_identity": {
+    "model_dir": "/workspace/models/MinerU2.5-Pro-2605-1.2B",
+    "snapshot_revision": "MinerU2.5-Pro-2605-1.2B",
+    "config_json": {
+      "name": "config.json",
+      "size_bytes": 2840,
+      "sha256": "22097df08750242647a513043636a8dff16820a09757e9271e220bdea378df28"
+    },
+    "safetensors": [
+      {
+        "name": "model.safetensors",
+        "size_bytes": 2312126640
+      }
+    ],
+    "safetensors_sha256_computed": false
+  },
+  "processor": "/workspace/models/MinerU2.5-Pro-2605-1.2B",
+  "device": "npu:0",
+  "dtype": "float16",
+  "npu_jit_compile": "off",
+  "npu_conv3d_mode": "auto",
+  "use_fast": false,
+  "batch_size": 8,
+  "cache_length": 8192,
+  "measure_steps": 512,
+  "warmup_steps_requested": 16,
+  "warmup_steps_after_compile_call": 15,
+  "validation_steps": 0,
+  "decode_weight_format": {
+    "requested_mode": "none",
+    "effective_mode": "none",
+    "target_format": null,
+    "target_format_id": null,
+    "decoder_linear_count": 0,
+    "converted_decoder_linear_count": 0,
+    "already_nz_decoder_linear_count": 0,
+    "lm_head_copy": null,
+    "skipped_reason": null,
+    "setup_s": 0.00010154093615710735
+  },
+  "decode_rotary_impl": {
+    "requested_mode": "manual",
+    "effective_mode": "manual",
+    "rotary_mode": null,
+    "scope": "decode_static_only",
+    "prefill_rotary_impl": "manual",
+    "updated_attention_layers": 24,
+    "skipped_reason": null,
+    "setup_s": 0.0013027619570493698
+  },
+  "compile": {
+    "backend": "torchair",
+    "compile_api": "torchair.inference.cache_compile",
+    "fullgraph": true,
+    "dynamic": false,
+    "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/11_mineru_2_5_pro_inference/isolated_fp16_k8192_b1_b8/mineru_manual_attention_none_rotary_manual_bs8_cache8192",
+    "torchair_ge_cache": true,
+    "batch_size": 8,
+    "cache_length": 8192,
+    "decode_attention": "manual_eager_attention_ops",
+    "decode_weight_format": "none",
+    "decode_rotary_impl": "manual",
+    "compile_wrapper_s": 0.7691389021929353,
+    "compiled_first_call_s": 123.78780218982138,
+    "first_call_counts_as_warmup_step": true
+  },
+  "timing_s": {
+    "setup_model_processor_inputs_s": 25.120388709008694,
+    "warmup_prefill_total_s": 11.937311652116477,
+    "warmup_batch_assembly_s": 0.009900037897750735,
+    "post_compile_warmup_decode_s": 0.2788305291905999,
+    "measure_prefill_total_s": 2.0528716295957565,
+    "measure_batch_assembly_s": 0.019234317122027278,
+    "decode_s": 9.45327116502449
+  },
+  "throughput": {
+    "raw_batch_tokens": 4096,
+    "decode_forward_calls": 512,
+    "decode_calls_per_s": 54.16114602681807,
+    "raw_batch_tok_s": 433.2891682145446,
+    "per_item_tok_s_if_divided_evenly": 54.16114602681807,
+    "eos_ignored": true
+  },
+  "selected_crops": [
+    {
+      "batch_row": 0,
+      "path": "/workspace/repos/paddle_ocr_vl_npu/crops/crop_01_text_block_en.png",
+      "name": "crop_01_text_block_en.png",
+      "block_type": "text",
+      "prompt": "\nText Recognition:",
+      "image_size": [
+        1133,
+        172
+      ],
+      "input_shapes": {
+        "input_ids": [
+          1,
+          265
+        ],
+        "attention_mask": [
+          1,
+          265
+        ],
+        "mm_token_type_ids": [
+          1,
+          265
+        ],
+        "pixel_values": [
+          960,
+          1176
+        ],
+        "image_grid_thw": [
+          1,
+          3
+        ]
+      },
+      "input_token_count": 265,
+      "image_grid_thw": [
+        1,
+        12,
+        80
+      ],
+      "prefill_s": 0.1560400619637221,
+      "prefill_next_token_id": 4498,
+      "prefill_next_cache_position": 265
+    },
+    {
+      "batch_row": 1,
+      "path": "/workspace/repos/paddle_ocr_vl_npu/crops/crop_02_equation_matrix.png",
+      "name": "crop_02_equation_matrix.png",
+      "block_type": "equation",
+      "prompt": "\nFormula Recognition:",
+      "image_size": [
+        437,
+        111
+      ],
+      "input_shapes": {
+        "input_ids": [
+          1,
+          89
+        ],
+        "attention_mask": [
+          1,
+          89
+        ],
+        "mm_token_type_ids": [
+          1,
+          89
+        ],
+        "pixel_values": [
+          256,
+          1176
+        ],
+        "image_grid_thw": [
+          1,
+          3
+        ]
+      },
+      "input_token_count": 89,
+      "image_grid_thw": [
+        1,
+        8,
+        32
+      ],
+      "prefill_s": 0.11800373601727188,
+      "prefill_next_token_id": 59,
+      "prefill_next_cache_position": 89
+    },
+    {
+      "batch_row": 2,
+      "path": "/workspace/repos/paddle_ocr_vl_npu/crops/crop_03_code_block.png",
+      "name": "crop_03_code_block.png",
+      "block_type": "text",
+      "prompt": "\nText Recognition:",
+      "image_size": [
+        430,
+        326
+      ],
+      "input_shapes": {
+        "input_ids": [
+          1,
+          205
+        ],
+        "attention_mask": [
+          1,
+          205
+        ],
+        "mm_token_type_ids": [
+          1,
+          205
+        ],
+        "pixel_values": [
+          720,
+          1176
+        ],
+        "image_grid_thw": [
+          1,
+          3
+        ]
+      },
+      "input_token_count": 205,
+      "image_grid_thw": [
+        1,
+        24,
+        30
+      ],
+      "prefill_s": 0.15342073794454336,
+      "prefill_next_token_id": 1958,
+      "prefill_next_cache_position": 205
+    },
+    {
+      "batch_row": 3,
+      "path": "/workspace/repos/paddle_ocr_vl_npu/crops/crop_04_handwritten_title_zh.png",
+      "name": "crop_04_handwritten_title_zh.png",
+      "block_type": "text",
+      "prompt": "\nText Recognition:",
+      "image_size": [
+        538,
+        68
+      ],
+      "input_shapes": {
+        "input_ids": [
+          1,
+          94
+        ],
+        "attention_mask": [
+          1,
+          94
+        ],
+        "mm_token_type_ids": [
+          1,
+          94
+        ],
+        "pixel_values": [
+          276,
+          1176
+        ],
+        "image_grid_thw": [
+          1,
+          3
+        ]
+      },
+      "input_token_count": 94,
+      "image_grid_thw": [
+        1,
+        6,
+        46
+      ],
+      "prefill_s": 0.2999029669445008,
+      "prefill_next_token_id": 17,
+      "prefill_next_cache_position": 94
+    },
+    {
+      "batch_row": 4,
+      "path": "/workspace/repos/paddle_ocr_vl_npu/crops/crop_05_table_rwkv_dims.png",
+      "name": "crop_05_table_rwkv_dims.png",
+      "block_type": "table",
+      "prompt": "\nTable Recognition:",
+      "image_size": [
+        522,
+        246
+      ],
+      "input_shapes": {
+        "input_ids": [
+          1,
+          196
+        ],
+        "attention_mask": [
+          1,
+          196
+        ],
+        "mm_token_type_ids": [
+          1,
+          196
+        ],
+        "pixel_values": [
+          684,
+          1176
+        ],
+        "image_grid_thw": [
+          1,
+          3
+        ]
+      },
+      "input_token_count": 196,
+      "image_grid_thw": [
+        1,
+        18,
+        38
+      ],
+      "prefill_s": 0.34948280989192426,
+      "prefill_next_token_id": 151663,
+      "prefill_next_cache_position": 196
+    },
+    {
+      "batch_row": 5,
+      "path": "/workspace/repos/paddle_ocr_vl_npu/crops/crop_06_chart_cubic_spline.png",
+      "name": "crop_06_chart_cubic_spline.png",
+      "block_type": "chart",
+      "prompt": "\nImage Analysis:",
+      "image_size": [
+        529,
+        406
+      ],
+      "input_shapes": {
+        "input_ids": [
+          1,
+          291
+        ],
+        "attention_mask": [
+          1,
+          291
+        ],
+        "mm_token_type_ids": [
+          1,
+          291
+        ],
+        "pixel_values": [
+          1064,
+          1176
+        ],
+        "image_grid_thw": [
+          1,
+          3
+        ]
+      },
+      "input_token_count": 291,
+      "image_grid_thw": [
+        1,
+        28,
+        38
+      ],
+      "prefill_s": 0.3059350289404392,
+      "prefill_next_token_id": 27,
+      "prefill_next_cache_position": 291
+    },
+    {
+      "batch_row": 6,
+      "path": "/workspace/repos/paddle_ocr_vl_npu/crops/crop_07_figure_caption.png",
+      "name": "crop_07_figure_caption.png",
+      "block_type": "text",
+      "prompt": "\nText Recognition:",
+      "image_size": [
+        410,
+        95
+      ],
+      "input_shapes": {
+        "input_ids": [
+          1,
+          93
+        ],
+        "attention_mask": [
+          1,
+          93
+        ],
+        "mm_token_type_ids": [
+          1,
+          93
+        ],
+        "pixel_values": [
+          272,
+          1176
+        ],
+        "image_grid_thw": [
+          1,
+          3
+        ]
+      },
+      "input_token_count": 93,
+      "image_grid_thw": [
+        1,
+        8,
+        34
+      ],
+      "prefill_s": 0.3085818039253354,
+      "prefill_next_token_id": 22029,
+      "prefill_next_cache_position": 93
+    },
+    {
+      "batch_row": 7,
+      "path": "/workspace/repos/paddle_ocr_vl_npu/crops/crop_08_table_footnote_zh.png",
+      "name": "crop_08_table_footnote_zh.png",
+      "block_type": "table",
+      "prompt": "\nTable Recognition:",
+      "image_size": [
+        824,
+        91
+      ],
+      "input_shapes": {
+        "input_ids": [
+          1,
+          112
+        ],
+        "attention_mask": [
+          1,
+          112
+        ],
+        "mm_token_type_ids": [
+          1,
+          112
+        ],
+        "pixel_values": [
+          348,
+          1176
+        ],
+        "image_grid_thw": [
+          1,
+          3
+        ]
+      },
+      "input_token_count": 112,
+      "image_grid_thw": [
+        1,
+        6,
+        58
+      ],
+      "prefill_s": 0.3615044839680195,
+      "prefill_next_token_id": 151663,
+      "prefill_next_cache_position": 112
+    }
+  ],
+  "validation": {
+    "enabled": false,
+    "reason": "validation_steps <= 0"
+  }
+}
+WROTE /workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/isolated_fp16_k8192_b1_b8_20260805/b8.json
