@@ -490,11 +490,27 @@ class LocalDecoderAttention(nn.Module):
         attention_mask: torch.Tensor,
         output_dtype: torch.dtype,
     ) -> torch.Tensor:
-        batch_size, _, target_length, _ = query_states.shape
-        attention_scores = torch.matmul(query_states * self.scaling, key_states.transpose(-1, -2))
+        batch_size, num_heads, target_length, head_dim = query_states.shape
+        source_length = key_states.shape[2]
+        query_bmm = (query_states * self.scaling).reshape(
+            batch_size * num_heads, target_length, head_dim
+        )
+        key_bmm = key_states.reshape(
+            batch_size * num_heads, source_length, head_dim
+        )
+        attention_scores = torch.bmm(query_bmm, key_bmm.transpose(1, 2)).view(
+            batch_size, num_heads, target_length, source_length
+        )
         attention_scores = attention_scores.to(dtype=torch.float32) + attention_mask
         attention_probs = torch.softmax(attention_scores, dim=-1).to(dtype=output_dtype)
-        attention_output = torch.matmul(attention_probs, value_states)
+        attention_output = torch.bmm(
+            attention_probs.reshape(
+                batch_size * num_heads, target_length, source_length
+            ),
+            value_states.reshape(
+                batch_size * num_heads, source_length, head_dim
+            ),
+        ).view(batch_size, num_heads, target_length, head_dim)
         attention_output = attention_output.transpose(1, 2).contiguous().view(batch_size, target_length, self.embed_dim)
         return self.out_proj(attention_output)
 
