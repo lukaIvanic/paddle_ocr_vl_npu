@@ -11,7 +11,7 @@ import torch
 
 from ..model.text_decode import LocalPaddleOCRVLStaticCache
 from .repetition import ExactCycleTracker, RepetitionEvidence
-from utils.timing import synchronize
+from utils.timing import stream_synchronize, synchronize
 from utils.timeline import TimelineRecorder
 
 
@@ -53,7 +53,6 @@ class DecodeSlotState:
         default_factory=ExactCycleTracker,
     )
     repetition_evidence: RepetitionEvidence | None = None
-    draining: bool = False
 
     def __post_init__(self) -> None:
         for token_id in self.token_ids:
@@ -437,26 +436,6 @@ class DecodeArena:
         self.rope_deltas[slot_index].zero_()
         return state
 
-    def prepare_sacrificial_drain(self, slot_index: int) -> DecodeSlotState:
-        """Keep a completed row alive for one harmless lookahead launch.
-
-        The scheduler learns that token N completed only after graph N+1 has
-        already launched.  Keeping the row through one more launch lets the
-        normal N+1 token event prove that ordinary-position write complete
-        before admission.  The remaining speculative graph is redirected to
-        the final KV cell, which stays masked for the replacement request.
-        """
-
-        state = self.slots[slot_index]
-        if state is None:
-            raise RuntimeError(f"decode slot {slot_index} is already free")
-        if state.draining:
-            raise RuntimeError(f"decode slot {slot_index} is already draining")
-        state.draining = True
-        self.next_token[slot_index].fill_(self.eos_token_id)
-        self.cache_position[slot_index].fill_(int(self.cache.cache_length) - 1)
-        return state
-
     def step(
         self,
         decode_fn: Callable[..., torch.Tensor],
@@ -805,7 +784,6 @@ class ContinuousDecodeScheduler:
                     "request_id": state.ready.request_id,
                     "tokens": len(state.token_ids),
                     "prompt_length": state.ready.prompt_length,
-                    "draining": state.draining,
                 }
                 for index, state in enumerate(self.arena.slots)
                 if state is not None
@@ -1049,6 +1027,7 @@ class ContinuousDecodeScheduler:
             refill_reason: str,
         ) -> None:
             nonlocal d2h_wait_wall_s, retire_and_refill_wall_s
+            nonlocal hot_swap_safety_sync_wall_s
             progress(
                 "pending_token_wait_begin",
                 iteration=iteration,
@@ -1140,7 +1119,6 @@ class ContinuousDecodeScheduler:
                 )
             started = time.perf_counter()
             completed_before = len(completions)
-            drained_slots: list[int] = []
             for slot_index, was_active in enumerate(pending_copy.active_slots):
                 if not was_active:
                     continue
@@ -1148,39 +1126,28 @@ class ContinuousDecodeScheduler:
                 expected_epoch = pending_copy.slot_epochs[slot_index]
                 if state is None or state.epoch != expected_epoch:
                     continue
-                if state.draining:
-                    self.arena.release(slot_index)
-                    drained_slots.append(slot_index)
-                    continue
                 token_id = int(host_tokens[slot_index])
                 state.token_ids.append(token_id)
                 stop_reason = self._completion_reason(state, token_id)
                 if stop_reason is not None:
-                    replacement_pending = bool(ready_queue or not source_exhausted)
-                    completed_state = (
-                        self.arena.prepare_sacrificial_drain(slot_index)
-                        if replacement_pending
-                        else self.arena.release(slot_index)
-                    )
-                    completion_tokens = list(completed_state.token_ids)
-                    repetition_evidence = completed_state.repetition_evidence
+                    released = self.arena.release(slot_index)
+                    completion_tokens = list(released.token_ids)
+                    repetition_evidence = released.repetition_evidence
                     if repetition_evidence is not None:
                         completion_tokens = completion_tokens[
                             : repetition_evidence.trim_length
                         ]
                     record_completion(
                         DecodeCompletion(
-                            ready=completed_state.ready,
+                            ready=released.ready,
                             token_ids=completion_tokens,
                             stop_reason=stop_reason,
                             slot_index=slot_index,
-                            slot_epoch=completed_state.epoch,
-                            admitted_at=completed_state.admitted_at,
-                            first_decode_launched_at=(
-                                completed_state.first_decode_launched_at
-                            ),
+                            slot_epoch=released.epoch,
+                            admitted_at=released.admitted_at,
+                            first_decode_launched_at=released.first_decode_launched_at,
                             completed_at=time.perf_counter(),
-                            iterations_launched=completed_state.iterations_launched,
+                            iterations_launched=released.iterations_launched,
                             repetition_evidence=(
                                 repetition_evidence.to_dict()
                                 if repetition_evidence is not None
@@ -1193,8 +1160,32 @@ class ContinuousDecodeScheduler:
                 iteration=iteration,
                 pending_iteration=pending_copy.iteration,
                 newly_completed=len(completions) - completed_before,
-                drained_slots=drained_slots,
             )
+            newly_completed = len(completions) - completed_before
+            if newly_completed and (ready_queue or not source_exhausted):
+                # The next decode graph is submitted before the previous
+                # sampled tokens are retired so its D2H can overlap compute.
+                # A slot that just completed therefore still participates in
+                # that speculative graph.  TorchAir's in-place KV writes are
+                # not reliably protected from an immediately following
+                # hot-swap copy by enqueue order alone on every Ascend target.
+                # Resolve only the compute stream at an actual replacement
+                # boundary; iterations without a hot swap remain pipelined.
+                progress(
+                    "hot_swap_safety_sync_begin",
+                    iteration=iteration,
+                    newly_completed=newly_completed,
+                )
+                safety_started = time.perf_counter()
+                stream_synchronize(self.device)
+                safety_wait_s = time.perf_counter() - safety_started
+                hot_swap_safety_sync_wall_s += safety_wait_s
+                progress(
+                    "hot_swap_safety_sync_end",
+                    iteration=iteration,
+                    newly_completed=newly_completed,
+                    wait_s=safety_wait_s,
+                )
             progress("hot_swap_admission_begin", iteration=iteration)
             fill_free_slots(hot_swap=True)
             progress("hot_swap_admission_end", iteration=iteration)
@@ -1246,7 +1237,6 @@ class ContinuousDecodeScheduler:
                 index
                 for index, state in enumerate(self.arena.slots)
                 if state is not None
-                and not state.draining
                 and int(state.ready.prompt_length) + int(state.iterations_launched)
                 >= int(self.arena.cache.cache_length)
             ]
