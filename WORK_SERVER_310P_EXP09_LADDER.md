@@ -25213,3 +25213,220 @@ Return the exact final sentence first. Then write `$ROOT/agent_report.md` with:
 
 Do not run E2E, layout, CDM, or another inference pass. If no Phase-59 summary
 exists, report that comparison as unavailable instead of inventing it.
+
+## Phase 61: product table-API handoff validation
+
+Phase 61 prepares the 310P crop API for a manual product-style check. The agent
+starts the API and leaves it running. It does **not** run the 665-table benchmark
+on its own. Instead, it creates and returns three short commands so Luka can
+watch the benchmark and the external example run in the terminal.
+
+The client handoff contains exactly these files:
+
+- `09_persistent_page_engine/scripts/run_omnidocbench_table_api.py`
+- `09_persistent_page_engine/TABLE_API_README.md`
+- `09_persistent_page_engine/example_table.png`
+
+The server remains an internal service. Do not copy server code into the client
+handoff. Do not edit tracked files, rebuild model weights, or rerun layout/E2E.
+
+Use one shell for this setup:
+
+```sh
+set -euo pipefail
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git pull --ff-only origin main
+test -z "$(git status --porcelain)"
+
+PYTHON_BIN=/usr/local/python3.12.13/bin/python
+SERVER=09_persistent_page_engine/scripts/serve_crop_ocr_api.py
+CLIENT=09_persistent_page_engine/scripts/run_omnidocbench_table_api.py
+README=09_persistent_page_engine/TABLE_API_README.md
+EXAMPLE=09_persistent_page_engine/example_table.png
+MODEL=/home/lukaiv/models/PaddleOCR-VL-1.6
+DATASET_JSON=/home/lukaiv/datasets/OmniDocBench/OmniDocBench.json
+IMAGES_DIR=/home/lukaiv/datasets/OmniDocBench/images
+
+. tmp/09_persistent_page_engine/310p_phase56_cdm/runtime_paths.env
+EVAL_PYTHON="$OMNIDOCBENCH_EVAL_PYTHON"
+EVALUATOR_ROOT="$OMNIDOCBENCH_EVALUATOR_ROOT"
+
+test -x "$PYTHON_BIN"
+test -x "$EVAL_PYTHON"
+test -f "$EVALUATOR_ROOT/pdf_validation.py"
+test -f "$SERVER" && test -f "$CLIENT" && test -f "$README"
+test -f "$EXAMPLE" && test -f "$DATASET_JSON" && test -d "$IMAGES_DIR"
+test "$(sha256sum "$EXAMPLE" | awk '{print $1}')" = \
+  7a612b5430319fb84c2ca74062772782c0ddbbaa0fcb51434f75ec8a61479820
+test "$(sha256sum "$MODEL/model.safetensors" | awk '{print $1}')" = \
+  85a479d506a11e724e7285d395c551be69f41dbc16b6342d3cacfb189aed71db
+
+DECODE_CACHE=.runtime_cache/310p_phase57_decode_b64_k4096_pse
+VISION_CACHE=.runtime_cache/310p_phase52_v16_vision_4352_nz
+TEXT_CACHE=.runtime_cache/310p_phase52_v16_text
+for cache in "$DECODE_CACHE" "$VISION_CACHE" "$TEXT_CACHE"; do
+  test -d "$cache"
+  test -n "$(find "$cache" -type f -print -quit)"
+done
+
+SHORT="$(git rev-parse --short HEAD)"
+ROOT="tmp/09_persistent_page_engine/310p_phase61_product_table_api_${SHORT}"
+mkdir -p "$ROOT"
+printf '%s\n' "$ROOT" >"$ROOT/root.txt"
+
+cat >"$ROOT/start_api.sh" <<EOF
+#!/bin/bash
+set -euo pipefail
+cd "$WORK_SERVER_REPO"
+ROOT="$ROOT"
+PID_FILE="\$ROOT/server.pid"
+
+if test -s "\$PID_FILE" && kill -0 "\$(cat "\$PID_FILE")" 2>/dev/null; then
+  old_pid="\$(cat "\$PID_FILE")"
+  old_cmd="\$(ps -p "\$old_pid" -o args= || true)"
+  case "\$old_cmd" in
+    *serve_crop_ocr_api.py*)
+      kill "\$old_pid"
+      for unused in \$(seq 1 150); do
+        kill -0 "\$old_pid" 2>/dev/null || break
+        sleep 0.2
+      done
+      if kill -0 "\$old_pid" 2>/dev/null; then
+        echo "Owned API pid \$old_pid did not stop cleanly." >&2
+        exit 1
+      fi
+      ;;
+    *) echo "Refusing to stop unrelated pid \$old_pid: \$old_cmd" >&2; exit 1 ;;
+  esac
+fi
+if ss -ltn 2>/dev/null | grep -q ':8765 '; then
+  echo 'Port 8765 is already in use. Do not stop an unowned process.' >&2
+  exit 1
+fi
+
+source npu-setup
+printf 'physical_device=%s\n' "\${ASCEND_RT_VISIBLE_DEVICES:-unknown}" \
+  | tee "\$ROOT/device.txt"
+
+PYTHONUNBUFFERED=1 nohup "$PYTHON_BIN" "$SERVER" \
+  --host 127.0.0.1 --port 8765 \
+  --model "$MODEL" \
+  --queue-capacity 256 \
+  --decode-batch-size 64 \
+  --cache-length 4096 --max-new-tokens 4096 \
+  --min-pixels 28224 --max-pixels 802816 \
+  --decode-backend torchair \
+  --decode-optimization combined_apply_pse_sentinel \
+  --torchair-cache-dir "$DECODE_CACHE" \
+  --vision-buckets 256,384,512,640,768,1408,1920,2048,2944,4096 \
+  --vision-torchair-cache-dir "$VISION_CACHE" \
+  --text-buckets 128,256,512,1024,1312 \
+  --text-torchair-cache-dir "$TEXT_CACHE" \
+  >"\$ROOT/server.log" 2>&1 </dev/null &
+api_pid="\$!"
+printf '%s\n' "\$api_pid" >"\$PID_FILE"
+
+started="\$(date +%s)"
+for attempt in \$(seq 1 540); do
+  if ! kill -0 "\$api_pid" 2>/dev/null; then
+    echo "API_START_FAIL pid=\$api_pid log=\$ROOT/server.log"
+    tail -n 100 "\$ROOT/server.log"
+    exit 1
+  fi
+  if /usr/bin/python3 - <<'PY' >/dev/null 2>&1
+import json, urllib.request
+with urllib.request.urlopen('http://127.0.0.1:8765/ready', timeout=2) as response:
+    data = json.load(response)
+assert data['ready'] is True
+assert data['configuration']['batch_size'] == 64
+assert data['configuration']['cache_length'] == 4096
+assert data['configuration']['decode_optimization'] == 'combined_apply_pse_sentinel'
+PY
+  then
+    /usr/bin/python3 - <<'PY' >"\$ROOT/ready.json"
+import json, urllib.request
+with urllib.request.urlopen('http://127.0.0.1:8765/ready', timeout=5) as response:
+    print(json.dumps(json.load(response), indent=2, sort_keys=True))
+PY
+    echo "API_READY pid=\$api_pid startup_s=\$(( \$(date +%s) - started )) url=http://127.0.0.1:8765/v1/ocr"
+    exit 0
+  fi
+  if test \$((attempt % 6)) -eq 0; then
+    echo "API_START_PROGRESS elapsed_s=\$(( \$(date +%s) - started )) last=\$(tail -n 1 "\$ROOT/server.log" | cut -c1-160)"
+  fi
+  sleep 5
+done
+echo "API_START_TIMEOUT log=\$ROOT/server.log"
+exit 1
+EOF
+chmod +x "$ROOT/start_api.sh"
+
+cat >"$ROOT/run_full_benchmark.sh" <<EOF
+#!/bin/bash
+set -euo pipefail
+cd "$WORK_SERVER_REPO"
+OUT="$ROOT/omnidocbench_tables"
+mkdir -p "\$OUT"
+PYTHONUNBUFFERED=1 "$EVAL_PYTHON" "$CLIENT" \
+  --omnidocbench \
+  --dataset-json "$DATASET_JSON" \
+  --images-dir "$IMAGES_DIR" \
+  --evaluator-root "$EVALUATOR_ROOT" \
+  --api-url http://127.0.0.1:8765/v1/ocr \
+  --http-workers 64 --drain-server \
+  --crop-padding 0 --timeout-s 900 \
+  --teds-workers 12 --teds-timeout-s 120 \
+  --output-dir "\$OUT" \
+  2>&1 | tee "\$OUT/client.log"
+EOF
+chmod +x "$ROOT/run_full_benchmark.sh"
+
+cat >"$ROOT/run_example.sh" <<EOF
+#!/bin/bash
+set -euo pipefail
+cd "$WORK_SERVER_REPO"
+OUT="$ROOT/example_table"
+mkdir -p "\$OUT"
+PYTHONUNBUFFERED=1 "$EVAL_PYTHON" "$CLIENT" \
+  --images "$EXAMPLE" \
+  --crop-type table \
+  --api-url http://127.0.0.1:8765/v1/ocr \
+  --output-dir "\$OUT" \
+  2>&1 | tee "\$OUT/client.log"
+echo "Rendered Markdown: \$WORK_SERVER_REPO/\$OUT/results.md"
+EOF
+chmod +x "$ROOT/run_example.sh"
+
+"$ROOT/start_api.sh" | tee "$ROOT/startup.log"
+
+cat >"$ROOT/commands_for_luka.txt" <<EOF
+# The API is running. Run the full benchmark first:
+cd "$WORK_SERVER_REPO"
+bash "$ROOT/run_full_benchmark.sh"
+
+# The benchmark drains the NPU worker. Restart the API before the example:
+bash "$ROOT/start_api.sh"
+bash "$ROOT/run_example.sh"
+
+# Stop the API when finished:
+kill "\$(cat "$ROOT/server.pid")"
+EOF
+
+printf '310P PHASE 61: READY root=%s api_pid=%s\n' \
+  "$ROOT" "$(cat "$ROOT/server.pid")"
+cat "$ROOT/commands_for_luka.txt"
+```
+
+Return the exact `310P PHASE 61: READY ...` line first, followed by the content
+of `commands_for_luka.txt`. Keep the API running. Do not run either client
+command for Luka. Also report only these checks in one short sentence:
+
+- `example_table.png` has the expected SHA-256 and is `1284 x 412`;
+- `/ready` reports B64, KV4096, and `combined_apply_pse_sentinel`;
+- the client README contains the 665-table reference and the expected external
+  table content.
+
+If startup compiles a missing graph, report progress every 30 seconds. Do not
+change the cache paths or silently fall back to eager execution. If no NPU is
+free, stop and report that fact. Do not terminate another user's process.
