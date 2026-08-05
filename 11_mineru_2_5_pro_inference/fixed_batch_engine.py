@@ -66,7 +66,7 @@ class FixedBatchDecodeEngine:
                 cache_length=self.cache_length,
                 device=self.model.device,
                 dtype=self.model.dtype,
-                init_mode="empty",
+                init_mode="zeros",
             )
         return self._arena
 
