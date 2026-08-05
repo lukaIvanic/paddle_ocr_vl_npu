@@ -1,8 +1,8 @@
 # Experiment 12: UniRec 0.1B Inference
 
-This experiment compares the official bundled Transformers implementation of
-UniRec-0.1B-1217 with the local implementation that we can modify and optimize.
-This checkpoint recognizes text, formulas, and tables.
+This experiment compares the official UniRec implementations with the local
+implementation that we can modify and optimize. It also contains a thin runner
+for the official OpenDoc full-page pipeline.
 
 ## Files
 
@@ -11,6 +11,8 @@ This checkpoint recognizes text, formulas, and tables.
 - `run_optimized.py`: local eager or compiled inference.
 - `run_original_transformers.py`: exact Transformers model and processor code
   bundled with the official UniRec-0.1B-1217 checkpoint.
+- `run_official_opendoc.py`: OpenOCR's official PP-DocLayoutV2 + UniRec page
+  pipeline with explicit checkpoint and recognizer-device selection.
 
 The local model implementation is copied without architectural changes from
 `unirec_research/03_compiled_decode_single_batch` at commit `4b9a9ab`.
@@ -24,7 +26,7 @@ Custom Python:   /workspace/venvs/unirec_npu_py312/bin/python
 Official Transformers: 4.49.0
 ```
 
-The model directory is the official `topdu/unirec_0_1b` checkpoint at revision
+The 1217 model directory is the official `topdu/unirec_0_1b` checkpoint at revision
 `d2469d0f50992a380240266fe169b982ea940615`. This is the table-capable
 UniRec-0.1B-1217 release. The installed `model.safetensors` is 535,797,520
 bytes and has SHA-256:
@@ -33,9 +35,14 @@ bytes and has SHA-256:
 1a080d683731d2bdae5a4b8c538160d2e8b1733f44de25cb75f264406db8d746
 ```
 
-This matches the official Hugging Face LFS metadata. Do not substitute the
-older `topdu/unirec-0.1b` checkpoint. That checkpoint only recognizes text and
-formulas.
+This matches the official Hugging Face LFS metadata.
+
+OpenOCR's documented OpenDoc score-reproduction path uses the distinct
+`topdu/unirec-0.1b` `model.pth` checkpoint. It is also table-capable in the
+OpenDoc pipeline and is not numerically identical to the 1217 safetensors
+checkpoint. Use `/workspace/models/unirec-0.1b/model.pth` when reproducing the
+published OpenDoc OmniDocBench score. Do not interchange the two checkpoints
+when comparing exact outputs or reported metrics.
 
 ## Setup
 
@@ -91,6 +98,28 @@ Cached TorchAir decode:
   --image crops/crop_01_text_block_en.png \
   --device npu:0 --dtype bfloat16
 ```
+
+## Official OpenDoc full-page pipeline
+
+OpenOCR documents `tools/infer_doc.py` as the reference path for reproducing
+its OmniDocBench v1.5 score. The adapter below preserves that pipeline and uses
+the exact `model.pth` checkpoint while placing only UniRec on the NPU. Layout
+detection remains on the official PaddleX CPU path.
+
+```sh
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
+  12_unirec_0_1b_inference/run_official_opendoc.py \
+  --openocr-root /workspace/repos/OpenOCR \
+  --model-path /workspace/models/unirec-0.1b/model.pth \
+  --input /workspace/datasets/OmniDocBench/images \
+  --output-dir tmp/12_unirec_0_1b_inference/opendoc_reference \
+  --recognizer-device npu:0
+```
+
+Use `--limit 1` for a smoke. Omit `--limit` for the complete image directory.
+The runner saves official OpenDoc JSON and Markdown plus a compact run summary.
+It does not replace the OmniDocBench evaluator; score the Markdown outputs with
+the standard evaluator after inference.
 
 ## Artifacts
 
