@@ -31,6 +31,11 @@ from run_transformers_recognition_smoke import configure_npu, synchronize
 DEFAULT_MODEL = Path("/workspace/models/MinerU2.5-Pro-2605-1.2B")
 DEFAULT_DATASET_JSON = Path("/workspace/datasets/OmniDocBench/OmniDocBench.json")
 DEFAULT_IMAGES_DIR = Path("/workspace/datasets/OmniDocBench/images")
+DEFAULT_LOCAL_TORCHAIR_CACHE_DIR = (
+    Path(".runtime_cache")
+    / "11_mineru_2_5_pro_inference"
+    / "native_compiled_decode_b1_k8192_bf16"
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -45,6 +50,7 @@ def parse_args() -> argparse.Namespace:
             "transformers",
             "local-correctness",
             "local-eager-client",
+            "local-compiled-client",
             "vllm-engine",
             "vllm-async-engine",
         ),
@@ -75,6 +81,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--resume", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--fail-fast", action="store_true")
     parser.add_argument("--hash-model-files", action="store_true")
+    parser.add_argument("--local-compiled-cache-length", type=int, default=8192)
+    parser.add_argument(
+        "--local-torchair-cache-dir",
+        type=Path,
+        default=DEFAULT_LOCAL_TORCHAIR_CACHE_DIR,
+    )
     parser.add_argument(
         "--vllm-enforce-eager",
         action=argparse.BooleanOptionalAction,
@@ -191,7 +203,12 @@ def main() -> None:
         f"model={model_dir}",
         flush=True,
     )
-    if args.backend in ("transformers", "local-correctness", "local-eager-client"):
+    if args.backend in (
+        "transformers",
+        "local-correctness",
+        "local-eager-client",
+        "local-compiled-client",
+    ):
         from transformers import AutoProcessor
 
         processor = AutoProcessor.from_pretrained(
@@ -217,6 +234,7 @@ def main() -> None:
             from local_modeling_mineru import LocalMinerU2_5ForConditionalGeneration
             from native_custom_backend import (
                 LocalMinerUGenerateAdapter,
+                make_local_compiled_vlm_client,
                 make_local_eager_vlm_client,
             )
 
@@ -242,7 +260,35 @@ def main() -> None:
                 system_prompt=client.client.system_prompt,
                 allow_truncated_content=client.client.allow_truncated_content,
             )
-        attention = "eager-local" if args.backend.startswith("local-") else "eager"
+        elif args.backend == "local-compiled-client":
+            if args.local_compiled_cache_length <= 0:
+                raise ValueError("local-compiled-cache-length must be positive")
+            from run_local_model_two_step_extract import (
+                CompiledSingleBatchRecognitionDecoder,
+            )
+
+            compiled_decoder = CompiledSingleBatchRecognitionDecoder(
+                local_model,
+                cache_root=args.local_torchair_cache_dir,
+                cache_length=args.local_compiled_cache_length,
+                decode_weight_format="none",
+                decode_rotary_impl="manual",
+            )
+            client.client = make_local_compiled_vlm_client(
+                local_model,
+                processor,
+                compiled_decoder,
+                batch_size=max(1, args.batch_size),
+                system_prompt=client.client.system_prompt,
+                allow_truncated_content=client.client.allow_truncated_content,
+            )
+        attention = (
+            "eager-prefill-torchair-static-decode"
+            if args.backend == "local-compiled-client"
+            else "eager-local"
+            if args.backend.startswith("local-")
+            else "eager"
+        )
         processor_fast: bool | None = True
     else:
         from mineru_vl_utils import MinerULogitsProcessor
@@ -346,6 +392,16 @@ def main() -> None:
         "image_analysis": False,
         "batch_size": args.batch_size,
         "page_batch_size": args.page_batch_size,
+        "local_compiled_cache_length": (
+            args.local_compiled_cache_length
+            if args.backend == "local-compiled-client"
+            else None
+        ),
+        "local_torchair_cache_dir": (
+            str(args.local_torchair_cache_dir)
+            if args.backend == "local-compiled-client"
+            else None
+        ),
         "vllm_enforce_eager": (
             args.vllm_enforce_eager if args.backend.startswith("vllm-") else None
         ),
@@ -526,6 +582,30 @@ def main() -> None:
         "measured_group_wall_s": sum(batch_times),
         "measured_group_pages_per_s": completed / sum(batch_times) if batch_times else None,
     }
+    generation_metrics = getattr(client.client, "generation_metrics", None)
+    if generation_metrics is not None:
+        decode_calls = sum(int(item["decode_calls"]) for item in generation_metrics)
+        decode_s = sum(float(item["decode_s"]) for item in generation_metrics)
+        summary["local_compiled_generation"] = {
+            "calls": len(generation_metrics),
+            "decode_calls": decode_calls,
+            "decode_s": decode_s,
+            "decode_tok_s": decode_calls / decode_s if decode_s > 0 else 0.0,
+            "prefill_s": sum(float(item["prefill_s"]) for item in generation_metrics),
+            "generation_wall_s": sum(
+                float(item["generation_wall_s"]) for item in generation_metrics
+            ),
+            "compile_wrapper_s": sum(
+                float(item["compile_wrapper_s"])
+                for item in generation_metrics
+                if item.get("compile_warmup", {}).get("ran_this_call")
+            ),
+            "compiled_first_call_s": sum(
+                float(item["compiled_first_call_s"])
+                for item in generation_metrics
+                if item.get("compile_warmup", {}).get("ran_this_call")
+            ),
+        }
     summary_path = output_dir / f"run_summary_shard_{args.shard_index:02d}.json"
     atomic_write_text(summary_path, json.dumps(summary, ensure_ascii=False, indent=2) + "\n")
     print(f"[summary] {json.dumps(summary, ensure_ascii=False)}", flush=True)

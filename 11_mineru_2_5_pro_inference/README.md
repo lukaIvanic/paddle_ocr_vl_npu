@@ -48,9 +48,10 @@ run_official_transformers_omnidocbench.py
   vLLM engines, plus two local-model lanes. ``local-correctness`` presents the
   local model through the official Transformers client contract;
   ``local-eager-client`` is the first direct eager custom VLM client while the
-  official MinerU frontend and post-processing stay unchanged. It writes
-  official json2md Markdown, content lists, per-page checkpoints, shard
-  progress, and timing.
+  official MinerU frontend and post-processing stay unchanged;
+  ``local-compiled-client`` keeps prefill eager and replaces only B1 decode
+  with the existing TorchAir static-KV graph. It writes official json2md
+  Markdown, content lists, per-page checkpoints, shard progress, and timing.
 ```
 
 The experiment reuses the repository-level `crops/` corpus. Its manifest and

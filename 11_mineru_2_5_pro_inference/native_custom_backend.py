@@ -9,6 +9,7 @@ but invokes ``generate_ids`` directly.
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 import torch
@@ -116,6 +117,85 @@ def make_local_eager_vlm_client(
 
     adapter = LocalMinerUGenerateAdapter(model)
     return LocalEagerMinerUVlmClient(
+        model=adapter,
+        processor=processor,
+        system_prompt=system_prompt,
+        allow_truncated_content=allow_truncated_content,
+        batch_size=int(batch_size),
+        use_tqdm=False,
+    )
+
+
+def make_local_compiled_vlm_client(
+    model: Any,
+    processor: Any,
+    compiled_decoder: Any,
+    *,
+    batch_size: int,
+    system_prompt: str,
+    allow_truncated_content: bool,
+):
+    """Build a B1 client with eager prefill and TorchAir static-cache decode."""
+
+    from mineru_vl_utils.vlm_client.transformers_client import TransformersVlmClient
+
+    class LocalCompiledMinerUVlmClient(TransformersVlmClient):
+        def __init__(self, **kwargs: Any) -> None:
+            super().__init__(**kwargs)
+            self.generation_metrics: list[dict[str, Any]] = []
+
+        def _predict_one_batch(
+            self,
+            image_objs,
+            chat_prompts,
+            sampling_params,
+            **kwargs,
+        ):
+            if len(chat_prompts) != 1:
+                raise ValueError("local compiled MinerU client currently requires batch_size=1")
+            actual_images = [image for image in image_objs if image is not None]
+            inputs = self.processor(
+                text=chat_prompts,
+                images=actual_images or None,
+                padding=True,
+                return_tensors="pt",
+            )
+            inputs = inputs.to(device=model.device, dtype=model.dtype)
+            params = self.build_sampling_params(sampling_params)
+            max_new_tokens = params.max_new_tokens
+            if max_new_tokens is None:
+                max_new_tokens = max(1, int(self.model_max_length) - int(inputs.input_ids.shape[1]))
+
+            started = time.perf_counter()
+            generated, metrics = compiled_decoder.generate(
+                input_ids=inputs.input_ids,
+                attention_mask=inputs.attention_mask,
+                pixel_values=getattr(inputs, "pixel_values", None),
+                image_grid_thw=getattr(inputs, "image_grid_thw", None),
+                max_new_tokens=int(max_new_tokens),
+                eos_token_id=int(model.config.eos_token_id),
+                pad_token_id=int(model.config.pad_token_id),
+            )
+            record = {
+                **metrics,
+                "generation_wall_s": float(time.perf_counter() - started),
+                "input_tokens": int(inputs.input_ids.shape[1]),
+            }
+            self.generation_metrics.append(record)
+
+            token_ids = generated.cpu().tolist()
+            token_ids = [
+                [token_id for token_id in row if token_id not in self.skip_token_ids]
+                for row in token_ids
+            ]
+            return self.processor.batch_decode(
+                token_ids,
+                skip_special_tokens=False,
+                clean_up_tokenization_spaces=False,
+            )
+
+    adapter = LocalMinerUGenerateAdapter(model)
+    return LocalCompiledMinerUVlmClient(
         model=adapter,
         processor=processor,
         system_prompt=system_prompt,
