@@ -22,13 +22,35 @@ from typing import Any
 import numpy as np
 
 from modeling_optimized_unirec import OptimizedUniRecRunner
+from opendoc_layout_npu import PPDocLayoutV2NpuAdapter
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--openocr-root", type=Path, required=True)
     parser.add_argument("--model-path", type=Path, required=True)
-    parser.add_argument("--layout-model", type=Path, required=True)
+    parser.add_argument(
+        "--layout-model",
+        type=Path,
+        default=Path(
+            "/root/.cache/openocr/PP_DoclayoutV2_onnx/PP-DoclayoutV2.onnx"
+        ),
+    )
+    parser.add_argument(
+        "--layout-backend",
+        choices=("onnx_cpu", "transformers_npu"),
+        default="onnx_cpu",
+    )
+    parser.add_argument(
+        "--layout-transformers-model",
+        type=Path,
+        default=Path("/workspace/models/PP-DocLayoutV2_safetensors"),
+    )
+    parser.add_argument(
+        "--layout-dtype",
+        choices=("float16", "float32"),
+        default="float32",
+    )
     parser.add_argument("--stock-encoder", type=Path, required=True)
     parser.add_argument("--stock-decoder", type=Path, required=True)
     parser.add_argument("--stock-tokenizer-mapping", type=Path, required=True)
@@ -272,11 +294,23 @@ def main() -> None:
     required_paths = [
         openocr_root / "tools/infer_doc_onnx.py",
         model_path / "model.pth",
-        args.layout_model.expanduser().resolve(),
         args.stock_encoder.expanduser().resolve(),
         args.stock_decoder.expanduser().resolve(),
         args.stock_tokenizer_mapping.expanduser().resolve(),
     ]
+    if args.layout_backend == "onnx_cpu":
+        required_paths.append(args.layout_model.expanduser().resolve())
+    else:
+        layout_transformers_model = (
+            args.layout_transformers_model.expanduser().resolve()
+        )
+        required_paths.extend(
+            [
+                layout_transformers_model / "config.json",
+                layout_transformers_model / "model.safetensors",
+                layout_transformers_model / "preprocessor_config.json",
+            ]
+        )
     missing = [str(path) for path in required_paths if not path.is_file()]
     if missing:
         raise FileNotFoundError(f"Required inputs are missing: {missing}")
@@ -305,6 +339,7 @@ def main() -> None:
         flush=True,
     )
     setup_started = time.perf_counter()
+    use_onnx_layout = args.layout_backend == "onnx_cpu"
     pipeline = infer_doc_onnx.OpenDocONNX(
         layout_model_path=str(args.layout_model.expanduser().resolve()),
         unirec_encoder_path=str(args.stock_encoder.expanduser().resolve()),
@@ -312,10 +347,18 @@ def main() -> None:
         tokenizer_mapping_path=str(args.stock_tokenizer_mapping.expanduser().resolve()),
         use_gpu=False,
         layout_threshold=args.layout_threshold,
-        use_layout_detection=True,
+        use_layout_detection=use_onnx_layout,
         auto_download=False,
         max_parallel_blocks=1,
     )
+    if not use_onnx_layout:
+        pipeline.layout_detector = PPDocLayoutV2NpuAdapter(
+            model_path=args.layout_transformers_model,
+            device=args.device,
+            dtype=args.layout_dtype,
+            threshold=args.layout_threshold,
+        )
+        pipeline.use_layout_detection = True
     stock_recognizer = pipeline.vlm_recognizer if args.mode == "compare" else None
     custom_runner = OptimizedUniRecRunner(
         model_path=model_path,
@@ -386,6 +429,18 @@ def main() -> None:
             else None
         ),
         "max_parallel_blocks": 1,
+        "layout_backend": args.layout_backend,
+        "layout_dtype": args.layout_dtype if not use_onnx_layout else None,
+        "layout_transformers_model": (
+            str(args.layout_transformers_model.expanduser().resolve())
+            if not use_onnx_layout
+            else None
+        ),
+        "layout_timing": (
+            pipeline.layout_detector.timing_summary()
+            if not use_onnx_layout
+            else None
+        ),
         "max_length": args.max_length,
         "setup_s": setup_s,
         "pipeline_wall_s": sum(record["wall_s"] for record in page_records),

@@ -188,6 +188,20 @@ static-cache decoder step. Image preprocessing, the vision encoder, and decoder
 prefill remain eager. Compiled graphs are cached under
 `.runtime_cache/12_unirec_0_1b_inference/opendoc_model_pth_decode` by default.
 
+To replace the CPU ONNX layout detector with eager PP-DocLayoutV2 on NPU while
+keeping the same OpenDoc layout contract, add:
+
+```sh
+  --layout-backend transformers_npu \
+  --layout-transformers-model /workspace/models/PP-DocLayoutV2_safetensors \
+  --layout-dtype float32
+```
+
+The NPU adapter deliberately preserves OpenDoc's original 25-class labels,
+overlap filtering, reading-order sort, block numbering, and downstream crop
+assembly. `float32` is the parity-first default; `float16` is an explicit
+performance experiment.
+
 ## Artifacts
 
 - Run JSON: `tmp/12_unirec_0_1b_inference/`
