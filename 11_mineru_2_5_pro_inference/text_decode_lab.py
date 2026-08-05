@@ -340,6 +340,7 @@ def main() -> None:
                 "step_ms": float(measured_s * 1000.0 / args.measure_steps),
                 "raw_tok_s": float(raw_tokens / measured_s),
             },
+            "validation_token_ids": validation_result["token_ids"],
             "profile": profile,
         }
         progress("lane_end", attention=attention, raw_tok_s=raw_tokens / measured_s)

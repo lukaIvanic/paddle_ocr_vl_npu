@@ -487,6 +487,37 @@ class MinerURMSNorm(nn.Module):
         return self.weight * hidden_states.to(input_dtype)
 
 
+def _decode_rms_norm(norm: MinerURMSNorm, hidden_states: torch.Tensor) -> torch.Tensor:
+    if hidden_states.device.type != "npu":
+        return norm(hidden_states)
+    import torch_npu
+
+    return torch_npu.npu_rms_norm(
+        hidden_states,
+        norm.weight,
+        norm.variance_epsilon,
+    )[0]
+
+
+def _decode_add_rms_norm(
+    x: torch.Tensor,
+    residual: torch.Tensor,
+    norm: MinerURMSNorm,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    if x.device.type != "npu":
+        summed = x + residual
+        return norm(summed), summed
+    import torch_npu
+
+    normalized, _rstd, summed = torch_npu.npu_add_rms_norm(
+        x,
+        residual,
+        norm.weight,
+        norm.variance_epsilon,
+    )
+    return normalized, summed
+
+
 def linear_last_dim(module: nn.Linear, inputs: torch.Tensor) -> torch.Tensor:
     """Apply a linear to the last dimension through an explicit 2-D MatMul."""
     leading_shape = inputs.shape[:-1]
@@ -998,16 +1029,37 @@ class MinerUTextModel(nn.Module):
             self.layers[0].self_attn.mrope_section,
         )
         hidden_states = inputs_embeds
+        residual: torch.Tensor | None = None
         for layer_idx, layer in enumerate(self.layers):
-            hidden_states = layer.forward_decode_static(
-                hidden_states,
+            if residual is None:
+                attention_input = _decode_rms_norm(layer.input_layernorm, hidden_states)
+                residual = hidden_states
+            else:
+                attention_input, residual = _decode_add_rms_norm(
+                    hidden_states,
+                    residual,
+                    layer.input_layernorm,
+                )
+            attention_output = layer.self_attn.forward_decode_static(
+                attention_input,
                 attention_mask,
                 position_embeddings,
                 key_caches[layer_idx],
                 value_caches[layer_idx],
                 cache_position,
             )
-        return self.norm(hidden_states)
+            mlp_input, residual = _decode_add_rms_norm(
+                attention_output,
+                residual,
+                layer.post_attention_layernorm,
+            )
+            hidden_states = layer.mlp.forward_decode_static(mlp_input)
+        hidden_states, _final_residual = _decode_add_rms_norm(
+            hidden_states,
+            residual,
+            self.norm,
+        )
+        return hidden_states
 
 
 class MinerUVisionPatchEmbed(nn.Module):
