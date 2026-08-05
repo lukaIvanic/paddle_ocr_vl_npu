@@ -495,6 +495,11 @@ def _teds_scores(samples: list[dict], args: argparse.Namespace, metric: Any) -> 
             for receiver, (process, started, task) in list(active.items()):
                 index, sample = task
                 if not process.is_alive():
+                    # The child can send its result and exit between the
+                    # connection wait above and this liveness check. Let the
+                    # next loop consume that already-buffered result.
+                    if receiver.poll():
+                        continue
                     receiver.close()
                     active.pop(receiver)
                     raise RuntimeError(
