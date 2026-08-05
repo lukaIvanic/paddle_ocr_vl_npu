@@ -1,0 +1,561 @@
+Loading ONNX models...
+🔧 User specified: Using CPU
+Using execution providers: ['CPUExecutionProvider']
+Loading tokenizer from mapping file: /root/.cache/openocr/unirec_0_1b_onnx/unirec_tokenizer_mapping.json
+✅ Loaded vocabulary with 56371 tokens
+
+✅ Models loaded successfully!
+   Number of decoder layers: 6
+   Number of attention heads: 6
+   Head dimension: 128
+   Model dimension (d_model): 768
+   Vocabulary size: 56371
+Loading weights:   0%|          | 0/961 [00:00<?, ?it/s]Loading weights:  75%|███████▌  | 722/961 [00:00<00:00, 6833.15it/s]Loading weights: 100%|██████████| 961/961 [00:00<00:00, 6996.29it/s]
+OPENDOC_BATCHED_SETUP_END setup_s=21.829 pages=32 decode_batch_size=4 decode_scheduling=continuous
+/usr/local/python3.12.13/lib/python3.12/site-packages/transformers/models/pp_doclayout_v2/modeling_pp_doclayout_v2.py:2088: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  wh = torch.ones_like(grid_xy) * grid_size * (2.0**level)
+OPENDOC_CONTINUOUS_PAGE_READY index=1/32 image=PPT_1001115_eng_page_003.png crops=6
+UNIREC_CONTINUOUS_CROP_END request_id=page_000000_crop_0000 slot=0 admission=0 completion=0 tokens=6
+UNIREC_CONTINUOUS_CROP_END request_id=page_000000_crop_0001 slot=1 admission=1 completion=1 tokens=14
+UNIREC_CONTINUOUS_CROP_END request_id=page_000000_crop_0002 slot=2 admission=2 completion=2 tokens=25
+OPENDOC_CONTINUOUS_PAGE_READY index=2/32 image=PPT_1001115_eng_page_005.png crops=8
+UNIREC_CONTINUOUS_CROP_END request_id=page_000000_crop_0003 slot=3 admission=3 completion=3 tokens=28
+UNIREC_CONTINUOUS_CROP_END request_id=page_000001_crop_0001 slot=3 admission=7 completion=4 tokens=6
+UNIREC_CONTINUOUS_CROP_END request_id=page_000001_crop_0000 slot=2 admission=6 completion=5 tokens=12
+UNIREC_CONTINUOUS_CROP_END request_id=page_000000_crop_0005 slot=1 admission=5 completion=6 tokens=27
+UNIREC_CONTINUOUS_CROP_END request_id=page_000000_crop_0004 slot=0 admission=4 completion=7 tokens=46
+OPENDOC_BATCHED_PAGE_END index=1/32 image=PPT_1001115_eng_page_003.png crops=6 wall_s=15.130
+UNIREC_CONTINUOUS_CROP_END request_id=page_000001_crop_0004 slot=1 admission=10 completion=8 tokens=23
+UNIREC_CONTINUOUS_CROP_END request_id=page_000001_crop_0003 slot=2 admission=9 completion=9 tokens=27
+UNIREC_CONTINUOUS_CROP_END request_id=page_000001_crop_0006 slot=1 admission=12 completion=10 tokens=6
+OPENDOC_CONTINUOUS_PAGE_READY index=3/32 image=PPT_1001115_eng_page_011.png crops=12
+UNIREC_CONTINUOUS_CROP_END request_id=page_000002_crop_0000 slot=1 admission=14 completion=11 tokens=7
+UNIREC_CONTINUOUS_CROP_END request_id=page_000001_crop_0002 slot=3 admission=8 completion=12 tokens=47
+UNIREC_CONTINUOUS_CROP_END request_id=page_000001_crop_0007 slot=2 admission=13 completion=13 tokens=19
+UNIREC_CONTINUOUS_CROP_END request_id=page_000001_crop_0005 slot=0 admission=11 completion=14 tokens=33
+OPENDOC_BATCHED_PAGE_END index=2/32 image=PPT_1001115_eng_page_005.png crops=8 wall_s=2.925
+UNIREC_CONTINUOUS_CROP_END request_id=page_000002_crop_0002 slot=3 admission=16 completion=15 tokens=10
+UNIREC_CONTINUOUS_CROP_END request_id=page_000002_crop_0003 slot=2 admission=17 completion=16 tokens=10
+UNIREC_CONTINUOUS_CROP_END request_id=page_000002_crop_0004 slot=0 admission=18 completion=17 tokens=16
+UNIREC_CONTINUOUS_CROP_END request_id=page_000002_crop_0006 slot=2 admission=20 completion=18 tokens=13
+UNIREC_CONTINUOUS_CROP_END request_id=page_000002_crop_0001 slot=1 admission=15 completion=19 tokens=30
+UNIREC_CONTINUOUS_CROP_END request_id=page_000002_crop_0005 slot=3 admission=19 completion=20 tokens=17
+UNIREC_CONTINUOUS_CROP_END request_id=page_000002_crop_0007 slot=0 admission=21 completion=21 tokens=13
+UNIREC_CONTINUOUS_CROP_END request_id=page_000002_crop_0009 slot=1 admission=23 completion=22 tokens=10
+OPENDOC_CONTINUOUS_PAGE_READY index=4/32 image=PPT_1001115_eng_page_015.png crops=5
+UNIREC_CONTINUOUS_CROP_END request_id=page_000002_crop_0008 slot=2 admission=22 completion=23 tokens=20
+UNIREC_CONTINUOUS_CROP_END request_id=page_000003_crop_0001 slot=2 admission=27 completion=24 tokens=4
+UNIREC_CONTINUOUS_CROP_END request_id=page_000003_crop_0000 slot=1 admission=26 completion=25 tokens=18
+UNIREC_CONTINUOUS_CROP_END request_id=page_000003_crop_0003 slot=1 admission=29 completion=26 tokens=4
+UNIREC_CONTINUOUS_CROP_END request_id=page_000003_crop_0004 slot=1 admission=30 completion=27 tokens=5
+OPENDOC_CONTINUOUS_PAGE_READY index=5/32 image=PPT_11.2013EvaluatingTraineeteacherproficiency_page_010.png crops=6
+UNIREC_CONTINUOUS_CROP_END request_id=page_000004_crop_0000 slot=1 admission=31 completion=28 tokens=8
+UNIREC_CONTINUOUS_CROP_END request_id=page_000002_crop_0011 slot=0 admission=25 completion=29 tokens=37
+UNIREC_CONTINUOUS_CROP_END request_id=page_000003_crop_0002 slot=2 admission=28 completion=30 tokens=35
+UNIREC_CONTINUOUS_CROP_END request_id=page_000002_crop_0010 slot=3 admission=24 completion=31 tokens=54
+OPENDOC_BATCHED_PAGE_END index=3/32 image=PPT_1001115_eng_page_011.png crops=12 wall_s=5.103
+OPENDOC_BATCHED_PAGE_END index=4/32 image=PPT_1001115_eng_page_015.png crops=5 wall_s=2.537
+UNIREC_CONTINUOUS_CROP_END request_id=page_000004_crop_0003 slot=2 admission=34 completion=32 tokens=14
+UNIREC_CONTINUOUS_CROP_END request_id=page_000004_crop_0004 slot=3 admission=35 completion=33 tokens=14
+OPENDOC_CONTINUOUS_PAGE_READY index=6/32 image=PPT_11.2013EvaluatingTraineeteacherproficiency_page_029.png crops=4
+UNIREC_CONTINUOUS_CROP_END request_id=page_000005_crop_0000 slot=3 admission=37 completion=34 tokens=4
+UNIREC_CONTINUOUS_CROP_END request_id=page_000004_crop_0001 slot=1 admission=32 completion=35 tokens=38
+UNIREC_CONTINUOUS_CROP_END request_id=page_000005_crop_0001 slot=3 admission=38 completion=36 tokens=11
+UNIREC_CONTINUOUS_CROP_END request_id=page_000004_crop_0002 slot=0 admission=33 completion=37 tokens=50
+OPENDOC_CONTINUOUS_PAGE_READY index=7/32 image=PPT_13 fallacies LALT2012_page_001.png crops=5
+UNIREC_CONTINUOUS_CROP_END request_id=page_000006_crop_0000 slot=0 admission=41 completion=38 tokens=18
+UNIREC_CONTINUOUS_CROP_END request_id=page_000005_crop_0003 slot=3 admission=40 completion=39 tokens=35
+UNIREC_CONTINUOUS_CROP_END request_id=page_000004_crop_0005 slot=2 admission=36 completion=40 tokens=50
+OPENDOC_BATCHED_PAGE_END index=5/32 image=PPT_11.2013EvaluatingTraineeteacherproficiency_page_010.png crops=6 wall_s=3.380
+UNIREC_CONTINUOUS_CROP_END request_id=page_000006_crop_0003 slot=2 admission=44 completion=41 tokens=6
+UNIREC_CONTINUOUS_CROP_END request_id=page_000006_crop_0001 slot=0 admission=42 completion=42 tokens=20
+OPENDOC_CONTINUOUS_PAGE_READY index=8/32 image=PPT_13 fallacies LALT2012_page_009.png crops=5
+UNIREC_CONTINUOUS_CROP_END request_id=page_000006_crop_0004 slot=2 admission=45 completion=43 tokens=12
+UNIREC_CONTINUOUS_CROP_END request_id=page_000005_crop_0002 slot=1 admission=39 completion=44 tokens=61
+OPENDOC_BATCHED_PAGE_END index=6/32 image=PPT_11.2013EvaluatingTraineeteacherproficiency_page_029.png crops=4 wall_s=3.686
+UNIREC_CONTINUOUS_CROP_END request_id=page_000007_crop_0001 slot=2 admission=47 completion=45 tokens=5
+UNIREC_CONTINUOUS_CROP_END request_id=page_000006_crop_0002 slot=3 admission=43 completion=46 tokens=30
+OPENDOC_BATCHED_PAGE_END index=7/32 image=PPT_13 fallacies LALT2012_page_001.png crops=5 wall_s=3.130
+UNIREC_CONTINUOUS_CROP_END request_id=page_000007_crop_0000 slot=0 admission=46 completion=47 tokens=22
+OPENDOC_CONTINUOUS_PAGE_READY index=9/32 image=PPT_13 fallacies LALT2012_page_010.png crops=9
+UNIREC_CONTINUOUS_CROP_END request_id=page_000007_crop_0003 slot=2 admission=49 completion=48 tokens=15
+UNIREC_CONTINUOUS_CROP_END request_id=page_000008_crop_0001 slot=2 admission=52 completion=49 tokens=6
+UNIREC_CONTINUOUS_CROP_END request_id=page_000007_crop_0002 slot=1 admission=48 completion=50 tokens=21
+UNIREC_CONTINUOUS_CROP_END request_id=page_000008_crop_0000 slot=0 admission=51 completion=51 tokens=22
+UNIREC_CONTINUOUS_CROP_END request_id=page_000008_crop_0002 slot=2 admission=53 completion=52 tokens=78
+UNIREC_CONTINUOUS_CROP_END request_id=page_000008_crop_0003 slot=1 admission=54 completion=53 tokens=135
+UNIREC_CONTINUOUS_CROP_END request_id=page_000008_crop_0005 slot=2 admission=56 completion=54 tokens=60
+UNIREC_CONTINUOUS_CROP_END request_id=page_000008_crop_0004 slot=0 admission=55 completion=55 tokens=123
+UNIREC_CONTINUOUS_CROP_END request_id=page_000007_crop_0004 slot=3 admission=50 completion=56 tokens=163
+OPENDOC_BATCHED_PAGE_END index=8/32 image=PPT_13 fallacies LALT2012_page_009.png crops=5 wall_s=3.893
+OPENDOC_CONTINUOUS_PAGE_READY index=10/32 image=PPT_1637904769_page_001.png crops=2
+UNIREC_CONTINUOUS_CROP_END request_id=page_000009_crop_0000 slot=3 admission=60 completion=57 tokens=30
+UNIREC_CONTINUOUS_CROP_END request_id=page_000008_crop_0006 slot=1 admission=57 completion=58 tokens=61
+OPENDOC_CONTINUOUS_PAGE_READY index=11/32 image=PPT_1637904769_page_002.png crops=5
+UNIREC_CONTINUOUS_CROP_END request_id=page_000009_crop_0001 slot=3 admission=61 completion=59 tokens=35
+UNIREC_CONTINUOUS_CROP_END request_id=page_000010_crop_0000 slot=1 admission=62 completion=60 tokens=22
+UNIREC_CONTINUOUS_CROP_END request_id=page_000010_crop_0001 slot=3 admission=63 completion=61 tokens=9
+UNIREC_CONTINUOUS_CROP_END request_id=page_000008_crop_0008 slot=0 admission=59 completion=62 tokens=89
+UNIREC_CONTINUOUS_CROP_END request_id=page_000010_crop_0002 slot=1 admission=64 completion=63 tokens=17
+OPENDOC_CONTINUOUS_PAGE_READY index=12/32 image=PPT_1637904769_page_008.png crops=7
+UNIREC_CONTINUOUS_CROP_END request_id=page_000010_crop_0003 slot=3 admission=65 completion=64 tokens=15
+UNIREC_CONTINUOUS_CROP_END request_id=page_000010_crop_0004 slot=0 admission=66 completion=65 tokens=17
+UNIREC_CONTINUOUS_CROP_END request_id=page_000011_crop_0001 slot=3 admission=68 completion=66 tokens=9
+UNIREC_CONTINUOUS_CROP_END request_id=page_000008_crop_0007 slot=2 admission=58 completion=67 tokens=112
+OPENDOC_BATCHED_PAGE_END index=9/32 image=PPT_13 fallacies LALT2012_page_010.png crops=9 wall_s=5.891
+OPENDOC_BATCHED_PAGE_END index=10/32 image=PPT_1637904769_page_001.png crops=2 wall_s=3.673
+OPENDOC_BATCHED_PAGE_END index=11/32 image=PPT_1637904769_page_002.png crops=5 wall_s=2.340
+UNIREC_CONTINUOUS_CROP_END request_id=page_000011_crop_0000 slot=1 admission=67 completion=68 tokens=21
+UNIREC_CONTINUOUS_CROP_END request_id=page_000011_crop_0003 slot=3 admission=70 completion=69 tokens=10
+UNIREC_CONTINUOUS_CROP_END request_id=page_000011_crop_0002 slot=0 admission=69 completion=70 tokens=13
+OPENDOC_CONTINUOUS_PAGE_READY index=13/32 image=PPT_1637904769_page_017.png crops=5
+UNIREC_CONTINUOUS_CROP_END request_id=page_000011_crop_0004 slot=2 admission=71 completion=71 tokens=9
+UNIREC_CONTINUOUS_CROP_END request_id=page_000012_crop_0000 slot=0 admission=74 completion=72 tokens=5
+UNIREC_CONTINUOUS_CROP_END request_id=page_000011_crop_0005 slot=1 admission=72 completion=73 tokens=8
+UNIREC_CONTINUOUS_CROP_END request_id=page_000011_crop_0006 slot=3 admission=73 completion=74 tokens=8
+OPENDOC_BATCHED_PAGE_END index=12/32 image=PPT_1637904769_page_008.png crops=7 wall_s=2.467
+UNIREC_CONTINUOUS_CROP_END request_id=page_000012_crop_0001 slot=2 admission=75 completion=75 tokens=13
+OPENDOC_CONTINUOUS_PAGE_READY index=14/32 image=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_012.png crops=3
+UNIREC_CONTINUOUS_CROP_END request_id=page_000013_crop_0000 slot=2 admission=79 completion=76 tokens=5
+UNIREC_CONTINUOUS_CROP_END request_id=page_000013_crop_0001 slot=2 admission=80 completion=77 tokens=29
+UNIREC_CONTINUOUS_CROP_END request_id=page_000012_crop_0004 slot=3 admission=78 completion=78 tokens=76
+OPENDOC_CONTINUOUS_PAGE_READY index=15/32 image=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_014.png crops=6
+UNIREC_CONTINUOUS_CROP_END request_id=page_000014_crop_0000 slot=3 admission=82 completion=79 tokens=5
+UNIREC_CONTINUOUS_CROP_END request_id=page_000014_crop_0001 slot=3 admission=83 completion=80 tokens=13
+UNIREC_CONTINUOUS_CROP_END request_id=page_000012_crop_0003 slot=1 admission=77 completion=81 tokens=109
+UNIREC_CONTINUOUS_CROP_END request_id=page_000012_crop_0002 slot=0 admission=76 completion=82 tokens=123
+OPENDOC_BATCHED_PAGE_END index=13/32 image=PPT_1637904769_page_017.png crops=5 wall_s=5.572
+UNIREC_CONTINUOUS_CROP_END request_id=page_000014_crop_0003 slot=1 admission=85 completion=83 tokens=34
+UNIREC_CONTINUOUS_CROP_END request_id=page_000014_crop_0002 slot=3 admission=84 completion=84 tokens=54
+OPENDOC_CONTINUOUS_PAGE_READY index=16/32 image=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_017.png crops=3
+UNIREC_CONTINUOUS_CROP_END request_id=page_000015_crop_0000 slot=3 admission=88 completion=85 tokens=5
+UNIREC_CONTINUOUS_CROP_END request_id=page_000014_crop_0005 slot=1 admission=87 completion=86 tokens=12
+UNIREC_CONTINUOUS_CROP_END request_id=page_000013_crop_0002 slot=2 admission=81 completion=87 tokens=116
+OPENDOC_BATCHED_PAGE_END index=14/32 image=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_012.png crops=3 wall_s=4.929
+OPENDOC_CONTINUOUS_PAGE_READY index=17/32 image=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_021.png crops=4
+UNIREC_CONTINUOUS_CROP_END request_id=page_000015_crop_0001 slot=3 admission=89 completion=88 tokens=9
+UNIREC_CONTINUOUS_CROP_END request_id=page_000016_crop_0000 slot=2 admission=91 completion=89 tokens=5
+UNIREC_CONTINUOUS_CROP_END request_id=page_000016_crop_0001 slot=3 admission=92 completion=90 tokens=9
+UNIREC_CONTINUOUS_CROP_END request_id=page_000016_crop_0002 slot=2 admission=93 completion=91 tokens=38
+OPENDOC_CONTINUOUS_PAGE_READY index=18/32 image=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_006.png crops=3
+UNIREC_CONTINUOUS_CROP_END request_id=page_000017_crop_0000 slot=2 admission=95 completion=92 tokens=7
+UNIREC_CONTINUOUS_CROP_END request_id=page_000016_crop_0003 slot=3 admission=94 completion=93 tokens=56
+UNIREC_CONTINUOUS_CROP_END request_id=page_000017_crop_0001 slot=2 admission=96 completion=94 tokens=20
+OPENDOC_CONTINUOUS_PAGE_READY index=19/32 image=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_010.png crops=4
+UNIREC_CONTINUOUS_CROP_END request_id=page_000018_crop_0000 slot=2 admission=98 completion=95 tokens=9
+UNIREC_CONTINUOUS_CROP_END request_id=page_000018_crop_0001 slot=2 admission=99 completion=96 tokens=9
+UNIREC_CONTINUOUS_CROP_END request_id=page_000017_crop_0002 slot=3 admission=97 completion=97 tokens=23
+UNIREC_CONTINUOUS_CROP_END request_id=page_000015_crop_0002 slot=1 admission=90 completion=98 tokens=97
+OPENDOC_CONTINUOUS_PAGE_READY index=20/32 image=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_013.png crops=7
+UNIREC_CONTINUOUS_CROP_END request_id=page_000014_crop_0004 slot=0 admission=86 completion=99 tokens=135
+OPENDOC_BATCHED_PAGE_END index=15/32 image=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_014.png crops=6 wall_s=6.256
+OPENDOC_BATCHED_PAGE_END index=16/32 image=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_017.png crops=3 wall_s=4.118
+OPENDOC_BATCHED_PAGE_END index=17/32 image=PPT_8076_MEYER_Chapter_2_-_Language_Change_page_021.png crops=4 wall_s=3.365
+OPENDOC_BATCHED_PAGE_END index=18/32 image=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_006.png crops=3 wall_s=2.817
+UNIREC_CONTINUOUS_CROP_END request_id=page_000019_crop_0000 slot=1 admission=102 completion=100 tokens=9
+UNIREC_CONTINUOUS_CROP_END request_id=page_000018_crop_0003 slot=3 admission=101 completion=101 tokens=23
+UNIREC_CONTINUOUS_CROP_END request_id=page_000019_crop_0002 slot=1 admission=104 completion=102 tokens=10
+UNIREC_CONTINUOUS_CROP_END request_id=page_000019_crop_0001 slot=0 admission=103 completion=103 tokens=20
+UNIREC_CONTINUOUS_CROP_END request_id=page_000019_crop_0004 slot=1 admission=106 completion=104 tokens=12
+UNIREC_CONTINUOUS_CROP_END request_id=page_000019_crop_0005 slot=0 admission=107 completion=105 tokens=8
+OPENDOC_CONTINUOUS_PAGE_READY index=21/32 image=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_024.png crops=5
+UNIREC_CONTINUOUS_CROP_END request_id=page_000019_crop_0003 slot=3 admission=105 completion=106 tokens=19
+UNIREC_CONTINUOUS_CROP_END request_id=page_000020_crop_0000 slot=0 admission=109 completion=107 tokens=9
+UNIREC_CONTINUOUS_CROP_END request_id=page_000019_crop_0006 slot=1 admission=108 completion=108 tokens=14
+UNIREC_CONTINUOUS_CROP_END request_id=page_000020_crop_0002 slot=0 admission=111 completion=109 tokens=18
+UNIREC_CONTINUOUS_CROP_END request_id=page_000020_crop_0003 slot=1 admission=112 completion=110 tokens=28
+OPENDOC_CONTINUOUS_PAGE_READY index=22/32 image=PPT_BaharMartonosi_page_002.png crops=5
+UNIREC_CONTINUOUS_CROP_END request_id=page_000020_crop_0001 slot=3 admission=110 completion=111 tokens=44
+UNIREC_CONTINUOUS_CROP_END request_id=page_000021_crop_0000 slot=1 admission=114 completion=112 tokens=17
+UNIREC_CONTINUOUS_CROP_END request_id=page_000021_crop_0001 slot=3 admission=115 completion=113 tokens=10
+UNIREC_CONTINUOUS_CROP_END request_id=page_000020_crop_0004 slot=0 admission=113 completion=114 tokens=41
+UNIREC_CONTINUOUS_CROP_END request_id=page_000021_crop_0003 slot=3 admission=117 completion=115 tokens=27
+OPENDOC_CONTINUOUS_PAGE_READY index=23/32 image=PPT_BaharMartonosi_page_005.png crops=7
+UNIREC_CONTINUOUS_CROP_END request_id=page_000021_crop_0004 slot=0 admission=118 completion=116 tokens=27
+UNIREC_CONTINUOUS_CROP_END request_id=page_000021_crop_0002 slot=1 admission=116 completion=117 tokens=41
+UNIREC_CONTINUOUS_CROP_END request_id=page_000022_crop_0000 slot=3 admission=119 completion=118 tokens=19
+UNIREC_CONTINUOUS_CROP_END request_id=page_000022_crop_0001 slot=0 admission=120 completion=119 tokens=11
+UNIREC_CONTINUOUS_CROP_END request_id=page_000022_crop_0003 slot=3 admission=122 completion=120 tokens=11
+UNIREC_CONTINUOUS_CROP_END request_id=page_000022_crop_0004 slot=0 admission=123 completion=121 tokens=9
+UNIREC_CONTINUOUS_CROP_END request_id=page_000022_crop_0002 slot=1 admission=121 completion=122 tokens=19
+OPENDOC_CONTINUOUS_PAGE_READY index=24/32 image=PPT_BaharMartonosi_page_006.png crops=13
+UNIREC_CONTINUOUS_CROP_END request_id=page_000022_crop_0006 slot=0 admission=125 completion=123 tokens=10
+UNIREC_CONTINUOUS_CROP_END request_id=page_000022_crop_0005 slot=3 admission=124 completion=124 tokens=17
+UNIREC_CONTINUOUS_CROP_END request_id=page_000023_crop_0000 slot=1 admission=126 completion=125 tokens=19
+UNIREC_CONTINUOUS_CROP_END request_id=page_000023_crop_0002 slot=3 admission=128 completion=126 tokens=6
+UNIREC_CONTINUOUS_CROP_END request_id=page_000023_crop_0001 slot=0 admission=127 completion=127 tokens=17
+UNIREC_CONTINUOUS_CROP_END request_id=page_000023_crop_0004 slot=3 admission=130 completion=128 tokens=8
+UNIREC_CONTINUOUS_CROP_END request_id=page_000023_crop_0006 slot=3 admission=132 completion=129 tokens=5
+UNIREC_CONTINUOUS_CROP_END request_id=page_000023_crop_0005 slot=0 admission=131 completion=130 tokens=11
+UNIREC_CONTINUOUS_CROP_END request_id=page_000023_crop_0003 slot=1 admission=129 completion=131 tokens=25
+UNIREC_CONTINUOUS_CROP_END request_id=page_000023_crop_0008 slot=0 admission=134 completion=132 tokens=13
+UNIREC_CONTINUOUS_CROP_END request_id=page_000023_crop_0007 slot=3 admission=133 completion=133 tokens=18
+UNIREC_CONTINUOUS_CROP_END request_id=page_000023_crop_0010 slot=0 admission=136 completion=134 tokens=9
+UNIREC_CONTINUOUS_CROP_END request_id=page_000023_crop_0011 slot=3 admission=137 completion=135 tokens=11
+OPENDOC_CONTINUOUS_PAGE_READY index=25/32 image=PPT_BaharMartonosi_page_007.png crops=6
+UNIREC_CONTINUOUS_CROP_END request_id=page_000023_crop_0012 slot=0 admission=138 completion=136 tokens=8
+UNIREC_CONTINUOUS_CROP_END request_id=page_000023_crop_0009 slot=1 admission=135 completion=137 tokens=23
+UNIREC_CONTINUOUS_CROP_END request_id=page_000024_crop_0001 slot=0 admission=140 completion=138 tokens=12
+UNIREC_CONTINUOUS_CROP_END request_id=page_000024_crop_0000 slot=3 admission=139 completion=139 tokens=19
+UNIREC_CONTINUOUS_CROP_END request_id=page_000024_crop_0003 slot=0 admission=142 completion=140 tokens=11
+UNIREC_CONTINUOUS_CROP_END request_id=page_000024_crop_0004 slot=3 admission=143 completion=141 tokens=10
+OPENDOC_CONTINUOUS_PAGE_READY index=26/32 image=PPT_BaharMartonosi_page_008.png crops=8
+UNIREC_CONTINUOUS_CROP_END request_id=page_000025_crop_0000 slot=3 admission=145 completion=142 tokens=11
+UNIREC_CONTINUOUS_CROP_END request_id=page_000018_crop_0002 slot=2 admission=100 completion=143 tokens=255
+<table>
+<tr>
+<td></td>
+<td>Luminance</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>100</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>
+
+Luminance
+100
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+
+OPENDOC_BATCHED_PAGE_END index=19/32 image=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_010.png crops=4 wall_s=9.106
+OPENDOC_BATCHED_PAGE_END index=20/32 image=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_013.png crops=7 wall_s=7.785
+OPENDOC_BATCHED_PAGE_END index=21/32 image=PPT_B14_Claeys_Consistent Presentation of Images_v2_page_024.png crops=5 wall_s=6.578
+OPENDOC_BATCHED_PAGE_END index=22/32 image=PPT_BaharMartonosi_page_002.png crops=5 wall_s=5.751
+OPENDOC_BATCHED_PAGE_END index=23/32 image=PPT_BaharMartonosi_page_005.png crops=7 wall_s=4.838
+OPENDOC_BATCHED_PAGE_END index=24/32 image=PPT_BaharMartonosi_page_006.png crops=13 wall_s=3.707
+UNIREC_CONTINUOUS_CROP_END request_id=page_000024_crop_0002 slot=1 admission=141 completion=144 tokens=41
+UNIREC_CONTINUOUS_CROP_END request_id=page_000025_crop_0001 slot=3 admission=146 completion=145 tokens=17
+UNIREC_CONTINUOUS_CROP_END request_id=page_000025_crop_0003 slot=1 admission=148 completion=146 tokens=9
+UNIREC_CONTINUOUS_CROP_END request_id=page_000025_crop_0002 slot=2 admission=147 completion=147 tokens=18
+UNIREC_CONTINUOUS_CROP_END request_id=page_000025_crop_0004 slot=3 admission=149 completion=148 tokens=11
+UNIREC_CONTINUOUS_CROP_END request_id=page_000024_crop_0005 slot=0 admission=144 completion=149 tokens=48
+OPENDOC_BATCHED_PAGE_END index=25/32 image=PPT_BaharMartonosi_page_007.png crops=6 wall_s=2.982
+OPENDOC_CONTINUOUS_PAGE_READY index=27/32 image=PPT_BaharMartonosi_page_010.png crops=4
+UNIREC_CONTINUOUS_CROP_END request_id=page_000025_crop_0006 slot=2 admission=151 completion=150 tokens=15
+UNIREC_CONTINUOUS_CROP_END request_id=page_000025_crop_0005 slot=1 admission=150 completion=151 tokens=22
+UNIREC_CONTINUOUS_CROP_END request_id=page_000025_crop_0007 slot=3 admission=152 completion=152 tokens=22
+OPENDOC_BATCHED_PAGE_END index=26/32 image=PPT_BaharMartonosi_page_008.png crops=8 wall_s=3.467
+UNIREC_CONTINUOUS_CROP_END request_id=page_000026_crop_0002 slot=1 admission=155 completion=153 tokens=16
+OPENDOC_CONTINUOUS_PAGE_READY index=28/32 image=PPT_CalculusReview_page_002.png crops=7
+UNIREC_CONTINUOUS_CROP_END request_id=page_000027_crop_0000 slot=1 admission=157 completion=154 tokens=3
+UNIREC_CONTINUOUS_CROP_END request_id=page_000026_crop_0000 slot=0 admission=153 completion=155 tokens=23
+UNIREC_CONTINUOUS_CROP_END request_id=page_000026_crop_0001 slot=2 admission=154 completion=156 tokens=28
+UNIREC_CONTINUOUS_CROP_END request_id=page_000027_crop_0001 slot=1 admission=158 completion=157 tokens=11
+UNIREC_CONTINUOUS_CROP_END request_id=page_000027_crop_0002 slot=0 admission=159 completion=158 tokens=12
+UNIREC_CONTINUOUS_CROP_END request_id=page_000026_crop_0003 slot=3 admission=156 completion=159 tokens=35
+OPENDOC_BATCHED_PAGE_END index=27/32 image=PPT_BaharMartonosi_page_010.png crops=4 wall_s=3.937
+UNIREC_CONTINUOUS_CROP_END request_id=page_000027_crop_0005 slot=0 admission=162 completion=160 tokens=21
+OPENDOC_CONTINUOUS_PAGE_READY index=29/32 image=PPT_CalculusReview_page_004.png crops=9
+UNIREC_CONTINUOUS_CROP_END request_id=page_000027_crop_0004 slot=1 admission=161 completion=161 tokens=29
+UNIREC_CONTINUOUS_CROP_END request_id=page_000028_crop_0000 slot=0 admission=164 completion=162 tokens=8
+UNIREC_CONTINUOUS_CROP_END request_id=page_000027_crop_0003 slot=2 admission=160 completion=163 tokens=34
+UNIREC_CONTINUOUS_CROP_END request_id=page_000028_crop_0002 slot=0 admission=166 completion=164 tokens=12
+UNIREC_CONTINUOUS_CROP_END request_id=page_000028_crop_0001 slot=1 admission=165 completion=165 tokens=15
+UNIREC_CONTINUOUS_CROP_END request_id=page_000027_crop_0006 slot=3 admission=163 completion=166 tokens=39
+OPENDOC_BATCHED_PAGE_END index=28/32 image=PPT_CalculusReview_page_002.png crops=7 wall_s=3.391
+UNIREC_CONTINUOUS_CROP_END request_id=page_000028_crop_0004 slot=0 admission=168 completion=167 tokens=16
+UNIREC_CONTINUOUS_CROP_END request_id=page_000028_crop_0003 slot=2 admission=167 completion=168 tokens=28
+UNIREC_CONTINUOUS_CROP_END request_id=page_000028_crop_0008 slot=2 admission=172 completion=169 tokens=9
+OPENDOC_CONTINUOUS_PAGE_READY index=30/32 image=PPT_CalculusReview_page_009.png crops=4
+UNIREC_CONTINUOUS_CROP_END request_id=page_000029_crop_0000 slot=2 admission=173 completion=170 tokens=7
+UNIREC_CONTINUOUS_CROP_END request_id=page_000028_crop_0006 slot=3 admission=170 completion=171 tokens=32
+UNIREC_CONTINUOUS_CROP_END request_id=page_000028_crop_0005 slot=1 admission=169 completion=172 tokens=45
+UNIREC_CONTINUOUS_CROP_END request_id=page_000028_crop_0007 slot=0 admission=171 completion=173 tokens=41
+OPENDOC_BATCHED_PAGE_END index=29/32 image=PPT_CalculusReview_page_004.png crops=9 wall_s=3.092
+UNIREC_CONTINUOUS_CROP_END request_id=page_000029_crop_0002 slot=3 admission=175 completion=174 tokens=13
+OPENDOC_CONTINUOUS_PAGE_READY index=31/32 image=PPT_CalculusReview_page_014.png crops=5
+UNIREC_CONTINUOUS_CROP_END request_id=page_000030_crop_0000 slot=0 admission=177 completion=175 tokens=4
+UNIREC_CONTINUOUS_CROP_END request_id=page_000030_crop_0001 slot=3 admission=178 completion=176 tokens=11
+UNIREC_CONTINUOUS_CROP_END request_id=page_000029_crop_0003 slot=1 admission=176 completion=177 tokens=32
+UNIREC_CONTINUOUS_CROP_END request_id=page_000030_crop_0003 slot=3 admission=180 completion=178 tokens=18
+OPENDOC_CONTINUOUS_PAGE_READY index=32/32 image=PPT_CalculusReview_page_033.png crops=4
+UNIREC_CONTINUOUS_CROP_END request_id=page_000030_crop_0004 slot=1 admission=181 completion=179 tokens=8
+UNIREC_CONTINUOUS_CROP_END request_id=page_000030_crop_0002 slot=0 admission=179 completion=180 tokens=31
+UNIREC_CONTINUOUS_CROP_END request_id=page_000031_crop_0000 slot=3 admission=182 completion=181 tokens=7
+UNIREC_CONTINUOUS_CROP_END request_id=page_000031_crop_0002 slot=0 admission=184 completion=182 tokens=22
+UNIREC_CONTINUOUS_CROP_END request_id=page_000031_crop_0003 slot=3 admission=185 completion=183 tokens=25
+UNIREC_CONTINUOUS_CROP_END request_id=page_000031_crop_0001 slot=1 admission=183 completion=184 tokens=31
+UNIREC_CONTINUOUS_CROP_END request_id=page_000029_crop_0001 slot=2 admission=174 completion=185 tokens=95
+OPENDOC_BATCHED_PAGE_END index=30/32 image=PPT_CalculusReview_page_009.png crops=4 wall_s=2.940
+OPENDOC_BATCHED_PAGE_END index=31/32 image=PPT_CalculusReview_page_014.png crops=5 wall_s=1.831
+OPENDOC_BATCHED_PAGE_END index=32/32 image=PPT_CalculusReview_page_033.png crops=4 wall_s=1.005
+UNIREC_CONTINUOUS_END {"batch_size": 4, "submitted": 186, "completed": 186, "decode_iterations": 1233, "raw_decode_token_slots": 4932, "effective_decode_tokens": 4886, "idle_decode_token_slots": 46, "decode_s": 10.83574052597396, "first_decode_step_s": 8.74762565200217, "steady_decode_s": 2.08811487397179, "raw_decode_tokens_per_s": 455.1604007292055, "effective_decode_tokens_per_s": 450.9151901790142, "steady_raw_decode_tokens_per_s": 2360.02341701943, "steady_effective_decode_tokens_per_s": 2337.9939776560177, "slot_refills": 182, "compile_wrap_s": 0.9925607789773494, "compile": {"compile_api": "torch_npu.dynamo.torchair.inference.cache_compile", "compile_api_import_path": "torch_npu.dynamo.torchair.inference.cache_compile", "backend": "torchair", "fullgraph": true, "dynamic": false, "torchair_ge_cache": true, "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/decode_selfkv256_cross1320_eager_b4", "static_self_kv_len": 256, "static_cross_kv_len": 1320, "self_attention_backend": "eager", "batch_size": 4}, "timing_detail": {"run_wall_s": 59.22676446009427, "source_pull_s": 44.221717519685626, "initial_cache_stack_s": 0.002285298891365528, "initial_state_build_s": 0.01675017410889268, "cache_refill_copy_enqueue_s": 0.25255394261330366, "cache_refill_row_bytes": 29054112, "cache_refill_total_bytes": 5287848384, "result_build_s": 0.04623364191502333, "completion_callback_s": 1.884980401955545, "decode_input_build_s": 0.5359493780415505, "pre_decode_sync_s": 0.11480914172716439, "decode_s": 10.83574052597396, "scheduler_bookkeeping_residual_s": 0.32318365620449185}}
+OPENDOC_BATCHED_RUN_END {"status": "ok", "openocr_root": "/workspace/repos/OpenOCR", "model_path": "/workspace/models/unirec-0.1b", "device": "npu:0", "dtype": "float16", "decode_mode": "compiled", "decode_scheduling": "continuous", "decode_batch_size": 4, "max_length": 256, "layout_backend": "transformers_npu", "layout_dtype": "float32", "setup_s": 21.828577731968835, "pipeline_wall_s": 59.228302147006616, "pages_per_s": 0.5402822441300941, "page_count": 32, "crop_count": 186, "cohort_count": 0, "layout_s": 10.651048861676827, "page_prepare_total_s": 16.63140508159995, "page_frontend_other_s": 5.980356219923124, "prepare_s": 5.4139229787979275, "prefill_s": 21.529158502118662, "prefill_device_stage_s": {"detail_vision_patch_stem_2d": 0.2031249399036169, "detail_vision_pointwise_linear": 1.4226674586101444, "detail_vision_spatial_depthwise_focal": 3.317966144628824, "detail_vision_pointwise_conv_1x1": 0.7052249385081232, "detail_vision_flat_mlp": 1.4552914390433573, "detail_vision_downsample_2d": 0.3144360387399795, "detail_vision_flat_projection": 0.04751400022162125, "spatial_focalsvtr_encoder": 15.899212692260745, "encoder_attention_mask": 0.09338876046985392, "decoder_input_and_masks": 0.2131815803274512, "flat_cross_kv_projection": 0.37925867840647687, "flat_decoder_prefill": 2.9717830289006217, "static_cache_build_and_padding": 0.4455718587636946, "prefill_lm_head": 0.06584652005881073, "first_token_argmax": 0.08407097962312397, "first_token_assembly": 0.05331721984781324}, "decode_s": 10.83574052597396, "output_assembly_s": 0.024663060205057263, "output_write_s": 1.8001904252450913, "raw_decode_token_slots": 4932, "effective_decode_tokens": 4886, "padding_decode_token_slots": 46, "idle_decode_token_slots": 46, "raw_decode_tokens_per_s": 455.1604007292055, "effective_decode_tokens_per_s": 450.9151901790142, "cohorts": [], "continuous_decode": {"batch_size": 4, "submitted": 186, "completed": 186, "decode_iterations": 1233, "raw_decode_token_slots": 4932, "effective_decode_tokens": 4886, "idle_decode_token_slots": 46, "decode_s": 10.83574052597396, "first_decode_step_s": 8.74762565200217, "steady_decode_s": 2.08811487397179, "raw_decode_tokens_per_s": 455.1604007292055, "effective_decode_tokens_per_s": 450.9151901790142, "steady_raw_decode_tokens_per_s": 2360.02341701943, "steady_effective_decode_tokens_per_s": 2337.9939776560177, "slot_refills": 182, "compile_wrap_s": 0.9925607789773494, "compile": {"compile_api": "torch_npu.dynamo.torchair.inference.cache_compile", "compile_api_import_path": "torch_npu.dynamo.torchair.inference.cache_compile", "backend": "torchair", "fullgraph": true, "dynamic": false, "torchair_ge_cache": true, "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/decode_selfkv256_cross1320_eager_b4", "static_self_kv_len": 256, "static_cross_kv_len": 1320, "self_attention_backend": "eager", "batch_size": 4}, "timing_detail": {"run_wall_s": 59.22676446009427, "source_pull_s": 44.221717519685626, "initial_cache_stack_s": 0.002285298891365528, "initial_state_build_s": 0.01675017410889268, "cache_refill_copy_enqueue_s": 0.25255394261330366, "cache_refill_row_bytes": 29054112, "cache_refill_total_bytes": 5287848384, "result_build_s": 0.04623364191502333, "completion_callback_s": 1.884980401955545, "decode_input_build_s": 0.5359493780415505, "pre_decode_sync_s": 0.11480914172716439, "decode_s": 10.83574052597396, "scheduler_bookkeeping_residual_s": 0.32318365620449185}}, "pages": [{"page_index": 0, "image": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_003.png", "crop_count": 6, "layout_s": 2.2991970269940794, "wall_s": 15.129877272993326}, {"page_index": 1, "image": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_005.png", "crop_count": 8, "layout_s": 0.2862219449598342, "wall_s": 2.9253390091471374}, {"page_index": 2, "image": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_011.png", "crop_count": 12, "layout_s": 0.3383352200035006, "wall_s": 5.102576770819724}, {"page_index": 3, "image": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_015.png", "crop_count": 5, "layout_s": 0.21734948409721255, "wall_s": 2.5372418421320617}, {"page_index": 4, "image": "/workspace/datasets/OmniDocBench/images/PPT_11.2013EvaluatingTraineeteacherproficiency_page_010.png", "crop_count": 6, "layout_s": 0.32627017493359745, "wall_s": 3.380257169948891}, {"page_index": 5, "image": "/workspace/datasets/OmniDocBench/images/PPT_11.2013EvaluatingTraineeteacherproficiency_page_029.png", "crop_count": 4, "layout_s": 0.23956167185679078, "wall_s": 3.686464663827792}, {"page_index": 6, "image": "/workspace/datasets/OmniDocBench/images/PPT_13 fallacies LALT2012_page_001.png", "crop_count": 5, "layout_s": 0.21809204597957432, "wall_s": 3.129791142884642}, {"page_index": 7, "image": "/workspace/datasets/OmniDocBench/images/PPT_13 fallacies LALT2012_page_009.png", "crop_count": 5, "layout_s": 0.347549936035648, "wall_s": 3.893190196948126}, {"page_index": 8, "image": "/workspace/datasets/OmniDocBench/images/PPT_13 fallacies LALT2012_page_010.png", "crop_count": 9, "layout_s": 0.26946839899756014, "wall_s": 5.890950140776113}, {"page_index": 9, "image": "/workspace/datasets/OmniDocBench/images/PPT_1637904769_page_001.png", "crop_count": 2, "layout_s": 0.42308115982450545, "wall_s": 3.673148588044569}, {"page_index": 10, "image": "/workspace/datasets/OmniDocBench/images/PPT_1637904769_page_002.png", "crop_count": 5, "layout_s": 0.42305519990623, "wall_s": 2.3402006030082703}, {"page_index": 11, "image": "/workspace/datasets/OmniDocBench/images/PPT_1637904769_page_008.png", "crop_count": 7, "layout_s": 0.16996199893765152, "wall_s": 2.466588680865243}, {"page_index": 12, "image": "/workspace/datasets/OmniDocBench/images/PPT_1637904769_page_017.png", "crop_count": 5, "layout_s": 0.1658717489335686, "wall_s": 5.5722416951321065}, {"page_index": 13, "image": "/workspace/datasets/OmniDocBench/images/PPT_8076_MEYER_Chapter_2_-_Language_Change_page_012.png", "crop_count": 3, "layout_s": 0.5909396540373564, "wall_s": 4.929416408063844}, {"page_index": 14, "image": "/workspace/datasets/OmniDocBench/images/PPT_8076_MEYER_Chapter_2_-_Language_Change_page_014.png", "crop_count": 6, "layout_s": 0.381996831856668, "wall_s": 6.255617378978059}, {"page_index": 15, "image": "/workspace/datasets/OmniDocBench/images/PPT_8076_MEYER_Chapter_2_-_Language_Change_page_017.png", "crop_count": 3, "layout_s": 0.2607458720449358, "wall_s": 4.117978317895904}, {"page_index": 16, "image": "/workspace/datasets/OmniDocBench/images/PPT_8076_MEYER_Chapter_2_-_Language_Change_page_021.png", "crop_count": 4, "layout_s": 0.15518545708619058, "wall_s": 3.3653799968305975}, {"page_index": 17, "image": "/workspace/datasets/OmniDocBench/images/PPT_B14_Claeys_Consistent Presentation of Images_v2_page_006.png", "crop_count": 3, "layout_s": 0.21495924307964742, "wall_s": 2.8169451758731157}, {"page_index": 18, "image": "/workspace/datasets/OmniDocBench/images/PPT_B14_Claeys_Consistent Presentation of Images_v2_page_010.png", "crop_count": 4, "layout_s": 0.21803126600570977, "wall_s": 9.106274737045169}, {"page_index": 19, "image": "/workspace/datasets/OmniDocBench/images/PPT_B14_Claeys_Consistent Presentation of Images_v2_page_013.png", "crop_count": 7, "layout_s": 0.24693749705329537, "wall_s": 7.7852386948652565}, {"page_index": 20, "image": "/workspace/datasets/OmniDocBench/images/PPT_B14_Claeys_Consistent Presentation of Images_v2_page_024.png", "crop_count": 5, "layout_s": 0.1573891439475119, "wall_s": 6.5778890759684145}, {"page_index": 21, "image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_002.png", "crop_count": 5, "layout_s": 0.22074946202337742, "wall_s": 5.750939062098041}, {"page_index": 22, "image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_005.png", "crop_count": 7, "layout_s": 0.2778201219625771, "wall_s": 4.838242759928107}, {"page_index": 23, "image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_006.png", "crop_count": 13, "layout_s": 0.2202875940129161, "wall_s": 3.7068771908525378}, {"page_index": 24, "image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_007.png", "crop_count": 6, "layout_s": 0.2612011900637299, "wall_s": 2.9817108660936356}, {"page_index": 25, "image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_008.png", "crop_count": 8, "layout_s": 0.15388331608846784, "wall_s": 3.467162736924365}, {"page_index": 26, "image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_010.png", "crop_count": 4, "layout_s": 0.3185136129613966, "wall_s": 3.9366661962121725}, {"page_index": 27, "image": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_002.png", "crop_count": 7, "layout_s": 0.38908993313089013, "wall_s": 3.390523114008829}, {"page_index": 28, "image": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_004.png", "crop_count": 9, "layout_s": 0.19528167881071568, "wall_s": 3.0923889169935137}, {"page_index": 29, "image": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_009.png", "crop_count": 4, "layout_s": 0.25438476307317615, "wall_s": 2.9398091440089047}, {"page_index": 30, "image": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_014.png", "crop_count": 5, "layout_s": 0.1994728511199355, "wall_s": 1.8306873941328377}, {"page_index": 31, "image": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_033.png", "crop_count": 4, "layout_s": 0.21016336185857654, "wall_s": 1.005136702908203}], "trace_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/opendoc_continuous_b4_32p_prefill_detail_e03ddef/output/recognition_trace.jsonl"}

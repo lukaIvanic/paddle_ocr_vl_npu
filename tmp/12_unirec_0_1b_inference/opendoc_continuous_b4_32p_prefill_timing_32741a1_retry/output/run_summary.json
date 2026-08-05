@@ -1,0 +1,318 @@
+{
+  "status": "ok",
+  "openocr_root": "/workspace/repos/OpenOCR",
+  "model_path": "/workspace/models/unirec-0.1b",
+  "device": "npu:0",
+  "dtype": "float16",
+  "decode_mode": "compiled",
+  "decode_scheduling": "continuous",
+  "decode_batch_size": 4,
+  "max_length": 256,
+  "layout_backend": "transformers_npu",
+  "layout_dtype": "float32",
+  "setup_s": 23.189752106089145,
+  "pipeline_wall_s": 52.48241016501561,
+  "pages_per_s": 0.6097280955540217,
+  "page_count": 32,
+  "crop_count": 186,
+  "cohort_count": 0,
+  "layout_s": 11.083140468923375,
+  "page_prepare_total_s": 17.61037845327519,
+  "page_frontend_other_s": 6.527237984351814,
+  "prepare_s": 5.516842424403876,
+  "prefill_s": 13.868584193987772,
+  "prefill_device_stage_s": {
+    "spatial_focalsvtr_encoder": 8.320340824127195,
+    "encoder_attention_mask": 0.09222432088851935,
+    "decoder_input_and_masks": 0.32237042094767104,
+    "flat_cross_kv_projection": 0.4252495196908713,
+    "flat_decoder_prefill": 3.074318767666817,
+    "static_cache_build_and_padding": 0.4510020406842231,
+    "prefill_lm_head": 0.08582251883298161,
+    "first_token_argmax": 0.04860262008011342,
+    "first_token_assembly": 0.021168119986075925
+  },
+  "decode_s": 11.040370440809056,
+  "output_assembly_s": 0.03907530731521547,
+  "output_write_s": 1.8469502793159336,
+  "raw_decode_token_slots": 4932,
+  "effective_decode_tokens": 4886,
+  "padding_decode_token_slots": 46,
+  "idle_decode_token_slots": 46,
+  "raw_decode_tokens_per_s": 446.72414086483997,
+  "effective_decode_tokens_per_s": 442.55761400357017,
+  "cohorts": [],
+  "continuous_decode": {
+    "batch_size": 4,
+    "submitted": 186,
+    "completed": 186,
+    "decode_iterations": 1233,
+    "raw_decode_token_slots": 4932,
+    "effective_decode_tokens": 4886,
+    "idle_decode_token_slots": 46,
+    "decode_s": 11.040370440809056,
+    "first_decode_step_s": 8.694024580996484,
+    "steady_decode_s": 2.3463458598125726,
+    "raw_decode_tokens_per_s": 446.72414086483997,
+    "effective_decode_tokens_per_s": 442.55761400357017,
+    "steady_raw_decode_tokens_per_s": 2100.2871249312116,
+    "steady_effective_decode_tokens_per_s": 2080.682172060506,
+    "slot_refills": 182,
+    "compile_wrap_s": 0.7052047150209546,
+    "compile": {
+      "compile_api": "torch_npu.dynamo.torchair.inference.cache_compile",
+      "compile_api_import_path": "torch_npu.dynamo.torchair.inference.cache_compile",
+      "backend": "torchair",
+      "fullgraph": true,
+      "dynamic": false,
+      "torchair_ge_cache": true,
+      "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/decode_selfkv256_cross1320_eager_b4",
+      "static_self_kv_len": 256,
+      "static_cross_kv_len": 1320,
+      "self_attention_backend": "eager",
+      "batch_size": 4
+    },
+    "timing_detail": {
+      "run_wall_s": 52.48117356398143,
+      "source_pull_s": 37.50878892908804,
+      "initial_cache_stack_s": 0.006872206926345825,
+      "initial_state_build_s": 0.011268661823123693,
+      "cache_refill_copy_enqueue_s": 0.2295995003078133,
+      "cache_refill_row_bytes": 29054112,
+      "cache_refill_total_bytes": 5287848384,
+      "result_build_s": 0.06605603289790452,
+      "completion_callback_s": 1.9797887937165797,
+      "decode_input_build_s": 0.593481891322881,
+      "pre_decode_sync_s": 0.09976395801641047,
+      "decode_s": 11.040370440809056,
+      "scheduler_bookkeeping_residual_s": 0.23997843405231833
+    }
+  },
+  "pages": [
+    {
+      "page_index": 0,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_003.png",
+      "crop_count": 6,
+      "layout_s": 2.767730330117047,
+      "wall_s": 14.827381720999256
+    },
+    {
+      "page_index": 1,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_005.png",
+      "crop_count": 8,
+      "layout_s": 0.2598713568877429,
+      "wall_s": 2.268660506932065
+    },
+    {
+      "page_index": 2,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_011.png",
+      "crop_count": 12,
+      "layout_s": 0.1701347620692104,
+      "wall_s": 2.9223885780666023
+    },
+    {
+      "page_index": 3,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_015.png",
+      "crop_count": 5,
+      "layout_s": 0.17610162287019193,
+      "wall_s": 1.4124228348955512
+    },
+    {
+      "page_index": 4,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_11.2013EvaluatingTraineeteacherproficiency_page_010.png",
+      "crop_count": 6,
+      "layout_s": 0.14612688310444355,
+      "wall_s": 1.7932161970529705
+    },
+    {
+      "page_index": 5,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_11.2013EvaluatingTraineeteacherproficiency_page_029.png",
+      "crop_count": 4,
+      "layout_s": 0.12621906492859125,
+      "wall_s": 1.7997975191101432
+    },
+    {
+      "page_index": 6,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_13 fallacies LALT2012_page_001.png",
+      "crop_count": 5,
+      "layout_s": 0.1581772689241916,
+      "wall_s": 1.5658987739589065
+    },
+    {
+      "page_index": 7,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_13 fallacies LALT2012_page_009.png",
+      "crop_count": 5,
+      "layout_s": 0.19525889889337122,
+      "wall_s": 2.7046689079143107
+    },
+    {
+      "page_index": 8,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_13 fallacies LALT2012_page_010.png",
+      "crop_count": 9,
+      "layout_s": 0.2557173459790647,
+      "wall_s": 5.88174525485374
+    },
+    {
+      "page_index": 9,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_1637904769_page_001.png",
+      "crop_count": 2,
+      "layout_s": 0.19146055402234197,
+      "wall_s": 4.256718876073137
+    },
+    {
+      "page_index": 10,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_1637904769_page_002.png",
+      "crop_count": 5,
+      "layout_s": 0.17242007004097104,
+      "wall_s": 3.8128858329728246
+    },
+    {
+      "page_index": 11,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_1637904769_page_008.png",
+      "crop_count": 7,
+      "layout_s": 0.5077355890534818,
+      "wall_s": 3.4283442969899625
+    },
+    {
+      "page_index": 12,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_1637904769_page_017.png",
+      "crop_count": 5,
+      "layout_s": 0.3628598768264055,
+      "wall_s": 4.4042354330886155
+    },
+    {
+      "page_index": 13,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_8076_MEYER_Chapter_2_-_Language_Change_page_012.png",
+      "crop_count": 3,
+      "layout_s": 0.2671913211233914,
+      "wall_s": 4.75685022608377
+    },
+    {
+      "page_index": 14,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_8076_MEYER_Chapter_2_-_Language_Change_page_014.png",
+      "crop_count": 6,
+      "layout_s": 0.4188396790996194,
+      "wall_s": 7.936786570819095
+    },
+    {
+      "page_index": 15,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_8076_MEYER_Chapter_2_-_Language_Change_page_017.png",
+      "crop_count": 3,
+      "layout_s": 0.5142303998582065,
+      "wall_s": 5.6891433510463685
+    },
+    {
+      "page_index": 16,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_8076_MEYER_Chapter_2_-_Language_Change_page_021.png",
+      "crop_count": 4,
+      "layout_s": 0.3851775371003896,
+      "wall_s": 4.365622777026147
+    },
+    {
+      "page_index": 17,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_B14_Claeys_Consistent Presentation of Images_v2_page_006.png",
+      "crop_count": 3,
+      "layout_s": 0.24554342310875654,
+      "wall_s": 3.0898412140086293
+    },
+    {
+      "page_index": 18,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_B14_Claeys_Consistent Presentation of Images_v2_page_010.png",
+      "crop_count": 4,
+      "layout_s": 0.2782564000226557,
+      "wall_s": 8.536004905123264
+    },
+    {
+      "page_index": 19,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_B14_Claeys_Consistent Presentation of Images_v2_page_013.png",
+      "crop_count": 7,
+      "layout_s": 0.36015583109110594,
+      "wall_s": 7.363956845132634
+    },
+    {
+      "page_index": 20,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_B14_Claeys_Consistent Presentation of Images_v2_page_024.png",
+      "crop_count": 5,
+      "layout_s": 0.29399769683368504,
+      "wall_s": 5.905500437831506
+    },
+    {
+      "page_index": 21,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_002.png",
+      "crop_count": 5,
+      "layout_s": 0.2590314920525998,
+      "wall_s": 4.718886831076816
+    },
+    {
+      "page_index": 22,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_005.png",
+      "crop_count": 7,
+      "layout_s": 0.1833467660471797,
+      "wall_s": 3.6725416970439255
+    },
+    {
+      "page_index": 23,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_006.png",
+      "crop_count": 13,
+      "layout_s": 0.291089037200436,
+      "wall_s": 2.7950544331688434
+    },
+    {
+      "page_index": 24,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_007.png",
+      "crop_count": 6,
+      "layout_s": 0.15695811808109283,
+      "wall_s": 1.8700337430927902
+    },
+    {
+      "page_index": 25,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_008.png",
+      "crop_count": 8,
+      "layout_s": 0.14249777188524604,
+      "wall_s": 1.9461249259766191
+    },
+    {
+      "page_index": 26,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_010.png",
+      "crop_count": 4,
+      "layout_s": 0.132492481963709,
+      "wall_s": 2.8105850170832127
+    },
+    {
+      "page_index": 27,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_002.png",
+      "crop_count": 7,
+      "layout_s": 0.3308281619101763,
+      "wall_s": 2.9445274339523166
+    },
+    {
+      "page_index": 28,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_004.png",
+      "crop_count": 9,
+      "layout_s": 0.31585656898096204,
+      "wall_s": 2.2900937609374523
+    },
+    {
+      "page_index": 29,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_009.png",
+      "crop_count": 4,
+      "layout_s": 0.32064522895962,
+      "wall_s": 3.331181006040424
+    },
+    {
+      "page_index": 30,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_014.png",
+      "crop_count": 5,
+      "layout_s": 0.1991346050053835,
+      "wall_s": 2.429780396167189
+    },
+    {
+      "page_index": 31,
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_033.png",
+      "crop_count": 4,
+      "layout_s": 0.498054324882105,
+      "wall_s": 1.6567353068385273
+    }
+  ],
+  "trace_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/opendoc_continuous_b4_32p_prefill_timing_32741a1_retry/output/recognition_trace.jsonl"
+}
