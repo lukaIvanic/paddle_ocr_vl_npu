@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import queue
 import json
+import statistics
 import threading
 import time
 from collections import Counter, defaultdict, deque
@@ -130,6 +131,9 @@ class _UnifiedPageReadySource:
         self._mode_counts: Counter[str] = Counter()
         self._mode_wall_s: defaultdict[str, float] = defaultdict(float)
         self._device_stage_s: defaultdict[str, float] = defaultdict(float)
+        self._prefill_tokens: Counter[str] = Counter()
+        self._layout_timing_s: defaultdict[str, float] = defaultdict(float)
+        self._layout_page_total_samples_s: list[float] = []
         self._pages_completed = 0
 
         self._input_executor = ThreadPoolExecutor(
@@ -399,6 +403,23 @@ class _UnifiedPageReadySource:
         for state in finalized:
             for stage, seconds in state.device_stage_s.items():
                 self._device_stage_s[stage] += float(seconds)
+            self._prefill_tokens["crops"] += 1
+            self._prefill_tokens["useful_vision"] += int(
+                state.vision["real_vision_tokens"]
+            )
+            self._prefill_tokens["physical_vision"] += int(
+                state.vision["physical_vision_tokens"]
+            )
+            self._prefill_tokens["useful_text"] += int(
+                state.text_prefill["real_text_tokens"]
+            )
+            self._prefill_tokens["physical_text"] += int(
+                state.text_prefill["physical_text_tokens"]
+            )
+            self._prefill_tokens["input"] += int(state.input_tokens)
+            self._prefill_tokens["projected_image"] += int(
+                state.projected_image_tokens
+            )
         self._ready.extend(
             self.recognizer._ready_from_prefilled(state) for state in finalized
         )
@@ -499,21 +520,49 @@ class _UnifiedPageReadySource:
             ),
             document_images=prepared.document_images,
         )
+        timing_s = {
+            "page_wall_s": time.perf_counter() - page.submission.submitted_at,
+            **prepared.timing_s,
+        }
+        for stage, seconds in prepared.timing_s.items():
+            if isinstance(seconds, (int, float)):
+                self._layout_timing_s[stage] += float(seconds)
+        if "page_total_s" in prepared.timing_s:
+            self._layout_page_total_samples_s.append(
+                float(prepared.timing_s["page_total_s"])
+            )
         self.emit_page(
             page.submission.request_id,
             result,
-            {
-                "page_wall_s": time.perf_counter() - page.submission.submitted_at,
-                **prepared.timing_s,
-            },
+            timing_s,
         )
         self._pages_completed += 1
 
     def summary(self) -> dict[str, Any]:
+        page_samples = sorted(self._layout_page_total_samples_s)
+        page_distribution = None
+        if page_samples:
+            p95_index = min(
+                len(page_samples) - 1,
+                max(0, int(0.95 * len(page_samples) + 0.999999) - 1),
+            )
+            page_distribution = {
+                "count": len(page_samples),
+                "mean": statistics.fmean(page_samples),
+                "median": statistics.median(page_samples),
+                "p95": page_samples[p95_index],
+                "min": page_samples[0],
+                "max": page_samples[-1],
+            }
         return {
             "mode_counts": dict(self._mode_counts),
             "mode_wall_s": dict(self._mode_wall_s),
             "device_stage_s": dict(self._device_stage_s),
+            "prefill_tokens": dict(self._prefill_tokens),
+            "vision_packing": self.recognizer._vision_packing_stats.summary(),
+            "text_packing": self.recognizer._text_packing_stats.summary(),
+            "layout_timing_s": dict(self._layout_timing_s),
+            "layout_page_total_s": page_distribution,
             "pages_completed": self._pages_completed,
         }
 
@@ -544,6 +593,9 @@ class PersistentPageEngine:
         text_max_pixels: int | None = None,
         table_max_pixels: int | None = None,
         text_crop_scale: float = 1.0,
+        input_workers: int = 8,
+        postprocess_workers: int = 8,
+        max_inflight_pages: int = 8,
     ) -> None:
         self.frontend = frontend
         self.recognizer = recognizer
@@ -552,6 +604,9 @@ class PersistentPageEngine:
         self.text_max_pixels = text_max_pixels
         self.table_max_pixels = table_max_pixels
         self.text_crop_scale = float(text_crop_scale)
+        self.input_workers = int(input_workers)
+        self.postprocess_workers = int(postprocess_workers)
+        self.max_inflight_pages = int(max_inflight_pages)
         self.last_mode_summary: dict[str, Any] = {}
 
     def serve(
@@ -573,6 +628,9 @@ class PersistentPageEngine:
             text_crop_scale=self.text_crop_scale,
             emit_page=emit_page,
             emit_page_error=emit_page_error,
+            input_workers=self.input_workers,
+            postprocess_workers=self.postprocess_workers,
+            max_inflight_pages=self.max_inflight_pages,
         )
         self.recognizer._begin_decode_schedule()
         try:

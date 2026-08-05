@@ -17,7 +17,7 @@ from dataclasses import asdict
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 from urllib.parse import parse_qs, urlparse
 
 
@@ -28,7 +28,7 @@ VISION_BUCKETS = "256,384,512,640,768,1408,1920,2048,2944,4096"
 TEXT_PACK_BUCKETS = "128,256,384,512,768,1024"
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8766)
@@ -92,7 +92,23 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=REPO_ROOT / ".runtime_cache/09_persistent_page_engine_text_packed_torchair",
     )
-    return parser.parse_args()
+    return parser.parse_args(argv)
+
+
+def worker_config(args: argparse.Namespace) -> dict[str, Any]:
+    excluded = {
+        "host",
+        "port",
+        "request_timeout_s",
+        "max_image_bytes",
+        "queue_capacity",
+        "spool_dir",
+    }
+    return {
+        key: str(value.expanduser().resolve()) if isinstance(value, Path) else value
+        for key, value in vars(args).items()
+        if key not in excluded
+    }
 
 
 def _worker_main(jobs: Any, results: Any, config: dict[str, Any]) -> None:
@@ -175,10 +191,13 @@ def _worker_main(jobs: Any, results: Any, config: dict[str, Any]) -> None:
                 if job is None:
                     self._closed = True
                     return None
+                submitted_at = job.get("submitted_monotonic_s")
+                if submitted_at is None:
+                    submitted_at = time.perf_counter()
                 return PageSubmission(
                     request_id=job["request_id"],
                     image_path=Path(job["image_path"]),
-                    submitted_at=job["submitted_monotonic_s"],
+                    submitted_at=float(submitted_at),
                 )
 
         results.put(
@@ -218,6 +237,7 @@ def _worker_main(jobs: Any, results: Any, config: dict[str, Any]) -> None:
                 }
             )
 
+        service_started = time.perf_counter()
         with torch.inference_mode():
             summary = engine.serve(
                 PageQueue(),
@@ -228,6 +248,7 @@ def _worker_main(jobs: Any, results: Any, config: dict[str, Any]) -> None:
             {
                 "kind": "service_summary",
                 "payload": {
+                    "service_wall_s": time.perf_counter() - service_started,
                     "schedule": asdict(summary),
                     "device_modes": engine.last_mode_summary,
                 },
@@ -421,12 +442,7 @@ def main() -> None:
     context = mp.get_context("spawn")
     jobs = context.Queue(maxsize=args.queue_capacity)
     results = context.Queue()
-    excluded = {"host", "port", "request_timeout_s", "max_image_bytes", "queue_capacity", "spool_dir"}
-    config = {
-        key: str(value.expanduser().resolve()) if isinstance(value, Path) else value
-        for key, value in vars(args).items()
-        if key not in excluded
-    }
+    config = worker_config(args)
     worker = context.Process(target=_worker_main, args=(jobs, results, config))
     worker.start()
     state = _State(args, jobs, results, worker)
