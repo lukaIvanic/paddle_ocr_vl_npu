@@ -2108,6 +2108,7 @@ class OptimizedUniRecRunner:
         return hooks
 
     @staticmethod
+    @torch.inference_mode()
     def _stack_prefilled_caches(
         items: list[UniRecPrefilledItem],
     ) -> LocalUniRecStaticCache:
