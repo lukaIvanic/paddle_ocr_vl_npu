@@ -239,56 +239,41 @@ def make_local_fixed_batch_vlm_client(
             super().__init__(**kwargs)
             self.generation_metrics: list[dict[str, Any]] = []
 
-        def _predict_one_batch(
+        def _prepare_generation(
             self,
-            image_objs,
-            chat_prompts,
-            sampling_params,
-            **kwargs,
-        ):
-            prepared: list[PreparedGeneration] = []
-            if isinstance(sampling_params, Sequence):
-                request_params = list(sampling_params)
-            else:
-                request_params = [sampling_params] * len(chat_prompts)
-            if len(request_params) != len(chat_prompts):
-                raise ValueError("sampling-parameter count must match request count")
-            for image, chat_prompt, sampling_param in zip(
-                image_objs,
-                chat_prompts,
-                request_params,
-            ):
-                params = self.build_sampling_params(sampling_param)
-                inputs = self.processor(
-                    text=[chat_prompt],
-                    images=[image] if image is not None else None,
-                    padding=True,
-                    return_tensors="pt",
+            image,
+            chat_prompt,
+            sampling_param,
+        ) -> PreparedGeneration:
+            params = self.build_sampling_params(sampling_param)
+            inputs = self.processor(
+                text=[chat_prompt],
+                images=[image] if image is not None else None,
+                padding=True,
+                return_tensors="pt",
+            )
+            inputs = inputs.to(device=model.device, dtype=model.dtype)
+            max_new_tokens = params.max_new_tokens
+            if max_new_tokens is None:
+                max_new_tokens = max(
+                    1,
+                    int(self.model_max_length) - int(inputs.input_ids.shape[1]),
                 )
-                inputs = inputs.to(device=model.device, dtype=model.dtype)
-                max_new_tokens = params.max_new_tokens
-                if max_new_tokens is None:
-                    max_new_tokens = max(
-                        1,
-                        int(self.model_max_length) - int(inputs.input_ids.shape[1]),
-                    )
-                max_new_tokens = min(
-                    int(max_new_tokens),
-                    engine.cache_length - int(inputs.input_ids.shape[1]),
-                )
-                if max_new_tokens <= 0:
-                    raise ValueError("prepared request leaves no room in the static KV cache")
-                prepared.append(
-                    PreparedGeneration(
-                        input_ids=inputs.input_ids,
-                        attention_mask=inputs.attention_mask,
-                        pixel_values=getattr(inputs, "pixel_values", None),
-                        image_grid_thw=getattr(inputs, "image_grid_thw", None),
-                        max_new_tokens=max_new_tokens,
-                    )
-                )
+            max_new_tokens = min(
+                int(max_new_tokens),
+                engine.cache_length - int(inputs.input_ids.shape[1]),
+            )
+            if max_new_tokens <= 0:
+                raise ValueError("prepared request leaves no room in the static KV cache")
+            return PreparedGeneration(
+                input_ids=inputs.input_ids,
+                attention_mask=inputs.attention_mask,
+                pixel_values=getattr(inputs, "pixel_values", None),
+                image_grid_thw=getattr(inputs, "image_grid_thw", None),
+                max_new_tokens=max_new_tokens,
+            )
 
-            generated, metrics = engine.generate_many(prepared)
+        def _decode_outputs(self, generated, metrics):
             self.generation_metrics.append(metrics)
             rows = [tensor[0].detach().cpu().tolist() for tensor in generated]
             rows = [
@@ -300,6 +285,31 @@ def make_local_fixed_batch_vlm_client(
                 skip_special_tokens=False,
                 clean_up_tokenization_spaces=False,
             )
+
+        def _predict_one_batch(
+            self,
+            image_objs,
+            chat_prompts,
+            sampling_params,
+            **kwargs,
+        ):
+            if isinstance(sampling_params, Sequence):
+                request_params = list(sampling_params)
+            else:
+                request_params = [sampling_params] * len(chat_prompts)
+            if len(request_params) != len(chat_prompts):
+                raise ValueError("sampling-parameter count must match request count")
+            prepared = [
+                self._prepare_generation(image, chat_prompt, sampling_param)
+                for image, chat_prompt, sampling_param in zip(
+                    image_objs,
+                    chat_prompts,
+                    request_params,
+                )
+            ]
+
+            generated, metrics = engine.generate_many(prepared)
+            return self._decode_outputs(generated, metrics)
 
         def batch_predict(
             self,
@@ -370,12 +380,15 @@ def make_local_fixed_batch_vlm_client(
 
             if not isinstance(sampling_params, Sequence):
                 sampling_params = [sampling_params] * len(images)
-            return self._predict_one_batch(
-                image_objs=image_objs,
-                chat_prompts=chat_prompts,
-                sampling_params=sampling_params,
-                **kwargs,
+            generated, metrics = engine.generate_lazy(
+                len(image_objs),
+                lambda index: self._prepare_generation(
+                    image_objs[index],
+                    chat_prompts[index],
+                    sampling_params[index],
+                ),
             )
+            return self._decode_outputs(generated, metrics)
 
     adapter = LocalMinerUGenerateAdapter(model)
     return LocalFixedBatchMinerUVlmClient(

@@ -52,7 +52,11 @@ run_official_transformers_omnidocbench.py
   ``local-compiled-client`` keeps prefill eager and replaces only B1 decode
   with the existing TorchAir static-KV graph; ``local-fixed-batch-client``
   prefills requests independently into request-owned rows of a shared KV arena
-  and runs full groups through a fixed compiled decode batch, with B1 tails.
+  and runs full groups through a fixed compiled decode batch, with B1 tails;
+  ``local-continuous-client`` uses the same request-owned arena and compiled
+  graph, but immediately refills a completed slot from the pending request
+  stream. It intentionally retains the fixed path's synchronous host-visible
+  completion check so refill can be measured independently.
   It writes official json2md Markdown, content lists, per-page checkpoints,
   shard progress, and timing.
 ```
@@ -144,6 +148,34 @@ Markdown, content list, and page record all exist.
 The evaluator consumes the generated `predictions/` directory. Use the pinned
 Experiment-09 OmniDocBench evaluator wrapper after every shard completes; do
 not score partial output as a full-corpus result.
+
+## Local continuous compiled-decode lane
+
+This lane leaves the official MinerU page frontend, processor, two-step
+protocol, and post-processing in place. Recognition requests are prepared at
+B1 and prefilled directly into request-owned rows of a shared static KV arena.
+The static B8 decode graph then runs until a request ends; that slot is
+prefilled with the next pending request before the next decode iteration.
+Draining rows use pad tokens only after the pending stream is exhausted.
+
+```sh
+$VLLM_PYTHON \
+  11_mineru_2_5_pro_inference/run_official_transformers_omnidocbench.py \
+  --backend local-continuous-client \
+  --model "$MODEL_DIR" \
+  --output-dir tmp/11_mineru_2_5_pro_inference/local_continuous_b8_k4096_n8 \
+  --limit 8 \
+  --page-batch-size 8 \
+  --batch-size 8 \
+  --local-compiled-cache-length 4096 \
+  --local-torchair-cache-dir \
+    .runtime_cache/11_mineru_2_5_pro_inference/native_fixed_b8_k4096_bf16
+```
+
+`--page-batch-size` currently bounds the request stream: all recognition
+requests produced by that page group can refill one another, but requests from
+the next page group are admitted only after the current group is written. Keep
+the page group bounded until frontend production itself becomes incremental.
 
 ## Official synchronous vLLM lane
 

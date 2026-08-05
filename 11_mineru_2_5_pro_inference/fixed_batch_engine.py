@@ -11,6 +11,7 @@ the next waiting request.
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Sequence
 
@@ -268,7 +269,27 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
     ) -> tuple[list[torch.Tensor], dict[str, Any]]:
         if len(requests) < self.batch_size:
             return super().generate_many(requests)
-        return self._generate_continuous(requests)
+        return self._generate_continuous(
+            request_count=len(requests),
+            prepare_request=requests.__getitem__,
+        )
+
+    @torch.inference_mode()
+    def generate_lazy(
+        self,
+        request_count: int,
+        prepare_request: Callable[[int], PreparedGeneration],
+    ) -> tuple[list[torch.Tensor], dict[str, Any]]:
+        """Generate in input order while preparing only requests being admitted."""
+        if request_count < 0:
+            raise ValueError("request_count must be non-negative")
+        if request_count < self.batch_size:
+            requests = [prepare_request(index) for index in range(request_count)]
+            return super().generate_many(requests)
+        return self._generate_continuous(
+            request_count=request_count,
+            prepare_request=prepare_request,
+        )
 
     def _validate_request(self, request: PreparedGeneration) -> None:
         if request.input_ids.shape[0] != 1:
@@ -313,13 +334,15 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
     @torch.inference_mode()
     def _generate_continuous(
         self,
-        requests: Sequence[PreparedGeneration],
+        *,
+        request_count: int,
+        prepare_request: Callable[[int], PreparedGeneration],
     ) -> tuple[list[torch.Tensor], dict[str, Any]]:
         started = time.perf_counter()
         arena = self._arena_for_batch()
-        request_count = len(requests)
         generated: list[list[int] | None] = [None] * request_count
         outputs: list[torch.Tensor | None] = [None] * request_count
+        request_max_new: list[int | None] = [None] * request_count
         slot_requests: list[int | None] = [None] * self.batch_size
         next_request = 0
         prefill_s = 0.0
@@ -331,17 +354,19 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
             while next_request < request_count:
                 request_index = next_request
                 next_request += 1
+                request = prepare_request(request_index)
+                request_max_new[request_index] = request.max_new_tokens
                 state, elapsed_s = self._prefill_slot(
                     arena,
                     slot,
-                    requests[request_index],
+                    request,
                 )
                 prefill_s += elapsed_s
                 token_id = int(state["token_id"])
                 generated[request_index] = [token_id]
                 if (
                     token_id == self.eos_token_id
-                    or requests[request_index].max_new_tokens <= 1
+                    or request.max_new_tokens <= 1
                 ):
                     outputs[request_index] = torch.tensor([[token_id]], dtype=torch.long)
                     immediate_completion_count += 1
@@ -433,9 +458,12 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
                     raise RuntimeError("active request has no generated-token state")
                 token_id = candidate_ids[slot]
                 request_tokens.append(token_id)
+                max_new_tokens = request_max_new[request_index]
+                if max_new_tokens is None:
+                    raise RuntimeError("active request has no generation limit")
                 is_finished = (
                     token_id == self.eos_token_id
-                    or len(request_tokens) >= requests[request_index].max_new_tokens
+                    or len(request_tokens) >= max_new_tokens
                 )
                 if not is_finished:
                     next_token[slot : slot + 1].copy_(candidate[slot : slot + 1])
