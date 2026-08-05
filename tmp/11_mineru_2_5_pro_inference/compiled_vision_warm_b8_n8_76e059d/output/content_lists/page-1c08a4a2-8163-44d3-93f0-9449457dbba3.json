@@ -1,0 +1,179 @@
+[
+  {
+    "type": "title",
+    "bbox": [
+      0.385,
+      0.086,
+      0.607,
+      0.102
+    ],
+    "angle": 0,
+    "content": "3.3.2.3【轴心加单调类型】"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.109,
+      0.85,
+      0.166
+    ],
+    "angle": 0,
+    "content": "▲适用题型：已知对称轴和对称中心以及单调性，求ω范围的题目，并且（不论开闭）区间不含0，比如 \\( \\left[\\frac{\\pi}{4},\\frac{\\pi}{3}\\right] \\) ;",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.148,
+      0.175,
+      0.249,
+      0.19
+    ],
+    "angle": 0,
+    "content": "▲方法原理：",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.148,
+      0.205,
+      0.741,
+      0.224
+    ],
+    "angle": 0,
+    "content": "\\(y = \\sin (wx + \\varphi)\\) 对称轴 \\(x = p\\) ，对称中心 \\((t,0)\\) ，在 \\((a,b)\\) 单调，则 \\(w\\) 范围：",
+    "merge_prev": false
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.147,
+      0.239,
+      0.383,
+      0.254
+    ],
+    "angle": 0,
+    "content": "1. 法一：卡形式卡范围再讨论"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.153,
+      0.263,
+      0.871,
+      0.349
+    ],
+    "angle": 0,
+    "content": "(1)卡形式：轴 \\(x = p\\) ，心 \\((t,0)\\Rightarrow \\left\\{ \\begin{array}{l}\\left|p - t\\right| = \\frac{(2n - 1)T}{4} = \\frac{(2n - 1)}{4}\\frac{2\\pi}{w}\\left[\\text{常写成}\\frac{(2n + 1)T}{4},n\\in N\\right]\\\\ \\Rightarrow w = \\frac{(2n - 1)\\pi}{2|p - t|}\\big(n\\in N^{*}\\big) \\end{array} \\right.\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.154,
+      0.369,
+      0.571,
+      0.404
+    ],
+    "angle": 0,
+    "content": "(2)卡范围： \\(|b - a|\\leq \\frac{T}{2}\\Rightarrow |b - a|\\leq \\frac{1}{2}\\cdot \\frac{2\\pi}{w}\\Rightarrow w\\leq \\frac{\\pi}{|b - a|}\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.154,
+      0.407,
+      0.867,
+      0.518
+    ],
+    "angle": 0,
+    "content": "(3) 讨论验证: \\(\\begin{cases} w = \\frac{(2n - 1)\\pi}{2|p - t|} \\\\ w \\leq \\frac{\\pi}{|b - a|} \\end{cases} \\Rightarrow\\) 逐个讨论 \\(w \\begin{cases} \\langle 1 \\rangle w \\text{取一个符合的值} \\\\ \\langle 2 \\rangle \\text{对称中心} (t, 0) \\Rightarrow tw + \\varphi = k\\pi \\\\ \\varphi \\text{的范围} (k \\in \\mathbb{Z}) \\end{cases} \\Rightarrow \\varphi\\)\n\n\\(\\begin{cases} \\langle 3 \\rangle \\text{验证单调性是否符合题意} \\\\ \\langle 4 \\rangle \\text{按以上步骤循环讨论验证直至求出答案} \\end{cases}\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.147,
+      0.527,
+      0.434,
+      0.542
+    ],
+    "angle": 0,
+    "content": "注意:以上结论无需记忆,重在理解;",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.555,
+      0.848,
+      0.62
+    ],
+    "angle": 0,
+    "content": "举例说明：(浙江·杭十四中高二期末) \\( f(x)=\\sin(\\omega x+\\varphi)(\\omega>0,\\left|\\varphi\\right|\\leq\\frac{\\pi}{2}) \\) ，若 \\( x=-\\frac{\\pi}{8} \\) 是函数 \\( f(x) \\) 的零点， \\( x=\\frac{\\pi}{8} \\) 是函数 \\( f(x) \\) 的对称轴， \\( f(x) \\) 在区间 \\( \\left(\\frac{\\pi}{5},\\frac{\\pi}{4}\\right) \\) 上单调，则 \\( \\omega \\) 的最大值是？",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.153,
+      0.623,
+      0.741,
+      0.681
+    ],
+    "angle": 0,
+    "content": "(1)卡形式：轴 \\(x = \\frac{\\pi}{8}\\) ，心 \\(\\left(-\\frac{\\pi}{8},0\\right)\\Rightarrow \\left\\{ \\begin{array}{l}\\left|\\frac{\\pi}{8} -\\left(-\\frac{\\pi}{8}\\right)\\right| = \\frac{(2n + 1)T}{4} = \\frac{(2n + 1)}{4}\\frac{2\\pi}{w}\\\\ \\Rightarrow w = 4n + 2(n\\in N) \\end{array} \\right.\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.154,
+      0.683,
+      0.467,
+      0.731
+    ],
+    "angle": 0,
+    "content": "(2)卡范围： \\(\\left|\\frac{\\pi}{4} -\\frac{\\pi}{5}\\right|\\leq \\frac{T}{2}\\Rightarrow \\left\\{ \\begin{array}{l}\\frac{\\pi}{20}\\leq \\frac{1}{2}\\cdot \\frac{2\\pi}{w}\\\\ \\Rightarrow w\\leq 20 \\end{array} \\right.\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.154,
+      0.734,
+      0.422,
+      0.77
+    ],
+    "angle": 0,
+    "content": "(3) 讨论验证:  \\( \\left\\{\\begin{aligned} w &= 4n + 2 (n \\in N) \\\\ w & \\leq 20 \\end{aligned}\\right. \\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.153,
+      0.773,
+      0.894,
+      0.9
+    ],
+    "angle": 0,
+    "content": "逐个讨论 \\(w\\left\\{ \\begin{array}{l}\\langle 1\\rangle \\omega = 18\\\\ \\langle 2\\rangle \\text{对称中心}\\left(-\\frac{\\pi}{8},0\\right)\\Rightarrow 18\\times \\left(-\\frac{\\pi}{8}\\right) + \\varphi = k\\pi ,k\\in Z,|\\varphi |\\leq \\frac{\\pi}{2}\\Rightarrow \\varphi = \\frac{\\pi}{4}\\\\ \\langle 3\\rangle \\text{验证} f(x) = \\sin \\left(18x + \\frac{\\pi}{4}\\right)\\text{在}\\left(\\frac{\\pi}{5},\\frac{\\pi}{4}\\right)\\text{不单调，}\\omega = 18\\text{舍}\\\\ \\langle 4\\rangle \\text{同理}\\omega = 14,\\text{算得}\\varphi = -\\frac{\\pi}{4}\\text{验证} f(x) = \\sin \\left(14x - \\frac{\\pi}{4}\\right)\\text{在}\\left(\\frac{\\pi}{5},\\frac{\\pi}{4}\\right)\\text{单调故}\\omega_{\\max} = 14 \\end{array} \\right.\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.487,
+      0.929,
+      0.512,
+      0.94
+    ],
+    "angle": 0,
+    "content": "394"
+  }
+]

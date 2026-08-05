@@ -1,0 +1,128 @@
+[
+  {
+    "type": "page_number",
+    "bbox": [
+      0.15,
+      0.103,
+      0.179,
+      0.116
+    ],
+    "angle": 0,
+    "content": "130"
+  },
+  {
+    "type": "header",
+    "bbox": [
+      0.194,
+      0.103,
+      0.623,
+      0.117
+    ],
+    "angle": 0,
+    "content": "CHAP. 3 THE SOLUTION OF LINEAR SYSTEMS \\(AX = B\\)"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.147,
+      0.135,
+      0.819,
+      0.169
+    ],
+    "angle": 0,
+    "content": "The new elements are written \\( a_{rc}^{(2)} \\) to indicate that this is the second time that a number has been stored in the matrix at location \\( (r, c) \\). The result after step 2 is",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.307,
+      0.177,
+      0.652,
+      0.322
+    ],
+    "angle": 0,
+    "content": "\\[\n\\left[ \\begin{array}{c c c c c c} a _ {1 1} ^ {(1)} & a _ {1 2} ^ {(1)} & a _ {1 3} ^ {(1)} & \\dots & a _ {1 N} ^ {(1)} & a _ {1 N + 1} ^ {(1)} \\\\ 0 & a _ {2 2} ^ {(2)} & a _ {2 3} ^ {(2)} & \\dots & a _ {2 N} ^ {(2)} & a _ {2 N + 1} ^ {(2)} \\\\ 0 & a _ {3 2} ^ {(2)} & a _ {3 3} ^ {(2)} & \\dots & a _ {3 N} ^ {(2)} & a _ {3 N + 1} ^ {(2)} \\\\ \\vdots & \\vdots & \\vdots & & \\vdots & \\vdots \\\\ 0 & a _ {N 2} ^ {(2)} & a _ {N 3} ^ {(2)} & \\dots & a _ {N N} ^ {(2)} & a _ {N N + 1} ^ {(2)} \\end{array} \\right]\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.149,
+      0.329,
+      0.82,
+      0.379
+    ],
+    "angle": 0,
+    "content": "Step 3. If necessary, switch the second row with some row below it so that \\( a_{22}^{(2)} \\neq 0 \\); then eliminate \\( x_{2} \\) in rows 3 through \\( N \\). In this process, \\( m_{r2} \\) is the multiple of row 2 that is subtracted from row \\( r \\).",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.348,
+      0.389,
+      0.586,
+      0.512
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\text { for } r = 3: N \\\\ m _ {r 2} = a _ {r 2} ^ {(2)} / a _ {2 2} ^ {(2)}; \\\\ a _ {r 2} ^ {(3)} = 0; \\\\ \\text {for} c = 3: N + 1 \\\\ a _ {r c} ^ {(3)} = a _ {r c} ^ {(2)} \\quad m _ {r 2} * a _ {2 c} ^ {(2)}; \\\\ \\text {end} \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.351,
+      0.499,
+      0.383,
+      0.511
+    ],
+    "angle": 0,
+    "content": "end",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.15,
+      0.525,
+      0.82,
+      0.562
+    ],
+    "angle": 0,
+    "content": "The new elements are written \\( a_{rc}^{(3)} \\) to indicate that this is the third time that a number has been stored in the matrix at location \\( (r, c) \\). The result after step 3 is",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.31,
+      0.569,
+      0.655,
+      0.715
+    ],
+    "angle": 0,
+    "content": "\\[\n\\left[ \\begin{array}{c c c c c c} a _ {1 1} ^ {(1)} & a _ {1 2} ^ {(1)} & a _ {1 3} ^ {(1)} & \\dots & a _ {1 N} ^ {(1)} & a _ {1 N + 1} ^ {(1)} \\\\ 0 & a _ {2 2} ^ {(2)} & a _ {2 3} ^ {(2)} & \\dots & a _ {2 N} ^ {(2)} & a _ {2 N + 1} ^ {(2)} \\\\ 0 & 0 & a _ {3 3} ^ {(3)} & \\dots & a _ {3 N} ^ {(3)} & a _ {3 N + 1} ^ {(3)} \\\\ \\vdots & \\vdots & \\vdots & & \\vdots & \\vdots \\\\ 0 & 0 & a _ {N 3} ^ {(3)} & \\dots & a _ {N N} ^ {(3)} & a _ {N N + 1} ^ {(3)} \\end{array} \\right]\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.151,
+      0.722,
+      0.823,
+      0.773
+    ],
+    "angle": 0,
+    "content": "Step \\( p + 1 \\). This is the general step. If necessary, switch row \\( p \\) with some row beneath it so that \\( a_{pp}^{(p)} \\neq 0 \\); then eliminate \\( x_p \\) in rows \\( p + 1 \\) through \\( N \\). Here \\( m_{rp} \\) is the multiple of row \\( p \\) that is subtracted from row \\( r \\).",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.35,
+      0.782,
+      0.512,
+      0.841
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\text { for } r = p + 1: N \\\\ m _ {r p} = a _ {r p} ^ {(p)} / a _ {p p} ^ {(p)}; \\\\ a _ {r p} ^ {(p + 1)} = 0; \\\\ \\end{array}\n\\]"
+  }
+]
