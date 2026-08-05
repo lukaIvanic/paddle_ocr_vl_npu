@@ -87,6 +87,22 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="PyTorch intra-op threads used by the fixed 800x800 layout resize.",
     )
     parser.add_argument("--preprocessor-min-pixels", type=int)
+    parser.add_argument("--preprocessor-max-pixels", type=int, default=1_003_520)
+    parser.add_argument("--text-preprocessor-max-pixels", type=int)
+    parser.add_argument("--table-preprocessor-max-pixels", type=int)
+    parser.add_argument("--text-crop-scale", type=float, default=1.0)
+    parser.add_argument(
+        "--device-stage-timing",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Record layout device-event stage times. Disable for production parity.",
+    )
+    parser.add_argument(
+        "--progress-every",
+        type=int,
+        default=0,
+        help="Print completed-page progress every N pages; zero disables it.",
+    )
     parser.add_argument("--reference-requests", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument(
@@ -130,6 +146,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("--offset must be non-negative and --limit positive")
     if args.torch_cpu_threads <= 0:
         parser.error("--torch-cpu-threads must be positive")
+    if args.preprocessor_max_pixels <= 0:
+        parser.error("--preprocessor-max-pixels must be positive")
+    if args.text_crop_scale <= 0.0:
+        parser.error("--text-crop-scale must be positive")
+    if args.progress_every < 0:
+        parser.error("--progress-every must be non-negative")
     if args.workers == 1 and (
         args.input_workers is not None
         or args.page_prepare_workers is not None
@@ -250,7 +272,9 @@ def main(argv: Sequence[str] | None = None) -> None:
         device,
         timeline=timeline,
         graph_capture=device.type == "npu" and args.graph_capture,
-        device_stage_timing=device.type == "npu",
+        device_stage_timing=(
+            device.type == "npu" and args.device_stage_timing
+        ),
         npu_indexput_compat=args.layout_indexput_compat,
         model_backend=args.model_backend,
         model_dtype=(
@@ -280,17 +304,42 @@ def main(argv: Sequence[str] | None = None) -> None:
             page.statistics,
         )
 
+    frontend_started = 0.0
+
+    def report_progress(completed: int) -> None:
+        if (
+            args.progress_every > 0
+            and (
+                completed % args.progress_every == 0
+                or completed == len(image_paths)
+            )
+        ):
+            elapsed_s = time.perf_counter() - frontend_started
+            print(
+                f"layout_completed={completed}/{len(image_paths)} "
+                f"elapsed_s={elapsed_s:.3f} "
+                f"pages_per_s={completed / elapsed_s:.3f}",
+                flush=True,
+            )
+
     def prepare_serial() -> list[Any]:
-        return [
-            page_record(
-                frontend.prepare_page(
-                    path,
-                    ordinal,
-                    min_pixels=args.preprocessor_min_pixels,
+        prepared: list[Any] = []
+        for ordinal, path in enumerate(image_paths):
+            prepared.append(
+                page_record(
+                    frontend.prepare_page(
+                        path,
+                        ordinal,
+                        min_pixels=args.preprocessor_min_pixels,
+                        max_pixels=args.preprocessor_max_pixels,
+                        text_max_pixels=args.text_preprocessor_max_pixels,
+                        table_max_pixels=args.table_preprocessor_max_pixels,
+                        text_crop_scale=args.text_crop_scale,
+                    )
                 )
             )
-            for ordinal, path in enumerate(image_paths)
-        ]
+            report_progress(len(prepared))
+        return prepared
 
     worker_pipeline: dict[str, Any] = {
         "strategy": "serial",
@@ -341,6 +390,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             started = time.perf_counter()
             prepared.append(page_record(prepare_futures.popleft().result()))
             page_prepare_wait_s += time.perf_counter() - started
+            report_progress(len(prepared))
 
         with (
             ThreadPoolExecutor(
@@ -367,6 +417,10 @@ def main(argv: Sequence[str] | None = None) -> None:
                         frontend.prepare_detected_page,
                         detected,
                         min_pixels=args.preprocessor_min_pixels,
+                        max_pixels=args.preprocessor_max_pixels,
+                        text_max_pixels=args.text_preprocessor_max_pixels,
+                        table_max_pixels=args.table_preprocessor_max_pixels,
+                        text_crop_scale=args.text_crop_scale,
                     )
                 )
                 if len(prepare_futures) >= page_prepare_workers:
@@ -470,6 +524,12 @@ def main(argv: Sequence[str] | None = None) -> None:
         "npu_indexput_compat": bool(frontend.npu_indexput_compat),
         "workers": args.workers,
         "torch_cpu_threads": torch.get_num_threads(),
+        "preprocessor_min_pixels": args.preprocessor_min_pixels,
+        "preprocessor_max_pixels": args.preprocessor_max_pixels,
+        "text_preprocessor_max_pixels": args.text_preprocessor_max_pixels,
+        "table_preprocessor_max_pixels": args.table_preprocessor_max_pixels,
+        "text_crop_scale": args.text_crop_scale,
+        "device_stage_timing": bool(args.device_stage_timing),
         "worker_strategy": worker_pipeline["strategy"],
         "worker_pipeline": worker_pipeline,
         "setup_s": setup_s,
