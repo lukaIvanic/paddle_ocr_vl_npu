@@ -385,6 +385,17 @@ class LocalUniRecStaticCache:
         )
 
 
+@dataclass
+class UniRecPrefilledItem:
+    """One exact B1 prefill, ready to join a fixed decode cohort."""
+
+    prep: dict[str, Any]
+    kv_cache: LocalUniRecStaticCache
+    generated_ids: torch.Tensor
+    next_token: torch.Tensor
+    prefill_s: float
+
+
 class LocalScaledWordEmbedding(nn.Embedding):
     def __init__(self, num_embeddings: int, embedding_dim: int, padding_idx: int, embed_scale: float):
         super().__init__(num_embeddings, embedding_dim, padding_idx)
@@ -635,7 +646,15 @@ class LocalDecoderAttention(nn.Module):
         key_states: torch.Tensor,
         value_states: torch.Tensor,
     ) -> None:
-        updated_positions = cache_position.reshape(-1).to(dtype=torch.int64, device=key_cache.device).contiguous()
+        # Fixed cohorts advance every row at the same decode position.  Cache
+        # dim 2 therefore receives one shared position, while key/value states
+        # retain their independent batch rows.  Per-row positions require a
+        # different scatter contract and belong to the future hot-swap engine.
+        updated_positions = (
+            cache_position.reshape(-1)[:1]
+            .to(dtype=torch.int64, device=key_cache.device)
+            .contiguous()
+        )
         if key_cache.device.type == "npu":
             if torch_npu is None:
                 raise RuntimeError("NPU scatter_update_ cache updates require torch_npu")
@@ -1484,11 +1503,13 @@ class OptimizedUniRecRunner:
         self_attention_backend: str,
         compile_dynamic: bool,
         cross_cache_len: int | None,
+        batch_size: int,
     ) -> tuple[nn.Module, dict[str, Any]]:
         normalized_cross_cache_len = "none" if cross_cache_len is None else str(int(cross_cache_len))
         cache_key = (
             f"{backend}:self_attn={self_attention_backend}:dynamic={int(compile_dynamic)}:"
-            f"self_kv={LOCAL_UNIREC_STATIC_CACHE_LEN}:cross_kv={normalized_cross_cache_len}"
+            f"self_kv={LOCAL_UNIREC_STATIC_CACHE_LEN}:cross_kv={normalized_cross_cache_len}:"
+            f"batch={int(batch_size)}"
         )
         cached = self._compiled_decode_modules.get(cache_key)
         if cached is not None:
@@ -1520,10 +1541,13 @@ class OptimizedUniRecRunner:
                     "torchair_cache_dir": None,
                 }
             else:
-                shape_cache_dir = (
-                    self.compile_cache_dir
-                    / f"decode_selfkv{LOCAL_UNIREC_STATIC_CACHE_LEN}_cross{normalized_cross_cache_len}_{self_attention_backend}"
+                shape_name = (
+                    f"decode_selfkv{LOCAL_UNIREC_STATIC_CACHE_LEN}_cross"
+                    f"{normalized_cross_cache_len}_{self_attention_backend}"
                 )
+                if batch_size != 1:
+                    shape_name += f"_b{int(batch_size)}"
+                shape_cache_dir = self.compile_cache_dir / shape_name
                 shape_cache_dir.mkdir(parents=True, exist_ok=True)
                 cache_compile, cache_compile_import_path = import_torchair_cache_compile()
                 compiled = cache_compile(
@@ -1558,6 +1582,7 @@ class OptimizedUniRecRunner:
                 "static_self_kv_len": int(LOCAL_UNIREC_STATIC_CACHE_LEN),
                 "static_cross_kv_len": None if cross_cache_len is None else int(cross_cache_len),
                 "self_attention_backend": self_attention_backend,
+                "batch_size": int(batch_size),
             }
         )
         self._compiled_decode_modules[cache_key] = compiled
@@ -1567,6 +1592,13 @@ class OptimizedUniRecRunner:
     def _decode_text(self, generated_ids: torch.Tensor) -> str:
         decoded = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=False)
         return clean_special_tokens(decoded[0] if decoded else "")
+
+    def _decode_text_batch(self, generated_ids: list[list[int]]) -> list[str]:
+        decoded = self.tokenizer.batch_decode(
+            generated_ids,
+            skip_special_tokens=False,
+        )
+        return [clean_special_tokens(text) for text in decoded]
 
     def generate_one(
         self,
@@ -1608,6 +1640,270 @@ class OptimizedUniRecRunner:
             compile_dynamic=compile_dynamic,
         )
 
+    def prefill_image_for_cohort(
+        self,
+        image: Image.Image,
+        *,
+        image_source: str = "<pil_image>",
+    ) -> UniRecPrefilledItem:
+        """Run the exact B1 image and decoder prefill used by normal generation."""
+        inputs, prep = self.prepare_pil_image(image, image_source=image_source)
+        pixel_values = inputs["pixel_values"]
+        cross_cache_len = self._get_static_cross_cache_len()
+        decoder_input_ids = self.model.decoder_start_ids(
+            batch_size=1,
+            device=pixel_values.device,
+        )
+        with torch.inference_mode():
+            synchronize_device(self.device)
+            started = time.perf_counter()
+            prefill_outputs = self.model.prefill_with_cache(
+                pixel_values=pixel_values,
+                decoder_input_ids=decoder_input_ids,
+                cross_cache_len=cross_cache_len,
+            )
+            next_token = self.model.select_next_token(prefill_outputs["logits"])
+            generated_ids = torch.cat((decoder_input_ids, next_token), dim=1)
+            synchronize_device(self.device)
+            prefill_s = time.perf_counter() - started
+        return UniRecPrefilledItem(
+            prep=prep,
+            kv_cache=prefill_outputs["kv_cache"],
+            generated_ids=generated_ids,
+            next_token=next_token,
+            prefill_s=prefill_s,
+        )
+
+    @staticmethod
+    def _stack_prefilled_caches(
+        items: list[UniRecPrefilledItem],
+    ) -> LocalUniRecStaticCache:
+        if not items:
+            raise ValueError("Cannot stack an empty UniRec prefill cohort")
+        caches = [item.kv_cache for item in items]
+        if any(
+            cache.cross_key_cache is None
+            or cache.cross_value_cache is None
+            or cache.cross_attention_mask is None
+            for cache in caches
+        ):
+            raise RuntimeError("Every cohort item must have a static cross-attention cache")
+        layer_count = len(caches[0].key_cache)
+        if any(len(cache.key_cache) != layer_count for cache in caches):
+            raise ValueError("All cohort items must have the same decoder layer count")
+        return LocalUniRecStaticCache(
+            key_cache=tuple(
+                torch.cat([cache.key_cache[layer] for cache in caches], dim=0)
+                for layer in range(layer_count)
+            ),
+            value_cache=tuple(
+                torch.cat([cache.value_cache[layer] for cache in caches], dim=0)
+                for layer in range(layer_count)
+            ),
+            cache_len=caches[0].cache_len,
+            cross_key_cache=tuple(
+                torch.cat(
+                    [cache.cross_key_cache[layer] for cache in caches],
+                    dim=0,
+                )
+                for layer in range(layer_count)
+            ),
+            cross_value_cache=tuple(
+                torch.cat(
+                    [cache.cross_value_cache[layer] for cache in caches],
+                    dim=0,
+                )
+                for layer in range(layer_count)
+            ),
+            cross_attention_mask=torch.cat(
+                [cache.cross_attention_mask for cache in caches],
+                dim=0,
+            ),
+            actual_cross_attention_length=None,
+        )
+
+    def generate_prefilled_cohort(
+        self,
+        items: list[UniRecPrefilledItem],
+        *,
+        max_length: int,
+        decode_mode: str,
+        compile_backend: str,
+        compile_dynamic: bool = False,
+        pad_to_batch_size: int | None = None,
+    ) -> dict[str, Any]:
+        """Decode a fixed cohort; finished and dummy rows emit EOS padding."""
+        if not items:
+            raise ValueError("Cannot decode an empty UniRec cohort")
+        if max_length > LOCAL_UNIREC_STATIC_CACHE_LEN:
+            raise ValueError(
+                f"max_length must be <= {LOCAL_UNIREC_STATIC_CACHE_LEN}, got {max_length}"
+            )
+        if decode_mode not in {"eager", "compiled", "compiled_ifa"}:
+            raise ValueError(f"Unsupported decode_mode: {decode_mode}")
+        real_batch_size = len(items)
+        target_batch_size = (
+            real_batch_size if pad_to_batch_size is None else int(pad_to_batch_size)
+        )
+        if target_batch_size < real_batch_size:
+            raise ValueError(
+                "pad_to_batch_size must be >= the number of real items, "
+                f"got target={target_batch_size} real={real_batch_size}"
+            )
+        padded_items = list(items)
+        while len(padded_items) < target_batch_size:
+            padded_items.append(items[-1])
+
+        batch_size = len(padded_items)
+        self_attention_backend = "increfa" if decode_mode == "compiled_ifa" else "eager"
+        decode_module = None
+        compile_wrap_s = None
+        compile_meta = None
+        cross_cache_len = int(
+            padded_items[0].kv_cache.cross_attention_mask.shape[-1]
+        )
+        if decode_mode.startswith("compiled"):
+            compile_started = time.perf_counter()
+            decode_module, compile_meta = self._compile_decode_module(
+                backend=compile_backend,
+                self_attention_backend=self_attention_backend,
+                compile_dynamic=compile_dynamic,
+                cross_cache_len=cross_cache_len,
+                batch_size=batch_size,
+            )
+            compile_wrap_s = time.perf_counter() - compile_started
+
+        cache = self._stack_prefilled_caches(padded_items)
+        generated_ids = torch.cat(
+            [item.generated_ids for item in padded_items],
+            dim=0,
+        )
+        next_token = torch.cat([item.next_token for item in padded_items], dim=0)
+        eos_token_id = int(self.config.eos_token_id)
+        finished = next_token.eq(eos_token_id)
+        if target_batch_size > real_batch_size:
+            finished[real_batch_size:] = True
+            next_token[real_batch_size:] = eos_token_id
+        cache_position = torch.full(
+            (batch_size,),
+            int(generated_ids.shape[1] - 1),
+            dtype=torch.int64,
+            device=next_token.device,
+        )
+
+        raw_decode_iterations = 0
+        with torch.inference_mode():
+            synchronize_device(self.device)
+            decode_started = time.perf_counter()
+            all_finished = bool(torch.all(finished).item())
+            while int(generated_ids.shape[1]) < max_length and not all_finished:
+                active_length = int(generated_ids.shape[1])
+                if decode_module is None:
+                    logits = self.model.forward_cached_logits(
+                        decoder_input_ids=next_token,
+                        cache_position=cache_position,
+                        active_length=active_length,
+                        key_cache=cache.key_cache,
+                        value_cache=cache.value_cache,
+                        cross_key_cache=cache.cross_key_cache,
+                        cross_value_cache=cache.cross_value_cache,
+                        cross_attention_mask=cache.cross_attention_mask,
+                        self_attention_backend="eager",
+                    )
+                else:
+                    logits = decode_module(
+                        next_token,
+                        cache_position,
+                        active_length,
+                        cache.key_cache,
+                        cache.value_cache,
+                        cache.cross_key_cache,
+                        cache.cross_value_cache,
+                        cache.cross_attention_mask,
+                    )
+                predicted = self.model.select_next_token(logits)
+                predicted = torch.where(
+                    finished,
+                    torch.full_like(predicted, eos_token_id),
+                    predicted,
+                )
+                generated_ids = torch.cat((generated_ids, predicted), dim=1)
+                raw_decode_iterations += 1
+                finished = torch.logical_or(finished, predicted.eq(eos_token_id))
+                next_token = predicted
+                cache_position = cache_position + 1
+                all_finished = bool(torch.all(finished).item())
+            synchronize_device(self.device)
+            decode_s = time.perf_counter() - decode_started
+
+        rows = generated_ids[:real_batch_size].detach().cpu().tolist()
+        trimmed_rows: list[list[int]] = []
+        for row in rows:
+            try:
+                eos_index = row.index(eos_token_id, 1)
+            except ValueError:
+                trimmed_rows.append([int(token) for token in row])
+            else:
+                trimmed_rows.append([int(token) for token in row[: eos_index + 1]])
+        texts = self._decode_text_batch(trimmed_rows)
+        effective_decode_tokens = sum(max(0, len(row) - 2) for row in trimmed_rows)
+        raw_decode_token_slots = raw_decode_iterations * batch_size
+        results = []
+        for item, token_ids, text in zip(items, trimmed_rows, texts):
+            decode_tokens = max(0, len(token_ids) - 2)
+            results.append(
+                {
+                    "image": str(item.prep["image"]),
+                    "text": text,
+                    "generated_ids": token_ids,
+                    "generated_token_count": max(0, len(token_ids) - 1),
+                    "prefill_generated_token_count": 1 if len(token_ids) > 1 else 0,
+                    "decode_generated_token_count": decode_tokens,
+                    "ttft_s": item.prefill_s,
+                    "decode_s": decode_s,
+                    "total_latency_s": (
+                        float(item.prep["prepare_total_s"])
+                        + item.prefill_s
+                        + decode_s
+                    ),
+                    "decode_tokens_per_s": (
+                        float(decode_tokens) / decode_s if decode_s > 0 else None
+                    ),
+                    "compile_wrap_s": compile_wrap_s,
+                    "compile": compile_meta,
+                    "cross_cache_len": cross_cache_len,
+                    "static_self_kv_len": int(LOCAL_UNIREC_STATIC_CACHE_LEN),
+                    "device": self.device,
+                    "dtype": self.dtype_name,
+                    "decode_mode": decode_mode,
+                    "compile_backend": (
+                        compile_backend if decode_mode.startswith("compiled") else None
+                    ),
+                    "prep": item.prep,
+                }
+            )
+        return {
+            "items": results,
+            "batch_size": batch_size,
+            "real_batch_size": real_batch_size,
+            "dummy_batch_size": batch_size - real_batch_size,
+            "decode_iterations": raw_decode_iterations,
+            "raw_decode_token_slots": raw_decode_token_slots,
+            "effective_decode_tokens": effective_decode_tokens,
+            "padding_decode_token_slots": (
+                raw_decode_token_slots - effective_decode_tokens
+            ),
+            "decode_s": decode_s,
+            "raw_decode_tokens_per_s": (
+                float(raw_decode_token_slots) / decode_s if decode_s > 0 else None
+            ),
+            "effective_decode_tokens_per_s": (
+                float(effective_decode_tokens) / decode_s if decode_s > 0 else None
+            ),
+            "compile_wrap_s": compile_wrap_s,
+            "compile": compile_meta,
+        }
+
     def _generate_prepared(
         self,
         *,
@@ -1639,6 +1935,7 @@ class OptimizedUniRecRunner:
                 self_attention_backend=self_attention_backend,
                 compile_dynamic=compile_dynamic,
                 cross_cache_len=cross_cache_len,
+                batch_size=batch_size,
             )
             compile_wrap_s = time.perf_counter() - compile_start
 

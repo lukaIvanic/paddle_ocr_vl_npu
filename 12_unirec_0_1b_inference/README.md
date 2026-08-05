@@ -17,6 +17,10 @@ for the official OpenDoc full-page pipeline.
   postprocessing, and output path with only UniRec crop inference replaced by
   the local eager NPU implementation. Its comparison mode feeds each exact
   in-memory crop to stock ONNX and local NPU inference and writes a JSONL trace.
+- `run_opendoc_batched_unirec.py`: unmodified OpenDoc layout/crop/assembly
+  semantics with a repository-owned cross-page crop queue. Each crop keeps an
+  exact B1 vision/decoder prefill; completed caches are concatenated into fixed
+  padded decode cohorts.
 
 The local model implementation is copied without architectural changes from
 `unirec_research/03_compiled_decode_single_batch` at commit `4b9a9ab`.
@@ -201,6 +205,39 @@ The NPU adapter deliberately preserves OpenDoc's original 25-class labels,
 overlap filtering, reading-order sort, block numbering, and downstream crop
 assembly. `float32` is the parity-first default; `float16` is an explicit
 performance experiment.
+
+## Fixed cross-page decode cohorts
+
+The fixed-cohort runner batches decode only. It does not pad images or alter
+the vision encoder. Crops are prepared and prefetched one at a time using the
+same path as B1, then their static self/cross KV caches are concatenated across
+page boundaries. All rows decode until the longest row finishes. Rows that
+already reached EOS emit padding EOS tokens and are excluded from effective
+token throughput.
+
+```sh
+/workspace/venvs/unirec_npu_py312/bin/python \
+  12_unirec_0_1b_inference/run_opendoc_batched_unirec.py \
+  --openocr-root /workspace/repos/OpenOCR \
+  --model-path /workspace/models/unirec-0.1b \
+  --layout-model /root/.cache/openocr/PP_DoclayoutV2_onnx/PP-DoclayoutV2.onnx \
+  --layout-backend transformers_npu \
+  --layout-transformers-model /workspace/models/PP-DocLayoutV2_safetensors \
+  --layout-dtype float32 \
+  --stock-encoder /root/.cache/openocr/unirec_0_1b_onnx/unirec_encoder.onnx \
+  --stock-decoder /root/.cache/openocr/unirec_0_1b_onnx/unirec_decoder.onnx \
+  --stock-tokenizer-mapping /root/.cache/openocr/unirec_0_1b_onnx/unirec_tokenizer_mapping.json \
+  --input /workspace/datasets/OmniDocBench/images \
+  --output-dir tmp/12_unirec_0_1b_inference/opendoc_batched_b4 \
+  --device npu:0 --dtype float16 --max-length 256 \
+  --decode-mode compiled --compile-backend torchair \
+  --decode-batch-size 4 --limit 32
+```
+
+This runner does not edit or patch the OpenOCR checkout. It imports the stock
+layout and page-assembly helpers and owns only the scheduling boundary. The
+final partial cohort is padded to `--decode-batch-size`. Reports preserve raw
+physical decode slots, effective real decode tokens, and padding slots.
 
 ## Artifacts
 
