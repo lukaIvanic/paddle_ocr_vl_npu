@@ -21,6 +21,7 @@ from typing import Any
 
 import cv2
 import numpy as np
+import torch
 from PIL import Image
 
 from continuous_unirec import (
@@ -28,10 +29,19 @@ from continuous_unirec import (
     ContinuousReadyItem,
     ContinuousUniRecDecoder,
 )
-from modeling_optimized_unirec import OptimizedUniRecRunner
+from modeling_optimized_unirec import (
+    LOCAL_UNIREC_STATIC_CACHE_LEN,
+    OptimizedUniRecRunner,
+)
 from opendoc_layout_npu import PPDocLayoutV2NpuAdapter
 from text_packed_prefill import PACKED_TEXT_PREFILL_BUCKET
-from vision_atlas import UniRecVisionAtlasRuntime
+from vision_atlas import (
+    ATLAS_CHANNELS,
+    ATLAS_HEIGHT,
+    ATLAS_MAX_MEMBERS,
+    ATLAS_WIDTH,
+    UniRecVisionAtlasRuntime,
+)
 
 
 @dataclass
@@ -199,6 +209,178 @@ def record_prefill_metrics(metrics: RunMetrics, item: Any) -> None:
         metrics.prefill_device_stage_s,
         item.prefill_device_stage_s,
     )
+
+
+def warmup_configured_graphs(
+    *,
+    args: argparse.Namespace,
+    runner: OptimizedUniRecRunner,
+    vision_atlas_runtime: UniRecVisionAtlasRuntime | None,
+    passes: int = 2,
+) -> dict[str, Any]:
+    """Load and replay every configured graph before pipeline timing starts."""
+    if passes < 1:
+        raise ValueError("graph warmup passes must be >= 1")
+    device = torch.device(runner.device)
+    report: dict[str, Any] = {"passes": passes, "graphs": {}}
+    warmup_started = time.perf_counter()
+    print(f"UNIREC_GRAPH_WARMUP_BEGIN passes={passes}", flush=True)
+
+    with torch.inference_mode():
+        if vision_atlas_runtime is not None:
+            cells = ATLAS_HEIGHT * ATLAS_WIDTH
+            identity = torch.arange(cells, dtype=torch.long, device=device)
+            valid_mask = torch.ones(
+                (1, 1, ATLAS_HEIGHT, ATLAS_WIDTH),
+                dtype=runner.dtype,
+                device=device,
+            )
+            membership = torch.zeros(
+                (ATLAS_MAX_MEMBERS, cells),
+                dtype=runner.dtype,
+                device=device,
+            )
+            membership[0].fill_(1)
+            normalized_membership = membership / float(cells)
+            atlas_inputs = (
+                torch.zeros(
+                    (1, cells, ATLAS_CHANNELS),
+                    dtype=runner.dtype,
+                    device=device,
+                ),
+                identity,
+                identity,
+                valid_mask,
+                membership,
+                normalized_membership,
+            )
+            pass_times = []
+            for pass_index in range(passes):
+                started = time.perf_counter()
+                _ = vision_atlas_runtime.compiled(*atlas_inputs)
+                synchronize_device(runner.device)
+                elapsed = time.perf_counter() - started
+                pass_times.append(elapsed)
+                print(
+                    "UNIREC_GRAPH_WARMUP_PASS "
+                    f"graph=vision_atlas_stage2 pass={pass_index + 1}/{passes} "
+                    f"wall_s={elapsed:.3f}",
+                    flush=True,
+                )
+            vision_atlas_runtime.first_call = False
+            report["graphs"]["vision_atlas_stage2"] = {
+                "pass_wall_s": pass_times,
+                "cache_dir": str(vision_atlas_runtime.cache_dir),
+            }
+
+        if args.text_prefill_mode == "compiled_packed_s1024":
+            text_runtime = runner._get_compiled_packed_text_prefill_runtime()
+            text_input = torch.zeros(
+                (1, text_runtime.bucket, runner.config.d_model),
+                dtype=runner.dtype,
+                device=device,
+            )
+            pass_times = []
+            for pass_index in range(passes):
+                started = time.perf_counter()
+                _ = text_runtime.compiled(text_input)
+                synchronize_device(runner.device)
+                elapsed = time.perf_counter() - started
+                pass_times.append(elapsed)
+                print(
+                    "UNIREC_GRAPH_WARMUP_PASS "
+                    f"graph=text_prefill_packed_s1024 "
+                    f"pass={pass_index + 1}/{passes} wall_s={elapsed:.3f}",
+                    flush=True,
+                )
+            text_runtime._first_call = False
+            report["graphs"]["text_prefill_packed_s1024"] = {
+                "pass_wall_s": pass_times,
+                "cache_dir": str(text_runtime.cache_dir),
+            }
+
+        if args.decode_mode.startswith("compiled"):
+            shape_started = time.perf_counter()
+            cross_cache_len = runner._get_static_cross_cache_len()
+            shape_discovery_s = time.perf_counter() - shape_started
+            self_attention_backend = (
+                "increfa" if args.decode_mode == "compiled_ifa" else "eager"
+            )
+            decode_module, decode_metadata = runner._compile_decode_module(
+                backend=args.compile_backend,
+                self_attention_backend=self_attention_backend,
+                compile_dynamic=False,
+                cross_cache_len=cross_cache_len,
+                batch_size=args.decode_batch_size,
+            )
+            batch_size = args.decode_batch_size
+            heads = runner.config.decoder_attention_heads
+            head_dim = runner.config.d_model // heads
+            layer_count = runner.config.decoder_layers
+            self_keys = tuple(
+                torch.zeros(
+                    (batch_size, heads, LOCAL_UNIREC_STATIC_CACHE_LEN, head_dim),
+                    dtype=runner.dtype,
+                    device=device,
+                )
+                for _ in range(layer_count)
+            )
+            self_values = tuple(torch.zeros_like(tensor) for tensor in self_keys)
+            cross_keys = tuple(
+                torch.zeros(
+                    (batch_size, heads, cross_cache_len, head_dim),
+                    dtype=runner.dtype,
+                    device=device,
+                )
+                for _ in range(layer_count)
+            )
+            cross_values = tuple(torch.zeros_like(tensor) for tensor in cross_keys)
+            cross_mask = torch.zeros(
+                (batch_size, 1, 1, cross_cache_len),
+                dtype=torch.float32,
+                device=device,
+            )
+            decode_inputs = (
+                torch.full(
+                    (batch_size, 1),
+                    int(runner.config.decoder_start_token_id),
+                    dtype=torch.long,
+                    device=device,
+                ),
+                torch.ones((batch_size,), dtype=torch.int64, device=device),
+                1 if self_attention_backend == "increfa" else 0,
+                self_keys,
+                self_values,
+                cross_keys,
+                cross_values,
+                cross_mask,
+            )
+            pass_times = []
+            for pass_index in range(passes):
+                started = time.perf_counter()
+                _ = decode_module(*decode_inputs)
+                synchronize_device(runner.device)
+                elapsed = time.perf_counter() - started
+                pass_times.append(elapsed)
+                print(
+                    "UNIREC_GRAPH_WARMUP_PASS "
+                    f"graph=decode_b{batch_size} pass={pass_index + 1}/{passes} "
+                    f"wall_s={elapsed:.3f}",
+                    flush=True,
+                )
+            report["graphs"][f"decode_b{batch_size}"] = {
+                "pass_wall_s": pass_times,
+                "shape_discovery_s": shape_discovery_s,
+                "cross_cache_len": cross_cache_len,
+                "cache_dir": decode_metadata.get("torchair_cache_dir"),
+            }
+
+    report["wall_s"] = time.perf_counter() - warmup_started
+    print(
+        "UNIREC_GRAPH_WARMUP_END " + json.dumps(report, ensure_ascii=False),
+        flush=True,
+    )
+    return report
 
 
 def iter_greedy_text_packs(
@@ -658,6 +840,11 @@ def main() -> None:
         if args.vision_prefill_mode == "compiled_atlas_stage2"
         else None
     )
+    graph_warmup = warmup_configured_graphs(
+        args=args,
+        runner=runner,
+        vision_atlas_runtime=vision_atlas_runtime,
+    )
     setup_s = time.perf_counter() - setup_started
     print(
         f"OPENDOC_BATCHED_SETUP_END setup_s={setup_s:.3f} pages={len(image_paths)} "
@@ -898,6 +1085,7 @@ def main() -> None:
         "layout_backend": args.layout_backend,
         "layout_dtype": args.layout_dtype if not use_onnx_layout else None,
         "setup_s": setup_s,
+        "graph_warmup": graph_warmup,
         "pipeline_wall_s": pipeline_wall_s,
         "pages_per_s": len(image_paths) / pipeline_wall_s,
         "page_count": len(image_paths),
