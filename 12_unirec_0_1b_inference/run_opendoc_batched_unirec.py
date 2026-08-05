@@ -31,6 +31,7 @@ from continuous_unirec import (
 from modeling_optimized_unirec import OptimizedUniRecRunner
 from opendoc_layout_npu import PPDocLayoutV2NpuAdapter
 from text_packed_prefill import PACKED_TEXT_PREFILL_BUCKET
+from vision_atlas import UniRecVisionAtlasRuntime
 
 
 @dataclass
@@ -159,6 +160,15 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--vision-prefill-mode",
+        choices=("eager", "compiled_atlas_stage2"),
+        default="eager",
+        help=(
+            "Vision execution. compiled_atlas_stage2 packs crop-local stage-2 "
+            "feature maps into the validated guarded 64x192 atlas graph"
+        ),
+    )
+    parser.add_argument(
         "--prefill-device-timing",
         action="store_true",
         help="Record NPU event timing for each recognition-prefill stage",
@@ -228,9 +238,15 @@ def prefill_crop_group(
     crops: list[CropRequest],
     use_packed_graph: bool,
     runner: OptimizedUniRecRunner,
+    vision_atlas_runtime: UniRecVisionAtlasRuntime | None,
     args: argparse.Namespace,
 ) -> list[Any]:
     if use_packed_graph:
+        if vision_atlas_runtime is not None:
+            return vision_atlas_runtime.prefill_images_packed_for_cohort(
+                [(crop.image, crop.request_id) for crop in crops],
+                profile_device_stages=args.prefill_device_timing,
+            )
         return runner.prefill_images_packed_for_cohort(
             [(crop.image, crop.request_id) for crop in crops],
             profile_device_stages=args.prefill_device_timing,
@@ -473,6 +489,7 @@ def recognize_cohort(
     cohort: list[CropRequest],
     target_batch_size: int,
     runner: OptimizedUniRecRunner,
+    vision_atlas_runtime: UniRecVisionAtlasRuntime | None,
     args: argparse.Namespace,
     metrics: RunMetrics,
 ) -> None:
@@ -492,6 +509,7 @@ def recognize_cohort(
             crops=crops,
             use_packed_graph=use_packed_graph,
             runner=runner,
+            vision_atlas_runtime=vision_atlas_runtime,
             args=args,
         )
         for crop, item in zip(crops, items):
@@ -622,9 +640,23 @@ def main() -> None:
                 args.decode_mode.startswith("compiled")
                 or args.text_prefill_mode
                 in {"compiled_s512", "compiled_packed_s1024"}
+                or args.vision_prefill_mode == "compiled_atlas_stage2"
             )
             else None
         ),
+    )
+    if (
+        args.vision_prefill_mode == "compiled_atlas_stage2"
+        and args.text_prefill_mode != "compiled_packed_s1024"
+    ):
+        raise ValueError(
+            "compiled_atlas_stage2 currently requires "
+            "--text-prefill-mode compiled_packed_s1024"
+        )
+    vision_atlas_runtime = (
+        UniRecVisionAtlasRuntime(runner)
+        if args.vision_prefill_mode == "compiled_atlas_stage2"
+        else None
     )
     setup_s = time.perf_counter() - setup_started
     print(
@@ -707,6 +739,7 @@ def main() -> None:
                     crops=crop_group,
                     use_packed_graph=use_packed_graph,
                     runner=runner,
+                    vision_atlas_runtime=vision_atlas_runtime,
                     args=args,
                 )
                 for crop, item in zip(crop_group, items):
@@ -820,6 +853,7 @@ def main() -> None:
                     cohort=cohort,
                     target_batch_size=args.decode_batch_size,
                     runner=runner,
+                    vision_atlas_runtime=vision_atlas_runtime,
                     args=args,
                     metrics=metrics,
                 )
@@ -833,6 +867,7 @@ def main() -> None:
                 cohort=final_cohort,
                 target_batch_size=args.decode_batch_size,
                 runner=runner,
+                vision_atlas_runtime=vision_atlas_runtime,
                 args=args,
                 metrics=metrics,
             )
@@ -858,6 +893,7 @@ def main() -> None:
         "decode_scheduling": args.decode_scheduling,
         "decode_batch_size": args.decode_batch_size,
         "text_prefill_mode": args.text_prefill_mode,
+        "vision_prefill_mode": args.vision_prefill_mode,
         "max_length": args.max_length,
         "layout_backend": args.layout_backend,
         "layout_dtype": args.layout_dtype if not use_onnx_layout else None,
@@ -886,6 +922,11 @@ def main() -> None:
             else None
         ),
         "text_prefill_packing": runner.packed_text_prefill_summary(),
+        "vision_prefill": (
+            vision_atlas_runtime.summary()
+            if vision_atlas_runtime is not None
+            else {"execution": "eager_per_crop"}
+        ),
         "decode_s": metrics.decode_s,
         "output_assembly_s": metrics.output_assembly_s,
         "output_write_s": metrics.output_write_s,
