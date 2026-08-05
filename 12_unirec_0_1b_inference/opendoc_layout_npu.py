@@ -91,20 +91,11 @@ class PPDocLayoutV2NpuAdapter:
         if execution == "torchair":
             from layout_torchair import LayoutFullGraphRuntime
 
-            warmup_inputs = self.processor(
-                images=np.zeros((800, 800, 3), dtype=np.uint8),
-                return_tensors="pt",
-            )
-            warmup_pixel_values = warmup_inputs["pixel_values"].to(
-                device=self.device,
-                dtype=self.dtype,
-            )
             self.compiled_runtime = LayoutFullGraphRuntime(
                 self.model,
                 cache_root=Path(compile_cache_dir),
                 dtype=self.dtype,
                 device=self.device,
-                sample_pixel_values=warmup_pixel_values,
             )
         self.setup_s = time.perf_counter() - started
         self.page_count = 0
@@ -123,10 +114,31 @@ class PPDocLayoutV2NpuAdapter:
         self.postprocess_s = 0.0
         self.stage_s.clear()
 
-    def warmup_graph(self, *, passes: int = 2) -> dict[str, Any] | None:
+    def warmup_graph(
+        self, image: np.ndarray, *, passes: int = 2
+    ) -> dict[str, Any] | None:
         if self.compiled_runtime is None:
             return None
-        self.graph_warmup = self.compiled_runtime.warmup(passes=passes)
+        pass_wall_s = []
+        for index in range(passes):
+            started = time.perf_counter()
+            self._predict_one(image, self.threshold)
+            elapsed = time.perf_counter() - started
+            pass_wall_s.append(elapsed)
+            print(
+                f"LAYOUT_GRAPH_WARMUP pass={index + 1}/{passes} "
+                f"wall_s={elapsed:.3f}",
+                flush=True,
+            )
+        self.reset_timing()
+        self.graph_warmup = {
+            "passes": passes,
+            "pass_wall_s": pass_wall_s,
+            "cache_dir": str(self.compiled_runtime.cache_dir),
+            "dynamic": False,
+            "fullgraph": True,
+            "input": "first_benchmark_page",
+        }
         return self.graph_warmup
 
     @torch.inference_mode()

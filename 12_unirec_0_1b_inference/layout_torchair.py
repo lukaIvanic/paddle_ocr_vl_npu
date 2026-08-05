@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import math
-import time
 import types
 from pathlib import Path
 from typing import Any
@@ -250,7 +249,6 @@ class LayoutFullGraphRuntime:
         cache_root: Path,
         dtype: torch.dtype,
         device: torch.device,
-        sample_pixel_values: torch.Tensor,
     ) -> None:
         make_compile_compatible(model)
         self.stage = LayoutFullGraph(model).eval()
@@ -272,28 +270,5 @@ class LayoutFullGraphRuntime:
             ge_cache=True,
             fullgraph=True,
         )
-        self.sample_pixel_values = sample_pixel_values
-
-    def warmup(self, *, passes: int = 2) -> dict[str, Any]:
-        pass_wall_s = []
-        with torch.inference_mode():
-            for index in range(passes):
-                started = time.perf_counter()
-                self.compiled(self.sample_pixel_values)
-                torch.npu.synchronize()
-                elapsed = time.perf_counter() - started
-                pass_wall_s.append(elapsed)
-                print(
-                    f"LAYOUT_GRAPH_WARMUP pass={index + 1}/{passes} wall_s={elapsed:.3f}",
-                    flush=True,
-                )
-        return {
-            "passes": passes,
-            "pass_wall_s": pass_wall_s,
-            "cache_dir": str(self.cache_dir),
-            "dynamic": False,
-            "fullgraph": True,
-        }
-
     def __call__(self, pixel_values: torch.Tensor):
         return self.compiled(pixel_values)

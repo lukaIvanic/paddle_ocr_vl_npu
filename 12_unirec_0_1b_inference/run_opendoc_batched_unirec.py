@@ -946,7 +946,8 @@ def main() -> None:
         vision_atlas_runtime=vision_atlas_runtime,
     )
     if not use_onnx_layout:
-        pipeline.layout_detector.warmup_graph()
+        layout_warmup_page = decode_page_bgr(image_paths[0])
+        pipeline.layout_detector.warmup_graph(layout_warmup_page.image)
     setup_s = time.perf_counter() - setup_started
     print(
         f"OPENDOC_BATCHED_SETUP_END setup_s={setup_s:.3f} pages={len(image_paths)} "
