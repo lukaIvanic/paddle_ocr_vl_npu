@@ -21,6 +21,7 @@ except Exception:
 LOCAL_UNIREC_STATIC_CACHE_LEN = 256
 LOCAL_UNIREC_SELF_ATTN_BACKENDS = {"eager", "increfa"}
 DTYPE_MAP = {
+    "bfloat16": torch.bfloat16,
     "float16": torch.float16,
     "float32": torch.float32,
 }
@@ -1325,8 +1326,23 @@ class OptimizedUniRecRunner:
 
     def _load_model(self) -> LocalUniRecModel:
         model = LocalUniRecModel(self.config).to(dtype=self.dtype)
-        checkpoint = torch.load(self.model_path / "model.pth", map_location=torch.device("cpu"))
-        state_dict = checkpoint.get("state_dict", checkpoint)
+        safetensors_path = self.model_path / "model.safetensors"
+        pytorch_path = self.model_path / "model.pth"
+        if safetensors_path.is_file():
+            try:
+                from safetensors.torch import load_file
+            except ImportError as exc:
+                raise RuntimeError(
+                    "Loading model.safetensors requires the safetensors package"
+                ) from exc
+            state_dict = load_file(str(safetensors_path), device="cpu")
+        elif pytorch_path.is_file():
+            checkpoint = torch.load(pytorch_path, map_location=torch.device("cpu"))
+            state_dict = checkpoint.get("state_dict", checkpoint)
+        else:
+            raise FileNotFoundError(
+                f"No model.safetensors or model.pth checkpoint found under {self.model_path}"
+            )
         remapped: dict[str, torch.Tensor] = {}
         for key, value in state_dict.items():
             normalized = key[len("module.") :] if key.startswith("module.") else key
@@ -1336,6 +1352,10 @@ class OptimizedUniRecRunner:
                 normalized = "decoder." + normalized[len("model.decoder.") :]
             elif normalized.startswith("model.lm_head."):
                 normalized = "lm_head." + normalized[len("model.lm_head.") :]
+            elif normalized == "model.shared.weight":
+                remapped["decoder.embed_tokens.weight"] = value
+                remapped["lm_head.weight"] = value
+                continue
             elif normalized.startswith(("encoder.", "decoder.", "lm_head.")):
                 pass
             else:

@@ -52,7 +52,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model-path", type=Path, required=True)
     parser.add_argument("--image", type=Path, action="append", default=None)
     parser.add_argument("--device", default="npu:0")
-    parser.add_argument("--dtype", choices=("float16", "float32"), default="float16")
+    parser.add_argument("--dtype", choices=("bfloat16", "float16", "float32"), default="bfloat16")
     parser.add_argument("--max-length", type=int, default=128)
     parser.add_argument("--decode-mode", choices=("eager", "compiled", "compiled_ifa"), default="compiled")
     parser.add_argument(
