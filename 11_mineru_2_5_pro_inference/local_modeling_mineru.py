@@ -403,6 +403,14 @@ class MinerURMSNorm(nn.Module):
         return self.weight * hidden_states.to(input_dtype)
 
 
+def linear_last_dim(module: nn.Linear, inputs: torch.Tensor) -> torch.Tensor:
+    """Apply a linear to the last dimension through an explicit 2-D MatMul."""
+    leading_shape = inputs.shape[:-1]
+    flattened = inputs.reshape(-1, inputs.shape[-1])
+    outputs = F.linear(flattened, module.weight, module.bias)
+    return outputs.reshape(*leading_shape, module.out_features)
+
+
 class MinerURotaryEmbedding(nn.Module):
     def __init__(self, config: MinerUTextConfig):
         super().__init__()
@@ -441,7 +449,9 @@ class MinerUMLP(nn.Module):
         self.down_proj = nn.Linear(config.intermediate_size, config.hidden_size, bias=False)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.down_proj(_activation(self.hidden_act, self.gate_proj(x)) * self.up_proj(x))
+        gate = _activation(self.hidden_act, linear_last_dim(self.gate_proj, x))
+        up = linear_last_dim(self.up_proj, x)
+        return linear_last_dim(self.down_proj, gate * up)
 
 
 class MinerUAttention(nn.Module):
@@ -463,9 +473,15 @@ class MinerUAttention(nn.Module):
 
     def project_qkv(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         batch, query_length, _hidden = hidden_states.shape
-        query_states = self.q_proj(hidden_states).view(batch, query_length, self.num_heads, self.head_dim).transpose(1, 2)
-        key_states = self.k_proj(hidden_states).view(batch, query_length, self.num_key_value_heads, self.head_dim).transpose(1, 2)
-        value_states = self.v_proj(hidden_states).view(batch, query_length, self.num_key_value_heads, self.head_dim).transpose(1, 2)
+        query_states = linear_last_dim(self.q_proj, hidden_states).view(
+            batch, query_length, self.num_heads, self.head_dim
+        ).transpose(1, 2)
+        key_states = linear_last_dim(self.k_proj, hidden_states).view(
+            batch, query_length, self.num_key_value_heads, self.head_dim
+        ).transpose(1, 2)
+        value_states = linear_last_dim(self.v_proj, hidden_states).view(
+            batch, query_length, self.num_key_value_heads, self.head_dim
+        ).transpose(1, 2)
         return query_states, key_states, value_states
 
     def apply_rotary(
@@ -516,7 +532,7 @@ class MinerUAttention(nn.Module):
         probs = F.softmax(scores, dim=-1, dtype=torch.float32).to(query_states.dtype)
         attn_output = torch.matmul(probs, value_for_attn)
         attn_output = attn_output.transpose(1, 2).contiguous().reshape(batch, query_length, -1)
-        return self.o_proj(attn_output)
+        return linear_last_dim(self.o_proj, attn_output)
 
     def attend_static_decode(
         self,
@@ -544,7 +560,7 @@ class MinerUAttention(nn.Module):
             batch, heads, query_length, head_dim
         )
         attn_output = attn_output.transpose(1, 2).contiguous().reshape(batch, query_length, -1)
-        return self.o_proj(attn_output)
+        return linear_last_dim(self.o_proj, attn_output)
 
     def forward(
         self,
