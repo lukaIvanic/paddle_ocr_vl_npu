@@ -201,6 +201,36 @@ defined by the existing vision `cu_seqlens`. MinerU's vision head dimension is
 to `--local-dtype float16`; this is the common PromptFA dtype supported by both
 910B and 310P. `bfloat16` remains an explicit 910B-only comparison option.
 
+The local backends also accept `--local-vision-backend torchair` plus
+`--local-vision-buckets`. This is a B=1 static bucket path. Patch embedding and
+position construction remain eager at the real image shape. The 32 vision
+transformer blocks receive padded hidden states, rotary factors, and a bool
+mask that isolates real rows from padding. Real rows are sliced before the
+unchanged 2x2 patch merger. Sequences above the largest configured bucket use
+the same eager unpadded blocks instead of being truncated or resized.
+
+The first 910B validation at commit `9511b2e` used FP16 PromptFA. A fixed layout
+request routed 5,476 real tokens to the 5,632 bucket: full vision time changed
+from 178.1 ms eager to 153.6 ms compiled (1.16x, 35.6K effective tok/s). A real
+recognition crop routed 960 tokens to the 1,024 bucket: 144.2 ms to 39.0 ms
+(3.69x, 24.6K effective tok/s). Both cases had exact first-64-token generation
+parity. Final image-embedding cosine similarity was at least 0.999998, mean
+absolute error was at most 0.0506, and neither result contained nonfinite
+values. Cold first calls were about 87-91 seconds and are excluded from warm
+timing.
+
+Use the isolated comparison before adding more graph shapes:
+
+```sh
+$PYTHON 11_mineru_2_5_pro_inference/bench_compiled_vision_prefill.py \
+  --model "$MODEL_DIR" \
+  --image crops/crop_01_text_block_en.png \
+  --prompt "Text Recognition:" \
+  --bucket 1024 \
+  --cache-dir .runtime_cache/11_mineru_2_5_pro_inference/vision_prefill_b1_fp16 \
+  --output tmp/11_mineru_2_5_pro_inference/compiled_vision_crop/result.json
+```
+
 ## Official synchronous vLLM lane
 
 Start with eager vLLM to separate compatibility from graph compilation:
