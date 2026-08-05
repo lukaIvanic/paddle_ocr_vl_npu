@@ -1,0 +1,221 @@
+[
+  {
+    "type": "header",
+    "bbox": [
+      0.069,
+      0.055,
+      0.106,
+      0.076
+    ],
+    "angle": 0,
+    "content": "小红书"
+  },
+  {
+    "type": "header",
+    "bbox": [
+      0.11,
+      0.053,
+      0.267,
+      0.071
+    ],
+    "angle": 0,
+    "content": "@管综数学看朱曦"
+  },
+  {
+    "type": "header",
+    "bbox": [
+      0.9,
+      0.057,
+      0.976,
+      0.079
+    ],
+    "angle": 0,
+    "content": "陈剑团队"
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.112,
+      0.086,
+      0.426,
+      0.105
+    ],
+    "angle": 0,
+    "content": "2. 自然数 ----整数的子集（非负子集）"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.116,
+      0.114,
+      0.348,
+      0.133
+    ],
+    "angle": 0,
+    "content": "自然数 N: 0, 1, 2, …",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.119,
+      0.136,
+      0.609,
+      0.171
+    ],
+    "angle": 0,
+    "content": "注意 自然数包括正整数和0，最小的自然数为0.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.116,
+      0.182,
+      0.198,
+      0.199
+    ],
+    "angle": 0,
+    "content": "考试方法：",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.127,
+      0.199,
+      0.692,
+      0.236
+    ],
+    "angle": 0,
+    "content": "(1) \\( z_1(+,-,x)z_2 = z \\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.122,
+      0.237,
+      0.924,
+      0.335
+    ],
+    "angle": 0,
+    "content": "(2) \\( a, b \\in \\mathbb{Z} \\). 且 \\( \\frac{b}{a} = \\mathbb{Z} \\) < \\(\\begin{array}{l} b \\text{是} a \\text{的倍数} (b = a k) \\\\ a \\text{是} b \\text{的双数} (\\text{双乘}) \\end{array}\\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.15,
+      0.347,
+      0.695,
+      0.402
+    ],
+    "angle": 0,
+    "content": "例： \\( \\frac{b}{4} = z \\Rightarrow  b = {4k}\\left( {k \\in  z}\\right) . \\)",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.254,
+      0.404,
+      0.665,
+      0.436
+    ],
+    "angle": 0,
+    "content": "\\[\nb = \\dots - 8, - 4, 0, 4, 8, \\dots\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.159,
+      0.445,
+      0.843,
+      0.613
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\frac {4}{a} = z ^ {+} (a \\in z) = a = 1, 2, 4. \\\\ \\frac {4}{a} = z ^ {-} (a \\in z) \\Rightarrow a = \\underline {{- 1 , - 2 , - 4}}. \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.16,
+      0.445,
+      0.843,
+      0.506
+    ],
+    "angle": 0,
+    "content": "例：\\(\\frac{3}{a}=z(a\\in z)\\Rightarrow a=\\underline{1,3,-1,-3}\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.127,
+      0.624,
+      0.909,
+      0.681
+    ],
+    "angle": 0,
+    "content": "(3) \\( z_1 + \\frac{b}{a} = z_2 \\Rightarrow \\frac{b}{a} = z \\Rightarrow \\boxed{b = a k} (k + z) \\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.14,
+      0.689,
+      0.895,
+      0.754
+    ],
+    "angle": 0,
+    "content": "例： \\( m \\in  z \\) 且 \\( \\frac{-3m + 4}{3m + 1} = z \\Rightarrow  {求}^{1}m = \\frac{0/ - 2}.\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.147,
+      0.757,
+      0.963,
+      0.832
+    ],
+    "angle": 0,
+    "content": "分离：分子不带子团！\\(\\frac{-(3m+1)+5}{3m+1}=-1+\\boxed{\\frac{5}{3m+1}}=z.\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.172,
+      0.844,
+      0.571,
+      0.876
+    ],
+    "angle": 0,
+    "content": "\\[\n\\therefore 3 m + 1 = 1, 5, - 1, - 5.\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.19,
+      0.894,
+      0.584,
+      0.925
+    ],
+    "angle": 0,
+    "content": "\\[\n\\therefore 3 m = 0, 4, - 2, - 6.\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.268,
+      0.931,
+      0.57,
+      0.962
+    ],
+    "angle": 0,
+    "content": "\\[\nm = 4 2\n\\]"
+  }
+]
