@@ -1,0 +1,68 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_8076_MEYER_Chapter_2_-_Language_Change_page_012.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "header_01",
+      "bbox": [
+        64.20226287841797,
+        45.1898193359375,
+        423.01690673828125,
+        95.92387390136719
+      ],
+      "score": 0.8723477721214294,
+      "text": "CAMBRIDGE",
+      "text_unirec": "CAMBRIDGE",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "paragraph_title_02",
+      "bbox": [
+        316.8382568359375,
+        265.2251281738281,
+        1454.8060302734375,
+        380.1091613769531
+      ],
+      "score": 0.8710708022117615,
+      "text": "Words in Modern and Older Indo-European LanguagesEquivalent to Modern English foot",
+      "text_unirec": "Words in Modern and Older Indo-European LanguagesEquivalent to Modern English foot",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "table_03",
+      "bbox": [
+        332.5151672363281,
+        545.1763916015625,
+        1562.518310546875,
+        988.0252075195312
+      ],
+      "score": 0.9842398166656494,
+      "text": "<table>\n<tr>\n<td>Old English fót</td>\n<td>Modern French pied</td>\n</tr>\n<tr>\n<td>Modern English foot</td>\n<td>Modern Italian piede</td>\n</tr>\n<tr>\n<td>Modern German Fuß</td>\n<td>Modern Portuguese pé</td>\n</tr>\n<tr>\n<td>Modern Dutch voet</td>\n<td>Modern Spanish pie</td>\n</tr>\n<tr>\n<td>Modern Norwegian fot</td>\n<td>Sanskrit pāt</td>\n</tr>\n<tr>\n<td>Modern Danish fod</td>\n<td>Latin pēs</td>\n</tr>\n<tr>\n<td>Modern Swedish fot</td>\n<td>Greek peza</td>\n</tr>\n</table>\n\n\n",
+      "text_unirec": "<table>\n<tr>\n<td>Old English fót</td>\n<td>Modern French pied</td>\n</tr>\n<tr>\n<td>Modern English foot</td>\n<td>Modern Italian piede</td>\n</tr>\n<tr>\n<td>Modern German Fuß</td>\n<td>Modern Portuguese pé</td>\n</tr>\n<tr>\n<td>Modern Dutch voet</td>\n<td>Modern Spanish pie</td>\n</tr>\n<tr>\n<td>Modern Norwegian fot</td>\n<td>Sanskrit pāt</td>\n</tr>\n<tr>\n<td>Modern Danish fod</td>\n<td>Latin pēs</td>\n</tr>\n<tr>\n<td>Modern Swedish fot</td>\n<td>Greek peza</td>\n</tr>\n</table>\n\n\n",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "footer_image_04",
+      "bbox": [
+        1453.411865234375,
+        1355.821044921875,
+        1954.937255859375,
+        1464.001708984375
+      ],
+      "score": 0.8283084630966187,
+      "text": "",
+      "text_unirec": "",
+      "is_image": true,
+      "img_path": "imgs/img_in_footer_image_box_1453_1355_1954_1464.jpg",
+      "is_merged_continuation": false,
+      "in_table": false
+    }
+  ],
+  "timing": {
+    "total": 3.9961822479963303
+  }
+}

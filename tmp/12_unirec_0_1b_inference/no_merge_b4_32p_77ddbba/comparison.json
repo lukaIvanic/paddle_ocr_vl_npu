@@ -1,0 +1,19 @@
+{
+  "baseline": "tmp/12_unirec_0_1b_inference/frontend_decode4_32p_0fbb969",
+  "baseline_pages_per_s": 2.302767851146895,
+  "baseline_pipeline_wall_s": 13.896320458035916,
+  "candidate": "tmp/12_unirec_0_1b_inference/no_merge_b4_32p_77ddbba",
+  "candidate_pages_per_s": 2.769104926023932,
+  "candidate_pipeline_wall_s": 11.556080702925101,
+  "field_difference_counts": {
+    "label": 0,
+    "prompt": 0,
+    "text": 0,
+    "token_ids": 0
+  },
+  "request_count": 186,
+  "same_request_ids": true,
+  "throughput_gain_pct": 20.251154481107502,
+  "wall_reduction_pct": 16.840715225140837,
+  "wall_reduction_s": 2.340239755110815
+}
