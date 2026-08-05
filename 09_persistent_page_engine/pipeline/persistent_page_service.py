@@ -123,11 +123,13 @@ class _UnifiedPageReadySource:
         ] = queue.Queue(maxsize=recognizer.cpu_preprocess_max_pending)
         self._prepared: deque[tuple[CpuPreparedRecognition, float]] = deque()
         self._ready: deque[ReadyDecodeRequest] = deque()
+        self._staged_prefill: Any | None = None
         self._owners: dict[str, _RequestOwner] = {}
         self._owners_lock = threading.Lock()
         self._crop_sentinel = object()
         self._mode_counts: Counter[str] = Counter()
         self._mode_wall_s: defaultdict[str, float] = defaultdict(float)
+        self._device_stage_s: defaultdict[str, float] = defaultdict(float)
         self._pages_completed = 0
 
         self._input_executor = ThreadPoolExecutor(
@@ -137,6 +139,10 @@ class _UnifiedPageReadySource:
         self._postprocess_executor = ThreadPoolExecutor(
             max_workers=postprocess_workers,
             thread_name_prefix="page-api-layout-postprocess",
+        )
+        self._h2d_executor = ThreadPoolExecutor(
+            max_workers=1,
+            thread_name_prefix="page-api-prefill-h2d",
         )
         self._intake_thread = threading.Thread(
             target=self._intake_loop,
@@ -164,6 +170,7 @@ class _UnifiedPageReadySource:
                 and self._prepared_inbox.empty()
                 and not self._prepared
                 and not self._ready
+                and self._staged_prefill is None
             )
 
     def _notify(self) -> None:
@@ -352,7 +359,7 @@ class _UnifiedPageReadySource:
             except queue.Empty:
                 return
 
-    def _run_prefill(self) -> None:
+    def _pop_prefill_group(self) -> Any:
         if not self._prepared:
             raise RuntimeError("prefill requested without prepared crops")
         members = [self._prepared.popleft()]
@@ -365,11 +372,31 @@ class _UnifiedPageReadySource:
                     break
                 members.append(self._prepared.popleft())
                 total += candidate_tokens
+        return self.recognizer._prepared_group(members)
+
+    def _run_prefill(self) -> None:
+        if self._staged_prefill is None:
+            self._staged_prefill = self.recognizer._stage_prefill_group(
+                self._pop_prefill_group()
+            )
+
+        next_stage_future: Future[Any] | None = None
+        if self._prepared:
+            next_stage_future = self._h2d_executor.submit(
+                self.recognizer._stage_prefill_group,
+                self._pop_prefill_group(),
+            )
         started = time.perf_counter()
-        group = self.recognizer._prepared_group(members)
-        staged = self.recognizer._stage_prefill_group(group)
-        inflight = self.recognizer._enqueue_staged_prefill_group(staged)
+        inflight = self.recognizer._enqueue_staged_prefill_group(
+            self._staged_prefill
+        )
+        self._staged_prefill = (
+            None if next_stage_future is None else next_stage_future.result()
+        )
         finalized = self.recognizer._finalize_prefill_group(inflight)
+        for state in finalized:
+            for stage, seconds in state.device_stage_s.items():
+                self._device_stage_s[stage] += float(seconds)
         self._ready.extend(
             self.recognizer._ready_from_prefilled(state) for state in finalized
         )
@@ -417,7 +444,8 @@ class _UnifiedPageReadySource:
 
             if free <= 0:
                 return None
-            if prepared > 0 and (active == 0 or prepared >= free):
+            has_prefill = self._staged_prefill is not None or prepared > 0
+            if has_prefill and (active == 0 or prepared >= free):
                 self._run_prefill()
                 continue
 
@@ -430,7 +458,7 @@ class _UnifiedPageReadySource:
                 continue
 
             self._harvest_prepared()
-            if self._prepared:
+            if self._staged_prefill is not None or self._prepared:
                 self._run_prefill()
                 continue
             if self.closed:
@@ -483,6 +511,7 @@ class _UnifiedPageReadySource:
         return {
             "mode_counts": dict(self._mode_counts),
             "mode_wall_s": dict(self._mode_wall_s),
+            "device_stage_s": dict(self._device_stage_s),
             "pages_completed": self._pages_completed,
         }
 
@@ -497,6 +526,7 @@ class _UnifiedPageReadySource:
         self._crop_thread.join(timeout=5.0)
         self._input_executor.shutdown(wait=True, cancel_futures=True)
         self._postprocess_executor.shutdown(wait=True, cancel_futures=True)
+        self._h2d_executor.shutdown(wait=True, cancel_futures=True)
 
 
 class PersistentPageEngine:
