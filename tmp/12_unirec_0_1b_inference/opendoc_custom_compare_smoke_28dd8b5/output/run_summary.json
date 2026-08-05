@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "mode": "compare",
+  "openocr_root": "/workspace/repos/OpenOCR",
+  "model_path": "/workspace/models/unirec-0.1b",
+  "device": "npu:0",
+  "dtype": "bfloat16",
+  "max_parallel_blocks": 1,
+  "max_length": 256,
+  "setup_s": 17.879666117951274,
+  "pipeline_wall_s": 34.31763556203805,
+  "page_count": 1,
+  "crop_count": 6,
+  "preprocess_exact_count": 0,
+  "token_exact_count": 6,
+  "raw_text_exact_count": 6,
+  "postprocessed_text_exact_count": 6,
+  "pages": [
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_003.png",
+      "wall_s": 34.31763556203805,
+      "recognized_crops": 6
+    }
+  ],
+  "trace_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/opendoc_custom_compare_smoke_28dd8b5/output/recognition_comparison.jsonl"
+}

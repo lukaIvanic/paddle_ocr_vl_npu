@@ -1,0 +1,79 @@
+OPENDOC_CUSTOM_SETUP_BEGIN mode=compare pages=1 max_parallel_blocks=1
+[2026/08/05 11:57:28] opendoc_onnx INFO: 🔧 User specified: Using CPU for layout detection
+[2026/08/05 11:57:28] opendoc_onnx INFO: Layout detector using: CPUExecutionProvider
+[2026/08/05 11:57:32] opendoc_onnx INFO:    Input names: ['im_shape', 'image', 'scale_factor']
+[2026/08/05 11:57:32] opendoc_onnx INFO:    Output names: ['fetch_name_0', 'fetch_name_1']
+Loading ONNX models...
+🔧 User specified: Using CPU
+Using execution providers: ['CPUExecutionProvider']
+Loading tokenizer from mapping file: /root/.cache/openocr/unirec_0_1b_onnx/unirec_tokenizer_mapping.json
+✅ Loaded vocabulary with 56371 tokens
+
+✅ Models loaded successfully!
+   Number of decoder layers: 6
+   Number of attention heads: 6
+   Head dimension: 128
+   Model dimension (d_model): 768
+   Vocabulary size: 56371
+OPENDOC_CUSTOM_SETUP_END setup_s=17.880
+OPENDOC_CUSTOM_PAGE_BEGIN index=1/1 image=PPT_1001115_eng_page_003.png
+[2026/08/05 11:57:52] opendoc_onnx INFO:   VLM recognition: processing 6 block(s) sequentially
+/workspace/repos/paddle_ocr_vl_npu/12_unirec_0_1b_inference/modeling_optimized_unirec.py:1385: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  pixel_values = inputs["pixel_values"].to(self.device).to(dtype=self.dtype)
+Encoding image...
+Encoding time: 0.85 seconds
+  cross_k shape: (6, 1, 6, 32, 128)
+  cross_v shape: (6, 1, 6, 32, 128)
+Generating text...
+✅ Generation complete! Total tokens: 7
+  Time taken: 0.53 seconds
+  Tokens per second: 13.12
+UNIREC_CROP_END page=PPT_1001115_eng_page_003.png crop=1 label=paragraph_title_01 custom_tokens=7 custom_s=0.553 token_exact=True first_diff=None
+Encoding image...
+Encoding time: 1.14 seconds
+  cross_k shape: (6, 1, 6, 52, 128)
+  cross_v shape: (6, 1, 6, 52, 128)
+Generating text...
+✅ Generation complete! Total tokens: 15
+  Time taken: 1.54 seconds
+  Tokens per second: 9.74
+UNIREC_CROP_END page=PPT_1001115_eng_page_003.png crop=2 label=paragraph_title_02 custom_tokens=15 custom_s=0.232 token_exact=True first_diff=None
+Encoding image...
+Encoding time: 1.37 seconds
+  cross_k shape: (6, 1, 6, 60, 128)
+  cross_v shape: (6, 1, 6, 60, 128)
+Generating text...
+✅ Generation complete! Total tokens: 26
+  Time taken: 2.28 seconds
+  Tokens per second: 11.40
+UNIREC_CROP_END page=PPT_1001115_eng_page_003.png crop=3 label=text_03 custom_tokens=26 custom_s=0.323 token_exact=True first_diff=None
+Encoding image...
+Encoding time: 1.57 seconds
+  cross_k shape: (6, 1, 6, 112, 128)
+  cross_v shape: (6, 1, 6, 112, 128)
+Generating text...
+✅ Generation complete! Total tokens: 29
+  Time taken: 2.46 seconds
+  Tokens per second: 11.77
+UNIREC_CROP_END page=PPT_1001115_eng_page_003.png crop=4 label=text_04 custom_tokens=29 custom_s=0.526 token_exact=True first_diff=None
+Encoding image...
+Encoding time: 1.70 seconds
+  cross_k shape: (6, 1, 6, 120, 128)
+  cross_v shape: (6, 1, 6, 120, 128)
+Generating text...
+✅ Generation complete! Total tokens: 47
+  Time taken: 5.62 seconds
+  Tokens per second: 8.36
+UNIREC_CROP_END page=PPT_1001115_eng_page_003.png crop=5 label=text_05 custom_tokens=47 custom_s=1.615 token_exact=True first_diff=None
+Encoding image...
+Encoding time: 1.78 seconds
+  cross_k shape: (6, 1, 6, 60, 128)
+  cross_v shape: (6, 1, 6, 60, 128)
+Generating text...
+✅ Generation complete! Total tokens: 28
+  Time taken: 3.24 seconds
+  Tokens per second: 8.64
+UNIREC_CROP_END page=PPT_1001115_eng_page_003.png crop=6 label=text_06 custom_tokens=28 custom_s=0.784 token_exact=True first_diff=None
+[2026/08/05 11:58:20] opendoc_onnx INFO:   Total time:  34.249s
+OPENDOC_CUSTOM_PAGE_END index=1/1 wall_s=34.318 recognized_crops=6
+OPENDOC_CUSTOM_RUN_END {"status": "ok", "mode": "compare", "openocr_root": "/workspace/repos/OpenOCR", "model_path": "/workspace/models/unirec-0.1b", "device": "npu:0", "dtype": "bfloat16", "max_parallel_blocks": 1, "max_length": 256, "setup_s": 17.879666117951274, "pipeline_wall_s": 34.31763556203805, "page_count": 1, "crop_count": 6, "preprocess_exact_count": 0, "token_exact_count": 6, "raw_text_exact_count": 6, "postprocessed_text_exact_count": 6, "pages": [{"image": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_003.png", "wall_s": 34.31763556203805, "recognized_crops": 6}], "trace_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/opendoc_custom_compare_smoke_28dd8b5/output/recognition_comparison.jsonl"}

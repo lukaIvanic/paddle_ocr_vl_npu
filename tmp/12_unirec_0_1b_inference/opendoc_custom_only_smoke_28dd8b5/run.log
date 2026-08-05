@@ -1,0 +1,31 @@
+OPENDOC_CUSTOM_SETUP_BEGIN mode=custom pages=1 max_parallel_blocks=1
+[2026/08/05 11:59:31] opendoc_onnx INFO: 🔧 User specified: Using CPU for layout detection
+[2026/08/05 11:59:31] opendoc_onnx INFO: Layout detector using: CPUExecutionProvider
+[2026/08/05 11:59:34] opendoc_onnx INFO:    Input names: ['im_shape', 'image', 'scale_factor']
+[2026/08/05 11:59:34] opendoc_onnx INFO:    Output names: ['fetch_name_0', 'fetch_name_1']
+Loading ONNX models...
+🔧 User specified: Using CPU
+Using execution providers: ['CPUExecutionProvider']
+Loading tokenizer from mapping file: /root/.cache/openocr/unirec_0_1b_onnx/unirec_tokenizer_mapping.json
+✅ Loaded vocabulary with 56371 tokens
+
+✅ Models loaded successfully!
+   Number of decoder layers: 6
+   Number of attention heads: 6
+   Head dimension: 128
+   Model dimension (d_model): 768
+   Vocabulary size: 56371
+OPENDOC_CUSTOM_SETUP_END setup_s=18.304
+OPENDOC_CUSTOM_PAGE_BEGIN index=1/1 image=PPT_1001115_eng_page_003.png
+[2026/08/05 11:59:54] opendoc_onnx INFO:   VLM recognition: processing 6 block(s) sequentially
+/workspace/repos/paddle_ocr_vl_npu/12_unirec_0_1b_inference/modeling_optimized_unirec.py:1385: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  pixel_values = inputs["pixel_values"].to(self.device).to(dtype=self.dtype)
+UNIREC_CROP_END page=PPT_1001115_eng_page_003.png crop=1 label=paragraph_title_01 custom_tokens=7 custom_s=1.503 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_003.png crop=2 label=paragraph_title_02 custom_tokens=15 custom_s=0.472 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_003.png crop=3 label=text_03 custom_tokens=26 custom_s=0.673 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_003.png crop=4 label=text_04 custom_tokens=29 custom_s=0.529 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_003.png crop=5 label=text_05 custom_tokens=47 custom_s=1.249 custom_only
+UNIREC_CROP_END page=PPT_1001115_eng_page_003.png crop=6 label=text_06 custom_tokens=28 custom_s=0.750 custom_only
+[2026/08/05 11:59:59] opendoc_onnx INFO:   Total time:  10.044s
+OPENDOC_CUSTOM_PAGE_END index=1/1 wall_s=10.102 recognized_crops=6
+OPENDOC_CUSTOM_RUN_END {"status": "ok", "mode": "custom", "openocr_root": "/workspace/repos/OpenOCR", "model_path": "/workspace/models/unirec-0.1b", "device": "npu:0", "dtype": "bfloat16", "max_parallel_blocks": 1, "max_length": 256, "setup_s": 18.304037990048528, "pipeline_wall_s": 10.10241497703828, "page_count": 1, "crop_count": 6, "preprocess_exact_count": 0, "token_exact_count": 0, "raw_text_exact_count": 0, "postprocessed_text_exact_count": 0, "pages": [{"image": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_003.png", "wall_s": 10.10241497703828, "recognized_crops": 6}], "trace_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/opendoc_custom_only_smoke_28dd8b5/output/recognition_comparison.jsonl"}
