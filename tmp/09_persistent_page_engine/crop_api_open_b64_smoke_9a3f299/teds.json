@@ -1,0 +1,740 @@
+{
+  "table_count": 94,
+  "table_page_count": 67,
+  "sample_TEDS": 0.9069612439557171,
+  "sample_TEDS_structure_only": 0.9382348324702406,
+  "page_TEDS": 0.9126403867152533,
+  "page_TEDS_structure_only": 0.945247997907521,
+  "teds_timeout_s": 30.0,
+  "teds_timeout_count": 1,
+  "teds_error_count": 0,
+  "per_page_TEDS": {
+    "page-4319d401-c9e8-4326-9869-7572cf2e0e96.png": 0.9,
+    "page-d5a3ea83-5427-4f90-a157-7b39b784b26e.png": 0.9664293931550187,
+    "page-0b20ed47-7c6c-4578-bbdf-057a89a083ec.png": 0.7980293980758377,
+    "page-52e82aa9-7bd7-4683-8adc-520cae0291e0.png": 1.0,
+    "page-d5f79be0-5d57-4849-9897-6106dd32117a.png": 0.8095238095238095,
+    "page-ab441454-71f1-4900-87c1-d71d5602261e.png": 0.9959077380952381,
+    "page-3f872a77-3faf-47d6-8574-bd2e5806ff98.png": 0.7017651279879541,
+    "page-7a8cfa1e-c76b-4449-a38f-497648074cd1.png": 0.9848571428571429,
+    "page-f245e436-c16e-4d7c-8797-c473bf25880a.png": 0.9964628349547704,
+    "page-b9d507e7-1239-42de-b70a-d7ca65393dc9.png": 0.7033602150537634,
+    "page-9edf7687-029e-4e72-a9a6-c23faa1e1861.png": 0.9880952380952381,
+    "page-d627077d-61cd-45c5-936f-a2c306ec3b5b.png": 0.9995475113122172,
+    "page-9470d573-83bd-40bb-8491-534e9df043f6.png": 0.7879818594104309,
+    "page-c9614e79-fb1f-46ef-a660-0f8de860ae30.png": 0.9378787878787879,
+    "page-f9583127-1277-4424-be9d-35430e0aedd6.png": 0.953968253968254,
+    "page-2ff22832-e343-46a7-b94f-47ed864ce486.png": 0.9589285714285714,
+    "page-c8a4555b-2c14-40c2-b67f-097dbc77a6b7.png": 0.9673920736022646,
+    "page-e6c5454d-90ad-495c-85db-a416b7cd6452.png": 0.9546453254347992,
+    "page-f8fad378-8ee9-4bb0-b195-35a4d55f3113.png": 0.987538069587233,
+    "page-2b4c4f44-c0de-41b6-9561-96195c233f47.png": 0.9532308533169366,
+    "page-112859dc-07d9-473a-a027-94904db8fd84.png": 0.9571772714215082,
+    "page-7bfad9a4-c5b7-40f3-8600-be513d1b1aaa.png": 0.9906976744186047,
+    "page-3bed7e71-905d-4f69-aabe-dbff56d7ac4c.png": 0.8283879080519492,
+    "page-28c45f5f-7e0d-464a-89ec-8de3a4abb927.png": 0.9820225564801367,
+    "page-28657a85-95cc-4bfa-8156-cc98518a0b4c.png": 1.0,
+    "page-74749e1d-5239-4d8e-b89c-6d83f5e59374.png": 0.9983974358974359,
+    "page-fd7003ba-9af2-4b60-8c45-1e2ac1c7f474.png": 0.8140422077922078,
+    "page-d8376ede-3935-4a80-8acb-525b14796774.png": 1.0,
+    "page-73432bc8-cd0f-4e14-b119-0a9de73ab141.png": 0.9394638668784632,
+    "page-9a25d716-f3a8-42e6-9a4d-e5e49a71ab41.png": 0.6837198346873936,
+    "page-b4d4cf5b-0a0e-454b-8220-8c7f58402791.png": 0.969337897244874,
+    "page-83587fc3-fe55-4e51-a3c5-f0664edba743.png": 0.9975845117838957,
+    "page-349417c3-e5f4-4dae-b018-7323ef36b04e.png": 0.8333333333333333,
+    "page-91460e0a-922c-4f9b-9d11-d1a7981c3a05.png": 0.9987179487179487,
+    "page-423cdc11-af52-4e41-8feb-a40741b15855.png": 0.9481878306878306,
+    "page-0c1be55c-0b1b-4d62-b17d-ed752f9af9f2.png": 1.0,
+    "page-219a47e5-3b78-4fa4-9066-3b95bb342a87.png": 0.9731490974912027,
+    "page-f46e72b1-865d-43e6-ab94-afae16c5f178.png": 0.9981785063752276,
+    "page-07d333cf-4ebf-427c-b146-e419962b81fa.png": 0.7887199546485261,
+    "page-573c437e-c309-4483-a038-ef2f440b104a.png": 0.9814907622117578,
+    "page-f6b6cfb8-3bb5-4393-b3fb-70efef72aca5.png": 0.9726231937996643,
+    "page-c99421f9-4435-44a9-82f8-7b044bb0ee1d.png": 0.9074245369789706,
+    "page-bf3685a0-f0ea-46a7-bb99-1526da8f8077.png": 0.9517315083535963,
+    "page-572316a1-cdf8-4c50-81d4-2e6dc13dcdce.png": 0.9969230769230769,
+    "page-eb7308e0-1395-4444-b6a5-9d33cc3a03b2.png": 0.9957787031283356,
+    "page-66aa2b38-32c0-4222-839a-50df648218df.png": 0.748909379551839,
+    "page-94600a77-35db-4549-b505-3dadc092b3f4.png": 1.0,
+    "page-b527edec-3363-4d38-a390-2f3a307f2392.png": 0.8464052287581699,
+    "page-e7681b54-2c4a-40a2-9abe-caebba01cefb.png": 0.85137439858422,
+    "page-a8d87718-ab19-4fc0-9ef5-3611ad10f88e.png": 0.92578125,
+    "page-472c26e2-6bc2-4c05-9889-05132c87a8a9.png": 0.9360389842058023,
+    "page-dd5b0a99-4cc6-4fa9-ab63-a277947735b1.png": 0.726861576436122,
+    "page-3f8eed58-8b86-4f3a-958d-13671977d3c6.png": 0.78125,
+    "page-91b20bf2-3ad5-41f4-b739-4cc4b18ab1eb.png": 0.9821296656361063,
+    "page-1f03d0f2-1166-4b9b-9609-94bf8bfd29b2.png": 0.9674408377310897,
+    "page-31fb2a53-5b32-40f6-9db1-52b357f3201f.png": 0.9928518974639664,
+    "page-d0b2bb59-ce8e-4a1c-9ba1-a805606a477f.png": 0.9284899749373434,
+    "page-d29fe4d2-832a-4ad6-ac80-dc01cf8b0e16.png": 0.999438202247191,
+    "page-d5e0cd38-ac0f-422c-b6d5-c8f001720491.png": 0.9993788371253159,
+    "page-8792f466-c570-468c-86dc-402a510e9bb7.png": 0.9914855993131659,
+    "page-6c29d065-b8f0-4bb0-b7c3-779f9cbab09a.png": 0.9779488498537202,
+    "page-c7792da7-4167-4f5c-a7ca-ec0f8833f83b.png": 0.991927561564852,
+    "page-2abc2a95-d39a-48db-9b6d-f40410412694.png": 0.860009484886936,
+    "page-3c690b07-30d7-4e77-bf20-012f0080fb1d.png": 0.9933212930623976,
+    "page-74961b9a-ef4c-42d8-a95f-406e6b84cf63.png": 0.9051933490816841,
+    "page-2deb83b3-abe2-442c-a544-0b6a8db464f1.png": 0.8880377184378504,
+    "page-dca64e05-1ce6-49ee-857a-9b5d05a87357.png": 0.0
+  },
+  "per_table": [
+    {
+      "request_id": "page_000147_table_box_id_3",
+      "page_name": "page-4319d401-c9e8-4326-9869-7572cf2e0e96.png",
+      "TEDS": 0.9,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000223_table_box_id_4",
+      "page_name": "page-d5a3ea83-5427-4f90-a157-7b39b784b26e.png",
+      "TEDS": 0.9833333333333333,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000106_table_box_id_4",
+      "page_name": "page-0b20ed47-7c6c-4578-bbdf-057a89a083ec.png",
+      "TEDS": 0.8162878787878788,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000142_table_box_id_2",
+      "page_name": "page-52e82aa9-7bd7-4683-8adc-520cae0291e0.png",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000190_table_box_id_0",
+      "page_name": "page-d5f79be0-5d57-4849-9897-6106dd32117a.png",
+      "TEDS": 0.8095238095238095,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000182_table_box-tn22tc2f",
+      "page_name": "page-ab441454-71f1-4900-87c1-d71d5602261e.png",
+      "TEDS": 0.9918154761904762,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000229_table_box-pug9otka",
+      "page_name": "page-3f872a77-3faf-47d6-8574-bd2e5806ff98.png",
+      "TEDS": 0.32806324110671936,
+      "TEDS_structure_only": 0.4782608695652174,
+      "error": null
+    },
+    {
+      "request_id": "page_000188_table_box_id_6",
+      "page_name": "page-7a8cfa1e-c76b-4449-a38f-497648074cd1.png",
+      "TEDS": 0.9848571428571429,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000210_table_box_id_4",
+      "page_name": "page-f245e436-c16e-4d7c-8797-c473bf25880a.png",
+      "TEDS": 0.996,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000200_table_box_id_7",
+      "page_name": "page-b9d507e7-1239-42de-b70a-d7ca65393dc9.png",
+      "TEDS": 0.5483870967741935,
+      "TEDS_structure_only": 0.5555555555555556,
+      "error": null
+    },
+    {
+      "request_id": "page_000201_table_box_id_3",
+      "page_name": "page-9edf7687-029e-4e72-a9a6-c23faa1e1861.png",
+      "TEDS": 0.9761904761904762,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000229_table_box_id_7",
+      "page_name": "page-3f872a77-3faf-47d6-8574-bd2e5806ff98.png",
+      "TEDS": 0.884375,
+      "TEDS_structure_only": 0.9,
+      "error": null
+    },
+    {
+      "request_id": "page_000225_table_box_id_9",
+      "page_name": "page-d627077d-61cd-45c5-936f-a2c306ec3b5b.png",
+      "TEDS": 0.9990950226244344,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000209_table_box_id_1",
+      "page_name": "page-9470d573-83bd-40bb-8491-534e9df043f6.png",
+      "TEDS": 0.7879818594104309,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000217_table_box_id_0",
+      "page_name": "page-c9614e79-fb1f-46ef-a660-0f8de860ae30.png",
+      "TEDS": 0.9378787878787879,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000010_table_box_id_1",
+      "page_name": "page-f9583127-1277-4424-be9d-35430e0aedd6.png",
+      "TEDS": 0.953968253968254,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000226_table_box_id_5",
+      "page_name": "page-2ff22832-e343-46a7-b94f-47ed864ce486.png",
+      "TEDS": 0.9910714285714286,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000215_table_box_id_4",
+      "page_name": "page-c8a4555b-2c14-40c2-b67f-097dbc77a6b7.png",
+      "TEDS": 0.9673920736022646,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000220_table_box_id_10",
+      "page_name": "page-e6c5454d-90ad-495c-85db-a416b7cd6452.png",
+      "TEDS": 0.95,
+      "TEDS_structure_only": 0.95,
+      "error": null
+    },
+    {
+      "request_id": "page_000232_table_box_id_8",
+      "page_name": "page-f8fad378-8ee9-4bb0-b195-35a4d55f3113.png",
+      "TEDS": 0.987538069587233,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000204_table_box_id_6",
+      "page_name": "page-2b4c4f44-c0de-41b6-9561-96195c233f47.png",
+      "TEDS": 0.9532308533169366,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000202_table_box_id_0",
+      "page_name": "page-112859dc-07d9-473a-a027-94904db8fd84.png",
+      "TEDS": 0.9571772714215082,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000229_table_box_id_3",
+      "page_name": "page-3f872a77-3faf-47d6-8574-bd2e5806ff98.png",
+      "TEDS": 0.8928571428571429,
+      "TEDS_structure_only": 0.8928571428571429,
+      "error": null
+    },
+    {
+      "request_id": "page_000235_table_box_id_16",
+      "page_name": "page-7bfad9a4-c5b7-40f3-8600-be513d1b1aaa.png",
+      "TEDS": 0.9906976744186047,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000182_table_box_id_2",
+      "page_name": "page-ab441454-71f1-4900-87c1-d71d5602261e.png",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000226_table_box_id_0",
+      "page_name": "page-2ff22832-e343-46a7-b94f-47ed864ce486.png",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000222_table_box_id_1",
+      "page_name": "page-3bed7e71-905d-4f69-aabe-dbff56d7ac4c.png",
+      "TEDS": 0.8432147562582345,
+      "TEDS_structure_only": 0.8541666666666666,
+      "error": null
+    },
+    {
+      "request_id": "page_000220_table_box_id_3",
+      "page_name": "page-e6c5454d-90ad-495c-85db-a416b7cd6452.png",
+      "TEDS": 0.9404511278195489,
+      "TEDS_structure_only": 0.9473684210526316,
+      "error": null
+    },
+    {
+      "request_id": "page_000208_table_box_id_7",
+      "page_name": "page-28c45f5f-7e0d-464a-89ec-8de3a4abb927.png",
+      "TEDS": 0.9820225564801367,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000247_table_box_id_0",
+      "page_name": "page-28657a85-95cc-4bfa-8156-cc98518a0b4c.png",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000219_table_box_id_3",
+      "page_name": "page-74749e1d-5239-4d8e-b89c-6d83f5e59374.png",
+      "TEDS": 0.9983974358974359,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000239_table_box_id_7",
+      "page_name": "page-fd7003ba-9af2-4b60-8c45-1e2ac1c7f474.png",
+      "TEDS": 0.6280844155844156,
+      "TEDS_structure_only": 0.75,
+      "error": null
+    },
+    {
+      "request_id": "page_000246_table_box_id_6",
+      "page_name": "page-d8376ede-3935-4a80-8acb-525b14796774.png",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000205_table_box_id_11",
+      "page_name": "page-73432bc8-cd0f-4e14-b119-0a9de73ab141.png",
+      "TEDS": 0.9159907552764696,
+      "TEDS_structure_only": 0.9285714285714286,
+      "error": null
+    },
+    {
+      "request_id": "page_000200_table_box_id_2",
+      "page_name": "page-b9d507e7-1239-42de-b70a-d7ca65393dc9.png",
+      "TEDS": 0.8583333333333334,
+      "TEDS_structure_only": 0.8611111111111112,
+      "error": null
+    },
+    {
+      "request_id": "page_000222_table_box_id_3",
+      "page_name": "page-3bed7e71-905d-4f69-aabe-dbff56d7ac4c.png",
+      "TEDS": 0.813561059845664,
+      "TEDS_structure_only": 0.8732394366197183,
+      "error": null
+    },
+    {
+      "request_id": "page_000236_table_box_id_1",
+      "page_name": "page-9a25d716-f3a8-42e6-9a4d-e5e49a71ab41.png",
+      "TEDS": 0.9501461038961039,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000236_table_box_id_5",
+      "page_name": "page-9a25d716-f3a8-42e6-9a4d-e5e49a71ab41.png",
+      "TEDS": 0.41729356547868346,
+      "TEDS_structure_only": 0.5178571428571428,
+      "error": null
+    },
+    {
+      "request_id": "page_000238_table_box_id_2",
+      "page_name": "page-b4d4cf5b-0a0e-454b-8220-8c7f58402791.png",
+      "TEDS": 0.969337897244874,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000246_table_box_id_14",
+      "page_name": "page-d8376ede-3935-4a80-8acb-525b14796774.png",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000226_table_box_id_3",
+      "page_name": "page-2ff22832-e343-46a7-b94f-47ed864ce486.png",
+      "TEDS": 0.8857142857142857,
+      "TEDS_structure_only": 0.8857142857142857,
+      "error": null
+    },
+    {
+      "request_id": "page_000206_table_box_id_1",
+      "page_name": "page-83587fc3-fe55-4e51-a3c5-f0664edba743.png",
+      "TEDS": 0.9986914082948206,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000205_table_box_id_13",
+      "page_name": "page-73432bc8-cd0f-4e14-b119-0a9de73ab141.png",
+      "TEDS": 0.9629369784804568,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000246_table_box_id_11",
+      "page_name": "page-d8376ede-3935-4a80-8acb-525b14796774.png",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000206_table_box_id_9",
+      "page_name": "page-83587fc3-fe55-4e51-a3c5-f0664edba743.png",
+      "TEDS": 0.9964776152729709,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000210_table_box_id_0",
+      "page_name": "page-f245e436-c16e-4d7c-8797-c473bf25880a.png",
+      "TEDS": 0.9969256699095409,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000243_table_box-xkm41jlm",
+      "page_name": "page-349417c3-e5f4-4dae-b018-7323ef36b04e.png",
+      "TEDS": 0.7407407407407407,
+      "TEDS_structure_only": 0.75,
+      "error": null
+    },
+    {
+      "request_id": "page_000201_table_box-w2ehqidz",
+      "page_name": "page-9edf7687-029e-4e72-a9a6-c23faa1e1861.png",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000241_table_box_id_2",
+      "page_name": "page-91460e0a-922c-4f9b-9d11-d1a7981c3a05.png",
+      "TEDS": 0.9987179487179487,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000213_table_box_id_5",
+      "page_name": "page-423cdc11-af52-4e41-8feb-a40741b15855.png",
+      "TEDS": 0.9481878306878306,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000243_table_box_id_1",
+      "page_name": "page-349417c3-e5f4-4dae-b018-7323ef36b04e.png",
+      "TEDS": 0.9259259259259259,
+      "TEDS_structure_only": 0.9259259259259259,
+      "error": null
+    },
+    {
+      "request_id": "page_000211_table_box_id_3",
+      "page_name": "page-0c1be55c-0b1b-4d62-b17d-ed752f9af9f2.png",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000253_table_box_id_7",
+      "page_name": "page-219a47e5-3b78-4fa4-9066-3b95bb342a87.png",
+      "TEDS": 0.9501461988304094,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000240_table_box_id_9",
+      "page_name": "page-f46e72b1-865d-43e6-ab94-afae16c5f178.png",
+      "TEDS": 0.9981785063752276,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000244_table_box-fkrm6qrz",
+      "page_name": "page-07d333cf-4ebf-427c-b146-e419962b81fa.png",
+      "TEDS": 0.8775510204081632,
+      "TEDS_structure_only": 0.8775510204081632,
+      "error": null
+    },
+    {
+      "request_id": "page_000011_table_box_id_1",
+      "page_name": "page-573c437e-c309-4483-a038-ef2f440b104a.png",
+      "TEDS": 0.9814907622117578,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000221_table_box_id_3",
+      "page_name": "page-f6b6cfb8-3bb5-4393-b3fb-70efef72aca5.png",
+      "TEDS": 0.9726231937996643,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000244_table_box_id_8",
+      "page_name": "page-07d333cf-4ebf-427c-b146-e419962b81fa.png",
+      "TEDS": 0.6998888888888889,
+      "TEDS_structure_only": 0.92,
+      "error": null
+    },
+    {
+      "request_id": "page_000225_table_box_id_13",
+      "page_name": "page-d627077d-61cd-45c5-936f-a2c306ec3b5b.png",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000224_table_box_id_6",
+      "page_name": "page-c99421f9-4435-44a9-82f8-7b044bb0ee1d.png",
+      "TEDS": 0.908801580333626,
+      "TEDS_structure_only": 0.9552238805970149,
+      "error": null
+    },
+    {
+      "request_id": "page_000224_table_box-3str9h9p",
+      "page_name": "page-c99421f9-4435-44a9-82f8-7b044bb0ee1d.png",
+      "TEDS": 0.9060474936243154,
+      "TEDS_structure_only": 0.9552238805970149,
+      "error": null
+    },
+    {
+      "request_id": "page_000242_table_box-mhg591pb",
+      "page_name": "page-bf3685a0-f0ea-46a7-bb99-1526da8f8077.png",
+      "TEDS": 0.9198564593301435,
+      "TEDS_structure_only": 0.9210526315789473,
+      "error": null
+    },
+    {
+      "request_id": "page_000106_table_box_id_2",
+      "page_name": "page-0b20ed47-7c6c-4578-bbdf-057a89a083ec.png",
+      "TEDS": 0.7797709173637966,
+      "TEDS_structure_only": 0.9487179487179487,
+      "error": null
+    },
+    {
+      "request_id": "page_000218_table_box_id_4",
+      "page_name": "page-572316a1-cdf8-4c50-81d4-2e6dc13dcdce.png",
+      "TEDS": 0.9969230769230769,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000220_table_box_id_7",
+      "page_name": "page-e6c5454d-90ad-495c-85db-a416b7cd6452.png",
+      "TEDS": 0.9734848484848485,
+      "TEDS_structure_only": 0.9772727272727273,
+      "error": null
+    },
+    {
+      "request_id": "page_000195_table_box_id_0",
+      "page_name": "page-eb7308e0-1395-4444-b6a5-9d33cc3a03b2.png",
+      "TEDS": 0.9957787031283356,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000239_table_box_id_1",
+      "page_name": "page-fd7003ba-9af2-4b60-8c45-1e2ac1c7f474.png",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000228_table_box_id_1",
+      "page_name": "page-66aa2b38-32c0-4222-839a-50df648218df.png",
+      "TEDS": 0.748909379551839,
+      "TEDS_structure_only": 0.7844827586206897,
+      "error": null
+    },
+    {
+      "request_id": "page_000248_table_box_id_1",
+      "page_name": "page-94600a77-35db-4549-b505-3dadc092b3f4.png",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000253_table_box_id_2",
+      "page_name": "page-219a47e5-3b78-4fa4-9066-3b95bb342a87.png",
+      "TEDS": 0.9961519961519961,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000214_table_box_id_6",
+      "page_name": "page-b527edec-3363-4d38-a390-2f3a307f2392.png",
+      "TEDS": 0.8464052287581699,
+      "TEDS_structure_only": 0.8541666666666666,
+      "error": null
+    },
+    {
+      "request_id": "page_000249_table_box_id_4",
+      "page_name": "page-e7681b54-2c4a-40a2-9abe-caebba01cefb.png",
+      "TEDS": 0.8243793243793244,
+      "TEDS_structure_only": 0.8653846153846154,
+      "error": null
+    },
+    {
+      "request_id": "page_000245_table_box_id_0",
+      "page_name": "page-a8d87718-ab19-4fc0-9ef5-3611ad10f88e.png",
+      "TEDS": 0.92578125,
+      "TEDS_structure_only": 0.9375,
+      "error": null
+    },
+    {
+      "request_id": "page_000227_table_box_id_1",
+      "page_name": "page-472c26e2-6bc2-4c05-9889-05132c87a8a9.png",
+      "TEDS": 0.9360389842058023,
+      "TEDS_structure_only": 0.9805825242718447,
+      "error": null
+    },
+    {
+      "request_id": "page_000252_table_box_id_1",
+      "page_name": "page-dd5b0a99-4cc6-4fa9-ab63-a277947735b1.png",
+      "TEDS": 0.726861576436122,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000251_table_box_id_7",
+      "page_name": "page-3f8eed58-8b86-4f3a-958d-13671977d3c6.png",
+      "TEDS": 0.78125,
+      "TEDS_structure_only": 0.78125,
+      "error": null
+    },
+    {
+      "request_id": "page_000212_table_box_id_1",
+      "page_name": "page-91b20bf2-3ad5-41f4-b739-4cc4b18ab1eb.png",
+      "TEDS": 0.9821296656361063,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000254_table_box_id_4",
+      "page_name": "page-1f03d0f2-1166-4b9b-9609-94bf8bfd29b2.png",
+      "TEDS": 0.9674408377310897,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000223_table_box_id_2",
+      "page_name": "page-d5a3ea83-5427-4f90-a157-7b39b784b26e.png",
+      "TEDS": 0.9495254529767041,
+      "TEDS_structure_only": 0.9508196721311475,
+      "error": null
+    },
+    {
+      "request_id": "page_000207_table_box_id_1",
+      "page_name": "page-31fb2a53-5b32-40f6-9db1-52b357f3201f.png",
+      "TEDS": 0.9928518974639664,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000178_table_box_id_1",
+      "page_name": "page-d0b2bb59-ce8e-4a1c-9ba1-a805606a477f.png",
+      "TEDS": 0.9284899749373434,
+      "TEDS_structure_only": 0.9583333333333334,
+      "error": null
+    },
+    {
+      "request_id": "page_000231_table_box_id_2",
+      "page_name": "page-d29fe4d2-832a-4ad6-ac80-dc01cf8b0e16.png",
+      "TEDS": 0.999438202247191,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000242_table_box_id_3",
+      "page_name": "page-bf3685a0-f0ea-46a7-bb99-1526da8f8077.png",
+      "TEDS": 0.9836065573770492,
+      "TEDS_structure_only": 0.9836065573770492,
+      "error": null
+    },
+    {
+      "request_id": "page_000230_table_box_id_7",
+      "page_name": "page-d5e0cd38-ac0f-422c-b6d5-c8f001720491.png",
+      "TEDS": 0.9993788371253159,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000234_table_box_id_5",
+      "page_name": "page-8792f466-c570-468c-86dc-402a510e9bb7.png",
+      "TEDS": 0.9914855993131659,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000237_table_box_id_3",
+      "page_name": "page-6c29d065-b8f0-4bb0-b7c3-779f9cbab09a.png",
+      "TEDS": 0.9779488498537202,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000199_table_box_id_0",
+      "page_name": "page-c7792da7-4167-4f5c-a7ca-ec0f8833f83b.png",
+      "TEDS": 0.991927561564852,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000249_table_box-gjm9bkso",
+      "page_name": "page-e7681b54-2c4a-40a2-9abe-caebba01cefb.png",
+      "TEDS": 0.8783694727891157,
+      "TEDS_structure_only": 0.8928571428571429,
+      "error": null
+    },
+    {
+      "request_id": "page_000250_table_box-stnne6dt",
+      "page_name": "page-2abc2a95-d39a-48db-9b6d-f40410412694.png",
+      "TEDS": 0.8532148407148408,
+      "TEDS_structure_only": 0.8601398601398601,
+      "error": null
+    },
+    {
+      "request_id": "page_000203_table_box_id_3",
+      "page_name": "page-3c690b07-30d7-4e77-bf20-012f0080fb1d.png",
+      "TEDS": 0.9933212930623976,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000250_table_box_id_4",
+      "page_name": "page-2abc2a95-d39a-48db-9b6d-f40410412694.png",
+      "TEDS": 0.866804129059031,
+      "TEDS_structure_only": 0.869281045751634,
+      "error": null
+    },
+    {
+      "request_id": "page_000233_table_box_id_2",
+      "page_name": "page-74961b9a-ef4c-42d8-a95f-406e6b84cf63.png",
+      "TEDS": 0.9051933490816841,
+      "TEDS_structure_only": 0.9166666666666666,
+      "error": null
+    },
+    {
+      "request_id": "page_000255_table_box_id_2",
+      "page_name": "page-2deb83b3-abe2-442c-a544-0b6a8db464f1.png",
+      "TEDS": 0.8880377184378504,
+      "TEDS_structure_only": 0.9333333333333333,
+      "error": null
+    },
+    {
+      "request_id": "page_000216_table_box_id_0",
+      "page_name": "page-dca64e05-1ce6-49ee-857a-9b5d05a87357.png",
+      "TEDS": 0.0,
+      "TEDS_structure_only": 0.0,
+      "error": "timeout:30.0"
+    }
+  ]
+}
