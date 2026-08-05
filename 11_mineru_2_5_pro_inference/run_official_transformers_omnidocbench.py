@@ -100,6 +100,24 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--local-compiled-cache-length", type=int, default=8192)
     parser.add_argument(
+        "--local-decode-attention",
+        choices=("manual", "increfa"),
+        default="manual",
+        help="Attention implementation used only by static one-token decode.",
+    )
+    parser.add_argument(
+        "--local-decode-weight-format",
+        choices=("none", "decode_nz"),
+        default="none",
+        help="Weight layout used only by static one-token decode.",
+    )
+    parser.add_argument(
+        "--local-decode-rotary-impl",
+        choices=("manual", "npu_rotary_mul"),
+        default="manual",
+        help="RoPE implementation used only by static one-token decode.",
+    )
+    parser.add_argument(
         "--local-prepare-prefetch-depth",
         type=int,
         default=16,
@@ -258,6 +276,7 @@ def main() -> None:
 
     setup_started = time.perf_counter()
     local_vision_runtime = None
+    local_decode_setup = None
     print(
         f"[setup] shard={args.shard_index}/{args.shard_count} pages={len(shard)} "
         f"model={model_dir}",
@@ -304,7 +323,13 @@ def main() -> None:
                 raise ValueError(
                     "local batched MinerU clients require --batch-size > 1"
                 )
-            from local_modeling_mineru import LocalMinerU2_5ForConditionalGeneration
+            from local_modeling_mineru import (
+                LocalMinerU2_5ForConditionalGeneration,
+                configure_decode_attention_impl,
+                configure_decode_packed_projections,
+                configure_decode_rotary_impl,
+                configure_decode_weight_format,
+            )
             from native_custom_backend import (
                 LocalMinerUGenerateAdapter,
                 make_local_compiled_vlm_client,
@@ -322,6 +347,30 @@ def main() -> None:
                 dtype=local_dtype,
                 device="npu:0",
             )
+            if args.backend in (
+                "local-compiled-client",
+                "local-fixed-batch-client",
+                "local-continuous-client",
+            ):
+                decode_setup_started = time.perf_counter()
+                packed_projections = configure_decode_packed_projections(local_model)
+                decode_weight_format = configure_decode_weight_format(
+                    local_model, args.local_decode_weight_format
+                )
+                decode_rotary_impl = configure_decode_rotary_impl(
+                    local_model, args.local_decode_rotary_impl
+                )
+                decode_attention = configure_decode_attention_impl(
+                    local_model, args.local_decode_attention
+                )
+                synchronize()
+                local_decode_setup = {
+                    "packed_projections": packed_projections,
+                    "weight_format": decode_weight_format,
+                    "rotary_impl": decode_rotary_impl,
+                    "attention": decode_attention,
+                    "setup_s": time.perf_counter() - decode_setup_started,
+                }
             local_model.set_vision_attention_impl(args.local_vision_attention)
             if args.local_vision_backend == "torchair":
                 if args.local_vision_attention != "prompt_flash_attention":
@@ -368,8 +417,9 @@ def main() -> None:
                 local_model,
                 cache_root=args.local_torchair_cache_dir,
                 cache_length=args.local_compiled_cache_length,
-                decode_weight_format="none",
-                decode_rotary_impl="manual",
+                decode_weight_format=args.local_decode_weight_format,
+                decode_rotary_impl=args.local_decode_rotary_impl,
+                decode_attention_impl=args.local_decode_attention,
             )
             client.client = make_local_compiled_vlm_client(
                 local_model,
@@ -394,8 +444,9 @@ def main() -> None:
                 local_model,
                 cache_root=args.local_torchair_cache_dir,
                 cache_length=args.local_compiled_cache_length,
-                decode_weight_format="none",
-                decode_rotary_impl="manual",
+                decode_weight_format=args.local_decode_weight_format,
+                decode_rotary_impl=args.local_decode_rotary_impl,
+                decode_attention_impl=args.local_decode_attention,
             )
             engine_cls = (
                 ContinuousBatchDecodeEngine
@@ -552,6 +603,16 @@ def main() -> None:
             )
             else None
         ),
+        "local_decode_attention": (
+            args.local_decode_attention if local_decode_setup is not None else None
+        ),
+        "local_decode_weight_format": (
+            args.local_decode_weight_format if local_decode_setup is not None else None
+        ),
+        "local_decode_rotary_impl": (
+            args.local_decode_rotary_impl if local_decode_setup is not None else None
+        ),
+        "local_decode_setup": local_decode_setup,
         "local_prepare_prefetch_depth": (
             args.local_prepare_prefetch_depth
             if args.backend == "local-continuous-client"

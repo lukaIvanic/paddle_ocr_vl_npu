@@ -576,12 +576,14 @@ class CompiledSingleBatchRecognitionDecoder:
         cache_length: int | None,
         decode_weight_format: str,
         decode_rotary_impl: str = "manual",
+        decode_attention_impl: str = "manual",
     ) -> None:
         self.model = model
         self.cache_root = cache_root
         self.cache_length = None if cache_length is None else int(cache_length)
         self.decode_weight_format = str(decode_weight_format)
         self.decode_rotary_impl = str(decode_rotary_impl)
+        self.decode_attention_impl = str(decode_attention_impl)
         self._flat_decode_by_shape: dict[tuple[int, int, str, str], Any] = {}
         self._compiled_by_shape: dict[tuple[int, int, str, str], tuple[Callable[..., Any], dict[str, Any]]] = {}
         self._warmup_by_shape: dict[tuple[int, int, str, str], dict[str, Any]] = {}
@@ -614,6 +616,7 @@ class CompiledSingleBatchRecognitionDecoder:
                 cache_length=int(cache_length),
                 decode_weight_format=self.decode_weight_format,
                 decode_rotary_impl=self.decode_rotary_impl,
+                decode_attention_impl=self.decode_attention_impl,
             )
             self._compiled_by_shape[key] = (compiled_decode, compile_meta)
         return self._compiled_by_shape[key]
