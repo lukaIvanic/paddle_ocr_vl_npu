@@ -518,6 +518,34 @@ class MinerUAttention(nn.Module):
         attn_output = attn_output.transpose(1, 2).contiguous().reshape(batch, query_length, -1)
         return self.o_proj(attn_output)
 
+    def attend_static_decode(
+        self,
+        query_states: torch.Tensor,
+        key_states: torch.Tensor,
+        value_states: torch.Tensor,
+        attention_mask: torch.Tensor | None,
+    ) -> torch.Tensor:
+        """Compile-friendly equivalent of rank-4 attention for one-token decode."""
+        batch, heads, query_length, head_dim = query_states.shape
+        key_for_attn = repeat_kv(key_states, self.num_key_value_groups)
+        value_for_attn = repeat_kv(value_states, self.num_key_value_groups)
+        key_length = key_for_attn.shape[-2]
+        flat_query = query_states.reshape(batch * heads, query_length, head_dim)
+        flat_key = key_for_attn.reshape(batch * heads, key_length, head_dim)
+        scores = torch.bmm(flat_query, flat_key.transpose(1, 2)).reshape(
+            batch, heads, query_length, key_length
+        ) * self.scaling
+        if attention_mask is not None:
+            scores = scores + attention_mask[:, :, :, :key_length]
+        probs = F.softmax(scores, dim=-1, dtype=torch.float32).to(query_states.dtype)
+        flat_probs = probs.reshape(batch * heads, query_length, key_length)
+        flat_value = value_for_attn.reshape(batch * heads, key_length, head_dim)
+        attn_output = torch.bmm(flat_probs, flat_value).reshape(
+            batch, heads, query_length, head_dim
+        )
+        attn_output = attn_output.transpose(1, 2).contiguous().reshape(batch, query_length, -1)
+        return self.o_proj(attn_output)
+
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -563,7 +591,7 @@ class MinerUAttention(nn.Module):
             key_states,
             value_states,
         )
-        return self.attend(query_states, key_cache, value_cache, attention_mask)
+        return self.attend_static_decode(query_states, key_cache, value_cache, attention_mask)
 
 
 class MinerUDecoderLayer(nn.Module):
