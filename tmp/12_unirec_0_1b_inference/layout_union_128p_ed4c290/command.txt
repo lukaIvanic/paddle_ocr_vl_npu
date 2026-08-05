@@ -1,0 +1,4 @@
+commit=ed4c290
+host=liteserver-c001-4
+ASCEND_RT_VISIBLE_DEVICES=
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python 12_unirec_0_1b_inference/analyze_layout_union_crops.py --openocr-root /workspace/repos/OpenOCR --layout-model /workspace/models/PP-DocLayoutV2_safetensors --input /workspace/datasets/OmniDocBench/images --output-dir tmp/12_unirec_0_1b_inference/layout_union_128p_ed4c290 --device npu:0 --dtype float32 --threshold 0.4 --limit 128

@@ -1,0 +1,1711 @@
+{
+  "groups": [
+    {
+      "aligns": [
+        "center"
+      ],
+      "boxes": [
+        [
+          45,
+          460,
+          1157,
+          700
+        ],
+        [
+          1209,
+          545,
+          1879,
+          627
+        ]
+      ],
+      "foreign_labels": {},
+      "foreign_overlap_fraction": 0.0,
+      "image": "PPT_BaharMartonosi_page_006.png",
+      "labels": [
+        "text",
+        "text"
+      ],
+      "page_index": 23,
+      "pixel_exact": false,
+      "same_shape": false,
+      "source_indices": [
+        3,
+        4
+      ],
+      "stitched_area": 358064,
+      "stitched_shape": [
+        322,
+        1112,
+        3
+      ],
+      "uncovered_fraction": 0.26885677935296254,
+      "uncovered_ink_fraction": 0.039853689567430024,
+      "union_area": 440160,
+      "union_box": [
+        45,
+        460,
+        1879,
+        700
+      ],
+      "union_shape": [
+        240,
+        1834,
+        3
+      ]
+    },
+    {
+      "aligns": [
+        "center"
+      ],
+      "boxes": [
+        [
+          123,
+          1143,
+          1099,
+          1357
+        ],
+        [
+          1229,
+          912,
+          1880,
+          996
+        ]
+      ],
+      "foreign_labels": {
+        "text": 4
+      },
+      "foreign_overlap_fraction": 0.3597104359448242,
+      "image": "PPT_BaharMartonosi_page_006.png",
+      "labels": [
+        "text",
+        "text"
+      ],
+      "page_index": 23,
+      "pixel_exact": false,
+      "same_shape": false,
+      "source_indices": [
+        9,
+        10
+      ],
+      "stitched_area": 290848,
+      "stitched_shape": [
+        298,
+        976,
+        3
+      ],
+      "uncovered_fraction": 0.6629239063009599,
+      "uncovered_ink_fraction": 0.24536844595934082,
+      "union_area": 781865,
+      "union_box": [
+        123,
+        912,
+        1880,
+        1357
+      ],
+      "union_shape": [
+        445,
+        1757,
+        3
+      ]
+    },
+    {
+      "aligns": [
+        "left"
+      ],
+      "boxes": [
+        [
+          107,
+          162,
+          1547,
+          240
+        ],
+        [
+          102,
+          243,
+          1887,
+          480
+        ]
+      ],
+      "foreign_labels": {
+        "display_formula": 1
+      },
+      "foreign_overlap_fraction": 0.003620316050948681,
+      "image": "PPT_ch7_page_035.png",
+      "labels": [
+        "text",
+        "text"
+      ],
+      "page_index": 73,
+      "pixel_exact": false,
+      "same_shape": false,
+      "source_indices": [
+        1,
+        2
+      ],
+      "stitched_area": 562275,
+      "stitched_shape": [
+        315,
+        1785,
+        3
+      ],
+      "uncovered_fraction": 0.05684160456635484,
+      "uncovered_ink_fraction": 0.05684160456635484,
+      "union_area": 567630,
+      "union_box": [
+        102,
+        162,
+        1887,
+        480
+      ],
+      "union_shape": [
+        318,
+        1785,
+        3
+      ]
+    },
+    {
+      "aligns": [
+        "left"
+      ],
+      "boxes": [
+        [
+          107,
+          841,
+          1803,
+          992
+        ],
+        [
+          106,
+          999,
+          1743,
+          1319
+        ]
+      ],
+      "foreign_labels": {
+        "display_formula": 1
+      },
+      "foreign_overlap_fraction": 0.005313339069931432,
+      "image": "PPT_ch7_page_057.png",
+      "labels": [
+        "text",
+        "text"
+      ],
+      "page_index": 75,
+      "pixel_exact": false,
+      "same_shape": false,
+      "source_indices": [
+        8,
+        9
+      ],
+      "stitched_area": 798816,
+      "stitched_shape": [
+        471,
+        1696,
+        3
+      ],
+      "uncovered_fraction": 0.03850013437446836,
+      "uncovered_ink_fraction": 0.03850013437446836,
+      "union_area": 811166,
+      "union_box": [
+        106,
+        841,
+        1803,
+        1319
+      ],
+      "union_shape": [
+        478,
+        1697,
+        3
+      ]
+    },
+    {
+      "aligns": [
+        "left"
+      ],
+      "boxes": [
+        [
+          138,
+          846,
+          1781,
+          985
+        ],
+        [
+          141,
+          1044,
+          992,
+          1119
+        ]
+      ],
+      "foreign_labels": {
+        "display_formula": 2
+      },
+      "foreign_overlap_fraction": 0.05220950686562373,
+      "image": "PPT_linear-algebra primer_page_008.png",
+      "labels": [
+        "text",
+        "text"
+      ],
+      "page_index": 102,
+      "pixel_exact": false,
+      "same_shape": false,
+      "source_indices": [
+        5,
+        6
+      ],
+      "stitched_area": 351602,
+      "stitched_shape": [
+        214,
+        1643,
+        3
+      ],
+      "uncovered_fraction": 0.3485471720407813,
+      "uncovered_ink_fraction": 0.003366485411524973,
+      "union_area": 448539,
+      "union_box": [
+        138,
+        846,
+        1781,
+        1119
+      ],
+      "union_shape": [
+        273,
+        1643,
+        3
+      ]
+    },
+    {
+      "aligns": [
+        "right"
+      ],
+      "boxes": [
+        [
+          678,
+          757,
+          1290,
+          939
+        ],
+        [
+          1060,
+          939,
+          1288,
+          972
+        ]
+      ],
+      "foreign_labels": {
+        "text": 1
+      },
+      "foreign_overlap_fraction": 0.004643562851497188,
+      "image": "book_en_6.Complex.Analysis.-.Elias.M..Stein_page_051.png",
+      "labels": [
+        "text",
+        "text"
+      ],
+      "page_index": 112,
+      "pixel_exact": false,
+      "same_shape": true,
+      "source_indices": [
+        2,
+        3
+      ],
+      "stitched_area": 131580,
+      "stitched_shape": [
+        215,
+        612,
+        3
+      ],
+      "uncovered_fraction": 0.09630642954856361,
+      "uncovered_ink_fraction": 0.0,
+      "union_area": 131580,
+      "union_box": [
+        678,
+        757,
+        1290,
+        972
+      ],
+      "union_shape": [
+        215,
+        612,
+        3
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "block_count": 6,
+      "current_multi_group_count": 0,
+      "image": "PPT_1001115_eng_page_003.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 0
+    },
+    {
+      "block_count": 8,
+      "current_multi_group_count": 0,
+      "image": "PPT_1001115_eng_page_005.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 1
+    },
+    {
+      "block_count": 12,
+      "current_multi_group_count": 0,
+      "image": "PPT_1001115_eng_page_011.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 2
+    },
+    {
+      "block_count": 6,
+      "current_multi_group_count": 0,
+      "image": "PPT_1001115_eng_page_015.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 3
+    },
+    {
+      "block_count": 7,
+      "current_multi_group_count": 0,
+      "image": "PPT_11.2013EvaluatingTraineeteacherproficiency_page_010.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 4
+    },
+    {
+      "block_count": 5,
+      "current_multi_group_count": 0,
+      "image": "PPT_11.2013EvaluatingTraineeteacherproficiency_page_029.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 5
+    },
+    {
+      "block_count": 5,
+      "current_multi_group_count": 0,
+      "image": "PPT_13 fallacies LALT2012_page_001.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 6
+    },
+    {
+      "block_count": 5,
+      "current_multi_group_count": 0,
+      "image": "PPT_13 fallacies LALT2012_page_009.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 7
+    },
+    {
+      "block_count": 9,
+      "current_multi_group_count": 0,
+      "image": "PPT_13 fallacies LALT2012_page_010.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 8
+    },
+    {
+      "block_count": 2,
+      "current_multi_group_count": 0,
+      "image": "PPT_1637904769_page_001.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 9
+    },
+    {
+      "block_count": 5,
+      "current_multi_group_count": 0,
+      "image": "PPT_1637904769_page_002.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 10
+    },
+    {
+      "block_count": 7,
+      "current_multi_group_count": 0,
+      "image": "PPT_1637904769_page_008.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 11
+    },
+    {
+      "block_count": 5,
+      "current_multi_group_count": 0,
+      "image": "PPT_1637904769_page_017.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 12
+    },
+    {
+      "block_count": 4,
+      "current_multi_group_count": 0,
+      "image": "PPT_8076_MEYER_Chapter_2_-_Language_Change_page_012.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 13
+    },
+    {
+      "block_count": 6,
+      "current_multi_group_count": 0,
+      "image": "PPT_8076_MEYER_Chapter_2_-_Language_Change_page_014.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 14
+    },
+    {
+      "block_count": 4,
+      "current_multi_group_count": 0,
+      "image": "PPT_8076_MEYER_Chapter_2_-_Language_Change_page_017.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 15
+    },
+    {
+      "block_count": 5,
+      "current_multi_group_count": 0,
+      "image": "PPT_8076_MEYER_Chapter_2_-_Language_Change_page_021.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 16
+    },
+    {
+      "block_count": 5,
+      "current_multi_group_count": 0,
+      "image": "PPT_B14_Claeys_Consistent Presentation of Images_v2_page_006.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 17
+    },
+    {
+      "block_count": 4,
+      "current_multi_group_count": 0,
+      "image": "PPT_B14_Claeys_Consistent Presentation of Images_v2_page_010.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 18
+    },
+    {
+      "block_count": 7,
+      "current_multi_group_count": 0,
+      "image": "PPT_B14_Claeys_Consistent Presentation of Images_v2_page_013.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 19
+    },
+    {
+      "block_count": 5,
+      "current_multi_group_count": 0,
+      "image": "PPT_B14_Claeys_Consistent Presentation of Images_v2_page_024.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 20
+    },
+    {
+      "block_count": 7,
+      "current_multi_group_count": 0,
+      "image": "PPT_BaharMartonosi_page_002.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 21
+    },
+    {
+      "block_count": 10,
+      "current_multi_group_count": 0,
+      "image": "PPT_BaharMartonosi_page_005.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 22
+    },
+    {
+      "block_count": 13,
+      "current_multi_group_count": 0,
+      "image": "PPT_BaharMartonosi_page_006.png",
+      "intended_groups": [
+        {
+          "aligns": [
+            "center"
+          ],
+          "boxes": [
+            [
+              45,
+              460,
+              1157,
+              700
+            ],
+            [
+              1209,
+              545,
+              1879,
+              627
+            ]
+          ],
+          "foreign_labels": {},
+          "foreign_overlap_fraction": 0.0,
+          "image": "PPT_BaharMartonosi_page_006.png",
+          "labels": [
+            "text",
+            "text"
+          ],
+          "page_index": 23,
+          "pixel_exact": false,
+          "same_shape": false,
+          "source_indices": [
+            3,
+            4
+          ],
+          "stitched_area": 358064,
+          "stitched_shape": [
+            322,
+            1112,
+            3
+          ],
+          "uncovered_fraction": 0.26885677935296254,
+          "uncovered_ink_fraction": 0.039853689567430024,
+          "union_area": 440160,
+          "union_box": [
+            45,
+            460,
+            1879,
+            700
+          ],
+          "union_shape": [
+            240,
+            1834,
+            3
+          ]
+        },
+        {
+          "aligns": [
+            "center"
+          ],
+          "boxes": [
+            [
+              123,
+              1143,
+              1099,
+              1357
+            ],
+            [
+              1229,
+              912,
+              1880,
+              996
+            ]
+          ],
+          "foreign_labels": {
+            "text": 4
+          },
+          "foreign_overlap_fraction": 0.3597104359448242,
+          "image": "PPT_BaharMartonosi_page_006.png",
+          "labels": [
+            "text",
+            "text"
+          ],
+          "page_index": 23,
+          "pixel_exact": false,
+          "same_shape": false,
+          "source_indices": [
+            9,
+            10
+          ],
+          "stitched_area": 290848,
+          "stitched_shape": [
+            298,
+            976,
+            3
+          ],
+          "uncovered_fraction": 0.6629239063009599,
+          "uncovered_ink_fraction": 0.24536844595934082,
+          "union_area": 781865,
+          "union_box": [
+            123,
+            912,
+            1880,
+            1357
+          ],
+          "union_shape": [
+            445,
+            1757,
+            3
+          ]
+        }
+      ],
+      "intended_multi_group_count": 2,
+      "page_index": 23
+    },
+    {
+      "block_count": 6,
+      "current_multi_group_count": 0,
+      "image": "PPT_BaharMartonosi_page_007.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 24
+    },
+    {
+      "block_count": 8,
+      "current_multi_group_count": 0,
+      "image": "PPT_BaharMartonosi_page_008.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 25
+    },
+    {
+      "block_count": 6,
+      "current_multi_group_count": 0,
+      "image": "PPT_BaharMartonosi_page_010.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 26
+    },
+    {
+      "block_count": 8,
+      "current_multi_group_count": 0,
+      "image": "PPT_CalculusReview_page_002.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 27
+    },
+    {
+      "block_count": 9,
+      "current_multi_group_count": 0,
+      "image": "PPT_CalculusReview_page_004.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 28
+    },
+    {
+      "block_count": 5,
+      "current_multi_group_count": 0,
+      "image": "PPT_CalculusReview_page_009.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 29
+    },
+    {
+      "block_count": 5,
+      "current_multi_group_count": 0,
+      "image": "PPT_CalculusReview_page_014.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 30
+    },
+    {
+      "block_count": 4,
+      "current_multi_group_count": 0,
+      "image": "PPT_CalculusReview_page_033.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 31
+    },
+    {
+      "block_count": 7,
+      "current_multi_group_count": 0,
+      "image": "PPT_Catalysis.ppt_page_003.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 32
+    },
+    {
+      "block_count": 2,
+      "current_multi_group_count": 0,
+      "image": "PPT_Catalysis.ppt_page_016.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 33
+    },
+    {
+      "block_count": 7,
+      "current_multi_group_count": 0,
+      "image": "PPT_EnglishtoAmericanTransition_page_003.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 34
+    },
+    {
+      "block_count": 4,
+      "current_multi_group_count": 0,
+      "image": "PPT_EnglishtoAmericanTransition_page_005.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 35
+    },
+    {
+      "block_count": 9,
+      "current_multi_group_count": 0,
+      "image": "PPT_EnglishtoAmericanTransition_page_009.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 36
+    },
+    {
+      "block_count": 3,
+      "current_multi_group_count": 0,
+      "image": "PPT_EnglishtoAmericanTransition_page_012.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 37
+    },
+    {
+      "block_count": 6,
+      "current_multi_group_count": 0,
+      "image": "PPT_EnglishtoAmericanTransition_page_016.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 38
+    },
+    {
+      "block_count": 6,
+      "current_multi_group_count": 0,
+      "image": "PPT_EnglishtoAmericanTransition_page_017.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 39
+    },
+    {
+      "block_count": 6,
+      "current_multi_group_count": 0,
+      "image": "PPT_Keuk Chan Narith_page_005.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 40
+    },
+    {
+      "block_count": 2,
+      "current_multi_group_count": 0,
+      "image": "PPT_Keuk Chan Narith_page_009.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 41
+    },
+    {
+      "block_count": 2,
+      "current_multi_group_count": 0,
+      "image": "PPT_Keuk Chan Narith_page_019.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 42
+    },
+    {
+      "block_count": 6,
+      "current_multi_group_count": 0,
+      "image": "PPT_LEP power point presentation-English-FINAL-10-31-07_page_004.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 43
+    },
+    {
+      "block_count": 11,
+      "current_multi_group_count": 0,
+      "image": "PPT_LEP power point presentation-English-FINAL-10-31-07_page_006.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 44
+    },
+    {
+      "block_count": 9,
+      "current_multi_group_count": 0,
+      "image": "PPT_LEP power point presentation-English-FINAL-10-31-07_page_008.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 45
+    },
+    {
+      "block_count": 1,
+      "current_multi_group_count": 0,
+      "image": "PPT_LEP power point presentation-English-FINAL-10-31-07_page_010.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 46
+    },
+    {
+      "block_count": 1,
+      "current_multi_group_count": 0,
+      "image": "PPT_LEP power point presentation-English-FINAL-10-31-07_page_011.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 47
+    },
+    {
+      "block_count": 3,
+      "current_multi_group_count": 0,
+      "image": "PPT_LEP power point presentation-English-FINAL-10-31-07_page_015.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 48
+    },
+    {
+      "block_count": 11,
+      "current_multi_group_count": 0,
+      "image": "PPT_MMAT5390Lecture1_page_023.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 49
+    },
+    {
+      "block_count": 7,
+      "current_multi_group_count": 0,
+      "image": "PPT_MMAT5390Lecture1_page_024.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 50
+    },
+    {
+      "block_count": 11,
+      "current_multi_group_count": 0,
+      "image": "PPT_PresentationSpecification_page_007.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 51
+    },
+    {
+      "block_count": 10,
+      "current_multi_group_count": 0,
+      "image": "PPT_PresentationSpecification_page_010.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 52
+    },
+    {
+      "block_count": 12,
+      "current_multi_group_count": 0,
+      "image": "PPT_PresentationSpecification_page_025.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 53
+    },
+    {
+      "block_count": 6,
+      "current_multi_group_count": 0,
+      "image": "PPT_StewartCalcET7e_03_02_page_007.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 54
+    },
+    {
+      "block_count": 9,
+      "current_multi_group_count": 0,
+      "image": "PPT_StewartCalcET7e_03_02_page_010.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 55
+    },
+    {
+      "block_count": 7,
+      "current_multi_group_count": 0,
+      "image": "PPT_StewartCalcET7e_03_02_page_012.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 56
+    },
+    {
+      "block_count": 5,
+      "current_multi_group_count": 0,
+      "image": "PPT_StewartCalcET7e_03_02_page_014.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 57
+    },
+    {
+      "block_count": 7,
+      "current_multi_group_count": 0,
+      "image": "PPT_StewartCalcET7e_03_02_page_015.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 58
+    },
+    {
+      "block_count": 9,
+      "current_multi_group_count": 0,
+      "image": "PPT_StewartCalcET7e_04_09_page_018.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 59
+    },
+    {
+      "block_count": 5,
+      "current_multi_group_count": 0,
+      "image": "PPT_The Right Moves_page_010.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 60
+    },
+    {
+      "block_count": 3,
+      "current_multi_group_count": 0,
+      "image": "PPT_The Right Moves_page_016.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 61
+    },
+    {
+      "block_count": 5,
+      "current_multi_group_count": 0,
+      "image": "PPT_The Right Moves_page_024.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 62
+    },
+    {
+      "block_count": 10,
+      "current_multi_group_count": 0,
+      "image": "PPT_Transfer-Orientation-2012_page_004.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 63
+    },
+    {
+      "block_count": 5,
+      "current_multi_group_count": 0,
+      "image": "PPT_all655920_page_001.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 64
+    },
+    {
+      "block_count": 3,
+      "current_multi_group_count": 0,
+      "image": "PPT_all655920_page_002.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 65
+    },
+    {
+      "block_count": 4,
+      "current_multi_group_count": 0,
+      "image": "PPT_all655920_page_003.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 66
+    },
+    {
+      "block_count": 6,
+      "current_multi_group_count": 0,
+      "image": "PPT_all655920_page_008.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 67
+    },
+    {
+      "block_count": 16,
+      "current_multi_group_count": 0,
+      "image": "PPT_ch7_page_020.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 68
+    },
+    {
+      "block_count": 6,
+      "current_multi_group_count": 0,
+      "image": "PPT_ch7_page_021.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 69
+    },
+    {
+      "block_count": 8,
+      "current_multi_group_count": 0,
+      "image": "PPT_ch7_page_028.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 70
+    },
+    {
+      "block_count": 9,
+      "current_multi_group_count": 0,
+      "image": "PPT_ch7_page_030.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 71
+    },
+    {
+      "block_count": 14,
+      "current_multi_group_count": 0,
+      "image": "PPT_ch7_page_034.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 72
+    },
+    {
+      "block_count": 7,
+      "current_multi_group_count": 0,
+      "image": "PPT_ch7_page_035.png",
+      "intended_groups": [
+        {
+          "aligns": [
+            "left"
+          ],
+          "boxes": [
+            [
+              107,
+              162,
+              1547,
+              240
+            ],
+            [
+              102,
+              243,
+              1887,
+              480
+            ]
+          ],
+          "foreign_labels": {
+            "display_formula": 1
+          },
+          "foreign_overlap_fraction": 0.003620316050948681,
+          "image": "PPT_ch7_page_035.png",
+          "labels": [
+            "text",
+            "text"
+          ],
+          "page_index": 73,
+          "pixel_exact": false,
+          "same_shape": false,
+          "source_indices": [
+            1,
+            2
+          ],
+          "stitched_area": 562275,
+          "stitched_shape": [
+            315,
+            1785,
+            3
+          ],
+          "uncovered_fraction": 0.05684160456635484,
+          "uncovered_ink_fraction": 0.05684160456635484,
+          "union_area": 567630,
+          "union_box": [
+            102,
+            162,
+            1887,
+            480
+          ],
+          "union_shape": [
+            318,
+            1785,
+            3
+          ]
+        }
+      ],
+      "intended_multi_group_count": 1,
+      "page_index": 73
+    },
+    {
+      "block_count": 7,
+      "current_multi_group_count": 0,
+      "image": "PPT_ch7_page_053.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 74
+    },
+    {
+      "block_count": 12,
+      "current_multi_group_count": 0,
+      "image": "PPT_ch7_page_057.png",
+      "intended_groups": [
+        {
+          "aligns": [
+            "left"
+          ],
+          "boxes": [
+            [
+              107,
+              841,
+              1803,
+              992
+            ],
+            [
+              106,
+              999,
+              1743,
+              1319
+            ]
+          ],
+          "foreign_labels": {
+            "display_formula": 1
+          },
+          "foreign_overlap_fraction": 0.005313339069931432,
+          "image": "PPT_ch7_page_057.png",
+          "labels": [
+            "text",
+            "text"
+          ],
+          "page_index": 75,
+          "pixel_exact": false,
+          "same_shape": false,
+          "source_indices": [
+            8,
+            9
+          ],
+          "stitched_area": 798816,
+          "stitched_shape": [
+            471,
+            1696,
+            3
+          ],
+          "uncovered_fraction": 0.03850013437446836,
+          "uncovered_ink_fraction": 0.03850013437446836,
+          "union_area": 811166,
+          "union_box": [
+            106,
+            841,
+            1803,
+            1319
+          ],
+          "union_shape": [
+            478,
+            1697,
+            3
+          ]
+        }
+      ],
+      "intended_multi_group_count": 1,
+      "page_index": 75
+    },
+    {
+      "block_count": 15,
+      "current_multi_group_count": 0,
+      "image": "PPT_ch7_page_090.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 76
+    },
+    {
+      "block_count": 18,
+      "current_multi_group_count": 0,
+      "image": "PPT_ch7_page_132.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 77
+    },
+    {
+      "block_count": 8,
+      "current_multi_group_count": 0,
+      "image": "PPT_ch7_page_136.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 78
+    },
+    {
+      "block_count": 10,
+      "current_multi_group_count": 0,
+      "image": "PPT_ch7_page_142.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 79
+    },
+    {
+      "block_count": 5,
+      "current_multi_group_count": 0,
+      "image": "PPT_english-guidelines-for-humanities-students.zp199743_page_002.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 80
+    },
+    {
+      "block_count": 4,
+      "current_multi_group_count": 0,
+      "image": "PPT_english-guidelines-for-humanities-students.zp199743_page_008.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 81
+    },
+    {
+      "block_count": 6,
+      "current_multi_group_count": 0,
+      "image": "PPT_english-guidelines-for-humanities-students.zp199743_page_011.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 82
+    },
+    {
+      "block_count": 5,
+      "current_multi_group_count": 0,
+      "image": "PPT_english-studies-s6-on-the-road-resource-3_page_002.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 83
+    },
+    {
+      "block_count": 2,
+      "current_multi_group_count": 0,
+      "image": "PPT_english-studies-s6-on-the-road-resource-3_page_003.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 84
+    },
+    {
+      "block_count": 3,
+      "current_multi_group_count": 0,
+      "image": "PPT_english-studies-s6-on-the-road-resource-3_page_005.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 85
+    },
+    {
+      "block_count": 4,
+      "current_multi_group_count": 0,
+      "image": "PPT_esea-app101_page_003.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 86
+    },
+    {
+      "block_count": 2,
+      "current_multi_group_count": 0,
+      "image": "PPT_esea-app101_page_015.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 87
+    },
+    {
+      "block_count": 5,
+      "current_multi_group_count": 0,
+      "image": "PPT_fundamental_theorem_of_calculus___page_002.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 88
+    },
+    {
+      "block_count": 6,
+      "current_multi_group_count": 0,
+      "image": "PPT_fundamental_theorem_of_calculus___page_005.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 89
+    },
+    {
+      "block_count": 4,
+      "current_multi_group_count": 0,
+      "image": "PPT_fundamental_theorem_of_calculus___page_006.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 90
+    },
+    {
+      "block_count": 4,
+      "current_multi_group_count": 0,
+      "image": "PPT_fundamental_theorem_of_calculus___page_013.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 91
+    },
+    {
+      "block_count": 6,
+      "current_multi_group_count": 0,
+      "image": "PPT_lay_linalg5_01_05_page_003.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 92
+    },
+    {
+      "block_count": 9,
+      "current_multi_group_count": 0,
+      "image": "PPT_lay_linalg5_01_05_page_004.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 93
+    },
+    {
+      "block_count": 6,
+      "current_multi_group_count": 0,
+      "image": "PPT_lay_linalg5_01_05_page_005.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 94
+    },
+    {
+      "block_count": 8,
+      "current_multi_group_count": 0,
+      "image": "PPT_lay_linalg5_01_05_page_008.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 95
+    },
+    {
+      "block_count": 6,
+      "current_multi_group_count": 0,
+      "image": "PPT_lay_linalg5_01_05_page_009.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 96
+    },
+    {
+      "block_count": 3,
+      "current_multi_group_count": 0,
+      "image": "PPT_lecture1_page_005.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 97
+    },
+    {
+      "block_count": 3,
+      "current_multi_group_count": 0,
+      "image": "PPT_lecture1_page_007.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 98
+    },
+    {
+      "block_count": 7,
+      "current_multi_group_count": 0,
+      "image": "PPT_lecture1_page_009.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 99
+    },
+    {
+      "block_count": 4,
+      "current_multi_group_count": 0,
+      "image": "PPT_lecture1_page_022.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 100
+    },
+    {
+      "block_count": 8,
+      "current_multi_group_count": 0,
+      "image": "PPT_linear-algebra primer_page_007.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 101
+    },
+    {
+      "block_count": 20,
+      "current_multi_group_count": 0,
+      "image": "PPT_linear-algebra primer_page_008.png",
+      "intended_groups": [
+        {
+          "aligns": [
+            "left"
+          ],
+          "boxes": [
+            [
+              138,
+              846,
+              1781,
+              985
+            ],
+            [
+              141,
+              1044,
+              992,
+              1119
+            ]
+          ],
+          "foreign_labels": {
+            "display_formula": 2
+          },
+          "foreign_overlap_fraction": 0.05220950686562373,
+          "image": "PPT_linear-algebra primer_page_008.png",
+          "labels": [
+            "text",
+            "text"
+          ],
+          "page_index": 102,
+          "pixel_exact": false,
+          "same_shape": false,
+          "source_indices": [
+            5,
+            6
+          ],
+          "stitched_area": 351602,
+          "stitched_shape": [
+            214,
+            1643,
+            3
+          ],
+          "uncovered_fraction": 0.3485471720407813,
+          "uncovered_ink_fraction": 0.003366485411524973,
+          "union_area": 448539,
+          "union_box": [
+            138,
+            846,
+            1781,
+            1119
+          ],
+          "union_shape": [
+            273,
+            1643,
+            3
+          ]
+        }
+      ],
+      "intended_multi_group_count": 1,
+      "page_index": 102
+    },
+    {
+      "block_count": 11,
+      "current_multi_group_count": 0,
+      "image": "PPT_linear-algebra primer_page_016.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 103
+    },
+    {
+      "block_count": 3,
+      "current_multi_group_count": 0,
+      "image": "PPT_session 10_page_022.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 104
+    },
+    {
+      "block_count": 3,
+      "current_multi_group_count": 0,
+      "image": "PPT_session 10_page_023.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 105
+    },
+    {
+      "block_count": 3,
+      "current_multi_group_count": 0,
+      "image": "PPT_session 10_page_028.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 106
+    },
+    {
+      "block_count": 6,
+      "current_multi_group_count": 0,
+      "image": "PPT_sociolinguistics_page_015.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 107
+    },
+    {
+      "block_count": 8,
+      "current_multi_group_count": 0,
+      "image": "book_en_40.Puzzles.and.Problems.in.Probability.and.Mathematical.Statistics,.Schwarz,.Springer,.2008_page_064.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 108
+    },
+    {
+      "block_count": 12,
+      "current_multi_group_count": 0,
+      "image": "book_en_40.Puzzles.and.Problems.in.Probability.and.Mathematical.Statistics,.Schwarz,.Springer,.2008_page_115.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 109
+    },
+    {
+      "block_count": 17,
+      "current_multi_group_count": 0,
+      "image": "book_en_5.Advanced.Modern.Algebra.-.J.Rotman.2003_page_572.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 110
+    },
+    {
+      "block_count": 22,
+      "current_multi_group_count": 0,
+      "image": "book_en_5.Advanced.Modern.Algebra.-.J.Rotman.2003_page_887.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 111
+    },
+    {
+      "block_count": 9,
+      "current_multi_group_count": 0,
+      "image": "book_en_6.Complex.Analysis.-.Elias.M..Stein_page_051.png",
+      "intended_groups": [
+        {
+          "aligns": [
+            "right"
+          ],
+          "boxes": [
+            [
+              678,
+              757,
+              1290,
+              939
+            ],
+            [
+              1060,
+              939,
+              1288,
+              972
+            ]
+          ],
+          "foreign_labels": {
+            "text": 1
+          },
+          "foreign_overlap_fraction": 0.004643562851497188,
+          "image": "book_en_6.Complex.Analysis.-.Elias.M..Stein_page_051.png",
+          "labels": [
+            "text",
+            "text"
+          ],
+          "page_index": 112,
+          "pixel_exact": false,
+          "same_shape": true,
+          "source_indices": [
+            2,
+            3
+          ],
+          "stitched_area": 131580,
+          "stitched_shape": [
+            215,
+            612,
+            3
+          ],
+          "uncovered_fraction": 0.09630642954856361,
+          "uncovered_ink_fraction": 0.0,
+          "union_area": 131580,
+          "union_box": [
+            678,
+            757,
+            1290,
+            972
+          ],
+          "union_shape": [
+            215,
+            612,
+            3
+          ]
+        }
+      ],
+      "intended_multi_group_count": 1,
+      "page_index": 112
+    },
+    {
+      "block_count": 18,
+      "current_multi_group_count": 0,
+      "image": "book_en_6.Complex.Analysis.-.Elias.M..Stein_page_205.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 113
+    },
+    {
+      "block_count": 14,
+      "current_multi_group_count": 0,
+      "image": "book_en_A.Concise.Introduction.to.Linear.Algebra,.Geza.Schay,.Birkhauser,.2012_page_065.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 114
+    },
+    {
+      "block_count": 22,
+      "current_multi_group_count": 0,
+      "image": "book_en_A.Concise.Introduction.to.Linear.Algebra,.Geza.Schay,.Birkhauser,.2012_page_194.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 115
+    },
+    {
+      "block_count": 18,
+      "current_multi_group_count": 0,
+      "image": "book_en_A.Course.in.Abstract.Harmonic.Analysis.-.Gerald.B.Folland.0849384907_page_119.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 116
+    },
+    {
+      "block_count": 3,
+      "current_multi_group_count": 0,
+      "image": "book_en_[\u642c\u4e66\u5320#20][HTML5 Canvas].2011.\u82f1\u6587\u7248_page_208.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 117
+    },
+    {
+      "block_count": 14,
+      "current_multi_group_count": 0,
+      "image": "book_en_[\u642c\u4e66\u5320#375][High Performance MySQL 3rd Edition].2012.\u82f1\u6587\u7248_page_153.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 118
+    },
+    {
+      "block_count": 3,
+      "current_multi_group_count": 0,
+      "image": "book_en_[\u642c\u4e66\u5320#893][Pyomo\u2014Optimization Modeling in Python].2012.\u82f1\u6587\u7248_page_016.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 119
+    },
+    {
+      "block_count": 9,
+      "current_multi_group_count": 0,
+      "image": "book_en_[\u642c\u4e66\u5320#893][Pyomo\u2014Optimization Modeling in Python].2012.\u82f1\u6587\u7248_page_188.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 120
+    },
+    {
+      "block_count": 15,
+      "current_multi_group_count": 0,
+      "image": "book_en_\u56fd\u5916\u6570\u5b66\u6559\u6750-An Excursion through Elementary Mathematics\uff08\u521d\u7b49\u6570\u5b66\u6f2b\u6e38\uff09-An excursion through elementary mathematics, Vol.3 (Caminha Muniz Neto A)_0035.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 121
+    },
+    {
+      "block_count": 20,
+      "current_multi_group_count": 0,
+      "image": "book_en_\u56fd\u5916\u6570\u5b66\u6559\u6750-An Excursion through Elementary Mathematics\uff08\u521d\u7b49\u6570\u5b66\u6f2b\u6e38\uff09-An excursion through elementary mathematics, Vol.3 (Caminha Muniz Neto A)_0085.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 122
+    },
+    {
+      "block_count": 14,
+      "current_multi_group_count": 0,
+      "image": "book_en_\u56fd\u5916\u6570\u5b66\u6559\u6750-An Excursion through Elementary Mathematics\uff08\u521d\u7b49\u6570\u5b66\u6f2b\u6e38\uff09-An excursion through elementary mathematics, Vol.3 (Caminha Muniz Neto A)_0092.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 123
+    },
+    {
+      "block_count": 17,
+      "current_multi_group_count": 0,
+      "image": "book_en_\u56fd\u5916\u6570\u5b66\u6559\u6750-An Excursion through Elementary Mathematics\uff08\u521d\u7b49\u6570\u5b66\u6f2b\u6e38\uff09-An excursion through elementary mathematics, Vol.3 (Caminha Muniz Neto A)_0100.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 124
+    },
+    {
+      "block_count": 14,
+      "current_multi_group_count": 0,
+      "image": "book_en_\u56fd\u5916\u6570\u5b66\u6559\u6750-An Excursion through Elementary Mathematics\uff08\u521d\u7b49\u6570\u5b66\u6f2b\u6e38\uff09-An excursion through elementary mathematics, Vol.3 (Caminha Muniz Neto A)_0119.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 125
+    },
+    {
+      "block_count": 17,
+      "current_multi_group_count": 0,
+      "image": "book_en_\u56fd\u5916\u6570\u5b66\u6559\u6750-An Excursion through Elementary Mathematics\uff08\u521d\u7b49\u6570\u5b66\u6f2b\u6e38\uff09-An excursion through elementary mathematics, Vol.3 (Caminha Muniz Neto A)_0242.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 126
+    },
+    {
+      "block_count": 13,
+      "current_multi_group_count": 0,
+      "image": "book_en_\u56fd\u5916\u6570\u5b66\u6559\u6750-An Excursion through Elementary Mathematics\uff08\u521d\u7b49\u6570\u5b66\u6f2b\u6e38\uff09-An excursion through elementary mathematics, Vol.3 (Caminha Muniz Neto A)_0451.png",
+      "intended_groups": [],
+      "intended_multi_group_count": 0,
+      "page_index": 127
+    }
+  ],
+  "summary": {
+    "current_changed_image_count": 0,
+    "current_merge_s": 9.688998635858297,
+    "current_multi_group_count": 0,
+    "intended_member_count_histogram": {
+      "2": 6
+    },
+    "intended_merge_s": 8.002313165226951,
+    "intended_multi_group_count": 6,
+    "layout_s": 12.677053672028705,
+    "mean_union_foreign_overlap_fraction": 0.0709161934638042,
+    "mean_union_uncovered_fraction": 0.24532933769734844,
+    "mean_union_uncovered_ink_fraction": 0.0639883933131865,
+    "page_count": 128,
+    "total_blocks": 988,
+    "union_groups_with_foreign_overlap": 5,
+    "union_groups_with_uncovered_ink_gt_0_1pct": 5,
+    "union_pixel_exact_group_count": 0,
+    "union_same_shape_group_count": 1
+  }
+}
