@@ -25430,3 +25430,535 @@ command for Luka. Also report only these checks in one short sentence:
 If startup compiles a missing graph, report progress every 30 seconds. Do not
 change the cache paths or silently fall back to eager execution. If no NPU is
 free, stop and report that fact. Do not terminate another user's process.
+
+## Phase 62: full persistent page-API benchmark and official evaluation
+
+Phase 62 reproduces the completed 910B2 full-page HTTP benchmark on 310P. It
+tests the real persistent `/v1/pages` service, not the direct scheduler and not
+the crop-only API. It sends all 1,651 OmniDocBench pages through 64 independent
+HTTP clients. The server uses the unified layout/prefill/decode scheduler.
+
+The frozen 910B2 HTTP authority is:
+
+```text
+pages                                      1651 / 1651
+recognition crops                          30557
+client generation wall                    846.149585 s
+client throughput                         1.951192 pages/s
+vision prefill, physical/useful            49120.56 / 43896.66 tok/s
+text prefill, physical/useful              43260.26 / 35520.84 tok/s
+decode, raw/effective                      8475.02 / 7644.16 tok/s
+decode active-slot fraction               0.923154
+layout/prefill/decode mode wall            151.559 / 463.690 / 210.561 s
+text-block Edit distance                   0.0507143006
+display-formula Edit distance              0.0903256356
+formula sample-CDM                         0.9705318878
+formula page-CDM                           0.9740841006
+table sample-TEDS                          0.9305174944
+table Page-TEDS                            0.9444293305
+table structure-only Page-TEDS             0.9687623944
+reading-order Edit distance                0.1403014634
+official Overall                           95.59330435
+page-match bounded fallbacks               4
+TEDS timeouts/errors; CDM timeouts/errors  0/0; 0/0
+```
+
+The official Overall uses **page-weighted** CDM:
+
+```text
+Overall = mean(1 - text-block Edit distance, page-CDM, Page-TEDS)
+```
+
+Do not substitute the sample-weighted CDM printed by `cdm_run_summary.json`.
+That value is useful, but it is not the CDM term in the official Overall.
+
+The 310P service must use the same algorithmic settings. The only required
+platform-specific addition is `--vision-promptfa-align-128`. Do not change B64
+to B32, KV4096 to KV2048, the pixel policy, packing target, cache paths, model,
+or attention workaround. If no NPU is free, stop. Never terminate another
+user's process.
+
+### 62.1 Pull, validate the environment, and start the owned API
+
+Use one persistent shell. The work-server checkout is pull-only.
+
+```sh
+set -uo pipefail
+WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
+cd "$WORK_SERVER_REPO"
+git pull --ff-only origin main
+test -z "$(git status --porcelain)"
+source npu-setup
+set -e
+
+PYTHON_BIN=/usr/local/python3.12.13/bin/python
+SERVER=09_persistent_page_engine/scripts/serve_page_ocr_api.py
+CLIENT=09_persistent_page_engine/scripts/run_omnidocbench_page_api.py
+EVAL_WRAPPER=09_persistent_page_engine/scripts/run_omnidocbench_eval.py
+CDM_RUNNER=09_persistent_page_engine/scripts/run_cdm_from_matched_formulas.py
+MODEL=/home/lukaiv/models/PaddleOCR-VL-1.6
+LAYOUT_MODEL=/home/lukaiv/models/PP-DocLayoutV3_safetensors
+DATASET_JSON=/home/lukaiv/datasets/OmniDocBench/OmniDocBench.json
+IMAGES_DIR=/home/lukaiv/datasets/OmniDocBench/images
+
+. tmp/09_persistent_page_engine/310p_phase56_cdm/runtime_paths.env
+EVAL_PYTHON="$OMNIDOCBENCH_EVAL_PYTHON"
+EVALUATOR_ROOT="$OMNIDOCBENCH_EVALUATOR_ROOT"
+
+test -x "$PYTHON_BIN" && test -x "$EVAL_PYTHON"
+test -f "$SERVER" && test -f "$CLIENT" && test -f "$EVAL_WRAPPER"
+test -f "$CDM_RUNNER" && test -f "$EVALUATOR_ROOT/pdf_validation.py"
+test -f "$DATASET_JSON" && test -d "$IMAGES_DIR"
+test "$(sha256sum "$MODEL/model.safetensors" | awk '{print $1}')" = \
+  85a479d506a11e724e7285d395c551be69f41dbc16b6342d3cacfb189aed71db
+test "$(sha256sum "$DATASET_JSON" | awk '{print $1}')" = \
+  a45cd84b04ad8b793e775089640e6b681209abea33ead54c1828ddca35fae496
+
+"$PYTHON_BIN" - "$DATASET_JSON" "$IMAGES_DIR" <<'PY'
+import json
+import pathlib
+import sys
+items = json.load(open(sys.argv[1]))
+images = pathlib.Path(sys.argv[2])
+assert len(items) == 1651, len(items)
+missing = [
+    x["page_info"]["image_path"] for x in items
+    if not (images / pathlib.Path(x["page_info"]["image_path"]).name).is_file()
+]
+assert not missing, missing[:10]
+print("PHASE62_DATASET PASS pages=1651 missing=0")
+PY
+
+DECODE_CACHE=.runtime_cache/310p_phase57_decode_b64_k4096_pse
+VISION_CACHE=.runtime_cache/310p_phase52_v16_vision_4352_nz
+TEXT_CACHE=.runtime_cache/310p_phase52_v16_text
+PACKED_CACHE=.runtime_cache/310p_phase52_v16_text_packed
+for cache in "$DECODE_CACHE" "$VISION_CACHE" "$TEXT_CACHE" "$PACKED_CACHE"; do
+  test -d "$cache"
+  test -n "$(find "$cache" -type f -print -quit)"
+done
+
+COMMIT="$(git rev-parse HEAD)"
+SHORT="$(git rev-parse --short HEAD)"
+ROOT="tmp/09_persistent_page_engine/310p_phase62_page_api_full_${SHORT}"
+test ! -e "$ROOT"
+mkdir -p "$ROOT/server" "$ROOT/client" "$ROOT/evaluation/work" "$ROOT/spool"
+
+record_caches() {
+  out="$1"
+  : >"$out"
+  for cache in "$DECODE_CACHE" "$VISION_CACHE" "$TEXT_CACHE" "$PACKED_CACHE"; do
+    printf '%s\tfiles=%s\tbytes=%s\n' "$cache" \
+      "$(find "$cache" -type f | wc -l)" \
+      "$(du -sb "$cache" | cut -f1)"
+  done >"$out"
+}
+
+record_caches "$ROOT/cache_before_startup.txt"
+df -h . "$DECODE_CACHE" | tee "$ROOT/df_preflight.txt"
+npu-smi info | tee "$ROOT/npu_preflight.txt"
+
+API_PID=""
+stop_owned_api() {
+  test -n "${API_PID:-}" || return 0
+  kill -0 "$API_PID" 2>/dev/null || return 0
+  cmd="$(ps -p "$API_PID" -o args= || true)"
+  case "$cmd" in
+    *serve_page_ocr_api.py*--port\ 8766*) ;;
+    *) echo "Refusing to stop unrecognized pid $API_PID: $cmd" >&2; return 1 ;;
+  esac
+  kill -TERM "$API_PID"
+  for unused in $(seq 1 150); do
+    kill -0 "$API_PID" 2>/dev/null || break
+    sleep 0.2
+  done
+  if kill -0 "$API_PID" 2>/dev/null; then
+    echo "Owned API pid $API_PID did not stop cleanly." >&2
+    return 1
+  fi
+}
+trap stop_owned_api EXIT
+
+if ss -ltn 2>/dev/null | grep -q ':8766 '; then
+  echo 'Port 8766 is already in use. Do not stop an unowned process.' >&2
+  exit 1
+fi
+
+SERVER_ARGS=(
+  "$SERVER"
+  --host 127.0.0.1 --port 8766
+  --queue-capacity 128 --request-timeout-s 3600
+  --spool-dir "$ROOT/spool"
+  --layout-model "$LAYOUT_MODEL" --recognizer-model "$MODEL"
+  --no-layout-graph-capture
+  --decode-batch-size 64 --cache-length 4096 --max-new-tokens 4096
+  --min-pixels 28224 --max-pixels 802816 --text-crop-scale 0.5
+  --vision-buckets 256,384,512,640,768,1408,1920,2048,2944,4096
+  --vision-pack-target 768 --vision-promptfa-align-128
+  --text-buckets 1152
+  --text-pack-buckets 128,256,384,512,768,1024
+  --torchair-cache-dir "$DECODE_CACHE"
+  --vision-torchair-cache-dir "$VISION_CACHE"
+  --text-torchair-cache-dir "$TEXT_CACHE"
+  --text-packed-cache-dir "$PACKED_CACHE"
+)
+printf '%q ' "$PYTHON_BIN" "${SERVER_ARGS[@]}" >"$ROOT/server/command.sh"
+printf '\n' >>"$ROOT/server/command.sh"
+
+PYTHONUNBUFFERED=1 "$PYTHON_BIN" "${SERVER_ARGS[@]}" \
+  >"$ROOT/server/run.log" 2>&1 &
+API_PID="$!"
+printf '%s\n' "$API_PID" >"$ROOT/server/pid.txt"
+
+startup_started="$(date +%s)"
+server_ready=0
+for attempt in $(seq 1 540); do
+  if ! kill -0 "$API_PID" 2>/dev/null; then
+    echo "310P PHASE 62 SERVER: FAIL pid=$API_PID log=$ROOT/server/run.log"
+    tail -n 100 "$ROOT/server/run.log"
+    exit 0
+  fi
+  if /usr/bin/python3 - <<'PY' >/dev/null 2>&1
+import json, urllib.request
+with urllib.request.urlopen("http://127.0.0.1:8766/ready", timeout=2) as r:
+    x = json.load(r)
+assert x["ready"] is True
+assert x["configuration"]["batch_size"] == 64
+assert x["configuration"]["cache_length"] == 4096
+assert x["configuration"]["decode_optimization"] == "combined_apply_pse_sentinel"
+PY
+  then
+    server_ready=1
+    break
+  fi
+  if test $((attempt % 6)) -eq 0; then
+    elapsed="$(( $(date +%s) - startup_started ))"
+    last="$(tail -n 1 "$ROOT/server/run.log" | tr '\r\n' ' ' | cut -c1-180)"
+    echo "PHASE62_STARTUP_PROGRESS elapsed_s=$elapsed last=$last"
+  fi
+  sleep 5
+done
+
+if test "$server_ready" -ne 1; then
+  echo "310P PHASE 62 SERVER: FAIL startup_timeout log=$ROOT/server/run.log"
+  exit 0
+fi
+
+/usr/bin/python3 - <<'PY' >"$ROOT/server/ready.json"
+import json, urllib.request
+with urllib.request.urlopen("http://127.0.0.1:8766/ready", timeout=5) as r:
+    print(json.dumps(json.load(r), indent=2, sort_keys=True))
+PY
+record_caches "$ROOT/cache_after_startup.txt"
+printf '310P PHASE 62 SERVER: READY startup_s=%s pid=%s root=%s\n' \
+  "$(( $(date +%s) - startup_started ))" "$API_PID" "$ROOT" \
+  | tee "$ROOT/server_sentence.txt"
+```
+
+Return the `SERVER: READY` sentence immediately. If startup fails, stop. Do not
+try another NPU, smaller batch, or different cache.
+
+### 62.2 Run all pages through HTTP and drain the scheduler
+
+```sh
+CLIENT_ARGS=(
+  "$CLIENT"
+  --api-url http://127.0.0.1:8766/v1/pages
+  --dataset-json "$DATASET_JSON" --images-dir "$IMAGES_DIR"
+  --offset 0 --limit 1651 --http-workers 64 --timeout-s 3600
+  --drain-server
+  --output-dir "$ROOT/client/output"
+)
+printf '%q ' "$PYTHON_BIN" "${CLIENT_ARGS[@]}" >"$ROOT/client/command.sh"
+printf '\n' >>"$ROOT/client/command.sh"
+
+SECONDS=0
+set +e
+set -o pipefail
+PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 10800 \
+  "$PYTHON_BIN" "${CLIENT_ARGS[@]}" \
+  2>&1 | tee "$ROOT/client/run.log" &
+client_pipe_pid="$!"
+(
+  while sleep 60; do
+    kill -0 "$client_pipe_pid" 2>/dev/null || exit 0
+    progress="$(grep -o 'PAGE_API_PROGRESS.*' "$ROOT/client/run.log" | tail -n 1 || true)"
+    test -n "$progress" || progress=setup_or_first_pages
+    echo "PHASE62_CLIENT_HEARTBEAT elapsed_s=$SECONDS $progress"
+  done
+) &
+heartbeat_pid="$!"
+wait "$client_pipe_pid"
+client_ec="$?"
+kill "$heartbeat_pid" 2>/dev/null || true
+wait "$heartbeat_pid" 2>/dev/null || true
+set -e
+printf '%s\n' "$client_ec" >"$ROOT/client/exit_code.txt"
+printf '%s\n' "$SECONDS" >"$ROOT/client/outer_wall_s.txt"
+record_caches "$ROOT/cache_after_client.txt"
+
+if test "$client_ec" -ne 0; then
+  echo "310P PHASE 62 E2E: FAIL exit=$client_ec wall_s=$SECONDS log=$ROOT/client/run.log" \
+    | tee "$ROOT/e2e_sentence.txt"
+  exit 0
+fi
+
+"$PYTHON_BIN" - "$ROOT/client/output/run_summary.json" \
+  "$ROOT/e2e_summary.json" <<'PY' | tee "$ROOT/e2e_sentence.txt"
+import json
+import pathlib
+import sys
+src, dst = map(pathlib.Path, sys.argv[1:])
+x = json.loads(src.read_text())
+assert x["count"] == 1651
+assert x["server_drain"]["drained"] is True
+s = x["server_drain"]["summary"]
+q = s["schedule"]
+d = s["device_modes"]
+assert d["pages_completed"] == 1651
+assert q["batch_size"] == 64
+assert q["ready_buffer_capacity"] == 64
+assert q["ready_buffer_low_watermark"] == 32
+stage = d["device_stage_s"]
+tok = d["prefill_tokens"]
+out = {
+    "pages": x["count"],
+    "client_wall_s": x["wall_s"],
+    "pages_per_s": x["pages_per_s"],
+    "requests": q["requests"],
+    "vision_physical_tok_s": tok["physical_vision"] / stage["vision_prefill"],
+    "vision_useful_tok_s": tok["useful_vision"] / stage["vision_prefill"],
+    "text_physical_tok_s": tok["physical_text"] / stage["text_prefill"],
+    "text_useful_tok_s": tok["useful_text"] / stage["text_prefill"],
+    "decode_raw_tok_s": q["rates"]["raw_decode_tok_per_s"],
+    "decode_effective_tok_s": q["rates"]["effective_decode_tok_per_s"],
+    "decode_active_slot_fraction": q["rates"]["active_slot_fraction"],
+    "layout_mode_wall_s": d["mode_wall_s"]["layout"],
+    "prefill_mode_wall_s": d["mode_wall_s"]["prefill"],
+    "decode_host_exclusive_wall_s": q["timing_s"]["decode_host_exclusive_wall"],
+    "hot_swap_safety_sync_wall_s": q["timing_s"]["hot_swap_safety_sync_wall"],
+    "mode_counts": d["mode_counts"],
+    "device_stage_s": stage,
+    "vision_packing": d["vision_packing"],
+    "text_packing": d["text_packing"],
+}
+dst.write_text(json.dumps(out, indent=2, sort_keys=True) + "\n")
+print(
+    "310P PHASE 62 E2E: PASS "
+    f"pages=1651 wall_s={out['client_wall_s']:.3f} "
+    f"pages_per_s={out['pages_per_s']:.6f} "
+    f"vision_physical_tps={out['vision_physical_tok_s']:.1f} "
+    f"text_physical_tps={out['text_physical_tok_s']:.1f} "
+    f"decode_raw_tps={out['decode_raw_tok_s']:.1f} "
+    f"active_fraction={out['decode_active_slot_fraction']:.6f}"
+)
+PY
+
+stop_owned_api
+API_PID=""
+```
+
+Return the exact `E2E: PASS` sentence immediately. Then continue. If the cache
+inventory grew during the client run, label the timing `COMPILE_CONTAMINATED`
+in the report. Do not rerun the 1,651 pages without asking Luka.
+
+### 62.3 Run official matching, TEDS, and page-weighted CDM
+
+```sh
+cat >"$ROOT/evaluation/work/config.yaml" <<EOF
+end2end_eval:
+  metrics:
+    text_block:
+      metric: [Edit_dist]
+    display_formula:
+      metric: [Edit_dist]
+    table:
+      metric: [TEDS, Edit_dist]
+      teds_workers: 12
+    reading_order:
+      metric: [Edit_dist]
+  dataset:
+    dataset_name: end2end_dataset
+    ground_truth:
+      data_path: $(realpath "$DATASET_JSON")
+    prediction:
+      data_path: $(realpath "$ROOT/client/output/predictions")
+    match_method: quick_match
+    match_workers: 24
+    quick_match_truncated_timeout_sec: 300
+    match_timeout_sec: 420
+    timeout_fallback_max_chunk_span: 10
+    timeout_fallback_order_penalty: 0.10
+EOF
+
+SECONDS=0
+set +e
+set -o pipefail
+(
+  cd "$ROOT/evaluation/work"
+  PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 3600 \
+    "$EVAL_PYTHON" "$WORK_SERVER_REPO/$EVAL_WRAPPER" \
+    --config config.yaml --evaluator-root "$EVALUATOR_ROOT" \
+    --match-workers 24 --teds-workers 12 \
+    --page-timeout-sec 120 --fallback-timeout-sec 180 \
+    --fallback-latex-timeout-sec 30 --teds-timeout-sec 120
+) 2>&1 | tee "$ROOT/evaluation/evaluation.log"
+eval_ec="${PIPESTATUS[0]}"
+set -e
+printf '%s\n' "$eval_ec" >"$ROOT/evaluation/exit_code.txt"
+printf '%s\n' "$SECONDS" >"$ROOT/evaluation/wall_s.txt"
+if test "$eval_ec" -ne 0; then
+  echo "310P PHASE 62 EVALUATION: FAIL exit=$eval_ec wall_s=$SECONDS" \
+    | tee "$ROOT/evaluation_sentence.txt"
+  exit 0
+fi
+
+MATCHED="$ROOT/evaluation/work/result/predictions_quick_match_display_formula_result.json"
+METRIC="$ROOT/evaluation/work/result/predictions_quick_match_metric_result.json"
+STAGES="$ROOT/evaluation/work/result/predictions_quick_match_stage_execution.json"
+test -s "$MATCHED" && test -s "$METRIC" && test -s "$STAGES"
+
+nproc_count="$(nproc)"
+mem_gib="$(awk '/MemAvailable:/ {printf "%d", $2/1024/1024}' /proc/meminfo)"
+CDM_WORKERS="$nproc_count"
+test "$CDM_WORKERS" -le 96 || CDM_WORKERS=96
+mem_workers="$((mem_gib / 2))"
+test "$mem_workers" -ge 1 || mem_workers=1
+test "$CDM_WORKERS" -le "$mem_workers" || CDM_WORKERS="$mem_workers"
+
+CDM_OUT="$ROOT/evaluation/cdm_native"
+SECONDS=0
+set +e
+set -o pipefail
+PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 1800 \
+  "$EVAL_PYTHON" "$CDM_RUNNER" \
+  --input "$MATCHED" --output-dir "$CDM_OUT" \
+  --evaluator-root "$EVALUATOR_ROOT" --workers "$CDM_WORKERS" \
+  2>&1 | tee "$ROOT/evaluation/cdm.log"
+cdm_ec="${PIPESTATUS[0]}"
+set -e
+printf '%s\n' "$cdm_ec" >"$ROOT/evaluation/cdm_exit_code.txt"
+printf '%s\n' "$SECONDS" >"$ROOT/evaluation/cdm_wall_s.txt"
+if test "$cdm_ec" -ne 0; then
+  echo "310P PHASE 62 CDM: FAIL exit=$cdm_ec wall_s=$SECONDS" \
+    | tee "$ROOT/cdm_sentence.txt"
+  exit 0
+fi
+```
+
+### 62.4 Calculate the official score and compare with 910B2
+
+```sh
+"$EVAL_PYTHON" - \
+  "$ROOT/e2e_summary.json" "$METRIC" "$STAGES" \
+  "$CDM_OUT/cdm_run_summary.json" "$ROOT/final_summary.json" <<'PY' \
+  | tee "$ROOT/final_sentence.txt"
+import json
+import pathlib
+import sys
+from collections import defaultdict
+
+e2e_path, metric_path, stages_path, cdm_path, output_path = map(
+    pathlib.Path, sys.argv[1:]
+)
+e2e = json.loads(e2e_path.read_text())
+metric = json.loads(metric_path.read_text())
+stages = json.loads(stages_path.read_text())
+cdm = json.loads(cdm_path.read_text())
+evaluated = json.loads(pathlib.Path(cdm["evaluated_samples"]).read_text())
+
+assert stages["page_match"]["page_count"] == 1651
+teds_debug = stages["metrics"]["table"]["TEDS"]
+assert teds_debug["timeout_case_count"] == 0, teds_debug
+assert teds_debug["error_case_count"] == 0, teds_debug
+assert teds_debug["exception_case_count"] == 0, teds_debug
+assert cdm["debug"]["timeout_case_count"] == 0, cdm["debug"]
+assert cdm["debug"]["exception_case_count"] == 0, cdm["debug"]
+
+by_page = defaultdict(list)
+for sample in evaluated:
+    by_page[str(sample["img_id"])].append(float(sample["metric"]["CDM"]))
+sample_cdm = sum(v for values in by_page.values() for v in values) / len(evaluated)
+page_cdm = sum(sum(values) / len(values) for values in by_page.values()) / len(by_page)
+assert abs(sample_cdm - float(cdm["scores"]["CDM"]["all"])) < 1e-12
+
+text_edit = float(metric["text_block"]["page"]["Edit_dist"]["ALL"])
+formula_edit = float(metric["display_formula"]["page"]["Edit_dist"]["ALL"])
+sample_teds = float(metric["table"]["all"]["TEDS"]["all"])
+page_teds = float(metric["table"]["page"]["TEDS"]["ALL"])
+structure_teds = float(metric["table"]["page"]["TEDS_structure_only"]["ALL"])
+reading_edit = float(metric["reading_order"]["page"]["Edit_dist"]["ALL"])
+overall = ((1.0 - text_edit) + page_cdm + page_teds) / 3.0
+
+reference = {
+    "pages_per_s": 1.9511916431145628,
+    "client_wall_s": 846.1495854731183,
+    "text_edit": 0.05071430060872228,
+    "formula_edit": 0.09032563564247499,
+    "sample_cdm": 0.9705318877551026,
+    "page_cdm": 0.9740841005676619,
+    "page_teds": 0.9444293305373284,
+    "structure_teds": 0.9687623943678403,
+    "reading_edit": 0.14030146339439298,
+    "overall": 0.955933043498756,
+}
+current = {
+    **e2e,
+    "text_edit": text_edit,
+    "formula_edit": formula_edit,
+    "sample_cdm": sample_cdm,
+    "page_cdm": page_cdm,
+    "sample_teds": sample_teds,
+    "page_teds": page_teds,
+    "structure_teds": structure_teds,
+    "reading_edit": reading_edit,
+    "overall": overall,
+    "formula_samples": len(evaluated),
+    "formula_pages": len(by_page),
+    "match_fallbacks": stages["page_match"]["fallbacks"],
+}
+deltas = {
+    key: current[key] - reference[key]
+    for key in reference
+}
+out = {
+    "classification": "PASS",
+    "current_310p": current,
+    "reference_910b2_http": reference,
+    "signed_delta_310p_minus_910b2": deltas,
+    "overall_delta_percentage_points": 100.0 * deltas["overall"],
+    "quality_warning_over_0_5pp": abs(100.0 * deltas["overall"]) > 0.5,
+    "teds_debug": teds_debug,
+    "cdm_debug": cdm["debug"],
+}
+output_path.write_text(json.dumps(out, indent=2, sort_keys=True) + "\n")
+print(
+    "310P PHASE 62 FULL PAGE API: PASS "
+    f"pages_per_s={e2e['pages_per_s']:.6f} "
+    f"text_edit={text_edit:.6f} page_cdm={page_cdm:.6f} "
+    f"page_teds={page_teds:.6f} overall={100*overall:.4f} "
+    f"overall_delta_pp={100*deltas['overall']:+.4f} "
+    f"quality_warning={out['quality_warning_over_0_5pp']} "
+    "teds_errors=0 cdm_errors=0"
+)
+PY
+```
+
+Return the exact final sentence first. Then write `$ROOT/agent_report.md` with:
+
+1. commit, host, exact physical 310P, CANN/driver/firmware, Python, torch and
+   torch_npu versions, model and dataset hashes, and exact server/client/eval
+   commands;
+2. startup time and cache file/byte changes before startup, after startup, and
+   after the client, naming any compiled cache;
+3. client wall, pages/s, request count, vision/text physical and useful tok/s,
+   raw/effective decode tok/s, active fraction, all mode walls, all device-stage
+   totals, packing histograms/fill, hot-swap counts, and stop behavior;
+4. text/formula edit distance, sample/page CDM, sample/Page/structure TEDS,
+   reading-order edit distance, official Overall, all evaluator fallback/error
+   counts, and signed deltas against the frozen 910B2 HTTP authority;
+5. what is proven and what is not proven.
+
+Do not paste the full JSON or logs into chat. Report progress every 60 seconds
+during generation. Report matching, TEDS, and CDM progress at their natural
+stage boundaries. Do not rerun a successful full benchmark.
