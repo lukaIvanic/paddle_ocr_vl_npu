@@ -130,7 +130,7 @@ def main() -> None:
     args = parser.parse_args()
 
     from transformers import AutoProcessor
-    from mineru_vl_utils import MinerUClient
+    from mineru_vl_utils.mineru_client import MinerUClientHelper
 
     run_dir = args.run_dir.expanduser().resolve()
     summary_path = run_dir / "output" / "run_summary_shard_00.json"
@@ -154,15 +154,22 @@ def main() -> None:
         trust_remote_code=True,
         use_fast=True,
     )
-    replay_client = MinerUClient.__new__(MinerUClient)
-    replay_client.debug = False
-    replay_client.backend = "transformers"
-    replay_client.layout_image_size = (1036, 1036)
-    replay_client.min_image_edge = 28
-    replay_client.max_image_edge_ratio = 50
-    replay_client.image_analysis = False
-    replay_client.prompts = {"[default]": ""}
-    replay_client.sampling_params = {}
+    replay_client = MinerUClientHelper(
+        backend="transformers",
+        prompts={"[default]": ""},
+        sampling_params={},
+        layout_image_size=(1036, 1036),
+        min_image_edge=28,
+        max_image_edge_ratio=50,
+        simple_post_process=False,
+        handle_equation_block=True,
+        abandon_list=False,
+        abandon_paratext=False,
+        image_analysis=False,
+        debug=False,
+        enable_table_formula_eq_wrap=False,
+        enable_cross_page_table_merge=False,
+    )
 
     layout_tokens: list[int] = []
     crop_tokens: list[int] = []
