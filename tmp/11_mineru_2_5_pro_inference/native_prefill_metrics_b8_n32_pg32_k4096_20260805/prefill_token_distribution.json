@@ -1,0 +1,2608 @@
+{
+  "run_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/native_prefill_metrics_b8_n32_pg32_k4096_20260805",
+  "replay_checks": {
+    "layout_request_count": {
+      "actual": 32,
+      "expected": 32,
+      "exact": true
+    },
+    "crop_request_count": {
+      "actual": 560,
+      "expected": 560,
+      "exact": true
+    },
+    "layout_tokens": {
+      "actual": 175232,
+      "expected": 175232,
+      "exact": true
+    },
+    "crop_tokens": {
+      "actual": 263212,
+      "expected": 263212,
+      "exact": true
+    },
+    "all_tokens": {
+      "actual": 438444,
+      "expected": 438444,
+      "exact": true
+    }
+  },
+  "layout": {
+    "count": 32,
+    "total_tokens": 175232,
+    "min": 5476,
+    "p10": 5476.0,
+    "p25": 5476.0,
+    "median": 5476.0,
+    "mean": 5476,
+    "p75": 5476.0,
+    "p90": 5476.0,
+    "p95": 5476.0,
+    "p99": 5476.0,
+    "max": 5476,
+    "bins": [
+      {
+        "range": "1-128",
+        "count": 0,
+        "request_fraction": 0.0,
+        "tokens": 0,
+        "token_fraction": 0.0
+      },
+      {
+        "range": "129-256",
+        "count": 0,
+        "request_fraction": 0.0,
+        "tokens": 0,
+        "token_fraction": 0.0
+      },
+      {
+        "range": "257-384",
+        "count": 0,
+        "request_fraction": 0.0,
+        "tokens": 0,
+        "token_fraction": 0.0
+      },
+      {
+        "range": "385-512",
+        "count": 0,
+        "request_fraction": 0.0,
+        "tokens": 0,
+        "token_fraction": 0.0
+      },
+      {
+        "range": "513-768",
+        "count": 0,
+        "request_fraction": 0.0,
+        "tokens": 0,
+        "token_fraction": 0.0
+      },
+      {
+        "range": "769-1024",
+        "count": 0,
+        "request_fraction": 0.0,
+        "tokens": 0,
+        "token_fraction": 0.0
+      },
+      {
+        "range": "1025-1536",
+        "count": 0,
+        "request_fraction": 0.0,
+        "tokens": 0,
+        "token_fraction": 0.0
+      },
+      {
+        "range": "1537-2048",
+        "count": 0,
+        "request_fraction": 0.0,
+        "tokens": 0,
+        "token_fraction": 0.0
+      },
+      {
+        "range": "2049-3072",
+        "count": 0,
+        "request_fraction": 0.0,
+        "tokens": 0,
+        "token_fraction": 0.0
+      },
+      {
+        "range": "3073-4096",
+        "count": 0,
+        "request_fraction": 0.0,
+        "tokens": 0,
+        "token_fraction": 0.0
+      },
+      {
+        "range": "4097-5120",
+        "count": 0,
+        "request_fraction": 0.0,
+        "tokens": 0,
+        "token_fraction": 0.0
+      },
+      {
+        "range": ">5120",
+        "count": 32,
+        "request_fraction": 1.0,
+        "tokens": 175232,
+        "token_fraction": 1.0
+      }
+    ],
+    "cumulative": [
+      {
+        "at_most": 128,
+        "count": 0,
+        "request_fraction": 0.0,
+        "tokens": 0,
+        "token_fraction": 0.0
+      },
+      {
+        "at_most": 256,
+        "count": 0,
+        "request_fraction": 0.0,
+        "tokens": 0,
+        "token_fraction": 0.0
+      },
+      {
+        "at_most": 384,
+        "count": 0,
+        "request_fraction": 0.0,
+        "tokens": 0,
+        "token_fraction": 0.0
+      },
+      {
+        "at_most": 512,
+        "count": 0,
+        "request_fraction": 0.0,
+        "tokens": 0,
+        "token_fraction": 0.0
+      },
+      {
+        "at_most": 768,
+        "count": 0,
+        "request_fraction": 0.0,
+        "tokens": 0,
+        "token_fraction": 0.0
+      },
+      {
+        "at_most": 1024,
+        "count": 0,
+        "request_fraction": 0.0,
+        "tokens": 0,
+        "token_fraction": 0.0
+      },
+      {
+        "at_most": 1536,
+        "count": 0,
+        "request_fraction": 0.0,
+        "tokens": 0,
+        "token_fraction": 0.0
+      },
+      {
+        "at_most": 2048,
+        "count": 0,
+        "request_fraction": 0.0,
+        "tokens": 0,
+        "token_fraction": 0.0
+      },
+      {
+        "at_most": 3072,
+        "count": 0,
+        "request_fraction": 0.0,
+        "tokens": 0,
+        "token_fraction": 0.0
+      },
+      {
+        "at_most": 4096,
+        "count": 0,
+        "request_fraction": 0.0,
+        "tokens": 0,
+        "token_fraction": 0.0
+      },
+      {
+        "at_most": 5120,
+        "count": 0,
+        "request_fraction": 0.0,
+        "tokens": 0,
+        "token_fraction": 0.0
+      }
+    ]
+  },
+  "recognition_crops": {
+    "count": 560,
+    "total_tokens": 263212,
+    "min": 256,
+    "p10": 272.0,
+    "p25": 288.0,
+    "median": 322.0,
+    "mean": 470.02142857142854,
+    "p75": 480.0,
+    "p90": 840.0,
+    "p95": 1177.9999999999982,
+    "p99": 1983.359999999997,
+    "max": 4144,
+    "bins": [
+      {
+        "range": "1-128",
+        "count": 0,
+        "request_fraction": 0.0,
+        "tokens": 0,
+        "token_fraction": 0.0
+      },
+      {
+        "range": "129-256",
+        "count": 2,
+        "request_fraction": 0.0035714285714285713,
+        "tokens": 512,
+        "token_fraction": 0.0019452000668662523
+      },
+      {
+        "range": "257-384",
+        "count": 386,
+        "request_fraction": 0.6892857142857143,
+        "tokens": 119040,
+        "token_fraction": 0.4522590155464037
+      },
+      {
+        "range": "385-512",
+        "count": 55,
+        "request_fraction": 0.09821428571428571,
+        "tokens": 25584,
+        "token_fraction": 0.09719921584122304
+      },
+      {
+        "range": "513-768",
+        "count": 41,
+        "request_fraction": 0.07321428571428572,
+        "tokens": 25980,
+        "token_fraction": 0.09870370651793992
+      },
+      {
+        "range": "769-1024",
+        "count": 40,
+        "request_fraction": 0.07142857142857142,
+        "tokens": 34772,
+        "token_fraction": 0.13210643891615884
+      },
+      {
+        "range": "1025-1536",
+        "count": 23,
+        "request_fraction": 0.04107142857142857,
+        "tokens": 29616,
+        "token_fraction": 0.11251766636779478
+      },
+      {
+        "range": "1537-2048",
+        "count": 8,
+        "request_fraction": 0.014285714285714285,
+        "tokens": 14664,
+        "token_fraction": 0.05571174566509126
+      },
+      {
+        "range": "2049-3072",
+        "count": 4,
+        "request_fraction": 0.007142857142857143,
+        "tokens": 8900,
+        "token_fraction": 0.033813048037323525
+      },
+      {
+        "range": "3073-4096",
+        "count": 0,
+        "request_fraction": 0.0,
+        "tokens": 0,
+        "token_fraction": 0.0
+      },
+      {
+        "range": "4097-5120",
+        "count": 1,
+        "request_fraction": 0.0017857142857142857,
+        "tokens": 4144,
+        "token_fraction": 0.015743963041198728
+      },
+      {
+        "range": ">5120",
+        "count": 0,
+        "request_fraction": 0.0,
+        "tokens": 0,
+        "token_fraction": 0.0
+      }
+    ],
+    "cumulative": [
+      {
+        "at_most": 128,
+        "count": 0,
+        "request_fraction": 0.0,
+        "tokens": 0,
+        "token_fraction": 0.0
+      },
+      {
+        "at_most": 256,
+        "count": 2,
+        "request_fraction": 0.0035714285714285713,
+        "tokens": 512,
+        "token_fraction": 0.0019452000668662523
+      },
+      {
+        "at_most": 384,
+        "count": 388,
+        "request_fraction": 0.6928571428571428,
+        "tokens": 119552,
+        "token_fraction": 0.4542042156132699
+      },
+      {
+        "at_most": 512,
+        "count": 443,
+        "request_fraction": 0.7910714285714285,
+        "tokens": 145136,
+        "token_fraction": 0.551403431454493
+      },
+      {
+        "at_most": 768,
+        "count": 484,
+        "request_fraction": 0.8642857142857143,
+        "tokens": 171116,
+        "token_fraction": 0.6501071379724329
+      },
+      {
+        "at_most": 1024,
+        "count": 524,
+        "request_fraction": 0.9357142857142857,
+        "tokens": 205888,
+        "token_fraction": 0.7822135768885917
+      },
+      {
+        "at_most": 1536,
+        "count": 547,
+        "request_fraction": 0.9767857142857143,
+        "tokens": 235504,
+        "token_fraction": 0.8947312432563865
+      },
+      {
+        "at_most": 2048,
+        "count": 555,
+        "request_fraction": 0.9910714285714286,
+        "tokens": 250168,
+        "token_fraction": 0.9504429889214777
+      },
+      {
+        "at_most": 3072,
+        "count": 559,
+        "request_fraction": 0.9982142857142857,
+        "tokens": 259068,
+        "token_fraction": 0.9842560369588013
+      },
+      {
+        "at_most": 4096,
+        "count": 559,
+        "request_fraction": 0.9982142857142857,
+        "tokens": 259068,
+        "token_fraction": 0.9842560369588013
+      },
+      {
+        "at_most": 5120,
+        "count": 560,
+        "request_fraction": 1.0,
+        "tokens": 263212,
+        "token_fraction": 1.0
+      }
+    ]
+  },
+  "recognition_by_type": {
+    "aside_text": {
+      "count": 2,
+      "total_tokens": 560,
+      "min": 272,
+      "p10": 273.6,
+      "p25": 276.0,
+      "median": 280.0,
+      "mean": 280,
+      "p75": 284.0,
+      "p90": 286.4,
+      "p95": 287.2,
+      "p99": 287.84000000000003,
+      "max": 288,
+      "bins": [
+        {
+          "range": "1-128",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "129-256",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "257-384",
+          "count": 2,
+          "request_fraction": 1.0,
+          "tokens": 560,
+          "token_fraction": 1.0
+        },
+        {
+          "range": "385-512",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "513-768",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "769-1024",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "1025-1536",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "1537-2048",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "2049-3072",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "3073-4096",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "4097-5120",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": ">5120",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        }
+      ],
+      "cumulative": [
+        {
+          "at_most": 128,
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "at_most": 256,
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "at_most": 384,
+          "count": 2,
+          "request_fraction": 1.0,
+          "tokens": 560,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 512,
+          "count": 2,
+          "request_fraction": 1.0,
+          "tokens": 560,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 768,
+          "count": 2,
+          "request_fraction": 1.0,
+          "tokens": 560,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 1024,
+          "count": 2,
+          "request_fraction": 1.0,
+          "tokens": 560,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 1536,
+          "count": 2,
+          "request_fraction": 1.0,
+          "tokens": 560,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 2048,
+          "count": 2,
+          "request_fraction": 1.0,
+          "tokens": 560,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 3072,
+          "count": 2,
+          "request_fraction": 1.0,
+          "tokens": 560,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 4096,
+          "count": 2,
+          "request_fraction": 1.0,
+          "tokens": 560,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 5120,
+          "count": 2,
+          "request_fraction": 1.0,
+          "tokens": 560,
+          "token_fraction": 1.0
+        }
+      ]
+    },
+    "equation": {
+      "count": 132,
+      "total_tokens": 63636,
+      "min": 256,
+      "p10": 272.0,
+      "p25": 288.0,
+      "median": 322.0,
+      "mean": 482.09090909090907,
+      "p75": 435.0,
+      "p90": 960.0,
+      "p95": 1475.999999999999,
+      "p99": 2002.7999999999997,
+      "max": 2160,
+      "bins": [
+        {
+          "range": "1-128",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "129-256",
+          "count": 2,
+          "request_fraction": 0.015151515151515152,
+          "tokens": 512,
+          "token_fraction": 0.008045760261487208
+        },
+        {
+          "range": "257-384",
+          "count": 92,
+          "request_fraction": 0.696969696969697,
+          "tokens": 28432,
+          "token_fraction": 0.44679112452071157
+        },
+        {
+          "range": "385-512",
+          "count": 15,
+          "request_fraction": 0.11363636363636363,
+          "tokens": 6852,
+          "token_fraction": 0.10767490099943429
+        },
+        {
+          "range": "513-768",
+          "count": 3,
+          "request_fraction": 0.022727272727272728,
+          "tokens": 1696,
+          "token_fraction": 0.026651580866176378
+        },
+        {
+          "range": "769-1024",
+          "count": 8,
+          "request_fraction": 0.06060606060606061,
+          "tokens": 7184,
+          "token_fraction": 0.1128920736689924
+        },
+        {
+          "range": "1025-1536",
+          "count": 6,
+          "request_fraction": 0.045454545454545456,
+          "tokens": 7808,
+          "token_fraction": 0.12269784398767992
+        },
+        {
+          "range": "1537-2048",
+          "count": 5,
+          "request_fraction": 0.03787878787878788,
+          "tokens": 8992,
+          "token_fraction": 0.1413036645923691
+        },
+        {
+          "range": "2049-3072",
+          "count": 1,
+          "request_fraction": 0.007575757575757576,
+          "tokens": 2160,
+          "token_fraction": 0.03394305110314916
+        },
+        {
+          "range": "3073-4096",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "4097-5120",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": ">5120",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        }
+      ],
+      "cumulative": [
+        {
+          "at_most": 128,
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "at_most": 256,
+          "count": 2,
+          "request_fraction": 0.015151515151515152,
+          "tokens": 512,
+          "token_fraction": 0.008045760261487208
+        },
+        {
+          "at_most": 384,
+          "count": 94,
+          "request_fraction": 0.7121212121212122,
+          "tokens": 28944,
+          "token_fraction": 0.45483688478219875
+        },
+        {
+          "at_most": 512,
+          "count": 109,
+          "request_fraction": 0.8257575757575758,
+          "tokens": 35796,
+          "token_fraction": 0.5625117857816331
+        },
+        {
+          "at_most": 768,
+          "count": 112,
+          "request_fraction": 0.8484848484848485,
+          "tokens": 37492,
+          "token_fraction": 0.5891633666478094
+        },
+        {
+          "at_most": 1024,
+          "count": 120,
+          "request_fraction": 0.9090909090909091,
+          "tokens": 44676,
+          "token_fraction": 0.7020554403168018
+        },
+        {
+          "at_most": 1536,
+          "count": 126,
+          "request_fraction": 0.9545454545454546,
+          "tokens": 52484,
+          "token_fraction": 0.8247532843044817
+        },
+        {
+          "at_most": 2048,
+          "count": 131,
+          "request_fraction": 0.9924242424242424,
+          "tokens": 61476,
+          "token_fraction": 0.9660569488968508
+        },
+        {
+          "at_most": 3072,
+          "count": 132,
+          "request_fraction": 1.0,
+          "tokens": 63636,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 4096,
+          "count": 132,
+          "request_fraction": 1.0,
+          "tokens": 63636,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 5120,
+          "count": 132,
+          "request_fraction": 1.0,
+          "tokens": 63636,
+          "token_fraction": 1.0
+        }
+      ]
+    },
+    "header": {
+      "count": 16,
+      "total_tokens": 4944,
+      "min": 264,
+      "p10": 278.0,
+      "p25": 288.0,
+      "median": 308.0,
+      "mean": 309,
+      "p75": 321.0,
+      "p90": 348.0,
+      "p95": 360.0,
+      "p99": 360.0,
+      "max": 360,
+      "bins": [
+        {
+          "range": "1-128",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "129-256",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "257-384",
+          "count": 16,
+          "request_fraction": 1.0,
+          "tokens": 4944,
+          "token_fraction": 1.0
+        },
+        {
+          "range": "385-512",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "513-768",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "769-1024",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "1025-1536",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "1537-2048",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "2049-3072",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "3073-4096",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "4097-5120",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": ">5120",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        }
+      ],
+      "cumulative": [
+        {
+          "at_most": 128,
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "at_most": 256,
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "at_most": 384,
+          "count": 16,
+          "request_fraction": 1.0,
+          "tokens": 4944,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 512,
+          "count": 16,
+          "request_fraction": 1.0,
+          "tokens": 4944,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 768,
+          "count": 16,
+          "request_fraction": 1.0,
+          "tokens": 4944,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 1024,
+          "count": 16,
+          "request_fraction": 1.0,
+          "tokens": 4944,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 1536,
+          "count": 16,
+          "request_fraction": 1.0,
+          "tokens": 4944,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 2048,
+          "count": 16,
+          "request_fraction": 1.0,
+          "tokens": 4944,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 3072,
+          "count": 16,
+          "request_fraction": 1.0,
+          "tokens": 4944,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 4096,
+          "count": 16,
+          "request_fraction": 1.0,
+          "tokens": 4944,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 5120,
+          "count": 16,
+          "request_fraction": 1.0,
+          "tokens": 4944,
+          "token_fraction": 1.0
+        }
+      ]
+    },
+    "image_caption": {
+      "count": 3,
+      "total_tokens": 928,
+      "min": 304,
+      "p10": 304.0,
+      "p25": 304.0,
+      "median": 304,
+      "mean": 309.3333333333333,
+      "p75": 312.0,
+      "p90": 316.79999999999995,
+      "p95": 318.40000000000003,
+      "p99": 319.68,
+      "max": 320,
+      "bins": [
+        {
+          "range": "1-128",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "129-256",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "257-384",
+          "count": 3,
+          "request_fraction": 1.0,
+          "tokens": 928,
+          "token_fraction": 1.0
+        },
+        {
+          "range": "385-512",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "513-768",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "769-1024",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "1025-1536",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "1537-2048",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "2049-3072",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "3073-4096",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "4097-5120",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": ">5120",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        }
+      ],
+      "cumulative": [
+        {
+          "at_most": 128,
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "at_most": 256,
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "at_most": 384,
+          "count": 3,
+          "request_fraction": 1.0,
+          "tokens": 928,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 512,
+          "count": 3,
+          "request_fraction": 1.0,
+          "tokens": 928,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 768,
+          "count": 3,
+          "request_fraction": 1.0,
+          "tokens": 928,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 1024,
+          "count": 3,
+          "request_fraction": 1.0,
+          "tokens": 928,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 1536,
+          "count": 3,
+          "request_fraction": 1.0,
+          "tokens": 928,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 2048,
+          "count": 3,
+          "request_fraction": 1.0,
+          "tokens": 928,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 3072,
+          "count": 3,
+          "request_fraction": 1.0,
+          "tokens": 928,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 4096,
+          "count": 3,
+          "request_fraction": 1.0,
+          "tokens": 928,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 5120,
+          "count": 3,
+          "request_fraction": 1.0,
+          "tokens": 928,
+          "token_fraction": 1.0
+        }
+      ]
+    },
+    "page_number": {
+      "count": 30,
+      "total_tokens": 8768,
+      "min": 264,
+      "p10": 272.0,
+      "p25": 280.0,
+      "median": 288.0,
+      "mean": 292.26666666666665,
+      "p75": 308.0,
+      "p90": 309.20000000000005,
+      "p95": 320.0,
+      "p99": 320.0,
+      "max": 320,
+      "bins": [
+        {
+          "range": "1-128",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "129-256",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "257-384",
+          "count": 30,
+          "request_fraction": 1.0,
+          "tokens": 8768,
+          "token_fraction": 1.0
+        },
+        {
+          "range": "385-512",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "513-768",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "769-1024",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "1025-1536",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "1537-2048",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "2049-3072",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "3073-4096",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "4097-5120",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": ">5120",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        }
+      ],
+      "cumulative": [
+        {
+          "at_most": 128,
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "at_most": 256,
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "at_most": 384,
+          "count": 30,
+          "request_fraction": 1.0,
+          "tokens": 8768,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 512,
+          "count": 30,
+          "request_fraction": 1.0,
+          "tokens": 8768,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 768,
+          "count": 30,
+          "request_fraction": 1.0,
+          "tokens": 8768,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 1024,
+          "count": 30,
+          "request_fraction": 1.0,
+          "tokens": 8768,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 1536,
+          "count": 30,
+          "request_fraction": 1.0,
+          "tokens": 8768,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 2048,
+          "count": 30,
+          "request_fraction": 1.0,
+          "tokens": 8768,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 3072,
+          "count": 30,
+          "request_fraction": 1.0,
+          "tokens": 8768,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 4096,
+          "count": 30,
+          "request_fraction": 1.0,
+          "tokens": 8768,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 5120,
+          "count": 30,
+          "request_fraction": 1.0,
+          "tokens": 8768,
+          "token_fraction": 1.0
+        }
+      ]
+    },
+    "table": {
+      "count": 2,
+      "total_tokens": 4720,
+      "min": 576,
+      "p10": 932.8,
+      "p25": 1468.0,
+      "median": 2360.0,
+      "mean": 2360,
+      "p75": 3252.0,
+      "p90": 3787.2,
+      "p95": 3965.6,
+      "p99": 4108.320000000001,
+      "max": 4144,
+      "bins": [
+        {
+          "range": "1-128",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "129-256",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "257-384",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "385-512",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "513-768",
+          "count": 1,
+          "request_fraction": 0.5,
+          "tokens": 576,
+          "token_fraction": 0.12203389830508475
+        },
+        {
+          "range": "769-1024",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "1025-1536",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "1537-2048",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "2049-3072",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "3073-4096",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "4097-5120",
+          "count": 1,
+          "request_fraction": 0.5,
+          "tokens": 4144,
+          "token_fraction": 0.8779661016949153
+        },
+        {
+          "range": ">5120",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        }
+      ],
+      "cumulative": [
+        {
+          "at_most": 128,
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "at_most": 256,
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "at_most": 384,
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "at_most": 512,
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "at_most": 768,
+          "count": 1,
+          "request_fraction": 0.5,
+          "tokens": 576,
+          "token_fraction": 0.12203389830508475
+        },
+        {
+          "at_most": 1024,
+          "count": 1,
+          "request_fraction": 0.5,
+          "tokens": 576,
+          "token_fraction": 0.12203389830508475
+        },
+        {
+          "at_most": 1536,
+          "count": 1,
+          "request_fraction": 0.5,
+          "tokens": 576,
+          "token_fraction": 0.12203389830508475
+        },
+        {
+          "at_most": 2048,
+          "count": 1,
+          "request_fraction": 0.5,
+          "tokens": 576,
+          "token_fraction": 0.12203389830508475
+        },
+        {
+          "at_most": 3072,
+          "count": 1,
+          "request_fraction": 0.5,
+          "tokens": 576,
+          "token_fraction": 0.12203389830508475
+        },
+        {
+          "at_most": 4096,
+          "count": 1,
+          "request_fraction": 0.5,
+          "tokens": 576,
+          "token_fraction": 0.12203389830508475
+        },
+        {
+          "at_most": 5120,
+          "count": 2,
+          "request_fraction": 1.0,
+          "tokens": 4720,
+          "token_fraction": 1.0
+        }
+      ]
+    },
+    "table_caption": {
+      "count": 2,
+      "total_tokens": 624,
+      "min": 272,
+      "p10": 280.0,
+      "p25": 292.0,
+      "median": 312.0,
+      "mean": 312,
+      "p75": 332.0,
+      "p90": 344.0,
+      "p95": 348.0,
+      "p99": 351.20000000000005,
+      "max": 352,
+      "bins": [
+        {
+          "range": "1-128",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "129-256",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "257-384",
+          "count": 2,
+          "request_fraction": 1.0,
+          "tokens": 624,
+          "token_fraction": 1.0
+        },
+        {
+          "range": "385-512",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "513-768",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "769-1024",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "1025-1536",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "1537-2048",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "2049-3072",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "3073-4096",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "4097-5120",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": ">5120",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        }
+      ],
+      "cumulative": [
+        {
+          "at_most": 128,
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "at_most": 256,
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "at_most": 384,
+          "count": 2,
+          "request_fraction": 1.0,
+          "tokens": 624,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 512,
+          "count": 2,
+          "request_fraction": 1.0,
+          "tokens": 624,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 768,
+          "count": 2,
+          "request_fraction": 1.0,
+          "tokens": 624,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 1024,
+          "count": 2,
+          "request_fraction": 1.0,
+          "tokens": 624,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 1536,
+          "count": 2,
+          "request_fraction": 1.0,
+          "tokens": 624,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 2048,
+          "count": 2,
+          "request_fraction": 1.0,
+          "tokens": 624,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 3072,
+          "count": 2,
+          "request_fraction": 1.0,
+          "tokens": 624,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 4096,
+          "count": 2,
+          "request_fraction": 1.0,
+          "tokens": 624,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 5120,
+          "count": 2,
+          "request_fraction": 1.0,
+          "tokens": 624,
+          "token_fraction": 1.0
+        }
+      ]
+    },
+    "text": {
+      "count": 342,
+      "total_tokens": 169232,
+      "min": 260,
+      "p10": 280.0,
+      "p25": 296.0,
+      "median": 344.0,
+      "mean": 494.83040935672517,
+      "p75": 584.0,
+      "p90": 840.0,
+      "p95": 1174.7999999999997,
+      "p99": 1940.7199999999998,
+      "max": 2448,
+      "bins": [
+        {
+          "range": "1-128",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "129-256",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "257-384",
+          "count": 211,
+          "request_fraction": 0.6169590643274854,
+          "tokens": 65604,
+          "token_fraction": 0.3876571806750496
+        },
+        {
+          "range": "385-512",
+          "count": 40,
+          "request_fraction": 0.11695906432748537,
+          "tokens": 18732,
+          "token_fraction": 0.11068828590337525
+        },
+        {
+          "range": "513-768",
+          "count": 36,
+          "request_fraction": 0.10526315789473684,
+          "tokens": 23088,
+          "token_fraction": 0.13642809870473668
+        },
+        {
+          "range": "769-1024",
+          "count": 32,
+          "request_fraction": 0.0935672514619883,
+          "tokens": 27588,
+          "token_fraction": 0.16301881440862248
+        },
+        {
+          "range": "1025-1536",
+          "count": 17,
+          "request_fraction": 0.049707602339181284,
+          "tokens": 21808,
+          "token_fraction": 0.12886451734896473
+        },
+        {
+          "range": "1537-2048",
+          "count": 3,
+          "request_fraction": 0.008771929824561403,
+          "tokens": 5672,
+          "token_fraction": 0.03351611988276449
+        },
+        {
+          "range": "2049-3072",
+          "count": 3,
+          "request_fraction": 0.008771929824561403,
+          "tokens": 6740,
+          "token_fraction": 0.039826983076486716
+        },
+        {
+          "range": "3073-4096",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "4097-5120",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": ">5120",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        }
+      ],
+      "cumulative": [
+        {
+          "at_most": 128,
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "at_most": 256,
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "at_most": 384,
+          "count": 211,
+          "request_fraction": 0.6169590643274854,
+          "tokens": 65604,
+          "token_fraction": 0.3876571806750496
+        },
+        {
+          "at_most": 512,
+          "count": 251,
+          "request_fraction": 0.7339181286549707,
+          "tokens": 84336,
+          "token_fraction": 0.4983454665784249
+        },
+        {
+          "at_most": 768,
+          "count": 287,
+          "request_fraction": 0.8391812865497076,
+          "tokens": 107424,
+          "token_fraction": 0.6347735652831615
+        },
+        {
+          "at_most": 1024,
+          "count": 319,
+          "request_fraction": 0.9327485380116959,
+          "tokens": 135012,
+          "token_fraction": 0.7977923796917841
+        },
+        {
+          "at_most": 1536,
+          "count": 336,
+          "request_fraction": 0.9824561403508771,
+          "tokens": 156820,
+          "token_fraction": 0.9266568970407488
+        },
+        {
+          "at_most": 2048,
+          "count": 339,
+          "request_fraction": 0.9912280701754386,
+          "tokens": 162492,
+          "token_fraction": 0.9601730169235133
+        },
+        {
+          "at_most": 3072,
+          "count": 342,
+          "request_fraction": 1.0,
+          "tokens": 169232,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 4096,
+          "count": 342,
+          "request_fraction": 1.0,
+          "tokens": 169232,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 5120,
+          "count": 342,
+          "request_fraction": 1.0,
+          "tokens": 169232,
+          "token_fraction": 1.0
+        }
+      ]
+    },
+    "title": {
+      "count": 31,
+      "total_tokens": 9800,
+      "min": 264,
+      "p10": 276.0,
+      "p25": 288.0,
+      "median": 312,
+      "mean": 316.1290322580645,
+      "p75": 322.0,
+      "p90": 336.0,
+      "p95": 350.0,
+      "p99": 539.5999999999998,
+      "max": 620,
+      "bins": [
+        {
+          "range": "1-128",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "129-256",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "257-384",
+          "count": 30,
+          "request_fraction": 0.967741935483871,
+          "tokens": 9180,
+          "token_fraction": 0.936734693877551
+        },
+        {
+          "range": "385-512",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "513-768",
+          "count": 1,
+          "request_fraction": 0.03225806451612903,
+          "tokens": 620,
+          "token_fraction": 0.06326530612244897
+        },
+        {
+          "range": "769-1024",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "1025-1536",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "1537-2048",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "2049-3072",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "3073-4096",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": "4097-5120",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "range": ">5120",
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        }
+      ],
+      "cumulative": [
+        {
+          "at_most": 128,
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "at_most": 256,
+          "count": 0,
+          "request_fraction": 0.0,
+          "tokens": 0,
+          "token_fraction": 0.0
+        },
+        {
+          "at_most": 384,
+          "count": 30,
+          "request_fraction": 0.967741935483871,
+          "tokens": 9180,
+          "token_fraction": 0.936734693877551
+        },
+        {
+          "at_most": 512,
+          "count": 30,
+          "request_fraction": 0.967741935483871,
+          "tokens": 9180,
+          "token_fraction": 0.936734693877551
+        },
+        {
+          "at_most": 768,
+          "count": 31,
+          "request_fraction": 1.0,
+          "tokens": 9800,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 1024,
+          "count": 31,
+          "request_fraction": 1.0,
+          "tokens": 9800,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 1536,
+          "count": 31,
+          "request_fraction": 1.0,
+          "tokens": 9800,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 2048,
+          "count": 31,
+          "request_fraction": 1.0,
+          "tokens": 9800,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 3072,
+          "count": 31,
+          "request_fraction": 1.0,
+          "tokens": 9800,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 4096,
+          "count": 31,
+          "request_fraction": 1.0,
+          "tokens": 9800,
+          "token_fraction": 1.0
+        },
+        {
+          "at_most": 5120,
+          "count": 31,
+          "request_fraction": 1.0,
+          "tokens": 9800,
+          "token_fraction": 1.0
+        }
+      ]
+    }
+  },
+  "recognition_type_counts": {
+    "aside_text": 2,
+    "equation": 132,
+    "header": 16,
+    "image_caption": 3,
+    "page_number": 30,
+    "table": 2,
+    "table_caption": 2,
+    "text": 342,
+    "title": 31
+  },
+  "layout_token_counts": [
+    5476,
+    5476,
+    5476,
+    5476,
+    5476,
+    5476,
+    5476,
+    5476,
+    5476,
+    5476,
+    5476,
+    5476,
+    5476,
+    5476,
+    5476,
+    5476,
+    5476,
+    5476,
+    5476,
+    5476,
+    5476,
+    5476,
+    5476,
+    5476,
+    5476,
+    5476,
+    5476,
+    5476,
+    5476,
+    5476,
+    5476,
+    5476
+  ],
+  "recognition_crop_token_counts": [
+    296,
+    280,
+    264,
+    304,
+    324,
+    800,
+    480,
+    1280,
+    1440,
+    640,
+    480,
+    464,
+    480,
+    560,
+    308,
+    304,
+    480,
+    960,
+    640,
+    304,
+    272,
+    312,
+    264,
+    336,
+    288,
+    288,
+    480,
+    960,
+    640,
+    336,
+    288,
+    300,
+    320,
+    280,
+    300,
+    408,
+    840,
+    680,
+    1216,
+    1296,
+    1088,
+    680,
+    408,
+    288,
+    320,
+    312,
+    336,
+    288,
+    348,
+    300,
+    396,
+    1504,
+    640,
+    288,
+    800,
+    512,
+    480,
+    920,
+    900,
+    1152,
+    288,
+    276,
+    352,
+    620,
+    272,
+    1344,
+    896,
+    336,
+    688,
+    300,
+    864,
+    320,
+    320,
+    300,
+    840,
+    288,
+    280,
+    324,
+    1176,
+    300,
+    1512,
+    360,
+    840,
+    700,
+    288,
+    304,
+    1936,
+    308,
+    272,
+    276,
+    504,
+    336,
+    272,
+    264,
+    384,
+    336,
+    360,
+    272,
+    304,
+    352,
+    312,
+    348,
+    304,
+    296,
+    288,
+    312,
+    324,
+    304,
+    324,
+    288,
+    288,
+    320,
+    312,
+    280,
+    1100,
+    328,
+    368,
+    288,
+    312,
+    348,
+    276,
+    384,
+    420,
+    348,
+    304,
+    264,
+    688,
+    312,
+    276,
+    264,
+    360,
+    1080,
+    336,
+    288,
+    704,
+    288,
+    444,
+    324,
+    272,
+    360,
+    308,
+    480,
+    480,
+    312,
+    320,
+    304,
+    288,
+    312,
+    384,
+    960,
+    480,
+    304,
+    304,
+    372,
+    384,
+    312,
+    444,
+    296,
+    480,
+    264,
+    1008,
+    304,
+    336,
+    504,
+    304,
+    504,
+    320,
+    384,
+    348,
+    260,
+    504,
+    312,
+    312,
+    352,
+    504,
+    840,
+    840,
+    304,
+    336,
+    320,
+    504,
+    320,
+    272,
+    288,
+    640,
+    576,
+    352,
+    344,
+    328,
+    300,
+    296,
+    296,
+    296,
+    1120,
+    1280,
+    320,
+    312,
+    480,
+    640,
+    640,
+    280,
+    264,
+    324,
+    272,
+    4144,
+    480,
+    640,
+    1088,
+    480,
+    312,
+    288,
+    352,
+    288,
+    1872,
+    360,
+    324,
+    352,
+    656,
+    840,
+    840,
+    288,
+    288,
+    288,
+    984,
+    288,
+    296,
+    360,
+    1240,
+    372,
+    360,
+    1792,
+    504,
+    264,
+    308,
+    264,
+    308,
+    820,
+    264,
+    264,
+    308,
+    308,
+    288,
+    1944,
+    280,
+    264,
+    2160,
+    296,
+    432,
+    312,
+    288,
+    288,
+    288,
+    336,
+    308,
+    272,
+    560,
+    380,
+    288,
+    336,
+    312,
+    344,
+    336,
+    296,
+    276,
+    336,
+    264,
+    384,
+    348,
+    288,
+    312,
+    312,
+    320,
+    336,
+    312,
+    360,
+    272,
+    264,
+    372,
+    264,
+    348,
+    312,
+    372,
+    384,
+    372,
+    444,
+    288,
+    336,
+    360,
+    312,
+    372,
+    272,
+    360,
+    480,
+    372,
+    492,
+    372,
+    328,
+    372,
+    492,
+    384,
+    320,
+    552,
+    296,
+    256,
+    312,
+    272,
+    264,
+    384,
+    288,
+    280,
+    1600,
+    312,
+    820,
+    840,
+    324,
+    336,
+    840,
+    840,
+    336,
+    840,
+    840,
+    840,
+    264,
+    324,
+    272,
+    288,
+    272,
+    276,
+    288,
+    288,
+    264,
+    272,
+    320,
+    672,
+    320,
+    288,
+    304,
+    272,
+    304,
+    344,
+    288,
+    384,
+    260,
+    312,
+    276,
+    372,
+    496,
+    312,
+    288,
+    288,
+    308,
+    304,
+    320,
+    640,
+    264,
+    324,
+    312,
+    312,
+    384,
+    288,
+    312,
+    960,
+    264,
+    296,
+    304,
+    640,
+    312,
+    1280,
+    640,
+    396,
+    396,
+    800,
+    800,
+    480,
+    408,
+    372,
+    640,
+    360,
+    280,
+    348,
+    468,
+    592,
+    468,
+    320,
+    320,
+    640,
+    336,
+    272,
+    264,
+    280,
+    336,
+    336,
+    256,
+    576,
+    360,
+    336,
+    456,
+    300,
+    468,
+    468,
+    264,
+    280,
+    288,
+    528,
+    272,
+    792,
+    280,
+    264,
+    312,
+    792,
+    288,
+    660,
+    320,
+    280,
+    544,
+    288,
+    272,
+    276,
+    288,
+    372,
+    288,
+    264,
+    648,
+    2448,
+    416,
+    816,
+    672,
+    480,
+    260,
+    280,
+    288,
+    312,
+    420,
+    280,
+    324,
+    288,
+    280,
+    264,
+    656,
+    272,
+    348,
+    656,
+    336,
+    1148,
+    336,
+    348,
+    496,
+    280,
+    272,
+    336,
+    280,
+    312,
+    288,
+    300,
+    288,
+    544,
+    408,
+    512,
+    2132,
+    360,
+    320,
+    480,
+    420,
+    336,
+    272,
+    372,
+    320,
+    276,
+    288,
+    280,
+    288,
+    264,
+    504,
+    1332,
+    360,
+    264,
+    320,
+    348,
+    324,
+    1520,
+    272,
+    280,
+    312,
+    312,
+    264,
+    288,
+    288,
+    288,
+    312,
+    288,
+    288,
+    308,
+    264,
+    288,
+    296,
+    288,
+    324,
+    384,
+    492,
+    280,
+    864,
+    672,
+    672,
+    672,
+    672,
+    308,
+    288,
+    936,
+    840,
+    304,
+    1364,
+    912,
+    840,
+    1008,
+    308,
+    308,
+    308,
+    280,
+    308,
+    336,
+    288,
+    2040,
+    1920,
+    288,
+    2160,
+    304,
+    432,
+    336,
+    336,
+    320,
+    320,
+    308,
+    308,
+    308,
+    264,
+    300,
+    312,
+    344,
+    352,
+    560,
+    288,
+    280,
+    288,
+    300,
+    264,
+    416,
+    300,
+    312,
+    1536,
+    304,
+    320,
+    280,
+    800,
+    1560,
+    324,
+    1520,
+    1000,
+    312,
+    276,
+    320
+  ]
+}
