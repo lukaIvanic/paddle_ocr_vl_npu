@@ -59,7 +59,6 @@ class PPDocLayoutV2NpuAdapter:
         profile_stages: bool = False,
         execution: str = "eager",
         compile_cache_dir: str | Path | None = None,
-        graph_warmup_passes: int = 2,
     ) -> None:
         if dtype not in DTYPE_MAP:
             raise ValueError(f"Unsupported layout dtype: {dtype}")
@@ -106,9 +105,7 @@ class PPDocLayoutV2NpuAdapter:
                 dtype=self.dtype,
                 device=self.device,
                 sample_pixel_values=warmup_pixel_values,
-                warmup_passes=graph_warmup_passes,
             )
-            self.graph_warmup = self.compiled_runtime.warmup
         self.setup_s = time.perf_counter() - started
         self.page_count = 0
         self.forward_s = 0.0
@@ -125,6 +122,12 @@ class PPDocLayoutV2NpuAdapter:
         self.forward_s = 0.0
         self.postprocess_s = 0.0
         self.stage_s.clear()
+
+    def warmup_graph(self, *, passes: int = 2) -> dict[str, Any] | None:
+        if self.compiled_runtime is None:
+            return None
+        self.graph_warmup = self.compiled_runtime.warmup(passes=passes)
+        return self.graph_warmup
 
     @torch.inference_mode()
     def _predict_one(
