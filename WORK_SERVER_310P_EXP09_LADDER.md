@@ -24909,3 +24909,280 @@ Return that exact one-line result first.  Then write
 Do not rerun the 665 tables.  If scoring alone fails after all responses are
 saved, fix or rerun only scoring.  Do not change inference output or delete
 `tables.jsonl`.
+
+## Phase 60: persistent B64 cross-request crop API
+
+Run this only after Phase 59 has finished and its server has stopped. Phase 59
+is the B1 accuracy baseline. Phase 60 keeps the same one-PNG-per-HTTP-request
+contract, but 64 concurrent HTTP calls feed one open `ContinuousRecognizer`
+session. Later crops join the active decode arena and hot-swap into free slots.
+There is no HTTP batch payload and no API-side image batching.
+
+The 910B2 authority for this exact path is:
+
+- 665 tables on 458 pages;
+- generation wall 104.410327 s, 6.369102 tables/s;
+- raw decode 11,106.207 tok/s, effective decode 6,973.206 tok/s;
+- 64 initial admissions and 601 hot-swap admissions;
+- sample TEDS 0.9494153960 and Page-TEDS 0.9541704811;
+- page structure-only TEDS 0.9777204859;
+- 663/665 generated strings byte-exact to the B1 authority;
+- B64 Page-TEDS minus B1 Page-TEDS = -0.0003837270.
+
+The work-server result does not need to match token text or speed exactly.
+Quality must remain close to its own Phase-59 B1 result. Do not modify source,
+weights, prompts, crop boxes, padding, or graph settings during this phase.
+
+### 60.1 Pull, verify caches, and start the B64 server
+
+```sh
+set -uo pipefail
+cd "$(git rev-parse --show-toplevel)"
+git pull --ff-only origin main
+test -z "$(git status --porcelain)"
+source npu-setup
+set -e
+
+PYTHON_BIN=/usr/local/python3.12.13/bin/python
+SERVER=09_persistent_page_engine/scripts/serve_crop_ocr_api.py
+CLIENT=09_persistent_page_engine/scripts/run_omnidocbench_table_api.py
+MODEL=/home/lukaiv/models/PaddleOCR-VL-1.6
+DATASET_JSON=/home/lukaiv/datasets/OmniDocBench/OmniDocBench.json
+IMAGES_DIR=/home/lukaiv/datasets/OmniDocBench/images
+
+CDM_ROOT=tmp/09_persistent_page_engine/310p_phase56_cdm
+. "$CDM_ROOT/runtime_paths.env"
+EVAL_PYTHON="$OMNIDOCBENCH_EVAL_PYTHON"
+EVALUATOR_ROOT="$OMNIDOCBENCH_EVALUATOR_ROOT"
+
+DECODE_CACHE=.runtime_cache/310p_phase57_decode_b64_k4096_pse
+VISION_CACHE=.runtime_cache/310p_phase52_v16_vision_4352_nz
+TEXT_CACHE=.runtime_cache/310p_phase52_v16_text
+for cache in "$DECODE_CACHE" "$VISION_CACHE" "$TEXT_CACHE"; do
+  test -d "$cache"
+  test -n "$(find "$cache" -type f -print -quit)"
+done
+
+SHORT="$(git rev-parse --short HEAD)"
+ROOT="tmp/09_persistent_page_engine/310p_phase60_open_crop_api_${SHORT}"
+test ! -e "$ROOT"
+mkdir -p "$ROOT"
+
+cache_inventory() {
+  out="$1"
+  : >"$out"
+  for cache in "$DECODE_CACHE" "$VISION_CACHE" "$TEXT_CACHE"; do
+    printf '%s\tfiles=%s\tbytes=%s\n' "$cache" \
+      "$(find "$cache" -type f | wc -l)" \
+      "$(du -sb "$cache" | cut -f1)" >>"$out"
+  done
+}
+cache_inventory "$ROOT/cache_before.txt"
+npu-smi info | tee "$ROOT/npu_before.txt"
+
+SERVER_ARGS=(
+  "$SERVER" --host 127.0.0.1 --port 8765
+  --model "$MODEL"
+  --queue-capacity 256
+  --decode-batch-size 64
+  --cache-length 4096 --max-new-tokens 4096
+  --min-pixels 28224 --max-pixels 802816
+  --decode-backend torchair
+  --decode-optimization combined_apply_pse_sentinel
+  --torchair-cache-dir "$DECODE_CACHE"
+  --vision-buckets 256,384,512,640,768,1408,1920,2048,2944,4096
+  --vision-torchair-cache-dir "$VISION_CACHE"
+  --text-buckets 128,256,512,1024,1312
+  --text-torchair-cache-dir "$TEXT_CACHE"
+)
+printf '%q ' "$PYTHON_BIN" "${SERVER_ARGS[@]}" >"$ROOT/server_command.sh"
+printf '\n' >>"$ROOT/server_command.sh"
+
+server_started="$(date +%s)"
+PYTHONUNBUFFERED=1 "$PYTHON_BIN" "${SERVER_ARGS[@]}" \
+  >"$ROOT/server.log" 2>&1 &
+API_PID="$!"
+printf '%s\n' "$API_PID" >"$ROOT/server.pid"
+cleanup_api() {
+  if kill -0 "$API_PID" 2>/dev/null; then
+    kill "$API_PID"
+    wait "$API_PID" 2>/dev/null || true
+  fi
+}
+trap cleanup_api EXIT INT TERM
+
+ready=0
+for attempt in $(seq 1 540); do
+  if ! kill -0 "$API_PID" 2>/dev/null; then
+    printf '310P PHASE 60 SERVER: FAIL process_exited\n'
+    tail -n 100 "$ROOT/server.log"
+    exit 0
+  fi
+  if /usr/bin/python3 - <<'PY' >/dev/null 2>&1
+import json, urllib.request
+with urllib.request.urlopen('http://127.0.0.1:8765/ready', timeout=2) as r:
+    data=json.load(r)
+assert data['ready'] is True
+assert data['configuration']['batch_size'] == 64
+PY
+  then
+    ready=1
+    break
+  fi
+  if test $((attempt % 6)) -eq 0; then
+    printf 'PHASE60_STARTUP_PROGRESS elapsed_s=%s last=%s\n' \
+      "$(( $(date +%s) - server_started ))" \
+      "$(tail -n 1 "$ROOT/server.log" | tr '\r\n' ' ' | cut -c1-180)"
+  fi
+  sleep 5
+done
+test "$ready" -eq 1
+printf '%s\n' "$(( $(date +%s) - server_started ))" >"$ROOT/server_startup_s.txt"
+/usr/bin/python3 - <<'PY' >"$ROOT/ready.json"
+import json, urllib.request
+with urllib.request.urlopen('http://127.0.0.1:8765/ready', timeout=5) as r:
+    print(json.dumps(json.load(r), indent=2, sort_keys=True))
+PY
+```
+
+Return one sentence immediately when ready:
+
+```text
+310P PHASE 60 SERVER: READY startup_s=<seconds> batch=64 pool=<capacity>
+```
+
+### 60.2 Submit 665 independent calls, drain, and score
+
+```sh
+CLIENT_ARGS=(
+  "$CLIENT"
+  --dataset-json "$DATASET_JSON"
+  --images-dir "$IMAGES_DIR"
+  --api-url http://127.0.0.1:8765/v1/ocr
+  --http-workers 64 --drain-server
+  --output "$ROOT/tables.jsonl"
+  --score-output "$ROOT/scores.json"
+  --summary-output "$ROOT/run_summary.json"
+  --evaluator-root "$EVALUATOR_ROOT"
+  --crop-padding 0 --timeout-s 900
+  --teds-workers 12 --teds-timeout-s 120
+  --no-resume
+)
+printf '%q ' "$EVAL_PYTHON" "${CLIENT_ARGS[@]}" >"$ROOT/client_command.sh"
+printf '\n' >>"$ROOT/client_command.sh"
+
+SECONDS=0
+set +e
+set -o pipefail
+PYTHONUNBUFFERED=1 timeout --signal=TERM --kill-after=30s 10800 \
+  "$EVAL_PYTHON" "${CLIENT_ARGS[@]}" 2>&1 | tee "$ROOT/client.log"
+client_ec="${PIPESTATUS[0]}"
+set -e
+printf '%s\n' "$client_ec" >"$ROOT/client_exit_code.txt"
+printf '%s\n' "$SECONDS" >"$ROOT/client_outer_wall_s.txt"
+cleanup_api
+trap - EXIT INT TERM
+cache_inventory "$ROOT/cache_after.txt"
+npu-smi info >"$ROOT/npu_after.txt" || true
+
+if test "$client_ec" -ne 0; then
+  printf '310P PHASE 60 CLIENT: FAIL exit=%s wall_s=%s\n' "$client_ec" "$SECONDS"
+  tail -n 100 "$ROOT/client.log"
+  exit 0
+fi
+```
+
+The first client line must say `submitted=665 http_workers=64`. Completion
+order should be non-FIFO. The drain line must report `requests=665` and
+`decode_batch_size=64`. If the client fails after all 665 outputs are saved,
+do not rerun inference. Repair or rerun only drain/scoring as applicable.
+
+### 60.3 Validate and compare with Phase 59
+
+```sh
+"$EVAL_PYTHON" - "$ROOT" <<'PY' | tee "$ROOT/final_sentence.txt"
+import glob, json, pathlib, sys
+root=pathlib.Path(sys.argv[1])
+summary=json.loads((root/'run_summary.json').read_text())
+scores=json.loads((root/'scores.json').read_text())
+ready=json.loads((root/'ready.json').read_text())
+records=[json.loads(x) for x in (root/'tables.jsonl').read_text().splitlines() if x]
+service=summary['service_scheduler']
+
+assert len(records) == summary['tables'] == scores['table_count'] == 665
+assert scores['table_page_count'] == 458
+assert scores['teds_timeout_count'] == scores['teds_error_count'] == 0
+assert ready['configuration']['batch_size'] == service['batch_size'] == 64
+assert ready['configuration']['cache_length'] == 4096
+assert ready['configuration']['decode_optimization'] == 'combined_apply_pse_sentinel'
+assert ready['configuration']['vision_packing']['mode'] == 'off'
+assert ready['configuration']['text_packing']['mode'] == 'off'
+assert ready['configuration']['private_prefill_cache']['capacity'] == 96
+assert service['requests'] == 665
+assert service['initial_admissions'] + service['hot_swap_admissions'] + service['prefill_only_completions'] == 665
+assert service['hot_swap_admissions'] > 0
+
+phase59_paths=glob.glob('tmp/09_persistent_page_engine/310p_phase59_crop_api_*/run_summary.json')
+phase59=None
+if phase59_paths:
+    p=max(map(pathlib.Path,phase59_paths),key=lambda x:x.stat().st_mtime)
+    phase59=json.loads(p.read_text())
+
+current={
+  'generation_wall_s':summary['generation_wall_s'],
+  'tables_per_s':summary['tables_per_s'],
+  'page_teds':scores['page_TEDS'],
+  'sample_teds':scores['sample_TEDS'],
+  'page_structure':scores['page_TEDS_structure_only'],
+  'raw_decode_tps':service['rates']['raw_decode_tok_per_s'],
+  'effective_decode_tps':service['rates']['effective_decode_tok_per_s'],
+  'active_slot_fraction':service['rates']['active_slot_fraction'],
+  'initial_admissions':service['initial_admissions'],
+  'hot_swap_admissions':service['hot_swap_admissions'],
+  'stop_reasons':summary['stop_reasons'],
+}
+ref910={
+  'generation_wall_s':104.41032719612122,
+  'tables_per_s':6.369101772383914,
+  'page_teds':0.9541704811266127,
+  'sample_teds':0.949415396047169,
+  'page_structure':0.9777204859107415,
+  'raw_decode_tps':11106.206901209489,
+  'effective_decode_tps':6973.205688465291,
+}
+comparison={
+  'classification':'PASS',
+  'current_310p_b64':current,
+  'reference_910b_b64':ref910,
+  'speed_ratio_310p_over_910b':current['tables_per_s']/ref910['tables_per_s'],
+  'page_teds_delta_vs_910b':current['page_teds']-ref910['page_teds'],
+  'phase59_b1':phase59,
+  'speedup_vs_phase59_b1':None if phase59 is None else current['tables_per_s']/phase59['tables_per_s'],
+  'page_teds_delta_vs_phase59_b1':None if phase59 is None else current['page_teds']-phase59['metrics']['page_TEDS'],
+}
+(root/'final_comparison.json').write_text(json.dumps(comparison,indent=2,sort_keys=True)+'\n')
+print(
+  '310P PHASE 60 OPEN CROP API: PASS '
+  f'tables_per_s={current["tables_per_s"]:.6f} '
+  f'effective_decode_tps={current["effective_decode_tps"]:.1f} '
+  f'hot_swaps={current["hot_swap_admissions"]} '
+  f'page_teds={current["page_teds"]:.6f} '
+  f'speedup_vs_b1={comparison["speedup_vs_phase59_b1"]} '
+  f'page_teds_delta_vs_b1={comparison["page_teds_delta_vs_phase59_b1"]}'
+)
+PY
+```
+
+Return the exact final sentence first. Then write `$ROOT/agent_report.md` with:
+
+1. commit, host, physical NPU, versions, model SHA, exact commands;
+2. startup and exact cache file/byte deltas, naming any compiled graph;
+3. generation wall, tables/s, raw/effective decode tok/s, active fraction,
+   initial/hot-swap admissions, and device-stage totals;
+4. sample/Page TEDS and structure TEDS, with signed deltas against its own
+   Phase-59 B1 result and the labeled 910B2 B64 reference;
+5. worker/HTTP latency distributions and wrapper overhead;
+6. what is proven and not proven.
+
+Do not run E2E, layout, CDM, or another inference pass. If no Phase-59 summary
+exists, report that comparison as unavailable instead of inventing it.

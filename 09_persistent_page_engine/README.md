@@ -1144,6 +1144,15 @@ reverse.
 diagnostic page runner, owned OmniDocBench runner, NPU smoke wrapper, labs, and
 focused probes. `utils/` contains only shared timing and metric helpers.
 
+`scripts/serve_crop_ocr_api.py` is the crop-only HTTP wrapper. Each call carries
+one image and one crop type. The HTTP process only validates and queues the
+request. One separate NPU process owns a long-lived `ContinuousRecognizer`.
+Requests that arrive while decode is active join the same fixed B64 arena and
+hot-swap into free slots; a temporarily empty HTTP queue does not close the
+recognizer run. `scripts/run_omnidocbench_table_api.py` submits independent GT
+table-crop calls concurrently and uses `/v1/drain` after a benchmark to close
+the open source and collect exact run-scoped scheduler metrics.
+
 The production runtime packages do not import `scripts/` entrypoints or probes.
 Those scripts consume the same preprocessing and model-stage modules as the
 E2E engine, so diagnostic code cannot silently become a runtime dependency or
