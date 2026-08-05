@@ -78,6 +78,193 @@ class FixedBatchDecodeEngine:
             cache_length=arena.cache_length,
         )
 
+    def _build_group_inputs_embeds(
+        self,
+        entries: Sequence[tuple[int, int, PreparedGeneration]],
+        timeline: PrefillDeviceTimeline,
+    ) -> list[torch.Tensor]:
+        """Build request embeddings with 3072-token packed vision blocks."""
+        visual = self.model.visual
+        runtime = visual.prefill_runtime
+        target = 3072
+        token_embeds: list[torch.Tensor] = []
+        vision_inputs: dict[
+            int,
+            tuple[
+                torch.Tensor,
+                tuple[torch.Tensor, torch.Tensor],
+                torch.Tensor,
+            ],
+        ] = {}
+
+        for index, (_slot, _request_index, request) in enumerate(entries):
+            token_embeds.append(
+                timeline.measure(
+                    "token_embedding",
+                    lambda request=request: self.model.model.embed_tokens(
+                        request.input_ids
+                    ),
+                )
+            )
+            if request.pixel_values is None:
+                continue
+            if request.image_grid_thw is None:
+                raise ValueError(
+                    "image_grid_thw is required when pixel_values is provided"
+                )
+            hidden = timeline.measure(
+                "vision_patch_embed",
+                lambda request=request: visual.patch_embed(
+                    request.pixel_values.type(visual.dtype)
+                ),
+            )
+
+            def prepare_positions(request=request):
+                rotary = visual.rot_pos_emb(request.image_grid_thw)
+                emb = torch.cat((rotary, rotary), dim=-1)
+                position_embeddings = (emb.cos(), emb.sin())
+                cu_seqlens = torch.repeat_interleave(
+                    request.image_grid_thw[:, 1] * request.image_grid_thw[:, 2],
+                    request.image_grid_thw[:, 0],
+                ).cumsum(dim=0, dtype=torch.int32)
+                return position_embeddings, F.pad(cu_seqlens, (1, 0), value=0)
+
+            positions, cu_seqlens = timeline.measure(
+                "vision_position_prepare", prepare_positions
+            )
+            vision_inputs[index] = (hidden, positions, cu_seqlens)
+
+        packed_outputs: dict[int, torch.Tensor] = {}
+        eligible = [
+            index
+            for index, (hidden, _positions, _cu) in vision_inputs.items()
+            if int(hidden.shape[0]) <= target
+        ]
+        bins: list[list[int]] = []
+        bin_totals: list[int] = []
+        for index in sorted(
+            eligible,
+            key=lambda value: int(vision_inputs[value][0].shape[0]),
+            reverse=True,
+        ):
+            length = int(vision_inputs[index][0].shape[0])
+            destination = next(
+                (
+                    bin_index
+                    for bin_index, total in enumerate(bin_totals)
+                    if total + length <= target
+                ),
+                None,
+            )
+            if destination is None:
+                bins.append([index])
+                bin_totals.append(length)
+            else:
+                bins[destination].append(index)
+                bin_totals[destination] += length
+
+        for members, real_tokens in zip(bins, bin_totals):
+            if len(members) == 1:
+                index = members[0]
+                hidden, positions, cu_seqlens = vision_inputs[index]
+                packed_outputs[index] = timeline.measure(
+                    "vision_transformer_blocks",
+                    lambda hidden=hidden, positions=positions, cu_seqlens=cu_seqlens: runtime.run(
+                        hidden, positions, cu_seqlens
+                    ),
+                )
+                continue
+            hidden = torch.cat(
+                [vision_inputs[index][0] for index in members], dim=0
+            )
+            rope_cos = torch.cat(
+                [vision_inputs[index][1][0] for index in members], dim=0
+            )
+            rope_sin = torch.cat(
+                [vision_inputs[index][1][1] for index in members], dim=0
+            )
+            pad_tokens = target - real_tokens
+            hidden = F.pad(hidden, (0, 0, 0, pad_tokens)).unsqueeze(0).contiguous()
+            rope_cos = (
+                F.pad(rope_cos, (0, 0, 0, pad_tokens), value=1.0)
+                .unsqueeze(0)
+                .contiguous()
+            )
+            rope_sin = (
+                F.pad(rope_sin, (0, 0, 0, pad_tokens), value=0.0)
+                .unsqueeze(0)
+                .contiguous()
+            )
+            segment_ids = torch.cat(
+                [
+                    torch.full(
+                        (int(vision_inputs[index][0].shape[0]),),
+                        member_index,
+                        device=hidden.device,
+                        dtype=torch.int32,
+                    )
+                    for member_index, index in enumerate(members)
+                ]
+                + [
+                    torch.full(
+                        (pad_tokens,),
+                        -1,
+                        device=hidden.device,
+                        dtype=torch.int32,
+                    )
+                ]
+            )
+            mask = (segment_ids[:, None] != segment_ids[None, :]).view(
+                1, 1, target, target
+            ).contiguous()
+            compiled = runtime._compiled_for_bucket(target)
+            packed = timeline.measure(
+                "vision_transformer_blocks",
+                lambda: compiled(hidden, rope_cos, rope_sin, mask),
+            )[0, :real_tokens]
+            runtime.route_counts[f"packed_{target}"] = (
+                runtime.route_counts.get(f"packed_{target}", 0) + 1
+            )
+            runtime.real_tokens += real_tokens
+            runtime.physical_tokens += target
+            offset = 0
+            for index in members:
+                length = int(vision_inputs[index][0].shape[0])
+                packed_outputs[index] = packed[offset : offset + length].contiguous()
+                offset += length
+
+        for index, (hidden, positions, cu_seqlens) in vision_inputs.items():
+            if index in packed_outputs:
+                continue
+            packed_outputs[index] = timeline.measure(
+                "vision_transformer_blocks",
+                lambda hidden=hidden, positions=positions, cu_seqlens=cu_seqlens: runtime.run(
+                    hidden, positions, cu_seqlens
+                ),
+            )
+
+        for index, image_hidden in packed_outputs.items():
+            image_embeds = timeline.measure(
+                "vision_merger",
+                lambda image_hidden=image_hidden: visual.merger(image_hidden),
+            ).to(
+                device=token_embeds[index].device,
+                dtype=token_embeds[index].dtype,
+            )
+            request = entries[index][2]
+            image_mask = (
+                (request.input_ids == self.model.config.image_token_id)
+                .unsqueeze(-1)
+                .expand_as(token_embeds[index])
+            )
+            token_embeds[index] = timeline.measure(
+                "image_embed_scatter",
+                lambda index=index, image_mask=image_mask, image_embeds=image_embeds: token_embeds[
+                    index
+                ].masked_scatter(image_mask, image_embeds),
+            )
+        return token_embeds
+
     @torch.inference_mode()
     def generate_many(
         self,
@@ -362,15 +549,12 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
 
         runtime = self.packed_text_prefill_runtime
         timeline = PrefillDeviceTimeline(self.model.device)
+        inputs_embeds_list = self._build_group_inputs_embeds(entries, timeline)
         members: list[PreparedTextMember] = []
-        for _slot, _request_index, request in entries:
+        for inputs_embeds, (_slot, _request_index, request) in zip(
+            inputs_embeds_list, entries
+        ):
             self._validate_request(request)
-            inputs_embeds = self.model.build_inputs_embeds(
-                request.input_ids,
-                request.pixel_values,
-                request.image_grid_thw,
-                device_timeline=timeline,
-            )
             position_ids, rope_delta = timeline.measure(
                 "mrope_prepare",
                 lambda request=request: self.model.get_rope_index(
@@ -443,14 +627,41 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
                     "prefill_metrics": None,
                 }
 
-        overflow_metrics: dict[str, float | int] = {}
         for entry_index in overflow:
             slot, request_index, request = entries[entry_index]
-            state, _elapsed = self._prefill_slot(arena, slot, request)
-            state["request_index"] = request_index
-            states[slot] = state
-            for name, value in (state.get("prefill_metrics") or {}).items():
-                overflow_metrics[name] = overflow_metrics.get(name, 0) + value
+            member = members[entry_index]
+            cache = self._slot_view(arena, slot)
+            hidden_states = timeline.measure(
+                "text_transformer_prefill",
+                lambda member=member, request=request, cache=cache: self.model.model.forward_prefill_static(
+                    inputs_embeds=member.inputs_embeds,
+                    attention_mask=request.attention_mask,
+                    position_ids=member.position_ids,
+                    cache=cache,
+                ),
+            )
+            logits = timeline.measure(
+                "prefill_lm_head",
+                lambda hidden_states=hidden_states: F.linear(
+                    hidden_states[:, -1:, :],
+                    self.model.model.embed_tokens.weight,
+                ),
+            )
+            token = torch.argmax(logits.float(), dim=-1)
+            states[slot] = {
+                "request_index": request_index,
+                "token": token,
+                "token_id": None,
+                "cache_position": torch.full(
+                    (1,),
+                    member.sequence_length,
+                    device=self.model.device,
+                    dtype=torch.int64,
+                ),
+                "rope_delta": member.rope_delta,
+                "prefill_metrics": None,
+            }
+            physical_tokens += member.sequence_length
 
         stage_metrics = timeline.resolve()
         for state in states.values():
@@ -467,8 +678,6 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
             "text_kv_redistribute_bytes": copied_bytes,
             **stage_metrics,
         }
-        for name, value in overflow_metrics.items():
-            aggregate[name] = aggregate.get(name, 0) + value
         return states, float(time.perf_counter() - started), aggregate
 
     @torch.inference_mode()
