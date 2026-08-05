@@ -19,8 +19,11 @@ for the official OpenDoc full-page pipeline.
   in-memory crop to stock ONNX and local NPU inference and writes a JSONL trace.
 - `run_opendoc_batched_unirec.py`: unmodified OpenDoc layout/crop/assembly
   semantics with a repository-owned cross-page crop queue. Each crop keeps an
-  exact B1 vision/decoder prefill; completed caches are concatenated into fixed
-  padded decode cohorts.
+  exact B1 vision/decoder prefill. The runner supports fixed padded cohorts and
+  a fixed-arena continuous decoder.
+- `continuous_unirec.py`: continuous decode scheduler. Each physical batch row
+  owns its cache position; an EOS or length-complete row is replaced by the
+  next B1-prefilled request without waiting for the other rows.
 
 The local model implementation is copied without architectural changes from
 `unirec_research/03_compiled_decode_single_batch` at commit `4b9a9ab`.
@@ -206,7 +209,7 @@ overlap filtering, reading-order sort, block numbering, and downstream crop
 assembly. `float32` is the parity-first default; `float16` is an explicit
 performance experiment.
 
-## Fixed cross-page decode cohorts
+## Cross-page decode scheduling
 
 The fixed-cohort runner batches decode only. It does not pad images or alter
 the vision encoder. Crops are prepared and prefetched one at a time using the
@@ -238,6 +241,21 @@ This runner does not edit or patch the OpenOCR checkout. It imports the stock
 layout and page-assembly helpers and owns only the scheduling boundary. The
 final partial cohort is padded to `--decode-batch-size`. Reports preserve raw
 physical decode slots, effective real decode tokens, and padding slots.
+
+Add `--decode-scheduling continuous` to retain the same physical decode graph
+while hot-swapping completed rows:
+
+```sh
+  --decode-batch-size 4 --decode-scheduling continuous
+```
+
+Continuous mode keeps exact B1 image and decoder prefill semantics. It copies
+the replacement request's complete static self/cross KV rows into the finished
+slot, resets only that row's cache position, and resumes the fixed-shape graph.
+Requests may complete out of order; pages are still emitted in input order as
+soon as all their crops finish. The initial implementation performs replacement
+prefill synchronously between decode iterations. It does not yet overlap NPU
+prefill with decode.
 
 ## Artifacts
 

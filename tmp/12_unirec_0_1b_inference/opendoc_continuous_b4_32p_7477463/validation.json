@@ -1,0 +1,37 @@
+{
+  "commit": "7477463",
+  "device": "Ascend 910B2",
+  "reference": "tmp/12_unirec_0_1b_inference/opendoc_batched_b4_32p_a372dbf/output",
+  "continuous": {
+    "page_count": 32,
+    "crop_count": 186,
+    "pipeline_wall_s": 46.376648692879826,
+    "pages_per_s": 0.6900024236747606,
+    "decode_s": 10.60547579685226,
+    "first_decode_step_s": 8.229645958170295,
+    "steady_decode_s": 2.375829838681966,
+    "raw_decode_token_slots": 4932,
+    "effective_decode_tokens": 4886,
+    "idle_decode_token_slots": 46,
+    "useful_slot_fraction": 0.9906731549067316,
+    "steady_raw_decode_tokens_per_s": 2074.2226230873066,
+    "steady_effective_decode_tokens_per_s": 2054.860967108813
+  },
+  "warm_fixed_control": {
+    "page_count": 32,
+    "crop_count": 186,
+    "pipeline_wall_s": 49.21898751100525,
+    "pages_per_s": 0.6501555927546229,
+    "decode_s": 12.288779558846727,
+    "first_cohort_decode_s": 8.089629969093949,
+    "steady_decode_s": 4.199149589752778,
+    "raw_decode_token_slots": 9656,
+    "effective_decode_tokens": 4886,
+    "padding_decode_token_slots": 4770,
+    "useful_slot_fraction": 0.505799503935377
+  },
+  "parity": {
+    "exact_crop_token_ids": "186/186",
+    "exact_markdown_files": "32/32"
+  }
+}
