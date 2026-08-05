@@ -85,6 +85,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--hash-model-files", action="store_true")
     parser.add_argument("--local-compiled-cache-length", type=int, default=8192)
     parser.add_argument(
+        "--local-prepare-prefetch-depth",
+        type=int,
+        default=16,
+        help=(
+            "Continuous local lane only: maximum CPU-prepared requests kept "
+            "ahead of slot admission. Zero disables background preparation."
+        ),
+    )
+    parser.add_argument(
         "--local-torchair-cache-dir",
         type=Path,
         default=DEFAULT_LOCAL_TORCHAIR_CACHE_DIR,
@@ -166,6 +175,8 @@ def main() -> None:
         raise ValueError("shard-index must be in [0, shard-count)")
     if args.batch_size < 0 or args.page_batch_size <= 0:
         raise ValueError("batch-size must be non-negative and page-batch-size must be positive")
+    if args.local_prepare_prefetch_depth < 0:
+        raise ValueError("local-prepare-prefetch-depth must be non-negative")
     capture_sizes = [
         int(value)
         for value in args.vllm_cudagraph_capture_sizes.split(",")
@@ -339,6 +350,11 @@ def main() -> None:
                 engine,
                 batch_size=args.batch_size,
                 continuous_refill=args.backend == "local-continuous-client",
+                prepare_prefetch_depth=(
+                    args.local_prepare_prefetch_depth
+                    if args.backend == "local-continuous-client"
+                    else 0
+                ),
                 system_prompt=client.client.system_prompt,
                 allow_truncated_content=client.client.allow_truncated_content,
             )
@@ -465,6 +481,11 @@ def main() -> None:
                 "local-fixed-batch-client",
                 "local-continuous-client",
             )
+            else None
+        ),
+        "local_prepare_prefetch_depth": (
+            args.local_prepare_prefetch_depth
+            if args.backend == "local-continuous-client"
             else None
         ),
         "local_torchair_cache_dir": (
@@ -684,6 +705,22 @@ def main() -> None:
             ),
             "refill_count": sum(
                 int(item.get("refill_count", 0)) for item in generation_metrics
+            ),
+            "prepare_prefetch_depth": max(
+                (int(item.get("prepare_prefetch_depth", 0)) for item in generation_metrics),
+                default=0,
+            ),
+            "cpu_prepare_worker_s": sum(
+                float(item.get("cpu_prepare_worker_s", 0.0))
+                for item in generation_metrics
+            ),
+            "cpu_prepare_wait_s": sum(
+                float(item.get("cpu_prepare_wait_s", 0.0))
+                for item in generation_metrics
+            ),
+            "request_h2d_submit_s": sum(
+                float(item.get("request_h2d_submit_s", 0.0))
+                for item in generation_metrics
             ),
             "decode_s": decode_s,
             "decode_tok_s": decode_calls / decode_s if decode_s > 0 else 0.0,

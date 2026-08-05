@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Sequence
+from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from typing import Any
 
@@ -224,6 +225,7 @@ def make_local_fixed_batch_vlm_client(
     *,
     batch_size: int,
     continuous_refill: bool = False,
+    prepare_prefetch_depth: int = 0,
     system_prompt: str,
     allow_truncated_content: bool,
 ):
@@ -239,19 +241,26 @@ def make_local_fixed_batch_vlm_client(
             super().__init__(**kwargs)
             self.generation_metrics: list[dict[str, Any]] = []
 
-        def _prepare_generation(
+        def _prepare_cpu_inputs(
             self,
             image,
             chat_prompt,
-            sampling_param,
-        ) -> PreparedGeneration:
-            params = self.build_sampling_params(sampling_param)
+        ):
+            started = time.perf_counter()
             inputs = self.processor(
                 text=[chat_prompt],
                 images=[image] if image is not None else None,
                 padding=True,
                 return_tensors="pt",
             )
+            return inputs, float(time.perf_counter() - started)
+
+        def _finish_generation(
+            self,
+            inputs,
+            sampling_param,
+        ) -> PreparedGeneration:
+            params = self.build_sampling_params(sampling_param)
             inputs = inputs.to(device=model.device, dtype=model.dtype)
             max_new_tokens = params.max_new_tokens
             if max_new_tokens is None:
@@ -272,6 +281,15 @@ def make_local_fixed_batch_vlm_client(
                 image_grid_thw=getattr(inputs, "image_grid_thw", None),
                 max_new_tokens=max_new_tokens,
             )
+
+        def _prepare_generation(
+            self,
+            image,
+            chat_prompt,
+            sampling_param,
+        ) -> PreparedGeneration:
+            inputs, _ = self._prepare_cpu_inputs(image, chat_prompt)
+            return self._finish_generation(inputs, sampling_param)
 
         def _decode_outputs(self, generated, metrics):
             self.generation_metrics.append(metrics)
@@ -380,13 +398,76 @@ def make_local_fixed_batch_vlm_client(
 
             if not isinstance(sampling_params, Sequence):
                 sampling_params = [sampling_params] * len(images)
-            generated, metrics = engine.generate_lazy(
+            prefetch_depth = min(
+                max(0, int(prepare_prefetch_depth)),
                 len(image_objs),
-                lambda index: self._prepare_generation(
-                    image_objs[index],
-                    chat_prompts[index],
-                    sampling_params[index],
-                ),
+            )
+            if prefetch_depth == 0:
+                generated, metrics = engine.generate_lazy(
+                    len(image_objs),
+                    lambda index: self._prepare_generation(
+                        image_objs[index],
+                        chat_prompts[index],
+                        sampling_params[index],
+                    ),
+                )
+                metrics["prepare_prefetch_depth"] = 0
+                return self._decode_outputs(generated, metrics)
+
+            cpu_prepare_worker_s = 0.0
+            cpu_prepare_wait_s = 0.0
+            request_h2d_submit_s = 0.0
+            with ThreadPoolExecutor(
+                max_workers=1,
+                thread_name_prefix="mineru-prepare",
+            ) as executor:
+                futures = {}
+                next_submit = 0
+
+                def fill_prefetch() -> None:
+                    nonlocal next_submit
+                    while (
+                        next_submit < len(image_objs)
+                        and len(futures) < prefetch_depth
+                    ):
+                        index = next_submit
+                        next_submit += 1
+                        futures[index] = executor.submit(
+                            self._prepare_cpu_inputs,
+                            image_objs[index],
+                            chat_prompts[index],
+                        )
+
+                fill_prefetch()
+
+                def prepare_index(index: int) -> PreparedGeneration:
+                    nonlocal cpu_prepare_worker_s
+                    nonlocal cpu_prepare_wait_s
+                    nonlocal request_h2d_submit_s
+                    wait_started = time.perf_counter()
+                    inputs, worker_s = futures.pop(index).result()
+                    cpu_prepare_wait_s += time.perf_counter() - wait_started
+                    cpu_prepare_worker_s += worker_s
+                    fill_prefetch()
+                    h2d_started = time.perf_counter()
+                    request = self._finish_generation(
+                        inputs,
+                        sampling_params[index],
+                    )
+                    request_h2d_submit_s += time.perf_counter() - h2d_started
+                    return request
+
+                generated, metrics = engine.generate_lazy(
+                    len(image_objs),
+                    prepare_index,
+                )
+            metrics.update(
+                {
+                    "prepare_prefetch_depth": prefetch_depth,
+                    "cpu_prepare_worker_s": cpu_prepare_worker_s,
+                    "cpu_prepare_wait_s": cpu_prepare_wait_s,
+                    "request_h2d_submit_s": request_h2d_submit_s,
+                }
             )
             return self._decode_outputs(generated, metrics)
 

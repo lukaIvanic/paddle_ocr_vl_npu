@@ -167,10 +167,16 @@ $VLLM_PYTHON \
   --limit 8 \
   --page-batch-size 8 \
   --batch-size 8 \
+  --local-prepare-prefetch-depth 16 \
   --local-compiled-cache-length 4096 \
   --local-torchair-cache-dir \
     .runtime_cache/11_mineru_2_5_pro_inference/native_fixed_b8_k4096_bf16
 ```
+
+CPU processor work runs one request at a time on a bounded background producer;
+`--local-prepare-prefetch-depth` controls its queue. NPU transfer and prefill
+remain on the inference thread. This keeps host preparation off the decode
+critical path without changing the synchronous decode-completion contract.
 
 `--page-batch-size` currently bounds the request stream: all recognition
 requests produced by that page group can refill one another, but requests from
