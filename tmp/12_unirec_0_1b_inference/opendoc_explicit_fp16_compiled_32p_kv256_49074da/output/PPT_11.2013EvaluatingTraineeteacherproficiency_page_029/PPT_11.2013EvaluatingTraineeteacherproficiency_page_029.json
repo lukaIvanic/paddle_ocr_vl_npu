@@ -1,0 +1,66 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_11.2013EvaluatingTraineeteacherproficiency_page_029.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "paragraph_title_01",
+      "bbox": [
+        70.87818145751953,
+        170.12757873535156,
+        321.4494934082031,
+        257.28564453125
+      ],
+      "score": 0.8123319149017334,
+      "text": "Turkey",
+      "text_unirec": "Turkey",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "header_02",
+      "bbox": [
+        1412.2379150390625,
+        193.96253967285156,
+        1930.6090087890625,
+        250.51365661621094
+      ],
+      "score": 0.5457872152328491,
+      "text": "UNIVERSITY OF LEEDS",
+      "text_unirec": "UNIVERSITY OF LEEDS",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_03",
+      "bbox": [
+        63.28374099731445,
+        369.9007568359375,
+        1862.92626953125,
+        612.0361328125
+      ],
+      "score": 0.9801194667816162,
+      "text": "Yilmaz 2011 looked at the relationships between Turkish primary and secondary school teachers’ perceptions of self-efficacy, English proficiency, and instructional strategies",
+      "text_unirec": "Yilmaz 2011 looked at the relationships between Turkish primary and secondary school teachers’ perceptions of self-efficacy, English proficiency, and instructional strategies",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_04",
+      "bbox": [
+        71.21318817138672,
+        642.8825073242188,
+        1797.404296875,
+        803.5812377929688
+      ],
+      "score": 0.9651141166687012,
+      "text": "Results indicated that teachers’ perceived efficacy was correlated with their self-reported English proficiency",
+      "text_unirec": "Results indicated that teachers’ perceived efficacy was correlated with their self-reported English proficiency",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 4.938879489898682
+  }
+}

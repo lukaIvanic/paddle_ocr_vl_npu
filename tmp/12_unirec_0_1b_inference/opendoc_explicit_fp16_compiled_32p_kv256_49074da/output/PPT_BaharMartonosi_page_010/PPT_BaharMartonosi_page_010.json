@@ -1,0 +1,82 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_010.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "paragraph_title_01",
+      "bbox": [
+        106.74845886230469,
+        107.9647445678711,
+        1513.7437744140625,
+        301.6077575683594
+      ],
+      "score": 0.7372194528579712,
+      "text": "THE BIGGER PICTURE: COMMUNICATION AND YOUR CAREER",
+      "text_unirec": "THE BIGGER PICTURE: COMMUNICATION AND YOUR CAREER",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_02",
+      "bbox": [
+        78.75686645507812,
+        364.10870361328125,
+        1117.1917724609375,
+        610.2447509765625
+      ],
+      "score": 0.9679422378540039,
+      "text": "Expressing yourself technically helps you make and use professional connections wisely",
+      "text_unirec": "Expressing yourself technically helps you make and use professional connections wisely",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_03",
+      "bbox": [
+        76.74944305419922,
+        717.343017578125,
+        939.61181640625,
+        880.5531005859375
+      ],
+      "score": 0.9573758244514465,
+      "text": "You are joining a long-term community...",
+      "text_unirec": "You are joining a long-term community...",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_04",
+      "bbox": [
+        77.898681640625,
+        990.0850830078125,
+        1108.1297607421875,
+        1314.92626953125
+      ],
+      "score": 0.9707996249198914,
+      "text": "Communicate your ideas to forge mentoring and technical relationships in the service of professional goals",
+      "text_unirec": "Communicate your ideas to forge mentoring and technical relationships in the service of professional goals",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "image_05",
+      "bbox": [
+        1190.20751953125,
+        343.72760009765625,
+        1888.8399658203125,
+        966.4221801757812
+      ],
+      "score": 0.9698545932769775,
+      "text": "",
+      "text_unirec": "",
+      "is_image": true,
+      "img_path": "imgs/img_in_image_box_1190_343_1888_966.jpg",
+      "is_merged_continuation": false,
+      "in_table": false
+    }
+  ],
+  "timing": {
+    "total": 3.6165215969085693
+  }
+}

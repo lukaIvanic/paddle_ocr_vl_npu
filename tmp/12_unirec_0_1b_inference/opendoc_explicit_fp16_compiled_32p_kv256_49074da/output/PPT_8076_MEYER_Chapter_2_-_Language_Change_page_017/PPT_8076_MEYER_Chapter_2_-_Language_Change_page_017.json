@@ -1,0 +1,68 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_8076_MEYER_Chapter_2_-_Language_Change_page_017.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "header_01",
+      "bbox": [
+        62.544734954833984,
+        44.11429214477539,
+        423.6591796875,
+        97.4007568359375
+      ],
+      "score": 0.8618989586830139,
+      "text": "CAMBRIDGE",
+      "text_unirec": "CAMBRIDGE",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "paragraph_title_02",
+      "bbox": [
+        161.8155517578125,
+        289.6778259277344,
+        958.8924560546875,
+        395.1199645996094
+      ],
+      "score": 0.9469925761222839,
+      "text": "Morphology (cont.)",
+      "text_unirec": "Morphology (cont.)",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_03",
+      "bbox": [
+        164.6979522705078,
+        522.1338500976562,
+        1816.916748046875,
+        966.5897827148438
+      ],
+      "score": 0.9847412705421448,
+      "text": "Agglutinative languages—Meaning is expressed by very complex internal structure. Turkish is a very agglutinative language. The construction gayigtik means ‘We drank the tea’ (çay = ‘tea’; iç = ‘drink’; and tik = ‘we/past’).",
+      "text_unirec": "Agglutinative languages—Meaning is expressed by very complex internal structure. Turkish is a very agglutinative language. The construction gayigtik means ‘We drank the tea’ (çay = ‘tea’; iç = ‘drink’; and tik = ‘we/past’).",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "footer_image_04",
+      "bbox": [
+        1452.92041015625,
+        1355.191162109375,
+        1955.619384765625,
+        1465.1390380859375
+      ],
+      "score": 0.8169133067131042,
+      "text": "",
+      "text_unirec": "",
+      "is_image": true,
+      "img_path": "imgs/img_in_footer_image_box_1452_1355_1955_1465.jpg",
+      "is_merged_continuation": false,
+      "in_table": false
+    }
+  ],
+  "timing": {
+    "total": 5.1715288162231445
+  }
+}

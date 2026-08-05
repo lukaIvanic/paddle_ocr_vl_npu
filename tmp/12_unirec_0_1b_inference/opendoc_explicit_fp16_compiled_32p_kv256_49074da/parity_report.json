@@ -1,0 +1,58 @@
+{
+  "scope": {
+    "pages": 32,
+    "custom_recognition_crops": 185,
+    "stock_source": "tmp/12_unirec_0_1b_inference/opendoc_onnx_v16_full/output",
+    "custom_source": "tmp/12_unirec_0_1b_inference/opendoc_explicit_fp16_compiled_32p_kv256_49074da/output",
+    "stock_token_ids_available": false
+  },
+  "page_parity": {
+    "markdown_exact": 27,
+    "layout_structure_exact": 24,
+    "mismatched_markdown_pages": [
+      "PPT_1001115_eng_page_011",
+      "PPT_13 fallacies LALT2012_page_010",
+      "PPT_BaharMartonosi_page_002",
+      "PPT_BaharMartonosi_page_010",
+      "PPT_CalculusReview_page_002"
+    ],
+    "mismatched_structure_pages": [
+      "PPT_1001115_eng_page_011",
+      "PPT_11.2013EvaluatingTraineeteacherproficiency_page_010",
+      "PPT_11.2013EvaluatingTraineeteacherproficiency_page_029",
+      "PPT_13 fallacies LALT2012_page_010",
+      "PPT_B14_Claeys_Consistent Presentation of Images_v2_page_010",
+      "PPT_BaharMartonosi_page_002",
+      "PPT_BaharMartonosi_page_010",
+      "PPT_CalculusReview_page_002"
+    ]
+  },
+  "recognition_parity_on_identical_layout": {
+    "pages": 24,
+    "crops": 134,
+    "raw_text_exact": 119,
+    "postprocessed_text_exact": 134,
+    "raw_differences_normalized_by_postprocess": 15,
+    "mismatches": []
+  },
+  "performance": {
+    "setup_s": 12.10247461986728,
+    "pipeline_wall_s": 157.42268313327804,
+    "pages_per_s": 0.2032743907236544,
+    "recognition_s_including_first_graph_load": 26.87011453299783,
+    "decode_steps": 4559,
+    "decode_s_including_first_graph_load": 12.52849218971096,
+    "decode_tps_including_first_graph_load": 363.89055689750796,
+    "steady_recognition_s_excluding_first_crop": 19.082152761053294,
+    "steady_decode_steps": 4554,
+    "steady_decode_s": 5.04071745974943,
+    "steady_decode_tps": 903.4428206627505,
+    "max_custom_token_count": 256,
+    "length_capped_crops": 1
+  },
+  "interpretation": {
+    "token_id_parity": "not measurable from saved stock page outputs because stock token IDs were not retained and decoded text does not uniquely determine token IDs",
+    "recognition": "all postprocessed crop outputs are exact where the two independently-run layout passes produced identical structures",
+    "remaining_page_differences": "confined to pages where layout segmentation, image-box retention, or label routing differed"
+  }
+}

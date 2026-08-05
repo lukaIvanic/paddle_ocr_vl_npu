@@ -1,0 +1,80 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_1637904769_page_002.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "text_01",
+      "bbox": [
+        161.03744506835938,
+        44.31787109375,
+        1840.57763671875,
+        346.04742431640625
+      ],
+      "score": 0.7326955795288086,
+      "text": "ENGLISH COMMUNICATION: WHAT, WHY, AND HOW?",
+      "text_unirec": "ENGLISH COMMUNICATION: WHAT, WHY, AND HOW?",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_02",
+      "bbox": [
+        106.4463882446289,
+        432.71826171875,
+        1685.212158203125,
+        563.5134887695312
+      ],
+      "score": 0.6505856513977051,
+      "text": "ENGLISH COMMUNICATION",
+      "text_unirec": "ENGLISH COMMUNICATION",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_03",
+      "bbox": [
+        105.20362854003906,
+        580.914306640625,
+        1859.0255126953125,
+        797.7619018554688
+      ],
+      "score": 0.7321240305900574,
+      "text": "COMMUNICATION THROUGH ENGLISH LANGUAGE",
+      "text_unirec": "COMMUNICATION THROUGH ENGLISH LANGUAGE",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_04",
+      "bbox": [
+        103.243408203125,
+        816.351318359375,
+        1889.4595947265625,
+        931.4779663085938
+      ],
+      "score": 0.6758304238319397,
+      "text": "• COMMAND OVER ENGLISH LANGUAGE",
+      "text_unirec": "• COMMAND OVER ENGLISH LANGUAGE",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_05",
+      "bbox": [
+        97.67485046386719,
+        944.6398315429688,
+        1602.587890625,
+        1156.79296875
+      ],
+      "score": 0.6431529521942139,
+      "text": "COMPETENT USER OF ENGLISH LANGUAGE",
+      "text_unirec": "COMPETENT USER OF ENGLISH LANGUAGE",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 3.2442352771759033
+  }
+}

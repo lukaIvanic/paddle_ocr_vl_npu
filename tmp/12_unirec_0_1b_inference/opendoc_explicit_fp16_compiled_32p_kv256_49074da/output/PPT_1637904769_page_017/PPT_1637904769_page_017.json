@@ -1,0 +1,80 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_1637904769_page_017.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "paragraph_title_01",
+      "bbox": [
+        584.2976684570312,
+        128.685302734375,
+        1416.8551025390625,
+        254.94247436523438
+      ],
+      "score": 0.9665261507034302,
+      "text": "CONCLUSION",
+      "text_unirec": "CONCLUSION",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_02",
+      "bbox": [
+        109.87281799316406,
+        350.0423278808594,
+        805.8638305664062,
+        414.4609375
+      ],
+      "score": 0.9453814029693604,
+      "text": "Use of audio-visual aids.",
+      "text_unirec": "Use of audio-visual aids.",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_03",
+      "bbox": [
+        105.72689819335938,
+        416.6983337402344,
+        1819.1776123046875,
+        749.0447998046875
+      ],
+      "score": 0.9841983318328857,
+      "text": "We should always remember that we are teaching and learning English language for ourselves, not for the interest of the west nor for the MNOs of the superpowers. We would not allow those alien power to displace our native languages. The English language should be in harmony with our regional languages, our traditional values, our socio-cultural set-up etc.",
+      "text_unirec": "We should always remember that we are teaching and learning English language for ourselves, not for the interest of the west nor for the MNOs of the superpowers. We would not allow those alien power to displace our native languages. The English language should be in harmony with our regional languages, our traditional values, our socio-cultural set-up etc.",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_04",
+      "bbox": [
+        106.49842071533203,
+        751.370849609375,
+        1857.4798583984375,
+        1030.5684814453125
+      ],
+      "score": 0.9823840260505676,
+      "text": "So we should frame and design the syllabus and prepare the texts and contents Indan in concept, colour and spirit with a view to helping our learners to acquire the skills of English language and at the same time to develop in them a sense of belongingness to our soclo-cultural identities and high regard for Indan realities.",
+      "text_unirec": "So we should frame and design the syllabus and prepare the texts and contents Indan in concept, colour and spirit with a view to helping our learners to acquire the skills of English language and at the same time to develop in them a sense of belongingness to our soclo-cultural identities and high regard for Indan realities.",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_05",
+      "bbox": [
+        106.038330078125,
+        1031.7181396484375,
+        1853.9769287109375,
+        1261.0762939453125
+      ],
+      "score": 0.9785937666893005,
+      "text": "• The teachers should create a congenial teaching- learning situation where the students are not compelled to learn English but they come forward by themselves to acquire the English language and appreciate English literature.",
+      "text_unirec": "• The teachers should create a congenial teaching- learning situation where the students are not compelled to learn English but they come forward by themselves to acquire the English language and appreciate English literature.",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 7.858266592025757
+  }
+}

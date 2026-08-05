@@ -1,0 +1,124 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_002.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "paragraph_title_01",
+      "bbox": [
+        836.8441772460938,
+        130.1432342529297,
+        1161.4747314453125,
+        262.75030517578125
+      ],
+      "score": 0.9471988677978516,
+      "text": "Slope",
+      "text_unirec": "Slope",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_02",
+      "bbox": [
+        26.826560974121094,
+        355.5991516113281,
+        590.6795654296875,
+        435.60906982421875
+      ],
+      "score": 0.7380315661430359,
+      "text": "• Slope = rise/run",
+      "text_unirec": "• Slope = rise/run",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "display_formula_03",
+      "bbox": [
+        314.8469543457031,
+        447.98193359375,
+        566.939453125,
+        524.92626953125
+      ],
+      "score": 0.5187585353851318,
+      "text": "$$= ∆y/∆x$$\n\n",
+      "text_unirec": "$$= ∆y/∆x$$\n\n",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "display_formula_04",
+      "bbox": [
+        24.95539093017578,
+        531.0634155273438,
+        845.9735107421875,
+        621.1450805664062
+      ],
+      "score": 0.5102541446685791,
+      "text": "$$• \\mathbf{y_{2}-y_{1}} /(\\mathbf{x_{2}-x_{1}} )$$\n\n",
+      "text_unirec": "$$• \\mathbf{y_{2}-y_{1}} /(\\mathbf{x_{2}-x_{1}} )$$\n\n",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_05",
+      "bbox": [
+        27.19622802734375,
+        708.8408813476562,
+        911.7026977539062,
+        930.8512573242188
+      ],
+      "score": 0.983414351940155,
+      "text": "• Order of points 1 and 2 not critical, but keeping them together is",
+      "text_unirec": "• Order of points 1 and 2 not critical, but keeping them together is",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_06",
+      "bbox": [
+        26.9904727935791,
+        941.8114013671875,
+        1028.636474609375,
+        1090.378173828125
+      ],
+      "score": 0.9773811101913452,
+      "text": "• Points may lie in any quadrant: slope will work out",
+      "text_unirec": "• Points may lie in any quadrant: slope will work out",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_07",
+      "bbox": [
+        25.129735946655273,
+        1101.4892578125,
+        1011.0244750976562,
+        1322.727294921875
+      ],
+      "score": 0.9813183546066284,
+      "text": "• Leibniz notation for derivative based on  $\\Delta y/\\Delta x$ ; the derivative is written dy/dx",
+      "text_unirec": "• Leibniz notation for derivative based on  $\\Delta y/\\Delta x$ ; the derivative is written dy/dx",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "image_08",
+      "bbox": [
+        1049.91259765625,
+        362.5459289550781,
+        1942.217529296875,
+        1251.9058837890625
+      ],
+      "score": 0.8780874609947205,
+      "text": "",
+      "text_unirec": "",
+      "is_image": true,
+      "img_path": "imgs/img_in_image_box_1049_362_1942_1251.jpg",
+      "is_merged_continuation": false,
+      "in_table": false
+    }
+  ],
+  "timing": {
+    "total": 6.283231496810913
+  }
+}

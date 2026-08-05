@@ -1,0 +1,94 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_13 fallacies LALT2012_page_010.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "paragraph_title_01",
+      "bbox": [
+        409.76751708984375,
+        76.56517791748047,
+        1682.9342041015625,
+        138.3192901611328
+      ],
+      "score": 0.6858659982681274,
+      "text": "Thirteen Fallacies about the Users and Uses of EIL",
+      "text_unirec": "Thirteen Fallacies about the Users and Uses of EIL",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "paragraph_title_02",
+      "bbox": [
+        104.67147827148438,
+        277.0004577636719,
+        358.49237060546875,
+        325.940185546875
+      ],
+      "score": 0.925543487071991,
+      "text": "9, References",
+      "text_unirec": "9, References",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_03",
+      "bbox": [
+        103.70111083984375,
+        385.3838195800781,
+        1875.21240234375,
+        486.6761779785156
+      ],
+      "score": 0.5292811989784241,
+      "text": "Baxter, J. 1991. 'How should I speak English? American-ly, Japanese-ly, or internationally?' in Brown, A. (ed.) 1991: op. cit. (53-71).",
+      "text_unirec": "Baxter, J. 1991. 'How should I speak English? American-ly, Japanese-ly, or internationally?' in Brown, A. (ed.) 1991: op. cit. (53-71).",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_04",
+      "bbox": [
+        105.20613098144531,
+        910.2081909179688,
+        1791.9803466796875,
+        1009.9426879882812
+      ],
+      "score": 0.556978166103363,
+      "text": "Guerra, L. 2009, Teaching and Learning English as an International Language in Portugal: Policy, practice and perceptions, Saarbrucken: VDM Verlag Dr. Muller.",
+      "text_unirec": "Guerra, L. 2009, Teaching and Learning English as an International Language in Portugal: Policy, practice and perceptions, Saarbrucken: VDM Verlag Dr. Muller.",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_05",
+      "bbox": [
+        104.1504135131836,
+        1012.702880859375,
+        1875.2540283203125,
+        1164.1202392578125
+      ],
+      "score": 0.5774632692337036,
+      "text": "Kachru, B. B. 1992. Teaching World Englishes' in B. B. Kachru (ed.) 1992: op. cit. (355-365).Kachru, B. B. (ed.) 1992, The Other Tongue: English across Cultures, Urbana & Chicago: University ofTilinois Press.",
+      "text_unirec": "Kachru, B. B. 1992. Teaching World Englishes' in B. B. Kachru (ed.) 1992: op. cit. (355-365).Kachru, B. B. (ed.) 1992, The Other Tongue: English across Cultures, Urbana & Chicago: University ofTilinois Press.",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_06",
+      "bbox": [
+        103.91634368896484,
+        1171.5738525390625,
+        1813.2889404296875,
+        1327.892333984375
+      ],
+      "score": 0.7928690910339355,
+      "text": "McArthur, T. 1998. The English Languages. Cambridge: Cambridge University Press.Modiano, M. 1999. Standard English(es) and educational practices for the world's lingua franca’inEnglish Today 60: 3-13.",
+      "text_unirec": "McArthur, T. 1998. The English Languages. Cambridge: Cambridge University Press.Modiano, M. 1999. Standard English(es) and educational practices for the world's lingua franca’inEnglish Today 60: 3-13.",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 3.402228832244873
+  }
+}

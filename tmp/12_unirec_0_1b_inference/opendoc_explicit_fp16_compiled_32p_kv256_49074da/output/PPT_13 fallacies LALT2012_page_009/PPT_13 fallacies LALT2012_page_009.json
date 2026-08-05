@@ -1,0 +1,80 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_13 fallacies LALT2012_page_009.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "paragraph_title_01",
+      "bbox": [
+        410.3811340332031,
+        77.17508697509766,
+        1683.4278564453125,
+        137.84152221679688
+      ],
+      "score": 0.5802023410797119,
+      "text": "Thirteen Fallacies about the Users and Uses of EIL",
+      "text_unirec": "Thirteen Fallacies about the Users and Uses of EIL",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_02",
+      "bbox": [
+        136.0376739501953,
+        356.9167175292969,
+        412.5616760253906,
+        409.88946533203125
+      ],
+      "score": 0.5858492851257324,
+      "text": "8. Conclusion",
+      "text_unirec": "8. Conclusion",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_03",
+      "bbox": [
+        334.1438903808594,
+        515.5037841796875,
+        1662.235595703125,
+        576.5138549804688
+      ],
+      "score": 0.8995157480239868,
+      "text": "Native English as the norm and native speakers as norm providers:",
+      "text_unirec": "Native English as the norm and native speakers as norm providers:",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_04",
+      "bbox": [
+        560.1528930664062,
+        622.1712646484375,
+        1439.385498046875,
+        682.2160034179688
+      ],
+      "score": 0.869120717048645,
+      "text": "linguacentric and ethnocentric attitudes",
+      "text_unirec": "linguacentric and ethnocentric attitudes",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_05",
+      "bbox": [
+        132.72523498535156,
+        781.8297729492188,
+        1829.7376708984375,
+        1109.429443359375
+      ],
+      "score": 0.9650404453277588,
+      "text": "\"A linguistic chauvinism, or if you will, ethnocentricity, is so deeply rooted, not only in British culture, but also in the minds and hearts of a large number of language teachers working abroad, that many of the people who embrace such bias find it difficult to accept that other varieties of English, for some learners, are better choices for the educational model in the teaching of English as a foregn or second language\" (Modiano, 1999)",
+      "text_unirec": "\"A linguistic chauvinism, or if you will, ethnocentricity, is so deeply rooted, not only in British culture, but also in the minds and hearts of a large number of language teachers working abroad, that many of the people who embrace such bias find it difficult to accept that other varieties of English, for some learners, are better choices for the educational model in the teaching of English as a foregn or second language\" (Modiano, 1999)",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 4.180109977722168
+  }
+}

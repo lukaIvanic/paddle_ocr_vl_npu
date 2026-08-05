@@ -1,0 +1,66 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_B14_Claeys_Consistent Presentation of Images_v2_page_010.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "paragraph_title_01",
+      "bbox": [
+        273.59783935546875,
+        78.82315063476562,
+        1728.278076171875,
+        185.13482666015625
+      ],
+      "score": 0.960638165473938,
+      "text": "Monitor Characteristic Curve",
+      "text_unirec": "Monitor Characteristic Curve",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "figure_title_02",
+      "bbox": [
+        845.07373046875,
+        355.2694396972656,
+        1320.273193359375,
+        402.5452575683594
+      ],
+      "score": 0.6644120812416077,
+      "text": "Monitor Characteristic Curve",
+      "text_unirec": "Monitor Characteristic Curve",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "chart_03",
+      "bbox": [
+        189.51141357421875,
+        422.8203430175781,
+        1549.6541748046875,
+        1140.8468017578125
+      ],
+      "score": 0.6479165554046631,
+      "text": "10",
+      "text_unirec": "10",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "footer_04",
+      "bbox": [
+        329.0977478027344,
+        1284.6890869140625,
+        1718.4073486328125,
+        1349.168701171875
+      ],
+      "score": 0.7424894571304321,
+      "text": "Slide Provided by David Clunie, Quintiles Intelligent Imaging",
+      "text_unirec": "Slide Provided by David Clunie, Quintiles Intelligent Imaging",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 4.355909109115601
+  }
+}

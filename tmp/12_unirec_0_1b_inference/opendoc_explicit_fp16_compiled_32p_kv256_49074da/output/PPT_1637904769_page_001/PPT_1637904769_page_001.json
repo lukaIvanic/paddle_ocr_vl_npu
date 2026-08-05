@@ -1,0 +1,38 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_1637904769_page_001.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "paragraph_title_01",
+      "bbox": [
+        199.6640625,
+        474.5207824707031,
+        1766.408447265625,
+        849.9896850585938
+      ],
+      "score": 0.6401151418685913,
+      "text": "AIMS AND OBJECTIVES OF LEARNING ENGLISH IN INDIA TODAY",
+      "text_unirec": "AIMS AND OBJECTIVES OF LEARNING ENGLISH IN INDIA TODAY",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_02",
+      "bbox": [
+        436.6412048339844,
+        982.1220092773438,
+        1661.7706298828125,
+        1218.3016357421875
+      ],
+      "score": 0.6712863445281982,
+      "text": "Jatin SharmaLecturer, Dr. B.K.B. College, Puranigudam,Nagaon,Assam",
+      "text_unirec": "Jatin SharmaLecturer, Dr. B.K.B. College, Puranigudam,Nagaon,Assam",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 2.8709044456481934
+  }
+}

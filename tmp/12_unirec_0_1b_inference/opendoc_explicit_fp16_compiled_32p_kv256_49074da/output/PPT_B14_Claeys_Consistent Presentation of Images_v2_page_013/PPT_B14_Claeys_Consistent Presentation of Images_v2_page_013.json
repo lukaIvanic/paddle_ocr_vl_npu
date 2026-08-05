@@ -1,0 +1,108 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_B14_Claeys_Consistent Presentation of Images_v2_page_013.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "text_01",
+      "bbox": [
+        359.621826171875,
+        134.54322814941406,
+        1637.043212890625,
+        256.6947937011719
+      ],
+      "score": 0.8593379259109497,
+      "text": "Perceptual Linearization :",
+      "text_unirec": "Perceptual Linearization :",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_02",
+      "bbox": [
+        165.24302673339844,
+        384.18280029296875,
+        1655.0921630859375,
+        585.0853881835938
+      ],
+      "score": 0.9265745282173157,
+      "text": " Compensates the contrast sensitivity of human visual system",
+      "text_unirec": " Compensates the contrast sensitivity of human visual system",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_03",
+      "bbox": [
+        163.3953399658203,
+        711.3612670898438,
+        1588.1695556640625,
+        810.7571411132812
+      ],
+      "score": 0.9268462657928467,
+      "text": "Grayscale Standard Display Function",
+      "text_unirec": "Grayscale Standard Display Function",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_04",
+      "bbox": [
+        257.5479736328125,
+        834.13720703125,
+        1644.6541748046875,
+        920.322509765625
+      ],
+      "score": 0.9304418563842773,
+      "text": "– Input: Just Noticeable Differences (JNDs)",
+      "text_unirec": "– Input: Just Noticeable Differences (JNDs)",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_05",
+      "bbox": [
+        258.7537841796875,
+        947.3390502929688,
+        1201.0323486328125,
+        1030.90576171875
+      ],
+      "score": 0.9535990953445435,
+      "text": "– Output: absolute luminance",
+      "text_unirec": "– Output: absolute luminance",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_06",
+      "bbox": [
+        259.1606750488281,
+        1059.2369384765625,
+        811.7166748046875,
+        1136.9749755859375
+      ],
+      "score": 0.9485836029052734,
+      "text": "– Barten’s model",
+      "text_unirec": "– Barten’s model",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_07",
+      "bbox": [
+        257.242919921875,
+        1170.1373291015625,
+        1257.5372314453125,
+        1250.615234375
+      ],
+      "score": 0.9471721649169922,
+      "text": "– Described in DICOM Part 14",
+      "text_unirec": "– Described in DICOM Part 14",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 5.0236899852752686
+  }
+}

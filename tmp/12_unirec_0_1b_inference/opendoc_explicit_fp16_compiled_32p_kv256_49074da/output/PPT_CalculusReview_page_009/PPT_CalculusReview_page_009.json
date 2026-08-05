@@ -1,0 +1,82 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_009.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "paragraph_title_01",
+      "bbox": [
+        505.72979736328125,
+        86.76809692382812,
+        1496.8861083984375,
+        203.6987762451172
+      ],
+      "score": 0.9654814004898071,
+      "text": "Partial Derivatives",
+      "text_unirec": "Partial Derivatives",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "image_02",
+      "bbox": [
+        439.57958984375,
+        306.0616760253906,
+        1277.1585693359375,
+        1063.4906005859375
+      ],
+      "score": 0.925255537033081,
+      "text": "",
+      "text_unirec": "",
+      "is_image": true,
+      "img_path": "imgs/img_in_image_box_439_306_1277_1063.jpg",
+      "is_merged_continuation": false,
+      "in_table": false
+    },
+    {
+      "label": "table_03",
+      "bbox": [
+        1426.670654296875,
+        495.9663391113281,
+        1565.2197265625,
+        896.1190795898438
+      ],
+      "score": 0.899619996547699,
+      "text": "<table>\n<tr>\n<td>2.5-3</td>\n</tr>\n<tr>\n<td>$\\mdlgblkcircle$2.5</td>\n</tr>\n<tr>\n<td>$\\mdlgblkcircle$1.5</td>\n</tr>\n<tr>\n<td>$\\mdlgblkcircle$0.5</td>\n</tr>\n<tr>\n<td>$\\mdlgblkcircle$-0.5</td>\n</tr>\n<tr>\n<td>$\\mdlgblkcircle$-1--0.5</td>\n</tr>\n<tr>\n<td>$\\mdlgblkcircle$-1.5-1</td>\n</tr>\n</table>\n\n\n",
+      "text_unirec": "<table>\n<tr>\n<td>2.5-3</td>\n</tr>\n<tr>\n<td>$\\mdlgblkcircle$2.5</td>\n</tr>\n<tr>\n<td>$\\mdlgblkcircle$1.5</td>\n</tr>\n<tr>\n<td>$\\mdlgblkcircle$0.5</td>\n</tr>\n<tr>\n<td>$\\mdlgblkcircle$-0.5</td>\n</tr>\n<tr>\n<td>$\\mdlgblkcircle$-1--0.5</td>\n</tr>\n<tr>\n<td>$\\mdlgblkcircle$-1.5-1</td>\n</tr>\n</table>\n\n\n",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_04",
+      "bbox": [
+        108.91783142089844,
+        1151.765380859375,
+        1442.80419921875,
+        1234.5902099609375
+      ],
+      "score": 0.9389444589614868,
+      "text": "• Functions of more than one variable",
+      "text_unirec": "• Functions of more than one variable",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_05",
+      "bbox": [
+        109.76451873779297,
+        1260.92578125,
+        1246.388671875,
+        1353.0098876953125
+      ],
+      "score": 0.9676096439361572,
+      "text": "• Example:  $C(x,y) = x^{4} + y^{3} + xy$ ",
+      "text_unirec": "• Example:  $C(x,y) = x^{4} + y^{3} + xy$ ",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 3.7144453525543213
+  }
+}

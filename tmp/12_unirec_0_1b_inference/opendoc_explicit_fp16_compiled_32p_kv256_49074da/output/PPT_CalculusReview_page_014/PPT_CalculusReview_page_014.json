@@ -1,0 +1,80 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_014.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "paragraph_title_01",
+      "bbox": [
+        722.5848999023438,
+        128.75616455078125,
+        1275.7425537109375,
+        250.8193359375
+      ],
+      "score": 0.932479739189148,
+      "text": "Gradients",
+      "text_unirec": "Gradients",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_02",
+      "bbox": [
+        106.95579528808594,
+        364.3424377441406,
+        805.5069580078125,
+        461.2262268066406
+      ],
+      "score": 0.9473633170127869,
+      "text": "• del C (or grad C)",
+      "text_unirec": "• del C (or grad C)",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "display_formula_03",
+      "bbox": [
+        453.34613037109375,
+        568.1908569335938,
+        1415.8541259765625,
+        899.2372436523438
+      ],
+      "score": 0.9681413173675537,
+      "text": "$$ \\nabla C=\\mathbf{i}\\frac{\\partial C}{\\partial x}+\\mathbf{j}\\frac{\\partial C}{\\partial y}$$\n\n",
+      "text_unirec": "$$ \\nabla C=\\mathbf{i}\\frac{\\partial C}{\\partial x}+\\mathbf{j}\\frac{\\partial C}{\\partial y}$$\n\n",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_04",
+      "bbox": [
+        107.58647155761719,
+        1037.3660888671875,
+        1073.395263671875,
+        1130.20703125
+      ],
+      "score": 0.9476789832115173,
+      "text": "• Diffusion (Fick’s 1st Law):",
+      "text_unirec": "• Diffusion (Fick’s 1st Law):",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "display_formula_05",
+      "bbox": [
+        606.2290649414062,
+        1203.516357421875,
+        1355.039794921875,
+        1357.22265625
+      ],
+      "score": 0.953972578048706,
+      "text": "$$J = -DVC$$\n\n",
+      "text_unirec": "$$J = -DVC$$\n\n",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 4.48104190826416
+  }
+}

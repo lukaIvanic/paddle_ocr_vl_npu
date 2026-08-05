@@ -1,0 +1,96 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_8076_MEYER_Chapter_2_-_Language_Change_page_014.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "header_01",
+      "bbox": [
+        63.334075927734375,
+        44.579429626464844,
+        423.097412109375,
+        96.708251953125
+      ],
+      "score": 0.7836195230484009,
+      "text": "CAMBRIDGE",
+      "text_unirec": "CAMBRIDGE",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "paragraph_title_02",
+      "bbox": [
+        162.28848266601562,
+        307.7498474121094,
+        1155.6796875,
+        374.9803466796875
+      ],
+      "score": 0.7805788516998291,
+      "text": "Verb Endings in Romance Languages",
+      "text_unirec": "Verb Endings in Romance Languages",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_03",
+      "bbox": [
+        157.61888122558594,
+        522.9747314453125,
+        1780.4263916015625,
+        616.9725952148438
+      ],
+      "score": 0.9555799961090088,
+      "text": "Verb Inflections in Four Italic Languages (taken from Rebecca Posner 1996 TheRomance Languages. Cambridge University Press, p. 40)",
+      "text_unirec": "Verb Inflections in Four Italic Languages (taken from Rebecca Posner 1996 TheRomance Languages. Cambridge University Press, p. 40)",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "figure_title_04",
+      "bbox": [
+        191.5530548095703,
+        734.2760009765625,
+        1488.67578125,
+        823.0125732421875
+      ],
+      "score": 0.9528371095657349,
+      "text": "Table 1.1 Regular present indicative person endings in Latin, Spanish, Portuguese and Italian",
+      "text_unirec": "Table 1.1 Regular present indicative person endings in Latin, Spanish, Portuguese and Italian",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "table_05",
+      "bbox": [
+        196.12925720214844,
+        842.855224609375,
+        1485.9075927734375,
+        1159.1119384765625
+      ],
+      "score": 0.9776079654693604,
+      "text": "<table>\n<tr>\n<td></td>\n<td>Latin</td>\n<td>Spanish</td>\n<td>Portuguese</td>\n<td>Italian</td>\n</tr>\n<tr>\n<td>1</td>\n<td>-o</td>\n<td>-o</td>\n<td>-o [u]</td>\n<td>-o</td>\n</tr>\n<tr>\n<td>2</td>\n<td>-s</td>\n<td>-s</td>\n<td>-s [J]</td>\n<td>-i</td>\n</tr>\n<tr>\n<td>3</td>\n<td>-T</td>\n<td>$\\theta$</td>\n<td>$\\theta$</td>\n<td>$\\theta$</td>\n</tr>\n<tr>\n<td>4</td>\n<td>-MUS</td>\n<td>-mos</td>\n<td>-mos [muJ]</td>\n<td>-iamo</td>\n</tr>\n<tr>\n<td>5</td>\n<td>-TIS</td>\n<td>-is</td>\n<td>-is [jJ]</td>\n<td>-te</td>\n</tr>\n<tr>\n<td>6</td>\n<td>-NT</td>\n<td>-n</td>\n<td>-m [~]</td>\n<td>-no</td>\n</tr>\n</table>\n\n\n",
+      "text_unirec": "<table>\n<tr>\n<td></td>\n<td>Latin</td>\n<td>Spanish</td>\n<td>Portuguese</td>\n<td>Italian</td>\n</tr>\n<tr>\n<td>1</td>\n<td>-o</td>\n<td>-o</td>\n<td>-o [u]</td>\n<td>-o</td>\n</tr>\n<tr>\n<td>2</td>\n<td>-s</td>\n<td>-s</td>\n<td>-s [J]</td>\n<td>-i</td>\n</tr>\n<tr>\n<td>3</td>\n<td>-T</td>\n<td>$\\theta$</td>\n<td>$\\theta$</td>\n<td>$\\theta$</td>\n</tr>\n<tr>\n<td>4</td>\n<td>-MUS</td>\n<td>-mos</td>\n<td>-mos [muJ]</td>\n<td>-iamo</td>\n</tr>\n<tr>\n<td>5</td>\n<td>-TIS</td>\n<td>-is</td>\n<td>-is [jJ]</td>\n<td>-te</td>\n</tr>\n<tr>\n<td>6</td>\n<td>-NT</td>\n<td>-n</td>\n<td>-m [~]</td>\n<td>-no</td>\n</tr>\n</table>\n\n\n",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "footer_image_06",
+      "bbox": [
+        1453.14453125,
+        1355.5614013671875,
+        1955.6041259765625,
+        1463.990234375
+      ],
+      "score": 0.7621973752975464,
+      "text": "",
+      "text_unirec": "",
+      "is_image": true,
+      "img_path": "imgs/img_in_footer_image_box_1453_1355_1955_1463.jpg",
+      "is_merged_continuation": false,
+      "in_table": false
+    }
+  ],
+  "timing": {
+    "total": 4.00926399230957
+  }
+}

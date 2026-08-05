@@ -1,0 +1,192 @@
+{
+  "input_path": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_006.png",
+  "width": 2000,
+  "height": 1500,
+  "recognition_results": [
+    {
+      "label": "paragraph_title_01",
+      "bbox": [
+        108.49624633789062,
+        204.85491943359375,
+        1532.07373046875,
+        300.7690124511719
+      ],
+      "score": 0.7833770513534546,
+      "text": "A \"TYPICAL\" PROJECT TALK OUTLINE",
+      "text_unirec": "A \"TYPICAL\" PROJECT TALK OUTLINE",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "paragraph_title_02",
+      "bbox": [
+        45.785011291503906,
+        361.3746643066406,
+        1162.730712890625,
+        444.5714111328125
+      ],
+      "score": 0.6611242294311523,
+      "text": "• Title/author/affiliation (1 slide)",
+      "text_unirec": "• Title/author/affiliation (1 slide)",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_03",
+      "bbox": [
+        1539.8197021484375,
+        377.92913818359375,
+        1883.238037109375,
+        458.712646484375
+      ],
+      "score": 0.9175374507904053,
+      "text": "Who am I?",
+      "text_unirec": "Who am I?",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_04",
+      "bbox": [
+        45.80181884765625,
+        460.8343200683594,
+        1157.8538818359375,
+        701.0568237304688
+      ],
+      "score": 0.9675024151802063,
+      "text": "Forecast (1 slide)Give gist of problem attacked andinsight found",
+      "text_unirec": "Forecast (1 slide)Give gist of problem attacked andinsight found",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_05",
+      "bbox": [
+        1209.301513671875,
+        545.6973876953125,
+        1879.8040771484375,
+        627.1907958984375
+      ],
+      "score": 0.9501561522483826,
+      "text": "What is the problem?",
+      "text_unirec": "What is the problem?",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_06",
+      "bbox": [
+        45.71974182128906,
+        716.8982543945312,
+        643.3079223632812,
+        796.8945922851562
+      ],
+      "score": 0.7953368425369263,
+      "text": "o Outline (1 slide)",
+      "text_unirec": "o Outline (1 slide)",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "paragraph_title_07",
+      "bbox": [
+        46.66969299316406,
+        812.6229858398438,
+        549.1705932617188,
+        891.9705810546875
+      ],
+      "score": 0.7898744344711304,
+      "text": "o Background",
+      "text_unirec": "o Background",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_08",
+      "bbox": [
+        124.7053451538086,
+        905.3126831054688,
+        940.918212890625,
+        1047.8082275390625
+      ],
+      "score": 0.9610869288444519,
+      "text": "Motivation and ProblemStatement (1-2 slides)",
+      "text_unirec": "Motivation and ProblemStatement (1-2 slides)",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_09",
+      "bbox": [
+        124.9226303100586,
+        1058.961181640625,
+        921.2003784179688,
+        1130.598388671875
+      ],
+      "score": 0.9453960657119751,
+      "text": "Related Work (0-1 slides)",
+      "text_unirec": "Related Work (0-1 slides)",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_10",
+      "bbox": [
+        123.75393676757812,
+        1143.606201171875,
+        1099.490966796875,
+        1357.843017578125
+      ],
+      "score": 0.9714369177818298,
+      "text": "Methods (1-3 slides)Explain your approach; illustrate algorithm",
+      "text_unirec": "Methods (1-3 slides)Explain your approach; illustrate algorithm",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_11",
+      "bbox": [
+        1229.0291748046875,
+        912.23046875,
+        1880.777587890625,
+        996.953369140625
+      ],
+      "score": 0.9433994889259338,
+      "text": "Why is it important?",
+      "text_unirec": "Why is it important?",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_12",
+      "bbox": [
+        1129.71826171875,
+        1047.5020751953125,
+        1883.119873046875,
+        1125.1337890625
+      ],
+      "score": 0.9433256983757019,
+      "text": "What have others done?",
+      "text_unirec": "What have others done?",
+      "is_image": false,
+      "is_merged_continuation": false
+    },
+    {
+      "label": "text_13",
+      "bbox": [
+        1180.123779296875,
+        1196.9637451171875,
+        1879.1658935546875,
+        1277.9373779296875
+      ],
+      "score": 0.9485846161842346,
+      "text": "What is my approach?",
+      "text_unirec": "What is my approach?",
+      "is_image": false,
+      "is_merged_continuation": false
+    }
+  ],
+  "timing": {
+    "total": 5.3347649574279785
+  }
+}

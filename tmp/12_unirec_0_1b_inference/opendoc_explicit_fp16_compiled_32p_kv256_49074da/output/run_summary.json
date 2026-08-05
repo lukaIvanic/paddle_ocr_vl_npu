@@ -1,0 +1,184 @@
+{
+  "status": "ok",
+  "mode": "custom",
+  "openocr_root": "/workspace/repos/OpenOCR",
+  "model_path": "/workspace/models/unirec-0.1b",
+  "device": "npu:0",
+  "dtype": "float16",
+  "decode_mode": "compiled",
+  "compile_backend": "torchair",
+  "compile_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_explicit_model_pth_decode_fp16",
+  "max_parallel_blocks": 1,
+  "max_length": 256,
+  "setup_s": 12.10247461986728,
+  "pipeline_wall_s": 157.42268313327804,
+  "page_count": 32,
+  "crop_count": 185,
+  "preprocess_exact_count": 0,
+  "token_exact_count": 0,
+  "raw_text_exact_count": 0,
+  "postprocessed_text_exact_count": 0,
+  "pages": [
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_003.png",
+      "wall_s": 14.707280929898843,
+      "recognized_crops": 6
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_005.png",
+      "wall_s": 7.330799531890079,
+      "recognized_crops": 8
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_011.png",
+      "wall_s": 4.381937664933503,
+      "recognized_crops": 14
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_1001115_eng_page_015.png",
+      "wall_s": 4.299120957031846,
+      "recognized_crops": 5
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_11.2013EvaluatingTraineeteacherproficiency_page_010.png",
+      "wall_s": 4.8010044859256595,
+      "recognized_crops": 7
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_11.2013EvaluatingTraineeteacherproficiency_page_029.png",
+      "wall_s": 4.974222820950672,
+      "recognized_crops": 4
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_13 fallacies LALT2012_page_001.png",
+      "wall_s": 5.424988902173936,
+      "recognized_crops": 5
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_13 fallacies LALT2012_page_009.png",
+      "wall_s": 4.236330379964784,
+      "recognized_crops": 5
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_13 fallacies LALT2012_page_010.png",
+      "wall_s": 3.4631681391038,
+      "recognized_crops": 6
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_1637904769_page_001.png",
+      "wall_s": 2.906976127065718,
+      "recognized_crops": 2
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_1637904769_page_002.png",
+      "wall_s": 3.282578229904175,
+      "recognized_crops": 5
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_1637904769_page_008.png",
+      "wall_s": 5.592686332063749,
+      "recognized_crops": 7
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_1637904769_page_017.png",
+      "wall_s": 7.8989069981034845,
+      "recognized_crops": 5
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_8076_MEYER_Chapter_2_-_Language_Change_page_012.png",
+      "wall_s": 3.4697886819485575,
+      "recognized_crops": 3
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_8076_MEYER_Chapter_2_-_Language_Change_page_014.png",
+      "wall_s": 4.053824567003176,
+      "recognized_crops": 5
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_8076_MEYER_Chapter_2_-_Language_Change_page_017.png",
+      "wall_s": 5.209902746137232,
+      "recognized_crops": 3
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_8076_MEYER_Chapter_2_-_Language_Change_page_021.png",
+      "wall_s": 2.5923159380909055,
+      "recognized_crops": 4
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_B14_Claeys_Consistent Presentation of Images_v2_page_006.png",
+      "wall_s": 3.1059018468949944,
+      "recognized_crops": 3
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_B14_Claeys_Consistent Presentation of Images_v2_page_010.png",
+      "wall_s": 4.384820193052292,
+      "recognized_crops": 4
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_B14_Claeys_Consistent Presentation of Images_v2_page_013.png",
+      "wall_s": 5.079640711890534,
+      "recognized_crops": 7
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_B14_Claeys_Consistent Presentation of Images_v2_page_024.png",
+      "wall_s": 4.657556928927079,
+      "recognized_crops": 5
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_002.png",
+      "wall_s": 3.265738173155114,
+      "recognized_crops": 5
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_005.png",
+      "wall_s": 3.506738810101524,
+      "recognized_crops": 7
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_006.png",
+      "wall_s": 5.371325829066336,
+      "recognized_crops": 13
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_007.png",
+      "wall_s": 3.717795236967504,
+      "recognized_crops": 6
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_008.png",
+      "wall_s": 6.532028616871685,
+      "recognized_crops": 8
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_BaharMartonosi_page_010.png",
+      "wall_s": 3.692174161085859,
+      "recognized_crops": 4
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_002.png",
+      "wall_s": 6.324315825942904,
+      "recognized_crops": 7
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_004.png",
+      "wall_s": 5.142911208095029,
+      "recognized_crops": 9
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_009.png",
+      "wall_s": 3.7595925061032176,
+      "recognized_crops": 4
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_014.png",
+      "wall_s": 4.607890464132652,
+      "recognized_crops": 5
+    },
+    {
+      "image": "/workspace/datasets/OmniDocBench/images/PPT_CalculusReview_page_033.png",
+      "wall_s": 5.648419188801199,
+      "recognized_crops": 4
+    }
+  ],
+  "trace_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/opendoc_explicit_fp16_compiled_32p_kv256_49074da/output/recognition_comparison.jsonl"
+}
