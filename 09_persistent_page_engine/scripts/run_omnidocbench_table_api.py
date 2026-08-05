@@ -89,10 +89,18 @@ def _score(output: Path, score_output: Path, evaluator_root: Path) -> None:
     page_structure_scores: dict[str, list[float]] = {}
     scored: list[dict[str, Any]] = []
     started = time.perf_counter()
+
+    def document(table_html: str) -> str:
+        if "<html" in table_html.lower():
+            return table_html
+        return f"<html><body>{table_html}</body></html>"
+
     for index, record in enumerate(records, start=1):
-        score = float(evaluator.evaluate(record["pred_html"], record["gt_html"]))
+        pred_html = document(record["pred_html"])
+        gt_html = document(record["gt_html"])
+        score = float(evaluator.evaluate(pred_html, gt_html))
         structure = float(
-            structure_evaluator.evaluate(record["pred_html"], record["gt_html"])
+            structure_evaluator.evaluate(pred_html, gt_html)
         )
         page_scores.setdefault(record["page_name"], []).append(score)
         page_structure_scores.setdefault(record["page_name"], []).append(structure)
