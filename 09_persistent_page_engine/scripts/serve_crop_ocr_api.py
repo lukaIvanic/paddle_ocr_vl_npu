@@ -40,7 +40,10 @@ PROMPTS = {
     "seal": "Seal Recognition:",
 }
 DEFAULT_VISION_BUCKETS = "256,384,512,640,768,1408,1920,2048,2944,4096"
-DEFAULT_TEXT_BUCKETS = "128,160,176,192,208,224,256,320,384,448,576,640,768,896,1024,1152,1280,1312"
+# A 4096-token vision input becomes at most about 1024 projected tokens.
+# Five existing B1 shapes cover that full table-recognition range while
+# avoiding startup work for thirteen redundant intermediate buckets.
+DEFAULT_TEXT_BUCKETS = "128,256,512,1024,1312"
 
 
 def parse_args() -> argparse.Namespace:
