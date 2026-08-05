@@ -324,7 +324,12 @@ def warmup_configured_graphs(
     with torch.inference_mode():
         if vision_atlas_runtime is not None:
             cells = ATLAS_HEIGHT * ATLAS_WIDTH
-            identity = torch.arange(cells, dtype=torch.long, device=device)
+            atlas_to_source = torch.arange(
+                cells,
+                dtype=torch.long,
+                device=device,
+            )
+            source_to_atlas = atlas_to_source.clone()
             valid_mask = torch.ones(
                 (1, 1, ATLAS_HEIGHT, ATLAS_WIDTH),
                 dtype=runner.dtype,
@@ -343,8 +348,8 @@ def warmup_configured_graphs(
                     dtype=runner.dtype,
                     device=device,
                 ),
-                identity,
-                identity,
+                atlas_to_source,
+                source_to_atlas,
                 valid_mask,
                 membership,
                 normalized_membership,
