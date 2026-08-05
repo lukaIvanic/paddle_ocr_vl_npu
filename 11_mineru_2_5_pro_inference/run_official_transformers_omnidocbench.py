@@ -119,7 +119,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--local-decode-rotary-impl",
-        choices=("manual", "npu_rotary_mul"),
+        choices=("manual", "npu_apply"),
         default="manual",
         help="RoPE implementation used only by static one-token decode.",
     )

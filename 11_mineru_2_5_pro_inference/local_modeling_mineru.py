@@ -26,8 +26,11 @@ DECODE_WEIGHT_FORMAT_NONE = "none"
 DECODE_WEIGHT_FORMAT_NZ = "decode_nz"
 DECODE_WEIGHT_FORMAT_CHOICES = (DECODE_WEIGHT_FORMAT_NONE, DECODE_WEIGHT_FORMAT_NZ)
 DECODE_ROTARY_IMPL_MANUAL = "manual"
-DECODE_ROTARY_IMPL_NPU = "npu_rotary_mul"
-DECODE_ROTARY_IMPL_CHOICES = (DECODE_ROTARY_IMPL_MANUAL, DECODE_ROTARY_IMPL_NPU)
+DECODE_ROTARY_IMPL_NPU_APPLY = "npu_apply"
+DECODE_ROTARY_IMPL_CHOICES = (
+    DECODE_ROTARY_IMPL_MANUAL,
+    DECODE_ROTARY_IMPL_NPU_APPLY,
+)
 DECODE_ATTENTION_MANUAL = "manual"
 DECODE_ATTENTION_INCREFA = "increfa"
 DECODE_ATTENTION_CHOICES = (DECODE_ATTENTION_MANUAL, DECODE_ATTENTION_INCREFA)
@@ -132,23 +135,6 @@ def prepare_multimodal_rotary_factors(
     cos = torch.cat([part[i % 3] for i, part in enumerate(cos.split(mrope_section, dim=-1))], dim=-1)
     sin = torch.cat([part[i % 3] for i, part in enumerate(sin.split(mrope_section, dim=-1))], dim=-1)
     return cos.unsqueeze(unsqueeze_dim), sin.unsqueeze(unsqueeze_dim)
-
-
-def apply_multimodal_rotary_pos_emb_npu(
-    q: torch.Tensor,
-    k: torch.Tensor,
-    cos: torch.Tensor,
-    sin: torch.Tensor,
-    mrope_section: list[int],
-    unsqueeze_dim: int = 1,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    cos, sin = prepare_multimodal_rotary_factors(cos, sin, mrope_section, unsqueeze_dim=unsqueeze_dim)
-    import torch_npu
-
-    return (
-        torch_npu.npu_rotary_mul(q.contiguous(), cos.contiguous(), sin.contiguous(), rotary_mode="half"),
-        torch_npu.npu_rotary_mul(k.contiguous(), cos.contiguous(), sin.contiguous(), rotary_mode="half"),
-    )
 
 
 def apply_rotary_pos_emb_vision(
@@ -377,9 +363,11 @@ def configure_decode_rotary_impl(
 
     effective_mode = str(mode)
     skipped_reason = None
-    if mode == DECODE_ROTARY_IMPL_NPU and model.device.type != "npu":
+    if mode == DECODE_ROTARY_IMPL_NPU_APPLY and model.device.type != "npu":
         effective_mode = DECODE_ROTARY_IMPL_MANUAL
-        skipped_reason = f"npu_rotary_mul requires NPU tensors, got device={model.device.type}"
+        skipped_reason = (
+            f"npu_apply_rotary_pos_emb requires NPU tensors, got device={model.device.type}"
+        )
 
     updated_layers = 0
     for module in model.modules():
@@ -389,7 +377,9 @@ def configure_decode_rotary_impl(
     return {
         "requested_mode": str(mode),
         "effective_mode": effective_mode,
-        "rotary_mode": "half" if effective_mode == DECODE_ROTARY_IMPL_NPU else None,
+        "rotary_mode": (
+            "half" if effective_mode == DECODE_ROTARY_IMPL_NPU_APPLY else None
+        ),
         "scope": "decode_static_only",
         "prefill_rotary_impl": DECODE_ROTARY_IMPL_MANUAL,
         "updated_attention_layers": int(updated_layers),
@@ -713,22 +703,22 @@ class MinerUAttention(nn.Module):
         repeating it 24 times.
         """
         cos, sin = position_embeddings
-        if self.decode_rotary_impl == DECODE_ROTARY_IMPL_NPU:
+        if self.decode_rotary_impl == DECODE_ROTARY_IMPL_NPU_APPLY:
             import torch_npu
 
+            query_bsnd = query_states.transpose(1, 2).contiguous()
+            key_bsnd = key_states.transpose(1, 2).contiguous()
+            query_bsnd, key_bsnd = torch_npu.npu_apply_rotary_pos_emb(
+                query_bsnd,
+                key_bsnd,
+                cos.contiguous(),
+                sin.contiguous(),
+                layout="BSND",
+                rotary_mode="half",
+            )
             return (
-                torch_npu.npu_rotary_mul(
-                    query_states.contiguous(),
-                    cos.contiguous(),
-                    sin.contiguous(),
-                    rotary_mode="half",
-                ),
-                torch_npu.npu_rotary_mul(
-                    key_states.contiguous(),
-                    cos.contiguous(),
-                    sin.contiguous(),
-                    rotary_mode="half",
-                ),
+                query_bsnd.transpose(1, 2),
+                key_bsnd.transpose(1, 2),
             )
         query_embed = (query_states * cos) + (rotate_half(query_states) * sin)
         key_embed = (key_states * cos) + (rotate_half(key_states) * sin)
