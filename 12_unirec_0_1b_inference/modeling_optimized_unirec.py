@@ -452,6 +452,17 @@ class LocalDecoderAttention(nn.Module):
         self.v_proj = nn.Linear(self.embed_dim, self.embed_dim, bias=True)
         self.out_proj = nn.Linear(self.embed_dim, self.embed_dim, bias=True)
 
+    @staticmethod
+    def apply_linear_3d(linear: nn.Linear, hidden_states: torch.Tensor) -> torch.Tensor:
+        """Apply a decoder linear through an explicit rank-2 matrix shape."""
+        if hidden_states.ndim != 3:
+            raise ValueError(
+                f"Decoder linear expects [batch, sequence, hidden], got {tuple(hidden_states.shape)}"
+            )
+        batch_size, sequence_length, hidden_size = hidden_states.shape
+        output = linear(hidden_states.reshape(batch_size * sequence_length, hidden_size))
+        return output.reshape(batch_size, sequence_length, linear.out_features)
+
     def project_states(
         self,
         hidden_states: torch.Tensor,
@@ -461,9 +472,15 @@ class LocalDecoderAttention(nn.Module):
         source_states = hidden_states if key_value_states is None else key_value_states
         source_length = source_states.shape[1]
 
-        query_states = self.q_proj(hidden_states).view(batch_size, target_length, self.num_heads, self.head_dim)
-        key_states = self.k_proj(source_states).view(batch_size, source_length, self.num_heads, self.head_dim)
-        value_states = self.v_proj(source_states).view(batch_size, source_length, self.num_heads, self.head_dim)
+        query_states = self.apply_linear_3d(self.q_proj, hidden_states).view(
+            batch_size, target_length, self.num_heads, self.head_dim
+        )
+        key_states = self.apply_linear_3d(self.k_proj, source_states).view(
+            batch_size, source_length, self.num_heads, self.head_dim
+        )
+        value_states = self.apply_linear_3d(self.v_proj, source_states).view(
+            batch_size, source_length, self.num_heads, self.head_dim
+        )
 
         return (
             query_states.transpose(1, 2).contiguous(),
@@ -473,13 +490,19 @@ class LocalDecoderAttention(nn.Module):
 
     def project_query_states(self, hidden_states: torch.Tensor) -> torch.Tensor:
         batch_size, target_length, _ = hidden_states.shape
-        query_states = self.q_proj(hidden_states).view(batch_size, target_length, self.num_heads, self.head_dim)
+        query_states = self.apply_linear_3d(self.q_proj, hidden_states).view(
+            batch_size, target_length, self.num_heads, self.head_dim
+        )
         return query_states.transpose(1, 2).contiguous()
 
     def project_key_value_states(self, key_value_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         batch_size, source_length, _ = key_value_states.shape
-        key_states = self.k_proj(key_value_states).view(batch_size, source_length, self.num_heads, self.head_dim)
-        value_states = self.v_proj(key_value_states).view(batch_size, source_length, self.num_heads, self.head_dim)
+        key_states = self.apply_linear_3d(self.k_proj, key_value_states).view(
+            batch_size, source_length, self.num_heads, self.head_dim
+        )
+        value_states = self.apply_linear_3d(self.v_proj, key_value_states).view(
+            batch_size, source_length, self.num_heads, self.head_dim
+        )
         return key_states.transpose(1, 2).contiguous(), value_states.transpose(1, 2).contiguous()
 
     def attend(
@@ -512,7 +535,7 @@ class LocalDecoderAttention(nn.Module):
             ),
         ).view(batch_size, num_heads, target_length, head_dim)
         attention_output = attention_output.transpose(1, 2).contiguous().view(batch_size, target_length, self.embed_dim)
-        return self.out_proj(attention_output)
+        return self.apply_linear_3d(self.out_proj, attention_output)
 
     def attend_increfa(
         self,
@@ -558,7 +581,7 @@ class LocalDecoderAttention(nn.Module):
         )
         attention_output = attention_output.to(dtype=output_dtype)
         attention_output = attention_output.transpose(1, 2).contiguous().view(batch_size, target_length, self.embed_dim)
-        return self.out_proj(attention_output)
+        return self.apply_linear_3d(self.out_proj, attention_output)
 
     @staticmethod
     def build_static_cache_attention_mask(
@@ -692,7 +715,9 @@ class LocalDecoderLayer(nn.Module):
     def apply_ffn(self, hidden_states: torch.Tensor) -> torch.Tensor:
         residual = hidden_states
         hidden_states = self.final_layer_norm(hidden_states)
-        hidden_states = self.fc2(torch.relu(self.fc1(hidden_states)))
+        hidden_states = LocalDecoderAttention.apply_linear_3d(self.fc1, hidden_states)
+        hidden_states = torch.relu(hidden_states)
+        hidden_states = LocalDecoderAttention.apply_linear_3d(self.fc2, hidden_states)
         return residual + hidden_states
 
     def forward_prefill(
@@ -1039,7 +1064,7 @@ class LocalUniRecModel(nn.Module):
             encoder_hidden_states=encoder_hidden_states,
             encoder_attention_mask=encoder_attention_mask,
         )
-        logits = self.lm_head(decoder_output)
+        logits = LocalDecoderAttention.apply_linear_3d(self.lm_head, decoder_output)
         return {
             "encoder_last_hidden_state": encoder_hidden_states,
             "encoder_attention_mask": encoder_attention_mask,
@@ -1067,7 +1092,7 @@ class LocalUniRecModel(nn.Module):
             cache_len=LOCAL_UNIREC_STATIC_CACHE_LEN,
             cross_cache_len=cross_cache_len,
         )
-        logits = self.lm_head(decoder_output)
+        logits = LocalDecoderAttention.apply_linear_3d(self.lm_head, decoder_output)
         return {
             "logits": logits,
             "kv_cache": kv_cache,
@@ -1096,7 +1121,7 @@ class LocalUniRecModel(nn.Module):
             cross_attention_mask=cross_attention_mask,
             self_attention_backend=self_attention_backend,
         )
-        return self.lm_head(decoder_output)
+        return LocalDecoderAttention.apply_linear_3d(self.lm_head, decoder_output)
 
     def generate(
         self,
