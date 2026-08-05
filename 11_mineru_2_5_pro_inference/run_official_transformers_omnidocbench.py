@@ -51,6 +51,7 @@ def parse_args() -> argparse.Namespace:
             "local-correctness",
             "local-eager-client",
             "local-compiled-client",
+            "local-fixed-batch-client",
             "vllm-engine",
             "vllm-async-engine",
         ),
@@ -208,6 +209,7 @@ def main() -> None:
         "local-correctness",
         "local-eager-client",
         "local-compiled-client",
+        "local-fixed-batch-client",
     ):
         from transformers import AutoProcessor
 
@@ -229,13 +231,19 @@ def main() -> None:
             model.lm_head.weight = model.model.language_model.embed_tokens.weight
             model = model.to("npu:0").eval()
         else:
-            if args.batch_size not in (0, 1):
+            if (
+                args.backend != "local-fixed-batch-client"
+                and args.batch_size not in (0, 1)
+            ):
                 raise ValueError("local MinerU lanes currently require --batch-size 1")
+            if args.backend == "local-fixed-batch-client" and args.batch_size <= 1:
+                raise ValueError("local fixed-batch MinerU client requires --batch-size > 1")
             from local_modeling_mineru import LocalMinerU2_5ForConditionalGeneration
             from native_custom_backend import (
                 LocalMinerUGenerateAdapter,
                 make_local_compiled_vlm_client,
                 make_local_eager_vlm_client,
+                make_local_fixed_batch_vlm_client,
             )
 
             local_model = LocalMinerU2_5ForConditionalGeneration.from_pretrained(
@@ -282,9 +290,40 @@ def main() -> None:
                 system_prompt=client.client.system_prompt,
                 allow_truncated_content=client.client.allow_truncated_content,
             )
+        elif args.backend == "local-fixed-batch-client":
+            if args.local_compiled_cache_length <= 0:
+                raise ValueError("local-compiled-cache-length must be positive")
+            from fixed_batch_engine import FixedBatchDecodeEngine
+            from run_local_model_two_step_extract import (
+                CompiledSingleBatchRecognitionDecoder,
+            )
+
+            compiled_decoder = CompiledSingleBatchRecognitionDecoder(
+                local_model,
+                cache_root=args.local_torchair_cache_dir,
+                cache_length=args.local_compiled_cache_length,
+                decode_weight_format="none",
+                decode_rotary_impl="manual",
+            )
+            engine = FixedBatchDecodeEngine(
+                local_model,
+                compiled_decoder,
+                batch_size=args.batch_size,
+                cache_length=args.local_compiled_cache_length,
+                eos_token_id=local_model.config.eos_token_id,
+                pad_token_id=local_model.config.pad_token_id,
+            )
+            client.client = make_local_fixed_batch_vlm_client(
+                local_model,
+                processor,
+                engine,
+                batch_size=args.batch_size,
+                system_prompt=client.client.system_prompt,
+                allow_truncated_content=client.client.allow_truncated_content,
+            )
         attention = (
             "eager-prefill-torchair-static-decode"
-            if args.backend == "local-compiled-client"
+            if args.backend in ("local-compiled-client", "local-fixed-batch-client")
             else "eager-local"
             if args.backend.startswith("local-")
             else "eager"
@@ -394,12 +433,12 @@ def main() -> None:
         "page_batch_size": args.page_batch_size,
         "local_compiled_cache_length": (
             args.local_compiled_cache_length
-            if args.backend == "local-compiled-client"
+            if args.backend in ("local-compiled-client", "local-fixed-batch-client")
             else None
         ),
         "local_torchair_cache_dir": (
             str(args.local_torchair_cache_dir)
-            if args.backend == "local-compiled-client"
+            if args.backend in ("local-compiled-client", "local-fixed-batch-client")
             else None
         ),
         "vllm_enforce_eager": (
@@ -585,12 +624,20 @@ def main() -> None:
     generation_metrics = getattr(client.client, "generation_metrics", None)
     if generation_metrics is not None:
         decode_calls = sum(int(item["decode_calls"]) for item in generation_metrics)
+        raw_decode_token_slots = sum(
+            int(item.get("raw_decode_token_slots", item["decode_calls"]))
+            for item in generation_metrics
+        )
         decode_s = sum(float(item["decode_s"]) for item in generation_metrics)
         summary["local_compiled_generation"] = {
             "calls": len(generation_metrics),
             "decode_calls": decode_calls,
+            "raw_decode_token_slots": raw_decode_token_slots,
             "decode_s": decode_s,
             "decode_tok_s": decode_calls / decode_s if decode_s > 0 else 0.0,
+            "raw_decode_tok_s": (
+                raw_decode_token_slots / decode_s if decode_s > 0 else 0.0
+            ),
             "prefill_s": sum(float(item["prefill_s"]) for item in generation_metrics),
             "generation_wall_s": sum(
                 float(item["generation_wall_s"]) for item in generation_metrics

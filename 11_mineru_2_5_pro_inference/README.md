@@ -50,8 +50,11 @@ run_official_transformers_omnidocbench.py
   ``local-eager-client`` is the first direct eager custom VLM client while the
   official MinerU frontend and post-processing stay unchanged;
   ``local-compiled-client`` keeps prefill eager and replaces only B1 decode
-  with the existing TorchAir static-KV graph. It writes official json2md
-  Markdown, content lists, per-page checkpoints, shard progress, and timing.
+  with the existing TorchAir static-KV graph; ``local-fixed-batch-client``
+  prefills requests independently into request-owned rows of a shared KV arena
+  and runs full groups through a fixed compiled decode batch, with B1 tails.
+  It writes official json2md Markdown, content lists, per-page checkpoints,
+  shard progress, and timing.
 ```
 
 The experiment reuses the repository-level `crops/` corpus. Its manifest and

@@ -212,3 +212,85 @@ def make_local_compiled_vlm_client(
         batch_size=int(batch_size),
         use_tqdm=False,
     )
+
+
+def make_local_fixed_batch_vlm_client(
+    model: Any,
+    processor: Any,
+    engine: Any,
+    *,
+    batch_size: int,
+    system_prompt: str,
+    allow_truncated_content: bool,
+):
+    """Build the compatibility wrapper around the request-owned KV engine."""
+
+    from fixed_batch_engine import PreparedGeneration
+    from mineru_vl_utils.vlm_client.transformers_client import TransformersVlmClient
+
+    class LocalFixedBatchMinerUVlmClient(TransformersVlmClient):
+        def __init__(self, **kwargs: Any) -> None:
+            super().__init__(**kwargs)
+            self.generation_metrics: list[dict[str, Any]] = []
+
+        def _predict_one_batch(
+            self,
+            image_objs,
+            chat_prompts,
+            sampling_params,
+            **kwargs,
+        ):
+            params = self.build_sampling_params(sampling_params)
+            prepared: list[PreparedGeneration] = []
+            for image, chat_prompt in zip(image_objs, chat_prompts):
+                inputs = self.processor(
+                    text=[chat_prompt],
+                    images=[image] if image is not None else None,
+                    padding=True,
+                    return_tensors="pt",
+                )
+                inputs = inputs.to(device=model.device, dtype=model.dtype)
+                max_new_tokens = params.max_new_tokens
+                if max_new_tokens is None:
+                    max_new_tokens = max(
+                        1,
+                        int(self.model_max_length) - int(inputs.input_ids.shape[1]),
+                    )
+                max_new_tokens = min(
+                    int(max_new_tokens),
+                    engine.cache_length - int(inputs.input_ids.shape[1]),
+                )
+                if max_new_tokens <= 0:
+                    raise ValueError("prepared request leaves no room in the static KV cache")
+                prepared.append(
+                    PreparedGeneration(
+                        input_ids=inputs.input_ids,
+                        attention_mask=inputs.attention_mask,
+                        pixel_values=getattr(inputs, "pixel_values", None),
+                        image_grid_thw=getattr(inputs, "image_grid_thw", None),
+                        max_new_tokens=max_new_tokens,
+                    )
+                )
+
+            generated, metrics = engine.generate_many(prepared)
+            self.generation_metrics.append(metrics)
+            rows = [tensor[0].detach().cpu().tolist() for tensor in generated]
+            rows = [
+                [token_id for token_id in row if token_id not in self.skip_token_ids]
+                for row in rows
+            ]
+            return self.processor.batch_decode(
+                rows,
+                skip_special_tokens=False,
+                clean_up_tokenization_spaces=False,
+            )
+
+    adapter = LocalMinerUGenerateAdapter(model)
+    return LocalFixedBatchMinerUVlmClient(
+        model=adapter,
+        processor=processor,
+        system_prompt=system_prompt,
+        allow_truncated_content=allow_truncated_content,
+        batch_size=int(batch_size),
+        use_tqdm=False,
+    )
