@@ -131,6 +131,18 @@ def parse_args() -> argparse.Namespace:
         choices=("float16", "float32"),
         default="float32",
     )
+    parser.add_argument(
+        "--layout-execution",
+        choices=("eager", "torchair"),
+        default="eager",
+    )
+    parser.add_argument(
+        "--layout-compile-cache-dir",
+        type=Path,
+        default=Path(
+            ".runtime_cache/12_unirec_0_1b_inference/layout_detector_torchair"
+        ),
+    )
     parser.add_argument("--stock-encoder", type=Path, required=True)
     parser.add_argument("--stock-decoder", type=Path, required=True)
     parser.add_argument("--stock-tokenizer-mapping", type=Path, required=True)
@@ -896,6 +908,8 @@ def main() -> None:
             device=args.device,
             dtype=args.layout_dtype,
             threshold=args.layout_threshold,
+            execution=args.layout_execution,
+            compile_cache_dir=args.layout_compile_cache_dir,
         )
         pipeline.use_layout_detection = True
     runner = OptimizedUniRecRunner(
@@ -1238,6 +1252,10 @@ def main() -> None:
         "max_length": args.max_length,
         "layout_backend": args.layout_backend,
         "layout_dtype": args.layout_dtype if not use_onnx_layout else None,
+        "layout_execution": args.layout_execution if not use_onnx_layout else None,
+        "layout_graph_warmup": (
+            pipeline.layout_detector.graph_warmup if not use_onnx_layout else None
+        ),
         "page_decode_workers": args.page_decode_workers,
         "setup_s": setup_s,
         "graph_warmup": graph_warmup,

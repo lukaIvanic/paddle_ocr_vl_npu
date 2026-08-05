@@ -57,11 +57,18 @@ class PPDocLayoutV2NpuAdapter:
         dtype: str = "float32",
         threshold: float = 0.5,
         profile_stages: bool = False,
+        execution: str = "eager",
+        compile_cache_dir: str | Path | None = None,
+        graph_warmup_passes: int = 2,
     ) -> None:
         if dtype not in DTYPE_MAP:
             raise ValueError(f"Unsupported layout dtype: {dtype}")
         if not str(device).startswith("npu"):
             raise ValueError("PPDocLayoutV2NpuAdapter requires an NPU device")
+        if execution not in {"eager", "torchair"}:
+            raise ValueError(f"Unsupported layout execution: {execution}")
+        if execution == "torchair" and compile_cache_dir is None:
+            raise ValueError("TorchAir layout execution requires compile_cache_dir")
 
         import torch_npu  # noqa: F401
         from tools.infer_doc_onnx import filter_overlap_boxes
@@ -72,6 +79,7 @@ class PPDocLayoutV2NpuAdapter:
         self.dtype = DTYPE_MAP[dtype]
         self.threshold = float(threshold)
         self.profile_stages = bool(profile_stages)
+        self.execution = execution
         self._filter_overlap_boxes = filter_overlap_boxes
 
         started = time.perf_counter()
@@ -79,6 +87,19 @@ class PPDocLayoutV2NpuAdapter:
         self.model = AutoModelForObjectDetection.from_pretrained(self.model_path)
         self.model.eval().to(device=self.device, dtype=self.dtype)
         torch.npu.synchronize()
+        self.compiled_runtime = None
+        self.graph_warmup = None
+        if execution == "torchair":
+            from layout_torchair import LayoutFullGraphRuntime
+
+            self.compiled_runtime = LayoutFullGraphRuntime(
+                self.model,
+                cache_root=Path(compile_cache_dir),
+                dtype=self.dtype,
+                device=self.device,
+                warmup_passes=graph_warmup_passes,
+            )
+            self.graph_warmup = self.compiled_runtime.warmup
         self.setup_s = time.perf_counter() - started
         self.page_count = 0
         self.forward_s = 0.0
@@ -130,7 +151,21 @@ class PPDocLayoutV2NpuAdapter:
         self._record_stage("inputs_h2d_s", started)
 
         started = time.perf_counter()
-        outputs = self.model(**moved)
+        if self.compiled_runtime is None:
+            outputs = self.model(**moved)
+        else:
+            from transformers.models.pp_doclayout_v2.modeling_pp_doclayout_v2 import (
+                PPDocLayoutV2ForObjectDetectionOutput,
+            )
+
+            logits, pred_boxes, order_logits = self.compiled_runtime(
+                moved["pixel_values"]
+            )
+            outputs = PPDocLayoutV2ForObjectDetectionOutput(
+                logits=logits,
+                pred_boxes=pred_boxes,
+                order_logits=order_logits,
+            )
         torch.npu.synchronize()
         forward_s = time.perf_counter() - started
         self.forward_s += forward_s
@@ -219,6 +254,8 @@ class PPDocLayoutV2NpuAdapter:
             "page_count": self.page_count,
             "forward_s": self.forward_s,
             "postprocess_s": self.postprocess_s,
+            "execution": self.execution,
+            "graph_warmup": self.graph_warmup,
             "stage_s": stage_s,
             "stage_mean_ms": {
                 name: seconds * 1000.0 / self.page_count
