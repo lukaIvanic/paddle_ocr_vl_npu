@@ -1369,29 +1369,59 @@ class OptimizedUniRecRunner:
             )
         return model
 
+    def _prepare_pil_image(
+        self,
+        image: Image.Image,
+        *,
+        image_source: str,
+        image_load_s: float,
+    ) -> tuple[dict[str, torch.Tensor], dict[str, Any]]:
+        image = image.convert("RGB")
+        t0 = time.perf_counter()
+        processed_width, processed_height = self.processor.get_processed_size(image.width, image.height)
+        encoder_seq_len_hint = self.processor.estimate_encoder_token_count_for_image_size(image.width, image.height)
+        inputs = self.processor(image)
+        t1 = time.perf_counter()
+        pixel_values = inputs["pixel_values"].to(self.device).to(dtype=self.dtype)
+        synchronize_device(self.device)
+        t2 = time.perf_counter()
+        prepare_total_s = float(image_load_s) + (t2 - t0)
+        return {"pixel_values": pixel_values}, {
+            "image": image_source,
+            "original_image_size": [int(image.width), int(image.height)],
+            "processed_image_size": [int(processed_width), int(processed_height)],
+            "encoder_seq_len_hint": int(encoder_seq_len_hint),
+            "pixel_values_shape": list(pixel_values.shape),
+            "image_load_s": float(image_load_s),
+            "image_preprocess_s": t1 - t0,
+            "move_to_device_s": t2 - t1,
+            "prepare_total_s": prepare_total_s,
+        }
+
     def prepare_image(self, image_path: str | Path) -> tuple[dict[str, torch.Tensor], dict[str, Any]]:
         synchronize_device(self.device)
         t0 = time.perf_counter()
         image = Image.open(image_path).convert("RGB")
         t1 = time.perf_counter()
-        processed_width, processed_height = self.processor.get_processed_size(image.width, image.height)
-        encoder_seq_len_hint = self.processor.estimate_encoder_token_count_for_image_size(image.width, image.height)
-        inputs = self.processor(image)
-        t2 = time.perf_counter()
-        pixel_values = inputs["pixel_values"].to(self.device).to(dtype=self.dtype)
+        return self._prepare_pil_image(
+            image,
+            image_source=str(Path(image_path).resolve()),
+            image_load_s=t1 - t0,
+        )
+
+    def prepare_pil_image(
+        self,
+        image: Image.Image,
+        *,
+        image_source: str = "<pil_image>",
+    ) -> tuple[dict[str, torch.Tensor], dict[str, Any]]:
+        """Prepare an in-memory crop without a file encode/decode round trip."""
         synchronize_device(self.device)
-        t3 = time.perf_counter()
-        return {"pixel_values": pixel_values}, {
-            "image": str(Path(image_path).resolve()),
-            "original_image_size": [int(image.width), int(image.height)],
-            "processed_image_size": [int(processed_width), int(processed_height)],
-            "encoder_seq_len_hint": int(encoder_seq_len_hint),
-            "pixel_values_shape": list(pixel_values.shape),
-            "image_load_s": t1 - t0,
-            "image_preprocess_s": t2 - t1,
-            "move_to_device_s": t3 - t2,
-            "prepare_total_s": t3 - t0,
-        }
+        return self._prepare_pil_image(
+            image,
+            image_source=image_source,
+            image_load_s=0.0,
+        )
 
     def _get_static_cross_cache_len(self) -> int:
         processor_max_side = tuple(int(value) for value in self.processor.max_side)
@@ -1506,13 +1536,52 @@ class OptimizedUniRecRunner:
         compile_backend: str,
         compile_dynamic: bool = False,
     ) -> dict[str, Any]:
+        inputs, prep = self.prepare_image(image_path)
+        return self._generate_prepared(
+            pixel_values=inputs["pixel_values"],
+            prep=prep,
+            max_length=max_length,
+            decode_mode=decode_mode,
+            compile_backend=compile_backend,
+            compile_dynamic=compile_dynamic,
+        )
+
+    def generate_image(
+        self,
+        image: Image.Image,
+        *,
+        max_length: int,
+        decode_mode: str,
+        compile_backend: str,
+        compile_dynamic: bool = False,
+        image_source: str = "<pil_image>",
+    ) -> dict[str, Any]:
+        """Generate from an already-cropped PIL image using the normal model path."""
+        inputs, prep = self.prepare_pil_image(image, image_source=image_source)
+        return self._generate_prepared(
+            pixel_values=inputs["pixel_values"],
+            prep=prep,
+            max_length=max_length,
+            decode_mode=decode_mode,
+            compile_backend=compile_backend,
+            compile_dynamic=compile_dynamic,
+        )
+
+    def _generate_prepared(
+        self,
+        *,
+        pixel_values: torch.Tensor,
+        prep: dict[str, Any],
+        max_length: int,
+        decode_mode: str,
+        compile_backend: str,
+        compile_dynamic: bool,
+    ) -> dict[str, Any]:
         if max_length > LOCAL_UNIREC_STATIC_CACHE_LEN:
             raise ValueError(f"max_length must be <= {LOCAL_UNIREC_STATIC_CACHE_LEN}, got {max_length}")
         if decode_mode not in {"eager", "compiled", "compiled_ifa"}:
             raise ValueError(f"Unsupported decode_mode: {decode_mode}")
 
-        inputs, prep = self.prepare_image(image_path)
-        pixel_values = inputs["pixel_values"]
         batch_size = int(pixel_values.shape[0])
         decoder_input_ids = self.model.decoder_start_ids(batch_size=batch_size, device=pixel_values.device)
         generated_ids = decoder_input_ids
@@ -1592,7 +1661,7 @@ class OptimizedUniRecRunner:
         generated_token_count = max(0, int(generated_ids.shape[1]) - 1)
         total_latency_s = float(prep["prepare_total_s"]) + prefill_s + decode_s
         return {
-            "image": str(Path(image_path).resolve()),
+            "image": str(prep["image"]),
             "text": text,
             "generated_ids": generated_ids.detach().cpu().tolist()[0],
             "generated_token_count": generated_token_count,

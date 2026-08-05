@@ -13,6 +13,10 @@ for the official OpenDoc full-page pipeline.
   bundled with the official UniRec-0.1B-1217 checkpoint.
 - `run_official_opendoc.py`: OpenOCR's official PP-DocLayoutV2 + UniRec page
   pipeline with explicit checkpoint and recognizer-device selection.
+- `run_opendoc_custom_unirec.py`: official OpenDoc ONNX layout, crop,
+  postprocessing, and output path with only UniRec crop inference replaced by
+  the local eager NPU implementation. Its comparison mode feeds each exact
+  in-memory crop to stock ONNX and local NPU inference and writes a JSONL trace.
 
 The local model implementation is copied without architectural changes from
 `unirec_research/03_compiled_decode_single_batch` at commit `4b9a9ab`.
@@ -155,6 +159,30 @@ only UniRec on the NPU:
 Use `--limit 1` for a smoke. Omit `--limit` for the complete image directory.
 Neither runner replaces the OmniDocBench evaluator. Score the Markdown outputs
 with the standard evaluator after inference.
+
+## Official OpenDoc with local eager UniRec
+
+Use one recognition thread while the custom path is being validated. Comparison
+mode runs stock ONNX and local eager NPU UniRec on every identical crop, returns
+the local result to the unchanged OpenDoc assembler, and records preprocessing,
+token, raw-text, and label-postprocessed parity:
+
+```sh
+/workspace/venvs/unirec_npu_py312/bin/python \
+  12_unirec_0_1b_inference/run_opendoc_custom_unirec.py \
+  --openocr-root /workspace/repos/OpenOCR \
+  --model-path /workspace/models/unirec-0.1b \
+  --layout-model /root/.cache/openocr/PP_DoclayoutV2_onnx/PP-DoclayoutV2.onnx \
+  --stock-encoder /root/.cache/openocr/unirec_0_1b_onnx/unirec_encoder.onnx \
+  --stock-decoder /root/.cache/openocr/unirec_0_1b_onnx/unirec_decoder.onnx \
+  --stock-tokenizer-mapping /root/.cache/openocr/unirec_0_1b_onnx/unirec_tokenizer_mapping.json \
+  --input /workspace/datasets/OmniDocBench/images \
+  --output-dir tmp/12_unirec_0_1b_inference/opendoc_custom_compare \
+  --mode compare --device npu:0 --dtype bfloat16 --limit 1
+```
+
+Use `--mode custom` for timing without the stock recognizer call. The page path
+still fixes `max_parallel_blocks=1`; no crop-level concurrency is introduced.
 
 ## Artifacts
 
