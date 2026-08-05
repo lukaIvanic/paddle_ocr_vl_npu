@@ -80,7 +80,7 @@ def main() -> None:
     # MinerU stores only model.embed_tokens.weight and its local implementation
     # deliberately uses that tied matrix for output logits. Current Transformers
     # otherwise reports lm_head.weight missing and randomly initializes it.
-    model.lm_head.weight = model.model.embed_tokens.weight
+    model.lm_head.weight = model.model.language_model.embed_tokens.weight
     model = model.to("npu:0").eval()
     processor = AutoProcessor.from_pretrained(model_dir, use_fast=False, local_files_only=True)
     synchronize()
