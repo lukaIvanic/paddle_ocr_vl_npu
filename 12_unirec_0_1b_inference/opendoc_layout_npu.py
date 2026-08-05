@@ -59,6 +59,7 @@ class PPDocLayoutV2NpuAdapter:
         profile_stages: bool = False,
         execution: str = "eager",
         compile_cache_dir: str | Path | None = None,
+        batch_size: int = 1,
     ) -> None:
         if dtype not in DTYPE_MAP:
             raise ValueError(f"Unsupported layout dtype: {dtype}")
@@ -68,6 +69,8 @@ class PPDocLayoutV2NpuAdapter:
             raise ValueError(f"Unsupported layout execution: {execution}")
         if execution == "torchair" and compile_cache_dir is None:
             raise ValueError("TorchAir layout execution requires compile_cache_dir")
+        if batch_size < 1:
+            raise ValueError("layout batch size must be >= 1")
 
         import torch_npu  # noqa: F401
         from tools.infer_doc_onnx import filter_overlap_boxes
@@ -79,6 +82,7 @@ class PPDocLayoutV2NpuAdapter:
         self.threshold = float(threshold)
         self.profile_stages = bool(profile_stages)
         self.execution = execution
+        self.batch_size = int(batch_size)
         self._filter_overlap_boxes = filter_overlap_boxes
 
         started = time.perf_counter()
@@ -96,6 +100,7 @@ class PPDocLayoutV2NpuAdapter:
                 cache_root=Path(compile_cache_dir),
                 dtype=self.dtype,
                 device=self.device,
+                batch_size=self.batch_size,
             )
         self.setup_s = time.perf_counter() - started
         self.page_count = 0
@@ -122,7 +127,7 @@ class PPDocLayoutV2NpuAdapter:
         pass_wall_s = []
         for index in range(passes):
             started = time.perf_counter()
-            self._predict_one(image, self.threshold)
+            self._predict_batch([image] * self.batch_size, self.threshold)
             elapsed = time.perf_counter() - started
             pass_wall_s.append(elapsed)
             print(
@@ -138,29 +143,40 @@ class PPDocLayoutV2NpuAdapter:
             "dynamic": False,
             "fullgraph": True,
             "input": "first_benchmark_page",
+            "batch_size": self.batch_size,
         }
         return self.graph_warmup
 
     @torch.inference_mode()
-    def _predict_one(
+    def _predict_batch(
         self,
-        image: np.ndarray,
+        images: list[np.ndarray],
         threshold: float,
-    ) -> dict[str, Any]:
-        if image.ndim != 3 or image.shape[2] != 3:
+    ) -> list[dict[str, Any]]:
+        if not images:
+            return []
+        if len(images) > self.batch_size:
             raise ValueError(
-                "OpenDoc layout input must be a BGR HxWx3 image, got "
-                f"shape={image.shape}"
+                f"layout batch has {len(images)} pages, maximum is {self.batch_size}"
             )
-        height, width = image.shape[:2]
+        for image in images:
+            if image.ndim != 3 or image.shape[2] != 3:
+                raise ValueError(
+                    "OpenDoc layout input must be a BGR HxWx3 image, got "
+                    f"shape={image.shape}"
+                )
+        real_page_count = len(images)
+        padded_images = list(images)
+        padded_images.extend([images[-1]] * (self.batch_size - real_page_count))
+        target_sizes = [image.shape[:2] for image in padded_images]
 
         total_started = time.perf_counter()
         started = time.perf_counter()
-        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        rgbs = [cv2.cvtColor(image, cv2.COLOR_BGR2RGB) for image in padded_images]
         self._record_stage("bgr_to_rgb_s", started)
 
         started = time.perf_counter()
-        inputs = self.processor(images=rgb, return_tensors="pt")
+        inputs = self.processor(images=rgbs, return_tensors="pt")
         self._record_stage("processor_preprocess_s", started)
 
         started = time.perf_counter()
@@ -201,65 +217,79 @@ class PPDocLayoutV2NpuAdapter:
         prediction = self.processor.post_process_object_detection(
             outputs,
             threshold=threshold,
-            target_sizes=[(height, width)],
-        )[0]
+            target_sizes=target_sizes,
+        )
         if self.profile_stages:
             torch.npu.synchronize()
         self._record_stage("hf_box_decode_s", started)
 
         started = time.perf_counter()
-        scores_cpu = prediction["scores"].detach().cpu()
-        labels_cpu = prediction["labels"].detach().cpu()
-        boxes_cpu = prediction["boxes"].detach().cpu()
-        order_sequence_cpu = prediction["order_seq"].detach().cpu()
-        scores = scores_cpu.tolist()
-        labels = labels_cpu.tolist()
-        boxes = boxes_cpu.tolist()
-        order_sequence = order_sequence_cpu.tolist()
+        cpu_predictions = []
+        for item in prediction[:real_page_count]:
+            cpu_predictions.append(
+                {
+                    "scores": item["scores"].detach().cpu().tolist(),
+                    "labels": item["labels"].detach().cpu().tolist(),
+                    "boxes": item["boxes"].detach().cpu().tolist(),
+                    "order_seq": item["order_seq"].detach().cpu().tolist(),
+                }
+            )
         self._record_stage("outputs_d2h_s", started)
 
         started = time.perf_counter()
-        result_boxes: list[dict[str, Any]] = []
-        for score, label_id, box, order in zip(
-            scores,
-            labels,
-            boxes,
-            order_sequence,
-        ):
-            class_id = int(label_id)
-            x1, y1, x2, y2 = box
-            result_boxes.append(
-                {
-                    "cls_id": class_id,
-                    "label": self.LABEL_MAP.get(class_id, f"class_{class_id}"),
-                    "score": float(score),
-                    "coordinate": [
-                        float(np.clip(x1, 0, width)),
-                        float(np.clip(y1, 0, height)),
-                        float(np.clip(x2, 0, width)),
-                        float(np.clip(y2, 0, height)),
-                    ],
-                    "custom_value": float(order),
-                }
-            )
+        results = []
+        for image, item in zip(images, cpu_predictions):
+            height, width = image.shape[:2]
+            result_boxes: list[dict[str, Any]] = []
+            for score, label_id, box, order in zip(
+                item["scores"],
+                item["labels"],
+                item["boxes"],
+                item["order_seq"],
+            ):
+                class_id = int(label_id)
+                x1, y1, x2, y2 = box
+                result_boxes.append(
+                    {
+                        "cls_id": class_id,
+                        "label": self.LABEL_MAP.get(class_id, f"class_{class_id}"),
+                        "score": float(score),
+                        "coordinate": [
+                            float(np.clip(x1, 0, width)),
+                            float(np.clip(y1, 0, height)),
+                            float(np.clip(x2, 0, width)),
+                            float(np.clip(y2, 0, height)),
+                        ],
+                        "custom_value": float(order),
+                    }
+                )
+            results.append({"boxes": result_boxes})
         self._record_stage("result_box_build_s", started)
 
         started = time.perf_counter()
-        result = self._filter_overlap_boxes({"boxes": result_boxes})
+        results = [self._filter_overlap_boxes(result) for result in results]
         self._record_stage("overlap_filter_s", started)
 
         started = time.perf_counter()
-        result["boxes"] = sorted(
-            result["boxes"],
-            key=lambda box: box["custom_value"],
-        )
-        for index, box in enumerate(result["boxes"], start=1):
-            box["label"] = f"{box['label']}_{index:02d}"
+        for result in results:
+            result["boxes"] = sorted(
+                result["boxes"],
+                key=lambda box: box["custom_value"],
+            )
+            for index, box in enumerate(result["boxes"], start=1):
+                box["label"] = f"{box['label']}_{index:02d}"
         self._record_stage("order_and_label_s", started)
         self.postprocess_s += time.perf_counter() - postprocess_started
         self._record_stage("detector_total_s", total_started)
-        self.page_count += 1
-        return result
+        self.page_count += real_page_count
+        return results
+
+    def _predict_one(
+        self,
+        image: np.ndarray,
+        threshold: float,
+    ) -> dict[str, Any]:
+        return self._predict_batch([image], threshold)[0]
 
     def __call__(
         self,
@@ -269,7 +299,15 @@ class PPDocLayoutV2NpuAdapter:
         if isinstance(images, np.ndarray):
             images = [images]
         active_threshold = self.threshold if threshold is None else float(threshold)
-        return [self._predict_one(image, active_threshold) for image in images]
+        results = []
+        for start in range(0, len(images), self.batch_size):
+            results.extend(
+                self._predict_batch(
+                    images[start : start + self.batch_size],
+                    active_threshold,
+                )
+            )
+        return results
 
     def timing_summary(self) -> dict[str, Any]:
         stage_s = dict(self.stage_s)
@@ -279,6 +317,7 @@ class PPDocLayoutV2NpuAdapter:
             "forward_s": self.forward_s,
             "postprocess_s": self.postprocess_s,
             "execution": self.execution,
+            "batch_size": self.batch_size,
             "graph_warmup": self.graph_warmup,
             "stage_s": stage_s,
             "stage_mean_ms": {

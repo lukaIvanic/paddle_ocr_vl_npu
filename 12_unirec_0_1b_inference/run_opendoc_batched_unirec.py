@@ -17,6 +17,7 @@ import warnings
 from collections import deque
 from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass, field
+from itertools import islice
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -135,6 +136,16 @@ def parse_args() -> argparse.Namespace:
         "--layout-execution",
         choices=("eager", "torchair"),
         default="eager",
+    )
+    parser.add_argument(
+        "--layout-batch-size",
+        type=int,
+        default=1,
+        help=(
+            "Static layout-model batch size. Page preprocessing and "
+            "postprocessing remain independent; only the 800x800 model "
+            "forward is batched."
+        ),
     )
     parser.add_argument(
         "--layout-compile-cache-dir",
@@ -555,6 +566,8 @@ def prepare_page(
     decoded: DecodedPage,
     page_index: int,
     layout_threshold: float,
+    precomputed_layout: dict[str, Any] | None = None,
+    measured_layout_s: float | None = None,
 ) -> PageRequest:
     started_at = decoded.started_at
     image_path = decoded.image_path
@@ -562,12 +575,18 @@ def prepare_page(
     frontend_timing_s = dict(decoded.timing_s)
     height, width = image.shape[:2]
 
-    layout_started = time.perf_counter()
-    layout_results = pipeline.layout_detector(
-        [image],
-        threshold=layout_threshold,
-    )[0]
-    layout_s = time.perf_counter() - layout_started
+    if precomputed_layout is None:
+        layout_started = time.perf_counter()
+        layout_results = pipeline.layout_detector(
+            [image],
+            threshold=layout_threshold,
+        )[0]
+        layout_s = time.perf_counter() - layout_started
+    else:
+        if measured_layout_s is None:
+            raise ValueError("precomputed layout requires measured layout time")
+        layout_results = precomputed_layout
+        layout_s = float(measured_layout_s)
     frontend_timing_s["layout_s"] = layout_s
     image_labels = (
         infer_doc_onnx.IMAGE_LABELS
@@ -663,6 +682,46 @@ def prepare_page(
         prepare_page_total_s=prepare_page_total_s,
         frontend_timing_s=frontend_timing_s,
     )
+
+
+def iter_prepared_pages(
+    *,
+    pipeline: Any,
+    infer_doc_onnx: Any,
+    decoded_pages: Iterable[DecodedPage],
+    layout_threshold: float,
+    layout_batch_size: int,
+) -> Iterable[PageRequest]:
+    """Batch only layout inference, then restore exact page order."""
+    source = iter(decoded_pages)
+    page_index = 0
+    while True:
+        batch = list(islice(source, layout_batch_size))
+        if not batch:
+            return
+        layout_started = time.perf_counter()
+        layout_results = pipeline.layout_detector(
+            [decoded.image for decoded in batch],
+            threshold=layout_threshold,
+        )
+        layout_batch_s = time.perf_counter() - layout_started
+        if len(layout_results) != len(batch):
+            raise RuntimeError(
+                "Layout result count mismatch: "
+                f"{len(layout_results)} != {len(batch)}"
+            )
+        layout_page_s = layout_batch_s / len(batch)
+        for decoded, layout_result in zip(batch, layout_results):
+            yield prepare_page(
+                pipeline=pipeline,
+                infer_doc_onnx=infer_doc_onnx,
+                decoded=decoded,
+                page_index=page_index,
+                layout_threshold=layout_threshold,
+                precomputed_layout=layout_result,
+                measured_layout_s=layout_page_s,
+            )
+            page_index += 1
 
 
 def assemble_page(
@@ -863,6 +922,12 @@ def main() -> None:
         raise ValueError("--decode-batch-size must be >= 1")
     if args.page_decode_workers < 1:
         raise ValueError("--page-decode-workers must be >= 1")
+    if args.layout_batch_size < 1:
+        raise ValueError("--layout-batch-size must be >= 1")
+    if args.layout_batch_size > 1 and args.layout_backend != "transformers_npu":
+        raise ValueError(
+            "--layout-batch-size > 1 requires --layout-backend transformers_npu"
+        )
     openocr_root = args.openocr_root.expanduser().resolve()
     model_path = args.model_path.expanduser().resolve()
     input_path = args.input.expanduser().resolve()
@@ -910,6 +975,7 @@ def main() -> None:
             threshold=args.layout_threshold,
             execution=args.layout_execution,
             compile_cache_dir=args.layout_compile_cache_dir,
+            batch_size=args.layout_batch_size,
         )
         pipeline.use_layout_detection = True
     runner = OptimizedUniRecRunner(
@@ -1045,14 +1111,15 @@ def main() -> None:
                 image_paths,
                 workers=args.page_decode_workers,
             )
-            for page_index, decoded in enumerate(decoded_pages):
-                page = prepare_page(
-                    pipeline=pipeline,
-                    infer_doc_onnx=infer_doc_onnx,
-                    decoded=decoded,
-                    page_index=page_index,
-                    layout_threshold=args.layout_threshold,
-                )
+            prepared_pages = iter_prepared_pages(
+                pipeline=pipeline,
+                infer_doc_onnx=infer_doc_onnx,
+                decoded_pages=decoded_pages,
+                layout_threshold=args.layout_threshold,
+                layout_batch_size=args.layout_batch_size,
+            )
+            for page in prepared_pages:
+                page_index = page.page_index
                 metrics.layout_s += page.layout_s
                 metrics.page_prepare_total_s += page.prepare_page_total_s
                 accumulate_stage_seconds(
@@ -1063,7 +1130,7 @@ def main() -> None:
                 print(
                     f"OPENDOC_CONTINUOUS_PAGE_READY "
                     f"index={page_index + 1}/{len(image_paths)} "
-                    f"image={decoded.image_path.name} crops={len(page.crops)}",
+                    f"image={page.image_path.name} crops={len(page.crops)}",
                     flush=True,
                 )
                 flush_ready_pages()
@@ -1173,14 +1240,15 @@ def main() -> None:
             image_paths,
             workers=args.page_decode_workers,
         )
-        for page_index, decoded in enumerate(decoded_pages):
-            page = prepare_page(
-                pipeline=pipeline,
-                infer_doc_onnx=infer_doc_onnx,
-                decoded=decoded,
-                page_index=page_index,
-                layout_threshold=args.layout_threshold,
-            )
+        prepared_pages = iter_prepared_pages(
+            pipeline=pipeline,
+            infer_doc_onnx=infer_doc_onnx,
+            decoded_pages=decoded_pages,
+            layout_threshold=args.layout_threshold,
+            layout_batch_size=args.layout_batch_size,
+        )
+        for page in prepared_pages:
+            page_index = page.page_index
             metrics.layout_s += page.layout_s
             metrics.page_prepare_total_s += page.prepare_page_total_s
             accumulate_stage_seconds(
@@ -1191,7 +1259,7 @@ def main() -> None:
             pending_crops.extend(page.crops)
             print(
                 f"OPENDOC_BATCHED_PAGE_READY index={page_index + 1}/{len(image_paths)} "
-                f"image={decoded.image_path.name} crops={len(page.crops)} "
+                f"image={page.image_path.name} crops={len(page.crops)} "
                 f"queued={len(pending_crops)}",
                 flush=True,
             )
@@ -1256,6 +1324,7 @@ def main() -> None:
         "layout_backend": args.layout_backend,
         "layout_dtype": args.layout_dtype if not use_onnx_layout else None,
         "layout_execution": args.layout_execution if not use_onnx_layout else None,
+        "layout_batch_size": args.layout_batch_size,
         "layout_graph_warmup": (
             pipeline.layout_detector.graph_warmup if not use_onnx_layout else None
         ),
