@@ -1,0 +1,40 @@
+Loading weights:   0%|          | 0/858 [00:00<?, ?it/s]Loading weights:  86%|████████▌ | 735/858 [00:00<00:00, 7106.96it/s]Loading weights: 100%|██████████| 858/858 [00:00<00:00, 7455.55it/s]
+.PAGE_SCHEDULER {"mode":"layout","count":1,"wall_s":7.453024429036304,"pages_completed":0}
+PAGE_SCHEDULER {"mode":"prefill","count":1,"wall_s":1.8441612930037081,"pages_completed":0}
+{
+  "layout_mode_s_per_page": 1.0659221136011183,
+  "layout_page_total_s": {
+    "count": 8,
+    "mean": 10.716626029257895,
+    "median": 10.908099391148426,
+    "p95": 13.777736841933802,
+    "min": 7.925162843894213,
+    "max": 13.777736841933802
+  },
+  "vision_prefill": {
+    "device_s": 0.9741302824020389,
+    "useful_tokens": 35576,
+    "physical_tokens": 40960,
+    "useful_tok_per_s": 36520.78232520979,
+    "physical_tok_per_s": 42047.76377447135
+  },
+  "text_prefill": {
+    "device_s": 0.4264456214904785,
+    "useful_tokens": 10480,
+    "physical_tokens": 13696,
+    "useful_tok_per_s": 24575.231804165665,
+    "physical_tok_per_s": 32116.638815825663
+  },
+  "decode": {
+    "wall_s": 3.7371506956405938,
+    "graph_calls": 427,
+    "raw_token_slots": 27328,
+    "active_token_slots": 7474,
+    "effective_tokens": 7352,
+    "raw_tok_per_s": 7312.522888594848,
+    "active_tok_per_s": 1999.919352655075,
+    "effective_tok_per_s": 1967.2741611881338,
+    "active_slot_fraction": 0.2734923887587822
+  }
+}
+summary=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/scheduler_ab_8p_32a0787/unified_direct/output/run_summary.json

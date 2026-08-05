@@ -1,0 +1,240 @@
+{
+  "contracts": {
+    "pages": [
+      8,
+      8
+    ],
+    "crops": [
+      122,
+      122
+    ],
+    "useful_vision_tokens": [
+      35576,
+      35576
+    ],
+    "useful_text_tokens": [
+      10480,
+      10480
+    ],
+    "decode_graph_calls": [
+      427,
+      427
+    ],
+    "effective_decode_tokens": [
+      7349,
+      7352
+    ]
+  },
+  "layout": {
+    "control_mean_page_total_s": 4.402266638237052,
+    "unified_mean_page_total_s": 10.716626029257895,
+    "mean_page_total_delta_percent": 143.4342785186114,
+    "control_model_submit_s_per_page": 0.8378153529192787,
+    "unified_model_submit_s_per_page": 1.0221797651029192,
+    "model_submit_delta_percent": 22.00537523467938
+  },
+  "vision_prefill": {
+    "control_device_s": 0.9600652141571046,
+    "unified_device_s": 0.9741302824020389,
+    "control_physical_tokens": 41216,
+    "unified_physical_tokens": 40960,
+    "control_physical_tok_per_s": 42930.41700941727,
+    "unified_physical_tok_per_s": 42047.76377447135,
+    "physical_tok_per_s_delta_percent": -2.056008994164449
+  },
+  "text_prefill": {
+    "control_device_s": 0.45582788181304923,
+    "unified_device_s": 0.4264456214904785,
+    "control_physical_tokens": 13952,
+    "unified_physical_tokens": 13696,
+    "control_physical_tok_per_s": 30608.044300638452,
+    "unified_physical_tok_per_s": 32116.638815825663,
+    "physical_tok_per_s_delta_percent": 4.928751737188719
+  },
+  "decode": {
+    "control_wall_s": 3.540027152514085,
+    "unified_wall_s": 3.7371506956405938,
+    "control_raw_tok_per_s": 7719.71479952971,
+    "unified_raw_tok_per_s": 7312.522888594848,
+    "raw_tok_per_s_delta_percent": -5.274701481972732,
+    "control_effective_tok_per_s": 2075.972777435006,
+    "unified_effective_tok_per_s": 1967.2741611881338,
+    "control_active_slot_fraction": 0.2733826112412178,
+    "unified_active_slot_fraction": 0.2734923887587822
+  },
+  "device_stage_s": {
+    "control": {
+      "adaptive_mlp_projector": 0.028515540301799775,
+      "image_embed_scatter": 0.01857472011819482,
+      "prefill_argmax": 0.0035632400289177892,
+      "prefill_lm_head": 0.026480840474367145,
+      "recognition_inputs_h2d": 2.1701652389764794,
+      "static_cache_alloc": 4.201999878569031e-05,
+      "text_kv_redistribute": 0.190050418972969,
+      "text_prefill": 0.45582788181304923,
+      "text_prefill_input_prep": 0.09118431973457339,
+      "text_token_embedding": 0.0042597400238737464,
+      "vision_embeddings": 1.9794162335991865,
+      "vision_prefill": 0.9600652141571046,
+      "vision_prefill_input_prep": 0.1332655398845673
+    },
+    "unified": {
+      "recognition_inputs_h2d": 2.104572911083698,
+      "vision_embeddings": 1.9760776000022893,
+      "adaptive_mlp_projector": 0.03645919984579085,
+      "text_token_embedding": 0.0112700399258174,
+      "image_embed_scatter": 0.02238076027482748,
+      "static_cache_alloc": 0.010578920334825,
+      "text_prefill_input_prep": 0.13415455856919295,
+      "text_prefill": 0.4264456214904785,
+      "text_kv_redistribute": 0.23595675784349449,
+      "prefill_lm_head": 0.01560141994059086,
+      "prefill_argmax": 0.005091100014746189,
+      "vision_prefill_input_prep": 0.26338716065883633,
+      "vision_prefill": 0.9741302824020389
+    }
+  },
+  "packing": {
+    "control_vision": {
+      "mode": "greedy",
+      "target": 768,
+      "lookahead": 32,
+      "groups": 56,
+      "crops": 122,
+      "packed_groups": 33,
+      "singleton_groups": 23,
+      "eager_overflow_groups": 0,
+      "crops_per_group": 2.1785714285714284,
+      "group_size_histogram": {
+        "1": 23,
+        "2": 9,
+        "3": 15,
+        "4": 9
+      },
+      "graph_shape_histogram": {
+        "b1_s1408": 7,
+        "b1_s256": 9,
+        "b1_s2944": 1,
+        "b1_s384": 5,
+        "b1_s512": 4,
+        "b1_s640": 7,
+        "b1_s768": 23
+      },
+      "ready_window_histogram": {},
+      "router_cpu_s": 0.0,
+      "packed_real_vision_tokens": 21028,
+      "packed_physical_vision_tokens": 22656,
+      "packed_fill_fraction": 0.9281426553672316
+    },
+    "unified_vision": {
+      "mode": "greedy",
+      "target": 768,
+      "lookahead": 32,
+      "groups": 55,
+      "crops": 122,
+      "packed_groups": 35,
+      "singleton_groups": 20,
+      "eager_overflow_groups": 0,
+      "crops_per_group": 2.2181818181818183,
+      "group_size_histogram": {
+        "1": 20,
+        "2": 10,
+        "3": 18,
+        "4": 7
+      },
+      "graph_shape_histogram": {
+        "b1_s1408": 7,
+        "b1_s256": 7,
+        "b1_s2944": 1,
+        "b1_s384": 7,
+        "b1_s512": 3,
+        "b1_s640": 7,
+        "b1_s768": 23
+      },
+      "ready_window_histogram": {},
+      "router_cpu_s": 0.0,
+      "packed_real_vision_tokens": 21684,
+      "packed_physical_vision_tokens": 23296,
+      "packed_fill_fraction": 0.9308035714285714
+    },
+    "control_text": {
+      "mode": "production_group",
+      "buckets": [
+        128,
+        256,
+        384,
+        512,
+        768,
+        1024
+      ],
+      "groups": 56,
+      "crops": 122,
+      "packs": 56,
+      "packed_crops": 122,
+      "fallback_crops": 0,
+      "calls": 56,
+      "call_reduction_fraction": 0.540983606557377,
+      "pack_size_histogram": {
+        "1": 23,
+        "2": 9,
+        "3": 15,
+        "4": 9
+      },
+      "bucket_histogram": {
+        "128": 14,
+        "256": 34,
+        "384": 7,
+        "768": 1
+      },
+      "packed_real_text_tokens": 10480,
+      "packed_physical_text_tokens": 13952,
+      "packed_fill_fraction": 0.7511467889908257,
+      "redistributed_kv_bytes": 193167360,
+      "private_cache_pool": {
+        "storage": "zero_once_fixed_arena",
+        "capacity": 96,
+        "allocated_bytes": 7247757312,
+        "acquisitions": 122,
+        "reuses": 26,
+        "releases": 122,
+        "active_slots": 0,
+        "free_slots": 96,
+        "high_water_active_slots": 64
+      }
+    },
+    "unified_text": {
+      "mode": "production_group",
+      "buckets": [
+        128,
+        256,
+        384,
+        512,
+        768,
+        1024
+      ],
+      "groups": 55,
+      "crops": 122,
+      "packs": 55,
+      "packed_crops": 122,
+      "fallback_crops": 0,
+      "calls": 55,
+      "call_reduction_fraction": 0.5491803278688525,
+      "pack_size_histogram": {
+        "1": 20,
+        "2": 10,
+        "3": 18,
+        "4": 7
+      },
+      "bucket_histogram": {
+        "128": 14,
+        "256": 33,
+        "384": 7,
+        "768": 1
+      },
+      "packed_real_text_tokens": 10480,
+      "packed_physical_text_tokens": 13696,
+      "packed_fill_fraction": 0.7651869158878505,
+      "redistributed_kv_bytes": 193167360
+    }
+  }
+}

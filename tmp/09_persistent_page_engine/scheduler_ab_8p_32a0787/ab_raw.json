@@ -1,0 +1,444 @@
+{
+  "control": {
+    "layout": {
+      "implementation": "owned_no_paddlex",
+      "device": "npu:0",
+      "graph_capture": false,
+      "npu_indexput_compat": true,
+      "setup_s": 1.4484551781788468,
+      "worker_pipeline": {
+        "strategy": "bounded_staged_cpu_pipeline",
+        "input_workers": 4,
+        "page_prepare_workers": 8,
+        "max_inflight_pages": 8
+      },
+      "stage_s": {
+        "file_read_s": 0.009759367210790515,
+        "image_decode_s": 1.0658893240615726,
+        "layout_input_h2d_s": 16.86213601497002,
+        "layout_mask_polygon_cpu_s": 0.22140338318422437,
+        "layout_mask_wait_and_d2h_s": 0.004810753045603633,
+        "layout_metadata_wait_and_d2h_s": 0.03779070149175823,
+        "layout_model_submit_s": 6.702522823354229,
+        "layout_postprocess_s": 0.4885070724412799,
+        "layout_preprocess_cpu_s": 0.7117831669747829,
+        "layout_preprocess_h2d_s": 17.573919181944802,
+        "layout_structural_postprocess_cpu_s": 0.36845908127725124,
+        "page_preparation_s": 0.3328558055218309,
+        "page_total_s": 35.21813310589641
+      },
+      "statistics": {
+        "filtered_layout_boxes": 128,
+        "merged_blocks": 128,
+        "raw_layout_boxes": 128,
+        "requests": 122
+      }
+    },
+    "recognition": {
+      "schedules": 1,
+      "requests": 122,
+      "wall_s": 15.082981155952439,
+      "generated_tokens_including_eos": 7471,
+      "decode_tokens_after_prefill_including_eos": 7349,
+      "input_tokens": 10480,
+      "projected_image_tokens": 8894,
+      "real_vision_tokens": 35576,
+      "physical_vision_tokens": 41216,
+      "real_text_tokens": 10480,
+      "physical_text_tokens": 13952,
+      "decode_graph_calls": 427,
+      "raw_decode_token_slots": 27328,
+      "active_decode_token_slots": 7471,
+      "effective_decode_tokens": 7349,
+      "idle_decode_token_slots": 19857,
+      "lookahead_decode_token_slots": 122,
+      "decode_wall_s": 3.540027152514085,
+      "run_scoped_scheduler_wall_s": 7.823093188926578,
+      "hot_swap_safety_sync_wall_s": 0.1144448877312243,
+      "kv_prefix_bytes_copied": 193167360,
+      "stop_reason_counts": {
+        "eos": 122
+      },
+      "pixel_profile_request_counts": {
+        "28224:802816": 122
+      },
+      "device_stage_s": {
+        "adaptive_mlp_projector": 0.028515540301799775,
+        "image_embed_scatter": 0.01857472011819482,
+        "prefill_argmax": 0.0035632400289177892,
+        "prefill_lm_head": 0.026480840474367145,
+        "recognition_inputs_h2d": 2.1701652389764794,
+        "static_cache_alloc": 4.201999878569031e-05,
+        "text_kv_redistribute": 0.190050418972969,
+        "text_prefill": 0.45582788181304923,
+        "text_prefill_input_prep": 0.09118431973457339,
+        "text_token_embedding": 0.0042597400238737464,
+        "vision_embeddings": 1.9794162335991865,
+        "vision_prefill": 0.9600652141571046,
+        "vision_prefill_input_prep": 0.1332655398845673
+      },
+      "vision_packing": {
+        "mode": "greedy",
+        "target": 768,
+        "lookahead": 32,
+        "groups": 56,
+        "crops": 122,
+        "packed_groups": 33,
+        "singleton_groups": 23,
+        "eager_overflow_groups": 0,
+        "crops_per_group": 2.1785714285714284,
+        "group_size_histogram": {
+          "1": 23,
+          "2": 9,
+          "3": 15,
+          "4": 9
+        },
+        "graph_shape_histogram": {
+          "b1_s1408": 7,
+          "b1_s256": 9,
+          "b1_s2944": 1,
+          "b1_s384": 5,
+          "b1_s512": 4,
+          "b1_s640": 7,
+          "b1_s768": 23
+        },
+        "ready_window_histogram": {},
+        "router_cpu_s": 0.0,
+        "packed_real_vision_tokens": 21028,
+        "packed_physical_vision_tokens": 22656,
+        "packed_fill_fraction": 0.9281426553672316
+      },
+      "text_packing": {
+        "mode": "production_group",
+        "buckets": [
+          128,
+          256,
+          384,
+          512,
+          768,
+          1024
+        ],
+        "groups": 56,
+        "crops": 122,
+        "packs": 56,
+        "packed_crops": 122,
+        "fallback_crops": 0,
+        "calls": 56,
+        "call_reduction_fraction": 0.540983606557377,
+        "pack_size_histogram": {
+          "1": 23,
+          "2": 9,
+          "3": 15,
+          "4": 9
+        },
+        "bucket_histogram": {
+          "128": 14,
+          "256": 34,
+          "384": 7,
+          "768": 1
+        },
+        "packed_real_text_tokens": 10480,
+        "packed_physical_text_tokens": 13952,
+        "packed_fill_fraction": 0.7511467889908257,
+        "redistributed_kv_bytes": 193167360,
+        "private_cache_pool": {
+          "storage": "zero_once_fixed_arena",
+          "capacity": 96,
+          "allocated_bytes": 7247757312,
+          "acquisitions": 122,
+          "reuses": 26,
+          "releases": 122,
+          "active_slots": 0,
+          "free_slots": 96,
+          "high_water_active_slots": 64
+        }
+      },
+      "run_output_tok_per_s": 495.32648239447013,
+      "decode_useful_token_fraction": 0.26891832552693207,
+      "vision_useful_token_fraction": 0.8631599378881988,
+      "text_useful_token_fraction": 0.7511467889908257,
+      "trace_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/scheduler_ab_8p_32a0787/layout_first/output/recognition_trace.jsonl"
+    }
+  },
+  "unified": {
+    "service_wall_s": 17.11931669502519,
+    "modes": {
+      "mode_counts": {
+        "layout": 8,
+        "prefill": 55,
+        "prefill_crops": 122
+      },
+      "mode_wall_s": {
+        "layout": 8.527376908808947,
+        "prefill": 4.417961115017533
+      },
+      "device_stage_s": {
+        "recognition_inputs_h2d": 2.104572911083698,
+        "vision_embeddings": 1.9760776000022893,
+        "adaptive_mlp_projector": 0.03645919984579085,
+        "text_token_embedding": 0.0112700399258174,
+        "image_embed_scatter": 0.02238076027482748,
+        "static_cache_alloc": 0.010578920334825,
+        "text_prefill_input_prep": 0.13415455856919295,
+        "text_prefill": 0.4264456214904785,
+        "text_kv_redistribute": 0.23595675784349449,
+        "prefill_lm_head": 0.01560141994059086,
+        "prefill_argmax": 0.005091100014746189,
+        "vision_prefill_input_prep": 0.26338716065883633,
+        "vision_prefill": 0.9741302824020389
+      },
+      "prefill_tokens": {
+        "crops": 122,
+        "useful_vision": 35576,
+        "physical_vision": 40960,
+        "useful_text": 10480,
+        "physical_text": 13696,
+        "input": 10480,
+        "projected_image": 8894
+      },
+      "vision_packing": {
+        "mode": "greedy",
+        "target": 768,
+        "lookahead": 32,
+        "groups": 55,
+        "crops": 122,
+        "packed_groups": 35,
+        "singleton_groups": 20,
+        "eager_overflow_groups": 0,
+        "crops_per_group": 2.2181818181818183,
+        "group_size_histogram": {
+          "1": 20,
+          "2": 10,
+          "3": 18,
+          "4": 7
+        },
+        "graph_shape_histogram": {
+          "b1_s1408": 7,
+          "b1_s256": 7,
+          "b1_s2944": 1,
+          "b1_s384": 7,
+          "b1_s512": 3,
+          "b1_s640": 7,
+          "b1_s768": 23
+        },
+        "ready_window_histogram": {},
+        "router_cpu_s": 0.0,
+        "packed_real_vision_tokens": 21684,
+        "packed_physical_vision_tokens": 23296,
+        "packed_fill_fraction": 0.9308035714285714
+      },
+      "text_packing": {
+        "mode": "production_group",
+        "buckets": [
+          128,
+          256,
+          384,
+          512,
+          768,
+          1024
+        ],
+        "groups": 55,
+        "crops": 122,
+        "packs": 55,
+        "packed_crops": 122,
+        "fallback_crops": 0,
+        "calls": 55,
+        "call_reduction_fraction": 0.5491803278688525,
+        "pack_size_histogram": {
+          "1": 20,
+          "2": 10,
+          "3": 18,
+          "4": 7
+        },
+        "bucket_histogram": {
+          "128": 14,
+          "256": 33,
+          "384": 7,
+          "768": 1
+        },
+        "packed_real_text_tokens": 10480,
+        "packed_physical_text_tokens": 13696,
+        "packed_fill_fraction": 0.7651869158878505,
+        "redistributed_kv_bytes": 193167360
+      },
+      "layout_timing_s": {
+        "file_read_s": 0.02169403899461031,
+        "image_decode_s": 1.4318437352776527,
+        "layout_preprocess_cpu_s": 2.6803317877929658,
+        "layout_input_h2d_s": 0.16274915379472077,
+        "layout_preprocess_h2d_s": 2.8430809415876865,
+        "layout_model_submit_s": 8.177438120823354,
+        "layout_metadata_wait_and_d2h_s": 0.017492725746706128,
+        "layout_mask_wait_and_d2h_s": 0.020512848161160946,
+        "layout_mask_polygon_cpu_s": 0.27889788895845413,
+        "layout_structural_postprocess_cpu_s": 0.4603531430475414,
+        "layout_postprocess_s": 0.6334332940168679,
+        "page_preparation_s": 0.40174857899546623,
+        "page_total_s": 85.73300823406316
+      },
+      "layout_page_total_s": {
+        "count": 8,
+        "mean": 10.716626029257895,
+        "median": 10.908099391148426,
+        "p95": 13.777736841933802,
+        "min": 7.925162843894213,
+        "max": 13.777736841933802
+      },
+      "pages_completed": 8
+    },
+    "schedule": {
+      "schedule_id": "http:pages",
+      "batch_size": 64,
+      "requests": 122,
+      "ready_buffer_capacity": 64,
+      "ready_buffer_low_watermark": 32,
+      "max_ready_queue_depth": 64,
+      "ready_source_refill_count": 2,
+      "graph_calls": 427,
+      "initial_admissions": 64,
+      "hot_swap_admissions": 58,
+      "prefill_only_completions": 0,
+      "raw_decode_token_slots": 27328,
+      "active_decode_token_slots": 7474,
+      "effective_decode_tokens": 7352,
+      "idle_decode_token_slots": 19854,
+      "lookahead_decode_token_slots": 122,
+      "kv_prefix_bytes_copied": 193167360,
+      "initial_kv_prefix_bytes_copied": 102481920,
+      "hot_swap_kv_prefix_bytes_copied": 90685440,
+      "timing_s": {
+        "continuous_decode_wall": 3.7371506956405938,
+        "decode_host_exclusive_wall": 3.7371506956405938,
+        "run_scoped_scheduler_wall": 17.042512769112363,
+        "ready_source_wall": 13.281168950721622,
+        "completion_callback_wall": 0.024193122750148177,
+        "decode_model_and_argmax_device": 2.4955610837936404,
+        "slot_admission_device": 1.0318811194300652,
+        "slot_admission_enqueue_wall": 1.050585217308253,
+        "d2h_wait_wall": 1.589498293818906,
+        "retire_and_refill_host_wall": 2.1220500371418893,
+        "hot_swap_safety_sync_wall": 0.14313304983079433
+      },
+      "vision_packing": {
+        "mode": "greedy",
+        "target": 768,
+        "lookahead": 32,
+        "groups": 55,
+        "crops": 122,
+        "packed_groups": 35,
+        "singleton_groups": 20,
+        "eager_overflow_groups": 0,
+        "crops_per_group": 2.2181818181818183,
+        "group_size_histogram": {
+          "1": 20,
+          "2": 10,
+          "3": 18,
+          "4": 7
+        },
+        "graph_shape_histogram": {
+          "b1_s1408": 7,
+          "b1_s256": 7,
+          "b1_s2944": 1,
+          "b1_s384": 7,
+          "b1_s512": 3,
+          "b1_s640": 7,
+          "b1_s768": 23
+        },
+        "ready_window_histogram": {},
+        "router_cpu_s": 0.0,
+        "packed_real_vision_tokens": 21684,
+        "packed_physical_vision_tokens": 23296,
+        "packed_fill_fraction": 0.9308035714285714
+      },
+      "text_packing": {
+        "mode": "production_group",
+        "buckets": [
+          128,
+          256,
+          384,
+          512,
+          768,
+          1024
+        ],
+        "groups": 55,
+        "crops": 122,
+        "packs": 55,
+        "packed_crops": 122,
+        "fallback_crops": 0,
+        "calls": 55,
+        "call_reduction_fraction": 0.5491803278688525,
+        "pack_size_histogram": {
+          "1": 20,
+          "2": 10,
+          "3": 18,
+          "4": 7
+        },
+        "bucket_histogram": {
+          "128": 14,
+          "256": 33,
+          "384": 7,
+          "768": 1
+        },
+        "packed_real_text_tokens": 10480,
+        "packed_physical_text_tokens": 13696,
+        "packed_fill_fraction": 0.7651869158878505,
+        "redistributed_kv_bytes": 193167360,
+        "private_cache_pool": {
+          "storage": "zero_once_fixed_arena",
+          "capacity": 96,
+          "allocated_bytes": 7247757312,
+          "acquisitions": 122,
+          "reuses": 26,
+          "releases": 122,
+          "active_slots": 0,
+          "free_slots": 96,
+          "high_water_active_slots": 64
+        }
+      },
+      "rates": {
+        "raw_decode_tok_per_s": 7312.522888594848,
+        "effective_decode_tok_per_s": 1967.2741611881338,
+        "effective_fraction": 0.2690281030444965,
+        "active_slot_fraction": 0.2734923887587822,
+        "effective_device_tok_per_s": 2946.0308736758384,
+        "scheduler_effective_tok_per_s": 431.39178474459897
+      }
+    },
+    "metrics": {
+      "layout_mode_s_per_page": 1.0659221136011183,
+      "layout_page_total_s": {
+        "count": 8,
+        "mean": 10.716626029257895,
+        "median": 10.908099391148426,
+        "p95": 13.777736841933802,
+        "min": 7.925162843894213,
+        "max": 13.777736841933802
+      },
+      "vision_prefill": {
+        "device_s": 0.9741302824020389,
+        "useful_tokens": 35576,
+        "physical_tokens": 40960,
+        "useful_tok_per_s": 36520.78232520979,
+        "physical_tok_per_s": 42047.76377447135
+      },
+      "text_prefill": {
+        "device_s": 0.4264456214904785,
+        "useful_tokens": 10480,
+        "physical_tokens": 13696,
+        "useful_tok_per_s": 24575.231804165665,
+        "physical_tok_per_s": 32116.638815825663
+      },
+      "decode": {
+        "wall_s": 3.7371506956405938,
+        "graph_calls": 427,
+        "raw_token_slots": 27328,
+        "active_token_slots": 7474,
+        "effective_tokens": 7352,
+        "raw_tok_per_s": 7312.522888594848,
+        "active_tok_per_s": 1999.919352655075,
+        "effective_tok_per_s": 1967.2741611881338,
+        "active_slot_fraction": 0.2734923887587822
+      }
+    }
+  }
+}

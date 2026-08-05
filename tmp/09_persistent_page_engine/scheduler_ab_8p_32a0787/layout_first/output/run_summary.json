@@ -1,0 +1,336 @@
+{
+  "dataset_json": "/workspace/datasets/OmniDocBench/OmniDocBench.json",
+  "images_dir": "/workspace/datasets/OmniDocBench/images",
+  "offset": 0,
+  "count": 8,
+  "images": [
+    "page-d1561665-5359-42fe-920c-d6e3bff81953.png",
+    "page-bd6eb36e-0856-4d9d-b587-21b4a0209c8b.png",
+    "page-affbb0cc-d616-481d-b493-80ed1ccb5a10.png",
+    "page-14cd673f-d86d-45a7-a13e-2b4e1d91c08f.png",
+    "page-ba4443e6-f432-435f-89e7-ddf0a571d2cd.png",
+    "page-1c08a4a2-8163-44d3-93f0-9449457dbba3.png",
+    "page-74c7629d-b064-4b8f-8667-bf943f5ba367.png",
+    "page-c9654418-0624-48d4-8be7-6065f45dd1f9.png"
+  ],
+  "pipeline": "owned_paddleocr_vl_v1.6",
+  "layout_device": "npu",
+  "layout_graph_capture": false,
+  "layout_workers": 8,
+  "page_preprocessing_mode": "all_before_recognition",
+  "configuration": {
+    "layout_model": "/workspace/models/PP-DocLayoutV3_safetensors",
+    "recognizer_model": "/workspace/models/PaddleOCR-VL-1.6",
+    "device": "npu:0",
+    "layout_device": "npu:0",
+    "layout_graph_capture": false,
+    "dtype": "fp16",
+    "batch_size": 64,
+    "cache_length": 4096,
+    "max_new_tokens": 4096,
+    "decode_backend": "torchair",
+    "decode_optimization": "combined_apply_pse_sentinel",
+    "preprocessor_min_pixels": 28224,
+    "preprocessor_max_pixels": 802816,
+    "text_preprocessor_max_pixels": null,
+    "text_crop_scale": 0.5,
+    "effective_global_min_pixels": 28224,
+    "effective_global_max_pixels": 802816,
+    "vision_backend": "torchair",
+    "vision_attention": "prompt_flash_attention",
+    "vision_mlp": {
+      "source_intermediate_size": 4304,
+      "target_intermediate_size": 4352,
+      "layer_count": 27,
+      "zero_extended": true
+    },
+    "vision_linear_weight_format": {
+      "requested": "fractal_nz",
+      "effective_mode": "fractal_nz",
+      "target_format": "FRACTAL_NZ",
+      "target_format_code": 29,
+      "linear_weight_count": 162,
+      "before_format_histogram": {
+        "2": 162
+      },
+      "after_format_histogram": {
+        "29": 162
+      },
+      "converted_count": 162,
+      "all_after_are_nz": true
+    },
+    "vision_padding": "bucket",
+    "vision_packing": "greedy",
+    "vision_pack_target": 768,
+    "vision_router_lookahead": 32,
+    "vision_batched_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_vision_router_batched",
+    "vision_buckets": [
+      256,
+      384,
+      512,
+      640,
+      768,
+      1408,
+      1920,
+      2048,
+      2944,
+      4096
+    ],
+    "text_buckets": [
+      1152
+    ],
+    "text_packing": "production_group",
+    "text_pack_buckets": [
+      128,
+      256,
+      384,
+      512,
+      768,
+      1024
+    ],
+    "text_pack_max_members": 32,
+    "text_packed_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_packed_torchair",
+    "cpu_preprocessing": {
+      "execution": "background_thread",
+      "workers": 1,
+      "max_pending": 64,
+      "ordering": "fifo",
+      "pin_recognition_inputs": "best_effort"
+    },
+    "page_preprocessing_mode": "all_before_recognition",
+    "scheduler_progress": false,
+    "recognition_input_fingerprints": false,
+    "vision_route_plan_input": null
+  },
+  "setup_s": 38.47295070486143,
+  "recognizer_setup_timing_s": {
+    "recognizer_frontend_setup": 0.9492419129237533,
+    "recognizer_model_load": 11.444914443884045,
+    "vision_mlp_padding": 0.03140791389159858,
+    "vision_weight_format": 7.4484445510897785,
+    "decode_optimization_setup": 0.035456741927191615,
+    "decode_weight_format": 0.03456290811300278,
+    "vision_runtime_setup": 10.137897701002657,
+    "text_runtime_setup": 0.914967100135982,
+    "compile_wrapper": 0.0024983230978250504,
+    "compile_first_call": 0.3512118891812861,
+    "vision_router_setup": 0.0,
+    "packed_text_runtime_setup": 4.694265532074496,
+    "private_cache_pool_setup": 0.011181219946593046,
+    "decode_control_setup": 0.004049268085509539,
+    "recognizer_runtime_total": 36.07521179295145
+  },
+  "pipeline_e2e_s": 15.08719709678553,
+  "pages_per_s": 0.5302509106681237,
+  "s_per_page": 1.8858996370981913,
+  "result_count": 8,
+  "prediction_count": 8,
+  "completion_s": [
+    12.628254645969719,
+    12.977515421807766,
+    13.161093711853027,
+    13.756151244975626,
+    14.10102764586918,
+    14.190363304922357,
+    14.3980698348023,
+    15.049253061879426
+  ],
+  "page_artifact_writer": {
+    "execution": "background_ordered_single_worker",
+    "max_pending": 8,
+    "max_pending_observed": 1,
+    "write_wall_sum_s": 0.016704543999999998,
+    "queue_wait_sum_s": 0.018580475,
+    "producer_backpressure_s": 0.0,
+    "final_drain_s": 1.388e-05
+  },
+  "recognition": {
+    "schedules": 1,
+    "requests": 122,
+    "wall_s": 15.082981155952439,
+    "generated_tokens_including_eos": 7471,
+    "decode_tokens_after_prefill_including_eos": 7349,
+    "input_tokens": 10480,
+    "projected_image_tokens": 8894,
+    "real_vision_tokens": 35576,
+    "physical_vision_tokens": 41216,
+    "real_text_tokens": 10480,
+    "physical_text_tokens": 13952,
+    "decode_graph_calls": 427,
+    "raw_decode_token_slots": 27328,
+    "active_decode_token_slots": 7471,
+    "effective_decode_tokens": 7349,
+    "idle_decode_token_slots": 19857,
+    "lookahead_decode_token_slots": 122,
+    "decode_wall_s": 3.540027152514085,
+    "run_scoped_scheduler_wall_s": 7.823093188926578,
+    "hot_swap_safety_sync_wall_s": 0.1144448877312243,
+    "kv_prefix_bytes_copied": 193167360,
+    "stop_reason_counts": {
+      "eos": 122
+    },
+    "pixel_profile_request_counts": {
+      "28224:802816": 122
+    },
+    "device_stage_s": {
+      "adaptive_mlp_projector": 0.028515540301799775,
+      "image_embed_scatter": 0.01857472011819482,
+      "prefill_argmax": 0.0035632400289177892,
+      "prefill_lm_head": 0.026480840474367145,
+      "recognition_inputs_h2d": 2.1701652389764794,
+      "static_cache_alloc": 4.201999878569031e-05,
+      "text_kv_redistribute": 0.190050418972969,
+      "text_prefill": 0.45582788181304923,
+      "text_prefill_input_prep": 0.09118431973457339,
+      "text_token_embedding": 0.0042597400238737464,
+      "vision_embeddings": 1.9794162335991865,
+      "vision_prefill": 0.9600652141571046,
+      "vision_prefill_input_prep": 0.1332655398845673
+    },
+    "vision_packing": {
+      "mode": "greedy",
+      "target": 768,
+      "lookahead": 32,
+      "groups": 56,
+      "crops": 122,
+      "packed_groups": 33,
+      "singleton_groups": 23,
+      "eager_overflow_groups": 0,
+      "crops_per_group": 2.1785714285714284,
+      "group_size_histogram": {
+        "1": 23,
+        "2": 9,
+        "3": 15,
+        "4": 9
+      },
+      "graph_shape_histogram": {
+        "b1_s1408": 7,
+        "b1_s256": 9,
+        "b1_s2944": 1,
+        "b1_s384": 5,
+        "b1_s512": 4,
+        "b1_s640": 7,
+        "b1_s768": 23
+      },
+      "ready_window_histogram": {},
+      "router_cpu_s": 0.0,
+      "packed_real_vision_tokens": 21028,
+      "packed_physical_vision_tokens": 22656,
+      "packed_fill_fraction": 0.9281426553672316
+    },
+    "text_packing": {
+      "mode": "production_group",
+      "buckets": [
+        128,
+        256,
+        384,
+        512,
+        768,
+        1024
+      ],
+      "groups": 56,
+      "crops": 122,
+      "packs": 56,
+      "packed_crops": 122,
+      "fallback_crops": 0,
+      "calls": 56,
+      "call_reduction_fraction": 0.540983606557377,
+      "pack_size_histogram": {
+        "1": 23,
+        "2": 9,
+        "3": 15,
+        "4": 9
+      },
+      "bucket_histogram": {
+        "128": 14,
+        "256": 34,
+        "384": 7,
+        "768": 1
+      },
+      "packed_real_text_tokens": 10480,
+      "packed_physical_text_tokens": 13952,
+      "packed_fill_fraction": 0.7511467889908257,
+      "redistributed_kv_bytes": 193167360,
+      "private_cache_pool": {
+        "storage": "zero_once_fixed_arena",
+        "capacity": 96,
+        "allocated_bytes": 7247757312,
+        "acquisitions": 122,
+        "reuses": 26,
+        "releases": 122,
+        "active_slots": 0,
+        "free_slots": 96,
+        "high_water_active_slots": 64
+      }
+    },
+    "run_output_tok_per_s": 495.32648239447013,
+    "decode_useful_token_fraction": 0.26891832552693207,
+    "vision_useful_token_fraction": 0.8631599378881988,
+    "text_useful_token_fraction": 0.7511467889908257,
+    "trace_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/scheduler_ab_8p_32a0787/layout_first/output/recognition_trace.jsonl"
+  },
+  "layout_frontend": {
+    "implementation": "owned_no_paddlex",
+    "device": "npu:0",
+    "graph_capture": false,
+    "npu_indexput_compat": true,
+    "setup_s": 1.4484551781788468,
+    "worker_pipeline": {
+      "strategy": "bounded_staged_cpu_pipeline",
+      "input_workers": 4,
+      "page_prepare_workers": 8,
+      "max_inflight_pages": 8
+    },
+    "stage_s": {
+      "file_read_s": 0.009759367210790515,
+      "image_decode_s": 1.0658893240615726,
+      "layout_input_h2d_s": 16.86213601497002,
+      "layout_mask_polygon_cpu_s": 0.22140338318422437,
+      "layout_mask_wait_and_d2h_s": 0.004810753045603633,
+      "layout_metadata_wait_and_d2h_s": 0.03779070149175823,
+      "layout_model_submit_s": 6.702522823354229,
+      "layout_postprocess_s": 0.4885070724412799,
+      "layout_preprocess_cpu_s": 0.7117831669747829,
+      "layout_preprocess_h2d_s": 17.573919181944802,
+      "layout_structural_postprocess_cpu_s": 0.36845908127725124,
+      "page_preparation_s": 0.3328558055218309,
+      "page_total_s": 35.21813310589641
+    },
+    "statistics": {
+      "filtered_layout_boxes": 128,
+      "merged_blocks": 128,
+      "raw_layout_boxes": 128,
+      "requests": 122
+    }
+  },
+  "page_completion_order": [
+    "page-ba4443e6-f432-435f-89e7-ddf0a571d2cd.png",
+    "page-14cd673f-d86d-45a7-a13e-2b4e1d91c08f.png",
+    "page-1c08a4a2-8163-44d3-93f0-9449457dbba3.png",
+    "page-bd6eb36e-0856-4d9d-b587-21b4a0209c8b.png",
+    "page-d1561665-5359-42fe-920c-d6e3bff81953.png",
+    "page-c9654418-0624-48d4-8be7-6065f45dd1f9.png",
+    "page-74c7629d-b064-4b8f-8667-bf943f5ba367.png",
+    "page-affbb0cc-d616-481d-b493-80ed1ccb5a10.png"
+  ],
+  "paddlex_runtime_dependency": false,
+  "loaded_paddlex_modules": [],
+  "layout_mask_guard": {
+    "guard_version": 2,
+    "behavior": "integer_bounding_rectangle_for_empty_scaled_mask_crop",
+    "fallback_calls": 0,
+    "fallback_regions": 0,
+    "events": []
+  },
+  "layout_mask_guard_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/scheduler_ab_8p_32a0787/layout_first/output/layout_mask_guard.json",
+  "predictions_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/scheduler_ab_8p_32a0787/layout_first/output/predictions",
+  "page_regions_jsonl": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/scheduler_ab_8p_32a0787/layout_first/output/page_regions.jsonl",
+  "vision_route_plan": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/scheduler_ab_8p_32a0787/layout_first/output/vision_route_plan.json",
+  "timeline": {
+    "enabled": true,
+    "event_count": 4875,
+    "trace_json": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/scheduler_ab_8p_32a0787/layout_first/output/timeline_trace.json",
+    "html": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/scheduler_ab_8p_32a0787/layout_first/output/timeline.html",
+    "additional_device_synchronization": false
+  }
+}
