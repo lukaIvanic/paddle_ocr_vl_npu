@@ -199,6 +199,9 @@ class GuardedAtlasStage(nn.Module):
             gates = gates * valid_mask
             ctx_all = None
             for level, focal_layer in enumerate(modulation.focal_layers):
+                # Reapply the crop mask after every spatial convolution. This
+                # keeps each level's implicit per-crop padding at zero, so the
+                # halo only has to isolate the largest individual kernel.
                 ctx = focal_layer(ctx) * valid_mask
                 contribution = ctx * gates[:, level : level + 1]
                 ctx_all = (
@@ -224,17 +227,62 @@ class GuardedAtlasStage(nn.Module):
         return x
 
 
+class RoutedGuardedAtlasStage(nn.Module):
+    """Route a flat fixed-size token reservoir through one atlas stage."""
+
+    def __init__(self, stage: nn.Module, *, atlas_height: int, atlas_width: int):
+        super().__init__()
+        self.atlas_stage = GuardedAtlasStage(stage)
+        self.atlas_height = atlas_height
+        self.atlas_width = atlas_width
+
+    def forward(
+        self,
+        packed_source: torch.Tensor,
+        atlas_to_source: torch.Tensor,
+        source_to_atlas: torch.Tensor,
+        valid_mask: torch.Tensor,
+        membership: torch.Tensor,
+        normalized_membership: torch.Tensor,
+    ) -> torch.Tensor:
+        cells = self.atlas_height * self.atlas_width
+        channels = packed_source.shape[-1]
+        atlas = packed_source.index_select(1, atlas_to_source).reshape(
+            1,
+            self.atlas_height,
+            self.atlas_width,
+            channels,
+        ).permute(0, 3, 1, 2).contiguous()
+        output = self.atlas_stage(
+            atlas,
+            valid_mask,
+            membership,
+            normalized_membership,
+        )
+        output_flat = output.permute(0, 2, 3, 1).reshape(1, cells, channels)
+        return output_flat.index_select(1, source_to_atlas)
+
+
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", type=Path, default=DEFAULT_MODEL)
     parser.add_argument("--trace", type=Path, default=DEFAULT_TRACE)
     parser.add_argument("--stage", type=int, choices=range(4), default=2)
     parser.add_argument("--atlas-height", type=int, default=64)
-    parser.add_argument("--atlas-width", type=int, default=256)
-    parser.add_argument("--guard", type=int, default=6)
+    parser.add_argument("--atlas-width", type=int, default=192)
+    parser.add_argument("--guard", type=int, default=3)
     parser.add_argument("--max-members", type=int, default=16)
     parser.add_argument("--limit", type=int, default=64)
     parser.add_argument("--packing", choices=("fifo", "ffd"), default="ffd")
+    parser.add_argument(
+        "--routing",
+        choices=("prebuilt_atlas", "permutation"),
+        default="permutation",
+        help=(
+            "prebuilt_atlas times only stage compute; permutation includes "
+            "one fixed source-to-atlas gather and one inverse gather"
+        ),
+    )
     parser.add_argument(
         "--execution",
         action="append",
@@ -251,10 +299,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     args.execution = tuple(dict.fromkeys(args.execution or ["eager"]))
     if args.atlas_height <= 0 or args.atlas_width <= 0:
         parser.error("atlas dimensions must be positive")
-    if args.guard < 6:
+    if args.guard < 3:
         parser.error(
-            "--guard must be at least 6 because the sequential 3x3, 5x5, "
-            "and 7x7 focal kernels have a cumulative six-pixel radius"
+            "--guard must be at least 3 to isolate the 7x7 focal kernel; "
+            "the lab reapplies the crop mask after every focal convolution"
         )
     if args.max_members <= 0 or args.limit <= 0:
         parser.error("--max-members and --limit must be positive")
@@ -389,6 +437,86 @@ def _materialize_pack(
     return atlas, valid_mask, membership, normalized_membership
 
 
+def _materialize_routed_pack(
+    pack: AtlasPack,
+    inputs: dict[int, torch.Tensor],
+    *,
+    channels: int,
+    dtype: torch.dtype,
+    device: torch.device,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    cells = pack.height * pack.width
+    packed_source = torch.zeros(
+        (1, cells, channels),
+        dtype=dtype,
+        device=device,
+    )
+    atlas_to_source_list = [-1] * cells
+    source_cursor = 0
+    for placement in pack.placements:
+        crop = placement.crop
+        value = inputs[crop.source_index]
+        packed_source[:, source_cursor : source_cursor + crop.tokens].copy_(value)
+        for row in range(crop.height):
+            atlas_row = placement.inner_y + row
+            for column in range(crop.width):
+                atlas_index = atlas_row * pack.width + placement.inner_x + column
+                atlas_to_source_list[atlas_index] = (
+                    source_cursor + row * crop.width + column
+                )
+        source_cursor += crop.tokens
+
+    padding_source_indices = iter(range(source_cursor, cells))
+    for atlas_index, source_index in enumerate(atlas_to_source_list):
+        if source_index < 0:
+            atlas_to_source_list[atlas_index] = next(padding_source_indices)
+    try:
+        next(padding_source_indices)
+    except StopIteration:
+        pass
+    else:
+        raise AssertionError("source and atlas permutations have different sizes")
+
+    source_to_atlas_list = [-1] * cells
+    for atlas_index, source_index in enumerate(atlas_to_source_list):
+        source_to_atlas_list[source_index] = atlas_index
+    if any(index < 0 for index in source_to_atlas_list):
+        raise AssertionError("atlas routing is not a complete permutation")
+
+    _, valid_mask, membership, normalized_membership = _materialize_pack(
+        pack,
+        inputs,
+        channels=channels,
+        dtype=dtype,
+        device=device,
+    )
+    return (
+        packed_source,
+        torch.tensor(atlas_to_source_list, dtype=torch.long, device=device),
+        torch.tensor(source_to_atlas_list, dtype=torch.long, device=device),
+        valid_mask,
+        membership,
+        normalized_membership,
+    )
+
+
+def _assemble_routed_sources(
+    packs: list[AtlasPack],
+    inputs: dict[int, torch.Tensor],
+    routed_inputs: list[tuple[torch.Tensor, ...]],
+) -> None:
+    """Copy separate crop tensors into reusable fixed-size source buffers."""
+    for pack, values in zip(packs, routed_inputs):
+        packed_source = values[0]
+        cursor = 0
+        for placement in pack.placements:
+            crop = placement.crop
+            value = inputs[crop.source_index]
+            packed_source[:, cursor : cursor + crop.tokens].copy_(value)
+            cursor += crop.tokens
+        packed_source[:, cursor:].zero_()
+
+
 def _baseline_forward(
     stage: nn.Module,
     crop: CropShape,
@@ -419,6 +547,22 @@ def _extract_pack(
     return extracted
 
 
+def _extract_routed_pack(
+    pack: AtlasPack,
+    output: torch.Tensor,
+) -> dict[int, torch.Tensor]:
+    extracted = {}
+    cursor = 0
+    for placement in pack.placements:
+        crop = placement.crop
+        extracted[crop.source_index] = output[
+            :,
+            cursor : cursor + crop.tokens,
+        ]
+        cursor += crop.tokens
+    return extracted
+
+
 def _synchronize(device: torch.device) -> None:
     synchronize_device(str(device))
 
@@ -441,7 +585,7 @@ def _measure_ms(device: torch.device, fn: Callable[[], Any]) -> tuple[float, Any
 
 
 def _compile_atlas(
-    module: GuardedAtlasStage,
+    module: nn.Module,
     *,
     cache_root: Path,
     stage: int,
@@ -449,13 +593,14 @@ def _compile_atlas(
     atlas_width: int,
     max_members: int,
     dtype_name: str,
+    routing: str,
 ) -> tuple[Callable[..., torch.Tensor], dict[str, Any]]:
     source = Path(__file__).read_bytes()
     source += Path(__file__).with_name("modeling_optimized_unirec.py").read_bytes()
     digest = hashlib.sha256(source).hexdigest()[:12]
     cache_dir = cache_root.expanduser().resolve() / (
         f"stage{stage}_atlas{atlas_height}x{atlas_width}_m{max_members}_"
-        f"{dtype_name}_src{digest}"
+        f"{routing}_{dtype_name}_src{digest}"
     )
     cache_dir.mkdir(parents=True, exist_ok=True)
     from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
@@ -566,7 +711,14 @@ def main() -> None:
         compile_cache_dir=args.cache_dir,
     )
     stage = runner.model.encoder.vision_encoder.layers[args.stage]
-    atlas_module = GuardedAtlasStage(stage).eval()
+    if args.routing == "prebuilt_atlas":
+        atlas_module = GuardedAtlasStage(stage).eval()
+    else:
+        atlas_module = RoutedGuardedAtlasStage(
+            stage,
+            atlas_height=args.atlas_height,
+            atlas_width=args.atlas_width,
+        ).eval()
     inputs = _make_inputs(
         packed_shapes,
         channels=STAGE_CHANNELS[args.stage],
@@ -574,16 +726,49 @@ def main() -> None:
         device=device,
         seed=args.seed,
     )
-    materialized = [
-        _materialize_pack(
-            pack,
-            inputs,
-            channels=STAGE_CHANNELS[args.stage],
-            dtype=dtype,
-            device=device,
+    if args.routing == "prebuilt_atlas":
+        materialized = [
+            _materialize_pack(
+                pack,
+                inputs,
+                channels=STAGE_CHANNELS[args.stage],
+                dtype=dtype,
+                device=device,
+            )
+            for pack in packs
+        ]
+        assembly_result = None
+    else:
+        materialized = [
+            _materialize_routed_pack(
+                pack,
+                inputs,
+                channels=STAGE_CHANNELS[args.stage],
+                dtype=dtype,
+                device=device,
+            )
+            for pack in packs
+        ]
+        for _ in range(args.warmup):
+            _assemble_routed_sources(packs, inputs, materialized)
+        _synchronize(device)
+        assembly_samples = []
+        for _ in range(args.repeats):
+            elapsed_ms, _ = _measure_ms(
+                device,
+                lambda: _assemble_routed_sources(packs, inputs, materialized),
+            )
+            assembly_samples.append(elapsed_ms)
+        assembly_result = {
+            "copies": len(packed_shapes),
+            "samples_ms": assembly_samples,
+            "median_ms": statistics.median(assembly_samples),
+        }
+        print(
+            "UNIREC_VISION_ATLAS_ASSEMBLY "
+            + json.dumps(assembly_result, sort_keys=True),
+            flush=True,
         )
-        for pack in packs
-    ]
 
     print("UNIREC_VISION_ATLAS_REFERENCE_BEGIN", flush=True)
     with torch.inference_mode():
@@ -641,6 +826,7 @@ def main() -> None:
                 atlas_width=args.atlas_width,
                 max_members=args.max_members,
                 dtype_name=args.dtype,
+                routing=args.routing,
             )
             print(
                 "UNIREC_VISION_ATLAS_FIRST_GRAPH_BEGIN "
@@ -670,7 +856,10 @@ def main() -> None:
         _synchronize(device)
         candidate: dict[int, torch.Tensor] = {}
         for pack, output in zip(packs, candidate_outputs):
-            candidate.update(_extract_pack(pack, output))
+            if args.routing == "prebuilt_atlas":
+                candidate.update(_extract_pack(pack, output))
+            else:
+                candidate.update(_extract_routed_pack(pack, output))
         correctness = _correctness(reference, candidate)
         samples = []
         for _ in range(args.repeats):
@@ -679,6 +868,11 @@ def main() -> None:
             samples.append(elapsed_ms)
         median_ms = statistics.median(samples)
         physical_tokens = len(packs) * args.atlas_height * args.atlas_width
+        combined_ms = (
+            median_ms + assembly_result["median_ms"]
+            if assembly_result is not None
+            else median_ms
+        )
         result = {
             "execution": execution,
             "calls": len(packs),
@@ -690,6 +884,10 @@ def main() -> None:
             "physical_tokens_per_s": physical_tokens / (median_ms / 1000.0),
             "effective_tokens_per_s": real_tokens / (median_ms / 1000.0),
             "speedup_vs_per_crop": baseline_median_ms / median_ms,
+            "routing": args.routing,
+            "separate_crop_assembly": assembly_result,
+            "combined_with_separate_crop_assembly_ms": combined_ms,
+            "combined_speedup_vs_per_crop": baseline_median_ms / combined_ms,
             "correctness": correctness,
             "compile": compile_metadata,
         }
@@ -706,6 +904,7 @@ def main() -> None:
         "trace": str(args.trace.expanduser().resolve()),
         "device": str(device),
         "dtype": args.dtype,
+        "routing": args.routing,
         "torch": torch.__version__,
         "stage": args.stage,
         "stage_depth": len(stage.blocks),
