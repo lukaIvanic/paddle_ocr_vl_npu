@@ -12,6 +12,7 @@ import argparse
 import json
 import sys
 import time
+import warnings
 from collections import deque
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -412,6 +413,13 @@ def recognize_cohort(
 
 def main() -> None:
     args = parse_args()
+    warnings.filterwarnings(
+        "once",
+        message=(
+            r"Skip cache as LocalUniRecCachedDecodeStepModule\.forward.*recompiled.*"
+        ),
+        category=UserWarning,
+    )
     if args.decode_batch_size < 1:
         raise ValueError("--decode-batch-size must be >= 1")
     openocr_root = args.openocr_root.expanduser().resolve()

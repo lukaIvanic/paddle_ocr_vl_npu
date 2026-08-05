@@ -172,7 +172,7 @@ the local result to the unchanged OpenDoc assembler, and records preprocessing,
 token, raw-text, and label-postprocessed parity:
 
 ```sh
-/workspace/venvs/unirec_npu_py312/bin/python \
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
   12_unirec_0_1b_inference/run_opendoc_custom_unirec.py \
   --openocr-root /workspace/repos/OpenOCR \
   --model-path /workspace/models/unirec-0.1b \
@@ -216,7 +216,7 @@ already reached EOS emit padding EOS tokens and are excluded from effective
 token throughput.
 
 ```sh
-/workspace/venvs/unirec_npu_py312/bin/python \
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
   12_unirec_0_1b_inference/run_opendoc_batched_unirec.py \
   --openocr-root /workspace/repos/OpenOCR \
   --model-path /workspace/models/unirec-0.1b \
