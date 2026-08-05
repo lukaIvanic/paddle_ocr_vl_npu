@@ -24738,12 +24738,11 @@ the last 80 server-log lines, cache growth, and `npu-smi info`, then stop.
 ```sh
 CLIENT_ARGS=(
   "$CLIENT"
+  --omnidocbench
   --dataset-json "$DATASET_JSON"
   --images-dir "$IMAGES_DIR"
   --api-url http://127.0.0.1:8765/v1/ocr
-  --output "$ROOT/tables.jsonl"
-  --score-output "$ROOT/scores.json"
-  --summary-output "$ROOT/run_summary.json"
+  --output-dir "$ROOT"
   --evaluator-root "$EVALUATOR_ROOT"
   --crop-padding 0
   --timeout-s 900
@@ -25056,13 +25055,12 @@ Return one sentence immediately when ready:
 ```sh
 CLIENT_ARGS=(
   "$CLIENT"
+  --omnidocbench
   --dataset-json "$DATASET_JSON"
   --images-dir "$IMAGES_DIR"
   --api-url http://127.0.0.1:8765/v1/ocr
   --http-workers 64 --drain-server
-  --output "$ROOT/tables.jsonl"
-  --score-output "$ROOT/scores.json"
-  --summary-output "$ROOT/run_summary.json"
+  --output-dir "$ROOT"
   --evaluator-root "$EVALUATOR_ROOT"
   --crop-padding 0 --timeout-s 900
   --teds-workers 12 --teds-timeout-s 120

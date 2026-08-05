@@ -1151,7 +1151,27 @@ Requests that arrive while decode is active join the same fixed B64 arena and
 hot-swap into free slots; a temporarily empty HTTP queue does not close the
 recognizer run. `scripts/run_omnidocbench_table_api.py` submits independent GT
 table-crop calls concurrently and uses `/v1/drain` after a benchmark to close
-the open source and collect exact run-scoped scheduler metrics.
+the open source and collect exact run-scoped scheduler metrics. The same client
+also accepts arbitrary already-cropped images. These are the two exclusive
+client modes:
+
+```sh
+# Official component-recognition run. Writes tables.jsonl, scores.json,
+# run_summary.json, and a readable summary.md under the output directory.
+python scripts/run_omnidocbench_table_api.py \
+  --omnidocbench --output-dir tmp/table_api_benchmark
+
+# Product/user images. Prints every recognition and writes results.md,
+# one Markdown file per image, results.json, and summary files.
+python scripts/run_omnidocbench_table_api.py \
+  --images crop-a.png crop-b.png --crop-type table \
+  --output-dir tmp/table_api_images
+```
+
+Image mode sends the original file bytes. Image decode, resize, normalization,
+prompt selection, vision preparation, MRoPE construction, and inference stay
+inside the API worker. The caller supplies an already-cropped image and its
+type; this endpoint does not run page layout detection.
 
 The production runtime packages do not import `scripts/` entrypoints or probes.
 Those scripts consume the same preprocessing and model-stage modules as the
