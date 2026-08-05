@@ -192,10 +192,16 @@ class GuardedAtlasStage(nn.Module):
             q = q * valid_mask
             ctx = ctx * valid_mask
             gates = gates * valid_mask
-            ctx_all = torch.zeros_like(ctx)
+            ctx_all = None
             for level, focal_layer in enumerate(modulation.focal_layers):
                 ctx = focal_layer(ctx) * valid_mask
-                ctx_all = ctx_all + ctx * gates[:, level : level + 1]
+                contribution = ctx * gates[:, level : level + 1]
+                ctx_all = (
+                    contribution
+                    if ctx_all is None
+                    else ctx_all + contribution
+                )
+            assert ctx_all is not None
             global_context = self._global_context(
                 ctx,
                 membership,
@@ -219,8 +225,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--trace", type=Path, default=DEFAULT_TRACE)
     parser.add_argument("--stage", type=int, choices=range(4), default=2)
     parser.add_argument("--atlas-height", type=int, default=64)
-    parser.add_argument("--atlas-width", type=int, default=128)
-    parser.add_argument("--guard", type=int, default=3)
+    parser.add_argument("--atlas-width", type=int, default=256)
+    parser.add_argument("--guard", type=int, default=6)
     parser.add_argument("--max-members", type=int, default=16)
     parser.add_argument("--limit", type=int, default=64)
     parser.add_argument("--packing", choices=("fifo", "ffd"), default="ffd")
@@ -240,8 +246,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     args.execution = tuple(dict.fromkeys(args.execution or ["eager"]))
     if args.atlas_height <= 0 or args.atlas_width <= 0:
         parser.error("atlas dimensions must be positive")
-    if args.guard < 3:
-        parser.error("--guard must be at least 3 for the 7x7 focal kernel")
+    if args.guard < 6:
+        parser.error(
+            "--guard must be at least 6 because the sequential 3x3, 5x5, "
+            "and 7x7 focal kernels have a cumulative six-pixel radius"
+        )
     if args.max_members <= 0 or args.limit <= 0:
         parser.error("--max-members and --limit must be positive")
     if args.warmup < 0 or args.repeats <= 0:
