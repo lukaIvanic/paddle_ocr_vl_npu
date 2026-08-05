@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Run OpenDoc with exact B1 prefills and fixed cross-page decode cohorts.
+"""Run OpenDoc with exact B1 prefills and cross-page decode scheduling.
 
 OpenDoc/OpenOCR remains an unmodified dependency.  This runner reuses its
 layout detector, crop transforms, result assembly helpers, and writers while
-owning the crop queue and UniRec decode scheduling locally.
+owning the crop queue and UniRec decode scheduling locally.  It supports both
+fixed cohorts and a fixed-arena continuous decoder with per-slot hot swapping.
 """
 
 from __future__ import annotations
@@ -22,6 +23,11 @@ import cv2
 import numpy as np
 from PIL import Image
 
+from continuous_unirec import (
+    ContinuousCompletedItem,
+    ContinuousReadyItem,
+    ContinuousUniRecDecoder,
+)
 from modeling_optimized_unirec import OptimizedUniRecRunner
 from opendoc_layout_npu import PPDocLayoutV2NpuAdapter
 
@@ -71,6 +77,7 @@ class RunMetrics:
     raw_decode_token_slots: int = 0
     effective_decode_tokens: int = 0
     padding_decode_token_slots: int = 0
+    idle_decode_token_slots: int = 0
 
 
 def parse_args() -> argparse.Namespace:
@@ -121,6 +128,15 @@ def parse_args() -> argparse.Namespace:
         default=Path(".runtime_cache/12_unirec_0_1b_inference/opendoc_model_pth_decode"),
     )
     parser.add_argument("--decode-batch-size", type=int, default=4)
+    parser.add_argument(
+        "--decode-scheduling",
+        choices=("fixed", "continuous"),
+        default="fixed",
+        help=(
+            "fixed waits for the longest request in each cohort; continuous "
+            "hot-swaps a new B1-prefilled request into each finished slot"
+        ),
+    )
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--limit", type=int)
     parser.add_argument("--layout-threshold", type=float, default=0.4)
@@ -482,7 +498,8 @@ def main() -> None:
     setup_s = time.perf_counter() - setup_started
     print(
         f"OPENDOC_BATCHED_SETUP_END setup_s={setup_s:.3f} pages={len(image_paths)} "
-        f"decode_batch_size={args.decode_batch_size}",
+        f"decode_batch_size={args.decode_batch_size} "
+        f"decode_scheduling={args.decode_scheduling}",
         flush=True,
     )
 
@@ -491,6 +508,7 @@ def main() -> None:
     pending_pages: deque[PageRequest] = deque()
     pipeline_started = time.perf_counter()
     written_pages = 0
+    continuous_decode: dict[str, Any] | None = None
 
     def flush_ready_pages() -> None:
         nonlocal written_pages
@@ -520,44 +538,148 @@ def main() -> None:
                 flush=True,
             )
 
-    for page_index, image_path in enumerate(image_paths):
-        page = prepare_page(
-            pipeline=pipeline,
-            infer_doc_onnx=infer_doc_onnx,
-            image_path=image_path,
-            page_index=page_index,
-            layout_threshold=args.layout_threshold,
+    if args.decode_scheduling == "continuous":
+        def ready_source():
+            for page_index, image_path in enumerate(image_paths):
+                page = prepare_page(
+                    pipeline=pipeline,
+                    infer_doc_onnx=infer_doc_onnx,
+                    image_path=image_path,
+                    page_index=page_index,
+                    layout_threshold=args.layout_threshold,
+                )
+                metrics.layout_s += page.layout_s
+                pending_pages.append(page)
+                print(
+                    f"OPENDOC_CONTINUOUS_PAGE_READY "
+                    f"index={page_index + 1}/{len(image_paths)} "
+                    f"image={image_path.name} crops={len(page.crops)}",
+                    flush=True,
+                )
+                flush_ready_pages()
+                for crop in page.crops:
+                    item = runner.prefill_image_for_cohort(
+                        crop.image,
+                        image_source=crop.request_id,
+                    )
+                    metrics.prepare_s += float(item.prep["prepare_total_s"])
+                    metrics.prefill_s += item.prefill_s
+                    yield ContinuousReadyItem(
+                        request_id=crop.request_id,
+                        payload=crop,
+                        prefilled=item,
+                    )
+
+        def complete_crop(completed_item: ContinuousCompletedItem) -> None:
+            crop = completed_item.payload
+            if not isinstance(crop, CropRequest):
+                raise TypeError(
+                    "Continuous scheduler returned an unexpected crop payload: "
+                    f"{type(crop)!r}"
+                )
+            result = completed_item.result
+            crop.result = result
+            metrics.crop_records.append(
+                {
+                    "request_id": crop.request_id,
+                    "page": crop.page_name,
+                    "page_index": crop.page_index,
+                    "crop_index": crop.crop_index,
+                    "label": crop.label,
+                    "crop_size": [crop.image.width, crop.image.height],
+                    "processed_image_size": result["prep"]["processed_image_size"],
+                    "encoder_seq_len_hint": result["prep"]["encoder_seq_len_hint"],
+                    "token_ids": result["generated_ids"],
+                    "text": result["text"],
+                    "token_count": result["generated_token_count"],
+                    "decode_token_count": result["decode_generated_token_count"],
+                    "prefill_s": result["ttft_s"],
+                    "decode_slot": completed_item.slot,
+                    "admission_index": completed_item.admission_index,
+                    "completion_index": completed_item.completion_index,
+                }
+            )
+            print(
+                f"UNIREC_CONTINUOUS_CROP_END request_id={crop.request_id} "
+                f"slot={completed_item.slot} "
+                f"admission={completed_item.admission_index} "
+                f"completion={completed_item.completion_index} "
+                f"tokens={result['generated_token_count']}",
+                flush=True,
+            )
+            flush_ready_pages()
+
+        continuous_runner = ContinuousUniRecDecoder(
+            runner=runner,
+            batch_size=args.decode_batch_size,
+            max_length=args.max_length,
+            decode_mode=args.decode_mode,
+            compile_backend=args.compile_backend,
         )
-        metrics.layout_s += page.layout_s
-        pending_pages.append(page)
-        pending_crops.extend(page.crops)
+        continuous_decode = continuous_runner.run(
+            ready_source(),
+            on_complete=complete_crop,
+        )
+        metrics.decode_s = float(continuous_decode["decode_s"])
+        metrics.raw_decode_token_slots = int(
+            continuous_decode["raw_decode_token_slots"]
+        )
+        metrics.effective_decode_tokens = int(
+            continuous_decode["effective_decode_tokens"]
+        )
+        metrics.idle_decode_token_slots = int(
+            continuous_decode["idle_decode_token_slots"]
+        )
+        metrics.padding_decode_token_slots = (
+            metrics.raw_decode_token_slots - metrics.effective_decode_tokens
+        )
         print(
-            f"OPENDOC_BATCHED_PAGE_READY index={page_index + 1}/{len(image_paths)} "
-            f"image={image_path.name} crops={len(page.crops)} queued={len(pending_crops)}",
+            "UNIREC_CONTINUOUS_END "
+            + json.dumps(continuous_decode, ensure_ascii=False),
             flush=True,
         )
-        while len(pending_crops) >= args.decode_batch_size:
-            cohort = [pending_crops.popleft() for _ in range(args.decode_batch_size)]
+    else:
+        for page_index, image_path in enumerate(image_paths):
+            page = prepare_page(
+                pipeline=pipeline,
+                infer_doc_onnx=infer_doc_onnx,
+                image_path=image_path,
+                page_index=page_index,
+                layout_threshold=args.layout_threshold,
+            )
+            metrics.layout_s += page.layout_s
+            pending_pages.append(page)
+            pending_crops.extend(page.crops)
+            print(
+                f"OPENDOC_BATCHED_PAGE_READY index={page_index + 1}/{len(image_paths)} "
+                f"image={image_path.name} crops={len(page.crops)} "
+                f"queued={len(pending_crops)}",
+                flush=True,
+            )
+            while len(pending_crops) >= args.decode_batch_size:
+                cohort = [
+                    pending_crops.popleft() for _ in range(args.decode_batch_size)
+                ]
+                recognize_cohort(
+                    cohort=cohort,
+                    target_batch_size=args.decode_batch_size,
+                    runner=runner,
+                    args=args,
+                    metrics=metrics,
+                )
+                flush_ready_pages()
+            flush_ready_pages()
+
+        if pending_crops:
+            final_cohort = list(pending_crops)
+            pending_crops.clear()
             recognize_cohort(
-                cohort=cohort,
+                cohort=final_cohort,
                 target_batch_size=args.decode_batch_size,
                 runner=runner,
                 args=args,
                 metrics=metrics,
             )
-            flush_ready_pages()
-        flush_ready_pages()
-
-    if pending_crops:
-        final_cohort = list(pending_crops)
-        pending_crops.clear()
-        recognize_cohort(
-            cohort=final_cohort,
-            target_batch_size=args.decode_batch_size,
-            runner=runner,
-            args=args,
-            metrics=metrics,
-        )
     flush_ready_pages()
     if pending_pages:
         raise RuntimeError(f"Unfinished pages remain after final cohort: {len(pending_pages)}")
@@ -565,7 +687,10 @@ def main() -> None:
     pipeline_wall_s = time.perf_counter() - pipeline_started
     trace_path = output_dir / "recognition_trace.jsonl"
     with trace_path.open("w", encoding="utf-8") as handle:
-        for record in metrics.crop_records:
+        for record in sorted(
+            metrics.crop_records,
+            key=lambda item: (item["page_index"], item["crop_index"]),
+        ):
             handle.write(json.dumps(record, ensure_ascii=False) + "\n")
     summary = {
         "status": "ok",
@@ -574,6 +699,7 @@ def main() -> None:
         "device": args.device,
         "dtype": args.dtype,
         "decode_mode": args.decode_mode,
+        "decode_scheduling": args.decode_scheduling,
         "decode_batch_size": args.decode_batch_size,
         "max_length": args.max_length,
         "layout_backend": args.layout_backend,
@@ -591,6 +717,7 @@ def main() -> None:
         "raw_decode_token_slots": metrics.raw_decode_token_slots,
         "effective_decode_tokens": metrics.effective_decode_tokens,
         "padding_decode_token_slots": metrics.padding_decode_token_slots,
+        "idle_decode_token_slots": metrics.idle_decode_token_slots,
         "raw_decode_tokens_per_s": (
             metrics.raw_decode_token_slots / metrics.decode_s
             if metrics.decode_s > 0
@@ -602,6 +729,7 @@ def main() -> None:
             else None
         ),
         "cohorts": metrics.cohort_records,
+        "continuous_decode": continuous_decode,
         "pages": metrics.page_records,
         "trace_path": str(trace_path),
     }
