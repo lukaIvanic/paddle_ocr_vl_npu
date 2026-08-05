@@ -165,6 +165,15 @@ def make_local_compiled_vlm_client(
             max_new_tokens = params.max_new_tokens
             if max_new_tokens is None:
                 max_new_tokens = max(1, int(self.model_max_length) - int(inputs.input_ids.shape[1]))
+            if compiled_decoder.cache_length is not None:
+                available = int(compiled_decoder.cache_length) - int(inputs.input_ids.shape[1])
+                if available <= 0:
+                    raise ValueError(
+                        "local compiled cache is too short for the prepared prompt: "
+                        f"cache_length={compiled_decoder.cache_length} "
+                        f"input_tokens={int(inputs.input_ids.shape[1])}"
+                    )
+                max_new_tokens = min(int(max_new_tokens), available)
 
             started = time.perf_counter()
             generated, metrics = compiled_decoder.generate(
