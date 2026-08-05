@@ -46,7 +46,16 @@ def parse_args() -> argparse.Namespace:
         "--batch-size",
         type=int,
         default=1,
-        help="Official client recognition batch size; one is the fidelity baseline.",
+        help="Stock Transformers model batch size; one is the fidelity baseline.",
+    )
+    parser.add_argument(
+        "--page-batch-size",
+        type=int,
+        default=1,
+        help=(
+            "Pages passed to official batch_two_step_extract at once. One uses "
+            "the page-at-a-time two_step_extract path."
+        ),
     )
     parser.add_argument("--resume", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--fail-fast", action="store_true")
@@ -102,8 +111,8 @@ def main() -> None:
         raise ValueError("shard-count must be positive")
     if not 0 <= args.shard_index < args.shard_count:
         raise ValueError("shard-index must be in [0, shard-count)")
-    if args.batch_size <= 0:
-        raise ValueError("batch-size must be positive")
+    if args.batch_size <= 0 or args.page_batch_size <= 0:
+        raise ValueError("batch-size and page-batch-size must be positive")
 
     model_dir = args.model.expanduser().resolve()
     dataset_json = args.dataset_json.expanduser().resolve()
@@ -189,6 +198,7 @@ def main() -> None:
         "npu_jit_compile": False,
         "image_analysis": False,
         "batch_size": args.batch_size,
+        "page_batch_size": args.page_batch_size,
         "offset": args.offset,
         "limit": args.limit,
         "shard_count": args.shard_count,
@@ -210,11 +220,12 @@ def main() -> None:
     skipped = 0
     failed = 0
     page_times: list[float] = []
+    batch_times: list[float] = []
 
+    pending: list[tuple[int, int, dict[str, Any]]] = []
     for shard_position, (dataset_index, sample) in enumerate(shard, start=1):
         name = image_name(sample)
         stem = Path(name).stem
-        image_path = images_dir / name
         markdown_path = predictions_dir / f"{stem}.md"
         content_path = content_dir / f"{stem}.json"
         page_record_path = progress_dir / f"{stem}.json"
@@ -225,66 +236,101 @@ def main() -> None:
                 flush=True,
             )
             continue
+        pending.append((shard_position, dataset_index, sample))
 
+    if args.page_batch_size == 1:
+        page_groups = [[item] for item in pending]
+    else:
+        page_groups = [
+            pending[start : start + args.page_batch_size]
+            for start in range(0, len(pending), args.page_batch_size)
+        ]
+
+    for group_index, group in enumerate(page_groups, start=1):
+        names = [image_name(sample) for _, _, sample in group]
+        dataset_indices = [dataset_index for _, dataset_index, _ in group]
         print(
-            f"[page {shard_position}/{len(shard)}] START dataset_index={dataset_index} image={name}",
+            f"[group {group_index}/{len(page_groups)}] START pages={len(group)} "
+            f"dataset_indices={dataset_indices}",
             flush=True,
         )
-        page_started = time.perf_counter()
+        group_started = time.perf_counter()
         try:
-            with Image.open(image_path) as source:
-                image = source.convert("RGB")
+            images = []
+            for name in names:
+                with Image.open(images_dir / name) as source:
+                    images.append(source.convert("RGB"))
             with torch.inference_mode():
-                blocks = client.two_step_extract(image)
+                if len(group) == 1:
+                    results = [client.two_step_extract(images[0])]
+                else:
+                    results = client.batch_two_step_extract(images)
             synchronize()
-            elapsed_s = time.perf_counter() - page_started
-            markdown = json2md(blocks)
-            rendered_blocks = json.dumps(list(blocks), ensure_ascii=False, indent=2) + "\n"
-            type_counts = dict(sorted(collections.Counter(block["type"] for block in blocks).items()))
-            record = {
-                "status": "completed",
-                "dataset_index": dataset_index,
-                "image": name,
-                "elapsed_s": elapsed_s,
-                "block_count": len(blocks),
-                "block_types": type_counts,
-                "markdown_chars": len(markdown),
-                "completed_at": datetime.now(timezone.utc).isoformat(),
-            }
-            atomic_write_text(markdown_path, markdown)
-            atomic_write_text(content_path, rendered_blocks)
-            atomic_write_text(page_record_path, json.dumps(record, ensure_ascii=False, indent=2) + "\n")
-            append_jsonl(progress_path, record)
-            completed += 1
-            page_times.append(elapsed_s)
-            mean_s = sum(page_times) / len(page_times)
-            remaining_s = mean_s * (len(shard) - shard_position)
+            group_elapsed_s = time.perf_counter() - group_started
+            batch_times.append(group_elapsed_s)
+            for (shard_position, dataset_index, _), name, blocks in zip(group, names, results):
+                stem = Path(name).stem
+                markdown = json2md(blocks)
+                rendered_blocks = json.dumps(list(blocks), ensure_ascii=False, indent=2) + "\n"
+                type_counts = dict(sorted(collections.Counter(block["type"] for block in blocks).items()))
+                record = {
+                    "status": "completed",
+                    "dataset_index": dataset_index,
+                    "image": name,
+                    "group_index": group_index,
+                    "group_size": len(group),
+                    "group_elapsed_s": group_elapsed_s,
+                    "block_count": len(blocks),
+                    "block_types": type_counts,
+                    "markdown_chars": len(markdown),
+                    "completed_at": datetime.now(timezone.utc).isoformat(),
+                }
+                atomic_write_text(predictions_dir / f"{stem}.md", markdown)
+                atomic_write_text(content_dir / f"{stem}.json", rendered_blocks)
+                atomic_write_text(
+                    progress_dir / f"{stem}.json",
+                    json.dumps(record, ensure_ascii=False, indent=2) + "\n",
+                )
+                append_jsonl(progress_path, record)
+                completed += 1
+                if len(group) == 1:
+                    page_times.append(group_elapsed_s)
+            elapsed_total = sum(batch_times)
+            remaining_pages = len(pending) - completed
+            pages_per_s = completed / elapsed_total
+            remaining_s = remaining_pages / pages_per_s
             print(
-                f"[page {shard_position}/{len(shard)}] DONE elapsed_s={elapsed_s:.3f} "
-                f"mean_s={mean_s:.3f} eta_s={remaining_s:.1f} blocks={len(blocks)} "
-                f"markdown_chars={len(markdown)}",
+                f"[group {group_index}/{len(page_groups)}] DONE pages={len(group)} "
+                f"elapsed_s={group_elapsed_s:.3f} pages_per_s={pages_per_s:.5f} "
+                f"eta_s={remaining_s:.1f}",
                 flush=True,
             )
         except Exception as error:
-            failed += 1
-            elapsed_s = time.perf_counter() - page_started
-            record = {
-                "status": "failed",
-                "dataset_index": dataset_index,
-                "image": name,
-                "elapsed_s": elapsed_s,
-                "error_type": type(error).__name__,
-                "error": str(error),
-                "traceback": traceback.format_exc(),
-                "failed_at": datetime.now(timezone.utc).isoformat(),
-            }
-            atomic_write_text(
-                failures_dir / f"{stem}.json",
-                json.dumps(record, ensure_ascii=False, indent=2) + "\n",
-            )
-            append_jsonl(progress_path, record)
+            elapsed_s = time.perf_counter() - group_started
+            for _, dataset_index, sample in group:
+                name = image_name(sample)
+                stem = Path(name).stem
+                failed += 1
+                record = {
+                    "status": "failed",
+                    "dataset_index": dataset_index,
+                    "image": name,
+                    "group_index": group_index,
+                    "group_size": len(group),
+                    "group_elapsed_s": elapsed_s,
+                    "error_type": type(error).__name__,
+                    "error": str(error),
+                    "traceback": traceback.format_exc(),
+                    "failed_at": datetime.now(timezone.utc).isoformat(),
+                }
+                atomic_write_text(
+                    failures_dir / f"{stem}.json",
+                    json.dumps(record, ensure_ascii=False, indent=2) + "\n",
+                )
+                append_jsonl(progress_path, record)
             print(
-                f"[page {shard_position}/{len(shard)}] FAIL elapsed_s={elapsed_s:.3f} "
+                f"[group {group_index}/{len(page_groups)}] FAIL pages={len(group)} "
+                f"elapsed_s={elapsed_s:.3f} "
                 f"error={type(error).__name__}: {error}",
                 flush=True,
             )
@@ -300,6 +346,9 @@ def main() -> None:
         "failed": failed,
         "measured_page_mean_s": sum(page_times) / len(page_times) if page_times else None,
         "measured_pages_per_s": len(page_times) / sum(page_times) if page_times else None,
+        "measured_group_count": len(batch_times),
+        "measured_group_wall_s": sum(batch_times),
+        "measured_group_pages_per_s": completed / sum(batch_times) if batch_times else None,
     }
     summary_path = output_dir / f"run_summary_shard_{args.shard_index:02d}.json"
     atomic_write_text(summary_path, json.dumps(summary, ensure_ascii=False, indent=2) + "\n")
