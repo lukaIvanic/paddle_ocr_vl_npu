@@ -101,6 +101,13 @@ VLLM_PYTHON=/workspace/venvs/mineru_pro_vllm_py312/bin/python
 The validated version contract is vLLM 0.21.0, vLLM-Ascend 0.21.0rc1,
 Transformers 5.5.4, Torch 2.10.0, torch-npu 2.10.0, and CANN/NNAL 9.0.0.
 
+The local vLLM lane applies two required MinerU checkpoint compatibility
+corrections.  It forces the tied input-embedding/LM-head contract because the
+checkpoint stores only `model.embed_tokens.weight`, and it bypasses
+`mineru-vl-utils` 1.0.5's extra `LLM.renderer.render_cmpl` pass.  vLLM 0.21
+accepts the original `prompt` plus `multi_modal_data` request directly; the
+extra renderer pass preserves text IDs but corrupts the multimodal payload.
+
 ## Official Transformers OmniDocBench lane
 
 The fidelity baseline follows the checkpoint model card: BF16 stock

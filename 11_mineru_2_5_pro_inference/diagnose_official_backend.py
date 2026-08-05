@@ -157,6 +157,10 @@ def run_vllm(args: argparse.Namespace, image: Image.Image | None) -> dict[str, A
         max_num_seqs=1,
         limit_mm_per_prompt={"image": 1},
         enable_prefix_caching=False,
+        hf_overrides={
+            "tie_word_embeddings": True,
+            "text_config": {"tie_word_embeddings": True},
+        },
     )
     setup_s = time.perf_counter() - setup_started
     tokenizer = llm.get_tokenizer()

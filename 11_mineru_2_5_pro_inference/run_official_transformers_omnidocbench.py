@@ -195,7 +195,19 @@ def main() -> None:
         processor_fast: bool | None = True
     else:
         from mineru_vl_utils import MinerULogitsProcessor
+        from mineru_vl_utils.vlm_client.vllm_engine_client import (
+            VllmEngineVlmClient,
+        )
         from vllm import LLM
+
+        # mineru-vl-utils 1.0.5 sends an already-valid local vLLM multimodal
+        # request through LLM.renderer.render_cmpl a second time.  On vLLM
+        # 0.21 this preserves the text token IDs but corrupts the image payload.
+        # The local engine accepts the original prompt/multi_modal_data request.
+        def _keep_raw_vllm_prompts(self, raw_prompts):
+            return raw_prompts
+
+        VllmEngineVlmClient._render_vllm_cmpl_inputs = _keep_raw_vllm_prompts
 
         model = LLM(
             model=str(model_dir),
@@ -206,6 +218,14 @@ def main() -> None:
             max_num_seqs=args.vllm_max_num_seqs,
             limit_mm_per_prompt={"image": 1},
             logits_processors=[MinerULogitsProcessor],
+            # The checkpoint stores one tied embedding matrix and omits a
+            # separate lm_head.  Qwen2-VL's root config does not expose that
+            # tie, so vLLM otherwise leaves lm_head unloaded and emits uniform
+            # logits.  Set both config levels before model construction.
+            hf_overrides={
+                "tie_word_embeddings": True,
+                "text_config": {"tie_word_embeddings": True},
+            },
         )
         client = MinerUClient(
             backend="vllm-engine",
@@ -256,6 +276,8 @@ def main() -> None:
         "vllm_max_num_seqs": (
             args.vllm_max_num_seqs if args.backend == "vllm-engine" else None
         ),
+        "vllm_force_tied_embeddings": args.backend == "vllm-engine",
+        "vllm_raw_multimodal_prompts": args.backend == "vllm-engine",
         "offset": args.offset,
         "limit": args.limit,
         "shard_count": args.shard_count,
