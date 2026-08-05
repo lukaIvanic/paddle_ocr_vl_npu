@@ -99,13 +99,17 @@ def summarize(records: list[dict[str, Any]], setup_s: float) -> dict[str, Any]:
     measured_wall_s = sum(page_wall)
     detector_total_s = stages.get("detector_total_s", {}).get("total_s", 0.0)
     for name, stage in stages.items():
-        denominator = detector_total_s if name not in {
-            "page_file_read_s",
-            "page_image_decode_s",
-        } else measured_wall_s
-        stage["share_pct"] = (
-            100.0 * float(stage["total_s"]) / denominator if denominator else 0.0
+        stage["page_wall_share_pct"] = (
+            100.0 * float(stage["total_s"]) / measured_wall_s
+            if measured_wall_s
+            else 0.0
         )
+        if name not in {"page_file_read_s", "page_image_decode_s"}:
+            stage["detector_share_pct"] = (
+                100.0 * float(stage["total_s"]) / detector_total_s
+                if detector_total_s
+                else 0.0
+            )
 
     return {
         "setup_s": setup_s,
