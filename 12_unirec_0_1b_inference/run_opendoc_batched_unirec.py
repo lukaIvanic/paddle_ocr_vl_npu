@@ -575,12 +575,6 @@ def prepare_page(
     frontend_timing_s["layout_crop_views_s"] = (
         time.perf_counter() - crop_boxes_started
     )
-    merge_started = time.perf_counter()
-    blocks = infer_doc_onnx.merge_blocks(
-        blocks,
-        non_merge_labels=image_labels + ["table"],
-    )
-    frontend_timing_s["layout_merge_blocks_s"] = time.perf_counter() - merge_started
 
     image_index_started = time.perf_counter()
     imgs_in_doc = []
