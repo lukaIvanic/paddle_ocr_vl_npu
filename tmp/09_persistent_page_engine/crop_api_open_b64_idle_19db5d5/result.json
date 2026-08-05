@@ -1,0 +1,300 @@
+{
+  "results": [
+    {
+      "request_id": "page_000010_table_box_id_1",
+      "page_index": 10,
+      "page_name": "page-f9583127-1277-4424-be9d-35430e0aedd6.png",
+      "annotation_index": 1,
+      "anno_id": "box_id_1",
+      "bbox_xyxy": [
+        602,
+        350,
+        1100,
+        572
+      ],
+      "crop_size": [
+        498,
+        222
+      ],
+      "gt_html": "<table><tr><td>Dimension $(D)$</td><td>$d_{w}$</td><td>$d_{a}$</td><td>$d_{ν}$</td><td>$d_{g}$</td></tr><tr><td>768</td><td>64</td><td>64</td><td>32</td><td>128</td></tr><tr><td>1024</td><td>64</td><td>64</td><td>32</td><td>128</td></tr><tr><td>2048</td><td>96</td><td>96</td><td>64</td><td>256</td></tr><tr><td>2560</td><td>96</td><td>96</td><td>64</td><td>320</td></tr><tr><td>4096</td><td>128</td><td>128</td><td>96</td><td>480</td></tr><tr><td>6144</td><td>128</td><td>128</td><td>96</td><td>640</td></tr></table>",
+      "pred_html": "<table><tr><td>Dimension (D)</td><td>$ d_w $</td><td>$ d_a $</td><td>$ d_\\nu $</td><td>$ d_g $</td></tr><tr><td>768</td><td>64</td><td>64</td><td>32</td><td>128</td></tr><tr><td>1024</td><td>64</td><td>64</td><td>32</td><td>128</td></tr><tr><td>2048</td><td>96</td><td>96</td><td>64</td><td>256</td></tr><tr><td>2560</td><td>96</td><td>96</td><td>64</td><td>320</td></tr><tr><td>4096</td><td>128</td><td>128</td><td>96</td><td>480</td></tr><tr><td>6144</td><td>128</td><td>128</td><td>96</td><td>640</td></tr></table>",
+      "stop_reason": "eos",
+      "input_tokens": 157,
+      "projected_image_tokens": 144,
+      "output_tokens": 148,
+      "worker_wall_s": 2.6506959102116525,
+      "http_wall_s": 2.651529934955761,
+      "timing_s": {
+        "cpu_image_and_prompt_preprocess": 0.011318452889099717,
+        "cpu_mrope_index": 0.0011734501458704472,
+        "cpu_pin_memory": 0.013469689060002565,
+        "cpu_preprocess_background_queue_wait": 0.000879405066370964,
+        "cpu_preprocess_background_service": 0.026166614843532443,
+        "cpu_preprocess_background_consumer_wait": 0.02615236397832632,
+        "cpu_preprocess_background_ready_wait": 0.000864874105900526,
+        "prefill_h2d_submit_host": 0.005651656072586775,
+        "prefill_enqueue_host": 1.2727110711857677,
+        "recognizer_h2d": 0.004338240146636963,
+        "first_token_d2h": 0.00030875508673489094,
+        "prefill_resolve_wait": 0.0039565470069646835,
+        "vision_and_text_prefill_wall": 1.2767046079970896,
+        "time_to_first_token": 1.309774920111522,
+        "prefill_request_total": 1.3073131953254342,
+        "decode_ready_queue_wait": 0.4650317139457911,
+        "decode_slot_residency": 0.8590469900518656,
+        "detokenize": 0.00013185199350118637,
+        "request_total": 2.63398547610268
+      },
+      "device_stage_s": {
+        "recognition_inputs_h2d": 0.004338240146636963,
+        "vision_embeddings": 1.15210791015625,
+        "adaptive_mlp_projector": 0.07162889862060547,
+        "text_token_embedding": 0.002911900043487549,
+        "image_embed_scatter": 0.004839560031890869,
+        "static_cache_alloc": 1.8039999529719352e-05,
+        "text_prefill_input_prep": 0.0006919000148773194,
+        "text_prefill": 0.008324060440063476,
+        "text_kv_redistribute": 0.0,
+        "prefill_lm_head": 0.00022302000224590302,
+        "prefill_argmax": 2.4219999089837076e-05,
+        "vision_prefill_input_prep": 0.018835460662841797,
+        "vision_prefill": 0.01619763946533203
+      },
+      "rates": {
+        "request_output_tok_per_s": 56.188616582269475
+      },
+      "vision": {
+        "execution": "compiled",
+        "real_vision_tokens": 576,
+        "physical_vision_tokens": 640,
+        "padding_vision_tokens": 64,
+        "useful_token_fraction": 0.9,
+        "bucket": 640,
+        "packing": "single",
+        "pack_group_id": 1,
+        "pack_crops": 1,
+        "pack_real_vision_tokens": 576,
+        "pack_physical_vision_tokens": 640,
+        "pack_batch_size": 1,
+        "pack_sequence_length": 640,
+        "pack_row_sizes": [
+          1
+        ],
+        "router_visible_crops": null
+      },
+      "text_prefill": {
+        "execution": "compiled",
+        "real_text_tokens": 157,
+        "physical_text_tokens": 256,
+        "padding_text_tokens": 99,
+        "useful_token_fraction": 0.61328125,
+        "bucket": 256,
+        "packing": "off",
+        "pack_group_id": 1,
+        "text_pack_index": null,
+        "pack_real_text_tokens": 157,
+        "pack_physical_text_tokens": 256,
+        "private_cache_slot_index": 0,
+        "private_cache_generation": 1
+      },
+      "round_trip_s": 2.7812292189337313
+    },
+    {
+      "request_id": "page_000011_table_box_id_1",
+      "page_index": 11,
+      "page_name": "page-573c437e-c309-4483-a038-ef2f440b104a.png",
+      "annotation_index": 1,
+      "anno_id": "box_id_1",
+      "bbox_xyxy": [
+        282,
+        402,
+        1316,
+        1173
+      ],
+      "crop_size": [
+        1034,
+        771
+      ],
+      "gt_html": "<table><tr><td>Description of the strategy</td><td>Equations involving $m_{0}$ and $m_{N}$</td></tr><tr><td>(i) Clamped cubic spline: specify $S^{\\prime }(x_{0})$, $S^{\\prime }(x_{n})$(the “best choice\" if the derivatives are known)</td><td>$m_{0}=\\frac {3}{h_{0}}(d_{0}\\quad S^{\\prime }(x_{0}))\\frac {m_{1}}{2}$$m_{N}=\\frac{3}{h_{N\\quad1}}(S^{\\prime}(x_{N})\\quad d_{N\\quad1})\\quad\\frac{m_{N\\quad1}}{2}$</td></tr><tr><td>(ii) Natural cubic spline(a\"relaxed curve\")</td><td>$m_{0}=0,m_{N}=0$</td></tr><tr><td>(iii) Extrapolate $S^{\\prime \\prime }(x)$to the<br/>endpoints</td><td>$m_{0}=m_{1}\\quad\\frac {h_{0}(m_{2}\\quad m_{1})}{h_{1}},$$m_{N}=m_{N\\quad1}+\\frac{h_{N\\quad1}(m_{N\\quad1}\\quad m_{N\\quad2})}{h_{N\\quad2}}$</td></tr><tr><td>(iv) $S^{\\prime \\prime }(x)$ is constant near the<br/>endpoints</td><td>$m_{0}=m_{1},m_{N}=m_{N\\quad1}$</td></tr><tr><td>(v) Specify $S^{\\prime \\prime }(X)$ at each<br/>endpoint</td><td>$m_{0}=S^{\\prime \\prime }(x_{0}),m_{N}=S^{\\prime \\prime }(x_{N})$</td></tr></table>",
+      "pred_html": "<table><tr><td>Description of the strategy</td><td>Equations involving  $ m_{0} $ and  $ m_{N} $</td></tr><tr><td>(i) Clamped cubic spline: specify  $ S^{\\prime }(x_{0}) $,  $ S^{\\prime }(x_{n}) $(the “best choice&quot; if the derivatives are known)</td><td>$ m_{0}=\\frac {3}{h_{0}}(d_{0}\\quad S^{\\prime }(x_{0}))\\frac {m_{1}}{2} m_{N}=\\frac{3}{h_{N\\quad1}}(S^{\\prime}(x_{N})\\quad d_{N\\quad1})\\quad\\frac{m_{N\\quad1}}{2} $</td></tr><tr><td>(ii) Natural cubic spline(a&quot;relaxed curve&quot;)</td><td>$ m_{0}=0,m_{N}=0 $</td></tr><tr><td>(iii) Extrapolate  $ S^{\\prime \\prime }(x) $to theendpoints</td><td>$ m_{0}=m_{1}\\quad\\frac {h_{0}(m_{2}\\quad m_{1})}{h_{1}}, m_{N}=m_{N\\quad1}+\\frac{h_{N\\quad1}(m_{N\\quad1}\\quad m_{N\\quad2})}{h_{N\\quad2}} $</td></tr><tr><td>(iv)  $ S^{\\prime \\prime }(x) $ is constant near theendpoints</td><td>$ m_{0}=m_{1},m_{N}=m_{N\\quad1} $</td></tr><tr><td>(v) Specify  $ S^{\\prime \\prime }(X) $ at eachendpoint</td><td>$ m_{0}=S^{\\prime \\prime }(x_{0}),m_{N}=S^{\\prime \\prime }(x_{N}) $</td></tr></table>",
+      "stop_reason": "eos",
+      "input_tokens": 1012,
+      "projected_image_tokens": 999,
+      "output_tokens": 374,
+      "worker_wall_s": 2.3789760628715158,
+      "http_wall_s": 2.3797228450421244,
+      "timing_s": {
+        "cpu_image_and_prompt_preprocess": 0.06988499802537262,
+        "cpu_mrope_index": 0.0017259200103580952,
+        "cpu_pin_memory": 0.028719938127323985,
+        "cpu_preprocess_background_queue_wait": 0.00025479402393102646,
+        "cpu_preprocess_background_service": 0.1004956578835845,
+        "cpu_preprocess_background_consumer_wait": 0.10058678989298642,
+        "cpu_preprocess_background_ready_wait": 0.0004619981627911329,
+        "prefill_h2d_submit_host": 0.005797098157927394,
+        "prefill_enqueue_host": 0.07488708291202784,
+        "recognizer_h2d": 0.005455599784851074,
+        "first_token_d2h": 0.00024054385721683502,
+        "prefill_resolve_wait": 0.012943580048158765,
+        "vision_and_text_prefill_wall": 0.08784806285984814,
+        "time_to_first_token": 0.19485705089755356,
+        "prefill_request_total": 0.19387506266497076,
+        "decode_ready_queue_wait": 0.001304773148149252,
+        "decode_slot_residency": 2.1644377559423447,
+        "detokenize": 0.0002895151264965534,
+        "request_total": 2.360889095114544
+      },
+      "device_stage_s": {
+        "recognition_inputs_h2d": 0.005455599784851074,
+        "vision_embeddings": 0.009625519752502441,
+        "adaptive_mlp_projector": 0.0003238399922847748,
+        "text_token_embedding": 3.7119999527931215e-05,
+        "image_embed_scatter": 0.0007754999995231628,
+        "static_cache_alloc": 1.5999999595806003e-07,
+        "text_prefill_input_prep": 0.0005265799760818482,
+        "text_prefill": 0.013431260108947754,
+        "text_kv_redistribute": 0.0,
+        "prefill_lm_head": 0.00029106000065803525,
+        "prefill_argmax": 2.457999996840954e-05,
+        "vision_prefill_input_prep": 0.00037977999448776244,
+        "vision_prefill": 0.0617884407043457
+      },
+      "rates": {
+        "request_output_tok_per_s": 158.41489580087816
+      },
+      "vision": {
+        "execution": "compiled",
+        "real_vision_tokens": 3996,
+        "physical_vision_tokens": 4096,
+        "padding_vision_tokens": 100,
+        "useful_token_fraction": 0.9755859375,
+        "bucket": 4096,
+        "packing": "single",
+        "pack_group_id": 2,
+        "pack_crops": 1,
+        "pack_real_vision_tokens": 3996,
+        "pack_physical_vision_tokens": 4096,
+        "pack_batch_size": 1,
+        "pack_sequence_length": 4096,
+        "pack_row_sizes": [
+          1
+        ],
+        "router_visible_crops": null
+      },
+      "text_prefill": {
+        "execution": "compiled",
+        "real_text_tokens": 1012,
+        "physical_text_tokens": 1024,
+        "padding_text_tokens": 12,
+        "useful_token_fraction": 0.98828125,
+        "bucket": 1024,
+        "packing": "off",
+        "pack_group_id": 2,
+        "text_pack_index": null,
+        "pack_real_text_tokens": 1012,
+        "pack_physical_text_tokens": 1024,
+        "private_cache_slot_index": 1,
+        "private_cache_generation": 1
+      },
+      "round_trip_s": 2.5478082809131593
+    }
+  ],
+  "summary": {
+    "schedule_id": "http:open",
+    "batch_size": 64,
+    "requests": 2,
+    "ready_buffer_capacity": 64,
+    "ready_buffer_low_watermark": 32,
+    "max_ready_queue_depth": 1,
+    "ready_source_refill_count": 2,
+    "graph_calls": 522,
+    "initial_admissions": 1,
+    "hot_swap_admissions": 1,
+    "prefill_only_completions": 0,
+    "raw_decode_token_slots": 33408,
+    "active_decode_token_slots": 522,
+    "effective_decode_tokens": 520,
+    "idle_decode_token_slots": 32886,
+    "lookahead_decode_token_slots": 2,
+    "kv_prefix_bytes_copied": 21547008,
+    "initial_kv_prefix_bytes_copied": 2893824,
+    "hot_swap_kv_prefix_bytes_copied": 18653184,
+    "timing_s": {
+      "continuous_decode_wall": 3.485351013720037,
+      "decode_host_exclusive_wall": 2.791438810992986,
+      "run_scoped_scheduler_wall": 45.38728136802092,
+      "ready_source_wall": 42.59435472311452,
+      "completion_callback_wall": 0.0014878339134156704,
+      "decode_model_and_argmax_device": 3.0191467399597185,
+      "slot_admission_device": 0.46620427376031875,
+      "slot_admission_enqueue_wall": 0.4645952759310603,
+      "d2h_wait_wall": 0.8465792890638113,
+      "retire_and_refill_host_wall": 1.6163946583401412,
+      "hot_swap_safety_sync_wall": 0.009792886208742857
+    },
+    "vision_packing": {
+      "mode": "off",
+      "target": 1920,
+      "lookahead": 32,
+      "groups": 2,
+      "crops": 2,
+      "packed_groups": 0,
+      "singleton_groups": 2,
+      "eager_overflow_groups": 0,
+      "crops_per_group": 1.0,
+      "group_size_histogram": {
+        "1": 2
+      },
+      "graph_shape_histogram": {
+        "b1_s4096": 1,
+        "b1_s640": 1
+      },
+      "ready_window_histogram": {},
+      "router_cpu_s": 0.0,
+      "packed_real_vision_tokens": 0,
+      "packed_physical_vision_tokens": 0,
+      "packed_fill_fraction": null
+    },
+    "text_packing": {
+      "mode": "off",
+      "buckets": [
+        128,
+        256,
+        512,
+        1024
+      ],
+      "groups": 2,
+      "crops": 2,
+      "packs": 0,
+      "packed_crops": 0,
+      "fallback_crops": 2,
+      "calls": 2,
+      "call_reduction_fraction": 0.0,
+      "pack_size_histogram": {},
+      "bucket_histogram": {},
+      "packed_real_text_tokens": 0,
+      "packed_physical_text_tokens": 0,
+      "packed_fill_fraction": null,
+      "redistributed_kv_bytes": 0,
+      "private_cache_pool": {
+        "storage": "zero_once_fixed_arena",
+        "capacity": 96,
+        "allocated_bytes": 7247757312,
+        "acquisitions": 2,
+        "reuses": 0,
+        "releases": 2,
+        "active_slots": 0,
+        "free_slots": 96,
+        "high_water_active_slots": 1
+      }
+    },
+    "rates": {
+      "raw_decode_tok_per_s": 9585.261245851525,
+      "effective_decode_tok_per_s": 149.19587667153954,
+      "effective_fraction": 0.015565134099616858,
+      "active_slot_fraction": 0.015625,
+      "effective_device_tok_per_s": 172.2340928705366,
+      "scheduler_effective_tok_per_s": 11.456954114162539
+    }
+  }
+}

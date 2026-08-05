@@ -1,0 +1,9 @@
+Selected physical NPU 6 as logical npu:0
+Python: /usr/local/python3.12.13/bin/python3
+Waiting for NPU worker pid=2494568
+READY http://127.0.0.1:8766 worker_pid=2494568
+HTTP 127.0.0.1 "GET /ready HTTP/1.1" 200 -
+HTTP 127.0.0.1 "GET /ready HTTP/1.1" 200 -
+.HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=page_000010_table_box_id_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=page_000011_table_box_id_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/drain HTTP/1.1" 200 -
