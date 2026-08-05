@@ -183,6 +183,16 @@ requests produced by that page group can refill one another, but requests from
 the next page group are admitted only after the current group is written. Keep
 the page group bounded until frontend production itself becomes incremental.
 
+The validated B8/KV4096 configuration used a 16-request CPU preparation queue.
+On the first 32 OmniDocBench pages, one 32-page request stream completed in
+297.435 seconds (0.10759 pages/s), with 88.38% active decode slots and 531.79
+effective decode tok/s. CPU preparation performed 51.28 seconds of work, but
+slot admission waited only 0.55 seconds for it. The corresponding unprefetched
+cross-page run took 375.790 seconds; the earlier four-group continuous run took
+335.984 seconds. All 32 content lists and Markdown files were byte-identical
+across the three scheduling arrangements. The compact run summary is under
+`tmp/11_mineru_2_5_pro_inference/native_continuous_prefetch16_b8_n32_pg32_k4096_20260805/`.
+
 ## Official synchronous vLLM lane
 
 Start with eager vLLM to separate compatibility from graph compilation:
