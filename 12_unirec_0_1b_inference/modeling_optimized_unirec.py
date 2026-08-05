@@ -646,12 +646,11 @@ class LocalDecoderAttention(nn.Module):
         key_states: torch.Tensor,
         value_states: torch.Tensor,
     ) -> None:
-        # Fixed cohorts advance every row at the same decode position.  Cache
-        # dim 2 therefore receives one shared position, while key/value states
-        # retain their independent batch rows.  Per-row positions require a
-        # different scatter contract and belong to the future hot-swap engine.
+        # Ascend's Scatter KV-cache tiling contract takes one position per
+        # batch row. Fixed cohorts happen to carry the same value in every row,
+        # but the B-entry vector must still be preserved.
         updated_positions = (
-            cache_position.reshape(-1)[:1]
+            cache_position.reshape(-1)
             .to(dtype=torch.int64, device=key_cache.device)
             .contiguous()
         )
@@ -661,8 +660,17 @@ class LocalDecoderAttention(nn.Module):
             torch_npu.scatter_update_(key_cache, updated_positions, key_states.contiguous(), 2)
             torch_npu.scatter_update_(value_cache, updated_positions, value_states.contiguous(), 2)
             return
-        key_cache.index_copy_(2, updated_positions, key_states.contiguous())
-        value_cache.index_copy_(2, updated_positions, value_states.contiguous())
+        if updated_positions.numel() == 1:
+            key_cache.index_copy_(2, updated_positions, key_states.contiguous())
+            value_cache.index_copy_(2, updated_positions, value_states.contiguous())
+            return
+        batch_indices = torch.arange(
+            key_cache.shape[0],
+            dtype=torch.long,
+            device=key_cache.device,
+        )
+        key_cache[batch_indices, :, updated_positions, :] = key_states[:, :, 0, :]
+        value_cache[batch_indices, :, updated_positions, :] = value_states[:, :, 0, :]
 
     def forward(
         self,
