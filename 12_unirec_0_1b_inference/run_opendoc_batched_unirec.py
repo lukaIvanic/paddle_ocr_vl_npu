@@ -30,6 +30,7 @@ from continuous_unirec import (
 )
 from modeling_optimized_unirec import OptimizedUniRecRunner
 from opendoc_layout_npu import PPDocLayoutV2NpuAdapter
+from text_packed_prefill import PACKED_TEXT_PREFILL_BUCKET
 
 
 @dataclass
@@ -149,9 +150,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--layout-threshold", type=float, default=0.4)
     parser.add_argument(
         "--text-prefill-mode",
-        choices=("eager", "compiled_s512"),
+        choices=("eager", "compiled_s512", "compiled_packed_s1024"),
         default="eager",
-        help="Recognition text-prefill execution; compiled_s512 pads B1 source tokens to 512",
+        help=(
+            "Recognition text-prefill execution; compiled_s512 pads each crop "
+            "to 512, while compiled_packed_s1024 greedily combines crops into "
+            "one B1 source sequence padded to 1024"
+        ),
     )
     parser.add_argument(
         "--prefill-device-timing",
@@ -169,6 +174,83 @@ def accumulate_stage_seconds(
         return
     for name, seconds in source.items():
         destination[name] = destination.get(name, 0.0) + float(seconds)
+
+
+def record_prefill_metrics(metrics: RunMetrics, item: Any) -> None:
+    metrics.prepare_s += float(item.prep["prepare_total_s"])
+    metrics.prefill_s += float(item.prefill_s)
+    metrics.text_prefill_real_source_tokens += int(
+        item.text_prefill_real_source_tokens or 0
+    )
+    metrics.text_prefill_physical_source_tokens += int(
+        item.text_prefill_physical_source_tokens or 0
+    )
+    accumulate_stage_seconds(
+        metrics.prefill_device_stage_s,
+        item.prefill_device_stage_s,
+    )
+
+
+def iter_greedy_text_packs(
+    crops: Any,
+    *,
+    runner: OptimizedUniRecRunner,
+) -> Any:
+    """FIFO greedy packs; an over-capacity crop is an eager singleton."""
+    current: list[CropRequest] = []
+    current_tokens = 0
+    for crop in crops:
+        tokens = int(
+            runner.processor.estimate_encoder_token_count_for_image_size(
+                crop.image.width,
+                crop.image.height,
+            )
+        )
+        if tokens > PACKED_TEXT_PREFILL_BUCKET:
+            if current:
+                yield True, current
+                current = []
+                current_tokens = 0
+            yield False, [crop]
+            continue
+        if current and current_tokens + tokens > PACKED_TEXT_PREFILL_BUCKET:
+            yield True, current
+            current = []
+            current_tokens = 0
+        current.append(crop)
+        current_tokens += tokens
+    if current:
+        yield True, current
+
+
+def prefill_crop_group(
+    *,
+    crops: list[CropRequest],
+    use_packed_graph: bool,
+    runner: OptimizedUniRecRunner,
+    args: argparse.Namespace,
+) -> list[Any]:
+    if use_packed_graph:
+        return runner.prefill_images_packed_for_cohort(
+            [(crop.image, crop.request_id) for crop in crops],
+            profile_device_stages=args.prefill_device_timing,
+        )
+    if args.text_prefill_mode == "compiled_packed_s1024":
+        if len(crops) != 1:
+            raise AssertionError("packed text fallback must be a singleton")
+        runner.record_packed_text_prefill_fallback()
+        mode = "eager"
+    else:
+        mode = args.text_prefill_mode
+    return [
+        runner.prefill_image_for_cohort(
+            crop.image,
+            image_source=crop.request_id,
+            profile_device_stages=args.prefill_device_timing,
+            text_prefill_mode=mode,
+        )
+        for crop in crops
+    ]
 
 
 def _base_label(label: str) -> str:
@@ -400,27 +482,22 @@ def recognize_cohort(
         f"physical={target_batch_size}",
         flush=True,
     )
-    prefilled = []
-    for crop in cohort:
-        item = runner.prefill_image_for_cohort(
-            crop.image,
-            image_source=crop.request_id,
-            profile_device_stages=args.prefill_device_timing,
-            text_prefill_mode=args.text_prefill_mode,
+    prefilled_by_request: dict[str, Any] = {}
+    if args.text_prefill_mode == "compiled_packed_s1024":
+        groups = iter_greedy_text_packs(cohort, runner=runner)
+    else:
+        groups = [(False, cohort)]
+    for use_packed_graph, crops in groups:
+        items = prefill_crop_group(
+            crops=crops,
+            use_packed_graph=use_packed_graph,
+            runner=runner,
+            args=args,
         )
-        prefilled.append(item)
-        metrics.prepare_s += float(item.prep["prepare_total_s"])
-        metrics.prefill_s += item.prefill_s
-        metrics.text_prefill_real_source_tokens += int(
-            item.text_prefill_real_source_tokens or 0
-        )
-        metrics.text_prefill_physical_source_tokens += int(
-            item.text_prefill_physical_source_tokens or 0
-        )
-        accumulate_stage_seconds(
-            metrics.prefill_device_stage_s,
-            item.prefill_device_stage_s,
-        )
+        for crop, item in zip(crops, items):
+            prefilled_by_request[crop.request_id] = item
+            record_prefill_metrics(metrics, item)
+    prefilled = [prefilled_by_request[crop.request_id] for crop in cohort]
     decoded = runner.generate_prefilled_cohort(
         prefilled,
         max_length=args.max_length,
@@ -543,7 +620,8 @@ def main() -> None:
             args.compile_cache_dir.expanduser().resolve()
             if (
                 args.decode_mode.startswith("compiled")
-                or args.text_prefill_mode == "compiled_s512"
+                or args.text_prefill_mode
+                in {"compiled_s512", "compiled_packed_s1024"}
             )
             else None
         ),
@@ -596,7 +674,7 @@ def main() -> None:
             )
 
     if args.decode_scheduling == "continuous":
-        def ready_source():
+        def crop_source():
             for page_index, image_path in enumerate(image_paths):
                 page = prepare_page(
                     pipeline=pipeline,
@@ -616,24 +694,23 @@ def main() -> None:
                 )
                 flush_ready_pages()
                 for crop in page.crops:
-                    item = runner.prefill_image_for_cohort(
-                        crop.image,
-                        image_source=crop.request_id,
-                        profile_device_stages=args.prefill_device_timing,
-                        text_prefill_mode=args.text_prefill_mode,
-                    )
-                    metrics.prepare_s += float(item.prep["prepare_total_s"])
-                    metrics.prefill_s += item.prefill_s
-                    metrics.text_prefill_real_source_tokens += int(
-                        item.text_prefill_real_source_tokens or 0
-                    )
-                    metrics.text_prefill_physical_source_tokens += int(
-                        item.text_prefill_physical_source_tokens or 0
-                    )
-                    accumulate_stage_seconds(
-                        metrics.prefill_device_stage_s,
-                        item.prefill_device_stage_s,
-                    )
+                    yield crop
+
+        def ready_source():
+            crops = crop_source()
+            if args.text_prefill_mode == "compiled_packed_s1024":
+                groups = iter_greedy_text_packs(crops, runner=runner)
+            else:
+                groups = ((False, [crop]) for crop in crops)
+            for use_packed_graph, crop_group in groups:
+                items = prefill_crop_group(
+                    crops=crop_group,
+                    use_packed_graph=use_packed_graph,
+                    runner=runner,
+                    args=args,
+                )
+                for crop, item in zip(crop_group, items):
+                    record_prefill_metrics(metrics, item)
                     yield ContinuousReadyItem(
                         request_id=crop.request_id,
                         payload=crop,
@@ -808,6 +885,7 @@ def main() -> None:
             if metrics.text_prefill_physical_source_tokens > 0
             else None
         ),
+        "text_prefill_packing": runner.packed_text_prefill_summary(),
         "decode_s": metrics.decode_s,
         "output_assembly_s": metrics.output_assembly_s,
         "output_write_s": metrics.output_write_s,

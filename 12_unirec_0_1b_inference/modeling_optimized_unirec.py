@@ -14,6 +14,10 @@ from PIL import Image
 from transformers import PreTrainedTokenizerFast
 
 from prefill_timing import PrefillDeviceTimeline
+from text_packed_prefill import (
+    PACKED_TEXT_PREFILL_BUCKET,
+    PackedUniRecTextPrefillRuntime,
+)
 from text_prefill import UniRecTextPrefillRuntime
 
 try:
@@ -1453,6 +1457,17 @@ class OptimizedUniRecRunner:
         self._compiled_decode_modules: dict[str, nn.Module] = {}
         self._compiled_decode_metadata: dict[str, dict[str, Any]] = {}
         self._compiled_text_prefill_runtime: UniRecTextPrefillRuntime | None = None
+        self._compiled_packed_text_prefill_runtime: (
+            PackedUniRecTextPrefillRuntime | None
+        ) = None
+        self._packed_text_prefill_stats = {
+            "packs": 0,
+            "members": 0,
+            "real_source_tokens": 0,
+            "physical_source_tokens": 0,
+            "fallback_crops": 0,
+            "member_histogram": {},
+        }
         self._static_cross_cache_len_by_processor_max_side: dict[tuple[int, int], int] = {}
         self.compile_cache_dir = Path(compile_cache_dir).expanduser().resolve() if compile_cache_dir else None
 
@@ -1838,6 +1853,156 @@ class OptimizedUniRecRunner:
             ),
         )
 
+    def prefill_images_packed_for_cohort(
+        self,
+        images: list[tuple[Image.Image, str]],
+        *,
+        profile_device_stages: bool = False,
+    ) -> list[UniRecPrefilledItem]:
+        """Run B1 vision per crop, then one packed S1024 cross-KV graph."""
+        if not images:
+            raise ValueError("cannot prefill an empty UniRec text pack")
+        prepared = [
+            self.prepare_pil_image(image, image_source=image_source)
+            for image, image_source in images
+        ]
+        runtime = self._get_compiled_packed_text_prefill_runtime()
+        cross_cache_len = self._get_static_cross_cache_len()
+        member_vision_s: list[float] = []
+        member_stage_s: list[dict[str, float] | None] = []
+        encoder_hidden_states: list[torch.Tensor] = []
+        encoder_attention_masks: list[torch.Tensor] = []
+
+        with torch.inference_mode():
+            for inputs, _prep in prepared:
+                synchronize_device(self.device)
+                vision_started = time.perf_counter()
+                timeline = (
+                    PrefillDeviceTimeline(torch.device(self.device))
+                    if profile_device_stages
+                    else None
+                )
+                measure = (
+                    timeline.measure
+                    if timeline is not None
+                    else lambda _name, fn: fn()
+                )
+                timing_hooks = self._install_encoder_timing_hooks(timeline)
+                try:
+                    hidden_states = measure(
+                        "spatial_focalsvtr_encoder",
+                        lambda inputs=inputs: self.model.forward_encoder(
+                            inputs["pixel_values"]
+                        ),
+                    )
+                    attention_mask = measure(
+                        "encoder_attention_mask",
+                        lambda hidden_states=hidden_states: (
+                            self.model.build_encoder_attention_mask(hidden_states)
+                        ),
+                    )
+                finally:
+                    for hook in timing_hooks:
+                        hook.remove()
+                if timeline is None:
+                    synchronize_device(self.device)
+                    stages = None
+                else:
+                    stages = timeline.resolve()
+                member_vision_s.append(time.perf_counter() - vision_started)
+                member_stage_s.append(stages)
+                encoder_hidden_states.append(hidden_states)
+                encoder_attention_masks.append(attention_mask)
+
+            synchronize_device(self.device)
+            packed_started = time.perf_counter()
+            packed_timeline = (
+                PrefillDeviceTimeline(torch.device(self.device))
+                if profile_device_stages
+                else None
+            )
+            packed_measure = (
+                packed_timeline.measure
+                if packed_timeline is not None
+                else lambda _name, fn: fn()
+            )
+            packed_output = packed_measure(
+                "compiled_packed_text_prefill_s1024",
+                lambda: runtime.run(
+                    encoder_hidden_states=encoder_hidden_states,
+                ),
+            )
+            caches = []
+            for member, attention_mask in enumerate(encoder_attention_masks):
+                decode_cross_attention_mask = (
+                    self.model.decoder.build_cross_attention_mask(
+                        encoder_attention_mask=attention_mask,
+                        target_length=1,
+                    )
+                )
+                cache = packed_measure(
+                    "static_cache_build_and_padding",
+                    lambda member=member,
+                    decode_cross_attention_mask=decode_cross_attention_mask: (
+                        LocalUniRecStaticCache.from_cross_prefill(
+                            cross_key_cache=packed_output.cross_key_cache[member],
+                            cross_value_cache=packed_output.cross_value_cache[member],
+                            cross_attention_mask=decode_cross_attention_mask,
+                            cache_len=LOCAL_UNIREC_STATIC_CACHE_LEN,
+                            cross_cache_len=cross_cache_len,
+                        )
+                    ),
+                )
+                caches.append(cache)
+            if packed_timeline is None:
+                synchronize_device(self.device)
+                packed_stage_s = None
+            else:
+                packed_stage_s = packed_timeline.resolve()
+            packed_s = time.perf_counter() - packed_started
+
+        members = len(images)
+        real_tokens = packed_output.real_source_tokens
+        physical_tokens = packed_output.physical_source_tokens
+        padding_tokens = physical_tokens - real_tokens
+        self._packed_text_prefill_stats["packs"] += 1
+        self._packed_text_prefill_stats["members"] += members
+        self._packed_text_prefill_stats["real_source_tokens"] += real_tokens
+        self._packed_text_prefill_stats["physical_source_tokens"] += physical_tokens
+        histogram = self._packed_text_prefill_stats["member_histogram"]
+        histogram[str(members)] = histogram.get(str(members), 0) + 1
+
+        results = []
+        packed_wall_share = packed_s / members
+        for member, ((_inputs, prep), cache) in enumerate(zip(prepared, caches)):
+            stages = member_stage_s[member]
+            if stages is not None and packed_stage_s is not None:
+                stages = dict(stages)
+                for name, seconds in packed_stage_s.items():
+                    stages[name] = stages.get(name, 0.0) + seconds / members
+            generated_ids = self.model.decoder_start_ids(
+                batch_size=1,
+                device=cache.key_cache[0].device,
+            )
+            member_real_tokens = packed_output.segment_lengths[member]
+            member_physical_tokens = member_real_tokens
+            if member == members - 1:
+                member_physical_tokens += padding_tokens
+            results.append(
+                UniRecPrefilledItem(
+                    prep=prep,
+                    kv_cache=cache,
+                    generated_ids=generated_ids,
+                    next_token=generated_ids,
+                    prefill_s=member_vision_s[member] + packed_wall_share,
+                    prefill_device_stage_s=stages,
+                    text_prefill_execution="compiled_packed_s1024",
+                    text_prefill_real_source_tokens=member_real_tokens,
+                    text_prefill_physical_source_tokens=member_physical_tokens,
+                )
+            )
+        return results
+
     def _get_compiled_text_prefill_runtime(self) -> UniRecTextPrefillRuntime:
         if self._compiled_text_prefill_runtime is not None:
             return self._compiled_text_prefill_runtime
@@ -1853,6 +2018,39 @@ class OptimizedUniRecRunner:
             dtype_name=self.dtype_name,
         )
         return self._compiled_text_prefill_runtime
+
+    def _get_compiled_packed_text_prefill_runtime(
+        self,
+    ) -> PackedUniRecTextPrefillRuntime:
+        if self._compiled_packed_text_prefill_runtime is not None:
+            return self._compiled_packed_text_prefill_runtime
+        if not self.device.startswith("npu"):
+            raise ValueError("packed compiled UniRec text prefill requires an NPU")
+        if self.compile_cache_dir is None:
+            raise ValueError(
+                "packed compiled UniRec text prefill requires compile_cache_dir"
+            )
+        self._compiled_packed_text_prefill_runtime = (
+            PackedUniRecTextPrefillRuntime(
+                self.model.decoder,
+                cache_root=self.compile_cache_dir,
+                dtype_name=self.dtype_name,
+            )
+        )
+        return self._compiled_packed_text_prefill_runtime
+
+    def record_packed_text_prefill_fallback(self) -> None:
+        self._packed_text_prefill_stats["fallback_crops"] += 1
+
+    def packed_text_prefill_summary(self) -> dict[str, Any]:
+        stats = dict(self._packed_text_prefill_stats)
+        stats["member_histogram"] = dict(stats["member_histogram"])
+        physical = int(stats["physical_source_tokens"])
+        stats["useful_token_fraction"] = (
+            int(stats["real_source_tokens"]) / physical if physical else None
+        )
+        stats["bucket"] = PACKED_TEXT_PREFILL_BUCKET
+        return stats
 
     def _install_encoder_timing_hooks(
         self,
