@@ -23,7 +23,6 @@ from torch import nn
 
 from local_modeling_mineru import (
     LocalMinerUStaticCache,
-    _activation,
     linear_last_dim,
     repeat_kv,
 )
@@ -137,9 +136,7 @@ class PackedMinerUTextPrefillStage(nn.Module):
         value_cache: torch.Tensor,
     ) -> torch.Tensor:
         batch, sequence_length, _hidden = hidden_states.shape
-        query_states, key_states, value_states = attention.project_qkv_decode_static(
-            hidden_states
-        )
+        query_states, key_states, value_states = attention.project_qkv(hidden_states)
         query_states, key_states = attention.apply_rotary(
             query_states,
             key_states,
@@ -184,16 +181,7 @@ class PackedMinerUTextPrefillStage(nn.Module):
 
     @staticmethod
     def _apply_blocks(layer: Any, residual: torch.Tensor, attention_output: torch.Tensor) -> torch.Tensor:
-        hidden_states = residual + attention_output
-        residual = hidden_states
-        mlp_input = layer.post_attention_layernorm(hidden_states)
-        packed = linear_last_dim(layer.mlp.decode_gate_up_proj, mlp_input)
-        gate, up = packed.chunk(2, dim=-1)
-        mlp_output = linear_last_dim(
-            layer.mlp.down_proj,
-            _activation(layer.mlp.hidden_act, gate) * up,
-        )
-        return residual + mlp_output
+        return layer.apply_blocks(residual, attention_output)
 
     def forward(
         self,
@@ -280,7 +268,7 @@ class MinerUPackedTextPrefillRuntime:
             torch_npu_version = "unknown"
         key = "_".join(
             (
-                "mineru_text_packed_block_causal_qkv_gateup",
+                "mineru_text_packed_block_causal_stock_projections",
                 "bs1",
                 f"seq{bucket}",
                 f"members{self.max_members}",
@@ -466,8 +454,8 @@ class MinerUPackedTextPrefillRuntime:
             "boundary": "packed_block_diagonal_text_transformer",
             "buckets": list(self.buckets),
             "max_members": self.max_members,
-            "packed_qkv": True,
-            "packed_gate_up": True,
+            "packed_qkv": False,
+            "packed_gate_up": False,
             "attention": "manual_block_diagonal_causal",
             "route_counts": dict(self.route_counts),
             "pack_count": self.pack_count,
