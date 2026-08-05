@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import hashlib
 import io
 import json
 import math
@@ -89,6 +90,14 @@ def parse_args() -> argparse.Namespace:
             "the OCR server. Valid only with --omnidocbench."
         ),
     )
+    parser.add_argument(
+        "--fingerprint-only",
+        action="store_true",
+        help=(
+            "Hash OmniDocBench.json and all referenced images, write "
+            "dataset_manifest.json, and exit without contacting the API."
+        ),
+    )
     parser.add_argument("--resume", action=argparse.BooleanOptionalAction, default=True)
     return parser.parse_args()
 
@@ -102,6 +111,93 @@ def _bbox(poly: list[float], width: int, height: int, padding: int) -> tuple[int
         min(width, math.ceil(max(xs)) + padding),
         min(height, math.ceil(max(ys)) + padding),
     )
+
+
+def _sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _write_dataset_manifest(
+    dataset_json: Path,
+    images_dir: Path,
+    output_path: Path,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    dataset_bytes = dataset_json.read_bytes()
+    pages = json.loads(dataset_bytes)
+    image_names = [
+        Path(page["page_info"]["image_path"]).name
+        for page in pages
+    ]
+    if len(image_names) != len(set(image_names)):
+        duplicates = sorted(
+            name for name, count in Counter(image_names).items() if count > 1
+        )
+        raise ValueError(
+            "dataset contains duplicate resolved image names: "
+            + ", ".join(duplicates[:10])
+        )
+
+    entries: list[dict[str, Any]] = []
+    total_bytes = 0
+    aggregate = hashlib.sha256()
+    for index, name in enumerate(sorted(image_names), start=1):
+        image_path = images_dir / name
+        if not image_path.is_file():
+            raise FileNotFoundError(f"dataset image does not exist: {image_path}")
+        size = image_path.stat().st_size
+        image_hash = _sha256_file(image_path)
+        entry = {"path": name, "bytes": size, "sha256": image_hash}
+        canonical_line = (
+            json.dumps(entry, sort_keys=True, separators=(",", ":")) + "\n"
+        ).encode("utf-8")
+        aggregate.update(canonical_line)
+        entries.append(entry)
+        total_bytes += size
+        if index % 100 == 0 or index == len(image_names):
+            print(
+                f"fingerprinted_images={index}/{len(image_names)}",
+                flush=True,
+            )
+
+    manifest = {
+        "schema_version": 1,
+        "dataset_json": {
+            "path": dataset_json.name,
+            "bytes": len(dataset_bytes),
+            "sha256": _sha256_bytes(dataset_bytes),
+        },
+        "referenced_images": {
+            "resolution": "images_dir / basename(page_info.image_path)",
+            "aggregate_algorithm": "sha256(canonical_jsonl_entries_v1)",
+            "count": len(entries),
+            "total_bytes": total_bytes,
+            "aggregate_sha256": aggregate.hexdigest(),
+            "entries": entries,
+        },
+    }
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    print(
+        "DATASET_FINGERPRINT "
+        f"json_sha256={manifest['dataset_json']['sha256']} "
+        f"images={manifest['referenced_images']['count']} "
+        "images_aggregate_sha256="
+        f"{manifest['referenced_images']['aggregate_sha256']} "
+        f"output={output_path}",
+        flush=True,
+    )
+    return pages, manifest
 
 
 def _post_image(
@@ -338,6 +434,9 @@ def _write_summary(
     service_summary: dict[str, Any] | None,
 ) -> dict[str, Any]:
     records = list(_read_completed(output).values())
+    dataset_manifest = json.loads(
+        (output.parent / "dataset_manifest.json").read_text(encoding="utf-8")
+    )
     http = [float(record["http_wall_s"]) for record in records]
     worker = [float(record["worker_wall_s"]) for record in records]
     overhead = [max(0.0, h - w) for h, w in zip(http, worker)]
@@ -391,6 +490,14 @@ def _write_summary(
         ),
         "service_scheduler": service_summary,
         "metrics": metrics,
+        "dataset_fingerprint": {
+            "dataset_json_sha256": dataset_manifest["dataset_json"]["sha256"],
+            "referenced_image_count": dataset_manifest["referenced_images"]["count"],
+            "referenced_images_total_bytes": dataset_manifest["referenced_images"]["total_bytes"],
+            "referenced_images_aggregate_sha256": dataset_manifest[
+                "referenced_images"
+            ]["aggregate_sha256"],
+        },
     }
     summary_output.parent.mkdir(parents=True, exist_ok=True)
     summary_output.write_text(
@@ -404,6 +511,7 @@ def _write_summary(
 def _benchmark_summary_markdown(summary: dict[str, Any]) -> str:
     metrics = summary["metrics"]
     stages = summary["device_stage_s"]
+    fingerprint = summary["dataset_fingerprint"]
     scheduler = summary.get("service_scheduler") or {}
     rates = scheduler.get("rates") or {}
     lines = [
@@ -421,6 +529,19 @@ def _benchmark_summary_markdown(summary: dict[str, Any]) -> str:
         f"- TEDS timeouts: {metrics['teds_timeout_count']}",
         f"- TEDS errors: {metrics['teds_error_count']}",
         f"- Stop reasons: {summary['stop_reasons']}",
+        "",
+        "## Dataset fingerprint",
+        "",
+        f"- OmniDocBench.json SHA-256: `{fingerprint['dataset_json_sha256']}`",
+        (
+            "- Referenced images: "
+            f"{fingerprint['referenced_image_count']} files, "
+            f"{fingerprint['referenced_images_total_bytes']} bytes"
+        ),
+        (
+            "- Referenced-images aggregate SHA-256: "
+            f"`{fingerprint['referenced_images_aggregate_sha256']}`"
+        ),
     ]
     if stages:
         lines.extend(
@@ -473,10 +594,11 @@ def _recognize_image_job(
 ) -> tuple[int, dict[str, Any]]:
     request_id = f"image_{index:06d}_{_safe_name(image_path)}"
     started = time.perf_counter()
+    image_bytes = image_path.read_bytes()
     response = _post_image(
         api_url,
         request_id,
-        image_path.read_bytes(),
+        image_bytes,
         crop_type,
         timeout_s,
     )
@@ -484,6 +606,7 @@ def _recognize_image_job(
         "request_id": request_id,
         "image_path": str(image_path.resolve()),
         "crop_type": crop_type,
+        "image_sha256": _sha256_bytes(image_bytes),
         "client_wall_s": time.perf_counter() - started,
         "response": response,
     }
@@ -665,7 +788,14 @@ def _run_omnidocbench(args: argparse.Namespace) -> None:
         print(f"\n{summary_markdown}", end="", flush=True)
         return
 
-    pages = json.loads(args.dataset_json.read_text(encoding="utf-8"))
+    pages, _dataset_manifest = _write_dataset_manifest(
+        args.dataset_json,
+        args.images_dir,
+        args.output_dir / "dataset_manifest.json",
+    )
+    if args.fingerprint_only:
+        return
+
     selected = pages[args.offset :]
     if args.limit_pages is not None:
         selected = selected[: args.limit_pages]
@@ -754,6 +884,10 @@ def main() -> None:
     args = parse_args()
     if args.score_only and not args.omnidocbench:
         raise ValueError("--score-only requires --omnidocbench")
+    if args.fingerprint_only and not args.omnidocbench:
+        raise ValueError("--fingerprint-only requires --omnidocbench")
+    if args.score_only and args.fingerprint_only:
+        raise ValueError("--score-only and --fingerprint-only are mutually exclusive")
     if args.drain_server is None:
         args.drain_server = args.omnidocbench
     if args.omnidocbench:
