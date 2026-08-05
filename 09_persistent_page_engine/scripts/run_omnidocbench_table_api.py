@@ -7,6 +7,7 @@ import argparse
 import io
 import json
 import math
+import sys
 import time
 import urllib.error
 import urllib.parse
@@ -23,6 +24,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--images-dir", type=Path, default=Path("/workspace/datasets/OmniDocBench/images"))
     parser.add_argument("--api-url", default="http://127.0.0.1:8765/v1/ocr")
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--score-output", type=Path)
+    parser.add_argument(
+        "--evaluator-root",
+        type=Path,
+        default=Path("/workspace/repos/OmniDocBench_eval"),
+    )
     parser.add_argument("--crop-padding", type=int, default=12)
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--limit-pages", type=int)
@@ -69,6 +76,69 @@ def _read_completed(path: Path) -> dict[str, dict[str, Any]]:
             record = json.loads(line)
             completed[record["request_id"]] = record
     return completed
+
+
+def _score(output: Path, score_output: Path, evaluator_root: Path) -> None:
+    sys.path.insert(0, str(evaluator_root.resolve()))
+    from src.metrics.table_metric import TEDS
+
+    records = list(_read_completed(output).values())
+    evaluator = TEDS(structure_only=False)
+    structure_evaluator = TEDS(structure_only=True)
+    page_scores: dict[str, list[float]] = {}
+    page_structure_scores: dict[str, list[float]] = {}
+    scored: list[dict[str, Any]] = []
+    started = time.perf_counter()
+    for index, record in enumerate(records, start=1):
+        score = float(evaluator.evaluate(record["pred_html"], record["gt_html"]))
+        structure = float(
+            structure_evaluator.evaluate(record["pred_html"], record["gt_html"])
+        )
+        page_scores.setdefault(record["page_name"], []).append(score)
+        page_structure_scores.setdefault(record["page_name"], []).append(structure)
+        scored.append(
+            {
+                "request_id": record["request_id"],
+                "page_name": record["page_name"],
+                "TEDS": score,
+                "TEDS_structure_only": structure,
+            }
+        )
+        if index % 25 == 0 or index == len(records):
+            print(
+                f"scored={index}/{len(records)} elapsed_s={time.perf_counter() - started:.1f}",
+                flush=True,
+            )
+    sample_scores = [item["TEDS"] for item in scored]
+    sample_structure = [item["TEDS_structure_only"] for item in scored]
+    page_means = {
+        page: sum(values) / len(values) for page, values in page_scores.items()
+    }
+    page_structure_means = {
+        page: sum(values) / len(values)
+        for page, values in page_structure_scores.items()
+    }
+    result = {
+        "table_count": len(scored),
+        "table_page_count": len(page_means),
+        "sample_TEDS": sum(sample_scores) / len(sample_scores),
+        "sample_TEDS_structure_only": sum(sample_structure) / len(sample_structure),
+        "page_TEDS": sum(page_means.values()) / len(page_means),
+        "page_TEDS_structure_only": sum(page_structure_means.values())
+        / len(page_structure_means),
+        "per_page_TEDS": page_means,
+        "per_table": scored,
+    }
+    score_output.parent.mkdir(parents=True, exist_ok=True)
+    score_output.write_text(
+        json.dumps(result, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    print(
+        f"SCORED page_TEDS={result['page_TEDS']:.6f} "
+        f"sample_TEDS={result['sample_TEDS']:.6f} output={score_output}",
+        flush=True,
+    )
 
 
 def main() -> None:
@@ -129,6 +199,8 @@ def main() -> None:
                 flush=True,
             )
     print(f"DONE tables={len(jobs)} output={args.output}", flush=True)
+    if args.score_output is not None:
+        _score(args.output, args.score_output, args.evaluator_root)
 
 
 if __name__ == "__main__":

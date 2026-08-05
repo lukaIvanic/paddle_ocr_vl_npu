@@ -84,6 +84,7 @@ def _worker_main(
         from paddleocr_vl.model.vision_prefill import parse_vision_buckets
         from paddleocr_vl.serving.engine import ContinuousRecognizer
         from paddleocr_vl.serving.types import RecognitionRequest
+        from pipeline.layout_output import normalize_recognition_text
 
         recognizer = ContinuousRecognizer(
             model=config["model"],
@@ -148,6 +149,11 @@ def _worker_main(
                         f"expected one recognition result, got {len(emitted)}"
                     )
                 payload = asdict(emitted[0])
+                payload["raw_text"] = payload["text"]
+                payload["text"] = normalize_recognition_text(
+                    job["crop_type"],
+                    payload["raw_text"],
+                )
                 payload.update(
                     {
                         "crop_type": job["crop_type"],
