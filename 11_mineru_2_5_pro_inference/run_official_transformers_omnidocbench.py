@@ -94,6 +94,11 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--local-prefill-metrics",
+        action="store_true",
+        help="Record opt-in NPU-event timings and token counts for local prefill.",
+    )
+    parser.add_argument(
         "--local-torchair-cache-dir",
         type=Path,
         default=DEFAULT_LOCAL_TORCHAIR_CACHE_DIR,
@@ -343,6 +348,7 @@ def main() -> None:
                 cache_length=args.local_compiled_cache_length,
                 eos_token_id=local_model.config.eos_token_id,
                 pad_token_id=local_model.config.pad_token_id,
+                collect_prefill_metrics=args.local_prefill_metrics,
             )
             client.client = make_local_fixed_batch_vlm_client(
                 local_model,
@@ -485,6 +491,11 @@ def main() -> None:
         ),
         "local_prepare_prefetch_depth": (
             args.local_prepare_prefetch_depth
+            if args.backend == "local-continuous-client"
+            else None
+        ),
+        "local_prefill_metrics": (
+            args.local_prefill_metrics
             if args.backend == "local-continuous-client"
             else None
         ),

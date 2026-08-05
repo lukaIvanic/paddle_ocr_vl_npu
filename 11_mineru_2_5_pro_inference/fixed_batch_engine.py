@@ -42,6 +42,7 @@ class FixedBatchDecodeEngine:
         cache_length: int,
         eos_token_id: int,
         pad_token_id: int,
+        collect_prefill_metrics: bool = False,
     ) -> None:
         if int(batch_size) <= 1:
             raise ValueError("fixed batch engine requires batch_size > 1")
@@ -51,6 +52,7 @@ class FixedBatchDecodeEngine:
         self.cache_length = int(cache_length)
         self.eos_token_id = int(eos_token_id)
         self.pad_token_id = int(pad_token_id)
+        self.collect_prefill_metrics = bool(collect_prefill_metrics)
         self._arena: LocalMinerUStaticCache | None = None
 
     def _arena_for_batch(self) -> LocalMinerUStaticCache:
@@ -318,7 +320,7 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
             cache_length=self.cache_length,
             cache=self._slot_view(arena, slot),
             logits_to_keep=1,
-            collect_prefill_metrics=True,
+            collect_prefill_metrics=self.collect_prefill_metrics,
         )
         token = torch.argmax(prefill.logits[:, -1, :].float(), dim=-1, keepdim=True)
         # The scheduler intentionally makes completion state host-visible in
