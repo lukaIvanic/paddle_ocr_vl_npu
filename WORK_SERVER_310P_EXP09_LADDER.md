@@ -24917,6 +24917,14 @@ contract, but 64 concurrent HTTP calls feed one open `ContinuousRecognizer`
 session. Later crops join the active decode arena and hot-swap into free slots.
 There is no HTTP batch payload and no API-side image batching.
 
+The completed work-server B1 headline is approximately `0.9545` Page-TEDS and
+`0.31` table-pages/s. Preserve its entire output directory. Phase 60 must use
+the same 665 table crops, prompts, model weights, pixel bounds, KV length, and
+scoring implementation; only cross-request scheduling and decode batch size
+change. Use the exact Phase-59 `scores.json` value for the quality delta. Treat
+`0.31` pages/s as a rounded headline unless the Phase-59 report contains a more
+precise value.
+
 The 910B2 authority for this exact path is:
 
 - 665 tables on 458 pages;
@@ -25093,7 +25101,18 @@ fi
 The first client line must say `submitted=665 http_workers=64`. Completion
 order should be non-FIFO. The drain line must report `requests=665` and
 `decode_batch_size=64`. If the client fails after all 665 outputs are saved,
-do not rerun inference. Repair or rerun only drain/scoring as applicable.
+do not rerun inference. The TEDS progress line must say
+`TEDS (process-isolated)`; this keeps 12 workers without forking children from
+a thread pool. If scoring alone fails, rerun only this command:
+
+```sh
+PYTHONUNBUFFERED=1 "$EVAL_PYTHON" "$CLIENT" \
+  --omnidocbench --score-only \
+  --output-dir "$ROOT" \
+  --evaluator-root "$EVALUATOR_ROOT" \
+  --teds-workers 12 --teds-timeout-s 120 \
+  2>&1 | tee "$ROOT/score_only.log"
+```
 
 ### 60.3 Validate and compare with Phase 59
 
@@ -25125,10 +25144,16 @@ phase59=None
 if phase59_paths:
     p=max(map(pathlib.Path,phase59_paths),key=lambda x:x.stat().st_mtime)
     phase59=json.loads(p.read_text())
+phase59_score_paths=glob.glob('tmp/09_persistent_page_engine/310p_phase59_crop_api_*/scores.json')
+phase59_scores=None
+if phase59_score_paths:
+    p=max(map(pathlib.Path,phase59_score_paths),key=lambda x:x.stat().st_mtime)
+    phase59_scores=json.loads(p.read_text())
 
 current={
   'generation_wall_s':summary['generation_wall_s'],
   'tables_per_s':summary['tables_per_s'],
+  'table_pages_per_s':458/summary['generation_wall_s'],
   'page_teds':scores['page_TEDS'],
   'sample_teds':scores['sample_TEDS'],
   'page_structure':scores['page_TEDS_structure_only'],
@@ -25155,13 +25180,16 @@ comparison={
   'speed_ratio_310p_over_910b':current['tables_per_s']/ref910['tables_per_s'],
   'page_teds_delta_vs_910b':current['page_teds']-ref910['page_teds'],
   'phase59_b1':phase59,
+  'phase59_b1_scores':phase59_scores,
   'speedup_vs_phase59_b1':None if phase59 is None else current['tables_per_s']/phase59['tables_per_s'],
-  'page_teds_delta_vs_phase59_b1':None if phase59 is None else current['page_teds']-phase59['metrics']['page_TEDS'],
+  'page_teds_delta_vs_phase59_b1':None if phase59_scores is None else current['page_teds']-phase59_scores['page_TEDS'],
+  'rounded_speedup_vs_reported_phase59_pages_per_s':current['table_pages_per_s']/0.31,
 }
 (root/'final_comparison.json').write_text(json.dumps(comparison,indent=2,sort_keys=True)+'\n')
 print(
   '310P PHASE 60 OPEN CROP API: PASS '
   f'tables_per_s={current["tables_per_s"]:.6f} '
+  f'table_pages_per_s={current["table_pages_per_s"]:.6f} '
   f'effective_decode_tps={current["effective_decode_tps"]:.1f} '
   f'hot_swaps={current["hot_swap_admissions"]} '
   f'page_teds={current["page_teds"]:.6f} '
@@ -25176,7 +25204,8 @@ Return the exact final sentence first. Then write `$ROOT/agent_report.md` with:
 1. commit, host, physical NPU, versions, model SHA, exact commands;
 2. startup and exact cache file/byte deltas, naming any compiled graph;
 3. generation wall, tables/s, raw/effective decode tok/s, active fraction,
-   initial/hot-swap admissions, and device-stage totals;
+   table-pages/s, initial/hot-swap admissions, device-stage totals, and the
+   rounded speedup over the reported Phase-59 `0.31` pages/s;
 4. sample/Page TEDS and structure TEDS, with signed deltas against its own
    Phase-59 B1 result and the labeled 910B2 B64 reference;
 5. worker/HTTP latency distributions and wrapper overhead;
