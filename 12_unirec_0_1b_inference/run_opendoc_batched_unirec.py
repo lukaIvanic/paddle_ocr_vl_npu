@@ -15,9 +15,10 @@ import sys
 import time
 import warnings
 from collections import deque
+from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 import cv2
 import numpy as np
@@ -74,6 +75,7 @@ class PageRequest:
     started_at: float
     layout_s: float
     prepare_page_total_s: float
+    frontend_timing_s: dict[str, float]
 
     def is_ready(self) -> bool:
         return all(crop.result is not None for crop in self.crops)
@@ -86,6 +88,7 @@ class RunMetrics:
     page_records: list[dict[str, Any]] = field(default_factory=list)
     layout_s: float = 0.0
     page_prepare_total_s: float = 0.0
+    frontend_timing_s: dict[str, float] = field(default_factory=dict)
     prepare_s: float = 0.0
     prefill_s: float = 0.0
     prefill_device_stage_s: dict[str, float] = field(default_factory=dict)
@@ -161,6 +164,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--limit", type=int)
     parser.add_argument("--layout-threshold", type=float, default=0.4)
     parser.add_argument(
+        "--page-decode-workers",
+        type=int,
+        default=4,
+        help=(
+            "Bounded OpenCV page-decode workers. Decoding stays exact BGR and "
+            "runs ahead of the serialized layout and recognition consumers."
+        ),
+    )
+    parser.add_argument(
         "--text-prefill-mode",
         choices=("eager", "compiled_s512", "compiled_packed_s1024"),
         default="eager",
@@ -195,6 +207,61 @@ def accumulate_stage_seconds(
         return
     for name, seconds in source.items():
         destination[name] = destination.get(name, 0.0) + float(seconds)
+
+
+@dataclass(frozen=True)
+class DecodedPage:
+    image_path: Path
+    image: np.ndarray
+    started_at: float
+    timing_s: dict[str, float]
+
+
+def decode_page_bgr(image_path: Path) -> DecodedPage:
+    """Read and decode one page with the existing exact OpenCV BGR contract."""
+    started_at = time.perf_counter()
+    read_started = time.perf_counter()
+    encoded = image_path.read_bytes()
+    read_s = time.perf_counter() - read_started
+    decode_started = time.perf_counter()
+    image = cv2.imdecode(np.frombuffer(encoded, np.uint8), cv2.IMREAD_COLOR)
+    decode_s = time.perf_counter() - decode_started
+    if image is None:
+        raise ValueError(f"Failed to decode image: {image_path}")
+    return DecodedPage(
+        image_path=image_path,
+        image=image,
+        started_at=started_at,
+        timing_s={
+            "page_file_read_s": read_s,
+            "page_image_decode_s": decode_s,
+        },
+    )
+
+
+def iter_decoded_pages(
+    image_paths: list[Path],
+    *,
+    workers: int,
+) -> Iterable[DecodedPage]:
+    """Decode pages concurrently but yield them in exact input order."""
+    if workers < 1:
+        raise ValueError("page decode workers must be >= 1")
+    max_pending = max(1, workers * 2)
+    next_index = 0
+    pending: deque[Future[DecodedPage]] = deque()
+    with ThreadPoolExecutor(
+        max_workers=workers,
+        thread_name_prefix="unirec-page-decode",
+    ) as executor:
+        while next_index < len(image_paths) and len(pending) < max_pending:
+            pending.append(executor.submit(decode_page_bgr, image_paths[next_index]))
+            next_index += 1
+        while pending:
+            yield pending.popleft().result()
+            if next_index < len(image_paths):
+                pending.append(executor.submit(decode_page_bgr, image_paths[next_index]))
+                next_index += 1
 
 
 def record_prefill_metrics(metrics: RunMetrics, item: Any) -> None:
@@ -469,14 +536,14 @@ def prepare_page(
     *,
     pipeline: Any,
     infer_doc_onnx: Any,
-    image_path: Path,
+    decoded: DecodedPage,
     page_index: int,
     layout_threshold: float,
 ) -> PageRequest:
-    started_at = time.perf_counter()
-    image = cv2.imread(str(image_path))
-    if image is None:
-        raise ValueError(f"Failed to read image: {image_path}")
+    started_at = decoded.started_at
+    image_path = decoded.image_path
+    image = decoded.image
+    frontend_timing_s = dict(decoded.timing_s)
     height, width = image.shape[:2]
 
     layout_started = time.perf_counter()
@@ -485,12 +552,14 @@ def prepare_page(
         threshold=layout_threshold,
     )[0]
     layout_s = time.perf_counter() - layout_started
+    frontend_timing_s["layout_s"] = layout_s
     image_labels = (
         infer_doc_onnx.IMAGE_LABELS
         if pipeline.use_chart_recognition
         else infer_doc_onnx.IMAGE_LABELS + ["chart"]
     )
 
+    crop_boxes_started = time.perf_counter()
     blocks = []
     for box in layout_results["boxes"]:
         x1, y1, x2, y2 = map(int, box["coordinate"])
@@ -503,11 +572,17 @@ def prepare_page(
                 "score": box.get("score", 1.0),
             }
         )
+    frontend_timing_s["layout_crop_views_s"] = (
+        time.perf_counter() - crop_boxes_started
+    )
+    merge_started = time.perf_counter()
     blocks = infer_doc_onnx.merge_blocks(
         blocks,
         non_merge_labels=image_labels + ["table"],
     )
+    frontend_timing_s["layout_merge_blocks_s"] = time.perf_counter() - merge_started
 
+    image_index_started = time.perf_counter()
     imgs_in_doc = []
     for block in blocks:
         label = block["label"]
@@ -519,7 +594,11 @@ def prepare_page(
                     "path": f"imgs/img_in_{_base_label(label)}_box_{x1}_{y1}_{x2}_{y2}.jpg",
                 }
             )
+    frontend_timing_s["document_image_index_s"] = (
+        time.perf_counter() - image_index_started
+    )
 
+    recognition_crops_started = time.perf_counter()
     crops: list[CropRequest] = []
     vlm_block_ids: list[int] = []
     drop_figures_set: set[str] = set()
@@ -553,8 +632,11 @@ def prepare_page(
         )
         vlm_block_ids.append(block_index)
         drop_figures_set.update(drop_figures)
+    frontend_timing_s["recognition_crop_build_s"] = (
+        time.perf_counter() - recognition_crops_started
+    )
 
-    prepare_page_total_s = time.perf_counter() - started_at
+    prepare_page_total_s = sum(frontend_timing_s.values())
     return PageRequest(
         page_index=page_index,
         image_path=image_path,
@@ -568,6 +650,7 @@ def prepare_page(
         started_at=started_at,
         layout_s=layout_s,
         prepare_page_total_s=prepare_page_total_s,
+        frontend_timing_s=frontend_timing_s,
     )
 
 
@@ -766,6 +849,8 @@ def main() -> None:
     )
     if args.decode_batch_size < 1:
         raise ValueError("--decode-batch-size must be >= 1")
+    if args.page_decode_workers < 1:
+        raise ValueError("--page-decode-workers must be >= 1")
     openocr_root = args.openocr_root.expanduser().resolve()
     model_path = args.model_path.expanduser().resolve()
     input_path = args.input.expanduser().resolve()
@@ -895,21 +980,29 @@ def main() -> None:
 
     if args.decode_scheduling == "continuous":
         def crop_source():
-            for page_index, image_path in enumerate(image_paths):
+            decoded_pages = iter_decoded_pages(
+                image_paths,
+                workers=args.page_decode_workers,
+            )
+            for page_index, decoded in enumerate(decoded_pages):
                 page = prepare_page(
                     pipeline=pipeline,
                     infer_doc_onnx=infer_doc_onnx,
-                    image_path=image_path,
+                    decoded=decoded,
                     page_index=page_index,
                     layout_threshold=args.layout_threshold,
                 )
                 metrics.layout_s += page.layout_s
                 metrics.page_prepare_total_s += page.prepare_page_total_s
+                accumulate_stage_seconds(
+                    metrics.frontend_timing_s,
+                    page.frontend_timing_s,
+                )
                 pending_pages.append(page)
                 print(
                     f"OPENDOC_CONTINUOUS_PAGE_READY "
                     f"index={page_index + 1}/{len(image_paths)} "
-                    f"image={image_path.name} crops={len(page.crops)}",
+                    f"image={decoded.image_path.name} crops={len(page.crops)}",
                     flush=True,
                 )
                 flush_ready_pages()
@@ -1015,21 +1108,29 @@ def main() -> None:
             flush=True,
         )
     else:
-        for page_index, image_path in enumerate(image_paths):
+        decoded_pages = iter_decoded_pages(
+            image_paths,
+            workers=args.page_decode_workers,
+        )
+        for page_index, decoded in enumerate(decoded_pages):
             page = prepare_page(
                 pipeline=pipeline,
                 infer_doc_onnx=infer_doc_onnx,
-                image_path=image_path,
+                decoded=decoded,
                 page_index=page_index,
                 layout_threshold=args.layout_threshold,
             )
             metrics.layout_s += page.layout_s
             metrics.page_prepare_total_s += page.prepare_page_total_s
+            accumulate_stage_seconds(
+                metrics.frontend_timing_s,
+                page.frontend_timing_s,
+            )
             pending_pages.append(page)
             pending_crops.extend(page.crops)
             print(
                 f"OPENDOC_BATCHED_PAGE_READY index={page_index + 1}/{len(image_paths)} "
-                f"image={image_path.name} crops={len(page.crops)} "
+                f"image={decoded.image_path.name} crops={len(page.crops)} "
                 f"queued={len(pending_crops)}",
                 flush=True,
             )
@@ -1085,6 +1186,7 @@ def main() -> None:
         "max_length": args.max_length,
         "layout_backend": args.layout_backend,
         "layout_dtype": args.layout_dtype if not use_onnx_layout else None,
+        "page_decode_workers": args.page_decode_workers,
         "setup_s": setup_s,
         "graph_warmup": graph_warmup,
         "pipeline_wall_s": pipeline_wall_s,
@@ -1095,6 +1197,7 @@ def main() -> None:
         "layout_s": metrics.layout_s,
         "page_prepare_total_s": metrics.page_prepare_total_s,
         "page_frontend_other_s": metrics.page_prepare_total_s - metrics.layout_s,
+        "page_frontend_stage_s": metrics.frontend_timing_s,
         "prepare_s": metrics.prepare_s,
         "prefill_s": metrics.prefill_s,
         "prefill_device_stage_s": metrics.prefill_device_stage_s,
