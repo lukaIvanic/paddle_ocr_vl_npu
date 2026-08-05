@@ -1,4 +1,4 @@
-"""Compiled HxW-invariant guarded-atlas execution for UniRec FocalSVTR."""
+"""Compiled guarded-atlas execution for UniRec FocalSVTR stage 2."""
 
 from __future__ import annotations
 
@@ -30,10 +30,6 @@ ATLAS_GUARD = 3
 ATLAS_MAX_MEMBERS = 16
 ATLAS_CHANNELS = 384
 ATLAS_STAGE_FACTOR = 16
-PREFIX_SCALE = 4
-PREFIX_HEIGHT = ATLAS_HEIGHT * PREFIX_SCALE
-PREFIX_WIDTH = ATLAS_WIDTH * PREFIX_SCALE
-PREFIX_CHANNELS = 96
 
 
 @dataclass(frozen=True)
@@ -114,7 +110,7 @@ class AtlasPack:
 
 
 class GuardedAtlasStage(nn.Module):
-    """Run one FocalSVTR stage on independent masked atlas regions."""
+    """Run stage-2 focal blocks on independent masked atlas regions."""
 
     def __init__(self, stage: nn.Module):
         super().__init__()
@@ -179,62 +175,34 @@ class GuardedAtlasStage(nn.Module):
         return x
 
 
-class RoutedGuardedAtlasPrefix(nn.Module):
-    """Run stages 0-2 from one fixed flat stage-0 token reservoir."""
+class RoutedGuardedAtlasStage(nn.Module):
+    """Route one fixed flat reservoir through a fixed stage-2 atlas."""
 
-    def __init__(self, stages: nn.ModuleList):
+    def __init__(self, stage: nn.Module):
         super().__init__()
-        self.stage0 = GuardedAtlasStage(stages[0])
-        self.downsample0 = stages[0].downsample
-        self.stage1 = GuardedAtlasStage(stages[1])
-        self.downsample1 = stages[1].downsample
-        self.stage2 = GuardedAtlasStage(stages[2])
-        if self.downsample0 is None or self.downsample1 is None:
-            raise ValueError("UniRec stages 0 and 1 must have downsamplers")
+        self.atlas_stage = GuardedAtlasStage(stage)
 
     def forward(
         self,
         packed_source: torch.Tensor,
         atlas_to_source: torch.Tensor,
         source_to_atlas: torch.Tensor,
-        valid_mask0: torch.Tensor,
-        membership0: torch.Tensor,
-        normalized_membership0: torch.Tensor,
-        valid_mask1: torch.Tensor,
-        membership1: torch.Tensor,
-        normalized_membership1: torch.Tensor,
-        valid_mask2: torch.Tensor,
-        membership2: torch.Tensor,
-        normalized_membership2: torch.Tensor,
+        valid_mask: torch.Tensor,
+        membership: torch.Tensor,
+        normalized_membership: torch.Tensor,
     ) -> torch.Tensor:
+        cells = ATLAS_HEIGHT * ATLAS_WIDTH
+        channels = packed_source.shape[-1]
         atlas = packed_source.index_select(1, atlas_to_source).reshape(
-            1, PREFIX_HEIGHT, PREFIX_WIDTH, PREFIX_CHANNELS
+            1, ATLAS_HEIGHT, ATLAS_WIDTH, channels
         ).permute(0, 3, 1, 2).contiguous()
-        atlas = self.stage0(
+        output = self.atlas_stage(
             atlas,
-            valid_mask0,
-            membership0,
-            normalized_membership0,
+            valid_mask,
+            membership,
+            normalized_membership,
         )
-        tokens, height, width = self.downsample0(atlas)
-        atlas = tokens.transpose(1, 2).reshape(1, -1, height, width)
-        atlas = self.stage1(
-            atlas,
-            valid_mask1,
-            membership1,
-            normalized_membership1,
-        )
-        tokens, height, width = self.downsample1(atlas)
-        atlas = tokens.transpose(1, 2).reshape(1, -1, height, width)
-        output = self.stage2(
-            atlas,
-            valid_mask2,
-            membership2,
-            normalized_membership2,
-        )
-        output = output.permute(0, 2, 3, 1).reshape(
-            1, ATLAS_HEIGHT * ATLAS_WIDTH, ATLAS_CHANNELS
-        )
+        output = output.permute(0, 2, 3, 1).reshape(1, cells, channels)
         return output.index_select(1, source_to_atlas)
 
 
@@ -274,43 +242,36 @@ def _pack_shapes(shapes: list[CropShape]) -> tuple[list[AtlasPack], list[CropSha
     return packs, overflow
 
 
-def _routing_maps(
+def _routing_inputs(
     pack: AtlasPack,
     *,
-    scale: int,
     dtype: torch.dtype,
     device: torch.device,
 ) -> tuple[torch.Tensor, ...]:
-    height = ATLAS_HEIGHT * scale
-    width = ATLAS_WIDTH * scale
-    cells = height * width
+    cells = ATLAS_HEIGHT * ATLAS_WIDTH
     atlas_to_source = [-1] * cells
     source_cursor = 0
-    valid = torch.zeros((1, 1, height, width), dtype=dtype)
+    valid = torch.zeros((1, 1, ATLAS_HEIGHT, ATLAS_WIDTH), dtype=dtype)
     membership = torch.zeros((ATLAS_MAX_MEMBERS, cells), dtype=dtype)
     for placement in pack.placements:
         crop = placement.crop
-        crop_height = crop.height * scale
-        crop_width = crop.width * scale
-        inner_y = placement.inner_y * scale
-        inner_x = placement.inner_x * scale
-        for row in range(crop_height):
-            atlas_row = inner_y + row
-            for column in range(crop_width):
-                atlas_index = atlas_row * width + inner_x + column
-                atlas_to_source[atlas_index] = source_cursor + row * crop_width + column
+        for row in range(crop.height):
+            atlas_row = placement.inner_y + row
+            for column in range(crop.width):
+                atlas_index = atlas_row * ATLAS_WIDTH + placement.inner_x + column
+                atlas_to_source[atlas_index] = source_cursor + row * crop.width + column
         valid[
             :,
             :,
-            inner_y : inner_y + crop_height,
-            inner_x : inner_x + crop_width,
+            placement.inner_y : placement.inner_y + crop.height,
+            placement.inner_x : placement.inner_x + crop.width,
         ] = 1
-        member_map = membership[placement.member].view(height, width)
+        member_map = membership[placement.member].view(ATLAS_HEIGHT, ATLAS_WIDTH)
         member_map[
-            inner_y : inner_y + crop_height,
-            inner_x : inner_x + crop_width,
+            placement.inner_y : placement.inner_y + crop.height,
+            placement.inner_x : placement.inner_x + crop.width,
         ] = 1
-        source_cursor += crop_height * crop_width
+        source_cursor += crop.tokens
     padding_indices = iter(range(source_cursor, cells))
     for atlas_index, source_index in enumerate(atlas_to_source):
         if source_index < 0:
@@ -322,6 +283,7 @@ def _routing_maps(
         raise AssertionError("atlas routing is not a complete permutation")
     normalized = membership / membership.sum(dim=1, keepdim=True).clamp_min(1)
     return (
+        torch.zeros((1, cells, ATLAS_CHANNELS), dtype=dtype, device=device),
         torch.tensor(atlas_to_source, dtype=torch.long, device=device),
         torch.tensor(source_to_atlas, dtype=torch.long, device=device),
         valid.to(device),
@@ -330,37 +292,8 @@ def _routing_maps(
     )
 
 
-def _routing_inputs(
-    pack: AtlasPack,
-    *,
-    dtype: torch.dtype,
-    device: torch.device,
-) -> tuple[torch.Tensor, ...]:
-    route0 = _routing_maps(pack, scale=4, dtype=dtype, device=device)
-    route1 = _routing_maps(pack, scale=2, dtype=dtype, device=device)
-    route2 = _routing_maps(pack, scale=1, dtype=dtype, device=device)
-    return (
-        torch.zeros(
-            (1, PREFIX_HEIGHT * PREFIX_WIDTH, PREFIX_CHANNELS),
-            dtype=dtype,
-            device=device,
-        ),
-        route0[0],
-        route2[1],
-        route0[2],
-        route0[3],
-        route0[4],
-        route1[2],
-        route1[3],
-        route1[4],
-        route2[2],
-        route2[3],
-        route2[4],
-    )
-
-
 class UniRecVisionAtlasRuntime:
-    """Run eager patch stems and compiled HxW-invariant stages 0-2."""
+    """Run stage 2 in atlases, then continue the stock crop-local pipeline."""
 
     def __init__(self, runner: OptimizedUniRecRunner) -> None:
         if not runner.device.startswith("npu"):
@@ -368,11 +301,10 @@ class UniRecVisionAtlasRuntime:
         if runner.compile_cache_dir is None:
             raise ValueError("compiled UniRec vision atlas requires compile_cache_dir")
         self.runner = runner
-        self.stages = runner.model.encoder.vision_encoder.layers
-        self.stage = self.stages[ATLAS_STAGE]
-        self.module = RoutedGuardedAtlasPrefix(self.stages).eval()
+        self.stage = runner.model.encoder.vision_encoder.layers[ATLAS_STAGE]
+        self.module = RoutedGuardedAtlasStage(self.stage).eval()
         self.cache_dir = runner.compile_cache_dir / (
-            f"vision_atlas_stages0_2_{ATLAS_HEIGHT}x{ATLAS_WIDTH}_"
+            f"vision_atlas_stage2_{ATLAS_HEIGHT}x{ATLAS_WIDTH}_"
             f"m{ATLAS_MAX_MEMBERS}_{runner.dtype_name}_src{_source_hash()}"
         )
         self.cache_dir.mkdir(parents=True, exist_ok=True)
@@ -401,35 +333,12 @@ class UniRecVisionAtlasRuntime:
             "first_call_wall_s": None,
         }
 
-    def warmup_inputs(self) -> tuple[torch.Tensor, ...]:
-        """Build one fixed-shape input set for graph load and replay."""
-        pack = AtlasPack.empty()
-        crop = CropShape(
-            source_index=0,
-            height=ATLAS_HEIGHT - 2 * ATLAS_GUARD,
-            width=ATLAS_WIDTH - 2 * ATLAS_GUARD,
-        )
-        if not pack.try_add(crop):
-            raise AssertionError("vision atlas warmup crop must fit")
-        return _routing_inputs(
-            pack,
-            dtype=self.runner.dtype,
-            device=torch.device(self.runner.device),
-        )
-
-    def _run_patch_stem(
-        self, pixel_values: torch.Tensor
-    ) -> tuple[torch.Tensor, int, int]:
+    def _run_prefix(self, pixel_values: torch.Tensor) -> tuple[torch.Tensor, int, int]:
         vision = self.runner.model.encoder.vision_encoder
         x = vision.patch_embed(pixel_values)
         height, width = x.shape[2:]
         x = vision.pos_drop(x.flatten(2).transpose(1, 2))
-        return x, height, width
-
-    def _run_stages_0_2_eager(
-        self, x: torch.Tensor, height: int, width: int
-    ) -> tuple[torch.Tensor, int, int]:
-        for layer in self.stages[:ATLAS_STAGE]:
+        for layer in vision.layers[:ATLAS_STAGE]:
             x, height, width = layer(x, height, width)
         return x, height, width
 
@@ -452,7 +361,7 @@ class UniRecVisionAtlasRuntime:
     def _run_atlas_packs(
         self,
         packs: list[AtlasPack],
-        stem_states: dict[int, torch.Tensor],
+        prefix_states: dict[int, torch.Tensor],
     ) -> dict[int, torch.Tensor]:
         outputs: dict[int, torch.Tensor] = {}
         for pack in packs:
@@ -464,10 +373,9 @@ class UniRecVisionAtlasRuntime:
             packed_source = values[0]
             cursor = 0
             for placement in pack.placements:
-                source = stem_states[placement.crop.source_index]
-                source_tokens = source.shape[1]
-                packed_source[:, cursor : cursor + source_tokens].copy_(source)
-                cursor += source_tokens
+                source = prefix_states[placement.crop.source_index]
+                packed_source[:, cursor : cursor + placement.crop.tokens].copy_(source)
+                cursor += placement.crop.tokens
             if self.first_call:
                 print(
                     "UNIREC_VISION_ATLAS_FIRST_CALL_BEGIN "
@@ -514,53 +422,27 @@ class UniRecVisionAtlasRuntime:
 
         synchronize_device(self.runner.device)
         started = time.perf_counter()
-        stem_states: dict[int, torch.Tensor] = {}
-        stem_shapes: dict[int, tuple[int, int]] = {}
+        prefix_states: dict[int, torch.Tensor] = {}
         shapes: list[CropShape] = []
         with torch.inference_mode():
             for source_index, (inputs, _prep) in enumerate(prepared):
                 x, height, width = measure(
-                    "vision_crop_patch_stem",
-                    lambda inputs=inputs: self._run_patch_stem(
-                        inputs["pixel_values"]
-                    ),
+                    "vision_crop_prefix_stages_0_1",
+                    lambda inputs=inputs: self._run_prefix(inputs["pixel_values"]),
                 )
-                if height % PREFIX_SCALE or width % PREFIX_SCALE:
-                    raise ValueError(
-                        "UniRec patch-stem output must be divisible by 4, got "
-                        f"{height}x{width}"
-                    )
-                stem_states[source_index] = x
-                stem_shapes[source_index] = (height, width)
-                shapes.append(
-                    CropShape(
-                        source_index,
-                        height // PREFIX_SCALE,
-                        width // PREFIX_SCALE,
-                    )
-                )
+                prefix_states[source_index] = x
+                shapes.append(CropShape(source_index, height, width))
 
             packs, overflow = _pack_shapes(shapes)
             atlas_outputs = measure(
-                "compiled_vision_atlas_stages_0_2",
-                lambda: self._run_atlas_packs(packs, stem_states),
+                "compiled_vision_atlas_stage2",
+                lambda: self._run_atlas_packs(packs, prefix_states),
             )
             for crop in overflow:
-                stem_height, stem_width = stem_shapes[crop.source_index]
-                prefix, prefix_height, prefix_width = measure(
-                    "vision_stages_0_1_eager_overflow",
-                    lambda crop=crop, stem_height=stem_height, stem_width=stem_width: (
-                        self._run_stages_0_2_eager(
-                            stem_states[crop.source_index],
-                            stem_height,
-                            stem_width,
-                        )
-                    ),
-                )
                 atlas_outputs[crop.source_index] = measure(
                     "vision_stage2_eager_overflow",
-                    lambda prefix=prefix, prefix_height=prefix_height, prefix_width=prefix_width: self._run_stage2_eager(
-                        prefix, prefix_height, prefix_width
+                    lambda crop=crop: self._run_stage2_eager(
+                        prefix_states[crop.source_index], crop.height, crop.width
                     ),
                 )
 
@@ -669,8 +551,8 @@ class UniRecVisionAtlasRuntime:
         physical = int(result["physical_stage_tokens"])
         result.update(
             {
-                "execution": "eager_patch_stem_compiled_atlas_stages0_2",
-                "stages": [0, 1, 2],
+                "execution": "compiled_atlas_stage2",
+                "stage": ATLAS_STAGE,
                 "atlas_height": ATLAS_HEIGHT,
                 "atlas_width": ATLAS_WIDTH,
                 "guard": ATLAS_GUARD,
