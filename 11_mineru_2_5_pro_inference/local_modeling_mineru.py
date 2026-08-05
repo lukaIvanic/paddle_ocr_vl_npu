@@ -617,8 +617,14 @@ class MinerUMLP(nn.Module):
 
     def forward_decode_static(self, x: torch.Tensor) -> torch.Tensor:
         packed = linear_last_dim(self.decode_gate_up_proj, x)
-        gate, up = packed.chunk(2, dim=-1)
-        return linear_last_dim(self.down_proj, _activation(self.hidden_act, gate) * up)
+        if packed.device.type == "npu" and self.hidden_act in {"silu", "swish"}:
+            import torch_npu
+
+            activated = torch_npu.npu_swiglu(packed, dim=-1)
+        else:
+            gate, up = packed.chunk(2, dim=-1)
+            activated = _activation(self.hidden_act, gate) * up
+        return linear_last_dim(self.down_proj, activated)
 
 
 class MinerUAttention(nn.Module):
