@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Run table OCR through the HTTP API on OmniDocBench or image files."""
+"""Send table crops to the OCR API.
+
+Product users need only the CLI in ``parse_args``. Use ``--images`` for normal
+PNG/JPEG crops or ``--omnidocbench`` for the fixed 665-table quality check.
+Everything below the PRODUCT TEAM section is internal transport and evaluation
+code; it should not need product-specific edits.
+"""
 
 from __future__ import annotations
 
@@ -7,503 +13,93 @@ import argparse
 import collections
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
 import hashlib
 import io
 import json
 import math
 import multiprocessing
+from multiprocessing.connection import wait as wait_for_process
 import os
+from pathlib import Path
 import shutil
 import sys
 import time
 import traceback
+from typing import Any
 import urllib.error
 import urllib.parse
 import urllib.request
-from pathlib import Path
-from typing import Any
 
 from PIL import Image
 
 
-OMNIDOCBENCH_V16_JSON_SHA256 = (
-    "a45cd84b04ad8b793e775089640e6b681209abea33ead54c1828ddca35fae496"
-)
-OMNIDOCBENCH_V16_IMAGES_AGGREGATE_SHA256 = (
-    "58feeb96c60fcfab12ba4348c4e093ceaf1b707658dbfd0e08c24d7821d4c221"
-)
-OMNIDOCBENCH_V16_IMAGE_COUNT = 1651
+# =============================================================================
+# PRODUCT TEAM INTERFACE
+# =============================================================================
 
-
-@dataclass
-class _TedsTask:
-    index: int
-    sample: dict[str, Any]
-    pred: str
-    gt: str
-
-
-@dataclass
-class _ActiveTeds:
-    task: _TedsTask
-    process: multiprocessing.Process
-    receiver: Any
-    started_at: float
-
-
-def _stop_process(process: multiprocessing.Process) -> None:
-    process.join(timeout=0.2)
-    if process.is_alive():
-        process.terminate()
-        process.join(timeout=2)
-    if process.is_alive():
-        process.kill()
-        process.join(timeout=2)
-
-
-def _teds_process_entry(sender: Any, pred: str, gt: str) -> None:
-    try:
-        from src.metrics.table_metric import TEDS
-
-        score = TEDS(structure_only=False).evaluate(pred, gt)
-        structure_score = TEDS(structure_only=True).evaluate(pred, gt)
-        sender.send(("ok", (score, structure_score)))
-    except BaseException:
-        sender.send(("metric_error", traceback.format_exc()))
-    finally:
-        sender.close()
-
-
-def _start_teds_process(
-    context: multiprocessing.context.BaseContext,
-    task: _TedsTask,
-) -> _ActiveTeds:
-    receiver, sender = context.Pipe(duplex=False)
-    process = context.Process(
-        target=_teds_process_entry,
-        args=(sender, task.pred, task.gt),
-        name=f"omnidoc-teds-{task.index}",
-    )
-    try:
-        process.start()
-    except BaseException as exc:
-        sender.close()
-        receiver.close()
-        raise RuntimeError(
-            "failed to start TEDS worker for "
-            f"{task.sample.get('img_id')} gt_idx={task.sample.get('gt_idx')} "
-            f"pred_idx={task.sample.get('pred_idx')}: "
-            f"{type(exc).__name__}: {exc}"
-        ) from exc
-    sender.close()
-    return _ActiveTeds(
-        task=task,
-        process=process,
-        receiver=receiver,
-        started_at=time.monotonic(),
-    )
-
-
-def _collect_teds_process_isolated(
-    samples: list[dict[str, Any]],
-    worker_count: int,
-    timeout_sec: float | None,
-    metric_module: Any,
-) -> list[dict[str, Any]]:
-    """Score tables with bounded, parent-owned worker processes."""
-
-    from tqdm import tqdm
-
-    context = multiprocessing.get_context("fork")
-    pending: collections.deque[_TedsTask] = collections.deque()
-    results: list[dict[str, Any]] = []
-    exact_count = 0
-    for index, sample in enumerate(samples):
-        gt = sample["norm_gt"] if sample.get("norm_gt") else sample["gt"]
-        pred = sample["norm_pred"] if sample.get("norm_pred") else sample["pred"]
-        if pred and gt and pred == gt:
-            exact_count += 1
-            results.append(
-                {
-                    "original_index": index,
-                    "score": 1.0,
-                    "score_structure_only": 1.0,
-                    "status": "ok",
-                    "case_record": None,
-                }
-            )
-        else:
-            pending.append(
-                _TedsTask(index=index, sample=sample, pred=pred, gt=gt)
-            )
-
-    print(
-        "[process-TEDS] "
-        f"workers={worker_count} samples={len(samples)} exact={exact_count} "
-        f"timeout={timeout_sec if timeout_sec is not None else 'none'}s",
-        flush=True,
-    )
-    active: list[_ActiveTeds] = []
-    progress = tqdm(
-        total=len(samples),
-        initial=exact_count,
-        ascii=True,
-        ncols=140,
-        desc="TEDS (process-isolated)",
-    )
-    try:
-        while pending or active:
-            while len(active) < worker_count and pending:
-                active.append(_start_teds_process(context, pending.popleft()))
-
-            made_progress = False
-            now = time.monotonic()
-            for running in list(active):
-                task = running.task
-                if running.receiver.poll():
-                    made_progress = True
-                    status, payload = running.receiver.recv()
-                    running.receiver.close()
-                    _stop_process(running.process)
-                    active.remove(running)
-                    if status == "ok":
-                        score, structure_score = payload
-                        results.append(
-                            {
-                                "original_index": task.index,
-                                "score": score,
-                                "score_structure_only": structure_score,
-                                "status": "ok",
-                                "case_record": None,
-                            }
-                        )
-                    else:
-                        reason = str(payload)
-                        print(
-                            "TEDS score error for table "
-                            f"{task.sample.get('gt_idx')} in "
-                            f"{task.sample.get('img_id')}: {reason}. "
-                            "The score is set to 0.",
-                            flush=True,
-                        )
-                        results.append(
-                            {
-                                "original_index": task.index,
-                                "score": 0.0,
-                                "score_structure_only": 0.0,
-                                "status": "error",
-                                "case_record": metric_module._build_case_record(
-                                    task.sample,
-                                    reason=reason,
-                                ),
-                            }
-                        )
-                    progress.update(1)
-                    continue
-
-                if not running.process.is_alive():
-                    made_progress = True
-                    exit_code = running.process.exitcode
-                    running.receiver.close()
-                    active.remove(running)
-                    raise RuntimeError(
-                        "TEDS worker exited without a result for "
-                        f"{task.sample.get('img_id')} "
-                        f"gt_idx={task.sample.get('gt_idx')} "
-                        f"pred_idx={task.sample.get('pred_idx')} "
-                        f"exit_code={exit_code}"
-                    )
-
-                if timeout_sec is None:
-                    continue
-                elapsed = now - running.started_at
-                if elapsed <= timeout_sec:
-                    continue
-
-                made_progress = True
-                running.receiver.close()
-                _stop_process(running.process)
-                active.remove(running)
-                reason = f"timeout:{timeout_sec}"
-                metric_module._log_teds_timeout(
-                    task.sample,
-                    task.gt,
-                    task.pred,
-                    timeout_sec,
-                    reason,
-                )
-                results.append(
-                    {
-                        "original_index": task.index,
-                        "score": 0.0,
-                        "score_structure_only": 0.0,
-                        "status": "timeout",
-                        "case_record": metric_module._build_case_record(
-                            task.sample,
-                            reason=reason,
-                            timeout_sec=timeout_sec,
-                            gt_length=len(task.gt),
-                            pred_length=len(task.pred),
-                        ),
-                    }
-                )
-                progress.update(1)
-
-            if not made_progress:
-                time.sleep(0.01)
-    finally:
-        progress.close()
-        for running in active:
-            running.receiver.close()
-            _stop_process(running.process)
-
-    assert len(results) == len(samples), (len(results), len(samples))
-    results.sort(key=lambda item: item["original_index"])
-    return results
+CROP_TYPES = ("text", "ocr", "table", "chart", "formula", "spotting", "seal")
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument(
-        "--omnidocbench",
-        action="store_true",
-        help="Crop all table annotations from OmniDocBench and report Page-TEDS.",
+        "--images", type=Path, nargs="+", metavar="IMAGE",
+        help="Recognize one or more already-cropped PNG/JPEG files.",
     )
     mode.add_argument(
-        "--images",
-        type=Path,
-        nargs="+",
-        metavar="IMAGE",
-        help="Recognize one or more already-cropped image files.",
+        "--omnidocbench", action="store_true",
+        help="Run and score all OmniDocBench table annotations.",
     )
-    parser.add_argument("--dataset-json", type=Path, default=Path("/workspace/datasets/OmniDocBench/OmniDocBench.json"))
-    parser.add_argument("--images-dir", type=Path, default=Path("/workspace/datasets/OmniDocBench/images"))
-    parser.add_argument("--api-url", default="http://127.0.0.1:8765/v1/ocr")
-    parser.add_argument(
-        "--output-dir",
-        type=Path,
-        required=True,
-        help="Directory for predictions, scores, summaries, and Markdown output.",
+
+    product = parser.add_argument_group("product client")
+    product.add_argument("--api-url", default="http://127.0.0.1:8765/v1/ocr")
+    product.add_argument("--output-dir", type=Path, required=True)
+    product.add_argument("--crop-type", choices=CROP_TYPES, default="table")
+    product.add_argument("--timeout-s", type=float, default=900.0)
+    product.add_argument("--http-workers", type=int, default=64)
+
+    benchmark = parser.add_argument_group("OmniDocBench evaluation")
+    benchmark.add_argument(
+        "--dataset-json", type=Path,
+        default=Path("/workspace/datasets/OmniDocBench/OmniDocBench.json"),
     )
-    parser.add_argument(
-        "--crop-type",
-        choices=("text", "ocr", "table", "chart", "formula", "spotting", "seal"),
-        default="table",
-        help="Prompt used for --images. OmniDocBench mode always uses table.",
+    benchmark.add_argument(
+        "--images-dir", type=Path,
+        default=Path("/workspace/datasets/OmniDocBench/images"),
     )
-    parser.add_argument(
-        "--evaluator-root",
-        type=Path,
+    benchmark.add_argument(
+        "--evaluator-root", type=Path,
         default=Path("/workspace/repos/OmniDocBench_eval"),
     )
-    parser.add_argument(
-        "--crop-padding",
-        type=int,
-        default=0,
-        help=(
-            "Pixels added around each GT box. The official OmniDocBench "
-            "component-recognition contract uses zero."
-        ),
+    benchmark.add_argument("--teds-workers", type=int, default=12)
+    benchmark.add_argument("--teds-timeout-s", type=float, default=120.0)
+    benchmark.add_argument(
+        "--score-only", action="store_true",
+        help="Rescore saved tables.jsonl without rerunning OCR.",
     )
-    parser.add_argument("--offset", type=int, default=0)
-    parser.add_argument("--limit-pages", type=int)
-    parser.add_argument("--timeout-s", type=float, default=900.0)
-    parser.add_argument("--http-workers", type=int, default=64)
-    parser.add_argument(
-        "--drain-server",
-        action=argparse.BooleanOptionalAction,
-        default=None,
-        help=(
-            "Close the recognizer session and collect scheduler metrics. "
-            "Defaults to on for OmniDocBench and off for arbitrary images."
-        ),
+
+    # Kept for existing runbooks. Normal product checks leave these unchanged.
+    advanced = parser.add_argument_group("advanced controls")
+    advanced.add_argument("--crop-padding", type=int, default=0)
+    advanced.add_argument("--offset", type=int, default=0)
+    advanced.add_argument("--limit-pages", type=int)
+    advanced.add_argument(
+        "--drain-server", action=argparse.BooleanOptionalAction, default=None,
     )
-    parser.add_argument("--teds-workers", type=int, default=12)
-    parser.add_argument("--teds-timeout-s", type=float, default=120.0)
-    parser.add_argument(
-        "--score-only",
-        action="store_true",
-        help=(
-            "Score existing tables.jsonl in --output-dir without contacting "
-            "the OCR server. Valid only with --omnidocbench."
-        ),
+    advanced.add_argument("--fingerprint-only", action="store_true")
+    advanced.add_argument(
+        "--resume", action=argparse.BooleanOptionalAction, default=True,
     )
-    parser.add_argument(
-        "--fingerprint-only",
-        action="store_true",
-        help=(
-            "Hash OmniDocBench.json and all referenced images, write "
-            "dataset_manifest.json, and exit without contacting the API."
-        ),
-    )
-    parser.add_argument("--resume", action=argparse.BooleanOptionalAction, default=True)
     return parser.parse_args()
 
 
-def _bbox(poly: list[float], width: int, height: int, padding: int) -> tuple[int, int, int, int]:
-    xs = poly[0::2]
-    ys = poly[1::2]
-    return (
-        max(0, math.floor(min(xs)) - padding),
-        max(0, math.floor(min(ys)) - padding),
-        min(width, math.ceil(max(xs)) + padding),
-        min(height, math.ceil(max(ys)) + padding),
-    )
+# =============================================================================
+# INTERNAL TRANSPORT AND OUTPUT
+# Product users should not need to edit below this line.
+# =============================================================================
 
-
-def _sha256_bytes(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
-
-
-def _sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for chunk in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
-def _write_dataset_manifest(
-    dataset_json: Path,
-    images_dir: Path,
-    output_path: Path,
-) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    print(
-        "DATASET_CHECK_START "
-        "checking OmniDocBench.json and all referenced image files; "
-        "inference will start after this check",
-        flush=True,
-    )
-    dataset_bytes = dataset_json.read_bytes()
-    pages = json.loads(dataset_bytes)
-    image_names = [
-        Path(page["page_info"]["image_path"]).name
-        for page in pages
-    ]
-    image_count_matches = len(image_names) == OMNIDOCBENCH_V16_IMAGE_COUNT
-    print(
-        "DATASET_IMAGE_COUNT "
-        f"found={len(image_names)} expected={OMNIDOCBENCH_V16_IMAGE_COUNT} "
-        f"matches={image_count_matches}",
-        flush=True,
-    )
-    if len(image_names) != len(set(image_names)):
-        duplicates = sorted(
-            name for name, count in Counter(image_names).items() if count > 1
-        )
-        raise ValueError(
-            "dataset contains duplicate resolved image names: "
-            + ", ".join(duplicates[:10])
-        )
-
-    entries: list[dict[str, Any]] = []
-    total_bytes = 0
-    aggregate = hashlib.sha256()
-    for index, name in enumerate(sorted(image_names), start=1):
-        image_path = images_dir / name
-        if not image_path.is_file():
-            raise FileNotFoundError(f"dataset image does not exist: {image_path}")
-        size = image_path.stat().st_size
-        image_hash = _sha256_file(image_path)
-        entry = {"path": name, "bytes": size, "sha256": image_hash}
-        canonical_line = (
-            json.dumps(entry, sort_keys=True, separators=(",", ":")) + "\n"
-        ).encode("utf-8")
-        aggregate.update(canonical_line)
-        entries.append(entry)
-        total_bytes += size
-        if index % 100 == 0 or index == len(image_names):
-            print(
-                f"fingerprinted_images={index}/{len(image_names)}",
-                flush=True,
-            )
-
-    manifest = {
-        "schema_version": 1,
-        "dataset_json": {
-            "path": dataset_json.name,
-            "bytes": len(dataset_bytes),
-            "sha256": _sha256_bytes(dataset_bytes),
-        },
-        "referenced_images": {
-            "resolution": "images_dir / basename(page_info.image_path)",
-            "aggregate_algorithm": "sha256(canonical_jsonl_entries_v1)",
-            "count": len(entries),
-            "total_bytes": total_bytes,
-            "aggregate_sha256": aggregate.hexdigest(),
-            "entries": entries,
-        },
-    }
-    manifest["repository_authority"] = {
-        "name": "OmniDocBench v1.6 910B benchmark inputs",
-        "expected_referenced_image_count": OMNIDOCBENCH_V16_IMAGE_COUNT,
-        "expected_dataset_json_sha256": OMNIDOCBENCH_V16_JSON_SHA256,
-        "expected_referenced_images_aggregate_sha256": (
-            OMNIDOCBENCH_V16_IMAGES_AGGREGATE_SHA256
-        ),
-        "image_count_matches": image_count_matches,
-        "dataset_json_matches": (
-            manifest["dataset_json"]["sha256"]
-            == OMNIDOCBENCH_V16_JSON_SHA256
-        ),
-        "referenced_images_aggregate_matches": (
-            manifest["referenced_images"]["aggregate_sha256"]
-            == OMNIDOCBENCH_V16_IMAGES_AGGREGATE_SHA256
-        ),
-        "matches": (
-            image_count_matches
-            and manifest["dataset_json"]["sha256"]
-            == OMNIDOCBENCH_V16_JSON_SHA256
-            and manifest["referenced_images"]["aggregate_sha256"]
-            == OMNIDOCBENCH_V16_IMAGES_AGGREGATE_SHA256
-        ),
-    }
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
-    print(
-        "DATASET_FINGERPRINT "
-        f"json_sha256={manifest['dataset_json']['sha256']} "
-        f"images={manifest['referenced_images']['count']} "
-        "images_aggregate_sha256="
-        f"{manifest['referenced_images']['aggregate_sha256']} "
-        f"matches_repository_authority={manifest['repository_authority']['matches']} "
-        f"output={output_path}",
-        flush=True,
-    )
-    if manifest["repository_authority"]["matches"]:
-        print(
-            "DATASET_CHECK_RESULT PASS: input count and fingerprints match "
-            "the repository authority",
-            flush=True,
-        )
-    else:
-        authority = manifest["repository_authority"]
-        print(
-            "\033[1;31m\n"
-            "!!!!!!!!!!!!!!!! DATASET AUTHORITY WARNING !!!!!!!!!!!!!!!!\n"
-            "The supplied OmniDocBench inputs do not match the validated "
-            "repository authority.\n"
-            f"Image count: {len(image_names)} "
-            f"(expected {OMNIDOCBENCH_V16_IMAGE_COUNT}); "
-            f"count_match={authority['image_count_matches']}\n"
-            f"JSON fingerprint match={authority['dataset_json_matches']}; "
-            "image aggregate fingerprint match="
-            f"{authority['referenced_images_aggregate_matches']}\n"
-            "The run will continue with the supplied inputs.\n"
-            "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-            "\033[0m\n",
-            file=sys.stderr,
-            flush=True,
-        )
-    return pages, manifest
-
-
-def _post_image(
+def _request(
     api_url: str,
     request_id: str,
     image_bytes: bytes,
@@ -527,56 +123,262 @@ def _post_image(
         raise RuntimeError(f"API HTTP {exc.code}: {body}") from exc
 
 
-def _post_crop(
-    api_url: str,
-    request_id: str,
-    crop: Image.Image,
-    timeout_s: float,
-) -> dict[str, Any]:
-    encoded = io.BytesIO()
-    crop.save(encoded, format="PNG", optimize=False)
-    return _post_image(
-        api_url,
-        request_id,
-        encoded.getvalue(),
-        "table",
-        timeout_s,
+def _drain(api_url: str, timeout_s: float) -> dict[str, Any]:
+    parsed = urllib.parse.urlparse(api_url)
+    url = urllib.parse.urlunparse(parsed._replace(path="/v1/drain", query=""))
+    request = urllib.request.Request(url, data=b"", method="POST")
+    with urllib.request.urlopen(request, timeout=timeout_s) as response:
+        return json.loads(response.read())["summary"]
+
+
+def _safe_name(path: Path) -> str:
+    name = "".join(
+        char if char.isalnum() or char in "-_" else "_" for char in path.stem
+    ).strip("_")
+    return name or "image"
+
+
+def _write_json(path: Path, value: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(value, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
     )
 
 
-def _drain_api(api_url: str, timeout_s: float) -> dict[str, Any]:
-    parsed = urllib.parse.urlparse(api_url)
-    drain_url = urllib.parse.urlunparse(parsed._replace(path="/v1/drain", query=""))
-    request = urllib.request.Request(drain_url, data=b"", method="POST")
-    with urllib.request.urlopen(request, timeout=timeout_s) as response:
-        payload = json.loads(response.read())
-    return payload["summary"]
+def _custom_image_job(
+    index: int,
+    image_path: Path,
+    args: argparse.Namespace,
+) -> tuple[int, dict[str, Any]]:
+    started = time.perf_counter()
+    image_bytes = image_path.read_bytes()
+    response = _request(
+        args.api_url,
+        f"image_{index:06d}_{_safe_name(image_path)}",
+        image_bytes,
+        args.crop_type,
+        args.timeout_s,
+    )
+    return index, {
+        "image_path": str(image_path.resolve()),
+        "image_sha256": hashlib.sha256(image_bytes).hexdigest(),
+        "crop_type": args.crop_type,
+        "client_wall_s": time.perf_counter() - started,
+        "response": response,
+    }
 
 
-def _recognize_job(
-    job: tuple[int, dict[str, Any], int, dict[str, Any]],
-    *,
-    images_dir: Path,
-    crop_padding: int,
-    api_url: str,
-    timeout_s: float,
-) -> dict[str, Any]:
+def _custom_markdown(record: dict[str, Any], relative_image: str) -> str:
+    response = record["response"]
+    return "\n".join(
+        [
+            f"# {Path(record['image_path']).name}",
+            "",
+            f"![Input image](<{relative_image}>)",
+            "",
+            "## Recognition",
+            "",
+            str(response["text"]).rstrip(),
+            "",
+            "## Run information",
+            "",
+            f"- Crop type: {record['crop_type']}",
+            f"- Stop reason: {response['stop_reason']}",
+            f"- Input tokens: {response['input_tokens']}",
+            f"- Output tokens including EOS: "
+            f"{response['generated_tokens_including_eos']}",
+            f"- Request wall time: {record['client_wall_s']:.3f} s",
+            "",
+        ]
+    )
+
+
+def _run_images(args: argparse.Namespace) -> None:
+    assert args.images
+    missing = [path for path in args.images if not path.is_file()]
+    if missing:
+        raise FileNotFoundError("Missing image(s): " + ", ".join(map(str, missing)))
+
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    started = time.perf_counter()
+    records: dict[int, dict[str, Any]] = {}
+    with ThreadPoolExecutor(max_workers=min(args.http_workers, len(args.images))) as pool:
+        futures = [
+            pool.submit(_custom_image_job, index, path, args)
+            for index, path in enumerate(args.images)
+        ]
+        for completed, future in enumerate(as_completed(futures), start=1):
+            index, record = future.result()
+            records[index] = record
+            print(f"completed={completed}/{len(futures)}", flush=True)
+
+    ordered = [records[index] for index in range(len(args.images))]
+    image_output = args.output_dir / "images"
+    image_output.mkdir(exist_ok=True)
+    sections = ["# Crop OCR results", ""]
+    for index, record in enumerate(ordered, start=1):
+        source = Path(record["image_path"])
+        saved = image_output / f"{index:03d}_{_safe_name(source)}{source.suffix.lower()}"
+        shutil.copy2(source, saved)
+        relative = os.path.relpath(saved, args.output_dir)
+        markdown = _custom_markdown(record, relative)
+        sections.extend([markdown, "---", ""])
+        print(f"\n=== {source} ===\n{record['response']['text']}", flush=True)
+
+    wall_s = time.perf_counter() - started
+    summary = {
+        "images": len(ordered),
+        "crop_type": args.crop_type,
+        "wall_s": wall_s,
+        "images_per_s": len(ordered) / wall_s,
+        "stop_reasons": dict(
+            Counter(item["response"]["stop_reason"] for item in ordered)
+        ),
+    }
+    _write_json(args.output_dir / "results.json", ordered)
+    (args.output_dir / "results.md").write_text(
+        "\n".join(sections), encoding="utf-8"
+    )
+    _write_json(args.output_dir / "summary.json", summary)
+    print(
+        "\n# Crop OCR summary\n\n"
+        f"- Images: {summary['images']}\n"
+        f"- Crop type: {summary['crop_type']}\n"
+        f"- Wall time: {wall_s:.3f} s\n"
+        f"- Results: `{args.output_dir / 'results.md'}`\n",
+        flush=True,
+    )
+
+
+# =============================================================================
+# INTERNAL OMNIDOCBENCH BENCHMARK AND TEDS EVALUATION
+# This section implements the fixed validation procedure. Product users should
+# not edit it. The pinned upstream evaluator supplies normalization and TEDS.
+# =============================================================================
+
+EXPECTED_JSON_SHA256 = (
+    "a45cd84b04ad8b793e775089640e6b681209abea33ead54c1828ddca35fae496"
+)
+EXPECTED_IMAGES_SHA256 = (
+    "58feeb96c60fcfab12ba4348c4e093ceaf1b707658dbfd0e08c24d7821d4c221"
+)
+EXPECTED_IMAGE_COUNT = 1651
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _check_dataset(args: argparse.Namespace) -> tuple[list[dict[str, Any]], dict]:
+    print(
+        "DATASET_CHECK_START checking OmniDocBench.json and all referenced "
+        "images; inference starts after this check",
+        flush=True,
+    )
+    dataset_bytes = args.dataset_json.read_bytes()
+    pages = json.loads(dataset_bytes)
+    names = [Path(page["page_info"]["image_path"]).name for page in pages]
+    if len(names) != len(set(names)):
+        raise ValueError("duplicate image basenames in OmniDocBench.json")
+
+    aggregate = hashlib.sha256()
+    total_bytes = 0
+    for index, name in enumerate(sorted(names), start=1):
+        path = args.images_dir / name
+        if not path.is_file():
+            raise FileNotFoundError(path)
+        size = path.stat().st_size
+        total_bytes += size
+        entry = {"path": name, "bytes": size, "sha256": _sha256_file(path)}
+        aggregate.update(
+            (json.dumps(entry, sort_keys=True, separators=(",", ":")) + "\n").encode()
+        )
+        if index % 100 == 0 or index == len(names):
+            print(f"fingerprinted_images={index}/{len(names)}", flush=True)
+
+    json_hash = hashlib.sha256(dataset_bytes).hexdigest()
+    images_hash = aggregate.hexdigest()
+    manifest = {
+        "dataset_json_sha256": json_hash,
+        "referenced_image_count": len(names),
+        "referenced_images_total_bytes": total_bytes,
+        "referenced_images_aggregate_sha256": images_hash,
+        "matches_repository_authority": (
+            len(names) == EXPECTED_IMAGE_COUNT
+            and json_hash == EXPECTED_JSON_SHA256
+            and images_hash == EXPECTED_IMAGES_SHA256
+        ),
+    }
+    _write_json(args.output_dir / "dataset_manifest.json", manifest)
+    print(
+        f"DATASET_CHECK_RESULT matches={manifest['matches_repository_authority']} "
+        f"images={len(names)}/{EXPECTED_IMAGE_COUNT} json_sha256={json_hash} "
+        f"images_sha256={images_hash}",
+        flush=True,
+    )
+    if not manifest["matches_repository_authority"]:
+        print(
+            "\033[1;31mDATASET WARNING: inputs differ from the validated "
+            "OmniDocBench v1.6 fingerprints. The run will continue.\033[0m",
+            file=sys.stderr,
+            flush=True,
+        )
+    return pages, manifest
+
+
+def _bbox(poly: list[float], width: int, height: int, padding: int) -> tuple[int, ...]:
+    xs, ys = poly[0::2], poly[1::2]
+    return (
+        max(0, math.floor(min(xs)) - padding),
+        max(0, math.floor(min(ys)) - padding),
+        min(width, math.ceil(max(xs)) + padding),
+        min(height, math.ceil(max(ys)) + padding),
+    )
+
+
+def _table_jobs(pages: list[dict], args: argparse.Namespace) -> list[tuple]:
+    selected = pages[args.offset :]
+    if args.limit_pages is not None:
+        selected = selected[: args.limit_pages]
+    return [
+        (page_index, page, annotation_index, annotation)
+        for page_index, page in enumerate(selected, start=args.offset)
+        for annotation_index, annotation in enumerate(page.get("layout_dets") or [])
+        if not annotation.get("ignore")
+        and annotation.get("category_type") == "table"
+    ]
+
+
+def _request_id(job: tuple) -> str:
+    page_index, _page, annotation_index, annotation = job
+    return (
+        f"page_{page_index:06d}_table_"
+        f"{annotation.get('anno_id', annotation_index)}"
+    )
+
+
+def _table_job(job: tuple, args: argparse.Namespace) -> dict[str, Any]:
     page_index, page, annotation_index, annotation = job
     page_name = Path(page["page_info"]["image_path"]).name
-    annotation_id = str(annotation.get("anno_id", annotation_index))
-    request_id = f"page_{page_index:06d}_table_{annotation_id}"
-    image_path = images_dir / page_name
-    with Image.open(image_path) as opened:
+    with Image.open(args.images_dir / page_name) as opened:
         image = opened.convert("RGB")
-    bbox = _bbox(annotation["poly"], image.width, image.height, crop_padding)
+    bbox = _bbox(annotation["poly"], image.width, image.height, args.crop_padding)
     crop = image.crop(bbox)
-    response = _post_crop(api_url, request_id, crop, timeout_s)
+    encoded = io.BytesIO()
+    crop.save(encoded, format="PNG", optimize=False)
+    response = _request(
+        args.api_url, _request_id(job), encoded.getvalue(), "table", args.timeout_s
+    )
     return {
-        "request_id": request_id,
+        "request_id": _request_id(job),
         "page_index": page_index,
         "page_name": page_name,
         "annotation_index": annotation_index,
-        "anno_id": annotation.get("anno_id"),
         "bbox_xyxy": list(bbox),
         "crop_size": list(crop.size),
         "gt_html": annotation.get("html") or annotation.get("text") or "",
@@ -587,609 +389,301 @@ def _recognize_job(
         "output_tokens": response["generated_tokens_including_eos"],
         "worker_wall_s": response["worker_wall_s"],
         "http_wall_s": response["http_wall_s"],
-        "timing_s": response["timing_s"],
-        "device_stage_s": response["device_stage_s"],
-        "rates": response["rates"],
-        "vision": response["vision"],
-        "text_prefill": response["text_prefill"],
+        "device_stage_s": response.get("device_stage_s", {}),
+        "vision": response.get("vision", {}),
+        "text_prefill": response.get("text_prefill", {}),
     }
 
 
-def _read_completed(path: Path) -> dict[str, dict[str, Any]]:
+def _read_jsonl(path: Path) -> dict[str, dict[str, Any]]:
     if not path.is_file():
         return {}
-    completed: dict[str, dict[str, Any]] = {}
-    for line in path.read_text(encoding="utf-8").splitlines():
-        if line.strip():
-            record = json.loads(line)
-            completed[record["request_id"]] = record
-    return completed
+    return {
+        record["request_id"]: record
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+        for record in [json.loads(line)]
+    }
 
 
-def _score(
-    output: Path,
-    score_output: Path,
-    evaluator_root: Path,
-    *,
-    workers: int,
-    timeout_s: float,
-) -> None:
-    sys.path.insert(0, str(evaluator_root.resolve()))
-    import src.metrics.cal_metric as metric_module
-    from src.core.preprocess import normalized_table
+def _stop_process(process: multiprocessing.Process) -> None:
+    process.join(timeout=0.2)
+    if process.is_alive():
+        process.terminate()
+        process.join(timeout=2)
+    if process.is_alive():
+        process.kill()
+        process.join(timeout=2)
 
-    records = list(_read_completed(output).values())
-    page_scores: dict[str, list[float]] = {}
-    page_structure_scores: dict[str, list[float]] = {}
-    scored: list[dict[str, Any]] = []
-    def document(table_html: str) -> str:
-        table_html = normalized_table(table_html, "html")
-        if "<html" in table_html.lower():
-            return table_html
-        return f"<html><body>{table_html}</body></html>"
 
-    samples: list[dict[str, Any]] = []
-    for index, record in enumerate(records):
-        pred_html = document(record["pred_html"])
-        gt_html = document(record["gt_html"])
-        samples.append(
-            {
-                "img_id": record["page_name"],
-                "gt_idx": record.get("annotation_index", index),
-                "pred_idx": record.get("annotation_index", index),
-                "gt": gt_html,
-                "pred": pred_html,
-                "norm_gt": gt_html,
-                "norm_pred": pred_html,
-            }
+def _teds_worker(sender: Any, pred: str, gt: str) -> None:
+    try:
+        from src.metrics.table_metric import TEDS
+
+        sender.send(
+            (
+                "ok",
+                TEDS(structure_only=False).evaluate(pred, gt),
+                TEDS(structure_only=True).evaluate(pred, gt),
+            )
         )
+    except BaseException:
+        sender.send(("error", traceback.format_exc(), 0.0))
+    finally:
+        sender.close()
 
-    process_results = _collect_teds_process_isolated(
-        samples,
-        workers,
-        timeout_s,
-        metric_module,
-    )
 
-    timeout_count = 0
-    error_count = 0
-    timeout_pages: set[str] = set()
-    for index, record in enumerate(records):
-        process_result = process_results[index]
-        score = float(process_result["score"])
-        structure = float(process_result["score_structure_only"])
-        status = str(process_result["status"])
-        case_record = process_result.get("case_record")
-        error = None
-        if status != "ok":
-            error = json.dumps(case_record, ensure_ascii=False)
-            if status == "timeout":
-                timeout_count += 1
-                timeout_pages.add(record["page_name"])
-            else:
-                error_count += 1
-        page_scores.setdefault(record["page_name"], []).append(score)
-        page_structure_scores.setdefault(record["page_name"], []).append(structure)
-        scored.append(
-            {
-                "request_id": record["request_id"],
-                "page_name": record["page_name"],
-                "TEDS": score,
-                "TEDS_structure_only": structure,
-                "error": error,
-            }
-        )
-    sample_scores = [item["TEDS"] for item in scored]
-    sample_structure = [item["TEDS_structure_only"] for item in scored]
-    page_means = {
-        page: sum(values) / len(values) for page, values in page_scores.items()
-    }
-    page_structure_means = {
-        page: sum(values) / len(values)
-        for page, values in page_structure_scores.items()
-    }
-    result = {
-        "table_count": len(scored),
-        "table_page_count": len(page_means),
-        "sample_TEDS": sum(sample_scores) / len(sample_scores),
-        "sample_TEDS_structure_only": sum(sample_structure) / len(sample_structure),
-        "page_TEDS": sum(page_means.values()) / len(page_means),
-        "page_TEDS_structure_only": sum(page_structure_means.values())
-        / len(page_structure_means),
-        "teds_timeout_s": timeout_s,
-        "teds_timeout_count": timeout_count,
-        "teds_timeout_pages": sorted(timeout_pages),
-        "teds_error_count": error_count,
-        "per_page_TEDS": page_means,
-        "per_table": scored,
-    }
-    score_output.parent.mkdir(parents=True, exist_ok=True)
-    score_output.write_text(
-        json.dumps(result, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
+def _teds_scores(samples: list[dict], args: argparse.Namespace, metric: Any) -> list[dict]:
+    """Score each non-exact table in a killable process with a hard timeout."""
+    from tqdm import tqdm
+
+    def packed(index, score, structure, status="ok", error=None):
+        return {"index": index, "score": score, "structure": structure,
+                "status": status, "error": error}
+
+    pending, results = collections.deque(), []
+    for index, sample in enumerate(samples):
+        if sample["pred"] and sample["pred"] == sample["gt"]:
+            results.append(packed(index, 1.0, 1.0))
+        else:
+            pending.append((index, sample))
+    exact = len(results)
     print(
-        f"SCORED page_TEDS={result['page_TEDS']:.6f} "
-        f"sample_TEDS={result['sample_TEDS']:.6f} output={score_output}",
+        f"[process-TEDS] workers={args.teds_workers} samples={len(samples)} "
+        f"exact={exact} timeout={args.teds_timeout_s}s",
         flush=True,
     )
-    if timeout_count:
-        recommended_timeout_s = max(120.0, timeout_s * 2.0)
-        page_preview = ", ".join(sorted(timeout_pages)[:10])
-        if len(timeout_pages) > 10:
-            page_preview += f", ... (+{len(timeout_pages) - 10} more)"
-        print(
-            "\033[1;31m\n"
-            "!!!!!!!!!!!!!!!!!!! TEDS TIMEOUT WARNING !!!!!!!!!!!!!!!!!!\n"
-            f"{timeout_count} table score(s) on {len(timeout_pages)} page(s) "
-            f"timed out after {timeout_s:g} seconds.\n"
-            "Each timed-out table was scored as zero, so the reported "
-            "TEDS values are artificially low.\n"
-            f"Affected pages: {page_preview}\n"
-            "Re-run scoring only with the same output directory and "
-            f"--teds-timeout-s {recommended_timeout_s:g}.\n"
-            "No OCR inference rerun is needed.\n"
-            "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-            "\033[0m\n",
-            file=sys.stderr,
-            flush=True,
-        )
+
+    context = multiprocessing.get_context("fork")
+    active: dict[Any, tuple[multiprocessing.Process, float, tuple]] = {}
+    progress = tqdm(total=len(samples), initial=exact, ascii=True, ncols=140,
+                    desc="TEDS (process-isolated)")
+    try:
+        while pending or active:
+            while pending and len(active) < args.teds_workers:
+                task = pending.popleft()
+                receiver, sender = context.Pipe(duplex=False)
+                process = context.Process(
+                    target=_teds_worker,
+                    args=(sender, task[1]["pred"], task[1]["gt"]),
+                    name=f"omnidoc-teds-{task[0]}",
+                )
+                process.start()
+                sender.close()
+                active[receiver] = (process, time.monotonic(), task)
+
+            for receiver in wait_for_process(list(active), timeout=0.05):
+                process, _, (index, sample) = active.pop(receiver)
+                try:
+                    status, score, structure = receiver.recv()
+                finally:
+                    receiver.close()
+                    _stop_process(process)
+                if status != "ok":
+                    error = str(score)
+                    print(
+                        f"TEDS error for {sample['page_name']}; score set to 0",
+                        flush=True,
+                    )
+                    score = structure = 0.0
+                else:
+                    error = None
+                results.append(packed(index, score, structure, status, error))
+                progress.update(1)
+
+            now = time.monotonic()
+            for receiver, (process, started, task) in list(active.items()):
+                index, sample = task
+                if not process.is_alive():
+                    receiver.close()
+                    active.pop(receiver)
+                    raise RuntimeError(
+                        f"TEDS worker died for {sample['page_name']} "
+                        f"with exit code {process.exitcode}"
+                    )
+                if now - started <= args.teds_timeout_s:
+                    continue
+                receiver.close()
+                _stop_process(process)
+                active.pop(receiver)
+                reason = f"timeout:{args.teds_timeout_s}"
+                metric._log_teds_timeout(
+                    sample, sample["gt"], sample["pred"],
+                    args.teds_timeout_s, reason,
+                )
+                results.append(packed(index, 0.0, 0.0, "timeout", reason))
+                progress.update(1)
+    finally:
+        progress.close()
+        for receiver, (process, _, _) in active.items():
+            receiver.close()
+            _stop_process(process)
+
+    results.sort(key=lambda item: item["index"])
+    assert len(results) == len(samples)
+    return results
+
+
+def _score(records: list[dict], args: argparse.Namespace) -> dict[str, Any]:
+    sys.path.insert(0, str(args.evaluator_root.resolve()))
+    import src.metrics.cal_metric as metric
+    from src.core.preprocess import normalized_table
+
+    def document(value: str) -> str:
+        value = normalized_table(value, "html")
+        return value if "<html" in value.lower() else f"<html><body>{value}</body></html>"
+
+    samples = [
+        {
+            "page_name": record["page_name"],
+            "img_id": record["page_name"],
+            "gt_idx": record["annotation_index"],
+            "pred_idx": record["annotation_index"],
+            "gt": document(record["gt_html"]),
+            "pred": document(record["pred_html"]),
+        }
+        for record in records
+    ]
+    raw_scores = _teds_scores(samples, args, metric)
+    per_table, pages, page_structures = [], collections.defaultdict(list), collections.defaultdict(list)
+    for record, score in zip(records, raw_scores):
+        item = {
+            "request_id": record["request_id"],
+            "page_name": record["page_name"],
+            "TEDS": float(score["score"]),
+            "TEDS_structure_only": float(score["structure"]),
+            "error": score["error"],
+        }
+        per_table.append(item)
+        pages[item["page_name"]].append(item["TEDS"])
+        page_structures[item["page_name"]].append(item["TEDS_structure_only"])
+
+    page_scores = {name: sum(values) / len(values) for name, values in pages.items()}
+    structure_scores = {
+        name: sum(values) / len(values) for name, values in page_structures.items()
+    }
+    result = {
+        "table_count": len(per_table),
+        "table_page_count": len(page_scores),
+        "sample_TEDS": sum(item["TEDS"] for item in per_table) / len(per_table),
+        "sample_TEDS_structure_only": sum(
+            item["TEDS_structure_only"] for item in per_table
+        ) / len(per_table),
+        "page_TEDS": sum(page_scores.values()) / len(page_scores),
+        "page_TEDS_structure_only": sum(structure_scores.values()) / len(structure_scores),
+        "teds_timeout_s": args.teds_timeout_s,
+        "teds_timeout_count": sum(item["status"] == "timeout" for item in raw_scores),
+        "teds_error_count": sum(item["status"] == "error" for item in raw_scores),
+        "per_page_TEDS": page_scores,
+        "per_table": per_table,
+    }
+    _write_json(args.output_dir / "scores.json", result)
+    return result
 
 
 def _distribution(values: list[float]) -> dict[str, float]:
-    ordered = sorted(values)
-
-    def percentile(fraction: float) -> float:
-        index = min(len(ordered) - 1, math.ceil(fraction * len(ordered)) - 1)
-        return ordered[index]
-
+    values = sorted(values)
+    percentile = lambda q: values[min(len(values) - 1, math.ceil(q * len(values)) - 1)]
     return {
-        "mean": sum(ordered) / len(ordered),
-        "p50": percentile(0.50),
-        "p95": percentile(0.95),
-        "max": ordered[-1],
+        "mean": sum(values) / len(values), "p50": percentile(0.5),
+        "p95": percentile(0.95), "max": values[-1],
     }
 
 
-def _write_summary(
-    output: Path,
-    summary_output: Path,
-    *,
+def _summary(
+    records: list[dict],
     generation_wall_s: float,
-    score_output: Path | None,
-    service_summary: dict[str, Any] | None,
-) -> dict[str, Any]:
-    records = list(_read_completed(output).values())
-    dataset_manifest = json.loads(
-        (output.parent / "dataset_manifest.json").read_text(encoding="utf-8")
-    )
+    manifest: dict,
+    scores: dict,
+    service: dict | None,
+) -> dict:
     http = [float(record["http_wall_s"]) for record in records]
     worker = [float(record["worker_wall_s"]) for record in records]
-    overhead = [max(0.0, h - w) for h, w in zip(http, worker)]
-    metrics = None
-    if score_output is not None:
-        metrics = json.loads(score_output.read_text(encoding="utf-8"))
-    summary = {
+    overhead = [max(0.0, left - right) for left, right in zip(http, worker)]
+    stage_names = sorted({name for record in records for name in record["device_stage_s"]})
+    return {
         "tables": len(records),
         "unique_requests": len({record["request_id"] for record in records}),
         "generation_wall_s": generation_wall_s,
         "tables_per_s": len(records) / generation_wall_s,
         "http_latency_s": _distribution(http),
         "worker_latency_s": _distribution(worker),
-        "http_wrapper_overhead_s": {
-            "sum": sum(overhead),
-            **_distribution(overhead),
-        },
-        "input_tokens": sum(int(record["input_tokens"]) for record in records),
-        "output_tokens_including_eos": sum(
-            int(record["output_tokens"]) for record in records
-        ),
+        "http_wrapper_overhead_s": {"sum": sum(overhead), **_distribution(overhead)},
+        "input_tokens": sum(record["input_tokens"] for record in records),
+        "output_tokens_including_eos": sum(record["output_tokens"] for record in records),
         "stop_reasons": dict(Counter(record["stop_reason"] for record in records)),
         "device_stage_s": {
-            stage: sum(
-                float(record.get("device_stage_s", {}).get(stage, 0.0))
-                for record in records
-            )
-            for stage in sorted(
-                {
-                    stage
-                    for record in records
-                    for stage in record.get("device_stage_s", {})
-                }
-            )
+            name: sum(record["device_stage_s"].get(name, 0.0) for record in records)
+            for name in stage_names
         },
         "physical_vision_tokens": sum(
-            int(record.get("vision", {}).get("physical_vision_tokens", 0))
-            for record in records
+            record["vision"].get("physical_vision_tokens", 0) for record in records
         ),
         "real_vision_tokens": sum(
-            int(record.get("vision", {}).get("real_vision_tokens", 0))
-            for record in records
+            record["vision"].get("real_vision_tokens", 0) for record in records
         ),
         "physical_text_tokens": sum(
-            int(record.get("text_prefill", {}).get("physical_text_tokens", 0))
-            for record in records
+            record["text_prefill"].get("physical_text_tokens", 0) for record in records
         ),
         "real_text_tokens": sum(
-            int(record.get("text_prefill", {}).get("real_text_tokens", 0))
-            for record in records
+            record["text_prefill"].get("real_text_tokens", 0) for record in records
         ),
-        "service_scheduler": service_summary,
-        "metrics": metrics,
-        "dataset_fingerprint": {
-            "dataset_json_sha256": dataset_manifest["dataset_json"]["sha256"],
-            "referenced_image_count": dataset_manifest["referenced_images"]["count"],
-            "expected_referenced_image_count": OMNIDOCBENCH_V16_IMAGE_COUNT,
-            "referenced_image_count_matches": dataset_manifest[
-                "repository_authority"
-            ]["image_count_matches"],
-            "referenced_images_total_bytes": dataset_manifest["referenced_images"]["total_bytes"],
-            "referenced_images_aggregate_sha256": dataset_manifest[
-                "referenced_images"
-            ]["aggregate_sha256"],
-            "matches_repository_authority": dataset_manifest[
-                "repository_authority"
-            ]["matches"],
-        },
-    }
-    summary_output.parent.mkdir(parents=True, exist_ok=True)
-    summary_output.write_text(
-        json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
-    print(f"SUMMARY output={summary_output}", flush=True)
-    return summary
-
-
-def _benchmark_summary_markdown(summary: dict[str, Any]) -> str:
-    metrics = summary["metrics"]
-    stages = summary["device_stage_s"]
-    fingerprint = summary["dataset_fingerprint"]
-    scheduler = summary.get("service_scheduler") or {}
-    rates = scheduler.get("rates") or {}
-    timeout_warning: list[str] = []
-    if metrics["teds_timeout_count"]:
-        recommended_timeout_s = max(
-            120.0,
-            float(metrics["teds_timeout_s"]) * 2.0,
-        )
-        timeout_warning = [
-            "- **WARNING:** Timed-out tables were scored as zero; the TEDS "
-            "values are artificially low.",
-            "- Re-run `--score-only` with "
-            f"`--teds-timeout-s {recommended_timeout_s:g}`.",
-        ]
-    lines = [
-        "# OmniDocBench table OCR summary",
-        "",
-        f"- Tables: {summary['tables']}",
-        f"- Generation wall time: {summary['generation_wall_s']:.3f} s",
-        f"- Throughput: {summary['tables_per_s']:.3f} tables/s",
-        f"- Page-TEDS: {metrics['page_TEDS']:.6f}",
-        f"- Sample TEDS: {metrics['sample_TEDS']:.6f}",
-        (
-            "- Page structure-only TEDS: "
-            f"{metrics['page_TEDS_structure_only']:.6f}"
-        ),
-        f"- TEDS timeouts: {metrics['teds_timeout_count']}",
-        f"- TEDS errors: {metrics['teds_error_count']}",
-        *timeout_warning,
-        f"- Stop reasons: {summary['stop_reasons']}",
-        "",
-        "## Dataset fingerprint",
-        "",
-        f"- OmniDocBench.json SHA-256: `{fingerprint['dataset_json_sha256']}`",
-        (
-            "- Referenced images: "
-            f"{fingerprint['referenced_image_count']} files, "
-            f"expected {fingerprint['expected_referenced_image_count']}, "
-            f"count matches: {fingerprint['referenced_image_count_matches']}; "
-            f"{fingerprint['referenced_images_total_bytes']} bytes"
-        ),
-        (
-            "- Referenced-images aggregate SHA-256: "
-            f"`{fingerprint['referenced_images_aggregate_sha256']}`"
-        ),
-        (
-            "- Matches repository authority: "
-            f"{fingerprint['matches_repository_authority']}"
-        ),
-    ]
-    if stages:
-        lines.extend(
-            [
-                "",
-                "## Device stages",
-                "",
-                *[
-                    f"- {name}: {seconds:.3f} s"
-                    for name, seconds in sorted(
-                        stages.items(), key=lambda item: item[1], reverse=True
-                    )
-                ],
-            ]
-        )
-    if rates:
-        lines.extend(
-            [
-                "",
-                "## Decode scheduler",
-                "",
-                (
-                    "- Raw decode throughput: "
-                    f"{rates.get('raw_decode_tok_per_s', 0.0):.3f} tok/s"
-                ),
-                (
-                    "- Effective decode throughput: "
-                    f"{rates.get('effective_decode_tok_per_s', 0.0):.3f} tok/s"
-                ),
-            ]
-        )
-    return "\n".join(lines) + "\n"
-
-
-def _safe_name(path: Path) -> str:
-    safe = "".join(
-        character if character.isalnum() or character in "-_" else "_"
-        for character in path.stem
-    ).strip("_")
-    return safe or "image"
-
-
-def _recognize_image_job(
-    index: int,
-    image_path: Path,
-    *,
-    crop_type: str,
-    api_url: str,
-    timeout_s: float,
-) -> tuple[int, dict[str, Any]]:
-    request_id = f"image_{index:06d}_{_safe_name(image_path)}"
-    started = time.perf_counter()
-    image_bytes = image_path.read_bytes()
-    response = _post_image(
-        api_url,
-        request_id,
-        image_bytes,
-        crop_type,
-        timeout_s,
-    )
-    return index, {
-        "request_id": request_id,
-        "image_path": str(image_path.resolve()),
-        "crop_type": crop_type,
-        "image_sha256": _sha256_bytes(image_bytes),
-        "client_wall_s": time.perf_counter() - started,
-        "response": response,
+        "service_scheduler": service,
+        "metrics": scores,
+        "dataset_fingerprint": manifest,
     }
 
 
-def _image_result_markdown(record: dict[str, Any], output_dir: Path) -> str:
-    image_path = Path(record["image_path"])
-    relative_image = os.path.relpath(
-        Path(record["saved_image_path"]),
-        output_dir.resolve(),
+def _print_score(scores: dict, timeout_s: float) -> None:
+    print(
+        "\n# OmniDocBench table OCR score\n\n"
+        f"- Tables: {scores['table_count']}\n"
+        f"- Table pages: {scores['table_page_count']}\n"
+        f"- Page-TEDS: {scores['page_TEDS']:.6f}\n"
+        f"- Sample TEDS: {scores['sample_TEDS']:.6f}\n"
+        f"- Page structure-only TEDS: {scores['page_TEDS_structure_only']:.6f}\n"
+        f"- TEDS timeouts: {scores['teds_timeout_count']}\n"
+        f"- TEDS errors: {scores['teds_error_count']}\n",
+        flush=True,
     )
-    response = record["response"]
-    recognition = str(response["text"]).rstrip()
-    return "\n".join(
-        [
-            f"# {image_path.name}",
-            "",
-            f"![Input image](<{relative_image}>)",
-            "",
-            "## Recognition",
-            "",
-            recognition,
-            "",
-            "## Run information",
-            "",
-            f"- Crop type: {record['crop_type']}",
-            f"- Stop reason: {response['stop_reason']}",
-            f"- Input tokens: {response['input_tokens']}",
-            (
-                "- Output tokens including EOS: "
-                f"{response['generated_tokens_including_eos']}"
-            ),
-            f"- Request wall time: {record['client_wall_s']:.3f} s",
-            "",
-        ]
-    )
-
-
-def _run_images(args: argparse.Namespace) -> None:
-    assert args.images is not None
-    missing = [path for path in args.images if not path.is_file()]
-    if missing:
-        raise FileNotFoundError(
-            "Image file(s) not found: " + ", ".join(str(path) for path in missing)
+    if scores["teds_timeout_count"]:
+        recommended = max(120.0, timeout_s * 2)
+        print(
+            "\033[1;31mTEDS WARNING: timeouts were scored as zero. "
+            f"Rerun --score-only with --teds-timeout-s {recommended:g}. "
+            "Do not rerun OCR.\033[0m",
+            file=sys.stderr,
+            flush=True,
         )
-
-    args.output_dir.mkdir(parents=True, exist_ok=True)
-    started = time.perf_counter()
-    records_by_index: dict[int, dict[str, Any]] = {}
-    workers = min(args.http_workers, len(args.images))
-    with ThreadPoolExecutor(max_workers=workers) as executor:
-        futures = [
-            executor.submit(
-                _recognize_image_job,
-                index,
-                image_path,
-                crop_type=args.crop_type,
-                api_url=args.api_url,
-                timeout_s=args.timeout_s,
-            )
-            for index, image_path in enumerate(args.images)
-        ]
-        for completed, future in enumerate(as_completed(futures), start=1):
-            index, record = future.result()
-            records_by_index[index] = record
-            print(f"completed={completed}/{len(futures)}", flush=True)
-
-    wall_s = time.perf_counter() - started
-    service_summary = None
-    if args.drain_server:
-        service_summary = _drain_api(args.api_url, args.timeout_s)
-
-    records = [records_by_index[index] for index in range(len(args.images))]
-    saved_images_dir = args.output_dir / "images"
-    saved_images_dir.mkdir(exist_ok=True)
-    for index, record in enumerate(records, start=1):
-        source = Path(record["image_path"])
-        saved_image = (
-            saved_images_dir
-            / f"{index:03d}_{_safe_name(source)}{source.suffix.lower()}"
-        )
-        shutil.copy2(source, saved_image)
-        record["saved_image_path"] = str(saved_image.resolve())
-
-    combined_sections: list[str] = ["# Crop OCR results", ""]
-    for index, record in enumerate(records, start=1):
-        markdown = _image_result_markdown(record, args.output_dir)
-        output_name = f"{index:03d}_{_safe_name(Path(record['image_path']))}.md"
-        (args.output_dir / output_name).write_text(markdown, encoding="utf-8")
-        combined_sections.extend([markdown, "---", ""])
-        print(f"\n=== {record['image_path']} ===", flush=True)
-        print(record["response"]["text"], flush=True)
-
-    results_path = args.output_dir / "results.json"
-    results_path.write_text(
-        json.dumps(records, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
-    markdown_path = args.output_dir / "results.md"
-    markdown_path.write_text("\n".join(combined_sections), encoding="utf-8")
-    summary = {
-        "images": len(records),
-        "wall_s": wall_s,
-        "images_per_s": len(records) / wall_s,
-        "crop_type": args.crop_type,
-        "stop_reasons": dict(
-            Counter(record["response"]["stop_reason"] for record in records)
-        ),
-        "input_tokens": sum(
-            int(record["response"]["input_tokens"]) for record in records
-        ),
-        "output_tokens_including_eos": sum(
-            int(record["response"]["generated_tokens_including_eos"])
-            for record in records
-        ),
-        "service_scheduler": service_summary,
-    }
-    (args.output_dir / "summary.json").write_text(
-        json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
-    summary_markdown = "\n".join(
-        [
-            "# Crop OCR summary",
-            "",
-            f"- Images: {summary['images']}",
-            f"- Crop type: {summary['crop_type']}",
-            f"- Wall time: {summary['wall_s']:.3f} s",
-            f"- Throughput: {summary['images_per_s']:.3f} images/s",
-            f"- Stop reasons: {summary['stop_reasons']}",
-            f"- Results: `{markdown_path}`",
-            "",
-        ]
-    )
-    (args.output_dir / "summary.md").write_text(
-        summary_markdown,
-        encoding="utf-8",
-    )
-    print(f"\n{summary_markdown}", end="", flush=True)
 
 
 def _run_omnidocbench(args: argparse.Namespace) -> None:
     output = args.output_dir / "tables.jsonl"
-    score_output = args.output_dir / "scores.json"
-    summary_output = args.output_dir / "run_summary.json"
     args.output_dir.mkdir(parents=True, exist_ok=True)
     if args.score_only:
-        if not output.is_file():
-            raise FileNotFoundError(f"score-only input does not exist: {output}")
-        _score(
-            output,
-            score_output,
-            args.evaluator_root,
-            workers=args.teds_workers,
-            timeout_s=args.teds_timeout_s,
-        )
-        metrics = json.loads(score_output.read_text(encoding="utf-8"))
-        summary_markdown = "\n".join(
-            [
-                "# OmniDocBench table OCR score",
-                "",
-                f"- Tables: {metrics['table_count']}",
-                f"- Table pages: {metrics['table_page_count']}",
-                f"- Page-TEDS: {metrics['page_TEDS']:.6f}",
-                f"- Sample TEDS: {metrics['sample_TEDS']:.6f}",
-                (
-                    "- Page structure-only TEDS: "
-                    f"{metrics['page_TEDS_structure_only']:.6f}"
-                ),
-                f"- TEDS timeouts: {metrics['teds_timeout_count']}",
-                f"- TEDS errors: {metrics['teds_error_count']}",
-                "",
-            ]
-        )
-        (args.output_dir / "score_summary.md").write_text(
-            summary_markdown,
-            encoding="utf-8",
-        )
-        print(f"\n{summary_markdown}", end="", flush=True)
+        records = list(_read_jsonl(output).values())
+        if not records:
+            raise FileNotFoundError(f"No saved predictions in {output}")
+        scores = _score(records, args)
+        _print_score(scores, args.teds_timeout_s)
         return
 
-    pages, _dataset_manifest = _write_dataset_manifest(
-        args.dataset_json,
-        args.images_dir,
-        args.output_dir / "dataset_manifest.json",
-    )
+    pages, manifest = _check_dataset(args)
     if args.fingerprint_only:
         return
-
-    selected = pages[args.offset :]
-    if args.limit_pages is not None:
-        selected = selected[: args.limit_pages]
-    jobs: list[tuple[int, dict[str, Any], int, dict[str, Any]]] = []
-    for page_index, page in enumerate(selected, start=args.offset):
-        for annotation_index, annotation in enumerate(page.get("layout_dets") or []):
-            if annotation.get("ignore") or annotation.get("category_type") != "table":
-                continue
-            jobs.append((page_index, page, annotation_index, annotation))
-
-    completed = _read_completed(output) if args.resume else {}
-    pending_jobs = []
-    for job in jobs:
-        page_index, _page, annotation_index, annotation = job
-        annotation_id = str(annotation.get("anno_id", annotation_index))
-        request_id = f"page_{page_index:06d}_table_{annotation_id}"
-        if request_id not in completed:
-            pending_jobs.append(job)
-    mode = "a" if args.resume else "w"
+    jobs = _table_jobs(pages, args)
+    completed = _read_jsonl(output) if args.resume else {}
+    pending = [job for job in jobs if _request_id(job) not in completed]
+    done = len(jobs) - len(pending)
     started = time.perf_counter()
-    done = len(jobs) - len(pending_jobs)
-    with output.open(mode, encoding="utf-8") as output_file:
-        with ThreadPoolExecutor(max_workers=args.http_workers) as executor:
-            futures = {
-                executor.submit(
-                    _recognize_job,
-                    job,
-                    images_dir=args.images_dir,
-                    crop_padding=args.crop_padding,
-                    api_url=args.api_url,
-                    timeout_s=args.timeout_s,
-                ): job
-                for job in pending_jobs
-            }
-            print(
-                f"submitted={len(futures)} http_workers={args.http_workers}",
-                flush=True,
-            )
+    with output.open("a" if args.resume else "w", encoding="utf-8") as target:
+        with ThreadPoolExecutor(max_workers=args.http_workers) as pool:
+            futures = [pool.submit(_table_job, job, args) for job in pending]
+            print(f"submitted={len(futures)} http_workers={args.http_workers}", flush=True)
             for future in as_completed(futures):
                 record = future.result()
-                output_file.write(json.dumps(record, ensure_ascii=False) + "\n")
-                output_file.flush()
+                target.write(json.dumps(record, ensure_ascii=False) + "\n")
+                target.flush()
                 done += 1
                 elapsed = time.perf_counter() - started
                 print(
@@ -1197,47 +691,36 @@ def _run_omnidocbench(args: argparse.Namespace) -> None:
                     f"elapsed_s={elapsed:.1f} tables_per_s={done / elapsed:.3f}",
                     flush=True,
                 )
-    print(f"DONE tables={len(jobs)} output={output}", flush=True)
+
     generation_wall_s = time.perf_counter() - started
-    service_summary = None
-    if args.drain_server:
-        service_summary = _drain_api(args.api_url, args.timeout_s)
-        print(
-            "DRAINED "
-            f"requests={service_summary['requests']} "
-            f"decode_batch_size={service_summary['batch_size']} "
-            f"effective_decode_tok_per_s="
-            f"{service_summary['rates']['effective_decode_tok_per_s']:.3f}",
-            flush=True,
-        )
-    _score(
-        output,
-        score_output,
-        args.evaluator_root,
-        workers=args.teds_workers,
-        timeout_s=args.teds_timeout_s,
+    service = _drain(args.api_url, args.timeout_s) if args.drain_server else None
+    records = list(_read_jsonl(output).values())
+    scores = _score(records, args)
+    summary = _summary(records, generation_wall_s, manifest, scores, service)
+    _write_json(args.output_dir / "run_summary.json", summary)
+    _print_score(scores, args.teds_timeout_s)
+    markdown = (
+        "# OmniDocBench table OCR summary\n\n"
+        f"- Tables: {len(records)}\n"
+        f"- Generation wall time: {generation_wall_s:.3f} s\n"
+        f"- Throughput: {summary['tables_per_s']:.3f} tables/s\n"
+        f"- Page-TEDS: {scores['page_TEDS']:.6f}\n"
+        f"- Sample TEDS: {scores['sample_TEDS']:.6f}\n"
+        f"- Page structure-only TEDS: {scores['page_TEDS_structure_only']:.6f}\n"
+        f"- TEDS timeouts: {scores['teds_timeout_count']}\n"
+        f"- TEDS errors: {scores['teds_error_count']}\n"
+        f"- Stop reasons: {summary['stop_reasons']}\n"
     )
-    summary = _write_summary(
-        output,
-        summary_output,
-        generation_wall_s=generation_wall_s,
-        score_output=score_output,
-        service_summary=service_summary,
-    )
-    summary_markdown = _benchmark_summary_markdown(summary)
-    (args.output_dir / "summary.md").write_text(
-        summary_markdown,
-        encoding="utf-8",
-    )
-    print(f"\n{summary_markdown}", end="", flush=True)
+    (args.output_dir / "summary.md").write_text(markdown, encoding="utf-8")
+    print(f"\n{markdown}", end="", flush=True)
 
 
 def main() -> None:
     args = parse_args()
-    if args.score_only and not args.omnidocbench:
-        raise ValueError("--score-only requires --omnidocbench")
-    if args.fingerprint_only and not args.omnidocbench:
-        raise ValueError("--fingerprint-only requires --omnidocbench")
+    if args.http_workers < 1 or args.teds_workers < 1:
+        raise ValueError("worker counts must be positive")
+    if (args.score_only or args.fingerprint_only) and not args.omnidocbench:
+        raise ValueError("--score-only and --fingerprint-only require --omnidocbench")
     if args.score_only and args.fingerprint_only:
         raise ValueError("--score-only and --fingerprint-only are mutually exclusive")
     if args.drain_server is None:
