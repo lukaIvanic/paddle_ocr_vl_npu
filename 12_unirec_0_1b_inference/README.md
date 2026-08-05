@@ -79,7 +79,7 @@ Eager:
   12_unirec_0_1b_inference/run_optimized.py \
   --model-path /workspace/models/unirec_0_1b_1217 \
   --image crops/crop_01_text_block_en.png \
-  --device npu:0 --dtype bfloat16 --decode-mode eager
+  --device npu:0 --dtype float16 --decode-mode eager
 ```
 
 Cached TorchAir decode:
@@ -89,7 +89,7 @@ Cached TorchAir decode:
   12_unirec_0_1b_inference/run_optimized.py \
   --model-path /workspace/models/unirec_0_1b_1217 \
   --image crops/crop_01_text_block_en.png \
-  --device npu:0 --dtype bfloat16 --decode-mode compiled \
+  --device npu:0 --dtype float16 --decode-mode compiled \
   --compile-backend torchair
 ```
 
@@ -100,7 +100,7 @@ Cached TorchAir decode:
   12_unirec_0_1b_inference/run_original_transformers.py \
   --model-path /workspace/models/unirec_0_1b_1217 \
   --image crops/crop_01_text_block_en.png \
-  --device npu:0 --dtype bfloat16
+  --device npu:0 --dtype float16
 ```
 
 ## Official OpenDoc full-page pipeline
@@ -178,7 +178,7 @@ token, raw-text, and label-postprocessed parity:
   --stock-tokenizer-mapping /root/.cache/openocr/unirec_0_1b_onnx/unirec_tokenizer_mapping.json \
   --input /workspace/datasets/OmniDocBench/images \
   --output-dir tmp/12_unirec_0_1b_inference/opendoc_custom_compare \
-  --mode compare --device npu:0 --dtype bfloat16 --limit 1
+  --mode compare --device npu:0 --dtype float16 --limit 1
 ```
 
 Use `--mode custom` for timing without the stock recognizer call. The page path

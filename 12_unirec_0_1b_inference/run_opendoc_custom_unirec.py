@@ -39,7 +39,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--dtype",
         choices=("bfloat16", "float16", "float32"),
-        default="bfloat16",
+        default="float16",
     )
     parser.add_argument("--max-length", type=int, default=2048)
     parser.add_argument(
