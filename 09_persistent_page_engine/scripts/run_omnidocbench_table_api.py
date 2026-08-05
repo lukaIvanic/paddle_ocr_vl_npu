@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import io
 import json
 import math
@@ -34,6 +35,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--limit-pages", type=int)
     parser.add_argument("--timeout-s", type=float, default=900.0)
+    parser.add_argument("--teds-workers", type=int, default=12)
+    parser.add_argument("--teds-timeout-s", type=float, default=30.0)
     parser.add_argument("--resume", action=argparse.BooleanOptionalAction, default=True)
     return parser.parse_args()
 
@@ -78,13 +81,18 @@ def _read_completed(path: Path) -> dict[str, dict[str, Any]]:
     return completed
 
 
-def _score(output: Path, score_output: Path, evaluator_root: Path) -> None:
+def _score(
+    output: Path,
+    score_output: Path,
+    evaluator_root: Path,
+    *,
+    workers: int,
+    timeout_s: float,
+) -> None:
     sys.path.insert(0, str(evaluator_root.resolve()))
-    from src.metrics.table_metric import TEDS
+    from src.metrics.cal_metric import _evaluate_teds_pair_with_timeout
 
     records = list(_read_completed(output).values())
-    evaluator = TEDS(structure_only=False)
-    structure_evaluator = TEDS(structure_only=True)
     page_scores: dict[str, list[float]] = {}
     page_structure_scores: dict[str, list[float]] = {}
     scored: list[dict[str, Any]] = []
@@ -95,13 +103,44 @@ def _score(output: Path, score_output: Path, evaluator_root: Path) -> None:
             return table_html
         return f"<html><body>{table_html}</body></html>"
 
-    for index, record in enumerate(records, start=1):
+    pairs: list[tuple[int, dict[str, Any], str, str]] = []
+    for index, record in enumerate(records):
         pred_html = document(record["pred_html"])
         gt_html = document(record["gt_html"])
-        score = float(evaluator.evaluate(pred_html, gt_html))
-        structure = float(
-            structure_evaluator.evaluate(pred_html, gt_html)
+        pairs.append((index, record, pred_html, gt_html))
+
+    results: dict[int, tuple[float, float, str | None]] = {}
+
+    def evaluate(pair: tuple[int, dict[str, Any], str, str]) -> tuple[int, float, float, str | None]:
+        index, _record, pred_html, gt_html = pair
+        score, structure, error = _evaluate_teds_pair_with_timeout(
+            pred_html,
+            gt_html,
+            timeout_s,
         )
+        return index, float(score), float(structure), error
+
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = [executor.submit(evaluate, pair) for pair in pairs]
+        for completed, future in enumerate(as_completed(futures), start=1):
+            index, score, structure, error = future.result()
+            results[index] = (score, structure, error)
+            if completed % 25 == 0 or completed == len(records):
+                print(
+                    f"scored={completed}/{len(records)} "
+                    f"elapsed_s={time.perf_counter() - started:.1f}",
+                    flush=True,
+                )
+
+    timeout_count = 0
+    error_count = 0
+    for index, record in enumerate(records):
+        score, structure, error = results[index]
+        if error:
+            if str(error).startswith("timeout:"):
+                timeout_count += 1
+            else:
+                error_count += 1
         page_scores.setdefault(record["page_name"], []).append(score)
         page_structure_scores.setdefault(record["page_name"], []).append(structure)
         scored.append(
@@ -110,13 +149,9 @@ def _score(output: Path, score_output: Path, evaluator_root: Path) -> None:
                 "page_name": record["page_name"],
                 "TEDS": score,
                 "TEDS_structure_only": structure,
+                "error": error,
             }
         )
-        if index % 25 == 0 or index == len(records):
-            print(
-                f"scored={index}/{len(records)} elapsed_s={time.perf_counter() - started:.1f}",
-                flush=True,
-            )
     sample_scores = [item["TEDS"] for item in scored]
     sample_structure = [item["TEDS_structure_only"] for item in scored]
     page_means = {
@@ -134,6 +169,9 @@ def _score(output: Path, score_output: Path, evaluator_root: Path) -> None:
         "page_TEDS": sum(page_means.values()) / len(page_means),
         "page_TEDS_structure_only": sum(page_structure_means.values())
         / len(page_structure_means),
+        "teds_timeout_s": timeout_s,
+        "teds_timeout_count": timeout_count,
+        "teds_error_count": error_count,
         "per_page_TEDS": page_means,
         "per_table": scored,
     }
@@ -208,7 +246,13 @@ def main() -> None:
             )
     print(f"DONE tables={len(jobs)} output={args.output}", flush=True)
     if args.score_output is not None:
-        _score(args.output, args.score_output, args.evaluator_root)
+        _score(
+            args.output,
+            args.score_output,
+            args.evaluator_root,
+            workers=args.teds_workers,
+            timeout_s=args.teds_timeout_s,
+        )
 
 
 if __name__ == "__main__":
