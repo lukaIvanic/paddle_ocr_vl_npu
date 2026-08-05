@@ -77,7 +77,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--limit", type=int)
-    parser.add_argument("--layout-threshold", type=float, default=0.5)
+    parser.add_argument(
+        "--layout-threshold",
+        type=float,
+        default=0.4,
+        help="PP-DocLayoutV2 confidence threshold; matches OpenDoc's default.",
+    )
     return parser.parse_args()
 
 
