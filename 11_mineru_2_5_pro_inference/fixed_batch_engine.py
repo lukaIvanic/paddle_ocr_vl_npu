@@ -16,8 +16,10 @@ from dataclasses import dataclass
 from typing import Any, Sequence
 
 import torch
+import torch.nn.functional as F
 
 from local_modeling_mineru import LocalMinerUStaticCache
+from prefill_timing import PrefillDeviceTimeline
 from run_local_model_two_step_extract import maybe_sync_device
 
 
@@ -43,6 +45,7 @@ class FixedBatchDecodeEngine:
         eos_token_id: int,
         pad_token_id: int,
         collect_prefill_metrics: bool = False,
+        packed_text_prefill_runtime: Any | None = None,
     ) -> None:
         if int(batch_size) <= 1:
             raise ValueError("fixed batch engine requires batch_size > 1")
@@ -53,6 +56,7 @@ class FixedBatchDecodeEngine:
         self.eos_token_id = int(eos_token_id)
         self.pad_token_id = int(pad_token_id)
         self.collect_prefill_metrics = bool(collect_prefill_metrics)
+        self.packed_text_prefill_runtime = packed_text_prefill_runtime
         self._arena: LocalMinerUStaticCache | None = None
 
     def _arena_for_batch(self) -> LocalMinerUStaticCache:
@@ -336,6 +340,138 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
         }, float(time.perf_counter() - started)
 
     @torch.inference_mode()
+    def _prefill_slots(
+        self,
+        arena: LocalMinerUStaticCache,
+        entries: Sequence[tuple[int, int, PreparedGeneration]],
+    ) -> tuple[dict[int, dict[str, Any]], float, dict[str, float | int]]:
+        """Prefill free slots, using packed static text graphs when enabled."""
+        started = time.perf_counter()
+        if self.packed_text_prefill_runtime is None:
+            states: dict[int, dict[str, Any]] = {}
+            aggregate: dict[str, float | int] = {}
+            for slot, request_index, request in entries:
+                state, _elapsed = self._prefill_slot(arena, slot, request)
+                state["request_index"] = request_index
+                states[slot] = state
+                for name, value in (state.get("prefill_metrics") or {}).items():
+                    aggregate[name] = aggregate.get(name, 0) + value
+            return states, float(time.perf_counter() - started), aggregate
+
+        from text_prefill_compile import PreparedTextMember
+
+        runtime = self.packed_text_prefill_runtime
+        timeline = PrefillDeviceTimeline(self.model.device)
+        members: list[PreparedTextMember] = []
+        for _slot, _request_index, request in entries:
+            self._validate_request(request)
+            inputs_embeds = self.model.build_inputs_embeds(
+                request.input_ids,
+                request.pixel_values,
+                request.image_grid_thw,
+                device_timeline=timeline,
+            )
+            position_ids, rope_delta = timeline.measure(
+                "mrope_prepare",
+                lambda request=request: self.model.get_rope_index(
+                    request.input_ids,
+                    request.image_grid_thw,
+                    request.attention_mask,
+                ),
+            )
+            raw_vision_tokens = (
+                0 if request.pixel_values is None else int(request.pixel_values.shape[0])
+            )
+            merge_factor = int(self.model.config.vision_config.spatial_merge_size) ** 2
+            members.append(
+                PreparedTextMember(
+                    inputs_embeds=inputs_embeds,
+                    position_ids=position_ids,
+                    rope_delta=rope_delta,
+                    sequence_length=int(inputs_embeds.shape[1]),
+                    raw_vision_tokens=raw_vision_tokens,
+                    merged_vision_tokens=raw_vision_tokens // merge_factor,
+                )
+            )
+
+        lengths = [member.sequence_length for member in members]
+        packs, overflow = runtime.pack_indices(lengths)
+        states: dict[int, dict[str, Any]] = {}
+        physical_tokens = 0
+        copied_bytes = 0
+        for pack_indices in packs:
+            pack_members = [members[index] for index in pack_indices]
+            prepared = runtime.prepare(pack_members)
+            physical_tokens += prepared.physical_tokens
+            last_hidden_states = timeline.measure(
+                "text_transformer_prefill",
+                lambda prepared=prepared: runtime.run_prepared(prepared),
+            )
+            destinations = [
+                self._slot_view(arena, entries[index][0]) for index in pack_indices
+            ]
+            copied_bytes += timeline.measure(
+                "text_kv_redistribute",
+                lambda prepared=prepared, destinations=destinations: runtime.redistribute_cache(
+                    prepared,
+                    destinations,
+                ),
+            )
+            logits = timeline.measure(
+                "prefill_lm_head",
+                lambda last_hidden_states=last_hidden_states: F.linear(
+                    last_hidden_states,
+                    self.model.model.embed_tokens.weight,
+                ),
+            )
+            tokens = torch.argmax(logits.float(), dim=-1)
+            for member_offset, entry_index in enumerate(pack_indices):
+                slot, request_index, _request = entries[entry_index]
+                member = members[entry_index]
+                token = tokens[:, member_offset : member_offset + 1]
+                states[slot] = {
+                    "request_index": request_index,
+                    "token": token,
+                    "token_id": None,
+                    "cache_position": torch.full(
+                        (1,),
+                        member.sequence_length,
+                        device=self.model.device,
+                        dtype=torch.int64,
+                    ),
+                    "rope_delta": member.rope_delta,
+                    "prefill_metrics": None,
+                }
+
+        overflow_metrics: dict[str, float | int] = {}
+        for entry_index in overflow:
+            slot, request_index, request = entries[entry_index]
+            state, _elapsed = self._prefill_slot(arena, slot, request)
+            state["request_index"] = request_index
+            states[slot] = state
+            for name, value in (state.get("prefill_metrics") or {}).items():
+                overflow_metrics[name] = overflow_metrics.get(name, 0) + value
+
+        stage_metrics = timeline.resolve()
+        for state in states.values():
+            if state["token_id"] is None:
+                state["token_id"] = int(state["token"][0, 0].item())
+        aggregate: dict[str, float | int] = {
+            "request_count": len(entries),
+            "raw_vision_tokens": sum(member.raw_vision_tokens for member in members),
+            "merged_vision_tokens": sum(member.merged_vision_tokens for member in members),
+            "text_prefill_tokens": sum(lengths),
+            "physical_text_prefill_tokens": physical_tokens,
+            "text_prefill_pack_count": len(packs),
+            "text_prefill_overflow_count": len(overflow),
+            "text_kv_redistribute_bytes": copied_bytes,
+            **stage_metrics,
+        }
+        for name, value in overflow_metrics.items():
+            aggregate[name] = aggregate.get(name, 0) + value
+        return states, float(time.perf_counter() - started), aggregate
+
+    @torch.inference_mode()
     def _generate_continuous(
         self,
         *,
@@ -354,37 +490,47 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
         immediate_completion_count = 0
         prefill_metrics: dict[str, float | int] = {}
 
-        def admit(slot: int) -> dict[str, Any] | None:
+        def admit_many(slots: Sequence[int]) -> dict[int, dict[str, Any]]:
             nonlocal next_request, prefill_s, refill_count, immediate_completion_count
-            while next_request < request_count:
-                request_index = next_request
-                next_request += 1
-                request = prepare_request(request_index)
-                request_max_new[request_index] = request.max_new_tokens
-                state, elapsed_s = self._prefill_slot(
+            available = list(slots)
+            admitted: dict[int, dict[str, Any]] = {}
+            while available and next_request < request_count:
+                entries: list[tuple[int, int, PreparedGeneration]] = []
+                for slot in available:
+                    if next_request >= request_count:
+                        break
+                    request_index = next_request
+                    next_request += 1
+                    request = prepare_request(request_index)
+                    request_max_new[request_index] = request.max_new_tokens
+                    entries.append((slot, request_index, request))
+                states, elapsed_s, group_metrics = self._prefill_slots(
                     arena,
-                    slot,
-                    request,
+                    entries,
                 )
                 prefill_s += elapsed_s
-                for name, value in (state.get("prefill_metrics") or {}).items():
+                for name, value in group_metrics.items():
                     prefill_metrics[name] = prefill_metrics.get(name, 0) + value
-                token_id = int(state["token_id"])
-                generated[request_index] = [token_id]
-                if (
-                    token_id == self.eos_token_id
-                    or request.max_new_tokens <= 1
-                ):
-                    outputs[request_index] = torch.tensor([[token_id]], dtype=torch.long)
-                    immediate_completion_count += 1
-                    continue
-                slot_requests[slot] = request_index
-                refill_count += 1
-                return state
-            slot_requests[slot] = None
-            return None
+                retry_slots: list[int] = []
+                for slot, request_index, request in entries:
+                    state = states[slot]
+                    token_id = int(state["token_id"])
+                    generated[request_index] = [token_id]
+                    if token_id == self.eos_token_id or request.max_new_tokens <= 1:
+                        outputs[request_index] = torch.tensor([[token_id]], dtype=torch.long)
+                        immediate_completion_count += 1
+                        retry_slots.append(slot)
+                        continue
+                    slot_requests[slot] = request_index
+                    admitted[slot] = state
+                    refill_count += 1
+                available = retry_slots
+            for slot in available:
+                slot_requests[slot] = None
+            return admitted
 
-        initial_states = [admit(slot) for slot in range(self.batch_size)]
+        initial_state_map = admit_many(range(self.batch_size))
+        initial_states = [initial_state_map.get(slot) for slot in range(self.batch_size)]
         template = next((state for state in initial_states if state is not None), None)
         if template is None:
             if not all(output is not None for output in outputs):
@@ -458,6 +604,7 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
                 first_call_s = call_s
             graph_calls += 1
 
+            finished_slots: list[int] = []
             for slot, request_index in enumerate(tuple(slot_requests)):
                 if request_index is None:
                     continue
@@ -482,7 +629,11 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
                     [request_tokens], dtype=torch.long
                 )
                 slot_requests[slot] = None
-                replacement = admit(slot)
+                finished_slots.append(slot)
+
+            replacements = admit_many(finished_slots)
+            for slot in finished_slots:
+                replacement = replacements.get(slot)
                 if replacement is None:
                     next_token[slot].fill_(self.pad_token_id)
                     cache_position[slot].zero_()

@@ -42,6 +42,12 @@ DEFAULT_LOCAL_VISION_TORCHAIR_CACHE_DIR = (
     / "vision_prefill_b1_fp16"
 )
 DEFAULT_LOCAL_VISION_BUCKETS = "384,512,768,1024,1536,2048,3072,4224,5632"
+DEFAULT_LOCAL_TEXT_TORCHAIR_CACHE_DIR = (
+    Path(".runtime_cache")
+    / "11_mineru_2_5_pro_inference"
+    / "text_prefill_packed_fp16"
+)
+DEFAULT_LOCAL_TEXT_BUCKETS = "128,256,512,1024"
 
 
 def parse_args() -> argparse.Namespace:
@@ -130,6 +136,23 @@ def parse_args() -> argparse.Namespace:
         "--local-prefill-metrics",
         action="store_true",
         help="Record opt-in NPU-event timings and token counts for local prefill.",
+    )
+    parser.add_argument(
+        "--local-text-backend",
+        choices=("eager", "torchair-packed"),
+        default="eager",
+        help="Run text prefill per request eagerly or through packed static graphs.",
+    )
+    parser.add_argument(
+        "--local-text-buckets",
+        default=DEFAULT_LOCAL_TEXT_BUCKETS,
+        help="Comma-separated physical token lengths for packed text-prefill graphs.",
+    )
+    parser.add_argument("--local-text-max-members", type=int, default=32)
+    parser.add_argument(
+        "--local-text-torchair-cache-dir",
+        type=Path,
+        default=DEFAULT_LOCAL_TEXT_TORCHAIR_CACHE_DIR,
     )
     parser.add_argument(
         "--local-vision-attention",
@@ -277,6 +300,7 @@ def main() -> None:
 
     setup_started = time.perf_counter()
     local_vision_runtime = None
+    local_text_runtime = None
     local_decode_setup = None
     print(
         f"[setup] shard={args.shard_index}/{args.shard_count} pages={len(shard)} "
@@ -449,6 +473,22 @@ def main() -> None:
                 decode_rotary_impl=args.local_decode_rotary_impl,
                 decode_attention_impl=args.local_decode_attention,
             )
+            if args.local_text_backend == "torchair-packed":
+                if args.backend != "local-continuous-client":
+                    raise ValueError(
+                        "packed text prefill currently requires local-continuous-client"
+                    )
+                from text_prefill_compile import MinerUPackedTextPrefillRuntime
+
+                local_text_runtime = MinerUPackedTextPrefillRuntime(
+                    local_model,
+                    buckets=args.local_text_buckets,
+                    max_members=args.local_text_max_members,
+                    cache_root=args.local_text_torchair_cache_dir,
+                    model_dir=model_dir,
+                    device=local_model.device,
+                    dtype=local_dtype,
+                )
             engine_cls = (
                 ContinuousBatchDecodeEngine
                 if args.backend == "local-continuous-client"
@@ -462,6 +502,7 @@ def main() -> None:
                 eos_token_id=local_model.config.eos_token_id,
                 pad_token_id=local_model.config.pad_token_id,
                 collect_prefill_metrics=args.local_prefill_metrics,
+                packed_text_prefill_runtime=local_text_runtime,
             )
             client.client = make_local_fixed_batch_vlm_client(
                 local_model,
@@ -622,6 +663,27 @@ def main() -> None:
         "local_prefill_metrics": (
             args.local_prefill_metrics
             if args.backend == "local-continuous-client"
+            else None
+        ),
+        "local_text_backend": (
+            args.local_text_backend if args.backend == "local-continuous-client" else None
+        ),
+        "local_text_buckets": (
+            args.local_text_buckets
+            if args.backend == "local-continuous-client"
+            and args.local_text_backend == "torchair-packed"
+            else None
+        ),
+        "local_text_max_members": (
+            args.local_text_max_members
+            if args.backend == "local-continuous-client"
+            and args.local_text_backend == "torchair-packed"
+            else None
+        ),
+        "local_text_torchair_cache_dir": (
+            str(args.local_text_torchair_cache_dir)
+            if args.backend == "local-continuous-client"
+            and args.local_text_backend == "torchair-packed"
             else None
         ),
         "local_vision_attention": (
@@ -830,6 +892,8 @@ def main() -> None:
     }
     if local_vision_runtime is not None:
         summary["local_compiled_vision"] = local_vision_runtime.metadata()
+    if local_text_runtime is not None:
+        summary["local_compiled_text_prefill"] = local_text_runtime.metadata()
     generation_metrics = getattr(client.client, "generation_metrics", None)
     if generation_metrics is not None:
         decode_calls = sum(int(item["decode_calls"]) for item in generation_metrics)
@@ -911,11 +975,19 @@ def main() -> None:
             raw_vision_tokens = int(prefill_metrics.get("raw_vision_tokens", 0))
             merged_vision_tokens = int(prefill_metrics.get("merged_vision_tokens", 0))
             text_prefill_tokens = int(prefill_metrics.get("text_prefill_tokens", 0))
+            physical_text_prefill_tokens = int(
+                prefill_metrics.get("physical_text_prefill_tokens", 0)
+            )
             prefill_metrics.update(
                 {
                     "raw_vision_tok_s": raw_vision_tokens / vision_s if vision_s > 0 else 0.0,
                     "merged_vision_tok_s": merged_vision_tokens / vision_s if vision_s > 0 else 0.0,
                     "text_prefill_tok_s": text_prefill_tokens / text_s if text_s > 0 else 0.0,
+                    "physical_text_prefill_tok_s": (
+                        physical_text_prefill_tokens / text_s
+                        if text_s > 0
+                        else 0.0
+                    ),
                 }
             )
             summary["local_compiled_generation"]["prefill_metrics"] = prefill_metrics
