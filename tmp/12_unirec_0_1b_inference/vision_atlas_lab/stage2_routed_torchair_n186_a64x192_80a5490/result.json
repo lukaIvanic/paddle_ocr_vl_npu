@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "git_commit": "80a549019a236c95af3b7df74a2c30ee543833e2",
+  "model": "/workspace/models/unirec-0.1b",
+  "trace": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/packed_text_s1024_32p_warm_044dc53/output/recognition_trace.jsonl",
+  "device": "npu:0",
+  "dtype": "float16",
+  "routing": "permutation",
+  "torch": "2.10.0+cpu",
+  "stage": 2,
+  "stage_depth": 9,
+  "stage_channels": 384,
+  "stage_downsample_factor": 16,
+  "atlas": {
+    "height": 64,
+    "width": 192,
+    "guard": 3,
+    "max_members": 16,
+    "packing": "ffd",
+    "packs": 14,
+    "member_histogram": {
+      "6": 1,
+      "9": 2,
+      "10": 1,
+      "12": 2,
+      "16": 8
+    }
+  },
+  "corpus": {
+    "requested": 186,
+    "packed": 186,
+    "overflow": [],
+    "real_tokens": 54880
+  },
+  "baseline": {
+    "calls": 186,
+    "samples_ms": [
+      2038.9510498046875,
+      2041.5472412109375,
+      2039.3232421875,
+      2064.884033203125,
+      2056.602783203125
+    ],
+    "median_ms": 2041.5472412109375,
+    "effective_tokens_per_s": 26881.57241340548
+  },
+  "lanes": [
+    {
+      "execution": "torchair",
+      "calls": 14,
+      "samples_ms": [
+        147.03480529785156,
+        146.8143768310547,
+        147.0150146484375,
+        147.01426696777344,
+        147.03846740722656
+      ],
+      "median_ms": 147.0150146484375,
+      "real_tokens": 54880,
+      "physical_tokens": 172032,
+      "fill_fraction": 0.3190104166666667,
+      "physical_tokens_per_s": 1170166.1929659809,
+      "effective_tokens_per_s": 373295.2047873246,
+      "speedup_vs_per_crop": 13.886658081101212,
+      "routing": "permutation",
+      "separate_crop_assembly": {
+        "copies": 186,
+        "samples_ms": [
+          7.53439998626709,
+          7.648819923400879,
+          7.562620162963867,
+          7.6448798179626465,
+          7.679180145263672
+        ],
+        "median_ms": 7.6448798179626465
+      },
+      "combined_with_separate_crop_assembly_ms": 154.65989446640015,
+      "combined_speedup_vs_per_crop": 13.200236869775335,
+      "correctness": {
+        "crops": 186,
+        "worst_max_abs": 1.125,
+        "mean_of_mean_abs": 0.003127922232623302,
+        "worst_relative_l2": 0.007873806818810168,
+        "worst_cosine": 0.9999690055847168,
+        "worst_crops": [
+          {
+            "source_index": 173,
+            "max_abs": 1.125,
+            "mean_abs": 0.005023745819926262,
+            "relative_l2": 0.007873806818810168,
+            "cosine": 0.9999690055847168
+          },
+          {
+            "source_index": 159,
+            "max_abs": 0.453125,
+            "mean_abs": 0.005279339384287596,
+            "relative_l2": 0.007285394463693799,
+            "cosine": 0.9999816417694092
+          },
+          {
+            "source_index": 104,
+            "max_abs": 0.5,
+            "mean_abs": 0.0033597322180867195,
+            "relative_l2": 0.005294090264241816,
+            "cosine": 0.9999866485595703
+          },
+          {
+            "source_index": 69,
+            "max_abs": 0.296875,
+            "mean_abs": 0.004220990929752588,
+            "relative_l2": 0.004439703568026767,
+            "cosine": 0.9999901652336121
+          },
+          {
+            "source_index": 55,
+            "max_abs": 0.25,
+            "mean_abs": 0.0032818177714943886,
+            "relative_l2": 0.004083927234896798,
+            "cosine": 0.9999922513961792
+          }
+        ]
+      },
+      "compile": {
+        "compile_api": "torch_npu.dynamo.torchair.inference.cache_compile",
+        "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/vision_atlas_lab/stage2_atlas64x192_m16_permutation_float16_srcbe3ed724b79d",
+        "dynamic": false,
+        "fullgraph": true,
+        "first_call_wall_s": 4.401767491130158
+      }
+    }
+  ]
+}
