@@ -44,9 +44,9 @@ parse_npu_profile.py
 
 run_official_transformers_omnidocbench.py
   Fidelity-first corpus runner around the official mineru-vl-utils two-step
-  page client. It supports stock Transformers and synchronous vLLM engines and
-  writes official json2md Markdown, content lists, per-page checkpoints, shard
-  progress, and timing.
+  page client. It supports stock Transformers plus synchronous and asynchronous
+  vLLM engines. It writes official json2md Markdown, content lists, per-page
+  checkpoints, shard progress, and timing.
 ```
 
 The experiment reuses the repository-level `crops/` corpus. Its manifest and
@@ -158,6 +158,42 @@ $VLLM_PYTHON \
 `--batch-size 0` keeps the official synchronous vLLM behavior: every request
 prepared by the current layout/page group is submitted to one vLLM generate
 call. The vLLM scheduler then performs continuous batching within that call.
+
+Use `--vllm-max-num-seqs` to control active scheduler concurrency. Use
+`--vllm-max-num-batched-tokens` to override the chunked-prefill token budget.
+The asynchronous lane uses the same checkpoint and raw multimodal-prompt
+corrections:
+
+```sh
+$VLLM_PYTHON \
+  11_mineru_2_5_pro_inference/run_official_transformers_omnidocbench.py \
+  --backend vllm-async-engine \
+  --model "$MODEL_DIR" \
+  --output-dir tmp/11_mineru_2_5_pro_inference/official_vllm_async_eager_n8 \
+  --limit 8 \
+  --page-batch-size 8 \
+  --batch-size 0 \
+  --vllm-enforce-eager \
+  --vllm-max-num-seqs 128
+```
+
+`FULL_DECODE_ONLY` leaves multimodal and text prefill outside ACLGraph and
+captures pure decode batches only:
+
+```sh
+$VLLM_PYTHON \
+  11_mineru_2_5_pro_inference/run_official_transformers_omnidocbench.py \
+  --backend vllm-engine \
+  --model "$MODEL_DIR" \
+  --output-dir tmp/11_mineru_2_5_pro_inference/official_vllm_full_decode_n8 \
+  --limit 8 \
+  --page-batch-size 8 \
+  --batch-size 0 \
+  --no-vllm-enforce-eager \
+  --vllm-full-decode-only \
+  --vllm-max-num-seqs 128 \
+  --vllm-cudagraph-capture-sizes 1,2,4,8,16,32,64,128
+```
 
 ## Two-step single-page smoke
 

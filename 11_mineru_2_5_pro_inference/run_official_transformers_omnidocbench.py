@@ -41,7 +41,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument(
         "--backend",
-        choices=("transformers", "vllm-engine"),
+        choices=("transformers", "vllm-engine", "vllm-async-engine"),
         default="transformers",
     )
     parser.add_argument("--offset", type=int, default=0)
@@ -78,6 +78,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--vllm-gpu-memory-utilization", type=float, default=0.8)
     parser.add_argument("--vllm-max-model-len", type=int, default=8192)
     parser.add_argument("--vllm-max-num-seqs", type=int, default=64)
+    parser.add_argument("--vllm-max-num-batched-tokens", type=int)
+    parser.add_argument(
+        "--vllm-full-decode-only",
+        action="store_true",
+        help="Capture only pure-decode batches with FULL_DECODE_ONLY ACLGraph.",
+    )
+    parser.add_argument(
+        "--vllm-cudagraph-capture-sizes",
+        default="1,2,4,8,16,32,64,128",
+        help="Comma-separated batch sizes captured by FULL_DECODE_ONLY.",
+    )
     return parser.parse_args()
 
 
@@ -131,6 +142,15 @@ def main() -> None:
         raise ValueError("shard-index must be in [0, shard-count)")
     if args.batch_size < 0 or args.page_batch_size <= 0:
         raise ValueError("batch-size must be non-negative and page-batch-size must be positive")
+    capture_sizes = [
+        int(value)
+        for value in args.vllm_cudagraph_capture_sizes.split(",")
+        if value.strip()
+    ]
+    if any(value <= 0 for value in capture_sizes):
+        raise ValueError("vllm-cudagraph-capture-sizes must contain positive integers")
+    if args.vllm_full_decode_only and args.vllm_enforce_eager:
+        raise ValueError("FULL_DECODE_ONLY requires --no-vllm-enforce-eager")
 
     model_dir = args.model.expanduser().resolve()
     dataset_json = args.dataset_json.expanduser().resolve()
@@ -195,27 +215,20 @@ def main() -> None:
         processor_fast: bool | None = True
     else:
         from mineru_vl_utils import MinerULogitsProcessor
-        from mineru_vl_utils.vlm_client.vllm_engine_client import (
-            VllmEngineVlmClient,
-        )
-        from vllm import LLM
-
-        # mineru-vl-utils 1.0.5 sends an already-valid local vLLM multimodal
-        # request through LLM.renderer.render_cmpl a second time.  On vLLM
-        # 0.21 this preserves the text token IDs but corrupts the image payload.
-        # The local engine accepts the original prompt/multi_modal_data request.
-        def _keep_raw_vllm_prompts(self, raw_prompts):
-            return raw_prompts
-
-        VllmEngineVlmClient._render_vllm_cmpl_inputs = _keep_raw_vllm_prompts
-
-        model = LLM(
+        compilation_config = None
+        if args.vllm_full_decode_only:
+            compilation_config = {
+                "cudagraph_mode": "FULL_DECODE_ONLY",
+                "cudagraph_capture_sizes": capture_sizes,
+            }
+        engine_kwargs = dict(
             model=str(model_dir),
             dtype="bfloat16",
             enforce_eager=args.vllm_enforce_eager,
             gpu_memory_utilization=args.vllm_gpu_memory_utilization,
             max_model_len=args.vllm_max_model_len,
             max_num_seqs=args.vllm_max_num_seqs,
+            max_num_batched_tokens=args.vllm_max_num_batched_tokens,
             limit_mm_per_prompt={"image": 1},
             logits_processors=[MinerULogitsProcessor],
             # The checkpoint stores one tied embedding matrix and omits a
@@ -227,13 +240,51 @@ def main() -> None:
                 "text_config": {"tie_word_embeddings": True},
             },
         )
-        client = MinerUClient(
-            backend="vllm-engine",
-            vllm_llm=model,
-            image_analysis=False,
-            batch_size=args.batch_size,
-            use_tqdm=False,
-        )
+        if compilation_config is not None:
+            engine_kwargs["compilation_config"] = compilation_config
+
+        if args.backend == "vllm-engine":
+            from mineru_vl_utils.vlm_client.vllm_engine_client import (
+                VllmEngineVlmClient,
+            )
+            from vllm import LLM
+
+            # mineru-vl-utils 1.0.5 sends an already-valid local vLLM
+            # multimodal request through the renderer a second time.
+            def _keep_raw_vllm_prompts(self, raw_prompts):
+                return raw_prompts
+
+            VllmEngineVlmClient._render_vllm_cmpl_inputs = _keep_raw_vllm_prompts
+            model = LLM(**engine_kwargs)
+            client = MinerUClient(
+                backend="vllm-engine",
+                vllm_llm=model,
+                image_analysis=False,
+                batch_size=args.batch_size,
+                use_tqdm=False,
+            )
+        else:
+            from mineru_vl_utils.vlm_client.vllm_async_engine_client import (
+                VllmAsyncEngineVlmClient,
+            )
+            from vllm import AsyncEngineArgs
+            from vllm.v1.engine.async_llm import AsyncLLM
+
+            async def _keep_raw_vllm_prompt(self, raw_prompt):
+                return raw_prompt
+
+            VllmAsyncEngineVlmClient._render_vllm_cmpl_input = (
+                _keep_raw_vllm_prompt
+            )
+            model = AsyncLLM.from_engine_args(AsyncEngineArgs(**engine_kwargs))
+            client = MinerUClient(
+                backend="vllm-async-engine",
+                vllm_async_llm=model,
+                image_analysis=False,
+                batch_size=args.batch_size,
+                max_concurrency=args.vllm_max_num_seqs,
+                use_tqdm=False,
+            )
         attention = "vllm-selected"
         processor_fast = None
     synchronize()
@@ -265,19 +316,34 @@ def main() -> None:
         "batch_size": args.batch_size,
         "page_batch_size": args.page_batch_size,
         "vllm_enforce_eager": (
-            args.vllm_enforce_eager if args.backend == "vllm-engine" else None
+            args.vllm_enforce_eager if args.backend.startswith("vllm-") else None
         ),
         "vllm_gpu_memory_utilization": (
-            args.vllm_gpu_memory_utilization if args.backend == "vllm-engine" else None
+            args.vllm_gpu_memory_utilization
+            if args.backend.startswith("vllm-")
+            else None
         ),
         "vllm_max_model_len": (
-            args.vllm_max_model_len if args.backend == "vllm-engine" else None
+            args.vllm_max_model_len if args.backend.startswith("vllm-") else None
         ),
         "vllm_max_num_seqs": (
-            args.vllm_max_num_seqs if args.backend == "vllm-engine" else None
+            args.vllm_max_num_seqs if args.backend.startswith("vllm-") else None
         ),
-        "vllm_force_tied_embeddings": args.backend == "vllm-engine",
-        "vllm_raw_multimodal_prompts": args.backend == "vllm-engine",
+        "vllm_max_num_batched_tokens": (
+            args.vllm_max_num_batched_tokens
+            if args.backend.startswith("vllm-")
+            else None
+        ),
+        "vllm_full_decode_only": (
+            args.vllm_full_decode_only if args.backend.startswith("vllm-") else None
+        ),
+        "vllm_cudagraph_capture_sizes": (
+            capture_sizes
+            if args.backend.startswith("vllm-") and args.vllm_full_decode_only
+            else None
+        ),
+        "vllm_force_tied_embeddings": args.backend.startswith("vllm-"),
+        "vllm_raw_multimodal_prompts": args.backend.startswith("vllm-"),
         "offset": args.offset,
         "limit": args.limit,
         "shard_count": args.shard_count,
