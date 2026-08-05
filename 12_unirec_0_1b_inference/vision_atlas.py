@@ -24,20 +24,16 @@ from prefill_timing import PrefillDeviceTimeline
 
 
 ATLAS_STAGE = 2
-ATLAS_HEIGHT = 32
-ATLAS_WIDTH = 128
+ATLAS_HEIGHT = 64
+ATLAS_WIDTH = 192
 ATLAS_GUARD = 3
 ATLAS_MAX_MEMBERS = 16
 ATLAS_CHANNELS = 384
 ATLAS_STAGE_FACTOR = 16
 PREFIX_SCALE = 4
-PREFIX_HEIGHT = 64
-PREFIX_WIDTH = 512
+PREFIX_HEIGHT = ATLAS_HEIGHT * PREFIX_SCALE
+PREFIX_WIDTH = ATLAS_WIDTH * PREFIX_SCALE
 PREFIX_CHANNELS = 96
-STAGE_HEIGHTS = (PREFIX_HEIGHT, 32, ATLAS_HEIGHT)
-STAGE_WIDTHS = (PREFIX_WIDTH, 256, ATLAS_WIDTH)
-STAGE_GUARDS = (4, 4, ATLAS_GUARD)
-STAGE_SCALES = (4, 2, 1)
 
 
 @dataclass(frozen=True)
@@ -57,15 +53,14 @@ class Placement:
     member: int
     y: int
     x: int
-    guard: int
 
     @property
     def inner_y(self) -> int:
-        return self.y + self.guard
+        return self.y + ATLAS_GUARD
 
     @property
     def inner_x(self) -> int:
-        return self.x + self.guard
+        return self.x + ATLAS_GUARD
 
 
 @dataclass
@@ -77,43 +72,28 @@ class Shelf:
 
 @dataclass
 class AtlasPack:
-    height: int
-    width: int
-    guard: int
-    scale: int
     shelves: list[Shelf]
     placements: list[Placement]
 
     @classmethod
-    def empty(
-        cls, *, height: int, width: int, guard: int, scale: int
-    ) -> "AtlasPack":
-        return cls(
-            height=height,
-            width=width,
-            guard=guard,
-            scale=scale,
-            shelves=[],
-            placements=[],
-        )
+    def empty(cls) -> "AtlasPack":
+        return cls(shelves=[], placements=[])
 
     def try_add(self, crop: CropShape) -> bool:
         if len(self.placements) >= ATLAS_MAX_MEMBERS:
             return False
-        crop_height = crop.height * self.scale
-        crop_width = crop.width * self.scale
-        physical_h = crop_height + 2 * self.guard
-        physical_w = crop_width + 2 * self.guard
-        if physical_h > self.height or physical_w > self.width:
+        physical_h = crop.height + 2 * ATLAS_GUARD
+        physical_w = crop.width + 2 * ATLAS_GUARD
+        if physical_h > ATLAS_HEIGHT or physical_w > ATLAS_WIDTH:
             return False
         selected = None
         for shelf in self.shelves:
-            if physical_h <= shelf.height and shelf.next_x + physical_w <= self.width:
+            if physical_h <= shelf.height and shelf.next_x + physical_w <= ATLAS_WIDTH:
                 selected = shelf
                 break
         if selected is None:
             next_y = sum(shelf.height for shelf in self.shelves)
-            if next_y + physical_h > self.height:
+            if next_y + physical_h > ATLAS_HEIGHT:
                 return False
             selected = Shelf(y=next_y, height=physical_h)
             self.shelves.append(selected)
@@ -123,7 +103,6 @@ class AtlasPack:
                 member=len(self.placements),
                 y=selected.y,
                 x=selected.next_x,
-                guard=self.guard,
             )
         )
         selected.next_x += physical_w
@@ -131,16 +110,7 @@ class AtlasPack:
 
     @property
     def real_tokens(self) -> int:
-        return sum(
-            placement.crop.tokens * self.scale * self.scale
-            for placement in self.placements
-        )
-
-
-@dataclass(frozen=True)
-class MultiStagePack:
-    crops: tuple[CropShape, ...]
-    stages: tuple[AtlasPack, AtlasPack, AtlasPack]
+        return sum(placement.crop.tokens for placement in self.placements)
 
 
 class GuardedAtlasStage(nn.Module):
@@ -225,11 +195,7 @@ class RoutedGuardedAtlasPrefix(nn.Module):
     def forward(
         self,
         packed_source: torch.Tensor,
-        atlas0_to_source: torch.Tensor,
-        stage0_to_source1: torch.Tensor,
-        atlas1_to_source: torch.Tensor,
-        stage1_to_source2: torch.Tensor,
-        atlas2_to_source: torch.Tensor,
+        atlas_to_source: torch.Tensor,
         source_to_atlas: torch.Tensor,
         valid_mask0: torch.Tensor,
         membership0: torch.Tensor,
@@ -241,7 +207,7 @@ class RoutedGuardedAtlasPrefix(nn.Module):
         membership2: torch.Tensor,
         normalized_membership2: torch.Tensor,
     ) -> torch.Tensor:
-        atlas = packed_source.index_select(1, atlas0_to_source).reshape(
+        atlas = packed_source.index_select(1, atlas_to_source).reshape(
             1, PREFIX_HEIGHT, PREFIX_WIDTH, PREFIX_CHANNELS
         ).permute(0, 3, 1, 2).contiguous()
         atlas = self.stage0(
@@ -251,10 +217,7 @@ class RoutedGuardedAtlasPrefix(nn.Module):
             normalized_membership0,
         )
         tokens, height, width = self.downsample0(atlas)
-        source1 = tokens.index_select(1, stage0_to_source1)
-        atlas = source1.index_select(1, atlas1_to_source).reshape(
-            1, STAGE_HEIGHTS[1], STAGE_WIDTHS[1], -1
-        ).permute(0, 3, 1, 2).contiguous()
+        atlas = tokens.transpose(1, 2).reshape(1, -1, height, width)
         atlas = self.stage1(
             atlas,
             valid_mask1,
@@ -262,11 +225,7 @@ class RoutedGuardedAtlasPrefix(nn.Module):
             normalized_membership1,
         )
         tokens, height, width = self.downsample1(atlas)
-        source2 = tokens.index_select(1, stage1_to_source2)
-        source2 = torch.cat((source2, torch.zeros_like(source2)), dim=1)
-        atlas = source2.index_select(1, atlas2_to_source).reshape(
-            1, STAGE_HEIGHTS[2], STAGE_WIDTHS[2], -1
-        ).permute(0, 3, 1, 2).contiguous()
+        atlas = tokens.transpose(1, 2).reshape(1, -1, height, width)
         output = self.stage2(
             atlas,
             valid_mask2,
@@ -285,30 +244,7 @@ def _source_hash() -> str:
     return hashlib.sha256(payload).hexdigest()[:12]
 
 
-def _build_multi_stage_pack(crops: list[CropShape]) -> MultiStagePack | None:
-    stage_packs = []
-    for height, width, guard, scale in zip(
-        STAGE_HEIGHTS,
-        STAGE_WIDTHS,
-        STAGE_GUARDS,
-        STAGE_SCALES,
-    ):
-        pack = AtlasPack.empty(
-            height=height,
-            width=width,
-            guard=guard,
-            scale=scale,
-        )
-        for crop in crops:
-            if not pack.try_add(crop):
-                return None
-        stage_packs.append(pack)
-    return MultiStagePack(tuple(crops), tuple(stage_packs))
-
-
-def _pack_shapes(
-    shapes: list[CropShape],
-) -> tuple[list[MultiStagePack], list[CropShape]]:
+def _pack_shapes(shapes: list[CropShape]) -> tuple[list[AtlasPack], list[CropShape]]:
     ordered = sorted(
         shapes,
         key=lambda crop: (
@@ -318,21 +254,22 @@ def _pack_shapes(
         ),
         reverse=True,
     )
-    packs: list[MultiStagePack] = []
+    packs: list[AtlasPack] = []
     overflow: list[CropShape] = []
     for crop in ordered:
-        if _build_multi_stage_pack([crop]) is None:
+        if (
+            crop.height + 2 * ATLAS_GUARD > ATLAS_HEIGHT
+            or crop.width + 2 * ATLAS_GUARD > ATLAS_WIDTH
+        ):
             overflow.append(crop)
             continue
-        for index, pack in enumerate(packs):
-            candidate = _build_multi_stage_pack([*pack.crops, crop])
-            if candidate is not None:
-                packs[index] = candidate
+        for pack in packs:
+            if pack.try_add(crop):
                 break
         else:
-            pack = _build_multi_stage_pack([crop])
-            if pack is None:
-                raise AssertionError("fresh multi-stage atlas rejected a fitting crop")
+            pack = AtlasPack.empty()
+            if not pack.try_add(crop):
+                raise AssertionError("fresh atlas rejected a fitting crop")
             packs.append(pack)
     return packs, overflow
 
@@ -340,14 +277,12 @@ def _pack_shapes(
 def _routing_maps(
     pack: AtlasPack,
     *,
+    scale: int,
     dtype: torch.dtype,
     device: torch.device,
-    output_divisor: int = 1,
 ) -> tuple[torch.Tensor, ...]:
-    if pack.scale % output_divisor:
-        raise ValueError("atlas scale must be divisible by output divisor")
-    height = pack.height // output_divisor
-    width = pack.width // output_divisor
+    height = ATLAS_HEIGHT * scale
+    width = ATLAS_WIDTH * scale
     cells = height * width
     atlas_to_source = [-1] * cells
     source_cursor = 0
@@ -355,15 +290,10 @@ def _routing_maps(
     membership = torch.zeros((ATLAS_MAX_MEMBERS, cells), dtype=dtype)
     for placement in pack.placements:
         crop = placement.crop
-        crop_height = crop.height * pack.scale // output_divisor
-        crop_width = crop.width * pack.scale // output_divisor
-        if (
-            placement.inner_y % output_divisor
-            or placement.inner_x % output_divisor
-        ):
-            raise ValueError("atlas placement is not downsample-aligned")
-        inner_y = placement.inner_y // output_divisor
-        inner_x = placement.inner_x // output_divisor
+        crop_height = crop.height * scale
+        crop_width = crop.width * scale
+        inner_y = placement.inner_y * scale
+        inner_x = placement.inner_x * scale
         for row in range(crop_height):
             atlas_row = inner_y + row
             for column in range(crop_width):
@@ -401,27 +331,14 @@ def _routing_maps(
 
 
 def _routing_inputs(
-    pack: MultiStagePack,
+    pack: AtlasPack,
     *,
     dtype: torch.dtype,
     device: torch.device,
 ) -> tuple[torch.Tensor, ...]:
-    stage0, stage1, stage2 = pack.stages
-    route0 = _routing_maps(stage0, dtype=dtype, device=device)
-    bridge0 = _routing_maps(
-        stage0,
-        dtype=dtype,
-        device=device,
-        output_divisor=2,
-    )
-    route1 = _routing_maps(stage1, dtype=dtype, device=device)
-    bridge1 = _routing_maps(
-        stage1,
-        dtype=dtype,
-        device=device,
-        output_divisor=2,
-    )
-    route2 = _routing_maps(stage2, dtype=dtype, device=device)
+    route0 = _routing_maps(pack, scale=4, dtype=dtype, device=device)
+    route1 = _routing_maps(pack, scale=2, dtype=dtype, device=device)
+    route2 = _routing_maps(pack, scale=1, dtype=dtype, device=device)
     return (
         torch.zeros(
             (1, PREFIX_HEIGHT * PREFIX_WIDTH, PREFIX_CHANNELS),
@@ -429,10 +346,6 @@ def _routing_inputs(
             device=device,
         ),
         route0[0],
-        bridge0[1],
-        route1[0],
-        bridge1[1],
-        route2[0],
         route2[1],
         route0[2],
         route0[3],
@@ -490,11 +403,14 @@ class UniRecVisionAtlasRuntime:
 
     def warmup_inputs(self) -> tuple[torch.Tensor, ...]:
         """Build one fixed-shape input set for graph load and replay."""
-        pack = _build_multi_stage_pack(
-            [CropShape(source_index=0, height=4, width=60)]
+        pack = AtlasPack.empty()
+        crop = CropShape(
+            source_index=0,
+            height=ATLAS_HEIGHT - 2 * ATLAS_GUARD,
+            width=ATLAS_WIDTH - 2 * ATLAS_GUARD,
         )
-        if pack is None:
-            raise AssertionError("vision atlas warmup crop must fit all stages")
+        if not pack.try_add(crop):
+            raise AssertionError("vision atlas warmup crop must fit")
         return _routing_inputs(
             pack,
             dtype=self.runner.dtype,
@@ -535,7 +451,7 @@ class UniRecVisionAtlasRuntime:
 
     def _run_atlas_packs(
         self,
-        packs: list[MultiStagePack],
+        packs: list[AtlasPack],
         stem_states: dict[int, torch.Tensor],
     ) -> dict[int, torch.Tensor]:
         outputs: dict[int, torch.Tensor] = {}
@@ -547,8 +463,8 @@ class UniRecVisionAtlasRuntime:
             )
             packed_source = values[0]
             cursor = 0
-            for crop in pack.crops:
-                source = stem_states[crop.source_index]
+            for placement in pack.placements:
+                source = stem_states[placement.crop.source_index]
                 source_tokens = source.shape[1]
                 packed_source[:, cursor : cursor + source_tokens].copy_(source)
                 cursor += source_tokens
@@ -569,9 +485,9 @@ class UniRecVisionAtlasRuntime:
                 )
                 self.first_call = False
             cursor = 0
-            for crop in pack.crops:
-                end = cursor + crop.tokens
-                outputs[crop.source_index] = result[:, cursor:end]
+            for placement in pack.placements:
+                end = cursor + placement.crop.tokens
+                outputs[placement.crop.source_index] = result[:, cursor:end]
                 cursor = end
         return outputs
 
@@ -710,11 +626,9 @@ class UniRecVisionAtlasRuntime:
 
         self.stats["groups"] += 1
         self.stats["packs"] += len(packs)
-        self.stats["packed_members"] += sum(len(pack.crops) for pack in packs)
+        self.stats["packed_members"] += sum(len(pack.placements) for pack in packs)
         self.stats["overflow_members"] += len(overflow)
-        self.stats["real_stage_tokens"] += sum(
-            pack.stages[ATLAS_STAGE].real_tokens for pack in packs
-        )
+        self.stats["real_stage_tokens"] += sum(pack.real_tokens for pack in packs)
         self.stats["physical_stage_tokens"] += (
             len(packs) * ATLAS_HEIGHT * ATLAS_WIDTH
         )
