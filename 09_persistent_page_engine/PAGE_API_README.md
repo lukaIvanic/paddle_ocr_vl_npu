@@ -4,6 +4,11 @@ Use this client when the full-page OCR API is already running:
 
 - `scripts/run_omnidocbench_page_api_eval.py`
 
+This is the only Python file from this repository that the product system
+needs. It contains the HTTP client, robust matching runner, Page-TEDS runner,
+and CDM runner. It does not import or execute another file from this
+repository.
+
 The command sends all 1,651 OmniDocBench pages to the API. It saves the page
 Markdown, runs the official matching metrics, runs Page-TEDS and CDM, and
 calculates the official Overall score.
@@ -26,24 +31,34 @@ git clone https://github.com/opendatalab/OmniDocBench.git /workspace/repos/OmniD
 git -C /workspace/repos/OmniDocBench_eval checkout 2b161d010d2e3aff77a0edef359ea3a6411d23cd
 ```
 
-Install the pinned ARM64 evaluator runtime once. This installs TeX Live 2025,
-ImageMagick 7.1.1-47, Ghostscript, and the Python 3.10 evaluator environment.
-It does not modify the evaluator source.
+Create a Python 3.10 environment and install the public evaluator. Its pinned
+`pyproject.toml` installs all Python packages from PyPI.
 
 ```sh
-cd /workspace/repos/paddle_ocr_vl_npu
-export OMNIDOCBENCH_WORKSPACE_ROOT=/workspace
-export OMNIDOCBENCH_EVALUATOR_ROOT=/workspace/repos/OmniDocBench_eval
-bash 09_persistent_page_engine/scripts/setup_omnidocbench_eval_runtime.sh
+python3.10 -m venv /workspace/venvs/omnidocbench_py310
+/workspace/venvs/omnidocbench_py310/bin/python -m pip install --upgrade pip
+/workspace/venvs/omnidocbench_py310/bin/python -m pip install \
+  --no-build-isolation /workspace/repos/OmniDocBench_eval
 ```
 
-Before each evaluation shell, load the runtime paths:
+Install these public system tools and put their commands on `PATH`:
+
+- [TeX Live](https://tug.org/texlive/) with `pdflatex`, `kpsewhich`,
+  `CJK.sty`, and `c70gkai.fd`;
+- [ImageMagick 7](https://imagemagick.org/script/download.php) with PDF
+  support and the `magick` command;
+- [Ghostscript](https://ghostscript.com/releases/gsdnld.html) with the `gs`
+  command.
+
+The validated environment used TeX Live 2025, ImageMagick 7.1.1-47, and
+Ghostscript 9.55.0. The script checks the required commands before it starts
+inference or scoring.
+
+Set two paths for the commands below:
 
 ```sh
-cd /workspace/repos/paddle_ocr_vl_npu
-export OMNIDOCBENCH_WORKSPACE_ROOT=/workspace
 export OMNIDOCBENCH_EVALUATOR_ROOT=/workspace/repos/OmniDocBench_eval
-source 09_persistent_page_engine/scripts/omnidocbench_eval_env.sh
+export OMNIDOCBENCH_EVAL_PYTHON=/workspace/venvs/omnidocbench_py310/bin/python
 ```
 
 ## Run the full benchmark
@@ -105,5 +120,5 @@ The final files are:
 - `output/full_page_api/generation/predictions/`
 - `output/full_page_api/evaluation/`
 
-The evaluator speedups are in committed scripts in this repository. The
+The evaluator speedups are embedded in the single client script. The pinned
 upstream OmniDocBench source remains unchanged.
