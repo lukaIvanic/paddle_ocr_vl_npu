@@ -46,7 +46,7 @@ class FixedBatchDecodeEngine:
         pad_token_id: int,
         collect_prefill_metrics: bool = False,
         packed_text_prefill_runtime: Any | None = None,
-        vision_pack_target: int = 3072,
+        vision_pack_target: int = 768,
     ) -> None:
         if int(batch_size) <= 1:
             raise ValueError("fixed batch engine requires batch_size > 1")

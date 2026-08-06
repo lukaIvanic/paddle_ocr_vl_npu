@@ -179,7 +179,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--local-vision-pack-target",
         type=int,
-        default=3072,
+        default=768,
         help=(
             "Continuous packed-text lane only: physical B=1 bucket used to "
             "pack independent vision sequences. Single-member groups retain "
