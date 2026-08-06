@@ -1512,6 +1512,8 @@ class LocalMinerU2_5ForConditionalGeneration(nn.Module):
         attention_mask: torch.Tensor | None = None,
         pixel_values: torch.Tensor | None = None,
         image_grid_thw: torch.Tensor | None = None,
+        position_ids: torch.Tensor | None = None,
+        rope_deltas: torch.Tensor | None = None,
         *,
         cache_length: int,
         cache: LocalMinerUStaticCache | None = None,
@@ -1534,10 +1536,13 @@ class LocalMinerU2_5ForConditionalGeneration(nn.Module):
         batch_size, sequence_length, _hidden = inputs_embeds.shape
         if int(sequence_length) > int(cache_length):
             raise ValueError(f"prefill sequence length {sequence_length} exceeds static cache length {cache_length}")
-        position_ids, rope_deltas = measure(
-            "mrope_prepare",
-            lambda: self.get_rope_index(input_ids, image_grid_thw, attention_mask),
-        )
+        if (position_ids is None) != (rope_deltas is None):
+            raise ValueError("position_ids and rope_deltas must be supplied together")
+        if position_ids is None:
+            position_ids, rope_deltas = measure(
+                "mrope_prepare",
+                lambda: self.get_rope_index(input_ids, image_grid_thw, attention_mask),
+            )
         if cache is None:
             cache = self.allocate_static_cache(
                 batch_size=int(batch_size),

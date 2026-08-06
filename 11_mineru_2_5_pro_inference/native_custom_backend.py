@@ -253,15 +253,32 @@ def make_local_fixed_batch_vlm_client(
                 padding=True,
                 return_tensors="pt",
             )
-            return inputs, float(time.perf_counter() - started)
+            mrope_started = time.perf_counter()
+            position_ids, rope_deltas = model.get_rope_index(
+                inputs.input_ids,
+                getattr(inputs, "image_grid_thw", None),
+                inputs.attention_mask,
+            )
+            mrope_s = time.perf_counter() - mrope_started
+            return (
+                inputs,
+                position_ids,
+                rope_deltas,
+                float(time.perf_counter() - started),
+                float(mrope_s),
+            )
 
         def _finish_generation(
             self,
             inputs,
             sampling_param,
+            position_ids,
+            rope_deltas,
         ) -> PreparedGeneration:
             params = self.build_sampling_params(sampling_param)
             inputs = inputs.to(device=model.device, dtype=model.dtype)
+            position_ids = position_ids.to(device=model.device)
+            rope_deltas = rope_deltas.to(device=model.device)
             max_new_tokens = params.max_new_tokens
             if max_new_tokens is None:
                 max_new_tokens = max(
@@ -280,6 +297,8 @@ def make_local_fixed_batch_vlm_client(
                 pixel_values=getattr(inputs, "pixel_values", None),
                 image_grid_thw=getattr(inputs, "image_grid_thw", None),
                 max_new_tokens=max_new_tokens,
+                position_ids=position_ids,
+                rope_deltas=rope_deltas,
             )
 
         def _prepare_generation(
@@ -288,8 +307,15 @@ def make_local_fixed_batch_vlm_client(
             chat_prompt,
             sampling_param,
         ) -> PreparedGeneration:
-            inputs, _ = self._prepare_cpu_inputs(image, chat_prompt)
-            return self._finish_generation(inputs, sampling_param)
+            inputs, position_ids, rope_deltas, _worker_s, _mrope_s = (
+                self._prepare_cpu_inputs(image, chat_prompt)
+            )
+            return self._finish_generation(
+                inputs,
+                sampling_param,
+                position_ids,
+                rope_deltas,
+            )
 
         def _decode_outputs(self, generated, metrics):
             self.generation_metrics.append(metrics)
@@ -415,6 +441,7 @@ def make_local_fixed_batch_vlm_client(
                 return self._decode_outputs(generated, metrics)
 
             cpu_prepare_worker_s = 0.0
+            cpu_mrope_prepare_s = 0.0
             cpu_prepare_wait_s = 0.0
             request_h2d_submit_s = 0.0
             with ThreadPoolExecutor(
@@ -442,17 +469,27 @@ def make_local_fixed_batch_vlm_client(
 
                 def prepare_index(index: int) -> PreparedGeneration:
                     nonlocal cpu_prepare_worker_s
+                    nonlocal cpu_mrope_prepare_s
                     nonlocal cpu_prepare_wait_s
                     nonlocal request_h2d_submit_s
                     wait_started = time.perf_counter()
-                    inputs, worker_s = futures.pop(index).result()
+                    (
+                        inputs,
+                        position_ids,
+                        rope_deltas,
+                        worker_s,
+                        mrope_s,
+                    ) = futures.pop(index).result()
                     cpu_prepare_wait_s += time.perf_counter() - wait_started
                     cpu_prepare_worker_s += worker_s
+                    cpu_mrope_prepare_s += mrope_s
                     fill_prefetch()
                     h2d_started = time.perf_counter()
                     request = self._finish_generation(
                         inputs,
                         sampling_params[index],
+                        position_ids,
+                        rope_deltas,
                     )
                     request_h2d_submit_s += time.perf_counter() - h2d_started
                     return request
@@ -465,6 +502,7 @@ def make_local_fixed_batch_vlm_client(
                 {
                     "prepare_prefetch_depth": prefetch_depth,
                     "cpu_prepare_worker_s": cpu_prepare_worker_s,
+                    "cpu_mrope_prepare_s": cpu_mrope_prepare_s,
                     "cpu_prepare_wait_s": cpu_prepare_wait_s,
                     "request_h2d_submit_s": request_h2d_submit_s,
                 }

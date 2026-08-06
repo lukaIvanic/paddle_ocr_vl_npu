@@ -30,6 +30,8 @@ class PreparedGeneration:
     pixel_values: torch.Tensor | None
     image_grid_thw: torch.Tensor | None
     max_new_tokens: int
+    position_ids: torch.Tensor | None = None
+    rope_deltas: torch.Tensor | None = None
 
 
 class FixedBatchDecodeEngine:
@@ -365,6 +367,8 @@ class FixedBatchDecodeEngine:
                 attention_mask=request.attention_mask,
                 pixel_values=request.pixel_values,
                 image_grid_thw=request.image_grid_thw,
+                position_ids=request.position_ids,
+                rope_deltas=request.rope_deltas,
                 cache_length=self.cache_length,
                 cache=self._slot_view(arena, slot),
                 logits_to_keep=1,
@@ -519,6 +523,8 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
             attention_mask=request.attention_mask,
             pixel_values=request.pixel_values,
             image_grid_thw=request.image_grid_thw,
+            position_ids=request.position_ids,
+            rope_deltas=request.rope_deltas,
             cache_length=self.cache_length,
             cache=self._slot_view(arena, slot),
             logits_to_keep=1,
@@ -566,14 +572,18 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
             inputs_embeds_list, entries
         ):
             self._validate_request(request)
-            position_ids, rope_delta = timeline.measure(
-                "mrope_prepare",
-                lambda request=request: self.model.get_rope_index(
-                    request.input_ids,
-                    request.image_grid_thw,
-                    request.attention_mask,
-                ),
-            )
+            if request.position_ids is None or request.rope_deltas is None:
+                position_ids, rope_delta = timeline.measure(
+                    "mrope_prepare",
+                    lambda request=request: self.model.get_rope_index(
+                        request.input_ids,
+                        request.image_grid_thw,
+                        request.attention_mask,
+                    ),
+                )
+            else:
+                position_ids = request.position_ids
+                rope_delta = request.rope_deltas
             raw_vision_tokens = (
                 0 if request.pixel_values is None else int(request.pixel_values.shape[0])
             )

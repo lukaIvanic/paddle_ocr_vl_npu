@@ -1323,6 +1323,10 @@ def main() -> None:
                 float(item.get("cpu_prepare_worker_s", 0.0))
                 for item in generation_metrics
             ),
+            "cpu_mrope_prepare_s": sum(
+                float(item.get("cpu_mrope_prepare_s", 0.0))
+                for item in generation_metrics
+            ),
             "cpu_prepare_wait_s": sum(
                 float(item.get("cpu_prepare_wait_s", 0.0))
                 for item in generation_metrics
@@ -1376,6 +1380,9 @@ def main() -> None:
                     "generation_wall_s": float(item.get("generation_wall_s", 0.0)),
                     "cpu_prepare_worker_s": float(
                         item.get("cpu_prepare_worker_s", 0.0)
+                    ),
+                    "cpu_mrope_prepare_s": float(
+                        item.get("cpu_mrope_prepare_s", 0.0)
                     ),
                     "cpu_prepare_wait_s": float(
                         item.get("cpu_prepare_wait_s", 0.0)
