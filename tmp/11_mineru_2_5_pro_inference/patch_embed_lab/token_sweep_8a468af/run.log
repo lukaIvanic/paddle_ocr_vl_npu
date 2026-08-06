@@ -1,0 +1,14 @@
+[npu] jit_compile=False; Conv3D NPU inference patch enabled
+[W806 10:05:12.235420613 OpInterface.cpp:19419] Warning: torch_npu.npu_conv3d is deprecated and will be removed in future version. Use torch.nn.functional.conv3d instead. (function operator())
+[W806 10:05:12.235492534 TensorFactories.cpp:340] Warning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (function operator())
+[sweep] tokens=128 conv3d_ms=0.972160 flat_linear_ms=0.064878 speedup=14.98 max_abs=0.000976562
+[sweep] tokens=384 conv3d_ms=3.903292 flat_linear_ms=0.063784 speedup=61.20 max_abs=0.000976562
+[sweep] tokens=512 conv3d_ms=3.507620 flat_linear_ms=0.062378 speedup=56.23 max_abs=0.000976562
+[sweep] tokens=768 conv3d_ms=7.656652 flat_linear_ms=0.063620 speedup=120.35 max_abs=0.00195312
+[sweep] tokens=1024 conv3d_ms=6.924786 flat_linear_ms=0.062852 speedup=110.18 max_abs=0.000976562
+[sweep] tokens=1536 conv3d_ms=15.242484 flat_linear_ms=0.063360 speedup=240.57 max_abs=0.00195312
+[sweep] tokens=2048 conv3d_ms=13.709300 flat_linear_ms=0.077448 speedup=177.01 max_abs=0.00195312
+[sweep] tokens=3072 conv3d_ms=30.375308 flat_linear_ms=0.110324 speedup=275.33 max_abs=0.00195312
+[sweep] tokens=4224 conv3d_ms=41.749814 flat_linear_ms=0.139884 speedup=298.46 max_abs=0.000976562
+[sweep] tokens=5476 conv3d_ms=36.426059 flat_linear_ms=0.193296 speedup=188.45 max_abs=0.00195312
+[output] /workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/patch_embed_lab/token_sweep_8a468af/result.json

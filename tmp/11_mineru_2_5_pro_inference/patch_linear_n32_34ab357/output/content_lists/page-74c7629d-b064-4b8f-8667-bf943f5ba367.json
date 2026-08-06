@@ -1,0 +1,290 @@
+[
+  {
+    "type": "page_number",
+    "bbox": [
+      0.044,
+      0.03,
+      0.138,
+      0.045
+    ],
+    "angle": 0,
+    "content": "· 1002 ·"
+  },
+  {
+    "type": "header",
+    "bbox": [
+      0.388,
+      0.026,
+      0.609,
+      0.044
+    ],
+    "angle": 0,
+    "content": "新编电气工程师手册"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.017,
+      0.068,
+      0.979,
+      0.108
+    ],
+    "angle": 0,
+    "content": "\\( Q_{D}, U, \\delta) \\) ,两结点系统共有12个变量,但只有4个实数方程。因而必须根据运行条件给定其中8个变量,即每个结点给定4个变量方能有解。虽然非线性方程组具有解的多值性,但只有一个解是稳定解。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.016,
+      0.112,
+      0.978,
+      0.149
+    ],
+    "angle": 0,
+    "content": "④ 将式的前两式与后两式分别相加得到全网有功功率和无功功率的平衡方程，因而该系统的有功功率损耗与无功功率损耗分别为",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.273,
+      0.154,
+      0.725,
+      0.171
+    ],
+    "angle": 0,
+    "content": "\\[\n\\Delta P = y _ {s} (U _ {1} ^ {2} + U _ {2} ^ {2}) \\sin \\alpha_ {s} - 2 y _ {m} U _ {1} U _ {2} \\sin \\alpha_ {m} \\cos (\\delta_ {1} - \\delta_ {2})\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.273,
+      0.177,
+      0.725,
+      0.195
+    ],
+    "angle": 0,
+    "content": "\\[\n\\Delta Q = y _ {s} (U _ {1} ^ {2} + U _ {2} ^ {2}) \\cos \\alpha_ {s} - 2 y _ {m} U _ {1} U _ {2} \\cos \\alpha_ {m} \\cos (\\delta_ {1} - \\delta_ {2})\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.018,
+      0.199,
+      0.384,
+      0.215
+    ],
+    "angle": 0,
+    "content": "它们也都是结点电压相量的非线性函数。",
+    "merge_prev": false
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.054,
+      0.221,
+      0.258,
+      0.242
+    ],
+    "angle": 0,
+    "content": "(二) \\(n\\) 母线系统"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.059,
+      0.247,
+      0.792,
+      0.263
+    ],
+    "angle": 0,
+    "content": "\\(n\\) 母线功率方程是这类方程的一般形式。由式并用结点注入功率代替结点电流后可得",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.333,
+      0.27,
+      0.662,
+      0.32
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{c} \\frac {P _ {i} - j Q _ {i}}{*} = \\sum_ {j = 1} ^ {n} Y _ {i j} U _ {j} \\\\ \\dot {U} _ {i} \\end{array} \\qquad \\quad i = 1, 2, \\dots , n\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.017,
+      0.325,
+      0.61,
+      0.343
+    ],
+    "angle": 0,
+    "content": "式中 \\(P_{i}, Q_{i}\\) 分别为结点 \\(i\\) 的注入有功功率和注入无功功率，因而有",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.334,
+      0.35,
+      0.662,
+      0.381
+    ],
+    "angle": 0,
+    "content": "\\[\nP _ {i} - j Q _ {i} = \\stackrel {*} {U} _ {i j = 1} ^ {n} Y _ {i j} U _ {j} \\quad i = 1, 2, \\dots , n\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.017,
+      0.386,
+      0.31,
+      0.405
+    ],
+    "angle": 0,
+    "content": "使 \\(\\dot{U}_i = U_i e^{j\\delta_i}, Y_{ij} = G_{ij} + \\mathrm{j}B_{ij}\\) 则有",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.219,
+      0.41,
+      0.779,
+      0.456
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} P _ {i} - \\mathrm{j} Q _ {i} = U _ {i} e ^ {- \\mathrm{j} \\delta_ {i}} \\sum_ {j = 1} ^ {n} (G _ {i j} + \\mathrm{j} B _ {i j}) U _ {j} e ^ {\\delta_ {j}} = U _ {i} \\sum_ {j = 1} ^ {n} (G _ {i j} + \\mathrm{j} B _ {i j}) U _ {j} e ^ {- (\\delta_ {i} - \\delta_ {j})} \\\\ i = 1 2 \\dots , n \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.02,
+      0.459,
+      0.667,
+      0.48
+    ],
+    "angle": 0,
+    "content": "由于 \\(e^{-f(\\delta_i - \\delta_j)} = \\cos (\\delta_i - \\delta_j) - \\mathrm{j}\\sin (\\delta_i - \\delta_j)\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.019,
+      0.481,
+      0.064,
+      0.496
+    ],
+    "angle": 0,
+    "content": "故有",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.286,
+      0.504,
+      0.715,
+      0.574
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} P _ {i} - j Q _ {i} = U _ {i} \\sum_ {j = 1} ^ {n} U _ {j} \\{G _ {i j} \\cos (\\delta_ {i} - \\delta_ {j}) + B _ {i j} \\sin (\\delta_ {i} - \\delta_ {j}) \\\\ + \\int \\left[ B _ {i j} \\cos \\left(\\delta_ {i} - \\delta_ {j}\\right) - G _ {i j} \\sin \\left(\\delta_ {i} - \\delta_ {j}\\right) \\right] \\rbrace \\\\ i = 1 2 \\dots , n \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.017,
+      0.576,
+      0.292,
+      0.592
+    ],
+    "angle": 0,
+    "content": "将上式的实部、虚部分开则有",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.285,
+      0.6,
+      0.711,
+      0.681
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\left. \\begin{array}{l} P _ {i} = U _ {i} \\sum_ {j = 1} ^ {n} U [ G _ {i j} \\cos (\\delta_ {i} - \\delta_ {j}) + B _ {i j} \\sin (\\delta_ {i} - \\delta_ {j}) ] \\\\ Q _ {i} = - U _ {i} \\sum_ {j = 1} ^ {n} U [ B _ {i j} \\cos (\\delta_ {i} - \\delta_ {j}) - G _ {i j} \\sin (\\delta_ {i} - \\delta_ {j}) ] \\end{array} \\right\\} \\\\ i = 1 2 \\dots , n \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.018,
+      0.684,
+      0.113,
+      0.7
+    ],
+    "angle": 0,
+    "content": "对节点 \\(i\\) ，",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.373,
+      0.707,
+      0.625,
+      0.724
+    ],
+    "angle": 0,
+    "content": "\\[\nP _ {i} = P _ {G i} - P _ {D i}, Q _ {i} = Q _ {G i} - Q _ {D i}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.018,
+      0.728,
+      0.085,
+      0.743
+    ],
+    "angle": 0,
+    "content": "因而有",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.205,
+      0.751,
+      0.787,
+      0.924
+    ],
+    "angle": 0,
+    "content": "\\[\n\\left. \\begin{array}{l} f _ {1} = P _ {G 1} - P _ {D 1} - U _ {1} \\sum_ {j = 1} ^ {n} U _ {j} \\left[ G _ {1 j} \\cos \\left(\\delta_ {1} - \\delta_ {j}\\right) + B _ {1 j} \\sin \\left(\\delta_ {1} - \\delta_ {j}\\right) \\right] = 0 \\\\ \\vdots \\\\ f _ {n} = P _ {G n} - P _ {D n} - U _ {n} \\sum_ {j = 1} ^ {n} U _ {j} \\left[ G _ {n j} \\cos \\left(\\delta_ {n} - \\delta_ {j}\\right) + B _ {n j} \\sin \\left(\\delta_ {n} - \\delta_ {j}\\right) \\right] = 0 \\\\ f _ {n + 1} = Q _ {G 1} - Q _ {D 1} + U _ {1} \\sum_ {j = 1} ^ {n} U _ {j} \\left[ B _ {1 j} \\cos \\left(\\delta_ {1} - \\delta_ {j}\\right) - G _ {1 j} \\sin \\left(\\delta_ {1} - \\delta_ {j}\\right) \\right] = 0 \\\\ \\vdots \\\\ f _ {2 n + 1} = Q _ {G n} - Q _ {D n} - U _ {n} \\sum_ {j = 1} ^ {n} U _ {j} \\left[ B _ {n j} \\cos \\left(\\delta_ {n} - \\delta_ {j}\\right) - G _ {n j} \\sin \\left(\\delta_ {n} - \\delta_ {j}\\right) \\right] = 0 \\end{array} \\right\\}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.017,
+      0.925,
+      0.978,
+      0.963
+    ],
+    "angle": 0,
+    "content": "上式即为 \\(n\\) 母线系统的极坐标功率方程。如前所述，一个结点有6个变量那么 \\(n\\) 个结点就有 \\(6n\\) 个变量，上式只有 \\(2n\\) 个方程因而必须给定 \\(4n\\) 个变量方能有解。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.058,
+      0.966,
+      0.978,
+      0.985
+    ],
+    "angle": 0,
+    "content": "按照控制理论的概念，结点电压相量 \\( U_{i} \\) 、 \\( \\delta_{i} \\) 称为状态变量，负荷功率 \\( P_{Di} \\) 、 \\( Q_{Di} \\) 称为扰动变量（不可控变",
+    "merge_prev": false
+  }
+]
