@@ -1,0 +1,191 @@
+{
+  "config": {
+    "layout_model": "/workspace/models/PP-DocLayoutV2_safetensors",
+    "input": "/workspace/datasets/OmniDocBench/images",
+    "offset": 769,
+    "limit": 128,
+    "rounds": 2,
+    "warmup_pages": 4,
+    "parity_pages": 8,
+    "device_work": false,
+    "output_contract": [
+      1,
+      3,
+      800,
+      800
+    ],
+    "dtype": "torch.float32"
+  },
+  "summary": {
+    "regular_opencv": {
+      "wall_s_rounds": [
+        22.944626769050956,
+        23.430111151887104
+      ],
+      "wall_s_median": 23.18736896046903,
+      "stage_s_median": {
+        "color_conversion_s": 0.29596985632088035,
+        "decode_s": 19.247834963724017,
+        "file_read_s": 0.3906169645488262,
+        "processor_s": 2.2095937251579016
+      },
+      "pages_per_s_from_median": 5.520246829997
+    },
+    "optimized_direct_rgb": {
+      "wall_s_rounds": [
+        12.081692746141925,
+        12.43081689090468
+      ],
+      "wall_s_median": 12.256254818523303,
+      "stage_s_median": {
+        "color_conversion_s": 0.0,
+        "decode_s": 8.992654078640044,
+        "file_read_s": 0.39501810329966247,
+        "processor_s": 2.1290439853910357
+      },
+      "pages_per_s_from_median": 10.443647092466547
+    },
+    "comparison": {
+      "wall_speedup_x": 1.8918804564527456,
+      "wall_saved_s": 10.931114141945727
+    }
+  },
+  "parity": {
+    "page_count": 8,
+    "all_exact": true,
+    "max_abs": 0.0,
+    "mean_abs_max": 0.0,
+    "pages": [
+      {
+        "page": "magazine_TheEconomist.2024.02.24_page_007.png",
+        "format": "png",
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0
+      },
+      {
+        "page": "magazine_TheEconomist.2024.02.24_page_008.png",
+        "format": "png",
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0
+      },
+      {
+        "page": "magazine_TheEconomist.2024.02.24_page_033.png",
+        "format": "png",
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0
+      },
+      {
+        "page": "magazine_TheEconomist.2024.02.24_page_068.png",
+        "format": "png",
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0
+      },
+      {
+        "page": "magazine_TheEconomist.2024.02.24_page_076.png",
+        "format": "png",
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0
+      },
+      {
+        "page": "magazine_TheEconomist.2024.03.02_page_025.png",
+        "format": "png",
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0
+      },
+      {
+        "page": "magazine_TheEconomist.2024.03.02_page_028.png",
+        "format": "png",
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0
+      },
+      {
+        "page": "magazine_TheEconomist.2024.03.02_page_031.png",
+        "format": "png",
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0
+      }
+    ]
+  },
+  "rounds": [
+    {
+      "lane": "regular_opencv",
+      "round": 0,
+      "pages": 128,
+      "formats": {
+        "png": 54,
+        "jpeg": 74
+      },
+      "wall_s": 22.944626769050956,
+      "pages_per_s": 5.578648164050933,
+      "stage_s": {
+        "file_read_s": 0.3988770958967507,
+        "decode_s": 19.205357291037217,
+        "color_conversion_s": 0.31455780076794326,
+        "processor_s": 2.1700370595790446
+      },
+      "unaccounted_s": 0.8557975217700005
+    },
+    {
+      "lane": "optimized_direct_rgb",
+      "round": 0,
+      "pages": 128,
+      "formats": {
+        "png": 54,
+        "jpeg": 74
+      },
+      "wall_s": 12.081692746141925,
+      "pages_per_s": 10.594541898185131,
+      "stage_s": {
+        "file_read_s": 0.4018475192133337,
+        "decode_s": 8.977787120267749,
+        "color_conversion_s": 0.0,
+        "processor_s": 2.0345932175405324
+      },
+      "unaccounted_s": 0.6674648891203105
+    },
+    {
+      "lane": "optimized_direct_rgb",
+      "round": 1,
+      "pages": 128,
+      "formats": {
+        "png": 54,
+        "jpeg": 74
+      },
+      "wall_s": 12.43081689090468,
+      "pages_per_s": 10.296990223840753,
+      "stage_s": {
+        "file_read_s": 0.3881886873859912,
+        "decode_s": 9.007521037012339,
+        "color_conversion_s": 0.0,
+        "processor_s": 2.223494753241539
+      },
+      "unaccounted_s": 0.811612413264811
+    },
+    {
+      "lane": "regular_opencv",
+      "round": 1,
+      "pages": 128,
+      "formats": {
+        "png": 54,
+        "jpeg": 74
+      },
+      "wall_s": 23.430111151887104,
+      "pages_per_s": 5.463055602691439,
+      "stage_s": {
+        "file_read_s": 0.38235683320090175,
+        "decode_s": 19.290312636410818,
+        "color_conversion_s": 0.27738191187381744,
+        "processor_s": 2.2491503907367587
+      },
+      "unaccounted_s": 1.2309093796648085
+    }
+  ]
+}
