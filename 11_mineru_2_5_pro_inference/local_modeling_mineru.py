@@ -1076,14 +1076,22 @@ class MinerUVisionPatchEmbed(nn.Module):
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         target_dtype = self.proj.weight.dtype
-        hidden_states = hidden_states.view(
+        # The Conv3D kernel and stride cover one complete temporal-spatial
+        # patch, so this operation is exactly one linear projection per patch.
+        # Express it directly as a matrix multiplication.  On Ascend this
+        # avoids the poorly utilized degenerate Conv3D kernel and its layout
+        # conversions while preserving the checkpoint weights and function.
+        flattened_patches = hidden_states.reshape(
             -1,
-            self.in_channels,
-            self.temporal_patch_size,
-            self.patch_size,
-            self.patch_size,
+            self.in_channels
+            * self.temporal_patch_size
+            * self.patch_size
+            * self.patch_size,
         )
-        return self.proj(hidden_states.to(dtype=target_dtype)).view(-1, self.embed_dim)
+        return F.linear(
+            flattened_patches.to(dtype=target_dtype),
+            self.proj.weight.flatten(1),
+        )
 
 
 class MinerUVisionRotaryEmbedding(nn.Module):
