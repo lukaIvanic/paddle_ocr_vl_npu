@@ -230,6 +230,15 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--local-vision-lookahead",
+        type=int,
+        default=32,
+        help=(
+            "Continuous packed-text lane only: number of prepared requests "
+            "visible to global vision packing before decode-slot admission."
+        ),
+    )
+    parser.add_argument(
         "--local-torchair-cache-dir",
         type=Path,
         default=DEFAULT_LOCAL_TORCHAIR_CACHE_DIR,
@@ -798,6 +807,7 @@ def main() -> None:
                 collect_prefill_metrics=args.local_prefill_metrics,
                 packed_text_prefill_runtime=local_text_runtime,
                 vision_pack_target=args.local_vision_pack_target,
+                vision_lookahead=args.local_vision_lookahead,
             )
             client.client = make_local_fixed_batch_vlm_client(
                 local_model,
@@ -1078,6 +1088,16 @@ def main() -> None:
         ),
         "local_vision_buckets": (
             args.local_vision_buckets if args.backend.startswith("local-") else None
+        ),
+        "local_vision_pack_target": (
+            args.local_vision_pack_target
+            if args.backend == "local-continuous-client"
+            else None
+        ),
+        "local_vision_lookahead": (
+            args.local_vision_lookahead
+            if args.backend == "local-continuous-client"
+            else None
         ),
         "local_vision_torchair_cache_dir": (
             str(args.local_vision_torchair_cache_dir)

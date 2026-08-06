@@ -11,6 +11,7 @@ the next waiting request.
 from __future__ import annotations
 
 import time
+from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Sequence
@@ -32,6 +33,7 @@ class PreparedGeneration:
     max_new_tokens: int
     position_ids: torch.Tensor | None = None
     rope_deltas: torch.Tensor | None = None
+    inputs_embeds: torch.Tensor | None = None
 
 
 @dataclass
@@ -60,6 +62,7 @@ class FixedBatchDecodeEngine:
         collect_prefill_metrics: bool = False,
         packed_text_prefill_runtime: Any | None = None,
         vision_pack_target: int = 768,
+        vision_lookahead: int = 32,
     ) -> None:
         if int(batch_size) <= 1:
             raise ValueError("fixed batch engine requires batch_size > 1")
@@ -74,6 +77,9 @@ class FixedBatchDecodeEngine:
         self.vision_pack_target = int(vision_pack_target)
         if self.vision_pack_target <= 0:
             raise ValueError("vision_pack_target must be positive")
+        self.vision_lookahead = int(vision_lookahead)
+        if self.vision_lookahead <= 0:
+            raise ValueError("vision_lookahead must be positive")
         self._arena: LocalMinerUStaticCache | None = None
 
     def _arena_for_batch(self) -> LocalMinerUStaticCache:
@@ -593,6 +599,34 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
             )
 
     @torch.inference_mode()
+    def _prepare_vision_window(
+        self,
+        requests: Sequence[tuple[int, PreparedGeneration]],
+    ) -> tuple[float, dict[str, float | int]]:
+        """Build vision-aware token embeddings for one global lookahead window."""
+        if not requests:
+            return 0.0, {}
+        started = time.perf_counter()
+        timeline = PrefillDeviceTimeline(self.model.device)
+        entries = [
+            (0, request_index, request)
+            for request_index, request in requests
+        ]
+        for _request_index, request in requests:
+            self._validate_request(request)
+            if request.inputs_embeds is not None:
+                raise RuntimeError("request vision embeddings were prepared twice")
+        inputs_embeds = self._build_group_inputs_embeds(entries, timeline)
+        for (_request_index, request), embeds in zip(requests, inputs_embeds):
+            request.inputs_embeds = embeds
+        metrics: dict[str, float | int] = {
+            "vision_prepare_window_count": 1,
+            "vision_prepare_request_count": len(requests),
+            **timeline.resolve(),
+        }
+        return float(time.perf_counter() - started), metrics
+
+    @torch.inference_mode()
     def _prefill_slot(
         self,
         arena: LocalMinerUStaticCache,
@@ -649,7 +683,17 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
 
         runtime = self.packed_text_prefill_runtime
         timeline = PrefillDeviceTimeline(self.model.device)
-        inputs_embeds_list = self._build_group_inputs_embeds(entries, timeline)
+        precomputed = [request.inputs_embeds for _slot, _index, request in entries]
+        if all(inputs_embeds is not None for inputs_embeds in precomputed):
+            inputs_embeds_list = [
+                inputs_embeds for inputs_embeds in precomputed if inputs_embeds is not None
+            ]
+            for _slot, _index, request in entries:
+                request.inputs_embeds = None
+        elif any(inputs_embeds is not None for inputs_embeds in precomputed):
+            raise RuntimeError("prefill group mixes prepared and unprepared vision inputs")
+        else:
+            inputs_embeds_list = self._build_group_inputs_embeds(entries, timeline)
         members: list[PreparedTextMember] = []
         for inputs_embeds, (_slot, _request_index, request) in zip(
             inputs_embeds_list, entries
@@ -799,32 +843,54 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
         slot_requests: list[int | None] = [None] * self.batch_size
         slot_epochs = [0] * self.batch_size
         next_request = 0
+        vision_ready: deque[tuple[int, PreparedGeneration]] = deque()
         prefill_s = 0.0
         refill_count = 0
         immediate_completion_count = 0
         prefill_metrics: dict[str, float | int] = {}
 
+        def accumulate_prefill_metrics(metrics: dict[str, float | int]) -> None:
+            for name, value in metrics.items():
+                prefill_metrics[name] = prefill_metrics.get(name, 0) + value
+
+        def fill_vision_ready() -> None:
+            nonlocal next_request, prefill_s
+            if vision_ready or next_request >= request_count:
+                return
+            window: list[tuple[int, PreparedGeneration]] = []
+            while (
+                next_request < request_count
+                and len(window) < self.vision_lookahead
+            ):
+                request_index = next_request
+                next_request += 1
+                request = prepare_request(request_index)
+                request_max_new[request_index] = request.max_new_tokens
+                window.append((request_index, request))
+            if self.packed_text_prefill_runtime is not None:
+                elapsed_s, metrics = self._prepare_vision_window(window)
+                prefill_s += elapsed_s
+                accumulate_prefill_metrics(metrics)
+            vision_ready.extend(window)
+
         def admit_many(slots: Sequence[int]) -> dict[int, dict[str, Any]]:
-            nonlocal next_request, prefill_s, refill_count, immediate_completion_count
+            nonlocal prefill_s, refill_count, immediate_completion_count
             available = list(slots)
             admitted: dict[int, dict[str, Any]] = {}
-            while available and next_request < request_count:
+            while available and (vision_ready or next_request < request_count):
+                fill_vision_ready()
                 entries: list[tuple[int, int, PreparedGeneration]] = []
                 for slot in available:
-                    if next_request >= request_count:
+                    if not vision_ready:
                         break
-                    request_index = next_request
-                    next_request += 1
-                    request = prepare_request(request_index)
-                    request_max_new[request_index] = request.max_new_tokens
+                    request_index, request = vision_ready.popleft()
                     entries.append((slot, request_index, request))
                 states, elapsed_s, group_metrics = self._prefill_slots(
                     arena,
                     entries,
                 )
                 prefill_s += elapsed_s
-                for name, value in group_metrics.items():
-                    prefill_metrics[name] = prefill_metrics.get(name, 0) + value
+                accumulate_prefill_metrics(group_metrics)
                 retry_slots: list[int] = []
                 for slot, request_index, request in entries:
                     state = states[slot]
@@ -978,7 +1044,7 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
                         slot_requests[slot] = None
                         finished_slots.append(slot)
 
-                if finished_slots and next_request < request_count:
+                if finished_slots and (vision_ready or next_request < request_count):
                     safety_started = time.perf_counter()
                     maybe_sync_device(self.model.device)
                     hot_swap_safety_sync_s += time.perf_counter() - safety_started
@@ -1033,6 +1099,7 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
                 raw_decode_token_slots - active_decode_token_slots
             ),
             "refill_count": refill_count,
+            "vision_lookahead": self.vision_lookahead,
             "immediate_completion_count": immediate_completion_count,
             "decode_s": float(decode_s),
             "sampled_token_copy_submit_s": float(token_copy_submit_s),
