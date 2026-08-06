@@ -1,0 +1,126 @@
+[
+  {
+    "type": "header",
+    "bbox": [
+      0.156,
+      0.099,
+      0.543,
+      0.113
+    ],
+    "angle": 0,
+    "content": "SEC. 5.3 INTERPOLATION BY SPLINE FUNCTIONS"
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.794,
+      0.099,
+      0.823,
+      0.112
+    ],
+    "angle": 0,
+    "content": "291"
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.197,
+      0.136,
+      0.501,
+      0.301
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "image_caption",
+    "bbox": [
+      0.512,
+      0.274,
+      0.747,
+      0.305
+    ],
+    "angle": 0,
+    "content": "Figure 5.15 The parabolically terminated cubic spline."
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.199,
+      0.334,
+      0.501,
+      0.5
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "image_caption",
+    "bbox": [
+      0.513,
+      0.458,
+      0.761,
+      0.503
+    ],
+    "angle": 0,
+    "content": "Figure 5.16 The curvature adjusted cubic spline with \\( S''(0) = 0.3 \\) and \\( S''(3) = 3.3 \\)."
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.157,
+      0.536,
+      0.83,
+      0.584
+    ],
+    "angle": 0,
+    "content": "and the solution is \\( m_1 = 2.7 \\) and \\( m_2 = 4.5 \\). The given boundary conditions are used to determine \\( m_0 = S''(0) = 0.3 \\) and \\( m_3 = S''(3) = 3.3 \\). Substitution of \\( \\{m_k\\} \\) in equations (16) produces the solution",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.16,
+      0.59,
+      0.72,
+      0.692
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} S _ {0} (x) = 0. 5 x ^ {3} \\quad 0. 1 5 x ^ {2} + 0. 1 5 x \\quad \\text {for} 0 \\leq x \\leq 1, \\\\ S _ {1} (x) = \\quad 1. 2 (x \\quad 1) ^ {3} + 1. 3 5 (x \\quad 1) ^ {2} \\\\ + 1. 3 5 (x \\quad 1) + 0. 5 \\quad \\text {for} 1 \\leq x \\leq 2, \\tag {22} \\\\ S _ {2} (x) = 1. 3 (x \\quad 2) ^ {3} \\quad 2. 2 5 (x \\quad 2) ^ {2} \\\\ + 0. 4 5 (x \\quad 2) + 2. 0 \\quad \\text {for} 2 \\leq x \\leq 3. \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.16,
+      0.7,
+      0.614,
+      0.716
+    ],
+    "angle": 0,
+    "content": "This curvature-adjusted cubic spline is shown in Figure 5.16.",
+    "merge_prev": false
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.16,
+      0.748,
+      0.423,
+      0.767
+    ],
+    "angle": 0,
+    "content": "Suitability of Cubic Splines"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.159,
+      0.771,
+      0.832,
+      0.837
+    ],
+    "angle": 0,
+    "content": "A practical feature of splines is the minimum of the oscillatory behavior that they possess. Consequently, among all functions \\( f(x) \\) that are twice continuously differentiable on \\([a, b]\\) and interpolate a given set of data points \\(\\{(x_k, y_k)\\}_{k=0}^N\\), the cubic spline has less wiggle. The next result explains this phenomenon.",
+    "merge_prev": false
+  }
+]
