@@ -1,0 +1,234 @@
+{
+  "config": {
+    "layout_model": "/workspace/models/PP-DocLayoutV2_safetensors",
+    "input": "/workspace/datasets/OmniDocBench/images",
+    "offset": 769,
+    "limit": 128,
+    "workers": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "rounds": 2,
+    "warmup_pages": 4,
+    "device_work": false,
+    "output_contract": [
+      1,
+      3,
+      800,
+      800
+    ],
+    "dtype": "torch.float32",
+    "torch_num_threads": 192,
+    "opencv_num_threads": 192
+  },
+  "summary": {
+    "1": {
+      "wall_s_rounds": [
+        11.765900268917903,
+        12.523508076090366
+      ],
+      "wall_s_median": 12.144704172504134,
+      "pages_per_s_rounds": [
+        10.87889554343231,
+        10.220778333219194
+      ],
+      "pages_per_s_median": 10.549836938325752,
+      "average_cpu_cores_rounds": [
+        6.975555301689484,
+        6.181929578326983
+      ],
+      "average_cpu_cores_median": 6.5787424400082335,
+      "speedup_vs_first_x": 1.0,
+      "parallel_efficiency_vs_first": 1.0
+    },
+    "2": {
+      "wall_s_rounds": [
+        8.436015956103802,
+        8.75326666701585
+      ],
+      "wall_s_median": 8.594641311559826,
+      "pages_per_s_rounds": [
+        15.173039105904817,
+        14.623112132791626
+      ],
+      "pages_per_s_median": 14.898075619348221,
+      "average_cpu_cores_rounds": [
+        10.064918018388257,
+        9.819532783559403
+      ],
+      "average_cpu_cores_median": 9.942225400973829,
+      "speedup_vs_first_x": 1.4130553832618309,
+      "parallel_efficiency_vs_first": 0.7065276916309154
+    },
+    "4": {
+      "wall_s_rounds": [
+        6.891347222961485,
+        6.896710773929954
+      ],
+      "wall_s_median": 6.8940289984457195,
+      "pages_per_s_rounds": [
+        18.574016931480827,
+        18.559571975070913
+      ],
+      "pages_per_s_median": 18.566794453275868,
+      "average_cpu_cores_rounds": [
+        12.217094317853753,
+        14.750145733896364
+      ],
+      "average_cpu_cores_median": 13.483620025875059,
+      "speedup_vs_first_x": 1.7616264995755306,
+      "parallel_efficiency_vs_first": 0.44040662489388266
+    },
+    "8": {
+      "wall_s_rounds": [
+        5.973898691125214,
+        6.106790659017861
+      ],
+      "wall_s_median": 6.0403446750715375,
+      "pages_per_s_rounds": [
+        21.42654347154497,
+        20.960273103677327
+      ],
+      "pages_per_s_median": 21.19340828761115,
+      "average_cpu_cores_rounds": [
+        15.063268001796432,
+        16.105576478991
+      ],
+      "average_cpu_cores_median": 15.584422240393717,
+      "speedup_vs_first_x": 2.010597875751238,
+      "parallel_efficiency_vs_first": 0.25132473446890474
+    }
+  },
+  "rounds": [
+    {
+      "round": 0,
+      "workers": 1,
+      "pages": 128,
+      "wall_s": 11.765900268917903,
+      "pages_per_s": 10.87889554343231,
+      "process_cpu_s": 82.073688,
+      "average_cpu_cores": 6.975555301689484,
+      "summed_stage_s": {
+        "file_read_s": 0.41223812918178737,
+        "decode_s": 9.01162002561614,
+        "color_conversion_s": 0.0,
+        "processor_s": 2.283014378976077,
+        "task_wall_s": 11.757050522137433
+      }
+    },
+    {
+      "round": 0,
+      "workers": 2,
+      "pages": 128,
+      "wall_s": 8.436015956103802,
+      "pages_per_s": 15.173039105904817,
+      "process_cpu_s": 84.90780899999999,
+      "average_cpu_cores": 10.064918018388257,
+      "summed_stage_s": {
+        "file_read_s": 1.3464293633587658,
+        "decode_s": 10.062094066524878,
+        "color_conversion_s": 0.0,
+        "processor_s": 5.163530427962542,
+        "task_wall_s": 16.629361180355772
+      }
+    },
+    {
+      "round": 0,
+      "workers": 4,
+      "pages": 128,
+      "wall_s": 6.891347222961485,
+      "pages_per_s": 18.574016931480827,
+      "process_cpu_s": 84.192239,
+      "average_cpu_cores": 12.217094317853753,
+      "summed_stage_s": {
+        "file_read_s": 2.944228823063895,
+        "decode_s": 11.59230379620567,
+        "color_conversion_s": 0.0,
+        "processor_s": 11.449277683161199,
+        "task_wall_s": 26.055020263418555
+      }
+    },
+    {
+      "round": 0,
+      "workers": 8,
+      "pages": 128,
+      "wall_s": 5.973898691125214,
+      "pages_per_s": 21.42654347154497,
+      "process_cpu_s": 89.98643700000002,
+      "average_cpu_cores": 15.063268001796432,
+      "summed_stage_s": {
+        "file_read_s": 6.87509199231863,
+        "decode_s": 14.02656832896173,
+        "color_conversion_s": 0.0,
+        "processor_s": 24.79964530142024,
+        "task_wall_s": 45.999769483692944
+      }
+    },
+    {
+      "round": 1,
+      "workers": 8,
+      "pages": 128,
+      "wall_s": 6.106790659017861,
+      "pages_per_s": 20.960273103677327,
+      "process_cpu_s": 98.353384,
+      "average_cpu_cores": 16.105576478991,
+      "summed_stage_s": {
+        "file_read_s": 8.250148774823174,
+        "decode_s": 15.55283999722451,
+        "color_conversion_s": 0.0,
+        "processor_s": 21.88159562437795,
+        "task_wall_s": 46.27093692775816
+      }
+    },
+    {
+      "round": 1,
+      "workers": 4,
+      "pages": 128,
+      "wall_s": 6.896710773929954,
+      "pages_per_s": 18.559571975070913,
+      "process_cpu_s": 101.72748899999999,
+      "average_cpu_cores": 14.750145733896364,
+      "summed_stage_s": {
+        "file_read_s": 3.4974263629410416,
+        "decode_s": 12.286293122684583,
+        "color_conversion_s": 0.0,
+        "processor_s": 10.701603636145592,
+        "task_wall_s": 26.5919302708935
+      }
+    },
+    {
+      "round": 1,
+      "workers": 2,
+      "pages": 128,
+      "wall_s": 8.75326666701585,
+      "pages_per_s": 14.623112132791626,
+      "process_cpu_s": 85.95298899999989,
+      "average_cpu_cores": 9.819532783559403,
+      "summed_stage_s": {
+        "file_read_s": 1.9068037159740925,
+        "decode_s": 10.322270603850484,
+        "color_conversion_s": 0.0,
+        "processor_s": 4.93492695549503,
+        "task_wall_s": 17.28220177302137
+      }
+    },
+    {
+      "round": 1,
+      "workers": 1,
+      "pages": 128,
+      "wall_s": 12.523508076090366,
+      "pages_per_s": 10.220778333219194,
+      "process_cpu_s": 77.41944499999988,
+      "average_cpu_cores": 6.181929578326983,
+      "summed_stage_s": {
+        "file_read_s": 0.43142050318419933,
+        "decode_s": 9.539471259107813,
+        "color_conversion_s": 0.0,
+        "processor_s": 2.383529581828043,
+        "task_wall_s": 12.474796406924725
+      }
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+git_commit=4ff6214
+device_work=false
+command=source npu-setup && /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python 12_unirec_0_1b_inference/layout_input_parallel_lab.py --openocr-root /workspace/repos/OpenOCR --offset 769 --limit 128 --workers 1,2,4,8 --rounds 2 --warmup-pages 4 --output tmp/12_unirec_0_1b_inference/layout_input_parallel_128p_4ff6214/report.json
