@@ -46,6 +46,7 @@ class FixedBatchDecodeEngine:
         pad_token_id: int,
         collect_prefill_metrics: bool = False,
         packed_text_prefill_runtime: Any | None = None,
+        vision_pack_target: int = 3072,
     ) -> None:
         if int(batch_size) <= 1:
             raise ValueError("fixed batch engine requires batch_size > 1")
@@ -57,6 +58,9 @@ class FixedBatchDecodeEngine:
         self.pad_token_id = int(pad_token_id)
         self.collect_prefill_metrics = bool(collect_prefill_metrics)
         self.packed_text_prefill_runtime = packed_text_prefill_runtime
+        self.vision_pack_target = int(vision_pack_target)
+        if self.vision_pack_target <= 0:
+            raise ValueError("vision_pack_target must be positive")
         self._arena: LocalMinerUStaticCache | None = None
 
     def _arena_for_batch(self) -> LocalMinerUStaticCache:
@@ -83,10 +87,17 @@ class FixedBatchDecodeEngine:
         entries: Sequence[tuple[int, int, PreparedGeneration]],
         timeline: PrefillDeviceTimeline,
     ) -> list[torch.Tensor]:
-        """Build request embeddings with 3072-token packed vision blocks."""
+        """Build request embeddings with one configurable packed vision bucket."""
         visual = self.model.visual
         runtime = visual.prefill_runtime
-        target = 3072
+        target = self.vision_pack_target
+        if runtime is None:
+            raise RuntimeError("vision packing requires the compiled vision runtime")
+        if target not in runtime.buckets:
+            raise ValueError(
+                "vision_pack_target must be one of the compiled vision buckets: "
+                f"target={target} buckets={runtime.buckets}"
+            )
         token_embeds: list[torch.Tensor] = []
         vision_inputs: dict[
             int,

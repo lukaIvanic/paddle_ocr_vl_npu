@@ -177,6 +177,16 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_LOCAL_VISION_TORCHAIR_CACHE_DIR,
     )
     parser.add_argument(
+        "--local-vision-pack-target",
+        type=int,
+        default=3072,
+        help=(
+            "Continuous packed-text lane only: physical B=1 bucket used to "
+            "pack independent vision sequences. Single-member groups retain "
+            "their ordinary smallest-bucket path."
+        ),
+    )
+    parser.add_argument(
         "--local-torchair-cache-dir",
         type=Path,
         default=DEFAULT_LOCAL_TORCHAIR_CACHE_DIR,
@@ -503,6 +513,7 @@ def main() -> None:
                 pad_token_id=local_model.config.pad_token_id,
                 collect_prefill_metrics=args.local_prefill_metrics,
                 packed_text_prefill_runtime=local_text_runtime,
+                vision_pack_target=args.local_vision_pack_target,
             )
             client.client = make_local_fixed_batch_vlm_client(
                 local_model,
