@@ -333,13 +333,20 @@ def process_worker(
             task = task_queue.get()
             if task is None:
                 break
-            round_index, shard = task
-            result = run_shard(runtime, shard, threshold=threshold)
+            round_index, page_index, path_string = task
+            result = run_shard(
+                runtime,
+                [(page_index, path_string)],
+                threshold=threshold,
+                reset_runtime_timing=False,
+                collect_runtime_timing=False,
+            )
             result_queue.put(
                 {
                     "status": "ok",
                     "worker": worker_index,
                     "round": round_index,
+                    "page_index": page_index,
                     "result": result,
                 }
             )
@@ -361,6 +368,48 @@ def receive(result_queue: Any, timeout_s: float) -> dict[str, Any]:
         raise TimeoutError(f"worker pool was silent for {timeout_s}s") from exception
 
 
+def aggregate_dynamic_worker_results(
+    messages: list[dict[str, Any]],
+    worker_count: int,
+) -> list[dict[str, Any]]:
+    """Combine page-sized results without losing per-worker load balance."""
+    worker_results = [
+        {
+            "pages": 0,
+            "wall_s": 0.0,
+            "process_cpu_s": 0.0,
+            "average_cpu_cores": 0.0,
+            "max_rss_kb": 0,
+            "decode_stage_s": {
+                "file_read_s": 0.0,
+                "direct_rgb_decode_s": 0.0,
+            },
+            "outputs": [],
+        }
+        for _ in range(worker_count)
+    ]
+    for message in messages:
+        target = worker_results[int(message["worker"])]
+        page_result = message["result"]
+        target["pages"] += int(page_result["pages"])
+        target["wall_s"] += float(page_result["wall_s"])
+        target["process_cpu_s"] += float(page_result["process_cpu_s"])
+        target["max_rss_kb"] = max(
+            int(target["max_rss_kb"]),
+            int(page_result["max_rss_kb"]),
+        )
+        for name, seconds in page_result["decode_stage_s"].items():
+            target["decode_stage_s"][name] += float(seconds)
+        target["outputs"].extend(page_result["outputs"])
+    for target in worker_results:
+        target["average_cpu_cores"] = (
+            target["process_cpu_s"] / target["wall_s"]
+            if target["wall_s"]
+            else 0.0
+        )
+    return worker_results
+
+
 def run_process_pool(
     paths: list[Path],
     *,
@@ -372,9 +421,8 @@ def run_process_pool(
     timeout_s: float,
 ) -> tuple[float, list[dict[str, Any]]]:
     context = mp.get_context("spawn")
-    shards = make_shards(paths, worker_count)
     result_queue = context.Queue()
-    task_queues = [context.Queue() for _ in range(worker_count)]
+    task_queue = context.Queue()
     processes = [
         context.Process(
             target=process_worker,
@@ -383,8 +431,8 @@ def run_process_pool(
                 str(model_path),
                 str(cache_dir),
                 threshold,
-                shards[worker_index][0][1],
-                task_queues[worker_index],
+                str(paths[worker_index % len(paths)]),
+                task_queue,
                 result_queue,
             ),
             name=f"unirec-layout-full-{worker_index}",
@@ -403,17 +451,32 @@ def run_process_pool(
         records = []
         for round_index in range(rounds):
             measured_started = time.perf_counter()
-            for task_queue, shard in zip(task_queues, shards):
-                task_queue.put((round_index, shard))
-            messages = [receive(result_queue, timeout_s) for _ in processes]
-            errors = [message for message in messages if message["status"] != "ok"]
-            if errors:
-                raise RuntimeError(f"process measurement failed: {errors}")
+            for page_index, path in enumerate(paths):
+                task_queue.put((round_index, page_index, str(path)))
+            messages = []
+            progress_step = max(1, len(paths) // 10)
+            while len(messages) < len(paths):
+                message = receive(result_queue, timeout_s)
+                if message["status"] != "ok":
+                    raise RuntimeError(f"process measurement failed: {message}")
+                if int(message["round"]) != round_index:
+                    raise RuntimeError(
+                        "unexpected dynamic worker round: "
+                        f"{message['round']} != {round_index}"
+                    )
+                messages.append(message)
+                if len(messages) % progress_step == 0 or len(messages) == len(paths):
+                    print(
+                        f"LAYOUT_FULL_WORKER progress mode=processes "
+                        f"workers={worker_count} round={round_index} "
+                        f"pages={len(messages)}/{len(paths)}",
+                        flush=True,
+                    )
             measured_wall_s = time.perf_counter() - measured_started
-            worker_results = [
-                message["result"]
-                for message in sorted(messages, key=lambda message: message["worker"])
-            ]
+            worker_results = aggregate_dynamic_worker_results(
+                messages,
+                worker_count,
+            )
             records.append(
                 aggregate_round(
                     mode="processes",
@@ -425,7 +488,7 @@ def run_process_pool(
                 )
             )
     finally:
-        for task_queue in task_queues:
+        for _ in processes:
             task_queue.put(None)
         for process in processes:
             process.join(timeout=10.0)
@@ -547,6 +610,7 @@ def main() -> None:
                 "threads": "one_shared_runtime_for_all_threads",
                 "processes": "one_complete_runtime_per_process",
             },
+            "process_scheduling": "dynamic_shared_filepath_queue",
             "coordinator_payload": "file_path_in_boxes_and_timing_out",
         },
         "summary": summarize(records),
