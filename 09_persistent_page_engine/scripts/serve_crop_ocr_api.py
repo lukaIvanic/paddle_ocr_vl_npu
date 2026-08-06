@@ -330,6 +330,12 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
+        if parsed.path == "/v1/drain":
+            self._json(
+                HTTPStatus.OK,
+                {"drained": False, "summary": {}, "server_running": True},
+            )
+            return
         if parsed.path != "/v1/ocr":
             self._json(HTTPStatus.NOT_FOUND, {"error": "not found"})
             return

@@ -84,6 +84,9 @@ def parse_args() -> argparse.Namespace:
     advanced.add_argument("--crop-padding", type=int, default=0)
     advanced.add_argument("--offset", type=int, default=0)
     advanced.add_argument("--limit-pages", type=int)
+    advanced.add_argument(
+        "--drain-server", action=argparse.BooleanOptionalAction, default=None,
+    )
     advanced.add_argument("--fingerprint-only", action="store_true")
     advanced.add_argument(
         "--resume", action=argparse.BooleanOptionalAction, default=True,
@@ -118,6 +121,14 @@ def _request(
     except urllib.error.HTTPError as exc:
         body = exc.read().decode("utf-8", errors="replace")
         raise RuntimeError(f"API HTTP {exc.code}: {body}") from exc
+
+
+def _drain(api_url: str, timeout_s: float) -> dict[str, Any]:
+    parsed = urllib.parse.urlparse(api_url)
+    url = urllib.parse.urlunparse(parsed._replace(path="/v1/drain", query=""))
+    request = urllib.request.Request(url, data=b"", method="POST")
+    with urllib.request.urlopen(request, timeout=timeout_s) as response:
+        return json.loads(response.read()).get("summary", {})
 
 
 def _safe_name(path: Path) -> str:
@@ -687,7 +698,7 @@ def _run_omnidocbench(args: argparse.Namespace) -> None:
                 )
 
     generation_wall_s = time.perf_counter() - started
-    service = None
+    service = _drain(args.api_url, args.timeout_s) if args.drain_server else None
     records = list(_read_jsonl(output).values())
     scores = _score(records, args)
     summary = _summary(records, generation_wall_s, manifest, scores, service)
@@ -717,6 +728,8 @@ def main() -> None:
         raise ValueError("--score-only and --fingerprint-only require --omnidocbench")
     if args.score_only and args.fingerprint_only:
         raise ValueError("--score-only and --fingerprint-only are mutually exclusive")
+    if args.drain_server is None:
+        args.drain_server = args.omnidocbench
     if args.omnidocbench:
         _run_omnidocbench(args)
     else:
