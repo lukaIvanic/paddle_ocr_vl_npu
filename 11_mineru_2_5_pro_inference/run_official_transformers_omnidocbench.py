@@ -914,7 +914,7 @@ def main() -> None:
             vision_original, vision_state = install_bucket_input_recorder(
                 local_vision_runtime, 4, synchronize
             )
-        if local_text_runtime is not None:
+        if local_text_runtime is not None and not args.layout_only:
             text_original, text_state = install_bucket_input_recorder(
                 local_text_runtime, 4, synchronize
             )
@@ -934,7 +934,7 @@ def main() -> None:
         finally:
             if local_vision_runtime is not None:
                 local_vision_runtime._compiled_for_bucket = vision_original
-            if local_text_runtime is not None:
+            if local_text_runtime is not None and not args.layout_only:
                 local_text_runtime._compiled_for_bucket = text_original
         synchronize()
         warmup_report["real_page_wall_s"] = (
@@ -948,7 +948,7 @@ def main() -> None:
                 local_vision_runtime,
                 vision_original,
                 vision_state,
-                local_text_runtime,
+                None if args.layout_only else local_text_runtime,
                 text_original,
                 text_state,
             )
