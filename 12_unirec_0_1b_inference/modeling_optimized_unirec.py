@@ -31,7 +31,7 @@ LOCAL_UNIREC_STATIC_CACHE_LEN = int(
 )
 if LOCAL_UNIREC_STATIC_CACHE_LEN < 1:
     raise ValueError("UNIREC_STATIC_CACHE_LEN must be >= 1")
-LOCAL_UNIREC_SELF_ATTN_BACKENDS = {"eager", "increfa"}
+LOCAL_UNIREC_SELF_ATTN_BACKENDS = {"eager", "increfa", "increfa_all"}
 DTYPE_MAP = {
     "bfloat16": torch.bfloat16,
     "float16": torch.float16,
@@ -759,17 +759,27 @@ class LocalDecoderLayer(nn.Module):
         cross_key_cache: torch.Tensor,
         cross_value_cache: torch.Tensor,
         cross_attention_mask: torch.Tensor,
+        attention_backend: str = "eager",
     ) -> torch.Tensor:
         residual = hidden_states
         hidden_states = self.encoder_attn_layer_norm(hidden_states)
         query_states = self.encoder_attn.project_query_states(hidden_states)
-        hidden_states = self.encoder_attn.attend(
-            query_states=query_states,
-            key_states=cross_key_cache,
-            value_states=cross_value_cache,
-            attention_mask=cross_attention_mask,
-            output_dtype=residual.dtype,
-        )
+        if attention_backend == "increfa_all":
+            hidden_states = self.encoder_attn.attend_increfa(
+                query_states=query_states,
+                key_states=cross_key_cache,
+                value_states=cross_value_cache,
+                attention_mask=cross_attention_mask,
+                output_dtype=residual.dtype,
+            )
+        else:
+            hidden_states = self.encoder_attn.attend(
+                query_states=query_states,
+                key_states=cross_key_cache,
+                value_states=cross_value_cache,
+                attention_mask=cross_attention_mask,
+                output_dtype=residual.dtype,
+            )
         return residual + hidden_states
 
     def apply_ffn(self, hidden_states: torch.Tensor) -> torch.Tensor:
@@ -864,6 +874,7 @@ class LocalDecoderLayer(nn.Module):
             cross_key_cache=cross_key_cache,
             cross_value_cache=cross_value_cache,
             cross_attention_mask=cross_attention_mask,
+            attention_backend=self_attention_backend,
         )
         return self.apply_ffn(hidden_states)
 
@@ -1063,6 +1074,10 @@ class LocalUniRecDecoder(nn.Module):
         self_attention_backend: str = "eager",
     ) -> torch.Tensor:
         hidden_states = self.build_cached_decoder_input_hidden_states(decoder_input_ids, cache_position)
+        if self_attention_backend == "increfa_all":
+            # Cross-attention uses one static mask for every decoder layer.
+            # Convert it once instead of inside all six IncreFA calls.
+            cross_attention_mask = cross_attention_mask.to(dtype=torch.bool)
         for layer_idx, layer in enumerate(self.layers):
             hidden_states = layer.forward_cached(
                 hidden_states=hidden_states,
@@ -2271,7 +2286,7 @@ class OptimizedUniRecRunner:
             padded_items.append(items[-1])
 
         batch_size = len(padded_items)
-        self_attention_backend = "increfa" if decode_mode == "compiled_ifa" else "eager"
+        self_attention_backend = "increfa_all" if decode_mode == "compiled_ifa" else "eager"
         decode_module = None
         compile_wrap_s = None
         compile_meta = None
@@ -2327,9 +2342,7 @@ class OptimizedUniRecRunner:
                         self_attention_backend="eager",
                     )
                 else:
-                    graph_active_length = (
-                        active_length if self_attention_backend == "increfa" else 0
-                    )
+                    graph_active_length = 0
                     logits = decode_module(
                         next_token,
                         cache_position,
@@ -2450,7 +2463,7 @@ class OptimizedUniRecRunner:
         decoder_input_ids = self.model.decoder_start_ids(batch_size=batch_size, device=pixel_values.device)
         generated_ids = decoder_input_ids
         eos_token_id = int(self.config.eos_token_id)
-        self_attention_backend = "increfa" if decode_mode == "compiled_ifa" else "eager"
+        self_attention_backend = "increfa_all" if decode_mode == "compiled_ifa" else "eager"
         decode_module = None
         compile_wrap_s = None
         compile_meta = None
@@ -2500,9 +2513,7 @@ class OptimizedUniRecRunner:
                         self_attention_backend="eager",
                     )
                 else:
-                    graph_active_length = (
-                        active_length if self_attention_backend == "increfa" else 0
-                    )
+                    graph_active_length = 0
                     logits = decode_module(
                         next_token,
                         cache_position,

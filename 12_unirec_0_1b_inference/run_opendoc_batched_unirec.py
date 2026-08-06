@@ -566,7 +566,7 @@ def warmup_configured_graphs(
             cross_cache_len = runner._get_static_cross_cache_len()
             shape_discovery_s = time.perf_counter() - shape_started
             self_attention_backend = (
-                "increfa" if args.decode_mode == "compiled_ifa" else "eager"
+                "increfa_all" if args.decode_mode == "compiled_ifa" else "eager"
             )
             decode_module, decode_metadata = runner._compile_decode_module(
                 backend=args.compile_backend,
@@ -610,7 +610,7 @@ def warmup_configured_graphs(
                     device=device,
                 ),
                 torch.ones((batch_size,), dtype=torch.int64, device=device),
-                1 if self_attention_backend == "increfa" else 0,
+                0,
                 self_keys,
                 self_values,
                 cross_keys,

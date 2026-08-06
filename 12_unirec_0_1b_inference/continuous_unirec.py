@@ -254,7 +254,7 @@ class ContinuousUniRecDecoder:
         initial_state_build_s = time.perf_counter() - state_build_started
 
         self_attention_backend = (
-            "increfa" if self.decode_mode == "compiled_ifa" else "eager"
+            "increfa_all" if self.decode_mode == "compiled_ifa" else "eager"
         )
         decode_module = None
         compile_wrap_s = None

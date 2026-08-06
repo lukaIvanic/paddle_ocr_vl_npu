@@ -254,7 +254,7 @@ def main() -> None:
 
     lanes: dict[str, Any] = {}
     validations: dict[str, Any] = {}
-    for backend in ("eager", "increfa"):
+    for backend in ("eager", "increfa", "increfa_all"):
         progress("lane_begin", backend=backend)
         compiled, compile_meta = runner._compile_decode_module(
             backend="torchair",
@@ -325,28 +325,30 @@ def main() -> None:
         progress("lane_end", backend=backend, raw_tok_s=raw_tokens / measured_s)
 
     left = validations["eager"]
-    right = validations["increfa"]
-    delta = (left["logits"] - right["logits"]).abs()
-    comparison = {
-        "token_exact": left["tokens"] == right["tokens"],
-        "eager_tokens": left["tokens"],
-        "increfa_tokens": right["tokens"],
-        "final_logits_max_abs": float(delta.max()),
-        "final_logits_mean_abs": float(delta.mean()),
-        "final_logits_cosine": float(
-            F.cosine_similarity(
-                left["logits"].flatten(), right["logits"].flatten(), dim=0
-            )
-        ),
-        "compiled_speedup": (
-            lanes["increfa"]["measure"]["raw_tok_s"]
-            / lanes["eager"]["measure"]["raw_tok_s"]
-        ),
-    }
+    comparison = {}
+    for backend in ("increfa", "increfa_all"):
+        right = validations[backend]
+        delta = (left["logits"] - right["logits"]).abs()
+        comparison[f"eager_vs_{backend}"] = {
+            "token_exact": left["tokens"] == right["tokens"],
+            "eager_tokens": left["tokens"],
+            f"{backend}_tokens": right["tokens"],
+            "final_logits_max_abs": float(delta.max()),
+            "final_logits_mean_abs": float(delta.mean()),
+            "final_logits_cosine": float(
+                F.cosine_similarity(
+                    left["logits"].flatten(), right["logits"].flatten(), dim=0
+                )
+            ),
+            "compiled_speedup": (
+                lanes[backend]["measure"]["raw_tok_s"]
+                / lanes["eager"]["measure"]["raw_tok_s"]
+            ),
+        }
 
     profiles: dict[str, Any] = {}
     if args.profile_steps > 0:
-        for backend in ("eager", "increfa"):
+        for backend in ("eager", "increfa", "increfa_all"):
             progress("profile_begin", backend=backend)
             state = make_state(
                 runner,
