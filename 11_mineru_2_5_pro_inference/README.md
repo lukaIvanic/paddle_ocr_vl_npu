@@ -269,6 +269,30 @@ compiled workload. `pages_per_s` is vision-only throughput. It excludes model
 load, image decode/resize, processor work, H2D, layout text generation, and all
 recognition crops.
 
+Profile the same full 1036x1036 compiled vision boundary with
+`torch_npu.profiler` as follows. Each AI Core metric family gets an independent
+capture. The runner measures unprofiled calls before and after each capture so
+profiler distortion is explicit, then parses the emitted CANN CSV files:
+
+```sh
+$PYTHON 11_mineru_2_5_pro_inference/profile_vision_prefill_lab.py \
+  --model "$MODEL_DIR" \
+  --dataset-json /workspace/datasets/OmniDocBench/OmniDocBench.json \
+  --images-dir /workspace/datasets/OmniDocBench/images \
+  --offset 0 --layout-size 1036 1036 \
+  --execution torchair --metrics pipe,memory \
+  --warmup-steps 3 --baseline-steps 10 --profile-steps 3 \
+  --cache-dir .runtime_cache/11_mineru_2_5_pro_inference/vision_prefill_b1_fp16 \
+  --profile-root .runtime_cache/11_mineru_2_5_pro_inference/vision_prefill_profiles/layout_1036 \
+  --output-dir tmp/11_mineru_2_5_pro_inference/vision_prefill_profile/layout_1036
+```
+
+The profile includes patch embedding, position preparation, all transformer
+blocks, and the patch merger. It excludes setup, CPU preparation, H2D, and the
+TorchAir cache restore/compile call. Heavy profiler output stays under
+`.runtime_cache`; only the parsed summaries and compact run result belong in
+`tmp/`.
+
 ## Official synchronous vLLM lane
 
 Start with eager vLLM to separate compatibility from graph compilation:
