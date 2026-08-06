@@ -254,8 +254,6 @@ class _State:
         self.worker_pid: int | None = None
         self.waiters: dict[str, queue.Queue[dict[str, Any]]] = {}
         self.lock = threading.Lock()
-        self.accepting = True
-        self.drain_started = False
         self.service_summary: dict[str, Any] | None = None
         self.service_summary_ready = threading.Event()
         self.stopping = threading.Event()
@@ -288,10 +286,6 @@ class _State:
     def submit(self, job: dict[str, Any]) -> dict[str, Any]:
         waiter: queue.Queue[dict[str, Any]] = queue.Queue(maxsize=1)
         with self.lock:
-            if not self.accepting:
-                raise RuntimeError("recognition service is draining")
-            if job["request_id"] in self.waiters:
-                raise ValueError(f"duplicate in-flight request_id: {job['request_id']}")
             self.waiters[job["request_id"]] = waiter
         try:
             job["submitted_monotonic_s"] = time.perf_counter()
@@ -302,12 +296,7 @@ class _State:
                 self.waiters.pop(job["request_id"], None)
 
     def drain(self) -> dict[str, Any]:
-        with self.lock:
-            self.accepting = False
-            should_close = not self.drain_started
-            self.drain_started = True
-        if should_close:
-            self.jobs.put(None, timeout=1.0)
+        self.jobs.put(None, timeout=1.0)
         if not self.service_summary_ready.wait(timeout=self.timeout_s):
             raise queue.Empty("timed out waiting for recognizer drain")
         assert self.service_summary is not None
@@ -341,23 +330,6 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
-        if parsed.path == "/v1/drain":
-            try:
-                summary = self.state.drain()
-            except queue.Empty:
-                self._json(
-                    HTTPStatus.GATEWAY_TIMEOUT,
-                    {"error": "recognizer drain timed out"},
-                )
-                return
-            except Exception as exc:
-                self._json(
-                    HTTPStatus.INTERNAL_SERVER_ERROR,
-                    {"error": f"{type(exc).__name__}: {exc}"},
-                )
-                return
-            self._json(HTTPStatus.OK, {"drained": True, "summary": summary})
-            return
         if parsed.path != "/v1/ocr":
             self._json(HTTPStatus.NOT_FOUND, {"error": "not found"})
             return
@@ -366,7 +338,8 @@ class _Handler(BaseHTTPRequestHandler):
         if crop_type not in PROMPTS:
             self._json(HTTPStatus.BAD_REQUEST, {"error": f"crop_type must be one of {sorted(PROMPTS)}"})
             return
-        request_id = query.get("request_id", [uuid.uuid4().hex])[0].strip()
+        public_request_id = query.get("request_id", [uuid.uuid4().hex])[0].strip()
+        request_id = f"{public_request_id}:{uuid.uuid4().hex}"
         try:
             length = int(self.headers.get("Content-Length", "0"))
         except ValueError:
@@ -397,6 +370,7 @@ class _Handler(BaseHTTPRequestHandler):
         if not message["ok"]:
             self._json(HTTPStatus.INTERNAL_SERVER_ERROR, message)
             return
+        message["payload"]["request_id"] = public_request_id
         message["payload"]["http_wall_s"] = time.perf_counter() - submitted
         self._json(HTTPStatus.OK, message["payload"])
 

@@ -1150,10 +1150,9 @@ request. One separate NPU process owns a long-lived `ContinuousRecognizer`.
 Requests that arrive while decode is active join the same fixed B64 arena and
 hot-swap into free slots; a temporarily empty HTTP queue does not close the
 recognizer run. `scripts/run_omnidocbench_table_api.py` submits independent GT
-table-crop calls concurrently and uses `/v1/drain` after a benchmark to close
-the open source and collect exact run-scoped scheduler metrics. The same client
-also accepts arbitrary already-cropped images. These are the two exclusive
-client modes:
+table-crop calls concurrently. It leaves the shared API server running after
+the benchmark. The same client also accepts arbitrary already-cropped images.
+These are the two exclusive client modes:
 
 ```sh
 # Official component-recognition run. Writes tables.jsonl, scores.json,

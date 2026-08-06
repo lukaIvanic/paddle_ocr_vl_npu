@@ -328,10 +328,6 @@ class _State:
         image_path = request_dir / (Path(filename).name or "page.png")
         image_path.write_bytes(body)
         with self.lock:
-            if not self.accepting:
-                raise RuntimeError("page service is shutting down")
-            if request_id in self.waiters:
-                raise ValueError(f"duplicate in-flight request_id: {request_id}")
             self.waiters[request_id] = waiter
             self.paths[request_id] = image_path
         try:
@@ -394,7 +390,8 @@ class _Handler(BaseHTTPRequestHandler):
             self._json(HTTPStatus.NOT_FOUND, {"error": "not found"})
             return
         query = parse_qs(parsed.query)
-        request_id = query.get("request_id", [uuid.uuid4().hex])[0]
+        public_request_id = query.get("request_id", [uuid.uuid4().hex])[0]
+        request_id = f"{public_request_id}:{uuid.uuid4().hex}"
         filename = query.get("filename", ["page.png"])[0]
         try:
             length = int(self.headers.get("Content-Length", "0"))
@@ -418,6 +415,7 @@ class _Handler(BaseHTTPRequestHandler):
         if not message.get("ok"):
             self._json(HTTPStatus.INTERNAL_SERVER_ERROR, message)
             return
+        message["payload"]["request_id"] = public_request_id
         message["payload"]["http_wall_s"] = time.perf_counter() - started
         self._json(HTTPStatus.OK, message["payload"])
 
