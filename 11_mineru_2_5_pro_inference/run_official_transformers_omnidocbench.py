@@ -169,10 +169,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--local-prepare-prefetch-depth",
         type=int,
-        default=16,
+        default=64,
         help=(
             "Continuous local lane only: maximum CPU-prepared requests kept "
-            "ahead of slot admission. Zero disables background preparation."
+            "ahead of slot admission. The default covers two 32-request "
+            "vision lookahead windows. Zero disables background preparation."
         ),
     )
     parser.add_argument(
