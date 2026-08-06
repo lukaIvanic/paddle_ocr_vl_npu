@@ -30,6 +30,7 @@ class PreparedGeneration:
     pixel_values: torch.Tensor | None
     image_grid_thw: torch.Tensor | None
     max_new_tokens: int
+    h2d_ready_event: Any | None = None
 
 
 class FixedBatchDecodeEngine:
@@ -81,6 +82,16 @@ class FixedBatchDecodeEngine:
             value_caches=tuple(cache[slot : slot + 1] for cache in arena.value_caches),
             cache_length=arena.cache_length,
         )
+
+    @staticmethod
+    def _wait_for_request_h2d(request: PreparedGeneration) -> None:
+        """Make the compute stream depend on an asynchronously staged request."""
+        if request.h2d_ready_event is None:
+            return
+        import torch_npu
+
+        torch_npu.npu.current_stream().wait_event(request.h2d_ready_event)
+        request.h2d_ready_event = None
 
     def _build_group_inputs_embeds(
         self,
@@ -303,6 +314,7 @@ class FixedBatchDecodeEngine:
         outputs: list[torch.Tensor] = []
         records: list[dict[str, Any]] = []
         for request in requests:
+            self._wait_for_request_h2d(request)
             generated, metrics = self.compiled_decoder.generate(
                 input_ids=request.input_ids,
                 attention_mask=request.attention_mask,
@@ -352,6 +364,7 @@ class FixedBatchDecodeEngine:
         maybe_sync_device(self.model.device)
         prefill_started = time.perf_counter()
         for slot, request in enumerate(requests):
+            self._wait_for_request_h2d(request)
             if request.input_ids.shape[0] != 1:
                 raise ValueError("each fixed-batch request must be prepared at B1")
             if request.input_ids.shape[1] + request.max_new_tokens > self.cache_length:
@@ -512,6 +525,7 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
         slot: int,
         request: PreparedGeneration,
     ) -> tuple[dict[str, Any], float]:
+        self._wait_for_request_h2d(request)
         self._validate_request(request)
         started = time.perf_counter()
         prefill = self.model.forward_static_prefill(
@@ -545,6 +559,8 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
     ) -> tuple[dict[int, dict[str, Any]], float, dict[str, float | int]]:
         """Prefill free slots, using packed static text graphs when enabled."""
         started = time.perf_counter()
+        for _slot, _request_index, request in entries:
+            self._wait_for_request_h2d(request)
         if self.packed_text_prefill_runtime is None:
             states: dict[int, dict[str, Any]] = {}
             aggregate: dict[str, float | int] = {}
