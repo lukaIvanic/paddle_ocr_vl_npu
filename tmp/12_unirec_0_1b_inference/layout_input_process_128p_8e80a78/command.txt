@@ -1,0 +1,4 @@
+git_commit=8e80a78
+device_work=false
+tensor_or_image_ipc=false
+command=source npu-setup && /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python 12_unirec_0_1b_inference/layout_input_process_lab.py --openocr-root /workspace/repos/OpenOCR --offset 769 --limit 128 --processes 1,2,4,8 --rounds 2 --warmup-pages-per-process 1 --output tmp/12_unirec_0_1b_inference/layout_input_process_128p_8e80a78/report.json
