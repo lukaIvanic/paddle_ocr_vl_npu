@@ -10,8 +10,8 @@ and CDM runner. It does not import or execute another file from this
 repository.
 
 The command sends all 1,651 OmniDocBench pages to the API. It saves the page
-Markdown, runs the official matching metrics, runs Page-TEDS and CDM, and
-calculates the official Overall score.
+Markdown, runs the official matching metrics, and runs Page-TEDS. Formula CDM
+is off by default because it needs a large system environment.
 
 ## One-time evaluator setup
 
@@ -40,19 +40,6 @@ python3.10 -m venv /workspace/venvs/omnidocbench_py310
 /workspace/venvs/omnidocbench_py310/bin/python -m pip install \
   --no-build-isolation /workspace/repos/OmniDocBench_eval
 ```
-
-Install these public system tools and put their commands on `PATH`:
-
-- [TeX Live](https://tug.org/texlive/) with `pdflatex`, `kpsewhich`,
-  `CJK.sty`, and `c70gkai.fd`;
-- [ImageMagick 7](https://imagemagick.org/script/download.php) with PDF
-  support and the `magick` command;
-- [Ghostscript](https://ghostscript.com/releases/gsdnld.html) with the `gs`
-  command.
-
-The validated environment used TeX Live 2025, ImageMagick 7.1.1-47, and
-Ghostscript 9.55.0. The script checks the required commands before it starts
-inference or scoring.
 
 Set two paths for the commands below:
 
@@ -86,10 +73,44 @@ Expected 910B2 reference:
 - Throughput: approximately `1.951 pages/s`
 - Text-block Edit distance: approximately `0.0507`
 - Official text score: approximately `0.9493`
-- Formula Page-CDM: approximately `0.9741`
+- Display-formula Edit distance: approximately `0.0903`
 - Table Page-TEDS: approximately `0.9444`
+- TEDS timeouts/errors: `0`
+
+## Optional formula CDM and Overall score
+
+Supply `--do-cdm` only when Formula Page-CDM and the official three-part
+Overall score are required. Without this option, the script does not check for
+or use TeX Live, ImageMagick, or Ghostscript.
+
+CDM requires these public system tools on `PATH`:
+
+- [TeX Live](https://tug.org/texlive/) with `pdflatex`, `kpsewhich`,
+  `CJK.sty`, and `c70gkai.fd`;
+- [ImageMagick 7](https://imagemagick.org/script/download.php) with PDF
+  support and the `magick` command;
+- [Ghostscript](https://ghostscript.com/releases/gsdnld.html) with the `gs`
+  command.
+
+The validated CDM environment used TeX Live 2025, ImageMagick 7.1.1-47, and
+Ghostscript 9.55.0. When it is available, run:
+
+```sh
+"$OMNIDOCBENCH_EVAL_PYTHON" \
+  09_persistent_page_engine/scripts/run_omnidocbench_page_api_eval.py \
+  --do-cdm \
+  --api-url http://API_HOST:8766/v1/pages \
+  --dataset-json /path/to/OmniDocBench.json \
+  --images-dir /path/to/images \
+  --evaluator-root "$OMNIDOCBENCH_EVALUATOR_ROOT" \
+  --output-dir output/full_page_api_with_cdm
+```
+
+Expected CDM reference:
+
+- Formula Page-CDM: approximately `0.9741`
 - Official Overall: approximately `95.5933%`
-- TEDS and CDM timeouts/errors: `0`
+- CDM timeouts/errors: `0`
 
 Small numerical differences across devices are normal. The official Overall is:
 
@@ -112,6 +133,8 @@ If evaluation was interrupted, keep the same output directory and run:
   --evaluator-root "$OMNIDOCBENCH_EVALUATOR_ROOT" \
   --output-dir output/full_page_api
 ```
+
+Add `--do-cdm` to this command only when the CDM environment is available.
 
 The final files are:
 

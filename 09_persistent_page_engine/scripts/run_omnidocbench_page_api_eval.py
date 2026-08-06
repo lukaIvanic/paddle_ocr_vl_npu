@@ -3,7 +3,8 @@
 
 Product users need only the CLI in ``parse_args``. The script sends independent
 page requests, saves Markdown predictions, runs the committed robust evaluator,
-calculates page-weighted CDM, and prints the official three-part Overall score.
+runs Page-TEDS, and reports the standard non-CDM metrics. ``--do-cdm`` also
+calculates page-weighted CDM and the official three-part Overall score.
 
 This file contains its HTTP client, robust evaluator runner, and CDM runner. It
 does not import or execute another file from this repository. Evaluation imports
@@ -1268,6 +1269,14 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Rescore saved generation/predictions without calling the API.",
     )
+    product.add_argument(
+        "--do-cdm",
+        action="store_true",
+        help=(
+            "Calculate formula Page-CDM and the official three-part Overall. "
+            "This requires TeX Live, ImageMagick 7, and Ghostscript."
+        ),
+    )
 
     advanced = parser.add_argument_group("advanced controls")
     advanced.add_argument("--offset", type=int, default=0)
@@ -1395,7 +1404,14 @@ def _validate_evaluator(root: Path, allow_mismatch: bool) -> dict[str, Any]:
     return result
 
 
-def _validate_runtime() -> dict[str, str]:
+def _validate_runtime(*, do_cdm: bool) -> dict[str, str]:
+    if not do_cdm:
+        print(
+            "CDM_CHECK SKIPPED --do-cdm was not supplied; "
+            "TeX Live, ImageMagick, and Ghostscript are not required",
+            flush=True,
+        )
+        return {}
     required = ("pdflatex", "kpsewhich", "magick", "gs")
     paths = {name: shutil.which(name) or "" for name in required}
     missing = [name for name, path in paths.items() if not path]
@@ -1568,27 +1584,12 @@ def _score(
     *,
     metric_path: Path,
     stages_path: Path,
-    cdm_summary_path: Path,
+    cdm_summary_path: Path | None,
     generation_summary_path: Path,
     page_count: int,
 ) -> dict[str, Any]:
     metric = _json(metric_path)
     stages = _json(stages_path)
-    cdm = _json(cdm_summary_path)
-    evaluated = _json(Path(cdm["evaluated_samples"]))
-
-    by_page: dict[str, list[float]] = defaultdict(list)
-    for sample in evaluated:
-        by_page[str(sample["img_id"])].append(float(sample["metric"]["CDM"]))
-    sample_cdm = sum(v for values in by_page.values() for v in values) / len(
-        evaluated
-    )
-    page_cdm = sum(sum(values) / len(values) for values in by_page.values()) / len(
-        by_page
-    )
-    if abs(sample_cdm - float(cdm["scores"]["CDM"]["all"])) >= 1e-12:
-        raise AssertionError("sample CDM does not match the CDM runner summary")
-
     text_edit = float(metric["text_block"]["page"]["Edit_dist"]["ALL"])
     formula_edit = float(metric["display_formula"]["page"]["Edit_dist"]["ALL"])
     sample_teds = float(metric["table"]["all"]["TEDS"]["all"])
@@ -1597,22 +1598,20 @@ def _score(
         metric["table"]["page"]["TEDS_structure_only"]["ALL"]
     )
     reading_edit = float(metric["reading_order"]["page"]["Edit_dist"]["ALL"])
-    overall = ((1.0 - text_edit) + page_cdm + page_teds) / 3.0
-
     teds_debug = stages["metrics"]["table"]["TEDS"]
-    cdm_debug = cdm["debug"]
     result: dict[str, Any] = {
         "pages": page_count,
+        "cdm_enabled": cdm_summary_path is not None,
         "text_block": {
             "edit_distance": text_edit,
             "score": 1.0 - text_edit,
         },
         "display_formula": {
             "edit_distance": formula_edit,
-            "sample_cdm": sample_cdm,
-            "page_cdm": page_cdm,
-            "sample_count": len(evaluated),
-            "page_count": len(by_page),
+            "sample_cdm": None,
+            "page_cdm": None,
+            "sample_count": None,
+            "page_count": None,
         },
         "table": {
             "sample_teds": sample_teds,
@@ -1623,12 +1622,48 @@ def _score(
             + int(teds_debug.get("exception_case_count", 0)),
         },
         "reading_order": {"edit_distance": reading_edit},
-        "official_overall": overall,
-        "official_overall_percent": 100.0 * overall,
+        "official_overall": None,
+        "official_overall_percent": None,
         "page_match_fallbacks": stages["page_match"]["fallbacks"],
-        "cdm_timeouts": int(cdm_debug["timeout_case_count"]),
-        "cdm_errors": int(cdm_debug["exception_case_count"]),
+        "cdm_timeouts": None,
+        "cdm_errors": None,
     }
+
+    sample_cdm: float | None = None
+    page_cdm: float | None = None
+    overall: float | None = None
+    if cdm_summary_path is not None:
+        cdm = _json(cdm_summary_path)
+        evaluated = _json(Path(cdm["evaluated_samples"]))
+        by_page: dict[str, list[float]] = defaultdict(list)
+        for sample in evaluated:
+            by_page[str(sample["img_id"])].append(
+                float(sample["metric"]["CDM"])
+            )
+        sample_cdm = sum(
+            value for values in by_page.values() for value in values
+        ) / len(evaluated)
+        page_cdm = sum(
+            sum(values) / len(values) for values in by_page.values()
+        ) / len(by_page)
+        if abs(sample_cdm - float(cdm["scores"]["CDM"]["all"])) >= 1e-12:
+            raise AssertionError(
+                "sample CDM does not match the CDM runner summary"
+            )
+        overall = ((1.0 - text_edit) + page_cdm + page_teds) / 3.0
+        cdm_debug = cdm["debug"]
+        result["display_formula"].update(
+            {
+                "sample_cdm": sample_cdm,
+                "page_cdm": page_cdm,
+                "sample_count": len(evaluated),
+                "page_count": len(by_page),
+            }
+        )
+        result["official_overall"] = overall
+        result["official_overall_percent"] = 100.0 * overall
+        result["cdm_timeouts"] = int(cdm_debug["timeout_case_count"])
+        result["cdm_errors"] = int(cdm_debug["exception_case_count"])
     if generation_summary_path.is_file():
         generation = _json(generation_summary_path)
         result["generation"] = {
@@ -1684,25 +1719,39 @@ def _summary_markdown(summary: dict[str, Any]) -> str:
             f"{summary['text_block']['score']:.6f}",
             f"- Display-formula Edit distance: "
             f"{formula['edit_distance']:.6f}",
-            f"- Formula page-CDM: {formula['page_cdm']:.6f}",
-            f"- Formula sample-CDM: {formula['sample_cdm']:.6f}",
             f"- Table Page-TEDS: {table['page_teds']:.6f}",
             f"- Table sample-TEDS: {table['sample_teds']:.6f}",
             f"- Table structure-only Page-TEDS: "
             f"{table['page_structure_teds']:.6f}",
             f"- Reading-order Edit distance: "
             f"{summary['reading_order']['edit_distance']:.6f}",
-            f"- Official Overall: {summary['official_overall_percent']:.4f}%",
             f"- TEDS timeouts/errors: "
             f"{table['teds_timeouts']}/{table['teds_errors']}",
-            f"- CDM timeouts/errors: "
-            f"{summary['cdm_timeouts']}/{summary['cdm_errors']}",
-            "",
-            "Official Overall = mean(text score, formula page-CDM, "
-            "table Page-TEDS).",
-            "",
         ]
     )
+    if summary["cdm_enabled"]:
+        lines.extend(
+            [
+                f"- Formula page-CDM: {formula['page_cdm']:.6f}",
+                f"- Formula sample-CDM: {formula['sample_cdm']:.6f}",
+                f"- Official Overall: "
+                f"{summary['official_overall_percent']:.4f}%",
+                f"- CDM timeouts/errors: "
+                f"{summary['cdm_timeouts']}/{summary['cdm_errors']}",
+                "",
+                "Official Overall = mean(text score, formula page-CDM, "
+                "table Page-TEDS).",
+                "",
+            ]
+        )
+    else:
+        lines.extend(
+            [
+                "- Formula Page-CDM: skipped (use `--do-cdm`)",
+                "- Official Overall: unavailable without Formula Page-CDM",
+                "",
+            ]
+        )
     return "\n".join(lines)
 
 
@@ -1719,7 +1768,7 @@ def main() -> None:
     evaluator_info = _validate_evaluator(
         evaluator_root, args.allow_evaluator_mismatch
     )
-    runtime_info = _validate_runtime()
+    runtime_info = _validate_runtime(do_cdm=args.do_cdm)
     pages, dataset_info = _dataset_manifest(
         dataset_json,
         images_dir,
@@ -1777,7 +1826,10 @@ def main() -> None:
     evaluation_work = evaluation_root / "work"
     result_dir = evaluation_work / "result"
     cdm_dir = evaluation_root / "cdm_native"
-    for stale_dir in (result_dir, cdm_dir):
+    stale_dirs = [result_dir]
+    if args.do_cdm:
+        stale_dirs.append(cdm_dir)
+    for stale_dir in stale_dirs:
         if stale_dir.exists():
             print(f"CLEAR_STALE_SCORE_ARTIFACTS directory={stale_dir}", flush=True)
             shutil.rmtree(stale_dir)
@@ -1815,24 +1867,29 @@ def main() -> None:
         if not artifact.is_file():
             raise FileNotFoundError(f"evaluator did not create: {artifact}")
 
-    cdm_command = [
-        sys.executable,
-        str(SCRIPT_PATH), "--_internal-cdm",
-        "--input", str(matched),
-        "--output-dir", str(cdm_dir),
-        "--evaluator-root", str(evaluator_root),
-        "--workers", str(_cdm_workers(args.cdm_workers)),
-        "--save-name", "predictions_quick_match_cdm",
-    ]
-    cdm_wall = _run(
-        cdm_command,
-        cwd=output_dir,
-        log_path=output_dir / "cdm.log",
-        stage="formula-cdm",
-    )
-    cdm_summary = cdm_dir / "cdm_run_summary.json"
-    if not cdm_summary.is_file():
-        raise FileNotFoundError(f"CDM did not create: {cdm_summary}")
+    cdm_wall: float | None = None
+    cdm_summary: Path | None = None
+    if args.do_cdm:
+        cdm_command = [
+            sys.executable,
+            str(SCRIPT_PATH), "--_internal-cdm",
+            "--input", str(matched),
+            "--output-dir", str(cdm_dir),
+            "--evaluator-root", str(evaluator_root),
+            "--workers", str(_cdm_workers(args.cdm_workers)),
+            "--save-name", "predictions_quick_match_cdm",
+        ]
+        cdm_wall = _run(
+            cdm_command,
+            cwd=output_dir,
+            log_path=output_dir / "cdm.log",
+            stage="formula-cdm",
+        )
+        cdm_summary = cdm_dir / "cdm_run_summary.json"
+        if not cdm_summary.is_file():
+            raise FileNotFoundError(f"CDM did not create: {cdm_summary}")
+    else:
+        print("FORMULA_CDM SKIPPED use --do-cdm to enable it", flush=True)
 
     summary = _score(
         metric_path=metric,
@@ -1849,14 +1906,17 @@ def main() -> None:
     markdown = _summary_markdown(summary)
     (output_dir / "benchmark_summary.md").write_text(markdown, encoding="utf-8")
     print("\n" + markdown, flush=True)
+    summary_label = (
+        "PAGE_API_OFFICIAL_SUMMARY" if args.do_cdm else "PAGE_API_SUMMARY"
+    )
     print(
-        "PAGE_API_OFFICIAL_SUMMARY "
+        summary_label + " "
         f"pages={len(selected)} "
         f"pages_per_s={summary.get('generation', {}).get('pages_per_s')} "
         f"text_edit={summary['text_block']['edit_distance']:.6f} "
-        f"page_cdm={summary['display_formula']['page_cdm']:.6f} "
+        f"page_cdm={summary['display_formula']['page_cdm']} "
         f"page_teds={summary['table']['page_teds']:.6f} "
-        f"overall={summary['official_overall_percent']:.4f}",
+        f"overall={summary['official_overall_percent']}",
         flush=True,
     )
 
