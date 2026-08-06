@@ -1552,8 +1552,13 @@ def main() -> None:
     model_path = args.model_path.expanduser().resolve()
     input_path = args.input.expanduser().resolve()
     output_dir = args.output_dir.expanduser().resolve()
-    if args.max_length > 256:
-        raise ValueError("The current UniRec static self-KV cache supports max-length <= 256")
+    if args.max_length > LOCAL_UNIREC_STATIC_CACHE_LEN:
+        raise ValueError(
+            "max-length exceeds the configured UniRec static self-KV cache: "
+            f"max_length={args.max_length} "
+            f"static_cache_len={LOCAL_UNIREC_STATIC_CACHE_LEN}. Set "
+            "UNIREC_STATIC_CACHE_LEN before launching the runner."
+        )
 
     if args.device.startswith("npu"):
         import torch_npu

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import time
 from dataclasses import dataclass
@@ -25,7 +26,11 @@ try:
 except Exception:
     torch_npu = None
 
-LOCAL_UNIREC_STATIC_CACHE_LEN = 256
+LOCAL_UNIREC_STATIC_CACHE_LEN = int(
+    os.environ.get("UNIREC_STATIC_CACHE_LEN", "256")
+)
+if LOCAL_UNIREC_STATIC_CACHE_LEN < 1:
+    raise ValueError("UNIREC_STATIC_CACHE_LEN must be >= 1")
 LOCAL_UNIREC_SELF_ATTN_BACKENDS = {"eager", "increfa"}
 DTYPE_MAP = {
     "bfloat16": torch.bfloat16,
