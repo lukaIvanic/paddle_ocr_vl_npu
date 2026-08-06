@@ -96,6 +96,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--fail-fast", action="store_true")
     parser.add_argument("--hash-model-files", action="store_true")
     parser.add_argument(
+        "--processor-min-pixels",
+        type=int,
+        help=(
+            "Override the Qwen2-VL image processor minimum pixel area. "
+            "By default, use the model checkpoint value."
+        ),
+    )
+    parser.add_argument(
         "--local-dtype",
         choices=("float16", "bfloat16"),
         default="float16",
@@ -332,6 +340,13 @@ def main() -> None:
             use_fast=True,
             local_files_only=True,
         )
+        if args.processor_min_pixels is not None:
+            if args.processor_min_pixels <= 0:
+                raise ValueError("processor-min-pixels must be positive")
+            processor.image_processor.min_pixels = args.processor_min_pixels
+            processor.image_processor.size["shortest_edge"] = (
+                args.processor_min_pixels
+            )
         if args.backend == "transformers":
             from transformers import Qwen2VLForConditionalGeneration
 
@@ -642,6 +657,11 @@ def main() -> None:
         ),
         "attention": attention,
         "processor_fast": processor_fast,
+        "processor_min_pixels": (
+            int(processor.image_processor.size["shortest_edge"])
+            if processor_fast
+            else None
+        ),
         "npu_jit_compile": False,
         "image_analysis": False,
         "batch_size": args.batch_size,
