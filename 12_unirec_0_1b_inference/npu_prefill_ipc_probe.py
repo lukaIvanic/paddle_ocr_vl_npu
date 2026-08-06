@@ -105,12 +105,13 @@ def _producer(
             "sent_at": time.perf_counter(),
         }
     )
+    if shared_storage is not None:
+        resource_tracker.unregister(shared_storage._name, "shared_memory")  # noqa: SLF001
     acknowledgement = ack_queue.get(timeout=120)
     if acknowledgement != "received":
         raise RuntimeError(f"unexpected acknowledgement: {acknowledgement!r}")
     if shared_storage is not None:
         shared_storage.close()
-        resource_tracker.unregister(shared_storage._name, "shared_memory")  # noqa: SLF001
 
 
 def main() -> None:
@@ -134,11 +135,13 @@ def main() -> None:
         target=_producer,
         args=(result_queue, ack_queue, args.device, args.transport),
     )
+    torch.npu.set_device(args.device)
+    torch.empty(1, dtype=torch.float16, device="npu:0")
+    torch.npu.synchronize()
     process.start()
     receive_started = time.perf_counter()
     payload = result_queue.get(timeout=180)
     received_s = time.perf_counter() - receive_started
-    torch.npu.set_device(args.device)
     torch.npu.synchronize()
     import_lag_s = time.perf_counter() - float(payload["sent_at"])
 
