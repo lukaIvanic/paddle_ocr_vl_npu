@@ -44,6 +44,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--images-dir", type=Path, default=DEFAULT_IMAGES_DIR)
     parser.add_argument("--page-index", type=int, default=0)
     parser.add_argument("--layout-size", type=int, nargs=2, default=(1036, 1036))
+    parser.add_argument(
+        "--patch-token-sweep",
+        type=str,
+        help=(
+            "Comma-separated raw patch-token counts. When set, benchmark only "
+            "Conv3D and the production flat-linear replacement on synthetic "
+            "fp16 patch rows, without running the vision transformer."
+        ),
+    )
     parser.add_argument("--cache-dir", type=Path, default=DEFAULT_CACHE_DIR)
     parser.add_argument("--patch-warmup", type=int, default=10)
     parser.add_argument("--patch-blocks", type=int, default=7)
@@ -62,6 +71,15 @@ def parse_args() -> argparse.Namespace:
         args.full_samples,
     ) <= 0:
         parser.error("all warm-up and measurement counts must be positive")
+    if args.patch_token_sweep:
+        try:
+            args.patch_token_sweep = [
+                int(value) for value in args.patch_token_sweep.split(",")
+            ]
+        except ValueError:
+            parser.error("--patch-token-sweep must contain comma-separated integers")
+        if not args.patch_token_sweep or min(args.patch_token_sweep) <= 0:
+            parser.error("--patch-token-sweep values must be positive")
     return args
 
 
@@ -178,6 +196,86 @@ def run_full(
     return output, time.perf_counter() - started, stages
 
 
+def run_patch_sweep(
+    model: LocalMinerU2_5ForConditionalGeneration,
+    token_counts: list[int],
+    args: argparse.Namespace,
+) -> None:
+    original = model.visual.patch_embed
+    variants = PatchEmbedVariants(original).to(device=model.device, dtype=model.dtype)
+    rows: list[dict[str, Any]] = []
+    feature_width = (
+        variants.in_channels
+        * variants.temporal_patch_size
+        * variants.patch_size
+        * variants.patch_size
+    )
+    torch.manual_seed(17)
+    for token_count in token_counts:
+        hidden_states = torch.randn(
+            token_count,
+            feature_width,
+            device=model.device,
+            dtype=model.dtype,
+        )
+        mode_outputs: dict[str, torch.Tensor] = {}
+        mode_ms: dict[str, dict[str, float]] = {}
+        for mode in ("conv3d", "flat_linear"):
+            variants.set_mode(mode)
+            for _ in range(args.patch_warmup):
+                variants(hidden_states)
+            synchronize()
+            block_ms: list[float] = []
+            output = None
+            for _ in range(args.patch_blocks):
+                output, milliseconds = device_block(
+                    lambda: variants(hidden_states),
+                    args.patch_calls_per_block,
+                )
+                block_ms.append(milliseconds)
+            if output is None:
+                raise RuntimeError("patch sweep produced no output")
+            mode_outputs[mode] = output.clone()
+            mode_ms[mode] = summary(block_ms)
+        parity = compare(mode_outputs["conv3d"], mode_outputs["flat_linear"])
+        conv_ms = mode_ms["conv3d"]["p50"]
+        linear_ms = mode_ms["flat_linear"]["p50"]
+        row = {
+            "raw_tokens": token_count,
+            "conv3d_ms": mode_ms["conv3d"],
+            "flat_linear_ms": mode_ms["flat_linear"],
+            "conv3d_raw_tokens_per_s": token_count / (conv_ms / 1000),
+            "flat_linear_raw_tokens_per_s": token_count / (linear_ms / 1000),
+            "speedup": conv_ms / linear_ms,
+            "parity": parity,
+        }
+        rows.append(row)
+        print(
+            f"[sweep] tokens={token_count} conv3d_ms={conv_ms:.6f} "
+            f"flat_linear_ms={linear_ms:.6f} speedup={row['speedup']:.2f} "
+            f"max_abs={parity['max_abs']:.6g}",
+            flush=True,
+        )
+    payload = {
+        "schema_version": 1,
+        "kind": "mineru_patch_embed_token_sweep",
+        "device": "Ascend NPU",
+        "dtype": "fp16",
+        "model": str(args.model.expanduser().resolve()),
+        "feature_width": feature_width,
+        "measurement": {
+            "patch_warmup": args.patch_warmup,
+            "patch_blocks": args.patch_blocks,
+            "patch_calls_per_block": args.patch_calls_per_block,
+        },
+        "rows": rows,
+    }
+    output = args.output.expanduser().resolve()
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    print(f"[output] {output}", flush=True)
+
+
 @torch.inference_mode()
 def main() -> None:
     args = parse_args()
@@ -195,6 +293,9 @@ def main() -> None:
         dtype=torch.float16,
         device="npu:0",
     )
+    if args.patch_token_sweep:
+        run_patch_sweep(model, args.patch_token_sweep, args)
+        return
     model.set_vision_attention_impl("prompt_flash_attention")
     runtime = MinerUVisionPrefillRuntime(
         model.visual,
