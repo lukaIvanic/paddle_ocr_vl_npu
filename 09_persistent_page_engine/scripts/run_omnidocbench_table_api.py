@@ -128,7 +128,7 @@ def _drain(api_url: str, timeout_s: float) -> dict[str, Any]:
     url = urllib.parse.urlunparse(parsed._replace(path="/v1/drain", query=""))
     request = urllib.request.Request(url, data=b"", method="POST")
     with urllib.request.urlopen(request, timeout=timeout_s) as response:
-        return json.loads(response.read()).get("summary", {})
+        return json.loads(response.read())["summary"]
 
 
 def _safe_name(path: Path) -> str:
