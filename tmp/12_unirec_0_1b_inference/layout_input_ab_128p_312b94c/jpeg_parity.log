@@ -1,0 +1,17 @@
+LAYOUT_INPUT_AB setup pages=8 rounds=1 warmup_pages=1
+LAYOUT_INPUT_AB warmup lane=regular_opencv done
+LAYOUT_INPUT_AB warmup lane=optimized_direct_rgb done
+LAYOUT_INPUT_AB round=1 lane=regular_opencv pages=8/8
+LAYOUT_INPUT_AB result {"lane": "regular_opencv", "round": 0, "pages": 8, "formats": {"jpeg": 8}, "wall_s": 1.4824915460776538, "pages_per_s": 5.3963208229863024, "stage_s": {"file_read_s": 0.02402613894082606, "decode_s": 0.889008768601343, "color_conversion_s": 0.039592223009094596, "processor_s": 0.16140557453036308}, "unaccounted_s": 0.368458840996027}
+LAYOUT_INPUT_AB round=1 lane=optimized_direct_rgb pages=8/8
+LAYOUT_INPUT_AB result {"lane": "optimized_direct_rgb", "round": 0, "pages": 8, "formats": {"jpeg": 8}, "wall_s": 1.1699149529449642, "pages_per_s": 6.838103897947478, "stage_s": {"file_read_s": 0.02249069232493639, "decode_s": 0.7242377486545593, "color_conversion_s": 0.0, "processor_s": 0.12019302323460579}, "unaccounted_s": 0.30299348873086274}
+LAYOUT_INPUT_AB parity=1/8 exact=True max_abs=0
+LAYOUT_INPUT_AB parity=2/8 exact=True max_abs=0
+LAYOUT_INPUT_AB parity=3/8 exact=True max_abs=0
+LAYOUT_INPUT_AB parity=4/8 exact=True max_abs=0
+LAYOUT_INPUT_AB parity=5/8 exact=True max_abs=0
+LAYOUT_INPUT_AB parity=6/8 exact=True max_abs=0
+LAYOUT_INPUT_AB parity=7/8 exact=True max_abs=0
+LAYOUT_INPUT_AB parity=8/8 exact=True max_abs=0
+LAYOUT_INPUT_AB summary {"regular_opencv": {"wall_s_rounds": [1.4824915460776538], "wall_s_median": 1.4824915460776538, "stage_s_median": {"color_conversion_s": 0.039592223009094596, "decode_s": 0.889008768601343, "file_read_s": 0.02402613894082606, "processor_s": 0.16140557453036308}, "pages_per_s_from_median": 5.3963208229863024}, "optimized_direct_rgb": {"wall_s_rounds": [1.1699149529449642], "wall_s_median": 1.1699149529449642, "stage_s_median": {"color_conversion_s": 0.0, "decode_s": 0.7242377486545593, "file_read_s": 0.02249069232493639, "processor_s": 0.12019302323460579}, "pages_per_s_from_median": 6.838103897947478}, "comparison": {"wall_speedup_x": 1.2671789024884734, "wall_saved_s": 0.3125765931326896}}
+LAYOUT_INPUT_AB done output=/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/layout_input_ab_128p_312b94c/jpeg_parity_report.json
