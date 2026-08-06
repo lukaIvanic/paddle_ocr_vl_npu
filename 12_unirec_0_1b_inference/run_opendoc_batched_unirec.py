@@ -836,6 +836,49 @@ def prepare_page(
     )
 
 
+def page_request_from_process_payload(
+    payload: dict[str, Any],
+    *,
+    measured_layout_s: float,
+) -> PageRequest:
+    """Materialize a process-owned frontend result without decoding again."""
+    started = time.perf_counter()
+    page_index = int(payload["page_index"])
+    image_path = Path(payload["image_path"])
+    crops = [
+        CropRequest(
+            page_index=page_index,
+            crop_index=int(crop["crop_index"]),
+            page_name=image_path.name,
+            image=Image.fromarray(crop["image_rgb"]),
+            label=crop["label"],
+            figure_token_map=crop["figure_token_map"],
+        )
+        for crop in payload["crops"]
+    ]
+    frontend_timing_s = dict(payload["frontend_timing_s"])
+    frontend_timing_s["layout_s"] = measured_layout_s
+    frontend_timing_s["process_payload_materialize_s"] = (
+        time.perf_counter() - started
+    )
+    return PageRequest(
+        page_index=page_index,
+        image_path=image_path,
+        image=payload["image_bgr"],
+        width=int(payload["width"]),
+        height=int(payload["height"]),
+        layout_results=payload["layout_results"],
+        blocks=payload["blocks"],
+        vlm_block_ids=[int(index) for index in payload["vlm_block_ids"]],
+        crops=crops,
+        drop_figures_set=set(payload["drop_figures_set"]),
+        started_at=float(payload["started_at"]),
+        layout_s=measured_layout_s,
+        prepare_page_total_s=sum(frontend_timing_s.values()),
+        frontend_timing_s=frontend_timing_s,
+    )
+
+
 def iter_prepared_pages(
     *,
     pipeline: Any,
@@ -1033,6 +1076,7 @@ def warmup_full_pipeline(
     vision_atlas_runtime: UniRecVisionAtlasRuntime | None,
     image_paths: list[Path],
     output_dir: Path,
+    precomputed_pages: list[PageRequest] | None = None,
     precomputed_layouts: list[dict[str, Any]] | None = None,
     precomputed_layout_page_s: float = 0.0,
 ) -> dict[str, Any]:
@@ -1048,26 +1092,29 @@ def warmup_full_pipeline(
         flush=True,
     )
 
-    decoded_pages = iter_decoded_pages(
-        warmup_paths,
-        workers=min(args.page_decode_workers, len(warmup_paths)),
-        decoder=args.page_image_decoder,
-    )
-    pages = list(
-        iter_prepared_pages(
-            pipeline=pipeline,
-            infer_doc_onnx=infer_doc_onnx,
-            decoded_pages=decoded_pages,
-            layout_threshold=args.layout_threshold,
-            layout_batch_size=args.layout_batch_size,
-            page_prepare_workers=min(
-                args.page_prepare_workers,
-                len(warmup_paths),
-            ),
-            precomputed_layouts=precomputed_layouts,
-            precomputed_layout_page_s=precomputed_layout_page_s,
+    if precomputed_pages is not None:
+        pages = precomputed_pages
+    else:
+        decoded_pages = iter_decoded_pages(
+            warmup_paths,
+            workers=min(args.page_decode_workers, len(warmup_paths)),
+            decoder=args.page_image_decoder,
         )
-    )
+        pages = list(
+            iter_prepared_pages(
+                pipeline=pipeline,
+                infer_doc_onnx=infer_doc_onnx,
+                decoded_pages=decoded_pages,
+                layout_threshold=args.layout_threshold,
+                layout_batch_size=args.layout_batch_size,
+                page_prepare_workers=min(
+                    args.page_prepare_workers,
+                    len(warmup_paths),
+                ),
+                precomputed_layouts=precomputed_layouts,
+                precomputed_layout_page_s=precomputed_layout_page_s,
+            )
+        )
     rejected_crops = 0
     for page in pages:
         rejected_crops += filter_page_recognition_shapes(
@@ -1406,20 +1453,32 @@ def main() -> None:
             threshold=args.layout_threshold,
             execution=args.layout_execution,
             warmup_paths=image_paths[: args.layout_process_workers],
+            openocr_root=openocr_root,
+            prepare_pages=True,
+            use_chart_recognition=pipeline.use_chart_recognition,
         )
         atexit.register(layout_process_pool.close)
         layout_process_setup_s = layout_process_pool.setup_wall_s
     if args.pipeline_warmup_pages:
         warmup_layouts = None
+        warmup_pages = None
         warmup_layout_page_s = 0.0
         if layout_process_pool is not None:
-            warmup_layouts, layout_process_warmup = layout_process_pool.map(
+            warmup_payloads, layout_process_warmup = layout_process_pool.map(
                 image_paths[: args.pipeline_warmup_pages],
                 label="pipeline_warmup",
             )
             warmup_layout_page_s = (
-                float(layout_process_warmup["wall_s"]) / len(warmup_layouts)
+                float(layout_process_warmup["wall_s"]) / len(warmup_payloads)
             )
+            warmup_pages = [
+                page_request_from_process_payload(
+                    payload,
+                    measured_layout_s=warmup_layout_page_s,
+                )
+                for payload in warmup_payloads
+            ]
+            del warmup_payloads
         try:
             graph_warmup = warmup_full_pipeline(
                 args=args,
@@ -1429,6 +1488,7 @@ def main() -> None:
                 vision_atlas_runtime=vision_atlas_runtime,
                 image_paths=image_paths,
                 output_dir=output_dir,
+                precomputed_pages=warmup_pages,
                 precomputed_layouts=warmup_layouts,
                 precomputed_layout_page_s=warmup_layout_page_s,
             )
@@ -1474,12 +1534,13 @@ def main() -> None:
     max_pending_writes = 8
     pipeline_started = time.perf_counter()
     precomputed_layouts: list[dict[str, Any]] | None = None
+    precomputed_pages: list[PageRequest] | None = None
     precomputed_layout_page_s = 0.0
     layout_process_summary: dict[str, Any] | None = None
     layout_process_shutdown_timing: dict[str, float] = {}
     if layout_process_pool is not None:
         try:
-            precomputed_layouts, layout_process_summary = layout_process_pool.map(
+            page_payloads, layout_process_summary = layout_process_pool.map(
                 image_paths,
                 label="measured",
             )
@@ -1488,8 +1549,16 @@ def main() -> None:
             layout_process_pool = None
             raise
         precomputed_layout_page_s = (
-            float(layout_process_summary["wall_s"]) / len(precomputed_layouts)
+            float(layout_process_summary["wall_s"]) / len(page_payloads)
         )
+        precomputed_pages = [
+            page_request_from_process_payload(
+                payload,
+                measured_layout_s=precomputed_layout_page_s,
+            )
+            for payload in page_payloads
+        ]
+        del page_payloads
     written_pages = 0
     continuous_decode: dict[str, Any] | None = None
 
@@ -1563,21 +1632,24 @@ def main() -> None:
 
     if args.decode_scheduling == "continuous":
         def crop_source():
-            decoded_pages = iter_decoded_pages(
-                image_paths,
-                workers=args.page_decode_workers,
-                decoder=args.page_image_decoder,
-            )
-            prepared_pages = iter_prepared_pages(
-                pipeline=pipeline,
-                infer_doc_onnx=infer_doc_onnx,
-                decoded_pages=decoded_pages,
-                layout_threshold=args.layout_threshold,
-                layout_batch_size=args.layout_batch_size,
-                page_prepare_workers=args.page_prepare_workers,
-                precomputed_layouts=precomputed_layouts,
-                precomputed_layout_page_s=precomputed_layout_page_s,
-            )
+            if precomputed_pages is not None:
+                prepared_pages: Iterable[PageRequest] = precomputed_pages
+            else:
+                decoded_pages = iter_decoded_pages(
+                    image_paths,
+                    workers=args.page_decode_workers,
+                    decoder=args.page_image_decoder,
+                )
+                prepared_pages = iter_prepared_pages(
+                    pipeline=pipeline,
+                    infer_doc_onnx=infer_doc_onnx,
+                    decoded_pages=decoded_pages,
+                    layout_threshold=args.layout_threshold,
+                    layout_batch_size=args.layout_batch_size,
+                    page_prepare_workers=args.page_prepare_workers,
+                    precomputed_layouts=precomputed_layouts,
+                    precomputed_layout_page_s=precomputed_layout_page_s,
+                )
             if args.preprocess_all_pages_first:
                 print(
                     "UNIREC_PAGE_FRONTEND_DRAIN_BEGIN "
@@ -1715,21 +1787,24 @@ def main() -> None:
             flush=True,
         )
     else:
-        decoded_pages = iter_decoded_pages(
-            image_paths,
-            workers=args.page_decode_workers,
-            decoder=args.page_image_decoder,
-        )
-        prepared_pages = iter_prepared_pages(
-            pipeline=pipeline,
-            infer_doc_onnx=infer_doc_onnx,
-            decoded_pages=decoded_pages,
-            layout_threshold=args.layout_threshold,
-            layout_batch_size=args.layout_batch_size,
-            page_prepare_workers=args.page_prepare_workers,
-            precomputed_layouts=precomputed_layouts,
-            precomputed_layout_page_s=precomputed_layout_page_s,
-        )
+        if precomputed_pages is not None:
+            prepared_pages = precomputed_pages
+        else:
+            decoded_pages = iter_decoded_pages(
+                image_paths,
+                workers=args.page_decode_workers,
+                decoder=args.page_image_decoder,
+            )
+            prepared_pages = iter_prepared_pages(
+                pipeline=pipeline,
+                infer_doc_onnx=infer_doc_onnx,
+                decoded_pages=decoded_pages,
+                layout_threshold=args.layout_threshold,
+                layout_batch_size=args.layout_batch_size,
+                page_prepare_workers=args.page_prepare_workers,
+                precomputed_layouts=precomputed_layouts,
+                precomputed_layout_page_s=precomputed_layout_page_s,
+            )
         if args.preprocess_all_pages_first:
             print(
                 "UNIREC_PAGE_FRONTEND_DRAIN_BEGIN "
