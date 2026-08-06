@@ -1,0 +1,945 @@
+{
+  "config": {
+    "model_path": "/workspace/models/PP-DocLayoutV2_safetensors",
+    "input": "/workspace/datasets/OmniDocBench/images",
+    "compile_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/layout_detector_torchair",
+    "offset": 0,
+    "limit": 128,
+    "worker_counts": [
+      8
+    ],
+    "modes": [
+      "processes"
+    ],
+    "rounds": 1,
+    "threshold": 0.4,
+    "layout_batch_size": 1,
+    "execution": "torchair",
+    "worker_ownership": {
+      "threads": "one_shared_runtime_for_all_threads",
+      "processes": "one_complete_runtime_per_process"
+    },
+    "process_scheduling": "dynamic_shared_filepath_queue",
+    "coordinator_payload": "file_path_in_boxes_and_timing_out"
+  },
+  "summary": {
+    "processes": {
+      "8": {
+        "setup_wall_s": 31.70626254985109,
+        "wall_s_rounds": [
+          2.357337865047157
+        ],
+        "wall_s_median": 2.357337865047157,
+        "pages_per_s_rounds": [
+          54.29853815097458
+        ],
+        "pages_per_s_median": 54.29853815097458,
+        "average_cpu_cores_median": 63.22484621737434,
+        "summed_max_rss_kb_median": 35184072,
+        "box_count": 988,
+        "all_rounds_match_baseline": true
+      }
+    }
+  },
+  "rounds": [
+    {
+      "mode": "processes",
+      "workers": 8,
+      "round": 0,
+      "pages": 128,
+      "setup_wall_s": 31.70626254985109,
+      "measured_wall_s": 2.357337865047157,
+      "pages_per_s": 54.29853815097458,
+      "worker_wall_s": [
+        2.3404381985310465,
+        2.273442458594218,
+        2.327300564851612,
+        2.3021571377757937,
+        2.3093803585506976,
+        2.259217844810337,
+        2.268439401406795,
+        2.324199622264132
+      ],
+      "total_process_cpu_s": 149.04232400000004,
+      "average_cpu_cores": 63.22484621737434,
+      "summed_max_rss_kb": 35184072,
+      "box_count": 988,
+      "output_digests": [
+        "6bdc034afa3fe7669e0b3cd7f344afa3d6c30793e88d0bda02cf221284e177fc",
+        "13be482ae835ca372ce92d80826d83bb9fd3c997d7d7d226283040e73d0b1128",
+        "dc330ae1279f9eceb8d14d6c72ceca8942609b8e9823d58de8d8a5ab0958c5e2",
+        "261a91f104d162abf5db02fe29f2b999db499d267273022553536b3bc174bc58",
+        "db05014d2e5b1421abb46c4b4a2e2700c216357d88e4388713bde5e77fa5f0d4",
+        "4587ba1d615931e44d662514cb1c6709c745c1d0cb9616b23f383fcc5f822178",
+        "a218d01221ac53846c37c3ddab366bccb5eca453bc9d47601e00db3049d2f677",
+        "cfe55aba76c384acf5fc625bfe2270d53ddef04737791680c1ef6d44d1f8299a",
+        "7dea79f30f39a97db856142e1a2eb25dbaa9f362ad9fe48e489c0caa8b46ea16",
+        "73943c90328147f1a9d16e4feaed40e4a21e490a34a45fc77c40e0343babe356",
+        "9cddc795b2e0dff5ca664a9f9aee0e334aa9c1c161c552e21df30f5a9006bb9b",
+        "2f725d0066d09ccf7a72c0333713a0919a9572ded603e1d8254f5866d463a478",
+        "7a5e7a0dabcd6e5deb3690223547d1726277153172af6904ed189aee1a7bb495",
+        "8575df0c79ab1c4454471fb81c43d1460c839420b49a2783b49f839ca980f843",
+        "f37dc0d758971e36d27e48d7f265f0fadfbc53fd94ad336b480110135f720fe1",
+        "3e297ad616cf2e1fa46ce8c20e658defd30c6349d2719e79663a2725ccca737c",
+        "0ab44e697d28baae1191669077863f0866ac6e5940ad6ba1300d0311883bfb76",
+        "c5ca58b043ed660d2f12aa1359a4c9a5f83cd8f9c49a970c9765c0ef9d725586",
+        "864ab6c059999d8306660662a288057deda854619fe900bd6a7e229be597f800",
+        "705ce2ed902b0284d683f894633dee28fafe27c3da42d6285055e1045e3ca6a4",
+        "2ae137ed922ef04434c6d6ca2795bd42fd9ba516773626bf7058a036e3ecc706",
+        "55a635414c4135f213de66e0e12c445a629a210291ef856fe91e1fd9f44e7fd4",
+        "c6fa56039688663e8923a5c392209c840f416f1a0da1a90c70dd7b64cab6c79f",
+        "4621b94e70e7c27acabb1eb9733736b6faa679c529ccba83c2c0f8b9ddc302de",
+        "4d70f178aa9f78cbc2cad07ef6afc6f001e1427799d5a2cde66cec0508e69eb1",
+        "4e10350e336410175b3072eca284f1159673d0c4f9c9b950ab1d242d1c049f97",
+        "e8649feb62961d816bd8ae0e2adfb2e0f8b31a50d3e1f8dc385e7e7e90c3f9c0",
+        "1501a4409b9234336c453c9b6d8aa3ab32f52f3ce6669a09ac9f71525d984108",
+        "82a01455e2c6cd5cfd7cecc2a61eb014aca212c0d3981bede8c1238d8da7b75e",
+        "fe3d68983aa82b3ad6a6555e99f16693a41fdf6408f89c1b6f898ec773a55df0",
+        "5e36689a752e583139ae741196cd7870c18ec47ecf1129de381624eca18a5176",
+        "d865735534372049e953371600486c68e26672da000ee812f0be570c14d60358",
+        "3d92a04760efd695a6a924b3865d58d99e02d6043bde3ef547a87e0cbf4e105c",
+        "b2efd753aebd348a73f33adbeb62a818bdf6930e30096ff14a08c8b20c578db8",
+        "daeaebf0dbb499cb35cb8bc7944b76bc8afedb85328d8c6f02fbfc09d8d36a75",
+        "a3a8c99f15083511a12a4b5123d582d5fc0993351180b1e7000aed72c24f6538",
+        "e8861b8bda4ff079f1df676f4f6f174d49eeb9912a40b604087daa11372f2ce8",
+        "cebf0134c92fba61f1b7a16c10fd724fa6c87ce91296029b2c05d371b5c9936d",
+        "2aff198179e5eae52e5ecd8750cd22553351ecd3a33952a129510c58402e9102",
+        "71d08d0e2071eb9fc39cc79d253c82be4ed6c4f53e65997ccd2d0396b1e2ee36",
+        "76f14ae6219c781f7cb74f1bc22c49677799c0a76b240a1ad3571b16122746f3",
+        "f6544fdf4acd48827ce46975e1b9201d526bd50625f38e09589872090ac0b174",
+        "f0b22f87dde87dd96e2b893d90c6bde49151bac74e4bf48055b1855224a39b4c",
+        "ddff9bf0b1d040f4c6cef3dacb034c15d391f6258c180a328269e00738c48388",
+        "ea16d3e024c37e9f5e3097f7b55bb39693cdf539bf9a77bf8ac805fc838867e0",
+        "88c08caa98190d3adbe07233b8b1677a17fb6ccff320b243a36e7677e8359be2",
+        "2bf9f0dfe690c1dc44e26795458f5e57c2420b069f1226093dd36929a3d1343a",
+        "c802707b45318fffc8a5b2dac6c8a66be85cb9b7863c0f3217d7762beaa320a1",
+        "007b9f7e933ff819070efd4c1f74cc0a230d52ad3d0a73fc3e6f81ffbb574e37",
+        "cc03be6734cde60e4ce0180865f11777f2a92b142fae32cc1b4fd3ee1449d12c",
+        "aecdcb3aa30d6bf6fca3011b95b64776df844a86b9d1a1ca6d8896aed8335402",
+        "00ef601ef4f41bf6832b719a8adb8407c1900c672cc07f36a1ebe6a1ef20cf43",
+        "5a9359275f4a38bd910ea9fc52d4cc8affdca0684a85512e5dc2ff438aa1c4ef",
+        "ee818feae2655e540493b128e3a51334457309cb31cb6e14d270495b3a2abbca",
+        "30c6fd847a5fc9a827c3a964f95d50621c03b4272c0029ba41eff75b5ebdf859",
+        "8d4c7bab523d61928c0fa1eeed4a572de387b9d2233a4347d9edc7b49a12b83f",
+        "4d637cfd07a6bfafa226ba0aecd3d9d572a3f0fad0de3357af89640b390ad381",
+        "f534daf41372d70f8ea0537c13e900336bc252b0eaa5c918ded32e42d9407c82",
+        "0a228a8081251a94591c8d26b5e8c72df8f91b5ae2ee77e83e9b08ed32ce38bf",
+        "d5c099128e58133eb743226d6e36eb21527b1b9e92ec1d3574350af003812210",
+        "2a57870f5fc1d8b94b09c547c626b74a294298dead6c1490a03215cb55a8603a",
+        "5cb51b0af56968ace830114887120280ad5c3f3f9a10580c16473bba96b52b7d",
+        "206fbd29bb17ed35d6a02c90de518524f9ed78dbb7c68160ff8dbdc9d14af049",
+        "13c89d20f1f085869670783220945f135cfec52db0d3c8bdd7d9a4541a1d4c13",
+        "ad49945c634af29c819bea4905ed6ff9ff89cb2c231d3023c55b0d7899efb14e",
+        "3c17e9f9f167161cb40af524aeed5da1bf4bd817e350d2a67628e870bfb13b18",
+        "198f4cb415f92f15b690e643c8a7cea7e11b3bd075064f596cebc8188fd97cc0",
+        "5877050d72702c7b1fd86ea3a50e1cca7203228063a4625e98a0b491fb81a929",
+        "e9e7cda6f32c0cd4ace39db7df28f340bd5558e24e883ce6eb38cc97c7b7a4e5",
+        "ba8821ed3c9493abccdbe0ffcf343dfd22609e2b8eeaeeeef04350bcda9263cb",
+        "21285cd540f531d8a2372c25f47342269a5ece41ad4513dd7d0ea745d0235a1b",
+        "15002e8f6b81c4ab0b79c23238d893ee86c62574c9a811e5ac655073b5dd8dce",
+        "1ecebada291bd82b33fb654add5bc2f8b1b9cea84c2d2ce9e719aa32d1d227d4",
+        "5e4dafb360dc4f61e6fb939501b5ec7fe0f20b86eb5e7e8c3f0ab0224aa7f9cf",
+        "a41ad1f9078ce611226567525803d99d89a8b9eb73204754fd2f44d009aa3185",
+        "5940f6dd7a327eeb737ef8f1b96bf2c2e809d3f7386310ccbbe4f0419298bf22",
+        "05dc729975ac141081892333181884f9f4588c7b7f68f41ca7f9d29b680f8a09",
+        "5cb6db26ef39dcc2d484888300f95516bd85784ab4965c62161e9e00e0d742a6",
+        "ba2b5ed187d39df72bd9191745572700d976d7eb91d05836392c62c3c21949d6",
+        "02a950c022ad035ba8ba1fa8ec6ede27e21fb99a5af76645f5728c0d023a3094",
+        "8566e38fc34e3aad23891421c161ee84dde532bfa0a176ee4b0b1bdb6bc9dde7",
+        "d7f003e2981a486216d732a3916c3ed0dbc0c73e347232142e30406123dc2bdf",
+        "e85acccb7748dc817e21e9c158cb7edcdee3f9cffc1db729fcf86a6890a9a161",
+        "05be433c7a1090c85f016e15ee0692347a1d04233dd4a9efe3d881a35da76f05",
+        "6aa283fdeeed9f591fe6364ac62ca23731435d3294cfd0130ac800b4c8c94fa6",
+        "742898c8cc3dd10ab6e550766fc6cd60dffee0137b49c35da85af59ff7d13852",
+        "fbc92b1c53856d9bcfa1747b233d8cb9f03f70338250cb1d5e2e09246a04b863",
+        "22f8d3c80e50696a054b88993bf4e8214342161d2aab3ae431c6f19dc290a5da",
+        "e2ce140cd8eacfa5293993f930e7cd19b78ac8f8f4a61f09ca79d5b41d182cf6",
+        "5ab4e0203cbf67ebd3ecd5454800e42ccdb8407b0860169a186dbe366f1981c0",
+        "fac3ac5de9dd1f4d4c5bd74060412cefd001be56bfe08b5a6407f2a7363ed496",
+        "1ca90c3f014bcb618be9759a9f859fa89636e9d15ea37876070fe2ae9d20d3a4",
+        "c580571e6783760f1015b77874396425c8d410e4560502a1b689236ef3d3edb4",
+        "5eed59a96e4cbbb15e5ac9cfb81c393622017b573dea85b87ff35a7de8b7c3e9",
+        "ef1cfbc17a2efa86fa1effe34fb376911cd77db11a7b41b765319134262a2946",
+        "0e5e3dec846d97b4f80a6b49ed7c0db54010b472fbd6614d902f863aabd6e2ff",
+        "f00964a1a511307f68406d6fb53ea34da1841e75d01aebb0ae3973a1eb115fdc",
+        "d0780ee092d6d8294408de7cf775deb6d4da43b1f621be75b1b16b285ec61e9c",
+        "50594f2094a440f0e08a2c5448d79dfa48e3ead269156a3f17232a00c6f1a4d4",
+        "0bf39f4fdbe29674ef36b8b88ba3c1528934334d2cc028481a38e228bb678b7c",
+        "f196d22ed1a8cf092b648000cee2b7067d514eabe97c5cd4da28a04bdf9057f4",
+        "becacd69af3e27a2e3d9d3245228b64542be246caf781014e6989f434aef1519",
+        "deb5e01a4dfb7742a4cb471feba74b76f0b573477b410c82c1b5e7c62ab1b90b",
+        "dbc1feb22559fed8656433d9111e9ac1a7dcc140a41e1f504af87c086a5a6b7d",
+        "91528c9f6b92627d1ab72f0f7abce2b7c55fcc233e7e625d775074be53a68366",
+        "e507df78219dbd690dcc0073ea96ad25c2cfea5ae6b87feb95b306ae767e2ba6",
+        "45d02ef5d81f04f177db3870b76384b2aeff1ccecaac6f040cba73317ed405f3",
+        "db5cf0ff407ad4f1837bedcb3999387b0933bc64385e2f64732031131b962c9a",
+        "4e4046784cdedaeb2bca1297986c36ac5222394651d693c256d6f657041b495d",
+        "812a030f0ac03ac339f640f06069c7f86af1e54902b6fe9a5d2a4fa4982e8df7",
+        "ca3a8d84da5784017846ac4802843639728681f3def77444833426fd9fe81b3b",
+        "c1de95a295191d7b5baa25d63b3a67efe15e5e87b9dc19f092ad1e3bf5ad1dd6",
+        "20f360e44666a16881d2ad6ae2561e8cef09d351fec611bc82d5d6c97f775635",
+        "1c14c479d745bae6c64c2348f3112156a2b6d4a2b9eed038330ba32f49574574",
+        "f304e1180c83e663e4f159855a5648fe16eb6e61e7929c1bf1ad3c42174f6ef3",
+        "d639d53e8721453cb33dcc27dddfac5ac715dbd1c1c40763c045f72fef46659a",
+        "0409942aed7bdea2242bd0e7273c4f7d6898aac266d1a93d03c33c354dec0063",
+        "45cf58e60c50aac9d64d22b2696cd12433c7e20e10e9ca5d0126341c600dee6f",
+        "3e2241cb2c645dd0fe2402a08b77c1481a9b8cc5b82a416dc9063fef38c1fcb9",
+        "90c0034a1d8387d7eaf77344e7ee2199544fd662f5a5c4fbb1b12d89c1ca4dd2",
+        "2d1b998b0b05d61294d3229270811631e260b1d007f34679b3eb2fe7bbd90fc2",
+        "02d26e2d2a0618c2b7c0d64b323879c241971d002c5055be1063ad5557b6b789",
+        "af1b80e5bbb3630ed0ae470bf3aee94a422df9262f68f1724c1d7c454f814530",
+        "5137151389c3e996a67293c95201c359fd48789f905799e1eaa5c8122e47df0b",
+        "6a78267644650cd9542025d85b6fad1d6b6a29c0672e3c7bdcc82b66e47fc675",
+        "b4e322520c547d0d0d106cad53e5d6f34adccbd3ce2c2938578662d98b53c2cc",
+        "35c87a2e5963c8c217508a8181fe6cfb87da4c94406fac926598f8f6c9d314f3",
+        "f173fe0dbac600aef318dc2f0cd2bb3d495d6dd24ec2315ff06382d5cffa53c4"
+      ],
+      "worker_results": [
+        {
+          "pages": 17,
+          "wall_s": 2.3404381985310465,
+          "process_cpu_s": 19.84876699999998,
+          "average_cpu_cores": 8.480790910205563,
+          "max_rss_kb": 4412496,
+          "decode_stage_s": {
+            "file_read_s": 0.009287579217925668,
+            "direct_rgb_decode_s": 0.13580982736311853
+          },
+          "outputs": [
+            {
+              "page_index": 0,
+              "box_count": 6,
+              "digest": "6bdc034afa3fe7669e0b3cd7f344afa3d6c30793e88d0bda02cf221284e177fc"
+            },
+            {
+              "page_index": 9,
+              "box_count": 2,
+              "digest": "73943c90328147f1a9d16e4feaed40e4a21e490a34a45fc77c40e0343babe356"
+            },
+            {
+              "page_index": 16,
+              "box_count": 5,
+              "digest": "0ab44e697d28baae1191669077863f0866ac6e5940ad6ba1300d0311883bfb76"
+            },
+            {
+              "page_index": 24,
+              "box_count": 6,
+              "digest": "4d70f178aa9f78cbc2cad07ef6afc6f001e1427799d5a2cde66cec0508e69eb1"
+            },
+            {
+              "page_index": 32,
+              "box_count": 7,
+              "digest": "3d92a04760efd695a6a924b3865d58d99e02d6043bde3ef547a87e0cbf4e105c"
+            },
+            {
+              "page_index": 40,
+              "box_count": 6,
+              "digest": "76f14ae6219c781f7cb74f1bc22c49677799c0a76b240a1ad3571b16122746f3"
+            },
+            {
+              "page_index": 47,
+              "box_count": 1,
+              "digest": "c802707b45318fffc8a5b2dac6c8a66be85cb9b7863c0f3217d7762beaa320a1"
+            },
+            {
+              "page_index": 57,
+              "box_count": 5,
+              "digest": "f534daf41372d70f8ea0537c13e900336bc252b0eaa5c918ded32e42d9407c82"
+            },
+            {
+              "page_index": 64,
+              "box_count": 5,
+              "digest": "ad49945c634af29c819bea4905ed6ff9ff89cb2c231d3023c55b0d7899efb14e"
+            },
+            {
+              "page_index": 71,
+              "box_count": 9,
+              "digest": "15002e8f6b81c4ab0b79c23238d893ee86c62574c9a811e5ac655073b5dd8dce"
+            },
+            {
+              "page_index": 79,
+              "box_count": 10,
+              "digest": "02a950c022ad035ba8ba1fa8ec6ede27e21fb99a5af76645f5728c0d023a3094"
+            },
+            {
+              "page_index": 87,
+              "box_count": 2,
+              "digest": "22f8d3c80e50696a054b88993bf4e8214342161d2aab3ae431c6f19dc290a5da"
+            },
+            {
+              "page_index": 95,
+              "box_count": 8,
+              "digest": "0e5e3dec846d97b4f80a6b49ed7c0db54010b472fbd6614d902f863aabd6e2ff"
+            },
+            {
+              "page_index": 103,
+              "box_count": 11,
+              "digest": "dbc1feb22559fed8656433d9111e9ac1a7dcc140a41e1f504af87c086a5a6b7d"
+            },
+            {
+              "page_index": 111,
+              "box_count": 22,
+              "digest": "c1de95a295191d7b5baa25d63b3a67efe15e5e87b9dc19f092ad1e3bf5ad1dd6"
+            },
+            {
+              "page_index": 119,
+              "box_count": 3,
+              "digest": "90c0034a1d8387d7eaf77344e7ee2199544fd662f5a5c4fbb1b12d89c1ca4dd2"
+            },
+            {
+              "page_index": 127,
+              "box_count": 13,
+              "digest": "f173fe0dbac600aef318dc2f0cd2bb3d495d6dd24ec2315ff06382d5cffa53c4"
+            }
+          ]
+        },
+        {
+          "pages": 15,
+          "wall_s": 2.273442458594218,
+          "process_cpu_s": 17.084518000000024,
+          "average_cpu_cores": 7.514823142066339,
+          "max_rss_kb": 4409228,
+          "decode_stage_s": {
+            "file_read_s": 0.0073188841342926025,
+            "direct_rgb_decode_s": 0.12853927724063396
+          },
+          "outputs": [
+            {
+              "page_index": 6,
+              "box_count": 5,
+              "digest": "a218d01221ac53846c37c3ddab366bccb5eca453bc9d47601e00db3049d2f677"
+            },
+            {
+              "page_index": 14,
+              "box_count": 6,
+              "digest": "f37dc0d758971e36d27e48d7f265f0fadfbc53fd94ad336b480110135f720fe1"
+            },
+            {
+              "page_index": 20,
+              "box_count": 5,
+              "digest": "2ae137ed922ef04434c6d6ca2795bd42fd9ba516773626bf7058a036e3ecc706"
+            },
+            {
+              "page_index": 29,
+              "box_count": 5,
+              "digest": "fe3d68983aa82b3ad6a6555e99f16693a41fdf6408f89c1b6f898ec773a55df0"
+            },
+            {
+              "page_index": 36,
+              "box_count": 9,
+              "digest": "e8861b8bda4ff079f1df676f4f6f174d49eeb9912a40b604087daa11372f2ce8"
+            },
+            {
+              "page_index": 48,
+              "box_count": 3,
+              "digest": "007b9f7e933ff819070efd4c1f74cc0a230d52ad3d0a73fc3e6f81ffbb574e37"
+            },
+            {
+              "page_index": 56,
+              "box_count": 7,
+              "digest": "4d637cfd07a6bfafa226ba0aecd3d9d572a3f0fad0de3357af89640b390ad381"
+            },
+            {
+              "page_index": 65,
+              "box_count": 3,
+              "digest": "3c17e9f9f167161cb40af524aeed5da1bf4bd817e350d2a67628e870bfb13b18"
+            },
+            {
+              "page_index": 73,
+              "box_count": 7,
+              "digest": "5e4dafb360dc4f61e6fb939501b5ec7fe0f20b86eb5e7e8c3f0ab0224aa7f9cf"
+            },
+            {
+              "page_index": 82,
+              "box_count": 6,
+              "digest": "e85acccb7748dc817e21e9c158cb7edcdee3f9cffc1db729fcf86a6890a9a161"
+            },
+            {
+              "page_index": 90,
+              "box_count": 4,
+              "digest": "fac3ac5de9dd1f4d4c5bd74060412cefd001be56bfe08b5a6407f2a7363ed496"
+            },
+            {
+              "page_index": 98,
+              "box_count": 3,
+              "digest": "50594f2094a440f0e08a2c5448d79dfa48e3ead269156a3f17232a00c6f1a4d4"
+            },
+            {
+              "page_index": 106,
+              "box_count": 3,
+              "digest": "45d02ef5d81f04f177db3870b76384b2aeff1ccecaac6f040cba73317ed405f3"
+            },
+            {
+              "page_index": 114,
+              "box_count": 14,
+              "digest": "f304e1180c83e663e4f159855a5648fe16eb6e61e7929c1bf1ad3c42174f6ef3"
+            },
+            {
+              "page_index": 122,
+              "box_count": 20,
+              "digest": "af1b80e5bbb3630ed0ae470bf3aee94a422df9262f68f1724c1d7c454f814530"
+            }
+          ]
+        },
+        {
+          "pages": 17,
+          "wall_s": 2.327300564851612,
+          "process_cpu_s": 19.91165900000002,
+          "average_cpu_cores": 8.555688638037857,
+          "max_rss_kb": 4405720,
+          "decode_stage_s": {
+            "file_read_s": 0.010362028609961271,
+            "direct_rgb_decode_s": 0.12901856028474867
+          },
+          "outputs": [
+            {
+              "page_index": 5,
+              "box_count": 5,
+              "digest": "4587ba1d615931e44d662514cb1c6709c745c1d0cb9616b23f383fcc5f822178"
+            },
+            {
+              "page_index": 13,
+              "box_count": 4,
+              "digest": "8575df0c79ab1c4454471fb81c43d1460c839420b49a2783b49f839ca980f843"
+            },
+            {
+              "page_index": 18,
+              "box_count": 4,
+              "digest": "864ab6c059999d8306660662a288057deda854619fe900bd6a7e229be597f800"
+            },
+            {
+              "page_index": 25,
+              "box_count": 8,
+              "digest": "4e10350e336410175b3072eca284f1159673d0c4f9c9b950ab1d242d1c049f97"
+            },
+            {
+              "page_index": 33,
+              "box_count": 2,
+              "digest": "b2efd753aebd348a73f33adbeb62a818bdf6930e30096ff14a08c8b20c578db8"
+            },
+            {
+              "page_index": 41,
+              "box_count": 2,
+              "digest": "f6544fdf4acd48827ce46975e1b9201d526bd50625f38e09589872090ac0b174"
+            },
+            {
+              "page_index": 49,
+              "box_count": 11,
+              "digest": "cc03be6734cde60e4ce0180865f11777f2a92b142fae32cc1b4fd3ee1449d12c"
+            },
+            {
+              "page_index": 55,
+              "box_count": 9,
+              "digest": "8d4c7bab523d61928c0fa1eeed4a572de387b9d2233a4347d9edc7b49a12b83f"
+            },
+            {
+              "page_index": 63,
+              "box_count": 10,
+              "digest": "13c89d20f1f085869670783220945f135cfec52db0d3c8bdd7d9a4541a1d4c13"
+            },
+            {
+              "page_index": 70,
+              "box_count": 8,
+              "digest": "21285cd540f531d8a2372c25f47342269a5ece41ad4513dd7d0ea745d0235a1b"
+            },
+            {
+              "page_index": 78,
+              "box_count": 8,
+              "digest": "ba2b5ed187d39df72bd9191745572700d976d7eb91d05836392c62c3c21949d6"
+            },
+            {
+              "page_index": 86,
+              "box_count": 4,
+              "digest": "fbc92b1c53856d9bcfa1747b233d8cb9f03f70338250cb1d5e2e09246a04b863"
+            },
+            {
+              "page_index": 93,
+              "box_count": 9,
+              "digest": "5eed59a96e4cbbb15e5ac9cfb81c393622017b573dea85b87ff35a7de8b7c3e9"
+            },
+            {
+              "page_index": 100,
+              "box_count": 4,
+              "digest": "f196d22ed1a8cf092b648000cee2b7067d514eabe97c5cd4da28a04bdf9057f4"
+            },
+            {
+              "page_index": 110,
+              "box_count": 17,
+              "digest": "ca3a8d84da5784017846ac4802843639728681f3def77444833426fd9fe81b3b"
+            },
+            {
+              "page_index": 118,
+              "box_count": 14,
+              "digest": "3e2241cb2c645dd0fe2402a08b77c1481a9b8cc5b82a416dc9063fef38c1fcb9"
+            },
+            {
+              "page_index": 126,
+              "box_count": 17,
+              "digest": "35c87a2e5963c8c217508a8181fe6cfb87da4c94406fac926598f8f6c9d314f3"
+            }
+          ]
+        },
+        {
+          "pages": 16,
+          "wall_s": 2.3021571377757937,
+          "process_cpu_s": 18.60798299999999,
+          "average_cpu_cores": 8.082846602720572,
+          "max_rss_kb": 4395748,
+          "decode_stage_s": {
+            "file_read_s": 0.007580536650493741,
+            "direct_rgb_decode_s": 0.1201535640284419
+          },
+          "outputs": [
+            {
+              "page_index": 1,
+              "box_count": 8,
+              "digest": "13be482ae835ca372ce92d80826d83bb9fd3c997d7d7d226283040e73d0b1128"
+            },
+            {
+              "page_index": 10,
+              "box_count": 5,
+              "digest": "9cddc795b2e0dff5ca664a9f9aee0e334aa9c1c161c552e21df30f5a9006bb9b"
+            },
+            {
+              "page_index": 17,
+              "box_count": 5,
+              "digest": "c5ca58b043ed660d2f12aa1359a4c9a5f83cd8f9c49a970c9765c0ef9d725586"
+            },
+            {
+              "page_index": 27,
+              "box_count": 8,
+              "digest": "1501a4409b9234336c453c9b6d8aa3ab32f52f3ce6669a09ac9f71525d984108"
+            },
+            {
+              "page_index": 35,
+              "box_count": 4,
+              "digest": "a3a8c99f15083511a12a4b5123d582d5fc0993351180b1e7000aed72c24f6538"
+            },
+            {
+              "page_index": 43,
+              "box_count": 6,
+              "digest": "ddff9bf0b1d040f4c6cef3dacb034c15d391f6258c180a328269e00738c48388"
+            },
+            {
+              "page_index": 51,
+              "box_count": 11,
+              "digest": "00ef601ef4f41bf6832b719a8adb8407c1900c672cc07f36a1ebe6a1ef20cf43"
+            },
+            {
+              "page_index": 59,
+              "box_count": 9,
+              "digest": "d5c099128e58133eb743226d6e36eb21527b1b9e92ec1d3574350af003812210"
+            },
+            {
+              "page_index": 67,
+              "box_count": 6,
+              "digest": "5877050d72702c7b1fd86ea3a50e1cca7203228063a4625e98a0b491fb81a929"
+            },
+            {
+              "page_index": 76,
+              "box_count": 15,
+              "digest": "05dc729975ac141081892333181884f9f4588c7b7f68f41ca7f9d29b680f8a09"
+            },
+            {
+              "page_index": 84,
+              "box_count": 2,
+              "digest": "6aa283fdeeed9f591fe6364ac62ca23731435d3294cfd0130ac800b4c8c94fa6"
+            },
+            {
+              "page_index": 92,
+              "box_count": 6,
+              "digest": "c580571e6783760f1015b77874396425c8d410e4560502a1b689236ef3d3edb4"
+            },
+            {
+              "page_index": 101,
+              "box_count": 8,
+              "digest": "becacd69af3e27a2e3d9d3245228b64542be246caf781014e6989f434aef1519"
+            },
+            {
+              "page_index": 107,
+              "box_count": 6,
+              "digest": "db5cf0ff407ad4f1837bedcb3999387b0933bc64385e2f64732031131b962c9a"
+            },
+            {
+              "page_index": 115,
+              "box_count": 22,
+              "digest": "d639d53e8721453cb33dcc27dddfac5ac715dbd1c1c40763c045f72fef46659a"
+            },
+            {
+              "page_index": 123,
+              "box_count": 14,
+              "digest": "5137151389c3e996a67293c95201c359fd48789f905799e1eaa5c8122e47df0b"
+            }
+          ]
+        },
+        {
+          "pages": 16,
+          "wall_s": 2.3093803585506976,
+          "process_cpu_s": 18.369269000000003,
+          "average_cpu_cores": 7.954198160552488,
+          "max_rss_kb": 4388520,
+          "decode_stage_s": {
+            "file_read_s": 0.007854425581172109,
+            "direct_rgb_decode_s": 0.1239822341594845
+          },
+          "outputs": [
+            {
+              "page_index": 2,
+              "box_count": 12,
+              "digest": "dc330ae1279f9eceb8d14d6c72ceca8942609b8e9823d58de8d8a5ab0958c5e2"
+            },
+            {
+              "page_index": 11,
+              "box_count": 7,
+              "digest": "2f725d0066d09ccf7a72c0333713a0919a9572ded603e1d8254f5866d463a478"
+            },
+            {
+              "page_index": 19,
+              "box_count": 7,
+              "digest": "705ce2ed902b0284d683f894633dee28fafe27c3da42d6285055e1045e3ca6a4"
+            },
+            {
+              "page_index": 31,
+              "box_count": 4,
+              "digest": "d865735534372049e953371600486c68e26672da000ee812f0be570c14d60358"
+            },
+            {
+              "page_index": 37,
+              "box_count": 3,
+              "digest": "cebf0134c92fba61f1b7a16c10fd724fa6c87ce91296029b2c05d371b5c9936d"
+            },
+            {
+              "page_index": 44,
+              "box_count": 11,
+              "digest": "ea16d3e024c37e9f5e3097f7b55bb39693cdf539bf9a77bf8ac805fc838867e0"
+            },
+            {
+              "page_index": 52,
+              "box_count": 10,
+              "digest": "5a9359275f4a38bd910ea9fc52d4cc8affdca0684a85512e5dc2ff438aa1c4ef"
+            },
+            {
+              "page_index": 60,
+              "box_count": 5,
+              "digest": "2a57870f5fc1d8b94b09c547c626b74a294298dead6c1490a03215cb55a8603a"
+            },
+            {
+              "page_index": 68,
+              "box_count": 16,
+              "digest": "e9e7cda6f32c0cd4ace39db7df28f340bd5558e24e883ce6eb38cc97c7b7a4e5"
+            },
+            {
+              "page_index": 75,
+              "box_count": 12,
+              "digest": "5940f6dd7a327eeb737ef8f1b96bf2c2e809d3f7386310ccbbe4f0419298bf22"
+            },
+            {
+              "page_index": 85,
+              "box_count": 3,
+              "digest": "742898c8cc3dd10ab6e550766fc6cd60dffee0137b49c35da85af59ff7d13852"
+            },
+            {
+              "page_index": 94,
+              "box_count": 6,
+              "digest": "ef1cfbc17a2efa86fa1effe34fb376911cd77db11a7b41b765319134262a2946"
+            },
+            {
+              "page_index": 102,
+              "box_count": 20,
+              "digest": "deb5e01a4dfb7742a4cb471feba74b76f0b573477b410c82c1b5e7c62ab1b90b"
+            },
+            {
+              "page_index": 109,
+              "box_count": 12,
+              "digest": "812a030f0ac03ac339f640f06069c7f86af1e54902b6fe9a5d2a4fa4982e8df7"
+            },
+            {
+              "page_index": 117,
+              "box_count": 3,
+              "digest": "45cf58e60c50aac9d64d22b2696cd12433c7e20e10e9ca5d0126341c600dee6f"
+            },
+            {
+              "page_index": 124,
+              "box_count": 17,
+              "digest": "6a78267644650cd9542025d85b6fad1d6b6a29c0672e3c7bdcc82b66e47fc675"
+            }
+          ]
+        },
+        {
+          "pages": 15,
+          "wall_s": 2.259217844810337,
+          "process_cpu_s": 17.868041000000012,
+          "average_cpu_cores": 7.908950011635575,
+          "max_rss_kb": 4408880,
+          "decode_stage_s": {
+            "file_read_s": 0.006014263490214944,
+            "direct_rgb_decode_s": 0.1268784769345075
+          },
+          "outputs": [
+            {
+              "page_index": 4,
+              "box_count": 7,
+              "digest": "db05014d2e5b1421abb46c4b4a2e2700c216357d88e4388713bde5e77fa5f0d4"
+            },
+            {
+              "page_index": 8,
+              "box_count": 9,
+              "digest": "7dea79f30f39a97db856142e1a2eb25dbaa9f362ad9fe48e489c0caa8b46ea16"
+            },
+            {
+              "page_index": 22,
+              "box_count": 10,
+              "digest": "c6fa56039688663e8923a5c392209c840f416f1a0da1a90c70dd7b64cab6c79f"
+            },
+            {
+              "page_index": 30,
+              "box_count": 5,
+              "digest": "5e36689a752e583139ae741196cd7870c18ec47ecf1129de381624eca18a5176"
+            },
+            {
+              "page_index": 39,
+              "box_count": 6,
+              "digest": "71d08d0e2071eb9fc39cc79d253c82be4ed6c4f53e65997ccd2d0396b1e2ee36"
+            },
+            {
+              "page_index": 46,
+              "box_count": 1,
+              "digest": "2bf9f0dfe690c1dc44e26795458f5e57c2420b069f1226093dd36929a3d1343a"
+            },
+            {
+              "page_index": 54,
+              "box_count": 6,
+              "digest": "30c6fd847a5fc9a827c3a964f95d50621c03b4272c0029ba41eff75b5ebdf859"
+            },
+            {
+              "page_index": 62,
+              "box_count": 5,
+              "digest": "206fbd29bb17ed35d6a02c90de518524f9ed78dbb7c68160ff8dbdc9d14af049"
+            },
+            {
+              "page_index": 72,
+              "box_count": 14,
+              "digest": "1ecebada291bd82b33fb654add5bc2f8b1b9cea84c2d2ce9e719aa32d1d227d4"
+            },
+            {
+              "page_index": 80,
+              "box_count": 5,
+              "digest": "8566e38fc34e3aad23891421c161ee84dde532bfa0a176ee4b0b1bdb6bc9dde7"
+            },
+            {
+              "page_index": 88,
+              "box_count": 5,
+              "digest": "e2ce140cd8eacfa5293993f930e7cd19b78ac8f8f4a61f09ca79d5b41d182cf6"
+            },
+            {
+              "page_index": 96,
+              "box_count": 6,
+              "digest": "f00964a1a511307f68406d6fb53ea34da1841e75d01aebb0ae3973a1eb115fdc"
+            },
+            {
+              "page_index": 104,
+              "box_count": 3,
+              "digest": "91528c9f6b92627d1ab72f0f7abce2b7c55fcc233e7e625d775074be53a68366"
+            },
+            {
+              "page_index": 112,
+              "box_count": 9,
+              "digest": "20f360e44666a16881d2ad6ae2561e8cef09d351fec611bc82d5d6c97f775635"
+            },
+            {
+              "page_index": 120,
+              "box_count": 9,
+              "digest": "2d1b998b0b05d61294d3229270811631e260b1d007f34679b3eb2fe7bbd90fc2"
+            }
+          ]
+        },
+        {
+          "pages": 16,
+          "wall_s": 2.268439401406795,
+          "process_cpu_s": 18.769170999999993,
+          "average_cpu_cores": 8.27404557880634,
+          "max_rss_kb": 4392224,
+          "decode_stage_s": {
+            "file_read_s": 0.007143101189285517,
+            "direct_rgb_decode_s": 0.10331750684417784
+          },
+          "outputs": [
+            {
+              "page_index": 3,
+              "box_count": 6,
+              "digest": "261a91f104d162abf5db02fe29f2b999db499d267273022553536b3bc174bc58"
+            },
+            {
+              "page_index": 12,
+              "box_count": 5,
+              "digest": "7a5e7a0dabcd6e5deb3690223547d1726277153172af6904ed189aee1a7bb495"
+            },
+            {
+              "page_index": 21,
+              "box_count": 7,
+              "digest": "55a635414c4135f213de66e0e12c445a629a210291ef856fe91e1fd9f44e7fd4"
+            },
+            {
+              "page_index": 26,
+              "box_count": 6,
+              "digest": "e8649feb62961d816bd8ae0e2adfb2e0f8b31a50d3e1f8dc385e7e7e90c3f9c0"
+            },
+            {
+              "page_index": 34,
+              "box_count": 7,
+              "digest": "daeaebf0dbb499cb35cb8bc7944b76bc8afedb85328d8c6f02fbfc09d8d36a75"
+            },
+            {
+              "page_index": 42,
+              "box_count": 2,
+              "digest": "f0b22f87dde87dd96e2b893d90c6bde49151bac74e4bf48055b1855224a39b4c"
+            },
+            {
+              "page_index": 50,
+              "box_count": 7,
+              "digest": "aecdcb3aa30d6bf6fca3011b95b64776df844a86b9d1a1ca6d8896aed8335402"
+            },
+            {
+              "page_index": 58,
+              "box_count": 7,
+              "digest": "0a228a8081251a94591c8d26b5e8c72df8f91b5ae2ee77e83e9b08ed32ce38bf"
+            },
+            {
+              "page_index": 66,
+              "box_count": 4,
+              "digest": "198f4cb415f92f15b690e643c8a7cea7e11b3bd075064f596cebc8188fd97cc0"
+            },
+            {
+              "page_index": 74,
+              "box_count": 7,
+              "digest": "a41ad1f9078ce611226567525803d99d89a8b9eb73204754fd2f44d009aa3185"
+            },
+            {
+              "page_index": 81,
+              "box_count": 4,
+              "digest": "d7f003e2981a486216d732a3916c3ed0dbc0c73e347232142e30406123dc2bdf"
+            },
+            {
+              "page_index": 89,
+              "box_count": 6,
+              "digest": "5ab4e0203cbf67ebd3ecd5454800e42ccdb8407b0860169a186dbe366f1981c0"
+            },
+            {
+              "page_index": 97,
+              "box_count": 3,
+              "digest": "d0780ee092d6d8294408de7cf775deb6d4da43b1f621be75b1b16b285ec61e9c"
+            },
+            {
+              "page_index": 105,
+              "box_count": 3,
+              "digest": "e507df78219dbd690dcc0073ea96ad25c2cfea5ae6b87feb95b306ae767e2ba6"
+            },
+            {
+              "page_index": 113,
+              "box_count": 18,
+              "digest": "1c14c479d745bae6c64c2348f3112156a2b6d4a2b9eed038330ba32f49574574"
+            },
+            {
+              "page_index": 121,
+              "box_count": 15,
+              "digest": "02d26e2d2a0618c2b7c0d64b323879c241971d002c5055be1063ad5557b6b789"
+            }
+          ]
+        },
+        {
+          "pages": 16,
+          "wall_s": 2.324199622264132,
+          "process_cpu_s": 18.582916000000004,
+          "average_cpu_cores": 7.995404448907601,
+          "max_rss_kb": 4371256,
+          "decode_stage_s": {
+            "file_read_s": 0.007136291358619928,
+            "direct_rgb_decode_s": 0.1442167318891734
+          },
+          "outputs": [
+            {
+              "page_index": 7,
+              "box_count": 5,
+              "digest": "cfe55aba76c384acf5fc625bfe2270d53ddef04737791680c1ef6d44d1f8299a"
+            },
+            {
+              "page_index": 15,
+              "box_count": 4,
+              "digest": "3e297ad616cf2e1fa46ce8c20e658defd30c6349d2719e79663a2725ccca737c"
+            },
+            {
+              "page_index": 23,
+              "box_count": 13,
+              "digest": "4621b94e70e7c27acabb1eb9733736b6faa679c529ccba83c2c0f8b9ddc302de"
+            },
+            {
+              "page_index": 28,
+              "box_count": 9,
+              "digest": "82a01455e2c6cd5cfd7cecc2a61eb014aca212c0d3981bede8c1238d8da7b75e"
+            },
+            {
+              "page_index": 38,
+              "box_count": 6,
+              "digest": "2aff198179e5eae52e5ecd8750cd22553351ecd3a33952a129510c58402e9102"
+            },
+            {
+              "page_index": 45,
+              "box_count": 9,
+              "digest": "88c08caa98190d3adbe07233b8b1677a17fb6ccff320b243a36e7677e8359be2"
+            },
+            {
+              "page_index": 53,
+              "box_count": 12,
+              "digest": "ee818feae2655e540493b128e3a51334457309cb31cb6e14d270495b3a2abbca"
+            },
+            {
+              "page_index": 61,
+              "box_count": 3,
+              "digest": "5cb51b0af56968ace830114887120280ad5c3f3f9a10580c16473bba96b52b7d"
+            },
+            {
+              "page_index": 69,
+              "box_count": 6,
+              "digest": "ba8821ed3c9493abccdbe0ffcf343dfd22609e2b8eeaeeeef04350bcda9263cb"
+            },
+            {
+              "page_index": 77,
+              "box_count": 18,
+              "digest": "5cb6db26ef39dcc2d484888300f95516bd85784ab4965c62161e9e00e0d742a6"
+            },
+            {
+              "page_index": 83,
+              "box_count": 5,
+              "digest": "05be433c7a1090c85f016e15ee0692347a1d04233dd4a9efe3d881a35da76f05"
+            },
+            {
+              "page_index": 91,
+              "box_count": 4,
+              "digest": "1ca90c3f014bcb618be9759a9f859fa89636e9d15ea37876070fe2ae9d20d3a4"
+            },
+            {
+              "page_index": 99,
+              "box_count": 7,
+              "digest": "0bf39f4fdbe29674ef36b8b88ba3c1528934334d2cc028481a38e228bb678b7c"
+            },
+            {
+              "page_index": 108,
+              "box_count": 8,
+              "digest": "4e4046784cdedaeb2bca1297986c36ac5222394651d693c256d6f657041b495d"
+            },
+            {
+              "page_index": 116,
+              "box_count": 18,
+              "digest": "0409942aed7bdea2242bd0e7273c4f7d6898aac266d1a93d03c33c354dec0063"
+            },
+            {
+              "page_index": 125,
+              "box_count": 14,
+              "digest": "b4e322520c547d0d0d106cad53e5d6f34adccbd3ce2c2938578662d98b53c2cc"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

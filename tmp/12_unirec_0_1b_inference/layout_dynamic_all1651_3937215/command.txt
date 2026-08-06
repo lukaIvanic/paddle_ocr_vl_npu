@@ -1,0 +1,1 @@
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python 12_unirec_0_1b_inference/layout_full_worker_lab.py --openocr-root /workspace/repos/OpenOCR --offset 0 --limit 1651 --worker-counts 8 --modes processes --rounds 1 --worker-timeout-s 1800 --output tmp/12_unirec_0_1b_inference/layout_dynamic_all1651_3937215/report.json

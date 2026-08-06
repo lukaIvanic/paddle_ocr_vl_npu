@@ -1,0 +1,40 @@
+LAYOUT_FULL_WORKER setup pages=1651 modes=('processes',) workers=(8,) rounds=1
+LAYOUT_FULL_WORKER starting mode=processes workers=8
+Loading weights:   0%|          | 0/961 [00:00<?, ?it/s]Loading weights:  50%|████▉     | 480/961 [00:00<00:00, 4792.65it/s]Loading weights: 100%|██████████| 961/961 [00:00<00:00, 4832.08it/s]
+Loading weights:   0%|          | 0/961 [00:00<?, ?it/s]Loading weights:  48%|████▊     | 465/961 [00:00<00:00, 4646.43it/s]Loading weights:  97%|█████████▋| 930/961 [00:00<00:00, 4620.12it/s]Loading weights: 100%|██████████| 961/961 [00:00<00:00, 4722.81it/s]
+Loading weights:   0%|          | 0/961 [00:00<?, ?it/s]Loading weights:  49%|████▊     | 467/961 [00:00<00:00, 4658.34it/s]Loading weights:  99%|█████████▉| 953/961 [00:00<00:00, 4775.59it/s]Loading weights: 100%|██████████| 961/961 [00:00<00:00, 4776.33it/s]
+Loading weights:   0%|          | 0/961 [00:00<?, ?it/s]Loading weights:  50%|█████     | 485/961 [00:00<00:00, 4847.99it/s]Loading weights:   0%|          | 0/961 [00:00<?, ?it/s]Loading weights: 100%|██████████| 961/961 [00:00<00:00, 4911.86it/s]
+Loading weights:   0%|          | 0/961 [00:00<?, ?it/s]Loading weights:  54%|█████▍    | 517/961 [00:00<00:00, 5166.59it/s]Loading weights:   0%|          | 0/961 [00:00<?, ?it/s]Loading weights:   0%|          | 0/961 [00:00<?, ?it/s]Loading weights:  48%|████▊     | 466/961 [00:00<00:00, 4656.00it/s]Loading weights: 100%|██████████| 961/961 [00:00<00:00, 5005.01it/s]
+Loading weights:  50%|█████     | 485/961 [00:00<00:00, 4831.72it/s]Loading weights:  48%|████▊     | 466/961 [00:00<00:00, 4657.93it/s]Loading weights:  97%|█████████▋| 932/961 [00:00<00:00, 4527.24it/s]Loading weights: 100%|██████████| 961/961 [00:00<00:00, 4639.14it/s]
+Loading weights: 100%|██████████| 961/961 [00:00<00:00, 4899.29it/s]
+Loading weights:  97%|█████████▋| 932/961 [00:00<00:00, 4562.01it/s]Loading weights: 100%|██████████| 961/961 [00:00<00:00, 4597.92it/s]
+/usr/local/python3.12.13/lib/python3.12/site-packages/transformers/models/pp_doclayout_v2/image_processing_pp_doclayout_v2.py:114: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  order_seq = torch.empty_like(order_pointers)
+/usr/local/python3.12.13/lib/python3.12/site-packages/transformers/models/pp_doclayout_v2/image_processing_pp_doclayout_v2.py:114: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  order_seq = torch.empty_like(order_pointers)
+/usr/local/python3.12.13/lib/python3.12/site-packages/transformers/models/pp_doclayout_v2/image_processing_pp_doclayout_v2.py:114: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  order_seq = torch.empty_like(order_pointers)
+/usr/local/python3.12.13/lib/python3.12/site-packages/transformers/models/pp_doclayout_v2/image_processing_pp_doclayout_v2.py:114: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  order_seq = torch.empty_like(order_pointers)
+/usr/local/python3.12.13/lib/python3.12/site-packages/transformers/models/pp_doclayout_v2/image_processing_pp_doclayout_v2.py:114: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  order_seq = torch.empty_like(order_pointers)
+/usr/local/python3.12.13/lib/python3.12/site-packages/transformers/models/pp_doclayout_v2/image_processing_pp_doclayout_v2.py:114: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  order_seq = torch.empty_like(order_pointers)
+/usr/local/python3.12.13/lib/python3.12/site-packages/transformers/models/pp_doclayout_v2/image_processing_pp_doclayout_v2.py:114: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  order_seq = torch.empty_like(order_pointers)
+/usr/local/python3.12.13/lib/python3.12/site-packages/transformers/models/pp_doclayout_v2/image_processing_pp_doclayout_v2.py:114: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  order_seq = torch.empty_like(order_pointers)
+LAYOUT_FULL_WORKER progress mode=processes workers=8 round=0 pages=165/1651
+LAYOUT_FULL_WORKER progress mode=processes workers=8 round=0 pages=330/1651
+LAYOUT_FULL_WORKER progress mode=processes workers=8 round=0 pages=495/1651
+LAYOUT_FULL_WORKER progress mode=processes workers=8 round=0 pages=660/1651
+LAYOUT_FULL_WORKER progress mode=processes workers=8 round=0 pages=825/1651
+LAYOUT_FULL_WORKER progress mode=processes workers=8 round=0 pages=990/1651
+LAYOUT_FULL_WORKER progress mode=processes workers=8 round=0 pages=1155/1651
+LAYOUT_FULL_WORKER progress mode=processes workers=8 round=0 pages=1320/1651
+LAYOUT_FULL_WORKER progress mode=processes workers=8 round=0 pages=1485/1651
+LAYOUT_FULL_WORKER progress mode=processes workers=8 round=0 pages=1650/1651
+LAYOUT_FULL_WORKER progress mode=processes workers=8 round=0 pages=1651/1651
+LAYOUT_FULL_WORKER result {"mode": "processes", "workers": 8, "round": 0, "pages": 1651, "setup_wall_s": 32.050964168971404, "measured_wall_s": 41.31736277695745, "pages_per_s": 39.958987917804784, "worker_wall_s": [40.999139751074836, 40.92650123988278, 40.85376437031664, 40.98198276734911, 40.913200322771445, 40.906832699198276, 41.02879562438466, 40.87077793222852], "total_process_cpu_s": 2324.5402700000004, "average_cpu_cores": 56.260615725851416, "summed_max_rss_kb": 42883528, "box_count": 34341}
+LAYOUT_FULL_WORKER summary {"processes": {"8": {"setup_wall_s": 32.050964168971404, "wall_s_rounds": [41.31736277695745], "wall_s_median": 41.31736277695745, "pages_per_s_rounds": [39.958987917804784], "pages_per_s_median": 39.958987917804784, "average_cpu_cores_median": 56.260615725851416, "summed_max_rss_kb_median": 42883528, "box_count": 34341, "all_rounds_match_baseline": true}}}
+LAYOUT_FULL_WORKER done output=/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/layout_dynamic_all1651_3937215/report.json
