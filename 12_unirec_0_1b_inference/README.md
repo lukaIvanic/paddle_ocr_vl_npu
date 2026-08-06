@@ -398,6 +398,26 @@ The process phase fell from 29.921 to 7.447 seconds. Mean queue-delivery delay
 fell from 4.433 to 0.093 seconds per page. The remaining frontend boundary is
 6.046 seconds of coordinator-side `PageRequest` and PIL-image materialization.
 
+Recognition-specific CPU preprocessing was then moved into the same eight
+workers. Workers run the existing PIL bicubic resize, float32 rescale and
+normalization path, and place ready BCHW tensors in the page arena. The
+coordinator retains only the float32 H2D copy and fp16 conversion. On the same
+hard 128-page set:
+
+```text
+shared crops, coordinator preprocessing: 253.215 s, 0.5055 page/s
+shared crops, worker preprocessing:      198.072 s, 0.6462 page/s
+saved:                                    55.142 s, +27.8% page throughput
+```
+
+Coordinator recognition preparation fell from 67.077 to 3.341 seconds. The
+worker frontend wall rose from 7.447 to 17.664 seconds, and parent descriptor
+materialization rose from 6.046 to 7.253 seconds. The move therefore spends
+11.424 additional frontend seconds to remove 63.736 seconds of serialized
+recognizer preparation. All 7,325 crop sizes, processed sizes, encoder-token
+hints, token IDs and texts matched exactly. The measured page arenas occupied
+16.826 GB and returned to the idle shared-memory baseline after the run.
+
 ## Artifacts
 
 - Run JSON: `tmp/12_unirec_0_1b_inference/`
