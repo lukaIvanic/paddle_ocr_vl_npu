@@ -189,6 +189,10 @@ CPU processor work runs one request at a time on a bounded background producer;
 `--local-prepare-prefetch-depth` controls its queue. NPU transfer and prefill
 remain on the inference thread. This keeps host preparation off the decode
 critical path without changing the synchronous decode-completion contract.
+The producer also constructs MRoPE position IDs and deltas from the CPU token,
+mask, and image-grid tensors. The request moves those exact tensors to the NPU
+with the other processor outputs, so text prefill does not run Python-driven
+MRoPE preparation on the NPU critical path.
 
 `--page-batch-size` bounds the request stream by default: all recognition
 requests produced by that page group can refill one another, but requests from
