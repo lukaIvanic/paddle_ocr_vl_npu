@@ -518,7 +518,18 @@ def _worker_main(
                         runner=recognition_runner,
                         vision_atlas_runtime=vision_atlas_runtime,
                     )
-                    result["frontend_timing_s"].update(prefill_timing)
+                    result["frontend_timing_s"].update(
+                        {
+                            name: value
+                            for name, value in prefill_timing.items()
+                            if name.endswith("_s")
+                        }
+                    )
+                    result["worker_prefill_stats"] = {
+                        name: value
+                        for name, value in prefill_timing.items()
+                        if not name.endswith("_s")
+                    }
                 result, shared_pack_s, shared_payload_bytes = (
                     _pack_frontend_payload_shared(result)
                 )

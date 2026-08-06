@@ -330,8 +330,6 @@ def accumulate_stage_seconds(
     if source is None:
         return
     for name, seconds in source.items():
-        if not name.endswith("_s"):
-            continue
         destination[name] = destination.get(name, 0.0) + float(seconds)
 
 
