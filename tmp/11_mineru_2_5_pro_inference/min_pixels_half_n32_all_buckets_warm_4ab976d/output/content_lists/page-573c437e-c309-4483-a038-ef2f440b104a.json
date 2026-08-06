@@ -1,0 +1,93 @@
+[
+  {
+    "type": "page_number",
+    "bbox": [
+      0.146,
+      0.109,
+      0.177,
+      0.121
+    ],
+    "angle": 0,
+    "content": "284"
+  },
+  {
+    "type": "header",
+    "bbox": [
+      0.19,
+      0.109,
+      0.393,
+      0.122
+    ],
+    "angle": 0,
+    "content": "CHAP. 5 CURVE FITTING"
+  },
+  {
+    "type": "table_caption",
+    "bbox": [
+      0.18,
+      0.147,
+      0.562,
+      0.163
+    ],
+    "angle": 0,
+    "content": "Table 5.8 End-point Constraints for a Cubic Spline"
+  },
+  {
+    "type": "table",
+    "bbox": [
+      0.174,
+      0.17,
+      0.794,
+      0.503
+    ],
+    "angle": 0,
+    "content": "<table><tr><td>Description of the strategy</td><td>Equations involving \\( m_0 \\) and \\( m_N \\)</td></tr><tr><td>(i) Clamped cubic spline: specify \\( S&#x27;(x_0) \\), \\( S&#x27;(x_n) \\)(the “best choice” if the derivatives are known)</td><td>\\( m_0 = \\frac{3}{h_0} (d_0 \\quad S&#x27;(x_0)) \\quad \\frac{m_1}{2} \\)\\( m_N = \\frac{3}{h_N \\quad 1} (S&#x27;(x_N) \\quad d_N \\quad 1) \\quad \\frac{m_N \\quad 1}{2} \\)</td></tr><tr><td>(ii) Natural cubic spline(a “relaxed curve”)</td><td>\\( m_0 = 0 \\), \\( m_N = 0 \\)</td></tr><tr><td>(iii) Extrapolate \\( S&#x27;&#x27;(x) \\) to the endpoints</td><td>\\( m_0 = m_1 \\quad \\frac{h_0 (m_2 \\quad m_1)}{h_1} \\),\\( m_N = m_N \\quad 1 + \\frac{h_N \\quad 1 (m_N \\quad 1 \\quad m_N \\quad 2)}{h_N \\quad 2} \\)</td></tr><tr><td>(iv) \\( S&#x27;&#x27;(x) \\) is constant near the endpoints</td><td>\\( m_0 = m_1 \\), \\( m_N = m_N \\quad 1 \\)</td></tr><tr><td>(v) Specify \\( S&#x27;&#x27;(X) \\) at each endpoint</td><td>\\( m_0 = S&#x27;&#x27;(x_0) \\), \\( m_N = S&#x27;&#x27;(x_N) \\)</td></tr></table>"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.148,
+      0.595,
+      0.82,
+      0.628
+    ],
+    "angle": 0,
+    "content": "Equations (13) and (14) with (12) used for \\( k = 2, 3, \\ldots, N \\) 2 form \\( N \\) 1 linear equations involving the coefficients \\( m_1, m_2, \\ldots, m_N \\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.149,
+      0.628,
+      0.82,
+      0.678
+    ],
+    "angle": 0,
+    "content": "Regardless of the particular strategy chosen in Table 5.8, we can rewrite equations 1 and \\(N - 1\\) in (12) and obtain a tridiagonal linear system of the form \\(HM = V\\), which involves \\(m_1, m_2, \\ldots, m_{N-1}\\):",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.152,
+      0.697,
+      0.731,
+      0.795
+    ],
+    "angle": 0,
+    "content": "\\[\n\\left[ \\begin{array}{c c c c c c c} b _ {1} & c _ {1} & & & & & \\\\ a _ {1} & b _ {2} & c _ {2} & & & & \\\\ & & \\ddots & & & & \\\\ & & & a _ {N - 3} & b _ {N - 2} & c _ {N - 2} \\\\ & & & & a _ {N - 2} & b _ {N - 1} \\end{array} \\right] \\left[ \\begin{array}{c} m _ {1} \\\\ m _ {2} \\\\ \\vdots \\\\ m _ {N - 2} \\\\ m _ {N - 1} \\end{array} \\right] = \\left[ \\begin{array}{c} v _ {1} \\\\ v _ {2} \\\\ \\vdots \\\\ v _ {N - 2} \\\\ v _ {N - 1} \\end{array} \\right]. \\tag {15}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.15,
+      0.813,
+      0.823,
+      0.847
+    ],
+    "angle": 0,
+    "content": "The linear system in (15) is strictly diagonally dominant and has a unique solution (see Chapter 3 for details). After the coefficients  \\( \\{m_{k}\\} \\)  are determined, the spline",
+    "merge_prev": false
+  }
+]
