@@ -7,6 +7,8 @@ import argparse
 import json
 import multiprocessing as mp
 import time
+from multiprocessing import resource_tracker
+from multiprocessing.shared_memory import SharedMemory
 from typing import Any
 
 
@@ -45,6 +47,8 @@ def _producer(
     tensors = cross_key + cross_value + self_key + self_value
     d2h_s = 0.0
     packed_tensor = None
+    shared_storage = None
+    shared_descriptor = None
     tensor_shapes = [list(tensor.shape) for tensor in tensors]
     if transport == "host":
         d2h_started = time.perf_counter()
@@ -62,6 +66,29 @@ def _producer(
         cross_value = []
         self_key = []
         self_value = []
+    elif transport == "shared_packed":
+        packed_npu = torch.cat([tensor.reshape(-1) for tensor in tensors])
+        shared_storage = SharedMemory(
+            create=True,
+            size=packed_npu.numel() * packed_npu.element_size(),
+        )
+        shared_array = torch.frombuffer(
+            shared_storage.buf,
+            dtype=packed_npu.dtype,
+            count=packed_npu.numel(),
+        )
+        d2h_started = time.perf_counter()
+        shared_array.copy_(packed_npu)
+        torch.npu.synchronize()
+        d2h_s = time.perf_counter() - d2h_started
+        shared_descriptor = {
+            "name": shared_storage.name,
+            "elements": packed_npu.numel(),
+        }
+        cross_key = []
+        cross_value = []
+        self_key = []
+        self_value = []
     result_queue.put(
         {
             "cross_key": cross_key,
@@ -69,6 +96,7 @@ def _producer(
             "self_key": self_key,
             "self_value": self_value,
             "packed_tensor": packed_tensor,
+            "shared_descriptor": shared_descriptor,
             "tensor_shapes": tensor_shapes,
             "producer_ready_s": ready_s,
             "producer_d2h_s": d2h_s,
@@ -80,6 +108,9 @@ def _producer(
     acknowledgement = ack_queue.get(timeout=120)
     if acknowledgement != "received":
         raise RuntimeError(f"unexpected acknowledgement: {acknowledgement!r}")
+    if shared_storage is not None:
+        shared_storage.close()
+        resource_tracker.unregister(shared_storage._name, "shared_memory")  # noqa: SLF001
 
 
 def main() -> None:
@@ -87,7 +118,7 @@ def main() -> None:
     parser.add_argument("--device", type=int, default=0)
     parser.add_argument(
         "--transport",
-        choices=("npu_ipc", "host", "host_packed"),
+        choices=("npu_ipc", "host", "host_packed", "shared_packed"),
         default="npu_ipc",
     )
     args = parser.parse_args()
@@ -111,7 +142,25 @@ def main() -> None:
     torch.npu.synchronize()
     import_lag_s = time.perf_counter() - float(payload["sent_at"])
 
-    if args.transport == "host_packed":
+    shared_storage = None
+    if args.transport == "shared_packed":
+        descriptor = payload["shared_descriptor"]
+        shared_storage = SharedMemory(name=descriptor["name"])
+        shared_storage.unlink()
+        packed = torch.frombuffer(
+            shared_storage.buf,
+            dtype=torch.float16,
+            count=int(descriptor["elements"]),
+        )
+        tensors = []
+        cursor = 0
+        for shape in payload["tensor_shapes"]:
+            elements = 1
+            for dimension in shape:
+                elements *= int(dimension)
+            tensors.append(packed[cursor : cursor + elements].view(shape))
+            cursor += elements
+    elif args.transport == "host_packed":
         packed = payload["packed_tensor"]
         tensors = []
         cursor = 0
@@ -155,8 +204,13 @@ def main() -> None:
     copy_started = time.perf_counter()
     if args.transport == "host":
         local = [tensor.to("npu:0") for tensor in tensors]
-    elif args.transport == "host_packed":
-        local_packed = payload["packed_tensor"].to("npu:0")
+    elif args.transport in {"host_packed", "shared_packed"}:
+        source_packed = (
+            payload["packed_tensor"]
+            if args.transport == "host_packed"
+            else packed
+        )
+        local_packed = source_packed.to("npu:0")
         local = []
         cursor = 0
         for shape in payload["tensor_shapes"]:
@@ -175,6 +229,8 @@ def main() -> None:
     process.join(timeout=30)
     if process.exitcode != 0:
         raise RuntimeError(f"producer exit code: {process.exitcode}")
+    if shared_storage is not None:
+        shared_storage.close()
     print(
         json.dumps(
             {
