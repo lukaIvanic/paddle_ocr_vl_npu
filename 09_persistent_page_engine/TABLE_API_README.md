@@ -1,4 +1,4 @@
-# Table OCR client
+# Crop OCR client
 
 Use these three files:
 
@@ -22,17 +22,40 @@ Clone the [OmniDocBench evaluator](https://github.com/opendatalab/OmniDocBench) 
 python3 -m pip install Pillow==10.4.0 apted==1.0.3 lxml==4.9.1 tqdm==4.67.1 Levenshtein==0.25.1 rapidfuzz==3.14.5 beautifulsoup4==4.11.1 pylatexenc==2.10 pandas==2.0.3 evaluate==0.4.3 numpy==1.24.4 matplotlib==3.7.5 datasets==5.0.0 huggingface-hub==1.22.0
 ```
 
+With `--omnidocbench`, select one crop set with `--crop-type`:
+
+- `table`: all 665 table annotations; also calculates TEDS.
+- `formula`: all 2,066 isolated-formula annotations.
+- `text`: all 16,520 text-block annotations.
+
 Run the OmniDocBench table test:
 
 ```sh
 python3 09_persistent_page_engine/scripts/run_omnidocbench_table_api.py \
   --omnidocbench \
+  --crop-type table \
   --dataset-json /path/to/OmniDocBench.json \
   --images-dir /path/to/images \
   --evaluator-root /path/to/OmniDocBench \
   --api-url http://API_HOST:8765/v1/ocr \
   --output-dir output/omnidocbench_tables
 ```
+
+To run formulas or text blocks, change both `--crop-type` and the output
+directory. For example:
+
+```sh
+python3 09_persistent_page_engine/scripts/run_omnidocbench_table_api.py \
+  --omnidocbench \
+  --crop-type formula \
+  --dataset-json /path/to/OmniDocBench.json \
+  --images-dir /path/to/images \
+  --api-url http://API_HOST:8765/v1/ocr \
+  --output-dir output/omnidocbench_formulas
+```
+
+Formula and text runs save every crop, ground-truth value, model prediction,
+stop reason, token count, and timing. TEDS is calculated only for table runs.
 
 Expected reference result:
 

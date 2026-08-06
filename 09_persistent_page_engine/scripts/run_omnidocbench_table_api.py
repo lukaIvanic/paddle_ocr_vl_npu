@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Send table crops to the OCR API.
+"""Send document crops to the OCR API.
 
 Product users need only the CLI in ``parse_args``. Use ``--images`` for normal
-PNG/JPEG crops or ``--omnidocbench`` for the fixed 665-table quality check.
-Everything below the PRODUCT TEAM section is internal transport and evaluation
-code; it should not need product-specific edits.
+PNG/JPEG crops or ``--omnidocbench`` to process every table, isolated formula,
+or text block in OmniDocBench. Table runs also calculate TEDS. Everything below
+the PRODUCT TEAM section is internal transport and evaluation code; it should
+not need product-specific edits.
 """
 
 from __future__ import annotations
@@ -49,7 +50,7 @@ def parse_args() -> argparse.Namespace:
     )
     mode.add_argument(
         "--omnidocbench", action="store_true",
-        help="Run and score all OmniDocBench table annotations.",
+        help="Run every OmniDocBench annotation selected by --crop-type.",
     )
 
     product = parser.add_argument_group("product client")
@@ -76,7 +77,7 @@ def parse_args() -> argparse.Namespace:
     benchmark.add_argument("--teds-timeout-s", type=float, default=120.0)
     benchmark.add_argument(
         "--score-only", action="store_true",
-        help="Rescore saved tables.jsonl without rerunning OCR.",
+        help="Rescore saved table predictions without rerunning OCR.",
     )
 
     # Kept for existing runbooks. Normal product checks leave these unchanged.
@@ -252,9 +253,10 @@ def _run_images(args: argparse.Namespace) -> None:
 
 
 # =============================================================================
-# INTERNAL OMNIDOCBENCH BENCHMARK AND TEDS EVALUATION
-# This section implements the fixed validation procedure. Product users should
-# not edit it. The pinned upstream evaluator supplies normalization and TEDS.
+# INTERNAL OMNIDOCBENCH BENCHMARK AND TABLE TEDS EVALUATION
+# This section implements the fixed crop selection and validation procedures.
+# Product users should not edit it. The pinned upstream evaluator supplies
+# table normalization and TEDS.
 # =============================================================================
 
 EXPECTED_JSON_SHA256 = (
@@ -264,6 +266,27 @@ EXPECTED_IMAGES_SHA256 = (
     "58feeb96c60fcfab12ba4348c4e093ceaf1b707658dbfd0e08c24d7821d4c221"
 )
 EXPECTED_IMAGE_COUNT = 1651
+
+OMNIDOCBENCH_PROFILES = {
+    "table": {
+        "annotation_type": "table",
+        "ground_truth_field": "html",
+        "plural": "tables",
+        "output_name": "tables.jsonl",
+    },
+    "formula": {
+        "annotation_type": "equation_isolated",
+        "ground_truth_field": "latex",
+        "plural": "formulas",
+        "output_name": "formulas.jsonl",
+    },
+    "text": {
+        "annotation_type": "text_block",
+        "ground_truth_field": "text",
+        "plural": "text blocks",
+        "output_name": "text_blocks.jsonl",
+    },
+}
 
 
 def _sha256_file(path: Path) -> str:
@@ -341,7 +364,12 @@ def _bbox(poly: list[float], width: int, height: int, padding: int) -> tuple[int
     )
 
 
-def _table_jobs(pages: list[dict], args: argparse.Namespace) -> list[tuple]:
+def _benchmark_profile(crop_type: str) -> dict[str, str]:
+    return OMNIDOCBENCH_PROFILES[crop_type]
+
+
+def _benchmark_jobs(pages: list[dict], args: argparse.Namespace) -> list[tuple]:
+    profile = _benchmark_profile(args.crop_type)
     selected = pages[args.offset :]
     if args.limit_pages is not None:
         selected = selected[: args.limit_pages]
@@ -350,20 +378,21 @@ def _table_jobs(pages: list[dict], args: argparse.Namespace) -> list[tuple]:
         for page_index, page in enumerate(selected, start=args.offset)
         for annotation_index, annotation in enumerate(page.get("layout_dets") or [])
         if not annotation.get("ignore")
-        and annotation.get("category_type") == "table"
+        and annotation.get("category_type") == profile["annotation_type"]
     ]
 
 
-def _request_id(job: tuple) -> str:
+def _request_id(job: tuple, crop_type: str) -> str:
     page_index, _page, annotation_index, annotation = job
     return (
-        f"page_{page_index:06d}_table_"
+        f"page_{page_index:06d}_{crop_type}_"
         f"{annotation.get('anno_id', annotation_index)}"
     )
 
 
-def _table_job(job: tuple, args: argparse.Namespace) -> dict[str, Any]:
+def _benchmark_job(job: tuple, args: argparse.Namespace) -> dict[str, Any]:
     page_index, page, annotation_index, annotation = job
+    profile = _benchmark_profile(args.crop_type)
     page_name = Path(page["page_info"]["image_path"]).name
     with Image.open(args.images_dir / page_name) as opened:
         image = opened.convert("RGB")
@@ -372,17 +401,24 @@ def _table_job(job: tuple, args: argparse.Namespace) -> dict[str, Any]:
     encoded = io.BytesIO()
     crop.save(encoded, format="PNG", optimize=False)
     response = _request(
-        args.api_url, _request_id(job), encoded.getvalue(), "table", args.timeout_s
+        args.api_url,
+        _request_id(job, args.crop_type),
+        encoded.getvalue(),
+        args.crop_type,
+        args.timeout_s,
     )
-    return {
-        "request_id": _request_id(job),
+    ground_truth = annotation.get(profile["ground_truth_field"]) or ""
+    record = {
+        "request_id": _request_id(job, args.crop_type),
+        "crop_type": args.crop_type,
+        "annotation_type": annotation.get("category_type"),
         "page_index": page_index,
         "page_name": page_name,
         "annotation_index": annotation_index,
         "bbox_xyxy": list(bbox),
         "crop_size": list(crop.size),
-        "gt_html": annotation.get("html") or annotation.get("text") or "",
-        "pred_html": response["text"],
+        "ground_truth": ground_truth,
+        "prediction": response["text"],
         "stop_reason": response["stop_reason"],
         "input_tokens": response["input_tokens"],
         "projected_image_tokens": response["projected_image_tokens"],
@@ -393,6 +429,11 @@ def _table_job(job: tuple, args: argparse.Namespace) -> dict[str, Any]:
         "vision": response.get("vision", {}),
         "text_prefill": response.get("text_prefill", {}),
     }
+    if args.crop_type == "table":
+        # Keep the established table fields for existing result readers.
+        record["gt_html"] = ground_truth
+        record["pred_html"] = response["text"]
+    return record
 
 
 def _read_jsonl(path: Path) -> dict[str, dict[str, Any]]:
@@ -599,18 +640,20 @@ def _summary(
     records: list[dict],
     generation_wall_s: float,
     manifest: dict,
-    scores: dict,
+    scores: dict | None,
     service: dict | None,
+    crop_type: str,
 ) -> dict:
     http = [float(record["http_wall_s"]) for record in records]
     worker = [float(record["worker_wall_s"]) for record in records]
     overhead = [max(0.0, left - right) for left, right in zip(http, worker)]
     stage_names = sorted({name for record in records for name in record["device_stage_s"]})
-    return {
-        "tables": len(records),
+    result = {
+        "crop_type": crop_type,
+        "crops": len(records),
         "unique_requests": len({record["request_id"] for record in records}),
         "generation_wall_s": generation_wall_s,
-        "tables_per_s": len(records) / generation_wall_s,
+        "crops_per_s": len(records) / generation_wall_s,
         "http_latency_s": _distribution(http),
         "worker_latency_s": _distribution(worker),
         "http_wrapper_overhead_s": {"sum": sum(overhead), **_distribution(overhead)},
@@ -637,6 +680,11 @@ def _summary(
         "metrics": scores,
         "dataset_fingerprint": manifest,
     }
+    if crop_type == "table":
+        # Preserve the established table summary fields for existing readers.
+        result["tables"] = len(records)
+        result["tables_per_s"] = result["crops_per_s"]
+    return result
 
 
 def _print_score(scores: dict, timeout_s: float) -> None:
@@ -663,9 +711,12 @@ def _print_score(scores: dict, timeout_s: float) -> None:
 
 
 def _run_omnidocbench(args: argparse.Namespace) -> None:
-    output = args.output_dir / "tables.jsonl"
+    profile = _benchmark_profile(args.crop_type)
+    output = args.output_dir / profile["output_name"]
     args.output_dir.mkdir(parents=True, exist_ok=True)
     if args.score_only:
+        if args.crop_type != "table":
+            raise ValueError("--score-only is available only for table TEDS")
         records = list(_read_jsonl(output).values())
         if not records:
             raise FileNotFoundError(f"No saved predictions in {output}")
@@ -676,14 +727,17 @@ def _run_omnidocbench(args: argparse.Namespace) -> None:
     pages, manifest = _check_dataset(args)
     if args.fingerprint_only:
         return
-    jobs = _table_jobs(pages, args)
+    jobs = _benchmark_jobs(pages, args)
     completed = _read_jsonl(output) if args.resume else {}
-    pending = [job for job in jobs if _request_id(job) not in completed]
+    pending = [
+        job for job in jobs
+        if _request_id(job, args.crop_type) not in completed
+    ]
     done = len(jobs) - len(pending)
     started = time.perf_counter()
     with output.open("a" if args.resume else "w", encoding="utf-8") as target:
         with ThreadPoolExecutor(max_workers=args.http_workers) as pool:
-            futures = [pool.submit(_table_job, job, args) for job in pending]
+            futures = [pool.submit(_benchmark_job, job, args) for job in pending]
             print(f"submitted={len(futures)} http_workers={args.http_workers}", flush=True)
             for future in as_completed(futures):
                 record = future.result()
@@ -693,29 +747,42 @@ def _run_omnidocbench(args: argparse.Namespace) -> None:
                 elapsed = time.perf_counter() - started
                 print(
                     f"completed={done}/{len(jobs)} page={record['page_index']} "
-                    f"elapsed_s={elapsed:.1f} tables_per_s={done / elapsed:.3f}",
+                    f"elapsed_s={elapsed:.1f} crops_per_s={done / elapsed:.3f}",
                     flush=True,
                 )
 
     generation_wall_s = time.perf_counter() - started
     service = _drain(args.api_url, args.timeout_s) if args.drain_server else None
     records = list(_read_jsonl(output).values())
-    scores = _score(records, args)
-    summary = _summary(records, generation_wall_s, manifest, scores, service)
+    scores = _score(records, args) if args.crop_type == "table" else {}
+    summary = _summary(
+        records,
+        generation_wall_s,
+        manifest,
+        scores,
+        service,
+        args.crop_type,
+    )
     _write_json(args.output_dir / "run_summary.json", summary)
-    _print_score(scores, args.teds_timeout_s)
+    if args.crop_type == "table":
+        _print_score(scores, args.teds_timeout_s)
     markdown = (
-        "# OmniDocBench table OCR summary\n\n"
-        f"- Tables: {len(records)}\n"
+        f"# OmniDocBench {args.crop_type} OCR summary\n\n"
+        f"- Crop type: {args.crop_type}\n"
+        f"- {profile['plural'].capitalize()}: {len(records)}\n"
         f"- Generation wall time: {generation_wall_s:.3f} s\n"
-        f"- Throughput: {summary['tables_per_s']:.3f} tables/s\n"
-        f"- Page-TEDS: {scores['page_TEDS']:.6f}\n"
-        f"- Sample TEDS: {scores['sample_TEDS']:.6f}\n"
-        f"- Page structure-only TEDS: {scores['page_TEDS_structure_only']:.6f}\n"
-        f"- TEDS timeouts: {scores['teds_timeout_count']}\n"
-        f"- TEDS errors: {scores['teds_error_count']}\n"
+        f"- Throughput: {summary['crops_per_s']:.3f} crops/s\n"
         f"- Stop reasons: {summary['stop_reasons']}\n"
     )
+    if args.crop_type == "table":
+        markdown += (
+            f"- Page-TEDS: {scores['page_TEDS']:.6f}\n"
+            f"- Sample TEDS: {scores['sample_TEDS']:.6f}\n"
+            f"- Page structure-only TEDS: "
+            f"{scores['page_TEDS_structure_only']:.6f}\n"
+            f"- TEDS timeouts: {scores['teds_timeout_count']}\n"
+            f"- TEDS errors: {scores['teds_error_count']}\n"
+        )
     (args.output_dir / "summary.md").write_text(markdown, encoding="utf-8")
     print(f"\n{markdown}", end="", flush=True)
 
@@ -728,6 +795,12 @@ def main() -> None:
         raise ValueError("--score-only and --fingerprint-only require --omnidocbench")
     if args.score_only and args.fingerprint_only:
         raise ValueError("--score-only and --fingerprint-only are mutually exclusive")
+    if args.omnidocbench and args.crop_type not in OMNIDOCBENCH_PROFILES:
+        choices = ", ".join(OMNIDOCBENCH_PROFILES)
+        raise ValueError(
+            f"--omnidocbench supports --crop-type {choices}; "
+            f"got {args.crop_type}"
+        )
     if args.drain_server is None:
         args.drain_server = args.omnidocbench
     if args.omnidocbench:
