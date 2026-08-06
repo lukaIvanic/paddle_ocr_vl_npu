@@ -190,10 +190,13 @@ CPU processor work runs one request at a time on a bounded background producer;
 remain on the inference thread. This keeps host preparation off the decode
 critical path without changing the synchronous decode-completion contract.
 
-`--page-batch-size` currently bounds the request stream: all recognition
+`--page-batch-size` bounds the request stream by default: all recognition
 requests produced by that page group can refill one another, but requests from
-the next page group are admitted only after the current group is written. Keep
-the page group bounded until frontend production itself becomes incremental.
+the next page group are admitted only after the current group is written.
+`--global-request-stream` removes those drains for the local continuous backend.
+It runs layout for every pending page first, then sends all resulting crops
+through one recognition request stream. The runner still writes every page
+after the shared group completes.
 
 The validated B8/KV4096 configuration used a 16-request CPU preparation queue.
 On the first 32 OmniDocBench pages, one 32-page request stream completed in

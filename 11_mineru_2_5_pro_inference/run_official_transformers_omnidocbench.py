@@ -103,6 +103,15 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--global-request-stream",
+        action="store_true",
+        help=(
+            "Local continuous backend only: process every pending page as one "
+            "stepping-mode group so layout and recognition each use one "
+            "persistent request stream."
+        ),
+    )
+    parser.add_argument(
         "--layout-image-size",
         type=int,
         nargs=2,
@@ -537,6 +546,10 @@ def main() -> None:
         raise ValueError("layout-image-size values must be positive")
     if args.local_prepare_prefetch_depth < 0:
         raise ValueError("local-prepare-prefetch-depth must be non-negative")
+    if args.global_request_stream and args.backend != "local-continuous-client":
+        raise ValueError(
+            "global-request-stream currently requires local-continuous-client"
+        )
     capture_sizes = [
         int(value)
         for value in args.vllm_cudagraph_capture_sizes.split(",")
@@ -1003,6 +1016,7 @@ def main() -> None:
         "image_analysis": False,
         "batch_size": args.batch_size,
         "page_batch_size": args.page_batch_size,
+        "global_request_stream": bool(args.global_request_stream),
         "layout_image_size": [int(value) for value in args.layout_image_size],
         "layout_only": bool(args.layout_only),
         "local_compiled_cache_length": (
@@ -1149,7 +1163,9 @@ def main() -> None:
             continue
         pending.append((shard_position, dataset_index, sample))
 
-    if args.page_batch_size == 1:
+    if args.global_request_stream:
+        page_groups = [pending] if pending else []
+    elif args.page_batch_size == 1:
         page_groups = [[item] for item in pending]
     else:
         page_groups = [
