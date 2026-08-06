@@ -330,6 +330,8 @@ def accumulate_stage_seconds(
     if source is None:
         return
     for name, seconds in source.items():
+        if not name.endswith("_s"):
+            continue
         destination[name] = destination.get(name, 0.0) + float(seconds)
 
 
@@ -919,7 +921,11 @@ def page_request_from_process_payload(
         drop_figures_set=set(payload["drop_figures_set"]),
         started_at=float(payload["started_at"]),
         layout_s=measured_layout_s,
-        prepare_page_total_s=sum(frontend_timing_s.values()),
+        prepare_page_total_s=sum(
+            float(value)
+            for name, value in frontend_timing_s.items()
+            if name.endswith("_s")
+        ),
         frontend_timing_s=frontend_timing_s,
         frontend_storage_lease=lease,
     )
