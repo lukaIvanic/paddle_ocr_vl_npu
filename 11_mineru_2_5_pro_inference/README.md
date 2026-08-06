@@ -149,6 +149,14 @@ The evaluator consumes the generated `predictions/` directory. Use the pinned
 Experiment-09 OmniDocBench evaluator wrapper after every shard completes; do
 not score partial output as a full-corpus result.
 
+Corpus runs warm the selected backend with the first two pages of each shard
+before measurement. Warmup outputs are discarded, the same pages are processed
+again as part of the measured shard, and generation plus vision/text routing
+counters are reset before the pipeline timer starts. Use `--warmup-pages 0` to
+measure a cold path or another positive value to change the warmup prefix. The
+run manifest records the warmup pages, wall time, and graph routes exercised;
+two pages do not guarantee coverage of every configured shape bucket.
+
 ## Local continuous compiled-decode lane
 
 This lane leaves the official MinerU page frontend, processor, two-step

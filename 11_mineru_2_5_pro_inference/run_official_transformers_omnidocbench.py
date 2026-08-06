@@ -72,6 +72,16 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--limit", type=int)
+    parser.add_argument(
+        "--warmup-pages",
+        type=int,
+        default=2,
+        help=(
+            "Run this many pages from the start of the selected shard before "
+            "measurement, discard their outputs, and reset runtime counters. "
+            "Use zero to disable warmup."
+        ),
+    )
     parser.add_argument("--shard-count", type=int, default=1)
     parser.add_argument("--shard-index", type=int, default=0)
     parser.add_argument(
@@ -266,10 +276,38 @@ def image_name(sample: dict[str, Any]) -> str:
     return Path(value).name
 
 
+def run_page_group(client: Any, images: list[Image.Image]) -> list[Any]:
+    if len(images) == 1:
+        return [client.two_step_extract(images[0])]
+    return client.batch_two_step_extract(images)
+
+
+def reset_measurement_counters(
+    client: Any,
+    vision_runtime: Any | None,
+    text_runtime: Any | None,
+) -> None:
+    generation_metrics = getattr(client.client, "generation_metrics", None)
+    if generation_metrics is not None:
+        generation_metrics.clear()
+    if vision_runtime is not None:
+        vision_runtime.route_counts.clear()
+        vision_runtime.real_tokens = 0
+        vision_runtime.physical_tokens = 0
+    if text_runtime is not None:
+        text_runtime.route_counts.clear()
+        text_runtime.real_tokens = 0
+        text_runtime.physical_tokens = 0
+        text_runtime.cache_copy_bytes = 0
+        text_runtime.pack_count = 0
+
+
 def main() -> None:
     args = parse_args()
     if args.offset < 0 or (args.limit is not None and args.limit < 0):
         raise ValueError("offset and limit must be non-negative")
+    if args.warmup_pages < 0:
+        raise ValueError("warmup-pages must be non-negative")
     if args.shard_count <= 0:
         raise ValueError("shard-count must be positive")
     if not 0 <= args.shard_index < args.shard_count:
@@ -630,6 +668,49 @@ def main() -> None:
     synchronize()
     setup_s = time.perf_counter() - setup_started
 
+    warmup_count = min(args.warmup_pages, len(shard))
+    warmup_report: dict[str, Any] = {
+        "requested_pages": args.warmup_pages,
+        "executed_pages": warmup_count,
+        "dataset_indices": [index for index, _ in shard[:warmup_count]],
+        "wall_s": 0.0,
+        "measurement_counters_reset": False,
+    }
+    if warmup_count:
+        print(
+            f"[warmup] START pages={warmup_count} "
+            f"dataset_indices={warmup_report['dataset_indices']}",
+            flush=True,
+        )
+        warmup_started = time.perf_counter()
+        warmup_items = shard[:warmup_count]
+        for start in range(0, warmup_count, args.page_batch_size):
+            warmup_group = warmup_items[start : start + args.page_batch_size]
+            warmup_images: list[Image.Image] = []
+            for _, sample in warmup_group:
+                with Image.open(images_dir / image_name(sample)) as source:
+                    warmup_images.append(source.convert("RGB"))
+            with torch.inference_mode():
+                run_page_group(client, warmup_images)
+        synchronize()
+        warmup_report["wall_s"] = time.perf_counter() - warmup_started
+        generation_metrics = getattr(client.client, "generation_metrics", None)
+        warmup_report["generation_calls"] = (
+            len(generation_metrics) if generation_metrics is not None else None
+        )
+        if local_vision_runtime is not None:
+            warmup_report["vision_runtime"] = local_vision_runtime.metadata()
+        if local_text_runtime is not None:
+            warmup_report["text_runtime"] = local_text_runtime.metadata()
+        reset_measurement_counters(client, local_vision_runtime, local_text_runtime)
+        warmup_report["measurement_counters_reset"] = True
+        print(
+            f"[warmup] DONE pages={warmup_count} "
+            f"elapsed_s={warmup_report['wall_s']:.3f}; outputs discarded; "
+            "measurement counters reset",
+            flush=True,
+        )
+
     model_hashes = {
         "config.json": sha256(model_dir / "config.json"),
     }
@@ -771,6 +852,7 @@ def main() -> None:
         "selected_pages": len(selected),
         "shard_pages": len(shard),
         "setup_s": setup_s,
+        "warmup": warmup_report,
         "ascend_rt_visible_devices": os.environ.get("ASCEND_RT_VISIBLE_DEVICES"),
     }
     atomic_write_text(
@@ -826,10 +908,7 @@ def main() -> None:
                 with Image.open(images_dir / name) as source:
                     images.append(source.convert("RGB"))
             with torch.inference_mode():
-                if len(group) == 1:
-                    results = [client.two_step_extract(images[0])]
-                else:
-                    results = client.batch_two_step_extract(images)
+                results = run_page_group(client, images)
             synchronize()
             group_elapsed_s = time.perf_counter() - group_started
             batch_times.append(group_elapsed_s)
