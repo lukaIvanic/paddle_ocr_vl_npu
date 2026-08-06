@@ -18,6 +18,77 @@ DTYPE_MAP = {
 }
 
 
+def filter_overlap_boxes_vectorized(
+    layout_result: dict[str, list[dict[str, Any]]],
+) -> dict[str, list[dict[str, Any]]]:
+    """Match OpenOCR's overlap decisions with vectorized box geometry.
+
+    OpenOCR calculates the same axis-aligned intersection and area values in
+    a nested Python loop.  Precomputing those values keeps the original
+    order-dependent drop loop and label exception intact while removing the
+    expensive per-pair NumPy allocations and repeated area calculations.
+    """
+    boxes = [
+        box.copy()
+        for box in layout_result["boxes"]
+        if box["label"] != "reference"
+    ]
+    if len(boxes) < 2:
+        return {**layout_result, "boxes": boxes}
+
+    coordinates = np.asarray(
+        [box["coordinate"] for box in boxes],
+        dtype=np.float64,
+    )
+    widths = coordinates[:, 2] - coordinates[:, 0]
+    heights = coordinates[:, 3] - coordinates[:, 1]
+    areas = np.abs(widths * heights)
+
+    intersection_widths = np.maximum(
+        0.0,
+        np.minimum(coordinates[:, None, 2], coordinates[None, :, 2])
+        - np.maximum(coordinates[:, None, 0], coordinates[None, :, 0]),
+    )
+    intersection_heights = np.maximum(
+        0.0,
+        np.minimum(coordinates[:, None, 3], coordinates[None, :, 3])
+        - np.maximum(coordinates[:, None, 1], coordinates[None, :, 1]),
+    )
+    intersections = intersection_widths * intersection_heights
+    smaller_areas = np.minimum(areas[:, None], areas[None, :])
+    overlap_ratios = np.divide(
+        intersections,
+        smaller_areas,
+        out=np.zeros_like(intersections),
+        where=smaller_areas != 0.0,
+    )
+
+    dropped: set[int] = set()
+    for first_index, first in enumerate(boxes):
+        for second_index in range(first_index + 1, len(boxes)):
+            if first_index in dropped or second_index in dropped:
+                continue
+            if overlap_ratios[first_index, second_index] <= 0.7:
+                continue
+            second = boxes[second_index]
+            if (
+                first["label"] == "image" or second["label"] == "image"
+            ) and first["label"] != second["label"]:
+                continue
+            dropped.add(
+                second_index
+                if areas[first_index] >= areas[second_index]
+                else first_index
+            )
+
+    return {
+        **layout_result,
+        "boxes": [
+            box for index, box in enumerate(boxes) if index not in dropped
+        ],
+    }
+
+
 class PPDocLayoutV2NpuAdapter:
     """Match ``LayoutDetectorONNX`` while running Transformers on NPU."""
 
@@ -73,7 +144,6 @@ class PPDocLayoutV2NpuAdapter:
             raise ValueError("layout batch size must be >= 1")
 
         import torch_npu  # noqa: F401
-        from tools.infer_doc_onnx import filter_overlap_boxes
         from transformers import AutoImageProcessor, AutoModelForObjectDetection
 
         self.model_path = Path(model_path).expanduser().resolve()
@@ -83,7 +153,7 @@ class PPDocLayoutV2NpuAdapter:
         self.profile_stages = bool(profile_stages)
         self.execution = execution
         self.batch_size = int(batch_size)
-        self._filter_overlap_boxes = filter_overlap_boxes
+        self._filter_overlap_boxes = filter_overlap_boxes_vectorized
 
         started = time.perf_counter()
         self.processor = AutoImageProcessor.from_pretrained(self.model_path)
