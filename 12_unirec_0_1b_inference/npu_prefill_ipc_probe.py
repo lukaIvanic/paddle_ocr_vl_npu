@@ -10,7 +10,12 @@ import time
 from typing import Any
 
 
-def _producer(result_queue: Any, ack_queue: Any, device: int) -> None:
+def _producer(
+    result_queue: Any,
+    ack_queue: Any,
+    device: int,
+    transport: str,
+) -> None:
     import torch
     import torch_npu
 
@@ -38,6 +43,15 @@ def _producer(result_queue: Any, ack_queue: Any, device: int) -> None:
     torch.npu.synchronize()
     ready_s = time.perf_counter() - started
     tensors = cross_key + cross_value + self_key + self_value
+    d2h_s = 0.0
+    if transport == "host":
+        d2h_started = time.perf_counter()
+        tensors = [tensor.cpu() for tensor in tensors]
+        d2h_s = time.perf_counter() - d2h_started
+        cross_key = tensors[:6]
+        cross_value = tensors[6:12]
+        self_key = tensors[12:18]
+        self_value = tensors[18:24]
     result_queue.put(
         {
             "cross_key": cross_key,
@@ -45,6 +59,8 @@ def _producer(result_queue: Any, ack_queue: Any, device: int) -> None:
             "self_key": self_key,
             "self_value": self_value,
             "producer_ready_s": ready_s,
+            "producer_d2h_s": d2h_s,
+            "transport": transport,
             "payload_bytes": sum(t.numel() * t.element_size() for t in tensors),
             "sent_at": time.perf_counter(),
         }
@@ -57,6 +73,7 @@ def _producer(result_queue: Any, ack_queue: Any, device: int) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--device", type=int, default=0)
+    parser.add_argument("--transport", choices=("npu_ipc", "host"), default="npu_ipc")
     args = parser.parse_args()
 
     import torch
@@ -68,7 +85,7 @@ def main() -> None:
     ack_queue = context.Queue(maxsize=1)
     process = context.Process(
         target=_producer,
-        args=(result_queue, ack_queue, args.device),
+        args=(result_queue, ack_queue, args.device, args.transport),
     )
     process.start()
     receive_started = time.perf_counter()
@@ -84,8 +101,11 @@ def main() -> None:
         + payload["self_key"]
         + payload["self_value"]
     )
-    if any(t.device.type != "npu" for t in tensors):
-        raise RuntimeError("IPC rebuilt at least one tensor off-device")
+    expected_device = "npu" if args.transport == "npu_ipc" else "cpu"
+    if any(t.device.type != expected_device for t in tensors):
+        raise RuntimeError(
+            f"IPC rebuilt at least one tensor off {expected_device}"
+        )
     checks = []
     for layer in range(6):
         checks.extend(
@@ -104,9 +124,12 @@ def main() -> None:
         raise RuntimeError(f"IPC values differ: {checks} != {expected}")
 
     copy_started = time.perf_counter()
-    local = [torch.empty_like(t) for t in tensors]
-    for target, source in zip(local, tensors):
-        target.copy_(source)
+    if args.transport == "host":
+        local = [tensor.to("npu:0") for tensor in tensors]
+    else:
+        local = [torch.empty_like(t) for t in tensors]
+        for target, source in zip(local, tensors):
+            target.copy_(source)
     torch.npu.synchronize()
     copy_s = time.perf_counter() - copy_started
     ack_queue.put("received")
@@ -120,6 +143,8 @@ def main() -> None:
                 "payload_bytes": int(payload["payload_bytes"]),
                 "tensor_count": len(tensors),
                 "producer_ready_s": float(payload["producer_ready_s"]),
+                "producer_d2h_s": float(payload["producer_d2h_s"]),
+                "transport": args.transport,
                 "queue_receive_wall_s": received_s,
                 "post_send_receive_and_sync_s": import_lag_s,
                 "device_to_device_copy_s": copy_s,
