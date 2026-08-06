@@ -53,7 +53,7 @@ class ContinuousUniRecDecoder:
             raise ValueError(
                 f"max_length must be <= {LOCAL_UNIREC_STATIC_CACHE_LEN}, got {max_length}"
             )
-        if decode_mode not in {"eager", "compiled"}:
+        if decode_mode not in {"eager", "compiled", "compiled_ifa"}:
             raise ValueError(f"Unsupported decode_mode: {decode_mode}")
         self.runner = runner
         self.batch_size = int(batch_size)

@@ -596,37 +596,28 @@ class LocalDecoderAttention(nn.Module):
         key_states: torch.Tensor,
         value_states: torch.Tensor,
         attention_mask: torch.Tensor,
-        actual_seq_lengths: list[int],
-        kv_padding_size: torch.Tensor,
         output_dtype: torch.dtype,
     ) -> torch.Tensor:
         batch_size, _, target_length, _ = query_states.shape
-        if batch_size != 1:
-            raise ValueError(f"Local UniRec IncreFA path supports only batch size 1, got {batch_size}")
         if target_length != 1:
             raise ValueError(f"Local UniRec IncreFA path expects q_len == 1, got {target_length}")
         if attention_mask.shape != (batch_size, 1, 1, key_states.shape[2]):
             raise ValueError(
                 f"Local UniRec IncreFA path expects attention_mask with shape ({batch_size}, 1, 1, {key_states.shape[2]}), got {tuple(attention_mask.shape)}"
             )
-        if len(actual_seq_lengths) != batch_size:
-            raise ValueError(
-                f"Local UniRec IncreFA path expects actual_seq_lengths with length {batch_size}, got {len(actual_seq_lengths)}"
-            )
-        if kv_padding_size.numel() != 1:
-            raise ValueError(
-                f"Local UniRec IncreFA path expects scalar kv_padding_size tensor, got {tuple(kv_padding_size.shape)}"
-            )
         if torch_npu is None:
             raise RuntimeError("IncreFA requires torch_npu, but torch_npu is not importable in this environment")
 
+        # Keep all sequence-validity state in the tensor-valued attention mask.
+        # actual_seq_lengths is a host-side Python list in torch_npu, so passing
+        # a changing value would specialize the full graph at every decode
+        # length.  The static boolean mask supports different positions per
+        # batch row while preserving one reusable graph.
         attention_output = torch_npu.npu_incre_flash_attention(
             query_states.contiguous(),
             key_states.contiguous(),
             value_states.contiguous(),
             atten_mask=attention_mask.to(dtype=torch.bool).contiguous(),
-            actual_seq_lengths=[int(v) for v in actual_seq_lengths],
-            kv_padding_size=kv_padding_size.to(dtype=torch.int64, device=query_states.device).contiguous(),
             num_heads=int(self.num_heads),
             num_key_value_heads=int(self.num_heads),
             input_layout="BNSD",
@@ -855,8 +846,8 @@ class LocalDecoderLayer(nn.Module):
                 output_dtype=residual.dtype,
             )
         else:
-            self_attention_mask_bool, actual_seq_lengths, kv_padding_size = self.self_attn.build_increfa_decode_metadata(
-                active_length=active_length,
+            self_attention_mask_bool = self.self_attn.build_static_cache_attention_mask_bool(
+                cache_position=cache_position,
                 cache_len=key_cache.shape[2],
                 device=hidden_states.device,
             )
@@ -865,8 +856,6 @@ class LocalDecoderLayer(nn.Module):
                 key_states=key_cache,
                 value_states=value_cache,
                 attention_mask=self_attention_mask_bool,
-                actual_seq_lengths=actual_seq_lengths,
-                kv_padding_size=kv_padding_size,
                 output_dtype=residual.dtype,
             )
         hidden_states = residual + hidden_states
