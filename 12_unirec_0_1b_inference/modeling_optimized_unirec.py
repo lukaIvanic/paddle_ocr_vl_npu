@@ -1537,9 +1537,14 @@ class OptimizedUniRecRunner:
         t0 = time.perf_counter()
         processed_width, processed_height = self.processor.get_processed_size(image.width, image.height)
         encoder_seq_len_hint = self.processor.estimate_encoder_token_count_for_image_size(image.width, image.height)
-        inputs = self.processor(image)
-        t1 = time.perf_counter()
-        pixel_values = inputs["pixel_values"].to(self.device).to(dtype=self.dtype)
+        # Continuous decode pulls the initial crop set outside inference_mode,
+        # then pulls refills from inside its inference_mode loop. Create every
+        # graph input under one explicit tensor contract so TorchAir does not
+        # compile separate ADInplaceOrView dispatch-key variants.
+        with torch.inference_mode(False):
+            inputs = self.processor(image)
+            t1 = time.perf_counter()
+            pixel_values = inputs["pixel_values"].to(self.device).to(dtype=self.dtype)
         synchronize_device(self.device)
         t2 = time.perf_counter()
         prepare_total_s = float(image_load_s) + (t2 - t0)
