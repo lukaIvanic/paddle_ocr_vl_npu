@@ -217,6 +217,14 @@ def aggregate_round(
         key=lambda output: output["page_index"],
     )
     page_count = sum(int(result["pages"]) for result in worker_results)
+    # RUSAGE_SELF is process-wide.  Every thread observes nearly the same
+    # process CPU interval, so summing thread samples would count it once per
+    # thread.  Independent process samples are additive.
+    process_cpu_s = (
+        max(float(result["process_cpu_s"]) for result in worker_results)
+        if mode == "threads"
+        else sum(float(result["process_cpu_s"]) for result in worker_results)
+    )
     result = {
         "mode": mode,
         "workers": worker_count,
@@ -226,13 +234,8 @@ def aggregate_round(
         "measured_wall_s": measured_wall_s,
         "pages_per_s": page_count / measured_wall_s,
         "worker_wall_s": [float(result["wall_s"]) for result in worker_results],
-        "total_process_cpu_s": sum(
-            float(result["process_cpu_s"]) for result in worker_results
-        ),
-        "average_cpu_cores": sum(
-            float(result["process_cpu_s"]) for result in worker_results
-        )
-        / measured_wall_s,
+        "total_process_cpu_s": process_cpu_s,
+        "average_cpu_cores": process_cpu_s / measured_wall_s,
         "summed_max_rss_kb": (
             max(int(result["max_rss_kb"]) for result in worker_results)
             if mode == "threads"
