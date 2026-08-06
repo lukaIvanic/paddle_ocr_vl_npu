@@ -411,6 +411,20 @@ class UniRecVisionAtlasRuntime:
             self.runner.prepare_pil_image(image, image_source=image_source)
             for image, image_source in images
         ]
+        return self.prefill_prepared_packed_for_cohort(
+            prepared,
+            profile_device_stages=profile_device_stages,
+        )
+
+    def prefill_prepared_packed_for_cohort(
+        self,
+        prepared: list[tuple[dict[str, torch.Tensor], dict[str, Any]]],
+        *,
+        profile_device_stages: bool = False,
+    ) -> list[UniRecPrefilledItem]:
+        """Run the vision atlas from already prepared device inputs."""
+        if not prepared:
+            raise ValueError("cannot prefill an empty UniRec vision atlas group")
         text_runtime = self.runner._get_compiled_packed_text_prefill_runtime()
         cross_cache_len = self.runner._get_static_cross_cache_len()
         timeline = (
@@ -494,7 +508,7 @@ class UniRecVisionAtlasRuntime:
             stage_seconds = timeline.resolve()
         wall_s = time.perf_counter() - started
 
-        members = len(images)
+        members = len(prepared)
         real_text_tokens = packed_output.real_source_tokens
         physical_text_tokens = packed_output.physical_source_tokens
         padding_text_tokens = physical_text_tokens - real_text_tokens

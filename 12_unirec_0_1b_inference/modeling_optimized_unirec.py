@@ -1585,6 +1585,49 @@ class OptimizedUniRecRunner:
             image_load_s=0.0,
         )
 
+    def prepare_preprocessed_pixels(
+        self,
+        pixel_values: np.ndarray,
+        *,
+        original_image_size: tuple[int, int],
+        image_source: str,
+    ) -> tuple[dict[str, torch.Tensor], dict[str, Any]]:
+        """Move worker-preprocessed float32 BCHW pixels to the NPU."""
+        if pixel_values.dtype != np.float32 or pixel_values.ndim != 4:
+            raise ValueError(
+                "preprocessed pixels must be float32 BCHW, got "
+                f"{pixel_values.dtype} {pixel_values.shape}"
+            )
+        if pixel_values.shape[0] != 1 or pixel_values.shape[1] != 3:
+            raise ValueError(f"unexpected preprocessed pixel shape: {pixel_values.shape}")
+        synchronize_device(self.device)
+        started = time.perf_counter()
+        with torch.inference_mode(False):
+            host_pixels = torch.from_numpy(pixel_values)
+            device_pixels = host_pixels.to(self.device).to(dtype=self.dtype)
+        synchronize_device(self.device)
+        move_s = time.perf_counter() - started
+        original_width, original_height = original_image_size
+        processed_height = int(pixel_values.shape[2])
+        processed_width = int(pixel_values.shape[3])
+        return {"pixel_values": device_pixels}, {
+            "image": image_source,
+            "original_image_size": [int(original_width), int(original_height)],
+            "processed_image_size": [processed_width, processed_height],
+            "encoder_seq_len_hint": int(
+                self.processor.estimate_encoder_token_count_from_processed_size(
+                    processed_width=processed_width,
+                    processed_height=processed_height,
+                )
+            ),
+            "pixel_values_shape": list(device_pixels.shape),
+            "image_load_s": 0.0,
+            "image_preprocess_s": 0.0,
+            "move_to_device_s": move_s,
+            "prepare_total_s": move_s,
+            "worker_preprocessed": True,
+        }
+
     def _get_static_cross_cache_len(self) -> int:
         processor_max_side = tuple(int(value) for value in self.processor.max_side)
         cached = self._static_cross_cache_len_by_processor_max_side.get(processor_max_side)
@@ -1751,7 +1794,22 @@ class OptimizedUniRecRunner:
         text_prefill_mode: str = "eager",
     ) -> UniRecPrefilledItem:
         """Build B1 encoder cross-KV; decode processes the start token."""
-        inputs, prep = self.prepare_pil_image(image, image_source=image_source)
+        prepared = self.prepare_pil_image(image, image_source=image_source)
+        return self.prefill_prepared_for_cohort(
+            prepared,
+            profile_device_stages=profile_device_stages,
+            text_prefill_mode=text_prefill_mode,
+        )
+
+    def prefill_prepared_for_cohort(
+        self,
+        prepared: tuple[dict[str, torch.Tensor], dict[str, Any]],
+        *,
+        profile_device_stages: bool = False,
+        text_prefill_mode: str = "eager",
+    ) -> UniRecPrefilledItem:
+        """Build B1 encoder cross-KV from an already prepared device input."""
+        inputs, prep = prepared
         pixel_values = inputs["pixel_values"]
         cross_cache_len = self._get_static_cross_cache_len()
         if text_prefill_mode not in {"eager", "compiled_s512"}:
@@ -1871,6 +1929,20 @@ class OptimizedUniRecRunner:
             self.prepare_pil_image(image, image_source=image_source)
             for image, image_source in images
         ]
+        return self.prefill_prepared_images_packed_for_cohort(
+            prepared,
+            profile_device_stages=profile_device_stages,
+        )
+
+    def prefill_prepared_images_packed_for_cohort(
+        self,
+        prepared: list[tuple[dict[str, torch.Tensor], dict[str, Any]]],
+        *,
+        profile_device_stages: bool = False,
+    ) -> list[UniRecPrefilledItem]:
+        """Run packed text prefill from already prepared device inputs."""
+        if not prepared:
+            raise ValueError("cannot prefill an empty UniRec text pack")
         runtime = self._get_compiled_packed_text_prefill_runtime()
         cross_cache_len = self._get_static_cross_cache_len()
         member_vision_s: list[float] = []
@@ -1966,7 +2038,7 @@ class OptimizedUniRecRunner:
                 packed_stage_s = packed_timeline.resolve()
             packed_s = time.perf_counter() - packed_started
 
-        members = len(images)
+        members = len(prepared)
         real_tokens = packed_output.real_source_tokens
         physical_tokens = packed_output.physical_source_tokens
         padding_tokens = physical_tokens - real_tokens

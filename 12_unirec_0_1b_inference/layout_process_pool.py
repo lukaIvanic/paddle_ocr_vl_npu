@@ -21,6 +21,7 @@ import numpy as np
 import torch
 import cv2
 from kornia_rs.image import Image as KorniaImage
+from PIL import Image
 from torchvision.io import ImageReadMode, decode_image
 
 from opendoc_layout_npu import PPDocLayoutV2NpuAdapter
@@ -45,7 +46,7 @@ class SharedPageLease:
             raise RuntimeError("shared page lease is already closed")
         return np.ndarray(
             tuple(int(value) for value in descriptor["shape"]),
-            dtype=np.uint8,
+            dtype=np.dtype(descriptor.get("dtype", "uint8")),
             buffer=self.storage.buf,
             offset=int(descriptor["offset"]),
         )
@@ -60,46 +61,55 @@ class SharedPageLease:
 def _pack_frontend_payload_shared(
     result: dict[str, Any],
 ) -> tuple[dict[str, Any], float, int]:
-    """Move one full frontend payload into one shared uint8 arena."""
+    """Move one full frontend payload into one aligned shared arena."""
     arrays = [result["image_bgr"]]
-    arrays.extend(crop["image_rgb"] for crop in result["crops"])
-    total_bytes = sum(int(array.nbytes) for array in arrays)
+    for crop in result["crops"]:
+        arrays.extend((crop["image_rgb"], crop["processed_pixel_values"]))
+    offsets = []
+    total_bytes = 0
+    for array in arrays:
+        total_bytes = (total_bytes + 63) // 64 * 64
+        offsets.append(total_bytes)
+        total_bytes += int(array.nbytes)
     if total_bytes <= 0:
         raise RuntimeError("full frontend payload has no image bytes")
     started = time.perf_counter()
     storage = SharedMemory(create=True, size=total_bytes)
     ownership_transferred = False
     try:
-        offset = 0
         descriptors = []
-        for array in arrays:
-            if array.dtype != np.uint8 or not array.flags.c_contiguous:
-                array = np.ascontiguousarray(array, dtype=np.uint8)
+        for array, offset in zip(arrays, offsets):
+            if not array.flags.c_contiguous:
+                array = np.ascontiguousarray(array)
             descriptor = {
                 "offset": offset,
                 "shape": list(array.shape),
+                "dtype": array.dtype.str,
                 "nbytes": int(array.nbytes),
             }
             target = np.ndarray(
                 array.shape,
-                dtype=np.uint8,
+                dtype=array.dtype,
                 buffer=storage.buf,
                 offset=offset,
             )
             np.copyto(target, array, casting="no")
             descriptors.append(descriptor)
-            offset += int(array.nbytes)
-        if offset != total_bytes:
-            raise RuntimeError(f"shared payload mismatch: {offset} != {total_bytes}")
         result["shared_memory"] = {
             "name": storage.name,
             "nbytes": total_bytes,
         }
         result["image_bgr_descriptor"] = descriptors[0]
         result["image_bgr"] = None
-        for crop, descriptor in zip(result["crops"], descriptors[1:]):
-            crop["image_rgb_descriptor"] = descriptor
+        descriptor_index = 1
+        for crop in result["crops"]:
+            crop["image_rgb_descriptor"] = descriptors[descriptor_index]
+            crop["processed_pixel_values_descriptor"] = descriptors[
+                descriptor_index + 1
+            ]
             crop["image_rgb"] = None
+            crop["processed_pixel_values"] = None
+            descriptor_index += 2
         ownership_transferred = True
         pack_s = time.perf_counter() - started
         return result, pack_s, total_bytes
@@ -287,6 +297,11 @@ def _worker_main(
 
             crop_margin = openocr_crop_margin
             tokenize_figure_of_table = openocr_tokenize_figure_of_table
+            from modeling_optimized_unirec import UniRecImageProcessor
+
+            recognition_processor = UniRecImageProcessor()
+        else:
+            recognition_processor = None
         result_queue.put({"status": "ready", "worker": worker_index})
         while True:
             task = task_queue.get()
@@ -314,11 +329,22 @@ def _worker_main(
                     tokenize_figure_of_table=tokenize_figure_of_table,
                 )
                 result["started_at"] = started
+                recognition_prepare_started = time.perf_counter()
+                for crop in result["crops"]:
+                    inputs = recognition_processor(Image.fromarray(crop["image_rgb"]))
+                    crop["processed_pixel_values"] = np.ascontiguousarray(
+                        inputs["pixel_values"].numpy(),
+                        dtype=np.float32,
+                    )
+                recognition_prepare_s = (
+                    time.perf_counter() - recognition_prepare_started
+                )
                 result["frontend_timing_s"] = {
                     "page_file_read_s": decode_timing["file_read_s"],
                     "page_image_decode_s": decode_timing["direct_rgb_decode_s"],
                     "layout_s": detector_s,
                     **frontend_timing,
+                    "recognition_input_prepare_worker_s": recognition_prepare_s,
                 }
                 result, shared_pack_s, shared_payload_bytes = (
                     _pack_frontend_payload_shared(result)
@@ -344,6 +370,9 @@ def _worker_main(
                         **frontend_timing,
                         "shared_pack_s": shared_pack_s,
                         "shared_payload_bytes": shared_payload_bytes,
+                        "recognition_input_prepare_s": (
+                            recognition_prepare_s if prepare_pages else 0.0
+                        ),
                         "worker_page_s": ready_at - started,
                     },
                 }
@@ -450,6 +479,7 @@ class DynamicLayoutProcessPool:
             "worker_layout_crop_views_sum_s": 0.0,
             "worker_document_image_index_sum_s": 0.0,
             "worker_recognition_crop_build_sum_s": 0.0,
+            "worker_recognition_input_prepare_sum_s": 0.0,
             "worker_shared_pack_sum_s": 0.0,
         }
         shared_payload_bytes = 0
@@ -491,6 +521,9 @@ class DynamicLayoutProcessPool:
             )
             stage_s["worker_recognition_crop_build_sum_s"] += float(
                 timing.get("recognition_crop_build_s", 0.0)
+            )
+            stage_s["worker_recognition_input_prepare_sum_s"] += float(
+                timing.get("recognition_input_prepare_s", 0.0)
             )
             stage_s["worker_shared_pack_sum_s"] += float(
                 timing.get("shared_pack_s", 0.0)

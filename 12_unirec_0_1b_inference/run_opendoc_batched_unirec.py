@@ -71,6 +71,7 @@ class CropRequest:
     image: Image.Image
     label: str
     figure_token_map: dict[str, Any]
+    prepared_pixel_values: np.ndarray | None = None
     result: dict[str, Any] | None = None
 
     @property
@@ -671,14 +672,29 @@ def prefill_crop_group(
     vision_atlas_runtime: UniRecVisionAtlasRuntime | None,
     args: argparse.Namespace,
 ) -> list[Any]:
+    prepared = [
+        (
+            runner.prepare_preprocessed_pixels(
+                crop.prepared_pixel_values,
+                original_image_size=(crop.image.width, crop.image.height),
+                image_source=crop.request_id,
+            )
+            if crop.prepared_pixel_values is not None
+            else runner.prepare_pil_image(
+                crop.image,
+                image_source=crop.request_id,
+            )
+        )
+        for crop in crops
+    ]
     if use_packed_graph:
         if vision_atlas_runtime is not None:
-            return vision_atlas_runtime.prefill_images_packed_for_cohort(
-                [(crop.image, crop.request_id) for crop in crops],
+            return vision_atlas_runtime.prefill_prepared_packed_for_cohort(
+                prepared,
                 profile_device_stages=args.prefill_device_timing,
             )
-        return runner.prefill_images_packed_for_cohort(
-            [(crop.image, crop.request_id) for crop in crops],
+        return runner.prefill_prepared_images_packed_for_cohort(
+            prepared,
             profile_device_stages=args.prefill_device_timing,
         )
     if args.text_prefill_mode == "compiled_packed_s1024":
@@ -689,13 +705,12 @@ def prefill_crop_group(
     else:
         mode = args.text_prefill_mode
     return [
-        runner.prefill_image_for_cohort(
-            crop.image,
-            image_source=crop.request_id,
+        runner.prefill_prepared_for_cohort(
+            prepared_item,
             profile_device_stages=args.prefill_device_timing,
             text_prefill_mode=mode,
         )
-        for crop in crops
+        for prepared_item in prepared
     ]
 
 
@@ -859,6 +874,9 @@ def page_request_from_process_payload(
             image=Image.fromarray(lease.array(crop["image_rgb_descriptor"])),
             label=crop["label"],
             figure_token_map=crop["figure_token_map"],
+            prepared_pixel_values=lease.array(
+                crop["processed_pixel_values_descriptor"]
+            ),
         )
         for crop in payload["crops"]
     ]
@@ -895,6 +913,7 @@ def release_page_frontend_storage(page: PageRequest) -> None:
     for crop in page.crops:
         crop.image.close()
         crop.image = Image.new("RGB", (1, 1))
+        crop.prepared_pixel_values = None
     page.frontend_storage_lease = None
     lease.close()
 
