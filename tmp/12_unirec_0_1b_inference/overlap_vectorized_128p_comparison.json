@@ -1,0 +1,27 @@
+{
+  "commit": "a3faff7",
+  "corpus": {
+    "offset": 769,
+    "pages": 128
+  },
+  "real_parity": {
+    "pages": 32,
+    "calls_including_warmup": 33,
+    "exact": true
+  },
+  "overlap_filter": {
+    "before_s": 10.716402833582833,
+    "after_s": 0.21086838492192328,
+    "speedup_x": 50.82033913026231,
+    "saved_s": 10.50553444866091
+  },
+  "strict_frontend_projection": {
+    "before_s": 44.116014181869105,
+    "after_s": 33.610479733208194,
+    "pages_per_s": 3.8083360016290406
+  },
+  "notes": [
+    "Projection substitutes the directly measured overlap stage only.",
+    "All overlap decisions and returned boxes were exact on the real parity lane."
+  ]
+}
