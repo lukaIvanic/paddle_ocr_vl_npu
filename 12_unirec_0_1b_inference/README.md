@@ -364,6 +364,23 @@ Use `--limit-pages 2 --crop-only` for a fast development smoke. The shared
 memory lane requires a writable POSIX shared-memory mount. Blue Zone provides
 128 GiB at `/dev/shm`.
 
+Validated on the hard 128-page trace (7,325 crops, 7.866 GiB including page
+images), with eight workers and 16 pages maximum in flight:
+
+```text
+metadata only:                         0.108 s
+pickled array list:                   20.001 s
+one packed but still pickled arena:   19.006 s
+shared-memory arena, zero-copy view:   2.364 s
+shared-memory arena, parent copy:      7.295 s
+```
+
+Every lane passed shape and sampled-byte parity. Packing objects without
+changing transport saved only 5%. Shared memory was 8.46x faster than the
+current pickled-array transport. Copying all 7.866 GiB back into parent-owned
+memory cost 4.479 seconds and reduced that gain to 2.74x. This makes page-scoped
+shared-memory leases the preferred integration direction.
+
 ## Artifacts
 
 - Run JSON: `tmp/12_unirec_0_1b_inference/`
