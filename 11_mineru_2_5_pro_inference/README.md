@@ -186,8 +186,8 @@ $VLLM_PYTHON \
 ```
 
 CPU processor work runs one request at a time on a bounded background producer;
-`--local-prepare-prefetch-depth` controls its queue. The producer submits
-prepared tensors' H2D copies on a dedicated NPU transfer stream.
+`--local-prepare-prefetch-depth` controls its queue. The producer pins prepared
+CPU tensors and submits their H2D copies on a dedicated NPU transfer stream.
 The compute stream waits on each request's event only when that request enters
 prefill. This keeps both CPU preparation and H2D submission off the decode
 critical path without changing request order or decode-completion semantics.
