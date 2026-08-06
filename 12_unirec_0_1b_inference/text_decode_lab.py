@@ -40,6 +40,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--validation-steps", type=int, default=8)
     parser.add_argument("--profile-steps", type=int, default=2)
     parser.add_argument(
+        "--backends",
+        nargs="+",
+        choices=("eager", "increfa", "increfa_all"),
+        default=("eager", "increfa", "increfa_all"),
+        help="Compiled decoder lanes to run; select one lane for shape sweeps.",
+    )
+    parser.add_argument(
         "--compiled-timing-steps",
         type=int,
         default=0,
@@ -341,7 +348,7 @@ def main() -> None:
 
     lanes: dict[str, Any] = {}
     validations: dict[str, Any] = {}
-    for backend in ("eager", "increfa", "increfa_all"):
+    for backend in args.backends:
         progress("lane_begin", backend=backend)
         compiled, compile_meta = runner._compile_decode_module(
             backend="torchair",
@@ -434,31 +441,34 @@ def main() -> None:
         }
         progress("lane_end", backend=backend, raw_tok_s=raw_tokens / measured_s)
 
-    left = validations["eager"]
     comparison = {}
-    for backend in ("increfa", "increfa_all"):
-        right = validations[backend]
-        delta = (left["logits"] - right["logits"]).abs()
-        comparison[f"eager_vs_{backend}"] = {
-            "token_exact": left["tokens"] == right["tokens"],
-            "eager_tokens": left["tokens"],
-            f"{backend}_tokens": right["tokens"],
-            "final_logits_max_abs": float(delta.max()),
-            "final_logits_mean_abs": float(delta.mean()),
-            "final_logits_cosine": float(
-                F.cosine_similarity(
-                    left["logits"].flatten(), right["logits"].flatten(), dim=0
-                )
-            ),
-            "compiled_speedup": (
-                lanes[backend]["measure"]["raw_tok_s"]
-                / lanes["eager"]["measure"]["raw_tok_s"]
-            ),
-        }
+    if "eager" in validations:
+        left = validations["eager"]
+        for backend in ("increfa", "increfa_all"):
+            if backend not in validations:
+                continue
+            right = validations[backend]
+            delta = (left["logits"] - right["logits"]).abs()
+            comparison[f"eager_vs_{backend}"] = {
+                "token_exact": left["tokens"] == right["tokens"],
+                "eager_tokens": left["tokens"],
+                f"{backend}_tokens": right["tokens"],
+                "final_logits_max_abs": float(delta.max()),
+                "final_logits_mean_abs": float(delta.mean()),
+                "final_logits_cosine": float(
+                    F.cosine_similarity(
+                        left["logits"].flatten(), right["logits"].flatten(), dim=0
+                    )
+                ),
+                "compiled_speedup": (
+                    lanes[backend]["measure"]["raw_tok_s"]
+                    / lanes["eager"]["measure"]["raw_tok_s"]
+                ),
+            }
 
     profiles: dict[str, Any] = {}
     if args.profile_steps > 0:
-        for backend in ("eager", "increfa", "increfa_all"):
+        for backend in args.backends:
             progress("profile_begin", backend=backend)
             state = make_state(
                 runner,
