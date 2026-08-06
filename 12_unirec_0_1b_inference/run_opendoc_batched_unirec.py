@@ -10,6 +10,7 @@ fixed cohorts and a fixed-arena continuous decoder with per-slot hot swapping.
 from __future__ import annotations
 
 import argparse
+import atexit
 import json
 import sys
 import time
@@ -19,7 +20,6 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass, field
 from itertools import islice
 from pathlib import Path
-from threading import Thread
 from typing import Any, Iterable
 
 import cv2
@@ -1407,6 +1407,7 @@ def main() -> None:
             execution=args.layout_execution,
             warmup_paths=image_paths[: args.layout_process_workers],
         )
+        atexit.register(layout_process_pool.close)
         layout_process_setup_s = layout_process_pool.setup_wall_s
     if args.pipeline_warmup_pages:
         warmup_layouts = None
@@ -1475,10 +1476,7 @@ def main() -> None:
     precomputed_layouts: list[dict[str, Any]] | None = None
     precomputed_layout_page_s = 0.0
     layout_process_summary: dict[str, Any] | None = None
-    layout_process_shutdown_thread: Thread | None = None
     layout_process_shutdown_timing: dict[str, float] = {}
-    layout_process_shutdown_errors: list[BaseException] = []
-    layout_process_shutdown_join_wait_s = 0.0
     if layout_process_pool is not None:
         try:
             precomputed_layouts, layout_process_summary = layout_process_pool.map(
@@ -1489,42 +1487,11 @@ def main() -> None:
             layout_process_pool.close()
             layout_process_pool = None
             raise
-        closing_layout_pool = layout_process_pool
-        layout_process_pool = None
-
-        def close_layout_processes() -> None:
-            started = time.perf_counter()
-            try:
-                closing_layout_pool.close()
-            except BaseException as exc:
-                layout_process_shutdown_errors.append(exc)
-            finally:
-                layout_process_shutdown_timing["wall_s"] = (
-                    time.perf_counter() - started
-                )
-
-        layout_process_shutdown_thread = Thread(
-            target=close_layout_processes,
-            name="unirec-layout-process-shutdown",
-        )
-        layout_process_shutdown_thread.start()
         precomputed_layout_page_s = (
             float(layout_process_summary["wall_s"]) / len(precomputed_layouts)
         )
     written_pages = 0
     continuous_decode: dict[str, Any] | None = None
-
-    def await_layout_process_shutdown() -> None:
-        nonlocal layout_process_shutdown_join_wait_s
-        if layout_process_shutdown_thread is None:
-            return
-        started = time.perf_counter()
-        layout_process_shutdown_thread.join()
-        layout_process_shutdown_join_wait_s += time.perf_counter() - started
-        if layout_process_shutdown_errors:
-            raise RuntimeError("Layout worker shutdown failed") from (
-                layout_process_shutdown_errors[0]
-            )
 
     def write_page(result: dict[str, Any]) -> tuple[float, float]:
         started = time.perf_counter()
@@ -1618,7 +1585,6 @@ def main() -> None:
                     flush=True,
                 )
                 prepared_pages = list(prepared_pages)
-                await_layout_process_shutdown()
                 print(
                     "UNIREC_PAGE_FRONTEND_DRAIN_END "
                     f"pages={len(prepared_pages)}",
@@ -1771,7 +1737,6 @@ def main() -> None:
                 flush=True,
             )
             prepared_pages = list(prepared_pages)
-            await_layout_process_shutdown()
             print(
                 "UNIREC_PAGE_FRONTEND_DRAIN_END "
                 f"pages={len(prepared_pages)}",
@@ -1837,8 +1802,14 @@ def main() -> None:
             f"Written page count mismatch: {written_pages} != {len(image_paths)}"
         )
 
-    await_layout_process_shutdown()
     pipeline_wall_s = time.perf_counter() - pipeline_started
+    if layout_process_pool is not None:
+        shutdown_started = time.perf_counter()
+        layout_process_pool.close()
+        layout_process_shutdown_timing["wall_s"] = (
+            time.perf_counter() - shutdown_started
+        )
+        layout_process_pool = None
     accepted_crop_count = len(metrics.crop_records)
     vision_spatial_device_s = sum(
         metrics.prefill_device_stage_s.get(name, 0.0)
@@ -1877,7 +1848,7 @@ def main() -> None:
         "layout_process_warmup": layout_process_warmup,
         "layout_process": layout_process_summary,
         "layout_process_shutdown_s": layout_process_shutdown_timing.get("wall_s"),
-        "layout_process_shutdown_join_wait_s": layout_process_shutdown_join_wait_s,
+        "layout_process_shutdown_join_wait_s": 0.0,
         "layout_graph_warmup": (
             pipeline.layout_detector.graph_warmup
             if not use_onnx_layout and not use_layout_processes
