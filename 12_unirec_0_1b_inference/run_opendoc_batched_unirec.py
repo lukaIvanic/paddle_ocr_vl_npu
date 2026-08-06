@@ -31,6 +31,7 @@ from continuous_unirec import (
     ContinuousReadyItem,
     ContinuousUniRecDecoder,
 )
+from layout_process_pool import DynamicLayoutProcessPool
 from modeling_optimized_unirec import (
     LOCAL_UNIREC_STATIC_CACHE_LEN,
     OptimizedUniRecRunner,
@@ -167,6 +168,16 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=Path(
             ".runtime_cache/12_unirec_0_1b_inference/layout_detector_torchair"
+        ),
+    )
+    parser.add_argument(
+        "--layout-process-workers",
+        type=int,
+        default=0,
+        help=(
+            "Precompute B1 layout with this many persistent isolated NPU "
+            "processes using one dynamic filepath queue. Requires "
+            "--preprocess-all-pages-first and --layout-batch-size 1."
         ),
     )
     parser.add_argument("--stock-encoder", type=Path, required=True)
@@ -832,6 +843,8 @@ def iter_prepared_pages(
     layout_threshold: float,
     layout_batch_size: int,
     page_prepare_workers: int = 1,
+    precomputed_layouts: list[dict[str, Any]] | None = None,
+    precomputed_layout_page_s: float = 0.0,
 ) -> Iterable[PageRequest]:
     """Batch only layout inference, then restore exact page order."""
     if page_prepare_workers < 1:
@@ -851,18 +864,24 @@ def iter_prepared_pages(
             batch = list(islice(source, layout_batch_size))
             if not batch:
                 return
-            layout_started = time.perf_counter()
-            layout_results = pipeline.layout_detector(
-                [decoded.image for decoded in batch],
-                threshold=layout_threshold,
-            )
-            layout_batch_s = time.perf_counter() - layout_started
+            if precomputed_layouts is None:
+                layout_started = time.perf_counter()
+                layout_results = pipeline.layout_detector(
+                    [decoded.image for decoded in batch],
+                    threshold=layout_threshold,
+                )
+                layout_batch_s = time.perf_counter() - layout_started
+                layout_page_s = layout_batch_s / len(batch)
+            else:
+                layout_results = precomputed_layouts[
+                    page_index : page_index + len(batch)
+                ]
+                layout_page_s = precomputed_layout_page_s
             if len(layout_results) != len(batch):
                 raise RuntimeError(
                     "Layout result count mismatch: "
                     f"{len(layout_results)} != {len(batch)}"
                 )
-            layout_page_s = layout_batch_s / len(batch)
             page_indices = range(page_index, page_index + len(batch))
             if executor is None:
                 prepared_batch = [
@@ -1013,6 +1032,8 @@ def warmup_full_pipeline(
     vision_atlas_runtime: UniRecVisionAtlasRuntime | None,
     image_paths: list[Path],
     output_dir: Path,
+    precomputed_layouts: list[dict[str, Any]] | None = None,
+    precomputed_layout_page_s: float = 0.0,
 ) -> dict[str, Any]:
     """Run real pages through the selected end-to-end path before measurement."""
     warmup_paths = image_paths[: args.pipeline_warmup_pages]
@@ -1042,6 +1063,8 @@ def warmup_full_pipeline(
                 args.page_prepare_workers,
                 len(warmup_paths),
             ),
+            precomputed_layouts=precomputed_layouts,
+            precomputed_layout_page_s=precomputed_layout_page_s,
         )
     )
     rejected_crops = 0
@@ -1253,6 +1276,21 @@ def main() -> None:
         raise ValueError("--pipeline-warmup-pages must be >= 0")
     if args.layout_batch_size < 1:
         raise ValueError("--layout-batch-size must be >= 1")
+    if args.layout_process_workers < 0:
+        raise ValueError("--layout-process-workers must be >= 0")
+    if args.layout_process_workers:
+        if args.layout_backend != "transformers_npu":
+            raise ValueError(
+                "--layout-process-workers requires --layout-backend transformers_npu"
+            )
+        if args.layout_batch_size != 1:
+            raise ValueError(
+                "--layout-process-workers requires --layout-batch-size 1"
+            )
+        if not args.preprocess_all_pages_first:
+            raise ValueError(
+                "--layout-process-workers requires --preprocess-all-pages-first"
+            )
     if args.layout_batch_size > 1 and args.layout_backend != "transformers_npu":
         raise ValueError(
             "--layout-batch-size > 1 requires --layout-backend transformers_npu"
@@ -1296,6 +1334,7 @@ def main() -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     setup_started = time.perf_counter()
     use_onnx_layout = args.layout_backend == "onnx_cpu"
+    use_layout_processes = args.layout_process_workers > 0
     pipeline = infer_doc_onnx.OpenDocONNX(
         layout_model_path=str(args.layout_model.expanduser().resolve()),
         unirec_encoder_path=str(args.stock_encoder.expanduser().resolve()),
@@ -1307,7 +1346,7 @@ def main() -> None:
         auto_download=False,
         max_parallel_blocks=1,
     )
-    if not use_onnx_layout:
+    if not use_onnx_layout and not use_layout_processes:
         pipeline.layout_detector = PPDocLayoutV2NpuAdapter(
             model_path=args.layout_transformers_model,
             device=args.device,
@@ -1317,6 +1356,8 @@ def main() -> None:
             compile_cache_dir=args.layout_compile_cache_dir,
             batch_size=args.layout_batch_size,
         )
+        pipeline.use_layout_detection = True
+    elif use_layout_processes:
         pipeline.use_layout_detection = True
     runner = OptimizedUniRecRunner(
         model_path=model_path,
@@ -1353,20 +1394,50 @@ def main() -> None:
             vision_atlas_runtime = UniRecVisionAtlasRuntime(runner)
     else:
         vision_atlas_runtime = None
-    if args.pipeline_warmup_pages:
-        graph_warmup = warmup_full_pipeline(
-            args=args,
-            pipeline=pipeline,
-            infer_doc_onnx=infer_doc_onnx,
-            runner=runner,
-            vision_atlas_runtime=vision_atlas_runtime,
-            image_paths=image_paths,
-            output_dir=output_dir,
+    layout_process_pool: DynamicLayoutProcessPool | None = None
+    layout_process_warmup: dict[str, Any] | None = None
+    layout_process_setup_s: float | None = None
+    if use_layout_processes:
+        layout_process_pool = DynamicLayoutProcessPool(
+            worker_count=args.layout_process_workers,
+            model_path=args.layout_transformers_model.expanduser().resolve(),
+            cache_dir=args.layout_compile_cache_dir.expanduser().resolve(),
+            threshold=args.layout_threshold,
+            execution=args.layout_execution,
+            warmup_paths=image_paths[: args.layout_process_workers],
         )
+        layout_process_setup_s = layout_process_pool.setup_wall_s
+    if args.pipeline_warmup_pages:
+        warmup_layouts = None
+        warmup_layout_page_s = 0.0
+        if layout_process_pool is not None:
+            warmup_layouts, layout_process_warmup = layout_process_pool.map(
+                image_paths[: args.pipeline_warmup_pages],
+                label="pipeline_warmup",
+            )
+            warmup_layout_page_s = (
+                float(layout_process_warmup["wall_s"]) / len(warmup_layouts)
+            )
+        try:
+            graph_warmup = warmup_full_pipeline(
+                args=args,
+                pipeline=pipeline,
+                infer_doc_onnx=infer_doc_onnx,
+                runner=runner,
+                vision_atlas_runtime=vision_atlas_runtime,
+                image_paths=image_paths,
+                output_dir=output_dir,
+                precomputed_layouts=warmup_layouts,
+                precomputed_layout_page_s=warmup_layout_page_s,
+            )
+        except BaseException:
+            if layout_process_pool is not None:
+                layout_process_pool.close()
+            raise
         runner.reset_packed_text_prefill_stats()
         if vision_atlas_runtime is not None:
             vision_atlas_runtime.reset_stats()
-        if not use_onnx_layout:
+        if not use_onnx_layout and not use_layout_processes:
             pipeline.layout_detector.reset_timing()
     else:
         graph_warmup = warmup_configured_graphs(
@@ -1374,7 +1445,7 @@ def main() -> None:
             runner=runner,
             vision_atlas_runtime=vision_atlas_runtime,
         )
-        if not use_onnx_layout:
+        if not use_onnx_layout and not use_layout_processes:
             layout_warmup_page = decode_page_bgr(
                 image_paths[0],
                 decoder=args.page_image_decoder,
@@ -1400,6 +1471,21 @@ def main() -> None:
     )
     max_pending_writes = 8
     pipeline_started = time.perf_counter()
+    precomputed_layouts: list[dict[str, Any]] | None = None
+    precomputed_layout_page_s = 0.0
+    layout_process_summary: dict[str, Any] | None = None
+    if layout_process_pool is not None:
+        try:
+            precomputed_layouts, layout_process_summary = layout_process_pool.map(
+                image_paths,
+                label="measured",
+            )
+        finally:
+            layout_process_pool.close()
+            layout_process_pool = None
+        precomputed_layout_page_s = (
+            float(layout_process_summary["wall_s"]) / len(precomputed_layouts)
+        )
     written_pages = 0
     continuous_decode: dict[str, Any] | None = None
 
@@ -1485,6 +1571,8 @@ def main() -> None:
                 layout_threshold=args.layout_threshold,
                 layout_batch_size=args.layout_batch_size,
                 page_prepare_workers=args.page_prepare_workers,
+                precomputed_layouts=precomputed_layouts,
+                precomputed_layout_page_s=precomputed_layout_page_s,
             )
             if args.preprocess_all_pages_first:
                 print(
@@ -1635,6 +1723,8 @@ def main() -> None:
             layout_threshold=args.layout_threshold,
             layout_batch_size=args.layout_batch_size,
             page_prepare_workers=args.page_prepare_workers,
+            precomputed_layouts=precomputed_layouts,
+            precomputed_layout_page_s=precomputed_layout_page_s,
         )
         if args.preprocess_all_pages_first:
             print(
@@ -1742,8 +1832,14 @@ def main() -> None:
         "layout_dtype": args.layout_dtype if not use_onnx_layout else None,
         "layout_execution": args.layout_execution if not use_onnx_layout else None,
         "layout_batch_size": args.layout_batch_size,
+        "layout_process_workers": args.layout_process_workers,
+        "layout_process_setup_s": layout_process_setup_s,
+        "layout_process_warmup": layout_process_warmup,
+        "layout_process": layout_process_summary,
         "layout_graph_warmup": (
-            pipeline.layout_detector.graph_warmup if not use_onnx_layout else None
+            pipeline.layout_detector.graph_warmup
+            if not use_onnx_layout and not use_layout_processes
+            else None
         ),
         "page_decode_workers": args.page_decode_workers,
         "page_image_decoder": args.page_image_decoder,
