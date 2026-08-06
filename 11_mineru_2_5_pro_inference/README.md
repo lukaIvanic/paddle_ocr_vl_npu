@@ -122,7 +122,7 @@ extra renderer pass preserves text IDs but corrupts the multimodal payload.
 
 ## Official Transformers OmniDocBench lane
 
-The fidelity baseline follows the checkpoint model card: BF16 stock
+The fidelity baseline uses FP16 stock
 Transformers, the fast processor, eager attention, official
 `MinerUClient(backend="transformers")`, `image_analysis=False`, greedy
 generation, and official `json2md`. The default client batch size is one.
@@ -170,7 +170,7 @@ $VLLM_PYTHON \
   --local-prepare-prefetch-depth 16 \
   --local-compiled-cache-length 4096 \
   --local-torchair-cache-dir \
-    .runtime_cache/11_mineru_2_5_pro_inference/native_fixed_b8_k4096_bf16
+    .runtime_cache/11_mineru_2_5_pro_inference/native_fixed_b8_k4096_fp16
 ```
 
 CPU processor work runs one request at a time on a bounded background producer;
@@ -197,9 +197,9 @@ Local MinerU backends accept `--local-vision-attention manual` and
 `--local-vision-attention prompt_flash_attention`. The PromptFA lane is eager:
 it uses one unmasked, full-attention `BNSD` operator call for each image segment
 defined by the existing vision `cu_seqlens`. MinerU's vision head dimension is
-80, so this path does not pad or slice attention heads. Local backends default
-to `--local-dtype float16`; this is the common PromptFA dtype supported by both
-910B and 310P. `bfloat16` remains an explicit 910B-only comparison option.
+80, so this path does not pad or slice attention heads. Local backends use
+`--local-dtype float16`; this is the common PromptFA dtype supported by both
+910B and 310P. The standard experiment paths do not expose a BF16 mode.
 
 The local backends also accept `--local-vision-backend torchair` plus
 `--local-vision-buckets`. This is a B=1 static bucket path. Patch embedding and

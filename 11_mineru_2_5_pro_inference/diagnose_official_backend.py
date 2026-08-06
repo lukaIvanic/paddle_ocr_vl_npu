@@ -78,7 +78,7 @@ def run_transformers(args: argparse.Namespace, image: Image.Image | None) -> dic
     )
     model = Qwen2VLForConditionalGeneration.from_pretrained(
         args.model,
-        dtype=torch.bfloat16,
+        dtype=torch.float16,
         attn_implementation="eager",
         local_files_only=True,
     )
@@ -150,7 +150,7 @@ def run_vllm(args: argparse.Namespace, image: Image.Image | None) -> dict[str, A
     setup_started = time.perf_counter()
     llm = LLM(
         model=str(args.model),
-        dtype="bfloat16",
+        dtype="float16",
         enforce_eager=True,
         gpu_memory_utilization=args.vllm_gpu_memory_utilization,
         max_model_len=8192,

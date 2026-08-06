@@ -3,7 +3,7 @@
 
 The runner supports the stock Transformers and synchronous vLLM engines while
 preserving the remaining model-card contract: the official
-``mineru-vl-utils`` two-step client, BF16, greedy generation, image analysis
+``mineru-vl-utils`` two-step client, FP16, greedy generation, image analysis
 disabled, and official ``json2md`` output.  It adds only corpus selection,
 deterministic sharding, durable checkpoints, and explicit progress/timing
 records.
@@ -34,7 +34,7 @@ DEFAULT_IMAGES_DIR = Path("/workspace/datasets/OmniDocBench/images")
 DEFAULT_LOCAL_TORCHAIR_CACHE_DIR = (
     Path(".runtime_cache")
     / "11_mineru_2_5_pro_inference"
-    / "native_compiled_decode_b1_k8192_bf16"
+    / "native_compiled_decode_b1_k8192_fp16"
 )
 DEFAULT_LOCAL_VISION_TORCHAIR_CACHE_DIR = (
     Path(".runtime_cache")
@@ -105,7 +105,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--local-dtype",
-        choices=("float16", "bfloat16"),
+        choices=("float16",),
         default="float16",
         help=(
             "Model dtype for local MinerU backends. Use float16 for the "
@@ -352,7 +352,7 @@ def main() -> None:
 
             model = Qwen2VLForConditionalGeneration.from_pretrained(
                 model_dir,
-                dtype=torch.bfloat16,
+                dtype=torch.float16,
                 attn_implementation="eager",
                 local_files_only=True,
             )
@@ -387,11 +387,7 @@ def main() -> None:
                 make_local_fixed_batch_vlm_client,
             )
 
-            local_dtype = (
-                torch.float16
-                if args.local_dtype == "float16"
-                else torch.bfloat16
-            )
+            local_dtype = torch.float16
             local_model = LocalMinerU2_5ForConditionalGeneration.from_pretrained(
                 model_dir,
                 dtype=local_dtype,
@@ -567,7 +563,7 @@ def main() -> None:
             }
         engine_kwargs = dict(
             model=str(model_dir),
-            dtype="bfloat16",
+            dtype="float16",
             enforce_eager=args.vllm_enforce_eager,
             gpu_memory_utilization=args.vllm_gpu_memory_utilization,
             max_model_len=args.vllm_max_model_len,
@@ -652,9 +648,7 @@ def main() -> None:
         "torch_npu": torch_npu.__version__,
         "transformers": transformers.__version__,
         "mineru_vl_utils": mineru_utils_version,
-        "dtype": (
-            args.local_dtype if args.backend.startswith("local-") else "bfloat16"
-        ),
+        "dtype": "float16",
         "attention": attention,
         "processor_fast": processor_fast,
         "processor_min_pixels": (

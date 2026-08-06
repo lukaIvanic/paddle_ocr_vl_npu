@@ -1294,8 +1294,6 @@ def parse_torch_dtype(value: str):
         "float16": torch.float16,
         "fp16": torch.float16,
         "half": torch.float16,
-        "bfloat16": torch.bfloat16,
-        "bf16": torch.bfloat16,
         "float32": torch.float32,
         "fp32": torch.float32,
     }
