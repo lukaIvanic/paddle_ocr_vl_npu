@@ -1341,6 +1341,36 @@ def main() -> None:
                 for item in generation_metrics
                 if item.get("compile_warmup", {}).get("ran_this_call")
             ),
+            "phase_calls": [
+                {
+                    "call_index": call_index,
+                    "group_index": call_index // 2,
+                    "phase": "layout" if call_index % 2 == 0 else "recognition",
+                    "request_count": int(item.get("request_count", 0)),
+                    "graph_calls": int(item.get("graph_calls", 0)),
+                    "decode_calls": int(item.get("decode_calls", 0)),
+                    "raw_decode_token_slots": int(
+                        item.get("raw_decode_token_slots", item.get("decode_calls", 0))
+                    ),
+                    "active_decode_token_slots": int(
+                        item.get("active_decode_token_slots", item.get("decode_calls", 0))
+                    ),
+                    "prefill_s": float(item.get("prefill_s", 0.0)),
+                    "decode_s": float(item.get("decode_s", 0.0)),
+                    "generation_wall_s": float(item.get("generation_wall_s", 0.0)),
+                    "cpu_prepare_worker_s": float(
+                        item.get("cpu_prepare_worker_s", 0.0)
+                    ),
+                    "cpu_prepare_wait_s": float(
+                        item.get("cpu_prepare_wait_s", 0.0)
+                    ),
+                    "request_h2d_submit_s": float(
+                        item.get("request_h2d_submit_s", 0.0)
+                    ),
+                    "prefill_metrics": item.get("prefill_metrics", {}),
+                }
+                for call_index, item in enumerate(generation_metrics)
+            ],
         }
         prefill_metrics: dict[str, float | int] = {}
         for item in generation_metrics:
