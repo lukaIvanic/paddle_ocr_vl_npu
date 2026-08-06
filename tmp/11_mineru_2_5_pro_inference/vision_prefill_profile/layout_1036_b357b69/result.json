@@ -1,0 +1,323 @@
+{
+  "schema_version": 1,
+  "kind": "mineru_vision_prefill_torch_npu_profile",
+  "profile_scope": "full get_image_features: patch + positions + transformer blocks + merger",
+  "excluded_scope": "model setup + image decode/resize + processor + H2D + graph cache restore/compile",
+  "device": "Ascend NPU",
+  "dtype": "fp16",
+  "attention": "prompt_flash_attention",
+  "execution": "torchair",
+  "setup_s": 15.19148879009299,
+  "model": "/workspace/models/MinerU2.5-Pro-2605-1.2B",
+  "page": {
+    "page_index": 0,
+    "name": "page-d1561665-5359-42fe-920c-d6e3bff81953.png",
+    "path": "/workspace/datasets/OmniDocBench/images/page-d1561665-5359-42fe-920c-d6e3bff81953.png",
+    "original_size_wh": [
+      1653,
+      2339
+    ],
+    "processed_size_wh": [
+      1036,
+      1036
+    ],
+    "grid_thw": [
+      [
+        1,
+        74,
+        74
+      ]
+    ],
+    "real_tokens": 5476,
+    "cpu_preprocess_s": 0.24210187490098178,
+    "h2d_s": 0.004224562086164951
+  },
+  "layout_size_wh": [
+    1036,
+    1036
+  ],
+  "real_tokens": 5476,
+  "physical_tokens": 5632,
+  "preparation": {
+    "cpu_preprocess_s": {
+      "count": 1,
+      "total": 0.24210187490098178,
+      "mean": 0.24210187490098178,
+      "min": 0.24210187490098178,
+      "p50": 0.24210187490098178,
+      "p90": 0.24210187490098178,
+      "max": 0.24210187490098178
+    },
+    "h2d_s": {
+      "count": 1,
+      "total": 0.004224562086164951,
+      "mean": 0.004224562086164951,
+      "min": 0.004224562086164951,
+      "p50": 0.004224562086164951,
+      "p90": 0.004224562086164951,
+      "max": 0.004224562086164951
+    }
+  },
+  "warmup_steps": 3,
+  "baseline_steps": 10,
+  "profile_steps": 3,
+  "metrics": {
+    "pipe": {
+      "metric": "pipe",
+      "profile_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/11_mineru_2_5_pro_inference/vision_prefill_profiles/layout_1036_b357b69/pipe",
+      "unprofiled_before": {
+        "samples_s": [
+          0.14152118493802845,
+          0.14352671895176172,
+          0.14091170486062765,
+          0.14129275106824934,
+          0.13945682998746634,
+          0.1404206759762019,
+          0.14113536896184087,
+          0.13960433192551136,
+          0.13909909408539534,
+          0.1396603740286082
+        ],
+        "summary_s": {
+          "count": 10,
+          "total": 1.4066290347836912,
+          "mean": 0.14066290347836913,
+          "min": 0.13909909408539534,
+          "p50": 0.14066619041841477,
+          "p90": 0.14172173833940177,
+          "max": 0.14352671895176172
+        },
+        "output_shape": [
+          1369,
+          896
+        ],
+        "nonfinite": 0
+      },
+      "unprofiled_after": {
+        "samples_s": [
+          0.14198586298152804,
+          0.13972376519814134,
+          0.14008160098455846,
+          0.1399505480658263,
+          0.13948703999631107,
+          0.1398656968958676,
+          0.1411891400348395,
+          0.13909158413298428,
+          0.1394935310818255,
+          0.13942843908444047
+        ],
+        "summary_s": {
+          "count": 10,
+          "total": 1.4002972084563226,
+          "mean": 0.14002972084563226,
+          "min": 0.13909158413298428,
+          "p50": 0.13979473104700446,
+          "p90": 0.1412688123295084,
+          "max": 0.14198586298152804
+        },
+        "output_shape": [
+          1369,
+          896
+        ],
+        "nonfinite": 0
+      },
+      "unprofiled_reference_mean_s": 0.1403463121620007,
+      "profiled_forward_samples_s": [
+        0.15140980295836926,
+        0.14501579478383064,
+        0.14534432021901011
+      ],
+      "profiled_forward_summary_s": {
+        "count": 3,
+        "total": 0.44176991796121,
+        "mean": 0.14725663932040334,
+        "min": 0.14501579478383064,
+        "p50": 0.14534432021901011,
+        "p90": 0.15019670641049743,
+        "max": 0.15140980295836926
+      },
+      "profiled_forward_slowdown": 1.0492376825008847,
+      "profiler_step_samples_s": [
+        0.0002609449438750744,
+        0.0002419739030301571,
+        5.869395324029028
+      ],
+      "profiler_step_summary_s": {
+        "count": 3,
+        "total": 5.869898242875934,
+        "mean": 1.9566327476253111,
+        "min": 0.0002419739030301571,
+        "p50": 0.0002609449438750744,
+        "p90": 4.695568448211998,
+        "max": 5.869395324029028
+      },
+      "profile_context_wall_s": 6.4284372460097075,
+      "profile_active_loop_wall_s": 6.312769010197371,
+      "profile_context_non_active_s": 0.1156682358123362,
+      "parser": {
+        "command": [
+          "/usr/local/python3.12.13/bin/python3",
+          "/workspace/repos/paddle_ocr_vl_npu/11_mineru_2_5_pro_inference/parse_npu_profile.py",
+          "--profile-dir",
+          "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/11_mineru_2_5_pro_inference/vision_prefill_profiles/layout_1036_b357b69/pipe",
+          "--topn",
+          "30",
+          "--out-json",
+          "/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/vision_prefill_profile/layout_1036_b357b69/pipe/parsed_profile_summary.json",
+          "--out-md",
+          "/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/vision_prefill_profile/layout_1036_b357b69/pipe/parsed_profile_summary.md",
+          "--skip-trace"
+        ],
+        "stdout": "{\n  \"out_json\": \"/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/vision_prefill_profile/layout_1036_b357b69/pipe/parsed_profile_summary.json\",\n  \"out_md\": \"/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/vision_prefill_profile/layout_1036_b357b69/pipe/parsed_profile_summary.md\",\n  \"runs\": 1\n}\n",
+        "stderr": "",
+        "json": "/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/vision_prefill_profile/layout_1036_b357b69/pipe/parsed_profile_summary.json",
+        "markdown": "/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/vision_prefill_profile/layout_1036_b357b69/pipe/parsed_profile_summary.md"
+      }
+    },
+    "memory": {
+      "metric": "memory",
+      "profile_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/11_mineru_2_5_pro_inference/vision_prefill_profiles/layout_1036_b357b69/memory",
+      "unprofiled_before": {
+        "samples_s": [
+          0.13992477813735604,
+          0.13940799911506474,
+          0.13941160892136395,
+          0.13912601512856781,
+          0.14000895898789167,
+          0.13945530005730689,
+          0.13902751286514103,
+          0.13977755489759147,
+          0.13940572901628911,
+          0.13939319900237024
+        ],
+        "summary_s": {
+          "count": 10,
+          "total": 1.394938656128943,
+          "mean": 0.13949386561289429,
+          "min": 0.13902751286514103,
+          "p50": 0.13940980401821434,
+          "p90": 0.1399331962224096,
+          "max": 0.14000895898789167
+        },
+        "output_shape": [
+          1369,
+          896
+        ],
+        "nonfinite": 0
+      },
+      "unprofiled_after": {
+        "samples_s": [
+          0.14133364195004106,
+          0.14067972102202475,
+          0.13904564315453172,
+          0.14249442191794515,
+          0.14019780210219324,
+          0.13907041400671005,
+          0.1393777090124786,
+          0.1397193840239197,
+          0.13907200400717556,
+          0.13995693903416395
+        ],
+        "summary_s": {
+          "count": 10,
+          "total": 1.4009476802311838,
+          "mean": 0.14009476802311838,
+          "min": 0.13904564315453172,
+          "p50": 0.13983816152904183,
+          "p90": 0.14144971994683148,
+          "max": 0.14249442191794515
+        },
+        "output_shape": [
+          1369,
+          896
+        ],
+        "nonfinite": 0
+      },
+      "unprofiled_reference_mean_s": 0.13979431681800633,
+      "profiled_forward_samples_s": [
+        0.14700001804158092,
+        0.1452748200390488,
+        0.14432906289584935
+      ],
+      "profiled_forward_summary_s": {
+        "count": 3,
+        "total": 0.43660390097647905,
+        "mean": 0.14553463365882635,
+        "min": 0.14432906289584935,
+        "p50": 0.1452748200390488,
+        "p90": 0.14665497844107447,
+        "max": 0.14700001804158092
+      },
+      "profiled_forward_slowdown": 1.0410625908941145,
+      "profiler_step_samples_s": [
+        0.0002451238688081503,
+        0.00020407303236424923,
+        5.820075506111607
+      ],
+      "profiler_step_summary_s": {
+        "count": 3,
+        "total": 5.820524703012779,
+        "mean": 1.9401749010042597,
+        "min": 0.00020407303236424923,
+        "p50": 0.0002451238688081503,
+        "p90": 4.656109429663047,
+        "max": 5.820075506111607
+      },
+      "profile_context_wall_s": 6.345523475902155,
+      "profile_active_loop_wall_s": 6.258162801153958,
+      "profile_context_non_active_s": 0.0873606747481972,
+      "parser": {
+        "command": [
+          "/usr/local/python3.12.13/bin/python3",
+          "/workspace/repos/paddle_ocr_vl_npu/11_mineru_2_5_pro_inference/parse_npu_profile.py",
+          "--profile-dir",
+          "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/11_mineru_2_5_pro_inference/vision_prefill_profiles/layout_1036_b357b69/memory",
+          "--topn",
+          "30",
+          "--out-json",
+          "/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/vision_prefill_profile/layout_1036_b357b69/memory/parsed_profile_summary.json",
+          "--out-md",
+          "/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/vision_prefill_profile/layout_1036_b357b69/memory/parsed_profile_summary.md",
+          "--skip-trace"
+        ],
+        "stdout": "{\n  \"out_json\": \"/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/vision_prefill_profile/layout_1036_b357b69/memory/parsed_profile_summary.json\",\n  \"out_md\": \"/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/vision_prefill_profile/layout_1036_b357b69/memory/parsed_profile_summary.md\",\n  \"runs\": 1\n}\n",
+        "stderr": "",
+        "json": "/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/vision_prefill_profile/layout_1036_b357b69/memory/parsed_profile_summary.json",
+        "markdown": "/workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/vision_prefill_profile/layout_1036_b357b69/memory/parsed_profile_summary.md"
+      }
+    }
+  },
+  "runtime": {
+    "backend": "torchair",
+    "boundary": "32_vision_transformer_blocks",
+    "batch_size": 1,
+    "attention": "prompt_flash_attention",
+    "mask_sparse_mode": 1,
+    "padding": "bucket",
+    "buckets": [
+      384,
+      512,
+      768,
+      1024,
+      1536,
+      2048,
+      3072,
+      4224,
+      5632
+    ],
+    "overflow": "eager_unpadded",
+    "route_counts": {
+      "5632": 46
+    },
+    "real_tokens": 251896,
+    "physical_tokens": 259072,
+    "useful_token_fraction": 0.9723011363636364,
+    "compile_records": {
+      "5632": {
+        "compile_wrapper_s": 0.00010725203901529312,
+        "first_call_s": 0.8084584798198193,
+        "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/11_mineru_2_5_pro_inference/vision_prefill_b1_fp16/mineru_vision_blocks_promptfa_mask_sparse1_bs1_seq5632_dtypefloat16_model22097df08750_torch2.10.0+cpu_torchnpu2.10.0_src2910a67c2383"
+      }
+    }
+  }
+}
