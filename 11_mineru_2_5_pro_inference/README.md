@@ -243,6 +243,32 @@ $PYTHON 11_mineru_2_5_pro_inference/bench_compiled_vision_prefill.py \
   --output tmp/11_mineru_2_5_pro_inference/compiled_vision_crop/result.json
 ```
 
+For corpus-level vision work, use `vision_prefill_lab.py`. It replays real
+OmniDocBench pages, keeps CPU image preparation and H2D outside the headline
+vision throughput, records patch/position/transformer/merger device times, and
+can compare eager against bucketed TorchAir features. The standard MinerU layout
+scenario forces each real page to 1036x1036, which produces 5,476 real tower
+tokens and routes to the 5,632-token compiled bucket:
+
+```sh
+$PYTHON 11_mineru_2_5_pro_inference/vision_prefill_lab.py \
+  --model "$MODEL_DIR" \
+  --dataset-json /workspace/datasets/OmniDocBench/OmniDocBench.json \
+  --images-dir /workspace/datasets/OmniDocBench/images \
+  --offset 0 --limit 8 \
+  --layout-size 1036 1036 \
+  --execution eager,torchair \
+  --buckets 384,512,768,1024,1536,2048,3072,4224,5632 \
+  --warmup-pages 2 --repeats 3 --parity-pages 2 \
+  --cache-dir .runtime_cache/11_mineru_2_5_pro_inference/vision_prefill_b1_fp16 \
+  --output tmp/11_mineru_2_5_pro_inference/vision_prefill_lab/layout_1036/result.json
+```
+
+Use `effective_tok_s` for real model work and `physical_tok_s` for the padded
+compiled workload. `pages_per_s` is vision-only throughput. It excludes model
+load, image decode/resize, processor work, H2D, layout text generation, and all
+recognition crops.
+
 ## Official synchronous vLLM lane
 
 Start with eager vLLM to separate compatibility from graph compilation:
