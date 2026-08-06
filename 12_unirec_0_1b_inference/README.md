@@ -333,6 +333,37 @@ replace stages 0, 1, or 3, the patch stem, stage downsampling, or the final
 projection. Use `--routing prebuilt_atlas` only to measure the stage-compute
 upper bound without permutation or separate-crop assembly costs.
 
+## Full-page frontend IPC lab
+
+`frontend_ipc_lab.py` isolates the process-to-coordinator transfer after page
+decode, layout, and crop construction. It does not load the layout or
+recognition model. It replays exact page and crop array shapes from a recorded
+recognition trace and compares four transport mechanisms:
+
+- descriptor-only metadata;
+- the current list of independently pickled NumPy arrays;
+- one packed NumPy arena that is still pickled through the queue;
+- one parent-owned POSIX shared-memory arena with descriptor-only queue traffic.
+
+The default trace is the hard 128-page, 7,325-crop run. Worker setup and
+shutdown are excluded from measured transport wall time. `--consumer sample`
+measures zero-copy receipt and validates representative bytes in every segment.
+`--consumer copy` additionally copies every segment into coordinator-owned
+memory, which prices a design that cannot retain shared-memory leases.
+
+```sh
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
+  12_unirec_0_1b_inference/frontend_ipc_lab.py \
+  --workers 8 --max-inflight 16 \
+  --modes metadata,pickle_arrays,pickle_arena,shared_memory_arena \
+  --consumer sample \
+  --output tmp/12_unirec_0_1b_inference/frontend_ipc_lab/result.json
+```
+
+Use `--limit-pages 2 --crop-only` for a fast development smoke. The shared
+memory lane requires a writable POSIX shared-memory mount. Blue Zone provides
+128 GiB at `/dev/shm`.
+
 ## Artifacts
 
 - Run JSON: `tmp/12_unirec_0_1b_inference/`
