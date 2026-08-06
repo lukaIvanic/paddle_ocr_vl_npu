@@ -1,17 +1,14 @@
 # Full-page OCR API benchmark client
 
-Use this client when the full-page OCR API is already running:
+Scripts:
 
-- `scripts/run_omnidocbench_page_api_eval.py`
+- `run_omnidocbench_page_api_eval.py`
 
-This is the only Python file from this repository that the product system
-needs. It contains the HTTP client, robust matching runner, Page-TEDS runner,
-and CDM runner. It does not import or execute another file from this
-repository.
+It contains the HTTP client, robust matching runner, Page-TEDS runner, and CDM runner.
 
 The command sends all 1,651 OmniDocBench pages to the API. It saves the page
 Markdown, runs the official matching metrics, and runs Page-TEDS. Formula CDM
-is off by default because it needs a large system environment.
+is off by default because it needs a complex system environment, but can be turned on with --do-cdm.
 
 ## One-time evaluator setup
 
@@ -24,7 +21,7 @@ Validated dataset fingerprints:
 - Referenced images: `1,651`
 - Referenced-images aggregate SHA-256: `58feeb96c60fcfab12ba4348c4e093ceaf1b707658dbfd0e08c24d7821d4c221`
 
-Clone the unmodified upstream evaluator and select the validated commit:
+Clone the evaluator and select the validated commit:
 
 ```sh
 git clone https://github.com/opendatalab/OmniDocBench.git OmniDocBench
@@ -52,7 +49,7 @@ export OMNIDOCBENCH_EVAL_PYTHON="$PWD/omnidocbench-venv/bin/python"
 
 ```sh
 "$OMNIDOCBENCH_EVAL_PYTHON" \
-  09_persistent_page_engine/scripts/run_omnidocbench_page_api_eval.py \
+  run_omnidocbench_page_api_eval.py \
   --api-url http://API_HOST:8766/v1/pages \
   --dataset-json /path/to/OmniDocBench.json \
   --images-dir /path/to/images \
@@ -88,7 +85,7 @@ Ghostscript 9.55.0. When it is available, run:
 
 ```sh
 "$OMNIDOCBENCH_EVAL_PYTHON" \
-  09_persistent_page_engine/scripts/run_omnidocbench_page_api_eval.py \
+  run_omnidocbench_page_api_eval.py \
   --do-cdm \
   --api-url http://API_HOST:8766/v1/pages \
   --dataset-json /path/to/OmniDocBench.json \
@@ -97,13 +94,13 @@ Ghostscript 9.55.0. When it is available, run:
   --output-dir output/full_page_api_with_cdm
 ```
 
-Small numerical differences across devices are normal. The official Overall is:
+The official Overall is:
 
 ```text
 mean(1 - text-block Edit distance, formula Page-CDM, table Page-TEDS)
 ```
 
-Do not use sample-CDM in this formula.
+Formula edit distance is a different calculation, and using it instead of CDM will yield a different (worse) Overall accuracy.
 
 ## Rescore without rerunning OCR
 
@@ -111,15 +108,13 @@ If evaluation was interrupted, keep the same output directory and run:
 
 ```sh
 "$OMNIDOCBENCH_EVAL_PYTHON" \
-  09_persistent_page_engine/scripts/run_omnidocbench_page_api_eval.py \
+  run_omnidocbench_page_api_eval.py \
   --score-only \
   --dataset-json /path/to/OmniDocBench.json \
   --images-dir /path/to/images \
   --evaluator-root "$OMNIDOCBENCH_EVALUATOR_ROOT" \
   --output-dir output/full_page_api
 ```
-
-Add `--do-cdm` to this command only when the CDM environment is available.
 
 The final files are:
 
@@ -128,5 +123,3 @@ The final files are:
 - `output/full_page_api/generation/predictions/`
 - `output/full_page_api/evaluation/`
 
-The evaluator speedups are embedded in the single client script. The pinned
-upstream OmniDocBench source remains unchanged.
