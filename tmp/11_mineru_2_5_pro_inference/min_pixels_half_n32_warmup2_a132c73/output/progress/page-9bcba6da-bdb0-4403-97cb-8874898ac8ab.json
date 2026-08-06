@@ -1,0 +1,16 @@
+{
+  "status": "completed",
+  "dataset_index": 23,
+  "image": "page-9bcba6da-bdb0-4403-97cb-8874898ac8ab.png",
+  "group_index": 1,
+  "group_size": 32,
+  "group_elapsed_s": 48.69063974102028,
+  "block_count": 17,
+  "block_types": {
+    "page_number": 1,
+    "text": 15,
+    "title": 1
+  },
+  "markdown_chars": 1281,
+  "completed_at": "2026-08-06T06:22:54.020863+00:00"
+}

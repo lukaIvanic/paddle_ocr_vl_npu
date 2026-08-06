@@ -1,0 +1,203 @@
+[
+  {
+    "type": "title",
+    "bbox": [
+      0.39,
+      0.091,
+      0.6,
+      0.106
+    ],
+    "angle": 0,
+    "content": "2.3.13【数形结合法之圆】"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.148,
+      0.119,
+      0.248,
+      0.134
+    ],
+    "angle": 0,
+    "content": "▲适用题型：",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.147,
+      0.147,
+      0.467,
+      0.171
+    ],
+    "angle": 0,
+    "content": "常见于含有 \\(\\sqrt{r^2 - (x - a)^2} + b\\) 结构的题型；",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.148,
+      0.184,
+      0.248,
+      0.198
+    ],
+    "angle": 0,
+    "content": "▲方法原理：",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.149,
+      0.212,
+      0.731,
+      0.255
+    ],
+    "angle": 0,
+    "content": "令 \\( y=\\sqrt{r^{2}-\\left(x-a\\right)^{2}}\\Rightarrow y=\\sqrt{r^{2}-\\left(x-a\\right)^{2}}\\geq0\\Rightarrow\\left\\{\\begin{aligned}y\\geq0\\\\ \\left(x-a\\right)^{2}+y^{2}=r^{2}\\end{aligned}\\right. \\) 即得到半圆，",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.269,
+      0.728,
+      0.309
+    ],
+    "angle": 0,
+    "content": "1. 若是分式类型，常将问题转换为斜率问题，比如 \\( f(x) = \\frac{\\sqrt{4 - (x - 3)^2} - 2}{x + 2} \\)，",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.149,
+      0.321,
+      0.695,
+      0.368
+    ],
+    "angle": 0,
+    "content": "(1) 令 \\( y = \\sqrt{4 - (x - 3)^2} \\Rightarrow y = \\sqrt{4 - (x - 3)^2} \\geq 0 \\Rightarrow \\begin{cases} y \\geq 0 \\\\ (x - 3)^2 + y^2 = 4 \\end{cases} \\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.149,
+      0.377,
+      0.841,
+      0.533
+    ],
+    "angle": 0,
+    "content": "(2) \\(\\Rightarrow \\left\\{ \\begin{array}{l} f(x) = \\frac{\\sqrt{4 - (x - 3)^2} - 2}{x + 2} = \\frac{y - 2}{x - (-2)} \\\\ k_{AB} = \\frac{y_A - y_B}{x_A - x_B} \\end{array} \\right\\} \\Rightarrow f(x) = k_{AB}\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.147,
+      0.545,
+      0.434,
+      0.56
+    ],
+    "angle": 0,
+    "content": "最后作图分析求出AB斜率范围即可；",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.575,
+      0.816,
+      0.595
+    ],
+    "angle": 0,
+    "content": "2. 若是整式类型，常将问题转换两函数图像问题，比如 \\( f(x) = 3x - 1 - \\sqrt{-x^2 + 4x - 3} \\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.149,
+      0.606,
+      0.554,
+      0.66
+    ],
+    "angle": 0,
+    "content": "(1) \\( \\left\\{\\begin{aligned}f(x)=3x-1-\\sqrt{-x^{2}+4x-3}&=3x-1-\\sqrt{1-\\left(x-2\\right)^{2}},\\\\ \\text{令}t=f(x)\\Rightarrow\\sqrt{1-\\left(x-2\\right)^{2}}=3x-1-t\\end{aligned}\\right. \\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.15,
+      0.664,
+      0.5,
+      0.728
+    ],
+    "angle": 0,
+    "content": "(2) \\( \\left\\{\\begin{aligned} 令 y_{1}&= \\sqrt{1-(x-2)^{2}}\\geq0\\Rightarrow\\left\\{\\begin{aligned} y\\geq0\\\\ (x-2)^{2}+y^{2}&=1\\end{aligned}\\right.\\\\ 令 y_{2}&=3x-1-t, 则 y_{1}=y_{2}\\end{aligned}\\right. \\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.149,
+      0.731,
+      0.43,
+      0.748
+    ],
+    "angle": 0,
+    "content": "\\(\\Rightarrow y_{1}\\) 和 \\(y_{2}\\) 有交点时，求纵截距- \\(t\\) 范围",
+    "merge_prev": false
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.55,
+      0.603,
+      0.818,
+      0.752
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.147,
+      0.758,
+      0.537,
+      0.774
+    ],
+    "angle": 0,
+    "content": "最后作图分析即可求出-t范围，也就求出t范围；",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.78,
+      0.677,
+      0.816
+    ],
+    "angle": 0,
+    "content": "例题1.（全国·高三专题练习）函数 \\( y = \\frac{\\sqrt{1 - x^2}}{x + 2} \\) 的值域是____.",
+    "merge_prev": false
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.49,
+      0.929,
+      0.507,
+      0.939
+    ],
+    "angle": 0,
+    "content": "96"
+  }
+]

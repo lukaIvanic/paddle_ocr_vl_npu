@@ -1,0 +1,267 @@
+[
+  {
+    "type": "header",
+    "bbox": [
+      0.147,
+      0.1,
+      0.435,
+      0.115
+    ],
+    "angle": 0,
+    "content": "SEC. 10.1 HYPERBOLIC EQUATIONS"
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.788,
+      0.1,
+      0.818,
+      0.114
+    ],
+    "angle": 0,
+    "content": "525"
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.147,
+      0.131,
+      0.515,
+      0.151
+    ],
+    "angle": 0,
+    "content": "Exercises for Hyperbolic Equations"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.165,
+      0.168,
+      0.82,
+      0.2
+    ],
+    "angle": 0,
+    "content": "1. (a) Verify by direct substitution that \\( u(x, t) = \\sin(n\\pi x) \\cos(2n\\pi t) \\) is a solution to the wave equation \\( u_{tt}(x, t) = 4u_{xx}(x, t) \\) for each positive integer \\( n = 1, 2, \\ldots \\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.186,
+      0.201,
+      0.82,
+      0.247
+    ],
+    "angle": 0,
+    "content": "(b) Verify by direct substitution that \\( u(x,t) = \\sin (n\\pi x)\\cos (cn\\pi t) \\) is a solution to the wave equation \\( u_{tt}(x,t) = c^2 u_{xx}(x,t) \\) for each positive integer \\( n = 1, 2, \\ldots \\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.165,
+      0.254,
+      0.82,
+      0.285
+    ],
+    "angle": 0,
+    "content": "2. Assume that the initial position and velocity are \\( u(x,0) = f(x) \\) and \\( u_{r}(x,0) \\equiv 0 \\), respectively. Show that the d'Alembert solution for this case is",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.372,
+      0.29,
+      0.637,
+      0.322
+    ],
+    "angle": 0,
+    "content": "\\[\nu (x, t) = \\frac {f (x + c t) + f (x - c t)}{2}.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.165,
+      0.325,
+      0.75,
+      0.342
+    ],
+    "angle": 0,
+    "content": "3. Obtain a simplified form of the difference equation (7) in the case \\( h = 2ck \\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.148,
+      0.347,
+      0.821,
+      0.393
+    ],
+    "angle": 0,
+    "content": "In Exercises 4 and 5, use the finite-difference method to calculate the first three rows of the approximate solution for the given wave equation. Carry out your calculations by hand (calculator).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.165,
+      0.398,
+      0.819,
+      0.415
+    ],
+    "angle": 0,
+    "content": "4. \\( u_{ff}(x,t) = 4u_{xx}(x,t) \\), for \\( 0 \\leq x \\leq 1 \\) and \\( 0 \\leq t \\leq 0.5 \\), with the boundary conditions",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.304,
+      0.42,
+      0.717,
+      0.437
+    ],
+    "angle": 0,
+    "content": "\\[\nu (0, t) = 0 \\quad \\text {and} \\quad u (1, t) = 0 \\quad \\text {for} 0 \\leq t \\leq 0. 5,\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.304,
+      0.44,
+      0.705,
+      0.457
+    ],
+    "angle": 0,
+    "content": "\\[\nu (x, 0) = f (x) = \\sin (\\pi x) \\quad \\text {for} 0 \\leq x \\leq 1,\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.298,
+      0.46,
+      0.705,
+      0.476
+    ],
+    "angle": 0,
+    "content": "\\[\nu _ {t} (x, 0) = g (x) = 0 \\quad \\text {for} 0 \\leq x \\leq 1.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.19,
+      0.483,
+      0.436,
+      0.498
+    ],
+    "angle": 0,
+    "content": "Let \\( h = 0.2, k = 0.1 \\), and \\( r = 1 \\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.166,
+      0.504,
+      0.819,
+      0.521
+    ],
+    "angle": 0,
+    "content": "5. \\( u_{tt}(x,t) = 4u_{xx}(x,t) \\), for \\( 0 \\leq x \\leq 1 \\) and \\( 0 \\leq t \\leq 0.5 \\), with the boundary conditions",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.307,
+      0.526,
+      0.713,
+      0.544
+    ],
+    "angle": 0,
+    "content": "\\[\nu (0, t) = 0 \\quad \\text {and} \\quad u (1, t) = 0 \\quad \\text {for} 0 \\leq t \\leq 0. 5,\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.307,
+      0.546,
+      0.705,
+      0.615
+    ],
+    "angle": 0,
+    "content": "\\[\nu (x, 0) = f (x) = \\left\\{ \\begin{array}{l l} \\frac {5 x}{2} & \\text {for} 0 <   x \\leq \\frac {3}{5}, \\\\ \\frac {1 5}{4} \\frac {1 5 x}{4} & \\text {for} \\frac {3}{5} \\leq x \\leq 1, \\end{array} \\right.\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.301,
+      0.618,
+      0.597,
+      0.634
+    ],
+    "angle": 0,
+    "content": "\\[\nu _ {t} (x, 0) = g (x) = 0 \\quad \\text {for} 0 <   x <   1.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.19,
+      0.64,
+      0.436,
+      0.655
+    ],
+    "angle": 0,
+    "content": "Let \\( h = 0.2, k = 0.1 \\), and \\( r = 1 \\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.168,
+      0.662,
+      0.82,
+      0.693
+    ],
+    "angle": 0,
+    "content": "6. Assume that the initial position and velocity are \\( u(x,0) = f(x) \\) and \\( u_{t}(x,0) = g(x) \\), respectively. Show that the d'Alembert solution for this case is",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.297,
+      0.699,
+      0.715,
+      0.735
+    ],
+    "angle": 0,
+    "content": "\\[\nu (x, t) = \\frac {f (x + c t) + f (x - c t)}{2} + \\frac {1}{2 c} \\int_ {x - c t} ^ {x + c t} g (s) d s.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.168,
+      0.738,
+      0.822,
+      0.773
+    ],
+    "angle": 0,
+    "content": "7. For the equation \\( u_{t!}(x, t) = 9u_{xx}(x, t) \\), what relationship between \\( h \\) and \\( k \\) must occur in order to produce the difference equation \\( u_{i,j+1} = u_{i+1,j} + u_{i-1,j} - u_{i,j-1} \\)?",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.168,
+      0.775,
+      0.822,
+      0.807
+    ],
+    "angle": 0,
+    "content": "8. What difficulty might occur when trying to use the finite-difference method to solve \\( u_{tt}(x,t) = 4u_{xx}(x,t) \\) with the choice \\( k = 0.02 \\) and \\( h = 0.03 \\)?",
+    "merge_prev": false
+  }
+]
