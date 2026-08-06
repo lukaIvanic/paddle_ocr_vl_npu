@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import inspect
 import time
 from pathlib import Path
 from typing import Any
@@ -58,7 +59,8 @@ class _StaticVisionSuffix(nn.Module):
 
 
 def _source_hash() -> str:
-    payload = Path(__file__).read_bytes()
+    payload = inspect.getsource(_StaticVisionPrefix).encode("utf-8")
+    payload += inspect.getsource(_StaticVisionSuffix).encode("utf-8")
     payload += Path(__file__).with_name("modeling_optimized_unirec.py").read_bytes()
     return hashlib.sha256(payload).hexdigest()[:12]
 
@@ -146,11 +148,14 @@ class StaticShapeUniRecVisionRuntime(UniRecVisionAtlasRuntime):
 
     def warmup_static_graphs(self, *, passes: int) -> dict[str, Any]:
         device = torch.device(self.runner.device)
-        prefix_input = torch.zeros(
-            (1, 3, self.input_height, self.input_width),
-            dtype=self.runner.dtype,
-            device=device,
-        )
+        # Production image preprocessing creates pixel_values before entering
+        # inference_mode. Match that tensor dispatch-key contract exactly.
+        with torch.inference_mode(False):
+            prefix_input = torch.zeros(
+                (1, 3, self.input_height, self.input_width),
+                dtype=self.runner.dtype,
+                device=device,
+            )
         suffix_input = torch.zeros(
             (1, self.stage_height * self.stage_width, 384),
             dtype=self.runner.dtype,
