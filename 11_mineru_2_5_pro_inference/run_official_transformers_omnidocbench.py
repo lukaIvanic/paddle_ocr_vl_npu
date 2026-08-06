@@ -302,6 +302,192 @@ def reset_measurement_counters(
         text_runtime.pack_count = 0
 
 
+def install_bucket_input_recorder(runtime: Any, input_count: int, synchronize_fn: Any):
+    """Capture real graph inputs while preserving the cache-backed callable."""
+
+    original = runtime._compiled_for_bucket
+    state: dict[str, Any] = {
+        "seen": set(),
+        "largest_bucket": -1,
+        "inputs": None,
+        "first_call_s": {},
+    }
+
+    def recorded_compiled_for_bucket(bucket: int):
+        compiled = original(bucket)
+
+        def recorded_call(*args: Any):
+            first_call = bucket not in state["seen"]
+            if first_call:
+                synchronize_fn()
+                started = time.perf_counter()
+            output = compiled(*args)
+            if first_call:
+                synchronize_fn()
+                elapsed_s = time.perf_counter() - started
+                state["seen"].add(bucket)
+                state["first_call_s"][str(bucket)] = elapsed_s
+                record = runtime.compile_records.get(str(bucket))
+                if record is not None and record.get("first_call_s") is None:
+                    record["first_call_s"] = elapsed_s
+                if bucket > state["largest_bucket"]:
+                    state["largest_bucket"] = bucket
+                    state["inputs"] = tuple(args[:input_count])
+            return output
+
+        return recorded_call
+
+    runtime._compiled_for_bucket = recorded_compiled_for_bucket
+    return original, state
+
+
+def resize_vision_graph_inputs(
+    torch: Any,
+    inputs: tuple[Any, ...],
+    target: int,
+) -> tuple[Any, ...]:
+    hidden, rope_cos, rope_sin, mask = inputs
+    source = int(hidden.shape[1])
+    copied = min(source, target)
+
+    resized_hidden = hidden.new_zeros((hidden.shape[0], target, *hidden.shape[2:]))
+    resized_hidden[:, :copied].copy_(hidden[:, :copied])
+    resized_cos = rope_cos.new_ones((rope_cos.shape[0], target, *rope_cos.shape[2:]))
+    resized_cos[:, :copied].copy_(rope_cos[:, :copied])
+    resized_sin = rope_sin.new_zeros((rope_sin.shape[0], target, *rope_sin.shape[2:]))
+    resized_sin[:, :copied].copy_(rope_sin[:, :copied])
+
+    resized_mask = torch.ones(
+        (mask.shape[0], mask.shape[1], target, target),
+        device=mask.device,
+        dtype=mask.dtype,
+    )
+    resized_mask[:, :, :copied, :copied].copy_(mask[:, :, :copied, :copied])
+    if target > source:
+        resized_mask[:, :, source:, source:] = False
+    return resized_hidden, resized_cos, resized_sin, resized_mask.contiguous()
+
+
+def resize_text_graph_inputs(
+    inputs: tuple[Any, ...],
+    target: int,
+) -> tuple[Any, ...]:
+    inputs_embeds, position_ids, segment_ids, local_positions = inputs
+    source = int(inputs_embeds.shape[1])
+    copied = min(source, target)
+
+    resized_embeds = inputs_embeds.new_zeros(
+        (inputs_embeds.shape[0], target, *inputs_embeds.shape[2:])
+    )
+    resized_embeds[:, :copied].copy_(inputs_embeds[:, :copied])
+    resized_positions = position_ids.new_ones(
+        (*position_ids.shape[:-1], target)
+    )
+    resized_positions[..., :copied].copy_(position_ids[..., :copied])
+    resized_segments = segment_ids.new_full((target,), -1)
+    resized_segments[:copied].copy_(segment_ids[:copied])
+    resized_local_positions = local_positions.new_zeros((target,))
+    resized_local_positions[:copied].copy_(local_positions[:copied])
+    return (
+        resized_embeds.contiguous(),
+        resized_positions.contiguous(),
+        resized_segments.contiguous(),
+        resized_local_positions.contiguous(),
+    )
+
+
+def warm_all_static_buckets(
+    torch: Any,
+    synchronize_fn: Any,
+    vision_runtime: Any | None,
+    vision_original: Any | None,
+    vision_state: dict[str, Any] | None,
+    text_runtime: Any | None,
+    text_original: Any | None,
+    text_state: dict[str, Any] | None,
+) -> dict[str, Any]:
+    report: dict[str, Any] = {}
+    if vision_runtime is not None:
+        if (
+            vision_original is None
+            or vision_state is None
+            or vision_state["inputs"] is None
+        ):
+            raise RuntimeError("two-page warmup captured no compiled vision graph inputs")
+        bucket_report: dict[str, Any] = {}
+        for bucket in vision_runtime.buckets:
+            if bucket in vision_state["seen"]:
+                bucket_report[str(bucket)] = {
+                    "source": "real_page_execution",
+                    "first_call_s": vision_state["first_call_s"][str(bucket)],
+                }
+                continue
+            compiled = vision_original(bucket)
+            graph_inputs = resize_vision_graph_inputs(
+                torch, vision_state["inputs"], bucket
+            )
+            synchronize_fn()
+            started = time.perf_counter()
+            compiled(*graph_inputs)
+            synchronize_fn()
+            elapsed_s = time.perf_counter() - started
+            vision_runtime.compile_records[str(bucket)]["first_call_s"] = elapsed_s
+            vision_state["seen"].add(bucket)
+            bucket_report[str(bucket)] = {
+                "source": "real_page_tensor_replay",
+                "first_call_s": elapsed_s,
+            }
+        uncovered = [
+            bucket
+            for bucket in vision_runtime.buckets
+            if vision_runtime.compile_records.get(str(bucket), {}).get("first_call_s")
+            is None
+        ]
+        if uncovered:
+            raise RuntimeError(f"vision warmup missed buckets: {uncovered}")
+        report["vision"] = bucket_report
+
+    if text_runtime is not None:
+        if (
+            text_original is None
+            or text_state is None
+            or text_state["inputs"] is None
+        ):
+            raise RuntimeError("two-page warmup captured no compiled text graph inputs")
+        bucket_report = {}
+        for bucket in text_runtime.buckets:
+            if bucket in text_state["seen"]:
+                bucket_report[str(bucket)] = {
+                    "source": "real_page_execution",
+                    "first_call_s": text_state["first_call_s"][str(bucket)],
+                }
+                continue
+            compiled = text_original(bucket)
+            graph_inputs = resize_text_graph_inputs(text_state["inputs"], bucket)
+            scratch = text_runtime.scratch_caches[bucket]
+            synchronize_fn()
+            started = time.perf_counter()
+            compiled(*graph_inputs, *scratch.flat_tensors())
+            synchronize_fn()
+            elapsed_s = time.perf_counter() - started
+            text_runtime.compile_records[str(bucket)]["first_call_s"] = elapsed_s
+            text_state["seen"].add(bucket)
+            bucket_report[str(bucket)] = {
+                "source": "real_page_tensor_replay",
+                "first_call_s": elapsed_s,
+            }
+        uncovered = [
+            bucket
+            for bucket in text_runtime.buckets
+            if text_runtime.compile_records.get(str(bucket), {}).get("first_call_s")
+            is None
+        ]
+        if uncovered:
+            raise RuntimeError(f"text warmup missed buckets: {uncovered}")
+        report["text"] = bucket_report
+    return report
+
+
 def main() -> None:
     args = parse_args()
     if args.offset < 0 or (args.limit is not None and args.limit < 0):
@@ -684,15 +870,50 @@ def main() -> None:
         )
         warmup_started = time.perf_counter()
         warmup_items = shard[:warmup_count]
-        for start in range(0, warmup_count, args.page_batch_size):
-            warmup_group = warmup_items[start : start + args.page_batch_size]
-            warmup_images: list[Image.Image] = []
-            for _, sample in warmup_group:
-                with Image.open(images_dir / image_name(sample)) as source:
-                    warmup_images.append(source.convert("RGB"))
-            with torch.inference_mode():
-                run_page_group(client, warmup_images)
+        vision_original = vision_state = None
+        text_original = text_state = None
+        if local_vision_runtime is not None:
+            vision_original, vision_state = install_bucket_input_recorder(
+                local_vision_runtime, 4, synchronize
+            )
+        if local_text_runtime is not None:
+            text_original, text_state = install_bucket_input_recorder(
+                local_text_runtime, 4, synchronize
+            )
+        page_warmup_started = time.perf_counter()
+        try:
+            for start in range(0, warmup_count, args.page_batch_size):
+                warmup_group = warmup_items[start : start + args.page_batch_size]
+                warmup_images: list[Image.Image] = []
+                for _, sample in warmup_group:
+                    with Image.open(images_dir / image_name(sample)) as source:
+                        warmup_images.append(source.convert("RGB"))
+                with torch.inference_mode():
+                    run_page_group(client, warmup_images)
+        finally:
+            if local_vision_runtime is not None:
+                local_vision_runtime._compiled_for_bucket = vision_original
+            if local_text_runtime is not None:
+                local_text_runtime._compiled_for_bucket = text_original
         synchronize()
+        warmup_report["real_page_wall_s"] = (
+            time.perf_counter() - page_warmup_started
+        )
+        bucket_warmup_started = time.perf_counter()
+        with torch.inference_mode():
+            warmup_report["static_bucket_warmup"] = warm_all_static_buckets(
+                torch,
+                synchronize,
+                local_vision_runtime,
+                vision_original,
+                vision_state,
+                local_text_runtime,
+                text_original,
+                text_state,
+            )
+        warmup_report["static_bucket_wall_s"] = (
+            time.perf_counter() - bucket_warmup_started
+        )
         warmup_report["wall_s"] = time.perf_counter() - warmup_started
         generation_metrics = getattr(client.client, "generation_metrics", None)
         warmup_report["generation_calls"] = (

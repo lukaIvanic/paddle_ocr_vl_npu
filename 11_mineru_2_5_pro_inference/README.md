@@ -154,8 +154,12 @@ before measurement. Warmup outputs are discarded, the same pages are processed
 again as part of the measured shard, and generation plus vision/text routing
 counters are reset before the pipeline timer starts. Use `--warmup-pages 0` to
 measure a cold path or another positive value to change the warmup prefix. The
-run manifest records the warmup pages, wall time, and graph routes exercised;
-two pages do not guarantee coverage of every configured shape bucket.
+run manifest records the warmup pages and wall time. For the local compiled
+lane, the runner also captures real static-graph tensors from those pages and
+replays resized forms through every configured vision and packed-text bucket.
+This loads all existing graph shapes without introducing synthetic model
+inputs, new buckets, or new cache keys. The manifest records whether each
+bucket ran directly on a page or through real-page tensor replay.
 
 ## Local continuous compiled-decode lane
 
