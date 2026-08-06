@@ -565,3 +565,15 @@ class UniRecVisionAtlasRuntime:
             }
         )
         return result
+
+    def reset_stats(self) -> None:
+        """Reset measured atlas counters while retaining compiled graph state."""
+        self.stats = {
+            "groups": 0,
+            "packs": 0,
+            "packed_members": 0,
+            "overflow_members": 0,
+            "real_stage_tokens": 0,
+            "physical_stage_tokens": 0,
+            "first_call_wall_s": None,
+        }

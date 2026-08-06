@@ -215,6 +215,16 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--pipeline-warmup-pages",
+        type=int,
+        default=2,
+        help=(
+            "Run the first N pages through the complete configured pipeline, "
+            "discard their measurements, then restart the measured page set "
+            "from its first page. Use 0 to retain synthetic graph warmup."
+        ),
+    )
+    parser.add_argument(
         "--text-prefill-mode",
         choices=("eager", "compiled_s512", "compiled_packed_s1024"),
         default="eager",
@@ -887,6 +897,138 @@ def assemble_page(
     }
 
 
+def warmup_full_pipeline(
+    *,
+    args: argparse.Namespace,
+    pipeline: Any,
+    infer_doc_onnx: Any,
+    runner: OptimizedUniRecRunner,
+    vision_atlas_runtime: UniRecVisionAtlasRuntime | None,
+    image_paths: list[Path],
+    output_dir: Path,
+) -> dict[str, Any]:
+    """Run real pages through the selected end-to-end path before measurement."""
+    warmup_paths = image_paths[: args.pipeline_warmup_pages]
+    warmup_dir = output_dir / "_pipeline_warmup"
+    warmup_dir.mkdir(parents=True, exist_ok=True)
+    started = time.perf_counter()
+    print(
+        "UNIREC_PIPELINE_WARMUP_BEGIN "
+        f"pages={len(warmup_paths)} source_pages="
+        + ",".join(path.name for path in warmup_paths),
+        flush=True,
+    )
+
+    decoded_pages = iter_decoded_pages(
+        warmup_paths,
+        workers=min(args.page_decode_workers, len(warmup_paths)),
+    )
+    pages = list(
+        iter_prepared_pages(
+            pipeline=pipeline,
+            infer_doc_onnx=infer_doc_onnx,
+            decoded_pages=decoded_pages,
+            layout_threshold=args.layout_threshold,
+            layout_batch_size=args.layout_batch_size,
+        )
+    )
+    rejected_crops = 0
+    for page in pages:
+        rejected_crops += filter_page_recognition_shapes(
+            page,
+            runner=runner,
+            target=args.recognition_shape_filter,
+        )
+
+    warmup_metrics = RunMetrics()
+    crops = [crop for page in pages for crop in page.crops]
+    decode_summary: dict[str, Any] | None = None
+    if args.decode_scheduling == "continuous":
+        def ready_source() -> Iterable[ContinuousReadyItem]:
+            if args.text_prefill_mode == "compiled_packed_s1024":
+                groups = iter_greedy_text_packs(iter(crops), runner=runner)
+            else:
+                groups = ((False, [crop]) for crop in crops)
+            for use_packed_graph, crop_group in groups:
+                items = prefill_crop_group(
+                    crops=crop_group,
+                    use_packed_graph=use_packed_graph,
+                    runner=runner,
+                    vision_atlas_runtime=vision_atlas_runtime,
+                    args=args,
+                )
+                for crop, item in zip(crop_group, items):
+                    record_prefill_metrics(warmup_metrics, item)
+                    yield ContinuousReadyItem(
+                        request_id=crop.request_id,
+                        payload=crop,
+                        prefilled=item,
+                    )
+
+        def complete_crop(completed_item: ContinuousCompletedItem) -> None:
+            crop = completed_item.payload
+            if not isinstance(crop, CropRequest):
+                raise TypeError(
+                    "Pipeline warmup received an unexpected crop payload: "
+                    f"{type(crop)!r}"
+                )
+            crop.result = completed_item.result
+
+        decode_summary = ContinuousUniRecDecoder(
+            runner=runner,
+            batch_size=args.decode_batch_size,
+            max_length=args.max_length,
+            decode_mode=args.decode_mode,
+            compile_backend=args.compile_backend,
+        ).run(ready_source(), on_complete=complete_crop)
+    else:
+        pending = deque(crops)
+        while pending:
+            cohort = [
+                pending.popleft()
+                for _ in range(min(args.decode_batch_size, len(pending)))
+            ]
+            recognize_cohort(
+                cohort=cohort,
+                target_batch_size=args.decode_batch_size,
+                runner=runner,
+                vision_atlas_runtime=vision_atlas_runtime,
+                args=args,
+                metrics=warmup_metrics,
+            )
+
+    for page in pages:
+        if not page.is_ready():
+            raise RuntimeError(
+                f"Pipeline warmup left page unfinished: {page.image_path.name}"
+            )
+        result = assemble_page(
+            page=page,
+            pipeline=pipeline,
+            infer_doc_onnx=infer_doc_onnx,
+        )
+        pipeline.save_to_json(result, str(warmup_dir))
+        pipeline.save_to_markdown(result, str(warmup_dir))
+    synchronize_device(runner.device)
+
+    report = {
+        "mode": "full_pipeline",
+        "page_count": len(pages),
+        "accepted_crop_count": len(crops),
+        "rejected_crop_count": rejected_crops,
+        "source_pages": [path.name for path in warmup_paths],
+        "output_dir": str(warmup_dir),
+        "wall_s": time.perf_counter() - started,
+        "decode": decode_summary,
+    }
+    print(
+        "UNIREC_PIPELINE_WARMUP_END "
+        + json.dumps(report, ensure_ascii=False),
+        flush=True,
+    )
+    return report
+
+
 def recognize_cohort(
     *,
     cohort: list[CropRequest],
@@ -988,6 +1130,8 @@ def main() -> None:
         raise ValueError("--decode-batch-size must be >= 1")
     if args.page_decode_workers < 1:
         raise ValueError("--page-decode-workers must be >= 1")
+    if args.pipeline_warmup_pages < 0:
+        raise ValueError("--pipeline-warmup-pages must be >= 0")
     if args.layout_batch_size < 1:
         raise ValueError("--layout-batch-size must be >= 1")
     if args.layout_batch_size > 1 and args.layout_backend != "transformers_npu":
@@ -1090,14 +1234,30 @@ def main() -> None:
             vision_atlas_runtime = UniRecVisionAtlasRuntime(runner)
     else:
         vision_atlas_runtime = None
-    graph_warmup = warmup_configured_graphs(
-        args=args,
-        runner=runner,
-        vision_atlas_runtime=vision_atlas_runtime,
-    )
-    if not use_onnx_layout:
-        layout_warmup_page = decode_page_bgr(image_paths[0])
-        pipeline.layout_detector.warmup_graph(layout_warmup_page.image)
+    if args.pipeline_warmup_pages:
+        graph_warmup = warmup_full_pipeline(
+            args=args,
+            pipeline=pipeline,
+            infer_doc_onnx=infer_doc_onnx,
+            runner=runner,
+            vision_atlas_runtime=vision_atlas_runtime,
+            image_paths=image_paths,
+            output_dir=output_dir,
+        )
+        runner.reset_packed_text_prefill_stats()
+        if vision_atlas_runtime is not None:
+            vision_atlas_runtime.reset_stats()
+        if not use_onnx_layout:
+            pipeline.layout_detector.reset_timing()
+    else:
+        graph_warmup = warmup_configured_graphs(
+            args=args,
+            runner=runner,
+            vision_atlas_runtime=vision_atlas_runtime,
+        )
+        if not use_onnx_layout:
+            layout_warmup_page = decode_page_bgr(image_paths[0])
+            pipeline.layout_detector.warmup_graph(layout_warmup_page.image)
     setup_s = time.perf_counter() - setup_started
     print(
         f"OPENDOC_BATCHED_SETUP_END setup_s={setup_s:.3f} pages={len(image_paths)} "

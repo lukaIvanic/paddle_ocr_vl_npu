@@ -2052,6 +2052,17 @@ class OptimizedUniRecRunner:
         stats["bucket"] = PACKED_TEXT_PREFILL_BUCKET
         return stats
 
+    def reset_packed_text_prefill_stats(self) -> None:
+        """Reset counters without discarding compiled text-prefill state."""
+        self._packed_text_prefill_stats = {
+            "packs": 0,
+            "members": 0,
+            "real_source_tokens": 0,
+            "physical_source_tokens": 0,
+            "fallback_crops": 0,
+            "member_histogram": {},
+        }
+
     def _install_encoder_timing_hooks(
         self,
         timeline: PrefillDeviceTimeline | None,
