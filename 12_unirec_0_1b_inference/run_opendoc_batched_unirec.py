@@ -215,6 +215,33 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--page-image-decoder",
+        choices=("opencv", "kornia_torchvision"),
+        default="opencv",
+        help=(
+            "Decode pages with the historical OpenCV BGR path or with the "
+            "Kornia-RS PNG / TorchVision JPEG dispatch used by experiment 09. "
+            "The fast path converts back to contiguous BGR before OpenDoc."
+        ),
+    )
+    parser.add_argument(
+        "--preprocess-all-pages-first",
+        action="store_true",
+        help=(
+            "Finish page decode, layout, and crop construction for the full "
+            "selected page set before recognition starts."
+        ),
+    )
+    parser.add_argument(
+        "--page-prepare-workers",
+        type=int,
+        default=1,
+        help=(
+            "Ordered post-layout page/crop construction workers. Values above "
+            "one require --preprocess-all-pages-first."
+        ),
+    )
+    parser.add_argument(
         "--pipeline-warmup-pages",
         type=int,
         default=2,
@@ -311,14 +338,38 @@ class DecodedPage:
     timing_s: dict[str, float]
 
 
-def decode_page_bgr(image_path: Path) -> DecodedPage:
-    """Read and decode one page with the existing exact OpenCV BGR contract."""
+def decode_page_bgr(
+    image_path: Path,
+    *,
+    decoder: str = "opencv",
+) -> DecodedPage:
+    """Read one page and return the existing contiguous OpenCV BGR contract."""
     started_at = time.perf_counter()
     read_started = time.perf_counter()
     encoded = image_path.read_bytes()
     read_s = time.perf_counter() - read_started
     decode_started = time.perf_counter()
-    image = cv2.imdecode(np.frombuffer(encoded, np.uint8), cv2.IMREAD_COLOR)
+    if decoder == "opencv":
+        image = cv2.imdecode(np.frombuffer(encoded, np.uint8), cv2.IMREAD_COLOR)
+    elif decoder == "kornia_torchvision":
+        from kornia_rs.image import Image as KorniaImage
+        from torchvision.io import ImageReadMode, decode_image
+
+        if encoded.startswith(b"\x89PNG\r\n\x1a\n"):
+            image_rgb = KorniaImage.decode(encoded, "RGB").data
+        else:
+            encoded_tensor = torch.frombuffer(
+                bytearray(encoded),
+                dtype=torch.uint8,
+            )
+            image_rgb = (
+                decode_image(encoded_tensor, mode=ImageReadMode.RGB)
+                .permute(1, 2, 0)
+                .numpy()
+            )
+        image = np.ascontiguousarray(image_rgb[..., ::-1])
+    else:
+        raise ValueError(f"unsupported page image decoder: {decoder}")
     decode_s = time.perf_counter() - decode_started
     if image is None:
         raise ValueError(f"Failed to decode image: {image_path}")
@@ -337,6 +388,7 @@ def iter_decoded_pages(
     image_paths: list[Path],
     *,
     workers: int,
+    decoder: str = "opencv",
 ) -> Iterable[DecodedPage]:
     """Decode pages concurrently but yield them in exact input order."""
     if workers < 1:
@@ -349,12 +401,24 @@ def iter_decoded_pages(
         thread_name_prefix="unirec-page-decode",
     ) as executor:
         while next_index < len(image_paths) and len(pending) < max_pending:
-            pending.append(executor.submit(decode_page_bgr, image_paths[next_index]))
+            pending.append(
+                executor.submit(
+                    decode_page_bgr,
+                    image_paths[next_index],
+                    decoder=decoder,
+                )
+            )
             next_index += 1
         while pending:
             yield pending.popleft().result()
             if next_index < len(image_paths):
-                pending.append(executor.submit(decode_page_bgr, image_paths[next_index]))
+                pending.append(
+                    executor.submit(
+                        decode_page_bgr,
+                        image_paths[next_index],
+                        decoder=decoder,
+                    )
+                )
                 next_index += 1
 
 
@@ -767,37 +831,80 @@ def iter_prepared_pages(
     decoded_pages: Iterable[DecodedPage],
     layout_threshold: float,
     layout_batch_size: int,
+    page_prepare_workers: int = 1,
 ) -> Iterable[PageRequest]:
     """Batch only layout inference, then restore exact page order."""
+    if page_prepare_workers < 1:
+        raise ValueError("page prepare workers must be >= 1")
     source = iter(decoded_pages)
     page_index = 0
-    while True:
-        batch = list(islice(source, layout_batch_size))
-        if not batch:
-            return
-        layout_started = time.perf_counter()
-        layout_results = pipeline.layout_detector(
-            [decoded.image for decoded in batch],
-            threshold=layout_threshold,
+    executor = (
+        ThreadPoolExecutor(
+            max_workers=page_prepare_workers,
+            thread_name_prefix="unirec-page-prepare",
         )
-        layout_batch_s = time.perf_counter() - layout_started
-        if len(layout_results) != len(batch):
-            raise RuntimeError(
-                "Layout result count mismatch: "
-                f"{len(layout_results)} != {len(batch)}"
+        if page_prepare_workers > 1
+        else None
+    )
+    try:
+        while True:
+            batch = list(islice(source, layout_batch_size))
+            if not batch:
+                return
+            layout_started = time.perf_counter()
+            layout_results = pipeline.layout_detector(
+                [decoded.image for decoded in batch],
+                threshold=layout_threshold,
             )
-        layout_page_s = layout_batch_s / len(batch)
-        for decoded, layout_result in zip(batch, layout_results):
-            yield prepare_page(
-                pipeline=pipeline,
-                infer_doc_onnx=infer_doc_onnx,
-                decoded=decoded,
-                page_index=page_index,
-                layout_threshold=layout_threshold,
-                precomputed_layout=layout_result,
-                measured_layout_s=layout_page_s,
-            )
-            page_index += 1
+            layout_batch_s = time.perf_counter() - layout_started
+            if len(layout_results) != len(batch):
+                raise RuntimeError(
+                    "Layout result count mismatch: "
+                    f"{len(layout_results)} != {len(batch)}"
+                )
+            layout_page_s = layout_batch_s / len(batch)
+            page_indices = range(page_index, page_index + len(batch))
+            if executor is None:
+                prepared_batch = [
+                    prepare_page(
+                        pipeline=pipeline,
+                        infer_doc_onnx=infer_doc_onnx,
+                        decoded=decoded,
+                        page_index=current_page_index,
+                        layout_threshold=layout_threshold,
+                        precomputed_layout=layout_result,
+                        measured_layout_s=layout_page_s,
+                    )
+                    for decoded, layout_result, current_page_index in zip(
+                        batch,
+                        layout_results,
+                        page_indices,
+                    )
+                ]
+            else:
+                futures = [
+                    executor.submit(
+                        prepare_page,
+                        pipeline=pipeline,
+                        infer_doc_onnx=infer_doc_onnx,
+                        decoded=decoded,
+                        page_index=current_page_index,
+                        layout_threshold=layout_threshold,
+                        precomputed_layout=layout_result,
+                        measured_layout_s=layout_page_s,
+                    )
+                    for decoded, layout_result, current_page_index in zip(
+                        batch,
+                        layout_results,
+                        page_indices,
+                    )
+                ]
+                prepared_batch = [future.result() for future in futures]
+            yield from prepared_batch
+            page_index += len(batch)
+    finally:
+        if executor is not None:
+            executor.shutdown(wait=True)
 
 
 def assemble_page(
@@ -922,6 +1029,7 @@ def warmup_full_pipeline(
     decoded_pages = iter_decoded_pages(
         warmup_paths,
         workers=min(args.page_decode_workers, len(warmup_paths)),
+        decoder=args.page_image_decoder,
     )
     pages = list(
         iter_prepared_pages(
@@ -930,6 +1038,10 @@ def warmup_full_pipeline(
             decoded_pages=decoded_pages,
             layout_threshold=args.layout_threshold,
             layout_batch_size=args.layout_batch_size,
+            page_prepare_workers=min(
+                args.page_prepare_workers,
+                len(warmup_paths),
+            ),
         )
     )
     rejected_crops = 0
@@ -1130,6 +1242,13 @@ def main() -> None:
         raise ValueError("--decode-batch-size must be >= 1")
     if args.page_decode_workers < 1:
         raise ValueError("--page-decode-workers must be >= 1")
+    if args.page_prepare_workers < 1:
+        raise ValueError("--page-prepare-workers must be >= 1")
+    if args.page_prepare_workers > 1 and not args.preprocess_all_pages_first:
+        raise ValueError(
+            "--page-prepare-workers > 1 requires "
+            "--preprocess-all-pages-first"
+        )
     if args.pipeline_warmup_pages < 0:
         raise ValueError("--pipeline-warmup-pages must be >= 0")
     if args.layout_batch_size < 1:
@@ -1256,7 +1375,10 @@ def main() -> None:
             vision_atlas_runtime=vision_atlas_runtime,
         )
         if not use_onnx_layout:
-            layout_warmup_page = decode_page_bgr(image_paths[0])
+            layout_warmup_page = decode_page_bgr(
+                image_paths[0],
+                decoder=args.page_image_decoder,
+            )
             pipeline.layout_detector.warmup_graph(layout_warmup_page.image)
     setup_s = time.perf_counter() - setup_started
     print(
@@ -1354,6 +1476,7 @@ def main() -> None:
             decoded_pages = iter_decoded_pages(
                 image_paths,
                 workers=args.page_decode_workers,
+                decoder=args.page_image_decoder,
             )
             prepared_pages = iter_prepared_pages(
                 pipeline=pipeline,
@@ -1361,7 +1484,20 @@ def main() -> None:
                 decoded_pages=decoded_pages,
                 layout_threshold=args.layout_threshold,
                 layout_batch_size=args.layout_batch_size,
+                page_prepare_workers=args.page_prepare_workers,
             )
+            if args.preprocess_all_pages_first:
+                print(
+                    "UNIREC_PAGE_FRONTEND_DRAIN_BEGIN "
+                    f"pages={len(image_paths)}",
+                    flush=True,
+                )
+                prepared_pages = list(prepared_pages)
+                print(
+                    "UNIREC_PAGE_FRONTEND_DRAIN_END "
+                    f"pages={len(prepared_pages)}",
+                    flush=True,
+                )
             for page in prepared_pages:
                 page_index = page.page_index
                 rejected = filter_page_recognition_shapes(
@@ -1490,6 +1626,7 @@ def main() -> None:
         decoded_pages = iter_decoded_pages(
             image_paths,
             workers=args.page_decode_workers,
+            decoder=args.page_image_decoder,
         )
         prepared_pages = iter_prepared_pages(
             pipeline=pipeline,
@@ -1497,7 +1634,20 @@ def main() -> None:
             decoded_pages=decoded_pages,
             layout_threshold=args.layout_threshold,
             layout_batch_size=args.layout_batch_size,
+            page_prepare_workers=args.page_prepare_workers,
         )
+        if args.preprocess_all_pages_first:
+            print(
+                "UNIREC_PAGE_FRONTEND_DRAIN_BEGIN "
+                f"pages={len(image_paths)}",
+                flush=True,
+            )
+            prepared_pages = list(prepared_pages)
+            print(
+                "UNIREC_PAGE_FRONTEND_DRAIN_END "
+                f"pages={len(prepared_pages)}",
+                flush=True,
+            )
         for page in prepared_pages:
             page_index = page.page_index
             rejected = filter_page_recognition_shapes(
@@ -1596,6 +1746,9 @@ def main() -> None:
             pipeline.layout_detector.graph_warmup if not use_onnx_layout else None
         ),
         "page_decode_workers": args.page_decode_workers,
+        "page_image_decoder": args.page_image_decoder,
+        "preprocess_all_pages_first": args.preprocess_all_pages_first,
+        "page_prepare_workers": args.page_prepare_workers,
         "setup_s": setup_s,
         "graph_warmup": graph_warmup,
         "pipeline_wall_s": pipeline_wall_s,
