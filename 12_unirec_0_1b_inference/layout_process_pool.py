@@ -12,6 +12,8 @@ import queue
 import sys
 import time
 import traceback
+from multiprocessing import resource_tracker
+from multiprocessing.shared_memory import SharedMemory
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +27,92 @@ from opendoc_layout_npu import PPDocLayoutV2NpuAdapter
 
 
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+
+
+class SharedPageLease:
+    """Own one page's shared frontend arena in the coordinator process."""
+
+    def __init__(self, name: str) -> None:
+        self.storage = SharedMemory(name=name)
+        # Remove the public POSIX name immediately.  The mapping remains valid
+        # until this coordinator closes its descriptor, but a later crash
+        # cannot leak a named shared-memory object.
+        self.storage.unlink()
+        self.closed = False
+
+    def array(self, descriptor: dict[str, Any]) -> np.ndarray:
+        if self.closed:
+            raise RuntimeError("shared page lease is already closed")
+        return np.ndarray(
+            tuple(int(value) for value in descriptor["shape"]),
+            dtype=np.uint8,
+            buffer=self.storage.buf,
+            offset=int(descriptor["offset"]),
+        )
+
+    def close(self) -> None:
+        if self.closed:
+            return
+        self.closed = True
+        self.storage.close()
+
+
+def _pack_frontend_payload_shared(
+    result: dict[str, Any],
+) -> tuple[dict[str, Any], float, int]:
+    """Move one full frontend payload into one shared uint8 arena."""
+    arrays = [result["image_bgr"]]
+    arrays.extend(crop["image_rgb"] for crop in result["crops"])
+    total_bytes = sum(int(array.nbytes) for array in arrays)
+    if total_bytes <= 0:
+        raise RuntimeError("full frontend payload has no image bytes")
+    started = time.perf_counter()
+    storage = SharedMemory(create=True, size=total_bytes)
+    ownership_transferred = False
+    try:
+        offset = 0
+        descriptors = []
+        for array in arrays:
+            if array.dtype != np.uint8 or not array.flags.c_contiguous:
+                array = np.ascontiguousarray(array, dtype=np.uint8)
+            descriptor = {
+                "offset": offset,
+                "shape": list(array.shape),
+                "nbytes": int(array.nbytes),
+            }
+            target = np.ndarray(
+                array.shape,
+                dtype=np.uint8,
+                buffer=storage.buf,
+                offset=offset,
+            )
+            np.copyto(target, array, casting="no")
+            descriptors.append(descriptor)
+            offset += int(array.nbytes)
+        if offset != total_bytes:
+            raise RuntimeError(f"shared payload mismatch: {offset} != {total_bytes}")
+        result["shared_memory"] = {
+            "name": storage.name,
+            "nbytes": total_bytes,
+        }
+        result["image_bgr_descriptor"] = descriptors[0]
+        result["image_bgr"] = None
+        for crop, descriptor in zip(result["crops"], descriptors[1:]):
+            crop["image_rgb_descriptor"] = descriptor
+            crop["image_rgb"] = None
+        ownership_transferred = True
+        pack_s = time.perf_counter() - started
+        return result, pack_s, total_bytes
+    finally:
+        storage.close()
+        if ownership_transferred:
+            # Python <=3.12 has no SharedMemory(track=False).  Ownership moves
+            # to the coordinator, which attaches and unlinks the name.  Stop
+            # this worker's resource tracker from unlinking it at process exit.
+            tracked_name = storage._name  # noqa: SLF001
+            resource_tracker.unregister(tracked_name, "shared_memory")
+        else:
+            storage.unlink()
 
 
 def _base_label(label: str) -> str:
@@ -213,6 +301,8 @@ def _worker_main(
             layout_result = runtime([bgr], threshold=threshold)[0]
             detector_s = time.perf_counter() - detector_started
             frontend_timing: dict[str, float] = {}
+            shared_pack_s = 0.0
+            shared_payload_bytes = 0
             if prepare_pages:
                 result, frontend_timing = _prepare_frontend_payload(
                     page_index=page_index,
@@ -230,6 +320,12 @@ def _worker_main(
                     "layout_s": detector_s,
                     **frontend_timing,
                 }
+                result, shared_pack_s, shared_payload_bytes = (
+                    _pack_frontend_payload_shared(result)
+                )
+                result["frontend_timing_s"]["process_shared_pack_s"] = (
+                    shared_pack_s
+                )
             else:
                 result = layout_result
             ready_at = time.perf_counter()
@@ -246,6 +342,8 @@ def _worker_main(
                         **decode_timing,
                         "detector_call_s": detector_s,
                         **frontend_timing,
+                        "shared_pack_s": shared_pack_s,
+                        "shared_payload_bytes": shared_payload_bytes,
                         "worker_page_s": ready_at - started,
                     },
                 }
@@ -352,7 +450,9 @@ class DynamicLayoutProcessPool:
             "worker_layout_crop_views_sum_s": 0.0,
             "worker_document_image_index_sum_s": 0.0,
             "worker_recognition_crop_build_sum_s": 0.0,
+            "worker_shared_pack_sum_s": 0.0,
         }
+        shared_payload_bytes = 0
         ipc_delivery_sum_s = 0.0
         ipc_delivery_max_s = 0.0
         progress_step = max(1, len(paths) // 10)
@@ -392,6 +492,10 @@ class DynamicLayoutProcessPool:
             stage_s["worker_recognition_crop_build_sum_s"] += float(
                 timing.get("recognition_crop_build_s", 0.0)
             )
+            stage_s["worker_shared_pack_sum_s"] += float(
+                timing.get("shared_pack_s", 0.0)
+            )
+            shared_payload_bytes += int(timing.get("shared_payload_bytes", 0))
             completed += 1
             if completed % progress_step == 0 or completed == len(paths):
                 print(
@@ -412,6 +516,7 @@ class DynamicLayoutProcessPool:
             "ipc_delivery_sum_s": ipc_delivery_sum_s,
             "ipc_delivery_mean_s": ipc_delivery_sum_s / len(paths),
             "ipc_delivery_max_s": ipc_delivery_max_s,
+            "shared_payload_bytes": shared_payload_bytes,
             "scheduling": "dynamic_shared_filepath_queue",
             "layout_batch_size": 1,
             "full_page_frontend": self.prepare_pages,

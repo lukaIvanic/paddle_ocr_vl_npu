@@ -32,7 +32,7 @@ from continuous_unirec import (
     ContinuousReadyItem,
     ContinuousUniRecDecoder,
 )
-from layout_process_pool import DynamicLayoutProcessPool
+from layout_process_pool import DynamicLayoutProcessPool, SharedPageLease
 from modeling_optimized_unirec import (
     LOCAL_UNIREC_STATIC_CACHE_LEN,
     OptimizedUniRecRunner,
@@ -94,6 +94,7 @@ class PageRequest:
     layout_s: float
     prepare_page_total_s: float
     frontend_timing_s: dict[str, float]
+    frontend_storage_lease: SharedPageLease | None = None
 
     def is_ready(self) -> bool:
         return all(crop.result is not None for crop in self.crops)
@@ -845,12 +846,17 @@ def page_request_from_process_payload(
     started = time.perf_counter()
     page_index = int(payload["page_index"])
     image_path = Path(payload["image_path"])
+    shared = payload.get("shared_memory")
+    if not isinstance(shared, dict):
+        raise RuntimeError("process frontend payload has no shared-memory arena")
+    lease = SharedPageLease(str(shared["name"]))
+    image_bgr = lease.array(payload["image_bgr_descriptor"])
     crops = [
         CropRequest(
             page_index=page_index,
             crop_index=int(crop["crop_index"]),
             page_name=image_path.name,
-            image=Image.fromarray(crop["image_rgb"]),
+            image=Image.fromarray(lease.array(crop["image_rgb_descriptor"])),
             label=crop["label"],
             figure_token_map=crop["figure_token_map"],
         )
@@ -864,7 +870,7 @@ def page_request_from_process_payload(
     return PageRequest(
         page_index=page_index,
         image_path=image_path,
-        image=payload["image_bgr"],
+        image=image_bgr,
         width=int(payload["width"]),
         height=int(payload["height"]),
         layout_results=payload["layout_results"],
@@ -876,7 +882,21 @@ def page_request_from_process_payload(
         layout_s=measured_layout_s,
         prepare_page_total_s=sum(frontend_timing_s.values()),
         frontend_timing_s=frontend_timing_s,
+        frontend_storage_lease=lease,
     )
+
+
+def release_page_frontend_storage(page: PageRequest) -> None:
+    """Release a page arena after output writing no longer reads its images."""
+    lease = page.frontend_storage_lease
+    if lease is None:
+        return
+    page.image = np.empty((0, 0, 3), dtype=np.uint8)
+    for crop in page.crops:
+        crop.image.close()
+        crop.image = Image.new("RGB", (1, 1))
+    page.frontend_storage_lease = None
+    lease.close()
 
 
 def iter_prepared_pages(
@@ -1192,6 +1212,7 @@ def warmup_full_pipeline(
         )
         pipeline.save_to_json(result, str(warmup_dir))
         pipeline.save_to_markdown(result, str(warmup_dir))
+        release_page_frontend_storage(page)
     synchronize_device(runner.device)
 
     report = {
@@ -1592,6 +1613,7 @@ def main() -> None:
             f"image={page.image_path.name} crops={len(page.crops)} wall_s={page_s:.3f}",
             flush=True,
         )
+        release_page_frontend_storage(page)
 
     def drain_completed_writes(*, wait: bool, count: int | None = None) -> None:
         drained = 0
