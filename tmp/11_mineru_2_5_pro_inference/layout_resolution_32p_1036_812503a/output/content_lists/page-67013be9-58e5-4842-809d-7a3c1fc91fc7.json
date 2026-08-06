@@ -1,0 +1,167 @@
+[
+  {
+    "type": "text",
+    "bbox": [
+      0.156,
+      0.123,
+      0.354,
+      0.139
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.359,
+      0.088,
+      0.583,
+      0.174
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.148,
+      0.179,
+      0.806,
+      0.25
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.256,
+      0.857,
+      0.316
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.329,
+      0.384,
+      0.36
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.149,
+      0.373,
+      0.667,
+      0.501
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.515,
+      0.785,
+      0.584
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.623,
+      0.848,
+      0.678
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.745,
+      0.85,
+      0.816
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.147,
+      0.827,
+      0.226,
+      0.863
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.322,
+      0.827,
+      0.404,
+      0.862
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.497,
+      0.827,
+      0.577,
+      0.862
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.671,
+      0.827,
+      0.745,
+      0.862
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.487,
+      0.929,
+      0.512,
+      0.94
+    ],
+    "angle": 0,
+    "content": null
+  }
+]

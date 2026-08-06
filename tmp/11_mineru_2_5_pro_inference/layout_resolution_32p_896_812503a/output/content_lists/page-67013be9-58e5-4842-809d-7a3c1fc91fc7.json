@@ -1,0 +1,1454 @@
+[
+  {
+    "type": "image",
+    "bbox": [
+      0.134,
+      0.075,
+      0.64,
+      0.125
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.128,
+      0.699,
+      0.16
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation_block",
+    "bbox": [
+      0.129,
+      0.16,
+      0.806,
+      0.219
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.16,
+      0.699,
+      0.179
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation_block",
+    "bbox": [
+      0.129,
+      0.179,
+      0.806,
+      0.219
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.179,
+      0.806,
+      0.219
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.22,
+      0.806,
+      0.24
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.24,
+      0.806,
+      0.26
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.26,
+      0.806,
+      0.28
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.28,
+      0.806,
+      0.3
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.3,
+      0.806,
+      0.32
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.32,
+      0.806,
+      0.34
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.34,
+      0.806,
+      0.36
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.36,
+      0.806,
+      0.38
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.38,
+      0.806,
+      0.4
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.4,
+      0.806,
+      0.42
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.42,
+      0.806,
+      0.44
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.44,
+      0.806,
+      0.46
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.46,
+      0.806,
+      0.48
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.48,
+      0.806,
+      0.5
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.5,
+      0.806,
+      0.52
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.52,
+      0.806,
+      0.54
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.54,
+      0.806,
+      0.56
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.56,
+      0.806,
+      0.58
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.58,
+      0.806,
+      0.6
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.6,
+      0.806,
+      0.62
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.62,
+      0.806,
+      0.64
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.64,
+      0.806,
+      0.66
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.66,
+      0.806,
+      0.68
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.68,
+      0.806,
+      0.7
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.7,
+      0.806,
+      0.72
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.72,
+      0.806,
+      0.74
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.74,
+      0.806,
+      0.76
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.76,
+      0.806,
+      0.78
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.78,
+      0.806,
+      0.8
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.8,
+      0.806,
+      0.82
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.82,
+      0.806,
+      0.84
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.84,
+      0.806,
+      0.86
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.86,
+      0.806,
+      0.88
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.88,
+      0.806,
+      0.9
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.9,
+      0.806,
+      0.92
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.92,
+      0.806,
+      0.94
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.94,
+      0.806,
+      0.96
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.96,
+      0.806,
+      0.98
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.1,
+      0.806,
+      0.98
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.1,
+      0.806,
+      0.12
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.12,
+      0.806,
+      0.14
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.14,
+      0.806,
+      0.16
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.16,
+      0.806,
+      0.18
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.18,
+      0.806,
+      0.2
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.2,
+      0.806,
+      0.22
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.22,
+      0.806,
+      0.24
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.24,
+      0.806,
+      0.26
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.26,
+      0.806,
+      0.28
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.28,
+      0.806,
+      0.3
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.3,
+      0.806,
+      0.32
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.32,
+      0.806,
+      0.34
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.34,
+      0.806,
+      0.36
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.36,
+      0.806,
+      0.38
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.38,
+      0.806,
+      0.4
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.4,
+      0.806,
+      0.42
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.42,
+      0.806,
+      0.44
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.44,
+      0.806,
+      0.46
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.46,
+      0.806,
+      0.48
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.48,
+      0.806,
+      0.5
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.5,
+      0.806,
+      0.52
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.52,
+      0.806,
+      0.54
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.54,
+      0.806,
+      0.56
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.56,
+      0.806,
+      0.58
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.58,
+      0.806,
+      0.6
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.6,
+      0.806,
+      0.62
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.62,
+      0.806,
+      0.64
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.64,
+      0.806,
+      0.66
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.66,
+      0.806,
+      0.68
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.68,
+      0.806,
+      0.7
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.7,
+      0.806,
+      0.72
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.72,
+      0.806,
+      0.74
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.74,
+      0.806,
+      0.76
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.76,
+      0.806,
+      0.78
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.78,
+      0.806,
+      0.8
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.8,
+      0.806,
+      0.82
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.82,
+      0.806,
+      0.84
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.84,
+      0.806,
+      0.86
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.86,
+      0.806,
+      0.88
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.88,
+      0.806,
+      0.9
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.9,
+      0.806,
+      0.92
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.92,
+      0.806,
+      0.94
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.94,
+      0.806,
+      0.96
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.96,
+      0.806,
+      0.98
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.1,
+      0.806,
+      0.98
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.1,
+      0.806,
+      0.12
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.12,
+      0.806,
+      0.14
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.14,
+      0.806,
+      0.16
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.16,
+      0.806,
+      0.18
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.18,
+      0.806,
+      0.2
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.2,
+      0.806,
+      0.22
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.22,
+      0.806,
+      0.24
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.24,
+      0.806,
+      0.26
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.26,
+      0.806,
+      0.28
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.28,
+      0.806,
+      0.3
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.3,
+      0.806,
+      0.32
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.32,
+      0.806,
+      0.34
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.34,
+      0.806,
+      0.36
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.36,
+      0.806,
+      0.38
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.38,
+      0.806,
+      0.4
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.4,
+      0.806,
+      0.42
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.42,
+      0.806,
+      0.44
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.44,
+      0.806,
+      0.46
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.46,
+      0.806,
+      0.48
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.48,
+      0.806,
+      0.5
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.5,
+      0.806,
+      0.52
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.52,
+      0.806,
+      0.54
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.54,
+      0.806,
+      0.56
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.56,
+      0.806,
+      0.58
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.58,
+      0.806,
+      0.6
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.6,
+      0.806,
+      0.62
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.62,
+      0.806,
+      0.64
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.64,
+      0.806,
+      0.66
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.66,
+      0.806,
+      0.68
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.68,
+      0.806,
+      0.7
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.7,
+      0.806,
+      0.72
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.72,
+      0.806,
+      0.74
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.74,
+      0.806,
+      0.76
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.76,
+      0.806,
+      0.78
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.78,
+      0.806,
+      0.8
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.8,
+      0.806,
+      0.82
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.82,
+      0.806,
+      0.84
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.84,
+      0.806,
+      0.86
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.86,
+      0.806,
+      0.88
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.88,
+      0.806,
+      0.9
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.9,
+      0.806,
+      0.92
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.129,
+      0.92,
+      0.806,
+      0.94
+    ],
+    "angle": 0,
+    "content": null
+  }
+]

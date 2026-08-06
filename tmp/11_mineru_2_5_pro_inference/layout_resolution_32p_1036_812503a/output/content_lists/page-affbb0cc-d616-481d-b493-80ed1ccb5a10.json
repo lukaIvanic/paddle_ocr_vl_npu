@@ -1,0 +1,130 @@
+[
+  {
+    "type": "header",
+    "bbox": [
+      0.215,
+      0.12,
+      0.34,
+      0.136
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.761,
+      0.123,
+      0.781,
+      0.135
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.213,
+      0.154,
+      0.501,
+      0.178
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.213,
+      0.179,
+      0.766,
+      0.22
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.214,
+      0.229,
+      0.792,
+      0.311
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.213,
+      0.312,
+      0.781,
+      0.371
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.214,
+      0.372,
+      0.848,
+      0.48
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.216,
+      0.493,
+      0.816,
+      0.602
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.213,
+      0.615,
+      0.781,
+      0.722
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.213,
+      0.724,
+      0.781,
+      0.782
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.213,
+      0.795,
+      0.781,
+      0.833
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  }
+]

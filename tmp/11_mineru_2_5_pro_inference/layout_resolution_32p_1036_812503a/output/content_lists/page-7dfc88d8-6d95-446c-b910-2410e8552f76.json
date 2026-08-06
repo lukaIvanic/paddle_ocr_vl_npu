@@ -1,0 +1,203 @@
+[
+  {
+    "type": "header",
+    "bbox": [
+      0.287,
+      0.057,
+      0.709,
+      0.073
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.149,
+      0.085,
+      0.999,
+      0.18
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.2,
+      0.21,
+      0.27,
+      0.23
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.147,
+      0.243,
+      0.849,
+      0.299
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.31,
+      0.849,
+      0.366
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.201,
+      0.376,
+      0.535,
+      0.398
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.202,
+      0.41,
+      0.569,
+      0.432
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.443,
+      0.85,
+      0.498
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.509,
+      0.85,
+      0.566
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.202,
+      0.576,
+      0.569,
+      0.598
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.609,
+      0.848,
+      0.663
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.675,
+      0.848,
+      0.731
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.742,
+      0.849,
+      0.798
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.201,
+      0.808,
+      0.732,
+      0.831
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.201,
+      0.842,
+      0.545,
+      0.864
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.201,
+      0.874,
+      0.785,
+      0.898
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.506,
+      0.942,
+      0.523,
+      0.953
+    ],
+    "angle": 0,
+    "content": null
+  }
+]

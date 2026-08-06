@@ -1,0 +1,129 @@
+[
+  {
+    "type": "title",
+    "bbox": [
+      0.136,
+      0.069,
+      0.573,
+      0.158
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.214,
+      0.29,
+      0.269
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.379,
+      0.208,
+      0.768,
+      0.317
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.339,
+      0.9,
+      0.445
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.281,
+      0.427,
+      0.728,
+      0.553
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.122,
+      0.574,
+      0.384,
+      0.628
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.182,
+      0.647,
+      0.783,
+      0.713
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.122,
+      0.73,
+      0.474,
+      0.78
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.18,
+      0.826,
+      0.677,
+      0.945
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.687,
+      0.86,
+      0.929,
+      0.912
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.933,
+      0.943,
+      0.959,
+      0.969
+    ],
+    "angle": 0,
+    "content": null
+  }
+]

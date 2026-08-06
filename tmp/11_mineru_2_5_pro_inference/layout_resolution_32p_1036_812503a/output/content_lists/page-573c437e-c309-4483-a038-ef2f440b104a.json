@@ -1,0 +1,93 @@
+[
+  {
+    "type": "page_number",
+    "bbox": [
+      0.146,
+      0.109,
+      0.177,
+      0.121
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "header",
+    "bbox": [
+      0.19,
+      0.109,
+      0.393,
+      0.122
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "table_caption",
+    "bbox": [
+      0.18,
+      0.147,
+      0.562,
+      0.163
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "table",
+    "bbox": [
+      0.174,
+      0.17,
+      0.794,
+      0.503
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.148,
+      0.595,
+      0.82,
+      0.628
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.149,
+      0.628,
+      0.82,
+      0.678
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.152,
+      0.697,
+      0.731,
+      0.795
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.15,
+      0.813,
+      0.823,
+      0.847
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  }
+]

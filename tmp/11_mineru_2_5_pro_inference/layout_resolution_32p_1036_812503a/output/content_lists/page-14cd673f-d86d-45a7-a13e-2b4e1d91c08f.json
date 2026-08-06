@@ -1,0 +1,254 @@
+[
+  {
+    "type": "header",
+    "bbox": [
+      0.069,
+      0.055,
+      0.106,
+      0.076
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "header",
+    "bbox": [
+      0.11,
+      0.053,
+      0.267,
+      0.071
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "header",
+    "bbox": [
+      0.9,
+      0.057,
+      0.976,
+      0.079
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.112,
+      0.086,
+      0.426,
+      0.105
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.116,
+      0.114,
+      0.348,
+      0.133
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.119,
+      0.136,
+      0.609,
+      0.171
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.116,
+      0.182,
+      0.198,
+      0.199
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "equation_block",
+    "bbox": [
+      0.125,
+      0.199,
+      0.924,
+      0.335
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.127,
+      0.199,
+      0.692,
+      0.236
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.122,
+      0.237,
+      0.924,
+      0.335
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.15,
+      0.347,
+      0.695,
+      0.402
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.254,
+      0.404,
+      0.665,
+      0.436
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation_block",
+    "bbox": [
+      0.159,
+      0.445,
+      0.843,
+      0.613
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.16,
+      0.445,
+      0.843,
+      0.506
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.27,
+      0.51,
+      0.811,
+      0.559
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.272,
+      0.56,
+      0.786,
+      0.612
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.127,
+      0.624,
+      0.909,
+      0.681
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.14,
+      0.689,
+      0.895,
+      0.754
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.147,
+      0.757,
+      0.963,
+      0.832
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.172,
+      0.844,
+      0.571,
+      0.876
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.19,
+      0.894,
+      0.584,
+      0.925
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.268,
+      0.931,
+      0.57,
+      0.962
+    ],
+    "angle": 0,
+    "content": null
+  }
+]

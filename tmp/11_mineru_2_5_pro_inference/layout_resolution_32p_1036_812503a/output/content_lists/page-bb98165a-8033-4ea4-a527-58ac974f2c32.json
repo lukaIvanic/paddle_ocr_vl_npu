@@ -1,0 +1,181 @@
+[
+  {
+    "type": "header",
+    "bbox": [
+      0.156,
+      0.099,
+      0.543,
+      0.113
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.794,
+      0.099,
+      0.823,
+      0.112
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.197,
+      0.136,
+      0.501,
+      0.301
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "image_caption",
+    "bbox": [
+      0.512,
+      0.274,
+      0.747,
+      0.305
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.199,
+      0.334,
+      0.501,
+      0.5
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "image_caption",
+    "bbox": [
+      0.513,
+      0.458,
+      0.761,
+      0.503
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.157,
+      0.536,
+      0.83,
+      0.584
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "equation_block",
+    "bbox": [
+      0.16,
+      0.59,
+      0.72,
+      0.692
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.274,
+      0.59,
+      0.717,
+      0.609
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.277,
+      0.612,
+      0.567,
+      0.631
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.163,
+      0.633,
+      0.717,
+      0.65
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.277,
+      0.653,
+      0.553,
+      0.672
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.343,
+      0.675,
+      0.717,
+      0.692
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.16,
+      0.7,
+      0.614,
+      0.716
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.16,
+      0.748,
+      0.423,
+      0.767
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.159,
+      0.771,
+      0.832,
+      0.837
+    ],
+    "angle": 0,
+    "content": null,
+    "merge_prev": false
+  }
+]
