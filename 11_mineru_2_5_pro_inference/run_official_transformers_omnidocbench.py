@@ -1335,6 +1335,18 @@ def main() -> None:
                 float(item.get("request_h2d_submit_s", 0.0))
                 for item in generation_metrics
             ),
+            "sampled_token_copy_submit_s": sum(
+                float(item.get("sampled_token_copy_submit_s", 0.0))
+                for item in generation_metrics
+            ),
+            "sampled_token_d2h_wait_s": sum(
+                float(item.get("sampled_token_d2h_wait_s", 0.0))
+                for item in generation_metrics
+            ),
+            "hot_swap_safety_sync_s": sum(
+                float(item.get("hot_swap_safety_sync_s", 0.0))
+                for item in generation_metrics
+            ),
             "decode_s": decode_s,
             "decode_tok_s": decode_calls / decode_s if decode_s > 0 else 0.0,
             "raw_decode_tok_s": (
@@ -1389,6 +1401,15 @@ def main() -> None:
                     ),
                     "request_h2d_submit_s": float(
                         item.get("request_h2d_submit_s", 0.0)
+                    ),
+                    "sampled_token_copy_submit_s": float(
+                        item.get("sampled_token_copy_submit_s", 0.0)
+                    ),
+                    "sampled_token_d2h_wait_s": float(
+                        item.get("sampled_token_d2h_wait_s", 0.0)
+                    ),
+                    "hot_swap_safety_sync_s": float(
+                        item.get("hot_swap_safety_sync_s", 0.0)
                     ),
                     "prefill_metrics": item.get("prefill_metrics", {}),
                 }
