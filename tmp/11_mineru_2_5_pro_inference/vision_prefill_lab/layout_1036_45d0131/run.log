@@ -1,0 +1,93 @@
+[setup] configure NPU and load processor/model
+[npu] jit_compile=False; Conv3D NPU inference patch enabled
+The `use_fast` parameter is deprecated and will be removed in a future version. Use `backend="torchvision"` instead of `use_fast=True`, or `backend="pil"` instead of `use_fast=False`.
+[setup] complete in 14.832s
+[prepare 1/8] page-d1561665-5359-42fe-920c-d6e3bff81953.png original=(1653, 2339) layout=(1036, 1036) tokens=5476 cpu=0.233s h2d=0.003s
+[prepare 2/8] page-bd6eb36e-0856-4d9d-b587-21b4a0209c8b.png original=(1653, 2339) layout=(1036, 1036) tokens=5476 cpu=0.203s h2d=0.004s
+[prepare 3/8] page-affbb0cc-d616-481d-b493-80ed1ccb5a10.png original=(1700, 2200) layout=(1036, 1036) tokens=5476 cpu=0.193s h2d=0.003s
+[prepare 4/8] page-14cd673f-d86d-45a7-a13e-2b4e1d91c08f.png original=(1654, 2339) layout=(1036, 1036) tokens=5476 cpu=0.210s h2d=0.003s
+[prepare 5/8] page-ba4443e6-f432-435f-89e7-ddf0a571d2cd.png original=(2000, 1500) layout=(1036, 1036) tokens=5476 cpu=0.161s h2d=0.003s
+[prepare 6/8] page-1c08a4a2-8163-44d3-93f0-9449457dbba3.png original=(1654, 2339) layout=(1036, 1036) tokens=5476 cpu=0.210s h2d=0.003s
+[prepare 7/8] page-74c7629d-b064-4b8f-8667-bf943f5ba367.png original=(1209, 1832) layout=(1036, 1036) tokens=5476 cpu=0.163s h2d=0.004s
+[prepare 8/8] page-c9654418-0624-48d4-8be7-6065f45dd1f9.png original=(1654, 2339) layout=(1036, 1036) tokens=5476 cpu=0.213s h2d=0.003s
+[corpus] pages=8 token_shapes=[5476] routes={'5476': 5632}
+[W806 07:46:22.152444488 OpInterface.cpp:19419] Warning: torch_npu.npu_conv3d is deprecated and will be removed in future version. Use torch.nn.functional.conv3d instead. (function operator())
+[W806 07:46:22.152519469 TensorFactories.cpp:340] Warning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (function operator())
+.[parity] comparing 2 real pages
+[parity] page-d1561665-5359-42fe-920c-d6e3bff81953.png cosine=0.99999827 mean_abs=0.050585
+[parity] page-bd6eb36e-0856-4d9d-b587-21b4a0209c8b.png cosine=0.99999702 mean_abs=0.060643
+[eager] warming 2 real pages
+[eager] measuring 8 pages x 3 repeats
+[eager 1/3 1/8] 152.60ms real=5476 physical=5476
+[eager 1/3 2/8] 152.58ms real=5476 physical=5476
+[eager 1/3 3/8] 153.82ms real=5476 physical=5476
+[eager 1/3 4/8] 155.80ms real=5476 physical=5476
+[eager 1/3 5/8] 153.36ms real=5476 physical=5476
+[eager 1/3 6/8] 153.05ms real=5476 physical=5476
+[eager 1/3 7/8] 152.60ms real=5476 physical=5476
+[eager 1/3 8/8] 152.07ms real=5476 physical=5476
+[eager 2/3 1/8] 152.80ms real=5476 physical=5476
+[eager 2/3 2/8] 152.89ms real=5476 physical=5476
+[eager 2/3 3/8] 152.20ms real=5476 physical=5476
+[eager 2/3 4/8] 153.55ms real=5476 physical=5476
+[eager 2/3 5/8] 154.60ms real=5476 physical=5476
+[eager 2/3 6/8] 154.13ms real=5476 physical=5476
+[eager 2/3 7/8] 154.31ms real=5476 physical=5476
+[eager 2/3 8/8] 154.68ms real=5476 physical=5476
+[eager 3/3 1/8] 152.85ms real=5476 physical=5476
+[eager 3/3 2/8] 153.59ms real=5476 physical=5476
+[eager 3/3 3/8] 153.35ms real=5476 physical=5476
+[eager 3/3 4/8] 152.61ms real=5476 physical=5476
+[eager 3/3 5/8] 153.82ms real=5476 physical=5476
+[eager 3/3 6/8] 153.38ms real=5476 physical=5476
+[eager 3/3 7/8] 152.89ms real=5476 physical=5476
+[eager 3/3 8/8] 153.75ms real=5476 physical=5476
+[torchair] warming 2 real pages
+[torchair] measuring 8 pages x 3 repeats
+[torchair 1/3 1/8] 140.87ms real=5476 physical=5632
+[torchair 1/3 2/8] 140.34ms real=5476 physical=5632
+[torchair 1/3 3/8] 139.50ms real=5476 physical=5632
+[torchair 1/3 4/8] 140.41ms real=5476 physical=5632
+[torchair 1/3 5/8] 140.26ms real=5476 physical=5632
+[torchair 1/3 6/8] 139.84ms real=5476 physical=5632
+[torchair 1/3 7/8] 140.50ms real=5476 physical=5632
+[torchair 1/3 8/8] 141.00ms real=5476 physical=5632
+[torchair 2/3 1/8] 140.92ms real=5476 physical=5632
+[torchair 2/3 2/8] 141.04ms real=5476 physical=5632
+[torchair 2/3 3/8] 140.64ms real=5476 physical=5632
+[torchair 2/3 4/8] 139.54ms real=5476 physical=5632
+[torchair 2/3 5/8] 140.21ms real=5476 physical=5632
+[torchair 2/3 6/8] 140.66ms real=5476 physical=5632
+[torchair 2/3 7/8] 139.70ms real=5476 physical=5632
+[torchair 2/3 8/8] 140.36ms real=5476 physical=5632
+[torchair 3/3 1/8] 140.85ms real=5476 physical=5632
+[torchair 3/3 2/8] 140.55ms real=5476 physical=5632
+[torchair 3/3 3/8] 141.18ms real=5476 physical=5632
+[torchair 3/3 4/8] 141.04ms real=5476 physical=5632
+[torchair 3/3 5/8] 139.93ms real=5476 physical=5632
+[torchair 3/3 6/8] 140.74ms real=5476 physical=5632
+[torchair 3/3 7/8] 141.10ms real=5476 physical=5632
+[torchair 3/3 8/8] 140.18ms real=5476 physical=5632
+{
+  "headline": {
+    "eager": {
+      "pages_per_s": 6.519447107290488,
+      "effective_tok_s": 35700.492359522716,
+      "physical_tok_s": 35700.492359522716,
+      "useful_token_fraction": 1.0,
+      "call_wall_s": 3.6812937669456005
+    },
+    "torchair": {
+      "pages_per_s": 7.118769393533575,
+      "effective_tok_s": 38982.38119898985,
+      "physical_tok_s": 40092.909224381096,
+      "useful_token_fraction": 0.9723011363636364,
+      "call_wall_s": 3.3713692175224423
+    }
+  },
+  "comparison": {
+    "torchair_wall_speedup": 1.091928391530761,
+    "effective_tok_s_speedup": 1.0919283915307607
+  }
+}
+[output] /workspace/repos/paddle_ocr_vl_npu/tmp/11_mineru_2_5_pro_inference/vision_prefill_lab/layout_1036_45d0131/result.json

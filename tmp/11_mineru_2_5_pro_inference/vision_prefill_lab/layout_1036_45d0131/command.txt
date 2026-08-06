@@ -1,0 +1,4 @@
+45d0131971f1cb36bdc86b2d82772c8042de5774
+liteserver-c001-4
+ASCEND_RT_VISIBLE_DEVICES=6
+/usr/local/python3.12.13/bin/python3 11_mineru_2_5_pro_inference/vision_prefill_lab.py --model /workspace/models/MinerU2.5-Pro-2605-1.2B --dataset-json /workspace/datasets/OmniDocBench/OmniDocBench.json --images-dir /workspace/datasets/OmniDocBench/images --offset 0 --limit 8 --layout-size 1036 1036 --execution eager,torchair --warmup-pages 2 --repeats 3 --parity-pages 2 --cache-dir .runtime_cache/11_mineru_2_5_pro_inference/vision_prefill_b1_fp16 --output tmp/11_mineru_2_5_pro_inference/vision_prefill_lab/layout_1036_45d0131/result.json
