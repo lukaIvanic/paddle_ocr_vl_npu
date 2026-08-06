@@ -1,0 +1,2 @@
+commit=303611e
+command=/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python 12_unirec_0_1b_inference/frontend_ipc_lab.py --workers 8 --max-inflight 16 --modes shared_memory_arena --consumer copy --output tmp/12_unirec_0_1b_inference/frontend_ipc_lab/hard128_copy.json

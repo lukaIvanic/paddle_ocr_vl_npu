@@ -1,0 +1,15 @@
+UNIREC_FRONTEND_IPC_WORKLOAD {"pages": 128, "crops": 7325, "segments": 7453, "page_image_bytes": 5364835488, "crop_bytes": 3080931936, "total_bytes": 8445767424, "total_gib": 7.865733861923218, "per_page_mean_mib": 62.92587089538574, "per_page_max_mib": 258.77845001220703}
+UNIREC_FRONTEND_IPC_LANE_BEGIN mode=shared_memory_arena round=0
+UNIREC_FRONTEND_IPC_PROGRESS mode=shared_memory_arena pages=12/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=shared_memory_arena pages=24/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=shared_memory_arena pages=36/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=shared_memory_arena pages=48/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=shared_memory_arena pages=60/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=shared_memory_arena pages=72/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=shared_memory_arena pages=84/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=shared_memory_arena pages=96/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=shared_memory_arena pages=108/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=shared_memory_arena pages=120/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=shared_memory_arena pages=128/128
+UNIREC_FRONTEND_IPC_LANE_END {"mode": "shared_memory_arena", "run_id": 0, "consumer": "copy", "workers": 8, "max_inflight": 16, "pages": 128, "segments": 7453, "payload_bytes": 8445767424, "queue_array_bytes": 0, "shared_memory_bytes": 8445767424, "setup_s": 0.34753072587773204, "wall_s": 7.295287828892469, "pages_per_s": 17.545572292989604, "payload_gib_per_s": 1.0781937664983603, "producer_build_sum_s": 4.971933484543115, "producer_build_mean_s": 0.038843230347993085, "producer_build_max_s": 0.15687663690187037, "first_ready_s": 0.07403707504272461, "last_ready_s": 6.137790679931641, "receive_wait_s": 0.09476461331360042, "ipc_delivery_sum_s": 95.48920202255249, "ipc_delivery_mean_s": 0.7460093908011913, "ipc_delivery_p50_s": 0.6388497352600098, "ipc_delivery_p95_s": 1.7444629669189453, "ipc_delivery_max_s": 1.9629738330841064, "consumer_s": 4.4787135273218155, "parent_shm_allocate_s": 0.12451719422824681, "worker_page_counts": [17, 16, 16, 16, 15, 16, 16, 16], "worker_peak_rss_kb": [181484, 191844, 181772, 276004, 308132, 292264, 180484, 300100], "shutdown_s": 0.11236440017819405, "mismatches": 0, "parity": "PASS", "round": 0}
+UNIREC_FRONTEND_IPC_DONE output=tmp/12_unirec_0_1b_inference/frontend_ipc_lab/hard128_copy.json

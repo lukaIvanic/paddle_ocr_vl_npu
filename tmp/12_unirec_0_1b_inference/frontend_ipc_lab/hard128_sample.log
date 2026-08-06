@@ -1,0 +1,54 @@
+UNIREC_FRONTEND_IPC_WORKLOAD {"pages": 128, "crops": 7325, "segments": 7453, "page_image_bytes": 5364835488, "crop_bytes": 3080931936, "total_bytes": 8445767424, "total_gib": 7.865733861923218, "per_page_mean_mib": 62.92587089538574, "per_page_max_mib": 258.77845001220703}
+UNIREC_FRONTEND_IPC_LANE_BEGIN mode=metadata round=0
+UNIREC_FRONTEND_IPC_PROGRESS mode=metadata pages=12/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=metadata pages=24/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=metadata pages=36/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=metadata pages=48/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=metadata pages=60/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=metadata pages=72/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=metadata pages=84/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=metadata pages=96/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=metadata pages=108/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=metadata pages=120/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=metadata pages=128/128
+UNIREC_FRONTEND_IPC_LANE_END {"mode": "metadata", "run_id": 0, "consumer": "sample", "workers": 8, "max_inflight": 16, "pages": 128, "segments": 7453, "payload_bytes": 8445767424, "queue_array_bytes": 0, "shared_memory_bytes": 0, "setup_s": 0.3347367790993303, "wall_s": 0.10799383511766791, "pages_per_s": 1185.2528420768997, "payload_gib_per_s": 72.83502667863283, "producer_build_sum_s": 0.00012622075155377388, "producer_build_mean_s": 9.860996215138584e-07, "producer_build_max_s": 2.4498440325260162e-06, "first_ready_s": 0.0009517669677734375, "last_ready_s": 0.08939027786254883, "receive_wait_s": 0.012077827239409089, "ipc_delivery_sum_s": 1.4172322750091553, "ipc_delivery_mean_s": 0.011072127148509026, "ipc_delivery_p50_s": 0.011902093887329102, "ipc_delivery_p95_s": 0.01647472381591797, "ipc_delivery_max_s": 0.01741647720336914, "consumer_s": 0.0002566163893789053, "parent_shm_allocate_s": 0.0, "worker_page_counts": [17, 16, 16, 17, 16, 15, 16, 15], "worker_peak_rss_kb": [45972, 45972, 45972, 45972, 45972, 45972, 45972, 45972], "shutdown_s": 0.08462078799493611, "mismatches": 0, "parity": "PASS", "round": 0}
+UNIREC_FRONTEND_IPC_LANE_BEGIN mode=pickle_arrays round=0
+UNIREC_FRONTEND_IPC_PROGRESS mode=pickle_arrays pages=12/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=pickle_arrays pages=24/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=pickle_arrays pages=36/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=pickle_arrays pages=48/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=pickle_arrays pages=60/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=pickle_arrays pages=72/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=pickle_arrays pages=84/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=pickle_arrays pages=96/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=pickle_arrays pages=108/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=pickle_arrays pages=120/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=pickle_arrays pages=128/128
+UNIREC_FRONTEND_IPC_LANE_END {"mode": "pickle_arrays", "run_id": 1, "consumer": "sample", "workers": 8, "max_inflight": 16, "pages": 128, "segments": 7453, "payload_bytes": 8445767424, "queue_array_bytes": 8445767424, "shared_memory_bytes": 0, "setup_s": 0.33166618715040386, "wall_s": 20.001193553907797, "pages_per_s": 6.39961808554128, "payload_gib_per_s": 0.3932632240532678, "producer_build_sum_s": 1.637386810965836, "producer_build_mean_s": 0.012792084460670594, "producer_build_max_s": 0.06555448402650654, "first_ready_s": 0.026479482650756836, "last_ready_s": 15.944697618484497, "receive_wait_s": 19.770822070306167, "ipc_delivery_sum_s": 284.353981256485, "ipc_delivery_mean_s": 2.221515478566289, "ipc_delivery_p50_s": 1.918424129486084, "ipc_delivery_p95_s": 4.422792196273804, "ipc_delivery_max_s": 5.202507734298706, "consumer_s": 0.04191395430825651, "parent_shm_allocate_s": 0.0, "worker_page_counts": [15, 16, 16, 16, 16, 16, 16, 17], "worker_peak_rss_kb": [542332, 474984, 512736, 840384, 746308, 713128, 817384, 400604], "shutdown_s": 0.10398023691959679, "mismatches": 0, "parity": "PASS", "round": 0}
+UNIREC_FRONTEND_IPC_LANE_BEGIN mode=pickle_arena round=0
+UNIREC_FRONTEND_IPC_PROGRESS mode=pickle_arena pages=12/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=pickle_arena pages=24/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=pickle_arena pages=36/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=pickle_arena pages=48/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=pickle_arena pages=60/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=pickle_arena pages=72/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=pickle_arena pages=84/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=pickle_arena pages=96/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=pickle_arena pages=108/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=pickle_arena pages=120/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=pickle_arena pages=128/128
+UNIREC_FRONTEND_IPC_LANE_END {"mode": "pickle_arena", "run_id": 2, "consumer": "sample", "workers": 8, "max_inflight": 16, "pages": 128, "segments": 7453, "payload_bytes": 8445767424, "queue_array_bytes": 8445767424, "shared_memory_bytes": 0, "setup_s": 0.35105003719218075, "wall_s": 19.005920907948166, "pages_per_s": 6.734743379178808, "payload_gib_per_s": 0.4138570238200777, "producer_build_sum_s": 1.5928029862698168, "producer_build_mean_s": 0.012443773330232943, "producer_build_max_s": 0.058132637990638614, "first_ready_s": 0.020221948623657227, "last_ready_s": 14.987550258636475, "receive_wait_s": 18.598660198040307, "ipc_delivery_sum_s": 273.4634208679199, "ipc_delivery_mean_s": 2.1364329755306244, "ipc_delivery_p50_s": 1.9353086948394775, "ipc_delivery_p95_s": 4.287798166275024, "ipc_delivery_max_s": 5.211010932922363, "consumer_s": 0.03882673429325223, "parent_shm_allocate_s": 0.0, "worker_page_counts": [16, 16, 16, 16, 16, 16, 16, 16], "worker_peak_rss_kb": [782020, 782020, 859604, 838336, 782020, 834244, 784880, 782020], "shutdown_s": 0.10090355388820171, "mismatches": 0, "parity": "PASS", "round": 0}
+UNIREC_FRONTEND_IPC_LANE_BEGIN mode=shared_memory_arena round=0
+UNIREC_FRONTEND_IPC_PROGRESS mode=shared_memory_arena pages=12/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=shared_memory_arena pages=24/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=shared_memory_arena pages=36/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=shared_memory_arena pages=48/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=shared_memory_arena pages=60/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=shared_memory_arena pages=72/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=shared_memory_arena pages=84/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=shared_memory_arena pages=96/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=shared_memory_arena pages=108/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=shared_memory_arena pages=120/128
+UNIREC_FRONTEND_IPC_PROGRESS mode=shared_memory_arena pages=128/128
+UNIREC_FRONTEND_IPC_LANE_END {"mode": "shared_memory_arena", "run_id": 3, "consumer": "sample", "workers": 8, "max_inflight": 16, "pages": 128, "segments": 7453, "payload_bytes": 8445767424, "queue_array_bytes": 0, "shared_memory_bytes": 8445767424, "setup_s": 0.3641306390054524, "wall_s": 2.363803564105183, "pages_per_s": 54.15001565430601, "payload_gib_per_s": 3.3275750918417746, "producer_build_sum_s": 5.370965402806178, "producer_build_mean_s": 0.041960667209423264, "producer_build_max_s": 0.1715983261819929, "first_ready_s": 0.07526469230651855, "last_ready_s": 1.9956772327423096, "receive_wait_s": 0.07847069553099573, "ipc_delivery_sum_s": 25.308671712875366, "ipc_delivery_mean_s": 0.1977239977568388, "ipc_delivery_p50_s": 0.19304585456848145, "ipc_delivery_p95_s": 0.39363646507263184, "ipc_delivery_max_s": 0.48204898834228516, "consumer_s": 0.11391826113685966, "parent_shm_allocate_s": 0.10949279740452766, "worker_page_counts": [14, 17, 15, 14, 17, 16, 16, 19], "worker_peak_rss_kb": [901260, 901260, 901260, 901260, 901260, 901260, 901260, 901260], "shutdown_s": 0.09109838912263513, "mismatches": 0, "parity": "PASS", "round": 0}
+UNIREC_FRONTEND_IPC_DONE output=tmp/12_unirec_0_1b_inference/frontend_ipc_lab/hard128_sample.json
