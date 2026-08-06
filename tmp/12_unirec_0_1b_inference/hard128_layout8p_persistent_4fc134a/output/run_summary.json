@@ -1,0 +1,1225 @@
+{
+  "status": "ok",
+  "openocr_root": "/workspace/repos/OpenOCR",
+  "model_path": "/workspace/models/unirec-0.1b",
+  "device": "npu:0",
+  "dtype": "float16",
+  "decode_mode": "compiled",
+  "decode_scheduling": "continuous",
+  "decode_batch_size": 32,
+  "text_prefill_mode": "compiled_packed_s1024",
+  "vision_prefill_mode": "compiled_atlas_stage2",
+  "vision_spatial_execution": "eager",
+  "recognition_shape_filter": null,
+  "max_length": 256,
+  "layout_backend": "transformers_npu",
+  "layout_dtype": "float32",
+  "layout_execution": "torchair",
+  "layout_batch_size": 1,
+  "layout_process_workers": 8,
+  "layout_process_setup_s": 38.74932694202289,
+  "layout_process_warmup": {
+    "label": "pipeline_warmup",
+    "worker_count": 8,
+    "page_count": 2,
+    "wall_s": 0.532294447068125,
+    "pages_per_s": 3.757318925673543,
+    "worker_page_counts": [
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0
+    ],
+    "worker_busy_s": [
+      0.0,
+      0.5305295269936323,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.5265222978778183,
+      0.0
+    ],
+    "stage_s": {
+      "worker_file_read_sum_s": 0.01183827081695199,
+      "worker_direct_rgb_decode_sum_s": 0.14713110006414354,
+      "worker_detector_call_sum_s": 0.8979986717458814
+    },
+    "scheduling": "dynamic_shared_filepath_queue",
+    "layout_batch_size": 1
+  },
+  "layout_process": {
+    "label": "measured",
+    "worker_count": 8,
+    "page_count": 128,
+    "wall_s": 6.191406417172402,
+    "pages_per_s": 20.673816476492465,
+    "worker_page_counts": [
+      15,
+      18,
+      15,
+      15,
+      16,
+      17,
+      17,
+      15
+    ],
+    "worker_busy_s": [
+      5.637245888821781,
+      6.1778233328368515,
+      5.730132077122107,
+      5.687796171056107,
+      5.605540029937401,
+      5.8340237436350435,
+      5.640413184417412,
+      5.854331640992314
+    ],
+    "stage_s": {
+      "worker_file_read_sum_s": 0.3599669218529016,
+      "worker_direct_rgb_decode_sum_s": 8.953919221181422,
+      "worker_detector_call_sum_s": 36.769357985118404
+    },
+    "scheduling": "dynamic_shared_filepath_queue",
+    "layout_batch_size": 1
+  },
+  "layout_process_shutdown_s": 10.197302819928154,
+  "layout_process_shutdown_join_wait_s": 0.0,
+  "layout_graph_warmup": null,
+  "page_decode_workers": 8,
+  "page_image_decoder": "opencv",
+  "preprocess_all_pages_first": true,
+  "page_prepare_workers": 8,
+  "setup_s": 58.499097193125635,
+  "graph_warmup": {
+    "mode": "full_pipeline",
+    "page_count": 2,
+    "accepted_crop_count": 46,
+    "rejected_crop_count": 0,
+    "source_pages": [
+      "magazine_TheEconomist.2024.02.24_page_007.png",
+      "magazine_TheEconomist.2024.02.24_page_008.png"
+    ],
+    "output_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/hard128_layout8p_persistent_4fc134a/output/_pipeline_warmup",
+    "wall_s": 10.250251671066508,
+    "decode": {
+      "batch_size": 32,
+      "submitted": 46,
+      "completed": 46,
+      "decode_iterations": 278,
+      "raw_decode_token_slots": 8896,
+      "effective_decode_tokens": 4447,
+      "idle_decode_token_slots": 4449,
+      "decode_s": 0.7426118194125593,
+      "first_decode_step_s": 0.15586820896714926,
+      "steady_decode_s": 0.58674361044541,
+      "raw_decode_tokens_per_s": 11979.340709978402,
+      "effective_decode_tokens_per_s": 5988.323756438169,
+      "steady_raw_decode_tokens_per_s": 15107.109548702443,
+      "steady_effective_decode_tokens_per_s": 7524.581301615668,
+      "slot_refills": 14,
+      "compile_wrap_s": 0.0010110968723893166,
+      "compile": {
+        "compile_api": "torch_npu.dynamo.torchair.inference.cache_compile",
+        "compile_api_import_path": "torch_npu.dynamo.torchair.inference.cache_compile",
+        "backend": "torchair",
+        "fullgraph": true,
+        "dynamic": false,
+        "torchair_ge_cache": true,
+        "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/decode_selfkv256_cross1320_eager_b32",
+        "static_self_kv_len": 256,
+        "static_cross_kv_len": 1320,
+        "self_attention_backend": "eager",
+        "batch_size": 32
+      },
+      "timing_detail": {
+        "run_wall_s": 9.687675419030711,
+        "source_pull_s": 8.8308580245357,
+        "initial_cache_stack_s": 0.009330448927357793,
+        "initial_state_build_s": 0.005840779049322009,
+        "cache_refill_copy_enqueue_s": 0.00951914326287806,
+        "cache_refill_row_bytes": 29054112,
+        "cache_refill_total_bytes": 406757568,
+        "result_build_s": 0.00888658408075571,
+        "completion_callback_s": 0.00039261579513549805,
+        "decode_input_build_s": 0.052022471791133285,
+        "pre_decode_sync_s": 0.016274421010166407,
+        "decode_s": 0.7426118194125593,
+        "scheduler_bookkeeping_residual_s": 0.010928014293313026
+      }
+    }
+  },
+  "pipeline_wall_s": 247.21084526111372,
+  "pages_per_s": 0.5177766366390658,
+  "page_count": 128,
+  "crop_count": 7325,
+  "rejected_crop_count": 0,
+  "cohort_count": 0,
+  "layout_s": 6.191406417172402,
+  "page_prepare_total_s": 34.30129530769773,
+  "page_frontend_other_s": 28.109888890525326,
+  "page_frontend_stage_s": {
+    "page_file_read_s": 0.4344785667490214,
+    "page_image_decode_s": 20.769441397394985,
+    "layout_s": 6.191406417172402,
+    "layout_crop_views_s": 0.03504323284141719,
+    "document_image_index_s": 0.008374305674806237,
+    "recognition_crop_build_s": 6.862551387865096
+  },
+  "prepare_s": 70.01659809355624,
+  "prefill_s": 110.45060210954524,
+  "prefill_device_stage_s": {
+    "vision_crop_prefix_stages_0_1": 48.86892287087422,
+    "compiled_vision_atlas_stage2": 21.89892267677539,
+    "vision_crop_suffix_stage3_projection": 20.19152224349944,
+    "compiled_packed_text_prefill_s1024": 5.158681139484012,
+    "static_cache_build_and_padding": 8.35528302291039,
+    "vision_stage2_eager_overflow": 1.4767596163749703,
+    "detail_vision_patch_stem_2d": 0.01758390009403229,
+    "detail_vision_pointwise_linear": 0.092311679802835,
+    "detail_vision_spatial_depthwise_focal": 0.22694694006443025,
+    "detail_vision_pointwise_conv_1x1": 0.04549903999269008,
+    "detail_vision_flat_mlp": 0.09218072021007538,
+    "detail_vision_downsample_2d": 0.019808860018849375,
+    "detail_vision_flat_projection": 0.002762100011110306,
+    "spatial_focalsvtr_encoder": 0.9192131156921387,
+    "encoder_attention_mask": 0.004740260049700735,
+    "flat_cross_kv_projection": 0.03147461998462677
+  },
+  "vision_spatial_device_s": 69.06044511437366,
+  "vision_spatial_ms_per_accepted_crop": 9.428047114590262,
+  "text_prefill_real_source_tokens": 681952,
+  "text_prefill_physical_source_tokens": 787736,
+  "text_prefill_useful_token_fraction": 0.8657113550732732,
+  "text_prefill_packing": {
+    "packs": 746,
+    "members": 7304,
+    "real_source_tokens": 658120,
+    "physical_source_tokens": 763904,
+    "fallback_crops": 21,
+    "member_histogram": {
+      "1": 109,
+      "2": 87,
+      "3": 42,
+      "4": 26,
+      "5": 23,
+      "6": 25,
+      "9": 31,
+      "7": 25,
+      "8": 26,
+      "13": 34,
+      "18": 19,
+      "14": 35,
+      "15": 27,
+      "10": 34,
+      "21": 15,
+      "12": 28,
+      "17": 26,
+      "20": 10,
+      "11": 28,
+      "19": 20,
+      "35": 1,
+      "38": 1,
+      "23": 10,
+      "16": 31,
+      "24": 4,
+      "26": 3,
+      "30": 3,
+      "33": 1,
+      "31": 3,
+      "22": 3,
+      "28": 2,
+      "36": 1,
+      "37": 1,
+      "34": 1,
+      "32": 2,
+      "40": 1,
+      "27": 3,
+      "25": 1,
+      "58": 2,
+      "65": 1,
+      "55": 1
+    },
+    "useful_token_fraction": 0.8615218666219839,
+    "bucket": 1024
+  },
+  "vision_prefill": {
+    "groups": 746,
+    "packs": 970,
+    "packed_members": 7219,
+    "overflow_members": 85,
+    "real_stage_tokens": 2424224,
+    "physical_stage_tokens": 11919360,
+    "first_call_wall_s": null,
+    "execution": "compiled_atlas_stage2",
+    "stage": 2,
+    "atlas_height": 64,
+    "atlas_width": 192,
+    "guard": 3,
+    "max_members": 16,
+    "fill_fraction": 0.20338541666666668,
+    "compile_api": "torch_npu.dynamo.torchair.inference.cache_compile",
+    "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_atlas_stage2_64x192_m16_float16_src1e9c45d7bc34"
+  },
+  "decode_s": 34.02858868823387,
+  "output_assembly_s": 0.3881783224642277,
+  "output_write_s": 3.0472957405727357,
+  "output_write_backpressure_s": 0.0,
+  "output_write_final_drain_s": 2.2798776626586914e-06,
+  "output_write_max_pending": 2,
+  "raw_decode_token_slots": 513408,
+  "effective_decode_tokens": 508508,
+  "padding_decode_token_slots": 4900,
+  "idle_decode_token_slots": 4900,
+  "raw_decode_tokens_per_s": 15087.54902249361,
+  "effective_decode_tokens_per_s": 14943.55245405249,
+  "cohorts": [],
+  "continuous_decode": {
+    "batch_size": 32,
+    "submitted": 7325,
+    "completed": 7325,
+    "decode_iterations": 16044,
+    "raw_decode_token_slots": 513408,
+    "effective_decode_tokens": 508508,
+    "idle_decode_token_slots": 4900,
+    "decode_s": 34.02858868823387,
+    "first_decode_step_s": 0.002352609997615218,
+    "steady_decode_s": 34.02623607823625,
+    "raw_decode_tokens_per_s": 15087.54902249361,
+    "effective_decode_tokens_per_s": 14943.55245405249,
+    "steady_raw_decode_tokens_per_s": 15087.651740839001,
+    "steady_effective_decode_tokens_per_s": 14943.64521632264,
+    "slot_refills": 7293,
+    "compile_wrap_s": 3.182096406817436e-05,
+    "compile": {
+      "compile_api": "torch_npu.dynamo.torchair.inference.cache_compile",
+      "compile_api_import_path": "torch_npu.dynamo.torchair.inference.cache_compile",
+      "backend": "torchair",
+      "fullgraph": true,
+      "dynamic": false,
+      "torchair_ge_cache": true,
+      "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/decode_selfkv256_cross1320_eager_b32",
+      "static_self_kv_len": 256,
+      "static_cross_kv_len": 1320,
+      "self_attention_backend": "eager",
+      "batch_size": 32
+    },
+    "timing_detail": {
+      "run_wall_s": 241.00506451004185,
+      "source_pull_s": 194.21748650097288,
+      "initial_cache_stack_s": 0.001137009123340249,
+      "initial_state_build_s": 0.0032660849392414093,
+      "cache_refill_copy_enqueue_s": 5.283360088709742,
+      "cache_refill_row_bytes": 29054112,
+      "cache_refill_total_bytes": 211891638816,
+      "result_build_s": 1.0771481038536876,
+      "completion_callback_s": 0.8293223821092397,
+      "decode_input_build_s": 2.85932957357727,
+      "pre_decode_sync_s": 0.9037264285143465,
+      "decode_s": 34.02858868823387,
+      "scheduler_bookkeeping_residual_s": 1.8016678290441632
+    }
+  },
+  "pages": [
+    {
+      "page_index": 0,
+      "image": "/workspace/datasets/OmniDocBench/images/magazine_TheEconomist.2024.02.24_page_007.png",
+      "crop_count": 24,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 15.667928946902975
+    },
+    {
+      "page_index": 1,
+      "image": "/workspace/datasets/OmniDocBench/images/magazine_TheEconomist.2024.02.24_page_008.png",
+      "crop_count": 22,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 16.8092047739774
+    },
+    {
+      "page_index": 2,
+      "image": "/workspace/datasets/OmniDocBench/images/magazine_TheEconomist.2024.02.24_page_033.png",
+      "crop_count": 19,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 18.269217828055844
+    },
+    {
+      "page_index": 3,
+      "image": "/workspace/datasets/OmniDocBench/images/magazine_TheEconomist.2024.02.24_page_068.png",
+      "crop_count": 25,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 19.367914750939235
+    },
+    {
+      "page_index": 4,
+      "image": "/workspace/datasets/OmniDocBench/images/magazine_TheEconomist.2024.02.24_page_076.png",
+      "crop_count": 18,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 21.694455292075872
+    },
+    {
+      "page_index": 5,
+      "image": "/workspace/datasets/OmniDocBench/images/magazine_TheEconomist.2024.03.02_page_025.png",
+      "crop_count": 21,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 22.627940578153357
+    },
+    {
+      "page_index": 6,
+      "image": "/workspace/datasets/OmniDocBench/images/magazine_TheEconomist.2024.03.02_page_028.png",
+      "crop_count": 28,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 23.79886612808332
+    },
+    {
+      "page_index": 7,
+      "image": "/workspace/datasets/OmniDocBench/images/magazine_TheEconomist.2024.03.02_page_031.png",
+      "crop_count": 20,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 26.200949802994728
+    },
+    {
+      "page_index": 8,
+      "image": "/workspace/datasets/OmniDocBench/images/magazine_TheEconomist.2024.03.02_page_032.png",
+      "crop_count": 23,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 27.617417437024415
+    },
+    {
+      "page_index": 9,
+      "image": "/workspace/datasets/OmniDocBench/images/magazine_TheEconomist.2024.03.02_page_075.png",
+      "crop_count": 24,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 27.645611855899915
+    },
+    {
+      "page_index": 10,
+      "image": "/workspace/datasets/OmniDocBench/images/magazine_TheEconomist.2024.03.09_page_016.png",
+      "crop_count": 17,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 29.407442880095914
+    },
+    {
+      "page_index": 11,
+      "image": "/workspace/datasets/OmniDocBench/images/magazine_TheEconomist.2024.03.09_page_029.png",
+      "crop_count": 24,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 30.267835963051766
+    },
+    {
+      "page_index": 12,
+      "image": "/workspace/datasets/OmniDocBench/images/magazine_TheEconomist.2024.03.09_page_064.png",
+      "crop_count": 16,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 31.164723296882585
+    },
+    {
+      "page_index": 13,
+      "image": "/workspace/datasets/OmniDocBench/images/magazine_TheEconomist.2024.03.09_page_079.png",
+      "crop_count": 26,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 32.473137012915686
+    },
+    {
+      "page_index": 14,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_019d4d5296ba8f1c21277d72fb0cf0db_1.jpg",
+      "crop_count": 90,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 34.38621856784448
+    },
+    {
+      "page_index": 15,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_01f020903d7bc4b3fc69f500f41eb77e_1.jpg",
+      "crop_count": 73,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 36.40981202991679
+    },
+    {
+      "page_index": 16,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_028a1dd5500fbd774e4d85df3c460c4d_1.jpg",
+      "crop_count": 83,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 37.74423497985117
+    },
+    {
+      "page_index": 17,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_02912feb79994ae24665509d964ad9ce_1.jpg",
+      "crop_count": 97,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 42.234599275980145
+    },
+    {
+      "page_index": 18,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_06b975dbc47dc2dc2a3a1468293f6a2c_1.jpg",
+      "crop_count": 63,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 43.93643562006764
+    },
+    {
+      "page_index": 19,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_0b1bb8d03b4287eb95f67b68c2cf9f92_1.jpg",
+      "crop_count": 209,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 48.81008080090396
+    },
+    {
+      "page_index": 20,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_0b86dae4d8f328a0e79d9ac394000dec_1.jpg",
+      "crop_count": 86,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 50.5848099750001
+    },
+    {
+      "page_index": 21,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_0ce88e1e131aef7a59d0533be36870de_1.jpg",
+      "crop_count": 61,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 51.904151796828955
+    },
+    {
+      "page_index": 22,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_0cfb8a42b5d4194d8c73dba0cdf6256c_1.jpg",
+      "crop_count": 71,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 54.04652049811557
+    },
+    {
+      "page_index": 23,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_0edcd83c195557b43279fa73edaa59aa_1.jpg",
+      "crop_count": 34,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 55.61356922192499
+    },
+    {
+      "page_index": 24,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_14b9d21f7fed39fb42849e9cde233930_1.jpg",
+      "crop_count": 87,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 56.856249681906775
+    },
+    {
+      "page_index": 25,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_17f81b80831d8d58564b9c8e3cf79261_1.jpg",
+      "crop_count": 65,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 57.958697518799454
+    },
+    {
+      "page_index": 26,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_1cddf9d22ca549f3a86cf1512a3110cc_1.jpg",
+      "crop_count": 84,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 60.55185961094685
+    },
+    {
+      "page_index": 27,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_2140e879cd0d3c1b5ba2ea1e3a75aab6_1.jpg",
+      "crop_count": 62,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 63.23675875295885
+    },
+    {
+      "page_index": 28,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_26f4ed67a5e8922e7d42b35d317ebf4b_1.jpg",
+      "crop_count": 70,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 63.94277657289058
+    },
+    {
+      "page_index": 29,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_2a645bfcbcd473423581cd9f1ceb778e_1.jpg",
+      "crop_count": 77,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 66.58511719014496
+    },
+    {
+      "page_index": 30,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_1.jpg",
+      "crop_count": 30,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 67.62871241709217
+    },
+    {
+      "page_index": 31,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_10.jpg",
+      "crop_count": 21,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 67.86904287198558
+    },
+    {
+      "page_index": 32,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_11.jpg",
+      "crop_count": 21,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 68.67553677898832
+    },
+    {
+      "page_index": 33,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_12.jpg",
+      "crop_count": 15,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 69.98449543514289
+    },
+    {
+      "page_index": 34,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_13.jpg",
+      "crop_count": 19,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 70.56221795384772
+    },
+    {
+      "page_index": 35,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_14.jpg",
+      "crop_count": 14,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 71.08317307801917
+    },
+    {
+      "page_index": 36,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_15.jpg",
+      "crop_count": 10,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 71.42867422988638
+    },
+    {
+      "page_index": 37,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_16.jpg",
+      "crop_count": 13,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 72.37142382306047
+    },
+    {
+      "page_index": 38,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_17.jpg",
+      "crop_count": 15,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 72.90995397605002
+    },
+    {
+      "page_index": 39,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_18.jpg",
+      "crop_count": 24,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 73.74280884000473
+    },
+    {
+      "page_index": 40,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_2.jpg",
+      "crop_count": 22,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 74.23426187294535
+    },
+    {
+      "page_index": 41,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_3.jpg",
+      "crop_count": 18,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 74.76124110003002
+    },
+    {
+      "page_index": 42,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_4.jpg",
+      "crop_count": 19,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 75.20349101605825
+    },
+    {
+      "page_index": 43,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_5.jpg",
+      "crop_count": 18,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 76.40198987512849
+    },
+    {
+      "page_index": 44,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_6.jpg",
+      "crop_count": 16,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 76.81868642708287
+    },
+    {
+      "page_index": 45,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_7.jpg",
+      "crop_count": 14,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 77.2600379891228
+    },
+    {
+      "page_index": 46,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_8.jpg",
+      "crop_count": 15,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 78.60129871382378
+    },
+    {
+      "page_index": 47,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_9.jpg",
+      "crop_count": 17,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 79.33499357313849
+    },
+    {
+      "page_index": 48,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_2c69e142b52dbb30cac2cb11d3eb25e5_1.jpg",
+      "crop_count": 74,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 81.81929866597056
+    },
+    {
+      "page_index": 49,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_2de954934f60ac538c5bd5dc40833a61_1.jpg",
+      "crop_count": 86,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 82.27211447199807
+    },
+    {
+      "page_index": 50,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_35352f94db65d19e097395380498ec15_1.jpg",
+      "crop_count": 86,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 84.96167047298513
+    },
+    {
+      "page_index": 51,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_354720d92a632709eb8e61795b191390_1.jpg",
+      "crop_count": 51,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 86.55223280587234
+    },
+    {
+      "page_index": 52,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_35bdaa11dec104ccbdc9e19ac8527d21_1.jpg",
+      "crop_count": 84,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 89.38300197711214
+    },
+    {
+      "page_index": 53,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_401c73055b88a62c479edd3d490cea8a_1.jpg",
+      "crop_count": 93,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 90.78667229297571
+    },
+    {
+      "page_index": 54,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_41a09cb64841567c220d8cac3c1cc193_1.jpg",
+      "crop_count": 87,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 93.92248919885606
+    },
+    {
+      "page_index": 55,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_4790b51e8fa793743699647c09a93ccb_1.jpg",
+      "crop_count": 79,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 95.8553661890328
+    },
+    {
+      "page_index": 56,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_4b4ad1f6cba28a4844d7ffa9306223a4_1.jpg",
+      "crop_count": 51,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 97.95546814100817
+    },
+    {
+      "page_index": 57,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_4cec63ef5a813c5a49dd8e577f3180e7_1.jpg",
+      "crop_count": 77,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 100.9539126320742
+    },
+    {
+      "page_index": 58,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_571a946262006cd89199b67353c408b8_1.jpg",
+      "crop_count": 70,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 102.46369380201213
+    },
+    {
+      "page_index": 59,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_5a8b7563a3262beecbecd7ddd3ef8827_1.jpg",
+      "crop_count": 83,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 104.90367019083351
+    },
+    {
+      "page_index": 60,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_5aedf678eff04d8ebac3692d54103e19_1.jpg",
+      "crop_count": 87,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 108.17908034892753
+    },
+    {
+      "page_index": 61,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_5bba361b0a5ca11745edbef140e2a431_1.jpg",
+      "crop_count": 65,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 109.77451164508238
+    },
+    {
+      "page_index": 62,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_5c4e17f22cdc19d414a3c521f631c899_1.jpg",
+      "crop_count": 72,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 112.30397359491326
+    },
+    {
+      "page_index": 63,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_5d4b8e73eacbc6ecac0d7b1396fd01d7_1.jpg",
+      "crop_count": 52,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 113.14042529091239
+    },
+    {
+      "page_index": 64,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_5e266dfd9c498cab274e12a7b4a75755_1.jpg",
+      "crop_count": 41,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 113.86170192901045
+    },
+    {
+      "page_index": 65,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_5e266dfd9c498cab274e12a7b4a75755_2.jpg",
+      "crop_count": 22,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 115.76621985784732
+    },
+    {
+      "page_index": 66,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_5e266dfd9c498cab274e12a7b4a75755_3.jpg",
+      "crop_count": 23,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 116.24640562897548
+    },
+    {
+      "page_index": 67,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_5e266dfd9c498cab274e12a7b4a75755_4.jpg",
+      "crop_count": 23,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 117.27095685200766
+    },
+    {
+      "page_index": 68,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_5e8bcc55b922fd521a667c6ef01027d5_1.jpg",
+      "crop_count": 62,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 118.07423136383295
+    },
+    {
+      "page_index": 69,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_635e4e6a64cf2ccfb2560f9b6dfe24b5_1.jpg",
+      "crop_count": 98,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 120.44857693696395
+    },
+    {
+      "page_index": 70,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_6d2b5f833fe20785bc395f757524cb05_1.jpg",
+      "crop_count": 64,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 122.53068806487136
+    },
+    {
+      "page_index": 71,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_6fa919bfb48695bc785d9f326e3cdd36_1.jpg",
+      "crop_count": 67,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 123.29996491898783
+    },
+    {
+      "page_index": 72,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_73fc8720a9b2798307ba43a8b8e47b5e_1.jpg",
+      "crop_count": 85,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 126.13741337414831
+    },
+    {
+      "page_index": 73,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_74fc3b01b2cc4a7e6ca0f1af2b998187_1.jpg",
+      "crop_count": 61,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 128.36669005197473
+    },
+    {
+      "page_index": 74,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_75bb60c3be9959e1be400d6b8281fea1_1.jpg",
+      "crop_count": 81,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 130.61758460709825
+    },
+    {
+      "page_index": 75,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_7746db2ad2ea24c827eac60244375bbf_1.jpg",
+      "crop_count": 84,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 132.28680313681252
+    },
+    {
+      "page_index": 76,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_7d8b25729455f1d061a95ec4269d72dc_1.jpg",
+      "crop_count": 40,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 134.38382833683863
+    },
+    {
+      "page_index": 77,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_8076765115f6c402e81c6bfb48139bc2_1.jpg",
+      "crop_count": 37,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 134.38807566999458
+    },
+    {
+      "page_index": 78,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_87769622e073730af94822416c60c710_1.jpg",
+      "crop_count": 82,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 136.27778871613555
+    },
+    {
+      "page_index": 79,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_95f2062735b213b3d7d471a48d5ec71b_1.jpg",
+      "crop_count": 77,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 139.30521434918046
+    },
+    {
+      "page_index": 80,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_9729b78cbf9f2820b9f257fff7e3171b_1.jpg",
+      "crop_count": 76,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 140.43922251299955
+    },
+    {
+      "page_index": 81,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_9bb9e05d38b370251a4b0a8d070d1d55_1.jpg",
+      "crop_count": 70,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 142.74283912498504
+    },
+    {
+      "page_index": 82,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_9eafddb83b0f7f99c42ff364b080e2c1_1.jpg",
+      "crop_count": 105,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 145.45209429017268
+    },
+    {
+      "page_index": 83,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_Chicago Tribune_0801@magazinesclubnew_page_015.png",
+      "crop_count": 34,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 146.47105332789943
+    },
+    {
+      "page_index": 84,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_Chicago Tribune_0801@magazinesclubnew_page_019.png",
+      "crop_count": 85,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 148.23305072402582
+    },
+    {
+      "page_index": 85,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_Chicago Tribune_0801@magazinesclubnew_page_032.png",
+      "crop_count": 53,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 151.39304521097802
+    },
+    {
+      "page_index": 86,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_Daily Mail_2022-08-01@magazinesclubnew_page_009.png",
+      "crop_count": 59,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 153.2525239540264
+    },
+    {
+      "page_index": 87,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_Daily Mail_2022-08-01@magazinesclubnew_page_068.png",
+      "crop_count": 36,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 153.965298097115
+    },
+    {
+      "page_index": 88,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_Daily Mirror 2025-1-8@magazinesclubnew_page_029.png",
+      "crop_count": 40,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 156.6727695830632
+    },
+    {
+      "page_index": 89,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_Daily Mirror 2025-1-8@magazinesclubnew_page_034.png",
+      "crop_count": 48,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 156.65695765404962
+    },
+    {
+      "page_index": 90,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_Daily Mirror 2025-1-8@magazinesclubnew_page_058.png",
+      "crop_count": 38,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 157.54796433704905
+    },
+    {
+      "page_index": 91,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_Daily Star 2025-1-8@magazinesclubnew_page_060.png",
+      "crop_count": 10,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 157.62408776092343
+    },
+    {
+      "page_index": 92,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_NY Daily News_August 1@magazinesclubnew_page_007.png",
+      "crop_count": 38,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 157.63037381810136
+    },
+    {
+      "page_index": 93,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_NY Daily News_August 1@magazinesclubnew_page_020.png",
+      "crop_count": 41,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 158.76408964721486
+    },
+    {
+      "page_index": 94,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_003.png",
+      "crop_count": 30,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 159.48372024693526
+    },
+    {
+      "page_index": 95,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_014.png",
+      "crop_count": 48,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 161.0407161200419
+    },
+    {
+      "page_index": 96,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_018.png",
+      "crop_count": 74,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 162.90645595896058
+    },
+    {
+      "page_index": 97,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_027.png",
+      "crop_count": 51,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 166.26447341102175
+    },
+    {
+      "page_index": 98,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_The Guardian UK_0801@magazinesclubnew_page_048.png",
+      "crop_count": 21,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 169.5995297229383
+    },
+    {
+      "page_index": 99,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_The Guardian UK_0801@magazinesclubnew_page_051.png",
+      "crop_count": 37,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 171.53527913219295
+    },
+    {
+      "page_index": 100,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_The Guardian UK_0801@magazinesclubnew_page_052.png",
+      "crop_count": 50,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 172.32593489903957
+    },
+    {
+      "page_index": 101,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_The Guardian UK_0801@magazinesclubnew_page_061.png",
+      "crop_count": 35,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 173.09904782893136
+    },
+    {
+      "page_index": 102,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_The Times UK_0801@magazinesclubnew_page_001.png",
+      "crop_count": 50,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 172.97034084098414
+    },
+    {
+      "page_index": 103,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_The Times UK_0801@magazinesclubnew_page_020.png",
+      "crop_count": 60,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 175.25929772411473
+    },
+    {
+      "page_index": 104,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_The Times UK_0801@magazinesclubnew_page_031.png",
+      "crop_count": 55,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 177.94605046790093
+    },
+    {
+      "page_index": 105,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_The Times UK_0801@magazinesclubnew_page_083.png",
+      "crop_count": 51,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 179.45438851299696
+    },
+    {
+      "page_index": 106,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_The Wall Street Journal - 2025-01-08@magazinesclubnew_page_004.png",
+      "crop_count": 104,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 180.01418803702109
+    },
+    {
+      "page_index": 107,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_The Wall Street Journal - 2025-01-08@magazinesclubnew_page_009.png",
+      "crop_count": 79,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 182.3931945390068
+    },
+    {
+      "page_index": 108,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_The Wall Street Journal - 2025-01-08@magazinesclubnew_page_018.png",
+      "crop_count": 97,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 184.9933768720366
+    },
+    {
+      "page_index": 109,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_The Wall Street Journal - 2025-01-08@magazinesclubnew_page_021.png",
+      "crop_count": 58,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 186.39360720920376
+    },
+    {
+      "page_index": 110,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_TheBostonGlobe-2025-1-8@magazinesclubnew_page_003.png",
+      "crop_count": 80,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 188.40772113995627
+    },
+    {
+      "page_index": 111,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_TheBostonGlobe-2025-1-8@magazinesclubnew_page_011.png",
+      "crop_count": 71,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 190.1789275831543
+    },
+    {
+      "page_index": 112,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_TheBostonGlobe-2025-1-8@magazinesclubnew_page_025.png",
+      "crop_count": 278,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 195.48671043291688
+    },
+    {
+      "page_index": 113,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_TheBostonGlobe-2025-1-8@magazinesclubnew_page_033.png",
+      "crop_count": 91,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 201.44945676391944
+    },
+    {
+      "page_index": 114,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_TheGuardianUS-2025-1-8@magazinesclubnew_page_015.png",
+      "crop_count": 59,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 202.8019195399247
+    },
+    {
+      "page_index": 115,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_TheGuardianUS-2025-1-8@magazinesclubnew_page_029.png",
+      "crop_count": 58,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 206.85356799094006
+    },
+    {
+      "page_index": 116,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_TheGuardianUS-2025-1-8@magazinesclubnew_page_033.png",
+      "crop_count": 39,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 209.62706647906452
+    },
+    {
+      "page_index": 117,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_TheGuardianUS-2025-1-8@magazinesclubnew_page_041.png",
+      "crop_count": 49,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 210.93910840689205
+    },
+    {
+      "page_index": 118,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_TheWashingtonPost-2025-01-08@magazinesclubnew_page_009.png",
+      "crop_count": 59,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 212.85716001596302
+    },
+    {
+      "page_index": 119,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_TheWashingtonPost-2025-01-08@magazinesclubnew_page_042.png",
+      "crop_count": 130,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 216.28932518791407
+    },
+    {
+      "page_index": 120,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_USAToday-2025-01-08@magazinesclubnew_page_012.png",
+      "crop_count": 58,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 217.42321963980794
+    },
+    {
+      "page_index": 121,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_USAToday-2025-01-08@magazinesclubnew_page_021.png",
+      "crop_count": 50,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 219.857166626025
+    },
+    {
+      "page_index": 122,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_USAToday-2025-01-08@magazinesclubnew_page_024.png",
+      "crop_count": 52,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 220.22185563412495
+    },
+    {
+      "page_index": 123,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_a105e3b0ddb10be6a596f76407c79180_1.jpg",
+      "crop_count": 156,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 224.43073936807923
+    },
+    {
+      "page_index": 124,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_a15057349a86850e55b084c235fa2f22_1.jpg",
+      "crop_count": 81,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 226.92180942418054
+    },
+    {
+      "page_index": 125,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_a7666484ee01a811247e52f784164cbb_1.jpg",
+      "crop_count": 69,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 230.18723405292258
+    },
+    {
+      "page_index": 126,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_a9c9e3816aa5cb6866d02c10273dc665_1.jpg",
+      "crop_count": 56,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 231.91194187500514
+    },
+    {
+      "page_index": 127,
+      "image": "/workspace/datasets/OmniDocBench/images/newspaper_b615618f3cdb0f2c13ffb5865dea799c_1.jpg",
+      "crop_count": 172,
+      "layout_s": 0.04837036263415939,
+      "wall_s": 234.84924274706282
+    }
+  ],
+  "trace_path": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/hard128_layout8p_persistent_4fc134a/output/recognition_trace.jsonl"
+}
