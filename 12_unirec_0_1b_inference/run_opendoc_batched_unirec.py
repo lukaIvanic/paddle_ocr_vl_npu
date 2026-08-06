@@ -45,6 +45,20 @@ from vision_atlas import (
     ATLAS_WIDTH,
     UniRecVisionAtlasRuntime,
 )
+from vision_static_shape import StaticShapeUniRecVisionRuntime
+
+
+def parse_spatial_shape(value: str) -> tuple[int, int]:
+    try:
+        width_text, height_text = value.lower().split("x", 1)
+        width, height = int(width_text), int(height_text)
+    except (TypeError, ValueError) as exc:
+        raise argparse.ArgumentTypeError(
+            f"expected WIDTHxHEIGHT, got {value!r}"
+        ) from exc
+    if width <= 0 or height <= 0:
+        raise argparse.ArgumentTypeError("shape dimensions must be positive")
+    return width, height
 
 
 @dataclass
@@ -106,6 +120,7 @@ class RunMetrics:
     effective_decode_tokens: int = 0
     padding_decode_token_slots: int = 0
     idle_decode_token_slots: int = 0
+    rejected_crops: int = 0
 
 
 def parse_args() -> argparse.Namespace:
@@ -219,6 +234,24 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--vision-spatial-execution",
+        choices=("eager", "compiled_static"),
+        default="eager",
+        help=(
+            "Execution for the crop-local vision prefix and suffix around the "
+            "stage-2 atlas. compiled_static requires --recognition-shape-filter."
+        ),
+    )
+    parser.add_argument(
+        "--recognition-shape-filter",
+        type=parse_spatial_shape,
+        metavar="WIDTHxHEIGHT",
+        help=(
+            "Keep only crops whose UniRec processed image size exactly matches "
+            "WIDTHxHEIGHT. Intended for controlled vision experiments."
+        ),
+    )
+    parser.add_argument(
         "--prefill-device-timing",
         action="store_true",
         help="Record NPU event timing for each recognition-prefill stage",
@@ -234,6 +267,30 @@ def accumulate_stage_seconds(
         return
     for name, seconds in source.items():
         destination[name] = destination.get(name, 0.0) + float(seconds)
+
+
+def filter_page_recognition_shapes(
+    page: PageRequest,
+    *,
+    runner: OptimizedUniRecRunner,
+    target: tuple[int, int] | None,
+) -> int:
+    if target is None:
+        return 0
+    kept_crops: list[CropRequest] = []
+    kept_block_ids: list[int] = []
+    for crop, block_id in zip(page.crops, page.vlm_block_ids):
+        processed = runner.processor.get_processed_size(
+            crop.image.width,
+            crop.image.height,
+        )
+        if processed == target:
+            kept_crops.append(crop)
+            kept_block_ids.append(block_id)
+    rejected = len(page.crops) - len(kept_crops)
+    page.crops = kept_crops
+    page.vlm_block_ids = kept_block_ids
+    return rejected
 
 
 @dataclass(frozen=True)
@@ -372,6 +429,10 @@ def warmup_configured_graphs(
                 "pass_wall_s": pass_times,
                 "cache_dir": str(vision_atlas_runtime.cache_dir),
             }
+            if isinstance(vision_atlas_runtime, StaticShapeUniRecVisionRuntime):
+                report["graphs"].update(
+                    vision_atlas_runtime.warmup_static_graphs(passes=passes)
+                )
 
         if args.text_prefill_mode == "compiled_packed_s1024":
             text_runtime = runner._get_compiled_packed_text_prefill_runtime()
@@ -933,6 +994,17 @@ def main() -> None:
         raise ValueError(
             "--layout-batch-size > 1 requires --layout-backend transformers_npu"
         )
+    if args.vision_spatial_execution == "compiled_static":
+        if args.vision_prefill_mode != "compiled_atlas_stage2":
+            raise ValueError(
+                "compiled_static vision execution requires "
+                "--vision-prefill-mode compiled_atlas_stage2"
+            )
+        if args.recognition_shape_filter is None:
+            raise ValueError(
+                "compiled_static vision execution requires "
+                "--recognition-shape-filter WIDTHxHEIGHT"
+            )
     openocr_root = args.openocr_root.expanduser().resolve()
     model_path = args.model_path.expanduser().resolve()
     input_path = args.input.expanduser().resolve()
@@ -1006,11 +1078,18 @@ def main() -> None:
             "compiled_atlas_stage2 currently requires "
             "--text-prefill-mode compiled_packed_s1024"
         )
-    vision_atlas_runtime = (
-        UniRecVisionAtlasRuntime(runner)
-        if args.vision_prefill_mode == "compiled_atlas_stage2"
-        else None
-    )
+    if args.vision_prefill_mode == "compiled_atlas_stage2":
+        if args.vision_spatial_execution == "compiled_static":
+            static_width, static_height = args.recognition_shape_filter
+            vision_atlas_runtime = StaticShapeUniRecVisionRuntime(
+                runner,
+                input_width=static_width,
+                input_height=static_height,
+            )
+        else:
+            vision_atlas_runtime = UniRecVisionAtlasRuntime(runner)
+    else:
+        vision_atlas_runtime = None
     graph_warmup = warmup_configured_graphs(
         args=args,
         runner=runner,
@@ -1125,6 +1204,12 @@ def main() -> None:
             )
             for page in prepared_pages:
                 page_index = page.page_index
+                rejected = filter_page_recognition_shapes(
+                    page,
+                    runner=runner,
+                    target=args.recognition_shape_filter,
+                )
+                metrics.rejected_crops += rejected
                 metrics.layout_s += page.layout_s
                 metrics.page_prepare_total_s += page.prepare_page_total_s
                 accumulate_stage_seconds(
@@ -1135,7 +1220,8 @@ def main() -> None:
                 print(
                     f"OPENDOC_CONTINUOUS_PAGE_READY "
                     f"index={page_index + 1}/{len(image_paths)} "
-                    f"image={page.image_path.name} crops={len(page.crops)}",
+                    f"image={page.image_path.name} crops={len(page.crops)} "
+                    f"rejected_crops={rejected}",
                     flush=True,
                 )
                 flush_ready_pages()
@@ -1254,6 +1340,12 @@ def main() -> None:
         )
         for page in prepared_pages:
             page_index = page.page_index
+            rejected = filter_page_recognition_shapes(
+                page,
+                runner=runner,
+                target=args.recognition_shape_filter,
+            )
+            metrics.rejected_crops += rejected
             metrics.layout_s += page.layout_s
             metrics.page_prepare_total_s += page.prepare_page_total_s
             accumulate_stage_seconds(
@@ -1265,7 +1357,7 @@ def main() -> None:
             print(
                 f"OPENDOC_BATCHED_PAGE_READY index={page_index + 1}/{len(image_paths)} "
                 f"image={page.image_path.name} crops={len(page.crops)} "
-                f"queued={len(pending_crops)}",
+                f"rejected_crops={rejected} queued={len(pending_crops)}",
                 flush=True,
             )
             while len(pending_crops) >= args.decode_batch_size:
@@ -1307,6 +1399,14 @@ def main() -> None:
         )
 
     pipeline_wall_s = time.perf_counter() - pipeline_started
+    accepted_crop_count = len(metrics.crop_records)
+    vision_spatial_device_s = sum(
+        metrics.prefill_device_stage_s.get(name, 0.0)
+        for name in (
+            "vision_crop_prefix_stages_0_1",
+            "vision_crop_suffix_stage3_projection",
+        )
+    )
     trace_path = output_dir / "recognition_trace.jsonl"
     with trace_path.open("w", encoding="utf-8") as handle:
         for record in sorted(
@@ -1325,6 +1425,8 @@ def main() -> None:
         "decode_batch_size": args.decode_batch_size,
         "text_prefill_mode": args.text_prefill_mode,
         "vision_prefill_mode": args.vision_prefill_mode,
+        "vision_spatial_execution": args.vision_spatial_execution,
+        "recognition_shape_filter": args.recognition_shape_filter,
         "max_length": args.max_length,
         "layout_backend": args.layout_backend,
         "layout_dtype": args.layout_dtype if not use_onnx_layout else None,
@@ -1339,7 +1441,8 @@ def main() -> None:
         "pipeline_wall_s": pipeline_wall_s,
         "pages_per_s": len(image_paths) / pipeline_wall_s,
         "page_count": len(image_paths),
-        "crop_count": len(metrics.crop_records),
+        "crop_count": accepted_crop_count,
+        "rejected_crop_count": metrics.rejected_crops,
         "cohort_count": len(metrics.cohort_records),
         "layout_s": metrics.layout_s,
         "page_prepare_total_s": metrics.page_prepare_total_s,
@@ -1348,6 +1451,12 @@ def main() -> None:
         "prepare_s": metrics.prepare_s,
         "prefill_s": metrics.prefill_s,
         "prefill_device_stage_s": metrics.prefill_device_stage_s,
+        "vision_spatial_device_s": vision_spatial_device_s,
+        "vision_spatial_ms_per_accepted_crop": (
+            vision_spatial_device_s * 1000.0 / accepted_crop_count
+            if accepted_crop_count > 0
+            else None
+        ),
         "text_prefill_real_source_tokens": (
             metrics.text_prefill_real_source_tokens
         ),
