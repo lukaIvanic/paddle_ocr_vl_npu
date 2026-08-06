@@ -40,6 +40,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--validation-steps", type=int, default=8)
     parser.add_argument("--profile-steps", type=int, default=2)
     parser.add_argument(
+        "--compiled-timing-steps",
+        type=int,
+        default=0,
+        help=(
+            "Measure the compiled graph with NPU events, separating queued "
+            "device execution, host submission, final synchronization, and "
+            "production-like sampled-token D2H wait."
+        ),
+    )
+    parser.add_argument(
         "--profile-metric",
         choices=("pipe", "memory", "l2", "memory_access"),
         default="pipe",
@@ -170,6 +180,83 @@ def run_steps(fn: Any, state: dict[str, Any], count: int, *, collect: bool = Fal
         if collect:
             tokens.append(state["next_token"].detach().cpu())
     return logits, None if not collect else torch.cat(tokens, dim=1).tolist()
+
+
+def profile_compiled_timing(
+    *,
+    fn: Any,
+    state: dict[str, Any],
+    device: str,
+    steps: int,
+) -> dict[str, Any]:
+    """Separate compiled-device work from host submission and token D2H wait."""
+    import torch_npu
+
+    synchronize_device(device)
+    queued_start = torch_npu.npu.Event(enable_timing=True)
+    queued_end = torch_npu.npu.Event(enable_timing=True)
+    queued_start.record()
+    host_started = time.perf_counter()
+    run_steps(fn, state, steps)
+    queued_end.record()
+    host_enqueue_s = time.perf_counter() - host_started
+    wait_started = time.perf_counter()
+    queued_end.synchronize()
+    final_sync_wait_s = time.perf_counter() - wait_started
+    queued_device_s = float(queued_start.elapsed_time(queued_end)) / 1000.0
+    queued_wall_s = host_enqueue_s + final_sync_wait_s
+
+    synchronize_device(device)
+    production_device_s = 0.0
+    production_submit_s = 0.0
+    production_d2h_wait_s = 0.0
+    production_wall_started = time.perf_counter()
+    for _ in range(steps):
+        start_event = torch_npu.npu.Event(enable_timing=True)
+        end_event = torch_npu.npu.Event(enable_timing=True)
+        start_event.record()
+        submit_started = time.perf_counter()
+        logits = fn(
+            state["next_token"],
+            state["cache_position"],
+            0,
+            state["self_keys"],
+            state["self_values"],
+            state["cross_keys"],
+            state["cross_values"],
+            state["cross_mask"],
+        )
+        predicted = torch.argmax(logits[:, -1, :].float(), dim=-1, keepdim=True).long()
+        state["next_token"] = predicted
+        state["cache_position"] = state["cache_position"] + 1
+        end_event.record()
+        production_submit_s += time.perf_counter() - submit_started
+        wait_started = time.perf_counter()
+        predicted.detach().cpu()
+        production_d2h_wait_s += time.perf_counter() - wait_started
+        production_device_s += float(start_event.elapsed_time(end_event)) / 1000.0
+    production_wall_s = time.perf_counter() - production_wall_started
+
+    def per_step(seconds: float) -> float:
+        return seconds * 1000.0 / steps
+
+    return {
+        "steps": int(steps),
+        "queued": {
+            "device_step_ms": per_step(queued_device_s),
+            "host_enqueue_step_ms": per_step(host_enqueue_s),
+            "final_sync_wait_step_ms": per_step(final_sync_wait_s),
+            "wall_step_ms": per_step(queued_wall_s),
+            "device_share_of_wall": queued_device_s / queued_wall_s,
+        },
+        "production_like_d2h": {
+            "device_step_ms": per_step(production_device_s),
+            "host_submit_step_ms": per_step(production_submit_s),
+            "sampled_token_d2h_wait_step_ms": per_step(production_d2h_wait_s),
+            "wall_step_ms": per_step(production_wall_s),
+            "device_share_of_wall": production_device_s / production_wall_s,
+        },
+    }
 
 
 def profile_eager_lane(
@@ -310,6 +397,28 @@ def main() -> None:
             "tokens": validation_tokens,
             "logits": validation_logits.detach().float().cpu(),
         }
+        compiled_timing = None
+        if args.compiled_timing_steps > 0:
+            progress("compiled_timing_begin", backend=backend)
+            timing_state = make_state(
+                runner,
+                batch_size=args.batch_size,
+                self_cache_length=args.self_cache_length,
+                cross_cache_length=args.cross_cache_length,
+                cache_position=args.cache_position,
+                seed=17,
+            )
+            compiled_timing = profile_compiled_timing(
+                fn=compiled,
+                state=timing_state,
+                device=runner.device,
+                steps=args.compiled_timing_steps,
+            )
+            progress(
+                "compiled_timing_end",
+                backend=backend,
+                **compiled_timing["production_like_d2h"],
+            )
         raw_tokens = args.batch_size * args.measure_steps
         lanes[backend] = {
             "compile": compile_meta,
@@ -321,6 +430,7 @@ def main() -> None:
                 "raw_tok_s": raw_tokens / measured_s,
                 "batch_s": args.measure_steps / measured_s,
             },
+            "compiled_timing": compiled_timing,
         }
         progress("lane_end", backend=backend, raw_tok_s=raw_tokens / measured_s)
 
