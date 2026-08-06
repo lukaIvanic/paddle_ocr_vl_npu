@@ -139,6 +139,42 @@ def weighted_avg(total_weighted: float, total_weight: float) -> float:
     return total_weighted / total_weight if total_weight > 0 else 0.0
 
 
+def is_pmu_field(name: str) -> bool:
+    """Return true for CANN AI Core/Vector Core metric columns."""
+
+    lowered = name.lower()
+    return lowered.startswith(("aic_", "aiv_")) or lowered == "cube_utilization(%)"
+
+
+def add_pmu_sample(bucket: dict[str, Any], row: dict[str, str], duration_us: float) -> None:
+    sums = bucket.setdefault("_pmu_sums", {})
+    weighted = bucket.setdefault("_pmu_weighted", {})
+    weights = bucket.setdefault("_pmu_weights", {})
+    for name, raw in row.items():
+        if not is_pmu_field(name):
+            continue
+        value = parse_float(raw)
+        if value == 0.0:
+            continue
+        sums[name] = float(sums.get(name, 0.0)) + value
+        if duration_us > 0.0:
+            weighted[name] = float(weighted.get(name, 0.0)) + value * duration_us
+            weights[name] = float(weights.get(name, 0.0)) + duration_us
+
+
+def finalize_pmu(mapping: dict[str, dict[str, Any]]) -> None:
+    for bucket in mapping.values():
+        sums = bucket.pop("_pmu_sums", {})
+        weighted = bucket.pop("_pmu_weighted", {})
+        weights = bucket.pop("_pmu_weights", {})
+        bucket["pmu_sums"] = dict(sorted(sums.items()))
+        bucket["pmu_duration_weighted_average"] = {
+            name: float(total) / float(weights[name])
+            for name, total in sorted(weighted.items())
+            if float(weights.get(name, 0.0)) > 0.0
+        }
+
+
 def summarize_kernel_details(path: Path, *, topn: int) -> dict[str, Any]:
     rows = read_csv_rows(path)
     by_name: dict[str, dict[str, Any]] = {}
@@ -185,6 +221,7 @@ def summarize_kernel_details(path: Path, *, topn: int) -> dict[str, Any]:
         add_sample(bucket, "input_format_samples", row.get("Input Formats"))
         add_sample(bucket, "output_format_samples", row.get("Output Formats"))
         add_sample(bucket, "input_dtype_samples", row.get("Input Data Types"))
+        add_pmu_sample(bucket, row, duration_us)
 
     for row in rows:
         duration_us = kernel_duration_us(row)
@@ -241,6 +278,26 @@ def summarize_kernel_details(path: Path, *, topn: int) -> dict[str, Any]:
                 }
             )
 
+    for mapping in (
+        by_name,
+        by_type,
+        by_core,
+        by_format,
+        by_dtype,
+        shape_signatures,
+        matmul_names,
+        matmul_shape_signatures,
+        transdata_names,
+        transdata_shape_signatures,
+    ):
+        finalize_pmu(mapping)
+    pmu_columns = sorted(
+        {
+            name
+            for bucket in by_name.values()
+            for name in bucket.get("pmu_sums", {})
+        }
+    )
     suspect_rows = sorted(suspect_rows, key=lambda item: float(item["duration_us"]), reverse=True)[:topn]
     return {
         "path": str(path),
@@ -249,6 +306,7 @@ def summarize_kernel_details(path: Path, *, topn: int) -> dict[str, Any]:
         "total_wait_us": total_wait_us,
         "total_aicore_time_us": total_aicore_us,
         "weighted_cube_utilization_pct": weighted_avg(cube_weighted, cube_weight),
+        "pmu_columns": pmu_columns,
         "top_kernel_names": top_items(by_name, key="duration_us", topn=topn),
         "top_kernel_types": top_items(by_type, key="duration_us", topn=topn),
         "top_core_types": top_items(by_core, key="duration_us", topn=topn),
