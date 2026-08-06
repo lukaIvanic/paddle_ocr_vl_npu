@@ -381,6 +381,23 @@ current pickled-array transport. Copying all 7.866 GiB back into parent-owned
 memory cost 4.479 seconds and reduced that gain to 2.74x. This makes page-scoped
 shared-memory leases the preferred integration direction.
 
+The page-scoped lease design was then integrated into the hard 128-page E2E
+runner. Each worker packs its decoded page and recognition crops into one
+shared arena. The coordinator unlinks the public shared-memory name when it
+attaches, retains the mapping through OCR and asynchronous output writing, and
+closes it when the page write completes. All 7,325 crop token IDs and texts
+matched both earlier paths exactly, and `/dev/shm` returned to its idle baseline.
+
+```text
+ordinary pickled full frontend: 278.717 s, 0.4592 page/s
+shared-memory full frontend:    253.215 s, 0.5055 page/s
+saved:                           25.502 s, +10.1% page throughput
+```
+
+The process phase fell from 29.921 to 7.447 seconds. Mean queue-delivery delay
+fell from 4.433 to 0.093 seconds per page. The remaining frontend boundary is
+6.046 seconds of coordinator-side `PageRequest` and PIL-image materialization.
+
 ## Artifacts
 
 - Run JSON: `tmp/12_unirec_0_1b_inference/`
