@@ -35,7 +35,9 @@ from continuous_unirec import (
 from layout_process_pool import DynamicLayoutProcessPool, SharedPageLease
 from modeling_optimized_unirec import (
     LOCAL_UNIREC_STATIC_CACHE_LEN,
+    LocalUniRecStaticCache,
     OptimizedUniRecRunner,
+    UniRecPrefilledItem,
     synchronize_device,
 )
 from opendoc_layout_npu import PPDocLayoutV2NpuAdapter
@@ -72,6 +74,8 @@ class CropRequest:
     label: str
     figure_token_map: dict[str, Any]
     prepared_pixel_values: np.ndarray | None = None
+    worker_cross_kv: np.ndarray | None = None
+    worker_prefill_metadata: dict[str, Any] | None = None
     result: dict[str, Any] | None = None
 
     @property
@@ -181,6 +185,15 @@ def parse_args() -> argparse.Namespace:
             "Precompute B1 layout with this many persistent isolated NPU "
             "processes using one dynamic filepath queue. Requires "
             "--preprocess-all-pages-first and --layout-batch-size 1."
+        ),
+    )
+    parser.add_argument(
+        "--prefill-in-layout-workers",
+        action="store_true",
+        help=(
+            "Extend each persistent layout/page worker through recognition "
+            "vision and text prefill. Workers return compact real cross-K/V "
+            "through shared memory; the coordinator owns continuous decode."
         ),
     )
     parser.add_argument("--stock-encoder", type=Path, required=True)
@@ -874,9 +887,17 @@ def page_request_from_process_payload(
             image=Image.fromarray(lease.array(crop["image_rgb_descriptor"])),
             label=crop["label"],
             figure_token_map=crop["figure_token_map"],
-            prepared_pixel_values=lease.array(
-                crop["processed_pixel_values_descriptor"]
+            prepared_pixel_values=(
+                lease.array(crop["processed_pixel_values_descriptor"])
+                if "processed_pixel_values_descriptor" in crop
+                else None
             ),
+            worker_cross_kv=(
+                lease.array(crop["worker_cross_kv_descriptor"])
+                if "worker_cross_kv_descriptor" in crop
+                else None
+            ),
+            worker_prefill_metadata=crop.get("worker_prefill_metadata"),
         )
         for crop in payload["crops"]
     ]
@@ -904,6 +925,93 @@ def page_request_from_process_payload(
     )
 
 
+def materialize_worker_prefilled_item(
+    crop: CropRequest,
+    *,
+    runner: OptimizedUniRecRunner,
+) -> UniRecPrefilledItem:
+    """Move one worker-produced real cross-K/V prefix into decode storage."""
+    packed_host = crop.worker_cross_kv
+    metadata = crop.worker_prefill_metadata
+    if packed_host is None or metadata is None:
+        raise RuntimeError(
+            f"crop {crop.request_id} has no worker-prefill payload"
+        )
+    num_layers = len(runner.model.decoder.layers)
+    if packed_host.ndim != 5 or int(packed_host.shape[0]) != 2 * num_layers:
+        raise RuntimeError(
+            "unexpected worker cross-K/V shape: "
+            f"{packed_host.shape}; decoder_layers={num_layers}"
+        )
+    source_len = int(packed_host.shape[-2])
+    if source_len != int(metadata["actual_cross_attention_length"]):
+        raise RuntimeError(
+            "worker cross-K/V length mismatch: "
+            f"tensor={source_len} metadata={metadata['actual_cross_attention_length']}"
+        )
+
+    started = time.perf_counter()
+    with torch.inference_mode(False):
+        packed_device = torch.from_numpy(packed_host).to(
+            runner.device,
+            dtype=runner.dtype,
+        )
+    synchronize_device(runner.device)
+    h2d_s = time.perf_counter() - started
+
+    cross_keys = tuple(packed_device[index] for index in range(num_layers))
+    cross_values = tuple(
+        packed_device[num_layers + index] for index in range(num_layers)
+    )
+    cache_started = time.perf_counter()
+    with torch.inference_mode(False):
+        encoder_mask = torch.ones(
+            (1, source_len),
+            dtype=torch.long,
+            device=runner.device,
+        )
+        decode_mask = runner.model.decoder.build_cross_attention_mask(
+            encoder_attention_mask=encoder_mask,
+            target_length=1,
+        )
+        cache = LocalUniRecStaticCache.from_cross_prefill(
+            cross_key_cache=cross_keys,
+            cross_value_cache=cross_values,
+            cross_attention_mask=decode_mask,
+            cache_len=LOCAL_UNIREC_STATIC_CACHE_LEN,
+            cross_cache_len=runner._get_static_cross_cache_len(),
+        )
+        generated_ids = runner.model.decoder_start_ids(
+            batch_size=1,
+            device=packed_device.device,
+        )
+    synchronize_device(runner.device)
+    cache_build_s = time.perf_counter() - cache_started
+    stages = dict(metadata.get("prefill_device_stage_s") or {})
+    stages["worker_cross_kv_h2d"] = h2d_s
+    stages["coordinator_static_cache_build"] = cache_build_s
+    return UniRecPrefilledItem(
+        prep=dict(metadata["prep"]),
+        kv_cache=cache,
+        generated_ids=generated_ids,
+        next_token=generated_ids,
+        prefill_s=(
+            float(metadata["prefill_s"])
+            + float(metadata.get("cache_d2h_s", 0.0))
+            + h2d_s
+            + cache_build_s
+        ),
+        prefill_device_stage_s=stages,
+        text_prefill_execution=str(metadata["text_prefill_execution"]),
+        text_prefill_real_source_tokens=int(
+            metadata["text_prefill_real_source_tokens"]
+        ),
+        text_prefill_physical_source_tokens=int(
+            metadata["text_prefill_physical_source_tokens"]
+        ),
+    )
+
+
 def release_page_frontend_storage(page: PageRequest) -> None:
     """Release a page arena after output writing no longer reads its images."""
     lease = page.frontend_storage_lease
@@ -914,6 +1022,7 @@ def release_page_frontend_storage(page: PageRequest) -> None:
         crop.image.close()
         crop.image = Image.new("RGB", (1, 1))
         crop.prepared_pixel_values = None
+        crop.worker_cross_kv = None
     page.frontend_storage_lease = None
     lease.close()
 
@@ -1167,6 +1276,19 @@ def warmup_full_pipeline(
     decode_summary: dict[str, Any] | None = None
     if args.decode_scheduling == "continuous":
         def ready_source() -> Iterable[ContinuousReadyItem]:
+            if args.prefill_in_layout_workers:
+                for crop in crops:
+                    item = materialize_worker_prefilled_item(
+                        crop,
+                        runner=runner,
+                    )
+                    record_prefill_metrics(warmup_metrics, item)
+                    yield ContinuousReadyItem(
+                        request_id=crop.request_id,
+                        payload=crop,
+                        prefilled=item,
+                    )
+                return
             if args.text_prefill_mode == "compiled_packed_s1024":
                 groups = iter_greedy_text_packs(iter(crops), runner=runner)
             else:
@@ -1375,9 +1497,37 @@ def main() -> None:
             raise ValueError(
                 "--layout-process-workers requires --layout-batch-size 1"
             )
-        if not args.preprocess_all_pages_first:
+        if (
+            not args.preprocess_all_pages_first
+            and not args.prefill_in_layout_workers
+        ):
             raise ValueError(
-                "--layout-process-workers requires --preprocess-all-pages-first"
+                "--layout-process-workers requires --preprocess-all-pages-first "
+                "unless --prefill-in-layout-workers enables streaming"
+            )
+    if args.prefill_in_layout_workers:
+        if not args.layout_process_workers:
+            raise ValueError(
+                "--prefill-in-layout-workers requires --layout-process-workers"
+            )
+        if args.preprocess_all_pages_first:
+            raise ValueError(
+                "--prefill-in-layout-workers is a streaming path; remove "
+                "--preprocess-all-pages-first"
+            )
+        if args.decode_scheduling != "continuous":
+            raise ValueError(
+                "--prefill-in-layout-workers requires --decode-scheduling continuous"
+            )
+        if args.vision_prefill_mode != "compiled_atlas_stage2":
+            raise ValueError(
+                "--prefill-in-layout-workers requires "
+                "--vision-prefill-mode compiled_atlas_stage2"
+            )
+        if args.text_prefill_mode != "compiled_packed_s1024":
+            raise ValueError(
+                "--prefill-in-layout-workers requires "
+                "--text-prefill-mode compiled_packed_s1024"
             )
     if args.layout_batch_size > 1 and args.layout_backend != "transformers_npu":
         raise ValueError(
@@ -1496,6 +1646,10 @@ def main() -> None:
             openocr_root=openocr_root,
             prepare_pages=True,
             use_chart_recognition=pipeline.use_chart_recognition,
+            prefill_recognition=args.prefill_in_layout_workers,
+            recognition_model_path=model_path,
+            recognition_dtype=args.dtype,
+            recognition_cache_dir=args.compile_cache_dir.expanduser().resolve(),
         )
         atexit.register(layout_process_pool.close)
         layout_process_setup_s = layout_process_pool.setup_wall_s
@@ -1578,7 +1732,7 @@ def main() -> None:
     precomputed_layout_page_s = 0.0
     layout_process_summary: dict[str, Any] | None = None
     layout_process_shutdown_timing: dict[str, float] = {}
-    if layout_process_pool is not None:
+    if layout_process_pool is not None and not args.prefill_in_layout_workers:
         try:
             page_payloads, layout_process_summary = layout_process_pool.map(
                 image_paths,
@@ -1673,7 +1827,29 @@ def main() -> None:
 
     if args.decode_scheduling == "continuous":
         def crop_source():
-            if precomputed_pages is not None:
+            nonlocal layout_process_summary
+            if args.prefill_in_layout_workers:
+                if layout_process_pool is None:
+                    raise RuntimeError("worker-prefill stream has no process pool")
+
+                def iter_worker_pages() -> Iterable[PageRequest]:
+                    nonlocal layout_process_summary
+                    for payload in layout_process_pool.iter_map(
+                        image_paths,
+                        label="measured_worker_prefill",
+                    ):
+                        yield page_request_from_process_payload(
+                            payload,
+                            measured_layout_s=float(
+                                payload["frontend_timing_s"]["layout_s"]
+                            ),
+                        )
+                    layout_process_summary = (
+                        layout_process_pool.last_stream_summary
+                    )
+
+                prepared_pages: Iterable[PageRequest] = iter_worker_pages()
+            elif precomputed_pages is not None:
                 prepared_pages: Iterable[PageRequest] = precomputed_pages
             else:
                 decoded_pages = iter_decoded_pages(
@@ -1731,6 +1907,19 @@ def main() -> None:
 
         def ready_source():
             crops = crop_source()
+            if args.prefill_in_layout_workers:
+                for crop in crops:
+                    item = materialize_worker_prefilled_item(
+                        crop,
+                        runner=runner,
+                    )
+                    record_prefill_metrics(metrics, item)
+                    yield ContinuousReadyItem(
+                        request_id=crop.request_id,
+                        payload=crop,
+                        prefilled=item,
+                    )
+                return
             if args.text_prefill_mode == "compiled_packed_s1024":
                 groups = iter_greedy_text_packs(crops, runner=runner)
             else:
@@ -1960,6 +2149,7 @@ def main() -> None:
         "layout_execution": args.layout_execution if not use_onnx_layout else None,
         "layout_batch_size": args.layout_batch_size,
         "layout_process_workers": args.layout_process_workers,
+        "prefill_in_layout_workers": args.prefill_in_layout_workers,
         "layout_process_setup_s": layout_process_setup_s,
         "layout_process_warmup": layout_process_warmup,
         "layout_process": layout_process_summary,

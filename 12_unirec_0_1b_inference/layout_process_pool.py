@@ -62,9 +62,24 @@ def _pack_frontend_payload_shared(
     result: dict[str, Any],
 ) -> tuple[dict[str, Any], float, int]:
     """Move one full frontend payload into one aligned shared arena."""
-    arrays = [result["image_bgr"]]
+    entries: list[tuple[str, dict[str, Any] | None, np.ndarray]] = [
+        ("image_bgr_descriptor", None, result["image_bgr"])
+    ]
     for crop in result["crops"]:
-        arrays.extend((crop["image_rgb"], crop["processed_pixel_values"]))
+        entries.append(("image_rgb_descriptor", crop, crop["image_rgb"]))
+        if "worker_cross_kv" in crop:
+            entries.append(
+                ("worker_cross_kv_descriptor", crop, crop["worker_cross_kv"])
+            )
+        else:
+            entries.append(
+                (
+                    "processed_pixel_values_descriptor",
+                    crop,
+                    crop["processed_pixel_values"],
+                )
+            )
+    arrays = [entry[2] for entry in entries]
     offsets = []
     total_bytes = 0
     for array in arrays:
@@ -99,17 +114,16 @@ def _pack_frontend_payload_shared(
             "name": storage.name,
             "nbytes": total_bytes,
         }
-        result["image_bgr_descriptor"] = descriptors[0]
+        for (descriptor_name, owner, _array), descriptor in zip(
+            entries, descriptors
+        ):
+            target = result if owner is None else owner
+            target[descriptor_name] = descriptor
         result["image_bgr"] = None
-        descriptor_index = 1
         for crop in result["crops"]:
-            crop["image_rgb_descriptor"] = descriptors[descriptor_index]
-            crop["processed_pixel_values_descriptor"] = descriptors[
-                descriptor_index + 1
-            ]
             crop["image_rgb"] = None
-            crop["processed_pixel_values"] = None
-            descriptor_index += 2
+            crop.pop("processed_pixel_values", None)
+            crop.pop("worker_cross_kv", None)
         ownership_transferred = True
         pack_s = time.perf_counter() - started
         return result, pack_s, total_bytes
@@ -254,6 +268,136 @@ def _prepare_frontend_payload(
     )
 
 
+def _iter_worker_prefill_groups(
+    crops: list[dict[str, Any]],
+    *,
+    runner: Any,
+    bucket: int,
+) -> Any:
+    """Page-local FIFO text packs, matching the coordinator's pack rule."""
+    current: list[dict[str, Any]] = []
+    current_tokens = 0
+    for crop in crops:
+        height, width = crop["image_rgb"].shape[:2]
+        tokens = int(
+            runner.processor.estimate_encoder_token_count_for_image_size(
+                width, height
+            )
+        )
+        if tokens > bucket:
+            if current:
+                yield True, current
+                current = []
+                current_tokens = 0
+            yield False, [crop]
+            continue
+        if current and current_tokens + tokens > bucket:
+            yield True, current
+            current = []
+            current_tokens = 0
+        current.append(crop)
+        current_tokens += tokens
+    if current:
+        yield True, current
+
+
+def _prefill_worker_page(
+    result: dict[str, Any],
+    *,
+    runner: Any,
+    vision_atlas_runtime: Any,
+) -> dict[str, float]:
+    """Run page-local recognition prefill and retain only real cross K/V."""
+    from text_packed_prefill import PACKED_TEXT_PREFILL_BUCKET
+
+    started = time.perf_counter()
+    cache_d2h_s = 0.0
+    real_tokens = 0
+    physical_tokens = 0
+    pack_count = 0
+    fallback_count = 0
+    for use_packed_graph, group in _iter_worker_prefill_groups(
+        result["crops"],
+        runner=runner,
+        bucket=PACKED_TEXT_PREFILL_BUCKET,
+    ):
+        prepared = []
+        for crop in group:
+            height, width = crop["image_rgb"].shape[:2]
+            request_id = (
+                f"page_{int(result['page_index']):06d}_"
+                f"crop_{int(crop['crop_index']):04d}"
+            )
+            prepared.append(
+                runner.prepare_preprocessed_pixels(
+                    crop["processed_pixel_values"],
+                    original_image_size=(width, height),
+                    image_source=request_id,
+                )
+            )
+        if use_packed_graph:
+            items = vision_atlas_runtime.prefill_prepared_packed_for_cohort(
+                prepared,
+                profile_device_stages=False,
+            )
+            pack_count += 1
+        else:
+            items = [
+                runner.prefill_prepared_for_cohort(
+                    prepared[0],
+                    profile_device_stages=False,
+                    text_prefill_mode="eager",
+                )
+            ]
+            fallback_count += 1
+        for crop, item in zip(group, items):
+            cache = item.kv_cache
+            actual_length = int(cache.actual_cross_attention_length or 0)
+            if actual_length <= 0:
+                raise RuntimeError("worker prefill produced an empty cross cache")
+            d2h_started = time.perf_counter()
+            packed_cache = torch.stack(
+                tuple(
+                    tensor[:, :, :actual_length, :]
+                    for tensor in (
+                        *cache.cross_key_cache,
+                        *cache.cross_value_cache,
+                    )
+                ),
+                dim=0,
+            ).contiguous()
+            packed_host = packed_cache.cpu().numpy()
+            item_d2h_s = time.perf_counter() - d2h_started
+            cache_d2h_s += item_d2h_s
+            member_real = int(
+                item.text_prefill_real_source_tokens or actual_length
+            )
+            member_physical = int(
+                item.text_prefill_physical_source_tokens or member_real
+            )
+            real_tokens += member_real
+            physical_tokens += member_physical
+            crop["worker_cross_kv"] = packed_host
+            crop["worker_prefill_metadata"] = {
+                "prep": item.prep,
+                "prefill_s": float(item.prefill_s),
+                "cache_d2h_s": item_d2h_s,
+                "prefill_device_stage_s": item.prefill_device_stage_s,
+                "text_prefill_execution": item.text_prefill_execution,
+                "text_prefill_real_source_tokens": member_real,
+                "text_prefill_physical_source_tokens": member_physical,
+                "actual_cross_attention_length": actual_length,
+            }
+    return {
+        "recognition_prefill_worker_s": time.perf_counter() - started,
+        "recognition_prefill_cache_d2h_s": cache_d2h_s,
+        "recognition_prefill_real_source_tokens": float(real_tokens),
+        "recognition_prefill_physical_source_tokens": float(physical_tokens),
+        "recognition_prefill_pack_count": float(pack_count),
+        "recognition_prefill_fallback_count": float(fallback_count),
+    }
+
+
 def _worker_main(
     worker_index: int,
     model_path: str,
@@ -264,6 +408,10 @@ def _worker_main(
     openocr_root: str | None,
     prepare_pages: bool,
     use_chart_recognition: bool,
+    prefill_recognition: bool,
+    recognition_model_path: str | None,
+    recognition_dtype: str,
+    recognition_cache_dir: str | None,
     task_queue: Any,
     result_queue: Any,
 ) -> None:
@@ -302,6 +450,24 @@ def _worker_main(
             recognition_processor = UniRecImageProcessor()
         else:
             recognition_processor = None
+        if prefill_recognition:
+            if not prepare_pages:
+                raise RuntimeError("worker recognition prefill requires page preparation")
+            if recognition_model_path is None or recognition_cache_dir is None:
+                raise RuntimeError("worker recognition prefill has no model/cache path")
+            from modeling_optimized_unirec import OptimizedUniRecRunner
+            from vision_atlas import UniRecVisionAtlasRuntime
+
+            recognition_runner = OptimizedUniRecRunner(
+                model_path=recognition_model_path,
+                device="npu:0",
+                dtype=recognition_dtype,
+                compile_cache_dir=recognition_cache_dir,
+            )
+            vision_atlas_runtime = UniRecVisionAtlasRuntime(recognition_runner)
+        else:
+            recognition_runner = None
+            vision_atlas_runtime = None
         result_queue.put({"status": "ready", "worker": worker_index})
         while True:
             task = task_queue.get()
@@ -346,6 +512,13 @@ def _worker_main(
                     **frontend_timing,
                     "recognition_input_prepare_worker_s": recognition_prepare_s,
                 }
+                if prefill_recognition:
+                    prefill_timing = _prefill_worker_page(
+                        result,
+                        runner=recognition_runner,
+                        vision_atlas_runtime=vision_atlas_runtime,
+                    )
+                    result["frontend_timing_s"].update(prefill_timing)
                 result, shared_pack_s, shared_payload_bytes = (
                     _pack_frontend_payload_shared(result)
                 )
@@ -403,6 +576,10 @@ class DynamicLayoutProcessPool:
         openocr_root: Path | None = None,
         prepare_pages: bool = False,
         use_chart_recognition: bool = False,
+        prefill_recognition: bool = False,
+        recognition_model_path: Path | None = None,
+        recognition_dtype: str = "float16",
+        recognition_cache_dir: Path | None = None,
         timeout_s: float = 1800.0,
     ) -> None:
         if worker_count < 1:
@@ -428,6 +605,18 @@ class DynamicLayoutProcessPool:
                     str(openocr_root) if openocr_root is not None else None,
                     prepare_pages,
                     use_chart_recognition,
+                    prefill_recognition,
+                    (
+                        str(recognition_model_path)
+                        if recognition_model_path is not None
+                        else None
+                    ),
+                    recognition_dtype,
+                    (
+                        str(recognition_cache_dir)
+                        if recognition_cache_dir is not None
+                        else None
+                    ),
                     self.task_queue,
                     self.result_queue,
                 ),
@@ -445,6 +634,7 @@ class DynamicLayoutProcessPool:
             raise RuntimeError(f"layout process setup failed: {errors}")
         self.setup_wall_s = time.perf_counter() - setup_started
         self._next_run_id = 0
+        self.last_stream_summary: dict[str, Any] | None = None
         self.closed = False
 
     def _receive(self) -> dict[str, Any]:
@@ -480,6 +670,8 @@ class DynamicLayoutProcessPool:
             "worker_document_image_index_sum_s": 0.0,
             "worker_recognition_crop_build_sum_s": 0.0,
             "worker_recognition_input_prepare_sum_s": 0.0,
+            "worker_recognition_prefill_sum_s": 0.0,
+            "worker_recognition_prefill_cache_d2h_sum_s": 0.0,
             "worker_shared_pack_sum_s": 0.0,
         }
         shared_payload_bytes = 0
@@ -525,6 +717,13 @@ class DynamicLayoutProcessPool:
             stage_s["worker_recognition_input_prepare_sum_s"] += float(
                 timing.get("recognition_input_prepare_s", 0.0)
             )
+            frontend = message["result"].get("frontend_timing_s", {})
+            stage_s["worker_recognition_prefill_sum_s"] += float(
+                frontend.get("recognition_prefill_worker_s", 0.0)
+            )
+            stage_s["worker_recognition_prefill_cache_d2h_sum_s"] += float(
+                frontend.get("recognition_prefill_cache_d2h_s", 0.0)
+            )
             stage_s["worker_shared_pack_sum_s"] += float(
                 timing.get("shared_pack_s", 0.0)
             )
@@ -557,6 +756,101 @@ class DynamicLayoutProcessPool:
         if any(result is None for result in results):
             raise RuntimeError("layout process pool returned incomplete results")
         return [result for result in results if result is not None], summary
+
+    def iter_map(
+        self,
+        paths: list[Path],
+        *,
+        label: str,
+    ) -> Any:
+        """Yield completed page payloads with bounded result-queue backpressure."""
+        if self.closed:
+            raise RuntimeError("layout process pool is closed")
+        run_id = self._next_run_id
+        self._next_run_id += 1
+        started = time.perf_counter()
+        for page_index, path in enumerate(paths):
+            self.task_queue.put((run_id, page_index, str(path)))
+        worker_pages = [0] * self.worker_count
+        worker_busy_s = [0.0] * self.worker_count
+        stage_s = {
+            "worker_file_read_sum_s": 0.0,
+            "worker_direct_rgb_decode_sum_s": 0.0,
+            "worker_detector_call_sum_s": 0.0,
+            "worker_layout_crop_views_sum_s": 0.0,
+            "worker_document_image_index_sum_s": 0.0,
+            "worker_recognition_crop_build_sum_s": 0.0,
+            "worker_recognition_input_prepare_sum_s": 0.0,
+            "worker_recognition_prefill_sum_s": 0.0,
+            "worker_recognition_prefill_cache_d2h_sum_s": 0.0,
+            "worker_shared_pack_sum_s": 0.0,
+        }
+        shared_payload_bytes = 0
+        ipc_delivery_sum_s = 0.0
+        ipc_delivery_max_s = 0.0
+        progress_step = max(1, len(paths) // 10)
+        completed = 0
+        while completed < len(paths):
+            message = self._receive()
+            if message["status"] != "ok":
+                raise RuntimeError(f"layout process execution failed: {message}")
+            if int(message["run_id"]) != run_id:
+                raise RuntimeError(
+                    f"unexpected layout run id: {message['run_id']} != {run_id}"
+                )
+            worker_index = int(message["worker"])
+            timing = message["timing"]
+            worker_pages[worker_index] += 1
+            worker_busy_s[worker_index] += float(timing["worker_page_s"])
+            ipc_delivery_s = time.perf_counter() - float(message["ready_at"])
+            ipc_delivery_sum_s += ipc_delivery_s
+            ipc_delivery_max_s = max(ipc_delivery_max_s, ipc_delivery_s)
+            for destination, source in (
+                ("worker_file_read_sum_s", "file_read_s"),
+                ("worker_direct_rgb_decode_sum_s", "direct_rgb_decode_s"),
+                ("worker_detector_call_sum_s", "detector_call_s"),
+                ("worker_layout_crop_views_sum_s", "layout_crop_views_s"),
+                ("worker_document_image_index_sum_s", "document_image_index_s"),
+                ("worker_recognition_crop_build_sum_s", "recognition_crop_build_s"),
+                ("worker_recognition_input_prepare_sum_s", "recognition_input_prepare_s"),
+                ("worker_shared_pack_sum_s", "shared_pack_s"),
+            ):
+                stage_s[destination] += float(timing.get(source, 0.0))
+            frontend = message["result"].get("frontend_timing_s", {})
+            stage_s["worker_recognition_prefill_sum_s"] += float(
+                frontend.get("recognition_prefill_worker_s", 0.0)
+            )
+            stage_s["worker_recognition_prefill_cache_d2h_sum_s"] += float(
+                frontend.get("recognition_prefill_cache_d2h_s", 0.0)
+            )
+            shared_payload_bytes += int(timing.get("shared_payload_bytes", 0))
+            completed += 1
+            if completed % progress_step == 0 or completed == len(paths):
+                print(
+                    f"UNIREC_LAYOUT_PROCESS_PROGRESS label={label} "
+                    f"pages={completed}/{len(paths)}",
+                    flush=True,
+                )
+            yield message["result"]
+
+        wall_s = time.perf_counter() - started
+        self.last_stream_summary = {
+            "label": label,
+            "worker_count": self.worker_count,
+            "page_count": len(paths),
+            "wall_s": wall_s,
+            "pages_per_s": len(paths) / wall_s if wall_s else None,
+            "worker_page_counts": worker_pages,
+            "worker_busy_s": worker_busy_s,
+            "stage_s": stage_s,
+            "ipc_delivery_sum_s": ipc_delivery_sum_s,
+            "ipc_delivery_mean_s": ipc_delivery_sum_s / len(paths),
+            "ipc_delivery_max_s": ipc_delivery_max_s,
+            "shared_payload_bytes": shared_payload_bytes,
+            "scheduling": "dynamic_completion_order_stream",
+            "layout_batch_size": 1,
+            "full_page_frontend": self.prepare_pages,
+        }
 
     def close(self) -> None:
         if getattr(self, "closed", False):
