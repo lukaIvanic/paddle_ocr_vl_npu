@@ -1,0 +1,151 @@
+[
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.089,
+      0.889,
+      0.165
+    ],
+    "angle": 0,
+    "content": "As \\(\\theta_{W_1} = \\zeta_5^2\\) and \\(\\theta_{W_5} = \\zeta_5^3\\), \\(F(W_1)\\) and \\(F(W_5)\\) are in the same orbit under the action of \\(\\sigma\\). Since \\(S_{F(W_i),F(W_j)}\\) are real algebraic integers, \\(F(W_1)\\) and \\(F(W_5)\\) are self-dual. Therefore \\(S_{(Z_k)_j,F(W_l)}\\) are also real algebraic integers, where \\(l = 1,5\\). Since \\(\\dim (\\mathcal{D}) = 2(\\chi_{80}^8)^2 + (\\chi_{180}^{14})^2 + (\\chi_{20}^6)^2\\), we conclude that \\(S_{(Z_k)_j,F(W_l)} = 0\\) for \\(l = 1,5\\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.133,
+      0.174,
+      0.462,
+      0.191
+    ],
+    "angle": 0,
+    "content": "Thus the \\(S\\)-matrix of \\(\\mathcal{D}\\) is of the form",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.246,
+      0.197,
+      0.885,
+      0.378
+    ],
+    "angle": 0,
+    "content": "\\[\n\\left( \\begin{array}{c c c c c c c c c c} 1 & \\chi_ {8 0} ^ {9} & \\chi_ {2 0} ^ {5} & \\chi_ {2 0} ^ {5} & \\chi_ {2 0} ^ {5} & \\chi_ {2 0} ^ {5} & \\chi_ {2 0} ^ {5} & \\chi_ {2 0} ^ {5} & \\chi_ {8 0} ^ {8} & \\chi_ {8 0} ^ {8} \\\\ \\chi_ {8 0} ^ {9} & 1 & \\chi_ {2 0} ^ {5} & \\chi_ {2 0} ^ {5} & \\chi_ {2 0} ^ {5} & \\chi_ {2 0} ^ {5} & \\chi_ {2 0} ^ {5} & \\chi_ {2 0} ^ {5} & - \\chi_ {8 0} ^ {8} & - \\chi_ {8 0} ^ {8} \\\\ \\chi_ {2 0} ^ {5} & \\chi_ {2 0} ^ {5} & & & & & & 0 & 0 \\\\ \\chi_ {2 0} ^ {5} & \\chi_ {2 0} ^ {5} & & & & & & 0 & 0 \\\\ \\chi_ {2 0} ^ {5} & \\chi_ {2 0} ^ {5} & & & * * * & & & 0 & 0 \\\\ \\chi_ {2 0} ^ {5} & \\chi_ {2 0} ^ {5} & & & & & & 0 & 0 \\\\ \\chi_ {2 0} ^ {5} & \\chi_ {2 0} ^ {5} & & & & & & 0 & 0 \\\\ \\chi_ {2 0} ^ {5} & \\chi_ {2 0} ^ {5} & & & & & & 0 & 0 \\\\ \\chi_ {8 0} ^ {8} & - \\chi_ {8 0} ^ {8} & 0 & 0 & 0 & 0 & 0 & 0 & - \\chi_ {2 0} ^ {6} & \\chi_ {1 8 0} ^ {1 4} \\\\ \\chi_ {8 0} ^ {8} & - \\chi_ {8 0} ^ {8} & 0 & 0 & 0 & 0 & 0 & 0 & \\chi_ {1 8 0} ^ {1 4} & - \\chi_ {2 0} ^ {6} \\end{array} \\right) \\tag {17}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.111,
+      0.384,
+      0.884,
+      0.506
+    ],
+    "angle": 0,
+    "content": "To determine the remaining entries of the S-matrix of D in (17), we apply the method introduced in the reconstruction program in [20, 21]. Specifically, we begin by identifying all possible representation types of the associated modular congruence representation of D. This involves decomposing the representation into a direct sum of irreducible components. Next, we reconstruct the modular data of D from the representation of SL(2, Z), leveraging properties of modular categories, such as Galois symmetry, the Verlinde formula, and other structural constraints.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.111,
+      0.507,
+      0.884,
+      0.558
+    ],
+    "angle": 0,
+    "content": "Let \\(\\rho_{\\mathcal{D}}\\) be the \\(\\mathrm{SL}(2,\\mathbb{Z})\\) modular congruence representation of \\(\\mathcal{D}\\), then it follows from the spectrum of \\(\\rho_{\\mathcal{D}}(\\mathfrak{t})\\) that \\(\\rho_{\\mathcal{D}}\\) contains a unique direct summand \\(\\rho_{1}\\) of dimension 3 of level 5, where",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.218,
+      0.559,
+      0.78,
+      0.62
+    ],
+    "angle": 0,
+    "content": "\\[\n\\rho_ {1} (\\mathfrak {s}) = \\frac {- 1}{\\sqrt {5}} \\left( \\begin{array}{c c c} 1 & \\sqrt {2} & \\sqrt {2} \\\\ \\sqrt {2} & 2 \\cos \\frac {2 \\pi}{5} & 2 \\cos \\frac {6 \\pi}{5} \\\\ \\sqrt {2} & 2 \\cos \\frac {6 \\pi}{5} & 2 \\cos \\frac {2 \\pi}{5} \\end{array} \\right) \\mathrm{and} \\rho_ {1} (\\mathfrak {t}) = \\mathrm{diag} (1, \\zeta_ {5} ^ {2}, \\zeta_ {5} ^ {3}).\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.622,
+      0.886,
+      0.678
+    ],
+    "angle": 0,
+    "content": "Assume \\(\\rho_{\\mathcal{D}} \\cong \\rho_1 \\oplus \\rho'\\), then \\(\\rho'\\) is a direct sum of irreducible representations with level 4, whose t-spectrum belongs to \\(\\{1, \\zeta_4, \\zeta_4^3\\}\\). Notice that these irreducible direct summands of level 4 are \\(\\rho_2, \\rho_3, \\rho_4, \\rho_5\\) [24, 25, 27], where",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.271,
+      0.684,
+      0.728,
+      0.744
+    ],
+    "angle": 0,
+    "content": "\\[\n\\rho_ {2} (\\mathfrak {s}) = \\frac {1}{2} \\left( \\begin{array}{c c c} {- 1} & {1} & {\\sqrt {2}} \\\\ {1} & {- 1} & {\\sqrt {2}} \\\\ {\\sqrt {2}} & {- \\sqrt {2}} & {0} \\end{array} \\right), \\rho_ {2} (\\mathbf {t}) = \\mathrm{diag} (\\zeta_ {4}, \\zeta_ {4} ^ {3}, 1),\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.295,
+      0.761,
+      0.705,
+      0.801
+    ],
+    "angle": 0,
+    "content": "\\[\n\\rho_ {3} (\\mathfrak {s}) = \\frac {1}{2} \\left( \\begin{array}{c c} \\zeta_ {4} & \\sqrt {3} \\zeta_ {4} \\\\ \\sqrt {3} \\zeta_ {4} & - \\zeta_ {4} \\end{array} \\right), \\rho_ {3} (\\mathfrak {t}) = \\mathrm{diag} (\\zeta_ {4}, \\zeta_ {4} ^ {3}),\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.33,
+      0.804,
+      0.705,
+      0.824
+    ],
+    "angle": 0,
+    "content": "\\[\n\\rho_ {4} (\\mathfrak {s}) = \\zeta_ {4} ^ {3}, \\rho_ {4} (\\mathfrak {t}) = \\zeta_ {4}, \\rho_ {5} (\\mathfrak {s}) = \\zeta_ {4}, \\rho_ {5} (\\mathfrak {t}) = \\zeta_ {4} ^ {3}.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.111,
+      0.834,
+      0.886,
+      0.871
+    ],
+    "angle": 0,
+    "content": "Lemma 3.5. Let  \\( \\rho_{D} = \\rho_{1} \\oplus \\rho' \\)  be the congruence  \\( \\mathrm{SL}(2, \\mathbb{Z}) \\)  representation associated D. The  \\( \\rho_{D} \\)  is equivalent to one of the following decompositions:",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.24,
+      0.88,
+      0.758,
+      0.899
+    ],
+    "angle": 0,
+    "content": "\\[\n\\rho_ {1} \\oplus 2 \\rho_ {2} \\oplus \\rho_ {0}, \\quad \\rho_ {1} \\oplus \\rho_ {2} \\oplus \\rho_ {3} \\oplus 2 \\rho_ {0}, \\quad \\rho_ {1} \\oplus \\rho_ {2} \\oplus \\rho_ {4} \\oplus \\rho_ {5} \\oplus 2 \\rho_ {0}.\n\\]"
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.492,
+      0.9,
+      0.508,
+      0.91
+    ],
+    "angle": 0,
+    "content": "11"
+  }
+]

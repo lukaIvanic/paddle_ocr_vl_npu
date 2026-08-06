@@ -1,0 +1,129 @@
+[
+  {
+    "type": "text",
+    "bbox": [
+      0.201,
+      0.145,
+      0.796,
+      0.227
+    ],
+    "angle": 0,
+    "content": "and the restriction of irreducible representations \\(\\Pi\\) of \\(G\\) to the subgroup \\(G'\\) that acts properly on \\(X\\). Specifically, we demonstrate that this restriction \\(\\Pi|_{G'}\\) is always discretely decomposable with uniformly bounded multiplicities.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.201,
+      0.229,
+      0.797,
+      0.289
+    ],
+    "angle": 0,
+    "content": "The following theorem bridges the spectral analysis on  \\( X_{\\Gamma} = \\Gamma \\backslash G / H \\)  and recent progress of branching problems that we outlined in Sections 2 to 4.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.202,
+      0.307,
+      0.799,
+      0.412
+    ],
+    "angle": 0,
+    "content": "Theorem 5.13. Let X = G/H be a reductive symmetric pair. Suppose that a reductive subgroup  \\( G' \\)  of G acts properly on X and that the complexification  \\( G'_{C} \\)  acts spherically on  \\( X_{C} \\) . Then the restriction  \\( \\Pi|_{G'} \\)  is  \\( G' \\) -admissible (Definition 2.1) for any H-distinguished  \\( \\Pi \\in \\widehat{G} \\)  (Definition 4.2). Moreover, the multiplicities are uniformly bounded:",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.368,
+      0.426,
+      0.63,
+      0.457
+    ],
+    "angle": 0,
+    "content": "\\[\n\\sup _ {\\Pi \\in \\mathrm{Irr} (G) _ {H}} \\sup _ {\\pi \\in \\mathrm{Irr} (G ^ {\\prime})} \\left[ \\Pi | _ {G ^ {\\prime}}: \\pi \\right] <   \\infty .\n\\]"
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.202,
+      0.469,
+      0.613,
+      0.488
+    ],
+    "angle": 0,
+    "content": "5.7. \\(H \\subset G \\supset G'\\rightsquigarrow H^{\\text{ind}} \\nearrow G \\searrow^{\\text{rest}} G'\\)."
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.201,
+      0.491,
+      0.795,
+      0.552
+    ],
+    "angle": 0,
+    "content": "The conclusion of Theorem 5.13 follows from two key aspects of branching problems:  \\( G' \\) -admissibility, as discussed in Section 2 and the uniformly bounded multiplicities outlined in Sections 3 and 4.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.221,
+      0.555,
+      0.683,
+      0.573
+    ],
+    "angle": 0,
+    "content": "The following diagram summarizes the related results:",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.204,
+      0.584,
+      0.825,
+      0.751
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} G _ {\\mathbb {C}} ^ {\\prime} \\underset {\\text {spherical}} {\\curvearrowright} G _ {\\mathbb {C}} / B _ {G _ {\\mathbb {C}} / H _ {\\mathbb {C}}} \\stackrel {{\\text {Theorem 4.6}}} {{\\Longleftrightarrow}} \\sup _ {\\Pi \\in \\operatorname{Irr} (G) _ {H}} \\sup _ {\\pi \\in \\operatorname{Irr} (G ^ {\\prime})} \\left[ \\Pi | _ {G ^ {\\prime}}: \\pi \\right] <   \\infty \\\\ \\left\\{ \\begin{array}{l l} G _ {\\mathbb {C}} ^ {\\prime} \\underset {\\text {spherical}} {\\curvearrowright} G _ {\\mathbb {C}} / H _ {\\mathbb {C}} & \\Pi | _ {G ^ {\\prime}} \\text {is discretely decomposable} \\\\ G ^ {\\prime} \\underset {\\text {proper}} {\\curvearrowright} G / H & \\text {with uniformly bounded multiplicities} \\\\ & \\text {for all} \\Pi \\in \\operatorname{Irr} (G) _ {H}. \\end{array} \\right. \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.282,
+      0.64,
+      0.641,
+      0.667
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.201,
+      0.761,
+      0.798,
+      0.886
+    ],
+    "angle": 0,
+    "content": "The proof of Theorem 5.13 ([Ko17], cf. [KK24]) does not rely on the  \\( G' \\) -admissibility criterion (Theorem 2.3), which is formulated purely in terms of representation theory. It would be interesting to explore a direct connection between the geometric assumption in Theorem 5.13 and the transversality condition of the two cones (condition (ii) in Theorem 2.3).",
+    "merge_prev": false
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.491,
+      0.887,
+      0.509,
+      0.898
+    ],
+    "angle": 0,
+    "content": "27"
+  }
+]

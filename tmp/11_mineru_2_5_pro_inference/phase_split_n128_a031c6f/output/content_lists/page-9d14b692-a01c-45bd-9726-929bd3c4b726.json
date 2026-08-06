@@ -1,0 +1,96 @@
+[
+  {
+    "type": "page_number",
+    "bbox": [
+      0.123,
+      0.063,
+      0.169,
+      0.077
+    ],
+    "angle": 0,
+    "content": "· XII ·"
+  },
+  {
+    "type": "header",
+    "bbox": [
+      0.453,
+      0.062,
+      0.581,
+      0.076
+    ],
+    "angle": 0,
+    "content": "紧固件材料手册"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.108,
+      0.096,
+      0.926,
+      0.115
+    ],
+    "angle": 0,
+    "content": "11.4 氮化硅陶瓷 511",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.109,
+      0.119,
+      0.926,
+      0.137
+    ],
+    "angle": 0,
+    "content": "参考文献 514",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.108,
+      0.148,
+      0.926,
+      0.167
+    ],
+    "angle": 0,
+    "content": "附录 A 公英制常用单位及换算表 …… 515",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.109,
+      0.178,
+      0.924,
+      0.196
+    ],
+    "angle": 0,
+    "content": "附录 B 材料检测用试验方法标准 …… 516",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.109,
+      0.208,
+      0.924,
+      0.225
+    ],
+    "angle": 0,
+    "content": "附录 C APP 产品目录 …… 522",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.109,
+      0.237,
+      0.924,
+      0.254
+    ],
+    "angle": 0,
+    "content": "附录 D 航天精工股份有限公司 536",
+    "merge_prev": false
+  }
+]

@@ -1,0 +1,106 @@
+[
+  {
+    "type": "page_number",
+    "bbox": [
+      0.832,
+      0.073,
+      0.85,
+      0.085
+    ],
+    "angle": 0,
+    "content": "23"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.144,
+      0.12,
+      0.854,
+      0.184
+    ],
+    "angle": 0,
+    "content": "\\(\\bigcup_{(i,k)\\in \\mathcal{C}_n^1}C_{n,k}^i\\) and \\(A_{2} = \\bigcup_{(i,k)\\in \\mathcal{C}_{n}^{2}}C_{n,k}^{i}\\) with finite sets \\(\\mathcal{C}_n^1\\) and \\(\\mathcal{C}_n^2\\) of indices such that \\(A_{1}\\subseteq A\\subseteq A_{2}\\) and \\(|\\bar{\\mu} (A) - \\bar{\\mu} (A_i)|\\leq \\frac{\\epsilon}{3}\\bar{\\mu} (A)\\) for \\(i = 1,2\\). Additionally, we choose \\(n\\) large enough such that \\(\\frac{142}{n} < \\frac{\\epsilon}{3}\\) holds. It follows, using estimates (5.24), (5.25), (5.26), and for \\(n > 4\\), \\(\\left(1 - \\frac{36}{k_n^4}\\right)^{-1} < 2\\) that:",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.155,
+      0.19,
+      0.845,
+      0.476
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\bar {\\mu} (\\Gamma_ {n, j} \\cap (f _ {n}, \\mathrm{d} f _ {n}) ^ {- m _ {n}} (A)) - \\bar {\\mu} (\\Gamma_ {n, j}) \\bar {\\mu} (A) \\\\ \\leq \\bar {\\mu} (\\Gamma_ {n, j} \\cap (f _ {n}, \\mathrm{d} f _ {n}) ^ {- m _ {n}} (A _ {2})) - \\bar {\\mu} (\\Gamma_ {n, j}) \\bar {\\mu} (A _ {2}) + \\bar {\\mu} (\\Gamma_ {n, j}) (\\bar {\\mu} (A _ {2}) - \\bar {\\mu} (A)) \\\\ \\leq \\bar {\\mu} (\\cup_ {l = 0} ^ {k _ {n} - 1} \\Gamma_ {n, l, j} \\cap (f _ {n}, \\mathrm{d} f _ {n}) ^ {- m _ {n}} (\\cup_ {(i, k) \\in \\mathcal {C} _ {n} ^ {2}} C _ {n, k} ^ {i})) - \\bar {\\mu} (\\Gamma_ {n, j}) \\bar {\\mu} (\\cup_ {(i, k) \\in \\mathcal {C} _ {n} ^ {2}} C _ {n, k} ^ {i}) + \\frac {\\epsilon}{3} \\bar {\\mu} (\\Gamma_ {n, j}) \\bar {\\mu} (A) \\\\ \\leq \\sum_ {(i, k) \\in \\mathcal {C} _ {n} ^ {2}} \\left(\\bar {\\mu} \\left(\\Gamma_ {n, l, j} \\cap \\left(f _ {n}, \\mathrm{d} f _ {n}\\right) ^ {- m _ {n}} \\left(C _ {n, k} ^ {i}\\right)\\right) - \\mu \\left(\\tilde {I} _ {n, l}\\right) \\bar {\\mu} \\left(C _ {n, k} ^ {i}\\right)\\right) + \\sum_ {(i, k) \\in \\mathcal {C} _ {n} ^ {2}} \\bar {\\mu} \\left(C _ {n, k} ^ {i}\\right) \\left(\\mu \\left(\\tilde {I} _ {n, l}\\right) - \\bar {\\mu} \\left(\\Gamma_ {n, j}\\right)\\right) \\\\ + \\frac {\\epsilon}{3} \\bar {\\mu} (\\Gamma_ {n, j}) \\bar {\\mu} (A) \\\\ \\leq \\sum_ {(i, k) \\in \\mathcal {C} _ {n} ^ {2}} \\left(\\frac {7 0}{n} + \\frac {3 6}{k _ {n} ^ {4}}\\right) \\mu (\\tilde {I} _ {n, l}) \\bar {\\mu} (C _ {n, k} ^ {i}) + \\frac {\\epsilon}{3} \\bar {\\mu} (\\Gamma_ {n, j}) \\bar {\\mu} (A) \\\\ \\leq \\sum_ {(i, k) \\in \\mathcal {C} _ {n} ^ {2}} \\frac {7 1}{n} \\left(1 - \\frac {3 6}{k _ {n} ^ {4}}\\right) ^ {- 1} \\bar {\\mu} (\\Gamma_ {n, j}) \\bar {\\mu} (C _ {n, k} ^ {i}) + \\frac {\\epsilon}{3} \\bar {\\mu} (\\Gamma_ {n, j}) \\bar {\\mu} (A) \\\\ \\leq \\frac {1 4 2}{n} \\bar {\\mu} (\\Gamma_ {n, j}) \\bar {\\mu} (A) + \\frac {1 4 2}{n} \\bar {\\mu} (\\Gamma_ {n, j}) (\\bar {\\mu} (A _ {2}) - \\bar {\\mu} (A)) + \\frac {\\epsilon}{3} \\bar {\\mu} (\\Gamma_ {n, j}) \\bar {\\mu} (A) \\\\ \\leq \\frac {\\epsilon}{3} \\bar {\\mu} (\\Gamma_ {n, j}) \\bar {\\mu} (A) + \\frac {\\epsilon}{3} \\bar {\\mu} (\\Gamma_ {n, j}) \\bar {\\mu} (A) + \\frac {\\epsilon}{3} \\bar {\\mu} (\\Gamma_ {n, j}) \\bar {\\mu} (A) \\leq \\epsilon \\bar {\\mu} (\\Gamma_ {n, j}) \\bar {\\mu} (A). \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.144,
+      0.482,
+      0.854,
+      0.528
+    ],
+    "angle": 0,
+    "content": "Analogously, we estimate that  \\( \\bar{\\mu}(\\Gamma_{n,j} \\cap (f_n, \\mathrm{d}f_n)^{-m_n}(A)) - \\bar{\\mu}(\\Gamma_{n,j})\\bar{\\mu}(A) > -\\epsilon\\bar{\\mu}(\\Gamma_{n,j})\\bar{\\mu}(A) \\) . Both estimates together yield equation (5.22) required for Lemma 5.8. This implies that  \\( (f, \\mathrm{d}f) \\)  is weakly mixing with respect to  \\( \\bar{\\mu} \\)  on the PTM. ☐",
+    "merge_prev": false
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.145,
+      0.546,
+      0.719,
+      0.565
+    ],
+    "angle": 0,
+    "content": "5.4 Criterion for analytic weakly mixing diffeomorphisms"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.144,
+      0.571,
+      0.854,
+      0.646
+    ],
+    "angle": 0,
+    "content": "We build on our criterion for weak mixing deduced in the previous subsections and show that the weak mixing property still holds for real-analytic AbC diffeomorphisms obtained by utilizing sufficiently close analytic approximations of the conjugation maps from the smooth constructions. We start by showing that such approximations still give good distribution properties in the sense of Definition 5.2.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.145,
+      0.655,
+      0.854,
+      0.737
+    ],
+    "angle": 0,
+    "content": "Lemma 5.10. Consider \\(\\phi_n \\in \\mathrm{Diff}^\\infty(\\mathbb{T}^2, \\mu)\\) and \\(\\hat{\\phi}_n \\in \\mathrm{Diff}_^\\omega_\\infty(\\mathbb{T}^2, \\mu)\\) satisfying \\(d_2(\\phi_n, \\hat{\\phi}_n \\upharpoonright_{\\mathbb{T}^2}) < \\epsilon_n\\), where \\(\\epsilon_n > 0\\) and \\(\\mathfrak{d}_n > 0\\) are given by (3.9). Denote \\(\\Phi_n = \\phi_n \\circ R_{\\alpha_{n+1}}^{m_n} \\circ \\phi_n^{-1}\\) and \\(\\hat{\\Phi}_n = \\hat{\\phi}_n \\circ R_{\\alpha_{n+1}}^{m_n} \\circ \\hat{\\phi}_n^{-1}\\). If the map \\((\\Phi_n, \\mathrm{d}\\Phi_n)\\) is \\((\\gamma, \\delta, \\varepsilon_1, \\varepsilon_2)\\)-distributing the elements \\(I \\in \\hat{\\eta}_n\\) in the sense of Definition 5.2, then \\((\\hat{\\Phi}_n, \\mathrm{d}\\hat{\\Phi}_n)\\) is \\((\\gamma', \\delta', \\varepsilon_1', \\varepsilon_2')\\)-distributing the elements \\(I \\in \\hat{\\eta}_n\\) with \\(\\gamma' = \\gamma + \\frac{1}{2^n}\\), \\(\\delta' = \\delta + \\frac{1}{2^n}\\), \\(\\varepsilon_1' = 2 \\cdot \\varepsilon_1 + \\frac{3}{2^n}\\), and \\(\\varepsilon_2' = 2 \\cdot \\varepsilon_2 + \\frac{3}{2^n}\\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.145,
+      0.743,
+      0.854,
+      0.774
+    ],
+    "angle": 0,
+    "content": "Proof. By using the triangle inequality and applying the mean value theorem, we can deduce the following proximity statement:",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.146,
+      0.782,
+      0.854,
+      0.829
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} d _ {1} (\\Phi_ {n}, \\hat {\\Phi} _ {n} \\mid_ {\\mathbb {T} ^ {2}}) = d _ {1} (\\phi_ {n} \\circ R _ {\\alpha_ {n + 1}} ^ {m _ {n}} \\circ \\phi_ {n} ^ {- 1}, (\\hat {\\phi} _ {n} \\circ R _ {\\alpha_ {n + 1}} ^ {m _ {n}} \\circ \\hat {\\phi} _ {n} ^ {- 1}) \\mid_ {\\mathbb {T} ^ {2}}) \\\\ \\leq d _ {1} (\\phi_ {n} \\circ R _ {\\alpha_ {n + 1}} ^ {m _ {n}} \\circ \\phi_ {n} ^ {- 1}, \\phi_ {n} \\circ R _ {\\alpha_ {n + 1}} ^ {m _ {n}} \\circ (\\hat {\\phi} _ {n} ^ {- 1}) \\upharpoonright_ {\\mathbb {T} ^ {2}}) + d _ {1} (\\phi_ {n} \\circ R _ {\\alpha_ {n + 1}} ^ {m _ {n}} \\circ (\\hat {\\phi} _ {n} ^ {- 1}) \\upharpoonright_ {\\mathbb {T} ^ {2}}, (\\hat {\\phi} _ {n} \\circ R _ {\\alpha_ {n + 1}} ^ {m _ {n}} \\circ \\hat {\\phi} _ {n} ^ {- 1}) \\upharpoonright_ {\\mathbb {T} ^ {2}}) \\\\ \\end{array}\n\\]"
+  }
+]

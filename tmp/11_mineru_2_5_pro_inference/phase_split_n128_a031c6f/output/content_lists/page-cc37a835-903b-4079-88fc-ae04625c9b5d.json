@@ -1,0 +1,185 @@
+[
+  {
+    "type": "equation",
+    "bbox": [
+      0.168,
+      0.134,
+      0.348,
+      0.15
+    ],
+    "angle": 0,
+    "content": "\\[\n=: I _ {2 1} + I _ {2 2} + I _ {2 3} + I _ {2 4}.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.104,
+      0.164,
+      0.538,
+      0.18
+    ],
+    "angle": 0,
+    "content": "Similar to the estimation of \\( I_{11} \\) and \\( I_{12} \\), we can derive",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.152,
+      0.189,
+      0.586,
+      0.211
+    ],
+    "angle": 0,
+    "content": "\\[\nI _ {2 1} \\leq C \\tau^ {\\frac {5}{2} (1 - \\varepsilon)}, \\quad I _ {2 2} \\leq C \\tau^ {2 (1 - \\varepsilon)} \\quad \\text {and} \\quad I _ {2 3} \\leq C \\tau^ {2 (1 - \\varepsilon)}.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.104,
+      0.223,
+      0.384,
+      0.24
+    ],
+    "angle": 0,
+    "content": "For \\(I_{24}\\), by the Itô formula, we get",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.151,
+      0.247,
+      0.95,
+      0.371
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} I _ {2 4} = \\left| \\mathbb {E} \\left[ \\int_ {t _ {k}} ^ {t _ {k + 1}} \\int_ {t _ {k}} ^ {s} \\langle D \\tilde {g} _ {i _ {2}} (X _ {\\tau} (t _ {k}, x; r), f _ {\\tau} (X _ {\\tau} (t _ {k}, x; r) \\rangle \\mathrm{d} r \\mathrm{d} B (s) \\cdot \\int_ {t _ {k}} ^ {t _ {k + 1}} \\tilde {g} _ {i _ {1}} (X _ {\\tau} (t _ {k}, x; s)) \\mathrm{d} B (s) \\right]\\right|\\left. \\right. \\\\ \\left. \\right. + \\left| \\right. \\mathbb {E} \\left[ \\right. \\int_ {t _ {k}} ^ {t _ {k + 1}} \\int_ {t _ {k}} ^ {s} \\langle D \\tilde {g} _ {i _ {2}} \\left( \\right.X _ {\\tau} \\left(t _ {k}, x; r\\right), g _ {\\tau} \\left( \\right.X _ {\\tau} \\left(t _ {k}, x; r\\right) \\rangle \\mathrm{d} B (r) \\mathrm{d} B (s) \\cdot \\int_ {t _ {k}} ^ {t _ {k + 1}} \\tilde {g} _ {i _ {1}} \\left(X _ {\\tau} \\left(t _ {k}, x; s\\right)\\right) \\mathrm{d} B (s) \\left. \\right]\\left. \\right|\\left. \\right. \\\\ + \\frac {1}{2} \\sum_ {l = 1} ^ {m} \\left| \\mathbb {E} \\left[ \\int_ {t _ {k}} ^ {t _ {k + 1}} \\int_ {t _ {k}} ^ {s} \\operatorname{trace} \\left(g _ {\\tau} ^ {T} \\left(X _ {\\tau} \\left(t _ {k}, x; r\\right)\\right) D ^ {2} g _ {\\tau} ^ {i _ {2}, l} \\left(X _ {\\tau} \\left(t _ {k}, x; r\\right) g _ {\\tau} \\left(X _ {\\tau} \\left(t _ {k}, x; r\\right)\\right)\\right) \\mathrm{d} r \\mathrm{d} B ^ {l} (s) \\cdot \\int_ {t _ {k}} ^ {t _ {k + 1}} \\tilde {g} _ {i _ {1}} \\left(X _ {\\tau} \\left(t _ {k}, x; s\\right)\\right) \\mathrm{d} B (s) \\right] \\right| \\right. \\\\ =: I _ {2 4 1} + I _ {2 4 2} + I _ {2 4 3}. \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.104,
+      0.382,
+      0.895,
+      0.416
+    ],
+    "angle": 0,
+    "content": "For \\( I_{242} \\), by using the Hölder inequality and the generalized Itô isometry, as well as the estimation of \\( I_{132} \\), we have",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.151,
+      0.426,
+      0.964,
+      0.589
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} I _ {2 4 2} = \\left| \\mathbb {E} \\left[ \\int_ {t _ {k}} ^ {t _ {k + 1}} \\int_ {t _ {k}} ^ {s} \\langle D \\tilde {g} _ {i _ {2}} (X _ {\\tau} (t _ {k}, x; r)), g _ {\\tau} (X _ {\\tau} (t _ {k}, x; r)) \\rangle \\mathrm{d} B (r) \\mathrm{d} B (s) \\cdot \\int_ {t _ {k}} ^ {t _ {k + 1}} \\tilde {g} _ {i _ {1}} (X _ {\\tau} (t _ {k}, x; s)) - \\tilde {g} _ {i _ {1}} (x) \\mathrm{d} B (s) \\right]\\right|\\left. \\right| \\\\ = \\Big | \\int_ {t _ {k}} ^ {t _ {k + 1}} \\mathbb {E} \\Big [ \\Big (\\int_ {t _ {k}} ^ {s} \\langle D \\tilde {g} _ {i _ {2}} (X _ {\\tau} (t _ {k}, x; r)), g _ {\\tau} (X _ {\\tau} (t _ {k}, x; r)) \\rangle \\mathrm{d} B (r) \\Big) \\cdot \\big (\\tilde {g} _ {i _ {1}} (X _ {\\tau} (t _ {k}, x; s)) - \\tilde {g} _ {i _ {1}} (x) \\big) \\Big ] \\mathrm{d} s \\Big | \\\\ \\leq \\int_ {t _ {k}} ^ {t _ {k + 1}} \\left\\| \\int_ {t _ {k}} ^ {s} D \\tilde {g} _ {i _ {2}} \\left(X _ {\\tau} \\left(t _ {k}, x; r\\right) g _ {\\tau} \\left(X _ {\\tau} \\left(t _ {k}, x; r\\right) \\mathrm{d} B (r) \\right. \\right\\| _ {L ^ {2} (\\Omega , \\mathbb {R})} \\cdot \\left\\| \\tilde {g} _ {i _ {1}} \\left(X _ {\\tau} \\left(t _ {k}, x; s\\right)\\right) - \\tilde {g} _ {i _ {1}} (x) \\right\\| _ {L ^ {2} (\\Omega , \\mathbb {R})} \\mathrm{d} s\\right. \\\\ \\leq C (1 + | \\mu^ {- 1} (\\hat {Y} \\tau^ {- \\varepsilon}) + C _ {0} | ^ {w + 2}) \\tau^ {\\frac {1}{2}} \\cdot (1 + | \\mu^ {- 1} (\\hat {Y} \\tau^ {- \\varepsilon}) + C _ {0} | ^ {w + 2}) ^ {\\frac {1}{2}} \\tau^ {1 + \\frac {1}{2} (1 - \\varepsilon)} \\\\ \\leq C \\tau^ {2 (1 - \\varepsilon)}. \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.104,
+      0.601,
+      0.427,
+      0.618
+    ],
+    "angle": 0,
+    "content": "Similar to the estimation of \\(I_{131}\\), we get",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.152,
+      0.629,
+      0.46,
+      0.648
+    ],
+    "angle": 0,
+    "content": "\\[\nI _ {2 4 1} \\leq C \\tau^ {2 (1 - \\varepsilon)} \\quad \\text {and} \\quad I _ {2 4 3} \\leq C \\tau^ {2 (1 - \\varepsilon)}.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.104,
+      0.661,
+      0.264,
+      0.676
+    ],
+    "angle": 0,
+    "content": "Therefore, we have",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.153,
+      0.689,
+      0.264,
+      0.708
+    ],
+    "angle": 0,
+    "content": "\\[\nI _ {2} \\leq C \\tau^ {2 (1 - \\varepsilon)}.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.104,
+      0.722,
+      0.214,
+      0.736
+    ],
+    "angle": 0,
+    "content": "It means that",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.153,
+      0.749,
+      0.895,
+      0.769
+    ],
+    "angle": 0,
+    "content": "\\[\n\\left| \\mathbb {E} \\left[ \\left(\\delta_ {k}\\right) ^ {i _ {1}} \\left(\\delta_ {k}\\right) ^ {i _ {2}} - \\left(\\bar {\\delta} _ {k}\\right) ^ {i _ {1}} \\left(\\bar {\\delta} _ {k}\\right) ^ {i _ {2}} \\right] \\right| \\leq C \\tau^ {2 (1 - \\varepsilon)}. \\tag {F3}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.103,
+      0.781,
+      0.352,
+      0.797
+    ],
+    "angle": 0,
+    "content": "When \\( r = 3 \\), we conclude that",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.152,
+      0.809,
+      0.914,
+      0.874
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\left| \\mathbb {E} \\left[ \\left(\\delta_ {k}\\right) ^ {i _ {1}} \\left(\\delta_ {k}\\right) ^ {i _ {2}} \\left(\\delta_ {k}\\right) ^ {i _ {3}} - \\left(\\bar {\\delta} _ {k}\\right) ^ {i _ {1}} \\left(\\bar {\\delta} _ {k}\\right) ^ {i _ {2}} \\left(\\bar {\\delta} _ {k}\\right) ^ {i _ {3}} \\right] \\right| \\\\ \\leq \\left| \\mathbb {E} \\left[ \\left(\\delta_ {k}\\right) ^ {i _ {1}} \\left(\\left(\\delta_ {k}\\right) ^ {i _ {2}} \\left(\\delta_ {k}\\right) ^ {i _ {3}} - \\left(\\bar {\\delta} _ {k}\\right) ^ {i _ {2}} \\left(\\bar {\\delta} _ {k}\\right) ^ {i _ {3}}\\right) \\right] \\right| + \\left| \\mathbb {E} \\left[ \\left(\\left(\\delta_ {k}\\right) ^ {i _ {1}} - \\left(\\bar {\\delta} _ {k}\\right) ^ {i _ {1}}\\right) \\left(\\bar {\\delta} _ {k}\\right) ^ {i _ {2}} \\left(\\bar {\\delta} _ {k}\\right) ^ {i _ {3}} \\right] \\right| \\\\ \\leq \\left| \\mathbb {E} \\left[ \\left(\\delta_ {k}\\right) ^ {i _ {1}} \\left(\\delta_ {k}\\right) ^ {i _ {2}} \\left(\\left(\\delta_ {k}\\right) ^ {i _ {3}} - \\left(\\bar {\\delta} _ {k}\\right) ^ {i _ {3}}\\right) \\right] \\right| + \\left| \\mathbb {E} \\left[ \\left(\\delta_ {k}\\right) ^ {i _ {1}} \\left(\\bar {\\delta} _ {k}\\right) ^ {i _ {3}} \\left(\\left(\\delta_ {k}\\right) ^ {i _ {2}} - \\left(\\bar {\\delta} _ {k}\\right) ^ {i _ {2}}\\right) \\right] \\right| + \\left| \\mathbb {E} \\left[ \\left(\\left(\\delta_ {k}\\right) ^ {i _ {1}} - \\left(\\bar {\\delta} _ {k}\\right) ^ {i _ {1}}\\right) \\left(\\bar {\\delta} _ {k}\\right) ^ {i _ {2}} \\left(\\bar {\\delta} _ {k}\\right) ^ {i _ {3}} \\right] \\right|. \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.488,
+      0.878,
+      0.51,
+      0.891
+    ],
+    "angle": 0,
+    "content": "41"
+  }
+]

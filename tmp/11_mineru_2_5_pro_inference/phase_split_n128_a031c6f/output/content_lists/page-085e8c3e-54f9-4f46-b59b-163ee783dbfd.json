@@ -1,0 +1,230 @@
+[
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.091,
+      0.167,
+      0.106
+    ],
+    "angle": 0,
+    "content": "Then,",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.142,
+      0.122,
+      0.861,
+      0.162
+    ],
+    "angle": 0,
+    "content": "\\[\n\\psi (x, y, \\alpha) = - \\log c (x, \\alpha) - \\frac {1}{2} \\log (2 \\pi \\alpha_ {2}) - \\frac {| y / c (x , \\alpha) - \\alpha_ {1} | ^ {2}}{2 \\alpha_ {2}}, \\quad (x, y, \\alpha) \\in \\mathbb {R} \\times \\mathbb {R} \\times \\overline {{\\Theta}} _ {3}.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.111,
+      0.173,
+      0.61,
+      0.192
+    ],
+    "angle": 0,
+    "content": "Let us confirm (A8). For \\(k = 0,1,\\dots,4\\) and \\(p\\in \\mathbb{N}\\), we have",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.134,
+      0.205,
+      0.874,
+      0.241
+    ],
+    "angle": 0,
+    "content": "\\[\n\\partial_ {\\alpha} ^ {k} \\psi (x, y, \\alpha) = - \\partial_ {\\alpha} ^ {k} \\log c (x, \\alpha) - \\frac {1}{2 \\alpha_ {2}} \\left\\{y ^ {2} \\cdot \\partial_ {\\alpha} ^ {k} \\left(c (x, \\alpha) ^ {- 2}\\right) - 2 \\alpha_ {1} y \\partial_ {\\alpha} ^ {k} (c (x, \\alpha) ^ {- 1}) + \\partial_ {\\alpha} ^ {k} (\\alpha_ {2} ^ {2}) \\right\\},\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.127,
+      0.242,
+      0.7,
+      0.293
+    ],
+    "angle": 0,
+    "content": "\\[\n\\partial_ {\\alpha_ {2}} ^ {k} \\psi (x, y, \\alpha) = - \\frac {1}{2} \\partial_ {\\alpha_ {2}} ^ {k} \\left(\\log \\alpha_ {2}\\right) + \\partial_ {\\alpha_ {2}} ^ {k} (\\alpha_ {2} ^ {- 1}) \\left\\{- \\frac {1}{2} \\left(\\frac {y}{c (x , \\alpha)} - \\alpha_ {1}\\right) ^ {2} \\right\\},\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.111,
+      0.303,
+      0.15,
+      0.318
+    ],
+    "angle": 0,
+    "content": "and",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.115,
+      0.331,
+      0.895,
+      0.372
+    ],
+    "angle": 0,
+    "content": "\\[\n\\partial_ {\\alpha_ {1}} \\psi (x, y, \\alpha) = \\frac {1}{\\alpha_ {2}} \\left(\\alpha_ {1} - \\frac {y}{c (x , \\alpha)}\\right), \\quad \\partial_ {\\alpha_ {1}} ^ {2} \\psi (x, y, \\alpha) = \\frac {1}{\\alpha_ {2}}, \\quad \\partial_ {\\alpha_ {1}} ^ {3} \\psi (x, y, \\alpha) = \\partial_ {\\alpha_ {1}} ^ {4} \\psi (x, y, \\alpha) = 0.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.382,
+      0.472,
+      0.402
+    ],
+    "angle": 0,
+    "content": "(A8) is satisfied, by Remark 2.1 and (A2).",
+    "merge_prev": false
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.111,
+      0.422,
+      0.386,
+      0.439
+    ],
+    "angle": 0,
+    "content": "3.2.2 Gamma Distribution"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.11,
+      0.449,
+      0.887,
+      0.487
+    ],
+    "angle": 0,
+    "content": "Let \\(\\Theta_3\\) be a subset of \\(\\mathbb{R}_+ \\times (1, \\infty) \\times \\mathbb{R}^{d_3 - 2}\\), which is open and convex with a smooth boundary and let \\(f_\\alpha(y)\\) be as follows:",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.302,
+      0.5,
+      0.7,
+      0.538
+    ],
+    "angle": 0,
+    "content": "\\[\nf _ {\\alpha} (z) = \\frac {1}{\\Gamma (\\alpha_ {2}) \\alpha_ {1} ^ {\\alpha_ {2}}} z ^ {\\alpha_ {2} - 1} \\exp \\{- z / \\alpha_ {1} \\}, \\quad (z \\geq 0),\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.111,
+      0.551,
+      0.269,
+      0.571
+    ],
+    "angle": 0,
+    "content": "for \\(\\alpha \\in \\overline{\\Theta}_3\\). Then,",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.206,
+      0.583,
+      0.797,
+      0.617
+    ],
+    "angle": 0,
+    "content": "\\[\n\\psi (x, y, \\alpha) = - \\log c (x, \\alpha) - \\log \\Gamma (\\alpha_ {2}) - \\alpha_ {2} \\log \\alpha_ {1} + (\\alpha_ {2} - 1) \\log y - \\frac {y}{\\alpha_ {1}},\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.11,
+      0.63,
+      0.887,
+      0.668
+    ],
+    "angle": 0,
+    "content": "for \\((x,y,\\alpha)\\in \\mathbb{R}\\times \\mathbb{R}_{+}\\times \\overline{\\Theta}_{3}\\). Let us confirm (A8). The derivatives of \\(\\psi (x,y,\\alpha)\\) on the parameters \\(\\alpha ,\\alpha_{1}\\) are given by",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.235,
+      0.68,
+      0.656,
+      0.711
+    ],
+    "angle": 0,
+    "content": "\\[\n\\partial_ {\\alpha} ^ {k} \\psi (x, y, \\alpha) = \\alpha_ {2} \\partial_ {\\alpha} ^ {k} \\log c (x, \\alpha) - \\frac {y}{\\alpha_ {1}} \\partial_ {\\alpha} ^ {k} \\left(c ^ {- 1} (x, \\alpha)\\right),\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.229,
+      0.714,
+      0.772,
+      0.749
+    ],
+    "angle": 0,
+    "content": "\\[\n\\partial_ {\\alpha_ {1}} ^ {k} \\psi (x, y, \\alpha) = - \\partial_ {\\alpha_ {1}} ^ {k} (\\Gamma (\\alpha_ {1})) - \\alpha_ {2} \\partial_ {\\alpha_ {1}} ^ {k} (\\log \\alpha_ {1}) - \\frac {y}{c (x , \\alpha)} \\partial_ {\\alpha_ {1}} ^ {k} (\\alpha_ {1} ^ {- 1}),\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.11,
+      0.76,
+      0.747,
+      0.779
+    ],
+    "angle": 0,
+    "content": "for \\(k = 1,2,\\dots,4\\). Therefore, we have that, for \\(k = 1,2,\\dots,4\\) and any \\(p\\in \\mathbb{N}\\),",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.336,
+      0.792,
+      0.667,
+      0.829
+    ],
+    "angle": 0,
+    "content": "\\[\n\\int_ {\\mathbb {R}} \\left| \\partial_ {\\alpha} ^ {k} \\left(\\psi (x, y, \\alpha)\\right) \\right| ^ {p} f _ {\\alpha_ {0}} (y) d y = R (x, 1),\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.336,
+      0.831,
+      0.67,
+      0.869
+    ],
+    "angle": 0,
+    "content": "\\[\n\\int_ {\\mathbb {R}} \\left| \\partial_ {\\alpha_ {1}} ^ {k} \\left(\\psi (x, y, \\alpha)\\right) \\right| ^ {p} f _ {\\alpha_ {0}} (y) d y = R (x, 1).\n\\]"
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.49,
+      0.918,
+      0.512,
+      0.932
+    ],
+    "angle": 0,
+    "content": "10"
+  }
+]

@@ -1,0 +1,299 @@
+[
+  {
+    "type": "title",
+    "bbox": [
+      0.398,
+      0.09,
+      0.592,
+      0.107
+    ],
+    "angle": 0,
+    "content": "2.3.17【柯西不等式法】"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.148,
+      0.119,
+      0.248,
+      0.134
+    ],
+    "angle": 0,
+    "content": "▲适用题型：",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.147,
+      0.148,
+      0.732,
+      0.17
+    ],
+    "angle": 0,
+    "content": "常用于根式中有和为定值时，比如求 \\( f(x) = \\sqrt{m(x + p)} + \\sqrt{n(-x + q)} \\) 最大值；",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.148,
+      0.184,
+      0.248,
+      0.199
+    ],
+    "angle": 0,
+    "content": "▲方法原理：",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.147,
+      0.206,
+      0.302,
+      0.221
+    ],
+    "angle": 0,
+    "content": "1. 二维柯西不等式：",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.232,
+      0.848,
+      0.266
+    ],
+    "angle": 0,
+    "content": "设 \\(a, b, c, d\\) 均为实数，有 \\((a^2 + b^2)(c^2 + d^2) \\geq (ac + bd)^2\\) 当且仅当 \\(\\frac{a}{c} = \\frac{b}{d}\\) 时等号成立；",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.148,
+      0.275,
+      0.775,
+      0.38
+    ],
+    "angle": 0,
+    "content": "向量法证明： \\(\\begin{cases} \\vec{m} = (a,b),\\vec{n} = (c,d),|\\cos \\theta |\\leq 1 \\\\ \\Rightarrow |\\vec{m}\\cdot \\vec{n}| = \\left\\| \\vec{m}\\right\\| \\vec{n}\\left|\\cos \\theta \\right|\\leq \\left|\\vec{m}\\right\\| \\vec{n} \\\\ \\Rightarrow |ac + bd|\\leq \\sqrt{a^2 + b^2}\\sqrt{c^2 + d^2}\\\\ \\Rightarrow (a^2 +b^2)(c^2 +d^2)\\geq (ac + bd)^2 \\end{cases}\\) ；取等时向量共线，即 \\(\\frac{a}{c} = \\frac{b}{d}\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.39,
+      0.461,
+      0.406
+    ],
+    "angle": 0,
+    "content": "解答题用到柯西不等式，即可用此证明；",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.415,
+      0.297,
+      0.43
+    ],
+    "angle": 0,
+    "content": "2. n 维柯西不等式:",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.148,
+      0.439,
+      0.831,
+      0.46
+    ],
+    "angle": 0,
+    "content": "\\((a_{1}^{2} + a_{2}^{2} + a_{3}^{2} + \\dots +a_{n}^{2})(b_{1}^{2} + b_{2}^{2} + b_{3}^{2} + \\dots +b_{n}^{2})\\geq (a_{1}b_{1} + a_{2}b_{2} + a_{3}b_{3} + \\dots +a_{n}b_{n})^{2}\\) 字母均为 \\(\\mathsf{R}\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.148,
+      0.473,
+      0.638,
+      0.508
+    ],
+    "angle": 0,
+    "content": "当且仅当 \\(\\frac{a_1}{b_1} = \\frac{a_2}{b_2} = \\frac{a_3}{b_3} = \\dots = \\frac{a_n}{b_n}\\) 时等号成立，\\(\\mathsf{n}\\) 维向量证明；",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.148,
+      0.518,
+      0.501,
+      0.541
+    ],
+    "angle": 0,
+    "content": "比如求 \\(f(x) = \\sqrt{m(x + p)} +\\sqrt{n(-x + q)}\\) 最大值：",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.149,
+      0.55,
+      0.798,
+      0.669
+    ],
+    "angle": 0,
+    "content": "\\[\n\\Rightarrow \\left\\{ \\begin{array}{l} {a = \\sqrt {m}, b = \\sqrt {n}, c = \\sqrt {x + p}, d = \\sqrt {- x + q}} \\\\ {\\sqrt {m (x + p)} + \\sqrt {n (- x + q)} \\leq \\sqrt {\\left(\\sqrt {m} ^ {2} + \\sqrt {n} ^ {2}\\right)} \\sqrt {\\left(\\sqrt {x + p} ^ {2} + \\sqrt {- x + q} ^ {2}\\right)} = \\sqrt {m + n} \\sqrt {q + q}} \\\\ {\\text {当且仅当} \\frac {\\sqrt {m}}{\\sqrt {x + p}} = \\frac {\\sqrt {n}}{\\sqrt {- x + q}} \\text {时取等};} \\end{array} \\right.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.155,
+      0.679,
+      0.515,
+      0.694
+    ],
+    "angle": 0,
+    "content": "(柯西的拓展权方和见不等式章节1.4的讲解)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.705,
+      0.731,
+      0.727
+    ],
+    "angle": 0,
+    "content": "例题1.（全国·高一课时练习）函数 \\( y = \\sqrt{x - 5} + 2\\sqrt{6 - x} \\) 的最大值是（）",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.744,
+      0.201,
+      0.761
+    ],
+    "angle": 0,
+    "content": "A. \\(\\sqrt{3}\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.322,
+      0.744,
+      0.377,
+      0.761
+    ],
+    "angle": 0,
+    "content": "B. \\(\\sqrt{5}\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.497,
+      0.745,
+      0.537,
+      0.76
+    ],
+    "angle": 0,
+    "content": "C. 3",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.671,
+      0.746,
+      0.712,
+      0.76
+    ],
+    "angle": 0,
+    "content": "D. 5",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.807,
+      0.75,
+      0.827
+    ],
+    "angle": 0,
+    "content": "例题2.（全国·高一课时练习）函数 \\( f(x) = \\sqrt{x - 1} + 2\\sqrt{2 - x} \\) 的最大值为（）",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.846,
+      0.191,
+      0.862
+    ],
+    "angle": 0,
+    "content": "A. 5",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.322,
+      0.846,
+      0.377,
+      0.863
+    ],
+    "angle": 0,
+    "content": "B. \\(\\sqrt{5}\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.497,
+      0.848,
+      0.537,
+      0.862
+    ],
+    "angle": 0,
+    "content": "C. 1",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.671,
+      0.848,
+      0.714,
+      0.862
+    ],
+    "angle": 0,
+    "content": "D. 2",
+    "merge_prev": false
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.487,
+      0.929,
+      0.512,
+      0.94
+    ],
+    "angle": 0,
+    "content": "102"
+  }
+]

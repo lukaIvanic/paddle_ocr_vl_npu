@@ -1,0 +1,289 @@
+[
+  {
+    "type": "text",
+    "bbox": [
+      0.895,
+      0.194,
+      0.95,
+      0.468
+    ],
+    "angle": 0,
+    "content": "寅\n化酉鬼\n化丑财\n化巳孙\n子\n戌\n空酉\n亥\n冲丑",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.865,
+      0.054,
+      0.896,
+      0.168
+    ],
+    "angle": 0,
+    "content": "山风蛊【巽】",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.866,
+      0.194,
+      0.888,
+      0.457
+    ],
+    "angle": 0,
+    "content": "x - 0 座 x = - 座",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.832,
+      0.052,
+      0.862,
+      0.155
+    ],
+    "angle": 0,
+    "content": "变卦火泽睽",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.797,
+      0.192,
+      0.826,
+      0.459
+    ],
+    "angle": 0,
+    "content": "虎\n蛇\n勾\n朱\n龙\n玄",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.755,
+      0.048,
+      0.791,
+      0.943
+    ],
+    "angle": 0,
+    "content": "断曰：二女遇疑难事，想求汝夫指点迷津，然又冲散未问。结果次年始知果应。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.717,
+      0.046,
+      0.751,
+      0.586
+    ],
+    "angle": 0,
+    "content": "有二女自言想问迷津，最后因其事化坏故未问。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.673,
+      0.045,
+      0.711,
+      0.69
+    ],
+    "angle": 0,
+    "content": "梦解：天显云篆指路，是她人祈贵人天恩指未来之路也。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.631,
+      0.102,
+      0.671,
+      0.209
+    ],
+    "angle": 0,
+    "content": "三只母鸡",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.582,
+      0.046,
+      0.624,
+      0.68
+    ],
+    "angle": 0,
+    "content": "寅月丙戌日一人梦邻人门前有三只鸡一只公鸡很大占兆",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.548,
+      0.178,
+      0.576,
+      0.413
+    ],
+    "angle": 0,
+    "content": "化未兄化酉孙\n卦身",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.515,
+      0.201,
+      0.542,
+      0.466
+    ],
+    "angle": 0,
+    "content": "巳空未酉丑卯己",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.476,
+      0.048,
+      0.506,
+      0.164
+    ],
+    "angle": 0,
+    "content": "火泽睽【艮】",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.478,
+      0.209,
+      0.506,
+      0.48
+    ],
+    "angle": 0,
+    "content": "应：= - 件 x 0",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.437,
+      0.048,
+      0.468,
+      0.153
+    ],
+    "angle": 0,
+    "content": "变卦兑为泽",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.438,
+      0.201,
+      0.47,
+      0.47
+    ],
+    "angle": 0,
+    "content": "父\n兄\n孙\n兄\n官\n父",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.405,
+      0.201,
+      0.433,
+      0.469
+    ],
+    "angle": 0,
+    "content": "龙\n玄\n虎\n蛇\n勾\n朱",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.361,
+      0.051,
+      0.404,
+      0.951
+    ],
+    "angle": 0,
+    "content": "断曰：是有不洁之女干扰汝家生活。其女点头默认，问有几人，予曰：二人。其",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.32,
+      0.053,
+      0.363,
+      0.949
+    ],
+    "angle": 0,
+    "content": "曰：梦中兆示三位何说二位？予曰：另有亦未认识，只是星像应兆，未必与汝夫",
+    "merge_prev": true
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.28,
+      0.054,
+      0.323,
+      0.948
+    ],
+    "angle": 0,
+    "content": "有染。其曰：明白。断有不洁女干扰是阴兄玄武空动化沐浴冲汝夫官鬼卦身。断",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.239,
+      0.056,
+      0.282,
+      0.947
+    ],
+    "angle": 0,
+    "content": "二女是身后有库中原神动生，即房中出主意人。梦解：三鸡者三妓女也。一公鸡",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.197,
+      0.056,
+      0.243,
+      0.66
+    ],
+    "angle": 0,
+    "content": "者一妓男也。公鸡肥大者是有钱势之人或有地位之人。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.154,
+      0.125,
+      0.194,
+      0.23
+    ],
+    "angle": 0,
+    "content": "飞鹰抓蛇",
+    "merge_prev": false
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.178,
+      0.956,
+      0.241,
+      0.972
+    ],
+    "angle": 0,
+    "content": "-135-"
+  }
+]

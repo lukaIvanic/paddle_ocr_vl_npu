@@ -1,0 +1,8 @@
+[npu] jit_compile=False; Conv3D NPU inference patch enabled
+Traceback (most recent call last):
+  File "/workspace/repos/paddle_ocr_vl_npu/11_mineru_2_5_pro_inference/run_official_transformers_omnidocbench.py", line 1418, in <module>
+    main()
+  File "/workspace/repos/paddle_ocr_vl_npu/11_mineru_2_5_pro_inference/run_official_transformers_omnidocbench.py", line 575, in main
+    from mineru_vl_utils import MinerUClient, __version__ as mineru_utils_version
+ModuleNotFoundError: No module named 'mineru_vl_utils'
+[ERROR] 2026-08-06-11:57:33 (PID:3558270, Device:0, RankID:-1) ERR99999 UNKNOWN applicaiton exception

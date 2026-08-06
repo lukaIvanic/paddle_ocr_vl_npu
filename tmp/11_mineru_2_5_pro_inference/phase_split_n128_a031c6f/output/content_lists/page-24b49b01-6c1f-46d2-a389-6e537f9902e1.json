@@ -1,0 +1,141 @@
+[
+  {
+    "type": "image",
+    "bbox": [
+      0.02,
+      0.012,
+      0.971,
+      0.336
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.189,
+      0.39,
+      0.51,
+      0.427
+    ],
+    "angle": 0,
+    "content": "Embodied AI"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.083,
+      0.45,
+      0.538,
+      0.486
+    ],
+    "angle": 0,
+    "content": "Embodied AI creates intelligent agents that perceive, understand, and interact with the physical world.",
+    "merge_prev": false
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.718,
+      0.39,
+      0.769,
+      0.402
+    ],
+    "angle": 0,
+    "content": "CHAIR"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.717,
+      0.41,
+      0.832,
+      0.423
+    ],
+    "angle": 0,
+    "content": "Alan Mackworth,",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.718,
+      0.425,
+      0.848,
+      0.438
+    ],
+    "angle": 0,
+    "content": "University of British",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.718,
+      0.44,
+      0.785,
+      0.452
+    ],
+    "angle": 0,
+    "content": "Columbia",
+    "merge_prev": false
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.084,
+      0.549,
+      0.273,
+      0.571
+    ],
+    "angle": 0,
+    "content": "Main Takeaways"
+  },
+  {
+    "type": "list",
+    "bbox": [
+      0.091,
+      0.582,
+      0.609,
+      0.695
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.091,
+      0.582,
+      0.578,
+      0.611
+    ],
+    "angle": 0,
+    "content": "- Intelligence emerges through the coupling of a physical body with a real environment.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.091,
+      0.624,
+      0.609,
+      0.653
+    ],
+    "angle": 0,
+    "content": "- Embodied AI insists that coupling is essential to achieving real intelligence in situated agents.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.091,
+      0.665,
+      0.553,
+      0.694
+    ],
+    "angle": 0,
+    "content": "- Robots are good scientific and engineering platforms for developing Embodied AI.",
+    "merge_prev": false
+  }
+]

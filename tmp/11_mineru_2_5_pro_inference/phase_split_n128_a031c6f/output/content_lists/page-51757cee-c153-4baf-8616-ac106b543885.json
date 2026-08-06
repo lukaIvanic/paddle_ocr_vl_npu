@@ -1,0 +1,333 @@
+[
+  {
+    "type": "header",
+    "bbox": [
+      0.298,
+      0.058,
+      0.64,
+      0.075
+    ],
+    "angle": 0,
+    "content": "16.5 加筋土支挡结构（挡墙、桥台）"
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.822,
+      0.061,
+      0.856,
+      0.075
+    ],
+    "angle": 0,
+    "content": "777"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.105,
+      0.095,
+      0.722,
+      0.113
+    ],
+    "angle": 0,
+    "content": "如图16-44，设滑动沿AB面发生，则抗滑安全系数 \\(F_{\\mathrm{ss}}\\) 按下式计算：",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.322,
+      0.117,
+      0.869,
+      0.151
+    ],
+    "angle": 0,
+    "content": "\\[\nF _ {\\mathrm{ss}} = \\frac {\\mu (G + P _ {\\mathrm{p}} l + E _ {\\mathrm{agv}} + E _ {\\mathrm{apv}})}{E _ {\\mathrm{agh}} + E _ {\\mathrm{aph}}} \\tag {16-47}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.103,
+      0.154,
+      0.517,
+      0.172
+    ],
+    "angle": 0,
+    "content": "式中 \\(F_{\\mathrm{ss}}\\) ——抗滑安全系数，要求 \\(F_{\\mathrm{ss}} > 1.5\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.177,
+      0.176,
+      0.626,
+      0.195
+    ],
+    "angle": 0,
+    "content": "\\(\\mu\\) ——AB面的摩擦系数， \\(\\mu = \\alpha_{\\mathrm{s}}\\tan \\varphi_{\\mathrm{w}}\\) \\(\\alpha_{\\mathrm{s}} = 0.8\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.176,
+      0.197,
+      0.351,
+      0.214
+    ],
+    "angle": 0,
+    "content": "G——滑动体重量；",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.231,
+      0.218,
+      0.404,
+      0.239
+    ],
+    "angle": 0,
+    "content": "\\[\nE _ {\\mathrm{agh}} = 0. 5 k _ {\\mathrm{ah}} \\gamma_ {\\mathrm{b}} h _ {i} ^ {2};\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.231,
+      0.241,
+      0.445,
+      0.259
+    ],
+    "angle": 0,
+    "content": "\\[\nE _ {\\mathrm{agv}} = E _ {\\mathrm{agh}} \\tan (\\delta - \\alpha_ {\\mathrm{w}});\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.231,
+      0.262,
+      0.44,
+      0.28
+    ],
+    "angle": 0,
+    "content": "\\[\nE _ {\\mathrm{aph}} = k _ {\\mathrm{ah}} (P _ {\\mathrm{p}} + P _ {\\mathrm{t}}) h _ {i};\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.231,
+      0.283,
+      0.435,
+      0.302
+    ],
+    "angle": 0,
+    "content": "\\[\nE _ {\\mathrm{apv}} = E _ {\\mathrm{aph}} \\tan (\\delta - \\alpha_ {\\mathrm{w}})\n\\]"
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.102,
+      0.304,
+      0.339,
+      0.321
+    ],
+    "angle": 0,
+    "content": "3. 滑动面在二相邻筋层间"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.101,
+      0.326,
+      0.835,
+      0.344
+    ],
+    "angle": 0,
+    "content": "如图 16-45，设滑动沿 CD 面发生，该面斜角为  \\( \\theta_{u} \\) ，抗滑安全系数  \\( F_{ss} \\)  按下式计算：",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.339,
+      0.348,
+      0.865,
+      0.385
+    ],
+    "angle": 0,
+    "content": "\\[\nF _ {\\mathrm{ss}} = \\frac {(1 - R _ {\\mathrm{f}} \\tan \\theta_ {\\mathrm{u}}) \\tan \\varphi_ {\\mathrm{w}}}{R _ {\\mathrm{f}} + \\tan \\theta_ {\\mathrm{u}}} \\tag {16-48}\n\\]"
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.071,
+      0.393,
+      0.459,
+      0.575
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "image_caption",
+    "bbox": [
+      0.112,
+      0.587,
+      0.411,
+      0.603
+    ],
+    "angle": 0,
+    "content": "图16-44 验算沿加筋层面的抗滑稳定"
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.495,
+      0.423,
+      0.853,
+      0.576
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "image_caption",
+    "bbox": [
+      0.503,
+      0.588,
+      0.838,
+      0.605
+    ],
+    "angle": 0,
+    "content": "图16-45 验算筋材之间最陡面的抗滑稳定"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.055,
+      0.614,
+      0.231,
+      0.645
+    ],
+    "angle": 0,
+    "content": "式中 \\(R_{\\mathrm{f}} = \\frac{\\Sigma H}{\\Sigma V}\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.101,
+      0.651,
+      0.399,
+      0.668
+    ],
+    "angle": 0,
+    "content": "\\( \\Sigma H \\) ——水平力之和， \\( \\Sigma H=E_{ah} \\) ;",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.104,
+      0.673,
+      0.464,
+      0.69
+    ],
+    "angle": 0,
+    "content": "\\( \\Sigma V \\) ——垂直力之和， \\( \\Sigma V=G+P+E_{av} \\) 。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.094,
+      0.695,
+      0.862,
+      0.713
+    ],
+    "angle": 0,
+    "content": "在计算抗滑安全系数时，墙后有临时超荷载作用属危险情况。墙顶上的超荷载是否要",
+    "merge_prev": false
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.073,
+      0.726,
+      0.437,
+      0.902
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "image_caption",
+    "bbox": [
+      0.148,
+      0.909,
+      0.359,
+      0.926
+    ],
+    "angle": 0,
+    "content": "图 16-46 验算墙面稳定性"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.452,
+      0.716,
+      0.862,
+      0.756
+    ],
+    "angle": 0,
+    "content": "考虑，原则上是： \\( \\theta_{u}>\\varphi_{w} \\) ，应给予注意； \\( \\theta_{u}<\\varphi_{w} \\) ，可不考虑。",
+    "merge_prev": false
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.493,
+      0.759,
+      0.629,
+      0.776
+    ],
+    "angle": 0,
+    "content": "4. 墙面稳定性"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.451,
+      0.78,
+      0.86,
+      0.861
+    ],
+    "angle": 0,
+    "content": "如图 16-46，验算墙面稳定性，在于校核深度  \\( z_{i} \\)  处的土压力  \\( E_{zi} \\)  是否超过了包裹式土工织物包裹端的抗拔力，或超过用 Bodkin 连接杆连接的土工格栅的蠕变强度。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.451,
+      0.865,
+      0.86,
+      0.903
+    ],
+    "angle": 0,
+    "content": "深度 \\(z_{i}\\) 处筋材所受的土压力 \\(E_{zi}\\) 按下式计算：",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.573,
+      0.908,
+      0.858,
+      0.927
+    ],
+    "angle": 0,
+    "content": "\\[\nE _ {\\mathrm{zi}} = e _ {\\mathrm{ah}} (r _ {1} + r _ {2}) \\tag {16-49}\n\\]"
+  }
+]

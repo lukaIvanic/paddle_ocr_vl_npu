@@ -1,0 +1,231 @@
+[
+  {
+    "type": "page_number",
+    "bbox": [
+      0.116,
+      0.065,
+      0.134,
+      0.076
+    ],
+    "angle": 0,
+    "content": "36"
+  },
+  {
+    "type": "header",
+    "bbox": [
+      0.425,
+      0.064,
+      0.576,
+      0.076
+    ],
+    "angle": 0,
+    "content": "CHOI, JUNG, AND LEE"
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.36,
+      0.092,
+      0.639,
+      0.106
+    ],
+    "angle": 0,
+    "content": "APPENDIX C. PROOF OF LEMMA 3.3"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.114,
+      0.884,
+      0.145
+    ],
+    "angle": 0,
+    "content": "Here, we provide detailed proof for Lemma 3.3. We only establish (3.17) since the other estimate can be derived through a similar argument. We write \\( B = B_{\\mathfrak{M}} \\) for simplicity.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.132,
+      0.146,
+      0.481,
+      0.16
+    ],
+    "angle": 0,
+    "content": "By using the Littlewood–Paley theorem, we get",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.232,
+      0.166,
+      0.884,
+      0.199
+    ],
+    "angle": 0,
+    "content": "\\[\n\\| \\langle \\nabla \\rangle^ {\\alpha_ {1}} D ^ {\\alpha_ {2}} B [ f, g ] \\| _ {L ^ {l _ {1} ^ {\\prime}}} ^ {2} \\lesssim \\| P _ {\\leq 1} B [ f, g ] \\| _ {L ^ {l _ {1} ^ {\\prime}}} ^ {2} + \\sum_ {N > 1} N ^ {2 \\left(\\alpha_ {1} + \\alpha_ {2}\\right)} \\| P _ {N} B [ f, g ] \\| _ {L ^ {l _ {1} ^ {\\prime}}} ^ {2}, \\tag {C.1}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.206,
+      0.701,
+      0.222
+    ],
+    "angle": 0,
+    "content": "where \\(D^{\\alpha_2} = \\langle |\\nabla|^{\\alpha_2}\\rangle\\) or \\(D^{\\alpha_2} = |\\nabla|^{\\alpha_2}\\). The first term can be estimated as follows:",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.384,
+      0.228,
+      0.615,
+      0.248
+    ],
+    "angle": 0,
+    "content": "\\[\n\\| P _ {\\leq 1} B [ f, g ] \\| _ {L ^ {l _ {1} ^ {\\prime}}} \\lesssim \\| f \\| _ {L ^ {l _ {2}}} \\| g \\| _ {L ^ {2}}.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.254,
+      0.351,
+      0.269
+    ],
+    "angle": 0,
+    "content": "For the second term, we observe",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.263,
+      0.275,
+      0.737,
+      0.312
+    ],
+    "angle": 0,
+    "content": "\\[\n\\| P _ {N} B [ f, g ] \\| _ {L ^ {\\prime_ {1}}} \\lesssim \\| P _ {N} B [ P _ {\\leq \\frac {N}{8}} f, g ] \\| _ {L ^ {\\prime_ {1}}} + \\sum_ {M > \\frac {N}{8}} \\| P _ {N} B [ P _ {M} f, g ] \\| _ {L ^ {\\prime_ {1}}}.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.319,
+      0.314,
+      0.335
+    ],
+    "angle": 0,
+    "content": "By using (3.16), we deduce",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.126,
+      0.342,
+      0.871,
+      0.375
+    ],
+    "angle": 0,
+    "content": "\\[\n\\| P _ {N} B \\left[ P _ {\\leq \\frac {N}{8}} f, g \\right] \\| _ {L ^ {l _ {1} ^ {\\prime}}} \\lesssim \\| B \\left[ P _ {\\leq \\frac {N}{8}} f, P _ {\\frac {N}{8} <   \\cdot <   8 N} g \\right] \\| _ {L ^ {l _ {1} ^ {\\prime}}} \\lesssim \\| P _ {\\leq \\frac {N}{8}} f \\| _ {L ^ {l _ {2}}} \\| P _ {\\frac {N}{8} <   \\cdot <   8 N} g \\| _ {L ^ {2}} \\lesssim \\| f \\| _ {L ^ {l _ {2}}} \\sum_ {M \\sim N} \\| P _ {M} g \\| _ {L ^ {2}}.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.381,
+      0.308,
+      0.395
+    ],
+    "angle": 0,
+    "content": "Consequently, we arrive at",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.226,
+      0.401,
+      0.773,
+      0.507
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\sum_ {N > 1} N ^ {2 (\\alpha_ {1} + \\alpha_ {2})} \\| P _ {N} B [ P _ {\\leq \\frac {N}{8}} f, g ] \\| _ {L ^ {l _ {1} ^ {\\prime}}} ^ {2} \\lesssim \\| f \\| _ {L ^ {l _ {2}}} ^ {2} \\sum_ {N > 1} \\left(\\sum_ {M \\sim N} N ^ {\\alpha_ {1} + \\alpha_ {2}} \\| P _ {M} g \\| _ {L ^ {2}}\\right) ^ {2} \\\\ \\lesssim \\| f \\| _ {L ^ {l _ {2}}} ^ {2} \\sum_ {M \\gtrsim 1} M ^ {2 \\left(\\alpha_ {1} + \\alpha_ {2}\\right)} \\| P _ {M} g \\| _ {L ^ {2}} ^ {2} \\\\ \\lesssim \\| f \\| _ {L ^ {l _ {2}}} ^ {2} \\| g \\| _ {\\dot {H} ^ {\\alpha_ {1} + \\alpha_ {2}}} ^ {2}. \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.512,
+      0.257,
+      0.526
+    ],
+    "angle": 0,
+    "content": "Meanwhile, we find",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.18,
+      0.533,
+      0.8,
+      0.575
+    ],
+    "angle": 0,
+    "content": "\\[\n\\sum_ {M > \\frac {N}{8}} \\| P _ {N} B [ P _ {M} f, g ] \\| _ {L ^ {l _ {1} ^ {\\prime}}} \\lesssim \\sum_ {M > \\frac {N}{8}} \\| P _ {M} f \\| _ {L ^ {2}} \\| g \\| _ {L ^ {l _ {2}}} \\lesssim \\sum_ {M > \\frac {N}{8}} \\frac {1}{M ^ {\\alpha_ {1} + \\alpha_ {2}}} \\| P _ {M} f \\| _ {\\dot {H} ^ {\\alpha_ {1} + \\alpha_ {2}}} \\| g \\| _ {L ^ {l _ {2}}}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.581,
+      0.373,
+      0.596
+    ],
+    "angle": 0,
+    "content": "due to (3.16). Then, it follows that",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.246,
+      0.603,
+      0.75,
+      0.846
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\sum_ {N > 1} N ^ {2 (\\alpha_ {1} + \\alpha_ {2})} \\left(\\sum_ {M > \\frac {N}{8}} \\| P _ {N} B [ P _ {M} f, g ] \\| _ {L ^ {\\prime_ {1} ^ {\\prime}}}\\right) ^ {2} \\\\ \\lesssim \\sum_ {N > 1} \\left(\\sum_ {M > \\frac {N}{8}} \\left(\\frac {N}{M}\\right) ^ {\\alpha_ {1} + \\alpha_ {2}} \\| P _ {M} f \\| _ {\\dot {H} ^ {\\alpha_ {1} + \\alpha_ {2}}} \\| g \\| _ {L ^ {l _ {2}}}\\right) ^ {2} \\\\ \\lesssim \\| g \\| _ {L ^ {l _ {2}}} ^ {2} \\sum_ {N > 1} \\left(\\sum_ {M > \\frac {N}{8}} \\left(\\frac {N}{M}\\right) ^ {\\alpha_ {1} + \\alpha_ {2}} \\sum_ {M > \\frac {N}{8}} \\left(\\frac {N}{M}\\right) ^ {\\alpha_ {1} + \\alpha_ {2}} \\| P _ {M} f \\| _ {\\dot {H} ^ {\\alpha_ {1} + \\alpha_ {2}}} ^ {2}\\right) \\\\ \\lesssim \\| g \\| _ {L ^ {l _ {2}}} ^ {2} \\sum_ {M > \\frac {1}{8}} \\sum_ {1 <   N <   8 M} \\left(\\frac {N}{M}\\right) ^ {\\alpha_ {1} + \\alpha_ {2}} \\| P _ {M} f \\| _ {H ^ {\\alpha_ {1} + \\alpha_ {2}}} ^ {2} \\\\ \\lesssim \\| g \\| _ {L ^ {l _ {2}}} ^ {2} \\sum_ {M > \\frac {1}{8}} \\| P _ {M} f \\| _ {\\dot {H} ^ {\\alpha_ {1} + \\alpha_ {2}}} ^ {2} \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.853,
+      0.498,
+      0.869
+    ],
+    "angle": 0,
+    "content": "by the Cauchy-Schwartz inequality and the fact that",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.414,
+      0.875,
+      0.584,
+      0.915
+    ],
+    "angle": 0,
+    "content": "\\[\n\\sum_ {N <   8 M} \\left(\\frac {N}{M}\\right) ^ {\\alpha_ {1} + \\alpha_ {2}} \\lesssim 1.\n\\]"
+  }
+]

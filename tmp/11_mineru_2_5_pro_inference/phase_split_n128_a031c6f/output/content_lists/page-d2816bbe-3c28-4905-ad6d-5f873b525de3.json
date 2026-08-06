@@ -1,0 +1,104 @@
+[
+  {
+    "type": "equation",
+    "bbox": [
+      0.134,
+      0.089,
+      0.885,
+      0.549
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\stackrel {(i)} {\\lesssim} \\left\\| \\mathbf {U} \\mathbf {U} ^ {\\top} \\mathbf {U} ^ {*} \\right\\| _ {2, \\infty} \\left\\| \\mathbf {E} \\mathbf {V} ^ {*} \\right\\| \\left\\| \\boldsymbol {\\Lambda} ^ {* - 1} \\right\\| + \\left\\| \\mathbf {R} \\mathbf {V} \\mathbf {V} ^ {\\top} \\mathbf {V} ^ {*} - \\mathbf {R} \\mathbf {V} ^ {*} \\right\\| _ {2, \\infty} \\left\\| \\boldsymbol {\\Lambda} ^ {* - 1} \\right\\| + \\left\\| \\mathbf {E} \\mathbf {V} ^ {*} \\right\\| _ {2, \\infty} \\left\\| \\boldsymbol {\\Lambda} ^ {* - 1} \\right\\| \\\\ \\lesssim \\left\\| \\mathbf {U} \\mathbf {U} ^ {\\top} \\mathbf {U} ^ {*} - \\mathbf {U} ^ {*} \\right\\| _ {2, \\infty} \\left\\| \\mathbf {E} \\mathbf {V} ^ {*} \\right\\| \\left\\| \\boldsymbol {\\Lambda} ^ {* - 1} \\right\\| + \\left\\| \\mathbf {U} ^ {*} \\right\\| _ {2, \\infty} \\left\\| \\mathbf {E} \\mathbf {V} ^ {*} \\right\\| \\left\\| \\boldsymbol {\\Lambda} ^ {* - 1} \\right\\| \\\\ + \\left\\| \\mathbf {R V V} ^ {\\top} \\mathbf {V} ^ {*} - \\mathbf {R V} ^ {*} \\right\\| _ {2, \\infty} \\left\\| \\boldsymbol {\\Lambda} ^ {* - 1} \\right\\| + \\left\\| \\mathbf {E V} ^ {*} \\right\\| _ {2, \\infty} \\left\\| \\boldsymbol {\\Lambda} ^ {* - 1} \\right\\| \\\\ \\stackrel {(i i)} {\\lesssim} \\underbrace {\\frac {\\widetilde {\\sigma} \\sqrt {N}}{\\sigma_ {K} ^ {*}}} _ {A _ {1}} \\left\\| \\mathbf {U} \\mathbf {U} ^ {\\top} \\mathbf {U} ^ {*} - \\mathbf {U} ^ {*} \\right\\| _ {2, \\infty} + \\frac {\\widetilde {\\sigma} \\sqrt {N}}{\\sigma_ {K} ^ {*}} \\left\\| \\mathbf {U} ^ {*} \\right\\| _ {2, \\infty} + \\frac {\\widetilde {\\sigma} \\sigma \\sqrt {K \\log d (M N + J)}}{\\sigma_ {K} ^ {* 2}} \\\\ + \\frac {M B \\log d}{\\sigma_ {K} ^ {*}} \\left\\| \\mathbf {V} \\mathbf {V} ^ {\\top} \\mathbf {V} ^ {*} - \\mathbf {V} ^ {*} \\right\\| _ {2, \\infty} + \\underbrace {\\frac {\\sigma^ {2} J}{\\sigma_ {K} ^ {* 2}}} _ {A _ {2}} \\left\\| \\mathbf {U} \\mathbf {U} ^ {\\top} \\mathbf {U} ^ {*} - \\mathbf {U} ^ {*} \\right\\| _ {2, \\infty} \\\\ + \\frac {\\kappa^ {*} \\sigma^ {2} (M N + J)}{\\sigma_ {K} ^ {* 2}} \\| \\mathbf {U} ^ {*} \\| _ {2, \\infty} + \\frac {\\sigma M B \\log d \\sqrt {J}}{\\sigma_ {K} ^ {* 2}} \\| \\mathbf {V} ^ {*} \\| _ {2, \\infty} + \\frac {\\widetilde {\\sigma} \\sqrt {K \\log d}}{\\sigma_ {K} ^ {*}} \\\\ \\stackrel {(i i i)} {\\lesssim} \\frac {\\widetilde {\\sigma} \\sqrt {N}}{\\sigma_ {K} ^ {*}} \\left\\| \\mathbf {U} ^ {*} \\right\\| _ {2, \\infty} + \\frac {\\widetilde {\\sigma} \\sigma \\sqrt {K \\log d (M N + J)}}{\\sigma_ {K} ^ {* 2}} + \\frac {M B \\log d}{\\sigma_ {K} ^ {*}} \\left\\| \\mathbf {V} \\mathbf {V} ^ {\\top} \\mathbf {V} ^ {*} - \\mathbf {V} ^ {*} \\right\\| _ {2, \\infty} \\\\ + \\frac {\\kappa^ {*} \\sigma^ {2} (M N + J)}{\\sigma_ {K} ^ {* 2}} \\| \\mathbf {U} ^ {*} \\| _ {2, \\infty} + \\frac {\\sigma M B \\log d \\sqrt {J}}{\\sigma_ {K} ^ {* 2}} \\| \\mathbf {V} ^ {*} \\| _ {2, \\infty} + \\frac {\\widetilde {\\sigma} \\sqrt {K \\log d}}{\\sigma_ {K} ^ {*}} \\\\ \\stackrel {(i v)} {\\lesssim} \\frac {\\widetilde {\\sigma} \\sqrt {N} \\sigma_ {K} ^ {*} + \\kappa^ {*} \\sigma^ {2} J}{\\sigma_ {K} ^ {* 2}} \\left\\| \\mathbf {U} ^ {*} \\right\\| _ {2, \\infty} + \\frac {M B \\log d}{\\sigma_ {K} ^ {*}} \\left\\| \\mathbf {V} \\mathbf {V} ^ {\\top} \\mathbf {V} ^ {*} - \\mathbf {V} ^ {*} \\right\\| _ {2, \\infty} \\\\ + \\frac {\\sigma M B \\log d \\sqrt {J}}{\\sigma_ {K} ^ {* 2}} \\| \\mathbf {V} ^ {*} \\| _ {2, \\infty} + \\frac {\\widetilde {\\sigma} \\sqrt {K \\log d}}{\\sigma_ {K} ^ {*}}, \\tag {S.48} \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.139,
+      0.197,
+      0.745,
+      0.37
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\stackrel {(i i)} {\\lesssim} \\underbrace {\\frac {\\widetilde {\\sigma} \\sqrt {N}}{\\sigma_ {K} ^ {*}}} _ {A _ {1}} \\left\\| \\mathbf {U} \\mathbf {U} ^ {\\top} \\mathbf {U} ^ {*} - \\mathbf {U} ^ {*} \\right\\| _ {2, \\infty} + \\frac {\\widetilde {\\sigma} \\sqrt {N}}{\\sigma_ {K} ^ {*}} \\left\\| \\mathbf {U} ^ {*} \\right\\| _ {2, \\infty} + \\frac {\\widetilde {\\sigma} \\sigma \\sqrt {K \\log d (M N + J)}}{\\sigma_ {K} ^ {* 2}} \\\\ + \\frac {M B \\log d}{\\sigma_ {K} ^ {*}} \\left\\| \\mathbf {V} \\mathbf {V} ^ {\\top} \\mathbf {V} ^ {*} - \\mathbf {V} ^ {*} \\right\\| _ {2, \\infty} + \\underbrace {\\frac {\\sigma^ {2} J}{\\sigma_ {K} ^ {* 2}}} _ {A _ {2}} \\left\\| \\mathbf {U} \\mathbf {U} ^ {\\top} \\mathbf {U} ^ {*} - \\mathbf {U} ^ {*} \\right\\| _ {2, \\infty} \\\\ + \\frac {\\kappa^ {*} \\sigma^ {2} (M N + J)}{\\sigma_ {K} ^ {* 2}} \\| \\mathbf {U} ^ {*} \\| _ {2, \\infty} + \\frac {\\sigma M B \\log d \\sqrt {J}}{\\sigma_ {K} ^ {* 2}} \\| \\mathbf {V} ^ {*} \\| _ {2, \\infty} + \\frac {\\widetilde {\\sigma} \\sqrt {K \\log d}}{\\sigma_ {K} ^ {*}} \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.135,
+      0.372,
+      0.774,
+      0.458
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\stackrel {(i i i)} {\\lesssim} \\frac {\\widetilde {\\sigma} \\sqrt {N}}{\\sigma_ {K} ^ {*}} \\left\\| \\mathbf {U} ^ {*} \\right\\| _ {2, \\infty} + \\frac {\\widetilde {\\sigma} \\sigma \\sqrt {K \\log d (M N + J)}}{\\sigma_ {K} ^ {* 2}} + \\frac {M B \\log d}{\\sigma_ {K} ^ {*}} \\left\\| \\mathbf {V} \\mathbf {V} ^ {\\top} \\mathbf {V} ^ {*} - \\mathbf {V} ^ {*} \\right\\| _ {2, \\infty} \\\\ + \\frac {\\kappa^ {*} \\sigma^ {2} (M N + J)}{\\sigma_ {K} ^ {* 2}} \\| \\mathbf {U} ^ {*} \\| _ {2, \\infty} + \\frac {\\sigma M B \\log d \\sqrt {J}}{\\sigma_ {K} ^ {* 2}} \\| \\mathbf {V} ^ {*} \\| _ {2, \\infty} + \\frac {\\widetilde {\\sigma} \\sqrt {K \\log d}}{\\sigma_ {K} ^ {*}} \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.562,
+      0.884,
+      0.674
+    ],
+    "angle": 0,
+    "content": "holds with probability at least \\(1 - O(d^{-10})\\). Here (i) uses Lemma 2.5 in Chen et al. (2021) combined with (S.16), (ii) uses (S.47), (S.11) in Lemma S.5, and (S.14) in Lemma S.6, (iii) is because \\(A_{1} = o(1), A_{2} = o(1)\\) by (S.1) in Assumption S.3, and (iv) holds by (S.1) in Assumption S.3.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.141,
+      0.686,
+      0.871,
+      0.706
+    ],
+    "angle": 0,
+    "content": "We will use similar arguments on the right singular subspace. By (S.7) in Lemma S.4,",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.255,
+      0.729,
+      0.884,
+      0.754
+    ],
+    "angle": 0,
+    "content": "\\[\n\\left\\| \\mathbf {E} ^ {\\top} \\mathbf {U} ^ {*} \\right\\| _ {2, \\infty} \\lesssim \\sigma \\sqrt {K \\log d} + B \\log d \\left\\| \\mathbf {U} ^ {*} \\right\\| _ {2, \\infty} \\lesssim \\sigma \\sqrt {K \\log d} \\tag {S.49}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.778,
+      0.885,
+      0.829
+    ],
+    "angle": 0,
+    "content": "holds with probability at least  \\( 1 - O(d^{-10}) \\) , where the last inequality follows by (S.2). Therefore, (S.46) in Proposition 2 leads to",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.2,
+      0.853,
+      0.767,
+      0.913
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\left\\| \\mathbf {V} \\mathbf {V} ^ {\\top} \\mathbf {V} ^ {*} - \\mathbf {V} ^ {*} \\right\\| _ {2, \\infty} \\\\ \\lesssim \\left\\| \\mathbf {V} \\mathbf {V} ^ {\\top} \\mathbf {V} ^ {*} - \\mathbf {V} ^ {*} \\right\\| _ {2, \\infty} \\left\\| \\mathbf {E} ^ {\\top} \\mathbf {U} ^ {*} \\right\\| \\left\\| \\boldsymbol {\\Lambda} ^ {* - 1} \\right\\| + \\left\\| \\mathbf {V} ^ {*} \\right\\| _ {2, \\infty} \\left\\| \\mathbf {E} ^ {\\top} \\mathbf {U} ^ {*} \\right\\| \\left\\| \\boldsymbol {\\Lambda} ^ {* - 1} \\right\\| \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.488,
+      0.935,
+      0.511,
+      0.949
+    ],
+    "angle": 0,
+    "content": "56"
+  }
+]

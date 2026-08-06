@@ -1,0 +1,259 @@
+[
+  {
+    "type": "page_number",
+    "bbox": [
+      0.128,
+      0.092,
+      0.136,
+      0.1
+    ],
+    "angle": 0,
+    "content": "4"
+  },
+  {
+    "type": "header",
+    "bbox": [
+      0.46,
+      0.089,
+      0.536,
+      0.1
+    ],
+    "angle": 0,
+    "content": "SANIA ASIF\\( ^{1} \\)"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.187,
+      0.118,
+      0.432,
+      0.132
+    ],
+    "angle": 0,
+    "content": "(c) Hom-Leibniz conformal identity:",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.269,
+      0.137,
+      0.741,
+      0.298
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} [ \\alpha (p) _ {\\lambda} [ q _ {\\mu} r ] _ {\\mathcal {N} _ {h}} ] _ {\\mathcal {N} _ {h}} \\\\ = [ \\alpha (p) _ {\\lambda} ([ \\mathcal {N} _ {h} (q) _ {\\lambda} r ] + [ q _ {\\lambda} \\mathcal {N} _ {h} (r) ] - \\mathcal {N} _ {h} [ q _ {\\lambda} r ]) ] _ {\\mathcal {N} _ {h}} \\\\ = \\left[ \\alpha (p) _ {\\lambda} \\left[ \\mathcal {N} _ {h} (q) _ {\\mu} r \\right] \\right] _ {\\mathcal {N} _ {h}} + \\left[ \\alpha (p) _ {\\lambda} \\left[ q _ {\\mu} \\mathcal {N} _ {h} (r) \\right] \\right] _ {\\mathcal {N} _ {h}} - \\left[ \\alpha (p) _ {\\lambda} \\mathcal {N} _ {h} \\left[ q _ {\\mu} r \\right] \\right] _ {\\mathcal {N} _ {h}} \\\\ = \\left[ \\mathcal {N} _ {h} (\\alpha (p)) _ {\\lambda} \\left[ \\mathcal {N} _ {h} (q) _ {\\mu} r \\right] \\right] + \\left[ \\alpha (p) _ {\\lambda} \\mathcal {N} _ {h} \\left(\\left[ \\mathcal {N} _ {h} (q) _ {\\mu} r \\right]\\right) \\right] - \\mathcal {N} _ {h} \\left(\\left[ \\alpha (p) _ {\\lambda} \\left[ \\mathcal {N} _ {h} (q) _ {\\mu} r \\right] \\right]\\right) \\\\ \\left. + \\left[ \\mathcal {N} _ {h} \\alpha (p) _ {\\lambda} \\left[ q _ {\\mu} \\mathcal {N} _ {h} (r) \\right] \\right] + \\left[ \\alpha (p) _ {\\lambda} \\mathcal {N} _ {h} \\left(\\left[ q _ {\\mu} \\mathcal {N} _ {h} (r) \\right]\\right) \\right] - \\mathcal {N} _ {h} \\left(\\left[ \\alpha (p) _ {\\lambda} \\left[ q _ {\\mu} \\mathcal {N} _ {h} (r) \\right] \\right]\\right) \\right. \\\\ \\left. - \\left[ \\mathcal {N} _ {h} \\alpha (p) _ {\\lambda} \\mathcal {N} _ {h} \\left(\\left[ q _ {\\mu} r \\right]\\right) \\right] - \\left[ \\alpha (p) _ {\\lambda} \\mathcal {N} _ {h} ^ {2} \\left(\\left[ q _ {\\mu} r \\right]\\right) \\right] + \\mathcal {N} _ {h} \\left(\\left[ \\alpha (p) _ {\\lambda} \\mathcal {N} _ {h} \\left(\\left[ q _ {\\mu} r \\right]\\right) \\right]\\right) \\right. \\\\ = \\left[ \\mathcal {N} _ {h} (\\alpha (p)) _ {\\lambda} \\left[ \\mathcal {N} _ {h} (q) _ {\\mu} r \\right] \\right] + \\left[ \\alpha (p) _ {\\lambda} \\left(\\left[ \\mathcal {N} _ {h} (q) _ {\\mu} \\mathcal {N} _ {h} (r) \\right]\\right) \\right] - \\mathcal {N} _ {h} \\left(\\left[ \\alpha (p) _ {\\lambda} \\left[ \\mathcal {N} _ {h} (q) _ {\\mu} r \\right] \\right]\\right) \\\\ \\left. + \\left[ \\mathcal {N} _ {h} \\alpha (p) _ {\\lambda} \\left[ q _ {\\mu} \\mathcal {N} _ {h} (r) \\right] \\right] - \\mathcal {N} _ {h} \\left(\\left[ \\alpha (p) _ {\\lambda} \\left[ q _ {\\mu} \\mathcal {N} _ {h} (r) \\right] \\right]\\right)\\right) \\\\ - \\left[ \\mathcal {N} _ {h} \\alpha (p) _ {\\lambda} \\mathcal {N} _ {h} ([ q _ {\\mu} r ]) \\right] + \\mathcal {N} _ {h} ([ \\alpha (p) _ {\\lambda} \\mathcal {N} _ {h} ([ q _ {\\mu} r ]) ]). \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.212,
+      0.302,
+      0.336,
+      0.315
+    ],
+    "angle": 0,
+    "content": "Similarly, we have",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.235,
+      0.321,
+      0.763,
+      0.393
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} [ [ p _ {\\lambda} q ] _ {\\mathcal {N} _ {h} \\lambda + \\mu} \\alpha (r) ] _ {\\mathcal {N} _ {h}} \\\\ = \\left[ \\left[ \\mathcal {N} _ {h} (p) _ {\\lambda} \\mathcal {N} _ {h} (q) \\right] _ {\\lambda + \\mu} \\alpha (r) \\right] + \\left[ \\left[ p _ {\\lambda} \\mathcal {N} _ {h} (q) \\right] _ {\\mathcal {N} _ {h} \\lambda + \\mu} \\mathcal {N} _ {h} (\\alpha (r)) \\right] - \\mathcal {N} _ {h} \\left[ \\left[ p _ {\\lambda} \\mathcal {N} _ {h} (q) \\right] _ {\\lambda + \\mu} \\alpha (r) \\right] \\\\ + \\left[ \\left[ \\mathcal {N} _ {h} (p) _ {\\lambda} q \\right] _ {\\lambda + \\mu} \\mathcal {N} _ {h} (\\alpha (r)) \\right] - \\mathcal {N} _ {h} \\left[ \\left[ \\mathcal {N} _ {h} (p) _ {\\lambda} q \\right] _ {\\lambda + \\mu} \\mathcal {N} _ {h} \\alpha (r) \\right] \\\\ - \\left[ \\mathcal {N} _ {h} [ p _ {\\lambda} q ] _ {\\lambda + \\mu} \\mathcal {N} _ {h} (\\alpha (r)) \\right] + \\mathcal {N} _ {h} \\left[ \\mathcal {N} _ {h} [ p _ {\\lambda} q ] _ {\\lambda + \\mu} \\alpha (r) \\right], \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.214,
+      0.396,
+      0.241,
+      0.408
+    ],
+    "angle": 0,
+    "content": "and",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.257,
+      0.415,
+      0.741,
+      0.484
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} [ \\alpha (q) _ {\\mu} [ p _ {\\lambda} r ] _ {\\mathcal {N} _ {h}} ] _ {\\mathcal {N} _ {h}} \\\\ = \\left[ \\mathcal {N} _ {h} (\\alpha (q)) _ {\\mu} \\left[ \\mathcal {N} _ {h} (p) _ {\\lambda} r \\right] \\right] + \\left[ \\alpha (q) _ {\\mu} \\left(\\left[ \\mathcal {N} _ {h} (p) _ {\\lambda} \\mathcal {N} _ {h} (r) \\right]\\right) \\right] - \\mathcal {N} _ {h} \\left(\\left[ \\alpha (q) _ {\\mu} \\left[ \\mathcal {N} _ {h} (p) _ {\\lambda} r \\right] \\right]\\right) \\\\ \\left. + \\left[ \\mathcal {N} _ {h} \\alpha (q) _ {\\mu} \\left[ p _ {\\lambda} \\mathcal {N} _ {h} (r) \\right] \\right] - \\mathcal {N} _ {h} \\left(\\left[ \\alpha (q) _ {\\mu} \\left[ p _ {\\lambda} \\mathcal {N} _ {h} (r) \\right] \\right]\\right)\\right) \\\\ - \\left[ \\mathcal {N} _ {h} \\alpha (q) _ {\\mu} \\mathcal {N} _ {h} ([ p _ {\\lambda} r ]) \\right] + \\mathcal {N} _ {h} ([ \\alpha (q) _ {\\mu} \\mathcal {N} _ {h} ([ p _ {\\lambda} r ]) ]). \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.212,
+      0.488,
+      0.762,
+      0.502
+    ],
+    "angle": 0,
+    "content": "From the above equations we conclude that Hom-Leibniz conformal identity holds.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.179,
+      0.509,
+      0.579,
+      0.524
+    ],
+    "angle": 0,
+    "content": "Hence \\((\\mathcal{L}_{\\mathcal{N}_h},[\\cdot_\\lambda \\cdot ]_{\\mathcal{N}_h},\\alpha)\\) is a Hom-Leibniz conformal algebra.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.153,
+      0.53,
+      0.353,
+      0.544
+    ],
+    "angle": 0,
+    "content": "(2) For any \\(p, q \\in \\mathcal{L}\\), we have",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.282,
+      0.549,
+      0.715,
+      0.657
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} [ \\mathcal {N} _ {h} (p) _ {\\lambda} \\mathcal {N} _ {h} (q) ] _ {\\mathcal {N} _ {h}} \\\\ = \\left[ \\mathcal {N} _ {h} \\left(\\mathcal {N} _ {h} (p)\\right) _ {\\lambda} \\mathcal {N} _ {h} (q) \\right] + \\left[ \\mathcal {N} _ {h} (p) _ {\\lambda} \\mathcal {N} _ {h} \\left(\\mathcal {N} _ {h} (q)\\right) \\right] - \\mathcal {N} _ {h} \\left(\\left[ \\mathcal {N} _ {h} (p) _ {\\lambda} \\mathcal {N} _ {h} (q) \\right]\\right) \\\\ = \\mathcal {N} _ {h} \\left(\\left[ \\mathcal {N} _ {h} \\left(\\mathcal {N} _ {h} (p)\\right) _ {\\lambda} q \\right] + \\left[ \\mathcal {N} _ {h} (p) _ {\\lambda} \\mathcal {N} _ {h} (q) \\right] - \\mathcal {N} _ {h} \\left(\\left[ \\mathcal {N} _ {h} (p) _ {\\lambda} q \\right]\\right)\\right) \\\\ + \\mathcal {N} _ {h} \\left(\\left[ \\mathcal {N} _ {h} (p) _ {\\lambda} \\mathcal {N} _ {h} (q) \\right] + \\left[ p _ {\\lambda} \\mathcal {N} _ {h} \\left(\\mathcal {N} _ {h} (q)\\right) \\right] - \\mathcal {N} _ {h} \\left(\\left[ p _ {\\lambda} \\mathcal {N} _ {h} (q) \\right]\\right)\\right) \\\\ - \\mathcal {N} _ {h} ^ {2} ([ \\mathcal {N} _ {h} (p) _ {\\lambda} q ] + [ p _ {\\lambda} \\mathcal {N} _ {h} (q) ] - \\mathcal {N} _ {h} ([ p _ {\\lambda} q ])) \\\\ = \\mathcal {N} _ {h} \\left(\\left[ \\mathcal {N} _ {h} (p) _ {\\lambda} q \\right] _ {\\mathcal {N} _ {h}} + \\left[ p _ {\\lambda} \\mathcal {N} _ {h} (q) \\right] _ {\\mathcal {N} _ {h}} - \\mathcal {N} _ {h} \\left(\\left[ p _ {\\lambda} q \\right] _ {\\mathcal {N} _ {h}}\\right)\\right). \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.178,
+      0.661,
+      0.797,
+      0.677
+    ],
+    "angle": 0,
+    "content": "Hence, \\(\\mathcal{N}_h\\) is also a Nijenhuis operator on the Hom-Leibniz conformal algebra \\((\\mathcal{L}_{\\mathcal{N}_h}, [\\cdot_\\lambda \\cdot]_{\\mathcal{N}_h})\\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.152,
+      0.682,
+      0.871,
+      0.71
+    ],
+    "angle": 0,
+    "content": "(3) It is obvious to observe that the map \\(\\mathcal{N}_h:(\\mathcal{L}_{\\mathcal{N}_h},[\\cdot_\\lambda \\cdot ]_{\\mathcal{N}_h},\\alpha)\\to (\\mathcal{L}_{\\mathcal{N}_h},[\\cdot_\\lambda \\cdot ],\\alpha), p\\mapsto \\mathcal{N}_h(p)\\) is a morphism of Hom-Nijenhuis Leibniz conformal algebra.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.125,
+      0.718,
+      0.28,
+      0.731
+    ],
+    "angle": 0,
+    "content": "It completes the proof.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.124,
+      0.747,
+      0.873,
+      0.789
+    ],
+    "angle": 0,
+    "content": "The following proposition describes the close relationship between the Nijenhuis operator and the Rota-Baxter operator. Similar results hold for Hom-associative conformal algebras (see prop 6.2 of [4]). Let us observe, if these results hold for Hom-Leibniz conformal algebras or not.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.125,
+      0.802,
+      0.871,
+      0.829
+    ],
+    "angle": 0,
+    "content": "Proposition 2.10. Let \\(\\mathcal{N}_h:\\mathcal{L}\\to \\mathcal{L}\\) be a \\(\\mathbb{C}[\\partial]\\)-module homomorphism over a Hom-Leibniz conformal algebra \\(\\mathcal{L}\\). Then",
+    "merge_prev": false
+  },
+  {
+    "type": "list",
+    "bbox": [
+      0.152,
+      0.837,
+      0.871,
+      0.916
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.152,
+      0.837,
+      0.867,
+      0.853
+    ],
+    "angle": 0,
+    "content": "(1) \\(\\mathcal{N}_h\\) is a Nijenhuis operator if and only if \\(\\mathcal{N}_h\\) is a Rota-Baxter-operator of weight 0, given that \\(\\mathcal{N}_h^2 = 0\\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.152,
+      0.858,
+      0.871,
+      0.874
+    ],
+    "angle": 0,
+    "content": "(2) \\(\\mathcal{N}_h\\) is a Nijenhuis operator if and only if \\(\\mathcal{N}_h\\) is a Rota-Baxter-operator of weight \\(-1\\), given that \\(\\mathcal{N}_h^2 = \\mathcal{N}_h\\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.152,
+      0.879,
+      0.871,
+      0.894
+    ],
+    "angle": 0,
+    "content": "(3) \\(\\mathcal{N}_h\\) is a Nijenhuis operator if and only if \\(\\mathcal{N}_h\\) is a modified RB-operator of weight \\(\\mp 1\\), given that \\(\\mathcal{N}_h^2 = \\pm Id\\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.152,
+      0.9,
+      0.86,
+      0.916
+    ],
+    "angle": 0,
+    "content": "(4) \\(\\mathcal{N}_h\\) is a Nijenhuis operator if and only if \\(\\mathcal{N}_h \\pm Id\\) is a RB-operator of weight \\(\\mp 2\\), given that \\(\\mathcal{N}_h^2 = Id\\).",
+    "merge_prev": false
+  }
+]

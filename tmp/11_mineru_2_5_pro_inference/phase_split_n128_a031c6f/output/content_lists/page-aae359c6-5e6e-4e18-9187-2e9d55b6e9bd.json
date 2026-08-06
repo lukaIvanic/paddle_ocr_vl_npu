@@ -1,0 +1,141 @@
+[
+  {
+    "type": "page_number",
+    "bbox": [
+      0.136,
+      0.08,
+      0.154,
+      0.09
+    ],
+    "angle": 0,
+    "content": "22"
+  },
+  {
+    "type": "header",
+    "bbox": [
+      0.362,
+      0.079,
+      0.636,
+      0.091
+    ],
+    "angle": 0,
+    "content": "BEN ELIAS AND MATTHEW HOGANCAMP"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.132,
+      0.106,
+      0.865,
+      0.141
+    ],
+    "angle": 0,
+    "content": "These functors have lifts \\(\\mathbf{LL}_Z, \\mathbf{RR}_Z\\): \\(\\mathrm{Ch}^b(\\mathcal{A}) \\otimes \\mathrm{Ch}^b(\\mathcal{A}) \\to \\mathrm{Ch}^b(\\mathcal{M})\\). We have two given natural transformations \\(H^0(\\mathbf{LL}_Z) \\to H^0(\\mathbf{RR}_Z)\\), given by",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.136,
+      0.152,
+      0.741,
+      0.172
+    ],
+    "angle": 0,
+    "content": "\\[\n\\boldsymbol {\\eta} _ {X _ {1}, X _ {2}} := \\boldsymbol {\\tau} _ {X _ {1} \\star X _ {2}}, \\quad \\boldsymbol {\\eta} _ {X _ {1}, X _ {2}} ^ {\\prime} := (\\mathrm{id} _ {X _ {1}} \\star \\boldsymbol {\\tau} _ {X _ {2}}) \\circ (\\boldsymbol {\\tau} _ {X _ {1}} \\star \\mathrm{id} _ {X _ {2}}). \\tag {2.45}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.133,
+      0.181,
+      0.865,
+      0.25
+    ],
+    "angle": 0,
+    "content": "These natural transformations are lifts of \\(\\tau_{X_1\\star X_2}\\) and \\((\\mathrm{id}_{X_1}\\star \\tau_{X_2})\\circ (\\tau_{X_1}\\star \\mathrm{id}_{X_2})\\) respectively, which are homotopic by definition of \\(\\mathcal{Z}(\\mathcal{A},\\mathcal{K}^b (\\mathcal{M}))\\). Thus, uniqueness of lifts (from Theorem 2.17) implies that \\(\\eta \\simeq \\eta^{\\prime}\\), which establishes the multiplicativity condition for \\(\\pmb{\\tau}\\) and shows that \\((Z,\\pmb{\\tau})\\) is an object of \\(\\mathcal{Z}(\\mathcal{K}^b (\\mathcal{A}),\\mathcal{K}^b (\\mathcal{M}))\\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.132,
+      0.27,
+      0.865,
+      0.322
+    ],
+    "angle": 0,
+    "content": "2.9. Fully faithful centralizing functors. In order to use the technology developed above, we must have some way of constructing objects of \\(\\mathcal{Z}(\\mathcal{A},\\mathcal{K}^b (\\mathcal{M}))\\). Many examples (see §3) can be provided with the following relatively elementary result.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.133,
+      0.332,
+      0.865,
+      0.417
+    ],
+    "angle": 0,
+    "content": "Theorem 2.21. Let \\(\\mathcal{A}\\) be a \\(\\mathbb{k}\\)-linear monoidal category and \\(\\mathcal{M}\\) an \\((\\mathcal{A},\\mathcal{A})\\) \\(\\star\\)-bimodule category, and let \\(Z\\in\\mathcal{K}^{b}(\\mathcal{M})\\) be given. Assume that \\(L_{Z},R_{Z}\\colon\\mathcal{A}\\to\\mathcal{K}^{b}(\\mathcal{M})\\) are fully faithful and have the same essential image. Then there is a monoidal autoequivalence \\(\\Phi\\colon\\mathcal{A}\\to\\mathcal{A}\\) such that \\(Z\\star X\\simeq\\Phi(X)\\star Z\\), naturally in \\(X\\in\\mathcal{A}\\). In other words, \\(Z\\) has the structure of an object in the Drinfeld centralizer \\(\\mathcal{Z}(\\mathcal{A},\\Phi\\mathcal{K}^{b}(\\mathcal{M}))\\), where \\(\\Phi\\mathcal{K}^{b}(\\mathcal{M})\\) denotes \\(\\mathcal{K}^{b}(\\mathcal{M})\\) with left action twisted by \\(\\Phi\\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.133,
+      0.427,
+      0.865,
+      0.517
+    ],
+    "angle": 0,
+    "content": "Proof. Without loss of generality, let us assume that \\(\\mathcal{A}\\) is strict monoidal. Let \\(\\mathcal{N} \\subset \\mathcal{K}^b(\\mathcal{M})\\) be the essential image of \\(L_Z\\) and \\(R_Z\\). Then \\(L_Z, R_Z\\) restrict to equivalences of categories \\(\\mathcal{A} \\to \\mathcal{N}\\), and we may choose an inverse functor \\(R_Z^{-1}\\) and define \\(\\Phi := R_Z^{-1} \\circ L_Z\\). The fact that \\(Z \\star X \\simeq \\Phi(X) \\star Z\\), naturally in \\(X\\) is true by construction. There is an isomorphism \\(\\psi_{X_1, X_2} \\colon \\Phi(X_1 \\star X_2) \\xrightarrow{\\cong} \\Phi(X_1) \\star \\Phi(X_2)\\), defined by commutativity of the diagram",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.136,
+      0.53,
+      0.714,
+      0.642
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{c} \\Phi (X _ {1}) \\star \\Phi (X _ {2}) \\star Z \\xleftarrow {\\mathrm{id} _ {\\Phi (X _ {1})} \\star \\tau_ {X _ {2}}} \\Phi (X _ {1}) \\star Z \\star X _ {2} \\\\ \\psi_ {X _ {1}, X _ {2}} \\star \\mathrm{id} _ {Z} \\Bigg \\uparrow \\\\ \\Phi (X _ {1} \\star X _ {2}) \\star Z \\xrightarrow {(\\tau_ {X _ {1} \\star X _ {2}}) ^ {- 1}} Z \\star X _ {1} \\star X _ {2} \\end{array} \\Bigg \\uparrow \\tau_ {X _ {1}} \\star \\mathrm{id} _ {X _ {2}} \\tag {2.46}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.133,
+      0.653,
+      0.863,
+      0.75
+    ],
+    "angle": 0,
+    "content": "Where the solid arrows alternate between homotopy equivalences of the form \\( R_Z(\\Phi(X)) \\simeq L_Z(X) \\), and associator isomorphisms. Observe that, a priori the above diagram defines a homotopy equivalence \\( \\Phi(X_1 \\star X_2) \\simeq \\Phi(X_1) \\star \\Phi(X_2) \\). But since \\( X_i \\) here are objects of \\( \\mathcal{A} \\), all homotopies are zero for degree reasons. Moreover, naturality of the isomorphism \\( R_Z \\circ \\Phi \\simeq L_Z \\) and of the associator implies that the isomorphism \\( \\Phi(X_1 \\star X_2) \\cong \\Phi(X_1) \\star \\Phi(X_2) \\) is natural in \\( X_1, X_2 \\in \\mathcal{A} \\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.133,
+      0.751,
+      0.863,
+      0.786
+    ],
+    "angle": 0,
+    "content": "To complete the proof that \\(\\Phi\\) is a monoidal functor, one would need to prove commutativity of the diagram",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.136,
+      0.799,
+      0.836,
+      0.897
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{c} \\Phi (X _ {1} \\star X _ {2} \\star X _ {3}) \\xrightarrow {\\Phi (X _ {1}) \\star \\Phi (X _ {2} \\star X _ {3})} \\Phi (X _ {1}) \\star \\Phi (X _ {2}) \\star \\Phi (X _ {3}) \\\\ \\xrightarrow {\\Phi (X _ {1} \\star X _ {2}) \\star \\Phi (X _ {3})} \\end{array} \\tag {2.47}\n\\]"
+  }
+]

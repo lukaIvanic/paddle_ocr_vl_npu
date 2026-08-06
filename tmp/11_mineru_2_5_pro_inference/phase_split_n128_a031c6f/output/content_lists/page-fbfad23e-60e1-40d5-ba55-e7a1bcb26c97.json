@@ -1,0 +1,316 @@
+[
+  {
+    "type": "header",
+    "bbox": [
+      0.151,
+      0.031,
+      0.371,
+      0.046
+    ],
+    "angle": 0,
+    "content": "附录1 初等数学几个内容简介"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.15,
+      0.089,
+      0.518,
+      0.107
+    ],
+    "angle": 0,
+    "content": "为极轴. 这样建立的坐标系称为极坐标系.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.149,
+      0.114,
+      0.896,
+      0.158
+    ],
+    "angle": 0,
+    "content": "当点 M 在极点时, 极径  \\( \\rho=0 \\) , 极角  \\( \\theta \\)  可取任意值. 在极坐标系中, 除了极点 O 以外, 平面上任一点 M 与有序实数对  \\( (\\rho,\\theta) \\)  之间建立了一一对应关系. 但在实际应用中,",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.15,
+      0.163,
+      0.616,
+      0.333
+    ],
+    "angle": 0,
+    "content": "有时为了方便起见,在极坐标中,允许 \\( \\rho \\) 和 \\( \\theta \\) 可取一切实数.这时,设有两个任意实数 \\( \\rho \\) 和 \\( \\theta \\),先作射线OP,使 \\( \\angle AOP=\\theta \\),如果 \\( \\rho>0 \\),在OP上作一点M,使 \\( |OM|=\\rho \\);如果 \\( \\rho<0 \\),在P向O的延长线上,作一点M,使 \\( |OM|=|\\rho| \\) (图3).这样,对于任意一对实数 \\( \\rho \\) 和 \\( \\theta \\),总可以在平面上确定唯一的一点M, \\( (\\rho,\\theta) \\) 仍称为点M的极坐标.由此可知,有序实数对 \\( (\\rho,\\theta) \\) 与",
+    "merge_prev": true
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.636,
+      0.173,
+      0.871,
+      0.279
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "image_caption",
+    "bbox": [
+      0.737,
+      0.29,
+      0.774,
+      0.305
+    ],
+    "angle": 0,
+    "content": "图3"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.152,
+      0.338,
+      0.739,
+      0.357
+    ],
+    "angle": 0,
+    "content": "\\((\\rho, \\theta + 2k\\pi)\\) 或 \\((- \\rho, \\theta + (2k + 1)\\pi)\\) 表示同一个点，这里 \\(k\\) 取任意整数.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.152,
+      0.363,
+      0.899,
+      0.407
+    ],
+    "angle": 0,
+    "content": "与直角坐标系一样,在极坐标系中,把曲线看作适合某种条件的点的集合,用曲线上的点的极坐标  \\( \\rho,\\theta \\)  的关系式  \\( \\varphi(\\rho,\\theta)=0 \\)  表示的方程,就是曲线的极坐标方程.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.194,
+      0.413,
+      0.899,
+      0.432
+    ],
+    "angle": 0,
+    "content": "当极坐标系中的极点与直角坐标系中的原点重合,极轴与 x 轴正半轴重合,两种",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.153,
+      0.438,
+      0.601,
+      0.481
+    ],
+    "angle": 0,
+    "content": "坐标系的长度单位一致时(图4)，极坐标与直角坐标可以互换.",
+    "merge_prev": true
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.195,
+      0.488,
+      0.504,
+      0.506
+    ],
+    "angle": 0,
+    "content": "由直角坐标到极坐标的变换公式为",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.279,
+      0.514,
+      0.472,
+      0.532
+    ],
+    "angle": 0,
+    "content": "\\[\nx = \\rho \\cos \\theta , \\quad y = \\rho \\sin \\theta.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.196,
+      0.538,
+      0.506,
+      0.556
+    ],
+    "angle": 0,
+    "content": "由极坐标到直角坐标的变换公式为",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.232,
+      0.567,
+      0.518,
+      0.598
+    ],
+    "angle": 0,
+    "content": "\\[\n\\rho^ {2} = x ^ {2} + y ^ {2}, \\quad \\tan \\theta = \\frac {y}{x} \\quad (x \\neq 0).\n\\]"
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.624,
+      0.448,
+      0.875,
+      0.587
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "image_caption",
+    "bbox": [
+      0.732,
+      0.599,
+      0.768,
+      0.614
+    ],
+    "angle": 0,
+    "content": "图4"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.196,
+      0.607,
+      0.493,
+      0.625
+    ],
+    "angle": 0,
+    "content": "下面给出常用曲线的极坐标方程：",
+    "merge_prev": false
+  },
+  {
+    "type": "list",
+    "bbox": [
+      0.194,
+      0.632,
+      0.664,
+      0.813
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.195,
+      0.632,
+      0.577,
+      0.651
+    ],
+    "angle": 0,
+    "content": "1. 圆心在极点, 半径为 r 的圆的方程为  \\( \\rho = r \\) .",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.194,
+      0.657,
+      0.651,
+      0.676
+    ],
+    "angle": 0,
+    "content": "2. 圆心为 \\((a,0)\\)，半径为 \\(a\\) 的圆的方程为 \\(\\rho = 2a\\cos \\theta\\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.194,
+      0.682,
+      0.662,
+      0.719
+    ],
+    "angle": 0,
+    "content": "3. 圆心为 \\(\\left(a, \\frac{\\pi}{2}\\right)\\), 半径为 \\(a\\) 的圆的方程为 \\(\\rho = 2a \\sin \\theta\\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.194,
+      0.727,
+      0.621,
+      0.746
+    ],
+    "angle": 0,
+    "content": "4. 过极点, 倾角为  \\( \\alpha \\)  的直线方程为  \\( \\theta = \\alpha (\\rho \\in \\mathbb{R}) \\) .",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.194,
+      0.752,
+      0.649,
+      0.771
+    ],
+    "angle": 0,
+    "content": "5. 过点 \\((a,0)\\) 且垂直于极轴的直线方程为 \\(\\rho \\cos \\theta = a\\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.194,
+      0.776,
+      0.662,
+      0.813
+    ],
+    "angle": 0,
+    "content": "6. 过点 \\( \\left(a,\\frac{\\pi}{2}\\right) \\) 且平行于极轴的直线方程为 \\( \\rho\\sin\\theta=a \\) .",
+    "merge_prev": false
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.156,
+      0.832,
+      0.29,
+      0.851
+    ],
+    "angle": 0,
+    "content": "(四) 参数方程"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.195,
+      0.871,
+      0.902,
+      0.894
+    ],
+    "angle": 0,
+    "content": "在平面直角坐标系中,如果曲线上任意一点的坐标 x,y 都是某个变量 t 的函数",
+    "merge_prev": false
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.111,
+      0.953,
+      0.143,
+      0.967
+    ],
+    "angle": 0,
+    "content": "358"
+  }
+]

@@ -1,0 +1,117 @@
+[
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.091,
+      0.666,
+      0.113
+    ],
+    "angle": 0,
+    "content": "For \\(\\beta_1'\\), with (S.17) we have with probability at least \\(1 - O(n^{-10})\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.214,
+      0.129,
+      0.887,
+      0.212
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\beta_ {1} ^ {\\prime} = \\left\\| \\mathbf {R} ^ {* ^ {\\top}} \\left(\\mathbf {U} \\mathbf {U} ^ {\\top} \\mathbf {U} ^ {*} - \\mathbf {U} ^ {*}\\right) \\right\\| _ {2, \\infty} \\\\ \\leq \\sigma_ {1} ^ {*} \\| \\mathbf {V} ^ {*} \\| _ {2, \\infty} \\left\\| \\mathbf {U} ^ {* \\top} \\mathbf {U} \\mathbf {U} ^ {\\top} \\mathbf {U} ^ {*} - \\mathbf {I} _ {K} \\right\\| \\lesssim \\frac {\\kappa^ {*} \\sigma^ {2} (M N + J)}{\\sigma_ {K} ^ {*}} \\| \\mathbf {V} ^ {*} \\| _ {2, \\infty}. \\tag {S.33} \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.223,
+      0.732,
+      0.243
+    ],
+    "angle": 0,
+    "content": "For \\(\\beta_2'\\), introducing the \"leave-one-block-out\" alternative \\(\\mathbf{U}^{(j)}\\) yields that",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.16,
+      0.264,
+      0.887,
+      0.367
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\beta_ {2} ^ {\\prime} = \\max _ {j \\in [ J ]} \\left\\| \\mathbf {E} _ {:, j} ^ {\\top} \\left(\\mathbf {U} \\mathbf {U} ^ {\\top} \\mathbf {U} ^ {*} - \\mathbf {U} ^ {*}\\right) \\right\\| _ {2} \\\\ \\leq \\underbrace {\\max _ {j \\in [ J ]} \\left\\| \\mathbf {E} _ {: , j} ^ {\\top} \\left(\\mathbf {U} ^ {(j)} \\mathbf {U} ^ {(j) ^ {\\top}} \\mathbf {U} ^ {*} - \\mathbf {U} ^ {*}\\right) \\right\\|} _ {\\gamma_ {1} ^ {\\prime}} + \\underbrace {\\max _ {j \\in [ J ]} \\left\\| \\mathbf {E} _ {: , j} ^ {\\top} \\left(\\mathbf {U} \\mathbf {U} ^ {\\top} \\mathbf {U} ^ {*} - \\mathbf {U} ^ {(j)} \\mathbf {U} ^ {(j) ^ {\\top}} \\mathbf {U} ^ {*}\\right) \\right\\|} _ {\\gamma_ {2} ^ {\\prime}}. \\tag {S.34} \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.383,
+      0.879,
+      0.404
+    ],
+    "angle": 0,
+    "content": "Upper bounding \\(\\gamma_1'\\) in (S.34). Utilizing Lemma S.4, one has at least \\(1 - O(d^{-11})\\) that,",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.164,
+      0.42,
+      0.884,
+      0.692
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\gamma_ {1} ^ {\\prime} \\leq \\sigma \\sqrt {\\log d} \\max _ {j \\in [ J ]} \\left\\| \\mathbf {U} ^ {(j)} \\mathbf {U} ^ {(\\boldsymbol {j}) ^ {\\top}} \\mathbf {U} ^ {*} - \\mathbf {U} ^ {*} \\right\\| _ {F} + B \\log d \\max _ {j \\in [ J ]} \\left\\| \\mathbf {U} ^ {(j)} \\mathbf {U} ^ {(\\boldsymbol {j}) ^ {\\top}} \\mathbf {U} ^ {*} - \\mathbf {U} ^ {*} \\right\\| _ {2, \\infty} \\\\ \\leq \\sigma \\sqrt {\\log d} \\| \\mathbf {U} \\mathbf {U} ^ {\\top} \\mathbf {U} ^ {*} - \\mathbf {U} ^ {*} \\| _ {F} + \\sigma \\sqrt {\\log d} \\max _ {j \\in [ J ]} \\| \\mathbf {U} ^ {(j)} \\mathbf {U} ^ {(j) \\top} \\mathbf {U} ^ {*} - \\mathbf {U} \\mathbf {U} ^ {\\top} \\mathbf {U} ^ {*} \\| _ {F} \\\\ + B \\log d \\| \\mathbf {U} \\mathbf {U} ^ {\\top} \\mathbf {U} ^ {*} - \\mathbf {U} ^ {*} \\| _ {2, \\infty} + B \\log d \\max _ {j \\in [ J ]} \\| \\mathbf {U} ^ {(j)} \\mathbf {U} ^ {(j) \\top} \\mathbf {U} ^ {*} - \\mathbf {U} \\mathbf {U} ^ {\\top} \\mathbf {U} ^ {*} \\| _ {2, \\infty} \\\\ \\leq \\sigma \\sqrt {\\log d} \\left\\| \\mathbf {U} \\mathbf {U} ^ {\\top} \\mathbf {U} ^ {*} - \\mathbf {U} ^ {*} \\right\\| _ {F} + B \\log d \\left\\| \\mathbf {U} \\mathbf {U} ^ {\\top} \\mathbf {U} ^ {*} - \\mathbf {U} ^ {*} \\right\\| _ {2, \\infty} \\\\ + \\left(\\sigma \\sqrt {\\log d} + B \\log d\\right) \\max _ {j \\in [ J ]} \\left\\| \\mathbf {U} ^ {(j)} \\mathbf {U} ^ {(j) ^ {\\top}} - \\mathbf {U} \\mathbf {U} ^ {\\top} \\right\\| _ {F} \\\\ \\lesssim \\sigma \\sqrt {\\log d} \\left\\| \\mathbf {U} \\mathbf {U} ^ {\\top} \\mathbf {U} ^ {*} - \\mathbf {U} ^ {*} \\right\\| _ {F} + B \\log d \\left\\| \\mathbf {U} \\mathbf {U} ^ {\\top} \\mathbf {U} ^ {*} - \\mathbf {U} ^ {*} \\right\\| _ {2, \\infty} \\\\ + B \\log d \\left\\| \\mathbf {U} ^ {(j)} \\mathbf {U} ^ {(j) ^ {\\top}} - \\mathbf {U} \\mathbf {U} ^ {\\top} \\right\\| _ {F}, \\tag {S.35} \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.708,
+      0.534,
+      0.729
+    ],
+    "angle": 0,
+    "content": "where the last line holds since \\(\\sigma \\sqrt{\\log d} \\ll B \\log d\\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.111,
+      0.735,
+      0.885,
+      0.79
+    ],
+    "angle": 0,
+    "content": "To bound \\(\\max_{j\\in [J]}\\left\\| \\mathbf{U}^{(j)}\\mathbf{U}^{(j)^\\top} - \\mathbf{U}\\mathbf{U}^\\top \\right\\| _F\\) in the RHS above, we apply Wedin's theorem with (S.31) and obtain",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.266,
+      0.806,
+      0.884,
+      0.893
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\max \\left\\{\\left\\| \\mathbf {U} \\mathbf {U} ^ {\\top} - \\mathbf {U} ^ {(j)} \\mathbf {U} ^ {(j) ^ {\\top}} \\right\\| _ {F}, \\left\\| \\mathbf {V} \\mathbf {V} ^ {\\top} - \\mathbf {V} ^ {(j)} \\mathbf {V} ^ {(j) ^ {\\top}} \\right\\| _ {F} \\right\\} \\\\ \\lesssim \\frac {\\max \\left\\{\\left\\| \\mathcal {P} _ {: , S _ {l _ {j}}} (\\mathbf {E}) ^ {\\top} \\mathbf {U} ^ {(j)} \\right\\| _ {F} , \\left\\| \\mathcal {P} _ {: , S _ {l _ {j}}} (\\mathbf {E}) \\mathbf {V} ^ {(j)} \\right\\| _ {F} \\right\\}}{\\sigma_ {K} ^ {*}}. \\tag {S.36} \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.488,
+      0.934,
+      0.51,
+      0.949
+    ],
+    "angle": 0,
+    "content": "51"
+  }
+]

@@ -1,0 +1,127 @@
+[
+  {
+    "type": "header",
+    "bbox": [
+      0.286,
+      0.062,
+      0.713,
+      0.077
+    ],
+    "angle": 0,
+    "content": "KOLMOGOROV EQUATIONS FOR 2D SCBF EQUATIONS"
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.866,
+      0.063,
+      0.882,
+      0.075
+    ],
+    "angle": 0,
+    "content": "29"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.274,
+      0.089,
+      0.884,
+      0.197
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\leq C \\lambda_ {1} ^ {\\delta (2 - 8 \\delta)} \\int_ {\\{\\| \\boldsymbol {x} \\| _ {\\mathbb {V}} \\geq \\varepsilon^ {- 1} \\}} e ^ {\\kappa \\| \\boldsymbol {x} \\| _ {\\mathbb {H}} ^ {2}} \\| \\mathrm{A} ^ {\\delta} \\boldsymbol {x} \\| _ {\\mathbb {H}} ^ {8 \\delta} \\frac {\\| \\mathrm{A} ^ {\\delta + \\frac {1}{2}} \\boldsymbol {x} \\| _ {\\mathbb {H}} ^ {2}}{\\| \\boldsymbol {x} \\| _ {\\mathbb {V}} ^ {8 \\delta - 2}} \\eta (\\mathrm{d} \\boldsymbol {x}) \\\\ \\leq C \\lambda_ {1} ^ {\\delta (2 - 8 \\delta)} \\varepsilon^ {8 \\delta - 2} \\int_ {\\mathbb {H}} e ^ {\\kappa \\| \\boldsymbol {x} \\| _ {\\mathbb {H}} ^ {2}} \\| \\mathrm{A} ^ {\\delta} \\boldsymbol {x} \\| _ {\\mathbb {H}} ^ {8 \\delta} \\| \\mathrm{A} ^ {\\delta + \\frac {1}{2}} \\boldsymbol {x} \\| _ {\\mathbb {H}} ^ {2} \\eta (\\mathrm{d} \\boldsymbol {x}) \\\\ \\leq C \\varepsilon^ {8 \\delta - 2}, \\tag {6.18} \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.205,
+      0.884,
+      0.242
+    ],
+    "angle": 0,
+    "content": "provided \\(\\frac{1}{4} < \\delta < \\frac{1}{2}\\), and thus (6.16) follows by an application of the Dominated convergence theorem. Let us now calculate by using (5.3) and (6.12)",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.26,
+      0.249,
+      0.741,
+      0.417
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\int_ {\\mathbb {H}} | (\\mathcal {C} _ {\\varepsilon} (\\boldsymbol {x}) - \\mathcal {C} (\\boldsymbol {x}), \\mathrm{D} _ {\\boldsymbol {x}} \\varphi_ {\\varepsilon} (\\boldsymbol {x})) | ^ {2} \\eta (\\mathrm{d} \\boldsymbol {x}) \\\\ = \\int_ {\\{\\| \\boldsymbol {x} \\| _ {\\mathbb {V}} \\geq \\varepsilon^ {- 1} \\}} \\left| \\left(\\mathcal {C} _ {\\varepsilon} (\\boldsymbol {x}) - \\mathcal {C} (\\boldsymbol {x}), \\mathrm{D} _ {\\boldsymbol {x}} \\varphi_ {\\varepsilon} (\\boldsymbol {x})\\right) \\right| ^ {2} \\eta (\\mathrm{d} \\boldsymbol {x}) \\\\ \\leq \\int_ {\\{\\| \\boldsymbol {x} \\| _ {\\mathbb {V}} \\geq \\varepsilon^ {- 1} \\}} \\left| \\frac {1 - \\varepsilon^ {r + 1} \\| \\boldsymbol {x} \\| _ {\\mathbb {V}} ^ {r + 1}}{\\varepsilon^ {r + 1} \\| \\boldsymbol {x} \\| _ {\\mathbb {V}} ^ {r + 1}} \\right| \\| \\mathcal {C} (\\boldsymbol {x}) \\| _ {\\mathbb {H}} ^ {2} \\| \\mathrm{D} _ {\\boldsymbol {x}} \\varphi_ {\\varepsilon} (\\boldsymbol {x}) \\| _ {\\mathbb {H}} ^ {2} \\eta (\\mathrm{d} \\boldsymbol {x}) \\\\ \\leq C e ^ {- \\delta t} \\| f \\| _ {1} ^ {2} \\int_ {\\{\\| \\boldsymbol {x} \\| _ {\\mathbb {V}} \\geq \\varepsilon^ {- 1} \\}} e ^ {\\kappa \\| \\boldsymbol {x} \\| _ {\\mathbb {H}} ^ {2}} \\| \\mathcal {C} (\\boldsymbol {x}) \\| _ {\\mathbb {H}} ^ {2} \\eta (\\mathrm{d} \\boldsymbol {x}), \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.424,
+      0.315,
+      0.441
+    ],
+    "angle": 0,
+    "content": "so that (6.15) follows if",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.33,
+      0.45,
+      0.882,
+      0.49
+    ],
+    "angle": 0,
+    "content": "\\[\n\\lim _ {\\varepsilon \\rightarrow 0} \\int_ {\\{\\| \\boldsymbol {x} \\| _ {\\mathbb {V}} \\geq \\varepsilon^ {- 1} \\}} e ^ {\\kappa \\| \\boldsymbol {x} \\| _ {\\mathbb {H}} ^ {2}} \\| \\mathcal {C} (\\boldsymbol {x}) \\| _ {\\mathbb {H}} ^ {2} \\eta (\\mathrm{d} \\boldsymbol {x}) = 0. \\tag {6.19}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.497,
+      0.806,
+      0.515
+    ],
+    "angle": 0,
+    "content": "We calculate for \\( r = 2 \\) by using (5.4), Ladyzhenskaya's and Poincaré's inequalities",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.178,
+      0.522,
+      0.819,
+      0.563
+    ],
+    "angle": 0,
+    "content": "\\[\n\\| \\mathcal {C} (\\boldsymbol {x}) \\| _ {\\mathbb {H}} \\leq \\| \\boldsymbol {x} \\| _ {\\widetilde {\\mathbb {L}} ^ {4}} ^ {2} \\leq \\sqrt {2} \\| \\boldsymbol {x} \\| _ {\\mathbb {H}} \\| \\boldsymbol {x} \\| _ {\\mathbb {V}} \\leq \\frac {\\sqrt {2}}{\\lambda_ {1}} \\| \\boldsymbol {x} \\| _ {\\mathbb {V}} ^ {2} \\leq \\frac {\\sqrt {2}}{\\lambda_ {1}} \\| \\mathrm{A} ^ {\\delta} \\boldsymbol {x} \\| _ {\\mathbb {H}} ^ {4 \\delta} \\| \\mathrm{A} ^ {\\delta + \\frac {1}{2}} \\boldsymbol {x} \\| _ {\\mathbb {H}} ^ {2 (1 - 2 \\delta)}.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.569,
+      0.885,
+      0.621
+    ],
+    "angle": 0,
+    "content": "Then proceeding in a similar way as we did in (6.17), one can conclude (6.19) provided \\(\\frac{1}{4} < \\delta < \\frac{1}{2}\\). Along with Lemma 5.1, estimates (5.35), (6.18) and (2.5), it follows for \\(r = 3\\) that",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.253,
+      0.624,
+      0.747,
+      0.909
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\int_ {\\{\\| \\boldsymbol {x} \\| _ {\\mathbb {V}} \\geq \\varepsilon^ {- 1} \\}} e ^ {\\kappa \\| \\boldsymbol {x} \\| _ {\\mathbb {H}} ^ {2}} \\| \\mathcal {C} (\\boldsymbol {x}) \\| _ {\\mathbb {H}} ^ {2} \\eta (\\mathrm{d} \\boldsymbol {x}) \\\\ \\leq C \\int_ {\\{\\| \\boldsymbol {x} \\| _ {\\mathbb {V}} \\geq \\varepsilon^ {- 1} \\}} e ^ {\\kappa \\| \\boldsymbol {x} \\| _ {\\mathbb {H}} ^ {2}} \\| \\boldsymbol {x} \\| _ {\\mathbb {V}} ^ {4} \\| \\boldsymbol {x} \\| _ {\\mathbb {H}} ^ {2} \\eta (\\mathrm{d} \\boldsymbol {x}) \\\\ \\leq \\frac {C}{\\lambda_ {1} ^ {2 \\delta}} \\int_ {\\{\\| \\boldsymbol {x} \\| _ {\\mathbb {V}} \\geq \\varepsilon^ {- 1} \\}} e ^ {\\kappa \\| \\boldsymbol {x} \\| _ {\\mathbb {H}} ^ {2}} \\| \\mathrm{A} ^ {\\delta} \\boldsymbol {x} \\| _ {\\mathbb {H}} ^ {8 \\delta} \\| \\mathrm{A} ^ {\\delta + \\frac {1}{2}} \\boldsymbol {x} \\| _ {\\mathbb {H}} ^ {4 - 8 \\delta} \\| \\mathrm{A} ^ {\\delta} \\boldsymbol {x} \\| _ {\\mathbb {H}} ^ {2} \\eta (\\mathrm{d} \\boldsymbol {x}) \\\\ \\leq \\frac {C}{\\lambda_ {1} ^ {2 \\delta}} \\int_ {\\{\\| \\boldsymbol {x} \\| _ {\\mathbb {V}} \\geq \\varepsilon^ {- 1} \\}} e ^ {\\kappa \\| \\boldsymbol {x} \\| _ {\\mathbb {H}} ^ {2}} \\| \\mathrm{A} ^ {\\delta} \\boldsymbol {x} \\| _ {\\mathbb {H}} ^ {8 \\delta + 2} \\frac {\\| \\mathrm{A} ^ {\\delta + \\frac {1}{2}} \\boldsymbol {x} \\| _ {\\mathbb {H}} ^ {2}}{\\| \\mathrm{A} ^ {\\delta + \\frac {1}{2}} \\boldsymbol {x} \\| _ {\\mathbb {H}} ^ {8 \\delta - 2}} \\eta (\\mathrm{d} \\boldsymbol {x}) \\\\ \\leq C \\lambda_ {1} ^ {\\delta (2 - 8 \\delta)} \\int_ {\\{\\| \\boldsymbol {x} \\| _ {\\mathbb {V}} \\geq \\varepsilon^ {- 1} \\}} e ^ {\\kappa \\| \\boldsymbol {x} \\| _ {\\mathbb {H}} ^ {2}} \\| \\mathrm{A} ^ {\\delta} \\boldsymbol {x} \\| _ {\\mathbb {H}} ^ {8 \\delta + 2} \\frac {\\| \\mathrm{A} ^ {\\delta + \\frac {1}{2}} \\boldsymbol {x} \\| _ {\\mathbb {H}} ^ {2}}{\\| \\boldsymbol {x} \\| _ {\\mathbb {V}} ^ {8 \\delta - 2}} \\eta (\\mathrm{d} \\boldsymbol {x}) \\\\ \\leq C \\lambda_ {1} ^ {\\delta (2 - 8 \\delta)} \\varepsilon^ {8 \\delta - 2} \\int_ {\\mathbb {H}} e ^ {\\kappa \\| \\boldsymbol {x} \\| _ {\\mathbb {H}} ^ {2}} \\| \\mathrm{A} ^ {\\delta} \\boldsymbol {x} \\| _ {\\mathbb {H}} ^ {8 \\delta + 2} \\| \\mathrm{A} ^ {\\delta + \\frac {1}{2}} \\boldsymbol {x} \\| _ {\\mathbb {H}} ^ {2} \\eta (\\mathrm{d} \\boldsymbol {x}) \\\\ \\leq C \\varepsilon^ {8 \\delta - 2}, \\\\ \\end{array}\n\\]"
+  }
+]

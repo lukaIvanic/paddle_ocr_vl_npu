@@ -1,0 +1,279 @@
+[
+  {
+    "type": "page_number",
+    "bbox": [
+      0.116,
+      0.065,
+      0.134,
+      0.075
+    ],
+    "angle": 0,
+    "content": "18"
+  },
+  {
+    "type": "header",
+    "bbox": [
+      0.43,
+      0.064,
+      0.57,
+      0.075
+    ],
+    "angle": 0,
+    "content": "KAO AND MARTONE"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.092,
+      0.427,
+      0.109
+    ],
+    "angle": 0,
+    "content": "Hence, we know that for any \\(n\\) and \\(\\underline{y} \\in \\Sigma^{+}\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.115,
+      0.114,
+      0.756,
+      0.135
+    ],
+    "angle": 0,
+    "content": "\\[\n\\mathbf {1} _ {\\{S _ {n} f (\\underline {{y}}) \\leq t \\}} (\\underline {{y}}) \\mathbf {1} _ {\\{| S _ {n} (g - m f) (\\underline {{y}}) | \\leq \\xi \\}} (\\underline {{y}}) \\leq \\mathbf {1} _ {\\{S _ {n} f (\\underline {{y}}) + \\frac {b}{H} S _ {n} (g - m f) (\\underline {{y}}) \\leq t + \\frac {b}{H} \\xi \\}} (\\underline {{y}}). \\tag {5.3}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.139,
+      0.462,
+      0.155
+    ],
+    "angle": 0,
+    "content": "By equation (5.2) and (5.3), we finally obtained",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.246,
+      0.16,
+      0.75,
+      0.198
+    ],
+    "angle": 0,
+    "content": "\\[\n\\sum_ {n \\geq 1} \\sum_ {\\underline {{y}} \\in \\sigma^ {- n} (\\underline {{z}} _ {p})} \\mathbf {1} _ {p} (\\underline {{y}}) \\mathbf {1} _ {\\{S _ {n} f (\\underline {{y}}) \\leq t \\}} (\\underline {{y}}) \\mathbf {1} _ {\\{| S _ {n} (g - m f) (\\underline {{y}}) | \\leq \\xi \\}} (\\underline {{y}}) \\leq D e ^ {\\frac {b \\xi}{H}} e ^ {t H} \\mu (p)\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.203,
+      0.502,
+      0.219
+    ],
+    "angle": 0,
+    "content": "which completes the proof of the claim. Then, we get",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.25,
+      0.22,
+      0.749,
+      0.377
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\sum_ {n \\geq 1} \\sum_ {\\underline {{y}} \\in \\sigma^ {- n} (\\underline {{z}} _ {p})} \\mathbf {1} _ {p} (\\underline {{y}}) \\mathbf {1} _ {\\{t \\leq S _ {n} f (\\underline {{y}}) \\leq t + \\xi \\}} (\\underline {{y}}) \\mathbf {1} _ {\\{m t \\leq S _ {n} g (\\underline {{y}}) \\leq m t + \\xi \\}} (\\underline {{y}}) \\\\ \\leq \\sum_ {n \\geq 1} \\sum_ {\\underline {{y}} \\in \\sigma^ {- n} \\left(\\underline {{z}} _ {p}\\right)} \\mathbf {1} _ {p} (\\underline {{y}}) \\mathbf {1} _ {\\{t \\leq S _ {n} f (\\underline {{y}}) \\leq t + \\xi \\}} (\\underline {{y}}) \\mathbf {1} _ {\\{| S _ {n} g (\\underline {{y}}) - m S _ {n} f (\\underline {{y}}) | \\leq (m + 1) \\xi \\}} (\\underline {{y}}) \\\\ \\leq \\sum_ {n \\geq 1} \\sum_ {\\underline {{y}} \\in \\sigma^ {- n} \\left(\\underline {{z}} _ {p}\\right)} \\mathbf {1} _ {p} (\\underline {{y}}) \\mathbf {1} _ {\\left\\{S _ {n} f (\\underline {{y}}) \\leq t + \\xi \\right\\}} (\\underline {{y}}) \\mathbf {1} _ {\\left\\{\\left| S _ {n} g (\\underline {{y}}) - m S _ {n} f (\\underline {{y}}) \\right| \\leq (m + 1) \\xi \\right\\}} (\\underline {{y}}) \\\\ \\leq \\underbrace {D e ^ {\\left(\\frac {b (m + 1) \\xi}{H} + H \\xi\\right)}} _ {C} e ^ {t H} \\mu (p) \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.381,
+      0.424,
+      0.397
+    ],
+    "angle": 0,
+    "content": "which finishes the proof of the proposition.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.132,
+      0.406,
+      0.668,
+      0.425
+    ],
+    "angle": 0,
+    "content": "Recall the notation \\( I_{\\xi, m}^{2}(t) = (t, t + \\xi) \\times (mt, mt + \\xi) \\) and consider the set",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.231,
+      0.43,
+      0.766,
+      0.449
+    ],
+    "angle": 0,
+    "content": "\\[\n\\mathcal {W} (p, t) := \\{\\underline {{y}} \\in \\Sigma^ {+} \\colon \\underline {{y}} \\in p, \\sigma^ {n} (\\underline {{y}}) = \\underline {{z}} _ {p}, S _ {n} \\mathbf {f} (\\underline {{y}}) \\in I _ {\\xi , m} ^ {2} (t) \\text {for some} n \\geq 1 \\}.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.453,
+      0.884,
+      0.489
+    ],
+    "angle": 0,
+    "content": "Since we assume that \\(\\underline{z}_p\\) is not periodic, if \\(\\underline{y} \\in \\mathcal{W}(p, t)\\) then there exists a unique positive integer \\(n(\\underline{y})\\) such that \\(\\sigma^{n(\\underline{y})}(\\underline{y}) = \\underline{z}_p\\). Now, for any \\(\\epsilon > 0\\) define",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.118,
+      0.495,
+      0.879,
+      0.531
+    ],
+    "angle": 0,
+    "content": "\\[\n\\mathcal {W} (p, t, \\geq \\epsilon) := \\left\\{\\underline {{y}} \\in \\mathcal {W} (p, t) \\colon \\left| \\frac {n (\\underline {{y}})}{t} - t _ {m} \\right| \\geq \\epsilon \\right\\} \\quad \\text {and} \\quad \\mathcal {W} (p, t, <   \\epsilon) := \\left\\{\\underline {{y}} \\in \\mathcal {W} (p, t) \\colon \\left| \\frac {n (\\underline {{y}})}{t} - t _ {m} \\right| <   \\epsilon \\right\\}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.534,
+      0.867,
+      0.55
+    ],
+    "angle": 0,
+    "content": "Observe that these sets are related to the quantities \\( W(n,p,t) \\) introduced in Section 4, and in particular",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.402,
+      0.555,
+      0.597,
+      0.589
+    ],
+    "angle": 0,
+    "content": "\\[\n\\# \\mathcal {W} (p, t) = \\sum_ {n \\geq 1} W (n, p, t).\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.595,
+      0.884,
+      0.627
+    ],
+    "angle": 0,
+    "content": "We now derive a type of large deviation result which shows that the contribution to the growth of  \\( \\mathcal{W}(p,t) \\)  by the elements y for which  \\( n(y)/t \\)  is far from  \\( t_{m} \\)  is negligible.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.634,
+      0.886,
+      0.665
+    ],
+    "angle": 0,
+    "content": "Lemma 5.3 (Negligible part). Suppose \\( m \\in S(\\mathbf{f}) \\) is an admissible slope for \\( \\mathbf{f} \\). For any \\( \\epsilon > 0 \\) there exist constants \\( C_2 = C_2(k, m, \\xi, \\epsilon) \\), \\( \\eta = \\eta(k, m, \\xi, \\epsilon) > 0 \\) such that",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.271,
+      0.67,
+      0.726,
+      0.708
+    ],
+    "angle": 0,
+    "content": "\\[\n\\sum_ {p \\in \\Lambda_ {k}} \\mathcal {W} (p, t, \\geq \\epsilon) = \\sum_ {p \\in \\Lambda_ {k}} \\sum_ {n: \\left| \\frac {n}{t} - t _ {m} \\right| \\geq \\epsilon} W (n, p, t) \\leq C _ {2} e ^ {t \\left(H _ {\\mathbf {f}} (m) - \\eta\\right)}.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.715,
+      0.886,
+      0.775
+    ],
+    "angle": 0,
+    "content": "Proof. When \\( n < k \\), the statement follows from a repeated application of Proposition 4.6. Thus, assume \\( n \\geq k \\) and let \\( \\mathbf{m} = (1, m) \\). By Lemma 2.12 we know that the function \\( t \\mapsto -t\\mathbb{P}^*(\\frac{\\mathbf{m}}{t}) \\) is concave down and realizes its maximum at \\( t = t_m \\). Let \\( t^1 = t_m + \\epsilon \\), \\( t^0 = t_m - \\epsilon \\), and \\( \\mathbf{z}^i = \\nabla \\mathbb{P}^*(\\frac{\\mathbf{m}}{t^i}) \\) for \\( i = 0, 1 \\). By Proposition 2.11, we have",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.361,
+      0.776,
+      0.637,
+      0.81
+    ],
+    "angle": 0,
+    "content": "\\[\n\\mathbb {P} (\\mathbf {z} ^ {1}) <   0 = \\mathbb {P} \\left(\\nabla \\mathbb {P} ^ {*} \\left(\\frac {\\mathbf {m}}{t _ {m}}\\right)\\right) <   \\mathbb {P} (\\mathbf {z} ^ {0})\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.812,
+      0.603,
+      0.829
+    ],
+    "angle": 0,
+    "content": "and \\(t^i\\mathbb{P}(\\mathbf{z}^i) - \\langle \\mathbf{m},\\mathbf{z}^i\\rangle < H_{\\mathbf{f}}(m)\\) by Proposition 2.11 and Lemma 3.3.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.829,
+      0.884,
+      0.868
+    ],
+    "angle": 0,
+    "content": "Consider \\( U_{t} = \\left(1,1 + \\frac{\\xi}{t}\\right) \\times \\left(m,m + \\frac{\\xi}{t}\\right) \\), so that \\( t \\cdot U_{t} = I_{\\xi, m}^{2}(t) \\). Recall that Lemma 4.8 shows that for all \\( n \\geq k \\), and for a fixed \\( \\mathbf{z} \\in D \\), if \\( \\mathbf{x} \\in \\mathbb{R}^{2} \\) is such that \\( \\langle \\mathbf{z}, \\mathbf{y} \\rangle \\geq \\langle \\mathbf{z}, \\mathbf{x} \\rangle \\) for all \\( \\mathbf{y} \\in U_{t} \\), then",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.404,
+      0.872,
+      0.594,
+      0.891
+    ],
+    "angle": 0,
+    "content": "\\[\nW (n, U _ {t}) \\leq Q e ^ {n \\mathbb {P} (\\mathbf {z}) - \\langle \\mathbf {z}, \\mathbf {x} \\rangle}.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.897,
+      0.828,
+      0.914
+    ],
+    "angle": 0,
+    "content": "Notice that the linear functional \\(\\mathbf{y} \\mapsto \\langle \\mathbf{z}, \\mathbf{y} \\rangle\\) for \\(\\mathbf{y} \\in \\overline{U}_t\\) reaches its extreme values at a vertex of \\(\\overline{U}_t\\).",
+    "merge_prev": false
+  }
+]

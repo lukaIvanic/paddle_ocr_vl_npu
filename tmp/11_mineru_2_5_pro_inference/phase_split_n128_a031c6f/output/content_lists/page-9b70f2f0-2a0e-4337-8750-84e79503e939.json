@@ -1,0 +1,140 @@
+[
+  {
+    "type": "header",
+    "bbox": [
+      0.344,
+      0.078,
+      0.656,
+      0.092
+    ],
+    "angle": 0,
+    "content": "DIFFERENTIABLE GROUPOID OBJECTS"
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.845,
+      0.08,
+      0.864,
+      0.091
+    ],
+    "angle": 0,
+    "content": "43"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.133,
+      0.106,
+      0.865,
+      0.158
+    ],
+    "angle": 0,
+    "content": "The left square commutes by the naturality of  \\( \\alpha \\) . The right square commutes by assumption. Hence, the diagram induces a unique map from the limit of the top row to the limit of the bottom row",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.333,
+      0.165,
+      0.666,
+      0.189
+    ],
+    "angle": 0,
+    "content": "\\[\n\\alpha_ {E} ^ {\\prime} := \\alpha_ {E} \\times_ {\\alpha_ {G _ {0}}} \\mathrm{id} _ {G _ {0}}: V ^ {[ n ]} E \\longrightarrow V ^ {[ m ]} E,\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.133,
+      0.195,
+      0.49,
+      0.214
+    ],
+    "angle": 0,
+    "content": "such that Diagram (5.7) and the diagram",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.402,
+      0.223,
+      0.599,
+      0.298
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{c} V ^ {[ n ]} E \\xrightarrow {\\alpha_ {E} ^ {\\prime}} V ^ {[ m ]} E \\\\ \\Big \\downarrow \\quad \\Big \\downarrow \\\\ G _ {0} \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.133,
+      0.307,
+      0.862,
+      0.343
+    ],
+    "angle": 0,
+    "content": "commute. This shows that \\(\\alpha_{E}^{\\prime}\\) is a bundle morphism. To show that \\(\\alpha_{E}^{\\prime}\\) is \\(G\\)-equivariant, we consider the following diagram:",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.182,
+      0.351,
+      0.866,
+      0.595
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{c} V ^ {[ n ]} E \\times_ {G _ {0}} G _ {1} \\xrightarrow {\\alpha_ {E} ^ {\\prime} \\times_ {G _ {0}} \\mathrm{id}} V ^ {[ m ]} E \\times_ {G _ {0}} G _ {1} \\\\ \\left. \\begin{array}{c} \\beta_ {V ^ {[ n ]} E} \\\\ V ^ {[ n ]} E \\xrightarrow {\\beta_ {V ^ {[ n ]} E}} \\beta_ {V ^ {[ n ]} E} \\\\ V ^ {[ n ]} E \\xrightarrow {\\alpha_ {E}} V ^ {[ m ]} E \\end{array} \\right\\} \\xrightarrow {\\alpha_ {E} \\times_ {\\alpha_ {G _ {0}}} \\alpha_ {G _ {1}}} \\left. \\begin{array}{c} i _ {V ^ {[ n ]} E} \\times_ {0 _ {G _ {0}} ^ {[ n ]}} 0 _ {G _ {1}} ^ {[ n ]} \\\\ T ^ {n} E \\times_ {T ^ {n} G _ {0}} T ^ {n} G _ {1} \\xrightarrow {\\alpha_ {E} \\times_ {\\alpha_ {G _ {0}}} \\alpha_ {G _ {1}}} T ^ {m} E \\times_ {T ^ {m} G _ {0}} T ^ {m} G _ {1} \\\\ \\beta_ {T ^ {n} E} \\\\ T ^ {n} E \\xrightarrow {\\alpha_ {E}} T ^ {m} E \\\\ \\beta_ {T ^ {m} E} \\\\ V ^ {[ n ]} E \\xrightarrow {\\alpha_ {E} ^ {\\prime}} V ^ {[ m ]} E \\end{array} \\right\\} \\end{array} \\tag {5.8}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.135,
+      0.602,
+      0.683,
+      0.621
+    ],
+    "angle": 0,
+    "content": "The inner square is the outer rectangle of the following diagram:",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.291,
+      0.629,
+      0.707,
+      0.765
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} T ^ {n} E \\times_ {T ^ {n} G _ {0}} T ^ {n} G _ {1} \\xrightarrow {\\alpha_ {E} \\times_ {\\alpha_ {G _ {0}}} \\alpha_ {G _ {1}}} T ^ {m} E \\times_ {T ^ {m} G _ {0}} T ^ {m} G _ {1} \\\\ \\nu_ {n, 1} ^ {- 1} \\Bigg \\downarrow \\cong \\quad \\cong \\Bigg \\downarrow \\nu_ {m, 1} ^ {- 1} \\\\ T ^ {n} (E \\times_ {G _ {0}} G _ {1}) \\xrightarrow [ \\alpha_ {E \\times_ {G _ {0}} G _ {1}} ]{} T ^ {m} (E \\times_ {G _ {0}} G _ {1}) \\\\ \\begin{array}{c} T ^ {n} \\beta_ {E} \\Big \\downarrow \\\\ T ^ {n} E \\xrightarrow {\\alpha_ {E}} T ^ {m} E \\end{array} \\xrightarrow {\\alpha_ {0} - 1} \\begin{array}{c} \\Big \\downarrow T ^ {m} \\beta_ {E} \\\\ T ^ {m} E \\end{array} \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.133,
+      0.771,
+      0.865,
+      0.822
+    ],
+    "angle": 0,
+    "content": "The bottom square commutes by the naturality of  \\( \\alpha \\) , the upper square by Lemma A.6. We conclude that the outer rectangle, and thus, the inner square of Diagram (5.8) is commutative.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.133,
+      0.824,
+      0.866,
+      0.899
+    ],
+    "angle": 0,
+    "content": "The right and left trapezoids of (5.8) are both the commutative diagram (5.2). The lower trapezoid is Diagram (5.7), which we have already shown to commute. The commutativity of the top trapezoid follows from the commutativity of the bottom trapezoid, the assumption that \\(\\alpha_{X} \\circ 0_{X}^{[n]} = 0_{X}^{[m]}\\) for both \\(X = G_{0}\\) and \\(X = G_{1}\\), and",
+    "merge_prev": false
+  }
+]

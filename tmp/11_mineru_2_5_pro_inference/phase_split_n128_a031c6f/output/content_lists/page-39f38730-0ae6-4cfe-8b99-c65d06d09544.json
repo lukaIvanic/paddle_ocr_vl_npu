@@ -1,0 +1,220 @@
+[
+  {
+    "type": "header",
+    "bbox": [
+      0.332,
+      0.064,
+      0.669,
+      0.075
+    ],
+    "angle": 0,
+    "content": "AN INFINITE HIERARCHY OF HÖLDER CUSPS FOR 1D EULER"
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.869,
+      0.065,
+      0.883,
+      0.074
+    ],
+    "angle": 0,
+    "content": "29"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.092,
+      0.355,
+      0.107
+    ],
+    "angle": 0,
+    "content": "for all \\( t \\in [0, T_{*}) \\), \\( 0 \\leq m \\leq 2n + 1 \\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.118,
+      0.884,
+      0.135
+    ],
+    "angle": 0,
+    "content": "Proposition 5.5. Suppose the hypotheses of Proposition 5.4 are satisfied, and additionally \\(\\overline{C}_x\\) is a constant satisfying",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.321,
+      0.143,
+      0.388,
+      0.16
+    ],
+    "angle": 0,
+    "content": "\\[\n\\overline {{C}} _ {x} \\gg 1,\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.591,
+      0.143,
+      0.675,
+      0.16
+    ],
+    "angle": 0,
+    "content": "\\[\n\\alpha \\overline {{C}} _ {x} \\gg \\overline {{C}} _ {t}.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.172,
+      0.697,
+      0.188
+    ],
+    "angle": 0,
+    "content": "Then if \\((1 + \\alpha)B_{z}\\varepsilon \\ll 1\\) the following bounds hold for all \\(t\\in [0,T_{*})\\) and \\(|\\beta |\\leq 2n + 1\\):",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.214,
+      0.197,
+      0.886,
+      0.239
+    ],
+    "angle": 0,
+    "content": "\\[\n\\frac {(| \\beta | + 1) ^ {2} \\| \\partial^ {\\beta} \\mathring {K} \\| _ {L _ {x} ^ {\\infty}}}{| \\beta | ! \\overline {{C}} _ {x} ^ {\\beta_ {x}} \\overline {{C}} _ {t} ^ {\\beta_ {t}}} \\leq B _ {k} \\varepsilon , \\quad \\frac {(| \\beta | + 1) ^ {2} \\| \\partial^ {\\beta} \\mathring {Z} \\| _ {L _ {x} ^ {\\infty}}}{| \\beta | ! \\overline {{C}} _ {x} ^ {\\beta_ {x}} \\overline {{C}} _ {t} ^ {\\beta_ {t}}} \\leq B _ {z} \\varepsilon , \\tag {5.30a}\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.216,
+      0.24,
+      0.884,
+      0.279
+    ],
+    "angle": 0,
+    "content": "\\[\n\\frac {(| \\beta | + 1) ^ {2} \\| \\partial^ {\\beta} \\Sigma_ {t} \\| _ {L _ {x} ^ {\\infty}}}{| \\beta | ! \\overline {{C}} _ {x} ^ {\\beta_ {x}} \\overline {{C}} _ {t} ^ {\\beta_ {t}}} \\leq 4 \\alpha B _ {z} \\varepsilon , \\quad \\frac {(| \\beta | + 1) ^ {2} \\| \\partial^ {\\beta} (\\Sigma^ {- 1}) _ {t} \\| _ {L _ {x} ^ {\\infty}}}{| \\beta | ! \\overline {{C}} _ {x} ^ {\\beta_ {x}} \\overline {{C}} _ {t} ^ {\\beta_ {t}}} \\leq 4 \\alpha B _ {z} \\varepsilon , \\tag {5.30b}\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.216,
+      0.281,
+      0.884,
+      0.322
+    ],
+    "angle": 0,
+    "content": "\\[\n\\frac {(| \\beta | + 1) ^ {2} \\| \\partial^ {\\beta} \\eta_ {x} \\| _ {L _ {x} ^ {\\infty}}}{| \\beta | ! \\overline {{C}} _ {x} ^ {\\beta_ {x}} \\overline {{C}} _ {t} ^ {\\beta_ {t}}} \\leq 3, \\quad \\frac {(| \\beta | + 1) ^ {2} \\| \\partial^ {\\beta} (\\eta_ {x} \\mathring {W}) \\| _ {L _ {x} ^ {\\infty}}}{| \\beta | ! \\overline {{C}} _ {x} ^ {\\beta_ {x}} \\overline {{C}} _ {t} ^ {\\beta_ {t}}} \\leq \\frac {4}{3}, \\tag {5.30c}\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.216,
+      0.323,
+      0.884,
+      0.363
+    ],
+    "angle": 0,
+    "content": "\\[\n\\frac {(| \\beta | + 1) ^ {2} \\| \\partial^ {\\beta} \\Sigma_ {x} \\| _ {L _ {x} ^ {\\infty}}}{| \\beta | ! \\overline {{C}} _ {x} ^ {\\beta_ {x}} \\overline {{C}} _ {t} ^ {\\beta_ {t}}} \\leq 1, \\quad \\frac {(| \\beta | + 1) ^ {2} \\| \\partial^ {\\beta} (\\Sigma^ {- 1}) _ {x} \\| _ {L _ {x} ^ {\\infty}}}{| \\beta | ! \\overline {{C}} _ {x} ^ {\\beta_ {x}} \\overline {{C}} _ {t} ^ {\\beta_ {t}}} \\leq 1 0. \\tag {5.30d}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.371,
+      0.376,
+      0.385
+    ],
+    "angle": 0,
+    "content": "Proof. We proceed by induction on \\(\\beta_{x}\\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.385,
+      0.884,
+      0.415
+    ],
+    "angle": 0,
+    "content": "Base Case: When \\(\\beta_{x} = 0\\), (5.30a) is implied by (5.29). The rest of the inequalities (5.30b)-(5.30d) in the case \\(\\beta_{x} = 0\\) now follow by applying the a priori estimates of § 5.2 with \\(A_{k} = B_{k}\\), \\(A_{z} = B_{z}\\), \\(\\delta = 0\\), and \\(C_{t} = \\overline{C}_{t}\\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.416,
+      0.884,
+      0.446
+    ],
+    "angle": 0,
+    "content": "Inductive Step: Fix \\( m \\) with \\( 0 \\leq m \\leq 2n \\) and suppose that the estimates (5.30a) - (5.30d) are true for choices of \\( \\beta \\) with \\( |\\beta| \\leq 2n + 1 \\) and \\( \\beta_x \\leq m \\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.446,
+      0.884,
+      0.49
+    ],
+    "angle": 0,
+    "content": "We first prove that (5.30a) is true for choices of \\(\\beta\\) with \\(|\\beta| \\leq 2n + 1\\) and \\(\\beta_x = m + 1\\). This needs to be done first, because it will be used to prove that the rest of the bounds (5.30b) - (5.30d) hold for \\(\\beta\\) with \\(|\\beta| \\leq 2n + 1\\) and \\(\\beta_x = m + 1\\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.49,
+      0.884,
+      0.521
+    ],
+    "angle": 0,
+    "content": "Fix a choice of \\(\\beta\\) with \\(|\\beta| \\leq 2n\\) and \\(\\beta_x = m\\). We will prove that (5.30a) is true for \\(\\beta + e_x\\). To do this, take \\(\\partial^\\beta\\) of (5.9a) to obtain",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.114,
+      0.53,
+      0.884,
+      0.771
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\alpha \\partial^{\\beta +e_{x}}\\mathring{K} = \\Sigma^{-1}\\eta_{x}\\partial^{\\beta +e_{t}}\\mathring{K} +\\sum_{\\substack{j e_{x} + \\gamma_{2} + \\gamma_{3} = \\beta \\\\ j\\geq 1}}\\binom {\\beta}{je_{x}\\gamma_{2}\\gamma_{3}}\\partial_{x}^{j - 1}(\\Sigma^{-1})_{x}\\partial^{\\gamma_{2}}\\eta_{x}\\partial^{\\gamma_{3} + e_{t}}\\mathring{K} \\\\ +\\sum_{\\substack{\\gamma_{1} + \\gamma_{2} + \\gamma_{3} = \\beta \\\\ \\gamma_{1}\\geq e_{t}}}\\binom {\\beta}{\\gamma_{1}\\gamma_{2}\\gamma_{3}}\\partial^{\\gamma_{1} - e_{t}}(\\Sigma^{-1})_{t}\\partial^{\\gamma_{2}}\\eta_{x}\\partial^{\\gamma_{3} + e_{t}}\\mathring{K} +\\frac{1}{2}\\Sigma^{-1}\\sum_{\\gamma \\leq \\beta}\\binom {\\beta}{\\gamma}\\partial^{\\gamma}\\mathring{K}\\partial^{\\beta -\\gamma}(\\eta_{x}\\mathring{W}) \\\\ + \\frac {1}{2} \\Sigma^ {- 1} \\sum_ {\\gamma_ {1} + \\gamma_ {2} + \\gamma_ {3} = \\beta} \\binom{\\beta}{\\gamma_ {1} \\gamma_ {2} \\gamma_ {3}} \\partial^ {\\gamma_ {1}} \\eta_ {x} \\partial^ {\\gamma_ {2}} \\mathring {K} \\partial^ {\\gamma_ {3}} \\mathring {Z} \\\\ + \\frac{1}{2}\\sum_{\\substack{j e_{x} + \\gamma_{2} + \\gamma_{3} = \\beta \\\\ j\\geq 1}}\\binom {\\beta}{je_{x}\\gamma_{2}\\gamma_{3}}\\partial_{x}^{j - 1}(\\Sigma^{-1})_{x}\\partial^{\\gamma_{2}}\\mathring{K}\\partial^{\\gamma_{3}}(\\eta_{x}\\mathring{W}) + \\frac{1}{2}\\sum_{\\substack{j e_{x} + \\gamma_{2} + \\gamma_{3} + \\gamma_{4} = \\beta \\\\ j\\geq 1}}\\binom {\\beta}{je_{x}\\gamma_{2}\\gamma_{3}\\gamma_{4}}\\partial_{x}^{j - 1}(\\Sigma^{-1})_{x}\\partial^{\\gamma_{2}}\\eta_{x}\\partial^{\\gamma_{3}}\\mathring{K}\\partial^{\\gamma_{4}}\\mathring{Z} \\\\ + \\frac{1}{2}\\sum_{\\substack{\\gamma_{1} + \\gamma_{2} + \\gamma_{3} = \\beta \\\\ \\gamma_{1}\\geq e_{t}}}\\binom {\\beta}{\\gamma_{1}\\gamma_{2}\\gamma_{3}}\\partial^{\\gamma_{1} - e_{t}}(\\Sigma^{-1})_{t}\\partial^{\\gamma_{2}}\\mathring{K}\\partial^{\\gamma_{3}}(\\eta_{x}\\mathring{W}) + \\frac{1}{2}\\sum_{\\substack{j e_{x} + \\gamma_{2} + \\gamma_{3} + \\gamma_{4} = \\beta \\\\ \\gamma_{1}\\geq e_{t}}}\\binom {\\beta}{\\gamma_{1}\\gamma_{2}\\gamma_{3}\\gamma_{4}}\\partial^{\\gamma_{1} - e_{t}}(\\Sigma^{-1})_{t}\\partial^{\\gamma_{2}}\\eta_{x}\\partial^{\\gamma_{3}}\\mathring{K}\\partial^{\\gamma_{4}}\\mathring{Z}. \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.78,
+      0.51,
+      0.796
+    ],
+    "angle": 0,
+    "content": "Applying our inductive hypothesis and Lemma B.2 gives us",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.114,
+      0.805,
+      0.88,
+      0.915
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\alpha \\frac{(|\\beta| + e_{x}| + 1)^{2}\\| \\partial^{\\beta}\\mathring{K}\\|_{L_{x}^{\\infty}}}{|\\beta + e_{x}|!\\overline{C}_{x}^{\\beta_{x} + 1}\\overline{C}_{t}^{\\beta_{t}}B_{k}\\varepsilon}\\leq 9\\frac{\\overline{C}_{t}}{\\overline{C}_{x}} +30\\frac{\\overline{C}_{t}}{\\overline{C}_{x}^{2}}\\frac{|\\beta| + 2}{|\\beta| + 1}\\sum_{\\substack{j_{1} + j_{2} + j_{3} = |\\beta |\\\\ j_{1}\\geq 1}}\\frac{|\\beta| + 2}{j_{1}^{3}(j_{2} + 1)^{2}(j_{3} + 1)^{2}} \\\\ + \\frac{1}{\\overline{C}_{x}}\\frac{|\\beta| + 2}{|\\beta| + 1}\\Biggl [24\\alpha B_{z}\\varepsilon \\sum_{\\substack{j_{1} + j_{2} + j_{3} = |\\beta |\\\\ j_{1}\\geq 1}}\\frac{|\\beta| + 2}{j_{1}^{3}(j_{2} + 1)^{2}(j_{3} + 2)} +2\\sum_{j = 0}^{|\\beta |}\\frac{|\\beta| + 2}{(j + 1)^{2}(|\\beta| + 1 - j)^{2}} +\\frac{9}{2} B_{z}\\varepsilon \\sum_{j_{1} + j_{2} + j_{3} = |\\beta |}\\frac{|\\beta| + 2}{(j_{1} + 1)^{2}(j_{2} + 1)^{2}(j_{3} + 1)^{2}}\\Biggr ] \\\\ \\end{array}\n\\]"
+  }
+]

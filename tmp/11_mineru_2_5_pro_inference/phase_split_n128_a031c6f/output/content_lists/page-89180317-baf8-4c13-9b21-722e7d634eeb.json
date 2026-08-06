@@ -1,0 +1,279 @@
+[
+  {
+    "type": "page_number",
+    "bbox": [
+      0.14,
+      0.062,
+      0.16,
+      0.072
+    ],
+    "angle": 0,
+    "content": "26"
+  },
+  {
+    "type": "header",
+    "bbox": [
+      0.825,
+      0.06,
+      0.858,
+      0.073
+    ],
+    "angle": 0,
+    "content": "目录"
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.14,
+      0.099,
+      0.315,
+      0.118
+    ],
+    "angle": 0,
+    "content": "16.4 高阶K重根"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.165,
+      0.135,
+      0.395,
+      0.15
+    ],
+    "angle": 0,
+    "content": "k重复数根：通解中的2k项",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.165,
+      0.161,
+      0.784,
+      0.18
+    ],
+    "angle": 0,
+    "content": "\\[\ne ^ {\\alpha} x \\left[ \\left(A _ {1} + A _ {2} x + \\dots + A _ {k} x ^ {k - 1}\\right) \\cos \\beta x + \\left(B _ {1} + B _ {2} x + \\dots + B _ {k} x ^ {k - 1}\\right) \\sin \\beta x \\right]\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.165,
+      0.188,
+      0.441,
+      0.204
+    ],
+    "angle": 0,
+    "content": "若 \\(\\lambda_{1,2} = \\alpha \\pm \\beta i, \\beta > 0\\) 为特征方程",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.165,
+      0.214,
+      0.562,
+      0.232
+    ],
+    "angle": 0,
+    "content": "\\( r^{n}+a_{1}r^{n-1}+\\cdots+a_{n-1}r+a_{n}=0 \\) 的k重复数根,",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.165,
+      0.241,
+      0.441,
+      0.257
+    ],
+    "angle": 0,
+    "content": "则对应的齐次方程通解中的 \\(2k\\) 项",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.165,
+      0.267,
+      0.78,
+      0.286
+    ],
+    "angle": 0,
+    "content": "\\[\ne ^ {\\alpha} x \\left[ \\left(A _ {1} + A _ {2} x + \\dots + A _ {k} x ^ {k - 1}\\right) \\cos \\beta x + \\left(B _ {1} + B _ {2} x + \\dots + B _ {k} x ^ {k - 1}\\right) \\sin \\beta x \\right]\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.165,
+      0.294,
+      0.668,
+      0.31
+    ],
+    "angle": 0,
+    "content": "求高阶齐次方程的通解：将 \\(n\\) 个特征根对应的项相加得到通解",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.137,
+      0.32,
+      0.859,
+      0.363
+    ],
+    "angle": 0,
+    "content": "求n阶常系数线性齐次微分方程 \\( y^{(n)}+a_{1}(x)y^{(n-1)}+\\cdots+a_{n-1}(x)y'+a_{n}(x)y=0 \\) 的通解：",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.165,
+      0.374,
+      0.818,
+      0.391
+    ],
+    "angle": 0,
+    "content": "1 写出特征方程 \\( r^n + a_1 r^{n-1} + \\cdots + a_{n-1} r + a_n = 0 \\)，求出其特征根 \\( r_i (i = 1, 2, \\dots, n) \\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.165,
+      0.4,
+      0.655,
+      0.417
+    ],
+    "angle": 0,
+    "content": "2 对每一个根，判断对应形式：单重实根 \\(r\\) ，对应一项 \\(Ce^{\\alpha}x\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.165,
+      0.426,
+      0.589,
+      0.444
+    ],
+    "angle": 0,
+    "content": "♡k重实根r,对应k项 \\( (C_{1}+C_{2}x+\\cdots+C_{k}x^{k-1})e^{\\alpha x}; \\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.165,
+      0.453,
+      0.761,
+      0.47
+    ],
+    "angle": 0,
+    "content": "\\(\\heartsuit\\) 单重复数根 \\(r_1.2 = \\alpha \\pm \\beta i, \\beta > 0\\), 对应两项 \\(e^{\\alpha}x(C_1\\cos \\beta x + C_2\\sin \\beta x)\\);",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.137,
+      0.48,
+      0.857,
+      0.525
+    ],
+    "angle": 0,
+    "content": "\\( \\heartsuit k \\) 重复数根 \\( r_{1}.2=\\alpha\\pm\\beta i,\\beta>0 \\) ,对应2k项 \\( e^{\\alpha}x\\left[(A_{1}+A_{2}x+\\cdots+A_{k}x^{k-1})\\cos\\beta x+(B_{1}+B_{2}x+\\cdots+B_{k}x^{k-1})\\sin\\beta x\\right] \\) .",
+    "merge_prev": false
+  },
+  {
+    "type": "list",
+    "bbox": [
+      0.137,
+      0.374,
+      0.857,
+      0.525
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.138,
+      0.546,
+      0.232,
+      0.563
+    ],
+    "angle": 0,
+    "content": "例1.K重"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.137,
+      0.573,
+      0.859,
+      0.616
+    ],
+    "angle": 0,
+    "content": "已知以  \\( y=(C_{1}x+C_{2})\\cos 2x+(C_{3}x+C_{4})\\sin 2x,\\quad(C_{1},C_{2},C_{3},C_{4} \\)  为任意常数)为通解的微分方程是  \\( y'''+ay'''+by''+cy'+dy=0 \\)  ,求  \\( a+b+c+d \\) .",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.165,
+      0.639,
+      0.731,
+      0.656
+    ],
+    "angle": 0,
+    "content": "3 将 \\(n\\) 个根对应的所有项相加便得通解，其中 \\(C, C_i, A_i, B_i\\) 为任意常数。",
+    "merge_prev": false
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.139,
+      0.728,
+      0.329,
+      0.75
+    ],
+    "angle": 0,
+    "content": "17 定积分应用"
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.138,
+      0.785,
+      0.529,
+      0.805
+    ],
+    "angle": 0,
+    "content": "17.1 旋转体体积，非 y 轴， \\( V = V_{1} - V_{2} \\)"
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.139,
+      0.838,
+      0.317,
+      0.856
+    ],
+    "angle": 0,
+    "content": "17.2 积分比大小"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.164,
+      0.862,
+      0.734,
+      0.902
+    ],
+    "angle": 0,
+    "content": "\\[\n\\mathrm{I} _ {1} = \\int_ {0} ^ {\\frac {\\pi}{4}} \\ln (1 + 2 \\sin x) \\cot x \\mathrm{dx}, \\mathrm{I} _ {2} = \\int_ {0} ^ {\\frac {\\pi}{4}} 2 \\cos x \\cot x \\mathrm{dx}, \\mathrm{I} _ {3} = \\int_ {0} ^ {\\frac {\\pi}{4}} \\frac {\\cos x}{1 + x} \\mathrm{dx}, \\text {则}\n\\]"
+  }
+]

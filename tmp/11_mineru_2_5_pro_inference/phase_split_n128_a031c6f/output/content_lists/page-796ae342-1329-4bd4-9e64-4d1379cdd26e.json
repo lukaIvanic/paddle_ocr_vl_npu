@@ -1,0 +1,154 @@
+[
+  {
+    "type": "page_number",
+    "bbox": [
+      0.167,
+      0.086,
+      0.178,
+      0.096
+    ],
+    "angle": 0,
+    "content": "2"
+  },
+  {
+    "type": "header",
+    "bbox": [
+      0.24,
+      0.084,
+      0.788,
+      0.098
+    ],
+    "angle": 0,
+    "content": "ALEXANDER HOCK, SERGEY SHADRIN, AND RAIMAR WULKENHAAR"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.209,
+      0.11,
+      0.862,
+      0.145
+    ],
+    "angle": 0,
+    "content": "- the summation is over all partitions \\( I_1 \\sqcup \\ldots \\sqcup I_s = I \\) of \\( I = \\{u_1, \\ldots, u_m\\} \\) into disjoint (and here non-empty) subsets \\( I_j \\) of any order.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.163,
+      0.151,
+      0.862,
+      0.239
+    ],
+    "angle": 0,
+    "content": "The first and the third named authors have proved in [HW25] that, under mild assumptions on the location of poles, the  \\( \\omega_{n}^{(0)} \\)  satisfy linear and quadratic loop equations and obey blobbed topological recursion [BS17]. Loop equations in the quartic analogue of the Kontsevich model lead so such  \\( \\omega_{n}^{(0)} \\)  for the special involution  \\( \\iota z = -z \\) . See [HW25, BHW22].",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.164,
+      0.241,
+      0.862,
+      0.346
+    ],
+    "angle": 0,
+    "content": "Although surprising at first sight, \\(\\omega_2^{(0)}\\) is symmetric: one has \\(B(w,\\iota z) = B(\\iota w,z)\\) and \\(B(w,z) = B(\\iota w,\\iota z)\\). This paper addresses the important question whether all \\(\\omega_n^{(0)}(z_1,\\dots,z_n)\\) defined by (1) and (2) are symmetric in their arguments \\(z_i\\). This symmetry is by no means obvious; it has not been proved so far. We will show that symmetry is reduced to the following purely combinatorial statement about integer partitions into a given number of parts:",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.164,
+      0.357,
+      0.862,
+      0.408
+    ],
+    "angle": 0,
+    "content": "Theorem 1. Let  \\( \\mathsf{P}_{k}(n) \\)  be the set of partitions of an integer  \\( n \\geq 1 \\)  into  \\( 1 \\leq k \\leq n \\)  parts. For any given integers  \\( (s, k, l) \\)  with  \\( k, l \\geq 0 \\)  and  \\( s \\geq \\max(k + l, 1) \\)  and any given partition  \\( \\nu \\in \\mathsf{P}_{s}(2s - k - l) \\)  one has",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.251,
+      0.42,
+      0.861,
+      0.512
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} s! = \\sum_{\\substack{(r - l) + p_{1} + \\ldots +p_{l} = s\\\\ r - l\\geq k, p_{1},\\ldots ,p_{l}\\geq 1}}\\sum_{\\mu \\in \\mathsf{P}_{r - l}(2r - k - 2l)}\\sum_{\\rho_{1}\\in \\mathsf{P}_{p_{1}}(2p_{1} - 1)}\\dots \\sum_{\\rho_{l}\\in \\mathsf{P}_{p_{l}}(2p_{l} - 1)} \\\\ \\times \\binom {\\nu} {\\mu , \\rho_ {1}, \\dots , \\rho_ {l}} (r - l)! (p _ {1} - 1)! \\dots (p _ {l} - 1)!. \\tag {3} \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.165,
+      0.524,
+      0.714,
+      0.546
+    ],
+    "angle": 0,
+    "content": "\\(By\\left(\\nu_{\\mu_{1},\\ldots,\\mu_{l}}\\right)\\) we denote the multinomial coefficient of partitions,",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.254,
+      0.56,
+      0.773,
+      0.647
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\binom{\\nu}{\\mu_ {1}, \\dots , \\mu_ {l}} = \\lim _ {N \\to \\infty} \\prod_ {k = 1} ^ {N} \\binom{h _ {k}}{g _ {k, 1}, \\dots , g _ {k, l}} \\\\ i f \\quad \\nu = (\\dots , \\underbrace {2 , \\dots , 2} _ {h _ {2}}, \\underbrace {1 , \\dots , 1} _ {h _ {1}}), \\quad \\mu_ {i} = (\\dots , \\underbrace {2 , \\dots , 2} _ {g _ {2, i}}, \\underbrace {1 , \\dots , 1} _ {g _ {1, i}}), \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.164,
+      0.661,
+      0.861,
+      0.699
+    ],
+    "angle": 0,
+    "content": "where \\(\\binom{h_k}{g_{k,1},\\dots,g_{k,l}}\\) are the usual multinomial coefficients which vanish unless \\(h_k = g_{k,1} + \\dots +g_{k,l}\\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.164,
+      0.71,
+      0.861,
+      0.744
+    ],
+    "angle": 0,
+    "content": "We give two examples at the end of sec. 5 and a proof of this theorem in sec. 6. This theorem is a main ingredient of the proof of the symmetry:",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.164,
+      0.757,
+      0.862,
+      0.793
+    ],
+    "angle": 0,
+    "content": "Theorem 2. All differentials \\(\\omega_{n}^{(0)}(z_{1},\\dots,z_{n})\\) defined by (1) and (2) are symmetric in their arguments \\(z_{i}\\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.185,
+      0.806,
+      0.688,
+      0.823
+    ],
+    "angle": 0,
+    "content": "Theorem 2 is proved by reduction to Theorem 1 in sec. 5.",
+    "merge_prev": false
+  }
+]

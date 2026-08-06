@@ -1,0 +1,268 @@
+[
+  {
+    "type": "header",
+    "bbox": [
+      0.669,
+      0.072,
+      0.887,
+      0.086
+    ],
+    "angle": 0,
+    "content": "持久状况承载能力极限状态计算"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.144,
+      0.103,
+      0.886,
+      0.144
+    ],
+    "angle": 0,
+    "content": "\\( \\sigma_{p0} \\) ——截面受拉区纵向预应力钢筋合力点处混凝土法向应力等于零时,预应力钢筋中的应力,按式(6.1.6-2)或式(6.1.6-5)计算;",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.146,
+      0.888,
+      0.207
+    ],
+    "angle": 0,
+    "content": "\\(\\varepsilon_{\\mathrm{cu}}\\) ——截面非均匀受压时混凝土的极限压应变, 当混凝土强度等级为 C50 及以下时, 取 \\(\\varepsilon_{\\mathrm{cu}} = 0.0033\\); 当混凝土强度等级为 C80 时, 取 \\(\\varepsilon_{\\mathrm{cu}} = 0.003\\); 中间强度等级用直线插入求得;",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.147,
+      0.211,
+      0.531,
+      0.231
+    ],
+    "angle": 0,
+    "content": "\\( f_{pd} \\) ——纵向预应力钢筋的抗拉强度设计值；",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.15,
+      0.233,
+      0.433,
+      0.252
+    ],
+    "angle": 0,
+    "content": "\\(E_{\\mathrm{p}}\\) ——预应力钢筋的弹性模量。",
+    "merge_prev": false
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.128,
+      0.275,
+      0.843,
+      0.294
+    ],
+    "angle": 0,
+    "content": "5.3.4 矩形截面偏心受压构件的正截面抗压承载力应符合下列规定(图 5.3.4):"
+  },
+  {
+    "type": "image_block",
+    "bbox": [
+      0.185,
+      0.319,
+      0.818,
+      0.497
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.185,
+      0.319,
+      0.573,
+      0.497
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.58,
+      0.319,
+      0.818,
+      0.493
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "image_caption",
+    "bbox": [
+      0.307,
+      0.517,
+      0.69,
+      0.532
+    ],
+    "angle": 0,
+    "content": "图5.3.4 矩形截面偏心受压构件正截面抗压承载力计算"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.29,
+      0.551,
+      0.884,
+      0.573
+    ],
+    "angle": 0,
+    "content": "\\[\n\\gamma_ {0} N _ {\\mathrm{d}} \\leqslant f _ {\\mathrm{cd}} b x + f _ {\\mathrm{sd}} ^ {\\prime} A _ {\\mathrm{s}} ^ {\\prime} + (f _ {\\mathrm{pd}} ^ {\\prime} - \\sigma_ {\\mathrm{p0}} ^ {\\prime}) A _ {\\mathrm{p}} ^ {\\prime} - \\sigma_ {\\mathrm{s}} A _ {\\mathrm{s}} - \\sigma_ {\\mathrm{p}} A _ {\\mathrm{p}} \\tag {5.3.4-1}\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.191,
+      0.582,
+      0.884,
+      0.617
+    ],
+    "angle": 0,
+    "content": "\\[\n\\gamma_ {0} N _ {\\mathrm{d}} e \\leqslant f _ {\\mathrm{cd}} b x \\left(h _ {0} - \\frac {x}{2}\\right) + f _ {\\mathrm{sd}} ^ {\\prime} A _ {\\mathrm{s}} ^ {\\prime} (h _ {0} - a _ {\\mathrm{s}} ^ {\\prime}) + (f _ {\\mathrm{pd}} ^ {\\prime} - \\sigma_ {\\mathrm{p0}} ^ {\\prime}) A _ {\\mathrm{p}} ^ {\\prime} (h _ {0} - a _ {\\mathrm{p}} ^ {\\prime}) \\tag {5.3.4-2}\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.429,
+      0.632,
+      0.885,
+      0.663
+    ],
+    "angle": 0,
+    "content": "\\[\ne = \\eta e _ {0} + \\frac {h}{2} - a \\tag {5.3.4-3}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.11,
+      0.678,
+      0.86,
+      0.698
+    ],
+    "angle": 0,
+    "content": "式中： \\(e\\) ——轴向力作用点至截面受拉边或受压较小边纵向钢筋 \\(A_{\\mathrm{s}}\\) 和 \\(A_{\\mathrm{p}}\\) 合力点的距离；",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.154,
+      0.701,
+      0.595,
+      0.72
+    ],
+    "angle": 0,
+    "content": "\\(e_0\\) ——轴向力对截面重心轴的偏心距， \\(e_0 = M_{\\mathrm{d}} / N_{\\mathrm{d}}\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.148,
+      0.723,
+      0.471,
+      0.74
+    ],
+    "angle": 0,
+    "content": "\\( M_{d} \\) ——相应于轴向力的弯矩设计值；",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.152,
+      0.744,
+      0.865,
+      0.763
+    ],
+    "angle": 0,
+    "content": "\\( h_{0} \\) ——截面受压较大边边缘至受拉边或受压较小边纵向钢筋合力点的距离, \\( h_{0}=h-a \\) ;",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.158,
+      0.767,
+      0.845,
+      0.785
+    ],
+    "angle": 0,
+    "content": "\\( \\eta \\) ——偏心受压构件轴向力偏心距增大系数,按本规范第5.3.9条的规定计算。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.15,
+      0.789,
+      0.766,
+      0.808
+    ],
+    "angle": 0,
+    "content": "截面受拉边或受压较小边纵向钢筋的应力 \\(\\sigma_{\\mathrm{s}}\\) 和 \\(\\sigma_{\\mathrm{p}}\\) 应按下列情况采用：",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.151,
+      0.811,
+      0.86,
+      0.831
+    ],
+    "angle": 0,
+    "content": "当 \\(\\xi \\leqslant \\xi_{\\mathrm{b}}\\) 时为大偏心受压构件，取 \\(\\sigma_{\\mathrm{s}} = f_{\\mathrm{sd}},\\sigma_{\\mathrm{p}} = f_{\\mathrm{pd}}\\) ，此处，相对受压区高度 \\(\\xi = x / h_0\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.152,
+      0.833,
+      0.783,
+      0.853
+    ],
+    "angle": 0,
+    "content": "当 \\(\\xi >\\xi_{\\mathrm{b}}\\) 时为小偏心受压构件， \\(\\sigma_{\\mathrm{s}}\\) 和 \\(\\sigma_{\\mathrm{p}}\\) 按本规范第5.1.5条的规定计算。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.111,
+      0.855,
+      0.886,
+      0.895
+    ],
+    "angle": 0,
+    "content": "在承载力计算中,当考虑截面受压较大边的纵向受压钢筋时,受压区高度应符合式(5.2.2-4)、式(5.2.2-5)的要求。",
+    "merge_prev": false
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.463,
+      0.9,
+      0.536,
+      0.913
+    ],
+    "angle": 0,
+    "content": "— 35 —"
+  }
+]

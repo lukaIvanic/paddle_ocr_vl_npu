@@ -1,0 +1,150 @@
+[
+  {
+    "type": "text",
+    "bbox": [
+      0.32,
+      0.077,
+      0.549,
+      0.1
+    ],
+    "angle": 0,
+    "content": "按表 E.0.2-4 计算；",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.227,
+      0.105,
+      0.903,
+      0.154
+    ],
+    "angle": 0,
+    "content": "\\( p_{sbl} \\) ——桩端全断面以上8倍桩径范围内的比贯入阻力平均值（kPa）；",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.227,
+      0.161,
+      0.905,
+      0.269
+    ],
+    "angle": 0,
+    "content": "\\( p_{sb2} \\) ——桩端全断面以下4倍桩径范围内的比贯入阻力平均值（kPa），当桩端持力层为密实的砂土层，其比贯入阻力平均值（ \\( p_{s} \\) ）超过20MPa时，应乘以表E.0.2-5中系数（C）后，再计算 \\( p_{sk2} \\) 及 \\( p_{sk1} \\) 值；",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.253,
+      0.274,
+      0.68,
+      0.298
+    ],
+    "angle": 0,
+    "content": "\\( \\beta \\) ——折减系数，按表 E.0.2-6 取值；",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.236,
+      0.303,
+      0.517,
+      0.325
+    ],
+    "angle": 0,
+    "content": "\\( A_{p} \\) ——桩端面积（ \\( m^{2} \\) ）。",
+    "merge_prev": false
+  },
+  {
+    "type": "table_caption",
+    "bbox": [
+      0.37,
+      0.34,
+      0.699,
+      0.361
+    ],
+    "angle": 0,
+    "content": "表 E.0.2-1 桩间极限侧阻力 \\( {q}_{\\text{sik }} \\)"
+  },
+  {
+    "type": "table",
+    "bbox": [
+      0.164,
+      0.364,
+      0.907,
+      0.725
+    ],
+    "angle": 0,
+    "content": "<table><tr><td colspan=\"2\">土的类别</td><td>单桥静力触探比贯入阻力(\\( p_s \\))</td><td>桩间极限侧阻力(kPa)</td></tr><tr><td colspan=\"2\">地表以下6m范围内的浅层土</td><td>--</td><td>15</td></tr><tr><td rowspan=\"6\">黏性土</td><td rowspan=\"3\">位于粉土及砂性土以上</td><td>\\( p_s \\leqslant 1000kPa \\)</td><td>\\( q_{sik} = \\frac{p_s}{20} \\)</td></tr><tr><td>\\( 1000kPa &lt; p_s \\leqslant 4000kPa \\)</td><td>\\( q_{sik} = 0.025p_s + 25 \\)</td></tr><tr><td>\\( p_s &gt;4000kPa \\)</td><td>125</td></tr><tr><td rowspan=\"3\">位于粉土及砂性土以下</td><td>\\( p_s \\leqslant 600kPa \\)</td><td>\\( q_{sik} = \\frac{p_s}{20} \\)</td></tr><tr><td>\\( 600kPa &lt; p_s \\leqslant 5000kPa \\)</td><td>\\( q_{sik} = 0.016p_s + 20.45 \\)</td></tr><tr><td>\\( p_s \\geqslant 5000kPa \\)</td><td>100</td></tr><tr><td rowspan=\"2\" colspan=\"2\">粉土及砂性土</td><td>\\( p_s \\leqslant 5000kPa \\)</td><td>\\( q_{sik} = \\frac{p_s}{50} \\)</td></tr><tr><td>\\( p_s &gt;5000kPa \\)</td><td>\\( q_{sik} = 100 \\)</td></tr></table>"
+  },
+  {
+    "type": "table_caption",
+    "bbox": [
+      0.432,
+      0.74,
+      0.639,
+      0.76
+    ],
+    "angle": 0,
+    "content": "表E.0.2-2 系数 \\(\\varphi_{\\mathrm{s}}\\)"
+  },
+  {
+    "type": "table",
+    "bbox": [
+      0.165,
+      0.764,
+      0.907,
+      0.841
+    ],
+    "angle": 0,
+    "content": "<table><tr><td>\\( p_{s}/p_{s1} \\)</td><td>\\( \\leqslant 5 \\)</td><td>7.5</td><td>\\( \\geqslant 10 \\)</td></tr><tr><td>\\( \\varphi_{s} \\)</td><td>1.00</td><td>0.50</td><td>0.33</td></tr></table>"
+  },
+  {
+    "type": "table_footnote",
+    "bbox": [
+      0.182,
+      0.846,
+      0.907,
+      0.888
+    ],
+    "angle": 0,
+    "content": "注：1 \\(p_{\\mathrm{s}}\\) 为桩端穿越的中密一密实砂土、粉土的单桥静力触探比贯入阻力平均值； \\(p_{\\mathrm{s1}}\\) 为砂土、粉土的下卧软土层的比贯入阻力平均值；"
+  },
+  {
+    "type": "table_footnote",
+    "bbox": [
+      0.222,
+      0.894,
+      0.822,
+      0.912
+    ],
+    "angle": 0,
+    "content": "2 单桥探头的圆锥底面积为  \\( 15cm^{2} \\) ，底部带 7cm 高滑套，锥角  \\( 60^{\\circ} \\) 。"
+  },
+  {
+    "type": "list",
+    "bbox": [
+      0.182,
+      0.846,
+      0.907,
+      0.912
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.184,
+      0.929,
+      0.214,
+      0.946
+    ],
+    "angle": 0,
+    "content": "60"
+  }
+]

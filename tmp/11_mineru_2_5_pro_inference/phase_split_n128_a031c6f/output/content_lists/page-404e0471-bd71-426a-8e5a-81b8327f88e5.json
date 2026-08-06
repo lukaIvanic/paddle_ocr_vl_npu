@@ -1,0 +1,370 @@
+[
+  {
+    "type": "equation",
+    "bbox": [
+      0.153,
+      0.104,
+      0.895,
+      0.2
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} ZZ^{\\top}\\stackrel {(1)}{=} T\\left[ \\begin{array}{cc}D_{\\mathrm{des}}^{\\frac{1}{2}\\top}\\left(\\left(\\sum_{i = 1}^{T}\\bar{x} (\\omega_{i})^{\\mathsf{H}}\\bar{x} (\\omega_{i})\\right)\\otimes I_{n_{\\phi}}\\right)D_{\\mathrm{des}}^{\\frac{1}{2}} & D_{\\mathrm{des}}^{\\frac{1}{2}\\top}\\left(\\sum_{i = 1}^{T}\\bar{x} (\\omega_{i})^{\\top}\\left(\\bar{\\phi} (\\omega_{i})^{\\mathsf{H}}\\otimes I_{n_{\\mathrm{x}}}\\right)\\right)\\otimes I_{n_{\\phi}}\\\\ \\left(\\sum_{i = 1}^{T}\\bar{x} (\\omega_{i})^{\\top}\\left(\\bar{\\phi} (\\omega_{i})^{\\mathsf{H}}\\otimes I_{n_{\\mathrm{x}}}\\right)\\right)^{\\mathsf{H}}\\otimes I_{n_{\\phi}}D_{\\mathrm{des}}^{\\frac{1}{2}} & \\left(\\left(\\sum_{i = 1}^{T}\\bar{\\phi} (\\omega_{i})\\bar{\\phi} (\\omega_{i})^{\\mathsf{H}}\\right)\\otimes I_{n_{\\mathrm{x}}}\\right)\\otimes I_{n_{\\phi}} \\end{array} \\right] \\\\ \\succeq T \\left[ \\begin{array}{c c} D _ {\\mathrm{des}} ^ {\\frac {1}{2} \\top} \\left(\\left(\\sum_ {i = 1} ^ {L} \\bar {x} \\left(\\omega_ {i}\\right) ^ {\\mathsf {H}} \\bar {x} \\left(\\omega_ {i}\\right)\\right) \\otimes I _ {n _ {\\phi}}\\right) D _ {\\mathrm{des}} ^ {\\frac {1}{2}} & D _ {\\mathrm{des}} ^ {\\frac {1}{2} \\top} \\left(\\sum_ {i = 1} ^ {L} \\bar {x} \\left(\\omega_ {i}\\right) ^ {\\top} \\left(\\bar {\\phi} \\left(\\omega_ {i}\\right) ^ {\\mathsf {H}} \\otimes I _ {n _ {\\mathrm{x}}}\\right)\\right) \\otimes I _ {n _ {\\phi}} \\\\ \\left(\\sum_ {i = 1} ^ {L} \\bar {x} \\left(\\omega_ {i}\\right) ^ {\\top} \\left(\\bar {\\phi} \\left(\\omega_ {i}\\right) ^ {\\mathsf {H}} \\otimes I _ {n _ {\\mathrm{x}}}\\right)\\right) ^ {\\mathsf {H}} \\otimes I _ {n _ {\\phi}} D _ {\\mathrm{des}} ^ {\\frac {1}{2}} & \\left(\\left(\\sum_ {i = 1} ^ {L} \\bar {\\phi} \\left(\\omega_ {i}\\right) \\bar {\\phi} \\left(\\omega_ {i}\\right) ^ {\\mathsf {H}}\\right) \\otimes I _ {n _ {\\mathrm{x}}}\\right) \\otimes I _ {n _ {\\phi}} \\end{array} \\right] \\tag {A.1} \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.067,
+      0.228,
+      0.417,
+      0.244
+    ],
+    "angle": 0,
+    "content": "By Young's inequality [7], for any \\(\\epsilon > 0\\), we have",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.114,
+      0.259,
+      0.462,
+      0.288
+    ],
+    "angle": 0,
+    "content": "\\[\n\\bar {\\Phi} _ {\\mathrm{u}} \\bar {\\Phi} _ {\\mathrm{w}} ^ {\\mathrm{H}} + \\bar {\\Phi} _ {\\mathrm{w}} \\bar {\\Phi} _ {\\mathrm{u}} ^ {\\mathrm{H}} \\succeq - \\epsilon \\bar {\\Phi} _ {\\mathrm{u}} \\bar {\\Phi} _ {\\mathrm{u}} ^ {\\mathrm{H}} - \\frac {1}{\\epsilon} \\bar {\\Phi} _ {\\mathrm{w}} \\bar {\\Phi} _ {\\mathrm{w}} ^ {\\mathrm{H}} \\tag {A.3}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.067,
+      0.303,
+      0.149,
+      0.318
+    ],
+    "angle": 0,
+    "content": "and hence,",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.068,
+      0.334,
+      0.462,
+      0.379
+    ],
+    "angle": 0,
+    "content": "\\[\n(\\bar {\\Phi} _ {\\mathrm{u}} + \\bar {\\Phi} _ {\\mathrm{w}}) (\\bar {\\Phi} _ {\\mathrm{u}} + \\bar {\\Phi} _ {\\mathrm{w}}) ^ {\\mathrm{H}} \\succeq (1 - \\epsilon) \\bar {\\Phi} _ {\\mathrm{u}} \\bar {\\Phi} _ {\\mathrm{u}} ^ {\\mathrm{H}} - \\left(\\frac {1 - \\epsilon}{\\epsilon}\\right) \\bar {\\Phi} _ {\\mathrm{w}} \\bar {\\Phi} _ {\\mathrm{w}} ^ {\\mathrm{H}}. \\tag {A.4}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.067,
+      0.38,
+      0.462,
+      0.407
+    ],
+    "angle": 0,
+    "content": "By inserting Inequality (A.4) in Inequality (A.2), we get (34).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.068,
+      0.407,
+      0.462,
+      0.436
+    ],
+    "angle": 0,
+    "content": "Part II. From the Parseval-Plancheral identity, we have (A.1), which can be written as",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.092,
+      0.453,
+      0.462,
+      0.474
+    ],
+    "angle": 0,
+    "content": "\\[\nZ Z ^ {\\top} \\succeq T \\bar {Z} \\bar {Z} ^ {\\mathsf {H}} = T \\left(\\bar {Z} _ {\\mathrm{u}} + \\bar {Z} _ {\\mathrm{w}}\\right) \\left(\\bar {Z} _ {\\mathrm{u}} + \\bar {Z} _ {\\mathrm{w}}\\right) ^ {\\mathsf {H}}. \\tag {A.5}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.067,
+      0.489,
+      0.417,
+      0.506
+    ],
+    "angle": 0,
+    "content": "By Young's inequality [7], for any \\(\\epsilon > 0\\), we have",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.116,
+      0.522,
+      0.462,
+      0.55
+    ],
+    "angle": 0,
+    "content": "\\[\n\\bar {Z} _ {\\mathrm{u}} \\bar {Z} _ {\\mathrm{w}} ^ {\\mathrm{H}} + \\bar {Z} _ {\\mathrm{w}} \\bar {Z} _ {\\mathrm{u}} ^ {\\mathrm{H}} \\succeq - \\epsilon \\bar {Z} _ {\\mathrm{u}} \\bar {Z} _ {\\mathrm{u}} ^ {\\mathrm{H}} - \\frac {1}{\\epsilon} \\bar {Z} _ {\\mathrm{w}} \\bar {Z} _ {\\mathrm{w}} ^ {\\mathrm{H}} \\tag {A.6}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.067,
+      0.565,
+      0.148,
+      0.58
+    ],
+    "angle": 0,
+    "content": "and hence,",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.071,
+      0.597,
+      0.462,
+      0.643
+    ],
+    "angle": 0,
+    "content": "\\[\n(\\bar {Z} _ {\\mathrm{u}} + \\bar {Z} _ {\\mathrm{w}}) (\\bar {Z} _ {\\mathrm{u}} + \\bar {Z} _ {\\mathrm{w}}) ^ {\\mathrm{H}} \\succeq (1 - \\epsilon) \\bar {Z} _ {\\mathrm{u}} \\bar {Z} _ {\\mathrm{u}} ^ {\\mathrm{H}} - \\left(\\frac {1 - \\epsilon}{\\epsilon}\\right) \\bar {Z} _ {\\mathrm{w}} \\bar {Z} _ {\\mathrm{w}} ^ {\\mathrm{H}}. \\tag {A.7}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.067,
+      0.642,
+      0.462,
+      0.671
+    ],
+    "angle": 0,
+    "content": "By inserting Inequality (A.7) in Inequality (A.5), we get (35).",
+    "merge_prev": false
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.067,
+      0.708,
+      0.259,
+      0.723
+    ],
+    "angle": 0,
+    "content": "B Proof of Lemma 10"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.067,
+      0.764,
+      0.462,
+      0.807
+    ],
+    "angle": 0,
+    "content": "PROOF. The proof is provided in two parts. In the first part, we prove (40), and in the second part, we prove (41).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.067,
+      0.823,
+      0.462,
+      0.867
+    ],
+    "angle": 0,
+    "content": "Part I. In order to determine a bound on \\(\\bar{\\Phi}_{\\mathrm{w}}\\) (31) of the form in (40), we first determine a bound on \\(W\\) (28). In particular, we have",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.184,
+      0.883,
+      0.462,
+      0.906
+    ],
+    "angle": 0,
+    "content": "\\[\n\\| W \\| = \\max _ {i = 1, \\dots , L} \\| \\bar {w} \\left(\\omega_ {i}\\right) \\| \\tag {B.1}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.498,
+      0.228,
+      0.53,
+      0.241
+    ],
+    "angle": 0,
+    "content": "and",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.514,
+      0.255,
+      0.892,
+      0.311
+    ],
+    "angle": 0,
+    "content": "\\[\n\\max _ {i = 1, \\dots , L} \\| \\bar {w} \\left(\\omega_ {i}\\right) \\| ^ {2} \\leq \\sum_ {i = 1} ^ {L} \\| \\bar {w} \\left(\\omega_ {i}\\right) \\| ^ {2} \\leq \\sum_ {\\omega_ {i} \\in \\Omega_ {T}} \\| \\bar {w} \\left(\\omega_ {i}\\right) \\| ^ {2}. \\tag {B.2}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.497,
+      0.324,
+      0.892,
+      0.354
+    ],
+    "angle": 0,
+    "content": "From the Parseval-Plancherel identity and the energy-bound on the disturbance (3), we have",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.539,
+      0.369,
+      0.892,
+      0.41
+    ],
+    "angle": 0,
+    "content": "\\[\n\\sum_ {\\omega_ {i} \\in \\Omega_ {T}} \\| \\bar {w} (\\omega_ {i}) \\| ^ {2} = \\frac {1}{T} \\sum_ {i = 0} ^ {T - 1} \\| w _ {k} \\| ^ {2} \\stackrel {(3)} {\\leq} \\frac {\\gamma_ {\\mathrm{w}}}{T}, \\tag {B.3}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.497,
+      0.424,
+      0.796,
+      0.439
+    ],
+    "angle": 0,
+    "content": "and hence, from (B.1) and (B.3), we have",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.548,
+      0.454,
+      0.892,
+      0.487
+    ],
+    "angle": 0,
+    "content": "\\[\n\\| W \\| \\leq \\sqrt {\\frac {\\gamma_ {\\mathrm{w}}}{T}} \\text {and} W W ^ {\\mathsf {H}} \\preceq \\frac {\\gamma_ {\\mathrm{w}}}{T} I _ {n _ {\\mathrm{x}} L}. \\tag {B.4}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.497,
+      0.501,
+      0.687,
+      0.516
+    ],
+    "angle": 0,
+    "content": "Starting from (31), we get",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.582,
+      0.529,
+      0.892,
+      0.612
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\bar {\\Phi} _ {\\mathrm{w}} \\bar {\\Phi} _ {\\mathrm{w}} ^ {\\mathsf {H}} = Y _ {\\phi , \\mathrm{tr}} W W ^ {\\mathsf {H}} Y _ {\\phi , \\mathrm{tr}} ^ {\\mathsf {H}} \\\\ \\stackrel {{\\text {(B.4)}}} {{\\succeq}} Y _ {\\phi , \\mathrm{tr}} \\left(\\frac {\\gamma_ {\\mathrm{w}}}{T} I _ {n _ {\\mathrm{x}} L}\\right) Y _ {\\phi , \\mathrm{tr}} ^ {\\mathsf {H}} \\\\ \\stackrel {(3 9)} {\\succeq} \\frac {\\gamma_ {\\mathrm{w}}}{T} \\Gamma_ {\\phi} = \\bar {W} _ {\\phi}. \\quad \\tag {cf.(40)} \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.497,
+      0.626,
+      0.706,
+      0.641
+    ],
+    "angle": 0,
+    "content": "Part II. From (40), we have",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.62,
+      0.655,
+      0.892,
+      0.689
+    ],
+    "angle": 0,
+    "content": "\\[\n\\| \\bar {\\Phi} _ {\\mathrm{w}} \\| \\leq \\sqrt {\\frac {\\gamma_ {\\mathrm{w}}}{T}} \\| \\Gamma_ {\\phi} \\| ^ {\\frac {1}{2}}. \\tag {B.5}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.497,
+      0.701,
+      0.707,
+      0.717
+    ],
+    "angle": 0,
+    "content": "Similarly, from (27), we have",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.521,
+      0.73,
+      0.892,
+      0.784
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\| \\bar {X} _ {\\mathrm{w}} \\| \\leq \\| Y _ {\\mathrm{x}, \\mathrm{tr}} \\| \\| W \\mathbf {1} _ {L} \\| \\tag {B.6} \\\\ \\leq \\| Y _ {\\mathrm{x,tr}} \\| \\max _ {i = 1, \\dots , L} \\| \\bar {w} (\\omega_ {i}) \\| ^ {2} \\stackrel {{(3 9),}} {{=}} \\sqrt {\\frac {\\gamma_ {\\mathrm{w}}}{T}} \\| \\Gamma_ {\\mathrm{x}} \\| ^ {\\frac {1}{2}}. \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.497,
+      0.797,
+      0.892,
+      0.853
+    ],
+    "angle": 0,
+    "content": "Recall that \\(\\bar{Z}_{\\mathrm{w}} = \\left[ \\begin{array}{c}D_{\\mathrm{des}}^{\\frac{1}{2} \\top}\\left(\\bar{X}_{\\mathrm{w}}^{\\mathsf{H}}\\otimes I_{n_{\\phi}}\\right)\\\\ \\bar{\\Phi}_{\\mathrm{w}}\\otimes I_{n_{\\mathrm{x}}n_{\\phi}} \\end{array} \\right]\\) from (33). Note that",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.546,
+      0.865,
+      0.892,
+      0.907
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\bar {Z} _ {\\mathrm{w}} ^ {\\mathsf {H}} \\bar {Z} _ {\\mathrm{w}} = \\left(\\bar {X} _ {\\mathrm{w}} \\otimes I _ {n _ {\\phi}}\\right) D _ {\\mathrm{des}} ^ {\\frac {1}{2}} D _ {\\mathrm{des}} ^ {\\frac {1}{2} \\top} \\left(\\bar {X} _ {\\mathrm{w}} ^ {\\mathsf {H}} \\otimes I _ {n _ {\\phi}}\\right) \\\\ + \\left(\\bar {\\Phi} _ {\\mathrm{w}} ^ {\\mathrm{H}} \\bar {\\Phi} _ {\\mathrm{w}} \\otimes I _ {n _ {\\mathrm{x}} n _ {\\phi}}\\right). \\tag {B.7} \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.469,
+      0.946,
+      0.488,
+      0.958
+    ],
+    "angle": 0,
+    "content": "12"
+  }
+]

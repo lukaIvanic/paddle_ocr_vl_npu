@@ -1,0 +1,165 @@
+[
+  {
+    "type": "page_number",
+    "bbox": [
+      0.151,
+      0.07,
+      0.16,
+      0.08
+    ],
+    "angle": 0,
+    "content": "4"
+  },
+  {
+    "type": "header",
+    "bbox": [
+      0.336,
+      0.068,
+      0.674,
+      0.08
+    ],
+    "angle": 0,
+    "content": "M. FEVRIER, A. NICA, AND K. SZPOJANKOWSKI"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.096,
+      0.862,
+      0.147
+    ],
+    "angle": 0,
+    "content": "A point to be noted here is that, in the aforementioned disintegration of \\(\\mu_{x,y}^{(\\mathrm{ov})}\\), one only needs to look at the measures \\(\\mu_t\\) for \\(t \\in \\mathrm{Spec}(y)\\), and that every such \\(\\mu_t\\) is supported on \\(\\mathrm{Spec}(x)\\), where \\(\\mathrm{Spec}(x), \\mathrm{Spec}(y) \\subseteq \\mathbb{R}\\) are the spectra of the elements \\(x\\) and \\(y\\), respectively.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.147,
+      0.149,
+      0.862,
+      0.275
+    ],
+    "angle": 0,
+    "content": "The name used for \\(\\mu_{x,y}^{(\\mathrm{ov})}\\) in the present paper is overlap measure of \\(x\\) and \\(y\\). Moreover, if \\(\\mu_{x,y}^{(\\mathrm{ov})}\\) happens to be absolutely continuous with respect to the direct product \\(\\mu_x \\times \\mu_y\\) of the distributions of \\(x\\) and \\(y\\), then we will refer to the Radon-Nikodym derivative of \\(\\mu_{x,y}^{(\\mathrm{ov})}\\) with respect to \\(\\mu_x \\times \\mu_y\\) by calling it the overlap function of \\(x\\) and \\(y\\). We note that \\(\\mu_{x,y}^{(\\mathrm{ov})}\\) does not always have to be absolutely continuous with respect to \\(\\mu_x \\times \\mu_y\\) (consider for example \\(y = x\\) where \\(x\\) has absolutely continuous distribution with respect to Lebesgue measure); but this will nevertheless be the case in several cases that are relevant for our calculations.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.147,
+      0.276,
+      0.861,
+      0.357
+    ],
+    "angle": 0,
+    "content": "The motivation for the “overlap” terminology comes from the case when our A is the algebra of matrices  \\( \\mathcal{M}_{N}(\\mathbb{C}) \\) , considered with the normalized trace  \\( \\varphi = \\frac{1}{N}Tr \\) , and when the pair of selfadjoint elements of A to be considered is thus a pair  \\( (X_{N}, Y_{N}) \\)  of complex Hermitian matrices. What happens here is that upon explicitly writing  \\( X_{N} \\)  and  \\( Y_{N} \\)  in terms of their eigenvalues and eigenvectors:",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.259,
+      0.362,
+      0.735,
+      0.38
+    ],
+    "angle": 0,
+    "content": "\\[\nX _ {N} = U \\mathrm{diag} (\\lambda_ {1}, \\dots , \\lambda_ {N}) U ^ {*} \\text {and} Y _ {N} = V \\mathrm{diag} (\\rho_ {1}, \\dots , \\rho_ {N}) V ^ {*},\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.263,
+      0.394,
+      0.75,
+      0.413
+    ],
+    "angle": 0,
+    "content": "with \\( U = [\\vec{u}_1, \\dots, \\vec{u}_N] \\) and \\( V = [\\vec{v}_1, \\dots, \\vec{v}_N] \\), unitary matrices,",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.147,
+      0.418,
+      0.313,
+      0.433
+    ],
+    "angle": 0,
+    "content": "one easily finds that",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.368,
+      0.433,
+      0.641,
+      0.48
+    ],
+    "angle": 0,
+    "content": "\\[\n\\mu_ {X _ {N}, Y _ {N}} ^ {(\\mathrm{ov})} = \\frac {1}{N} \\sum_ {i, j = 1} ^ {N} | \\langle \\vec {u} _ {i}, \\vec {v} _ {j} \\rangle | ^ {2} \\delta_ {(\\lambda_ {i}, \\rho_ {j})}.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.147,
+      0.482,
+      0.862,
+      0.566
+    ],
+    "angle": 0,
+    "content": "Moreover, the above measure is absolutely continuous with respect to the product of distributions (which in this case is just  \\( \\frac{1}{N^{2}}\\sum_{i,j=1}^{N}\\delta_{(\\lambda_{i},\\rho_{j})} \\) , the direct product of the empirical eigenvalue distributions of  \\( X_{N} \\)  and  \\( Y_{N} \\) ). The Radon-Nikodym derivative at a point  \\( (\\lambda_{i},\\rho_{j}) \\)  is given by  \\( N|\\langle\\vec{u}_{i},\\vec{v}_{j}\\rangle|^{2} \\)  – this is precisely the quantity called an overlap in the physics literature.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.148,
+      0.587,
+      0.862,
+      0.675
+    ],
+    "angle": 0,
+    "content": "1.5. Description of results - additive case. We show that the absolute continuity of \\(\\mu_{x,y}^{(\\mathrm{ov})}\\) with respect to \\(\\mu_x\\times \\mu_y\\) holds when \\(x = a\\) and \\(y = a + b\\) where \\(a,b\\) are freely independent selfadjoint random variables. This result is based on the subordination results of Biane [12] and regularity properties of free convolutions studied by Belinschi in a series of papers [2, 3, 4, 5]. More precisely we prove the following theorem.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.147,
+      0.693,
+      0.862,
+      0.776
+    ],
+    "angle": 0,
+    "content": "Theorem 1.1. Let \\(a, b\\) be freely independent selfadjoint random variables in a \\(W^{*}\\)-probability space \\((\\mathcal{A}, \\varphi)\\). Let \\(\\mu\\) and respectively \\(\\nu\\) be the distributions of \\(a\\) and \\(b\\) with respect to \\(\\varphi\\), and assume that neither of \\(\\mu, \\nu\\) is a point mass. Denote by \\(f_{\\mu \\boxplus \\nu}\\) the density of the absolutely continuous part of \\(\\mu \\boxplus \\nu\\) and by \\(\\omega\\) the continuation to the real line of the subordination function of \\(\\mu \\boxplus \\nu\\) with respect to \\(\\mu\\). Then there exists an open set \\(U \\subset \\mathbb{R}\\) such that",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.172,
+      0.779,
+      0.833,
+      0.833
+    ],
+    "angle": 0,
+    "content": "\\[\n\\forall s \\in \\mathrm{Spec} (a), \\mathrm{o} _ {a, a + b} (s, t) = \\left\\{ \\begin{array}{l l} - \\frac {1}{\\pi} \\frac {1}{f _ {\\mu \\boxplus \\nu} (t)} \\operatorname{Im} \\left(\\frac {1}{\\omega (t) - s}\\right) & \\quad \\text {if} t \\in U, \\\\ \\frac {1}{\\mu (\\{s \\})} 1 _ {\\omega (t) = s} & \\quad \\text {if} t \\text {is an atom of} \\mu \\boxplus \\nu , \\end{array} \\right.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.148,
+      0.836,
+      0.862,
+      0.892
+    ],
+    "angle": 0,
+    "content": "defines \\(\\mu \\times \\mu \\boxplus \\nu\\)-almost everywhere a function \\(\\mathrm{o}_{a,a + b}:\\mathrm{Spec}(a)\\times \\mathrm{Spec}(a + b)\\to \\mathbb{R}_{+}\\). Then \\(d\\mu_{a,a + b}^{(\\mathrm{ov})}(s,t) = \\mathrm{o}_{a,a + b}(s,t)\\mu (ds)\\mu \\boxplus \\nu (dt)\\). In particular \\(\\mu_{a,a + b}^{(\\mathrm{ov})}\\ll \\mu \\times \\mu \\boxplus \\nu\\) and \\(\\mathrm{o}_{a,a + b}\\) is the overlap function of \\(a\\) and \\(a + b\\).",
+    "merge_prev": false
+  }
+]

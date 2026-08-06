@@ -1,0 +1,152 @@
+[
+  {
+    "type": "header",
+    "bbox": [
+      0.302,
+      0.038,
+      0.425,
+      0.061
+    ],
+    "angle": 0,
+    "content": "Section"
+  },
+  {
+    "type": "header",
+    "bbox": [
+      0.346,
+      0.063,
+      0.41,
+      0.136
+    ],
+    "angle": 0,
+    "content": "1"
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.375,
+      0.193,
+      0.573,
+      0.224
+    ],
+    "angle": 0,
+    "content": "语气的概述"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.096,
+      0.281,
+      0.9,
+      0.334
+    ],
+    "angle": 0,
+    "content": "语气可以分为陈述语气、祈使语气和虚拟语气。虚拟语气又有七种基本结构。",
+    "merge_prev": false
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.099,
+      0.342,
+      0.889,
+      0.646
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.117,
+      0.664,
+      0.303,
+      0.69
+    ],
+    "angle": 0,
+    "content": "一 陈述语气"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.175,
+      0.727,
+      0.446,
+      0.765
+    ],
+    "angle": 0,
+    "content": "陈述语气表示所说的话是陈述事实、提出想法。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.782,
+      0.867,
+      0.806
+    ],
+    "angle": 0,
+    "content": "陈述语气可以用于各种时态，多用于陈述句、疑问句及部分感叹句中。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.813,
+      0.518,
+      0.835
+    ],
+    "angle": 0,
+    "content": "She went to the office this morning.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.842,
+      0.421,
+      0.864
+    ],
+    "angle": 0,
+    "content": "她今天早上去了办公室。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.873,
+      0.39,
+      0.894
+    ],
+    "angle": 0,
+    "content": "How nice a man he is!",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.146,
+      0.902,
+      0.394,
+      0.924
+    ],
+    "angle": 0,
+    "content": "他是多好的一个人啊！",
+    "merge_prev": false
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.087,
+      0.947,
+      0.13,
+      0.964
+    ],
+    "angle": 0,
+    "content": "252"
+  }
+]

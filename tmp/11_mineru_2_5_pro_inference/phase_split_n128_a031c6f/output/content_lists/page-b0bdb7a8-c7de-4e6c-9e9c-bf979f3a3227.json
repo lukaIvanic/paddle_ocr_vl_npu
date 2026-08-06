@@ -1,0 +1,210 @@
+[
+  {
+    "type": "header",
+    "bbox": [
+      0.305,
+      0.063,
+      0.694,
+      0.075
+    ],
+    "angle": 0,
+    "content": "UNIVERSAL \\(\\overline{\\partial}\\) SOLUTION ON STRONGLY PSEUDOCONVEX"
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.873,
+      0.065,
+      0.883,
+      0.075
+    ],
+    "angle": 0,
+    "content": "9"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.09,
+      0.885,
+      0.153
+    ],
+    "angle": 0,
+    "content": "Proof. By compactness of \\( b\\Omega \\) we can take a finitely many \\( \\zeta_1, \\ldots, \\zeta_M \\) such that \\( b\\Omega \\subset \\bigcup_{\\nu=1}^{M} \\Phi_{\\zeta_\\nu}(U_{\\zeta_\\nu}) \\). Let \\( \\chi_0 \\in C_c^\\infty(\\Omega) \\) and \\( \\chi_\\nu \\in C_c^\\infty(\\Phi_{\\zeta_\\nu}(U_{\\zeta_\\nu})) \\) (\\( 1 \\leq \\nu \\leq M \\)) be such that \\( \\sum_{\\nu=0}^\\infty \\chi_\\nu(z) \\equiv 1 \\) for all \\( z \\in \\Omega \\). We take \\( \\lambda_0 \\in C_c^\\infty(\\Omega) \\) and \\( \\lambda_\\nu \\in C_c^\\infty(\\Phi_{\\zeta_\\nu}(U_{\\zeta_\\nu})) \\) for \\( 1 \\leq \\nu \\leq M \\), such that for each \\( 0 \\leq \\nu \\leq M \\), \\( \\lambda_\\nu \\equiv 1 \\) in an open neighborhood of \\( \\mathrm{supp}\\, \\chi_\\nu \\). Therefore \\( \\chi_\\nu = \\lambda_\\nu \\chi_\\nu \\) and \\( \\mathrm{supp}\\, \\chi_\\nu \\cap \\mathrm{supp}(\\overline{\\partial}\\lambda_\\nu) = \\varnothing \\) for \\( 0 \\leq \\nu \\leq M \\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.133,
+      0.154,
+      0.414,
+      0.168
+    ],
+    "angle": 0,
+    "content": "We need to apply Proposition 2.3. Set",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.32,
+      0.174,
+      0.677,
+      0.194
+    ],
+    "angle": 0,
+    "content": "\\[\n\\mathscr {X} _ {q} ^ {k} := H ^ {k t _ {0}, 2} (\\Omega ; \\wedge^ {0, q}), \\qquad 0 \\leq q \\leq n, \\qquad k \\in \\mathbb {Z}.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.201,
+      0.884,
+      0.233
+    ],
+    "angle": 0,
+    "content": "Therefore by Lemma A.13, we have \\(\\mathcal{X}_q^{-\\infty} = \\mathcal{S}'(\\Omega; \\wedge^{0,q})\\) and \\(\\mathcal{X}_q^{+\\infty} = \\mathcal{C}^\\infty(\\Omega; \\wedge^{0,q})\\). Set \\(D_q := \\overline{\\partial}\\) on \\((0,q)\\)-forms. Immediately (B) holds. By (2.4) we get (E).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.133,
+      0.233,
+      0.555,
+      0.251
+    ],
+    "angle": 0,
+    "content": "We define operators \\(P'\\), \\(H_q'\\) and \\(R_q'\\) on \\(\\Omega\\) by the following:",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.116,
+      0.257,
+      0.776,
+      0.299
+    ],
+    "angle": 0,
+    "content": "\\[\nP ^ {\\prime} f := \\sum_ {\\nu = 1} ^ {M} \\Phi_ {\\zeta_ {\\nu} *} \\big ((\\lambda_ {\\nu} \\circ \\Phi_ {\\zeta_ {\\nu}}) \\cdot \\mathcal {P} ^ {\\zeta_ {\\nu}} [ \\Phi_ {\\zeta_ {\\nu}} ^ {*} (\\chi_ {\\nu} f) ] \\big) = \\sum_ {\\nu = 1} ^ {M} \\lambda_ {\\nu} \\cdot \\Phi_ {\\zeta_ {\\nu} *} \\circ \\mathcal {P} ^ {\\zeta_ {\\nu}} \\circ \\Phi_ {\\zeta_ {\\nu}} ^ {*} [ \\chi_ {\\nu} f ]; \\tag {2.11}\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.116,
+      0.302,
+      0.596,
+      0.343
+    ],
+    "angle": 0,
+    "content": "\\[\nH _ {q} ^ {\\prime} f := \\lambda_ {0} \\cdot \\mathcal {B} _ {q} [ \\chi_ {0} f ] + \\sum_ {\\nu = 1} ^ {M} \\lambda_ {\\nu} \\cdot \\Phi_ {\\zeta_ {\\nu} *} \\circ \\mathcal {H} _ {q} ^ {\\zeta_ {\\nu}} \\circ \\Phi_ {\\zeta_ {\\nu}} ^ {*} [ \\chi_ {\\nu} f ]. \\tag {2.12}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.349,
+      0.884,
+      0.395
+    ],
+    "angle": 0,
+    "content": "Here \\(\\mathcal{B}_q\\) are the Bochner-Martinelli integral operators from (A.23). Recall (see Lemmas A.29 and A.30) the boundedness \\(\\mathcal{B}_q:H_c^{s,2}(\\Omega ;\\wedge^{0,q})\\to H^{s + 1,2}(\\Omega ;\\wedge^{0,q - 1})\\) for all \\(s\\in \\mathbb{R}\\) and the formula \\(g = \\overline{\\partial}\\mathcal{B}_qg + \\mathcal{B}_{q + 1}\\overline{\\partial} g\\) for \\((0,q)\\) forms \\(g\\) that has compact support.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.396,
+      0.884,
+      0.427
+    ],
+    "angle": 0,
+    "content": "We define  \\( (R_{q})_{q=0}^{n} \\)  by  \\( R_{0}f := f - P'f - H_{1}'\\overline{\\partial}f \\)  and  \\( R_{q}f := f - \\overline{\\partial}H_{q}'f - H_{q+1}'\\overline{\\partial}f \\)  for  \\( 1 \\leq q \\leq n \\) . Therefore (D) holds since we define  \\( R_{q} \\)  by this way.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.427,
+      0.884,
+      0.491
+    ],
+    "angle": 0,
+    "content": "To verify (C), we adapt the standard convention for forms of mixed degree from Convention 1.3: for form \\( f = \\sum_{q=0}^{n} f_q \\) where \\( f_q \\) has degree \\( (0, q) \\), we use \\( P'f = P'f_0 \\) and \\( H'f = \\sum_{q=1}^{n} H'_q f_q \\) and \\( Rf = \\sum_{q=0}^{n} R_q f_q \\). Therefore, \\( Rf = f - P'f - \\overline{\\partial} H'f - H' \\overline{\\partial} f \\), which means \\( \\overline{\\partial} R - R \\overline{\\partial} = \\overline{\\partial} P' \\). Therefore (recall Remark 2.4 and we set \\( R_{n+1} = 0 \\)),",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.27,
+      0.497,
+      0.726,
+      0.516
+    ],
+    "angle": 0,
+    "content": "\\[\nR _ {q + 1} \\overline {{\\partial}} = \\overline {{\\partial}} R _ {q} \\quad \\text {for} 1 \\leq q \\leq n, \\qquad \\text {and} \\qquad R _ {1} \\overline {{\\partial}} _ {0} - \\overline {{\\partial}} R _ {0} = \\overline {{\\partial}} P ^ {\\prime}.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.133,
+      0.522,
+      0.411,
+      0.538
+    ],
+    "angle": 0,
+    "content": "Note that by (2.11) and (2.3) we have",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.191,
+      0.545,
+      0.804,
+      0.587
+    ],
+    "angle": 0,
+    "content": "\\[\n\\overline {{\\partial}} P ^ {\\prime} f = \\sum_ {\\nu = 1} ^ {M} \\overline {{\\partial}} \\lambda_ {\\nu} \\wedge \\Phi_ {\\zeta_ {\\nu} *} \\mathcal {P} ^ {\\zeta_ {\\nu}} \\left[ \\Phi_ {\\zeta_ {\\nu}} ^ {*} (\\chi_ {\\nu} f) \\right] = \\Phi_ {\\zeta_ {\\nu} *} \\circ \\left(\\left(\\Phi_ {\\zeta_ {\\nu}} ^ {*} \\overline {{\\partial}} \\lambda_ {\\nu}\\right) \\wedge \\mathcal {P} ^ {\\zeta_ {\\nu}} \\circ \\left[ \\left(\\Phi_ {\\zeta_ {\\nu}} ^ {*} \\chi_ {\\nu}\\right) \\cdot \\left(\\Phi_ {\\zeta_ {\\nu}} ^ {*} f\\right) \\right]\\right).\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.594,
+      0.884,
+      0.626
+    ],
+    "angle": 0,
+    "content": "Since \\(\\overline{\\partial}\\lambda_{\\nu}\\) and \\(\\chi_{\\nu}\\) have disjoint supports, so do \\(\\Phi_{\\zeta_{\\nu}}^{*}\\overline{\\partial}\\lambda_{\\nu}\\) and \\(\\Phi_{\\zeta_{\\nu}}^{*}\\chi_{\\nu}\\). By the assumption (c) we get \\(\\overline{\\partial} P^{\\prime}:\\mathcal{S}^{\\prime}\\to \\mathcal{C}^{\\infty}\\). This completes the verification of (C).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.132,
+      0.626,
+      0.802,
+      0.643
+    ],
+    "angle": 0,
+    "content": "To see \\( R_{q}: H^{s,2} \\to H^{s + t_{0},2} \\) is bounded, i.e. to verify (A) we compute the explicit expression.",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.155,
+      0.646,
+      0.842,
+      0.913
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} R f = f - P ^ {\\prime} f - \\overline {{\\partial}} H ^ {\\prime} f - H ^ {\\prime} \\overline {{\\partial}} f \\\\ = \\lambda_ {0} \\chi_ {0} f - \\overline {{\\partial}} (\\lambda_ {0} \\mathcal {B} [ \\chi_ {0} f ]) - \\lambda_ {0} \\mathcal {B} [ \\chi_ {0} \\overline {{\\partial}} f ] \\\\ + \\sum_ {\\nu = 1} ^ {M} \\left\\{\\lambda_ {\\nu} \\chi_ {\\nu} f - \\lambda_ {\\nu} \\Phi_ {\\zeta_ {\\nu} *} \\mathcal {P} ^ {\\zeta_ {\\nu}} \\Phi_ {\\zeta_ {\\nu}} ^ {*} [ \\chi_ {\\nu} f ] - \\overline {{\\partial}} (\\lambda_ {\\nu} \\Phi_ {\\zeta_ {\\nu} *} \\mathcal {H} ^ {\\zeta_ {\\nu}} \\Phi_ {\\zeta_ {\\nu}} ^ {*} [ \\chi_ {\\nu} f ]) - \\lambda_ {\\nu} \\Phi_ {\\zeta_ {\\nu} *} \\mathcal {H} ^ {\\zeta_ {\\nu}} \\Phi_ {\\zeta_ {\\nu}} ^ {*} [ \\chi_ {\\nu} \\overline {{\\partial}} f ] \\right\\} \\\\ = \\lambda_ {0} \\cdot (\\mathrm{id} - \\overline {{\\partial}} \\mathcal {B} - \\mathcal {B} \\overline {{\\partial}}) [ \\chi_ {0} f ] - \\overline {{\\partial}} \\lambda_ {0} \\wedge \\mathcal {B} [ \\chi_ {0} f ] + \\lambda_ {0} \\cdot \\mathcal {B} [ \\overline {{\\partial}} \\chi_ {0} \\wedge f ] + \\sum_ {\\nu = 1} ^ {M} \\lambda_ {\\nu} \\cdot \\Phi_ {\\zeta_ {\\nu} *} \\mathcal {H} ^ {\\zeta_ {\\nu}} \\Phi_ {\\zeta_ {\\nu}} ^ {*} [ \\overline {{\\partial}} \\chi_ {\\nu} \\wedge f ] \\\\ + \\sum_ {\\nu = 1} ^ {M} \\left\\{\\lambda_ {\\nu} \\cdot \\Phi_ {\\zeta_ {\\nu} *} \\left\\{\\mathrm{id} - \\mathcal {P} ^ {\\zeta_ {\\nu}} - \\overline {{\\partial}} \\mathcal {H} ^ {\\zeta_ {\\nu}} - \\mathcal {H} ^ {\\zeta_ {\\nu}} \\overline {{\\partial}} \\right\\} \\Phi_ {\\zeta_ {\\nu}} ^ {*} [ \\chi_ {\\nu} f ] - \\overline {{\\partial}} \\lambda_ {\\nu} \\wedge \\Phi_ {\\zeta_ {\\nu} *} \\mathcal {H} ^ {\\zeta_ {\\nu}} \\Phi_ {\\zeta_ {\\nu}} ^ {*} [ \\chi_ {\\nu} f ] \\right\\} \\\\ = \\lambda_ {0} \\cdot \\mathcal {B} [ \\overline {{\\partial}} \\chi_ {0} \\wedge f ] - \\overline {{\\partial}} \\lambda_ {0} \\wedge \\mathcal {B} [ \\chi_ {0} f ] + \\sum_ {\\nu = 1} ^ {M} \\lambda_ {\\nu} \\cdot \\Phi_ {\\zeta_ {\\nu} *} \\circ \\mathcal {R} ^ {\\zeta_ {\\nu}} \\circ \\Phi_ {\\zeta_ {\\nu}} ^ {*} [ \\chi_ {\\nu} f ] \\\\ + \\sum_ {\\nu = 1} ^ {M} \\Big \\{- \\overline {{\\partial}} \\lambda_ {\\nu} \\wedge \\Phi_ {\\zeta_ {\\nu} *} \\circ \\mathcal {H} ^ {\\zeta_ {\\nu}} \\circ \\Phi_ {\\zeta_ {\\nu}} ^ {*} [ \\chi_ {\\nu} f ] + \\lambda_ {\\nu} \\cdot \\Phi_ {\\zeta_ {\\nu} *} \\circ \\mathcal {H} ^ {\\zeta_ {\\nu}} \\circ \\Phi_ {\\zeta_ {\\nu}} ^ {*} [ \\overline {{\\partial}} \\chi_ {\\nu} \\wedge f ] \\Big \\}. \\\\ \\end{array}\n\\]"
+  }
+]

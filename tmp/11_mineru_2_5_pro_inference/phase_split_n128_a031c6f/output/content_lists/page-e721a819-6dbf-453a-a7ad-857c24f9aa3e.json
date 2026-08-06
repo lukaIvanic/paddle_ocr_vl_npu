@@ -1,0 +1,186 @@
+[
+  {
+    "type": "page_number",
+    "bbox": [
+      0.111,
+      0.084,
+      0.128,
+      0.093
+    ],
+    "angle": 0,
+    "content": "10"
+  },
+  {
+    "type": "header",
+    "bbox": [
+      0.45,
+      0.082,
+      0.562,
+      0.094
+    ],
+    "angle": 0,
+    "content": "XINCHEN MIAO"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.107,
+      0.11,
+      0.906,
+      0.177
+    ],
+    "angle": 0,
+    "content": "5.1. Expansion in the q-aspect. Since  \\( \\pi_{1} \\)  and  \\( \\pi_{2} \\)  are cuspidal automorphic representations, We note that  \\( \\Phi_{1} = \\varphi_{1}\\varphi_{2}^{q} \\)  is a rapid-decay function which is invariant under the congruence group  \\( \\mathbf{K}_{0}(\\mathfrak{uvq}) \\) , we apply Plancherel formula (See [Zac20, Theorem 2.8]) to the well-defined inner product (5.2) in the space of forms of level mnq. We have the following decomposition of the considered period",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.111,
+      0.187,
+      0.622,
+      0.205
+    ],
+    "angle": 0,
+    "content": "\\[\n\\mathcal {P} _ {\\mathfrak {q}} (\\mathfrak {l}, \\Phi , \\Phi) = \\mathcal {G} _ {\\mathfrak {q}} (\\mathfrak {l}, \\Phi , \\Phi) + \\mathcal {C} _ {1}, \\tag {5.3}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.108,
+      0.215,
+      0.38,
+      0.232
+    ],
+    "angle": 0,
+    "content": "where the generic part is given by",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.111,
+      0.24,
+      0.789,
+      0.354
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\mathcal{G}_{\\mathfrak{q}}(\\mathfrak{l},\\Phi ,\\Phi) = \\sum_{\\substack{\\pi \\text{cuspidal}\\\\ c(\\pi)|\\mathfrak{uvq}}}\\lambda_{\\pi}(\\mathfrak{l})\\sum_{\\psi \\in \\mathcal{B}(\\pi ,\\mathfrak{uvq})}\\left|\\left\\langle \\varphi_{1}\\varphi_{2}^{\\mathfrak{q}},\\psi \\right\\rangle \\right|^{2} \\\\ + \\sum_{\\substack{\\chi \\in \\widehat{F^{\\times}\\setminus\\mathbb{A}_{F}^{1}}\\\\ \\mathrm{c}(\\chi)^{2}|\\mathfrak{w}\\mathfrak{q}}}\\int_{-\\infty}^{\\infty}\\lambda_{\\chi ,it}(\\mathfrak{l})\\sum_{\\psi_{it}\\in \\mathcal{B}(\\chi ,\\chi^{-1},it,\\mathfrak{w}\\mathfrak{q})}\\left|\\langle \\varphi_{1}\\varphi_{2}^{\\mathfrak{q}},\\mathrm{E}(\\psi_{it})\\rangle \\right|^{2}\\frac{dt}{4\\pi}. \\tag{5.4} \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.107,
+      0.363,
+      0.906,
+      0.446
+    ],
+    "angle": 0,
+    "content": "Moreover, the constant term  \\( C_{1} \\)  is the one-dimensional contribution (constant term) which appears only if both  \\( \\pi_{1} \\)  and  \\( \\pi_{2} \\)  are cuspidal and there exists finite many quadratic characters  \\( \\chi \\)  (depending on the number field F) of  \\( F^{\\times}\\backslash A_{F}^{1} \\)  such that  \\( \\pi_{1}\\simeq\\pi_{2}\\otimes\\chi \\)  ( \\( \\chi=1 \\)  if  \\( \\pi_{1}=\\pi_{2} \\)  for example). The cardinality of such quadratic character  \\( \\chi \\)  is  \\( O_{\\varepsilon,F}((uvq)^{\\varepsilon})=O_{\\varepsilon,F}(q^{\\varepsilon}) \\) . For such a quadratic character  \\( \\chi \\) , by applying the Hecke relation (3.5), we have the following:",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.109,
+      0.454,
+      0.825,
+      0.616
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\mathcal {C} _ {1} = V _ {F} ^ {- 1} \\cdot \\langle \\mathrm{T} _ {\\mathrm{l}} (\\Phi), \\varphi_ {\\chi} \\rangle \\langle \\varphi_ {\\chi}, \\Phi \\rangle = \\frac {\\chi (\\mathrm{l}) \\deg (\\mathrm{T} _ {\\mathrm{l}})}{V _ {F}} \\cdot \\left| \\left\\langle \\varphi_ {1} \\varphi_ {2} ^ {\\mathrm{q}}, \\varphi_ {\\chi} \\right\\rangle \\right| ^ {2} \\\\ = \\frac {\\zeta_ {\\mathfrak {q}} (2) ^ {2} \\chi (\\mathrm{l}) \\deg \\left(\\mathrm{T} _ {\\mathrm{l}}\\right)}{\\zeta_ {\\mathfrak {q}} (1) ^ {2} V _ {F}} \\cdot \\left| \\frac {1}{q ^ {1 / 2}} \\left(\\left\\langle \\varphi_ {1} \\cdot \\left(\\mathrm{T} _ {\\mathfrak {q}} \\varphi_ {2}\\right), \\varphi_ {\\chi} \\right\\rangle - \\frac {1}{q _ {1}} \\cdot \\left\\langle \\varphi_ {1} \\cdot \\left(\\mathrm{T} _ {\\mathfrak {q} _ {1} ^ {m - 2}} \\varphi_ {2}\\right), \\varphi_ {\\chi} \\right\\rangle\\right) \\right| ^ {2} \\\\ = \\frac {\\zeta_ {\\mathfrak {q}} (2) ^ {2} \\chi (\\mathfrak {l}) \\deg \\left(\\mathrm{T} _ {\\mathfrak {l}}\\right)}{\\zeta_ {\\mathfrak {q}} (1) ^ {2} V _ {F}} \\cdot \\left| \\frac {1}{q ^ {1 / 2}} \\left(\\lambda_ {\\pi_ {2}} (\\mathfrak {q}) - \\frac {1}{q _ {1}} \\lambda_ {\\pi_ {2}} \\left(\\mathfrak {q} _ {1} ^ {m - 2}\\right)\\right) \\cdot \\langle \\varphi_ {1} \\varphi_ {2}, \\varphi_ {\\chi} \\rangle \\right| ^ {2} \\\\ = \\frac {\\zeta_ {\\mathfrak {q}} (2) ^ {2} \\chi (\\mathfrak {l}) \\deg (\\mathrm{T} _ {\\mathfrak {l}})}{q \\zeta_ {\\mathfrak {q}} (1) ^ {2} V _ {F}} \\cdot \\left| \\left(\\lambda_ {\\pi_ {2}} (\\mathfrak {q}) - \\frac {1}{q _ {1}} \\lambda_ {\\pi_ {2}} \\left(\\mathfrak {q} _ {1} ^ {m - 2}\\right)\\right) \\right| ^ {2} \\cdot | \\langle \\varphi_ {1} \\varphi_ {2}, \\varphi_ {\\chi} \\rangle | ^ {2}, \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.526,
+      0.149,
+      0.542
+    ],
+    "angle": 0,
+    "content": "(5.5)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.107,
+      0.623,
+      0.906,
+      0.686
+    ],
+    "angle": 0,
+    "content": "where  \\( T_{q} \\)  is the Hecke operator and  \\( \\zeta_{\\mathfrak{q}}(s):=\\prod_{v|\\mathfrak{q}}\\zeta_{F_{v}}(s) \\)  is the partial Dedekind zeta function. If the integral ideal q is squarefree, i.e. m=1, we define  \\( T_{q_{1}^{m-2}}:=0 \\)  and  \\( \\lambda_{\\pi_{2}}\\left(\\mathfrak{q}_{1}^{m-2}\\right):=0 \\) . Hence,  \\( T_{q_{1}^{m-2}}\\varphi_{2}=0 \\) . Moreover, the degree of the Hecke operator  \\( T_{l} \\)  is defined by",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.111,
+      0.694,
+      0.735,
+      0.738
+    ],
+    "angle": 0,
+    "content": "\\[\n\\deg (\\mathrm{T} _ {\\mathrm{l}}) := \\frac {1}{\\ell^ {1 / 2}} \\sum_ {0 \\leqslant k \\leqslant \\frac {n}{2}} \\gamma_ {n - 2 k} = \\ell^ {1 / 2} \\frac {\\zeta_ {F _ {\\mathrm{p}}} (1)}{\\zeta_ {F _ {\\mathrm{p}}} (n + 1)} \\leqslant \\ell^ {1 / 2} \\zeta_ {F _ {\\mathrm{p}}} (1). \\tag {5.6}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.107,
+      0.75,
+      0.902,
+      0.784
+    ],
+    "angle": 0,
+    "content": "Since \\(\\pi_2\\) is \\(\\theta_2\\)-tempered at all the finite places, we have \\(|\\lambda_{\\pi_2}(\\mathfrak{q})| \\leqslant (m + 1) \\cdot q^{\\theta_2}\\). Applying Cauchy-Schwartz inequality,",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.321,
+      0.787,
+      0.689,
+      0.826
+    ],
+    "angle": 0,
+    "content": "\\[\n\\mathcal {C} _ {1} \\ll_ {\\pi_ {1}, \\pi_ {2}, F, \\varepsilon} (\\ell q) ^ {\\varepsilon} \\frac {\\ell^ {1 / 2}}{q ^ {1 - 2 \\theta_ {2}}} \\ll_ {\\pi_ {1}, \\pi_ {2}, F, \\varepsilon} (\\ell q) ^ {\\varepsilon} \\frac {\\ell^ {1 / 2}}{q ^ {2 5 / 3 2}}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.107,
+      0.832,
+      0.442,
+      0.853
+    ],
+    "angle": 0,
+    "content": "since \\(0 \\leqslant \\theta_{2} \\leqslant \\frac{7}{64}\\). Hence we can conclude",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.111,
+      0.862,
+      0.709,
+      0.907
+    ],
+    "angle": 0,
+    "content": "\\[\n\\mathcal {P} _ {\\mathfrak {q}} (\\mathfrak {l}, \\Phi , \\Phi) = \\mathcal {G} _ {\\mathfrak {q}} (\\mathfrak {l}, \\Phi , \\Phi) + O _ {\\pi_ {1}, \\pi_ {2}, F, \\varepsilon} \\left((\\ell q) ^ {\\varepsilon} \\frac {\\ell^ {1 / 2}}{q ^ {1 - 2 \\theta_ {2}}}\\right), \\tag {5.7}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.108,
+      0.915,
+      0.438,
+      0.933
+    ],
+    "angle": 0,
+    "content": "where we recall that \\(\\Phi\\) is defined as (5.1).",
+    "merge_prev": false
+  }
+]

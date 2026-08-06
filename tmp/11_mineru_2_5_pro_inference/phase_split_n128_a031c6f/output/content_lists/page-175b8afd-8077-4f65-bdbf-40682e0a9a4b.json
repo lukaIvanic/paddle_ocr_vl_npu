@@ -1,0 +1,186 @@
+[
+  {
+    "type": "text",
+    "bbox": [
+      0.05,
+      0.089,
+      0.945,
+      0.125
+    ],
+    "angle": 0,
+    "content": "Assume that \\(\\mathcal{M}\\) halts. Let \\(N\\) be the number of time steps it takes \\(\\mathcal{M}\\) to halt. For every \\(n \\geq N\\), by Corollary 2.60, \\(\\mathcal{V}_n^{\\mathcal{M},\\lambda}\\) has a perfect ZPC strategy. So, if \\(C \\geq N\\), then we are done. Otherwise, let \\(n\\) be such that",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.398,
+      0.138,
+      0.597,
+      0.156
+    ],
+    "angle": 0,
+    "content": "\\[\n\\max (C, \\log N) \\leq n <   N.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.05,
+      0.169,
+      0.947,
+      0.278
+    ],
+    "angle": 0,
+    "content": "By Lemma 2.59, \\(\\mathcal{V}_n^{\\mathcal{M},\\lambda} = (\\mathcal{V}^{\\mathcal{M},\\lambda})_n'\\) in this case. By the compression theorem 2.53, since \\(n \\geq C\\), \\((\\mathcal{V}^{\\mathcal{M},\\lambda})_n'\\) has a perfect ZPC strategy given that \\(\\mathcal{V}_{2^n}^{\\mathcal{M},\\lambda}\\) has one. But \\(2^n \\geq N\\), and we already argued that these tailored games have perfect ZPC strategies. Hence, \\(\\mathcal{V}_n^{\\mathcal{M},\\lambda}\\) has a perfect ZPC strategy when \\(n \\geq \\max(C, \\log N)\\). If \\(C \\geq \\log N\\), then we are done. Otherwise, we can iterate this argument and deduce the same for any \\(n \\geq \\max(C, \\log \\log N)\\). Since there exists some \\(t\\) for which \\(C \\geq \\underbrace{\\log \\ldots \\log N}_{t\\text{-times}}\\) we deduce that \\(\\mathfrak{G}_{\\mathcal{M}} = \\mathcal{V}_C^{\\mathcal{M},\\lambda}\\) has a perfect ZPC strategy. This proves (2) in Theorem 2.31.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.079,
+      0.279,
+      0.468,
+      0.295
+    ],
+    "angle": 0,
+    "content": "Assume that \\(\\mathcal{M}\\) does not halt. Then, by Lemma 2.59,",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.429,
+      0.306,
+      0.946,
+      0.328
+    ],
+    "angle": 0,
+    "content": "\\[\n\\mathcal {V} _ {n} ^ {\\mathcal {M}, \\lambda} = (\\mathcal {V} ^ {\\mathcal {M}, \\lambda}) _ {n} ^ {\\prime} \\tag {11}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.051,
+      0.341,
+      0.559,
+      0.357
+    ],
+    "angle": 0,
+    "content": "for every \\( n \\). If \\( n \\geq C \\), then by the compression theorem 2.53, we have",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.237,
+      0.368,
+      0.946,
+      0.408
+    ],
+    "angle": 0,
+    "content": "\\[\n\\mathscr {E} ((\\mathcal {V} ^ {\\mathcal {M}, \\lambda}) _ {n} ^ {\\prime}, 1 / 2) \\geq \\mathscr {E} (\\mathcal {V} _ {2 ^ {n}} ^ {\\mathcal {M}, \\lambda}, 1 / 2) \\quad \\text {and} \\quad \\mathscr {E} ((\\mathcal {V} ^ {\\mathcal {M}, \\lambda}) _ {n} ^ {\\prime}, 1 / 2) \\geq \\underbrace {2 ^ {2 ^ {\\lambda n} - 1}} _ {\\geq 2 ^ {n}}. \\tag {12}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.051,
+      0.42,
+      0.415,
+      0.435
+    ],
+    "angle": 0,
+    "content": "So, for every positive integer \\( t \\) we can deduce that",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.321,
+      0.447,
+      0.677,
+      0.639
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\mathscr {E} \\left(\\mathcal {V} _ {C} ^ {\\mathcal {M}, \\lambda}, 1 / 2\\right) = _ {(1 1)} \\mathscr {E} \\left(\\left(\\mathcal {V} ^ {\\mathcal {M}, \\lambda}\\right) _ {C} ^ {\\prime}, 1 / 2\\right) \\\\ \\geq_ {(1 2)} \\mathscr {E} \\left(\\mathcal {V} _ {2 ^ {C}} ^ {\\mathcal {M}, \\lambda}, 1 / 2\\right) = _ {(1 1)} \\mathscr {E} \\left(\\left(\\mathcal {V} ^ {\\mathcal {M}, \\lambda}\\right) _ {2 ^ {C}} ^ {\\prime}, 1 / 2\\right) \\\\ \\geq_ {(1 2)} \\mathscr {E} \\left(\\mathcal {V} _ {2 ^ {C}} ^ {\\mathcal {M}, \\lambda}, 1 / 2\\right) = _ {(1 1)} \\mathscr {E} \\left(\\left(\\mathcal {V} ^ {\\mathcal {M}, \\lambda}\\right) _ {2 ^ {C}} ^ {\\prime}, 1 / 2\\right) \\\\ \\geq_ {(1 2)} \\underbrace {2 ^ {\\cdot \\cdot^ {2 ^ {C}}}} _ {(t + 1) - t i m e s}. \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.484,
+      0.503,
+      0.493,
+      0.52
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.397,
+      0.551,
+      0.641,
+      0.584
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.051,
+      0.652,
+      0.747,
+      0.672
+    ],
+    "angle": 0,
+    "content": "Since this was true for every \\(t\\), we can deduce that \\(\\mathcal{E}(\\mathcal{V}_C^{\\mathcal{M},\\lambda}, 1/2) = \\infty\\), which in turn proves that",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.37,
+      0.684,
+      0.626,
+      0.706
+    ],
+    "angle": 0,
+    "content": "\\[\n\\mathrm{val} ^ {*} (\\mathfrak {G} _ {\\mathcal {M}}) = \\mathrm{val} ^ {*} (\\mathcal {V} _ {C} ^ {\\mathcal {M}, \\lambda}) <   1 / 2,\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.051,
+      0.718,
+      0.264,
+      0.735
+    ],
+    "angle": 0,
+    "content": "proving (3) in Theorem 2.31.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.078,
+      0.747,
+      0.627,
+      0.763
+    ],
+    "angle": 0,
+    "content": "The rest of the paper is devoted to the proof of Compression, Theorem 2.53.",
+    "merge_prev": false
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.489,
+      0.935,
+      0.51,
+      0.948
+    ],
+    "angle": 0,
+    "content": "33"
+  }
+]

@@ -1,0 +1,139 @@
+[
+  {
+    "type": "page_number",
+    "bbox": [
+      0.133,
+      0.091,
+      0.152,
+      0.102
+    ],
+    "angle": 0,
+    "content": "56"
+  },
+  {
+    "type": "header",
+    "bbox": [
+      0.418,
+      0.09,
+      0.581,
+      0.103
+    ],
+    "angle": 0,
+    "content": "X. CEN AND Z. SONG"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.151,
+      0.147,
+      0.276,
+      0.163
+    ],
+    "angle": 0,
+    "content": "We claim that",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.154,
+      0.167,
+      0.867,
+      0.233
+    ],
+    "angle": 0,
+    "content": "\\[\n\\int_ {Q} | g \\lambda | \\prod_ {i \\in \\tau} \\left(\\sum_ {P \\in \\tilde {\\mathcal {S}}, P \\subseteq Q} \\eta_ {i, P} \\chi_ {P} (x)\\right) ^ {k _ {i} - t _ {i}} \\lesssim \\int_ {Q} A _ {\\tilde {\\mathcal {S}}, \\eta_ {\\tau (1)}} ^ {k _ {\\tau (1)} - t _ {\\tau (1)}} \\left(A _ {\\tilde {\\mathcal {S}}, \\eta_ {\\tau (2)}} ^ {k _ {\\tau (2)} - t _ {\\tau (2)}} \\left(A _ {\\tilde {\\mathcal {S}}, \\eta_ {\\tau (3)}} ^ {k _ {\\tau (3)} - t _ {\\tau (3)}} | g \\lambda |\\right)\\right). \\tag {4.27}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.15,
+      0.243,
+      0.603,
+      0.261
+    ],
+    "angle": 0,
+    "content": "Clearly, this follows directly from the definitions that",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.136,
+      0.263,
+      0.973,
+      0.562
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\int_ {Q} | g \\lambda | \\prod_ {i \\in \\tau} \\Bigl (\\sum_ {P \\in \\tilde {\\mathcal {S}}, P \\subseteq Q} \\eta_ {i, P} \\chi_ {P} (x) \\Bigr) ^ {k _ {i} - t _ {i}} \\\\ \\lesssim \\int_ {Q} A _ {\\tilde {\\mathcal {S}}, \\eta_ {\\tau (1)}} ^ {k _ {\\tau (1)} - t _ {\\tau (1)}} \\Big (| g \\lambda | \\big (\\sum_ {P \\in \\tilde {\\mathcal {S}}, P \\subseteq Q} \\eta_ {\\tau (2), P} \\chi_ {P} (x) \\big) ^ {k _ {\\tau (2)} - t _ {\\tau (2)}} \\big (\\sum_ {P \\in \\tilde {\\mathcal {S}}, P \\subseteq Q} \\eta_ {\\tau (3), P} \\chi_ {P} (x) \\big) ^ {k _ {\\tau (3)} - t _ {\\tau (3)}} \\Big) \\\\ = \\int_ {Q} A _ {\\tilde {\\mathcal {S}}, \\eta_ {\\tau (1)}} ^ {k _ {\\tau (1)} - t _ {\\tau (1)} - 1} \\Big (A _ {\\tilde {\\mathcal {S}}} \\big (| g \\lambda | \\big (\\sum_ {P \\in \\tilde {\\mathcal {S}}, P \\subseteq Q} \\eta_ {\\tau (2), P} \\chi_ {P} \\big) ^ {k _ {\\tau (2)} - t _ {\\tau (2)}} \\big (\\sum_ {P \\in \\tilde {\\mathcal {S}}, P \\subseteq Q} \\eta_ {\\tau (3), P} \\chi_ {P} \\big) ^ {k _ {\\tau (3)} - t _ {\\tau (3)}} \\big) \\eta_ {\\tau (1)} \\Big) \\\\ = \\int_ {Q} A _ {\\tilde {\\mathcal {S}}, \\eta_ {\\tau (1)}} ^ {k _ {\\tau (1)} - t _ {\\tau (1)} - 1} \\Big (\\eta_ {\\tau (1)} \\sum_ {Q ^ {\\prime} \\in \\tilde {\\mathcal {S}}} \\Big \\langle | g \\lambda | \\big (\\sum_ {P \\in \\tilde {\\mathcal {S}}, P \\subseteq Q} \\eta_ {\\tau (2), P} \\chi_ {P} \\big) ^ {k _ {\\tau (2)} - t _ {\\tau (2)}} \\big (\\sum_ {P \\in \\tilde {\\mathcal {S}}, P \\subseteq Q} \\eta_ {\\tau (3), P} \\chi_ {P} \\big) ^ {k _ {\\tau (3)} - t _ {\\tau (3)}} \\Big \\rangle_ {Q ^ {\\prime}} \\chi_ {Q ^ {\\prime}} \\Big) \\\\ \\stackrel {(4. 2 2)} {\\lesssim} \\int_ {Q} A _ {\\tilde {\\mathcal {S}}, \\eta_ {\\tau (1)}} ^ {k _ {\\tau (1)} - t _ {\\tau (1)} - 1} \\Big (\\big (\\sum_ {Q ^ {\\prime} \\in \\tilde {\\mathcal {S}}} \\Big \\langle A _ {\\tilde {\\mathcal {S}}, \\eta_ {\\tau (2)}} ^ {k _ {\\tau (2)} - t _ {\\tau (2)}} \\big (A _ {\\tilde {\\mathcal {S}}, \\eta_ {\\tau (3)}} ^ {k _ {\\tau (3)} - t _ {\\tau (3)}} | g \\lambda | \\big) \\Big \\rangle_ {Q ^ {\\prime}} \\chi_ {Q ^ {\\prime}} \\big) \\eta_ {\\tau (1)} \\Big) \\\\ = \\int_ {Q} A _ {\\tilde {\\mathcal {S}}, \\eta_ {\\tau (1)}} ^ {k _ {\\tau (1)} - t _ {\\tau (1)}} \\big (A _ {\\tilde {\\mathcal {S}}, \\eta_ {\\tau (2)}} ^ {k _ {\\tau (2)} - t _ {\\tau (2)}} \\big (A _ {\\tilde {\\mathcal {S}}, \\eta_ {\\tau (3)}} ^ {k _ {\\tau (3)} - t _ {\\tau (3)}} | g \\lambda | \\big) \\big). \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.15,
+      0.569,
+      0.527,
+      0.587
+    ],
+    "angle": 0,
+    "content": "Combining above estimate (4.27), we obtain",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.149,
+      0.593,
+      0.745,
+      0.689
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\sum_ {Q \\in \\mathcal {S}} \\mu (Q) ^ {\\eta} \\left(\\int_ {Q} | g \\lambda | \\prod_ {i \\in \\tau} \\left| b _ {i} - b _ {i, Q} \\right| ^ {k _ {i} - t _ {i}}\\right) \\prod_ {i \\in \\tau} \\langle \\left| f _ {i} \\left(b _ {i} - b _ {i, Q}\\right) ^ {t _ {i}} \\right| \\rangle_ {Q} \\prod_ {j \\in \\tau} \\langle | f _ {j} | \\rangle_ {Q} \\\\ \\lesssim \\prod_ {i \\in \\tau} \\| b _ {i} \\| _ {\\mathrm{BMO} _ {\\eta_ {i}}} ^ {k _ {i}} \\int_ {Q} A _ {\\tilde {\\mathcal {S}}, \\eta_ {\\tau (1)}} ^ {k _ {\\tau (1)} - t _ {\\tau (1)}} \\big (A _ {\\tilde {\\mathcal {S}}, \\eta_ {\\tau (2)}} ^ {k _ {\\tau (2)} - t _ {\\tau (2)}} \\big (A _ {\\tilde {\\mathcal {S}}, \\eta_ {\\tau (3)}} ^ {k _ {\\tau (3)} - t _ {\\tau (3)}} | g \\lambda | \\big) \\big) \\mathcal {A} _ {\\eta , \\tilde {\\mathcal {S}}} (\\vec {\\mathbf {A}}) \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.131,
+      0.7,
+      0.442,
+      0.719
+    ],
+    "angle": 0,
+    "content": "Since \\(A_{\\tilde{\\mathcal{S}}}\\) is self-adjoint, we conclude",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.149,
+      0.729,
+      0.856,
+      0.817
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} = \\prod_ {i \\in \\tau} \\| b _ {i} \\| _ {\\mathrm{BMO} _ {\\eta_ {i}}} ^ {k _ {i}} \\int_ {X} A _ {\\tilde {\\mathcal {S}}} \\left(A _ {\\tilde {\\mathcal {S}}, \\eta_ {\\tau (1)}} ^ {k _ {\\tau (1)} - t _ {\\tau (1)} - 1} \\left(\\mathcal {A} _ {\\eta , \\tilde {\\mathcal {S}}, \\eta_ {\\tau (1)}} (\\vec {\\mathbf {A}})\\right)\\right) A _ {\\tilde {\\mathcal {S}}, \\eta_ {\\tau (2)}} ^ {k _ {\\tau (2)} - t _ {\\tau (2)}} \\left(A _ {\\tilde {\\mathcal {S}}, \\eta_ {\\tau (3)}} ^ {k _ {\\tau (3)} - t _ {\\tau (3)}} | g \\lambda |\\right) \\\\ = \\prod_ {i \\in \\tau} \\| b _ {i} \\| _ {\\mathrm{BMO} _ {\\eta_ {i}}} ^ {k _ {i}} \\int_ {X} A _ {\\tilde {\\mathcal {S}}} \\left(A _ {\\tilde {\\mathcal {S}}, \\eta_ {\\tau (3)}} ^ {k _ {\\tau (3)} - t _ {\\tau (3)}} \\left(A _ {\\tilde {\\mathcal {S}}, \\eta_ {\\tau (2)}} ^ {k _ {\\tau (2)} - t _ {\\tau (2)}} \\left(A _ {\\tilde {\\mathcal {S}}, \\eta_ {\\tau (1)}} ^ {k _ {\\tau (1)} - t _ {\\tau (1)} - 1} \\left(\\mathcal {A} _ {\\eta , \\tilde {\\mathcal {S}}, \\eta_ {\\tau (1)}} (\\vec {\\mathbf {A}})\\right)\\right)\\right)\\right) | g \\lambda |, \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.131,
+      0.847,
+      0.543,
+      0.872
+    ],
+    "angle": 0,
+    "content": "where \\(\\mathcal{A}_{\\eta, \\tilde{\\mathcal{S}}, \\eta_{\\tau(1)}}(\\vec{\\mathbf{A}})\\) means that \\(\\mathcal{A}_{\\eta, \\tilde{\\mathcal{S}}}(\\vec{\\mathbf{A}})\\eta_{\\tau(1)}\\) and",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.248,
+      0.879,
+      0.748,
+      0.911
+    ],
+    "angle": 0,
+    "content": "\\[\n\\vec {\\mathbf {A}} = \\left(A _ {\\tilde {\\mathcal {S}}, \\eta_ {\\tau (1)}} ^ {t _ {\\tau (1)}} (| f _ {\\tau (1)} |), A _ {\\tilde {\\mathcal {S}}, \\eta_ {\\tau (2)}} ^ {t _ {\\tau (2)}} (| f _ {\\tau (2)} |), A _ {\\tilde {\\mathcal {S}}, \\eta_ {\\tau (3)}} ^ {t _ {\\tau (3)}} (| f _ {\\tau (3)} |), f _ {\\tau (4)}\\right).\n\\]"
+  }
+]

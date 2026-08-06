@@ -1,0 +1,232 @@
+[
+  {
+    "type": "page_number",
+    "bbox": [
+      0.116,
+      0.065,
+      0.134,
+      0.075
+    ],
+    "angle": 0,
+    "content": "38"
+  },
+  {
+    "type": "header",
+    "bbox": [
+      0.433,
+      0.064,
+      0.568,
+      0.075
+    ],
+    "angle": 0,
+    "content": "ROMAN SHVYDKOY"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.091,
+      0.885,
+      0.123
+    ],
+    "angle": 0,
+    "content": "Proof. Let us first verify (121). For any \\(2k + l \\leqslant 2m\\), \\(l \\geqslant 1\\), we apply (134) with \\(K = k + \\frac{l}{2}\\) and \\(L = l + 1\\), and using that the neutral term is bounded,",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.159,
+      0.138,
+      0.841,
+      0.193
+    ],
+    "angle": 0,
+    "content": "\\[\n\\mathrm{h} _ {q - 2 k - l} ^ {k, l} \\lesssim \\sum_ {i = 1} ^ {N} \\left(\\int_ {\\Omega \\times \\mathbb {R} ^ {n}} | D _ {x} ^ {k + \\frac {l}{2}} f | ^ {2} \\left<   v \\right> ^ {q - 2 k - l} \\mathrm{d} v \\mathrm{d} x\\right) ^ {\\theta_ {i} ^ {\\prime}} \\left(\\int_ {\\Omega \\times \\mathbb {R} ^ {n}} \\sum_ {l ^ {\\prime} \\leqslant L} | \\partial_ {v} ^ {l + 1} f | ^ {2} \\left<   v \\right> ^ {q - 2 k - l} \\mathrm{d} v \\mathrm{d} x\\right) ^ {\\theta_ {i} ^ {\\prime \\prime}},\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.207,
+      0.886,
+      0.237
+    ],
+    "angle": 0,
+    "content": "with \\(\\theta_i' + \\theta_i'' < 1\\). So, if \\(l\\) is even, then the \\(x\\)-integral on the right hand side consists of integer order derivatives and therefore,",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.116,
+      0.255,
+      0.578,
+      0.295
+    ],
+    "angle": 0,
+    "content": "\\[\n\\mathrm{h} _ {q - 2 k - l} ^ {k, l} \\lesssim \\sum_ {i = 1} ^ {N} \\mathrm{x} ^ {\\theta_ {i} ^ {\\prime}} \\mathrm{d} ^ {\\theta_ {i} ^ {\\prime \\prime}}. \\tag {123}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.312,
+      0.884,
+      0.329
+    ],
+    "angle": 0,
+    "content": "If \\( l \\) is odd, \\( l = 2p + 1 \\), and hence \\( k + p + 1 \\leqslant m \\), we use interpolation in \\( x \\) and distribute the weight accordingly,",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.174,
+      0.34,
+      0.823,
+      0.463
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\int_ {\\Omega \\times \\mathbb {R} ^ {n}} | D _ {x} ^ {k + p + \\frac {1}{2}} f | ^ {2} \\left\\langle v \\right\\rangle^ {q - 2 k - l} \\mathrm{d} v \\mathrm{d} x \\leqslant \\int_ {\\mathbb {R} ^ {n}} \\left(\\int_ {\\Omega} | \\partial_ {x} ^ {k + p + 1} f | ^ {2} \\mathrm{d} x\\right) ^ {1 / 2} \\left(\\int_ {\\Omega} | \\partial_ {x} ^ {k + p} f | ^ {2} \\mathrm{d} x\\right) ^ {1 / 2} \\mathrm{d} v \\\\ = \\int_ {\\mathbb {R} ^ {n}} \\left(\\int_ {\\Omega} \\left| \\partial_ {x} ^ {k + p + 1} f \\right| ^ {2} \\langle v \\rangle^ {q - 2 k - 2 p - 2} \\mathrm{d} x\\right) ^ {1 / 2} \\left(\\int_ {\\Omega} \\left| \\partial_ {x} ^ {k + p} f \\right| ^ {2} \\langle v \\rangle^ {q - 2 k - 2 p} \\mathrm{d} x\\right) ^ {1 / 2} \\mathrm{d} v \\\\ \\leqslant \\left(\\int_ {\\Omega \\times \\mathbb {R} ^ {n}} \\left| \\partial_ {x} ^ {k + p + 1} f \\right| ^ {2} \\langle v \\rangle^ {q - 2 k - 2 p - 2} \\mathrm{d} v \\mathrm{d} x\\right) ^ {1 / 2} \\left(\\int_ {\\Omega \\times \\mathbb {R} ^ {n}} \\left| \\partial_ {x} ^ {k + p} f \\right| ^ {2} \\langle v \\rangle^ {q - 2 k - 2 p} \\mathrm{d} v \\mathrm{d} x\\right) ^ {1 / 2} \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.477,
+      0.884,
+      0.507
+    ],
+    "angle": 0,
+    "content": "So, if \\( k = p = 0 \\), then the above is bounded by \\( \\lesssim \\mathrm{x}^{1/2} \\), and if \\( k + p > 0 \\), then by \\( \\lesssim \\mathrm{x} \\). In either case we arrive at the same bound (123).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.132,
+      0.508,
+      0.7,
+      0.523
+    ],
+    "angle": 0,
+    "content": "Summing up over \\(2k + l \\leqslant 2m\\), \\(l \\geqslant 1\\), and reindexing the exponents, we obtain",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.442,
+      0.54,
+      0.556,
+      0.581
+    ],
+    "angle": 0,
+    "content": "\\[\n\\mathrm{v} \\lesssim \\sum_ {i = 1} ^ {N} \\mathrm{x} ^ {\\theta_ {i} ^ {\\prime}} \\mathrm{d} ^ {\\theta_ {i} ^ {\\prime \\prime}},\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.597,
+      0.398,
+      0.612
+    ],
+    "angle": 0,
+    "content": "with \\(N\\) depending only on the indexes.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.133,
+      0.613,
+      0.361,
+      0.627
+    ],
+    "angle": 0,
+    "content": "As to the mixed term, we have",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.113,
+      0.644,
+      0.895,
+      0.681
+    ],
+    "angle": 0,
+    "content": "\\[\n\\int_ {\\Omega \\times \\mathbb {R} ^ {n}} \\langle v \\rangle^ {q - 2 k} \\partial_ {x} ^ {\\mathbf {k}} f \\cdot \\partial_ {x} ^ {\\mathbf {k} - 1} \\partial_ {v} f \\mathrm{d} v \\mathrm{d} x \\leqslant \\left(\\int_ {\\Omega \\times \\mathbb {R} ^ {n}} | \\partial_ {x} ^ {k} f | ^ {2} \\langle v \\rangle^ {q - 2 k} \\mathrm{d} v \\mathrm{d} x\\right) ^ {1 / 2} \\left(\\int_ {\\Omega \\times \\mathbb {R} ^ {n}} | \\partial_ {x} ^ {k - 1} \\partial_ {v} f | ^ {2} \\langle v \\rangle^ {q - 2 k} \\mathrm{d} v \\mathrm{d} x\\right) ^ {1 / 2}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.688,
+      0.352,
+      0.703
+    ],
+    "angle": 0,
+    "content": "using (134) with \\(K = k\\), \\(L = 2k\\),",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.363,
+      0.711,
+      0.675,
+      0.743
+    ],
+    "angle": 0,
+    "content": "\\[\n\\leqslant \\mathrm{h} ^ {1 / 2} \\sum_ {i} (\\mathrm{h} _ {q - 2 k} ^ {k, 0}) ^ {\\theta_ {i} ^ {\\prime} / 2} (\\mathrm{h} _ {q - 2 k} ^ {0, 2 k}) ^ {\\theta_ {i} ^ {\\prime \\prime} / 2} \\leqslant \\sum_ {i} \\mathrm{h} ^ {\\theta_ {i}},\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.759,
+      0.721,
+      0.775
+    ],
+    "angle": 0,
+    "content": "where all \\(\\theta_{i} < 1\\). After adding up the terms and relabeling the exponents, we obtain",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.452,
+      0.791,
+      0.547,
+      0.822
+    ],
+    "angle": 0,
+    "content": "\\[\n\\mathrm{m} \\lesssim \\sum_ {i} \\mathrm{h} ^ {\\theta_ {i}}.\n\\]"
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.868,
+      0.84,
+      0.884,
+      0.852
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.132,
+      0.88,
+      0.771,
+      0.896
+    ],
+    "angle": 0,
+    "content": "It remains to collect the obtained inequalities and prove the generation of bound lemma.",
+    "merge_prev": false
+  }
+]

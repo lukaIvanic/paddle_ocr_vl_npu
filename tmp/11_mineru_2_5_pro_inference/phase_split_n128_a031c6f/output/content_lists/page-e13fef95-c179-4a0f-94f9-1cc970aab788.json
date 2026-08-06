@@ -1,0 +1,103 @@
+[
+  {
+    "type": "text",
+    "bbox": [
+      0.114,
+      0.092,
+      0.21,
+      0.106
+    ],
+    "angle": 0,
+    "content": "\\(T\\) , we obtain",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.226,
+      0.119,
+      0.77,
+      0.491
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\sum_ {k = 0} ^ {T} \\beta \\| \\nabla F _ {\\mu_ {k}} (\\boldsymbol {x} _ {k}) \\| ^ {2} \\leq F _ {\\mu_ {0}} (\\boldsymbol {x} _ {0}) - F _ {\\mu_ {T + 1}} (\\boldsymbol {x} _ {T + 1}) + L _ {F} \\sqrt {d} \\sum_ {k = 0} ^ {T} | \\mu_ {k + 1} - \\mu_ {k} |\\left. \\right. \\\\ + \\beta \\sum_ {k = 0} ^ {T} \\nabla F _ {\\mu_ {k}} (\\boldsymbol {x} _ {k}) ^ {\\top} \\Delta_ {k} + \\frac {H _ {F} \\beta^ {2}}{2} \\sum_ {k = 0} ^ {T} \\| \\boldsymbol {g} _ {k} \\| ^ {2} \\\\ \\stackrel {(*)} {\\leq} F (\\boldsymbol {x} _ {0}) + L _ {F} \\sqrt {d} \\mu_ {0} - F ^ {*} + L _ {F} \\sqrt {d} \\sum_ {k = 0} ^ {T} | \\mu_ {k + 1} - \\mu_ {k} | \\\\ + \\beta \\sum_ {k = 0} ^ {T} \\nabla F _ {\\mu_ {k}} (\\boldsymbol {x} _ {k}) ^ {\\top} \\Delta_ {k} + \\frac {H _ {F} \\beta^ {2}}{2} \\sum_ {k = 0} ^ {T} \\| \\boldsymbol {g} _ {k} \\| ^ {2} \\\\ = F (\\boldsymbol {x} _ {0}) - F ^ {*} + L _ {F} \\sqrt {d} \\left(\\mu_ {0} + \\sum_ {k = 0} ^ {T} | \\mu_ {k + 1} - \\mu_ {k} |\\right) \\\\ + \\beta \\sum_ {k = 0} ^ {T} \\nabla F _ {\\mu_ {k}} (\\boldsymbol {x} _ {k}) ^ {\\top} \\Delta_ {k} + \\frac {H _ {F} \\beta^ {2}}{2} \\sum_ {k = 0} ^ {T} \\| \\boldsymbol {g} _ {k} \\| ^ {2} \\\\ \\stackrel {(\\ast \\ast)} {\\leq} F (\\boldsymbol {x} _ {0}) - F ^ {*} + 2 \\mu_ {0} L _ {F} \\sqrt {d} \\\\ + \\beta \\sum_ {k = 0} ^ {T} \\nabla F _ {\\mu_ {k}} (\\boldsymbol {x} _ {k}) ^ {\\top} \\Delta_ {k} + \\frac {H _ {F} \\beta^ {2}}{2} \\sum_ {k = 0} ^ {T} \\| \\boldsymbol {g} _ {k} \\| ^ {2}, \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.504,
+      0.93,
+      0.58
+    ],
+    "angle": 0,
+    "content": "where (*) comes since \\( F_{\\mu_0}(\\boldsymbol{x}_0) \\leq F(\\boldsymbol{x}_0) + L_F \\sqrt{d} \\mu_0 \\) from Lemma B.5 and \\( F_{\\mu_{T+1}}(\\boldsymbol{x}_{T+1}) = \\mathbb{E}_{\\boldsymbol{u} \\sim \\mathcal{N}(0, \\mathrm{I}_d)}[F(\\boldsymbol{x}_{T+1} + \\mu_{T+1} \\boldsymbol{u})] \\geq \\mathbb{E}_{\\boldsymbol{u} \\sim \\mathcal{N}(0, \\mathrm{I}_d)}[F^*] = F^* \\). The inequality (***) follows from the fact that \\( \\sum_{k=0}^{T} |\\mu_{k+1} - \\mu_k| = \\sum_{k=0}^{T} (\\mu_k - \\mu_{k+1}) = \\mu_0 - \\mu_{T+1} \\leq \\mu_0 \\). Here, let \\( \\zeta_k := \\{\\boldsymbol{u}_k, \\boldsymbol{\\xi}_k\\} \\), \\( \\zeta_{[0,T]} = \\{\\boldsymbol{u}_0, \\boldsymbol{\\xi}_0, \\dots, \\boldsymbol{u}_T, \\boldsymbol{\\xi}_T\\} \\), and \\( m_{\\min} := \\min_k m_k \\). Taking the expectation with respect to the random vectors \\( \\zeta_{[0,T]} \\), we obtain",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.114,
+      0.588,
+      0.673,
+      0.746
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\beta \\sum_ {k = 0} ^ {T} \\mathbb {E} _ {\\zeta_ {[ 0, T ]}} [ \\| \\nabla F _ {\\mu_ {k}} (\\boldsymbol {x} _ {k}) \\| ^ {2} ] \\\\ \\leq F (\\boldsymbol {x} _ {0}) - F ^ {*} + 2 \\mu_ {0} L _ {F} \\sqrt {d} + \\beta \\sum_ {k = 0} ^ {T} \\mathbb {E} _ {\\zeta_ {[ 0, T ]}} \\left[ \\nabla F _ {\\mu_ {k}} \\left(\\boldsymbol {x} _ {k}\\right) ^ {\\top} \\Delta_ {k} \\right] + \\frac {H _ {F} \\beta^ {2}}{2} \\sum_ {k = 0} ^ {T} \\mathbb {E} _ {\\zeta_ {[ 0, T ]}} \\left[ \\| \\boldsymbol {g} _ {k} \\| ^ {2} \\right] \\\\ \\stackrel {(*)} {\\leq} F (\\boldsymbol {x} _ {0}) - F ^ {*} + 2 \\mu_ {0} L _ {F} \\sqrt {d} + \\beta \\sum_ {k = 0} ^ {T} \\mathbb {E} _ {\\zeta_ {[ 0, k - 1 ]}} [ \\nabla F _ {\\mu_ {k}} (\\boldsymbol {x} _ {k}) ^ {\\top} \\mathbb {E} _ {\\zeta_ {k}} [ \\Delta_ {k} \\mid \\zeta_ {[ 0, k - 1 ]} ] ] \\\\ + \\frac {H _ {F} \\beta^ {2}}{2} \\sum_ {k = 0} ^ {T} \\mathbb {E} _ {\\zeta_ {[ 0, k - 1 ]}} \\left[ \\frac {3}{2} \\mu_ {k} ^ {2} H _ {F} ^ {2} (d + 6) ^ {3} + 6 (d + 4) \\| \\nabla F (\\boldsymbol {x} _ {k}) \\| ^ {2} + \\frac {3 \\sigma^ {2} d}{\\mu_ {k} ^ {2} m _ {k}} + \\frac {3 \\delta_ {k} ^ {2} d}{\\mu_ {k} ^ {2}} \\right] \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.119,
+      0.749,
+      0.471,
+      0.786
+    ],
+    "angle": 0,
+    "content": "\\[\n\\stackrel {(\\ast \\ast)} {=} F (\\boldsymbol {x} _ {0}) - F ^ {*} + 2 \\mu_ {0} L _ {F} \\sqrt {d} + \\frac {3 \\beta^ {2} H _ {F} ^ {3} (d + 6) ^ {3}}{4} \\sum_ {k = 0} ^ {T} \\mu_ {k} ^ {2}\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.133,
+      0.789,
+      0.755,
+      0.826
+    ],
+    "angle": 0,
+    "content": "\\[\n+ 3 (d + 4) H _ {F} \\beta^ {2} \\sum_ {k = 0} ^ {T} \\mathbb {E} _ {\\zeta_ {[ 0, k - 1 ]}} \\left[ \\| \\nabla F (\\boldsymbol {x} _ {k}) \\| ^ {2} \\right] + \\frac {3}{2} H _ {F} \\beta^ {2} \\sigma^ {2} d \\sum_ {k = 0} ^ {T} \\frac {1}{\\mu_ {k} ^ {2} m _ {k}} + \\frac {3}{2} H _ {F} \\beta^ {2} d \\sum_ {k = 0} ^ {T} \\frac {\\mathbb {E} _ {\\zeta_ {[ 0 , k - 1 ]}} \\left[ \\delta_ {k} ^ {2} \\right]}{\\mu_ {k} ^ {2}}\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.119,
+      0.83,
+      0.919,
+      0.867
+    ],
+    "angle": 0,
+    "content": "\\[\n\\stackrel {(* * *)} {\\leq} F \\left(\\boldsymbol {x} _ {0}\\right) - F ^ {*} + 2 \\mu_ {0} L _ {F} \\sqrt {d} + \\frac {3 \\mu_ {0} ^ {2} \\beta^ {2} H _ {F} ^ {3} (d + 6) ^ {3} (T + 1)}{4} + 3 (d + 4) H _ {F} \\beta^ {2} \\sum_ {k = 0} ^ {T} \\mathbb {E} _ {\\zeta_ {[ 0, k - 1 ]}} \\left[ \\| \\nabla F \\left(\\boldsymbol {x} _ {k}\\right) \\| ^ {2} \\right] + \\frac {3 H _ {F} \\beta^ {2} \\sigma^ {2} d (T + 1)}{2 \\mu_ {\\min} ^ {2} m _ {\\min}}\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.134,
+      0.87,
+      0.316,
+      0.907
+    ],
+    "angle": 0,
+    "content": "\\[\n+ \\frac {3 H _ {F} \\beta^ {2} d}{2 \\mu_ {\\min} ^ {2}} \\sum_ {k = 0} ^ {T} \\mathbb {E} _ {\\zeta_ {[ 0, k - 1 ]}} [ \\delta_ {k} ^ {2} ],\n\\]"
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.489,
+      0.935,
+      0.51,
+      0.948
+    ],
+    "angle": 0,
+    "content": "23"
+  }
+]

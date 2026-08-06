@@ -1,0 +1,212 @@
+[
+  {
+    "type": "text",
+    "bbox": [
+      0.171,
+      0.104,
+      0.825,
+      0.149
+    ],
+    "angle": 0,
+    "content": "RWKV-7 uses four low-rank MLPs for decay \\( w \\), value residual \\( v \\), in-context learning rate \\( a \\) and gate \\( g \\) respectively. The intermediate dimensions are listed in Table 16. These values are based on our mere speculation of how much information can be passed through.",
+    "merge_prev": false
+  },
+  {
+    "type": "table",
+    "bbox": [
+      0.354,
+      0.158,
+      0.645,
+      0.261
+    ],
+    "angle": 0,
+    "content": "<table><tr><td>Dimension (D)</td><td>\\( d_w \\)</td><td>\\( d_a \\)</td><td>\\( d_v \\)</td><td>\\( d_g \\)</td></tr><tr><td>768</td><td>64</td><td>64</td><td>32</td><td>128</td></tr><tr><td>1024</td><td>64</td><td>64</td><td>32</td><td>128</td></tr><tr><td>2048</td><td>96</td><td>96</td><td>64</td><td>256</td></tr><tr><td>2560</td><td>96</td><td>96</td><td>64</td><td>320</td></tr><tr><td>4096</td><td>128</td><td>128</td><td>96</td><td>480</td></tr><tr><td>6144</td><td>128</td><td>128</td><td>96</td><td>640</td></tr></table>"
+  },
+  {
+    "type": "table_caption",
+    "bbox": [
+      0.197,
+      0.284,
+      0.8,
+      0.3
+    ],
+    "angle": 0,
+    "content": "Table 16: Suggested Intermediate Dimensions for the low-rank MLPs for RWKV-7 models"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.172,
+      0.314,
+      0.741,
+      0.33
+    ],
+    "angle": 0,
+    "content": "The number of parameters for all RWKV-7 models can be computed by the formula:",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.241,
+      0.334,
+      0.825,
+      0.352
+    ],
+    "angle": 0,
+    "content": "\\[\n\\# (\\text {Params}) = 2 D V + 4 D + L D \\left(1 2 D + 2 \\left(d _ {w} + d _ {a} + d _ {v} + d _ {g}\\right) + 1 9\\right) - (2 D d _ {v} + D). \\tag {26}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.172,
+      0.364,
+      0.226,
+      0.377
+    ],
+    "angle": 0,
+    "content": "Where:",
+    "merge_prev": false
+  },
+  {
+    "type": "list",
+    "bbox": [
+      0.217,
+      0.39,
+      0.825,
+      0.474
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.217,
+      0.39,
+      0.825,
+      0.417
+    ],
+    "angle": 0,
+    "content": "- The weights of the embeddings and head, and the Layernorms beside them, yield \\(2DV + 4D\\) parameters;",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.217,
+      0.418,
+      0.825,
+      0.446
+    ],
+    "angle": 0,
+    "content": "- The weights of each layer yield \\( D\\left(12D + 2\\left(d_w + d_a + d_v + d_g\\right) + 19\\right) \\) parameters, except for the first layer;",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.217,
+      0.446,
+      0.825,
+      0.474
+    ],
+    "angle": 0,
+    "content": "- The low-rank MLP for the value residual is not present in the first layer, subtracting \\((2Dd_{\\nu} + D)\\) parameters.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.171,
+      0.489,
+      0.825,
+      0.573
+    ],
+    "angle": 0,
+    "content": "Parameter Initializations Proper parameter initialization is crucial for ensuring training stability and achieving optimal performance for language models. RWKV-7 employs a carefully designed initialization strategy tailored to its architecture. The detailed initialization scheme is beyond the scope here but can be found in the official code repository. We emphasize that using the recommended initialization is essential for replicating the results in this paper. Deviations from the prescribed initialization may lead to performance degradation.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.171,
+      0.588,
+      0.827,
+      0.686
+    ],
+    "angle": 0,
+    "content": "Dataset Loading The dataset used for pretraining consists of 3119194079123 tokens stored on disk, which are memory-mapped using the mmap mechanism. To ensure a diverse and pseudorandom sampling of training sequences, we employ a custom data loading strategy based on a mathematical function with desirable properties. Specifically, we utilize a pseudo-random number generator defined by the function \\( f(x) = ax^3 \\) over the finite field \\( \\mathbb{Z} / p\\mathbb{Z} \\), where \\( p \\) is a prime number of the form \\( 3n + 2 \\). This function is chosen because it is a bijection (full map) in \\( \\mathbb{Z} / p\\mathbb{Z} \\), ensuring that all possible indices are eventually accessed exactly once within one epoch.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.171,
+      0.692,
+      0.827,
+      0.72
+    ],
+    "angle": 0,
+    "content": "For pretraining with a sequence length of 4096, the relative address of the \\(k\\)-th sample is determined as:",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.243,
+      0.726,
+      0.753,
+      0.743
+    ],
+    "angle": 0,
+    "content": "\\[\n\\text {start\\_address} = 4 0 9 6 \\cdot (a k ^ {3} \\mod p), \\quad \\text {end\\_address} = \\text {start\\_address} + 4 0 9 7.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.171,
+      0.749,
+      0.827,
+      0.793
+    ],
+    "angle": 0,
+    "content": "Here, p is chosen as the largest prime of the form  \\( 3n + 2 \\)  smaller than  \\( \\lfloor dataset\\_size/4096 \\rfloor \\) , yielding p = 761521949. The parameter a is set to an integer close to 0.618p that ensures good mixing properties of the generated addresses.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.171,
+      0.798,
+      0.827,
+      0.855
+    ],
+    "angle": 0,
+    "content": "This approach guarantees both simple calculation and uniform access to the dataset while maintaining pseudo-randomness. By leveraging the properties of modular arithmetic and cubic mappings, we achieve a balance between computational efficiency and data diversity during pretraining.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.171,
+      0.869,
+      0.825,
+      0.926
+    ],
+    "angle": 0,
+    "content": "Training Details All RWKV-7 models were trained under bfloat16 format on nodes of  \\( 8 \\times \\) Nvidia H800. The AdamW optimizer was configured with  \\( \\beta_{1}=0.9 \\) ,  \\( \\beta_{2}=0.99 \\) ,  \\( \\epsilon=1 \\times 10^{-18} \\) , and a weight decay of 0.1 applied exclusively to linear layers and embedding weights. The choice of such a small  \\( \\epsilon \\)  value is motivated by the theory proposed by Molybog et al. (2023), which suggests that",
+    "merge_prev": false
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.49,
+      0.949,
+      0.509,
+      0.96
+    ],
+    "angle": 0,
+    "content": "40"
+  }
+]

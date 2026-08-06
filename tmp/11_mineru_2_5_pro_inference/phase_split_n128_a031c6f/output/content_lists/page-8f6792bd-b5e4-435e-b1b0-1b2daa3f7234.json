@@ -1,0 +1,221 @@
+[
+  {
+    "type": "header",
+    "bbox": [
+      0.16,
+      0.048,
+      0.321,
+      0.071
+    ],
+    "angle": 0,
+    "content": "小学教材全解"
+  },
+  {
+    "type": "header",
+    "bbox": [
+      0.382,
+      0.048,
+      0.626,
+      0.069
+    ],
+    "angle": 0,
+    "content": "RJ·一年级数学(下)"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.278,
+      0.104,
+      0.543,
+      0.128
+    ],
+    "angle": 0,
+    "content": "把 25 拆分成 20 和 5。",
+    "merge_prev": false
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.33,
+      0.154,
+      0.558,
+      0.301
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.297,
+      0.311,
+      0.5,
+      0.334
+    ],
+    "angle": 0,
+    "content": "再算 20+7=27。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.733,
+      0.093,
+      0.941,
+      0.14
+    ],
+    "angle": 0,
+    "content": "我是2,我可以先和加数2相加吗?",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.745,
+      0.162,
+      0.923,
+      0.196
+    ],
+    "angle": 0,
+    "content": "25+2",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.746,
+      0.221,
+      0.921,
+      0.293
+    ],
+    "angle": 0,
+    "content": "不可以，你是20，应该让5和我相加。",
+    "merge_prev": false
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.159,
+      0.354,
+      0.522,
+      0.379
+    ],
+    "angle": 0,
+    "content": "3. 探究 25+20 的计算方法"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.16,
+      0.396,
+      0.427,
+      0.42
+    ],
+    "angle": 0,
+    "content": "借助小棒理解算理。",
+    "merge_prev": false
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.171,
+      0.436,
+      0.703,
+      0.564
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.743,
+      0.412,
+      0.926,
+      0.459
+    ],
+    "angle": 0,
+    "content": "注意相同数位上的数才能相加减。",
+    "merge_prev": false
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.819,
+      0.484,
+      0.884,
+      0.527
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.174,
+      0.571,
+      0.886,
+      0.652
+    ],
+    "angle": 0,
+    "content": "先把 2 捆小棒与 2 捆小棒合起来, 是 4 捆小棒; 再把 4 捆小棒与 5 根小棒合起来, 是 4 捆零 5 根小棒, 即 45 根小棒。因此  \\( 25 + 20 = 45 \\) 。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.37,
+      0.694,
+      0.632,
+      0.717
+    ],
+    "angle": 0,
+    "content": "把 25 拆分成 20 和 5。",
+    "merge_prev": false
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.451,
+      0.75,
+      0.701,
+      0.906
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.385,
+      0.914,
+      0.589,
+      0.937
+    ],
+    "angle": 0,
+    "content": "再算  \\( 40 + 5 = 45 \\) 。",
+    "merge_prev": false
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.064,
+      0.95,
+      0.096,
+      0.966
+    ],
+    "angle": 0,
+    "content": "134"
+  },
+  {
+    "type": "footer",
+    "bbox": [
+      0.251,
+      0.983,
+      0.747,
+      0.999
+    ],
+    "angle": 0,
+    "content": "关注微信公众号“小考教辅站”获取更多小学教辅资料"
+  }
+]

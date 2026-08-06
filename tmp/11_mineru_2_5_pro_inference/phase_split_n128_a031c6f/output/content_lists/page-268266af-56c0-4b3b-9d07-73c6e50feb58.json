@@ -1,0 +1,137 @@
+[
+  {
+    "type": "page_number",
+    "bbox": [
+      0.168,
+      0.086,
+      0.186,
+      0.096
+    ],
+    "angle": 0,
+    "content": "16"
+  },
+  {
+    "type": "header",
+    "bbox": [
+      0.241,
+      0.084,
+      0.788,
+      0.098
+    ],
+    "angle": 0,
+    "content": "ALEXANDER HOCK, SERGEY SHADRIN, AND RAIMAR WULKENHAAR"
+  },
+  {
+    "type": "list",
+    "bbox": [
+      0.187,
+      0.109,
+      0.865,
+      0.355
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.193,
+      0.111,
+      0.859,
+      0.168
+    ],
+    "angle": 0,
+    "content": "\\[\n- 2\\sum_{k = 1}^{|I|}d_{u_{k}}\\Big[\\operatorname *{Res}_{q = \\iota u_{k}}\\tilde{K} (z_{2},q,u_{k})\\sum_{\\substack{I^{\\prime}\\sqcup I^{\\prime \\prime} = I\\\\ I^{\\prime \\prime}\\neq \\emptyset}}d_{u_{k}}^{-1}\\Big(\\omega_{|I^{\\prime}| + 3}^{(0)}(q,\\tilde{q},u,I^{\\prime})\\omega_{|I^{\\prime \\prime}| + 1}^{(0)}(q,I^{\\prime \\prime})\\Big)\\Big]\\quad (\\dagger \\dagger)\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.193,
+      0.172,
+      0.86,
+      0.219
+    ],
+    "angle": 0,
+    "content": "\\[\n- 2d_{\\tilde{q}}\\Big[\\operatorname *{Res}_{q = \\iota \\tilde{q}}\\tilde{K} (z_{2},q,\\tilde{q})\\sum_{\\substack{I^{\\prime}\\sqcup I^{\\prime \\prime} = I\\\\ I^{\\prime \\prime}\\neq \\emptyset}}d_{\\tilde{q}}^{-1}\\Big(\\omega_{|I^{\\prime}| + 3}^{(0)}(q,\\tilde{q},u,I^{\\prime})\\omega_{|I^{\\prime \\prime}| + 1}^{(0)}(q,I^{\\prime \\prime})\\Big)\\Big]\\qquad \\qquad (\\ddagger^{\\prime})\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.193,
+      0.222,
+      0.859,
+      0.261
+    ],
+    "angle": 0,
+    "content": "\\[\n\\left. - 2 d _ {\\tilde {q}} \\left[ \\underset {q = \\iota \\tilde {q}} {\\operatorname{Res}} \\tilde {K} \\left(z _ {2}, q, \\tilde {q}\\right) \\sum_ {I ^ {\\prime} \\sqcup I ^ {\\prime \\prime} = I} d _ {\\tilde {q}} ^ {- 1} \\left(\\omega_ {| I ^ {\\prime} | + 2} ^ {(0)} \\left(q, \\tilde {q}, I ^ {\\prime}\\right) \\omega_ {| I ^ {\\prime \\prime} | + 2} ^ {(0)} \\left(q, u, I ^ {\\prime \\prime}\\right)\\right) \\right] \\quad \\left(\\ddagger^ {\\prime \\prime}\\right) \\right.\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.193,
+      0.263,
+      0.859,
+      0.311
+    ],
+    "angle": 0,
+    "content": "\\[\n- 2d_{u}\\Big[\\operatorname *{Res}_{q = \\iota u}\\tilde{K} (z_{2},q,u)\\sum_{\\substack{I^{\\prime}\\sqcup I^{\\prime \\prime} = I\\\\ I^{\\prime \\prime}\\neq \\emptyset}}d_{u}^{-1}\\Big(\\omega_{|I^{\\prime}| + 3}^{(0)}(q,\\tilde{q},u,I^{\\prime})\\omega_{|I^{\\prime \\prime}| + 1}^{(0)}(q,I^{\\prime \\prime})\\Big)\\Big]\\qquad \\qquad (\\ddagger \\ddagger^{\\prime})\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.193,
+      0.314,
+      0.859,
+      0.353
+    ],
+    "angle": 0,
+    "content": "\\[\n\\left. - 2 d _ {u} \\left[ \\underset {q = \\iota u} {\\operatorname{Res}} \\tilde {K} \\left(z _ {2}, q, u\\right) \\sum_ {I ^ {\\prime} \\sqcup I ^ {\\prime \\prime} = I} d _ {u} ^ {- 1} \\left(\\omega_ {| I ^ {\\prime} | + 2} ^ {(0)} \\left(q, \\tilde {q}, I ^ {\\prime}\\right) \\omega_ {| I ^ {\\prime \\prime} | + 2} ^ {(0)} \\left(q, u, I ^ {\\prime \\prime}\\right)\\right) \\right] \\right\\}. \\quad \\left(\\ddagger \\ddagger^ {\\prime \\prime}\\right)\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.163,
+      0.376,
+      0.862,
+      0.501
+    ],
+    "angle": 0,
+    "content": "In the line \\((\\dagger)\\), because of shorter length, we have \\(\\omega_{|I'| + 3}^{(0)}(q,\\tilde{q},u,I') = \\omega_{|I'| + 3}^{(0)}(\\tilde{q},u,q,I')\\) by induction hypothesis. We commute the residues and use the identity (30) for \\(z_{2}\\mapsto q\\) and \\(I\\mapsto I'\\). After relabelling the index sets and commuting the residues again we get for the line \\((\\dagger)\\) exactly the same expression as the line \\((\\#)\\), multiplied by the line \\((\\S)\\), of (31). Similar considerations prove that the line \\((\\dagger \\dagger)\\) of (32) is equal to the line \\((\\#\\#\\), multiplied by the line \\((\\S)\\), of (31).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.164,
+      0.502,
+      0.861,
+      0.564
+    ],
+    "angle": 0,
+    "content": "The lines \\((\\ddagger')\\) and \\((\\ddagger'')\\) can be combined to a sum over decompositions \\(I' \\sqcup I'' = I \\cup \\{u\\}\\) of \\(\\omega_{|I'|+3}^{(0)}(q, \\tilde{q}, I')\\omega_{|I''|+1}^{(0)}(q, I'')\\); and the lines \\((\\ddagger\\ddagger')\\) and \\((\\ddagger\\ddagger'')\\) to a sum over decompositions \\(I' \\sqcup I'' = I \\cup \\{\\tilde{q}\\}\\) of \\(\\omega_{|I'|+3}^{(0)}(q, u, I')\\omega_{|I''|+1}^{(0)}(q, I'')\\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.163,
+      0.565,
+      0.861,
+      0.602
+    ],
+    "angle": 0,
+    "content": "With these considerations and \\(\\omega_{|I| + 3}^{(0)}(z_1,z_2,u,I)\\equiv \\omega_{|I| + 3}^{(0)}(z_1,u,z_2,I)\\) the difference between (31) and (32) reduces to",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.185,
+      0.624,
+      0.86,
+      0.824
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\mathcal {P} _ {z _ {1}; \\iota u} \\left(\\omega_ {| I | + 3} ^ {(0)} \\left(z _ {1}, z _ {2}, u, I\\right) - \\omega_ {| I | + 3} ^ {(0)} \\left(z _ {2}, z _ {1}, u, I\\right)\\right) (33) \\\\ = -d_{u}\\Big[\\operatorname{Res}_{\\tilde{q} = \\iota u}\\frac{dz_{1}d\\tilde{q}}{(z_{1} - \\tilde{q})^{2}}\\sum_{s = 1}^{|I|}\\sum_{\\substack{I_{1}\\sqcup \\dots \\sqcup I_{s} = I\\\\ I_{1},\\dots ,I_{s}\\neq \\emptyset}}\\frac{\\omega_{2}^{(0)}(u,z_{2})\\prod_{i = 1}^{s}\\omega_{|I_{i}| + 1}^{(0)}(u,I_{i})}{((y(\\iota\\tilde{q}) - y(u))dx(u))^{s + 1}}\\Big](a) \\\\ +d_{u}\\Big[\\underset {\\tilde{q} = \\iota u}{\\text{Res}}\\frac{dz_{1}d\\tilde{q}}{(z_{1} - \\tilde{q})^{2}}\\sum_{s = 0}^{|I| - 1}\\sum_{\\substack{I_{0}\\sqcup I_{1}\\sqcup \\dots \\sqcup I_{s} = I\\\\ I_{0},I_{1},\\dots ,I_{s}\\neq \\emptyset}}\\frac{\\prod_{i = 1}^{s}\\omega_{|I_{i}| + 1}^{(0)}(u,I_{i})}{((y(\\iota\\tilde{q}) - y(u))dx(u))^{s + 1}} (b^{\\prime)} \\\\ \\times 2d_{u}\\Big[\\operatorname *{Res}_{q = \\iota u}\\tilde{K} (z_{2},q,u)d_{u}^{-1}\\Big(\\sum_{\\substack{I^{\\prime}\\sqcup I^{\\prime \\prime} = I_{0}\\\\ I^{\\prime \\prime}\\neq \\emptyset}}\\omega_{|I^{\\prime}| + 2}^{(0)}(q,u,I^{\\prime})\\omega_{|I^{\\prime \\prime}| + 1}^{(0)}(q,I^{\\prime \\prime})\\Big)\\Big]\\Big]\\qquad \\text{(b\"} \\\\ \\end{array}\n\\]"
+  }
+]

@@ -1,0 +1,213 @@
+[
+  {
+    "type": "header",
+    "bbox": [
+      0.115,
+      0.092,
+      0.4,
+      0.11
+    ],
+    "angle": 0,
+    "content": "Jacobi-Koszul-Vinberg structures"
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.838,
+      0.093,
+      0.86,
+      0.107
+    ],
+    "angle": 0,
+    "content": "22"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.2,
+      0.133,
+      0.749,
+      0.369
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} - e ^ {- 2 t} \\langle \\tilde {\\gamma}, [ h ^ {\\sharp} \\tilde {\\alpha}, h ^ {\\sharp} \\tilde {\\beta} ] _ {A} \\rangle - e ^ {- t} \\phi_ {0} (h ^ {\\sharp} \\tilde {\\alpha}) \\left\\langle \\tilde {\\gamma}, - e ^ {- t} h ^ {\\sharp} \\tilde {\\beta} + e ^ {- t} h ^ {\\sharp} \\frac {\\partial \\tilde {\\beta}}{\\partial t} \\right\\rangle \\\\ + e ^ {- t} \\phi_ {0} (h ^ {\\sharp} \\tilde {\\beta}) \\left\\langle \\tilde {\\gamma}, - e ^ {- t} h ^ {\\sharp} \\tilde {\\alpha} + e ^ {- t} h ^ {\\sharp} \\frac {\\partial \\tilde {\\alpha}}{\\partial t} \\right\\rangle \\\\ = e ^ {- 2 t} \\left(\\rho_ {A} \\left(h ^ {\\sharp} \\tilde {\\alpha}\\right) \\left(h (\\tilde {\\beta}, \\tilde {\\gamma})\\right) - \\rho_ {A} \\left(h ^ {\\sharp} \\tilde {\\beta}\\right) \\left(h (\\tilde {\\alpha}, \\tilde {\\gamma})\\right) \\right. \\\\ + \\langle \\tilde {\\alpha}, h ^ {\\sharp} \\tilde {\\beta} \\cdot_ {A} h ^ {\\sharp} \\tilde {\\gamma} \\rangle - \\langle \\tilde {\\beta}, h ^ {\\sharp} \\tilde {\\alpha} \\cdot_ {A} h ^ {\\sharp} \\tilde {\\gamma} \\rangle - \\langle \\tilde {\\gamma}, [ h ^ {\\sharp} \\tilde {\\alpha}, h ^ {\\sharp} \\tilde {\\beta} ] _ {A} \\rangle \\\\ \\left. + h \\left(\\phi_ {0}, \\tilde {\\alpha}\\right) h \\left(\\tilde {\\beta}, \\tilde {\\gamma}\\right) - h \\left(\\phi_ {0}, \\tilde {\\beta}\\right) h \\left(\\tilde {\\gamma}, \\tilde {\\alpha}\\right)\\right) \\\\ = e ^ {- 2 t} (\\llbracket h, h \\rrbracket_ {A} (\\tilde {\\alpha}, \\tilde {\\beta}, \\tilde {\\gamma}) + h (\\phi_ {0}, \\tilde {\\alpha}) h (\\tilde {\\beta}, \\tilde {\\gamma}) - h (\\phi_ {0}, \\tilde {\\beta}) h (\\tilde {\\gamma}, \\tilde {\\alpha})) \\\\ = e ^ {- 2 t} [ [ h, h ] ] _ {A} ^ {\\phi_ {0}} (\\tilde {\\alpha}, \\tilde {\\beta}, \\tilde {\\gamma}). \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.381,
+      0.86,
+      0.424
+    ],
+    "angle": 0,
+    "content": "Therefore \\(h\\) is a Jacobi-Koszul-Vinberg structure on \\((A,\\phi_0)\\) if and only if \\(\\tilde{h}\\) is a Koszul-Vinberg structure on \\((\\tilde{A},\\overline{\\cdot}_A^{\\phi_0},\\overline{\\rho}_A^{\\phi_0})\\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.435,
+      0.86,
+      0.477
+    ],
+    "angle": 0,
+    "content": "DEFINITION 2.8.  \\( \\tilde{h} \\)  in Theorem 2.7 is called the Koszul-Vinbergization of a Jacobi-Koszul-Vinberg structure h on  \\( (A,\\phi_{0}) \\) .",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.49,
+      0.86,
+      0.53
+    ],
+    "angle": 0,
+    "content": "Now we define a Jacobi-Koszul-Vinberg manifold as a symmetric analogue of a Jacobi manifold.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.544,
+      0.86,
+      0.586
+    ],
+    "angle": 0,
+    "content": "DEFINITION 2.9. A Jacobi-Koszul-Vinberg structure on an affine manifold  \\( (M,\\nabla) \\)  is a pair  \\( (h,E) \\)  in  \\( \\Gamma(S^{2}TM)\\times\\mathfrak{X}(M) \\)  satisfying,",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.588,
+      0.328,
+      0.607
+    ],
+    "angle": 0,
+    "content": "for any \\(\\alpha, \\beta, \\gamma\\) in \\(\\Omega^1(M)\\),",
+    "merge_prev": false
+  },
+  {
+    "type": "list",
+    "bbox": [
+      0.206,
+      0.619,
+      0.773,
+      0.695
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.218,
+      0.623,
+      0.767,
+      0.643
+    ],
+    "angle": 0,
+    "content": "(i) \\((\\nabla_{h^{\\sharp}\\alpha}h)(\\beta ,\\gamma) - \\langle \\alpha ,E\\rangle h(\\beta ,\\gamma) = (\\nabla_{h^{\\sharp}\\beta}h)(\\alpha ,\\gamma) - \\langle \\beta ,E\\rangle h(\\alpha ,\\gamma),\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.214,
+      0.648,
+      0.626,
+      0.668
+    ],
+    "angle": 0,
+    "content": "(ii) \\((\\nabla_{E}h)(\\beta ,\\gamma) - \\langle \\gamma ,\\nabla_{h^{\\sharp}\\beta}E\\rangle +\\langle \\beta ,E\\rangle \\langle \\gamma ,E\\rangle = 0,\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.209,
+      0.674,
+      0.331,
+      0.693
+    ],
+    "angle": 0,
+    "content": "(iii) \\(\\nabla_{E}E = 0\\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.708,
+      0.586,
+      0.727
+    ],
+    "angle": 0,
+    "content": "\\((M,\\nabla ,h,E)\\) is called a Jacobi-Koszul-Vinberg manifold.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.74,
+      0.862,
+      0.822
+    ],
+    "angle": 0,
+    "content": "Let \\((M,\\nabla)\\) be an affine manifold. As previously stated in Example 1.8, \\((TM\\oplus\\mathbb{R},\\bar{\\nabla},\\mathrm{pr}_{1})\\) is a left-symmetric algebroid over \\(M\\). Furthermore, because of Example 1.13 and Proposition 2.2, \\(((TM\\oplus\\mathbb{R},\\bar{\\nabla},\\mathrm{pr}_{1}),(0,1))\\) is a Jacobi-left-symmetric algebroid over \\(M\\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.838,
+      0.861,
+      0.905
+    ],
+    "angle": 0,
+    "content": "PROPOSITION 2.10. Let  \\( (M,\\nabla) \\)  be an affine manifold. Identify  \\( (h,E) \\)  in  \\( \\Gamma(S^{2}TM)\\times\\mathfrak{X}(M) \\)  with H in  \\( \\Gamma(S^{2}(TM\\oplus\\mathbb{R})) \\)  by  \\( H=h+\\frac{\\partial}{\\partial t}\\otimes E+E\\otimes\\frac{\\partial}{\\partial t} \\) . Under this identification, the followings are equivalent;",
+    "merge_prev": false
+  },
+  {
+    "type": "list",
+    "bbox": [
+      0.241,
+      0.917,
+      0.732,
+      0.97
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.247,
+      0.921,
+      0.728,
+      0.94
+    ],
+    "angle": 0,
+    "content": "(1) \\((h,E)\\) is a Jacobi-Koszul-Vinberg structure on \\((M,\\nabla)\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.247,
+      0.944,
+      0.422,
+      0.967
+    ],
+    "angle": 0,
+    "content": "(2) \\(\\llbracket H, H \\rrbracket_{TM \\oplus \\mathbb{R}}^{(0,1)} = 0\\).",
+    "merge_prev": false
+  }
+]

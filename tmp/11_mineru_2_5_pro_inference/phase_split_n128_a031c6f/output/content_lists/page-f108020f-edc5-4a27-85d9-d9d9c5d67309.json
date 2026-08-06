@@ -1,0 +1,347 @@
+[
+  {
+    "type": "text",
+    "bbox": [
+      0.068,
+      0.09,
+      0.465,
+      0.122
+    ],
+    "angle": 0,
+    "content": "PROOF. We have \\( MM^{\\mathsf{H}} - MN^{\\mathsf{H}} - NM^{\\mathsf{H}} + NN^{\\mathsf{H}} = (M - N)(M - N)^{\\mathsf{H}} \\succeq 0 \\) and hence, (44) holds.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.067,
+      0.151,
+      0.465,
+      0.182
+    ],
+    "angle": 0,
+    "content": "The following proposition provides a sufficient condition linear in  \\( \\bar{Z}_{u} \\)  which, ensures the exploration goal (4).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.067,
+      0.194,
+      0.465,
+      0.227
+    ],
+    "angle": 0,
+    "content": "Proposition 13 Let Assumptions 1 and 2 hold. Suppose the matrices  \\( \\bar{\\Phi}_{u} \\) ,  \\( \\bar{Z}_{u} \\)  and  \\( \\hat{Z} \\in \\mathbb{C}^{(n_{\\phi} + n_{x}n_{\\phi}^{2}) \\times Ln_{x}n_{\\phi}} \\)  satisfy",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.126,
+      0.242,
+      0.419,
+      0.283
+    ],
+    "angle": 0,
+    "content": "\\[\n\\left[ \\begin{array}{c c} \\left((1 - \\epsilon) \\bar {\\Phi} _ {\\mathrm{u}} \\bar {\\Phi} _ {\\mathrm{u}} ^ {\\mathsf {H}} - \\left(\\frac {1 - \\epsilon}{\\epsilon}\\right) \\bar {W} _ {\\phi}\\right) - \\frac {\\gamma_ {\\mathrm{w}}}{T} D _ {\\mathrm{des}} & 0 \\\\ 0 & 0 \\end{array} \\right]\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.078,
+      0.286,
+      0.462,
+      0.325
+    ],
+    "angle": 0,
+    "content": "\\[\n+ \\left((1 - \\epsilon) \\left(\\bar {Z} _ {\\mathrm{u}} \\hat {Z} ^ {\\mathrm{H}} + \\hat {Z} \\bar {Z} _ {\\mathrm{u}} ^ {\\mathrm{H}} - \\hat {Z} \\hat {Z} ^ {\\mathrm{H}}\\right) - \\left(\\frac {1 - \\epsilon}{\\epsilon}\\right) \\bar {W} _ {Z}\\right) \\succeq 0, \\tag {45}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.068,
+      0.342,
+      0.465,
+      0.372
+    ],
+    "angle": 0,
+    "content": "then an estimate \\(\\hat{\\theta}_T\\) computed as in (11) satisfies the exploration goal (4).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.068,
+      0.402,
+      0.334,
+      0.416
+    ],
+    "angle": 0,
+    "content": "PROOF. From Lemma 12, we have",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.155,
+      0.431,
+      0.462,
+      0.45
+    ],
+    "angle": 0,
+    "content": "\\[\n\\bar {Z} _ {\\mathrm{u}} \\bar {Z} _ {\\mathrm{u}} ^ {\\mathrm{H}} \\succeq \\bar {Z} _ {\\mathrm{u}} \\hat {Z} ^ {\\mathrm{H}} + \\hat {Z} \\bar {Z} _ {\\mathrm{u}} ^ {\\mathrm{H}} - \\hat {Z} \\hat {Z} ^ {\\mathrm{H}}. \\tag {46}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.067,
+      0.462,
+      0.464,
+      0.535
+    ],
+    "angle": 0,
+    "content": "Inserting Inequality (46) in Inequality (45), and multiplying the resulting inequality by T yields Inequality (42). Hence, if there exists matrices  \\( \\bar{\\Phi}_{u} \\) ,  \\( \\bar{Z}_{u} \\)  and  \\( \\hat{Z} \\)  that satisfy (45), then the condition in Proposition 11 is satisfied and the exploration goal (4) is achieved. ☐",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.067,
+      0.566,
+      0.465,
+      0.669
+    ],
+    "angle": 0,
+    "content": "The bound derived in Lemma 12 is tight if  \\( \\hat{Z} = \\bar{Z}_{u} \\) . Since  \\( \\bar{Z}_{u} \\)  comprises uncertain elements  \\( V_{x,tr} \\) ,  \\( V_{\\phi,tr} \\)  and the unknown decision variable  \\( U_{e} \\) , we consider a candidate  \\( \\hat{Z} \\) . Later, this relaxation is embedded an iterative process to reduce conservatism. In what follows, we utilize Inequality (45) to derive a condition linear in the decision variable  \\( U_{e} \\)  that ensures the exploration goal (4).",
+    "merge_prev": false
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.068,
+      0.687,
+      0.232,
+      0.702
+    ],
+    "angle": 0,
+    "content": "4.6 Exploration SDP"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.067,
+      0.719,
+      0.464,
+      0.763
+    ],
+    "angle": 0,
+    "content": "In this section, we provide a sufficient condition that ensure the exploration goal (4) using Proposition 13. In (33),  \\( \\bar{Z}_{u} \\)  can be be written as  \\( \\bar{Z}_{u} = \\bar{Z}_{u,1} + \\bar{Z}_{u,2} \\) , where",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.111,
+      0.778,
+      0.422,
+      0.821
+    ],
+    "angle": 0,
+    "content": "\\[\n\\bar {Z} _ {\\mathrm{u,1}} = \\left[ \\begin{array}{c} D _ {\\mathrm{des}} ^ {\\frac {1}{2} \\top} \\left(\\mathbf {1} _ {L} ^ {\\top} U _ {\\mathrm{e}} ^ {\\top} \\otimes I _ {n _ {\\phi}}\\right) \\\\ 0 \\end{array} \\right] \\left(V _ {\\mathrm{x,tr}} ^ {\\mathsf {H}} \\otimes I _ {n _ {\\phi}}\\right),\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.111,
+      0.825,
+      0.462,
+      0.866
+    ],
+    "angle": 0,
+    "content": "\\[\n\\bar {Z} _ {\\mathrm{u}, 2} = \\left[ \\begin{array}{c} 0 \\\\ \\left(V _ {\\phi , \\mathrm{tr}}\\right) \\otimes I _ {n _ {\\mathrm{x}} n _ {\\phi}} \\end{array} \\right] \\left(U _ {\\mathrm{e}} \\otimes I _ {n _ {\\mathrm{x}} n _ {\\phi}}\\right). \\tag {47}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.067,
+      0.88,
+      0.464,
+      0.91
+    ],
+    "angle": 0,
+    "content": "In order to robustly account for uncertainties in Inequality (45), we split Inequality (45) into three inequalities",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.497,
+      0.092,
+      0.894,
+      0.121
+    ],
+    "angle": 0,
+    "content": "that are handled separately. The following inequalities are equivalent to Inequality (45) if \\(\\bar{D}_1 + \\bar{D}_2 + \\bar{D}_3 \\succeq 0\\):",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.644,
+      0.158,
+      0.892,
+      0.203
+    ],
+    "angle": 0,
+    "content": "\\[\n\\left(1 - \\epsilon\\right) \\left(\\bar {Z} _ {\\mathrm{u}, 1} \\hat {Z} ^ {\\mathrm{H}} + \\hat {Z} \\bar {Z} _ {\\mathrm{u}, 1} ^ {\\mathrm{H}}\\right) - \\bar {D} _ {1} \\succeq 0, \\tag {48a}\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.511,
+      0.206,
+      0.892,
+      0.242
+    ],
+    "angle": 0,
+    "content": "\\[\n\\left(1 - \\epsilon\\right) \\left(\\bar {Z} _ {\\mathrm{u}, 2} \\hat {Z} ^ {\\mathrm{H}} + \\hat {Z} \\bar {Z} _ {\\mathrm{u}, 2} ^ {\\mathrm{H}} - \\hat {Z} \\hat {Z} ^ {\\mathrm{H}}\\right) - \\left(\\frac {1 - \\epsilon}{\\epsilon}\\right) \\bar {W} _ {Z} - \\bar {D} _ {2} \\succeq 0, \\tag {48b}\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.536,
+      0.244,
+      0.892,
+      0.3
+    ],
+    "angle": 0,
+    "content": "\\[\n\\left[ \\begin{array}{c c} \\left((1 - \\epsilon) \\bar {\\Phi} _ {\\mathrm{u}} \\bar {\\Phi} _ {\\mathrm{u}} ^ {\\mathrm{H}} - \\left(\\frac {1 - \\epsilon}{\\epsilon}\\right) \\bar {W} _ {\\phi}\\right) - \\frac {\\gamma_ {\\mathrm{w}}}{T} D _ {\\mathrm{des}} & 0 \\\\ 0 & 0 \\end{array} \\right] - \\bar {D} _ {3} \\succeq 0. \\tag {48c}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.497,
+      0.326,
+      0.892,
+      0.356
+    ],
+    "angle": 0,
+    "content": "The following theorem provides a sufficient condition linear in \\( U_{\\mathrm{e}} \\) which ensures the exploration goal (4).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.497,
+      0.369,
+      0.894,
+      0.412
+    ],
+    "angle": 0,
+    "content": "Theorem 14 Let Assumptions 1, 2, 4 and 8 hold. Suppose there exist matrices  \\( U_{e} \\) ,  \\( \\bar{D}_{1} \\) ,  \\( \\bar{D}_{2} \\)  and  \\( \\bar{D}_{3} \\) , and scalars  \\( \\tau_{1} \\geq 0 \\) ,  \\( \\tau_{2} \\geq 0 \\) , and  \\( \\tau_{3} \\geq 0 \\)  such that",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.572,
+      0.426,
+      0.852,
+      0.443
+    ],
+    "angle": 0,
+    "content": "\\[\nS _ {\\mathrm{exp-1}} (\\epsilon , \\tau_ {1}, U _ {\\mathrm{e}}, \\hat {Z}, \\hat {V} _ {\\mathrm{x}}, \\tilde {\\Gamma} _ {\\mathrm{x}}, D _ {\\mathrm{des}}, \\bar {D} _ {1}) \\succeq 0,\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.537,
+      0.447,
+      0.852,
+      0.463
+    ],
+    "angle": 0,
+    "content": "\\[\nS _ {\\mathrm{exp-2}} (\\epsilon , \\tau_ {2}, U _ {\\mathrm{e}}, \\hat {Z}, \\bar {W} _ {Z}, \\hat {V} _ {\\phi}, \\tilde {\\Gamma} _ {\\phi}, D _ {\\mathrm{des}}, \\bar {D} _ {2}) \\succeq 0,\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.513,
+      0.466,
+      0.852,
+      0.483
+    ],
+    "angle": 0,
+    "content": "\\[\nS _ {\\mathrm{exp-3}} (\\epsilon , \\tau_ {3}, U _ {\\mathrm{e}}, \\hat {U}, \\bar {W} _ {\\phi}, \\hat {V} _ {\\phi}, \\tilde {\\Gamma} _ {\\phi}, \\gamma_ {\\mathrm{w}}, D _ {\\mathrm{des}}, \\bar {D} _ {3}) \\succeq 0,\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.714,
+      0.486,
+      0.891,
+      0.501
+    ],
+    "angle": 0,
+    "content": "\\[\n\\bar {D} _ {1} + \\bar {D} _ {2} + \\bar {D} _ {3} \\succeq 0, \\tag {50}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.497,
+      0.514,
+      0.894,
+      0.574
+    ],
+    "angle": 0,
+    "content": "where  \\( S_{exp-1} \\) ,  \\( S_{exp-2} \\) , and  \\( S_{exp-3} \\)  are defined in (49a), (49b) and (49c), respectively. Then, an estimate  \\( \\hat{\\theta}_{T} \\)  computed as in (11) upon the application of the input (6) satisfies the exploration goal (4).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.496,
+      0.585,
+      0.894,
+      0.69
+    ],
+    "angle": 0,
+    "content": "The proof of Theorem 14 is provided in Appendix C. The key idea of the proof is the application of robust control tools, in particular, the matrix S-lemma [5, 27], to account for parametric uncertainty. Consequently, we can pose the exploration problem of designing exploration inputs that excite the system with minimal energy to obtain an estimate \\(\\hat{\\theta}_T\\) that satisfies (4) using the following SDP:",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.509,
+      0.732,
+      0.892,
+      0.856
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\inf_{\\substack{U_{\\mathrm{e}},\\gamma_{\\mathrm{e}},\\\\ \\tau_{1}\\geq 0,\\tau_{2}\\geq 0,\\\\ \\tau_{3}\\geq 0}}\\gamma_{\\mathrm{e}} \\\\ \\text {s.t.} S _ {\\text {energy - bound}} \\left(\\gamma_ {\\mathrm{e}}, U _ {\\mathrm{e}}\\right) \\succeq 0 \\\\ S _ {\\mathrm{exp-1}} (\\epsilon , \\tau_ {1}, U _ {\\mathrm{e}}, \\hat {Z}, \\hat {V} _ {\\mathrm{x}}, \\tilde {\\Gamma} _ {\\mathrm{x}}, D _ {\\mathrm{des}}, \\bar {D} _ {1}) \\succeq 0 \\\\ S _ {\\exp - 2} \\left(\\epsilon , \\tau_ {2}, U _ {\\mathrm{e}}, \\hat {Z}, \\bar {W} _ {Z}, \\hat {V} _ {\\phi}, \\tilde {\\Gamma} _ {\\phi}, D _ {\\mathrm{des}}, \\bar {D} _ {2}\\right) \\succeq 0 \\\\ S _ {\\exp - 3} \\left(\\epsilon , \\tau_ {3}, U _ {\\mathrm{e}}, \\hat {U}, \\bar {W} _ {\\phi}, \\hat {V} _ {\\phi}, \\tilde {\\Gamma} _ {\\phi}, \\gamma_ {\\mathrm{w}}, D _ {\\mathrm{des}}, \\bar {D} _ {3}\\right) \\succeq 0 \\\\ \\bar {D} _ {1} + \\bar {D} _ {2} + \\bar {D} _ {3} \\succeq 0. \\tag {51} \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.497,
+      0.88,
+      0.894,
+      0.91
+    ],
+    "angle": 0,
+    "content": "A solution of (51) gives us the parameters required for the implementation of the exploration input, i.e.,",
+    "merge_prev": false
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.473,
+      0.946,
+      0.484,
+      0.957
+    ],
+    "angle": 0,
+    "content": "7"
+  }
+]

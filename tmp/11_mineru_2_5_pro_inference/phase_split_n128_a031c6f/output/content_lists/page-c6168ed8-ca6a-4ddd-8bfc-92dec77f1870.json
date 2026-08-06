@@ -1,0 +1,172 @@
+[
+  {
+    "type": "equation",
+    "bbox": [
+      0.217,
+      0.097,
+      0.881,
+      0.129
+    ],
+    "angle": 0,
+    "content": "\\[\n\\sigma_ {*} (\\mathbf {E}) \\leq \\sup _ {\\| \\mathbf {w} \\| = 1} \\| \\mathbb {E} \\left[ \\mathbf {E} \\mathbf {w} \\mathbf {w} ^ {\\top} \\mathbf {E} ^ {\\top} \\right] \\| ^ {\\frac {1}{2}} \\leq \\max _ {i \\in [ N ]} \\sup _ {\\| \\mathbf {w} \\| = 1} \\| \\mathbb {E} \\left[ \\mathbf {E} _ {i,:} \\mathbf {w} \\mathbf {w} ^ {\\top} \\mathbf {E} _ {i,:} ^ {\\top} \\right] \\| ^ {\\frac {1}{2}} \\leq \\widetilde {\\sigma}, \\tag {S.13}\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.218,
+      0.133,
+      0.535,
+      0.173
+    ],
+    "angle": 0,
+    "content": "\\[\nR (\\mathbf {E}) = \\left\\| \\max _ {i \\in [ N ], l \\in [ L ]} \\| \\mathbf {E} _ {i, S _ {l}} \\| \\right\\| _ {\\infty} \\leq \\sqrt {M} B.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.186,
+      0.882,
+      0.236
+    ],
+    "angle": 0,
+    "content": "Then the first inequality in Lemma S.5 follows by plugging these conditions into Proposition 1 with \\( t = c \\log d \\) with a sufficiently large constant \\( c \\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.141,
+      0.248,
+      0.598,
+      0.266
+    ],
+    "angle": 0,
+    "content": "Similarly, for the second and third inequalities we use",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.212,
+      0.288,
+      0.789,
+      0.312
+    ],
+    "angle": 0,
+    "content": "\\[\n\\sigma (\\mathbf {E} _ {i,:}) = \\max \\{\\| \\mathbb {E} [ \\mathbf {E} _ {i,:} ^ {\\top} \\mathbf {E} _ {i,:} ] \\| ^ {\\frac {1}{2}}, \\| \\mathbb {E} [ \\mathbf {E} _ {i,:} \\mathbf {E} _ {i,:} ^ {\\top} ] \\| ^ {\\frac {1}{2}} \\} \\leq \\max \\{\\sigma \\sqrt {J}, \\widetilde {\\sigma} \\} = \\sigma \\sqrt {J},\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.232,
+      0.322,
+      0.788,
+      0.345
+    ],
+    "angle": 0,
+    "content": "\\[\nv (\\mathbf {E} _ {i,:}) = \\| \\operatorname{Cov} (\\mathbf {E} _ {i,:}) \\| ^ {\\frac {1}{2}} \\leq \\widetilde {\\sigma}, \\quad \\sigma_ {*} (\\mathbf {E} _ {i,:}) \\leq \\widetilde {\\sigma}, \\quad R (\\mathbf {E} _ {i,:}) \\leq \\sqrt {M} B,\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.37,
+      0.15,
+      0.385
+    ],
+    "angle": 0,
+    "content": "and",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.276,
+      0.409,
+      0.724,
+      0.433
+    ],
+    "angle": 0,
+    "content": "\\[\n\\sigma (\\mathbf {E} _ {:, j}) = \\max \\{\\| \\mathbb {E} [ \\mathbf {E} _ {:, j} ^ {\\top} \\mathbf {E} _ {:, j} ] \\| ^ {\\frac {1}{2}}, \\| \\mathbb {E} [ \\mathbf {E} _ {:, j} \\mathbf {E} _ {:, j} ^ {\\top} ] \\| ^ {\\frac {1}{2}} \\} \\leq \\sigma \\sqrt {N},\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.334,
+      0.448,
+      0.723,
+      0.467
+    ],
+    "angle": 0,
+    "content": "\\[\nv (\\mathbf {E} _ {:, j}) \\leq \\sigma , \\qquad \\sigma_ {*} (\\mathbf {E} _ {:, j}) \\leq \\sigma , \\qquad R (\\mathbf {E} _ {:, j}) \\leq B.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.142,
+      0.491,
+      0.56,
+      0.509
+    ],
+    "angle": 0,
+    "content": "Furthermore, for the fourth and fifth inequalities,",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.223,
+      0.529,
+      0.776,
+      0.559
+    ],
+    "angle": 0,
+    "content": "\\[\n\\sigma (\\mathbf {E} \\mathbf {V} ^ {*}) = \\max \\left\\{\\| \\mathbb {E} [ \\mathbf {E} \\mathbf {V} ^ {*} \\mathbf {V} ^ {* ^ {\\top}} \\mathbf {E} ^ {\\top} ] \\| ^ {\\frac {1}{2}}, \\| \\mathbb {E} [ \\mathbf {V} ^ {* ^ {\\top}} \\mathbf {E} ^ {\\top} \\mathbf {E} \\mathbf {V} ^ {*} ] \\| ^ {\\frac {1}{2}} \\right\\} \\leq \\widetilde {\\sigma} \\sqrt {N},\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.341,
+      0.562,
+      0.699,
+      0.59
+    ],
+    "angle": 0,
+    "content": "\\[\nv (\\mathbf {E V} ^ {*}) \\leq \\widetilde {\\sigma}, \\quad \\sigma_ {*} (\\mathbf {E V} ^ {*}) \\leq \\sigma_ {*} (\\mathbf {E}) \\stackrel {{(\\mathrm{S.13})}} {{\\leq}} \\widetilde {\\sigma},\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.614,
+      0.408,
+      0.632
+    ],
+    "angle": 0,
+    "content": "and with \\(MK\\lesssim ML\\succ J\\) we have",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.189,
+      0.651,
+      0.811,
+      0.915
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\| \\mathbb {E} [ \\mathbf {E} ^ {\\top} \\mathbf {U} ^ {*} \\mathbf {U} ^ {* \\top} \\mathbf {E} ] \\| = \\max _ {l \\in [ L ]} \\| \\mathbb {E} [ \\mathbf {E} _ {:, S _ {l}} ^ {\\top} \\mathbf {U} ^ {*} \\mathbf {U} ^ {* \\top} \\mathbf {E} _ {:, S _ {l}} ] \\| \\leq \\max _ {l \\in [ L ]} \\mathbb {E} \\| \\mathbf {E} _ {:, S _ {l}} ^ {\\top} \\mathbf {U} ^ {*} \\mathbf {U} ^ {* \\top} \\mathbf {E} _ {:, S _ {l}} \\\\ = M \\max _ {j \\in [ J ]} \\mathbb {E} [ \\mathbf {E} _ {:, j} ^ {\\top} \\mathbf {U} ^ {*} \\mathbf {U} ^ {* \\top} \\mathbf {E} _ {:, j} ] \\leq M \\sigma^ {2} \\| \\mathbf {U} ^ {*} \\| _ {F} ^ {2} = M K \\sigma^ {2}, \\\\ \\| \\mathbb {E} [ \\mathbf {U} ^ {* \\top} \\mathbf {E} \\mathbf {E} ^ {\\top} \\mathbf {U} ^ {*} ] \\| \\leq \\| \\mathbb {E} [ \\mathbf {E} \\mathbf {E} ^ {\\top} ] \\| \\leq \\sigma^ {2} J, \\\\ \\sigma (\\mathbf {E} ^ {\\top} \\mathbf {U} ^ {*}) \\leq \\sigma \\sqrt {J} + \\sigma \\sqrt {M K}, \\\\ R (\\mathbf {E} ^ {\\top} \\mathbf {U} ^ {*}) = \\left\\| \\max _ {i \\in [ N ], l \\in [ L ]} \\| \\mathbf {E} _ {i, S _ {l}} ^ {\\top} \\mathbf {U} _ {i,:} ^ {*} \\| \\right\\| _ {\\infty} \\leq \\sqrt {M} B \\| \\mathbf {U} ^ {*} \\| _ {2, \\infty}, \\\\ v (\\mathbf {E} ^ {\\top} \\mathbf {U} ^ {*}) \\leq \\max _ {l \\in [ L ]} \\left\\| \\mathbb {E} [ \\mathbf {E} _ {:, S _ {l}} ^ {\\top} \\mathbf {U} ^ {*} \\mathbf {U} ^ {* \\top} \\mathbf {E} _ {:, S _ {l}} ] \\right\\| ^ {\\frac {1}{2}} \\leq \\sqrt {M K} \\sigma , \\\\ \\sigma_ {*} (\\mathbf {U} ^ {* \\top} \\mathbf {E}) ^ {2} \\leq \\sigma_ {*} (\\mathbf {E}) ^ {2} \\stackrel {{\\text {by (S.13)}}} {{\\leq}} \\widetilde {\\sigma} ^ {2} \\leq M \\sigma^ {2}. \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.489,
+      0.935,
+      0.511,
+      0.948
+    ],
+    "angle": 0,
+    "content": "43"
+  }
+]

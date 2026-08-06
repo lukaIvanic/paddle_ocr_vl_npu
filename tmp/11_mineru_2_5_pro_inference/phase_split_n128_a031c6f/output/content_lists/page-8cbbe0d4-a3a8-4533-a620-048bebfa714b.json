@@ -1,0 +1,270 @@
+[
+  {
+    "type": "list",
+    "bbox": [
+      0.133,
+      0.092,
+      0.887,
+      0.174
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.133,
+      0.092,
+      0.654,
+      0.108
+    ],
+    "angle": 0,
+    "content": "1. The wheels inside each averaged-filter are in order of increasing rank.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.133,
+      0.116,
+      0.887,
+      0.149
+    ],
+    "angle": 0,
+    "content": "2. If \\( W_{1} \\) and \\( W_{2} \\) are adjacent wheels consisting of \\( n_1 \\) and \\( n_2 \\) disks, respectively, where \\( W_{1} \\) is to the left of \\( W_{2} \\), then \\( W_{1} \\) outranks \\( W_{2} \\) or \\( n_1 + n_2 > w \\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.133,
+      0.157,
+      0.885,
+      0.174
+    ],
+    "angle": 0,
+    "content": "3. Every wheel to the immediate left of a averaged-filter ranks above the least wheel in the averaged-filter.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.136,
+      0.182,
+      0.838,
+      0.214
+    ],
+    "angle": 0,
+    "content": "For more on the homology of  \\( \\text{conf}(n,w) \\)  see [AM24, Sections 3 and 4] and [Waw24a, Section 3]. One can check that the inclusion of a wheel into  \\( \\text{conf}(n,w) \\)  induces an inclusion on the homology",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.39,
+      0.224,
+      0.607,
+      0.243
+    ],
+    "angle": 0,
+    "content": "\\[\nH _ {*} (T ^ {n - 1}) \\hookrightarrow H _ {*} \\big (\\mathrm{conf} (n, w) \\big),\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.253,
+      0.462,
+      0.269
+    ],
+    "angle": 0,
+    "content": "making the wheels homologically decomposable.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.277,
+      0.886,
+      0.31
+    ],
+    "angle": 0,
+    "content": "Proposition 3.4. Let \\( n \\leq w \\), and let \\( W(i_1, \\ldots, i_n) \\) be a wheel in \\( \\text{conf}(n, w) \\). The image of \\( W(i_1, \\ldots, i_n) \\) in \\( H_1(\\text{conf}(n, w)) \\) is",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.23,
+      0.321,
+      0.766,
+      0.34
+    ],
+    "angle": 0,
+    "content": "\\[\nW (i _ {1}, i _ {2}) \\oplus \\big (W (i _ {1}, i _ {3}) + W (i _ {2}, i _ {3}) \\big) \\oplus \\dots \\oplus \\big (W (i _ {1}, i _ {n}) + \\dots + W (i _ {n - 1}, i _ {n}) \\big).\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.35,
+      0.886,
+      0.38
+    ],
+    "angle": 0,
+    "content": "Here we have suppressed the wheels on 1 disk, which in light of Theorem 3.3 appear in order of decreasing label to the right of each wheel on two disks.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.39,
+      0.884,
+      0.422
+    ],
+    "angle": 0,
+    "content": "Proof. This follows immediately from the description of the wheels and the fact that the class in first homology corresponding to disk \\( i_k \\) orbiting disks \\( i_1, \\ldots, i_{k-1} \\) can be expressed as the sum",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.391,
+      0.433,
+      0.606,
+      0.45
+    ],
+    "angle": 0,
+    "content": "\\[\nW (i _ {1}, i _ {k}) + \\dots + W (i _ {k - 1}, i _ {k}).\n\\]"
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.867,
+      0.461,
+      0.884,
+      0.473
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.485,
+      0.884,
+      0.517
+    ],
+    "angle": 0,
+    "content": "Concatenation products of wheels behave similarly, and this will allow us to find large disjoint tori in  \\( \\text{conf}(n, w) \\) .",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.525,
+      0.912,
+      0.571
+    ],
+    "angle": 0,
+    "content": "Proposition 3.5. Let  \\(  W(i_{1,1}, \\ldots, i_{1,n_{1}}) \\cdots W(i_{m,1}, \\ldots, i_{m,n_{m}})  \\)  be a concatenation product of wheels in  \\(  \\text{conf}(n, w)  \\) . Such an embedded torus is homologically decomposable, and if w = 2, the image of this torus in  \\(  H_{1}(\\text{conf}(n, w))  \\)  is",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.128,
+      0.586,
+      0.868,
+      0.624
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} W (i _ {1, 1}, i _ {1, n _ {1}}) W (i _ {2, 1}) W (i _ {2, n _ {2}}) \\dots W (i _ {m, n _ {m}}) \\oplus \\dots \\\\ \\oplus W (i _ {1, 1}) W (i _ {1, n _ {1}}) \\dots W (i _ {m - 1, 1}) W (i _ {m - 1, n _ {m - 1}}) \\dots W (i _ {m, 1}, i _ {m, n _ {m}}), \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.635,
+      0.56,
+      0.652
+    ],
+    "angle": 0,
+    "content": "whereas if \\( w > 2 \\), the image of this torus in \\( H_{1}\\bigl (conf(n,w)\\bigr) \\) is",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.128,
+      0.667,
+      0.868,
+      0.706
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} W (i _ {1, 1}, i _ {1, 2}) \\oplus \\left(W (i _ {1, 1}, i _ {1, 3}) + W (i _ {1, 2}, i _ {1, 3})\\right) \\oplus \\dots \\oplus \\left(W (i _ {1, 1}, i _ {1, n _ {1}}) + \\dots + W (i _ {1, n _ {1} - 1}, i _ {1, n _ {1}})\\right) \\oplus \\dots \\\\ \\oplus W \\left(i _ {m, 1}, i _ {m, 2}\\right) \\oplus \\left(W \\left(i _ {m, 1}, i _ {m, 3}\\right) + W \\left(i _ {m, 2}, i _ {m, 3}\\right)\\right) \\oplus \\dots \\oplus \\left(W \\left(i _ {m, 1}, i _ {m, n _ {m}}\\right) + \\dots + W \\left(i _ {m, n _ {m} - 1}, i _ {m, n _ {m}}\\right)\\right), \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.716,
+      0.682,
+      0.731
+    ],
+    "angle": 0,
+    "content": "where, in the second decomposition, we have suppressed the wheels on one disk.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.741,
+      0.884,
+      0.757
+    ],
+    "angle": 0,
+    "content": "Proof. This follows immediately from Proposition 3.4 and the definition of the concatenation product. \\(\\square\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.766,
+      0.887,
+      0.844
+    ],
+    "angle": 0,
+    "content": "Now we demonstrate the existence of two homologically decomposable disjoint \\(\\left(n - \\left\\lceil \\frac{n}{w}\\right\\rceil\\right)\\)-tori in \\(\\mathrm{conf}(n,w)\\). This, along with Proposition 2.6 will prove that \\(\\mathbf{TC}_{\\mathbf{r}}\\big(\\mathrm{conf}(n,w)\\big)\\) is at least \\(r\\Big(n - \\left\\lceil \\frac{n}{w}\\right\\rceil\\Big)\\). We consider the cases \\(w = 2\\) and \\(w > 2\\) separately due to the fact that wheels on 2 disks in \\(\\mathrm{conf}(n,2)\\) split the strip into disjoint regions.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.851,
+      0.785,
+      0.87
+    ],
+    "angle": 0,
+    "content": "Lemma 3.6. There are two homologically decomposable disjoint \\(\\left(n - \\left\\lceil \\frac{n}{2}\\right\\rceil\\right)\\)-tori in \\(\\operatorname{conf}(n,2)\\).",
+    "merge_prev": false
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.494,
+      0.936,
+      0.505,
+      0.948
+    ],
+    "angle": 0,
+    "content": "6"
+  }
+]

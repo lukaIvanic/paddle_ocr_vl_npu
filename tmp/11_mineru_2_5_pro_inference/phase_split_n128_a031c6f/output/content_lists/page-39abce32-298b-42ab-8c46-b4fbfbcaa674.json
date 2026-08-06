@@ -1,0 +1,441 @@
+[
+  {
+    "type": "header",
+    "bbox": [
+      0.752,
+      0.084,
+      0.907,
+      0.099
+    ],
+    "angle": 0,
+    "content": "GB/T 33680—2017"
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.403,
+      0.147,
+      0.631,
+      0.167
+    ],
+    "angle": 0,
+    "content": "暴雨灾害等级"
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.13,
+      0.206,
+      0.196,
+      0.22
+    ],
+    "angle": 0,
+    "content": "1 范围"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.162,
+      0.243,
+      0.607,
+      0.258
+    ],
+    "angle": 0,
+    "content": "本标准规定了评估暴雨灾害影响的指标、等级及计算方法。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.128,
+      0.262,
+      0.906,
+      0.296
+    ],
+    "angle": 0,
+    "content": "本标准适用于区域性暴雨灾害的监测、评估业务和科研工作，也可供民政、农业、水利、环境及其他社会经济领域参考使用。",
+    "merge_prev": false
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.128,
+      0.319,
+      0.248,
+      0.333
+    ],
+    "angle": 0,
+    "content": "2 术语和定义"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.166,
+      0.357,
+      0.405,
+      0.372
+    ],
+    "angle": 0,
+    "content": "下列术语和定义适用于本文件。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.13,
+      0.377,
+      0.157,
+      0.39
+    ],
+    "angle": 0,
+    "content": "2.1",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.166,
+      0.396,
+      0.486,
+      0.411
+    ],
+    "angle": 0,
+    "content": "日降水量 daily accumulated precipitation",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.165,
+      0.414,
+      0.476,
+      0.43
+    ],
+    "angle": 0,
+    "content": "前一日 20 时到当日 20 时的累积降水量。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.16,
+      0.434,
+      0.314,
+      0.447
+    ],
+    "angle": 0,
+    "content": "注：单位为毫米(mm)。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.13,
+      0.452,
+      0.158,
+      0.465
+    ],
+    "angle": 0,
+    "content": "2.2",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.165,
+      0.471,
+      0.31,
+      0.486
+    ],
+    "angle": 0,
+    "content": "降水日 rainy day",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.164,
+      0.49,
+      0.506,
+      0.505
+    ],
+    "angle": 0,
+    "content": "观测到日降水量大于或等于0.1 mm的日子。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.16,
+      0.509,
+      0.282,
+      0.522
+    ],
+    "angle": 0,
+    "content": "注：单位为天(d)。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.13,
+      0.527,
+      0.157,
+      0.54
+    ],
+    "angle": 0,
+    "content": "2.3",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.165,
+      0.546,
+      0.53,
+      0.561
+    ],
+    "angle": 0,
+    "content": "持续降水天数 number of consecutive rainy day",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.165,
+      0.565,
+      0.335,
+      0.58
+    ],
+    "angle": 0,
+    "content": "连续出现降水的天数。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.16,
+      0.584,
+      0.28,
+      0.598
+    ],
+    "angle": 0,
+    "content": "注：单位为天(d)。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.13,
+      0.603,
+      0.158,
+      0.615
+    ],
+    "angle": 0,
+    "content": "2.4",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.166,
+      0.622,
+      0.301,
+      0.635
+    ],
+    "angle": 0,
+    "content": "暴雨 rain storm",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.164,
+      0.64,
+      0.451,
+      0.656
+    ],
+    "angle": 0,
+    "content": "24 h 降雨量大于等于 50 mm 的降水。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.16,
+      0.659,
+      0.424,
+      0.672
+    ],
+    "angle": 0,
+    "content": "注：来源于 GB/T 28592—2012 第 4 章。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.131,
+      0.678,
+      0.158,
+      0.69
+    ],
+    "angle": 0,
+    "content": "2.5",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.166,
+      0.697,
+      0.392,
+      0.71
+    ],
+    "angle": 0,
+    "content": "暴雨灾害 rainstorm disaster",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.165,
+      0.716,
+      0.783,
+      0.731
+    ],
+    "angle": 0,
+    "content": "暴雨导致江河泛滥淹没田地和城乡，造成农业或其他财产损失和人员伤亡的灾害。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.131,
+      0.736,
+      0.158,
+      0.748
+    ],
+    "angle": 0,
+    "content": "2.6",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.166,
+      0.755,
+      0.45,
+      0.769
+    ],
+    "angle": 0,
+    "content": "农作物受灾面积 affected crop areas",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.164,
+      0.774,
+      0.704,
+      0.789
+    ],
+    "angle": 0,
+    "content": "因暴雨灾害导致农作物产量比常年减少一成及以上的农作物播种面积。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.16,
+      0.793,
+      0.329,
+      0.806
+    ],
+    "angle": 0,
+    "content": "注 1：单位为公顷 \\( \\left(\\mathrm{hm}^{2}\\right) \\) 。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.16,
+      0.81,
+      0.451,
+      0.824
+    ],
+    "angle": 0,
+    "content": "注2：改写GB/T24438.1—2009，定义3.10。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.131,
+      0.829,
+      0.158,
+      0.841
+    ],
+    "angle": 0,
+    "content": "2.7",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.166,
+      0.848,
+      0.305,
+      0.861
+    ],
+    "angle": 0,
+    "content": "死亡人口 deaths",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.165,
+      0.867,
+      0.423,
+      0.882
+    ],
+    "angle": 0,
+    "content": "因暴雨灾害直接导致死亡的人数。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.16,
+      0.887,
+      0.272,
+      0.899
+    ],
+    "angle": 0,
+    "content": "注1：单位为人。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.16,
+      0.904,
+      0.442,
+      0.917
+    ],
+    "angle": 0,
+    "content": "注2：改写GB/T24438.1—2009，定义3.2。",
+    "merge_prev": false
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.873,
+      0.923,
+      0.883,
+      0.933
+    ],
+    "angle": 0,
+    "content": "1"
+  }
+]

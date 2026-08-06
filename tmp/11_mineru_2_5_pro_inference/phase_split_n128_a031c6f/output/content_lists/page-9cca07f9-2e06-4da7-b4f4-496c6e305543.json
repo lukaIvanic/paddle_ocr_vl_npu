@@ -1,0 +1,185 @@
+[
+  {
+    "type": "header",
+    "bbox": [
+      0.218,
+      0.049,
+      0.776,
+      0.063
+    ],
+    "angle": 0,
+    "content": "ON THE CONVERGENCE OF MIN-MAX LANGEVIN DYNAMICS AND ALGORITHM"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.17,
+      0.117,
+      0.338,
+      0.133
+    ],
+    "angle": 0,
+    "content": "Then we can compute:",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.164,
+      0.141,
+      0.834,
+      0.389
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\frac {\\partial \\rho_ {t} ^ {\\mathbf {Z}}}{\\partial t} = \\frac {\\partial}{\\partial t} \\int_ {\\mathbb {R} ^ {2 d N}} \\rho_ {0} ^ {\\mathbf {Z}} (\\mathbf {z} _ {0}) \\rho_ {t | 0} ^ {\\mathbf {Z}} (\\cdot \\mid \\mathbf {z} _ {0}) d \\mathbf {z} _ {0} \\\\ = \\int_ {\\mathbb {R} ^ {2 d N}} \\rho_ {0} ^ {\\mathbf {Z}} (\\mathbf {z} _ {0}) \\frac {\\partial \\rho_ {t | 0} ^ {\\mathbf {Z}} (\\cdot \\mid \\mathbf {z} _ {0})}{\\partial t} d \\mathbf {z} _ {0} \\\\ = \\int_ {\\mathbb {R} ^ {2 d N}} \\rho_ {0} ^ {\\mathbf {Z}} (\\mathbf {z} _ {0}) \\left(- \\nabla \\cdot \\left(\\rho_ {t | 0} ^ {\\mathbf {Z}} (\\cdot \\mid \\mathbf {z} _ {0}) b ^ {\\mathbf {Z}} (\\mathbf {z} _ {0})\\right) + \\tau \\Delta \\rho_ {t | 0} ^ {\\mathbf {Z}} (\\cdot \\mid \\mathbf {z} _ {0})\\right) d \\mathbf {z} _ {0} \\\\ = - \\nabla \\cdot \\left(\\int_ {\\mathbb {R} ^ {2 d N}} \\rho_ {0} ^ {\\mathbf {Z}} (\\mathbf {z} _ {0}) \\rho_ {t | 0} ^ {\\mathbf {Z}} (\\cdot \\mid \\mathbf {z} _ {0}) b ^ {\\mathbf {Z}} (\\mathbf {z} _ {0}) d \\mathbf {z} _ {0}\\right) + \\tau \\Delta \\left(\\int_ {\\mathbb {R} ^ {2 d N}} \\rho_ {0} ^ {\\mathbf {Z}} (\\mathbf {z} _ {0}) \\rho_ {t | 0} ^ {\\mathbf {Z}} (\\cdot \\mid \\mathbf {z} _ {0}) d \\mathbf {z} _ {0}\\right) \\\\ = - \\nabla \\cdot \\left(\\rho_ {t} ^ {\\mathbf {Z}} \\int_ {\\mathbb {R} ^ {2 d N}} \\rho_ {0 | t} ^ {\\mathbf {Z}} \\left(\\mathbf {z} _ {0} \\mid \\cdot\\right) b ^ {\\mathbf {Z}} \\left(\\mathbf {z} _ {0}\\right) d \\mathbf {z} _ {0}\\right) + \\tau \\Delta \\rho_ {t} ^ {\\mathbf {Z}} \\\\ = - \\nabla \\cdot \\left(\\rho_ {t} ^ {\\mathbf {Z}} \\mathbb {E} _ {\\rho_ {0 | t} ^ {\\mathbf {Z}}} \\left[ b ^ {\\mathbf {Z}} \\left(\\mathbf {Z} _ {0}\\right) \\mid \\mathbf {Z} _ {t} = \\cdot \\right]\\right) + \\tau \\Delta \\rho_ {t} ^ {\\mathbf {Z}} \\\\ = - \\nabla \\cdot \\left(\\rho_ {t} ^ {\\mathbf {Z}} b _ {t} ^ {\\mathbf {Z}}\\right) + \\tau \\Delta \\rho_ {t} ^ {\\mathbf {Z}}, \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.143,
+      0.399,
+      0.222,
+      0.413
+    ],
+    "angle": 0,
+    "content": "as desired.",
+    "merge_prev": false
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.142,
+      0.447,
+      0.806,
+      0.464
+    ],
+    "angle": 0,
+    "content": "F.2. One-Step Recurrence for the Biased Convergence of the Finite-Particle Algorithm"
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.143,
+      0.472,
+      0.519,
+      0.487
+    ],
+    "angle": 0,
+    "content": "F.2.1. ONE-STEP RECURRENCE IN \\( W_{2} \\) DISTANCE"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.142,
+      0.494,
+      0.855,
+      0.533
+    ],
+    "angle": 0,
+    "content": "Lemma 22 Assume Assumption 1. Let \\(\\mathbf{z}_k \\sim \\rho_k^{\\mathbf{z},\\eta}\\) for any \\(\\rho_k^{\\mathbf{z},\\eta} \\in \\mathcal{P}(\\mathbb{R}^{2dN})\\), and let \\(\\mathbf{z}_{k+1} \\sim \\rho_{k+1}^{\\mathbf{z},\\eta}\\) be one step of the finite-particle algorithm (20) with step size \\(0 < \\eta \\leq \\frac{\\alpha}{64L^2}\\). Then:",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.228,
+      0.542,
+      0.769,
+      0.575
+    ],
+    "angle": 0,
+    "content": "\\[\nW _ {2} (\\rho_ {k + 1} ^ {\\mathbf {z}, \\eta}, \\bar {\\nu} ^ {\\mathbf {Z}}) ^ {2} \\leq e ^ {- \\frac {3}{2} \\alpha \\eta} W _ {2} (\\rho_ {k} ^ {\\mathbf {z}, \\eta}, \\bar {\\nu} ^ {\\mathbf {Z}}) ^ {2} + \\frac {8 \\eta L ^ {2}}{\\alpha} \\left(\\mathsf {V a r} _ {\\bar {\\nu} ^ {Z}} (\\bar {Z}) + 6 4 \\tau \\eta d N\\right).\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.142,
+      0.586,
+      0.855,
+      0.621
+    ],
+    "angle": 0,
+    "content": "Proof We consider a continuous-time interpolation of one step of the algorithm (20) as follows. Let  \\( Z_{0} \\sim \\rho_{0}^{Z} \\)  where we define  \\( \\rho_{0}^{Z} = \\rho_{k}^{z,\\eta} \\) . We define  \\( (\\mathbf{Z}_{t})_{0 \\leq t \\leq \\eta} \\)  where  \\( Z_{t} \\sim \\rho_{t}^{Z} \\)  evolves following:",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.385,
+      0.631,
+      0.855,
+      0.651
+    ],
+    "angle": 0,
+    "content": "\\[\nd \\mathbf {Z} _ {t} = b ^ {\\mathbf {Z}} (\\mathbf {Z} _ {0}) d t + \\sqrt {2 \\tau} d W _ {t} ^ {\\mathbf {Z}} \\tag {49}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.142,
+      0.663,
+      0.854,
+      0.735
+    ],
+    "angle": 0,
+    "content": "where  \\( (W_{t}^{\\mathbf{Z}})_{t\\geq0} \\)  is the standard Brownian motion in  \\( R^{2dN} \\)  which is independent of  \\( Z_{0} \\) . Then we notice that the distribution of  \\( Z_{\\eta}\\sim\\rho_{\\eta}^{Z} \\)  of the process (49) is equal to the distribution of the next iterate  \\( x_{k+1}\\sim\\rho_{k+1}^{z,\\eta} \\)  along the algorithm (20), i.e.,  \\( \\rho_{k+1}^{z,\\eta}=\\rho_{\\eta}^{Z} \\) . This is because the solution to the process (49) at time  \\( t=\\eta \\)  is:",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.277,
+      0.745,
+      0.72,
+      0.767
+    ],
+    "angle": 0,
+    "content": "\\[\n\\mathbf {Z} _ {t} = \\mathbf {Z} _ {0} + t b ^ {\\mathbf {Z}} (\\mathbf {Z} _ {0}) + \\sqrt {2 \\tau} W _ {t} ^ {\\mathbf {Z}} \\stackrel {{d}} {{=}} \\mathbf {Z} _ {0} + t b ^ {\\mathbf {Z}} (\\mathbf {Z} _ {0}) + \\sqrt {2 \\tau t} \\boldsymbol {\\zeta}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.142,
+      0.782,
+      0.854,
+      0.823
+    ],
+    "angle": 0,
+    "content": "where \\(\\zeta \\sim \\mathcal{N}(0,I)\\) is an independent Gaussian random variable in \\(\\mathbb{R}^{2dN}\\), and \\(\\stackrel{d}{=}\\) means equality in distribution. This is the same update of the algorithm (20), so indeed \\(\\mathbf{Z}_{\\eta} \\stackrel{d}{=} \\mathbf{z}_{k + 1}\\), so \\(\\rho_{\\eta}^{\\mathbf{Z}} = \\rho_{k + 1}^{\\mathbf{z},\\eta}\\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.142,
+      0.823,
+      0.854,
+      0.857
+    ],
+    "angle": 0,
+    "content": "We also consider  \\( (\\bar{\\mathbf{Z}}_{t})_{0\\leq t\\leq\\eta} \\)  where  \\( \\bar{Z}_{t}\\sim\\bar{\\rho}_{t}^{Z}=\\bar{\\nu}^{Z} \\)  evolves following the stationary tensorized mean-field dynamics (16):",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.386,
+      0.867,
+      0.855,
+      0.888
+    ],
+    "angle": 0,
+    "content": "\\[\nd \\bar {\\mathbf {Z}} _ {t} = \\bar {b} ^ {\\mathbf {Z}} (\\bar {\\mathbf {Z}} _ {t}) d t + \\sqrt {2 \\tau} d W _ {t} ^ {\\mathbf {Z}} \\tag {50}\n\\]"
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.49,
+      0.915,
+      0.509,
+      0.926
+    ],
+    "angle": 0,
+    "content": "49"
+  }
+]

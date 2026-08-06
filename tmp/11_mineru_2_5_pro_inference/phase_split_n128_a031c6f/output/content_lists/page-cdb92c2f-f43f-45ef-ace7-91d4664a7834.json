@@ -1,0 +1,185 @@
+[
+  {
+    "type": "page_number",
+    "bbox": [
+      0.127,
+      0.091,
+      0.137,
+      0.1
+    ],
+    "angle": 0,
+    "content": "8"
+  },
+  {
+    "type": "header",
+    "bbox": [
+      0.46,
+      0.089,
+      0.538,
+      0.1
+    ],
+    "angle": 0,
+    "content": "SANIA ASIF \\( ^{1} \\)"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.124,
+      0.118,
+      0.875,
+      0.173
+    ],
+    "angle": 0,
+    "content": "Let us consider that  \\( (\\mathcal{L},[\\cdot_{\\lambda}\\cdot],\\alpha) \\)  is a Hom-Leibniz conformal algebra, which has coefficients in the representation  \\( (l,r,\\mathcal{M},\\beta) \\) . The group of nth-cochain  \\( C_{HomL}^{n}(\\mathcal{L},M) \\)  contains the map  \\( f_{\\lambda_{1},\\cdots,\\lambda_{n-1}}:\\wedge^{\\otimes n}\\mathcal{L}\\to\\mathbb{C}[\\lambda_{1},\\cdots,\\lambda_{n-1}]\\otimes\\mathcal{M} \\)  defined by  \\( p_{1}\\otimes p_{2}\\otimes\\cdots\\otimes p_{n}\\mapsto f_{\\lambda_{1},\\lambda_{2},\\cdots,\\lambda_{n-1}}(p_{1},p_{2},\\cdots,p_{n}) \\) . These maps satisfy the following conformal sesquilinearity condition:",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.196,
+      0.174,
+      0.873,
+      0.232
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} f _ {\\lambda_ {1}, \\lambda_ {2}, \\dots , \\lambda_ {n - 1}} (p _ {1}, p _ {2}, \\dots , \\partial (p _ {i}), \\dots , p _ {n}) \\\\ = \\left\\{ \\begin{array}{l l} - \\lambda_ {i} f _ {\\lambda_ {1}, \\lambda_ {2}, \\dots , \\lambda_ {n - 1}} \\left(p _ {1}, p _ {2}, \\dots , p _ {n}\\right), & i = 1, \\dots , n - 1, \\\\ \\left(\\partial + \\lambda_ {1} + \\lambda_ {2} + \\dots + \\lambda_ {n - 1}\\right) f _ {\\lambda_ {1}, \\lambda_ {2}, \\dots , \\lambda_ {n - 1}} \\left(p _ {1}, p _ {2}, \\dots , p _ {n}\\right), & i = n. \\end{array} \\right. \\tag {12} \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.124,
+      0.235,
+      0.822,
+      0.251
+    ],
+    "angle": 0,
+    "content": "such that \\(f\\circ \\alpha^{\\otimes n} = \\beta \\circ f\\). The coboundary map \\(\\delta_{Hom}:C_{Hom}^n (\\mathcal{L},\\mathcal{M})\\to C_{Hom}^{n + 1}(\\mathcal{L},\\mathcal{M})\\) can be defined by",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.209,
+      0.254,
+      0.871,
+      0.359
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} (\\delta_ {H o m L} f) _ {\\lambda_ {1}, \\dots , \\lambda_ {n}} (p _ {1}, \\dots , p _ {n + 1}) \\\\ = \\sum_ {i = 1} ^ {n} (- 1) ^ {i + 1} l \\left(\\alpha^ {n - 1} \\left(p _ {i}\\right)\\right) _ {\\lambda_ {i}} f _ {\\lambda_ {1}, \\dots , \\hat {\\lambda_ {i}}, \\dots , \\lambda_ {n}} \\left(p _ {1}, \\dots , \\hat {p _ {i}}, \\dots , p _ {n + 1}\\right) \\tag {13} \\\\ + (- 1) ^ {n + 1} r (f _ {\\lambda_ {1}, \\dots , \\lambda_ {n - 1}} (p _ {1}, \\dots , p _ {n})) _ {\\lambda_ {1} + \\dots + \\lambda_ {n}} \\alpha^ {n - 1} (p _ {n + 1}) \\\\ + \\sum_ {i <   j} (- 1) ^ {i + j} f _ {\\lambda_ {i} + \\lambda_ {j}, \\lambda_ {1}, \\dots , \\hat {\\lambda_ {i}}, \\dots , \\hat {\\lambda_ {j}}, \\dots , \\lambda_ {n}} ([ p _ {i \\lambda_ {i}} p _ {j} ], \\alpha (p _ {1}), \\dots , \\alpha (\\hat {p} _ {i}), \\dots , \\alpha (\\hat {p} _ {j}), \\dots , \\alpha (p _ {n + 1})), \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.124,
+      0.363,
+      0.873,
+      0.405
+    ],
+    "angle": 0,
+    "content": "where  \\(  f \\in C_{HomL}^{n}(\\mathcal{L}, \\mathcal{M})  \\)  and  \\( p_{1}, p_{2}, \\cdots, p_{n}, p_{n+1} \\in L \\) . With coefficients in the representation  \\(  (l, r, \\mathcal{M}, \\beta)  \\) , the corresponding cohomology groups are known as the cohomology of the Hom-Leibniz conformal algebra  \\(  (\\mathcal{L}, [\\cdot_{\\lambda} \\cdot], \\alpha)  \\) . If we assume that  \\(  l(p)_{\\lambda} m = [p_{\\lambda} m]  \\)  and  \\(  r(m)_{\\lambda} p = [m_{\\lambda} p]  \\)  then above equations turns to be",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.194,
+      0.407,
+      0.873,
+      0.515
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} (\\delta_ {H o m L} f) _ {\\lambda_ {1}, \\dots , \\lambda_ {n}} (p _ {1}, \\dots , p _ {n + 1}) \\\\ = \\sum_ {i = 1} ^ {n} (- 1) ^ {i + 1} \\left[ \\alpha^ {n - 1} \\left(p _ {i}\\right) _ {\\lambda_ {i}} f _ {\\lambda_ {1}, \\dots , \\hat {\\lambda_ {i}}, \\dots , \\lambda_ {n}} \\left(p _ {1}, \\dots , \\hat {p _ {i}}, \\dots , p _ {n + 1}\\right) \\right] \\tag {14} \\\\ + (- 1) ^ {n + 1} [ f _ {\\lambda_ {1}, \\dots , \\lambda_ {n - 1}} (p _ {1}, \\dots , p _ {n}) _ {\\lambda_ {1} + \\dots + \\lambda_ {n}} \\alpha^ {n - 1} (p _ {n + 1}) ] \\\\ + \\sum_ {i <   j} (- 1) ^ {i + j} f _ {\\lambda_ {i} + \\lambda_ {j}, \\lambda_ {1}, \\dots , \\hat {\\lambda_ {i}}, \\dots , \\hat {\\lambda_ {j}}, \\dots , \\lambda_ {n}} ([ p _ {i \\lambda_ {i}} p _ {j} ], \\alpha (p _ {1}), \\dots , \\alpha (\\hat {p _ {i}}), \\dots , \\alpha (\\hat {p _ {j}}), \\dots , \\alpha (p _ {n + 1})), \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.126,
+      0.527,
+      0.373,
+      0.543
+    ],
+    "angle": 0,
+    "content": "Theorem 3.1. \\(\\delta_{HomL}^{2}\\circ \\delta_{HomL}^{1} = 0\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.126,
+      0.557,
+      0.396,
+      0.571
+    ],
+    "angle": 0,
+    "content": "Proof. Consider that for \\( n = 1 \\), we have",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.305,
+      0.574,
+      0.692,
+      0.591
+    ],
+    "angle": 0,
+    "content": "\\[\n(\\delta_ {H o m L} ^ {1} f) (p _ {1}, p _ {2}) = l (p _ {1}) _ {\\lambda} f (p _ {2}) + r (f (p _ {1})) _ {\\lambda} p _ {2} - f ([ p  p _ {2} ])\n\\]"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.406,
+      0.593,
+      0.657,
+      0.609
+    ],
+    "angle": 0,
+    "content": "\\[\n= [ p _ {1 \\lambda} f (p _ {2}) ] + [ f (p _ {1}) _ {\\lambda} p _ {2} ] - f ([ p _ {1 \\lambda} p _ {2} ]).\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.125,
+      0.613,
+      0.156,
+      0.625
+    ],
+    "angle": 0,
+    "content": "and",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.234,
+      0.622,
+      0.872,
+      0.73
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} (\\delta_ {H o m L} ^ {2} f) _ {\\lambda_ {1}, \\lambda_ {2}} (p _ {1}, p _ {2}, p _ {3}) = l (\\alpha (p _ {1})) _ {\\lambda_ {1}} f _ {\\lambda_ {2}} (p _ {2}, p _ {3}) - l (\\alpha (p _ {2})) _ {\\lambda_ {2}} f _ {\\lambda_ {1}} (p _ {1}, p _ {3}) \\\\ - r (f _ {\\lambda_ {1}} (p _ {1}, p _ {2})) _ {\\lambda_ {1} + \\lambda_ {2}} \\alpha (p _ {3}) - f _ {\\lambda_ {1} + \\lambda_ {2}} ([ p _ {1 \\lambda_ {1}} p _ {2} ], \\alpha (p _ {3})) \\\\ \\begin{array}{l} + f _ {\\lambda_ {1} + \\lambda_ {2}} \\left(\\left[ p _ {1 \\lambda_ {1}} p _ {3} \\right], \\alpha \\left(p _ {2}\\right)\\right) - f _ {\\lambda_ {1} + \\lambda_ {2}} \\left(\\left[ p _ {2 \\lambda_ {2}} p _ {3} \\right], \\alpha \\left(p _ {1}\\right)\\right) \\\\ \\left[ f _ {1} \\left(\\dots\\right) \\right] = f _ {2} \\left(\\dots\\right) ] = \\left[ f _ {3} \\left(\\dots\\right) \\right] = f _ {4} \\left(\\dots\\right) ] \\end{array} \\tag {15} \\\\ = \\left[ \\left(\\alpha \\left(p _ {1}\\right)\\right) _ {\\lambda_ {1}} f _ {\\lambda_ {2}} \\left(p _ {2}, p _ {3}\\right) \\right] - \\left[ \\left(\\alpha \\left(p _ {2}\\right)\\right) _ {\\lambda_ {2}} f _ {\\lambda_ {1}} \\left(p _ {1}, p _ {3}\\right) \\right] \\\\ - \\left[ \\left(f _ {\\lambda_ {1}} \\left(p _ {1}, p _ {2}\\right)\\right) _ {\\lambda_ {1} + \\lambda_ {2}} \\alpha \\left(p _ {3}\\right) \\right] - f _ {\\lambda_ {1} + \\lambda_ {2}} \\left(\\left[ p _ {1 _ {\\lambda_ {1}}} p _ {2} \\right], \\alpha \\left(p _ {3}\\right)\\right) \\\\ + f _ {\\lambda_ {1} + \\lambda_ {2}} ([ p _ {1 _ {\\lambda_ {1}}} p _ {3} ], \\alpha (p _ {2})) - f _ {\\lambda_ {1} + \\lambda_ {2}} ([ p _ {2 _ {\\lambda_ {2}}} p _ {3} ], \\alpha (p _ {1})). \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.125,
+      0.73,
+      0.204,
+      0.742
+    ],
+    "angle": 0,
+    "content": "So we have",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.216,
+      0.747,
+      0.761,
+      0.918
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} (\\delta_ {H o m L} ^ {2} \\circ \\delta_ {H o m L} ^ {1} f) _ {\\lambda_ {1}, \\lambda_ {2}} (p _ {1}, p _ {2}, p _ {3}) \\\\ = \\left[ \\left(\\alpha \\left(p _ {1}\\right)\\right) _ {\\lambda_ {1}} \\delta_ {H o m L} ^ {1} f _ {\\lambda_ {2}} \\left(p _ {2}, p _ {3}\\right) \\right] - \\left[ \\left(\\alpha \\left(p _ {2}\\right)\\right) _ {\\lambda_ {2}} \\delta_ {H o m L} ^ {1} f _ {\\lambda_ {1}} \\left(p _ {1}, p _ {3}\\right) \\right] \\\\ - \\left[ \\left(\\delta_ {H o m L} ^ {1} f _ {\\lambda_ {1}} \\left(p _ {1}, p _ {2}\\right)\\right) _ {\\lambda_ {1} + \\lambda_ {2}} \\alpha \\left(p _ {3}\\right) \\right] - \\delta_ {H o m L} ^ {1} f _ {\\lambda_ {1} + \\lambda_ {2}} \\left(\\left[ p _ {1 _ {\\lambda_ {1}}} p _ {2} \\right], \\alpha \\left(p _ {3}\\right)\\right) \\\\ + \\delta_ {H o m L} ^ {1} f _ {\\lambda_ {1} + \\lambda_ {2}} ([ p _ {1 _ {\\lambda_ {1}}} p _ {3} ], \\alpha (p _ {2})) - \\delta_ {H o m L} ^ {1} f _ {\\lambda_ {1} + \\lambda_ {2}} ([ p _ {2 _ {\\lambda_ {2}}} p _ {3} ], \\alpha (p _ {1})) \\\\ = \\left[ \\left(\\alpha \\left(p _ {1}\\right)\\right) _ {\\lambda_ {1}} \\left\\{\\left[ p _ {2 _ {\\lambda_ {2}}} f \\left(p _ {3}\\right) \\right] + \\left[ f \\left(p _ {2}\\right) _ {\\lambda_ {2}} p _ {3} \\right] - f \\left(\\left[ p _ {2 _ {\\lambda_ {2}}} p _ {3} \\right]\\right) \\right\\} \\right] \\\\ - \\left[ (\\alpha (p _ {2})) _ {\\lambda_ {2}} \\{[ p _ {1 _ {\\lambda_ {1}}} f (p _ {3}) ] + [ f (p _ {1}) _ {\\lambda_ {1}} p _ {3} ] - f ([ p _ {1 _ {\\lambda_ {1}}} p _ {3}) \\} \\right] \\\\ - \\left[ \\left(\\left\\{\\left[ p _ {1 _ {\\lambda_ {1}}} f (p _ {2}) \\right] + \\left[ f (p _ {1}) _ {\\lambda_ {1}} p _ {2} \\right] - f \\left(\\left[ p _ {1 _ {\\lambda_ {1}}} p _ {2} \\right]\\right) \\right\\}\\right) _ {\\lambda_ {1} + \\lambda_ {2}} \\alpha (p _ {3})\\right] \\\\ \\left. \\right. - \\left\\{\\left[\\left[ p _ {1 _ {\\lambda_ {1}} p _ {2}} \\right] _ {\\lambda_ {1} + \\lambda_ {2}} f (\\alpha (p _ {3})) \\right] + \\left[ f \\left(\\left[ p _ {1 _ {\\lambda_ {1}} p _ {2}} \\right]\\right) _ {\\lambda_ {1} + \\lambda_ {2}} \\alpha (p _ {3}) \\right] - f \\left(\\left[\\left[ p _ {1 _ {\\lambda_ {1}} p _ {2}} \\right] _ {\\lambda_ {1} + \\lambda_ {2}} \\alpha (p _ {3}) \\right]\\right)\\right\\} \\\\ \\left. \\right. + \\left\\{\\left[\\left[ p _ {1 _ {\\lambda_ {1}} p _ {3}} \\right] _ {\\lambda_ {1} + \\lambda_ {2}} f (\\alpha (p _ {2})) \\right] + \\left[ f \\left(\\left[ p _ {1 _ {\\lambda_ {1}} p _ {3}} \\right]\\right) _ {\\lambda_ {1} + \\lambda_ {2}} \\alpha (p _ {2}) \\right] - f \\left(\\left[\\left[ p _ {1 _ {\\lambda_ {1}} p _ {3}} \\right] _ {\\lambda_ {1} + \\lambda_ {2}} \\alpha (p _ {2}) \\right]\\right)\\right\\} \\\\ \\end{array}\n\\]"
+  }
+]

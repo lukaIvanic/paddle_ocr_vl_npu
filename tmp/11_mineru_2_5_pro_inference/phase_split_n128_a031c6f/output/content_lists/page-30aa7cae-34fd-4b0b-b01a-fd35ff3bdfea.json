@@ -1,0 +1,81 @@
+[
+  {
+    "type": "header",
+    "bbox": [
+      0.215,
+      0.12,
+      0.34,
+      0.136
+    ],
+    "angle": 0,
+    "content": "第二章 行列式"
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.761,
+      0.123,
+      0.781,
+      0.135
+    ],
+    "angle": 0,
+    "content": "27"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.268,
+      0.156,
+      0.728,
+      0.316
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} = \\prod_ {i = 1} ^ {n} \\sin \\alpha_ {i} \\cos \\alpha_ {i} \\left| \\begin{array}{c c c c c} 1 & - \\tan \\alpha_ {1} & - \\tan \\alpha_ {2} & \\dots & - \\tan \\alpha_ {n} \\\\ \\frac {1}{\\tan \\alpha_ {1}} & 1 & 1 & \\dots & 1 \\\\ \\frac {1}{\\tan \\alpha_ {2}} & 1 & 1 & \\dots & 1 \\\\ \\vdots & \\vdots & \\vdots & & \\vdots \\\\ \\frac {1}{\\tan \\alpha_ {n}} & 1 & 1 & \\dots & 1 \\end{array} \\right| \\\\ = \\left\\{ \\begin{array}{c c} 0 & , n \\geq 3 \\\\ - \\sin^ {2} \\left(\\alpha_ {1} - \\alpha_ {2}\\right) & , n = 2 \\end{array} . \\right. \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.214,
+      0.324,
+      0.343,
+      0.34
+    ],
+    "angle": 0,
+    "content": "2.0.56 (例2.15).",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.268,
+      0.351,
+      0.728,
+      0.483
+    ],
+    "angle": 0,
+    "content": "\\[\nD _ {n + 1} = \\left| \\begin{array}{c c c c c c} a + x & - 1 & 0 & \\dots & 0 & 0 \\\\ 0 & a + x & - 1 & \\dots & 0 & 0 \\\\ 0 & 0 & a + x & \\dots & 0 & 0 \\\\ \\vdots & \\vdots & \\vdots & & \\vdots & \\vdots \\\\ 0 & 0 & 0 & \\dots & a + x & - 1 \\\\ 0 & 0 & 0 & \\dots & 0 & a \\end{array} \\right| = a (a + x) ^ {n}.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.214,
+      0.494,
+      0.343,
+      0.511
+    ],
+    "angle": 0,
+    "content": "2.0.57 (例2.19).",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.321,
+      0.524,
+      0.677,
+      0.753
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} D = \\left| \\begin{array}{c c c c c} 1 & c _ {1} & c _ {2} & \\dots & c _ {n} \\\\ 0 & a _ {1} + b _ {1} c _ {1} & a _ {2} + b _ {1} c _ {2} & \\dots & a _ {n} + b _ {1} c _ {n} \\\\ 0 & a _ {1} + b _ {2} c _ {1} & a _ {2} + b _ {2} c _ {2} & \\dots & a _ {n} + b _ {2} c _ {n} \\\\ \\vdots & \\vdots & \\vdots & & \\vdots \\\\ 0 & a _ {1} + b _ {n} c _ {1} & a _ {2} + b _ {n} c _ {2} & \\dots & a _ {n} + b _ {n} c _ {n} \\end{array} \\right| \\\\ = \\left| \\begin{array}{c c c c c} 1 & c _ {1} & c _ {2} & \\dots & c _ {n} \\\\ - b _ {1} & a _ {1} & a _ {2} & \\dots & a _ {n} \\\\ - b _ {2} & a _ {1} & a _ {2} & \\dots & a _ {n} \\\\ \\vdots & \\vdots & \\vdots & & \\vdots \\\\ - b _ {n} & a _ {1} & a _ {2} & \\dots & a _ {n} \\end{array} \\right| = 0 \\\\ \\end{array}\n\\]"
+  }
+]

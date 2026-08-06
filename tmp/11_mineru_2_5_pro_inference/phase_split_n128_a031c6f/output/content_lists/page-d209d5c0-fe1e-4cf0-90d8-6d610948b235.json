@@ -1,0 +1,189 @@
+[
+  {
+    "type": "page_number",
+    "bbox": [
+      0.115,
+      0.066,
+      0.134,
+      0.076
+    ],
+    "angle": 0,
+    "content": "50"
+  },
+  {
+    "type": "header",
+    "bbox": [
+      0.419,
+      0.065,
+      0.534,
+      0.076
+    ],
+    "angle": 0,
+    "content": "SOPHIE RAYNOR"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.091,
+      0.841,
+      0.126
+    ],
+    "angle": 0,
+    "content": "Pairs \\((\\mathcal{X}^1, f^1)\\) and \\((\\mathcal{X}^1, f^2)\\) represent the same element \\([\\mathcal{X}, f]_* \\in (\\widetilde{LT}_* \\Upsilon_* \\mathcal{H})_X\\) if and only if there is an object \\(\\mathcal{X}_f \\in X\\)-\\(\\mathsf{Gr}_{\\mathsf{sim}}\\) and a commuting diagram",
+    "merge_prev": false
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.115,
+      0.144,
+      0.613,
+      0.216
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.232,
+      0.839,
+      0.267
+    ],
+    "angle": 0,
+    "content": "in \\(\\mathsf{Gr}_{*}\\) such that \\(g^{j}\\) are similarity morphisms in \\(X\\)-\\(\\mathsf{Gr}_{\\mathrm{sim}}\\) for \\(j = 1,2\\), and \\(f^{\\perp} \\in \\mathsf{Gr}(\\mathcal{X}^{f},\\mathcal{H})\\) is an (unpointed) étale morphism.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.132,
+      0.274,
+      0.835,
+      0.29
+    ],
+    "angle": 0,
+    "content": "In particular, for all \\(\\mathcal{H}\\), \\(e \\in E(\\mathcal{H})\\) and \\(m \\geq 1\\), the following special case of (8.9) commutes in \\(\\mathsf{Gr}_{*}\\):",
+    "merge_prev": false
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.115,
+      0.307,
+      0.613,
+      0.374
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.396,
+      0.839,
+      0.45
+    ],
+    "angle": 0,
+    "content": "Since \\(\\Xi^{\\times}(\\mathcal{G},\\mathcal{H})\\cong \\widetilde{L} T_{*}\\Upsilon_{*}\\mathcal{H}(\\mathcal{G}) = \\lim_{(\\mathcal{C},b)\\in \\mathsf{el}(\\mathcal{G})}\\widetilde{L} T_{*}\\Upsilon_{*}\\mathcal{H}(\\mathcal{C})\\), morphisms \\(\\gamma \\in \\Xi^{\\times}(\\mathcal{G},\\mathcal{H})\\) are represented by pairs \\((\\Gamma ,f)\\), where \\(\\Gamma :\\mathsf{el}(\\mathcal{G})\\to \\mathsf{Gr}\\) is a nondegenerate \\(\\mathcal{G}\\)-shaped graph of graphs, and \\(f\\in \\mathsf{Gr}_{*}(\\Gamma (\\mathcal{G}),\\mathcal{H})\\) is a morphism in \\(\\mathsf{Gr}_{*}\\) (see [36, Section 8.1]).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.132,
+      0.457,
+      0.801,
+      0.472
+    ],
+    "angle": 0,
+    "content": "The following lemma generalises [36, Lemma 8.9], and is proved in exactly the same manner.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.489,
+      0.842,
+      0.56
+    ],
+    "angle": 0,
+    "content": "Lemma 8.11. Let \\(\\mathcal{G}\\) and \\(\\mathcal{H}\\) be graphs and, for \\(i = 1,2\\), let \\(\\Gamma^i\\) be a nondegenerate \\(\\mathcal{G}\\)-shaped graph of graphs with colimit \\(\\Gamma^i (\\mathcal{G})\\), and \\(f^i\\in \\mathsf{Gr}_*(\\Gamma^i (\\mathcal{G}),\\mathcal{H})\\). Then \\((\\Gamma^1,f^1),(\\Gamma^2,f^2)\\) represent the same element \\(\\gamma\\) of \\(\\Xi^{\\times}(\\mathcal{G},\\mathcal{H})\\) if and only if there is a representative \\((\\Gamma ,f)\\) of \\(\\gamma\\), and a commuting diagram in \\(\\mathsf{Gr}_*\\) of the following form:",
+    "merge_prev": false
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.115,
+      0.575,
+      0.638,
+      0.644
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.661,
+      0.838,
+      0.696
+    ],
+    "angle": 0,
+    "content": "where the morphisms in the top row are vertex deletion morphisms (including \\(z: \\mathcal{C}_0 \\to (1)\\)) in \\(\\mathsf{Gr}_{\\mathrm{sim}}\\), and \\(f \\in \\mathsf{Gr}(\\mathbf{\\Gamma}(\\mathcal{G}), \\mathcal{H})\\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.133,
+      0.716,
+      0.416,
+      0.733
+    ],
+    "angle": 0,
+    "content": "The following terminology is from [22].",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.749,
+      0.84,
+      0.802
+    ],
+    "angle": 0,
+    "content": "Definition 8.13. A (pointed) free morphism in \\(\\Xi^{\\times}\\) is a morphism in the image of the inclusion \\(\\mathsf{Gr}_{*} \\hookrightarrow \\Xi^{\\times}\\). An unpointed free morphism in \\(\\Xi^{\\times}\\) is a morphism in the image of \\(\\mathsf{Gr} \\hookrightarrow \\mathsf{Gr}_{*} \\hookrightarrow \\Xi^{\\times}\\). A refinement morphism \\([\\Gamma]\\) in \\(\\Xi^{\\times}\\) is a morphism in \\(\\Xi^{\\times}(\\mathcal{G},\\mathcal{H})\\) with a representative of the form \\((\\Gamma, id_{\\mathcal{H}})\\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.821,
+      0.839,
+      0.893
+    ],
+    "angle": 0,
+    "content": "So, a free morphism in \\(\\Xi^{\\times}(\\mathcal{G},\\mathcal{H})\\) has a representative of the form \\((id,f)\\) where \\(id\\colon \\mathsf{el}(\\mathcal{G})\\to \\mathsf{Gr}\\) is the trivial identity \\(\\mathcal{G}\\)-shaped graph of graphs with colimit \\(\\mathcal{G}\\) and \\(f\\in \\mathsf{Gr}_{*}(\\mathcal{G},\\mathcal{H})\\). Refinements \\([\\Gamma]\\) in \\(\\Xi^{\\times}(\\mathcal{G},\\mathcal{H})\\) are described by nondegenerate \\(\\mathcal{G}\\)-shaped graph of graphs \\(\\Gamma\\) with colimit \\(\\mathcal{H}\\), and hence induce isomorphisms \\(E_0(\\mathcal{G})\\xrightarrow{\\cong} E_0(\\mathcal{H})\\) on boundaries.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.897,
+      0.839,
+      0.956
+    ],
+    "angle": 0,
+    "content": "In particular, morphisms in \\(\\Xi^{\\times}(\\mathcal{G},\\mathcal{H})\\) factor as \\(\\mathcal{G}\\xrightarrow{[\\Gamma]} \\Gamma(\\mathcal{G})\\xrightarrow{\\mathrm{del}_{\\setminus W}}\\Gamma(\\mathcal{G})_{\\setminus W}\\xrightarrow{f}\\mathcal{H}\\). Here \\(\\Gamma\\colon\\mathrm{el}(\\mathcal{G})\\to\\mathrm{Gr}\\) is a nondegenerate \\(\\mathcal{G}\\)-shaped graph of graphs with colimit \\(\\Gamma(\\mathcal{G})\\in\\mathrm{Gr}\\), and \\(f\\in\\mathrm{Gr}(\\Gamma(\\mathcal{G})_{\\setminus W},\\mathcal{H})\\) is an (unpointed) étale morphism \\(\\mathrm{Gr}\\).",
+    "merge_prev": false
+  }
+]

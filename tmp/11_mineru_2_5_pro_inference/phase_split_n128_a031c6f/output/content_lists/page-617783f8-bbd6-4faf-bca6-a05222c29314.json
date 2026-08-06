@@ -1,0 +1,163 @@
+[
+  {
+    "type": "header",
+    "bbox": [
+      0.143,
+      0.057,
+      0.826,
+      0.073
+    ],
+    "angle": 0,
+    "content": "A Nearly Optimal Single Loop Algorithm for Stochastic Bilevel Optimization under Unbounded Smoothness"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.086,
+      0.086,
+      0.33,
+      0.101
+    ],
+    "angle": 0,
+    "content": "where we define  \\( v_{t} \\)  as the following:",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.246,
+      0.112,
+      0.725,
+      0.13
+    ],
+    "angle": 0,
+    "content": "\\[\nv _ {t} = [ \\nabla_ {y y} ^ {2} g (x _ {t}, y _ {t}) - \\nabla_ {y y} ^ {2} G (x _ {t}, y _ {t}; \\zeta_ {t}) ] z _ {t} - [ \\nabla_ {y} f (x _ {t}, y _ {t}) - \\nabla_ {y} F (x _ {t}, y _ {t}; \\xi_ {t}) ].\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.086,
+      0.14,
+      0.498,
+      0.157
+    ],
+    "angle": 0,
+    "content": "Next, given any \\(\\delta_t > 0\\), we apply Young's inequality to obtain",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.332,
+      0.166,
+      0.888,
+      0.194
+    ],
+    "angle": 0,
+    "content": "\\[\n\\langle v _ {t}, z _ {t + 1} - z _ {t} \\rangle \\leq \\frac {\\delta_ {t}}{2} \\| v _ {t} \\| ^ {2} + \\frac {1}{2 \\delta_ {t}} \\| z _ {t + 1} - z _ {t} \\| ^ {2}. \\tag {E.4}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.086,
+      0.204,
+      0.554,
+      0.22
+    ],
+    "angle": 0,
+    "content": "Also, we estimate the following by Young's inequality (with \\(\\phi_t = 4\\gamma\\)):",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.116,
+      0.23,
+      0.888,
+      0.363
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\langle \\nabla_ {y y} ^ {2} g (x _ {t}, y _ {t} ^ {*}) z _ {t} - \\nabla_ {y y} ^ {2} g (x _ {t}, y _ {t}) z _ {t, z _ {t + 1}} - z _ {t} \\rangle \\leq \\frac {\\phi_ {t}}{2} \\| \\nabla_ {y y} ^ {2} g (x _ {t}, y _ {t} ^ {*}) - \\nabla_ {y y} ^ {2} g (x _ {t}, y _ {t}) \\| ^ {2} \\| z _ {t} \\| ^ {2} + \\frac {1}{2 \\phi_ {t}} \\| z _ {t + 1} - z _ {t} \\| ^ {2} \\\\ \\leq \\frac {\\phi_ {t}}{2} l _ {g, 2} ^ {2} \\| y _ {t} - y _ {t} ^ {*} \\| ^ {2} (2 \\| z _ {t} ^ {*} \\| ^ {2} + 2 \\| z _ {t} - z _ {t} ^ {*} \\| ^ {2}) + \\frac {1}{2 \\phi_ {t}} \\| z _ {t + 1} - z _ {t} \\| ^ {2} \\\\ \\leq \\frac {\\phi_ {t}}{2} l _ {g, 2} ^ {2} \\| y _ {t} - y _ {t} ^ {*} \\| ^ {2} \\left(\\frac {2 l _ {f , 0} ^ {2}}{\\mu^ {2}} + 2 \\| z _ {t} - z _ {t} ^ {*} \\| ^ {2}\\right) + \\frac {1}{2 \\phi_ {t}} \\| z _ {t + 1} - z _ {t} \\| ^ {2} \\tag {E.5} \\\\ \\leq 4 \\gamma l _ {g, 2} ^ {2} \\| y _ {t} - y _ {t} ^ {*} \\| ^ {2} \\| z _ {t} - z _ {t} ^ {*} \\| ^ {2} + 4 \\gamma \\frac {l _ {g , 2} ^ {2} l _ {f , 0} ^ {2}}{\\mu^ {2}} \\| y _ {t} - y _ {t} ^ {*} \\| ^ {2} + \\frac {(4 \\gamma) ^ {- 1}}{2} \\| z _ {t + 1} - z _ {t} \\| ^ {2}, \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.085,
+      0.372,
+      0.714,
+      0.391
+    ],
+    "angle": 0,
+    "content": "where we use \\( \\| z_t^* \\| = \\| [\\nabla_{yy}^2 g(x,y^*(x))]^{-1}\\nabla_y f(x,y^*(x)) \\| \\leq l_{f,0} / \\mu \\) for the second inequality.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.086,
+      0.396,
+      0.504,
+      0.412
+    ],
+    "angle": 0,
+    "content": "Again we apply Young's inequality to estimate (with \\(\\varphi_t = 4\\gamma\\)):",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.174,
+      0.42,
+      0.89,
+      0.512
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\langle \\nabla_ {y} f (x _ {t}, y _ {t}) - \\nabla_ {y} f (x _ {t}, y _ {t} ^ {*}), z _ {t + 1} - z _ {t} \\rangle \\leq \\frac {\\varphi_ {t}}{2} \\| \\nabla_ {y} f (x _ {t}, y _ {t}) - \\nabla_ {y} f (x _ {t}, y _ {t} ^ {*}) \\| ^ {2} + \\frac {1}{2 \\varphi_ {t}} \\| z _ {t + 1} - z _ {t} \\| ^ {2} \\\\ \\leq \\frac {\\varphi_ {t}}{2} (L _ {y, 0} + L _ {y, 1} l _ {f, 0}) ^ {2} \\| y _ {t} - y _ {t} ^ {*} \\| ^ {2} + \\frac {1}{2 \\varphi_ {t}} \\| z _ {t + 1} - z _ {t} \\| ^ {2} \\tag {E.6} \\\\ \\leq 2 \\gamma (L _ {y, 0} + L _ {y, 1} l _ {f, 0}) ^ {2} \\| y _ {t} - y _ {t} ^ {*} \\| ^ {2} + \\frac {(4 \\gamma) ^ {- 1}}{2} \\| z _ {t + 1} - z _ {t} \\| ^ {2}. \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.086,
+      0.527,
+      0.559,
+      0.542
+    ],
+    "angle": 0,
+    "content": "Therefore, given any \\(z\\), combining (E.3), (E.4), (E.5) and (E.6) we have",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.097,
+      0.554,
+      0.877,
+      0.863
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} h (x _ {t}, z _ {t + 1}) \\leq h (x _ {t}, z _ {t}) + \\langle \\nabla_ {y y} ^ {2} G (x _ {t}, y _ {t}; \\zeta_ {t}) z _ {t} - \\nabla_ {y} F (x _ {t}, y _ {t}; \\xi_ {t}), z _ {t + 1} - z _ {t} \\rangle + \\frac {l _ {g , 1}}{2} \\| z _ {t + 1} - z _ {t} \\| ^ {2} \\\\ + \\langle [ \\nabla_ {y y} ^ {2} g (x _ {t}, y _ {t} ^ {*}) - \\nabla_ {y y} ^ {2} g (x _ {t}, y _ {t}) ] z _ {t}, z _ {t + 1} - z _ {t} \\rangle + \\langle [ \\nabla_ {y} f (x _ {t}, y _ {t}) - \\nabla_ {y} f (x _ {t}, y _ {t} ^ {*}) ], z _ {t + 1} - z _ {t} \\rangle \\\\ + \\langle v _ {t}, z _ {t + 1} - z _ {t} \\rangle \\\\ \\leq h (x _ {t}, z _ {t}) + \\langle \\nabla_ {y y} ^ {2} G (x _ {t}, y _ {t}; \\zeta_ {t}) z _ {t} - \\nabla_ {y} F (x _ {t}, y _ {t}; \\xi_ {t}), z _ {t + 1} - z _ {t} \\rangle + \\frac {\\delta_ {t} ^ {- 1} + l _ {g , 1} + 2 (4 \\gamma) ^ {- 1}}{2} \\| z _ {t + 1} - z _ {t} \\| ^ {2} + \\frac {\\delta_ {t}}{2} \\| v _ {t} \\| ^ {2} \\\\ + 4 \\gamma l _ {g, 2} ^ {2} \\| y _ {t} - y _ {t} ^ {*} \\| ^ {2} \\| z _ {t} - z _ {t} ^ {*} \\| ^ {2} + 4 \\gamma \\frac {l _ {g , 2} ^ {2} l _ {f , 0} ^ {2}}{\\mu^ {2}} \\| y _ {t} - y _ {t} ^ {*} \\| ^ {2} + 2 \\gamma (L _ {y, 0} + L _ {y, 1} l _ {f, 0}) ^ {2} \\| y _ {t} - y _ {t} ^ {*} \\| ^ {2} \\\\ \\leq h \\left(x _ {t}, z _ {t}\\right) + \\left\\langle \\nabla_ {y y} ^ {2} G \\left(x _ {t}, y _ {t}; \\zeta_ {t}\\right) z _ {t} - \\nabla_ {y} F \\left(x _ {t}, y _ {t}; \\xi_ {t}\\right), z _ {t + 1} - z _ {t} \\right\\rangle + \\frac {1}{2 \\gamma} \\left\\| z _ {t + 1} - z _ {t} \\right\\| ^ {2} \\\\ + \\frac {\\delta_ {t} ^ {- 1} + l _ {g , 1} + (2 \\gamma) ^ {- 1} - \\gamma^ {- 1}}{2} \\| z _ {t + 1} - z _ {t} \\| ^ {2} + \\frac {\\delta_ {t}}{2} \\| v _ {t} \\| ^ {2} \\\\ + 4 \\gamma l _ {g, 2} ^ {2} \\| y _ {t} - y _ {t} ^ {*} \\| ^ {2} \\| z _ {t} - z _ {t} ^ {*} \\| ^ {2} + 4 \\gamma \\frac {l _ {g , 2} ^ {2} l _ {f , 0} ^ {2}}{\\mu^ {2}} \\| y _ {t} - y _ {t} ^ {*} \\| ^ {2} + 2 \\gamma (L _ {y, 0} + L _ {y, 1} l _ {f, 0}) ^ {2} \\| y _ {t} - y _ {t} ^ {*} \\| ^ {2} \\\\ \\leq h (x _ {t}, z _ {t}) + \\langle \\nabla_ {y y} ^ {2} G (x _ {t}, y _ {t}; \\zeta_ {t}) z _ {t} - \\nabla_ {y} F (x _ {t}, y _ {t}; \\xi_ {t}), z - z _ {t} \\rangle + \\frac {1}{2 \\gamma} \\| z - z _ {t} \\| ^ {2} - \\frac {1}{2 \\gamma} \\| z - z _ {t + 1} \\| ^ {2} \\\\ + \\frac {\\delta_ {t} ^ {- 1} + l _ {g , 1} - (2 \\gamma) ^ {- 1}}{2} \\| z _ {t + 1} - z _ {t} \\| ^ {2} + \\frac {\\delta_ {t}}{2} \\| v _ {t} \\| ^ {2} \\\\ + 4 \\gamma l _ {g, 2} ^ {2} \\| y _ {t} - y _ {t} ^ {*} \\| ^ {2} \\| z _ {t} - z _ {t} ^ {*} \\| ^ {2} + 4 \\gamma \\frac {l _ {g , 2} ^ {2} l _ {f , 0} ^ {2}}{\\mu^ {2}} \\| y _ {t} - y _ {t} ^ {*} \\| ^ {2} + 2 \\gamma (L _ {y, 0} + L _ {y, 1} l _ {f, 0}) ^ {2} \\| y _ {t} - y _ {t} ^ {*} \\| ^ {2} \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.085,
+      0.874,
+      0.887,
+      0.909
+    ],
+    "angle": 0,
+    "content": "where the last inequality holds since \\( z_{t+1} = z_t - \\gamma[\\nabla_{yy}^2 G(x_t, y_t; \\zeta_t) z_t - \\nabla_y F(x_t, y_t; \\xi_t)] \\) is the unique minimizer of the \\( \\gamma^{-1} \\)-strongly convex function \\( l(z) = \\langle \\nabla_{yy}^2 G(x_t, y_t; \\zeta_t) z_t - \\nabla_y F(x_t, y_t; \\xi_t), z - z_t \\rangle + \\frac{1}{2\\gamma} \\|z - z_t\\|^2 \\), and thus",
+    "merge_prev": false
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.478,
+      0.924,
+      0.497,
+      0.935
+    ],
+    "angle": 0,
+    "content": "30"
+  }
+]

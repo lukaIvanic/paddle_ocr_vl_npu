@@ -1,0 +1,163 @@
+[
+  {
+    "type": "header",
+    "bbox": [
+      0.106,
+      0.047,
+      0.424,
+      0.064
+    ],
+    "angle": 0,
+    "content": "考研数学基础30讲·高等数学分册"
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.327,
+      0.089,
+      0.623,
+      0.128
+    ],
+    "angle": 0,
+    "content": "\\[\n\\lim _ {n \\to \\infty} \\sum_ {i = 1} ^ {n} f \\left(0 + \\frac {x - 0}{n} i\\right) \\frac {x - 0}{n} = \\int_ {0} ^ {x} f (t) \\mathrm{d} t.\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.139,
+      0.864,
+      0.215
+    ],
+    "angle": 0,
+    "content": "例 5 设 \\( f(x)=\\begin{cases}\\lim_{n\\to\\infty}\\frac{1}{n}\\left(1+\\cos\\frac{x}{n}+\\cos\\frac{2x}{n}+\\cdots+\\cos\\frac{n-1}{n}x\\right),&x>0,\\\\a,&x=0,\\\\f(-x),&x<0\\end{cases} \\) 连续，则 \\( a= \\) ____.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.116,
+      0.223,
+      0.212,
+      0.246
+    ],
+    "angle": 0,
+    "content": "解 应填1.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.116,
+      0.253,
+      0.641,
+      0.294
+    ],
+    "angle": 0,
+    "content": "当 \\(x > 0\\) 时， \\(f(x) = \\lim_{n\\to \\infty}\\frac{1}{n}\\sum_{i = 0}^{n - 1}\\cos \\frac{x}{n} i = \\lim_{n\\to \\infty}\\frac{1}{x}\\sum_{i = 0}^{n - 1}\\cos \\frac{x}{n} i\\cdot \\frac{x}{n}\\)",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.353,
+      0.306,
+      0.593,
+      0.343
+    ],
+    "angle": 0,
+    "content": "\\[\n= \\frac {1}{x} \\int_ {0} ^ {x} \\cos t \\mathrm{d} t = \\frac {1}{x} \\sin t \\bigg | _ {0} ^ {x} = \\frac {\\sin x}{x};\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.114,
+      0.355,
+      0.46,
+      0.389
+    ],
+    "angle": 0,
+    "content": "当 \\(x < 0\\) 时，\\(f(x) = f(-x) = \\frac{\\sin(-x)}{-x} = \\frac{\\sin x}{x}\\).",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.402,
+      0.672,
+      0.455
+    ],
+    "angle": 0,
+    "content": "综上所述， \\(f(x) = \\left\\{ \\begin{array}{ll}\\frac{\\sin x}{x}, & x\\neq 0,\\\\ a, & x = 0. \\end{array} \\right.\\) 故由 \\(f(x)\\) 连续，得 \\(a = \\lim_{x\\to 0}\\frac{\\sin x}{x} = 1\\) ：",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.246,
+      0.463,
+      0.611,
+      0.482
+    ],
+    "angle": 0,
+    "content": "公众号：大叔考研，免费分享无水印PDF",
+    "merge_prev": false
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.083,
+      0.495,
+      0.414,
+      0.516
+    ],
+    "angle": 0,
+    "content": "五 反常积分敛散性的综合判别法"
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.412,
+      0.595,
+      0.589,
+      0.619
+    ],
+    "angle": 0,
+    "content": "三向解题法"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.26,
+      0.668,
+      0.341,
+      0.687
+    ],
+    "angle": 0,
+    "content": "盯住目标",
+    "merge_prev": false
+  },
+  {
+    "type": "image",
+    "bbox": [
+      0.353,
+      0.666,
+      0.765,
+      0.83
+    ],
+    "angle": 0,
+    "content": null
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.094,
+      0.95,
+      0.127,
+      0.964
+    ],
+    "angle": 0,
+    "content": "638"
+  }
+]

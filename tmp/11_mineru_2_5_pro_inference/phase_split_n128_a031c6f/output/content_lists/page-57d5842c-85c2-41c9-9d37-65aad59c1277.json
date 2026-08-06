@@ -1,0 +1,175 @@
+[
+  {
+    "type": "page_number",
+    "bbox": [
+      0.117,
+      0.115,
+      0.127,
+      0.123
+    ],
+    "angle": 0,
+    "content": "8"
+  },
+  {
+    "type": "header",
+    "bbox": [
+      0.407,
+      0.113,
+      0.591,
+      0.124
+    ],
+    "angle": 0,
+    "content": "SANIA ASIF \\( ^{1} \\) , ZHIXIANG WU \\( ^{2} \\)"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.114,
+      0.14,
+      0.884,
+      0.168
+    ],
+    "angle": 0,
+    "content": "Definition 3.1. Let \\((\\mathfrak{M}_{\\phi},\\rho)\\) be a representation of an averaging Lie conformal algebra \\((\\mathfrak{L},[\\cdot_{\\lambda}\\cdot ]_P)\\). Define a map \\(\\xi^p:C^p (\\mathfrak{L},\\mathfrak{M})\\to C_{AO}^p (\\mathfrak{L},\\mathfrak{M})\\) by",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.132,
+      0.176,
+      0.882,
+      0.205
+    ],
+    "angle": 0,
+    "content": "\\[\n\\xi^ {p} f _ {\\lambda_ {1}, \\lambda_ {2}, \\dots , \\lambda_ {p - 1}} \\left(x _ {1}, x _ {2}, \\dots , x _ {p}\\right) = f _ {\\lambda_ {1}, \\lambda_ {2}, \\dots , \\lambda_ {p - 1}} \\left(P x _ {1}, P x _ {2}, \\dots , P x _ {p}\\right) - (\\phi \\circ f) _ {\\lambda_ {1}, \\lambda_ {2}, \\dots , \\lambda_ {p - 1}} \\left(P x _ {1}, x _ {2}, \\dots , x _ {p}\\right), \\tag {15}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.114,
+      0.214,
+      0.396,
+      0.228
+    ],
+    "angle": 0,
+    "content": "for all  \\( x_{1},\\cdots,x_{p}\\in L \\)  and  \\( f\\in C^{p}(\\mathfrak{L},\\mathfrak{M}) \\) .",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.114,
+      0.246,
+      0.585,
+      0.261
+    ],
+    "angle": 0,
+    "content": "Lemma 3.2. For any \\(x_{1},\\dots ,x_{p + 1}\\in \\mathfrak{L}\\) and \\(f\\in C^p (\\mathfrak{L},\\mathfrak{M})\\) , we have",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.223,
+      0.269,
+      0.882,
+      0.286
+    ],
+    "angle": 0,
+    "content": "\\[\n\\xi^ {p + 1} \\left(\\delta^ {p} (f)\\right) _ {\\lambda_ {1}, \\lambda_ {2}, \\dots , \\lambda_ {p}} \\left(x _ {1}, x _ {2}, \\dots , x _ {p + 1}\\right) = \\partial^ {p} \\left(\\xi^ {p} (f)\\right) _ {\\lambda_ {1}, \\lambda_ {2}, \\dots , \\lambda_ {p}} \\left(x _ {1}, x _ {2}, \\dots , x _ {p + 1}\\right). \\tag {16}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.116,
+      0.31,
+      0.301,
+      0.323
+    ],
+    "angle": 0,
+    "content": "Proof. First, consider that",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.114,
+      0.33,
+      0.903,
+      0.569
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\xi^ {p + 1} (\\delta^ {p} (f)) _ {\\lambda_ {1}, \\lambda_ {2}, \\dots , \\lambda_ {p}} (x _ {1}, x _ {2}, x _ {3}, \\dots , x _ {p + 1}) \\\\ = (\\delta^ {p} f) _ {\\lambda_ {1}, \\lambda_ {2}, \\dots , \\lambda_ {p}} (P x _ {1}, P x _ {2}, \\dots , P x _ {p}, P x _ {p + 1}) \\\\ - \\left(\\phi \\circ (\\delta^ {p} f)\\right) _ {\\lambda_ {1}, \\lambda_ {2}, \\dots , \\lambda_ {p}} (P x _ {1}, x _ {2}, \\dots , x _ {p}, x _ {p + 1}) \\\\ = \\sum_ {i = 1} ^ {p + 1} (- 1) ^ {i + 1} \\left[ \\left(P x _ {i}\\right) _ {\\lambda_ {i}} f _ {\\lambda_ {2}, \\dots , \\hat {\\lambda_ {i}}, \\dots , \\lambda_ {p}} \\left(P x _ {1}, \\dots \\hat {P x _ {i}}, \\dots , P x _ {p + 1}\\right) \\right] \\\\ + \\sum_ {1 \\leq i <   j \\leq p + 1} (- 1) ^ {i + j} f _ {\\lambda_ {i} + \\lambda_ {j}, \\lambda_ {1}, \\dots , \\hat {\\lambda_ {i}}, \\dots , \\hat {\\lambda_ {j}}, \\dots , \\lambda_ {p}} ([ P x _ {i \\lambda_ {i}} P x _ {j} ], P x _ {1}, \\dots , \\hat {P x _ {i}}, \\dots , \\hat {P x _ {j}}, \\dots , P x _ {p + 1}) \\\\ - \\phi ([ (P x _ {1}) _ {\\lambda_ {1}} f _ {\\lambda_ {2}, \\dots , \\hat {\\lambda_ {1}}, \\dots , \\lambda_ {p}} (x _ {2}, \\dots , x _ {p + 1}) ] \\\\ + \\sum_ {1 <   j \\leq p + 1} (- 1) ^ {1 + j} f _ {\\lambda_ {1} + \\lambda_ {j}, \\lambda_ {2}, \\dots , \\hat {x} _ {j}, \\dots , \\lambda_ {p}} ([ P x _ {1 \\lambda_ {1}} x _ {j} ], x _ {2}, \\dots , \\hat {x} _ {j}, \\dots , x _ {p + 1})) \\\\ - \\phi \\left(\\sum_ {i = 2} ^ {p + 1} (- 1) ^ {i + 1} \\left[ x _ {i \\lambda_ {i}} f _ {\\lambda_ {2}, \\dots , \\hat {\\lambda_ {i}}, \\dots , \\lambda_ {p + 1}} \\left(P x _ {1}, x _ {2}, \\dots \\hat {x _ {i}}, \\dots , x _ {p + 1}\\right) \\right] \\right. \\\\ + \\sum_ {2 \\leq i <   j \\leq p + 1} (- 1) ^ {i + j} f _ {\\lambda_ {i} + \\lambda_ {j}, \\lambda_ {1}, \\dots , \\hat {\\lambda_ {1}}, \\dots , \\hat {\\lambda_ {j}}, \\dots , \\lambda_ {p}} ([ x _ {i \\lambda_ {i}} x _ {j} ], P x _ {1}, x _ {2}, \\dots , \\hat {x _ {i}}, \\dots , \\hat {x _ {j}}, \\dots , x _ {p + 1})). \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.115,
+      0.577,
+      0.154,
+      0.588
+    ],
+    "angle": 0,
+    "content": "Next",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.114,
+      0.599,
+      0.892,
+      0.821
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\partial_ {A O} ^ {p} (\\xi^ {p} (f)) _ {\\lambda_ {1}, \\dots , \\lambda_ {p}} (x _ {1}, x _ {2}, x _ {3}, \\dots , x _ {p + 1}) \\\\ = \\sum_ {i = 1} ^ {p + 1} (- 1) ^ {i + 1} \\rho (P (x _ {i})) _ {\\lambda_ {i}} (\\xi^ {p} f) _ {\\lambda_ {1}, \\dots , \\hat {\\lambda_ {i}}, \\dots , \\lambda_ {p}} (x _ {1}, \\dots , \\hat {x _ {i}}, \\dots , x _ {p + 1}) \\\\ + \\sum_ {1 \\leq i <   j \\leq p + 1} (- 1) ^ {i + j} \\left(\\xi^ {p} f\\right) _ {\\lambda_ {i} + \\lambda_ {j}, \\lambda_ {1}, \\dots , \\hat {\\lambda_ {i}}, \\dots , \\hat {\\lambda_ {j}}, \\dots , \\lambda_ {p}} \\left(\\left[ P \\left(x _ {i}\\right) _ {\\lambda_ {i}} x _ {j} \\right], x _ {1}, \\dots , \\hat {x _ {i}}, \\dots , \\hat {x _ {j}}, \\dots , x _ {p + 1}\\right) \\\\ = \\sum_ {i = 1} ^ {p + 1} (- 1) ^ {i + 1} \\rho (P (x _ {i})) _ {\\lambda_ {i}} f _ {\\lambda_ {1}, \\lambda_ {2}, \\dots , \\hat {\\lambda_ {i}}, \\dots , \\lambda_ {p}} (P x _ {1}, P x _ {2}, \\dots , \\hat {P x _ {i}}, \\dots , P x _ {p + 1}) \\\\ - \\sum_ {i = 1} ^ {p + 1} (- 1) ^ {i + 1} \\rho (P (x _ {i})) _ {\\lambda_ {i}} (\\phi \\circ f) _ {\\lambda_ {1}, \\lambda_ {2}, \\dots , \\hat {\\lambda_ {i}}, \\dots , \\lambda_ {p}} (P x _ {1}, x _ {2}, \\dots , \\hat {x _ {i}}, \\dots , x _ {p + 1}) \\\\ + \\sum_ {1 \\leq i <   j \\leq p + 1} (- 1) ^ {i + j} f _ {\\lambda_ {i} + \\lambda_ {j}, \\lambda_ {1}, \\dots , \\hat {\\lambda_ {i}}, \\dots , \\hat {\\lambda_ {j}}, \\dots , \\lambda_ {p}} (P [ P (x _ {i}) _ {\\lambda_ {i}} x _ {j} ], P x _ {1}, P x _ {2}, \\dots \\hat {P x _ {i}}, \\dots \\hat {P x _ {j}}, \\dots , P x _ {p}) \\\\ - \\sum_ {1 \\leq i <   j \\leq p + 1} (- 1) ^ {i + j} (\\phi \\circ f) _ {\\lambda_ {i} + \\lambda_ {j}, \\lambda_ {1}, \\lambda_ {2}, \\dots , \\hat {\\lambda_ {i}}, \\dots \\hat {\\lambda_ {j}}, \\dots , \\lambda_ {p}} \\left(P \\left[ P \\left(x _ {i}\\right) _ {\\lambda_ {i}} x _ {j} \\right], x _ {1}, x _ {2}, \\dots \\hat {x _ {i}}, \\dots \\hat {x _ {j}}, \\dots , x _ {p}\\right). \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.115,
+      0.829,
+      0.314,
+      0.843
+    ],
+    "angle": 0,
+    "content": "By using Eq.(7), we see that",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.224,
+      0.852,
+      0.882,
+      0.869
+    ],
+    "angle": 0,
+    "content": "\\[\n\\xi^ {p + 1} \\left(\\delta^ {p} (f)\\right) _ {\\lambda_ {1}, \\lambda_ {2}, \\dots , \\lambda_ {p}} \\left(x _ {1}, x _ {2}, \\dots , x _ {p + 1}\\right) = \\partial^ {p} \\left(\\xi^ {p} (f)\\right) _ {\\lambda_ {1}, \\lambda_ {2}, \\dots , \\lambda_ {p}} \\left(x _ {1}, x _ {2}, \\dots , x _ {p + 1}\\right). \\tag {17}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.115,
+      0.877,
+      0.331,
+      0.89
+    ],
+    "angle": 0,
+    "content": "By now we complete the proof.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.867,
+      0.877,
+      0.882,
+      0.888
+    ],
+    "angle": 0,
+    "content": "□",
+    "merge_prev": false
+  }
+]

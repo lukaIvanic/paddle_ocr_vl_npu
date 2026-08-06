@@ -1,0 +1,128 @@
+[
+  {
+    "type": "header",
+    "bbox": [
+      0.383,
+      0.049,
+      0.607,
+      0.063
+    ],
+    "angle": 0,
+    "content": "LIU, CHEN, AND THEODOROU"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.142,
+      0.116,
+      0.68,
+      0.132
+    ],
+    "angle": 0,
+    "content": "where the decomposition follows by the chain rule of KL divergence.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.141,
+      0.132,
+      0.854,
+      0.167
+    ],
+    "angle": 0,
+    "content": "Next, we derive the model likelihood  \\( \\log \\mu^{\\theta} \\) . Notice that the marginal density  \\(  p_{t}^{\\theta}(x)  \\)  obeys the Fokker Plank equation",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.215,
+      0.178,
+      0.852,
+      0.287
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\frac {\\partial p _ {t} ^ {\\theta} (x)}{\\partial t} = - \\nabla \\cdot \\left(p _ {t} ^ {\\theta} (x) \\sigma Z _ {t} ^ {\\theta} (x)\\right) + \\frac {\\sigma^ {2}}{2} \\Delta p _ {t} ^ {\\theta} (x) (30) \\\\ \\Rightarrow \\frac {\\partial \\log p _ {t} ^ {\\theta}}{\\partial t} = \\frac {1}{p _ {t} ^ {\\theta}} \\Big (- p _ {t} ^ {\\theta} \\nabla \\cdot \\Big (\\sigma Z _ {t} ^ {\\theta} \\Big) - \\nabla p _ {t} ^ {\\theta} \\cdot \\sigma Z _ {t} ^ {\\theta} + \\frac {\\sigma^ {2}}{2} \\Delta p _ {t} ^ {\\theta} \\Big) \\\\ = - \\nabla \\cdot \\left(\\sigma Z _ {t} ^ {\\theta}\\right) - \\nabla \\log p _ {t} ^ {\\theta} \\cdot \\sigma Z _ {t} ^ {\\theta} + \\frac {\\sigma^ {2}}{2} \\Delta \\log p _ {t} ^ {\\theta} + \\frac {1}{2} \\| \\sigma \\nabla \\log p _ {t} ^ {\\theta} \\| ^ {2}, (31) \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.142,
+      0.296,
+      0.714,
+      0.312
+    ],
+    "angle": 0,
+    "content": "where the last equality follows by Equation 15. Now, invoke Itô formula",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.189,
+      0.324,
+      0.852,
+      0.398
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\mathrm{d} \\log p _ {t} ^ {\\theta} = \\frac {\\partial \\log p _ {t} ^ {\\theta}}{\\partial t} \\mathrm{d} t + \\left[ \\nabla \\log p _ {t} ^ {\\theta} \\cdot \\sigma Z _ {t} ^ {\\theta} + \\frac {\\sigma^ {2}}{2} \\Delta \\log p _ {t} ^ {\\theta} \\right] \\mathrm{d} t + \\sigma \\nabla \\log p _ {t} ^ {\\theta} \\cdot \\mathrm{d} W _ {t} \\\\ = \\left[ - \\nabla \\cdot \\left(\\sigma Z _ {t} ^ {\\theta}\\right) + \\sigma^ {2} \\Delta \\log p _ {t} ^ {\\theta} + \\frac {1}{2} \\| \\sigma \\nabla \\log p _ {t} ^ {\\theta} \\| ^ {2} \\right] \\mathrm{d} t + \\sigma \\nabla \\log p _ {t} ^ {\\theta} \\cdot \\mathrm{d} W _ {t}, \\tag {32} \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.142,
+      0.408,
+      0.857,
+      0.44
+    ],
+    "angle": 0,
+    "content": "where the last equality follows by Equation 31. Equation 32 facilitates a computation of the parametrized model likelihood",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.166,
+      0.452,
+      0.852,
+      0.568
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\log \\mu^ {\\theta} (X _ {0}) = \\mathbb {E} _ {p _ {1} ^ {\\theta}} [ \\log p _ {1} ^ {\\theta} (X _ {1} ^ {\\theta}) ] - \\int_ {0} ^ {1} \\mathbb {E} _ {p _ {t} ^ {\\theta}} \\left[ \\mathrm{d} \\log p _ {t} ^ {\\theta} \\right] \\\\ = \\mathbb {E} _ {p _ {1} ^ {\\theta}} \\left[ \\log p _ {1} ^ {\\theta} \\left(X _ {1} ^ {\\theta}\\right) \\right] - \\int_ {0} ^ {1} \\mathbb {E} _ {p _ {t} ^ {\\theta}} \\left[ - \\nabla \\cdot \\left(\\sigma Z _ {t} ^ {\\theta}\\right) + \\sigma^ {2} \\Delta \\log p _ {t} ^ {\\theta} + \\frac {1}{2} \\| \\sigma \\nabla \\log p _ {t} ^ {\\theta} \\| ^ {2} \\right] \\mathrm{d} t \\\\ = \\mathbb {E} _ {p _ {1} ^ {\\theta}} \\left[ \\log p _ {1} ^ {\\theta} \\left(X _ {1} ^ {\\theta}\\right) \\right] - \\int_ {0} ^ {1} \\mathbb {E} _ {p _ {t} ^ {\\theta}} \\left[ - \\nabla \\cdot \\left(\\sigma Z _ {t} ^ {\\theta}\\right) - \\frac {1}{2} \\| \\sigma \\nabla \\log p _ {t} ^ {\\theta} \\| ^ {2} \\right] \\mathrm{d} t, \\tag {33} \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.142,
+      0.577,
+      0.854,
+      0.628
+    ],
+    "angle": 0,
+    "content": "where the last equality follows by Equation 16. Although Equation 33 implies that the parametrized model likelihood is intractable, due to the unknown score function \\(\\nabla \\log p_t^\\theta\\), combining this likelihood with the KL divergence in Equation 29 yields a tractable objective:",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.149,
+      0.637,
+      0.846,
+      0.896
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} D _ {\\mathrm{KL}} (p ^ {\\theta} | | p ^ {\\phi}) - \\log \\mu^ {\\theta} (X _ {0}) \\\\ = D _ {\\mathrm{KL}} (p _ {1} ^ {\\theta} | | \\nu) + \\int_ {0} ^ {1} \\mathbb {E} _ {p _ {t} ^ {\\theta}} \\left[ \\frac {1}{2} \\| Z _ {t} ^ {\\theta} - \\sigma \\nabla \\log p _ {t} ^ {\\theta} + \\widehat {Z} _ {t} ^ {\\phi} \\| ^ {2} \\right] \\mathrm{d} t \\\\ \\left. - \\mathbb {E} _ {p _ {1} ^ {\\theta}} \\left[ \\log p _ {1} ^ {\\theta} \\left(X _ {1} ^ {\\theta}\\right) \\right] + \\int_ {0} ^ {1} \\mathbb {E} _ {p _ {t} ^ {\\theta}} \\left[ - \\nabla \\cdot \\left(\\sigma Z _ {t} ^ {\\theta}\\right) - \\frac {1}{2} \\| \\sigma \\nabla \\log p _ {t} ^ {\\theta} \\| ^ {2} \\right] \\mathrm{d} t \\right. \\\\ = - \\mathbb {E} _ {p _ {1} ^ {\\theta}} \\left[ \\log \\nu \\left(X _ {1} ^ {\\theta}\\right) \\right] + \\int_ {0} ^ {1} \\mathbb {E} _ {p _ {t} ^ {\\theta}} \\left[ \\frac {1}{2} \\| Z _ {t} ^ {\\theta} - \\sigma \\nabla \\log p _ {t} ^ {\\theta} + \\widehat {Z} _ {t} ^ {\\phi} \\| ^ {2} - \\nabla \\cdot \\left(\\sigma Z _ {t} ^ {\\theta}\\right) - \\frac {1}{2} \\| \\sigma \\nabla \\log p _ {t} ^ {\\theta} \\| ^ {2} \\right] \\mathrm{d} t \\\\ = - \\mathbb {E} _ {p _ {1} ^ {\\theta}} \\left[ \\log \\nu \\left(X _ {1} ^ {\\theta}\\right) \\right] + \\int_ {0} ^ {1} \\mathbb {E} _ {p _ {t} ^ {\\theta}} \\left[ \\frac {1}{2} \\| Z _ {t} ^ {\\theta} + \\widehat {Z} _ {t} ^ {\\phi} \\| ^ {2} - \\nabla \\cdot \\left(\\sigma Z _ {t} ^ {\\theta}\\right) - \\left(Z _ {t} ^ {\\theta} + \\widehat {Z} _ {t} ^ {\\phi}\\right) \\cdot \\sigma \\nabla \\log p _ {t} ^ {\\theta} \\right] \\mathrm{d} t \\\\ = - \\mathbb {E} _ {p _ {1} ^ {\\theta}} \\left[ \\log \\nu \\left(X _ {1} ^ {\\theta}\\right) \\right] + \\int_ {0} ^ {1} \\mathbb {E} _ {p _ {t} ^ {\\theta}} \\left[ \\frac {1}{2} \\| Z _ {t} ^ {\\theta} + \\widehat {Z} _ {t} ^ {\\phi} \\| ^ {2} - \\nabla \\cdot \\left(\\sigma Z _ {t} ^ {\\theta}\\right) + \\nabla \\cdot \\left(\\sigma Z _ {t} ^ {\\theta} + \\sigma \\widehat {Z} _ {t} ^ {\\phi}\\right) \\right] \\mathrm{d} t \\\\ = - \\mathbb {E} _ {p _ {1} ^ {\\theta}} [ \\log \\nu (X _ {1} ^ {\\theta}) ] + \\int_ {0} ^ {1} \\mathbb {E} _ {p _ {t} ^ {\\theta}} \\left[ \\frac {1}{2} \\| Z _ {t} ^ {\\theta} + \\widehat {Z} _ {t} ^ {\\phi} \\| ^ {2} + \\nabla \\cdot \\left(\\sigma \\widehat {Z} _ {t} ^ {\\phi}\\right) \\right] \\mathrm{d} t \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.49,
+      0.915,
+      0.509,
+      0.926
+    ],
+    "angle": 0,
+    "content": "18"
+  }
+]

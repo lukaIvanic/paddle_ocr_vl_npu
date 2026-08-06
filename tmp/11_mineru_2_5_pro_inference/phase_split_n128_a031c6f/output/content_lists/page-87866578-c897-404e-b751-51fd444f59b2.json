@@ -1,0 +1,84 @@
+[
+  {
+    "type": "header",
+    "bbox": [
+      0.394,
+      0.044,
+      0.566,
+      0.06
+    ],
+    "angle": 0,
+    "content": "第九章 卤代烃"
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.858,
+      0.046,
+      0.903,
+      0.059
+    ],
+    "angle": 0,
+    "content": "· 91 ·"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.093,
+      0.375,
+      0.129,
+      0.391
+    ],
+    "angle": 0,
+    "content": "(2)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.093,
+      0.538,
+      0.129,
+      0.554
+    ],
+    "angle": 0,
+    "content": "(3)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.093,
+      0.769,
+      0.136,
+      0.786
+    ],
+    "angle": 0,
+    "content": "(4)",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.129,
+      0.792,
+      0.154,
+      0.808
+    ],
+    "angle": 0,
+    "content": "或",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.053,
+      0.907,
+      0.916,
+      0.951
+    ],
+    "angle": 0,
+    "content": "19. 化合物（A）与  \\( Br_{2}-CCl_{4} \\)  溶液作用生成一个三溴化合物（B），（A）很容易与 NaOH 水溶液作用，生成两种同分异构的醇（C）和（D），（A）与  \\( KOH-C_{2}H_{5}OH \\)  溶液作用，生成一",
+    "merge_prev": false
+  }
+]

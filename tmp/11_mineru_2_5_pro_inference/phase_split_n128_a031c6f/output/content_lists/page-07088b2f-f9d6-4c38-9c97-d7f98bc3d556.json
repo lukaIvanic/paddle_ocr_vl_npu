@@ -1,0 +1,503 @@
+[
+  {
+    "type": "header",
+    "bbox": [
+      0.779,
+      0.092,
+      0.893,
+      0.116
+    ],
+    "angle": 0,
+    "content": "8 八字務實研究 8"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.891,
+      0.154,
+      0.91,
+      0.384
+    ],
+    "angle": 0,
+    "content": "年時伏吟，貽元偏財刑月支",
+    "merge_prev": false
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.89,
+      0.83,
+      0.925,
+      0.86
+    ],
+    "angle": 0,
+    "content": "九〇"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.845,
+      0.189,
+      0.864,
+      0.419
+    ],
+    "angle": 0,
+    "content": "31男：初連辛酉，父母雙亡",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.822,
+      0.189,
+      0.843,
+      0.23
+    ],
+    "angle": 0,
+    "content": "戊子",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.823,
+      0.299,
+      0.837,
+      0.325
+    ],
+    "angle": 0,
+    "content": "病",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.802,
+      0.188,
+      0.819,
+      0.23
+    ],
+    "angle": 0,
+    "content": "庚申",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.8,
+      0.299,
+      0.817,
+      0.325
+    ],
+    "angle": 0,
+    "content": "胎",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.781,
+      0.188,
+      0.797,
+      0.23
+    ],
+    "angle": 0,
+    "content": "乙\nH",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.779,
+      0.299,
+      0.794,
+      0.325
+    ],
+    "angle": 0,
+    "content": "衰",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.756,
+      0.188,
+      0.772,
+      0.23
+    ],
+    "angle": 0,
+    "content": "壬午",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.756,
+      0.299,
+      0.771,
+      0.34
+    ],
+    "angle": 0,
+    "content": "長生",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.707,
+      0.186,
+      0.726,
+      0.475
+    ],
+    "angle": 0,
+    "content": "①正官格，財官旺，喜印化官生身。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.663,
+      0.149,
+      0.701,
+      0.908
+    ],
+    "angle": 0,
+    "content": "②月柱正官坐正官，俱爲忌神。偏財入日支及時支爲忌神，月支爲亡神，外無其他神煞。年時伏吟，年干至時支爲羊刃。初運辛酉爲忌神運。正印引至年支爲刃。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.62,
+      0.184,
+      0.638,
+      0.546
+    ],
+    "angle": 0,
+    "content": "32男：民國四十年九月十日丑時。西運喪父。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.598,
+      0.182,
+      0.616,
+      0.223
+    ],
+    "angle": 0,
+    "content": "辛卯",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.598,
+      0.294,
+      0.612,
+      0.334
+    ],
+    "angle": 0,
+    "content": "長生",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.598,
+      0.37,
+      0.612,
+      0.426
+    ],
+    "angle": 0,
+    "content": "丁酉",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.555,
+      0.181,
+      0.572,
+      0.222
+    ],
+    "angle": 0,
+    "content": "癸未",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.554,
+      0.293,
+      0.569,
+      0.315
+    ],
+    "angle": 0,
+    "content": "墓",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.531,
+      0.18,
+      0.548,
+      0.221
+    ],
+    "angle": 0,
+    "content": "癸丑",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.469,
+      0.216,
+      0.486,
+      0.314
+    ],
+    "angle": 0,
+    "content": "貯元：",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.445,
+      0.216,
+      0.462,
+      0.481
+    ],
+    "angle": 0,
+    "content": "①官殺混雜，取印化發生身爲用",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.421,
+      0.216,
+      0.438,
+      0.941
+    ],
+    "angle": 0,
+    "content": "②月柱正官坐正官，俱爲忌神，偏財入月支及日支爲忌神，丑戊未二利。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.396,
+      0.178,
+      0.415,
+      0.614
+    ],
+    "angle": 0,
+    "content": "偏財入日支墓刑月宮年干偏印，胎元刑月支之偏財",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.355,
+      0.215,
+      0.373,
+      0.725
+    ],
+    "angle": 0,
+    "content": "33男：民國二十三年十二月二十六巳時戊寅軍中父母七百二",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.333,
+      0.213,
+      0.351,
+      0.254
+    ],
+    "angle": 0,
+    "content": "甲戌",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.333,
+      0.324,
+      0.349,
+      0.346
+    ],
+    "angle": 0,
+    "content": "幕",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.311,
+      0.213,
+      0.33,
+      0.253
+    ],
+    "angle": 0,
+    "content": "丁丑",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.311,
+      0.323,
+      0.326,
+      0.346
+    ],
+    "angle": 0,
+    "content": "養",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.309,
+      0.381,
+      0.325,
+      0.439
+    ],
+    "angle": 0,
+    "content": "2戊寅",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.29,
+      0.212,
+      0.307,
+      0.252
+    ],
+    "angle": 0,
+    "content": "丙午",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.29,
+      0.323,
+      0.305,
+      0.345
+    ],
+    "angle": 0,
+    "content": "刃",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.266,
+      0.211,
+      0.284,
+      0.252
+    ],
+    "angle": 0,
+    "content": "癸巳",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.266,
+      0.323,
+      0.282,
+      0.345
+    ],
+    "angle": 0,
+    "content": "禄",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.219,
+      0.209,
+      0.237,
+      0.721
+    ],
+    "angle": 0,
+    "content": "①丙火雖生隆冬，但弱中轉旺，傷官透官，喜財通關，喜金水。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.195,
+      0.209,
+      0.212,
+      0.934
+    ],
+    "angle": 0,
+    "content": "②月支丑爲閑神，透劫財爲忌。偏財入月支爲墓，偏財在時支而已二年有七火之兼。半月",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.171,
+      0.172,
+      0.194,
+      0.518
+    ],
+    "angle": 0,
+    "content": "丑戌刑，月支丑爲天煞，胎元與年柱反吟。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.128,
+      0.208,
+      0.147,
+      0.681
+    ],
+    "angle": 0,
+    "content": "34男。民國三十年十二月二十九日酉時。辰運戊申年喪父。",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.107,
+      0.206,
+      0.122,
+      0.248
+    ],
+    "angle": 0,
+    "content": "壬午",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.107,
+      0.318,
+      0.122,
+      0.34
+    ],
+    "angle": 0,
+    "content": "刃",
+    "merge_prev": false
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.068,
+      0.84,
+      0.085,
+      0.867
+    ],
+    "angle": 0,
+    "content": "九"
+  }
+]

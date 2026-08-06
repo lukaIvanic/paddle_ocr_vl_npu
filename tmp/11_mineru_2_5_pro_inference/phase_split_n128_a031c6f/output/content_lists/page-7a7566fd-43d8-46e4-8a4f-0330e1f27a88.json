@@ -1,0 +1,210 @@
+[
+  {
+    "type": "text",
+    "bbox": [
+      0.117,
+      0.129,
+      0.846,
+      0.145
+    ],
+    "angle": 0,
+    "content": "Proof. For any \\(z_{1}, z_{2} \\in \\mathbb{C}\\), let \\(z^{\\theta} = (1 - \\theta)z_{1} + \\theta z_{2}\\) and let \\(\\gamma(\\theta) = f(|z^{\\theta}|^{2})z^{\\theta}\\) for \\(0 \\leq \\theta \\leq 1\\), we have",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.303,
+      0.156,
+      0.862,
+      0.188
+    ],
+    "angle": 0,
+    "content": "\\[\nf (| z _ {2} | ^ {2}) z _ {2} - f (| z _ {1} | ^ {2}) z _ {1} = \\gamma (1) - \\gamma (0) = \\int_ {0} ^ {1} \\gamma^ {\\prime} (\\theta) \\mathrm{d} \\theta , \\tag {3.0.19}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.117,
+      0.197,
+      0.168,
+      0.21
+    ],
+    "angle": 0,
+    "content": "where",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.309,
+      0.209,
+      0.86,
+      0.227
+    ],
+    "angle": 0,
+    "content": "\\[\n\\gamma^ {\\prime} (\\theta) = (1 + \\sigma) f (| z ^ {\\theta} | ^ {2}) (z _ {2} - z _ {1}) + g (z ^ {\\theta}) \\overline {{(z _ {2} - z _ {1})}}, \\tag {3.0.20}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.117,
+      0.232,
+      0.157,
+      0.245
+    ],
+    "angle": 0,
+    "content": "with",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.297,
+      0.242,
+      0.86,
+      0.281
+    ],
+    "angle": 0,
+    "content": "\\[\ng (z) = \\left\\{ \\begin{array}{l l} f ^ {\\prime} \\left(| z | ^ {2}\\right) z ^ {2} = \\beta \\sigma | z | ^ {2 \\sigma - 2} z ^ {2}, & z \\neq 0, \\\\ 0, & z = 0, \\end{array} \\quad z \\in \\mathbb {C}. \\right. \\tag {3.0.21}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.117,
+      0.285,
+      0.321,
+      0.3
+    ],
+    "angle": 0,
+    "content": "Then we have, since \\(\\sigma > 0\\),",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.198,
+      0.31,
+      0.86,
+      0.342
+    ],
+    "angle": 0,
+    "content": "\\[\n\\(| f (| z _ {2} | ^ {2}) z _ {2} - f (| z _ {1} | ^ {2}) z _ {1} | \\leq \\int_ {0} ^ {1} | \\gamma^ {\\prime} (\\theta) | \\mathrm{d} \\theta \\lesssim | z _ {\\theta} | ^ {2 \\sigma} | z _ {1} - z _ {2} | \\leq M _ {0} ^ {2 \\sigma} | z _ {1} - z _ {2} |, \\tag {3.0.22}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.117,
+      0.351,
+      0.32,
+      0.366
+    ],
+    "angle": 0,
+    "content": "which completes the proof.",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.142,
+      0.374,
+      0.659,
+      0.39
+    ],
+    "angle": 0,
+    "content": "We say \\(F:\\mathbb{C}\\to \\mathbb{C}\\) is (globally) \\(p\\)-Hölder continuous with \\(0 < p\\leq 1\\) if",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.332,
+      0.4,
+      0.65,
+      0.416
+    ],
+    "angle": 0,
+    "content": "\\[\n| F (z _ {1}) - F (z _ {2}) | \\leq C | z _ {1} - z _ {2} | ^ {p}, \\quad z _ {1}, z _ {2} \\in \\mathbb {C},\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.116,
+      0.427,
+      0.475,
+      0.442
+    ],
+    "angle": 0,
+    "content": "where C is a constant independent of  \\( z_{1} \\)  and  \\( z_{2} \\) .",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.116,
+      0.449,
+      0.863,
+      0.483
+    ],
+    "angle": 0,
+    "content": "Lemma 3.2. Let \\(\\frac{\\alpha}{4} < \\sigma \\leq \\frac{1}{2}\\) and \\(F\\) be \\(2\\sigma\\)-Hölder continuous. For any \\(v \\in H_{\\mathrm{per}}^{1}(\\Omega)\\), we have \\(F(v) \\in H_{\\mathrm{per}}^{\\frac{\\alpha}{2}}(\\Omega)\\) and",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.416,
+      0.482,
+      0.859,
+      0.501
+    ],
+    "angle": 0,
+    "content": "\\[\n\\| F (v) \\| _ {H ^ {\\frac {\\alpha}{2}}} \\lesssim \\| v \\| _ {H ^ {1}} ^ {2 \\sigma}. \\tag {3.0.23}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.116,
+      0.506,
+      0.863,
+      0.536
+    ],
+    "angle": 0,
+    "content": "Proof. From Lemma 2.1 in (Zhang & Wang, 2024), recalling that  \\( \\Omega \\)  is equipped with the periodic boundary condition, we have",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.189,
+      0.546,
+      0.86,
+      0.816
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} | F (v) | _ {H ^ {\\frac {\\alpha}{2}}} ^ {2} \\lesssim \\int_ {\\Omega} \\int_ {\\Omega} \\frac {| F (v (x + y)) - F (v (y)) | ^ {2}}{| x | ^ {1 + \\alpha}} \\mathrm{d} x \\mathrm{d} y \\\\ \\lesssim \\int_ {\\Omega} \\int_ {\\Omega} \\frac {| v (x + y) - v (y) | ^ {4 \\sigma}}{| x | ^ {1 + \\alpha}} \\mathrm{d} x \\mathrm{d} y \\quad (F \\text {is} 2 \\sigma - \\text {H\\\"{o} lder continuous}) \\\\ = \\int_ {\\Omega} \\int_ {\\Omega} \\frac {\\left| \\int_ {0} ^ {1} v ^ {\\prime} (y + \\theta x) x \\mathrm{d} \\theta \\right| ^ {4 \\sigma}}{| x | ^ {1 + \\alpha}} \\mathrm{d} x \\mathrm{d} y \\\\ \\leq \\int_ {\\Omega} \\int_ {\\Omega} \\int_ {0} ^ {1} \\left| v ^ {\\prime} (y + \\theta x) \\right| ^ {4 \\sigma} \\mathrm{d} \\theta \\frac {| x | ^ {4 \\sigma}}{| x | ^ {1 + \\alpha}} \\mathrm{d} x \\mathrm{d} y \\tag {3.0.24} \\\\ \\lesssim \\int_ {\\Omega} \\frac {| x | ^ {4 \\sigma}}{| x | ^ {1 + \\alpha}} \\mathrm{d} x \\int_ {\\Omega} \\int_ {0} ^ {1} | v ^ {\\prime} (y) | ^ {4 \\sigma} \\mathrm{d} \\theta \\mathrm{d} y \\quad \\text {(change integration order)} \\\\ = \\int_ {\\Omega} \\frac {| x | ^ {4 \\sigma}}{| x | ^ {1 + \\alpha}} \\mathrm{d} x \\| v ^ {\\prime} \\| _ {L ^ {4 \\sigma}} ^ {4 \\sigma} \\\\ \\lesssim \\int_ {\\Omega} \\frac {| x | ^ {4 \\sigma}}{| x | ^ {1 + \\alpha}} \\mathrm{d} x \\| v \\| _ {H ^ {1}} ^ {4 \\sigma} \\quad (\\sigma \\leq \\frac {1}{2}) \\\\ \\lesssim \\| v \\| _ {H ^ {1}} ^ {4 \\sigma} \\quad (\\sigma > \\frac {\\alpha}{4}, \\text {the integral} \\int_ {\\Omega} \\frac {| x | ^ {4 \\sigma}}{| x | ^ {1 + \\alpha}} \\mathrm{d} x \\text {converges}). \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.117,
+      0.825,
+      0.384,
+      0.84
+    ],
+    "angle": 0,
+    "content": "Thus, we have completed the proof.",
+    "merge_prev": false
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.484,
+      0.862,
+      0.495,
+      0.873
+    ],
+    "angle": 0,
+    "content": "7"
+  }
+]

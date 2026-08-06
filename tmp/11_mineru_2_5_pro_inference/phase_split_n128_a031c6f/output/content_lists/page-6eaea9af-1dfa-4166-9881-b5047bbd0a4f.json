@@ -1,0 +1,214 @@
+[
+  {
+    "type": "title",
+    "bbox": [
+      0.049,
+      0.013,
+      0.15,
+      0.033
+    ],
+    "angle": 0,
+    "content": "开始使用"
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.096,
+      0.06,
+      0.197,
+      0.08
+    ],
+    "angle": 0,
+    "content": "产品简介"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.095,
+      0.104,
+      0.197,
+      0.123
+    ],
+    "angle": 0,
+    "content": "快速上手",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.095,
+      0.146,
+      0.361,
+      0.166
+    ],
+    "angle": 0,
+    "content": "在编程工具中使用本文档",
+    "merge_prev": false
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.049,
+      0.22,
+      0.15,
+      0.24
+    ],
+    "angle": 0,
+    "content": "平台能力"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.095,
+      0.267,
+      0.197,
+      0.287
+    ],
+    "angle": 0,
+    "content": "语言模型",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.095,
+      0.31,
+      0.242,
+      0.33
+    ],
+    "angle": 0,
+    "content": "视觉语言模型",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.095,
+      0.353,
+      0.242,
+      0.373
+    ],
+    "angle": 0,
+    "content": "视频生成模型",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.095,
+      0.396,
+      0.197,
+      0.415
+    ],
+    "angle": 0,
+    "content": "生图模型",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.095,
+      0.439,
+      0.266,
+      0.458
+    ],
+    "angle": 0,
+    "content": "文本转语音模型",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.095,
+      0.482,
+      0.197,
+      0.501
+    ],
+    "angle": 0,
+    "content": "推理模型",
+    "merge_prev": false
+  },
+  {
+    "type": "title",
+    "bbox": [
+      0.049,
+      0.555,
+      0.15,
+      0.575
+    ],
+    "angle": 0,
+    "content": "功能特性"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.095,
+      0.603,
+      0.22,
+      0.622
+    ],
+    "angle": 0,
+    "content": "JSON 模式",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.095,
+      0.645,
+      0.197,
+      0.665
+    ],
+    "angle": 0,
+    "content": "前缀续写",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.095,
+      0.688,
+      0.197,
+      0.707
+    ],
+    "angle": 0,
+    "content": "FIM 补全",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.095,
+      0.731,
+      0.28,
+      0.752
+    ],
+    "angle": 0,
+    "content": "Function Calling",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.095,
+      0.774,
+      0.197,
+      0.793
+    ],
+    "angle": 0,
+    "content": "模型微调",
+    "merge_prev": false
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.095,
+      0.816,
+      0.197,
+      0.836
+    ],
+    "angle": 0,
+    "content": "批量推理",
+    "merge_prev": false
+  }
+]

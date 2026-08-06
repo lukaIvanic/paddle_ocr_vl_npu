@@ -1,0 +1,185 @@
+[
+  {
+    "type": "page_number",
+    "bbox": [
+      0.116,
+      0.063,
+      0.135,
+      0.075
+    ],
+    "angle": 0,
+    "content": "26"
+  },
+  {
+    "type": "header",
+    "bbox": [
+      0.377,
+      0.062,
+      0.616,
+      0.075
+    ],
+    "angle": 0,
+    "content": "S. GAUTAM AND M. T. MOHAN"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.09,
+      0.287,
+      0.106
+    ],
+    "angle": 0,
+    "content": "Let us now consider",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.155,
+      0.107,
+      0.844,
+      0.433
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\left| \\int_ {0} ^ {T} \\left\\langle \\mathrm{B} _ {n} \\left(\\boldsymbol {u} _ {n} (t)\\right), \\mathrm{P} _ {n} \\boldsymbol {v} (t) \\right\\rangle \\mathrm{d} t - \\int_ {0} ^ {T} \\left\\langle \\mathrm{B} (\\boldsymbol {u} (t)), \\boldsymbol {v} (t) \\right\\rangle \\mathrm{d} t \\right| \\\\ \\leq \\left| \\int_ {0} ^ {T} \\langle \\mathrm{B} (\\boldsymbol {u} _ {n} (t)), \\mathrm{P} _ {n} \\boldsymbol {v} (t) - \\boldsymbol {v} (t) \\rangle \\mathrm{d} t \\right| + \\left| \\int_ {0} ^ {T} \\langle \\mathrm{B} (\\boldsymbol {u} _ {n} (t)) - \\mathrm{B} (\\boldsymbol {u} (t)), \\boldsymbol {v} (t) - \\boldsymbol {\\psi} _ {\\varepsilon} (t) \\rangle \\mathrm{d} t \\right| \\\\ + \\left| \\int_ {0} ^ {T} \\langle \\mathrm{B} (\\boldsymbol {u} _ {n} (t)) - \\mathrm{B} (\\boldsymbol {u} (t)), \\boldsymbol {\\psi} _ {\\varepsilon} (t) \\rangle \\mathrm{d} t \\right| \\\\ \\leq \\| \\mathrm{P} _ {n} - \\mathrm{I} _ {d} \\| _ {\\mathcal {L} (\\mathbb {V})} \\left(\\int_ {0} ^ {T} \\| \\boldsymbol {u} _ {n} (t) \\| _ {\\mathbb {L} ^ {4}} ^ {\\frac {8}{d}} \\mathrm{d} t\\right) ^ {\\frac {d}{4}} \\left(\\int_ {0} ^ {T} \\| \\boldsymbol {v} (t) \\| _ {\\mathbb {V}} ^ {\\frac {4}{4 - d}} \\mathrm{d} t\\right) ^ {\\frac {4 - d}{4}} \\\\ + C \\left[ \\int_ {0} ^ {T} \\left(\\| \\boldsymbol {u} _ {n} (t) \\| _ {\\tilde {\\mathbb {L}} ^ {4}} ^ {\\frac {8}{d}} + \\| \\boldsymbol {u} (t) \\| _ {\\tilde {\\mathbb {L}} ^ {4}} ^ {\\frac {8}{d}}\\right) \\mathrm{d} t \\right] ^ {\\frac {d}{4}} \\left(\\int_ {0} ^ {T} \\| \\boldsymbol {v} (t) - \\boldsymbol {\\psi} _ {\\varepsilon} (t) \\| _ {\\mathbb {V}} ^ {\\frac {4}{4 - d}} \\mathrm{d} t\\right) ^ {\\frac {4 - d}{4}} \\\\ + \\left| \\int_ {0} ^ {T} \\langle \\mathrm{B} (\\boldsymbol {u} _ {n} (t)) - \\mathrm{B} (\\boldsymbol {u} (t)), \\boldsymbol {\\psi} _ {\\varepsilon} (t) \\rangle \\mathrm{d} t \\right| \\\\ \\leq C \\left[ \\int_ {0} ^ {T} \\left(\\| \\pmb {u} _ {n} (t) \\| _ {\\tilde {\\mathbb {L}} ^ {4}} ^ {\\frac {8}{d}} + \\| \\pmb {u} (t) \\| _ {\\tilde {\\mathbb {L}} ^ {4}} ^ {\\frac {8}{d}}\\right) \\mathrm{d} t \\right] ^ {\\frac {d}{4}} \\left(\\int_ {0} ^ {T} \\| \\pmb {v} (t) - \\pmb {\\psi} _ {\\varepsilon} (t) \\| _ {\\mathbb {V}} ^ {\\frac {4}{4 - d}} \\mathrm{d} t\\right) ^ {\\frac {4 - d}{4}} \\text {as} n \\to \\infty , \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.435,
+      0.832,
+      0.455
+    ],
+    "angle": 0,
+    "content": "Since an application of Ladyzheskaya's inequality and the energy estimate (3.6) yield",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.126,
+      0.46,
+      0.871,
+      0.508
+    ],
+    "angle": 0,
+    "content": "\\[\n\\int_ {0} ^ {T} \\| \\boldsymbol {u} _ {n} (t) \\| _ {\\widetilde {\\mathbb {L}} ^ {4}} ^ {\\frac {8}{d}} \\mathrm{d} t \\leq C \\sup _ {t \\in [ 0, T ]} \\| \\boldsymbol {u} _ {n} (t) \\| _ {\\mathbb {H}} ^ {\\frac {2 (4 - d)}{d}} \\int_ {0} ^ {T} \\| \\boldsymbol {u} _ {n} (t) \\| _ {\\mathbb {V}} ^ {2} \\mathrm{d} t \\leq \\left\\{\\| \\boldsymbol {u} _ {0} \\| _ {\\mathbb {H}} ^ {2} + \\frac {1}{\\mu} \\int_ {0} ^ {T} \\| \\boldsymbol {f} (t) \\| _ {\\mathbb {V} ^ {\\prime}} ^ {2} \\mathrm{d} t \\right\\} ^ {\\frac {4}{d}},\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.515,
+      0.178,
+      0.53
+    ],
+    "angle": 0,
+    "content": "so that",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.289,
+      0.535,
+      0.707,
+      0.621
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} \\left| \\int_ {0} ^ {T} \\left\\langle \\mathrm{B} _ {n} \\left(\\boldsymbol {u} _ {n} (t)\\right), \\mathrm{P} _ {n} \\boldsymbol {v} (t) \\right\\rangle \\mathrm{d} t - \\int_ {0} ^ {T} \\left\\langle \\mathrm{B} (\\boldsymbol {u} (t)), \\boldsymbol {v} (t) \\right\\rangle \\mathrm{d} t \\right| \\\\ \\leq C \\left\\{\\| \\boldsymbol {u} _ {0} \\| _ {\\mathbb {H}} ^ {2} + \\frac {1}{\\mu} \\int_ {0} ^ {T} \\| \\boldsymbol {f} (t) \\| _ {\\mathbb {V} ^ {\\prime}} ^ {2} \\mathrm{d} t \\right\\} \\varepsilon . \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.625,
+      0.452,
+      0.642
+    ],
+    "angle": 0,
+    "content": "Since \\(\\varepsilon > 0\\) is arbitrary, we deduce that",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.273,
+      0.648,
+      0.884,
+      0.69
+    ],
+    "angle": 0,
+    "content": "\\[\n\\lim _ {n \\to \\infty} \\int_ {0} ^ {T} \\langle \\mathrm{B} _ {n} (\\boldsymbol {u} _ {n} (t)), \\mathrm{P} _ {n} \\boldsymbol {v} (t) \\rangle \\mathrm{d} t = \\int_ {0} ^ {T} \\langle \\mathrm{B} (\\boldsymbol {u} (t)), \\boldsymbol {v} (t) \\rangle \\mathrm{d} t. \\tag {3.62}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.113,
+      0.695,
+      0.329,
+      0.714
+    ],
+    "angle": 0,
+    "content": "We know from (3.6) that",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.174,
+      0.72,
+      0.884,
+      0.761
+    ],
+    "angle": 0,
+    "content": "\\[\n\\int_ {0} ^ {T} \\| \\mathcal {C} _ {n} \\left(\\boldsymbol {u} _ {n} (t) \\right\\| _ {\\widetilde {\\mathbb {L}} ^ {\\frac {r + 1}{r}}} ^ {\\frac {r + 1}{r}} d t \\leq \\int_ {0} ^ {T} \\| \\boldsymbol {u} _ {n} (t) \\| _ {\\widetilde {\\mathbb {L}} ^ {r + 1}} ^ {r + 1} \\mathrm{d} t \\leq \\| \\boldsymbol {u} _ {0} \\| _ {\\mathbb {H}} ^ {2} + \\frac {1}{\\mu} \\int_ {0} ^ {T} \\| \\boldsymbol {f} (t) \\| _ {\\mathbb {V} ^ {\\prime}} ^ {2} \\mathrm{d} t. \\tag {3.63}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.766,
+      0.884,
+      0.803
+    ],
+    "angle": 0,
+    "content": "Therefore, by an application of the Banach-Alaoglu theorem yields the existence of a \\(\\pmb{\\xi} \\in \\mathrm{L}^{\\frac{r+1}{r}}(0, T; \\widetilde{\\mathbb{L}}^{\\frac{r+1}{r}})\\) such that",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.356,
+      0.81,
+      0.882,
+      0.833
+    ],
+    "angle": 0,
+    "content": "\\[\n\\mathcal {C} _ {n} \\left(\\boldsymbol {u} _ {n}\\right) \\xrightarrow {w} \\boldsymbol {\\xi} \\text {in} \\mathrm{L} ^ {\\frac {r + 1}{r}} (0, T; \\widetilde {\\mathbb {L}} ^ {\\frac {r + 1}{r}}). \\tag {3.64}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.112,
+      0.842,
+      0.871,
+      0.864
+    ],
+    "angle": 0,
+    "content": "Note that from (3.63), we have \\(\\{| \\boldsymbol{u}_n(t)|^{r-1} \\boldsymbol{u}_n(t)\\}_{n \\in \\mathbb{N}}, |\\boldsymbol{u}(t)|^{r-1} \\boldsymbol{u}(t) \\in \\mathrm{L}^{\\frac{r+1}{r}}((0, T) \\times \\Omega)\\) and",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.224,
+      0.87,
+      0.773,
+      0.916
+    ],
+    "angle": 0,
+    "content": "\\[\n\\| | \\boldsymbol {u} _ {n} (t) | ^ {r - 1} \\boldsymbol {u} _ {n} (t) \\| _ {\\mathrm{L} ^ {\\frac {r + 1}{r}} ((0, T) \\times \\Omega)} \\leq \\left(\\| \\boldsymbol {u} _ {0} \\| _ {\\mathbb {H}} ^ {2} + \\frac {1}{\\mu} \\int_ {0} ^ {T} \\| \\boldsymbol {f} (t) \\| _ {\\mathbb {V} ^ {\\prime}} ^ {2} \\mathrm{d} t\\right) ^ {\\frac {1}{r + 1}},\n\\]"
+  }
+]

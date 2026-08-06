@@ -1,0 +1,70 @@
+[
+  {
+    "type": "header",
+    "bbox": [
+      0.244,
+      0.089,
+      0.756,
+      0.104
+    ],
+    "angle": 0,
+    "content": "THE MULTILINEAR FRACTIONAL SPARSE OPERATOR THEORY ..."
+  },
+  {
+    "type": "page_number",
+    "bbox": [
+      0.848,
+      0.091,
+      0.867,
+      0.102
+    ],
+    "angle": 0,
+    "content": "43"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.13,
+      0.117,
+      0.869,
+      0.155
+    ],
+    "angle": 0,
+    "content": "Next we set \\(\\lambda_{Q}^{\\prime} := \\mu(Q)^{\\eta \\cdot \\gamma} \\langle \\sigma_{1} \\rangle_{Q}^{\\gamma} \\langle \\sigma_{2} \\rangle_{Q}^{\\gamma - 1} \\langle u \\rangle_{Q} \\sigma_{2}(Q)\\). To estimate \\(II\\), as shown above, it is straightforward to demonstrate",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.134,
+      0.174,
+      0.862,
+      0.527
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} II\\lesssim \\sum_{F_{1}\\in \\mathcal{F}_{1}}\\langle f_{1}\\rangle_{\\sigma_{1},F_{1}}\\sum_{\\substack{H\\in \\mathcal{H}\\\\ H\\subseteq F_{1}}}\\langle h\\rangle_{u,H}\\sum_{\\substack{F_{2}\\in \\mathcal{F}_{2}\\\\ F_{2}\\subseteq H}}\\langle f_{2}\\rangle_{\\sigma_{2},F_{2}}\\sum_{\\substack{Q\\in \\mathcal{S}\\\\ \\pi (Q) = (F_{1},F_{2},H)}}\\lambda^{\\prime}_{Q} \\\\ \\leq \\sum_{F_{1}\\in \\mathcal{F}_{1}}\\langle f_{1}\\rangle_{\\sigma_{1},F_{1}}\\sum_{\\substack{H\\in \\mathcal{H}\\\\ \\pi_{\\mathcal{F}_{1}}(H) = F_{1}}}\\langle h\\rangle_{u,H}\\bigg\\| \\sum_{\\substack{F_{2}\\in \\mathcal{F}_{2}\\\\ \\pi_{\\mathcal{H}}(F_{2}) = H}}\\sum_{\\substack{Q\\in \\mathcal{S}\\\\ \\pi (Q) = (F_{1},F_{2},H)}}\\frac{\\lambda_{Q}^{\\prime}}{\\sigma_{2}(Q)}\\chi_{Q}\\bigg\\|_{L^{(p_{2} / \\gamma)^{\\prime}}(\\sigma_{2})} \\\\ \\times \\left\\| \\sup_{\\substack{F_{2}^{\\prime}\\in \\mathcal{F}_{2}\\\\ \\pi_{\\mathcal{H}}(F_{2}^{\\prime}) = H}}\\langle f_{2}\\rangle_{\\sigma_{2},F_{2}^{\\prime}}\\chi_{F_{2}^{\\prime}}\\right\\|_{L^{p_{2} / \\gamma}(\\sigma_{2})} \\\\ \\leq \\Big(\\sum_{F_{1}\\in \\mathcal{F}_{1}}\\sum_{\\substack{H\\in \\mathcal{H}\\\\ \\pi_{\\mathcal{F}_{1}}(H) = F_{1}}}\\big(\\langle f_{1}\\rangle_{\\sigma_{1},F_{1}}\\langle h\\rangle_{u,H}\\big)^{(p_{2} / \\gamma)^{\\prime}}\\Big\\| \\sum_{\\substack{F_{2}\\in \\mathcal{F}_{2}\\\\ \\pi_{\\mathcal{H}}(F_{2}) = H}}\\sum_{\\substack{Q\\in \\mathcal{S}\\\\ \\pi (Q) = (F_{1},F_{2},H)}}\\frac{\\lambda^{\\prime}_{Q}}{\\sigma_{2}(Q)}\\chi_{Q}\\Big\\|_{L^{(p_{2} / \\gamma)^{\\prime}}(\\sigma_{2})}^{(p_{2} / \\gamma)^{\\prime}}\\Big)^{1 / (p_{2} / \\gamma)^{\\prime}} \\\\ \\times \\Big(\\sum_{F_{1}\\in \\mathcal{F}_{1}}\\sum_{\\substack{H\\in \\mathcal{H}\\\\ \\pi_{\\mathcal{F}_{1}}(H) = F_{1}}}\\sum_{\\substack{F_{2}^{\\prime}\\in \\mathcal{F}_{2}\\\\ \\pi_{\\mathcal{H}}(F_{2}^{\\prime}) = H}}(\\langle f_{2}\\rangle_{\\sigma_{2},F_{2}^{\\prime}})^{(p_{2} / \\gamma)}\\sigma_{2}(F_{2}^{\\prime})\\Big)^{1 / (p_{2} / \\gamma)} \\\\ \\leq \\Big(\\sum_{F_{1}\\in \\mathcal{F}_{1}}\\sum_{\\substack{H\\in \\mathcal{H}\\\\ \\pi_{\\mathcal{F}_{1}}(H) = F_{1}}}\\big(\\langle f_{1}\\rangle_{\\sigma_{1},F_{1}}\\langle h\\rangle_{u,H}\\big)^{(p_{2} / \\gamma)^{\\prime}}\\Big\\| \\sum_{\\substack{Q\\in \\mathcal{S}\\\\ \\pi_{\\mathcal{H}}(Q) = H}}\\frac{\\lambda^{\\prime}_{Q}}{\\sigma_{2}(Q)}\\chi_{Q}\\Big\\|_{L^{(p_{2} / \\gamma)^{\\prime}}(\\sigma_{2})}^{(p_{2} / \\gamma)^{\\prime}}\\Big)^{1 / (p_{2} / \\gamma)^{\\prime}}\\cdot \\| f_{2}\\|_{L^{p_{2} / \\gamma}(\\sigma_{2})}. \\\\ \\end{array}\n\\]"
+  },
+  {
+    "type": "text",
+    "bbox": [
+      0.131,
+      0.57,
+      0.492,
+      0.589
+    ],
+    "angle": 0,
+    "content": "Thus, it follows from (4.8) and (4.13) that",
+    "merge_prev": false
+  },
+  {
+    "type": "equation",
+    "bbox": [
+      0.149,
+      0.609,
+      0.849,
+      0.916
+    ],
+    "angle": 0,
+    "content": "\\[\n\\begin{array}{l} I I\\leq \\| u,\\vec{\\sigma}\\|_{A_{\\vec{p},q}^{\\star}}^{\\frac{\\gamma}{q}}\\Big(\\sum_{F_{1}\\in \\mathcal{F}_{1}}\\sum_{\\substack{H\\in \\mathcal{H}\\\\ \\pi_{\\mathcal{F}_{1}}(H) = F_{1}}}(\\langle f_{1}\\rangle_{\\sigma_{1},F_{1}}\\langle h\\rangle_{u,H})^{(p_{2} / \\gamma)'} \\\\ \\times \\sum_{\\substack{Q\\in \\mathcal{S}\\\\ \\pi_{\\mathcal{H}}(Q) = H}}\\left\\langle \\sigma_{1}\\right\\rangle_{Q}^{\\frac{\\gamma(\\frac{p_{2}}{\\gamma})^{\\prime}}{p_{1}}}\\left\\langle u\\right\\rangle_{Q}^{(\\frac{p_{2}}{\\gamma})^{\\prime}(1 - \\frac{\\gamma}{q})}\\mu (Q)^{1 + \\gamma \\cdot \\eta \\cdot (p_{2} / \\gamma)^{\\prime}}\\Bigg)^{1 / (p_{2} / \\gamma)^{\\prime}}\\cdot \\left\\| f_{2}\\right\\|_{L^{p_{2} / \\gamma}(\\sigma_{2})} \\\\ \\leq \\| u,\\vec{\\sigma}\\|_{A_{\\vec{p},q}^{\\star}}^{\\frac{\\gamma}{q}}\\Big(\\sum_{F_{1}\\in \\mathcal{F}_{1}}\\sum_{\\substack{H\\in \\mathcal{H}\\\\ \\pi_{\\mathcal{F}_{1}}(H) = F_{1}}}(\\langle f_{1}\\rangle_{\\sigma_{1},F_{1}}\\langle h\\rangle_{u,H})^{(p_{2} / \\gamma)'} \\\\ \\times \\Big(\\sum_{\\substack{Q\\in \\mathcal{S}\\\\ \\pi_{\\mathcal{H}}(Q) = H}}\\langle \\sigma_{1}\\rangle_{Q}\\mu (Q)\\Big)^{\\frac{\\gamma(\\frac{p_{2}}{\\gamma})^{\\prime}}{p_{1}}}\\Big(\\sum_{\\substack{Q\\in \\mathcal{S}\\\\ \\pi_{\\mathcal{H}}(Q) = H}}\\langle u\\rangle_{Q}\\mu (Q)\\Big)^{(\\frac{p_{2}}{\\gamma})^{\\prime}(1 - \\frac{\\gamma}{q})}\\Big)^{1 / (p_{2} / \\gamma)^{\\prime}}\\cdot \\| f_{2}\\|_{L^{p_{2} / \\gamma}(\\sigma_{2})} \\\\ \\leq \\| u,\\vec{\\sigma}\\|_{A_{\\vec{p},q}^{\\star}}^{\\frac{\\gamma}{q}}\\Big(\\sum_{F_{1}\\in \\mathcal{F}_{1}}(\\langle f_{1}\\rangle_{\\sigma_{1},F_{1}})^{p_{1} / \\gamma}\\sum_{\\substack{H\\in \\mathcal{H}\\\\ \\pi_{\\mathcal{F}_{1}}(H) = F_{1}}}\\sum_{\\substack{Q\\in \\mathcal{S}\\\\ \\pi_{\\mathcal{H}}(Q) = H}}\\langle \\sigma_{1}\\rangle_{Q}\\mu (Q)\\Big)^{\\frac{\\gamma}{p_{1}}} \\\\ \\end{array}\n\\]"
+  }
+]
