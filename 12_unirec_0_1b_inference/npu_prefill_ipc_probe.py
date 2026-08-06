@@ -44,6 +44,8 @@ def _producer(
     ready_s = time.perf_counter() - started
     tensors = cross_key + cross_value + self_key + self_value
     d2h_s = 0.0
+    packed_tensor = None
+    tensor_shapes = [list(tensor.shape) for tensor in tensors]
     if transport == "host":
         d2h_started = time.perf_counter()
         tensors = [tensor.cpu() for tensor in tensors]
@@ -52,12 +54,22 @@ def _producer(
         cross_value = tensors[6:12]
         self_key = tensors[12:18]
         self_value = tensors[18:24]
+    elif transport == "host_packed":
+        d2h_started = time.perf_counter()
+        packed_tensor = torch.cat([tensor.reshape(-1) for tensor in tensors]).cpu()
+        d2h_s = time.perf_counter() - d2h_started
+        cross_key = []
+        cross_value = []
+        self_key = []
+        self_value = []
     result_queue.put(
         {
             "cross_key": cross_key,
             "cross_value": cross_value,
             "self_key": self_key,
             "self_value": self_value,
+            "packed_tensor": packed_tensor,
+            "tensor_shapes": tensor_shapes,
             "producer_ready_s": ready_s,
             "producer_d2h_s": d2h_s,
             "transport": transport,
@@ -73,7 +85,11 @@ def _producer(
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--device", type=int, default=0)
-    parser.add_argument("--transport", choices=("npu_ipc", "host"), default="npu_ipc")
+    parser.add_argument(
+        "--transport",
+        choices=("npu_ipc", "host", "host_packed"),
+        default="npu_ipc",
+    )
     args = parser.parse_args()
 
     import torch
@@ -95,12 +111,25 @@ def main() -> None:
     torch.npu.synchronize()
     import_lag_s = time.perf_counter() - float(payload["sent_at"])
 
-    tensors = (
-        payload["cross_key"]
-        + payload["cross_value"]
-        + payload["self_key"]
-        + payload["self_value"]
-    )
+    if args.transport == "host_packed":
+        packed = payload["packed_tensor"]
+        tensors = []
+        cursor = 0
+        for shape in payload["tensor_shapes"]:
+            elements = 1
+            for dimension in shape:
+                elements *= int(dimension)
+            tensors.append(packed[cursor : cursor + elements].view(shape))
+            cursor += elements
+        if cursor != packed.numel():
+            raise RuntimeError(f"packed cursor mismatch: {cursor} != {packed.numel()}")
+    else:
+        tensors = (
+            payload["cross_key"]
+            + payload["cross_value"]
+            + payload["self_key"]
+            + payload["self_value"]
+        )
     expected_device = "npu" if args.transport == "npu_ipc" else "cpu"
     if any(t.device.type != expected_device for t in tensors):
         raise RuntimeError(
@@ -110,10 +139,10 @@ def main() -> None:
     for layer in range(6):
         checks.extend(
             (
-                float(payload["cross_key"][layer].flatten()[0].item()),
-                float(payload["cross_value"][layer].flatten()[0].item()),
-                float(payload["self_key"][layer].flatten()[0].item()),
-                float(payload["self_value"][layer].flatten()[0].item()),
+                float(tensors[layer].flatten()[0].item()),
+                float(tensors[6 + layer].flatten()[0].item()),
+                float(tensors[12 + layer].flatten()[0].item()),
+                float(tensors[18 + layer].flatten()[0].item()),
             )
         )
     expected = []
@@ -126,6 +155,16 @@ def main() -> None:
     copy_started = time.perf_counter()
     if args.transport == "host":
         local = [tensor.to("npu:0") for tensor in tensors]
+    elif args.transport == "host_packed":
+        local_packed = payload["packed_tensor"].to("npu:0")
+        local = []
+        cursor = 0
+        for shape in payload["tensor_shapes"]:
+            elements = 1
+            for dimension in shape:
+                elements *= int(dimension)
+            local.append(local_packed[cursor : cursor + elements].view(shape))
+            cursor += elements
     else:
         local = [torch.empty_like(t) for t in tensors]
         for target, source in zip(local, tensors):
