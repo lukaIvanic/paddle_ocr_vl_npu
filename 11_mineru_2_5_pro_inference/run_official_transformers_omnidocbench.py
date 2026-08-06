@@ -102,6 +102,22 @@ def parse_args() -> argparse.Namespace:
             "the page-at-a-time two_step_extract path."
         ),
     )
+    parser.add_argument(
+        "--layout-image-size",
+        type=int,
+        nargs=2,
+        default=(1036, 1036),
+        metavar=("W", "H"),
+        help="Square or rectangular image size used only for layout generation.",
+    )
+    parser.add_argument(
+        "--layout-only",
+        action="store_true",
+        help=(
+            "Run and save raw layout generations plus parsed layout blocks; "
+            "skip all crop recognition."
+        ),
+    )
     parser.add_argument("--resume", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--fail-fast", action="store_true")
     parser.add_argument("--hash-model-files", action="store_true")
@@ -280,6 +296,23 @@ def run_page_group(client: Any, images: list[Image.Image]) -> list[Any]:
     if len(images) == 1:
         return [client.two_step_extract(images[0])]
     return client.batch_two_step_extract(images)
+
+
+def run_layout_group(client: Any, images: list[Image.Image]) -> list[dict[str, Any]]:
+    """Run the same layout-generation path as MinerU while retaining raw text."""
+
+    layout_images = client.helper.batch_prepare_for_layout(client.executor, images)
+    prompt = client.prompts.get("[layout]") or client.prompts["[default]"]
+    params = client.sampling_params.get("[layout]") or client.sampling_params.get(
+        "[default]"
+    )
+    outputs = client._batch_predict(layout_images, prompt, params, None, False)
+    texts = [output.text for output in outputs]
+    blocks = client.helper.batch_parse_layout_output(client.executor, texts)
+    return [
+        {"raw_text": text, "blocks": page_blocks}
+        for text, page_blocks in zip(texts, blocks)
+    ]
 
 
 def reset_measurement_counters(
@@ -500,6 +533,8 @@ def main() -> None:
         raise ValueError("shard-index must be in [0, shard-count)")
     if args.batch_size < 0 or args.page_batch_size <= 0:
         raise ValueError("batch-size must be non-negative and page-batch-size must be positive")
+    if any(int(value) <= 0 for value in args.layout_image_size):
+        raise ValueError("layout-image-size values must be positive")
     if args.local_prepare_prefetch_depth < 0:
         raise ValueError("local-prepare-prefetch-depth must be non-negative")
     capture_sizes = [
@@ -665,6 +700,7 @@ def main() -> None:
             model=model,
             processor=processor,
             image_analysis=False,
+            layout_image_size=tuple(int(value) for value in args.layout_image_size),
             batch_size=args.batch_size,
             use_tqdm=False,
         )
@@ -824,6 +860,7 @@ def main() -> None:
                 backend="vllm-engine",
                 vllm_llm=model,
                 image_analysis=False,
+                layout_image_size=tuple(int(value) for value in args.layout_image_size),
                 batch_size=args.batch_size,
                 use_tqdm=False,
             )
@@ -845,6 +882,7 @@ def main() -> None:
                 backend="vllm-async-engine",
                 vllm_async_llm=model,
                 image_analysis=False,
+                layout_image_size=tuple(int(value) for value in args.layout_image_size),
                 batch_size=args.batch_size,
                 max_concurrency=args.vllm_max_num_seqs,
                 use_tqdm=False,
@@ -889,7 +927,10 @@ def main() -> None:
                     with Image.open(images_dir / image_name(sample)) as source:
                         warmup_images.append(source.convert("RGB"))
                 with torch.inference_mode():
-                    run_page_group(client, warmup_images)
+                    if args.layout_only:
+                        run_layout_group(client, warmup_images)
+                    else:
+                        run_page_group(client, warmup_images)
         finally:
             if local_vision_runtime is not None:
                 local_vision_runtime._compiled_for_bucket = vision_original
@@ -962,6 +1003,8 @@ def main() -> None:
         "image_analysis": False,
         "batch_size": args.batch_size,
         "page_batch_size": args.page_batch_size,
+        "layout_image_size": [int(value) for value in args.layout_image_size],
+        "layout_only": bool(args.layout_only),
         "local_compiled_cache_length": (
             args.local_compiled_cache_length
             if args.backend
@@ -1129,13 +1172,22 @@ def main() -> None:
                 with Image.open(images_dir / name) as source:
                     images.append(source.convert("RGB"))
             with torch.inference_mode():
-                results = run_page_group(client, images)
+                results = (
+                    run_layout_group(client, images)
+                    if args.layout_only
+                    else run_page_group(client, images)
+                )
             synchronize()
             group_elapsed_s = time.perf_counter() - group_started
             batch_times.append(group_elapsed_s)
-            for (shard_position, dataset_index, _), name, blocks in zip(group, names, results):
+            for (shard_position, dataset_index, _), name, result in zip(group, names, results):
                 stem = Path(name).stem
-                markdown = json2md(blocks)
+                if args.layout_only:
+                    blocks = result["blocks"]
+                    markdown = result["raw_text"]
+                else:
+                    blocks = result
+                    markdown = json2md(blocks)
                 rendered_blocks = json.dumps(list(blocks), ensure_ascii=False, indent=2) + "\n"
                 type_counts = dict(sorted(collections.Counter(block["type"] for block in blocks).items()))
                 record = {
