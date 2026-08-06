@@ -27,25 +27,25 @@ Validated dataset fingerprints:
 Clone the unmodified upstream evaluator and select the validated commit:
 
 ```sh
-git clone https://github.com/opendatalab/OmniDocBench.git /workspace/repos/OmniDocBench_eval
-git -C /workspace/repos/OmniDocBench_eval checkout 2b161d010d2e3aff77a0edef359ea3a6411d23cd
+git clone https://github.com/opendatalab/OmniDocBench.git OmniDocBench
+git -C OmniDocBench checkout 2b161d010d2e3aff77a0edef359ea3a6411d23cd
 ```
 
 Create a Python 3.10 environment and install the public evaluator. Its pinned
 `pyproject.toml` installs all Python packages from PyPI.
 
 ```sh
-python3.10 -m venv /workspace/venvs/omnidocbench_py310
-/workspace/venvs/omnidocbench_py310/bin/python -m pip install --upgrade pip
-/workspace/venvs/omnidocbench_py310/bin/python -m pip install \
-  --no-build-isolation /workspace/repos/OmniDocBench_eval
+python3.10 -m venv omnidocbench-venv
+omnidocbench-venv/bin/python -m pip install --upgrade pip
+omnidocbench-venv/bin/python -m pip install \
+  --no-build-isolation OmniDocBench
 ```
 
 Set two paths for the commands below:
 
 ```sh
-export OMNIDOCBENCH_EVALUATOR_ROOT=/workspace/repos/OmniDocBench_eval
-export OMNIDOCBENCH_EVAL_PYTHON=/workspace/venvs/omnidocbench_py310/bin/python
+export OMNIDOCBENCH_EVALUATOR_ROOT="$PWD/OmniDocBench"
+export OMNIDOCBENCH_EVAL_PYTHON="$PWD/omnidocbench-venv/bin/python"
 ```
 
 ## Run the full benchmark
@@ -67,15 +67,6 @@ send more pages or run another benchmark without restarting it.
 The script checks the dataset and evaluator before inference. A dataset mismatch
 prints a red warning and continues. An evaluator commit or source mismatch stops
 the run unless `--allow-evaluator-mismatch` is supplied.
-
-Expected 910B2 reference:
-
-- Throughput: approximately `1.951 pages/s`
-- Text-block Edit distance: approximately `0.0507`
-- Official text score: approximately `0.9493`
-- Display-formula Edit distance: approximately `0.0903`
-- Table Page-TEDS: approximately `0.9444`
-- TEDS timeouts/errors: `0`
 
 ## Optional formula CDM and Overall score
 
@@ -105,12 +96,6 @@ Ghostscript 9.55.0. When it is available, run:
   --evaluator-root "$OMNIDOCBENCH_EVALUATOR_ROOT" \
   --output-dir output/full_page_api_with_cdm
 ```
-
-Expected CDM reference:
-
-- Formula Page-CDM: approximately `0.9741`
-- Official Overall: approximately `95.5933%`
-- CDM timeouts/errors: `0`
 
 Small numerical differences across devices are normal. The official Overall is:
 
