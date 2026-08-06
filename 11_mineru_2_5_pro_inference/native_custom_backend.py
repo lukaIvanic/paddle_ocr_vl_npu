@@ -260,17 +260,7 @@ def make_local_fixed_batch_vlm_client(
                 padding=True,
                 return_tensors="pt",
             )
-            pinned_tensors = 0
-            for name, value in tuple(inputs.items()):
-                if not isinstance(value, torch.Tensor) or value.device.type != "cpu":
-                    continue
-                try:
-                    value = value.pin_memory()
-                except RuntimeError:
-                    pass
-                inputs[name] = value
-                pinned_tensors += int(value.is_pinned())
-            return inputs, float(time.perf_counter() - started), pinned_tensors
+            return inputs, float(time.perf_counter() - started)
 
         @staticmethod
         def _move_inputs(inputs, *, non_blocking: bool):
@@ -335,7 +325,7 @@ def make_local_fixed_batch_vlm_client(
             chat_prompt,
             sampling_param,
         ) -> PreparedGeneration:
-            inputs, _, _ = self._prepare_cpu_inputs(image, chat_prompt)
+            inputs, _ = self._prepare_cpu_inputs(image, chat_prompt)
             return self._finish_generation(inputs, sampling_param)
 
         def _prepare_prefetched_generation(
@@ -344,7 +334,7 @@ def make_local_fixed_batch_vlm_client(
             chat_prompt,
             sampling_param,
         ):
-            inputs, worker_s, pinned_tensors = self._prepare_cpu_inputs(
+            inputs, worker_s = self._prepare_cpu_inputs(
                 image,
                 chat_prompt,
             )
@@ -358,7 +348,6 @@ def make_local_fixed_batch_vlm_client(
                 request,
                 worker_s,
                 float(time.perf_counter() - h2d_started),
-                pinned_tensors,
             )
 
         def _decode_outputs(self, generated, metrics):
@@ -487,7 +476,6 @@ def make_local_fixed_batch_vlm_client(
             cpu_prepare_worker_s = 0.0
             cpu_prepare_wait_s = 0.0
             request_h2d_submit_s = 0.0
-            pinned_input_tensors = 0
             asynchronously_staged_requests = 0
             with ThreadPoolExecutor(
                 max_workers=1,
@@ -517,16 +505,12 @@ def make_local_fixed_batch_vlm_client(
                     nonlocal cpu_prepare_worker_s
                     nonlocal cpu_prepare_wait_s
                     nonlocal request_h2d_submit_s
-                    nonlocal pinned_input_tensors
                     nonlocal asynchronously_staged_requests
                     wait_started = time.perf_counter()
-                    request, worker_s, h2d_submit_s, pinned_tensors = (
-                        futures.pop(index).result()
-                    )
+                    request, worker_s, h2d_submit_s = futures.pop(index).result()
                     cpu_prepare_wait_s += time.perf_counter() - wait_started
                     cpu_prepare_worker_s += worker_s
                     request_h2d_submit_s += h2d_submit_s
-                    pinned_input_tensors += pinned_tensors
                     asynchronously_staged_requests += int(
                         request.h2d_ready_event is not None
                     )
@@ -543,7 +527,6 @@ def make_local_fixed_batch_vlm_client(
                     "cpu_prepare_worker_s": cpu_prepare_worker_s,
                     "cpu_prepare_wait_s": cpu_prepare_wait_s,
                     "request_h2d_submit_s": request_h2d_submit_s,
-                    "pinned_input_tensors": pinned_input_tensors,
                     "asynchronously_staged_requests": asynchronously_staged_requests,
                 }
             )
