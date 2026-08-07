@@ -116,9 +116,16 @@ def trim_blank_margin(image: Image.Image) -> tuple[Image.Image, tuple[int, int, 
 
     rgb = np.asarray(image.convert("RGB"))
     gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
-    foreground = gray < 247
-    ys, xs = np.nonzero(foreground)
-    if not len(xs):
+    foreground = gray < 235
+    row_has_content = np.count_nonzero(foreground, axis=1) >= max(
+        3, round(image.width * 0.001)
+    )
+    column_has_content = np.count_nonzero(foreground, axis=0) >= max(
+        3, round(image.height * 0.001)
+    )
+    ys = np.flatnonzero(row_has_content)
+    xs = np.flatnonzero(column_has_content)
+    if not len(xs) or not len(ys):
         return image, (0, 0, image.width, image.height)
     margin = max(2, round(min(image.size) * 0.01))
     left = max(0, int(xs.min()) - margin)
@@ -368,7 +375,7 @@ def row_edge_split(rgb: np.ndarray, text_binary: np.ndarray) -> SplitProposal:
     ]
     boundaries = _nms_boundaries(
         candidates,
-        max(3, round(char_height * 0.70)),
+        max(3, round(char_height * 1.25)),
         height,
     )
     return SplitProposal(
@@ -382,6 +389,44 @@ def row_edge_split(rgb: np.ndarray, text_binary: np.ndarray) -> SplitProposal:
             "width": width,
         },
     )
+
+
+def select_split(
+    ruled: SplitProposal,
+    whitespace: SplitProposal,
+    row_edge: SplitProposal,
+) -> SplitProposal:
+    """Select a natural-row proposal from image-only structural evidence."""
+
+    ruled_rows = len(ruled.boundaries) - 1
+    whitespace_rows = len(whitespace.boundaries) - 1
+    edge_rows = len(row_edge.boundaries) - 1
+    if whitespace_rows <= 1 and edge_rows >= max(4, ruled_rows * 2):
+        source = row_edge
+        reason = "colored_or_filled_rows"
+    elif ruled_rows >= 3 and whitespace_rows <= math.ceil(ruled_rows * 1.35):
+        source = ruled
+        reason = "consistent_explicit_rules"
+    elif whitespace_rows >= max(2, ruled_rows * 2):
+        source = whitespace
+        reason = "borderless_or_sparse_rules"
+    elif abs(edge_rows - whitespace_rows) <= max(2, round(whitespace_rows * 0.20)):
+        source = whitespace
+        reason = "edge_whitespace_agreement"
+    else:
+        source = whitespace if whitespace_rows >= ruled_rows else ruled
+        reason = "conservative_fallback"
+    diagnostics = dict(source.diagnostics)
+    diagnostics.update(
+        {
+            "selected_source": source.name,
+            "selection_reason": reason,
+            "ruled_rows": ruled_rows,
+            "whitespace_rows": whitespace_rows,
+            "row_edge_rows": edge_rows,
+        }
+    )
+    return SplitProposal("selected", source.boundaries, diagnostics)
 
 
 def hybrid_split(
@@ -507,6 +552,7 @@ def analyze(image: Image.Image) -> tuple[SplitProposal, ...]:
     whitespace = whitespace_split(text_binary, horizontal, vertical)
     row_edge = row_edge_split(rgb, text_binary)
     hybrid = hybrid_split(text_binary, horizontal, vertical, ruled)
+    selected = select_split(ruled, whitespace, row_edge)
     return tuple(
         _scale_proposal(
             proposal,
@@ -514,7 +560,7 @@ def analyze(image: Image.Image) -> tuple[SplitProposal, ...]:
             image.height,
             scale,
         )
-        for proposal in (ruled, whitespace, row_edge, hybrid)
+        for proposal in (ruled, whitespace, row_edge, hybrid, selected)
     )
 
 
@@ -523,6 +569,7 @@ COLORS = {
     "whitespace": (35, 110, 220),
     "row_edge": (170, 80, 190),
     "hybrid": (15, 150, 80),
+    "selected": (230, 125, 20),
 }
 
 
@@ -556,7 +603,7 @@ def fit_panel(image: Image.Image, width: int = 380, height: int = 320) -> Image.
 
 
 def sample_panel(record: dict, image: Image.Image, proposals: tuple[SplitProposal, ...]) -> Image.Image:
-    panel_width, panel_height, header = 340, 320, 48
+    panel_width, panel_height, header = 300, 320, 48
     result = Image.new(
         "RGB", (panel_width * (len(proposals) + 1), panel_height + header), "white"
     )
@@ -632,11 +679,12 @@ def main() -> None:
         panel.save(panels_dir / f"{name}.png")
         panels.append((name, panel))
 
-        hybrid = proposals[-1]
+        selected_proposal = proposals[-1]
         row_output = rows_dir / name
         row_output.mkdir(exist_ok=True)
         for row_index, (top, bottom) in enumerate(
-            zip(hybrid.boundaries, hybrid.boundaries[1:]), start=1
+            zip(selected_proposal.boundaries, selected_proposal.boundaries[1:]),
+            start=1,
         ):
             image.crop((0, top, image.width, bottom)).save(
                 row_output / f"row_{row_index:03d}_y{top}-{bottom}.png"
