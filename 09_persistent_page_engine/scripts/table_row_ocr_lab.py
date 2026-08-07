@@ -28,7 +28,13 @@ from paddleocr_vl.model.vision_prefill import parse_vision_buckets
 from paddleocr_vl.serving.engine import ContinuousRecognizer
 from paddleocr_vl.serving.types import RecognitionRequest
 from pipeline.layout_output import normalize_recognition_text
-from table_row_split_lab import analyze, load_crop, read_jsonl, trim_blank_margin
+from table_row_split_lab import (
+    SplitProposal,
+    analyze,
+    load_crop,
+    read_jsonl,
+    trim_blank_margin,
+)
 
 
 DEFAULT_REQUEST_IDS = (
@@ -40,6 +46,7 @@ DEFAULT_REQUEST_IDS = (
     "page_000290_table_box_id_1",   # complex multi-line
 )
 DEFAULT_STRATEGIES = ("ruled", "whitespace", "row_edge", "hybrid", "selected")
+SUPPORTED_STRATEGIES = DEFAULT_STRATEGIES + ("whole",)
 TR_PATTERN = re.compile(r"<tr\b[^>]*>.*?</tr\s*>", re.IGNORECASE | re.DOTALL)
 TD_PATTERN = re.compile(r"<td\b([^>]*)>", re.IGNORECASE)
 COLSPAN_PATTERN = re.compile(r"\bcolspan\s*=\s*['\"]?(\d+)", re.IGNORECASE)
@@ -68,6 +75,11 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--request-id", action="append", default=[])
+    parser.add_argument(
+        "--all-tables",
+        action="store_true",
+        help="Process every record in --table-records instead of the representative set.",
+    )
     parser.add_argument(
         "--strategies",
         default=",".join(DEFAULT_STRATEGIES),
@@ -265,14 +277,20 @@ def main() -> None:
     if args.decode_batch_size <= 0 or args.decode_batch_size & (args.decode_batch_size - 1):
         raise ValueError("--decode-batch-size must be a positive power of two")
     strategies = tuple(item.strip() for item in args.strategies.split(",") if item.strip())
-    unknown = set(strategies) - set(DEFAULT_STRATEGIES)
+    unknown = set(strategies) - set(SUPPORTED_STRATEGIES)
     if unknown:
         raise ValueError(f"unknown strategies: {sorted(unknown)}")
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
     records = read_jsonl(args.table_records)
     by_id = {record["request_id"]: record for record in records}
-    request_ids = tuple(args.request_id or DEFAULT_REQUEST_IDS)
+    if args.all_tables and args.request_id:
+        raise ValueError("--all-tables and --request-id are mutually exclusive")
+    request_ids = (
+        tuple(record["request_id"] for record in records)
+        if args.all_tables
+        else tuple(args.request_id or DEFAULT_REQUEST_IDS)
+    )
     selected = [by_id[request_id] for request_id in request_ids]
 
     import torch_npu  # noqa: F401
@@ -286,12 +304,24 @@ def main() -> None:
     recognizer = build_recognizer(args)
     setup_s = time.perf_counter() - setup_started
     output_records: list[dict[str, Any]] = []
+    records_path = args.output_dir / "row_ocr_records.jsonl"
+    records_path.write_text("", encoding="utf-8")
 
     for table_index, source in enumerate(selected, start=1):
         raw_image = load_crop(source, args.images_dir)
         image, trim_box = trim_blank_margin(raw_image)
         split_started = time.perf_counter()
-        proposals = {proposal.name: proposal for proposal in analyze(image)}
+        proposals = (
+            {proposal.name: proposal for proposal in analyze(image)}
+            if any(strategy != "whole" for strategy in strategies)
+            else {}
+        )
+        if "whole" in strategies:
+            proposals["whole"] = SplitProposal(
+                name="whole",
+                boundaries=(0, image.height),
+                diagnostics={"source": "whole_table_crop"},
+            )
         split_s = time.perf_counter() - split_started
 
         for strategy in strategies:
@@ -360,6 +390,8 @@ def main() -> None:
                 "rows": sorted(results, key=lambda item: item["row_index"]),
             }
             output_records.append(record)
+            with records_path.open("a", encoding="utf-8") as stream:
+                stream.write(json.dumps(_jsonable(record), ensure_ascii=False) + "\n")
             print(
                 f"table={table_index}/{len(selected)} strategy={strategy} "
                 f"rows={metrics['rows']} e2e_s={table_e2e_s:.3f} "
@@ -385,11 +417,6 @@ def main() -> None:
             "output_tokens_including_eos": sum(item["metrics"]["output_tokens_including_eos"] for item in items),
         }
 
-    records_path = args.output_dir / "row_ocr_records.jsonl"
-    records_path.write_text(
-        "".join(json.dumps(_jsonable(item), ensure_ascii=False) + "\n" for item in output_records),
-        encoding="utf-8",
-    )
     summary = {
         "configuration": {
             "decode_batch_size": args.decode_batch_size,
