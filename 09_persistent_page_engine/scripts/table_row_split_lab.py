@@ -345,6 +345,45 @@ def whitespace_split(
     )
 
 
+def row_edge_split(rgb: np.ndarray, text_binary: np.ndarray) -> SplitProposal:
+    """Detect boundaries that change color or intensity across much of a row."""
+
+    height, width = text_binary.shape
+    lab = cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB).astype(np.int16)
+    delta = np.mean(np.abs(np.diff(lab, axis=0)), axis=2)
+    coverage = np.mean(delta >= 6.0, axis=1).astype(np.float32)
+    char_height = _component_height(text_binary)
+    smooth_size = _odd(max(3, round(char_height * 0.20)))
+    smooth = cv2.GaussianBlur(coverage, (1, smooth_size), 0).reshape(-1)
+    positive = smooth[smooth > 0]
+    high = float(np.percentile(positive, 95)) if len(positive) else 0.0
+    threshold = max(0.06, min(0.45, high * 0.42))
+    candidates = [
+        (start + end) // 2 + 1
+        for start, end in _runs(smooth >= threshold)
+    ]
+    edge_margin = max(2, round(char_height * 1.2))
+    candidates = [
+        point for point in candidates if edge_margin < point < height - edge_margin
+    ]
+    boundaries = _nms_boundaries(
+        candidates,
+        max(3, round(char_height * 0.70)),
+        height,
+    )
+    return SplitProposal(
+        name="row_edge",
+        boundaries=boundaries,
+        diagnostics={
+            "character_height": char_height,
+            "coverage_threshold": threshold,
+            "edge_margin": edge_margin,
+            "interior_boundaries": max(0, len(boundaries) - 2),
+            "width": width,
+        },
+    )
+
+
 def hybrid_split(
     text_binary: np.ndarray,
     horizontal: np.ndarray,
@@ -448,7 +487,7 @@ def _scale_proposal(
     return SplitProposal(proposal.name, boundaries, diagnostics)
 
 
-def analyze(image: Image.Image) -> tuple[SplitProposal, SplitProposal, SplitProposal]:
+def analyze(image: Image.Image) -> tuple[SplitProposal, ...]:
     max_detection_dimension = 1800
     scale = min(1.0, max_detection_dimension / max(image.size))
     detection_image = (
@@ -466,6 +505,7 @@ def analyze(image: Image.Image) -> tuple[SplitProposal, SplitProposal, SplitProp
     horizontal, vertical = line_masks(binary)
     ruled = ruled_split(binary, horizontal)
     whitespace = whitespace_split(text_binary, horizontal, vertical)
+    row_edge = row_edge_split(rgb, text_binary)
     hybrid = hybrid_split(text_binary, horizontal, vertical, ruled)
     return tuple(
         _scale_proposal(
@@ -474,13 +514,14 @@ def analyze(image: Image.Image) -> tuple[SplitProposal, SplitProposal, SplitProp
             image.height,
             scale,
         )
-        for proposal in (ruled, whitespace, hybrid)
+        for proposal in (ruled, whitespace, row_edge, hybrid)
     )
 
 
 COLORS = {
     "ruled": (220, 40, 40),
     "whitespace": (35, 110, 220),
+    "row_edge": (170, 80, 190),
     "hybrid": (15, 150, 80),
 }
 
@@ -515,8 +556,10 @@ def fit_panel(image: Image.Image, width: int = 380, height: int = 320) -> Image.
 
 
 def sample_panel(record: dict, image: Image.Image, proposals: tuple[SplitProposal, ...]) -> Image.Image:
-    panel_width, panel_height, header = 380, 320, 48
-    result = Image.new("RGB", (panel_width * 4, panel_height + header), "white")
+    panel_width, panel_height, header = 340, 320, 48
+    result = Image.new(
+        "RGB", (panel_width * (len(proposals) + 1), panel_height + header), "white"
+    )
     draw = ImageDraw.Draw(result)
     gt_rows = len(re.findall(r"<tr\b", str(record.get("gt_html", "")), re.IGNORECASE))
     title = (
