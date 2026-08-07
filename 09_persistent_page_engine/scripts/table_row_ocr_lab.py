@@ -329,6 +329,11 @@ def main() -> None:
     }
 
     for table_index, source in enumerate(selected, start=1):
+        if all(
+            (source["request_id"], strategy) in completed
+            for strategy in strategies
+        ):
+            continue
         raw_image = load_crop(source, args.images_dir)
         image, trim_box = trim_blank_margin(raw_image)
         split_started = time.perf_counter()
