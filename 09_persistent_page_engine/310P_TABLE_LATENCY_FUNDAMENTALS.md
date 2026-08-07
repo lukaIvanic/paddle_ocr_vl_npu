@@ -135,7 +135,7 @@ $$
 | Ascend 310P3 | 283 tok/s | **150 tok/s** | 53% | **20.6 s** |
 | Ascend 910B2 | 2,218 tok/s | **750 tok/s** | 34% | **4.12 s** |
 
-Even the impossible 310P3 roof gives:
+Even the impossible 310P3 roof gives P99:
 
 $$
 \frac{3{,}091}{283} = 10.9\ \text{s}
