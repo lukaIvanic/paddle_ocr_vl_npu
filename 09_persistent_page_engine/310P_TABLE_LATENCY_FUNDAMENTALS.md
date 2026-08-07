@@ -13,10 +13,10 @@ The measured full-benchmark result was approximately:
 | Hardware | 1 × Ascend 310P3 |
 | HTTP concurrency | ×64 |
 | End-to-end throughput | **0.7 pages/s** |
-| Text-block Edit Distance | 5.07% |
-| Table Page-TEDS | 94.44% |
-| Formula Page-CDM | 97.41% |
-| Official Overall accuracy | **95.59%** |
+| Text-block Edit Distance | 94.9 |
+| Table Page-TEDS | 94.4 |
+| Formula Page-CDM | 97.4 |
+| Official Overall accuracy | **95.59** |
 
 Although **throughput** is 0.7 page/s, this does not mean latency per page is `<= 1 / 0.7 = 1.43` seconds.
 
