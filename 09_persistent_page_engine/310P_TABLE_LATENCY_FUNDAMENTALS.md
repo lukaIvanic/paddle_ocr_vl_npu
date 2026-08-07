@@ -73,7 +73,7 @@ If we want to minimize latency, we should use 1x concurrency. That way, multiple
 This means we want batch size 1 (B1) decoding.
 
 To understand limits of B1 decoding, we look at the following fact: for one output token, the NPU needs to load all model weights from HBM to L2 cache. So if we know our NPU memory bandwidth, and model size, we can get peak theoretical tok/s for B1 decoding.
-> **Note:** Why is memory-transfer the bottleneck? It is a simple matter of truth for all acceleration devices that at B1 compute is much faster than memory transfer, and is never in the critical path.
+> **Note:** Why is memory-transfer the bottleneck, and not matmul-compute? It is a simple matter of truth for all acceleration devices that at B1 compute is much faster than memory transfer, and is never in the critical path.
 
 The NPU hardware bandwidths are:
 
