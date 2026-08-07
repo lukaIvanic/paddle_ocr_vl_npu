@@ -1,0 +1,1835 @@
+Name,Input Shapes,Call Stack,Host Self Duration(us),Host Total Duration(us),Device Self Duration(us),Device Total Duration(us),Device Self Duration With AICore(us),Device Total Duration With AICore(us)
+paddleocr_vl.compiled_decode_profile,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(661): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",260.07,13027.49,0,138.0,0,0
+paddleocr_vl.compiled_decode_step,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(665): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",700.74,3852.73,0,34.1,0,0
+Event::record,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/profiler/profiler_interface.py(46): wrapper;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(259): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",441.86,497.48,0,0.02,0,0
+record_event,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/npu/streams.py(151): record;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/profiler/profiler_interface.py(47): wrapper;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(259): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",55.62,55.62,0.02,0.02,0,0
+cache_compiler inference,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(598): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",448.25,1193.94,0,0,0,0
+TorchNpuGraphBase::Run,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",115.56,745.69,0,0,0,0
+AssembleInputs,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",81.02,81.02,0,0,0,0
+AssembleOutputs,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",69.49,69.49,0,0,0,0
+ExecuteGraph,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",183.79,183.79,0,0,0,0
+RefreshAtTensorFromGeTensor,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",88.87,295.83,0,0,0,0
+aten::empty,";
+;
+;
+;
+;
+","/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",67.69,132.56,0,0,0,0
+empty_tensor,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",64.87,64.87,0,0,0,0
+aten::set_,"0;
+;
+;
+;
+","/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",74.4,74.4,0,0,0,0
+aten::select,"1,1,103424;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",38.75,67.73,0,0,0,0
+aten::as_strided,"1,1,103424;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",28.98,28.98,0,0,0,0
+aten::to,"1,103424;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",23.93,225.98,0,8.58,0,0
+aten::_to_copy,"1,103424;
+;
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",29.92,202.05,0,8.58,0,0
+aten::empty,";
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",20.1,49.68,0,0,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",29.58,29.58,0,0,0,0
+aten::copy_,"1,103424;
+1,103424;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",91.89,122.45,0,8.58,0,0
+aclnnInplaceCopy,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",30.56,30.56,8.58,8.58,0,0
+aten::argmax,"1,103424;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",35.5,204.4,0,15.2,0,0
+aten::empty,";
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",20.06,46.66,0,0,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",26.6,26.6,0,0,0,0
+aten::argmax,"1,103424;
+;
+;
+1,1","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",51.42,122.24,0,15.2,0,0
+aten::reshape,"1,103424;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",20.7,44.73,0,0,0,0
+aten::view,"1,103424;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",24.03,24.03,0,0,0,0
+aclnnArgMax,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",26.09,26.09,15.2,15.2,0,0
+Event::record,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/profiler/profiler_interface.py(46): wrapper;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(262): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",323.95,368.96,0,0.0,0,0
+record_event,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/npu/streams.py(151): record;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/profiler/profiler_interface.py(47): wrapper;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(262): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",45.01,45.01,0.0,0.0,0,0
+aten::view,"1;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(532): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",38.33,38.33,0,0,0,0
+aten::full_like,"1,1;
+;
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(534): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",33.76,145.38,0,1.64,0,0
+aten::empty_like,"1,1;
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(534): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",27.78,53.79,0,0,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(534): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",26.01,26.01,0,0,0,0
+aten::fill_,"1,1;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(534): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",32.85,57.83,0,1.64,0,0
+aclnnInplaceFillScalar,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(534): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",24.98,24.98,1.64,1.64,0,0
+aten::where,"1,1;
+1,1;
+1,1","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(531): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",39.47,97.0,0,2.02,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(531): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",20.89,20.89,0,0,0,0
+aclnnSWhere,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(531): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",36.64,36.64,2.02,2.02,0,0
+aten::add,"1;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(538): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",40.15,120.46,0,3.0,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(538): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",21.81,21.81,0,0,0,0
+aten::item,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(538): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",18.0,35.83,0,0,0,0
+aten::_local_scalar_dense,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(538): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",17.83,17.83,0,0,0,0
+aclnnAdds,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(538): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",22.67,22.67,3.0,3.0,0,0
+aten::zeros_like,"1;
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(539): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",23.77,112.65,0,1.86,0,0
+aten::empty_like,"1;
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(539): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",20.57,40.42,0,0,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(539): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",19.85,19.85,0,0,0,0
+aten::zero_,1,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(539): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",26.46,48.46,0,1.86,0,0
+aclnnInplaceZero,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(539): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",22.0,22.0,1.86,1.86,0,0
+aten::where,"1;
+1;
+1","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(536): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",37.18,79.68,0,1.78,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(536): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",20.56,20.56,0,0,0,0
+aclnnSWhere,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(536): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",21.94,21.94,1.78,1.78,0,0
+paddleocr_vl.compiled_decode_step,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(665): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",600.81,3081.12,0,34.660000000000004,0,0
+Event::record,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/profiler/profiler_interface.py(46): wrapper;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(259): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",301.92,340.28,0,0.02,0,0
+record_event,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/npu/streams.py(151): record;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/profiler/profiler_interface.py(47): wrapper;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(259): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",38.36,38.36,0.02,0.02,0,0
+cache_compiler inference,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(598): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",315.76,863.28,0,0,0,0
+TorchNpuGraphBase::Run,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",80.61,547.52,0,0,0,0
+AssembleInputs,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",61.86,61.86,0,0,0,0
+AssembleOutputs,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",55.91,55.91,0,0,0,0
+ExecuteGraph,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",119.93,119.93,0,0,0,0
+RefreshAtTensorFromGeTensor,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",59.79,229.21,0,0,0,0
+aten::empty,";
+;
+;
+;
+;
+","/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",52.56,115.51,0,0,0,0
+empty_tensor,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",62.95,62.95,0,0,0,0
+aten::set_,"0;
+;
+;
+;
+","/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",53.91,53.91,0,0,0,0
+aten::select,"1,1,103424;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",27.39,50.29,0,0,0,0
+aten::as_strided,"1,1,103424;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",22.9,22.9,0,0,0,0
+aten::to,"1,103424;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",22.59,159.14,0,8.22,0,0
+aten::_to_copy,"1,103424;
+;
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",23.55,136.55,0,8.22,0,0
+aten::empty,";
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",19.84,47.84,0,0,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",28.0,28.0,0,0,0,0
+aten::copy_,"1,103424;
+1,103424;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",35.78,65.16,0,8.22,0,0
+aclnnInplaceCopy,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",29.38,29.38,8.22,8.22,0,0
+aten::argmax,"1,103424;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",36.55,191.09,0,15.100000000000001,0,0
+aten::empty,";
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",19.5,43.87,0,0,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",24.37,24.37,0,0,0,0
+aten::argmax,"1,103424;
+;
+;
+1,1","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",39.25,110.67,0,15.100000000000001,0,0
+aten::reshape,"1,103424;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",18.11,38.21,0,0,0,0
+aten::view,"1,103424;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",20.1,20.1,0,0,0,0
+aclnnArgMax,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",33.21,33.21,15.100000000000001,15.100000000000001,0,0
+Event::record,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/profiler/profiler_interface.py(46): wrapper;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(262): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",317.53,353.24,0,0.02,0,0
+record_event,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/npu/streams.py(151): record;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/profiler/profiler_interface.py(47): wrapper;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(262): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",35.71,35.71,0.02,0.02,0,0
+aten::view,"1;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(532): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",29.03,29.03,0,0,0,0
+aten::full_like,"1,1;
+;
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(534): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",20.72,137.75,0,1.78,0,0
+aten::empty_like,"1,1;
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(534): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",32.3,59.86,0,0,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(534): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",27.56,27.56,0,0,0,0
+aten::fill_,"1,1;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(534): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",32.67,57.17,0,1.78,0,0
+aclnnInplaceFillScalar,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(534): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",24.5,24.5,1.78,1.78,0,0
+aten::where,"1,1;
+1,1;
+1,1","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(531): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",29.68,72.61,0,2.16,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(531): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",20.85,20.85,0,0,0,0
+aclnnSWhere,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(531): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",22.08,22.08,2.16,2.16,0,0
+aten::add,"1;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(538): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",33.49,111.61,0,3.4,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(538): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",20.78,20.78,0,0,0,0
+aten::item,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(538): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",16.32,35.94,0,0,0,0
+aten::_local_scalar_dense,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(538): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",19.62,19.62,0,0,0,0
+aclnnAdds,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(538): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",21.4,21.4,3.4,3.4,0,0
+aten::zeros_like,"1;
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(539): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",19.5,101.33,0,1.98,0,0
+aten::empty_like,"1;
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(539): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",19.72,39.0,0,0,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(539): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",19.28,19.28,0,0,0,0
+aten::zero_,1,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(539): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",21.95,42.83,0,1.98,0,0
+aclnnInplaceZero,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(539): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",20.88,20.88,1.98,1.98,0,0
+aten::where,"1;
+1;
+1","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(536): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",27.48,70.66,0,1.98,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(536): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",18.47,18.47,0,0,0,0
+aclnnSWhere,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(536): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",24.71,24.71,1.98,1.98,0,0
+paddleocr_vl.compiled_decode_step,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(665): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",491.11,2911.55,0,35.519999999999996,0,0
+Event::record,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/profiler/profiler_interface.py(46): wrapper;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(259): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",300.75,347.96,0,0.02,0,0
+record_event,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/npu/streams.py(151): record;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/profiler/profiler_interface.py(47): wrapper;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(259): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",47.21,47.21,0.02,0.02,0,0
+cache_compiler inference,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(598): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",304.07,826.73,0,0,0,0
+TorchNpuGraphBase::Run,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",77.67,522.66,0,0,0,0
+AssembleInputs,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",55.08,55.08,0,0,0,0
+AssembleOutputs,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",53.92,53.92,0,0,0,0
+ExecuteGraph,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",118.01,118.01,0,0,0,0
+RefreshAtTensorFromGeTensor,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",58.48,217.98,0,0,0,0
+aten::empty,";
+;
+;
+;
+;
+","/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",50.99,103.22,0,0,0,0
+empty_tensor,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",52.23,52.23,0,0,0,0
+aten::set_,"0;
+;
+;
+;
+","/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",56.28,56.28,0,0,0,0
+aten::select,"1,1,103424;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",27.87,52.09,0,0,0,0
+aten::as_strided,"1,1,103424;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",24.22,24.22,0,0,0,0
+aten::to,"1,103424;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",21.59,160.31,0,8.36,0,0
+aten::_to_copy,"1,103424;
+;
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",23.38,138.72,0,8.36,0,0
+aten::empty,";
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",19.5,49.06,0,0,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",29.56,29.56,0,0,0,0
+aten::copy_,"1,103424;
+1,103424;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",37.39,66.28,0,8.36,0,0
+aclnnInplaceCopy,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",28.89,28.89,8.36,8.36,0,0
+aten::argmax,"1,103424;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",25.14,178.31,0,15.42,0,0
+aten::empty,";
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",20.83,49.92,0,0,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",29.09,29.09,0,0,0,0
+aten::argmax,"1,103424;
+;
+;
+1,1","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",39.0,103.25,0,15.42,0,0
+aten::reshape,"1,103424;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",18.42,37.97,0,0,0,0
+aten::view,"1,103424;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",19.55,19.55,0,0,0,0
+aclnnArgMax,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",26.28,26.28,15.42,15.42,0,0
+Event::record,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/profiler/profiler_interface.py(46): wrapper;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(262): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",312.92,348.19,0,0.02,0,0
+record_event,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/npu/streams.py(151): record;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/profiler/profiler_interface.py(47): wrapper;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(262): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",35.27,35.27,0.02,0.02,0,0
+aten::view,"1;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(532): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",26.9,26.9,0,0,0,0
+aten::full_like,"1,1;
+;
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(534): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",21.49,124.45,0,1.76,0,0
+aten::empty_like,"1,1;
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(534): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",20.79,45.56,0,0,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(534): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",24.77,24.77,0,0,0,0
+aten::fill_,"1,1;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(534): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",33.81,57.4,0,1.76,0,0
+aclnnInplaceFillScalar,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(534): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",23.59,23.59,1.76,1.76,0,0
+aten::where,"1,1;
+1,1;
+1,1","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(531): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",30.74,73.91,0,2.54,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(531): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",21.59,21.59,0,0,0,0
+aclnnSWhere,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(531): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",21.58,21.58,2.54,2.54,0,0
+aten::add,"1;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(538): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",31.35,102.38,0,3.32,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(538): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",19.33,19.33,0,0,0,0
+aten::item,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(538): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",16.41,31.11,0,0,0,0
+aten::_local_scalar_dense,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(538): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",14.7,14.7,0,0,0,0
+aclnnAdds,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(538): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",20.59,20.59,3.32,3.32,0,0
+aten::zeros_like,"1;
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(539): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",24.78,106.55,0,1.92,0,0
+aten::empty_like,"1;
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(539): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",19.43,38.48,0,0,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(539): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",19.05,19.05,0,0,0,0
+aten::zero_,1,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(539): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",22.47,43.29,0,1.92,0,0
+aclnnInplaceZero,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(539): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",20.82,20.82,1.92,1.92,0,0
+aten::where,"1;
+1;
+1","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(536): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",26.7,72.66,0,2.16,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(536): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",18.48,18.48,0,0,0,0
+aclnnSWhere,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(536): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",27.48,27.48,2.16,2.16,0,0
+paddleocr_vl.compiled_decode_step,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(665): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",509.13,2922.02,0,33.72,0,0
+Event::record,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/profiler/profiler_interface.py(46): wrapper;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(259): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",314.92,352.01,0,0.02,0,0
+record_event,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/npu/streams.py(151): record;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/profiler/profiler_interface.py(47): wrapper;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(259): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",37.09,37.09,0.02,0.02,0,0
+cache_compiler inference,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(598): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",287.05,804.37,0,0,0,0
+TorchNpuGraphBase::Run,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",77.76,517.32,0,0,0,0
+AssembleInputs,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",61.86,61.86,0,0,0,0
+AssembleOutputs,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",54.62,54.62,0,0,0,0
+ExecuteGraph,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",108.85,108.85,0,0,0,0
+RefreshAtTensorFromGeTensor,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",57.68,214.23,0,0,0,0
+aten::empty,";
+;
+;
+;
+;
+","/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",51.98,104.29,0,0,0,0
+empty_tensor,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",52.31,52.31,0,0,0,0
+aten::set_,"0;
+;
+;
+;
+","/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/core/_backend.py(140): run;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py(43): wapper;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/ge/_ge_graph.py(803): run;
+<string>(231): kernel;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(299): compiled_fn;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_decode.py(994): forward;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(318): compiled_method;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py(599): __call__;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(502): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",52.26,52.26,0,0,0,0
+aten::select,"1,1,103424;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",27.46,51.24,0,0,0,0
+aten::as_strided,"1,1,103424;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",23.78,23.78,0,0,0,0
+aten::to,"1,103424;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",22.54,166.71,0,8.0,0,0
+aten::_to_copy,"1,103424;
+;
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",30.69,144.17,0,8.0,0,0
+aten::empty,";
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",20.73,49.03,0,0,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",28.3,28.3,0,0,0,0
+aten::copy_,"1,103424;
+1,103424;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",35.81,64.45,0,8.0,0,0
+aclnnInplaceCopy,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(509): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",28.64,28.64,8.0,8.0,0,0
+aten::argmax,"1,103424;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",25.06,179.33,0,15.16,0,0
+aten::empty,";
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",20.11,43.77,0,0,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",23.66,23.66,0,0,0,0
+aten::argmax,"1,103424;
+;
+;
+1,1","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",38.86,110.5,0,15.16,0,0
+aten::reshape,"1,103424;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",25.69,45.39,0,0,0,0
+aten::view,"1,103424;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",19.7,19.7,0,0,0,0
+aclnnArgMax,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(508): execute;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(260): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",26.25,26.25,15.16,15.16,0,0
+Event::record,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py(1209): __call__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/autograd/profiler.py(801): __enter__;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/profiler/profiler_interface.py(46): wrapper;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(262): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",312.49,347.55,0,0.02,0,0
+record_event,,"/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/npu/streams.py(151): record;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/profiler/profiler_interface.py(47): wrapper;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(262): _measure_enqueue;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(517): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",35.06,35.06,0.02,0.02,0,0
+aten::view,"1;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(532): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",26.22,26.22,0,0,0,0
+aten::full_like,"1,1;
+;
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(534): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",19.65,115.96,0,1.62,0,0
+aten::empty_like,"1,1;
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(534): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",20.2,45.21,0,0,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(534): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",25.01,25.01,0,0,0,0
+aten::fill_,"1,1;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(534): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",27.62,51.1,0,1.62,0,0
+aclnnInplaceFillScalar,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(534): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",23.48,23.48,1.62,1.62,0,0
+aten::where,"1,1;
+1,1;
+1,1","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(531): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",35.79,81.32,0,2.12,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(531): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",23.36,23.36,0,0,0,0
+aclnnSWhere,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(531): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",22.17,22.17,2.12,2.12,0,0
+aten::add,"1;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(538): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",31.85,112.87,0,2.98,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(538): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",21.1,21.1,0,0,0,0
+aten::item,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(538): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",15.81,30.53,0,0,0,0
+aten::_local_scalar_dense,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(538): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",14.72,14.72,0,0,0,0
+aclnnAdds,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(538): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",29.39,29.39,2.98,2.98,0,0
+aten::zeros_like,"1;
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(539): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",20.64,107.25,0,1.94,0,0
+aten::empty_like,"1;
+;
+;
+;
+;
+","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(539): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",19.36,42.39,0,0,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(539): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",23.03,23.03,0,0,0,0
+aten::zero_,1,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(539): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",22.69,44.22,0,1.94,0,0
+aclnnInplaceZero,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(539): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",21.53,21.53,1.94,1.94,0,0
+aten::where,"1;
+1;
+1","/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(536): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",28.05,68.06,0,1.86,0,0
+empty_tensor,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(536): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",18.63,18.63,0,0,0,0
+aclnnSWhere,,"/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/serving/continuous_decode.py(536): step;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(668): torch_profile;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1538): main;
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py(124): decorate_context;
+/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/text_decode_lab.py(1589): <module>",21.38,21.38,1.86,1.86,0,0
