@@ -1,0 +1,1173 @@
+{
+  "input_contract": {
+    "table_source": "OmniDocBench v1.6 ground-truth table boxes",
+    "splitter_inputs": "crop pixels only",
+    "ground_truth_structure_used_by_splitter": false
+  },
+  "samples": [
+    {
+      "request_id": "page_000647_table_4",
+      "page_name": "docstructbench_llm-raw-the-eye-o.O-Character%20Sheet%20-%20Form%20Fillable.pdf_2.jpg",
+      "bbox_xyxy": [
+        91,
+        84,
+        579,
+        322
+      ],
+      "crop_size": [
+        488,
+        238
+      ],
+      "output_tokens": 12,
+      "panel": "panels/01_page_000647_table_4.png",
+      "strategies": {
+        "ruled": {
+          "boundaries": [
+            0,
+            3,
+            226,
+            238
+          ],
+          "rows": 3,
+          "diagnostics": {
+            "line_threshold": 0.41117828607559204,
+            "character_height": 26.0,
+            "interior_boundaries": 2
+          }
+        },
+        "whitespace": {
+          "boundaries": [
+            0,
+            238
+          ],
+          "rows": 1,
+          "diagnostics": {
+            "character_height": 7.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 0
+          }
+        },
+        "hybrid": {
+          "boundaries": [
+            0,
+            226,
+            238
+          ],
+          "rows": 2,
+          "diagnostics": {
+            "mode": "ruled+whitespace",
+            "character_height": 7.0,
+            "line_boundaries": 2,
+            "whitespace_candidates": 0,
+            "rows": 2,
+            "width": 488
+          }
+        }
+      }
+    },
+    {
+      "request_id": "page_000683_table_8",
+      "page_name": "jiaocaineedrop_chem-354334.pdf_20.jpg",
+      "bbox_xyxy": [
+        166,
+        1790,
+        1534,
+        1945
+      ],
+      "crop_size": [
+        1368,
+        155
+      ],
+      "output_tokens": 44,
+      "panel": "panels/02_page_000683_table_8.png",
+      "strategies": {
+        "ruled": {
+          "boundaries": [
+            0,
+            7,
+            153,
+            155
+          ],
+          "rows": 3,
+          "diagnostics": {
+            "line_threshold": 0.3059644761085497,
+            "character_height": 2.0,
+            "interior_boundaries": 2
+          }
+        },
+        "whitespace": {
+          "boundaries": [
+            0,
+            46,
+            64,
+            96,
+            112,
+            144,
+            155
+          ],
+          "rows": 6,
+          "diagnostics": {
+            "character_height": 2.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 5
+          }
+        },
+        "hybrid": {
+          "boundaries": [
+            0,
+            7,
+            46,
+            64,
+            96,
+            112,
+            144,
+            155
+          ],
+          "rows": 7,
+          "diagnostics": {
+            "mode": "ruled+whitespace",
+            "character_height": 2.0,
+            "line_boundaries": 2,
+            "whitespace_candidates": 5,
+            "rows": 7,
+            "width": 1368
+          }
+        }
+      }
+    },
+    {
+      "request_id": "page_000673_table_1",
+      "page_name": "jiaocaineedrop_biz-96816.pdf_48.jpg",
+      "bbox_xyxy": [
+        166,
+        282,
+        1537,
+        543
+      ],
+      "crop_size": [
+        1371,
+        261
+      ],
+      "output_tokens": 94,
+      "panel": "panels/03_page_000673_table_1.png",
+      "strategies": {
+        "ruled": {
+          "boundaries": [
+            0,
+            3,
+            51,
+            161,
+            209,
+            256,
+            261
+          ],
+          "rows": 6,
+          "diagnostics": {
+            "line_threshold": 0.3308534002304077,
+            "character_height": 11.0,
+            "interior_boundaries": 5
+          }
+        },
+        "whitespace": {
+          "boundaries": [
+            0,
+            53,
+            161,
+            211,
+            261
+          ],
+          "rows": 4,
+          "diagnostics": {
+            "character_height": 11.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 3
+          }
+        },
+        "hybrid": {
+          "boundaries": [
+            0,
+            51,
+            161,
+            209,
+            261
+          ],
+          "rows": 4,
+          "diagnostics": {
+            "mode": "ruled+whitespace",
+            "character_height": 11.0,
+            "line_boundaries": 5,
+            "whitespace_candidates": 3,
+            "rows": 4,
+            "width": 1371
+          }
+        }
+      }
+    },
+    {
+      "request_id": "page_001172_table_16",
+      "page_name": "yanbaopptmerge_0c79d327060dbf9f1582d03c235dadb039533a19091d2c0d24f2ad95d267f79b.pdf_2.jpg",
+      "bbox_xyxy": [
+        96,
+        585,
+        1559,
+        927
+      ],
+      "crop_size": [
+        1463,
+        342
+      ],
+      "output_tokens": 212,
+      "panel": "panels/04_page_001172_table_16.png",
+      "strategies": {
+        "ruled": {
+          "boundaries": [
+            0,
+            4,
+            38,
+            81,
+            123,
+            165,
+            207,
+            254,
+            296,
+            338,
+            342
+          ],
+          "rows": 10,
+          "diagnostics": {
+            "line_threshold": 0.3339000000000007,
+            "character_height": 13.0,
+            "interior_boundaries": 9
+          }
+        },
+        "whitespace": {
+          "boundaries": [
+            0,
+            43,
+            82,
+            159,
+            256,
+            297,
+            342
+          ],
+          "rows": 6,
+          "diagnostics": {
+            "character_height": 3.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 5
+          }
+        },
+        "hybrid": {
+          "boundaries": [
+            0,
+            4,
+            38,
+            43,
+            81,
+            123,
+            159,
+            165,
+            207,
+            254,
+            296,
+            338,
+            342
+          ],
+          "rows": 12,
+          "diagnostics": {
+            "mode": "ruled+whitespace",
+            "character_height": 3.0,
+            "line_boundaries": 9,
+            "whitespace_candidates": 5,
+            "rows": 12,
+            "width": 1463
+          }
+        }
+      }
+    },
+    {
+      "request_id": "page_001149_table_0",
+      "page_name": "eastmoney_c683eb2923c442ad9fd8c1f25abb7b1b35b359611d5b8a07d1eede7a81983769.pdf_21.jpg",
+      "bbox_xyxy": [
+        98,
+        856,
+        1551,
+        1495
+      ],
+      "crop_size": [
+        1453,
+        639
+      ],
+      "output_tokens": 314,
+      "panel": "panels/05_page_001149_table_0.png",
+      "strategies": {
+        "ruled": {
+          "boundaries": [
+            0,
+            1,
+            47,
+            95,
+            142,
+            189,
+            236,
+            283,
+            331,
+            378,
+            639
+          ],
+          "rows": 10,
+          "diagnostics": {
+            "line_threshold": 0.27922918796539303,
+            "character_height": 15.0,
+            "interior_boundaries": 9
+          }
+        },
+        "whitespace": {
+          "boundaries": [
+            0,
+            46,
+            94,
+            147,
+            188,
+            235,
+            279,
+            329,
+            376,
+            422,
+            466,
+            510,
+            552,
+            597,
+            639
+          ],
+          "rows": 14,
+          "diagnostics": {
+            "character_height": 14.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 13
+          }
+        },
+        "hybrid": {
+          "boundaries": [
+            0,
+            47,
+            95,
+            142,
+            189,
+            236,
+            283,
+            331,
+            378,
+            422,
+            466,
+            510,
+            552,
+            597,
+            639
+          ],
+          "rows": 14,
+          "diagnostics": {
+            "mode": "ruled+whitespace",
+            "character_height": 14.0,
+            "line_boundaries": 9,
+            "whitespace_candidates": 13,
+            "rows": 14,
+            "width": 1453
+          }
+        }
+      }
+    },
+    {
+      "request_id": "page_000635_table_0",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-s00128-010-0006-0.pdf_5.jpg",
+      "bbox_xyxy": [
+        140,
+        196,
+        1518,
+        624
+      ],
+      "crop_size": [
+        1378,
+        428
+      ],
+      "output_tokens": 452,
+      "panel": "panels/06_page_000635_table_0.png",
+      "strategies": {
+        "ruled": {
+          "boundaries": [
+            0,
+            6,
+            52,
+            423,
+            428
+          ],
+          "rows": 4,
+          "diagnostics": {
+            "line_threshold": 0.2015999999999957,
+            "character_height": 16.0,
+            "interior_boundaries": 3
+          }
+        },
+        "whitespace": {
+          "boundaries": [
+            0,
+            55,
+            94,
+            132,
+            168,
+            204,
+            241,
+            274,
+            309,
+            344,
+            381,
+            428
+          ],
+          "rows": 11,
+          "diagnostics": {
+            "character_height": 16.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 10
+          }
+        },
+        "hybrid": {
+          "boundaries": [
+            0,
+            52,
+            94,
+            132,
+            168,
+            204,
+            241,
+            274,
+            309,
+            344,
+            381,
+            428
+          ],
+          "rows": 11,
+          "diagnostics": {
+            "mode": "ruled+whitespace",
+            "character_height": 16.0,
+            "line_boundaries": 3,
+            "whitespace_candidates": 10,
+            "rows": 11,
+            "width": 1378
+          }
+        }
+      }
+    },
+    {
+      "request_id": "page_000630_table_2",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-hup.777.pdf_8.jpg",
+      "bbox_xyxy": [
+        194,
+        1076,
+        1430,
+        1728
+      ],
+      "crop_size": [
+        1236,
+        652
+      ],
+      "output_tokens": 739,
+      "panel": "panels/07_page_000630_table_2.png",
+      "strategies": {
+        "ruled": {
+          "boundaries": [
+            0,
+            4,
+            49,
+            103,
+            648,
+            652
+          ],
+          "rows": 5,
+          "diagnostics": {
+            "line_threshold": 0.105,
+            "character_height": 13.0,
+            "interior_boundaries": 4
+          }
+        },
+        "whitespace": {
+          "boundaries": [
+            0,
+            54,
+            104,
+            140,
+            165,
+            190,
+            215,
+            240,
+            265,
+            290,
+            314,
+            340,
+            389,
+            414,
+            440,
+            463,
+            489,
+            514,
+            538,
+            564,
+            614,
+            652
+          ],
+          "rows": 21,
+          "diagnostics": {
+            "character_height": 13.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 20
+          }
+        },
+        "hybrid": {
+          "boundaries": [
+            0,
+            49,
+            103,
+            140,
+            165,
+            190,
+            215,
+            240,
+            265,
+            290,
+            314,
+            340,
+            389,
+            414,
+            440,
+            463,
+            489,
+            514,
+            538,
+            564,
+            614,
+            652
+          ],
+          "rows": 21,
+          "diagnostics": {
+            "mode": "ruled+whitespace",
+            "character_height": 13.0,
+            "line_boundaries": 4,
+            "whitespace_candidates": 20,
+            "rows": 21,
+            "width": 1236
+          }
+        }
+      }
+    },
+    {
+      "request_id": "page_001272_table_1",
+      "page_name": "yanbaor2_1492d25d79af850815ea449254ea62418c3c7fd582792b5191e1879671ba1219.pdf_88.jpg",
+      "bbox_xyxy": [
+        364,
+        266,
+        1495,
+        2050
+      ],
+      "crop_size": [
+        1131,
+        1784
+      ],
+      "output_tokens": 952,
+      "panel": "panels/08_page_001272_table_1.png",
+      "strategies": {
+        "ruled": {
+          "boundaries": [
+            0,
+            3,
+            66,
+            130,
+            195,
+            260,
+            324,
+            389,
+            454,
+            518,
+            583,
+            648,
+            712,
+            777,
+            842,
+            906,
+            971,
+            1036,
+            1100,
+            1165,
+            1230,
+            1294,
+            1359,
+            1424,
+            1488,
+            1553,
+            1617,
+            1682,
+            1729,
+            1784
+          ],
+          "rows": 29,
+          "diagnostics": {
+            "line_threshold": 0.21,
+            "character_height": 12.0,
+            "interior_boundaries": 28
+          }
+        },
+        "whitespace": {
+          "boundaries": [
+            0,
+            390,
+            454,
+            584,
+            648,
+            715,
+            777,
+            841,
+            972,
+            1036,
+            1166,
+            1230,
+            1294,
+            1361,
+            1374,
+            1423,
+            1488,
+            1537,
+            1550,
+            1601,
+            1616,
+            1666,
+            1687,
+            1732,
+            1784
+          ],
+          "rows": 24,
+          "diagnostics": {
+            "character_height": 12.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 23
+          }
+        },
+        "hybrid": {
+          "boundaries": [
+            0,
+            66,
+            130,
+            195,
+            260,
+            324,
+            389,
+            454,
+            518,
+            583,
+            648,
+            712,
+            777,
+            842,
+            906,
+            971,
+            1036,
+            1100,
+            1165,
+            1230,
+            1294,
+            1359,
+            1424,
+            1488,
+            1537,
+            1553,
+            1601,
+            1617,
+            1666,
+            1682,
+            1729,
+            1784
+          ],
+          "rows": 31,
+          "diagnostics": {
+            "mode": "ruled+whitespace",
+            "character_height": 12.0,
+            "line_boundaries": 28,
+            "whitespace_candidates": 23,
+            "rows": 31,
+            "width": 1131
+          }
+        }
+      }
+    },
+    {
+      "request_id": "page_000496_table_4",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-s00374-006-0103-8.pdf_11.jpg",
+      "bbox_xyxy": [
+        133,
+        139,
+        1521,
+        1287
+      ],
+      "crop_size": [
+        1388,
+        1148
+      ],
+      "output_tokens": 1497,
+      "panel": "panels/09_page_000496_table_4.png",
+      "strategies": {
+        "ruled": {
+          "boundaries": [
+            0,
+            3,
+            42,
+            88,
+            1142,
+            1148
+          ],
+          "rows": 5,
+          "diagnostics": {
+            "line_threshold": 0.1,
+            "character_height": 17.0,
+            "interior_boundaries": 4
+          }
+        },
+        "whitespace": {
+          "boundaries": [
+            0,
+            44,
+            90,
+            134,
+            167,
+            199,
+            231,
+            264,
+            297,
+            329,
+            361,
+            395,
+            426,
+            459,
+            490,
+            523,
+            555,
+            588,
+            620,
+            652,
+            685,
+            717,
+            749,
+            782,
+            814,
+            846,
+            879,
+            911,
+            944,
+            976,
+            1008,
+            1042,
+            1073,
+            1106,
+            1148
+          ],
+          "rows": 34,
+          "diagnostics": {
+            "character_height": 17.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 33
+          }
+        },
+        "hybrid": {
+          "boundaries": [
+            0,
+            42,
+            88,
+            134,
+            167,
+            199,
+            231,
+            264,
+            297,
+            329,
+            361,
+            395,
+            426,
+            459,
+            490,
+            523,
+            555,
+            588,
+            620,
+            652,
+            685,
+            717,
+            749,
+            782,
+            814,
+            846,
+            879,
+            911,
+            944,
+            976,
+            1008,
+            1042,
+            1073,
+            1106,
+            1148
+          ],
+          "rows": 34,
+          "diagnostics": {
+            "mode": "ruled+whitespace",
+            "character_height": 17.0,
+            "line_boundaries": 4,
+            "whitespace_candidates": 33,
+            "rows": 34,
+            "width": 1388
+          }
+        }
+      }
+    },
+    {
+      "request_id": "page_001595_table_box_id_1",
+      "page_name": "magazine_TheEconomist.2024.02.24_page_076.png",
+      "bbox_xyxy": [
+        264,
+        584,
+        4285,
+        3696
+      ],
+      "crop_size": [
+        4021,
+        3112
+      ],
+      "output_tokens": 2682,
+      "panel": "panels/10_page_001595_table_box_id_1.png",
+      "strategies": {
+        "ruled": {
+          "boundaries": [
+            0,
+            244,
+            576,
+            1174,
+            1706,
+            2439,
+            2836,
+            3104,
+            3112
+          ],
+          "rows": 8,
+          "diagnostics": {
+            "line_threshold": 0.1,
+            "character_height": 30.0,
+            "interior_boundaries": 7
+          }
+        },
+        "whitespace": {
+          "boundaries": [
+            0,
+            573,
+            1176,
+            2440,
+            3112
+          ],
+          "rows": 4,
+          "diagnostics": {
+            "character_height": 30.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 3
+          }
+        },
+        "hybrid": {
+          "boundaries": [
+            0,
+            244,
+            576,
+            1174,
+            1706,
+            2439,
+            2836,
+            3112
+          ],
+          "rows": 7,
+          "diagnostics": {
+            "mode": "ruled+whitespace",
+            "character_height": 30.0,
+            "line_boundaries": 7,
+            "whitespace_candidates": 3,
+            "rows": 7,
+            "width": 4021
+          }
+        }
+      }
+    },
+    {
+      "request_id": "page_000282_table_box_id_1",
+      "page_name": "page-9f6bc620-1983-4503-bb0f-f9c7949ccb77.png",
+      "bbox_xyxy": [
+        151,
+        222,
+        1497,
+        1529
+      ],
+      "crop_size": [
+        1346,
+        1307
+      ],
+      "output_tokens": 3092,
+      "panel": "panels/11_page_000282_table_box_id_1.png",
+      "strategies": {
+        "ruled": {
+          "boundaries": [
+            0,
+            9,
+            41,
+            74,
+            1268,
+            1301,
+            1307
+          ],
+          "rows": 6,
+          "diagnostics": {
+            "line_threshold": 0.1,
+            "character_height": 15.0,
+            "interior_boundaries": 5
+          }
+        },
+        "whitespace": {
+          "boundaries": [
+            0,
+            74,
+            108,
+            141,
+            174,
+            207,
+            240,
+            274,
+            307,
+            340,
+            373,
+            406,
+            439,
+            472,
+            506,
+            539,
+            572,
+            605,
+            638,
+            671,
+            705,
+            738,
+            771,
+            804,
+            837,
+            870,
+            904,
+            937,
+            970,
+            1003,
+            1036,
+            1069,
+            1102,
+            1136,
+            1169,
+            1202,
+            1235,
+            1268,
+            1307
+          ],
+          "rows": 38,
+          "diagnostics": {
+            "character_height": 15.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 37
+          }
+        },
+        "hybrid": {
+          "boundaries": [
+            0,
+            41,
+            74,
+            108,
+            141,
+            174,
+            207,
+            240,
+            274,
+            307,
+            340,
+            373,
+            406,
+            439,
+            472,
+            506,
+            539,
+            572,
+            605,
+            638,
+            671,
+            705,
+            738,
+            771,
+            804,
+            837,
+            870,
+            904,
+            937,
+            970,
+            1003,
+            1036,
+            1069,
+            1102,
+            1136,
+            1169,
+            1202,
+            1235,
+            1268,
+            1307
+          ],
+          "rows": 39,
+          "diagnostics": {
+            "mode": "ruled+whitespace",
+            "character_height": 15.0,
+            "line_boundaries": 5,
+            "whitespace_candidates": 37,
+            "rows": 39,
+            "width": 1346
+          }
+        }
+      }
+    },
+    {
+      "request_id": "page_000290_table_box_id_1",
+      "page_name": "page-38fc7c6b-80ed-46be-bb53-29986a63ad3e.png",
+      "bbox_xyxy": [
+        118,
+        167,
+        1521,
+        2018
+      ],
+      "crop_size": [
+        1403,
+        1851
+      ],
+      "output_tokens": 3112,
+      "panel": "panels/12_page_000290_table_box_id_1.png",
+      "strategies": {
+        "ruled": {
+          "boundaries": [
+            0,
+            8,
+            55,
+            95,
+            1847,
+            1851
+          ],
+          "rows": 5,
+          "diagnostics": {
+            "line_threshold": 0.1,
+            "character_height": 14.0,
+            "interior_boundaries": 4
+          }
+        },
+        "whitespace": {
+          "boundaries": [
+            0,
+            47,
+            93,
+            126,
+            151,
+            176,
+            200,
+            375,
+            400,
+            425,
+            450,
+            524,
+            549,
+            574,
+            599,
+            675,
+            698,
+            798,
+            824,
+            847,
+            897,
+            924,
+            947,
+            998,
+            1020,
+            1096,
+            1122,
+            1209,
+            1296,
+            1396,
+            1422,
+            1444,
+            1671,
+            1694,
+            1721,
+            1743,
+            1851
+          ],
+          "rows": 36,
+          "diagnostics": {
+            "character_height": 14.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 35
+          }
+        },
+        "hybrid": {
+          "boundaries": [
+            0,
+            55,
+            95,
+            126,
+            151,
+            176,
+            200,
+            375,
+            400,
+            425,
+            450,
+            524,
+            549,
+            574,
+            599,
+            675,
+            698,
+            798,
+            824,
+            847,
+            897,
+            924,
+            947,
+            998,
+            1020,
+            1096,
+            1122,
+            1209,
+            1296,
+            1396,
+            1422,
+            1444,
+            1671,
+            1694,
+            1721,
+            1743,
+            1851
+          ],
+          "rows": 36,
+          "diagnostics": {
+            "mode": "ruled+whitespace",
+            "character_height": 14.0,
+            "line_boundaries": 4,
+            "whitespace_candidates": 35,
+            "rows": 36,
+            "width": 1403
+          }
+        }
+      }
+    }
+  ],
+  "contact_sheets": [
+    "contact_sheet_01.png",
+    "contact_sheet_02.png",
+    "contact_sheet_03.png"
+  ]
+}
