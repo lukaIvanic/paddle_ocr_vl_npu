@@ -1897,7 +1897,7 @@ class OptimizedUniRecRunner:
     ) -> tuple[nn.Module, dict[str, Any]]:
         if mask_mode not in ("per_step", "persistent"):
             raise ValueError(f"Unsupported decode mask mode: {mask_mode}")
-        if graph_mode not in ("ge", "acl"):
+        if graph_mode not in ("ge", "acl", "npugraph"):
             raise ValueError(f"Unsupported decode graph mode: {graph_mode}")
         if prefetch_mode not in LOCAL_UNIREC_PREFETCH_MODES:
             raise ValueError(f"Unsupported decode prefetch mode: {prefetch_mode}")
@@ -1923,6 +1923,29 @@ class OptimizedUniRecRunner:
                 self_attention_backend=self_attention_backend,
                 prefetch_mode=prefetch_mode,
             )
+        if graph_mode == "npugraph":
+            # Direct torch.npu.NPUGraph capture/replay: no torch.compile, no
+            # torchair, no GE. The caller captures the eager module once over
+            # static buffers and replays the recorded task stream per step.
+            compile_meta = {
+                "compile_api": "torch.npu.NPUGraph",
+                "backend": "npugraph",
+                "graph_mode": "npugraph",
+                "fullgraph": True,
+                "dynamic": False,
+                "torchair_ge_cache": False,
+                "torchair_cache_dir": None,
+                "mask_mode": mask_mode,
+                "qkv_fused": bool(self.qkv_fused),
+                "prefetch_mode": prefetch_mode,
+                "static_self_kv_len": int(LOCAL_UNIREC_STATIC_CACHE_LEN),
+                "static_cross_kv_len": None if cross_cache_len is None else int(cross_cache_len),
+                "self_attention_backend": self_attention_backend,
+                "batch_size": int(batch_size),
+            }
+            self._compiled_decode_modules[cache_key] = module
+            self._compiled_decode_metadata[cache_key] = compile_meta
+            return module, compile_meta
         if backend == "torchair":
             if not self.device.startswith("npu"):
                 raise ValueError("backend=torchair requires an NPU device")

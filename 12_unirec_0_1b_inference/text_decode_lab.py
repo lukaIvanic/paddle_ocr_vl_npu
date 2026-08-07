@@ -72,12 +72,15 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--graph-mode",
-        choices=("ge", "acl"),
+        choices=("ge", "acl", "npugraph"),
         default="ge",
         help=(
             "ge executes the compiled decode step through the GE graph "
             "engine (cache_compile); acl uses TorchAir reduce-overhead "
-            "ACLGraph capture/replay for dispatch."
+            "ACLGraph capture/replay for dispatch; npugraph bypasses "
+            "torch.compile entirely and captures the eager decode step "
+            "(forward + argmax + state advance) into a torch.npu.NPUGraph "
+            "replayed per step over static buffers."
         ),
     )
     parser.add_argument(
@@ -276,6 +279,248 @@ def run_steps(fn: Any, state: dict[str, Any], count: int, *, collect: bool = Fal
         if collect:
             tokens.append(state["next_token"].detach().cpu())
     return logits, None if not collect else torch.cat(tokens, dim=1).tolist()
+
+
+def reset_state_(
+    state: dict[str, Any],
+    runner: OptimizedUniRecRunner,
+    *,
+    seed: int,
+    cache_position: int,
+) -> None:
+    """Restore a state to make_state(seed) values without reallocating.
+
+    NPUGraph replay is bound to the captured buffer addresses, so measurement
+    phases must reuse one state and reset its contents in place.
+    """
+    generator = torch.Generator(device="cpu").manual_seed(seed)
+    input_ids = torch.randint(
+        0,
+        int(runner.config.vocab_size),
+        tuple(state["next_token"].shape),
+        generator=generator,
+        dtype=torch.int64,
+    )
+    state["next_token"].copy_(input_ids.to(runner.device))
+    state["cache_position"].fill_(cache_position)
+    for key in ("self_keys", "self_values", "cross_keys", "cross_values"):
+        for tensor in state[key]:
+            tensor.zero_()
+    state["cross_mask"].zero_()
+    if "self_mask" in state:
+        length = int(state["self_mask"].shape[-1])
+        kv_positions = torch.arange(length, device=runner.device).view(1, 1, 1, length)
+        invalid = (kv_positions >= cache_position).expand_as(state["self_mask"])
+        if state["self_mask"].dtype == torch.bool:
+            state["self_mask"].copy_(invalid)
+        else:
+            state["self_mask"].zero_()
+            state["self_mask"].masked_fill_(invalid, torch.finfo(torch.float32).min)
+
+
+def capture_npugraph(
+    module: Any,
+    state: dict[str, Any],
+    device: str,
+    *,
+    warmup_iters: int = 3,
+) -> tuple[Any, torch.Tensor, float]:
+    """Capture one full decode step into a torch.npu.NPUGraph.
+
+    The captured region is forward + argmax + in-place next_token/cache_position
+    advance, so a replay consumes zero host-side tensor work. Returns the graph,
+    the static logits buffer, and capture wall seconds (including warmup).
+    """
+    import torch_npu
+
+    static_args = call_args(state)
+
+    def one_step() -> torch.Tensor:
+        logits = module(*static_args)
+        predicted = torch.argmax(logits[:, -1, :].float(), dim=-1, keepdim=True)
+        state["next_token"].copy_(predicted)
+        state["cache_position"].add_(1)
+        return logits
+
+    started = time.perf_counter()
+    side_stream = torch_npu.npu.Stream()
+    side_stream.wait_stream(torch_npu.npu.current_stream())
+    with torch_npu.npu.stream(side_stream):
+        for _ in range(warmup_iters):
+            one_step()
+    torch_npu.npu.current_stream().wait_stream(side_stream)
+    synchronize_device(device)
+    graph = torch_npu.npu.NPUGraph()
+    with torch_npu.npu.graph(graph):
+        static_logits = one_step()
+    synchronize_device(device)
+    return graph, static_logits, time.perf_counter() - started
+
+
+def replay_steps(
+    graph: Any, state: dict[str, Any], count: int, *, collect: bool = False
+):
+    tokens: list[torch.Tensor] = []
+    for _ in range(count):
+        graph.replay()
+        if collect:
+            tokens.append(state["next_token"].detach().cpu())
+    return None if not collect else torch.cat(tokens, dim=1).tolist()
+
+
+def profile_replay_timing(
+    *,
+    graph: Any,
+    state: dict[str, Any],
+    device: str,
+    steps: int,
+    reset: Any,
+) -> dict[str, Any]:
+    """profile_compiled_timing's protocol with graph.replay() as the step."""
+    import torch_npu
+
+    reset()
+    synchronize_device(device)
+    queued_start = torch_npu.npu.Event(enable_timing=True)
+    queued_end = torch_npu.npu.Event(enable_timing=True)
+    queued_start.record()
+    host_started = time.perf_counter()
+    replay_steps(graph, state, steps)
+    queued_end.record()
+    host_enqueue_s = time.perf_counter() - host_started
+    wait_started = time.perf_counter()
+    queued_end.synchronize()
+    final_sync_wait_s = time.perf_counter() - wait_started
+    queued_device_s = float(queued_start.elapsed_time(queued_end)) / 1000.0
+    queued_wall_s = host_enqueue_s + final_sync_wait_s
+
+    reset()
+    synchronize_device(device)
+    production_device_s = 0.0
+    production_submit_s = 0.0
+    production_d2h_wait_s = 0.0
+    production_wall_started = time.perf_counter()
+    for _ in range(steps):
+        start_event = torch_npu.npu.Event(enable_timing=True)
+        end_event = torch_npu.npu.Event(enable_timing=True)
+        start_event.record()
+        submit_started = time.perf_counter()
+        graph.replay()
+        end_event.record()
+        production_submit_s += time.perf_counter() - submit_started
+        wait_started = time.perf_counter()
+        state["next_token"].detach().cpu()
+        production_d2h_wait_s += time.perf_counter() - wait_started
+        production_device_s += float(start_event.elapsed_time(end_event)) / 1000.0
+    production_wall_s = time.perf_counter() - production_wall_started
+
+    def per_step(seconds: float) -> float:
+        return seconds * 1000.0 / steps
+
+    return {
+        "steps": int(steps),
+        "queued": {
+            "device_step_ms": per_step(queued_device_s),
+            "host_enqueue_step_ms": per_step(host_enqueue_s),
+            "final_sync_wait_step_ms": per_step(final_sync_wait_s),
+            "wall_step_ms": per_step(queued_wall_s),
+            "device_share_of_wall": queued_device_s / queued_wall_s,
+        },
+        "production_like_d2h": {
+            "device_step_ms": per_step(production_device_s),
+            "host_submit_step_ms": per_step(production_submit_s),
+            "sampled_token_d2h_wait_step_ms": per_step(production_d2h_wait_s),
+            "wall_step_ms": per_step(production_wall_s),
+            "device_share_of_wall": production_device_s / production_wall_s,
+        },
+    }
+
+
+def run_npugraph_lane(
+    *,
+    runner: OptimizedUniRecRunner,
+    backend: str,
+    args: argparse.Namespace,
+    lane_state: Any,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    compile_meta: dict[str, Any]
+    module, compile_meta = runner._compile_decode_module(
+        backend="torchair",
+        self_attention_backend=backend,
+        compile_dynamic=False,
+        cross_cache_len=args.cross_cache_length,
+        batch_size=args.batch_size,
+        mask_mode=args.mask_mode,
+        prefetch_mode=args.prefetch_mode,
+        graph_mode="npugraph",
+    )
+    state = lane_state(backend, 7)
+
+    def reset(seed: int) -> None:
+        reset_state_(state, runner, seed=seed, cache_position=args.cache_position)
+
+    progress("npugraph_capture_begin", backend=backend)
+    graph, static_logits, capture_s = capture_npugraph(module, state, runner.device)
+    progress("npugraph_capture_end", backend=backend, seconds=capture_s)
+
+    reset(7)
+    replay_steps(graph, state, max(0, args.warmup_steps))
+    synchronize_device(runner.device)
+
+    reset(7)
+    synchronize_device(runner.device)
+    measured_started = time.perf_counter()
+    replay_steps(graph, state, args.measure_steps)
+    synchronize_device(runner.device)
+    measured_s = time.perf_counter() - measured_started
+
+    reset(11)
+    validation_tokens = replay_steps(
+        graph, state, args.validation_steps, collect=True
+    )
+    synchronize_device(runner.device)
+    validation = {
+        "tokens": validation_tokens,
+        "logits": static_logits.detach().float().cpu(),
+    }
+
+    compiled_timing = None
+    if args.compiled_timing_steps > 0:
+        progress("compiled_timing_begin", backend=backend)
+        compiled_timing = profile_replay_timing(
+            graph=graph,
+            state=state,
+            device=runner.device,
+            steps=args.compiled_timing_steps,
+            reset=lambda: reset(17),
+        )
+        progress(
+            "compiled_timing_end",
+            backend=backend,
+            **compiled_timing["production_like_d2h"],
+        )
+    if args.profile_compiled_steps > 0:
+        progress(
+            "compiled_profile_skipped",
+            backend=backend,
+            reason="npugraph lane does not implement --profile-compiled-steps yet",
+        )
+
+    raw_tokens = args.batch_size * args.measure_steps
+    lane = {
+        "compile": compile_meta,
+        "first_call_s": capture_s,
+        "measure": {
+            "steps": args.measure_steps,
+            "decode_s": measured_s,
+            "step_ms": measured_s * 1000.0 / args.measure_steps,
+            "raw_tok_s": raw_tokens / measured_s,
+            "batch_s": args.measure_steps / measured_s,
+        },
+        "compiled_timing": compiled_timing,
+        "compiled_profile": None,
+    }
+    return lane, validation
 
 
 def profile_compiled_timing(
@@ -508,6 +753,19 @@ def main() -> None:
     validations: dict[str, Any] = {}
     for backend in args.backends:
         progress("lane_begin", backend=backend)
+        if args.graph_mode == "npugraph":
+            lanes[backend], validations[backend] = run_npugraph_lane(
+                runner=runner,
+                backend=backend,
+                args=args,
+                lane_state=lane_state,
+            )
+            progress(
+                "lane_end",
+                backend=backend,
+                raw_tok_s=lanes[backend]["measure"]["raw_tok_s"],
+            )
+            continue
         compiled, compile_meta = runner._compile_decode_module(
             backend="torchair",
             self_attention_backend=backend,
