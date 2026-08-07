@@ -41,6 +41,8 @@ DEFAULT_REQUEST_IDS = (
 )
 DEFAULT_STRATEGIES = ("ruled", "whitespace", "row_edge", "hybrid", "selected")
 TR_PATTERN = re.compile(r"<tr\b[^>]*>.*?</tr\s*>", re.IGNORECASE | re.DOTALL)
+TD_PATTERN = re.compile(r"<td\b([^>]*)>", re.IGNORECASE)
+COLSPAN_PATTERN = re.compile(r"\bcolspan\s*=\s*['\"]?(\d+)", re.IGNORECASE)
 MARKDOWN_RULE = re.compile(r"^\s*\|?(?:\s*:?-+:?\s*\|)+\s*$")
 
 
@@ -148,6 +150,31 @@ def stitch_rows(row_results: list[dict[str, Any]]) -> tuple[str, dict[str, int]]
         kind, fragment = _extract_stitch_fragment(row["raw_text"])
         kinds[kind] += 1
         fragments.append(fragment)
+    html_rows = [row for fragment in fragments for row in TR_PATTERN.findall(fragment)]
+    widths = []
+    for row in html_rows:
+        width = 0
+        for attributes in TD_PATTERN.findall(row):
+            colspan = COLSPAN_PATTERN.search(attributes)
+            width += int(colspan.group(1)) if colspan else 1
+        widths.append(width)
+    table_width = max(widths, default=0)
+    if table_width:
+        padded_rows = []
+        for row, width in zip(html_rows, widths):
+            missing = table_width - width
+            if missing:
+                row = re.sub(
+                    r"</tr\s*>\s*$",
+                    "<td></td>" * missing + "</tr>",
+                    row,
+                    flags=re.IGNORECASE,
+                )
+            padded_rows.append(row)
+        fragments = padded_rows
+        kinds["rows_padded_to_table_width"] = sum(
+            width < table_width for width in widths
+        )
     return "<table>" + "".join(fragments) + "</table>", dict(kinds)
 
 
