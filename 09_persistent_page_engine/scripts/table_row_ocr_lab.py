@@ -8,6 +8,7 @@ from collections import Counter, defaultdict
 from dataclasses import asdict
 import html
 import json
+import math
 from pathlib import Path
 import re
 import sys
@@ -79,6 +80,11 @@ def parse_args() -> argparse.Namespace:
         "--all-tables",
         action="store_true",
         help="Process every record in --table-records instead of the representative set.",
+    )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Continue from the checkpointed row_ocr_records.jsonl.",
     )
     parser.add_argument(
         "--strategies",
@@ -243,6 +249,12 @@ def crop_rows(
     for index, (top, bottom) in enumerate(zip(boundaries, boundaries[1:])):
         crop_top = max(0, top - overlap)
         crop_bottom = min(image.height, bottom + overlap)
+        minimum_height = math.ceil(image.width / 199.0)
+        if crop_bottom - crop_top < minimum_height:
+            missing = minimum_height - (crop_bottom - crop_top)
+            crop_top = max(0, crop_top - missing // 2)
+            crop_bottom = min(image.height, crop_top + minimum_height)
+            crop_top = max(0, crop_bottom - minimum_height)
         rows.append((crop_top, crop_bottom, image.crop((0, crop_top, image.width, crop_bottom))))
     return rows
 
@@ -303,9 +315,18 @@ def main() -> None:
     setup_started = time.perf_counter()
     recognizer = build_recognizer(args)
     setup_s = time.perf_counter() - setup_started
-    output_records: list[dict[str, Any]] = []
     records_path = args.output_dir / "row_ocr_records.jsonl"
-    records_path.write_text("", encoding="utf-8")
+    output_records: list[dict[str, Any]] = (
+        read_jsonl(records_path)
+        if args.resume and records_path.is_file()
+        else []
+    )
+    if not args.resume:
+        records_path.write_text("", encoding="utf-8")
+    completed = {
+        (record["request_id"], record["strategy"])
+        for record in output_records
+    }
 
     for table_index, source in enumerate(selected, start=1):
         raw_image = load_crop(source, args.images_dir)
@@ -325,6 +346,8 @@ def main() -> None:
         split_s = time.perf_counter() - split_started
 
         for strategy in strategies:
+            if (source["request_id"], strategy) in completed:
+                continue
             proposal = proposals[strategy]
             row_crop_started = time.perf_counter()
             rows = crop_rows(image, proposal.boundaries, args.row_overlap_px)
