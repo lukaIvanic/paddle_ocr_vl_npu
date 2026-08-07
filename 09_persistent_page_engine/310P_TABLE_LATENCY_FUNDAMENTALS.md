@@ -56,11 +56,10 @@ The following distribution comes from all **665 table crops** in OmniDocBench v1
 
 For the observed P99 table:
 
-\[
-\text{required decode throughput}
-= \frac{3{,}091\ \text{tokens}}{2\ \text{s}}
-= \mathbf{1{,}546\ tokens/s}
-\]
+$$
+\frac{3{,}091\ \text{tokens}}{2\ \text{seconds}}
+= 1{,}546\ \text{tokens/second}
+$$
 
 The lower percentiles also require high batch-size-1 throughput:
 
@@ -106,10 +105,11 @@ The active 721.5 MB weight set is much larger than on-chip cache. At batch size 
 
 This gives a simple bandwidth roof:
 
-\[
-\text{peak decode tokens/s}
-\leq \frac{\text{memory bandwidth}}{\text{FP16 decoder weight bytes per token}}
-\]
+$$
+\text{Peak decode tokens/second}
+\leq
+\frac{\text{memory bandwidth}}{\text{FP16 decoder weight bytes per token}}
+$$
 
 This is an optimistic upper bound. It assumes:
 
@@ -125,17 +125,17 @@ No real implementation can meet all these assumptions.
 
 ### Ascend 310P3
 
-\[
+$$
 \frac{204\ \text{GB/s}}{0.7215\ \text{GB/token}}
-= \mathbf{283\ tokens/s}
-\]
+= 283\ \text{tokens/s}
+$$
 
 ### Ascend 910B2
 
-\[
+$$
 \frac{1{,}600\ \text{GB/s}}{0.7215\ \text{GB/token}}
-= \mathbf{2{,}218\ tokens/s}
-\]
+= 2{,}218\ \text{tokens/s}
+$$
 
 ### Comparison with measured results
 
@@ -146,9 +146,9 @@ No real implementation can meet all these assumptions.
 
 Even the impossible 310P3 roof gives:
 
-\[
+$$
 \frac{3{,}091}{283} = 10.9\ \text{s}
-\]
+$$
 
 The requested P99 throughput of 1,546 tokens/s is:
 
