@@ -586,6 +586,21 @@ def run_npugraph_lane(
             "uninstall_path": nsk._uninstall_path,
         }
         progress("static_kernel_end", backend=backend, **static_kernel_meta)
+        # This StaticKernelCompiler variant does not auto-uninstall at exit
+        # (unlike npugraph_ex's atexit hook), and the box is shared: remove
+        # the installed package ourselves once the process ends. The kernels
+        # stay selected in-process; uninstalling only removes the on-disk
+        # package for other users.
+        if nsk._uninstall_path:
+            import atexit
+            import subprocess
+
+            atexit.register(
+                subprocess.run,
+                ["bash", nsk._uninstall_path],
+                check=False,
+                capture_output=True,
+            )
         reset(7)
 
     ge_first_call_s = None
