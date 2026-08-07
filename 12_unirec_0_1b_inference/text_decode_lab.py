@@ -556,6 +556,23 @@ def run_npugraph_lane(
         "tokens": validation_tokens,
         "logits": static_logits.detach().float().cpu(),
     }
+    # Replay-integrity evidence: the degenerate validation sequence (a
+    # repeated token) cannot distinguish a live graph from a frozen one, so
+    # check the device-side state actually advanced and the KV slots the
+    # replays should have written are populated.
+    written = state["self_keys"][0][
+        0, 0, args.cache_position : args.cache_position + args.validation_steps, :
+    ]
+    replay_checks = {
+        "final_cache_position": int(state["cache_position"][0].item()),
+        "expected_final_cache_position": args.cache_position + args.validation_steps,
+        "validation_kv_slots_written": bool((written.abs().sum(dim=-1) > 0).all().item()),
+    }
+    replay_checks["state_advances"] = (
+        replay_checks["final_cache_position"]
+        == replay_checks["expected_final_cache_position"]
+    )
+    progress("replay_checks", **replay_checks)
 
     compiled_timing = None
     if args.compiled_timing_steps > 0:
@@ -592,6 +609,7 @@ def run_npugraph_lane(
         "compile": compile_meta,
         "first_call_s": capture_s,
         "ge_prewarm_s": ge_first_call_s,
+        "replay_checks": replay_checks,
         "measure": {
             "steps": args.measure_steps,
             "decode_s": measured_s,
