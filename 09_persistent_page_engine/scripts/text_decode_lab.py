@@ -71,6 +71,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--corpus", type=Path, default=DEFAULT_CORPUS)
     parser.add_argument("--model", default=str(DEFAULT_MODEL))
     parser.add_argument("--cache-dir", type=Path, default=DEFAULT_CACHE_ROOT)
+    parser.add_argument(
+        "--synthetic-lm-head-size",
+        type=int,
+        help=(
+            "Lab-only output width for the LM head. The model is loaded "
+            "normally, then its output weight is sliced before weight-format "
+            "conversion and compilation. Production code is unchanged."
+        ),
+    )
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--cache-length", type=int, default=4096)
     parser.add_argument("--dtype", choices=("fp16", "bf16"), default="fp16")
@@ -140,6 +149,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("--batch-size must be a positive power of two")
     if args.cache_length <= 0:
         parser.error("--cache-length must be positive")
+    if (
+        args.synthetic_lm_head_size is not None
+        and args.synthetic_lm_head_size <= 0
+    ):
+        parser.error("--synthetic-lm-head-size must be positive")
     if args.warmup < 0 or args.repeats <= 0:
         parser.error("--warmup must be non-negative and --repeats positive")
     if args.max_items is not None and args.max_items <= 0:
@@ -378,6 +392,38 @@ class TextDecodeLab:
         synchronize(self.device)
         self.model_load_s = time.perf_counter() - model_started
 
+        self.original_lm_head_size = int(self.model.lm_head.weight.shape[0])
+        requested_head_size = args.synthetic_lm_head_size
+        if requested_head_size is not None:
+            requested_head_size = int(requested_head_size)
+            if requested_head_size > self.original_lm_head_size:
+                raise ValueError(
+                    "--synthetic-lm-head-size exceeds the checkpoint LM head: "
+                    f"{requested_head_size} > {self.original_lm_head_size}"
+                )
+            if requested_head_size % 1024:
+                raise ValueError(
+                    "--synthetic-lm-head-size must be divisible by 1024 so "
+                    "the benchmark does not introduce an avoidable tiling "
+                    f"disadvantage: {requested_head_size}"
+                )
+        head_started = time.perf_counter()
+        if requested_head_size is not None:
+            head = self.model.lm_head
+            head.weight = torch.nn.Parameter(
+                head.weight[:requested_head_size].clone(),
+                requires_grad=False,
+            )
+            head.out_features = requested_head_size
+        synchronize(self.device)
+        self.lm_head_setup_s = time.perf_counter() - head_started
+        self.effective_lm_head_size = int(self.model.lm_head.weight.shape[0])
+        self.runtime_cache_root = args.cache_dir
+        if requested_head_size is not None:
+            self.runtime_cache_root = (
+                args.cache_dir / f"synthetic_lm_head_{requested_head_size}"
+            )
+
         self.optimization = prepare_decode_optimization_modules(
             self.model,
             args.decode_optimization,
@@ -395,7 +441,7 @@ class TextDecodeLab:
             self.model,
             backend=args.backend,
             device=self.device,
-            cache_root=args.cache_dir,
+            cache_root=self.runtime_cache_root,
             batch_size=args.batch_size,
             cache_length=args.cache_length,
             dtype=self.dtype,
@@ -413,7 +459,7 @@ class TextDecodeLab:
 
     def _preflight_cache(self) -> None:
         shape_dir = torchair_cache_dir_for_shape(
-            self.args.cache_dir,
+            self.runtime_cache_root,
             batch_size=self.args.batch_size,
             cache_length=self.args.cache_length,
             dtype=self.dtype,
@@ -1354,6 +1400,7 @@ def _write_report(
             "backend": args.backend,
             "decode_optimization": args.decode_optimization,
             "cache_dir": str(args.cache_dir.expanduser().resolve()),
+            "synthetic_lm_head_size": args.synthetic_lm_head_size,
             "active_slots": args.active_slots,
             "profile_position": args.profile_position,
             "tail_positions": list(args.tail_positions),
@@ -1372,11 +1419,23 @@ def _write_report(
         payload["setup"] = {
             "total_s": lab.setup_s,
             "model_load_s": lab.model_load_s,
+            "lm_head_setup_s": lab.lm_head_setup_s,
             "weight_format_s": lab.weight_format_s,
             "runtime_setup_s": lab.runtime_setup_s,
             "weight_format": lab.weight_format,
             "runtime_metadata": lab.runtime.metadata,
             "runtime_setup_detail_s": lab.runtime.setup_timing_s,
+            "lm_head": {
+                "original_output_features": lab.original_lm_head_size,
+                "effective_output_features": lab.effective_lm_head_size,
+                "synthetic": args.synthetic_lm_head_size is not None,
+                "divisible_by_1024": (
+                    lab.effective_lm_head_size % 1024 == 0
+                ),
+            },
+            "effective_cache_root": str(
+                lab.runtime_cache_root.expanduser().resolve()
+            ),
         }
     output.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     return output
