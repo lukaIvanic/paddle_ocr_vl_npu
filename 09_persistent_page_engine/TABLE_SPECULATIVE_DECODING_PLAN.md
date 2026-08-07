@@ -33,13 +33,20 @@ preserve useful table structure.
 
 ## Phase 2 — Precomputed row drafts
 
-Status: **pending**
+Status: **in progress**
 
 First run a small manually reviewed table set. Then run all OmniDocBench v1.6
 tables for every Phase 1 split mode. Run all row/band vision and text prefills,
 then generate draft outputs with concurrent decode. Measure per-table and corpus
 wall time, input vision tokens, text-prefill tokens, output tokens, malformed or
 degenerate outputs, draft-to-full-output similarity, and stitched Page-TEDS.
+
+The first six-table B8 experiment is complete. All row requests ended at EOS.
+The ruled strategy scored 0.7927 Page-TEDS, the image-only selected strategy
+scored 0.7569, and the saved whole-table outputs scored 0.7706 on the same six
+tables. The selector is strong on simple and borderless tables but selects too
+many narrow bands on dense tables. Phase 2 therefore stays in progress. Improve
+selection and stitching on the dense cases before the full 665-table sweep.
 
 Exit gate: draft artifacts are complete, reproducible, and sufficiently useful
 to justify target-side speculative verification work.
