@@ -118,10 +118,10 @@ def trim_blank_margin(image: Image.Image) -> tuple[Image.Image, tuple[int, int, 
     gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
     foreground = gray < 235
     row_has_content = np.count_nonzero(foreground, axis=1) >= max(
-        3, round(image.width * 0.001)
+        8, round(image.width * 0.005)
     )
     column_has_content = np.count_nonzero(foreground, axis=0) >= max(
-        3, round(image.height * 0.001)
+        8, round(image.height * 0.005)
     )
     ys = np.flatnonzero(row_has_content)
     xs = np.flatnonzero(column_has_content)
