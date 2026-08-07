@@ -828,6 +828,7 @@ class LocalDecoderLayer(nn.Module):
         cross_value_cache: torch.Tensor,
         cross_attention_mask: torch.Tensor,
         self_attention_backend: str = "eager",
+        self_attention_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
         if self_attention_backend not in LOCAL_UNIREC_SELF_ATTN_BACKENDS:
             raise ValueError(f"Unsupported Local UniRec self-attention backend: {self_attention_backend}")
@@ -842,12 +843,17 @@ class LocalDecoderLayer(nn.Module):
             key_states=key_states,
             value_states=value_states,
         )
-        self_attention_mask = self.self_attn.build_static_cache_attention_mask(
-            cache_position=cache_position,
-            cache_len=key_cache.shape[2],
-            device=hidden_states.device,
-        )
+        # The self-attention mask depends only on cache_position and cache
+        # length, so callers build it once per step and share it across all
+        # layers. When absent, build the backend-appropriate form here: an
+        # additive float mask for eager, a boolean mask for IncreFA.
         if self_attention_backend == "eager":
+            if self_attention_mask is None:
+                self_attention_mask = self.self_attn.build_static_cache_attention_mask(
+                    cache_position=cache_position,
+                    cache_len=key_cache.shape[2],
+                    device=hidden_states.device,
+                )
             hidden_states = self.self_attn.attend(
                 query_states=query_states,
                 key_states=key_cache,
@@ -856,16 +862,17 @@ class LocalDecoderLayer(nn.Module):
                 output_dtype=residual.dtype,
             )
         else:
-            self_attention_mask_bool = self.self_attn.build_static_cache_attention_mask_bool(
-                cache_position=cache_position,
-                cache_len=key_cache.shape[2],
-                device=hidden_states.device,
-            )
+            if self_attention_mask is None:
+                self_attention_mask = self.self_attn.build_static_cache_attention_mask_bool(
+                    cache_position=cache_position,
+                    cache_len=key_cache.shape[2],
+                    device=hidden_states.device,
+                )
             hidden_states = self.self_attn.attend_increfa(
                 query_states=query_states,
                 key_states=key_cache,
                 value_states=value_cache,
-                attention_mask=self_attention_mask_bool,
+                attention_mask=self_attention_mask,
                 output_dtype=residual.dtype,
             )
         hidden_states = residual + hidden_states
@@ -1072,12 +1079,27 @@ class LocalUniRecDecoder(nn.Module):
         cross_value_cache: tuple[torch.Tensor, ...],
         cross_attention_mask: torch.Tensor,
         self_attention_backend: str = "eager",
+        self_attention_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
         hidden_states = self.build_cached_decoder_input_hidden_states(decoder_input_ids, cache_position)
         if self_attention_backend == "increfa_all":
             # Cross-attention uses one static mask for every decoder layer.
             # Convert it once instead of inside all six IncreFA calls.
             cross_attention_mask = cross_attention_mask.to(dtype=torch.bool)
+        if self_attention_mask is None:
+            # One mask serves every decoder layer; build it once per step.
+            if self_attention_backend == "eager":
+                self_attention_mask = LocalDecoderAttention.build_static_cache_attention_mask(
+                    cache_position=cache_position,
+                    cache_len=key_cache[0].shape[2],
+                    device=hidden_states.device,
+                )
+            else:
+                self_attention_mask = LocalDecoderAttention.build_static_cache_attention_mask_bool(
+                    cache_position=cache_position,
+                    cache_len=key_cache[0].shape[2],
+                    device=hidden_states.device,
+                )
         for layer_idx, layer in enumerate(self.layers):
             hidden_states = layer.forward_cached(
                 hidden_states=hidden_states,
@@ -1089,6 +1111,7 @@ class LocalUniRecDecoder(nn.Module):
                 cross_value_cache=cross_value_cache[layer_idx],
                 cross_attention_mask=cross_attention_mask,
                 self_attention_backend=self_attention_backend,
+                self_attention_mask=self_attention_mask,
             )
 
         return self.layer_norm(hidden_states)
@@ -1123,6 +1146,56 @@ class LocalUniRecCachedDecodeStepModule(nn.Module):
             cross_value_cache=cross_value_cache,
             cross_attention_mask=cross_attention_mask,
             self_attention_backend=self.self_attention_backend,
+        )
+
+
+class LocalUniRecPersistentMaskDecodeStepModule(nn.Module):
+    """Decode step over a caller-owned persistent self-attention mask.
+
+    Instead of rebuilding the KV validity mask from an arange over the whole
+    static cache every step, the caller allocates the mask once with every
+    position at or beyond the initial cache position marked invalid. Each step
+    marks only the current cache position valid in place, mirroring how the
+    static KV caches themselves are updated, and every decoder layer shares
+    the same tensor. Eager expects an additive float mask (0 valid, -inf
+    invalid); IncreFA backends expect a boolean mask (True = masked).
+    """
+
+    def __init__(self, model: "LocalUniRecModel", *, self_attention_backend: str = "eager"):
+        super().__init__()
+        if self_attention_backend not in LOCAL_UNIREC_SELF_ATTN_BACKENDS:
+            raise ValueError(f"Unsupported Local UniRec self-attention backend: {self_attention_backend}")
+        self.model = model
+        self.self_attention_backend = self_attention_backend
+
+    def forward(
+        self,
+        decoder_input_ids: torch.Tensor,
+        cache_position: torch.Tensor,
+        active_length: int,
+        self_key_cache: tuple[torch.Tensor, ...],
+        self_value_cache: tuple[torch.Tensor, ...],
+        cross_key_cache: tuple[torch.Tensor, ...],
+        cross_value_cache: tuple[torch.Tensor, ...],
+        cross_attention_mask: torch.Tensor,
+        self_attention_mask: torch.Tensor,
+    ) -> torch.Tensor:
+        index = cache_position.view(-1, 1, 1, 1)
+        if self.self_attention_backend == "eager":
+            self_attention_mask.scatter_(3, index, 0.0)
+        else:
+            self_attention_mask.scatter_(3, index, False)
+        return self.model.forward_cached_logits(
+            decoder_input_ids=decoder_input_ids,
+            cache_position=cache_position,
+            active_length=active_length,
+            key_cache=self_key_cache,
+            value_cache=self_value_cache,
+            cross_key_cache=cross_key_cache,
+            cross_value_cache=cross_value_cache,
+            cross_attention_mask=cross_attention_mask,
+            self_attention_backend=self.self_attention_backend,
+            self_attention_mask=self_attention_mask,
         )
 
 
@@ -1222,6 +1295,7 @@ class LocalUniRecModel(nn.Module):
         cross_value_cache: tuple[torch.Tensor, ...],
         cross_attention_mask: torch.Tensor,
         self_attention_backend: str = "eager",
+        self_attention_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
         decoder_output = self.decoder.forward_cached(
             decoder_input_ids=decoder_input_ids,
@@ -1233,6 +1307,7 @@ class LocalUniRecModel(nn.Module):
             cross_value_cache=cross_value_cache,
             cross_attention_mask=cross_attention_mask,
             self_attention_backend=self_attention_backend,
+            self_attention_mask=self_attention_mask,
         )
         return LocalDecoderAttention.apply_linear_3d(self.lm_head, decoder_output)
 
@@ -1658,17 +1733,25 @@ class OptimizedUniRecRunner:
         compile_dynamic: bool,
         cross_cache_len: int | None,
         batch_size: int,
+        mask_mode: str = "per_step",
     ) -> tuple[nn.Module, dict[str, Any]]:
+        if mask_mode not in ("per_step", "persistent"):
+            raise ValueError(f"Unsupported decode mask mode: {mask_mode}")
         normalized_cross_cache_len = "none" if cross_cache_len is None else str(int(cross_cache_len))
         cache_key = (
             f"{backend}:self_attn={self_attention_backend}:dynamic={int(compile_dynamic)}:"
             f"self_kv={LOCAL_UNIREC_STATIC_CACHE_LEN}:cross_kv={normalized_cross_cache_len}:"
-            f"batch={int(batch_size)}"
+            f"batch={int(batch_size)}:mask={mask_mode}"
         )
         cached = self._compiled_decode_modules.get(cache_key)
         if cached is not None:
             return cached, self._compiled_decode_metadata[cache_key]
-        module = LocalUniRecCachedDecodeStepModule(self.model, self_attention_backend=self_attention_backend)
+        if mask_mode == "persistent":
+            module: nn.Module = LocalUniRecPersistentMaskDecodeStepModule(
+                self.model, self_attention_backend=self_attention_backend
+            )
+        else:
+            module = LocalUniRecCachedDecodeStepModule(self.model, self_attention_backend=self_attention_backend)
         if backend == "torchair":
             if not self.device.startswith("npu"):
                 raise ValueError("backend=torchair requires an NPU device")
@@ -1701,6 +1784,8 @@ class OptimizedUniRecRunner:
                 )
                 if batch_size != 1:
                     shape_name += f"_b{int(batch_size)}"
+                if mask_mode != "per_step":
+                    shape_name += f"_mask_{mask_mode}"
                 shape_cache_dir = self.compile_cache_dir / shape_name
                 shape_cache_dir.mkdir(parents=True, exist_ok=True)
                 cache_compile, cache_compile_import_path = import_torchair_cache_compile()
@@ -1733,6 +1818,7 @@ class OptimizedUniRecRunner:
             raise ValueError(f"Unsupported optimized compile backend: {backend}")
         compile_meta.update(
             {
+                "mask_mode": mask_mode,
                 "static_self_kv_len": int(LOCAL_UNIREC_STATIC_CACHE_LEN),
                 "static_cross_kv_len": None if cross_cache_len is None else int(cross_cache_len),
                 "self_attention_backend": self_attention_backend,

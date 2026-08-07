@@ -71,6 +71,16 @@ def parse_args() -> argparse.Namespace:
         default="pipe",
     )
     parser.add_argument(
+        "--mask-mode",
+        choices=("per_step", "persistent"),
+        default="per_step",
+        help=(
+            "per_step rebuilds the self-attention KV mask once per decode "
+            "step inside the graph; persistent keeps a caller-owned mask "
+            "and marks only the current position valid in place."
+        ),
+    )
+    parser.add_argument(
         "--cache-dir",
         type=Path,
         default=Path(".runtime_cache/12_unirec_0_1b_inference/text_decode_lab"),
@@ -121,6 +131,7 @@ def make_state(
     cross_cache_length: int,
     cache_position: int,
     seed: int,
+    mask_backend: str | None = None,
 ) -> dict[str, Any]:
     config = runner.config
     heads = int(config.decoder_attention_heads)
@@ -157,7 +168,7 @@ def make_state(
         device=runner.device,
         dtype=torch.float32,
     )
-    return {
+    state: dict[str, Any] = {
         "next_token": input_ids,
         "cache_position": torch.full(
             (batch_size,), cache_position, device=runner.device, dtype=torch.int64
@@ -168,10 +179,31 @@ def make_state(
         "cross_values": cross_values,
         "cross_mask": cross_mask,
     }
+    if mask_backend is not None:
+        # Persistent self-attention mask: positions before the initial cache
+        # position are valid; the decode graph marks each newly written
+        # position valid in place. Eager takes an additive float mask,
+        # IncreFA backends take a boolean mask (True = masked).
+        kv_positions = torch.arange(self_cache_length, device=runner.device).view(
+            1, 1, 1, self_cache_length
+        )
+        invalid = (kv_positions >= cache_position).expand(
+            batch_size, 1, 1, self_cache_length
+        )
+        if mask_backend == "eager":
+            self_mask = torch.zeros(
+                (batch_size, 1, 1, self_cache_length),
+                device=runner.device,
+                dtype=torch.float32,
+            ).masked_fill(invalid, torch.finfo(torch.float32).min)
+        else:
+            self_mask = invalid.contiguous()
+        state["self_mask"] = self_mask
+    return state
 
 
-def step(fn: Any, state: dict[str, Any]) -> torch.Tensor:
-    logits = fn(
+def call_args(state: dict[str, Any]) -> tuple[Any, ...]:
+    args: list[Any] = [
         state["next_token"],
         state["cache_position"],
         0,
@@ -180,7 +212,14 @@ def step(fn: Any, state: dict[str, Any]) -> torch.Tensor:
         state["cross_keys"],
         state["cross_values"],
         state["cross_mask"],
-    )
+    ]
+    if "self_mask" in state:
+        args.append(state["self_mask"])
+    return tuple(args)
+
+
+def step(fn: Any, state: dict[str, Any]) -> torch.Tensor:
+    logits = fn(*call_args(state))
     state["next_token"] = torch.argmax(
         logits[:, -1, :].float(), dim=-1, keepdim=True
     ).long()
@@ -232,16 +271,7 @@ def profile_compiled_timing(
         end_event = torch_npu.npu.Event(enable_timing=True)
         start_event.record()
         submit_started = time.perf_counter()
-        logits = fn(
-            state["next_token"],
-            state["cache_position"],
-            0,
-            state["self_keys"],
-            state["self_values"],
-            state["cross_keys"],
-            state["cross_values"],
-            state["cross_mask"],
-        )
+        logits = fn(*call_args(state))
         predicted = torch.argmax(logits[:, -1, :].float(), dim=-1, keepdim=True).long()
         state["next_token"] = predicted
         state["cache_position"] = state["cache_position"] + 1
@@ -291,6 +321,15 @@ def profile_eager_lane(
     profile_dir.mkdir(parents=True, exist_ok=True)
 
     def eager_decode(*inputs):
+        self_attention_mask = inputs[8] if len(inputs) > 8 else None
+        if self_attention_mask is not None:
+            # Persistent mask: mark the current position valid in place,
+            # mirroring LocalUniRecPersistentMaskDecodeStepModule.
+            index = inputs[1].view(-1, 1, 1, 1)
+            if backend == "eager":
+                self_attention_mask.scatter_(3, index, 0.0)
+            else:
+                self_attention_mask.scatter_(3, index, False)
         return runner.model.forward_cached_logits(
             decoder_input_ids=inputs[0],
             cache_position=inputs[1],
@@ -301,6 +340,7 @@ def profile_eager_lane(
             cross_value_cache=inputs[6],
             cross_attention_mask=inputs[7],
             self_attention_backend=backend,
+            self_attention_mask=self_attention_mask,
         )
 
     schedule = npu_prof.schedule(wait=0, warmup=0, active=1, repeat=1)
@@ -398,6 +438,17 @@ def main() -> None:
     )
     progress("model_load_end", seconds=time.perf_counter() - load_started)
 
+    def lane_state(backend: str, seed: int) -> dict[str, Any]:
+        return make_state(
+            runner,
+            batch_size=args.batch_size,
+            self_cache_length=args.self_cache_length,
+            cross_cache_length=args.cross_cache_length,
+            cache_position=args.cache_position,
+            seed=seed,
+            mask_backend=backend if args.mask_mode == "persistent" else None,
+        )
+
     lanes: dict[str, Any] = {}
     validations: dict[str, Any] = {}
     for backend in args.backends:
@@ -408,15 +459,9 @@ def main() -> None:
             compile_dynamic=False,
             cross_cache_len=args.cross_cache_length,
             batch_size=args.batch_size,
+            mask_mode=args.mask_mode,
         )
-        state = make_state(
-            runner,
-            batch_size=args.batch_size,
-            self_cache_length=args.self_cache_length,
-            cross_cache_length=args.cross_cache_length,
-            cache_position=args.cache_position,
-            seed=7,
-        )
+        state = lane_state(backend, 7)
         progress("first_call_begin", backend=backend)
         first_started = time.perf_counter()
         step(compiled, state)
@@ -426,28 +471,14 @@ def main() -> None:
         run_steps(compiled, state, max(0, args.warmup_steps - 1))
         synchronize_device(runner.device)
 
-        state = make_state(
-            runner,
-            batch_size=args.batch_size,
-            self_cache_length=args.self_cache_length,
-            cross_cache_length=args.cross_cache_length,
-            cache_position=args.cache_position,
-            seed=7,
-        )
+        state = lane_state(backend, 7)
         synchronize_device(runner.device)
         measured_started = time.perf_counter()
         run_steps(compiled, state, args.measure_steps)
         synchronize_device(runner.device)
         measured_s = time.perf_counter() - measured_started
 
-        state = make_state(
-            runner,
-            batch_size=args.batch_size,
-            self_cache_length=args.self_cache_length,
-            cross_cache_length=args.cross_cache_length,
-            cache_position=args.cache_position,
-            seed=11,
-        )
+        state = lane_state(backend, 11)
         validation_logits, validation_tokens = run_steps(
             compiled, state, args.validation_steps, collect=True
         )
@@ -459,14 +490,7 @@ def main() -> None:
         compiled_timing = None
         if args.compiled_timing_steps > 0:
             progress("compiled_timing_begin", backend=backend)
-            timing_state = make_state(
-                runner,
-                batch_size=args.batch_size,
-                self_cache_length=args.self_cache_length,
-                cross_cache_length=args.cross_cache_length,
-                cache_position=args.cache_position,
-                seed=17,
-            )
+            timing_state = lane_state(backend, 17)
             compiled_timing = profile_compiled_timing(
                 fn=compiled,
                 state=timing_state,
@@ -481,14 +505,7 @@ def main() -> None:
         compiled_profile = None
         if args.profile_compiled_steps > 0:
             progress("compiled_profile_begin", backend=backend)
-            profile_state = make_state(
-                runner,
-                batch_size=args.batch_size,
-                self_cache_length=args.self_cache_length,
-                cross_cache_length=args.cross_cache_length,
-                cache_position=args.cache_position,
-                seed=19,
-            )
+            profile_state = lane_state(backend, 19)
             compiled_profile = profile_compiled_lane(
                 backend=backend,
                 fn=compiled,
@@ -544,14 +561,7 @@ def main() -> None:
     if args.profile_steps > 0:
         for backend in args.backends:
             progress("profile_begin", backend=backend)
-            state = make_state(
-                runner,
-                batch_size=args.batch_size,
-                self_cache_length=args.self_cache_length,
-                cross_cache_length=args.cross_cache_length,
-                cache_position=args.cache_position,
-                seed=13,
-            )
+            state = lane_state(backend, 13)
             profiles[backend] = profile_eager_lane(
                 runner=runner,
                 backend=backend,
