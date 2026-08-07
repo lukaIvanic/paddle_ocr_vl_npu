@@ -84,13 +84,13 @@ The NPU hardware bandwidths are:
 
 ### 6. Why one output token requires reading the decoder weights
 
-Autoregressive decoding runs the complete text transformer and language-model head once for each new output token.
+Autoregressive decoding runs the complete decoder once for each new output token.
 
 The exact PaddleOCR-VL 1.6 checkpoint contains:
 
-| Parameters      | FP16 weight bytes |
-|-----------------|---:|
-| **360,747,008** | **721.5 MB** |
+| Parameters (decoder only) | FP16 weight bytes |
+|---------------------------|---:|
+| **360,747,008**           | **721.5 MB** |
 
 
 
@@ -112,16 +112,16 @@ This is an optimistic upper bound. It assumes:
 
 No real implementation can meet all these assumptions.
 
-## 7. Theoretical peak and measured batch-size-1 decode throughput
+### 7. Theoretical peak and measured batch-size-1 decode throughput
 
-### Ascend 310P3
+#### Ascend 310P3:
 
 $$
 \frac{204\ \text{GB/s}}{0.7215\ \text{GB/token}}
 = 283\ \text{tokens/s}
 $$
 
-### Ascend 910B2
+#### Ascend 910B2:
 
 $$
 \frac{1{,}600\ \text{GB/s}}{0.7215\ \text{GB/token}}
