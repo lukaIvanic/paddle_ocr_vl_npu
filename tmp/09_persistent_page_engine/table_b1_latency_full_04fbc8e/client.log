@@ -1,0 +1,721 @@
+DATASET_CHECK_START checking OmniDocBench.json and all referenced images; inference starts after this check
+fingerprinted_images=100/1651
+fingerprinted_images=200/1651
+fingerprinted_images=300/1651
+fingerprinted_images=400/1651
+fingerprinted_images=500/1651
+fingerprinted_images=600/1651
+fingerprinted_images=700/1651
+fingerprinted_images=800/1651
+fingerprinted_images=900/1651
+fingerprinted_images=1000/1651
+fingerprinted_images=1100/1651
+fingerprinted_images=1200/1651
+fingerprinted_images=1300/1651
+fingerprinted_images=1400/1651
+fingerprinted_images=1500/1651
+fingerprinted_images=1600/1651
+fingerprinted_images=1651/1651
+DATASET_CHECK_RESULT matches=True images=1651/1651 json_sha256=a45cd84b04ad8b793e775089640e6b681209abea33ead54c1828ddca35fae496 images_sha256=58feeb96c60fcfab12ba4348c4e093ceaf1b707658dbfd0e08c24d7821d4c221
+submitted=665 http_workers=1
+completed=1/665 page=10 elapsed_s=2.2 crops_per_s=0.459
+completed=2/665 page=11 elapsed_s=3.1 crops_per_s=0.642
+completed=3/665 page=106 elapsed_s=3.9 crops_per_s=0.763
+completed=4/665 page=106 elapsed_s=4.1 crops_per_s=0.975
+completed=5/665 page=142 elapsed_s=4.3 crops_per_s=1.163
+completed=6/665 page=147 elapsed_s=4.5 crops_per_s=1.346
+completed=7/665 page=178 elapsed_s=6.0 crops_per_s=1.161
+completed=8/665 page=182 elapsed_s=6.7 crops_per_s=1.198
+completed=9/665 page=182 elapsed_s=7.0 crops_per_s=1.285
+completed=10/665 page=188 elapsed_s=10.4 crops_per_s=0.961
+completed=11/665 page=190 elapsed_s=10.9 crops_per_s=1.012
+completed=12/665 page=195 elapsed_s=12.0 crops_per_s=0.998
+completed=13/665 page=199 elapsed_s=13.7 crops_per_s=0.947
+completed=14/665 page=200 elapsed_s=14.3 crops_per_s=0.977
+completed=15/665 page=200 elapsed_s=14.7 crops_per_s=1.022
+completed=16/665 page=201 elapsed_s=15.0 crops_per_s=1.064
+completed=17/665 page=201 elapsed_s=15.8 crops_per_s=1.077
+completed=18/665 page=202 elapsed_s=16.4 crops_per_s=1.099
+completed=19/665 page=203 elapsed_s=18.3 crops_per_s=1.037
+completed=20/665 page=204 elapsed_s=18.9 crops_per_s=1.059
+completed=21/665 page=205 elapsed_s=19.5 crops_per_s=1.079
+completed=22/665 page=205 elapsed_s=20.1 crops_per_s=1.095
+completed=23/665 page=206 elapsed_s=20.7 crops_per_s=1.114
+completed=24/665 page=206 elapsed_s=21.2 crops_per_s=1.130
+completed=25/665 page=207 elapsed_s=22.8 crops_per_s=1.097
+completed=26/665 page=208 elapsed_s=23.5 crops_per_s=1.108
+completed=27/665 page=209 elapsed_s=23.9 crops_per_s=1.129
+completed=28/665 page=210 elapsed_s=24.8 crops_per_s=1.128
+completed=29/665 page=210 elapsed_s=25.2 crops_per_s=1.151
+completed=30/665 page=211 elapsed_s=26.3 crops_per_s=1.142
+completed=31/665 page=212 elapsed_s=27.7 crops_per_s=1.117
+completed=32/665 page=213 elapsed_s=28.6 crops_per_s=1.118
+completed=33/665 page=214 elapsed_s=29.8 crops_per_s=1.107
+completed=34/665 page=215 elapsed_s=30.4 crops_per_s=1.119
+completed=35/665 page=216 elapsed_s=33.5 crops_per_s=1.044
+completed=36/665 page=217 elapsed_s=34.1 crops_per_s=1.056
+completed=37/665 page=218 elapsed_s=35.1 crops_per_s=1.055
+completed=38/665 page=219 elapsed_s=35.7 crops_per_s=1.066
+completed=39/665 page=220 elapsed_s=36.2 crops_per_s=1.078
+completed=40/665 page=220 elapsed_s=37.1 crops_per_s=1.078
+completed=41/665 page=220 elapsed_s=37.6 crops_per_s=1.092
+completed=42/665 page=221 elapsed_s=38.5 crops_per_s=1.091
+completed=43/665 page=222 elapsed_s=39.1 crops_per_s=1.100
+completed=44/665 page=222 elapsed_s=39.8 crops_per_s=1.105
+completed=45/665 page=223 elapsed_s=41.2 crops_per_s=1.094
+completed=46/665 page=223 elapsed_s=41.3 crops_per_s=1.113
+completed=47/665 page=224 elapsed_s=42.2 crops_per_s=1.114
+completed=48/665 page=224 elapsed_s=43.0 crops_per_s=1.116
+completed=49/665 page=225 elapsed_s=43.4 crops_per_s=1.128
+completed=50/665 page=225 elapsed_s=44.3 crops_per_s=1.129
+completed=51/665 page=226 elapsed_s=44.8 crops_per_s=1.138
+completed=52/665 page=226 elapsed_s=45.5 crops_per_s=1.142
+completed=53/665 page=226 elapsed_s=46.0 crops_per_s=1.152
+completed=54/665 page=227 elapsed_s=47.3 crops_per_s=1.141
+completed=55/665 page=228 elapsed_s=48.4 crops_per_s=1.135
+completed=56/665 page=229 elapsed_s=49.0 crops_per_s=1.144
+completed=57/665 page=229 elapsed_s=49.3 crops_per_s=1.156
+completed=58/665 page=229 elapsed_s=49.6 crops_per_s=1.169
+completed=59/665 page=230 elapsed_s=51.2 crops_per_s=1.152
+completed=60/665 page=231 elapsed_s=52.8 crops_per_s=1.137
+completed=61/665 page=232 elapsed_s=53.3 crops_per_s=1.145
+completed=62/665 page=233 elapsed_s=55.9 crops_per_s=1.110
+completed=63/665 page=234 elapsed_s=57.4 crops_per_s=1.097
+completed=64/665 page=235 elapsed_s=57.8 crops_per_s=1.106
+completed=65/665 page=236 elapsed_s=58.4 crops_per_s=1.113
+completed=66/665 page=236 elapsed_s=59.0 crops_per_s=1.118
+completed=67/665 page=237 elapsed_s=60.5 crops_per_s=1.108
+completed=68/665 page=238 elapsed_s=61.0 crops_per_s=1.114
+completed=69/665 page=239 elapsed_s=61.9 crops_per_s=1.115
+completed=70/665 page=239 elapsed_s=62.2 crops_per_s=1.125
+completed=71/665 page=240 elapsed_s=62.9 crops_per_s=1.129
+completed=72/665 page=241 elapsed_s=63.5 crops_per_s=1.134
+completed=73/665 page=242 elapsed_s=64.7 crops_per_s=1.128
+completed=74/665 page=242 elapsed_s=65.3 crops_per_s=1.133
+completed=75/665 page=243 elapsed_s=65.9 crops_per_s=1.138
+completed=76/665 page=243 elapsed_s=66.4 crops_per_s=1.145
+completed=77/665 page=244 elapsed_s=66.9 crops_per_s=1.151
+completed=78/665 page=244 elapsed_s=67.4 crops_per_s=1.157
+completed=79/665 page=245 elapsed_s=68.3 crops_per_s=1.156
+completed=80/665 page=246 elapsed_s=68.6 crops_per_s=1.167
+completed=81/665 page=246 elapsed_s=69.0 crops_per_s=1.175
+completed=82/665 page=246 elapsed_s=69.3 crops_per_s=1.184
+completed=83/665 page=247 elapsed_s=69.5 crops_per_s=1.195
+completed=84/665 page=248 elapsed_s=70.8 crops_per_s=1.187
+completed=85/665 page=249 elapsed_s=71.6 crops_per_s=1.188
+completed=86/665 page=249 elapsed_s=73.0 crops_per_s=1.178
+completed=87/665 page=250 elapsed_s=74.6 crops_per_s=1.166
+completed=88/665 page=250 elapsed_s=76.1 crops_per_s=1.156
+completed=89/665 page=251 elapsed_s=77.0 crops_per_s=1.155
+completed=90/665 page=252 elapsed_s=78.0 crops_per_s=1.155
+completed=91/665 page=253 elapsed_s=78.7 crops_per_s=1.156
+completed=92/665 page=253 elapsed_s=79.1 crops_per_s=1.162
+completed=93/665 page=254 elapsed_s=80.2 crops_per_s=1.160
+completed=94/665 page=255 elapsed_s=82.6 crops_per_s=1.139
+completed=95/665 page=256 elapsed_s=82.9 crops_per_s=1.147
+completed=96/665 page=256 elapsed_s=83.4 crops_per_s=1.151
+completed=97/665 page=256 elapsed_s=84.0 crops_per_s=1.155
+completed=98/665 page=256 elapsed_s=84.5 crops_per_s=1.159
+completed=99/665 page=257 elapsed_s=85.3 crops_per_s=1.160
+completed=100/665 page=258 elapsed_s=85.7 crops_per_s=1.167
+completed=101/665 page=259 elapsed_s=86.9 crops_per_s=1.162
+completed=102/665 page=260 elapsed_s=87.9 crops_per_s=1.161
+completed=103/665 page=261 elapsed_s=90.1 crops_per_s=1.143
+completed=104/665 page=262 elapsed_s=90.7 crops_per_s=1.146
+completed=105/665 page=263 elapsed_s=93.3 crops_per_s=1.125
+completed=106/665 page=264 elapsed_s=95.8 crops_per_s=1.106
+completed=107/665 page=265 elapsed_s=96.9 crops_per_s=1.104
+completed=108/665 page=266 elapsed_s=97.4 crops_per_s=1.109
+completed=109/665 page=266 elapsed_s=97.6 crops_per_s=1.117
+completed=110/665 page=266 elapsed_s=98.0 crops_per_s=1.123
+completed=111/665 page=266 elapsed_s=98.3 crops_per_s=1.129
+completed=112/665 page=266 elapsed_s=98.6 crops_per_s=1.136
+completed=113/665 page=266 elapsed_s=99.0 crops_per_s=1.142
+completed=114/665 page=267 elapsed_s=101.1 crops_per_s=1.128
+completed=115/665 page=268 elapsed_s=102.3 crops_per_s=1.124
+completed=116/665 page=268 elapsed_s=102.8 crops_per_s=1.128
+completed=117/665 page=268 elapsed_s=103.3 crops_per_s=1.133
+completed=118/665 page=269 elapsed_s=103.6 crops_per_s=1.139
+completed=119/665 page=270 elapsed_s=106.2 crops_per_s=1.120
+completed=120/665 page=271 elapsed_s=111.2 crops_per_s=1.079
+completed=121/665 page=272 elapsed_s=116.1 crops_per_s=1.042
+completed=122/665 page=273 elapsed_s=119.3 crops_per_s=1.022
+completed=123/665 page=274 elapsed_s=120.5 crops_per_s=1.021
+completed=124/665 page=275 elapsed_s=125.0 crops_per_s=0.992
+completed=125/665 page=276 elapsed_s=129.1 crops_per_s=0.968
+completed=126/665 page=277 elapsed_s=133.7 crops_per_s=0.942
+completed=127/665 page=278 elapsed_s=138.7 crops_per_s=0.916
+completed=128/665 page=279 elapsed_s=144.2 crops_per_s=0.888
+completed=129/665 page=279 elapsed_s=147.7 crops_per_s=0.873
+completed=130/665 page=280 elapsed_s=150.5 crops_per_s=0.864
+completed=131/665 page=281 elapsed_s=152.6 crops_per_s=0.858
+completed=132/665 page=282 elapsed_s=157.6 crops_per_s=0.838
+completed=133/665 page=283 elapsed_s=162.6 crops_per_s=0.818
+completed=134/665 page=284 elapsed_s=165.2 crops_per_s=0.811
+completed=135/665 page=285 elapsed_s=167.3 crops_per_s=0.807
+completed=136/665 page=286 elapsed_s=171.5 crops_per_s=0.793
+completed=137/665 page=287 elapsed_s=172.6 crops_per_s=0.794
+completed=138/665 page=287 elapsed_s=175.5 crops_per_s=0.786
+completed=139/665 page=288 elapsed_s=180.5 crops_per_s=0.770
+completed=140/665 page=289 elapsed_s=184.9 crops_per_s=0.757
+completed=141/665 page=290 elapsed_s=190.0 crops_per_s=0.742
+completed=142/665 page=291 elapsed_s=195.1 crops_per_s=0.728
+completed=143/665 page=292 elapsed_s=197.9 crops_per_s=0.722
+completed=144/665 page=292 elapsed_s=199.4 crops_per_s=0.722
+completed=145/665 page=292 elapsed_s=199.5 crops_per_s=0.727
+completed=146/665 page=293 elapsed_s=202.8 crops_per_s=0.720
+completed=147/665 page=294 elapsed_s=204.5 crops_per_s=0.719
+completed=148/665 page=295 elapsed_s=209.3 crops_per_s=0.707
+completed=149/665 page=297 elapsed_s=210.5 crops_per_s=0.708
+completed=150/665 page=298 elapsed_s=211.1 crops_per_s=0.711
+completed=151/665 page=299 elapsed_s=212.4 crops_per_s=0.711
+completed=152/665 page=300 elapsed_s=212.7 crops_per_s=0.715
+completed=153/665 page=307 elapsed_s=214.4 crops_per_s=0.714
+completed=154/665 page=324 elapsed_s=215.2 crops_per_s=0.716
+completed=155/665 page=343 elapsed_s=215.3 crops_per_s=0.720
+completed=156/665 page=355 elapsed_s=215.5 crops_per_s=0.724
+completed=157/665 page=356 elapsed_s=216.0 crops_per_s=0.727
+completed=158/665 page=417 elapsed_s=217.1 crops_per_s=0.728
+completed=159/665 page=418 elapsed_s=217.9 crops_per_s=0.730
+completed=160/665 page=419 elapsed_s=219.2 crops_per_s=0.730
+completed=161/665 page=420 elapsed_s=219.8 crops_per_s=0.732
+completed=162/665 page=425 elapsed_s=221.2 crops_per_s=0.732
+completed=163/665 page=428 elapsed_s=221.7 crops_per_s=0.735
+completed=164/665 page=433 elapsed_s=222.0 crops_per_s=0.739
+completed=165/665 page=434 elapsed_s=222.7 crops_per_s=0.741
+completed=166/665 page=434 elapsed_s=223.1 crops_per_s=0.744
+completed=167/665 page=446 elapsed_s=225.8 crops_per_s=0.740
+completed=168/665 page=447 elapsed_s=226.3 crops_per_s=0.742
+completed=169/665 page=451 elapsed_s=227.6 crops_per_s=0.743
+completed=170/665 page=451 elapsed_s=228.9 crops_per_s=0.743
+completed=171/665 page=451 elapsed_s=230.7 crops_per_s=0.741
+completed=172/665 page=465 elapsed_s=231.3 crops_per_s=0.744
+completed=173/665 page=465 elapsed_s=231.8 crops_per_s=0.746
+completed=174/665 page=465 elapsed_s=232.4 crops_per_s=0.749
+completed=175/665 page=465 elapsed_s=233.0 crops_per_s=0.751
+completed=176/665 page=465 elapsed_s=233.6 crops_per_s=0.753
+completed=177/665 page=466 elapsed_s=235.8 crops_per_s=0.751
+completed=178/665 page=467 elapsed_s=237.1 crops_per_s=0.751
+completed=179/665 page=468 elapsed_s=237.4 crops_per_s=0.754
+completed=180/665 page=468 elapsed_s=237.7 crops_per_s=0.757
+completed=181/665 page=494 elapsed_s=238.3 crops_per_s=0.760
+completed=182/665 page=495 elapsed_s=239.4 crops_per_s=0.760
+completed=183/665 page=496 elapsed_s=242.1 crops_per_s=0.756
+completed=184/665 page=496 elapsed_s=243.1 crops_per_s=0.757
+completed=185/665 page=499 elapsed_s=243.5 crops_per_s=0.760
+completed=186/665 page=499 elapsed_s=244.2 crops_per_s=0.762
+completed=187/665 page=500 elapsed_s=245.1 crops_per_s=0.763
+completed=188/665 page=500 elapsed_s=246.7 crops_per_s=0.762
+completed=189/665 page=501 elapsed_s=248.3 crops_per_s=0.761
+completed=190/665 page=503 elapsed_s=249.1 crops_per_s=0.763
+completed=191/665 page=505 elapsed_s=250.5 crops_per_s=0.762
+completed=192/665 page=506 elapsed_s=251.6 crops_per_s=0.763
+completed=193/665 page=506 elapsed_s=252.6 crops_per_s=0.764
+completed=194/665 page=507 elapsed_s=253.5 crops_per_s=0.765
+completed=195/665 page=507 elapsed_s=254.0 crops_per_s=0.768
+completed=196/665 page=508 elapsed_s=254.5 crops_per_s=0.770
+completed=197/665 page=509 elapsed_s=256.0 crops_per_s=0.770
+completed=198/665 page=510 elapsed_s=256.2 crops_per_s=0.773
+completed=199/665 page=511 elapsed_s=258.1 crops_per_s=0.771
+completed=200/665 page=512 elapsed_s=259.8 crops_per_s=0.770
+completed=201/665 page=513 elapsed_s=260.7 crops_per_s=0.771
+completed=202/665 page=514 elapsed_s=261.6 crops_per_s=0.772
+completed=203/665 page=514 elapsed_s=262.1 crops_per_s=0.774
+completed=204/665 page=515 elapsed_s=262.7 crops_per_s=0.776
+completed=205/665 page=516 elapsed_s=264.0 crops_per_s=0.776
+completed=206/665 page=518 elapsed_s=264.4 crops_per_s=0.779
+completed=207/665 page=519 elapsed_s=265.1 crops_per_s=0.781
+completed=208/665 page=519 elapsed_s=265.9 crops_per_s=0.782
+completed=209/665 page=520 elapsed_s=266.2 crops_per_s=0.785
+completed=210/665 page=520 elapsed_s=266.7 crops_per_s=0.788
+completed=211/665 page=521 elapsed_s=267.8 crops_per_s=0.788
+completed=212/665 page=522 elapsed_s=268.1 crops_per_s=0.791
+completed=213/665 page=523 elapsed_s=268.7 crops_per_s=0.793
+completed=214/665 page=523 elapsed_s=269.1 crops_per_s=0.795
+completed=215/665 page=524 elapsed_s=270.3 crops_per_s=0.795
+completed=216/665 page=526 elapsed_s=270.7 crops_per_s=0.798
+completed=217/665 page=526 elapsed_s=271.1 crops_per_s=0.800
+completed=218/665 page=528 elapsed_s=271.4 crops_per_s=0.803
+completed=219/665 page=531 elapsed_s=272.1 crops_per_s=0.805
+completed=220/665 page=532 elapsed_s=272.5 crops_per_s=0.807
+completed=221/665 page=532 elapsed_s=272.9 crops_per_s=0.810
+completed=222/665 page=533 elapsed_s=273.4 crops_per_s=0.812
+completed=223/665 page=533 elapsed_s=273.8 crops_per_s=0.814
+completed=224/665 page=534 elapsed_s=274.1 crops_per_s=0.817
+completed=225/665 page=534 elapsed_s=275.0 crops_per_s=0.818
+completed=226/665 page=535 elapsed_s=275.7 crops_per_s=0.820
+completed=227/665 page=536 elapsed_s=276.3 crops_per_s=0.822
+completed=228/665 page=542 elapsed_s=277.0 crops_per_s=0.823
+completed=229/665 page=543 elapsed_s=277.4 crops_per_s=0.825
+completed=230/665 page=545 elapsed_s=277.7 crops_per_s=0.828
+completed=231/665 page=552 elapsed_s=277.9 crops_per_s=0.831
+completed=232/665 page=553 elapsed_s=278.9 crops_per_s=0.832
+completed=233/665 page=554 elapsed_s=279.1 crops_per_s=0.835
+completed=234/665 page=554 elapsed_s=279.3 crops_per_s=0.838
+completed=235/665 page=564 elapsed_s=279.9 crops_per_s=0.840
+completed=236/665 page=565 elapsed_s=280.6 crops_per_s=0.841
+completed=237/665 page=566 elapsed_s=281.7 crops_per_s=0.841
+completed=238/665 page=577 elapsed_s=282.2 crops_per_s=0.843
+completed=239/665 page=585 elapsed_s=283.3 crops_per_s=0.844
+completed=240/665 page=591 elapsed_s=283.9 crops_per_s=0.845
+completed=241/665 page=592 elapsed_s=285.5 crops_per_s=0.844
+completed=242/665 page=593 elapsed_s=286.7 crops_per_s=0.844
+completed=243/665 page=595 elapsed_s=286.8 crops_per_s=0.847
+completed=244/665 page=600 elapsed_s=287.0 crops_per_s=0.850
+completed=245/665 page=603 elapsed_s=287.5 crops_per_s=0.852
+completed=246/665 page=605 elapsed_s=287.6 crops_per_s=0.855
+completed=247/665 page=612 elapsed_s=288.2 crops_per_s=0.857
+completed=248/665 page=623 elapsed_s=289.5 crops_per_s=0.857
+completed=249/665 page=626 elapsed_s=291.9 crops_per_s=0.853
+completed=250/665 page=626 elapsed_s=294.4 crops_per_s=0.849
+completed=251/665 page=626 elapsed_s=296.8 crops_per_s=0.846
+completed=252/665 page=627 elapsed_s=297.4 crops_per_s=0.847
+completed=253/665 page=628 elapsed_s=298.2 crops_per_s=0.848
+completed=254/665 page=628 elapsed_s=298.9 crops_per_s=0.850
+completed=255/665 page=629 elapsed_s=299.5 crops_per_s=0.851
+completed=256/665 page=630 elapsed_s=301.0 crops_per_s=0.851
+completed=257/665 page=631 elapsed_s=302.1 crops_per_s=0.851
+completed=258/665 page=632 elapsed_s=304.3 crops_per_s=0.848
+completed=259/665 page=632 elapsed_s=304.6 crops_per_s=0.850
+completed=260/665 page=633 elapsed_s=306.7 crops_per_s=0.848
+completed=261/665 page=634 elapsed_s=307.3 crops_per_s=0.849
+completed=262/665 page=634 elapsed_s=308.0 crops_per_s=0.851
+completed=263/665 page=635 elapsed_s=308.9 crops_per_s=0.851
+completed=264/665 page=636 elapsed_s=309.2 crops_per_s=0.854
+completed=265/665 page=637 elapsed_s=311.9 crops_per_s=0.850
+completed=266/665 page=638 elapsed_s=312.5 crops_per_s=0.851
+completed=267/665 page=639 elapsed_s=313.9 crops_per_s=0.851
+completed=268/665 page=639 elapsed_s=315.1 crops_per_s=0.850
+completed=269/665 page=640 elapsed_s=316.0 crops_per_s=0.851
+completed=270/665 page=641 elapsed_s=316.3 crops_per_s=0.854
+completed=271/665 page=641 elapsed_s=316.9 crops_per_s=0.855
+completed=272/665 page=641 elapsed_s=317.2 crops_per_s=0.857
+completed=273/665 page=642 elapsed_s=318.5 crops_per_s=0.857
+completed=274/665 page=642 elapsed_s=319.6 crops_per_s=0.857
+completed=275/665 page=643 elapsed_s=322.0 crops_per_s=0.854
+completed=276/665 page=645 elapsed_s=322.4 crops_per_s=0.856
+completed=277/665 page=647 elapsed_s=322.5 crops_per_s=0.859
+completed=278/665 page=647 elapsed_s=323.0 crops_per_s=0.861
+completed=279/665 page=647 elapsed_s=323.2 crops_per_s=0.863
+completed=280/665 page=647 elapsed_s=323.4 crops_per_s=0.866
+completed=281/665 page=647 elapsed_s=323.6 crops_per_s=0.868
+completed=282/665 page=647 elapsed_s=323.7 crops_per_s=0.871
+completed=283/665 page=649 elapsed_s=324.2 crops_per_s=0.873
+completed=284/665 page=649 elapsed_s=324.7 crops_per_s=0.875
+completed=285/665 page=652 elapsed_s=325.3 crops_per_s=0.876
+completed=286/665 page=652 elapsed_s=325.5 crops_per_s=0.879
+completed=287/665 page=652 elapsed_s=325.8 crops_per_s=0.881
+completed=288/665 page=654 elapsed_s=326.0 crops_per_s=0.883
+completed=289/665 page=655 elapsed_s=326.2 crops_per_s=0.886
+completed=290/665 page=656 elapsed_s=326.4 crops_per_s=0.889
+completed=291/665 page=657 elapsed_s=326.5 crops_per_s=0.891
+completed=292/665 page=658 elapsed_s=326.6 crops_per_s=0.894
+completed=293/665 page=659 elapsed_s=326.7 crops_per_s=0.897
+completed=294/665 page=660 elapsed_s=326.8 crops_per_s=0.900
+completed=295/665 page=661 elapsed_s=327.0 crops_per_s=0.902
+completed=296/665 page=665 elapsed_s=327.1 crops_per_s=0.905
+completed=297/665 page=665 elapsed_s=327.2 crops_per_s=0.908
+completed=298/665 page=665 elapsed_s=327.3 crops_per_s=0.910
+completed=299/665 page=668 elapsed_s=327.4 crops_per_s=0.913
+completed=300/665 page=673 elapsed_s=327.7 crops_per_s=0.915
+completed=301/665 page=676 elapsed_s=329.3 crops_per_s=0.914
+completed=302/665 page=677 elapsed_s=329.4 crops_per_s=0.917
+completed=303/665 page=680 elapsed_s=330.0 crops_per_s=0.918
+completed=304/665 page=682 elapsed_s=330.3 crops_per_s=0.920
+completed=305/665 page=683 elapsed_s=330.5 crops_per_s=0.923
+completed=306/665 page=683 elapsed_s=330.6 crops_per_s=0.925
+completed=307/665 page=696 elapsed_s=331.4 crops_per_s=0.926
+completed=308/665 page=697 elapsed_s=331.8 crops_per_s=0.928
+completed=309/665 page=702 elapsed_s=332.1 crops_per_s=0.931
+completed=310/665 page=709 elapsed_s=332.2 crops_per_s=0.933
+completed=311/665 page=710 elapsed_s=332.5 crops_per_s=0.935
+completed=312/665 page=712 elapsed_s=332.7 crops_per_s=0.938
+completed=313/665 page=715 elapsed_s=332.9 crops_per_s=0.940
+completed=314/665 page=715 elapsed_s=333.0 crops_per_s=0.943
+completed=315/665 page=715 elapsed_s=333.1 crops_per_s=0.946
+completed=316/665 page=716 elapsed_s=333.3 crops_per_s=0.948
+completed=317/665 page=716 elapsed_s=333.5 crops_per_s=0.951
+completed=318/665 page=720 elapsed_s=333.7 crops_per_s=0.953
+completed=319/665 page=721 elapsed_s=333.9 crops_per_s=0.955
+completed=320/665 page=737 elapsed_s=334.6 crops_per_s=0.956
+completed=321/665 page=737 elapsed_s=335.0 crops_per_s=0.958
+completed=322/665 page=742 elapsed_s=335.7 crops_per_s=0.959
+completed=323/665 page=743 elapsed_s=335.9 crops_per_s=0.962
+completed=324/665 page=744 elapsed_s=336.1 crops_per_s=0.964
+completed=325/665 page=745 elapsed_s=336.6 crops_per_s=0.966
+completed=326/665 page=746 elapsed_s=337.8 crops_per_s=0.965
+completed=327/665 page=754 elapsed_s=338.3 crops_per_s=0.967
+completed=328/665 page=755 elapsed_s=338.6 crops_per_s=0.969
+completed=329/665 page=758 elapsed_s=338.6 crops_per_s=0.972
+completed=330/665 page=760 elapsed_s=339.0 crops_per_s=0.974
+completed=331/665 page=762 elapsed_s=339.1 crops_per_s=0.976
+completed=332/665 page=763 elapsed_s=339.2 crops_per_s=0.979
+completed=333/665 page=763 elapsed_s=339.3 crops_per_s=0.981
+completed=334/665 page=763 elapsed_s=339.4 crops_per_s=0.984
+completed=335/665 page=766 elapsed_s=347.1 crops_per_s=0.965
+completed=336/665 page=769 elapsed_s=347.3 crops_per_s=0.967
+completed=337/665 page=775 elapsed_s=347.5 crops_per_s=0.970
+completed=338/665 page=776 elapsed_s=347.7 crops_per_s=0.972
+completed=339/665 page=781 elapsed_s=347.8 crops_per_s=0.975
+completed=340/665 page=785 elapsed_s=348.0 crops_per_s=0.977
+completed=341/665 page=789 elapsed_s=348.1 crops_per_s=0.980
+completed=342/665 page=790 elapsed_s=348.7 crops_per_s=0.981
+completed=343/665 page=792 elapsed_s=349.4 crops_per_s=0.982
+completed=344/665 page=792 elapsed_s=350.1 crops_per_s=0.983
+completed=345/665 page=793 elapsed_s=350.2 crops_per_s=0.985
+completed=346/665 page=799 elapsed_s=350.7 crops_per_s=0.987
+completed=347/665 page=800 elapsed_s=350.8 crops_per_s=0.989
+completed=348/665 page=800 elapsed_s=350.9 crops_per_s=0.992
+completed=349/665 page=803 elapsed_s=351.0 crops_per_s=0.994
+completed=350/665 page=806 elapsed_s=352.4 crops_per_s=0.993
+completed=351/665 page=814 elapsed_s=352.6 crops_per_s=0.996
+completed=352/665 page=818 elapsed_s=352.8 crops_per_s=0.998
+completed=353/665 page=821 elapsed_s=353.0 crops_per_s=1.000
+completed=354/665 page=821 elapsed_s=353.1 crops_per_s=1.002
+completed=355/665 page=821 elapsed_s=353.4 crops_per_s=1.004
+completed=356/665 page=823 elapsed_s=353.6 crops_per_s=1.007
+completed=357/665 page=824 elapsed_s=354.2 crops_per_s=1.008
+completed=358/665 page=826 elapsed_s=354.4 crops_per_s=1.010
+completed=359/665 page=827 elapsed_s=354.5 crops_per_s=1.013
+completed=360/665 page=829 elapsed_s=354.8 crops_per_s=1.015
+completed=361/665 page=832 elapsed_s=355.0 crops_per_s=1.017
+completed=362/665 page=833 elapsed_s=356.0 crops_per_s=1.017
+completed=363/665 page=835 elapsed_s=356.1 crops_per_s=1.019
+completed=364/665 page=838 elapsed_s=356.3 crops_per_s=1.022
+completed=365/665 page=838 elapsed_s=356.4 crops_per_s=1.024
+completed=366/665 page=838 elapsed_s=356.6 crops_per_s=1.026
+completed=367/665 page=841 elapsed_s=356.7 crops_per_s=1.029
+completed=368/665 page=841 elapsed_s=356.8 crops_per_s=1.031
+completed=369/665 page=844 elapsed_s=357.3 crops_per_s=1.033
+completed=370/665 page=853 elapsed_s=357.6 crops_per_s=1.035
+completed=371/665 page=853 elapsed_s=357.8 crops_per_s=1.037
+completed=372/665 page=858 elapsed_s=358.0 crops_per_s=1.039
+completed=373/665 page=861 elapsed_s=360.7 crops_per_s=1.034
+completed=374/665 page=861 elapsed_s=363.5 crops_per_s=1.029
+completed=375/665 page=864 elapsed_s=363.6 crops_per_s=1.031
+completed=376/665 page=866 elapsed_s=364.1 crops_per_s=1.033
+completed=377/665 page=866 elapsed_s=364.5 crops_per_s=1.034
+completed=378/665 page=866 elapsed_s=364.6 crops_per_s=1.037
+completed=379/665 page=900 elapsed_s=364.8 crops_per_s=1.039
+completed=380/665 page=903 elapsed_s=365.1 crops_per_s=1.041
+completed=381/665 page=911 elapsed_s=365.7 crops_per_s=1.042
+completed=382/665 page=913 elapsed_s=366.1 crops_per_s=1.044
+completed=383/665 page=915 elapsed_s=366.2 crops_per_s=1.046
+completed=384/665 page=916 elapsed_s=367.1 crops_per_s=1.046
+completed=385/665 page=918 elapsed_s=367.5 crops_per_s=1.048
+completed=386/665 page=918 elapsed_s=367.7 crops_per_s=1.050
+completed=387/665 page=918 elapsed_s=368.0 crops_per_s=1.052
+completed=388/665 page=920 elapsed_s=368.4 crops_per_s=1.053
+completed=389/665 page=920 elapsed_s=369.0 crops_per_s=1.054
+completed=390/665 page=921 elapsed_s=369.4 crops_per_s=1.056
+completed=391/665 page=921 elapsed_s=369.9 crops_per_s=1.057
+completed=392/665 page=921 elapsed_s=370.1 crops_per_s=1.059
+completed=393/665 page=922 elapsed_s=370.8 crops_per_s=1.060
+completed=394/665 page=925 elapsed_s=371.6 crops_per_s=1.060
+completed=395/665 page=927 elapsed_s=372.1 crops_per_s=1.062
+completed=396/665 page=928 elapsed_s=372.3 crops_per_s=1.064
+completed=397/665 page=929 elapsed_s=373.1 crops_per_s=1.064
+completed=398/665 page=930 elapsed_s=373.4 crops_per_s=1.066
+completed=399/665 page=932 elapsed_s=374.0 crops_per_s=1.067
+completed=400/665 page=933 elapsed_s=374.3 crops_per_s=1.069
+completed=401/665 page=934 elapsed_s=374.5 crops_per_s=1.071
+completed=402/665 page=935 elapsed_s=374.8 crops_per_s=1.073
+completed=403/665 page=937 elapsed_s=375.5 crops_per_s=1.073
+completed=404/665 page=937 elapsed_s=376.0 crops_per_s=1.074
+completed=405/665 page=938 elapsed_s=376.6 crops_per_s=1.075
+completed=406/665 page=938 elapsed_s=377.2 crops_per_s=1.076
+completed=407/665 page=940 elapsed_s=377.4 crops_per_s=1.078
+completed=408/665 page=941 elapsed_s=378.2 crops_per_s=1.079
+completed=409/665 page=942 elapsed_s=379.0 crops_per_s=1.079
+completed=410/665 page=944 elapsed_s=380.0 crops_per_s=1.079
+completed=411/665 page=945 elapsed_s=380.7 crops_per_s=1.080
+completed=412/665 page=946 elapsed_s=381.1 crops_per_s=1.081
+completed=413/665 page=982 elapsed_s=381.4 crops_per_s=1.083
+completed=414/665 page=984 elapsed_s=381.6 crops_per_s=1.085
+completed=415/665 page=984 elapsed_s=382.3 crops_per_s=1.085
+completed=416/665 page=1011 elapsed_s=382.7 crops_per_s=1.087
+completed=417/665 page=1011 elapsed_s=383.9 crops_per_s=1.086
+completed=418/665 page=1011 elapsed_s=384.4 crops_per_s=1.087
+completed=419/665 page=1026 elapsed_s=384.9 crops_per_s=1.089
+completed=420/665 page=1026 elapsed_s=385.5 crops_per_s=1.089
+completed=421/665 page=1035 elapsed_s=386.3 crops_per_s=1.090
+completed=422/665 page=1035 elapsed_s=386.9 crops_per_s=1.091
+completed=423/665 page=1036 elapsed_s=387.9 crops_per_s=1.090
+completed=424/665 page=1082 elapsed_s=388.6 crops_per_s=1.091
+completed=425/665 page=1082 elapsed_s=389.7 crops_per_s=1.091
+completed=426/665 page=1089 elapsed_s=390.3 crops_per_s=1.091
+completed=427/665 page=1117 elapsed_s=390.6 crops_per_s=1.093
+completed=428/665 page=1117 elapsed_s=391.7 crops_per_s=1.093
+completed=429/665 page=1119 elapsed_s=392.3 crops_per_s=1.094
+completed=430/665 page=1121 elapsed_s=392.7 crops_per_s=1.095
+completed=431/665 page=1121 elapsed_s=393.9 crops_per_s=1.094
+completed=432/665 page=1122 elapsed_s=394.3 crops_per_s=1.096
+completed=433/665 page=1123 elapsed_s=394.7 crops_per_s=1.097
+completed=434/665 page=1124 elapsed_s=395.0 crops_per_s=1.099
+completed=435/665 page=1124 elapsed_s=395.2 crops_per_s=1.101
+completed=436/665 page=1124 elapsed_s=395.7 crops_per_s=1.102
+completed=437/665 page=1125 elapsed_s=397.3 crops_per_s=1.100
+completed=438/665 page=1125 elapsed_s=398.0 crops_per_s=1.100
+completed=439/665 page=1125 elapsed_s=398.7 crops_per_s=1.101
+completed=440/665 page=1125 elapsed_s=399.2 crops_per_s=1.102
+completed=441/665 page=1126 elapsed_s=399.5 crops_per_s=1.104
+completed=442/665 page=1127 elapsed_s=400.1 crops_per_s=1.105
+completed=443/665 page=1128 elapsed_s=401.2 crops_per_s=1.104
+completed=444/665 page=1129 elapsed_s=402.6 crops_per_s=1.103
+completed=445/665 page=1129 elapsed_s=403.1 crops_per_s=1.104
+completed=446/665 page=1129 elapsed_s=404.0 crops_per_s=1.104
+completed=447/665 page=1129 elapsed_s=404.9 crops_per_s=1.104
+completed=448/665 page=1130 elapsed_s=405.1 crops_per_s=1.106
+completed=449/665 page=1130 elapsed_s=405.3 crops_per_s=1.108
+completed=450/665 page=1131 elapsed_s=405.6 crops_per_s=1.109
+completed=451/665 page=1131 elapsed_s=406.2 crops_per_s=1.110
+completed=452/665 page=1132 elapsed_s=406.9 crops_per_s=1.111
+completed=453/665 page=1132 elapsed_s=407.2 crops_per_s=1.113
+completed=454/665 page=1133 elapsed_s=408.6 crops_per_s=1.111
+completed=455/665 page=1134 elapsed_s=410.2 crops_per_s=1.109
+completed=456/665 page=1134 elapsed_s=411.3 crops_per_s=1.109
+completed=457/665 page=1134 elapsed_s=412.5 crops_per_s=1.108
+completed=458/665 page=1134 elapsed_s=413.7 crops_per_s=1.107
+completed=459/665 page=1135 elapsed_s=414.2 crops_per_s=1.108
+completed=460/665 page=1136 elapsed_s=414.7 crops_per_s=1.109
+completed=461/665 page=1137 elapsed_s=415.7 crops_per_s=1.109
+completed=462/665 page=1137 elapsed_s=417.5 crops_per_s=1.107
+completed=463/665 page=1137 elapsed_s=419.7 crops_per_s=1.103
+completed=464/665 page=1137 elapsed_s=420.5 crops_per_s=1.103
+completed=465/665 page=1137 elapsed_s=421.2 crops_per_s=1.104
+completed=466/665 page=1138 elapsed_s=423.2 crops_per_s=1.101
+completed=467/665 page=1139 elapsed_s=424.9 crops_per_s=1.099
+completed=468/665 page=1140 elapsed_s=425.4 crops_per_s=1.100
+completed=469/665 page=1140 elapsed_s=426.5 crops_per_s=1.100
+completed=470/665 page=1141 elapsed_s=426.8 crops_per_s=1.101
+completed=471/665 page=1141 elapsed_s=427.4 crops_per_s=1.102
+completed=472/665 page=1142 elapsed_s=427.7 crops_per_s=1.103
+completed=473/665 page=1143 elapsed_s=428.2 crops_per_s=1.105
+completed=474/665 page=1143 elapsed_s=429.1 crops_per_s=1.105
+completed=475/665 page=1144 elapsed_s=429.9 crops_per_s=1.105
+completed=476/665 page=1145 elapsed_s=430.4 crops_per_s=1.106
+completed=477/665 page=1146 elapsed_s=430.9 crops_per_s=1.107
+completed=478/665 page=1147 elapsed_s=433.0 crops_per_s=1.104
+completed=479/665 page=1147 elapsed_s=434.0 crops_per_s=1.104
+completed=480/665 page=1147 elapsed_s=435.8 crops_per_s=1.102
+completed=481/665 page=1147 elapsed_s=437.3 crops_per_s=1.100
+completed=482/665 page=1148 elapsed_s=438.8 crops_per_s=1.098
+completed=483/665 page=1149 elapsed_s=439.7 crops_per_s=1.099
+completed=484/665 page=1150 elapsed_s=440.3 crops_per_s=1.099
+completed=485/665 page=1152 elapsed_s=442.0 crops_per_s=1.097
+completed=486/665 page=1153 elapsed_s=443.6 crops_per_s=1.096
+completed=487/665 page=1154 elapsed_s=444.2 crops_per_s=1.096
+completed=488/665 page=1155 elapsed_s=444.5 crops_per_s=1.098
+completed=489/665 page=1156 elapsed_s=445.3 crops_per_s=1.098
+completed=490/665 page=1157 elapsed_s=445.8 crops_per_s=1.099
+completed=491/665 page=1158 elapsed_s=446.3 crops_per_s=1.100
+completed=492/665 page=1159 elapsed_s=447.1 crops_per_s=1.100
+completed=493/665 page=1160 elapsed_s=447.7 crops_per_s=1.101
+completed=494/665 page=1161 elapsed_s=448.7 crops_per_s=1.101
+completed=495/665 page=1162 elapsed_s=449.4 crops_per_s=1.101
+completed=496/665 page=1163 elapsed_s=450.7 crops_per_s=1.101
+completed=497/665 page=1164 elapsed_s=453.1 crops_per_s=1.097
+completed=498/665 page=1164 elapsed_s=455.4 crops_per_s=1.094
+completed=499/665 page=1165 elapsed_s=455.8 crops_per_s=1.095
+completed=500/665 page=1166 elapsed_s=456.2 crops_per_s=1.096
+completed=501/665 page=1166 elapsed_s=456.5 crops_per_s=1.097
+completed=502/665 page=1167 elapsed_s=456.9 crops_per_s=1.099
+completed=503/665 page=1167 elapsed_s=457.3 crops_per_s=1.100
+completed=504/665 page=1168 elapsed_s=458.1 crops_per_s=1.100
+completed=505/665 page=1169 elapsed_s=458.3 crops_per_s=1.102
+completed=506/665 page=1170 elapsed_s=458.8 crops_per_s=1.103
+completed=507/665 page=1171 elapsed_s=459.2 crops_per_s=1.104
+completed=508/665 page=1172 elapsed_s=459.8 crops_per_s=1.105
+completed=509/665 page=1173 elapsed_s=461.8 crops_per_s=1.102
+completed=510/665 page=1174 elapsed_s=462.3 crops_per_s=1.103
+completed=511/665 page=1175 elapsed_s=463.3 crops_per_s=1.103
+completed=512/665 page=1176 elapsed_s=464.6 crops_per_s=1.102
+completed=513/665 page=1177 elapsed_s=465.3 crops_per_s=1.102
+completed=514/665 page=1178 elapsed_s=466.8 crops_per_s=1.101
+completed=515/665 page=1179 elapsed_s=468.8 crops_per_s=1.099
+completed=516/665 page=1180 elapsed_s=469.2 crops_per_s=1.100
+completed=517/665 page=1180 elapsed_s=469.5 crops_per_s=1.101
+completed=518/665 page=1181 elapsed_s=471.3 crops_per_s=1.099
+completed=519/665 page=1182 elapsed_s=472.0 crops_per_s=1.100
+completed=520/665 page=1183 elapsed_s=472.4 crops_per_s=1.101
+completed=521/665 page=1183 elapsed_s=473.0 crops_per_s=1.101
+completed=522/665 page=1184 elapsed_s=473.3 crops_per_s=1.103
+completed=523/665 page=1184 elapsed_s=473.5 crops_per_s=1.105
+completed=524/665 page=1185 elapsed_s=474.0 crops_per_s=1.105
+completed=525/665 page=1186 elapsed_s=474.2 crops_per_s=1.107
+completed=526/665 page=1186 elapsed_s=474.7 crops_per_s=1.108
+completed=527/665 page=1187 elapsed_s=477.5 crops_per_s=1.104
+completed=528/665 page=1188 elapsed_s=480.9 crops_per_s=1.098
+completed=529/665 page=1189 elapsed_s=481.3 crops_per_s=1.099
+completed=530/665 page=1189 elapsed_s=481.8 crops_per_s=1.100
+completed=531/665 page=1190 elapsed_s=482.6 crops_per_s=1.100
+completed=532/665 page=1191 elapsed_s=482.9 crops_per_s=1.102
+completed=533/665 page=1192 elapsed_s=484.6 crops_per_s=1.100
+completed=534/665 page=1193 elapsed_s=485.2 crops_per_s=1.101
+completed=535/665 page=1193 elapsed_s=485.8 crops_per_s=1.101
+completed=536/665 page=1194 elapsed_s=486.4 crops_per_s=1.102
+completed=537/665 page=1195 elapsed_s=488.1 crops_per_s=1.100
+completed=538/665 page=1196 elapsed_s=489.0 crops_per_s=1.100
+completed=539/665 page=1197 elapsed_s=491.3 crops_per_s=1.097
+completed=540/665 page=1197 elapsed_s=492.5 crops_per_s=1.096
+completed=541/665 page=1197 elapsed_s=493.8 crops_per_s=1.096
+completed=542/665 page=1198 elapsed_s=494.4 crops_per_s=1.096
+completed=543/665 page=1199 elapsed_s=495.0 crops_per_s=1.097
+completed=544/665 page=1200 elapsed_s=496.9 crops_per_s=1.095
+completed=545/665 page=1201 elapsed_s=497.3 crops_per_s=1.096
+completed=546/665 page=1202 elapsed_s=498.4 crops_per_s=1.096
+completed=547/665 page=1204 elapsed_s=499.2 crops_per_s=1.096
+completed=548/665 page=1207 elapsed_s=499.7 crops_per_s=1.097
+completed=549/665 page=1208 elapsed_s=500.1 crops_per_s=1.098
+completed=550/665 page=1209 elapsed_s=500.4 crops_per_s=1.099
+completed=551/665 page=1210 elapsed_s=501.4 crops_per_s=1.099
+completed=552/665 page=1211 elapsed_s=501.7 crops_per_s=1.100
+completed=553/665 page=1214 elapsed_s=502.2 crops_per_s=1.101
+completed=554/665 page=1215 elapsed_s=503.9 crops_per_s=1.099
+completed=555/665 page=1216 elapsed_s=504.8 crops_per_s=1.099
+completed=556/665 page=1219 elapsed_s=506.9 crops_per_s=1.097
+completed=557/665 page=1219 elapsed_s=507.3 crops_per_s=1.098
+completed=558/665 page=1220 elapsed_s=508.8 crops_per_s=1.097
+completed=559/665 page=1222 elapsed_s=510.6 crops_per_s=1.095
+completed=560/665 page=1223 elapsed_s=511.9 crops_per_s=1.094
+completed=561/665 page=1225 elapsed_s=512.3 crops_per_s=1.095
+completed=562/665 page=1227 elapsed_s=514.0 crops_per_s=1.093
+completed=563/665 page=1230 elapsed_s=514.5 crops_per_s=1.094
+completed=564/665 page=1230 elapsed_s=514.8 crops_per_s=1.096
+completed=565/665 page=1231 elapsed_s=516.9 crops_per_s=1.093
+completed=566/665 page=1232 elapsed_s=517.4 crops_per_s=1.094
+completed=567/665 page=1233 elapsed_s=518.1 crops_per_s=1.094
+completed=568/665 page=1242 elapsed_s=518.6 crops_per_s=1.095
+completed=569/665 page=1248 elapsed_s=519.2 crops_per_s=1.096
+completed=570/665 page=1270 elapsed_s=520.7 crops_per_s=1.095
+completed=571/665 page=1271 elapsed_s=523.6 crops_per_s=1.091
+completed=572/665 page=1272 elapsed_s=525.5 crops_per_s=1.089
+completed=573/665 page=1273 elapsed_s=527.1 crops_per_s=1.087
+completed=574/665 page=1274 elapsed_s=531.2 crops_per_s=1.081
+completed=575/665 page=1275 elapsed_s=533.2 crops_per_s=1.078
+completed=576/665 page=1276 elapsed_s=536.9 crops_per_s=1.073
+completed=577/665 page=1306 elapsed_s=537.9 crops_per_s=1.073
+completed=578/665 page=1342 elapsed_s=539.3 crops_per_s=1.072
+completed=579/665 page=1356 elapsed_s=539.7 crops_per_s=1.073
+completed=580/665 page=1357 elapsed_s=539.9 crops_per_s=1.074
+completed=581/665 page=1367 elapsed_s=541.4 crops_per_s=1.073
+completed=582/665 page=1367 elapsed_s=542.1 crops_per_s=1.074
+completed=583/665 page=1367 elapsed_s=544.0 crops_per_s=1.072
+completed=584/665 page=1367 elapsed_s=544.8 crops_per_s=1.072
+completed=585/665 page=1367 elapsed_s=545.5 crops_per_s=1.072
+completed=586/665 page=1367 elapsed_s=546.3 crops_per_s=1.073
+completed=587/665 page=1367 elapsed_s=546.7 crops_per_s=1.074
+completed=588/665 page=1367 elapsed_s=547.4 crops_per_s=1.074
+completed=589/665 page=1367 elapsed_s=547.7 crops_per_s=1.075
+completed=590/665 page=1367 elapsed_s=548.0 crops_per_s=1.077
+completed=591/665 page=1367 elapsed_s=548.3 crops_per_s=1.078
+completed=592/665 page=1367 elapsed_s=548.8 crops_per_s=1.079
+completed=593/665 page=1367 elapsed_s=551.5 crops_per_s=1.075
+completed=594/665 page=1368 elapsed_s=552.3 crops_per_s=1.076
+completed=595/665 page=1368 elapsed_s=552.5 crops_per_s=1.077
+completed=596/665 page=1368 elapsed_s=553.1 crops_per_s=1.078
+completed=597/665 page=1368 elapsed_s=553.3 crops_per_s=1.079
+completed=598/665 page=1368 elapsed_s=553.6 crops_per_s=1.080
+completed=599/665 page=1368 elapsed_s=553.8 crops_per_s=1.082
+completed=600/665 page=1368 elapsed_s=554.6 crops_per_s=1.082
+completed=601/665 page=1368 elapsed_s=554.9 crops_per_s=1.083
+completed=602/665 page=1368 elapsed_s=555.6 crops_per_s=1.083
+completed=603/665 page=1368 elapsed_s=556.3 crops_per_s=1.084
+completed=604/665 page=1368 elapsed_s=556.7 crops_per_s=1.085
+completed=605/665 page=1368 elapsed_s=557.0 crops_per_s=1.086
+completed=606/665 page=1368 elapsed_s=557.4 crops_per_s=1.087
+completed=607/665 page=1368 elapsed_s=557.9 crops_per_s=1.088
+completed=608/665 page=1368 elapsed_s=558.3 crops_per_s=1.089
+completed=609/665 page=1368 elapsed_s=558.6 crops_per_s=1.090
+completed=610/665 page=1368 elapsed_s=559.0 crops_per_s=1.091
+completed=611/665 page=1368 elapsed_s=559.4 crops_per_s=1.092
+completed=612/665 page=1368 elapsed_s=560.4 crops_per_s=1.092
+completed=613/665 page=1368 elapsed_s=560.6 crops_per_s=1.094
+completed=614/665 page=1368 elapsed_s=560.8 crops_per_s=1.095
+completed=615/665 page=1368 elapsed_s=561.1 crops_per_s=1.096
+completed=616/665 page=1368 elapsed_s=561.4 crops_per_s=1.097
+completed=617/665 page=1368 elapsed_s=561.7 crops_per_s=1.099
+completed=618/665 page=1368 elapsed_s=561.9 crops_per_s=1.100
+completed=619/665 page=1368 elapsed_s=562.1 crops_per_s=1.101
+completed=620/665 page=1375 elapsed_s=563.4 crops_per_s=1.100
+completed=621/665 page=1375 elapsed_s=563.6 crops_per_s=1.102
+completed=622/665 page=1375 elapsed_s=565.5 crops_per_s=1.100
+completed=623/665 page=1375 elapsed_s=565.9 crops_per_s=1.101
+completed=624/665 page=1375 elapsed_s=566.1 crops_per_s=1.102
+completed=625/665 page=1376 elapsed_s=566.5 crops_per_s=1.103
+completed=626/665 page=1376 elapsed_s=566.8 crops_per_s=1.104
+completed=627/665 page=1378 elapsed_s=567.4 crops_per_s=1.105
+completed=628/665 page=1395 elapsed_s=568.4 crops_per_s=1.105
+completed=629/665 page=1395 elapsed_s=569.4 crops_per_s=1.105
+completed=630/665 page=1398 elapsed_s=570.1 crops_per_s=1.105
+completed=631/665 page=1398 elapsed_s=570.7 crops_per_s=1.106
+completed=632/665 page=1398 elapsed_s=571.3 crops_per_s=1.106
+completed=633/665 page=1398 elapsed_s=571.7 crops_per_s=1.107
+completed=634/665 page=1398 elapsed_s=572.1 crops_per_s=1.108
+completed=635/665 page=1398 elapsed_s=572.6 crops_per_s=1.109
+completed=636/665 page=1403 elapsed_s=572.8 crops_per_s=1.110
+completed=637/665 page=1404 elapsed_s=573.1 crops_per_s=1.111
+completed=638/665 page=1406 elapsed_s=573.7 crops_per_s=1.112
+completed=639/665 page=1408 elapsed_s=573.7 crops_per_s=1.114
+completed=640/665 page=1413 elapsed_s=574.0 crops_per_s=1.115
+completed=641/665 page=1417 elapsed_s=574.1 crops_per_s=1.116
+completed=642/665 page=1419 elapsed_s=574.4 crops_per_s=1.118
+completed=643/665 page=1432 elapsed_s=574.6 crops_per_s=1.119
+completed=644/665 page=1432 elapsed_s=574.8 crops_per_s=1.120
+completed=645/665 page=1449 elapsed_s=575.2 crops_per_s=1.121
+completed=646/665 page=1480 elapsed_s=575.8 crops_per_s=1.122
+completed=647/665 page=1493 elapsed_s=576.2 crops_per_s=1.123
+completed=648/665 page=1493 elapsed_s=576.5 crops_per_s=1.124
+completed=649/665 page=1494 elapsed_s=576.8 crops_per_s=1.125
+completed=650/665 page=1496 elapsed_s=577.6 crops_per_s=1.125
+completed=651/665 page=1498 elapsed_s=578.0 crops_per_s=1.126
+completed=652/665 page=1499 elapsed_s=578.6 crops_per_s=1.127
+completed=653/665 page=1503 elapsed_s=579.0 crops_per_s=1.128
+completed=654/665 page=1506 elapsed_s=579.3 crops_per_s=1.129
+completed=655/665 page=1516 elapsed_s=579.9 crops_per_s=1.130
+completed=656/665 page=1522 elapsed_s=580.7 crops_per_s=1.130
+completed=657/665 page=1595 elapsed_s=586.6 crops_per_s=1.120
+completed=658/665 page=1595 elapsed_s=588.3 crops_per_s=1.119
+completed=659/665 page=1595 elapsed_s=589.5 crops_per_s=1.118
+completed=660/665 page=1595 elapsed_s=590.0 crops_per_s=1.119
+completed=661/665 page=1595 elapsed_s=591.1 crops_per_s=1.118
+completed=662/665 page=1632 elapsed_s=591.3 crops_per_s=1.119
+completed=663/665 page=1636 elapsed_s=592.3 crops_per_s=1.119
+completed=664/665 page=1637 elapsed_s=592.5 crops_per_s=1.121
+completed=665/665 page=1637 elapsed_s=592.7 crops_per_s=1.122
+[process-TEDS] workers=12 samples=665 exact=193 timeout=120.0s
+TEDS (process-isolated):  29%|########################3                                                           | 193/665 [00:00<?, ?it/s]TEDS (process-isolated):  30%|######################7                                                     | 199/665 [00:00<00:09, 50.16it/s]TEDS (process-isolated):  32%|########################4                                                   | 214/665 [00:00<00:04, 96.39it/s]TEDS (process-isolated):  34%|#########################5                                                  | 224/665 [00:00<00:05, 74.31it/s]TEDS (process-isolated):  35%|##########################5                                                 | 232/665 [00:00<00:07, 57.58it/s]TEDS (process-isolated):  36%|###########################6                                                | 242/665 [00:00<00:06, 66.38it/s]TEDS (process-isolated):  38%|############################9                                               | 253/665 [00:00<00:05, 74.45it/s]TEDS (process-isolated):  39%|#############################9                                              | 262/665 [00:01<00:05, 67.60it/s]TEDS (process-isolated):  41%|##############################8                                             | 270/665 [00:01<00:06, 63.47it/s]TEDS (process-isolated):  42%|###############################6                                            | 277/665 [00:01<00:08, 46.92it/s]TEDS (process-isolated):  43%|################################3                                           | 283/665 [00:01<00:10, 35.92it/s]TEDS (process-isolated):  43%|################################9                                           | 288/665 [00:02<00:15, 24.76it/s]TEDS (process-isolated):  44%|#################################3                                          | 292/665 [00:03<00:33, 11.25it/s]TEDS (process-isolated):  44%|#################################7                                          | 295/665 [00:04<00:57,  6.40it/s]TEDS (process-isolated):  45%|#################################9                                          | 297/665 [00:05<01:15,  4.84it/s]TEDS (process-isolated):  45%|##################################1                                         | 299/665 [00:06<01:24,  4.35it/s]TEDS (process-isolated):  45%|##################################4                                         | 301/665 [00:06<01:16,  4.75it/s]TEDS (process-isolated):  45%|##################################5                                         | 302/665 [00:07<02:01,  2.99it/s]TEDS (process-isolated):  46%|##################################6                                         | 303/665 [00:09<03:20,  1.81it/s]TEDS (process-isolated):  46%|##################################7                                         | 304/665 [00:10<03:44,  1.61it/s]TEDS (process-isolated):  46%|##################################9                                         | 306/665 [00:11<03:17,  1.82it/s]TEDS (process-isolated):  46%|###################################                                         | 307/665 [00:12<03:41,  1.62it/s]TEDS (process-isolated):  46%|###################################3                                        | 309/665 [00:12<02:36,  2.28it/s]TEDS (process-isolated):  47%|###################################6                                        | 312/665 [00:12<01:34,  3.75it/s]TEDS (process-isolated):  47%|####################################                                        | 315/665 [00:12<01:09,  5.05it/s]TEDS (process-isolated):  48%|####################################3                                       | 318/665 [00:13<00:49,  7.00it/s]TEDS (process-isolated):  48%|####################################5                                       | 320/665 [00:13<00:49,  7.00it/s]TEDS (process-isolated):  48%|####################################8                                       | 322/665 [00:15<01:53,  3.03it/s]TEDS (process-isolated):  49%|####################################9                                       | 323/665 [00:15<01:42,  3.34it/s]TEDS (process-isolated):  49%|#####################################1                                      | 325/665 [00:16<02:07,  2.67it/s]TEDS (process-isolated):  49%|#####################################2                                      | 326/665 [00:16<02:18,  2.44it/s]TEDS (process-isolated):  49%|#####################################3                                      | 327/665 [00:17<02:12,  2.55it/s]TEDS (process-isolated):  49%|#####################################4                                      | 328/665 [00:17<02:11,  2.57it/s]TEDS (process-isolated):  50%|#####################################8                                      | 331/665 [00:17<01:18,  4.27it/s]TEDS (process-isolated):  50%|#####################################9                                      | 332/665 [00:18<01:30,  3.70it/s]TEDS (process-isolated):  50%|######################################1                                     | 334/665 [00:18<01:05,  5.05it/s]TEDS (process-isolated):  51%|######################################4                                     | 336/665 [00:18<00:51,  6.35it/s]TEDS (process-isolated):  51%|######################################5                                     | 337/665 [00:18<00:48,  6.71it/s]TEDS (process-isolated):  51%|######################################7                                     | 339/665 [00:18<00:39,  8.33it/s]TEDS (process-isolated):  51%|######################################9                                     | 341/665 [00:19<00:53,  6.05it/s]TEDS (process-isolated):  51%|#######################################                                     | 342/665 [00:19<00:59,  5.45it/s]TEDS (process-isolated):  52%|#######################################2                                    | 343/665 [00:19<01:09,  4.66it/s]TEDS (process-isolated):  52%|#######################################4                                    | 345/665 [00:19<00:53,  6.02it/s]TEDS (process-isolated):  52%|#######################################8                                    | 349/665 [00:20<00:33,  9.47it/s]TEDS (process-isolated):  53%|########################################2                                   | 352/665 [00:20<00:29, 10.62it/s]TEDS (process-isolated):  53%|########################################4                                   | 354/665 [00:20<00:27, 11.44it/s]TEDS (process-isolated):  54%|#########################################                                   | 359/665 [00:20<00:19, 15.60it/s]TEDS (process-isolated):  54%|#########################################2                                  | 361/665 [00:20<00:22, 13.27it/s]TEDS (process-isolated):  55%|#########################################4                                  | 363/665 [00:21<00:21, 14.26it/s]TEDS (process-isolated):  55%|#########################################7                                  | 365/665 [00:21<00:19, 15.21it/s]TEDS (process-isolated):  55%|##########################################                                  | 368/665 [00:21<00:16, 17.69it/s]TEDS (process-isolated):  56%|##########################################4                                 | 371/665 [00:21<00:15, 18.88it/s]TEDS (process-isolated):  56%|##########################################7                                 | 374/665 [00:22<00:43,  6.72it/s]TEDS (process-isolated):  57%|##########################################9                                 | 376/665 [00:23<01:11,  4.05it/s]TEDS (process-isolated):  57%|###########################################2                                | 378/665 [00:23<01:03,  4.55it/s]TEDS (process-isolated):  57%|###########################################4                                | 380/665 [00:24<00:52,  5.44it/s]TEDS (process-isolated):  57%|###########################################6                                | 382/665 [00:24<00:45,  6.18it/s]TEDS (process-isolated):  58%|###########################################8                                | 384/665 [00:24<01:02,  4.50it/s]TEDS (process-isolated):  58%|############################################1                               | 386/665 [00:25<00:59,  4.69it/s]TEDS (process-isolated):  58%|############################################3                               | 388/665 [00:25<00:55,  4.95it/s]TEDS (process-isolated):  58%|############################################4                               | 389/665 [00:26<01:02,  4.42it/s]TEDS (process-isolated):  59%|############################################6                               | 391/665 [00:26<01:05,  4.20it/s]TEDS (process-isolated):  59%|############################################8                               | 392/665 [00:26<01:08,  3.96it/s]TEDS (process-isolated):  59%|#############################################1                              | 395/665 [00:27<00:43,  6.23it/s]TEDS (process-isolated):  60%|#############################################3                              | 397/665 [00:27<00:37,  7.16it/s]TEDS (process-isolated):  60%|#############################################7                              | 400/665 [00:27<00:27,  9.79it/s]TEDS (process-isolated):  61%|##############################################1                             | 404/665 [00:27<00:18, 13.87it/s]TEDS (process-isolated):  61%|##############################################4                             | 406/665 [00:27<00:18, 14.22it/s]TEDS (process-isolated):  62%|##############################################8                             | 410/665 [00:27<00:14, 17.13it/s]TEDS (process-isolated):  62%|###############################################4                            | 415/665 [00:27<00:10, 23.13it/s]TEDS (process-isolated):  64%|################################################3                           | 423/665 [00:28<00:07, 33.81it/s]TEDS (process-isolated):  64%|################################################8                           | 427/665 [00:28<00:07, 30.73it/s]TEDS (process-isolated):  65%|#################################################4                          | 433/665 [00:28<00:06, 33.74it/s]TEDS (process-isolated):  66%|##################################################1                         | 439/665 [00:28<00:05, 39.25it/s]TEDS (process-isolated):  67%|##################################################8                         | 445/665 [00:28<00:05, 43.89it/s]TEDS (process-isolated):  68%|###################################################4                        | 450/665 [00:28<00:04, 43.32it/s]TEDS (process-isolated):  69%|####################################################1                       | 456/665 [00:28<00:04, 47.39it/s]TEDS (process-isolated):  69%|####################################################6                       | 461/665 [00:28<00:04, 45.55it/s]TEDS (process-isolated):  70%|#####################################################2                      | 466/665 [00:28<00:04, 43.16it/s]TEDS (process-isolated):  71%|#####################################################8                      | 471/665 [00:29<00:05, 35.06it/s]TEDS (process-isolated):  71%|######################################################2                     | 475/665 [00:29<00:05, 35.44it/s]TEDS (process-isolated):  72%|######################################################7                     | 479/665 [00:29<00:05, 34.11it/s]TEDS (process-isolated):  73%|#######################################################2                    | 483/665 [00:29<00:07, 24.01it/s]TEDS (process-isolated):  73%|#######################################################6                    | 487/665 [00:29<00:08, 21.38it/s]TEDS (process-isolated):  74%|########################################################                    | 490/665 [00:30<00:07, 22.87it/s]TEDS (process-isolated):  74%|########################################################3                   | 493/665 [00:30<00:07, 22.17it/s]TEDS (process-isolated):  75%|########################################################6                   | 496/665 [00:30<00:11, 14.57it/s]TEDS (process-isolated):  75%|########################################################9                   | 498/665 [00:30<00:14, 11.42it/s]TEDS (process-isolated):  75%|#########################################################1                  | 500/665 [00:31<00:13, 12.04it/s]TEDS (process-isolated):  75%|#########################################################3                  | 502/665 [00:31<00:12, 13.18it/s]TEDS (process-isolated):  76%|#########################################################8                  | 506/665 [00:31<00:08, 17.73it/s]TEDS (process-isolated):  77%|##########################################################1                 | 509/665 [00:31<00:08, 18.80it/s]TEDS (process-isolated):  77%|##########################################################5                 | 512/665 [00:31<00:12, 11.97it/s]TEDS (process-isolated):  77%|##########################################################7                 | 514/665 [00:32<00:11, 12.92it/s]TEDS (process-isolated):  78%|###########################################################2                | 518/665 [00:32<00:08, 16.63it/s]TEDS (process-isolated):  78%|###########################################################5                | 521/665 [00:32<00:08, 17.22it/s]TEDS (process-isolated):  79%|###########################################################8                | 524/665 [00:32<00:07, 18.53it/s]TEDS (process-isolated):  79%|############################################################3               | 528/665 [00:32<00:06, 22.22it/s]TEDS (process-isolated):  80%|############################################################8               | 532/665 [00:32<00:05, 25.71it/s]TEDS (process-isolated):  80%|#############################################################1              | 535/665 [00:32<00:05, 24.34it/s]TEDS (process-isolated):  81%|#############################################################4              | 538/665 [00:32<00:05, 24.99it/s]TEDS (process-isolated):  82%|##############################################################4             | 546/665 [00:33<00:03, 35.23it/s]TEDS (process-isolated):  83%|##############################################################8             | 550/665 [00:33<00:06, 16.57it/s]TEDS (process-isolated):  83%|###############################################################2            | 553/665 [00:33<00:06, 17.09it/s]TEDS (process-isolated):  84%|###############################################################5            | 556/665 [00:34<00:09, 11.51it/s]TEDS (process-isolated):  84%|###############################################################7            | 558/665 [00:34<00:09, 11.14it/s]TEDS (process-isolated):  85%|################################################################2           | 562/665 [00:34<00:07, 13.41it/s]TEDS (process-isolated):  85%|################################################################5           | 565/665 [00:34<00:07, 13.15it/s]TEDS (process-isolated):  85%|################################################################8           | 567/665 [00:35<00:07, 13.91it/s]TEDS (process-isolated):  86%|#################################################################           | 569/665 [00:35<00:11,  8.08it/s]TEDS (process-isolated):  86%|#################################################################2          | 571/665 [00:35<00:10,  9.35it/s]TEDS (process-isolated):  86%|#################################################################6          | 574/665 [00:35<00:07, 11.79it/s]TEDS (process-isolated):  87%|#################################################################8          | 576/665 [00:36<00:06, 12.76it/s]TEDS (process-isolated):  87%|##################################################################          | 578/665 [00:36<00:06, 12.79it/s]TEDS (process-isolated):  87%|##################################################################4         | 581/665 [00:36<00:06, 12.54it/s]TEDS (process-isolated):  88%|##################################################################6         | 583/665 [00:36<00:07, 10.54it/s]TEDS (process-isolated):  88%|##################################################################8         | 585/665 [00:37<00:08,  9.34it/s]TEDS (process-isolated):  88%|###################################################################         | 587/665 [00:37<00:08,  9.68it/s]TEDS (process-isolated):  89%|###################################################################3        | 589/665 [00:37<00:11,  6.46it/s]TEDS (process-isolated):  89%|###################################################################4        | 590/665 [00:37<00:12,  6.24it/s]TEDS (process-isolated):  89%|###################################################################5        | 591/665 [00:38<00:14,  5.28it/s]TEDS (process-isolated):  89%|###################################################################7        | 593/665 [00:38<00:10,  7.05it/s]TEDS (process-isolated):  90%|####################################################################1       | 596/665 [00:38<00:07,  9.25it/s]TEDS (process-isolated):  90%|####################################################################3       | 598/665 [00:38<00:07,  9.41it/s]TEDS (process-isolated):  91%|####################################################################8       | 602/665 [00:38<00:04, 13.74it/s]TEDS (process-isolated):  91%|#####################################################################       | 604/665 [00:39<00:06,  9.05it/s]TEDS (process-isolated):  91%|#####################################################################2      | 606/665 [00:39<00:06,  9.72it/s]TEDS (process-isolated):  91%|#####################################################################4      | 608/665 [00:39<00:05, 11.09it/s]TEDS (process-isolated):  92%|#####################################################################7      | 610/665 [00:39<00:04, 11.34it/s]TEDS (process-isolated):  92%|#####################################################################9      | 612/665 [00:39<00:04, 12.60it/s]TEDS (process-isolated):  93%|######################################################################4     | 616/665 [00:40<00:02, 17.07it/s]TEDS (process-isolated):  94%|#######################################################################     | 622/665 [00:40<00:02, 18.54it/s]TEDS (process-isolated):  94%|#######################################################################3    | 624/665 [00:40<00:02, 18.04it/s]TEDS (process-isolated):  94%|#######################################################################5    | 626/665 [00:40<00:02, 18.22it/s]TEDS (process-isolated):  94%|#######################################################################7    | 628/665 [00:40<00:02, 16.12it/s]TEDS (process-isolated):  95%|########################################################################1   | 631/665 [00:40<00:01, 18.41it/s]TEDS (process-isolated):  95%|########################################################################4   | 634/665 [00:40<00:01, 20.66it/s]TEDS (process-isolated):  96%|########################################################################9   | 638/665 [00:41<00:01, 23.87it/s]TEDS (process-isolated):  97%|#########################################################################4  | 643/665 [00:41<00:00, 28.55it/s]TEDS (process-isolated):  98%|##########################################################################2 | 650/665 [00:41<00:00, 37.56it/s]TEDS (process-isolated):  98%|##########################################################################7 | 654/665 [00:41<00:00, 21.71it/s]TEDS (process-isolated):  99%|###########################################################################2| 658/665 [00:42<00:00,  8.23it/s]TEDS (process-isolated):  99%|###########################################################################5| 661/665 [00:45<00:01,  3.29it/s]TEDS (process-isolated): 100%|###########################################################################7| 663/665 [00:47<00:00,  2.67it/s]TEDS (process-isolated): 100%|###########################################################################8| 664/665 [01:00<00:00,  2.67it/s]TEDS (process-isolated): 100%|############################################################################| 665/665 [01:07<00:00,  2.41s/it]TEDS (process-isolated): 100%|############################################################################| 665/665 [01:07<00:00,  6.95it/s]
+
+# OmniDocBench table OCR score
+
+- Tables: 665
+- Table pages: 458
+- Page-TEDS: 0.954554
+- Sample TEDS: 0.949733
+- Page structure-only TEDS: 0.978143
+- TEDS timeouts: 0
+- TEDS errors: 0
+
+
+# OmniDocBench table OCR summary
+
+- Crop type: table
+- Tables: 665
+- Generation wall time: 592.684 s
+- Throughput: 1.122 crops/s
+- Stop reasons: {'eos': 657, 'kv_cache_full': 8}
+
+## End-to-end HTTP latency
+
+- Mean: 0.737 s
+- P50: 0.443 s
+- P75: 0.886 s
+- P90: 1.612 s
+- P95: 2.430 s
+- P99: 4.786 s
+- Maximum: 5.332 s
+- Page-TEDS: 0.954554
+- Sample TEDS: 0.949733
+- Page structure-only TEDS: 0.978143
+- TEDS timeouts: 0
+- TEDS errors: 0
