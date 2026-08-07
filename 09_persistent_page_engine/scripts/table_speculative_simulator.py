@@ -135,6 +135,7 @@ def lcp(left: list[int] | tuple[int, ...], right: list[int] | tuple[int, ...]) -
 def suffix_candidate(
     prefix: list[int],
     draft: list[int],
+    continuations_by_preceding_token: dict[int, list[int]],
     state: MatcherState,
     block_size: int,
     minimum_anchor: int,
@@ -144,11 +145,10 @@ def suffix_candidate(
 ) -> Candidate | None:
     if not prefix or not draft:
         return None
-    final_prefix_token = prefix[-1]
     lower_bound = max(1, state.cursor - backtrack_tokens) if monotonic else 1
     best: tuple[tuple[int, int, int], Candidate] | None = None
-    for continuation in range(lower_bound, len(draft)):
-        if draft[continuation - 1] != final_prefix_token:
+    for continuation in continuations_by_preceding_token.get(prefix[-1], ()):
+        if continuation < lower_bound:
             continue
         anchor = preceding_match(prefix, draft, continuation, maximum_anchor)
         if anchor < minimum_anchor:
@@ -168,6 +168,7 @@ def suffix_candidate(
 def oracle_candidate(
     remaining_target: list[int],
     draft: list[int],
+    positions_by_token: dict[int, list[int]],
     state: MatcherState,
     block_size: int,
     backtrack_tokens: int,
@@ -175,7 +176,11 @@ def oracle_candidate(
 ) -> Candidate | None:
     lower_bound = max(0, state.cursor - backtrack_tokens) if monotonic else 0
     best: tuple[tuple[int, int, int], Candidate] | None = None
-    for start in range(lower_bound, len(draft)):
+    if not remaining_target:
+        return None
+    for start in positions_by_token.get(remaining_target[0], ()):
+        if start < lower_bound:
+            continue
         candidate_tokens = tuple(draft[start : start + block_size])
         if not candidate_tokens:
             continue
@@ -203,6 +208,12 @@ def simulate(
     if not target:
         raise ValueError("target must not be empty")
     state = MatcherState()
+    positions_by_token: defaultdict[int, list[int]] = defaultdict(list)
+    continuations_by_preceding_token: defaultdict[int, list[int]] = defaultdict(list)
+    for index, token in enumerate(draft):
+        positions_by_token[token].append(index)
+        if index + 1 < len(draft):
+            continuations_by_preceding_token[token].append(index + 1)
     position = 1  # The full-table prefill produces token zero.
     calls = 0
     speculative_calls = 0
@@ -225,6 +236,7 @@ def simulate(
             candidate = oracle_candidate(
                 target[position:],
                 draft,
+                positions_by_token,
                 state,
                 block_size,
                 backtrack_tokens,
@@ -234,6 +246,7 @@ def simulate(
             candidate = suffix_candidate(
                 prefix,
                 draft,
+                continuations_by_preceding_token,
                 state,
                 block_size,
                 minimum_anchor,
