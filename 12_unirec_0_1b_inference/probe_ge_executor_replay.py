@@ -46,7 +46,19 @@ def main() -> None:
     args = parser.parse_args()
 
     import torch_npu
-    import torch_npu.dynamo.torchair.ge._ge_graph as ge_graph_mod
+    # torchair is importable both as top-level `torchair` and as the bundled
+    # `torch_npu.dynamo.torchair`; these are DISTINCT module objects with
+    # distinct GeGraph classes. The generated kernel code uses the top-level
+    # one, so hook every loaded variant.
+    import torch_npu.dynamo.torchair.ge._ge_graph  # noqa: F401
+    import torchair.ge._ge_graph  # noqa: F401
+    import sys
+
+    ge_graph_mods = [
+        module
+        for name, module in list(sys.modules.items())
+        if name.endswith("._ge_graph") and hasattr(module, "GeGraph")
+    ]
 
     torch.npu.set_device(args.device)
     torch.npu.set_compile_mode(jit_compile=False)
@@ -84,20 +96,26 @@ def main() -> None:
 
         # Capture the steady-state executor call.
         captured: dict = {}
-        original_run = ge_graph_mod.GeGraph.run
+        original_runs = {id(m): m.GeGraph.run for m in ge_graph_mods}
 
-        def hooked_run(self, inputs, assigned_outputs=[], stream=None):  # noqa: B006
-            captured["graph"] = self
-            captured["inputs"] = list(inputs)
-            captured["outputs"] = list(assigned_outputs)
-            captured["stream"] = stream
-            return original_run(self, inputs, assigned_outputs, stream)
+        def make_hook(original_run):
+            def hooked_run(self, inputs, assigned_outputs=[], stream=None):  # noqa: B006
+                captured["graph"] = self
+                captured["inputs"] = list(inputs)
+                captured["outputs"] = list(assigned_outputs)
+                captured["stream"] = stream
+                captured["original_run"] = original_run
+                return original_run(self, inputs, assigned_outputs, stream)
 
-        ge_graph_mod.GeGraph.run = hooked_run
+            return hooked_run
+
+        for mod in ge_graph_mods:
+            mod.GeGraph.run = make_hook(original_runs[id(mod)])
         try:
             compiled(*call_args(state))
         finally:
-            ge_graph_mod.GeGraph.run = original_run
+            for mod in ge_graph_mods:
+                mod.GeGraph.run = original_runs[id(mod)]
         synchronize_device(runner.device)
         if "graph" not in captured:
             raise RuntimeError("GeGraph.run hook never fired; call path changed")
