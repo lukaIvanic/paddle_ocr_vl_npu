@@ -1,4 +1,4 @@
-# PaddleOCR-VL table latency on Ascend 310P3
+# PaddleOCR-VL latency on Ascend 310P3
 
 ### 1. Measured end-to-end result
 
