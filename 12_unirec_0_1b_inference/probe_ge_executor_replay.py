@@ -35,7 +35,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", type=Path, default=Path("/workspace/models/unirec-0.1b"))
     parser.add_argument("--device", default="npu:0")
-    parser.add_argument("--dtype", default="fp16")
+    parser.add_argument("--dtype", choices=("float16",), default="float16")
     parser.add_argument("--cache-dir", type=Path, required=True)
     parser.add_argument("--self-cache-length", type=int, default=256)
     parser.add_argument("--cross-cache-length", type=int, default=128)
