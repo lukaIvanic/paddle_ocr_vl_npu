@@ -299,11 +299,32 @@ def step(fn: Any, state: dict[str, Any]) -> torch.Tensor:
     return logits
 
 
-def run_steps(fn: Any, state: dict[str, Any], count: int, *, collect: bool = False):
+def step_static(fn: Any, state: dict[str, Any]) -> torch.Tensor:
+    """Step with in-place state advance so input addresses never change.
+
+    npugraph_ex keys captured ACLGraphs by input tensor address; the default
+    step() allocates fresh next_token/cache_position tensors every call, which
+    makes every step look like a new graph and forces eager fallback.
+    """
+    logits = fn(*call_args(state))
+    predicted = torch.argmax(logits[:, -1, :].float(), dim=-1, keepdim=True)
+    state["next_token"].copy_(predicted)
+    state["cache_position"].add_(1)
+    return logits
+
+
+def run_steps(
+    fn: Any,
+    state: dict[str, Any],
+    count: int,
+    *,
+    collect: bool = False,
+    stepper: Any = step,
+):
     tokens: list[torch.Tensor] = []
     logits = None
     for _ in range(count):
-        logits = step(fn, state)
+        logits = stepper(fn, state)
         if collect:
             tokens.append(state["next_token"].detach().cpu())
     return logits, None if not collect else torch.cat(tokens, dim=1).tolist()
@@ -689,6 +710,7 @@ def profile_compiled_timing(
     state: dict[str, Any],
     device: str,
     steps: int,
+    stepper: Any = step,
 ) -> dict[str, Any]:
     """Separate compiled-device work from host submission and token D2H wait."""
     import torch_npu
@@ -698,7 +720,7 @@ def profile_compiled_timing(
     queued_end = torch_npu.npu.Event(enable_timing=True)
     queued_start.record()
     host_started = time.perf_counter()
-    run_steps(fn, state, steps)
+    run_steps(fn, state, steps, stepper=stepper)
     queued_end.record()
     host_enqueue_s = time.perf_counter() - host_started
     wait_started = time.perf_counter()
@@ -717,14 +739,11 @@ def profile_compiled_timing(
         end_event = torch_npu.npu.Event(enable_timing=True)
         start_event.record()
         submit_started = time.perf_counter()
-        logits = fn(*call_args(state))
-        predicted = torch.argmax(logits[:, -1, :].float(), dim=-1, keepdim=True).long()
-        state["next_token"] = predicted
-        state["cache_position"] = state["cache_position"] + 1
+        stepper(fn, state)
         end_event.record()
         production_submit_s += time.perf_counter() - submit_started
         wait_started = time.perf_counter()
-        predicted.detach().cpu()
+        state["next_token"].detach().cpu()
         production_d2h_wait_s += time.perf_counter() - wait_started
         production_device_s += float(start_event.elapsed_time(end_event)) / 1000.0
     production_wall_s = time.perf_counter() - production_wall_started
@@ -826,6 +845,7 @@ def profile_compiled_lane(
     output_root: Path,
     steps: int,
     metric: str,
+    stepper: Any = step,
 ) -> dict[str, Any]:
     import torch_npu.profiler as npu_prof
 
@@ -848,7 +868,7 @@ def profile_compiled_lane(
         with_stack=False,
     ) as profiler:
         with torch.profiler.record_function(f"unirec.decode.compiled.{backend}"):
-            run_steps(fn, state, steps)
+            run_steps(fn, state, steps, stepper=stepper)
         synchronize_device(device)
         profiler.step()
     synchronize_device(device)
@@ -940,26 +960,43 @@ def main() -> None:
             prefetch_mode=args.prefetch_mode,
             graph_mode=args.graph_mode,
         )
+        # npugraph_ex keys captured graphs by input address: advance state in
+        # place so every step presents the same tensor addresses.
+        stepper = step_static if args.graph_mode.startswith("npugraph_ex") else step
         state = lane_state(backend, 7)
+
+        def phase_state(seed: int) -> dict[str, Any]:
+            # Address-stable modes must reuse one state across phases (a fresh
+            # state would change input addresses and force a re-capture inside
+            # the measurement); other modes keep fresh per-phase states.
+            nonlocal state
+            if stepper is step_static:
+                reset_state_(
+                    state, runner, seed=seed, cache_position=args.cache_position
+                )
+            else:
+                state = lane_state(backend, seed)
+            return state
+
         progress("first_call_begin", backend=backend)
         first_started = time.perf_counter()
-        step(compiled, state)
+        stepper(compiled, state)
         synchronize_device(runner.device)
         first_call_s = time.perf_counter() - first_started
         progress("first_call_end", backend=backend, seconds=first_call_s)
-        run_steps(compiled, state, max(0, args.warmup_steps - 1))
+        run_steps(compiled, state, max(0, args.warmup_steps - 1), stepper=stepper)
         synchronize_device(runner.device)
 
-        state = lane_state(backend, 7)
+        state = phase_state(7)
         synchronize_device(runner.device)
         measured_started = time.perf_counter()
-        run_steps(compiled, state, args.measure_steps)
+        run_steps(compiled, state, args.measure_steps, stepper=stepper)
         synchronize_device(runner.device)
         measured_s = time.perf_counter() - measured_started
 
-        state = lane_state(backend, 11)
+        state = phase_state(11)
         validation_logits, validation_tokens = run_steps(
-            compiled, state, args.validation_steps, collect=True
+            compiled, state, args.validation_steps, collect=True, stepper=stepper
         )
         synchronize_device(runner.device)
         validations[backend] = {
@@ -969,12 +1006,13 @@ def main() -> None:
         compiled_timing = None
         if args.compiled_timing_steps > 0:
             progress("compiled_timing_begin", backend=backend)
-            timing_state = lane_state(backend, 17)
+            timing_state = phase_state(17)
             compiled_timing = profile_compiled_timing(
                 fn=compiled,
                 state=timing_state,
                 device=runner.device,
                 steps=args.compiled_timing_steps,
+                stepper=stepper,
             )
             progress(
                 "compiled_timing_end",
@@ -984,7 +1022,7 @@ def main() -> None:
         compiled_profile = None
         if args.profile_compiled_steps > 0:
             progress("compiled_profile_begin", backend=backend)
-            profile_state = lane_state(backend, 19)
+            profile_state = phase_state(19)
             compiled_profile = profile_compiled_lane(
                 backend=backend,
                 fn=compiled,
@@ -993,6 +1031,7 @@ def main() -> None:
                 output_root=output.parent,
                 steps=args.profile_compiled_steps,
                 metric=args.profile_metric,
+                stepper=stepper,
             )
             progress("compiled_profile_end", backend=backend, **compiled_profile)
         raw_tokens = args.batch_size * args.measure_steps

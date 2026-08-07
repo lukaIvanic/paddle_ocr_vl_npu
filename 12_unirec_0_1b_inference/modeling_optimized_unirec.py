@@ -1981,9 +1981,10 @@ class OptimizedUniRecRunner:
             # binary fusion, and frozen parameter addresses.
             options = None
             if graph_mode == "npugraph_ex_full":
+                # super_kernel_optimize is omitted: it needs libascendsk.so,
+                # which is absent from the blue-zone CANN 9.0.0 install.
                 options = {
                     "static_kernel_compile": True,
-                    "super_kernel_optimize": True,
                     "frozen_parameter": True,
                 }
             compiled = torch.compile(
