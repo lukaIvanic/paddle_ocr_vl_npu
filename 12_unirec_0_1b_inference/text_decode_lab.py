@@ -71,6 +71,16 @@ def parse_args() -> argparse.Namespace:
         default="pipe",
     )
     parser.add_argument(
+        "--lm-head-rows",
+        type=int,
+        default=0,
+        help=(
+            "SYNTHETIC timing probe: slice the LM head to the first N vocab "
+            "rows before compile. Output tokens are not valid model output. "
+            "0 keeps the full head. Use a dedicated --cache-dir per value."
+        ),
+    )
+    parser.add_argument(
         "--qkv-projection",
         choices=("separate", "fused"),
         default="separate",
@@ -446,6 +456,17 @@ def main() -> None:
         compile_cache_dir=args.cache_dir,
     )
     progress("model_load_end", seconds=time.perf_counter() - load_started)
+    if args.lm_head_rows > 0:
+        # Synthetic residency probe: replace the head with its first N rows.
+        # Tokens decoded through this head are not valid model output.
+        full_head = runner.model.lm_head
+        sliced = torch.nn.Linear(
+            full_head.in_features, args.lm_head_rows, bias=False
+        ).to(device=runner.device, dtype=runner.dtype)
+        with torch.no_grad():
+            sliced.weight.copy_(full_head.weight[: args.lm_head_rows])
+        runner.model.lm_head = sliced
+        progress("lm_head_sliced", rows=args.lm_head_rows)
     if args.qkv_projection == "fused":
         runner.fuse_decoder_self_qkv()
         progress("qkv_fused")
@@ -593,6 +614,8 @@ def main() -> None:
             "self_cache_length": args.self_cache_length,
             "cross_cache_length": args.cross_cache_length,
             "initial_cache_position": args.cache_position,
+            "lm_head_rows": args.lm_head_rows or None,
+            "synthetic_head": bool(args.lm_head_rows),
         },
         "lanes": lanes,
         "comparison": comparison,
