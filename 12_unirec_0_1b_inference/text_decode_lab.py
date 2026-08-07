@@ -71,6 +71,15 @@ def parse_args() -> argparse.Namespace:
         default="pipe",
     )
     parser.add_argument(
+        "--qkv-projection",
+        choices=("separate", "fused"),
+        default="separate",
+        help=(
+            "separate runs the three per-projection matmuls; fused builds one "
+            "concatenated QKV weight at load time and runs a single matmul."
+        ),
+    )
+    parser.add_argument(
         "--mask-mode",
         choices=("per_step", "persistent"),
         default="per_step",
@@ -437,6 +446,9 @@ def main() -> None:
         compile_cache_dir=args.cache_dir,
     )
     progress("model_load_end", seconds=time.perf_counter() - load_started)
+    if args.qkv_projection == "fused":
+        runner.fuse_decoder_self_qkv()
+        progress("qkv_fused")
 
     def lane_state(backend: str, seed: int) -> dict[str, Any]:
         return make_state(

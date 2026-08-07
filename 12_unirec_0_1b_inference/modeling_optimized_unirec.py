@@ -504,6 +504,25 @@ class LocalDecoderAttention(nn.Module):
         self.k_proj = nn.Linear(self.embed_dim, self.embed_dim, bias=True)
         self.v_proj = nn.Linear(self.embed_dim, self.embed_dim, bias=True)
         self.out_proj = nn.Linear(self.embed_dim, self.embed_dim, bias=True)
+        self.qkv_weight: torch.Tensor | None = None
+        self.qkv_bias: torch.Tensor | None = None
+
+    def fuse_qkv_projections(self) -> None:
+        """Precompute one concatenated Q/K/V projection for self-attention.
+
+        Built once from the loaded per-projection weights, so the decode step
+        runs a single [embed_dim -> 3*embed_dim] matmul instead of three
+        matvec launches. Q is not pre-scaled here and every projection carries
+        a bias, so the concatenation is exact.
+        """
+        weight = torch.cat(
+            [self.q_proj.weight, self.k_proj.weight, self.v_proj.weight], dim=0
+        )
+        bias = torch.cat(
+            [self.q_proj.bias, self.k_proj.bias, self.v_proj.bias], dim=0
+        )
+        self.qkv_weight = weight.detach().contiguous()
+        self.qkv_bias = bias.detach().contiguous()
 
     @staticmethod
     def apply_linear_3d(linear: nn.Linear, hidden_states: torch.Tensor) -> torch.Tensor:
@@ -522,6 +541,18 @@ class LocalDecoderAttention(nn.Module):
         key_value_states: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         batch_size, target_length, _ = hidden_states.shape
+        if key_value_states is None and self.qkv_weight is not None:
+            fused = nn.functional.linear(
+                hidden_states.reshape(batch_size * target_length, self.embed_dim),
+                self.qkv_weight,
+                self.qkv_bias,
+            ).reshape(batch_size, target_length, 3, self.num_heads, self.head_dim)
+            query_states, key_states, value_states = fused.unbind(dim=2)
+            return (
+                query_states.transpose(1, 2).contiguous(),
+                key_states.transpose(1, 2).contiguous(),
+                value_states.transpose(1, 2).contiguous(),
+            )
         source_states = hidden_states if key_value_states is None else key_value_states
         source_length = source_states.shape[1]
 
@@ -1560,10 +1591,27 @@ class OptimizedUniRecRunner:
             if torch_npu is None:
                 raise RuntimeError("NPU execution requires torch_npu")
             torch_npu.npu.config.allow_internal_format = False
+        self.qkv_fused = False
         self.model = self._load_model().to(self.device)
         self.model.eval()
         synchronize_device(self.device)
         self.model_load_s = time.perf_counter() - load_start
+
+    def fuse_decoder_self_qkv(self) -> None:
+        """Build fused Q/K/V projections for every decoder self-attention.
+
+        Call after weight load and before any decode compile; the fused
+        weights become part of the traced decode graph, and the compile cache
+        key records the fusion state.
+        """
+        if self._compiled_decode_modules:
+            raise RuntimeError(
+                "Fuse decoder QKV before compiling decode modules; compiled "
+                "graphs already traced the separate projections"
+            )
+        for layer in self.model.decoder.layers:
+            layer.self_attn.fuse_qkv_projections()
+        self.qkv_fused = True
 
     def _load_model(self) -> LocalUniRecModel:
         model = LocalUniRecModel(self.config).to(dtype=self.dtype)
@@ -1741,7 +1789,7 @@ class OptimizedUniRecRunner:
         cache_key = (
             f"{backend}:self_attn={self_attention_backend}:dynamic={int(compile_dynamic)}:"
             f"self_kv={LOCAL_UNIREC_STATIC_CACHE_LEN}:cross_kv={normalized_cross_cache_len}:"
-            f"batch={int(batch_size)}:mask={mask_mode}"
+            f"batch={int(batch_size)}:mask={mask_mode}:qkv_fused={int(self.qkv_fused)}"
         )
         cached = self._compiled_decode_modules.get(cache_key)
         if cached is not None:
@@ -1786,6 +1834,8 @@ class OptimizedUniRecRunner:
                     shape_name += f"_b{int(batch_size)}"
                 if mask_mode != "per_step":
                     shape_name += f"_mask_{mask_mode}"
+                if self.qkv_fused:
+                    shape_name += "_qkvfused"
                 shape_cache_dir = self.compile_cache_dir / shape_name
                 shape_cache_dir.mkdir(parents=True, exist_ok=True)
                 cache_compile, cache_compile_import_path = import_torchair_cache_compile()
@@ -1819,6 +1869,7 @@ class OptimizedUniRecRunner:
         compile_meta.update(
             {
                 "mask_mode": mask_mode,
+                "qkv_fused": bool(self.qkv_fused),
                 "static_self_kv_len": int(LOCAL_UNIREC_STATIC_CACHE_LEN),
                 "static_cross_kv_len": None if cross_cache_len is None else int(cross_cache_len),
                 "self_attention_backend": self_attention_backend,
