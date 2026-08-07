@@ -123,6 +123,26 @@ def preceding_match(
     return matched
 
 
+def build_continuation_index(
+    draft: list[int],
+    maximum_anchor: int,
+) -> dict[int, dict[tuple[int, ...], list[int]]]:
+    lengths = []
+    length = 1
+    while length <= maximum_anchor:
+        lengths.append(length)
+        length *= 2
+    index: dict[int, dict[tuple[int, ...], list[int]]] = {}
+    for anchor_length in lengths:
+        by_anchor: defaultdict[tuple[int, ...], list[int]] = defaultdict(list)
+        for continuation in range(anchor_length, len(draft)):
+            by_anchor[tuple(draft[continuation - anchor_length : continuation])].append(
+                continuation
+            )
+        index[anchor_length] = dict(by_anchor)
+    return index
+
+
 def lcp(left: list[int] | tuple[int, ...], right: list[int] | tuple[int, ...]) -> int:
     matched = 0
     for lhs, rhs in zip(left, right):
@@ -135,7 +155,7 @@ def lcp(left: list[int] | tuple[int, ...], right: list[int] | tuple[int, ...]) -
 def suffix_candidate(
     prefix: list[int],
     draft: list[int],
-    continuations_by_preceding_token: dict[int, list[int]],
+    continuation_index: dict[int, dict[tuple[int, ...], list[int]]],
     state: MatcherState,
     block_size: int,
     minimum_anchor: int,
@@ -146,23 +166,33 @@ def suffix_candidate(
     if not prefix or not draft:
         return None
     lower_bound = max(1, state.cursor - backtrack_tokens) if monotonic else 1
-    best: tuple[tuple[int, int, int], Candidate] | None = None
-    for continuation in continuations_by_preceding_token.get(prefix[-1], ()):
-        if continuation < lower_bound:
-            continue
-        anchor = preceding_match(prefix, draft, continuation, maximum_anchor)
-        if anchor < minimum_anchor:
-            continue
-        candidate_tokens = tuple(draft[continuation : continuation + block_size])
-        if not candidate_tokens:
-            continue
-        forward = int(continuation >= state.cursor)
-        distance = abs(continuation - state.cursor)
-        score = (anchor, forward, -distance)
-        candidate = Candidate(continuation, candidate_tokens, anchor)
-        if best is None or score > best[0]:
-            best = (score, candidate)
-    return best[1] if best else None
+    usable_lengths = [
+        length
+        for length in continuation_index
+        if minimum_anchor <= length <= len(prefix)
+    ]
+    for indexed_anchor in sorted(usable_lengths, reverse=True):
+        positions = continuation_index[indexed_anchor].get(
+            tuple(prefix[-indexed_anchor:]),
+            (),
+        )
+        best: tuple[tuple[int, int, int], Candidate] | None = None
+        for continuation in positions:
+            if continuation < lower_bound:
+                continue
+            anchor = preceding_match(prefix, draft, continuation, maximum_anchor)
+            candidate_tokens = tuple(draft[continuation : continuation + block_size])
+            if not candidate_tokens:
+                continue
+            forward = int(continuation >= state.cursor)
+            distance = abs(continuation - state.cursor)
+            score = (anchor, forward, -distance)
+            candidate = Candidate(continuation, candidate_tokens, anchor)
+            if best is None or score > best[0]:
+                best = (score, candidate)
+        if best is not None:
+            return best[1]
+    return None
 
 
 def oracle_start_matches(target: list[int], draft: list[int]) -> list[tuple[int, int]]:
@@ -233,14 +263,11 @@ def simulate(
     block_cost: float,
     maximum_anchor: int,
     backtrack_tokens: int,
+    continuation_index: dict[int, dict[tuple[int, ...], list[int]]],
 ) -> dict[str, Any]:
     if not target:
         raise ValueError("target must not be empty")
     state = MatcherState()
-    continuations_by_preceding_token: defaultdict[int, list[int]] = defaultdict(list)
-    for index, token in enumerate(draft):
-        if index + 1 < len(draft):
-            continuations_by_preceding_token[token].append(index + 1)
     position = 1  # The full-table prefill produces token zero.
     calls = 0
     speculative_calls = 0
@@ -276,7 +303,7 @@ def simulate(
             candidate = suffix_candidate(
                 prefix,
                 draft,
-                continuations_by_preceding_token,
+                continuation_index,
                 state,
                 block_size,
                 minimum_anchor,
@@ -459,6 +486,7 @@ def main() -> None:
         target_record = targets[request_id]
         tokens = target_tokens(target_record)
         flat_draft, _row_for_token = flatten_drafts(draft_record, tokens[-1])
+        continuation_index = build_continuation_index(flat_draft, args.max_anchor_tokens)
         target_real_vision = int(target_record["metrics"]["real_vision_tokens"])
         draft_real_vision = int(draft_record["metrics"]["real_vision_tokens"])
         draft_output_tokens = int(draft_record["metrics"]["output_tokens_including_eos"])
@@ -474,6 +502,7 @@ def main() -> None:
                     DEFAULT_BLOCK_COSTS[block_size],
                     args.max_anchor_tokens,
                     args.backtrack_tokens,
+                    continuation_index,
                 )
                 baseline_target_vision_s = target_real_vision / args.vision_tok_per_s
                 baseline_target_decode_s = len(tokens) / args.target_decode_tok_per_s
