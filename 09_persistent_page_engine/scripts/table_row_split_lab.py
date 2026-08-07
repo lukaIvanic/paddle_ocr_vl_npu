@@ -259,7 +259,7 @@ def _text_component_mask(
     )
     source = cv2.bitwise_and(text_binary, cv2.bitwise_not(all_lines))
     count, labels, stats, _ = cv2.connectedComponentsWithStats(source, 8)
-    result = np.zeros_like(source)
+    keep = np.zeros(count, dtype=bool)
     for index in range(1, count):
         component_width = int(stats[index, cv2.CC_STAT_WIDTH])
         component_height = int(stats[index, cv2.CC_STAT_HEIGHT])
@@ -270,8 +270,8 @@ def _text_component_mask(
             continue
         if not (2 <= area <= max(16, width * height // 80)):
             continue
-        result[labels == index] = 255
-    return result
+        keep[index] = True
+    return np.where(keep[labels], 255, 0).astype(np.uint8)
 
 
 def whitespace_candidates(
