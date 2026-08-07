@@ -244,6 +244,19 @@ def _nms_boundaries(candidates: Iterable[int], min_distance: int, height: int) -
     return tuple([0, *selected, height])
 
 
+def _scored_nms_boundaries(
+    candidates: Iterable[tuple[int, float]],
+    min_distance: int,
+    height: int,
+) -> tuple[int, ...]:
+    selected: list[int] = []
+    for value, _ in sorted(candidates, key=lambda item: item[1], reverse=True):
+        value = max(1, min(height - 1, int(value)))
+        if all(abs(value - existing) >= min_distance for existing in selected):
+            selected.append(value)
+    return tuple([0, *sorted(selected), height])
+
+
 def ruled_split(binary: np.ndarray, horizontal: np.ndarray) -> SplitProposal:
     height, width = binary.shape
     coverage = np.count_nonzero(horizontal, axis=1) / max(1, width)
@@ -365,17 +378,20 @@ def row_edge_split(rgb: np.ndarray, text_binary: np.ndarray) -> SplitProposal:
     positive = smooth[smooth > 0]
     high = float(np.percentile(positive, 95)) if len(positive) else 0.0
     threshold = max(0.06, min(0.45, high * 0.42))
-    candidates = [
-        (start + end) // 2 + 1
-        for start, end in _runs(smooth >= threshold)
-    ]
+    candidates = []
+    for start, end in _runs(smooth >= threshold):
+        local = smooth[start:end]
+        peak = start + int(np.argmax(local))
+        candidates.append((peak + 1, float(local.max())))
     edge_margin = max(2, round(char_height * 1.2))
     candidates = [
-        point for point in candidates if edge_margin < point < height - edge_margin
+        (point, score)
+        for point, score in candidates
+        if edge_margin < point < height - edge_margin
     ]
-    boundaries = _nms_boundaries(
+    boundaries = _scored_nms_boundaries(
         candidates,
-        max(3, round(char_height * 1.25)),
+        max(3, round(char_height * 1.15)),
         height,
     )
     return SplitProposal(
