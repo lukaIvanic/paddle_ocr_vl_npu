@@ -1,10 +1,10 @@
 # PaddleOCR-VL table latency on Ascend 310P3
 
-## 1. Measured end-to-end result
+### 1. Measured end-to-end result
 
 We created our custom PaddleOCR-VL 1.6 e2e page pipeline, and evaluated on **OmniDocBench v1.6** using **1 x Ascend 310P3**.
 
-The measured full-benchmark result was approximately:
+The measured full-benchmark result was:
 
 | Metric                    | Result |
 |---------------------------|---:|
@@ -18,24 +18,22 @@ The measured full-benchmark result was approximately:
 | Formula Page-CDM          | 97.4 |
 | Official Overall accuracy | **95.59** |
 
-Although **throughput** is 0.7 page/s, this does not mean latency per page is `1 / 0.7 = 1.43` seconds.
+Although **throughput** is 0.7 page/s, this does not mean **e2e latency** per page is `1 / 0.7 = 1.43` seconds.
 
-## 2. Latency is not throughput
+### 2. Latency is not throughput
 
 Concurrency is good for the throughput metric. If you give us 70 pages, we will return OCR in <=100 seconds for all of them. However, each page may return at for example 30s, 60s, 80s. This would mean >>10s latency per page.
 
-## 3. CBG latency requirement
+### 3. CBG latency requirement
 
 The CBG team requested:
 
 > **P99 table latency below 2 seconds.**
 
-The metric would be all tables from OmniDocBench v1.6.
+The measurement would be all tables from OmniDocBench v1.6.
 To evaluate this requirement, we must first know how many output tokens each table needs.
 
-## 4. Output-token distribution for OmniDocBench v1.6 tables
-
-The following distribution comes from all **665 table crops** in OmniDocBench v1.6.
+The following distribution comes from all **665 table crops** in OmniDocBench v1.6:
 
 | Statistic | Decode tokens |
 |---|---:|
@@ -49,7 +47,7 @@ The following distribution comes from all **665 table crops** in OmniDocBench v1
 | Maximum | 3,111 |
 
 
-## 5. Decode speed required for latency below 2 seconds
+### 4. Decode speed required for latency below 2 seconds
 
 If we wanted to achieve P99 <2 seconds, it is clear we need to produce 3000+ output tokens in that time:
 
@@ -68,13 +66,14 @@ The lower percentiles also require high batch-size-1 throughput:
 
 These numbers allow only two seconds for decode. They leave no time for image loading, preprocessing, vision encoding, text prefill, HTTP, scheduling, or result serialization.
 
-## 6. What is theoretically possible?
+### 5. What is theoretically possible?
 
 If we want to minimize latency, we should use 1x concurrency. That way, multiple tables won't fight for the same pipeline resources.
 
 This means we want batch size 1 (B1) decoding.
 
 To understand limits of B1 decoding, we look at the following fact: for one output token, the NPU needs to load all model weights from HBM to L2 cache. So if we know our NPU memory bandwidth, and model size, we can get peak theoretical tok/s for B1 decoding.
+Why is memory-transfer the bottleneck? It is a simple matter of truth for all acceleration devices that at B1 compute is much faster than memory transfer, and is never in the critical path.
 
 The NPU hardware bandwidths are:
 
@@ -83,15 +82,17 @@ The NPU hardware bandwidths are:
 | Ascend 310P3 | **204 GB/s per processor** | [Atlas 300I Duo specifies 408 GB/s across two processors](https://support.huawei.com/enterprise/en/doc/EDOC1100285916?section=j00e) |
 | Ascend 910B2 environment | **1.6 TB/s** | [64 GB Atlas 300I A2 specification](https://www.hiascend.com/hardware/accelerator-card) |
 
-## 7. Why one output token requires reading the decoder weights
+### 6. Why one output token requires reading the decoder weights
 
-Autoregressive decoding runs the complete decode model once for each new output token.
+Autoregressive decoding runs the complete text transformer and language-model head once for each new output token.
 
 The exact PaddleOCR-VL 1.6 checkpoint contains:
 
-| Decode component | Parameters | FP16 weight bytes |
-|---|---:|---:|
-| Decode model | 360,747,008 | 721.5 MB |
+| Parameters      | FP16 weight bytes |
+|-----------------|---:|
+| **360,747,008** | **721.5 MB** |
+
+
 
 This gives a simple bandwidth roof:
 
@@ -111,7 +112,7 @@ This is an optimistic upper bound. It assumes:
 
 No real implementation can meet all these assumptions.
 
-## 8. Theoretical peak and measured batch-size-1 decode throughput
+## 7. Theoretical peak and measured batch-size-1 decode throughput
 
 ### Ascend 310P3
 
@@ -127,7 +128,7 @@ $$
 = 2{,}218\ \text{tokens/s}
 $$
 
-### Comparison with measured results
+### Comparison with our results
 
 | Device | Theoretical FP16 roof | Measured B1 decode | Measured fraction of roof | P99 decode time at measured speed |
 |---|---:|---:|---:|---:|
@@ -142,10 +143,10 @@ $$
 
 The requested P99 throughput of 1,546 tokens/s is:
 
-- **10.3 times** the measured 310P3 result;
+- **10.3 times** our 310P3 result;
 - **5.5 times** the 310P3 physical FP16 roof;
-- **2.1 times** the measured 910B2 result;
-- approximately 70% of the impossible 910B2 bandwidth roof, before any other work.
+- **2.1 times** our 910B2 result;
+- approximately 70% of the "impossible" 910B2 bandwidth roof, before any other work.
 
 ## 9. Conclusion
 
@@ -157,18 +158,8 @@ For the current 360.7M-active-parameter FP16 decoder:
 - The current 910B2 path is much faster, but its measured 750 tok/s still gives more than four seconds of P99 decode time before encoder and service overhead.
 
 Meeting the requirement needs a fundamental change, such as:
+- speculative decoding;
+- using 910B instead of 310P;
+- different OCR model;
 
-- fewer generated tokens or a more compact table representation;
-- a substantially smaller decoder;
-- lower-bit decoder weights with a genuinely faster low-bit execution path;
-- hardware with much more memory bandwidth;
-- or a less strict latency percentile.
 
-## Data and calculation scope
-
-- Dataset: OmniDocBench v1.6.
-- Table population: 665 ground-truth table crops.
-- Model: PaddleOCR-VL 1.6.
-- Parameter counts: calculated directly from the production `model.safetensors` tensor shapes.
-- Decode results: warmed batch-size-1 measurements, approximately 150 tok/s on 310P3 and 750 tok/s on 910B2.
-- Latency calculations are decode-only unless stated otherwise. Production queueing can increase latency further.
