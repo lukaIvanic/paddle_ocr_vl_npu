@@ -1,0 +1,2193 @@
+{
+  "input_contract": {
+    "table_source": "OmniDocBench v1.6 ground-truth table boxes",
+    "splitter_inputs": "crop pixels only",
+    "ground_truth_structure_used_by_splitter": false
+  },
+  "samples": [
+    {
+      "request_id": "page_000647_table_4",
+      "page_name": "docstructbench_llm-raw-the-eye-o.O-Character%20Sheet%20-%20Form%20Fillable.pdf_2.jpg",
+      "bbox_xyxy": [
+        91,
+        84,
+        579,
+        322
+      ],
+      "raw_crop_size": [
+        488,
+        238
+      ],
+      "trim_box_in_raw_crop": [
+        1,
+        0,
+        483,
+        232
+      ],
+      "crop_size": [
+        482,
+        232
+      ],
+      "output_tokens": 12,
+      "gt_rows_eval_only": 1,
+      "panel": "panels/01_page_000647_table_4.png",
+      "strategies": {
+        "ruled": {
+          "boundaries": [
+            0,
+            232
+          ],
+          "rows": 1,
+          "diagnostics": {
+            "line_threshold": 0.4156431412696838,
+            "character_height": 26.0,
+            "edge_margin": 31,
+            "interior_boundaries": 0
+          }
+        },
+        "whitespace": {
+          "boundaries": [
+            0,
+            232
+          ],
+          "rows": 1,
+          "diagnostics": {
+            "character_height": 7.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 0
+          }
+        },
+        "row_edge": {
+          "boundaries": [
+            0,
+            232
+          ],
+          "rows": 1,
+          "diagnostics": {
+            "character_height": 25.0,
+            "coverage_threshold": 0.2609206330776215,
+            "edge_margin": 30,
+            "interior_boundaries": 0,
+            "width": 482
+          }
+        },
+        "hybrid": {
+          "boundaries": [
+            0,
+            232
+          ],
+          "rows": 1,
+          "diagnostics": {
+            "mode": "whitespace-only",
+            "character_height": 7.0,
+            "line_boundaries": 0,
+            "whitespace_candidates": 0,
+            "typical_ruled_height": 232.0,
+            "rows": 1,
+            "width": 482
+          }
+        },
+        "selected": {
+          "boundaries": [
+            0,
+            232
+          ],
+          "rows": 1,
+          "diagnostics": {
+            "character_height": 7.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 0,
+            "selected_source": "whitespace",
+            "selection_reason": "edge_whitespace_agreement",
+            "ruled_rows": 1,
+            "whitespace_rows": 1,
+            "row_edge_rows": 1
+          }
+        }
+      }
+    },
+    {
+      "request_id": "page_000683_table_8",
+      "page_name": "jiaocaineedrop_chem-354334.pdf_20.jpg",
+      "bbox_xyxy": [
+        166,
+        1790,
+        1534,
+        1945
+      ],
+      "raw_crop_size": [
+        1368,
+        155
+      ],
+      "trim_box_in_raw_crop": [
+        1,
+        4,
+        1367,
+        155
+      ],
+      "crop_size": [
+        1366,
+        151
+      ],
+      "output_tokens": 44,
+      "gt_rows_eval_only": 3,
+      "panel": "panels/02_page_000683_table_8.png",
+      "strategies": {
+        "ruled": {
+          "boundaries": [
+            0,
+            3,
+            151
+          ],
+          "rows": 2,
+          "diagnostics": {
+            "line_threshold": 0.3143850660324097,
+            "character_height": 2.0,
+            "edge_margin": 2,
+            "interior_boundaries": 1
+          }
+        },
+        "whitespace": {
+          "boundaries": [
+            0,
+            52,
+            101,
+            151
+          ],
+          "rows": 3,
+          "diagnostics": {
+            "character_height": 11.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 2
+          }
+        },
+        "row_edge": {
+          "boundaries": [
+            0,
+            34,
+            102,
+            151
+          ],
+          "rows": 3,
+          "diagnostics": {
+            "character_height": 12.0,
+            "coverage_threshold": 0.13834480690956114,
+            "edge_margin": 14,
+            "interior_boundaries": 2,
+            "width": 1366
+          }
+        },
+        "hybrid": {
+          "boundaries": [
+            0,
+            52,
+            101,
+            151
+          ],
+          "rows": 3,
+          "diagnostics": {
+            "mode": "ruled+whitespace",
+            "character_height": 11.0,
+            "line_boundaries": 1,
+            "whitespace_candidates": 2,
+            "typical_ruled_height": 61.0,
+            "rows": 3,
+            "width": 1366
+          }
+        },
+        "selected": {
+          "boundaries": [
+            0,
+            52,
+            101,
+            151
+          ],
+          "rows": 3,
+          "diagnostics": {
+            "character_height": 11.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 2,
+            "selected_source": "whitespace",
+            "selection_reason": "edge_whitespace_agreement",
+            "ruled_rows": 2,
+            "whitespace_rows": 3,
+            "row_edge_rows": 3
+          }
+        }
+      }
+    },
+    {
+      "request_id": "page_000673_table_1",
+      "page_name": "jiaocaineedrop_biz-96816.pdf_48.jpg",
+      "bbox_xyxy": [
+        166,
+        282,
+        1537,
+        543
+      ],
+      "raw_crop_size": [
+        1371,
+        261
+      ],
+      "trim_box_in_raw_crop": [
+        0,
+        0,
+        1368,
+        261
+      ],
+      "crop_size": [
+        1368,
+        261
+      ],
+      "output_tokens": 94,
+      "gt_rows_eval_only": 4,
+      "panel": "panels/03_page_000673_table_1.png",
+      "strategies": {
+        "ruled": {
+          "boundaries": [
+            0,
+            51,
+            161,
+            209,
+            261
+          ],
+          "rows": 4,
+          "diagnostics": {
+            "line_threshold": 0.33157895922660824,
+            "character_height": 11.0,
+            "edge_margin": 13,
+            "interior_boundaries": 3
+          }
+        },
+        "whitespace": {
+          "boundaries": [
+            0,
+            53,
+            130,
+            162,
+            210,
+            261
+          ],
+          "rows": 5,
+          "diagnostics": {
+            "character_height": 11.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 4
+          }
+        },
+        "row_edge": {
+          "boundaries": [
+            0,
+            51,
+            161,
+            210,
+            261
+          ],
+          "rows": 4,
+          "diagnostics": {
+            "character_height": 11.0,
+            "coverage_threshold": 0.3276759885549545,
+            "edge_margin": 13,
+            "interior_boundaries": 3,
+            "width": 1368
+          }
+        },
+        "hybrid": {
+          "boundaries": [
+            0,
+            51,
+            130,
+            161,
+            209,
+            261
+          ],
+          "rows": 5,
+          "diagnostics": {
+            "mode": "ruled+whitespace",
+            "character_height": 11.0,
+            "line_boundaries": 3,
+            "whitespace_candidates": 4,
+            "typical_ruled_height": 51.2,
+            "rows": 5,
+            "width": 1368
+          }
+        },
+        "selected": {
+          "boundaries": [
+            0,
+            51,
+            161,
+            209,
+            261
+          ],
+          "rows": 4,
+          "diagnostics": {
+            "line_threshold": 0.33157895922660824,
+            "character_height": 11.0,
+            "edge_margin": 13,
+            "interior_boundaries": 3,
+            "selected_source": "ruled",
+            "selection_reason": "consistent_explicit_rules",
+            "ruled_rows": 4,
+            "whitespace_rows": 5,
+            "row_edge_rows": 4
+          }
+        }
+      }
+    },
+    {
+      "request_id": "page_001172_table_16",
+      "page_name": "yanbaopptmerge_0c79d327060dbf9f1582d03c235dadb039533a19091d2c0d24f2ad95d267f79b.pdf_2.jpg",
+      "bbox_xyxy": [
+        96,
+        585,
+        1559,
+        927
+      ],
+      "raw_crop_size": [
+        1463,
+        342
+      ],
+      "trim_box_in_raw_crop": [
+        0,
+        0,
+        1463,
+        342
+      ],
+      "crop_size": [
+        1463,
+        342
+      ],
+      "output_tokens": 212,
+      "gt_rows_eval_only": 8,
+      "panel": "panels/04_page_001172_table_16.png",
+      "strategies": {
+        "ruled": {
+          "boundaries": [
+            0,
+            38,
+            81,
+            123,
+            165,
+            207,
+            254,
+            296,
+            342
+          ],
+          "rows": 8,
+          "diagnostics": {
+            "line_threshold": 0.3339000000000007,
+            "character_height": 13.0,
+            "edge_margin": 16,
+            "interior_boundaries": 7
+          }
+        },
+        "whitespace": {
+          "boundaries": [
+            0,
+            43,
+            82,
+            159,
+            256,
+            297,
+            342
+          ],
+          "rows": 6,
+          "diagnostics": {
+            "character_height": 4.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 5
+          }
+        },
+        "row_edge": {
+          "boundaries": [
+            0,
+            41,
+            80,
+            123,
+            165,
+            206,
+            256,
+            297,
+            342
+          ],
+          "rows": 8,
+          "diagnostics": {
+            "character_height": 19.0,
+            "coverage_threshold": 0.22650718688964844,
+            "edge_margin": 23,
+            "interior_boundaries": 7,
+            "width": 1463
+          }
+        },
+        "hybrid": {
+          "boundaries": [
+            0,
+            38,
+            81,
+            123,
+            165,
+            207,
+            254,
+            296,
+            342
+          ],
+          "rows": 8,
+          "diagnostics": {
+            "mode": "ruled+whitespace",
+            "character_height": 4.0,
+            "line_boundaries": 7,
+            "whitespace_candidates": 5,
+            "typical_ruled_height": 42.0,
+            "rows": 8,
+            "width": 1463
+          }
+        },
+        "selected": {
+          "boundaries": [
+            0,
+            38,
+            81,
+            123,
+            165,
+            207,
+            254,
+            296,
+            342
+          ],
+          "rows": 8,
+          "diagnostics": {
+            "line_threshold": 0.3339000000000007,
+            "character_height": 13.0,
+            "edge_margin": 16,
+            "interior_boundaries": 7,
+            "selected_source": "ruled",
+            "selection_reason": "consistent_explicit_rules",
+            "ruled_rows": 8,
+            "whitespace_rows": 6,
+            "row_edge_rows": 8
+          }
+        }
+      }
+    },
+    {
+      "request_id": "page_001149_table_0",
+      "page_name": "eastmoney_c683eb2923c442ad9fd8c1f25abb7b1b35b359611d5b8a07d1eede7a81983769.pdf_21.jpg",
+      "bbox_xyxy": [
+        98,
+        856,
+        1551,
+        1495
+      ],
+      "raw_crop_size": [
+        1453,
+        639
+      ],
+      "trim_box_in_raw_crop": [
+        0,
+        0,
+        1453,
+        639
+      ],
+      "crop_size": [
+        1453,
+        639
+      ],
+      "output_tokens": 314,
+      "gt_rows_eval_only": 9,
+      "panel": "panels/05_page_001149_table_0.png",
+      "strategies": {
+        "ruled": {
+          "boundaries": [
+            0,
+            47,
+            95,
+            142,
+            189,
+            236,
+            283,
+            331,
+            378,
+            639
+          ],
+          "rows": 9,
+          "diagnostics": {
+            "line_threshold": 0.27922918796539303,
+            "character_height": 15.0,
+            "edge_margin": 18,
+            "interior_boundaries": 8
+          }
+        },
+        "whitespace": {
+          "boundaries": [
+            0,
+            46,
+            94,
+            188,
+            236,
+            279,
+            330,
+            377,
+            423,
+            466,
+            509,
+            552,
+            597,
+            639
+          ],
+          "rows": 13,
+          "diagnostics": {
+            "character_height": 18.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 12
+          }
+        },
+        "row_edge": {
+          "boundaries": [
+            0,
+            48,
+            95,
+            142,
+            164,
+            190,
+            237,
+            284,
+            331,
+            379,
+            452,
+            485,
+            529,
+            571,
+            613,
+            639
+          ],
+          "rows": 15,
+          "diagnostics": {
+            "character_height": 19.0,
+            "coverage_threshold": 0.17176135361194608,
+            "edge_margin": 23,
+            "interior_boundaries": 14,
+            "width": 1453
+          }
+        },
+        "hybrid": {
+          "boundaries": [
+            0,
+            47,
+            95,
+            142,
+            189,
+            236,
+            283,
+            331,
+            378,
+            423,
+            466,
+            509,
+            552,
+            597,
+            639
+          ],
+          "rows": 14,
+          "diagnostics": {
+            "mode": "ruled+whitespace",
+            "character_height": 18.0,
+            "line_boundaries": 8,
+            "whitespace_candidates": 12,
+            "typical_ruled_height": 47.0,
+            "rows": 14,
+            "width": 1453
+          }
+        },
+        "selected": {
+          "boundaries": [
+            0,
+            47,
+            95,
+            142,
+            189,
+            236,
+            283,
+            331,
+            378,
+            639
+          ],
+          "rows": 9,
+          "diagnostics": {
+            "line_threshold": 0.27922918796539303,
+            "character_height": 15.0,
+            "edge_margin": 18,
+            "interior_boundaries": 8,
+            "selected_source": "ruled",
+            "selection_reason": "consistent_explicit_rules",
+            "ruled_rows": 9,
+            "whitespace_rows": 13,
+            "row_edge_rows": 15
+          }
+        }
+      }
+    },
+    {
+      "request_id": "page_000635_table_0",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-s00128-010-0006-0.pdf_5.jpg",
+      "bbox_xyxy": [
+        140,
+        196,
+        1518,
+        624
+      ],
+      "raw_crop_size": [
+        1378,
+        428
+      ],
+      "trim_box_in_raw_crop": [
+        0,
+        1,
+        1376,
+        428
+      ],
+      "crop_size": [
+        1376,
+        427
+      ],
+      "output_tokens": 452,
+      "gt_rows_eval_only": 11,
+      "panel": "panels/06_page_000635_table_0.png",
+      "strategies": {
+        "ruled": {
+          "boundaries": [
+            0,
+            51,
+            427
+          ],
+          "rows": 2,
+          "diagnostics": {
+            "line_threshold": 0.2058000000000038,
+            "character_height": 16.0,
+            "edge_margin": 19,
+            "interior_boundaries": 1
+          }
+        },
+        "whitespace": {
+          "boundaries": [
+            0,
+            54,
+            95,
+            131,
+            167,
+            202,
+            239,
+            273,
+            309,
+            344,
+            379,
+            427
+          ],
+          "rows": 11,
+          "diagnostics": {
+            "character_height": 16.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 10
+          }
+        },
+        "row_edge": {
+          "boundaries": [
+            0,
+            24,
+            50,
+            120,
+            156,
+            191,
+            227,
+            298,
+            333,
+            368,
+            404,
+            427
+          ],
+          "rows": 11,
+          "diagnostics": {
+            "character_height": 16.0,
+            "coverage_threshold": 0.10461845755577087,
+            "edge_margin": 19,
+            "interior_boundaries": 10,
+            "width": 1376
+          }
+        },
+        "hybrid": {
+          "boundaries": [
+            0,
+            51,
+            95,
+            131,
+            167,
+            202,
+            239,
+            273,
+            309,
+            344,
+            379,
+            427
+          ],
+          "rows": 11,
+          "diagnostics": {
+            "mode": "ruled+whitespace",
+            "character_height": 16.0,
+            "line_boundaries": 1,
+            "whitespace_candidates": 10,
+            "typical_ruled_height": 181.0,
+            "rows": 11,
+            "width": 1376
+          }
+        },
+        "selected": {
+          "boundaries": [
+            0,
+            54,
+            95,
+            131,
+            167,
+            202,
+            239,
+            273,
+            309,
+            344,
+            379,
+            427
+          ],
+          "rows": 11,
+          "diagnostics": {
+            "character_height": 16.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 10,
+            "selected_source": "whitespace",
+            "selection_reason": "borderless_or_sparse_rules",
+            "ruled_rows": 2,
+            "whitespace_rows": 11,
+            "row_edge_rows": 11
+          }
+        }
+      }
+    },
+    {
+      "request_id": "page_000630_table_2",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-hup.777.pdf_8.jpg",
+      "bbox_xyxy": [
+        194,
+        1076,
+        1430,
+        1728
+      ],
+      "raw_crop_size": [
+        1236,
+        652
+      ],
+      "trim_box_in_raw_crop": [
+        0,
+        0,
+        1236,
+        652
+      ],
+      "crop_size": [
+        1236,
+        652
+      ],
+      "output_tokens": 739,
+      "gt_rows_eval_only": 23,
+      "panel": "panels/07_page_000630_table_2.png",
+      "strategies": {
+        "ruled": {
+          "boundaries": [
+            0,
+            49,
+            103,
+            652
+          ],
+          "rows": 3,
+          "diagnostics": {
+            "line_threshold": 0.105,
+            "character_height": 13.0,
+            "edge_margin": 16,
+            "interior_boundaries": 2
+          }
+        },
+        "whitespace": {
+          "boundaries": [
+            0,
+            54,
+            104,
+            140,
+            165,
+            190,
+            216,
+            240,
+            265,
+            290,
+            315,
+            340,
+            365,
+            389,
+            414,
+            440,
+            464,
+            489,
+            514,
+            539,
+            564,
+            590,
+            614,
+            652
+          ],
+          "rows": 23,
+          "diagnostics": {
+            "character_height": 11.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 22
+          }
+        },
+        "row_edge": {
+          "boundaries": [
+            0,
+            33,
+            49,
+            87,
+            104,
+            146,
+            159,
+            184,
+            209,
+            234,
+            259,
+            284,
+            309,
+            334,
+            351,
+            370,
+            383,
+            408,
+            433,
+            450,
+            470,
+            483,
+            508,
+            533,
+            558,
+            583,
+            608,
+            633,
+            652
+          ],
+          "rows": 28,
+          "diagnostics": {
+            "character_height": 11.0,
+            "coverage_threshold": 0.07745874005556104,
+            "edge_margin": 13,
+            "interior_boundaries": 27,
+            "width": 1236
+          }
+        },
+        "hybrid": {
+          "boundaries": [
+            0,
+            49,
+            103,
+            140,
+            165,
+            190,
+            216,
+            240,
+            265,
+            290,
+            315,
+            340,
+            365,
+            389,
+            414,
+            440,
+            464,
+            489,
+            514,
+            539,
+            564,
+            590,
+            614,
+            652
+          ],
+          "rows": 23,
+          "diagnostics": {
+            "mode": "ruled+whitespace",
+            "character_height": 11.0,
+            "line_boundaries": 2,
+            "whitespace_candidates": 22,
+            "typical_ruled_height": 53.0,
+            "rows": 23,
+            "width": 1236
+          }
+        },
+        "selected": {
+          "boundaries": [
+            0,
+            54,
+            104,
+            140,
+            165,
+            190,
+            216,
+            240,
+            265,
+            290,
+            315,
+            340,
+            365,
+            389,
+            414,
+            440,
+            464,
+            489,
+            514,
+            539,
+            564,
+            590,
+            614,
+            652
+          ],
+          "rows": 23,
+          "diagnostics": {
+            "character_height": 11.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 22,
+            "selected_source": "whitespace",
+            "selection_reason": "borderless_or_sparse_rules",
+            "ruled_rows": 3,
+            "whitespace_rows": 23,
+            "row_edge_rows": 28
+          }
+        }
+      }
+    },
+    {
+      "request_id": "page_001272_table_1",
+      "page_name": "yanbaor2_1492d25d79af850815ea449254ea62418c3c7fd582792b5191e1879671ba1219.pdf_88.jpg",
+      "bbox_xyxy": [
+        364,
+        266,
+        1495,
+        2050
+      ],
+      "raw_crop_size": [
+        1131,
+        1784
+      ],
+      "trim_box_in_raw_crop": [
+        0,
+        0,
+        1131,
+        1784
+      ],
+      "crop_size": [
+        1131,
+        1784
+      ],
+      "output_tokens": 952,
+      "gt_rows_eval_only": 11,
+      "panel": "panels/08_page_001272_table_1.png",
+      "strategies": {
+        "ruled": {
+          "boundaries": [
+            0,
+            66,
+            130,
+            195,
+            260,
+            324,
+            389,
+            454,
+            518,
+            583,
+            648,
+            712,
+            777,
+            842,
+            906,
+            971,
+            1036,
+            1100,
+            1165,
+            1230,
+            1294,
+            1359,
+            1424,
+            1488,
+            1553,
+            1617,
+            1682,
+            1729,
+            1784
+          ],
+          "rows": 28,
+          "diagnostics": {
+            "line_threshold": 0.21,
+            "character_height": 12.0,
+            "edge_margin": 14,
+            "interior_boundaries": 27
+          }
+        },
+        "whitespace": {
+          "boundaries": [
+            0,
+            69,
+            131,
+            196,
+            260,
+            325,
+            648,
+            715,
+            777,
+            842,
+            907,
+            971,
+            1036,
+            1101,
+            1165,
+            1230,
+            1295,
+            1361,
+            1375,
+            1424,
+            1489,
+            1537,
+            1551,
+            1602,
+            1616,
+            1666,
+            1684,
+            1731,
+            1784
+          ],
+          "rows": 28,
+          "diagnostics": {
+            "character_height": 12.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 27
+          }
+        },
+        "row_edge": {
+          "boundaries": [
+            0,
+            38,
+            66,
+            96,
+            112,
+            132,
+            148,
+            162,
+            176,
+            195,
+            213,
+            227,
+            241,
+            260,
+            284,
+            305,
+            326,
+            348,
+            368,
+            390,
+            413,
+            434,
+            454,
+            478,
+            499,
+            519,
+            543,
+            583,
+            620,
+            648,
+            685,
+            712,
+            737,
+            777,
+            801,
+            816,
+            842,
+            866,
+            880,
+            907,
+            945,
+            971,
+            994,
+            1010,
+            1036,
+            1101,
+            1139,
+            1165,
+            1195,
+            1231,
+            1261,
+            1295,
+            1360,
+            1424,
+            1489,
+            1554,
+            1618,
+            1683,
+            1707,
+            1730,
+            1754,
+            1784
+          ],
+          "rows": 61,
+          "diagnostics": {
+            "character_height": 12.0,
+            "coverage_threshold": 0.10564986884593963,
+            "edge_margin": 14,
+            "interior_boundaries": 60,
+            "width": 1131
+          }
+        },
+        "hybrid": {
+          "boundaries": [
+            0,
+            66,
+            130,
+            195,
+            260,
+            324,
+            389,
+            454,
+            518,
+            583,
+            648,
+            712,
+            777,
+            842,
+            906,
+            971,
+            1036,
+            1100,
+            1165,
+            1230,
+            1294,
+            1359,
+            1424,
+            1488,
+            1553,
+            1617,
+            1682,
+            1729,
+            1784
+          ],
+          "rows": 28,
+          "diagnostics": {
+            "mode": "ruled+whitespace",
+            "character_height": 12.0,
+            "line_boundaries": 27,
+            "whitespace_candidates": 27,
+            "typical_ruled_height": 64.8,
+            "rows": 28,
+            "width": 1131
+          }
+        },
+        "selected": {
+          "boundaries": [
+            0,
+            66,
+            130,
+            195,
+            260,
+            324,
+            389,
+            454,
+            518,
+            583,
+            648,
+            712,
+            777,
+            842,
+            906,
+            971,
+            1036,
+            1100,
+            1165,
+            1230,
+            1294,
+            1359,
+            1424,
+            1488,
+            1553,
+            1617,
+            1682,
+            1729,
+            1784
+          ],
+          "rows": 28,
+          "diagnostics": {
+            "line_threshold": 0.21,
+            "character_height": 12.0,
+            "edge_margin": 14,
+            "interior_boundaries": 27,
+            "selected_source": "ruled",
+            "selection_reason": "consistent_explicit_rules",
+            "ruled_rows": 28,
+            "whitespace_rows": 28,
+            "row_edge_rows": 61
+          }
+        }
+      }
+    },
+    {
+      "request_id": "page_000496_table_4",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-s00374-006-0103-8.pdf_11.jpg",
+      "bbox_xyxy": [
+        133,
+        139,
+        1521,
+        1287
+      ],
+      "raw_crop_size": [
+        1388,
+        1148
+      ],
+      "trim_box_in_raw_crop": [
+        0,
+        0,
+        1388,
+        1148
+      ],
+      "crop_size": [
+        1388,
+        1148
+      ],
+      "output_tokens": 1497,
+      "gt_rows_eval_only": 34,
+      "panel": "panels/09_page_000496_table_4.png",
+      "strategies": {
+        "ruled": {
+          "boundaries": [
+            0,
+            42,
+            88,
+            1148
+          ],
+          "rows": 3,
+          "diagnostics": {
+            "line_threshold": 0.1,
+            "character_height": 17.0,
+            "edge_margin": 20,
+            "interior_boundaries": 2
+          }
+        },
+        "whitespace": {
+          "boundaries": [
+            0,
+            44,
+            90,
+            134,
+            167,
+            199,
+            231,
+            263,
+            297,
+            329,
+            361,
+            395,
+            426,
+            458,
+            490,
+            523,
+            555,
+            588,
+            620,
+            652,
+            685,
+            717,
+            749,
+            781,
+            814,
+            846,
+            879,
+            911,
+            944,
+            976,
+            1008,
+            1042,
+            1074,
+            1106,
+            1148
+          ],
+          "rows": 34,
+          "diagnostics": {
+            "character_height": 17.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 33
+          }
+        },
+        "row_edge": {
+          "boundaries": [
+            0,
+            42,
+            87,
+            125,
+            158,
+            190,
+            222,
+            255,
+            287,
+            320,
+            352,
+            384,
+            417,
+            449,
+            481,
+            514,
+            546,
+            579,
+            611,
+            643,
+            676,
+            708,
+            740,
+            773,
+            805,
+            837,
+            870,
+            902,
+            935,
+            967,
+            999,
+            1032,
+            1064,
+            1097,
+            1119,
+            1148
+          ],
+          "rows": 35,
+          "diagnostics": {
+            "character_height": 17.0,
+            "coverage_threshold": 0.08019110190868368,
+            "edge_margin": 20,
+            "interior_boundaries": 34,
+            "width": 1388
+          }
+        },
+        "hybrid": {
+          "boundaries": [
+            0,
+            42,
+            88,
+            134,
+            167,
+            199,
+            231,
+            263,
+            297,
+            329,
+            361,
+            395,
+            426,
+            458,
+            490,
+            523,
+            555,
+            588,
+            620,
+            652,
+            685,
+            717,
+            749,
+            781,
+            814,
+            846,
+            879,
+            911,
+            944,
+            976,
+            1008,
+            1042,
+            1074,
+            1106,
+            1148
+          ],
+          "rows": 34,
+          "diagnostics": {
+            "mode": "ruled+whitespace",
+            "character_height": 17.0,
+            "line_boundaries": 2,
+            "whitespace_candidates": 33,
+            "typical_ruled_height": 45.2,
+            "rows": 34,
+            "width": 1388
+          }
+        },
+        "selected": {
+          "boundaries": [
+            0,
+            44,
+            90,
+            134,
+            167,
+            199,
+            231,
+            263,
+            297,
+            329,
+            361,
+            395,
+            426,
+            458,
+            490,
+            523,
+            555,
+            588,
+            620,
+            652,
+            685,
+            717,
+            749,
+            781,
+            814,
+            846,
+            879,
+            911,
+            944,
+            976,
+            1008,
+            1042,
+            1074,
+            1106,
+            1148
+          ],
+          "rows": 34,
+          "diagnostics": {
+            "character_height": 17.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 33,
+            "selected_source": "whitespace",
+            "selection_reason": "borderless_or_sparse_rules",
+            "ruled_rows": 3,
+            "whitespace_rows": 34,
+            "row_edge_rows": 35
+          }
+        }
+      }
+    },
+    {
+      "request_id": "page_001595_table_box_id_1",
+      "page_name": "magazine_TheEconomist.2024.02.24_page_076.png",
+      "bbox_xyxy": [
+        264,
+        584,
+        4285,
+        3696
+      ],
+      "raw_crop_size": [
+        4021,
+        3112
+      ],
+      "trim_box_in_raw_crop": [
+        0,
+        14,
+        4021,
+        3112
+      ],
+      "crop_size": [
+        4021,
+        3098
+      ],
+      "output_tokens": 2682,
+      "gt_rows_eval_only": 45,
+      "panel": "panels/10_page_001595_table_box_id_1.png",
+      "strategies": {
+        "ruled": {
+          "boundaries": [
+            0,
+            230,
+            561,
+            1159,
+            1691,
+            2424,
+            2821,
+            3098
+          ],
+          "rows": 7,
+          "diagnostics": {
+            "line_threshold": 0.105,
+            "character_height": 17.0,
+            "edge_margin": 20,
+            "interior_boundaries": 6,
+            "detection_scale": 0.4476498383486695
+          }
+        },
+        "whitespace": {
+          "boundaries": [
+            0,
+            3098
+          ],
+          "rows": 1,
+          "diagnostics": {
+            "character_height": 18.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 0,
+            "detection_scale": 0.4476498383486695
+          }
+        },
+        "row_edge": {
+          "boundaries": [
+            0,
+            51,
+            121,
+            230,
+            299,
+            357,
+            427,
+            498,
+            565,
+            614,
+            693,
+            746,
+            831,
+            878,
+            943,
+            1025,
+            1092,
+            1162,
+            1213,
+            1298,
+            1365,
+            1412,
+            1492,
+            1559,
+            1611,
+            1691,
+            1763,
+            1812,
+            1890,
+            1943,
+            2010,
+            2095,
+            2162,
+            2209,
+            2276,
+            2361,
+            2426,
+            2475,
+            2556,
+            2623,
+            2676,
+            2741,
+            2826,
+            2893,
+            2955,
+            3009,
+            3098
+          ],
+          "rows": 46,
+          "diagnostics": {
+            "character_height": 18.0,
+            "coverage_threshold": 0.07860999700427054,
+            "edge_margin": 22,
+            "interior_boundaries": 45,
+            "width": 1800,
+            "detection_scale": 0.4476498383486695
+          }
+        },
+        "hybrid": {
+          "boundaries": [
+            0,
+            230,
+            561,
+            1159,
+            1691,
+            2424,
+            2821,
+            3098
+          ],
+          "rows": 7,
+          "diagnostics": {
+            "mode": "ruled+whitespace",
+            "character_height": 18.0,
+            "line_boundaries": 6,
+            "whitespace_candidates": 0,
+            "typical_ruled_height": 160.0,
+            "rows": 7,
+            "width": 1800,
+            "detection_scale": 0.4476498383486695
+          }
+        },
+        "selected": {
+          "boundaries": [
+            0,
+            51,
+            121,
+            230,
+            299,
+            357,
+            427,
+            498,
+            565,
+            614,
+            693,
+            746,
+            831,
+            878,
+            943,
+            1025,
+            1092,
+            1162,
+            1213,
+            1298,
+            1365,
+            1412,
+            1492,
+            1559,
+            1611,
+            1691,
+            1763,
+            1812,
+            1890,
+            1943,
+            2010,
+            2095,
+            2162,
+            2209,
+            2276,
+            2361,
+            2426,
+            2475,
+            2556,
+            2623,
+            2676,
+            2741,
+            2826,
+            2893,
+            2955,
+            3009,
+            3098
+          ],
+          "rows": 46,
+          "diagnostics": {
+            "character_height": 18.0,
+            "coverage_threshold": 0.07860999700427054,
+            "edge_margin": 22,
+            "interior_boundaries": 45,
+            "width": 1800,
+            "selected_source": "row_edge",
+            "selection_reason": "colored_or_filled_rows",
+            "ruled_rows": 7,
+            "whitespace_rows": 1,
+            "row_edge_rows": 46,
+            "detection_scale": 0.4476498383486695
+          }
+        }
+      }
+    },
+    {
+      "request_id": "page_000282_table_box_id_1",
+      "page_name": "page-9f6bc620-1983-4503-bb0f-f9c7949ccb77.png",
+      "bbox_xyxy": [
+        151,
+        222,
+        1497,
+        1529
+      ],
+      "raw_crop_size": [
+        1346,
+        1307
+      ],
+      "trim_box_in_raw_crop": [
+        0,
+        0,
+        1346,
+        1307
+      ],
+      "crop_size": [
+        1346,
+        1307
+      ],
+      "output_tokens": 3092,
+      "gt_rows_eval_only": 39,
+      "panel": "panels/11_page_000282_table_box_id_1.png",
+      "strategies": {
+        "ruled": {
+          "boundaries": [
+            0,
+            41,
+            74,
+            1268,
+            1307
+          ],
+          "rows": 4,
+          "diagnostics": {
+            "line_threshold": 0.1,
+            "character_height": 15.0,
+            "edge_margin": 18,
+            "interior_boundaries": 3
+          }
+        },
+        "whitespace": {
+          "boundaries": [
+            0,
+            74,
+            108,
+            141,
+            174,
+            207,
+            240,
+            273,
+            306,
+            339,
+            372,
+            405,
+            438,
+            472,
+            506,
+            538,
+            571,
+            605,
+            637,
+            670,
+            704,
+            737,
+            770,
+            804,
+            836,
+            869,
+            903,
+            936,
+            970,
+            1002,
+            1035,
+            1068,
+            1101,
+            1135,
+            1169,
+            1202,
+            1235,
+            1268,
+            1307
+          ],
+          "rows": 38,
+          "diagnostics": {
+            "character_height": 14.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 37
+          }
+        },
+        "row_edge": {
+          "boundaries": [
+            0,
+            42,
+            75,
+            91,
+            124,
+            164,
+            197,
+            230,
+            263,
+            297,
+            330,
+            363,
+            396,
+            429,
+            462,
+            496,
+            529,
+            562,
+            595,
+            628,
+            661,
+            687,
+            728,
+            754,
+            787,
+            827,
+            860,
+            893,
+            927,
+            953,
+            993,
+            1026,
+            1059,
+            1085,
+            1125,
+            1159,
+            1180,
+            1225,
+            1269,
+            1307
+          ],
+          "rows": 39,
+          "diagnostics": {
+            "character_height": 14.0,
+            "coverage_threshold": 0.10363873980939388,
+            "edge_margin": 17,
+            "interior_boundaries": 38,
+            "width": 1346
+          }
+        },
+        "hybrid": {
+          "boundaries": [
+            0,
+            41,
+            74,
+            108,
+            141,
+            174,
+            207,
+            240,
+            273,
+            306,
+            339,
+            372,
+            405,
+            438,
+            472,
+            506,
+            538,
+            571,
+            605,
+            637,
+            670,
+            704,
+            737,
+            770,
+            804,
+            836,
+            869,
+            903,
+            936,
+            970,
+            1002,
+            1035,
+            1068,
+            1101,
+            1135,
+            1169,
+            1202,
+            1235,
+            1268,
+            1307
+          ],
+          "rows": 39,
+          "diagnostics": {
+            "mode": "ruled+whitespace",
+            "character_height": 14.0,
+            "line_boundaries": 3,
+            "whitespace_candidates": 37,
+            "typical_ruled_height": 39.4,
+            "rows": 39,
+            "width": 1346
+          }
+        },
+        "selected": {
+          "boundaries": [
+            0,
+            74,
+            108,
+            141,
+            174,
+            207,
+            240,
+            273,
+            306,
+            339,
+            372,
+            405,
+            438,
+            472,
+            506,
+            538,
+            571,
+            605,
+            637,
+            670,
+            704,
+            737,
+            770,
+            804,
+            836,
+            869,
+            903,
+            936,
+            970,
+            1002,
+            1035,
+            1068,
+            1101,
+            1135,
+            1169,
+            1202,
+            1235,
+            1268,
+            1307
+          ],
+          "rows": 38,
+          "diagnostics": {
+            "character_height": 14.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 37,
+            "selected_source": "whitespace",
+            "selection_reason": "borderless_or_sparse_rules",
+            "ruled_rows": 4,
+            "whitespace_rows": 38,
+            "row_edge_rows": 39
+          }
+        }
+      }
+    },
+    {
+      "request_id": "page_000290_table_box_id_1",
+      "page_name": "page-38fc7c6b-80ed-46be-bb53-29986a63ad3e.png",
+      "bbox_xyxy": [
+        118,
+        167,
+        1521,
+        2018
+      ],
+      "raw_crop_size": [
+        1403,
+        1851
+      ],
+      "trim_box_in_raw_crop": [
+        4,
+        0,
+        1403,
+        1851
+      ],
+      "crop_size": [
+        1399,
+        1851
+      ],
+      "output_tokens": 3112,
+      "gt_rows_eval_only": 44,
+      "panel": "panels/12_page_000290_table_box_id_1.png",
+      "strategies": {
+        "ruled": {
+          "boundaries": [
+            0,
+            55,
+            95,
+            1851
+          ],
+          "rows": 3,
+          "diagnostics": {
+            "line_threshold": 0.1,
+            "character_height": 14.0,
+            "edge_margin": 17,
+            "interior_boundaries": 2,
+            "detection_scale": 0.9724473257698542
+          }
+        },
+        "whitespace": {
+          "boundaries": [
+            0,
+            47,
+            93,
+            125,
+            150,
+            176,
+            201,
+            425,
+            524,
+            548,
+            675,
+            698,
+            798,
+            824,
+            847,
+            897,
+            947,
+            997,
+            1021,
+            1096,
+            1209,
+            1320,
+            1422,
+            1445,
+            1569,
+            1671,
+            1694,
+            1721,
+            1743,
+            1851
+          ],
+          "rows": 29,
+          "diagnostics": {
+            "character_height": 14.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 28,
+            "detection_scale": 0.9724473257698542
+          }
+        },
+        "row_edge": {
+          "boundaries": [
+            0,
+            31,
+            56,
+            96,
+            144,
+            169,
+            219,
+            244,
+            268,
+            293,
+            318,
+            342,
+            368,
+            393,
+            418,
+            443,
+            468,
+            492,
+            517,
+            567,
+            617,
+            642,
+            667,
+            717,
+            741,
+            766,
+            791,
+            815,
+            866,
+            916,
+            966,
+            990,
+            1040,
+            1065,
+            1115,
+            1139,
+            1165,
+            1190,
+            1231,
+            1264,
+            1289,
+            1314,
+            1339,
+            1364,
+            1389,
+            1414,
+            1464,
+            1488,
+            1513,
+            1538,
+            1588,
+            1612,
+            1638,
+            1663,
+            1713,
+            1762,
+            1787,
+            1812,
+            1851
+          ],
+          "rows": 58,
+          "diagnostics": {
+            "character_height": 14.0,
+            "coverage_threshold": 0.12254504442214965,
+            "edge_margin": 17,
+            "interior_boundaries": 57,
+            "width": 1360,
+            "detection_scale": 0.9724473257698542
+          }
+        },
+        "hybrid": {
+          "boundaries": [
+            0,
+            55,
+            95,
+            125,
+            150,
+            176,
+            201,
+            425,
+            524,
+            548,
+            675,
+            698,
+            798,
+            824,
+            847,
+            897,
+            947,
+            997,
+            1021,
+            1096,
+            1209,
+            1320,
+            1422,
+            1445,
+            1569,
+            1671,
+            1694,
+            1721,
+            1743,
+            1851
+          ],
+          "rows": 29,
+          "diagnostics": {
+            "mode": "ruled+whitespace",
+            "character_height": 14.0,
+            "line_boundaries": 2,
+            "whitespace_candidates": 28,
+            "typical_ruled_height": 50.2,
+            "rows": 29,
+            "width": 1360,
+            "detection_scale": 0.9724473257698542
+          }
+        },
+        "selected": {
+          "boundaries": [
+            0,
+            47,
+            93,
+            125,
+            150,
+            176,
+            201,
+            425,
+            524,
+            548,
+            675,
+            698,
+            798,
+            824,
+            847,
+            897,
+            947,
+            997,
+            1021,
+            1096,
+            1209,
+            1320,
+            1422,
+            1445,
+            1569,
+            1671,
+            1694,
+            1721,
+            1743,
+            1851
+          ],
+          "rows": 29,
+          "diagnostics": {
+            "character_height": 14.0,
+            "minimum_occupancy": 0.0,
+            "interior_boundaries": 28,
+            "selected_source": "whitespace",
+            "selection_reason": "borderless_or_sparse_rules",
+            "ruled_rows": 3,
+            "whitespace_rows": 29,
+            "row_edge_rows": 58,
+            "detection_scale": 0.9724473257698542
+          }
+        }
+      }
+    }
+  ],
+  "contact_sheets": [
+    "contact_sheet_01.png",
+    "contact_sheet_02.png",
+    "contact_sheet_03.png"
+  ]
+}
