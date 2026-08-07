@@ -128,6 +128,30 @@ def binarize(gray: np.ndarray) -> np.ndarray:
     )
 
 
+def text_binarize(gray: np.ndarray) -> np.ndarray:
+    """Extract dark glyphs without turning colored cell fills into foreground."""
+
+    blurred = cv2.GaussianBlur(gray, (3, 3), 0)
+    _, global_ink = cv2.threshold(
+        blurred,
+        0,
+        255,
+        cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU,
+    )
+    blackhat = cv2.morphologyEx(
+        blurred,
+        cv2.MORPH_BLACKHAT,
+        cv2.getStructuringElement(cv2.MORPH_RECT, (15, 9)),
+    )
+    _, local_ink = cv2.threshold(
+        blackhat,
+        0,
+        255,
+        cv2.THRESH_BINARY | cv2.THRESH_OTSU,
+    )
+    return cv2.bitwise_or(global_ink, local_ink)
+
+
 def line_masks(binary: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     height, width = binary.shape
     horizontal = np.zeros_like(binary)
@@ -206,6 +230,8 @@ def ruled_split(binary: np.ndarray, horizontal: np.ndarray) -> SplitProposal:
         for start, end in _runs(smoothed >= threshold)
     ]
     char_height = _component_height(cv2.bitwise_and(binary, cv2.bitwise_not(horizontal)))
+    edge_margin = max(2, round(char_height * 1.2))
+    peaks = [point for point in peaks if edge_margin < point < height - edge_margin]
     boundaries = _nms_boundaries(peaks, max(2, round(char_height * 0.55)), height)
     return SplitProposal(
         name="ruled",
@@ -213,22 +239,48 @@ def ruled_split(binary: np.ndarray, horizontal: np.ndarray) -> SplitProposal:
         diagnostics={
             "line_threshold": threshold,
             "character_height": char_height,
+            "edge_margin": edge_margin,
             "interior_boundaries": max(0, len(boundaries) - 2),
         },
     )
 
 
-def whitespace_candidates(
-    binary: np.ndarray,
+def _text_component_mask(
+    text_binary: np.ndarray,
     horizontal: np.ndarray,
     vertical: np.ndarray,
-) -> tuple[list[int], float, np.ndarray]:
-    height, width = binary.shape
+) -> np.ndarray:
+    """Remove rules and large filled regions while retaining character blobs."""
+
+    height, width = text_binary.shape
     all_lines = cv2.dilate(
         cv2.bitwise_or(horizontal, vertical),
         cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)),
     )
-    text = cv2.bitwise_and(binary, cv2.bitwise_not(all_lines))
+    source = cv2.bitwise_and(text_binary, cv2.bitwise_not(all_lines))
+    count, labels, stats, _ = cv2.connectedComponentsWithStats(source, 8)
+    result = np.zeros_like(source)
+    for index in range(1, count):
+        component_width = int(stats[index, cv2.CC_STAT_WIDTH])
+        component_height = int(stats[index, cv2.CC_STAT_HEIGHT])
+        area = int(stats[index, cv2.CC_STAT_AREA])
+        if not (1 <= component_width <= max(4, width // 3)):
+            continue
+        if not (2 <= component_height <= max(4, height // 7)):
+            continue
+        if not (2 <= area <= max(16, width * height // 80)):
+            continue
+        result[labels == index] = 255
+    return result
+
+
+def whitespace_candidates(
+    text_binary: np.ndarray,
+    horizontal: np.ndarray,
+    vertical: np.ndarray,
+) -> tuple[list[int], float, np.ndarray]:
+    height, width = text_binary.shape
+    text = _text_component_mask(text_binary, horizontal, vertical)
     char_height = _component_height(text)
     connected = cv2.dilate(
         text,
@@ -255,12 +307,14 @@ def whitespace_candidates(
 
 
 def whitespace_split(
-    binary: np.ndarray,
+    text_binary: np.ndarray,
     horizontal: np.ndarray,
     vertical: np.ndarray,
 ) -> SplitProposal:
-    height, _ = binary.shape
-    candidates, char_height, smooth = whitespace_candidates(binary, horizontal, vertical)
+    height, _ = text_binary.shape
+    candidates, char_height, smooth = whitespace_candidates(
+        text_binary, horizontal, vertical
+    )
     boundaries = _nms_boundaries(candidates, max(3, round(char_height * 1.05)), height)
     return SplitProposal(
         name="whitespace",
@@ -274,22 +328,48 @@ def whitespace_split(
 
 
 def hybrid_split(
-    binary: np.ndarray,
+    text_binary: np.ndarray,
     horizontal: np.ndarray,
     vertical: np.ndarray,
     ruled: SplitProposal,
 ) -> SplitProposal:
-    height, width = binary.shape
-    whitespace, char_height, occupancy = whitespace_candidates(binary, horizontal, vertical)
+    height, width = text_binary.shape
+    whitespace, char_height, occupancy = whitespace_candidates(
+        text_binary, horizontal, vertical
+    )
     line_points = list(ruled.boundaries[1:-1])
     candidates = list(line_points)
     line_margin = max(2, round(char_height * 0.7))
+    ruled_intervals = np.diff([0, *line_points, height])
+    positive_intervals = ruled_intervals[ruled_intervals > 0]
+    typical_ruled_height = (
+        float(np.percentile(positive_intervals, 40))
+        if len(positive_intervals)
+        else 0.0
+    )
 
     # A whitespace valley is useful when it is not merely the empty area around
     # an already-detected rule and does not make an implausibly short row.
     for point in whitespace:
         if any(abs(point - line) <= line_margin for line in line_points):
             continue
+        if line_points:
+            enclosing = next(
+                (
+                    right - left
+                    for left, right in zip(
+                        [0, *line_points], [*line_points, height]
+                    )
+                    if left < point < right
+                ),
+                0,
+            )
+            needs_subdivision = enclosing > max(
+                typical_ruled_height * 1.75,
+                char_height * 4.0,
+            )
+            if not needs_subdivision:
+                continue
         candidates.append(point)
 
     boundaries = list(
@@ -326,6 +406,7 @@ def hybrid_split(
             "character_height": char_height,
             "line_boundaries": len(line_points),
             "whitespace_candidates": len(whitespace),
+            "typical_ruled_height": typical_ruled_height,
             "rows": max(1, len(boundaries) - 1),
             "width": width,
         },
@@ -336,10 +417,11 @@ def analyze(image: Image.Image) -> tuple[SplitProposal, SplitProposal, SplitProp
     rgb = np.asarray(image.convert("RGB"))
     gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
     binary = binarize(gray)
+    text_binary = text_binarize(gray)
     horizontal, vertical = line_masks(binary)
     ruled = ruled_split(binary, horizontal)
-    whitespace = whitespace_split(binary, horizontal, vertical)
-    hybrid = hybrid_split(binary, horizontal, vertical, ruled)
+    whitespace = whitespace_split(text_binary, horizontal, vertical)
+    hybrid = hybrid_split(text_binary, horizontal, vertical, ruled)
     return ruled, whitespace, hybrid
 
 
@@ -383,12 +465,22 @@ def sample_panel(record: dict, image: Image.Image, proposals: tuple[SplitProposa
     panel_width, panel_height, header = 380, 320, 48
     result = Image.new("RGB", (panel_width * 4, panel_height + header), "white")
     draw = ImageDraw.Draw(result)
+    gt_rows = len(re.findall(r"<tr\b", str(record.get("gt_html", "")), re.IGNORECASE))
     title = (
         f"{record['request_id']}  crop={image.width}x{image.height}  "
-        f"output_tokens={record['output_tokens']}"
+        f"output_tokens={record['output_tokens']}  gt_rows(eval-only)={gt_rows}"
     )
     draw.text((8, 6), title, fill="black", font=ImageFont.load_default())
-    panels = [("original", image), *[(proposal.name, draw_overlay(image, proposal)) for proposal in proposals]]
+    panels = [
+        ("original", image),
+        *[
+            (
+                f"{proposal.name} rows={len(proposal.boundaries) - 1}",
+                draw_overlay(image, proposal),
+            )
+            for proposal in proposals
+        ],
+    ]
     for index, (label, panel_image) in enumerate(panels):
         fitted = fit_panel(panel_image, panel_width, panel_height)
         result.paste(fitted, (index * panel_width, header))
@@ -460,6 +552,13 @@ def main() -> None:
                 "bbox_xyxy": record["bbox_xyxy"],
                 "crop_size": list(image.size),
                 "output_tokens": record["output_tokens"],
+                "gt_rows_eval_only": len(
+                    re.findall(
+                        r"<tr\b",
+                        str(record.get("gt_html", "")),
+                        re.IGNORECASE,
+                    )
+                ),
                 "panel": f"panels/{name}.png",
                 "strategies": {
                     proposal.name: {
@@ -499,4 +598,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
