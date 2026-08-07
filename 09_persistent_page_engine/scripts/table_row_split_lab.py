@@ -111,6 +111,24 @@ def load_crop(record: dict, images_dir: Path) -> Image.Image:
         return page.crop(tuple(record["bbox_xyxy"]))
 
 
+def trim_blank_margin(image: Image.Image) -> tuple[Image.Image, tuple[int, int, int, int]]:
+    """Remove uniform light margins while retaining a small safety border."""
+
+    rgb = np.asarray(image.convert("RGB"))
+    gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
+    foreground = gray < 247
+    ys, xs = np.nonzero(foreground)
+    if not len(xs):
+        return image, (0, 0, image.width, image.height)
+    margin = max(2, round(min(image.size) * 0.01))
+    left = max(0, int(xs.min()) - margin)
+    top = max(0, int(ys.min()) - margin)
+    right = min(image.width, int(xs.max()) + margin + 1)
+    bottom = min(image.height, int(ys.max()) + margin + 1)
+    box = (left, top, right, bottom)
+    return image.crop(box), box
+
+
 def _odd(value: int) -> int:
     value = max(3, int(value))
     return value if value % 2 else value + 1
@@ -413,8 +431,35 @@ def hybrid_split(
     )
 
 
+def _scale_proposal(
+    proposal: SplitProposal,
+    source_height: int,
+    target_height: int,
+    scale: float,
+) -> SplitProposal:
+    if scale == 1.0:
+        return proposal
+    boundaries = tuple(
+        0 if y == 0 else target_height if y == source_height else round(y / scale)
+        for y in proposal.boundaries
+    )
+    diagnostics = dict(proposal.diagnostics)
+    diagnostics["detection_scale"] = scale
+    return SplitProposal(proposal.name, boundaries, diagnostics)
+
+
 def analyze(image: Image.Image) -> tuple[SplitProposal, SplitProposal, SplitProposal]:
-    rgb = np.asarray(image.convert("RGB"))
+    max_detection_dimension = 1800
+    scale = min(1.0, max_detection_dimension / max(image.size))
+    detection_image = (
+        image.resize(
+            (round(image.width * scale), round(image.height * scale)),
+            Image.Resampling.LANCZOS,
+        )
+        if scale < 1.0
+        else image
+    )
+    rgb = np.asarray(detection_image.convert("RGB"))
     gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
     binary = binarize(gray)
     text_binary = text_binarize(gray)
@@ -422,7 +467,15 @@ def analyze(image: Image.Image) -> tuple[SplitProposal, SplitProposal, SplitProp
     ruled = ruled_split(binary, horizontal)
     whitespace = whitespace_split(text_binary, horizontal, vertical)
     hybrid = hybrid_split(text_binary, horizontal, vertical, ruled)
-    return ruled, whitespace, hybrid
+    return tuple(
+        _scale_proposal(
+            proposal,
+            detection_image.height,
+            image.height,
+            scale,
+        )
+        for proposal in (ruled, whitespace, hybrid)
+    )
 
 
 COLORS = {
@@ -528,7 +581,8 @@ def main() -> None:
     manifest: list[dict] = []
     panels: list[tuple[str, Image.Image]] = []
     for index, record in enumerate(selected, start=1):
-        image = load_crop(record, args.images_dir)
+        raw_image = load_crop(record, args.images_dir)
+        image, trim_box = trim_blank_margin(raw_image)
         proposals = analyze(image)
         name = f"{index:02d}_{safe_name(record['request_id'])}"
         panel = sample_panel(record, image, proposals)
@@ -550,6 +604,8 @@ def main() -> None:
                 "request_id": record["request_id"],
                 "page_name": record["page_name"],
                 "bbox_xyxy": record["bbox_xyxy"],
+                "raw_crop_size": list(raw_image.size),
+                "trim_box_in_raw_crop": list(trim_box),
                 "crop_size": list(image.size),
                 "output_tokens": record["output_tokens"],
                 "gt_rows_eval_only": len(
