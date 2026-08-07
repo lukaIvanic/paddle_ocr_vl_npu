@@ -87,6 +87,14 @@ def parse_args() -> argparse.Namespace:
         help="Continue from the checkpointed row_ocr_records.jsonl.",
     )
     parser.add_argument(
+        "--cross-table-schedule",
+        action="store_true",
+        help=(
+            "Submit every selected row crop through one recognizer schedule so "
+            "decode batches can remain full across table boundaries."
+        ),
+    )
+    parser.add_argument(
         "--strategies",
         default=",".join(DEFAULT_STRATEGIES),
     )
@@ -283,6 +291,207 @@ def aggregate_result_tokens(results: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def run_cross_table_schedule(
+    args: argparse.Namespace,
+    recognizer: ContinuousRecognizer,
+    selected: list[dict[str, Any]],
+    strategies: tuple[str, ...],
+    setup_s: float,
+) -> None:
+    if args.resume:
+        raise ValueError("--resume is not supported with --cross-table-schedule")
+
+    total_started = time.perf_counter()
+    requests: list[RecognitionRequest] = []
+    request_owner: dict[str, tuple[tuple[str, str], int]] = {}
+    contexts: dict[tuple[str, str], dict[str, Any]] = {}
+
+    prepare_started = time.perf_counter()
+    for source in selected:
+        raw_image = load_crop(source, args.images_dir)
+        image, trim_box = trim_blank_margin(raw_image)
+        split_started = time.perf_counter()
+        proposals = (
+            {proposal.name: proposal for proposal in analyze(image)}
+            if any(strategy != "whole" for strategy in strategies)
+            else {}
+        )
+        if "whole" in strategies:
+            proposals["whole"] = SplitProposal(
+                name="whole",
+                boundaries=(0, image.height),
+                diagnostics={"source": "whole_table_crop"},
+            )
+        split_s = time.perf_counter() - split_started
+
+        for strategy in strategies:
+            proposal = proposals[strategy]
+            row_crop_started = time.perf_counter()
+            rows = crop_rows(image, proposal.boundaries, args.row_overlap_px)
+            row_crop_s = time.perf_counter() - row_crop_started
+            key = (source["request_id"], strategy)
+            contexts[key] = {
+                "source": source,
+                "raw_crop_size": list(raw_image.size),
+                "trim_box": list(trim_box),
+                "crop_size": list(image.size),
+                "proposal": proposal,
+                "row_y": [(top, bottom) for top, bottom, _image in rows],
+                "split_s": split_s,
+                "row_crop_s": row_crop_s,
+                "results": [],
+            }
+            for row_index, (_top, _bottom, row_image) in enumerate(rows):
+                request_id = (
+                    f"{source['request_id']}:{strategy}:row_{row_index:04d}"
+                )
+                request_owner[request_id] = (key, row_index)
+                requests.append(
+                    RecognitionRequest(
+                        request_id=request_id,
+                        crop=row_image,
+                        prompt="Table Recognition:",
+                        min_pixels=args.min_pixels,
+                        max_pixels=args.max_pixels,
+                        source_crop_size=row_image.size,
+                    )
+                )
+    prepare_wall_s = time.perf_counter() - prepare_started
+    print(
+        f"cross_table_prepared tables={len(selected)} strategies={len(strategies)} "
+        f"requests={len(requests)} wall_s={prepare_wall_s:.3f}",
+        flush=True,
+    )
+
+    recognition_started = time.perf_counter()
+
+    def emit(result: Any) -> None:
+        payload = asdict(result)
+        payload["raw_text"] = payload["text"]
+        key, row_index = request_owner[result.request_id]
+        payload["row_index"] = row_index
+        payload["row_y"] = list(contexts[key]["row_y"][row_index])
+        contexts[key]["results"].append(payload)
+
+    schedule = recognizer.run(
+        requests,
+        schedule_id="row-ocr:cross-table",
+        emit_result=emit,
+    )
+    recognition_wall_s = time.perf_counter() - recognition_started
+
+    output_records: list[dict[str, Any]] = []
+    stitch_wall_s = 0.0
+    for key, context in contexts.items():
+        source = context["source"]
+        strategy = key[1]
+        stitch_started = time.perf_counter()
+        stitched, fragment_kinds = stitch_rows(context["results"])
+        stitch_s = time.perf_counter() - stitch_started
+        stitch_wall_s += stitch_s
+        metrics = aggregate_result_tokens(context["results"])
+        output_records.append(
+            {
+                "request_id": source["request_id"],
+                "strategy": strategy,
+                "page_name": source["page_name"],
+                "annotation_index": source["annotation_index"],
+                "bbox_xyxy": source["bbox_xyxy"],
+                "raw_crop_size": context["raw_crop_size"],
+                "trim_box_in_raw_crop": context["trim_box"],
+                "crop_size": context["crop_size"],
+                "boundaries": list(context["proposal"].boundaries),
+                "gt_html": source["gt_html"],
+                "whole_table_prediction": source["pred_html"],
+                "pred_html": stitched,
+                "fragment_kinds": fragment_kinds,
+                "split_diagnostics": context["proposal"].diagnostics,
+                "timing_s": {
+                    "split_cpu": context["split_s"],
+                    "row_crop_cpu": context["row_crop_s"],
+                    "row_recognition_wall": None,
+                    "stitch_cpu": stitch_s,
+                    "table_row_ocr_e2e": None,
+                },
+                "metrics": metrics,
+                "decode_schedule": None,
+                "rows": sorted(
+                    context["results"], key=lambda item: item["row_index"]
+                ),
+            }
+        )
+
+    records_path = args.output_dir / "row_ocr_records.jsonl"
+    records_path.write_text(
+        "".join(
+            json.dumps(_jsonable(record), ensure_ascii=False) + "\n"
+            for record in output_records
+        ),
+        encoding="utf-8",
+    )
+    by_strategy: dict[str, dict[str, Any]] = {}
+    for strategy in strategies:
+        items = [item for item in output_records if item["strategy"] == strategy]
+        by_strategy[strategy] = {
+            "tables": len(items),
+            "rows": sum(item["metrics"]["rows"] for item in items),
+            "real_vision_tokens": sum(
+                item["metrics"]["real_vision_tokens"] for item in items
+            ),
+            "physical_vision_tokens": sum(
+                item["metrics"]["physical_vision_tokens"] for item in items
+            ),
+            "real_text_prefill_tokens": sum(
+                item["metrics"]["real_text_prefill_tokens"] for item in items
+            ),
+            "physical_text_prefill_tokens": sum(
+                item["metrics"]["physical_text_prefill_tokens"] for item in items
+            ),
+            "output_tokens_including_eos": sum(
+                item["metrics"]["output_tokens_including_eos"] for item in items
+            ),
+        }
+        mode_dir = args.output_dir / strategy
+        mode_dir.mkdir(exist_ok=True)
+        (mode_dir / "tables.jsonl").write_text(
+            "".join(
+                json.dumps(_jsonable(item), ensure_ascii=False) + "\n"
+                for item in items
+            ),
+            encoding="utf-8",
+        )
+
+    total_wall_s = time.perf_counter() - total_started
+    summary = {
+        "configuration": {
+            "decode_batch_size": args.decode_batch_size,
+            "row_overlap_px": args.row_overlap_px,
+            "strategies": list(strategies),
+            "request_ids": [item["request_id"] for item in selected],
+            "cross_table_schedule": True,
+            "recognizer": recognizer.configuration(),
+        },
+        "setup_s": setup_s,
+        "cross_table": {
+            "requests": len(requests),
+            "prepare_wall_s": prepare_wall_s,
+            "recognition_wall_s": recognition_wall_s,
+            "stitch_wall_s": stitch_wall_s,
+            "total_wall_s": total_wall_s,
+            "decode_schedule": asdict(schedule),
+        },
+        "by_strategy": by_strategy,
+        "records": str(records_path),
+    }
+    _write_json(args.output_dir / "run_summary.json", summary)
+    print(
+        f"cross_table_done tables={len(selected)} requests={len(requests)} "
+        f"recognition_wall_s={recognition_wall_s:.3f} total_wall_s={total_wall_s:.3f} "
+        f"wrote={args.output_dir}",
+        flush=True,
+    )
+
+
 @torch.inference_mode()
 def main() -> None:
     args = parse_args()
@@ -315,6 +524,9 @@ def main() -> None:
     setup_started = time.perf_counter()
     recognizer = build_recognizer(args)
     setup_s = time.perf_counter() - setup_started
+    if args.cross_table_schedule:
+        run_cross_table_schedule(args, recognizer, selected, strategies, setup_s)
+        return
     records_path = args.output_dir / "row_ocr_records.jsonl"
     output_records: list[dict[str, Any]] = (
         read_jsonl(records_path)
