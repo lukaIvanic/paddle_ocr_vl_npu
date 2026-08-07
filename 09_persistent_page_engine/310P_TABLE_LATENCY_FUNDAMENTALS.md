@@ -37,28 +37,20 @@ The CBG team requested:
 
 To evaluate this requirement, we must first know how many output tokens each table needs. Autoregressive generation produces one new token per decode iteration for each active request.
 
-## 4. Output-token distribution for OmniDocBench v1.6 tables
+## 4. Decode-token distribution for OmniDocBench v1.6 tables
 
 The following distribution comes from all **665 table crops** in OmniDocBench v1.6.
 
-`Output tokens` includes the first token produced during prefill. Therefore:
-
-\[
-\text{decode iterations} = \text{output tokens} - 1
-\]
-
-| Statistic | Output tokens | Decode iterations |
-|---|---:|---:|
-| Minimum | 10 | 9 |
-| Median | 212 | 211 |
-| P75 | 452 | 451 |
-| P90 | 952 | 951 |
-| P95 | 1,497 | 1,496 |
-| P99 | 3,092 | 3,091 |
-| Maximum | 3,112 | 3,111 |
-| Mean | 403.6 | 402.6 |
-
-Of the 665 tables, **657 ended with EOS** and **8 reached the KV-cache capacity**. The KV-limited tables are part of the observed P99 tail. However, the hardware conclusion does not depend only on those eight cases: P90 and P95 also require more throughput than one 310P3 can theoretically provide in FP16.
+| Statistic | Decode tokens |
+|---|---:|
+| Minimum | 9 |
+| Median | 211 |
+| P75 | 451 |
+| P90 | 951 |
+| P95 | 1,496 |
+| P99 | 3,091 |
+| Maximum | 3,111 |
+| Mean | 402.6 |
 
 ## 5. Decode throughput required for latency below 2 seconds
 
@@ -66,13 +58,13 @@ For the observed P99 table:
 
 \[
 \text{required decode throughput}
-= \frac{3{,}091\ \text{decode iterations}}{2\ \text{s}}
+= \frac{3{,}091\ \text{tokens}}{2\ \text{s}}
 = \mathbf{1{,}546\ tokens/s}
 \]
 
 The lower percentiles also require high batch-size-1 throughput:
 
-| Target | Decode iterations | Throughput required for 2 s |
+| Target | Decode tokens | Throughput required for 2 s |
 |---|---:|---:|
 | P90 | 951 | 476 tok/s |
 | P95 | 1,496 | 748 tok/s |
