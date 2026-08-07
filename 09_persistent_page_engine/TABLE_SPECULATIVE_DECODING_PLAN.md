@@ -33,7 +33,7 @@ preserve useful table structure.
 
 ## Phase 2 — Precomputed row drafts
 
-Status: **in progress**
+Status: **complete**
 
 First run a small manually reviewed table set. Then run all OmniDocBench v1.6
 tables for every Phase 1 split mode. Run all row/band vision and text prefills,
@@ -41,15 +41,17 @@ then generate draft outputs with concurrent decode. Measure per-table and corpus
 wall time, input vision tokens, text-prefill tokens, output tokens, malformed or
 degenerate outputs, draft-to-full-output similarity, and stitched Page-TEDS.
 
-The first six-table B8 experiment is complete. All row requests ended at EOS.
-The ruled strategy scored 0.7927 Page-TEDS, the image-only selected strategy
-scored 0.7569, and the saved whole-table outputs scored 0.7706 on the same six
-tables. The selector is strong on simple and borderless tables but selects too
-many narrow bands on dense tables. Phase 2 therefore stays in progress. Improve
-selection and stitching on the dense cases before the full 665-table sweep.
+The full 665-table sweep is complete for all five split modes. Exact target and
+draft token IDs are saved. Ruled rows dominate the other split modes in stitched
+Page-TEDS, draft cost, and offline speculative acceptance. The optimized ruled
+run uses one cross-table B8 schedule and keeps decode slots 98.9% active. See
+`TABLE_SPECULATIVE_DECODING_RESULTS.md` for the complete measurements.
 
 Exit gate: draft artifacts are complete, reproducible, and sufficiently useful
 to justify target-side speculative verification work.
+
+The exit gate passed. An offline Phase 4 feasibility simulation was also run by
+explicit request before Phase 3. It does not replace the Phase 3 runtime gate.
 
 ## Phase 3 — Draft-input speculative target runtime
 
