@@ -1,149 +1,192 @@
-# Ascend 310P table OCR latency fundamentals
+# PaddleOCR-VL table latency on Ascend 310P3
 
-## Bottom line
+## 1. Measured end-to-end result
 
-The full OmniDocBench result of approximately **0.7 pages/s** is a throughput result. It is not a per-page latency result.
+We evaluated the complete PaddleOCR-VL 1.6 page pipeline on **OmniDocBench v1.6** using one **Ascend 310P3**.
 
-The system gets this throughput by processing many OCR crops concurrently. Decode batching amortizes one model-weight read across many active sequences. A standalone table request at batch size 1 cannot use that same amortization.
+The measured full-benchmark result was approximately:
 
-For the current PaddleOCR-VL model on one Ascend 310P3:
-
-- measured batch-size-1 decode throughput is approximately **150 tokens/s**;
-- the theoretical FP16 weight-bandwidth roof is only approximately **283 tokens/s**;
-- a P90 table needs **951 decode steps**;
-- a P99 table needs **3,091 decode steps**.
-
-Therefore, **P99 latency below 2 seconds is physically impossible for this model in FP16 on one 310P**, even before image encoding, HTTP, preprocessing, queueing, and other work.
-
-## Why batch-size-1 decode is memory-bound
-
-The exact checkpoint used for this analysis is `PaddleOCR-VL-1.6`.
-
-The weights used across every autoregressive decode step are:
-
-| Component | Parameters | FP16 size |
-|---|---:|---:|
-| Text transformer layers | 254,840,832 | 509.7 MB |
-| Language-model head | 105,906,176 | 211.8 MB |
-| **Repeatedly used per decode step** | **360,747,008** | **721.5 MB** |
-
-The input embedding table is not included in this lower bound. Decode reads only the selected embedding row, not the complete table, on each step.
-
-The Atlas 300I Duo specification gives **408 GB/s total memory bandwidth across two Ascend 310-series processors**. This is approximately **204 GB/s per processor**. The absolute weight-streaming roof is therefore:
-
-\[
-\text{maximum decode throughput}
-= \frac{204\ \text{GB/s}}{0.7215\ \text{GB/token}}
-\approx 283\ \text{tokens/s}
-\]
-
-This roof assumes all of the following impossible conditions:
-
-- 100% of memory bandwidth is available to model weights;
-- every weight byte is transferred exactly once;
-- no KV-cache traffic exists;
-- no activation traffic exists;
-- attention, normalization, RoPE, vector operations, argmax, and host work take zero time;
-- there are no kernel-launch gaps or bandwidth inefficiencies.
-
-The measured **150 tokens/s** is approximately **53% of this ideal roof**. More kernel tuning can improve it, but it cannot close the large gap between the physical roof and a 2-second P99 target.
-
-## Real table output-length distribution
-
-This distribution comes from all **665 OmniDocBench table crops** in the saved production table-API run.
-
-`Decode steps` equals generated output tokens minus the first token produced during prefill.
-
-| Percentile | Decode steps | Decode-only at 150 tok/s | Impossible bandwidth roof at 283 tok/s |
-|---|---:|---:|---:|
-| Minimum | 9 | 0.06 s | 0.03 s |
-| Median | 211 | 1.41 s | 0.75 s |
-| P75 | 451 | 3.01 s | 1.60 s |
-| P90 | 951 | 6.34 s | 3.36 s |
-| P95 | 1,496 | 9.97 s | 5.29 s |
-| P99 | 3,091 | 20.61 s | 10.93 s |
-| Maximum | 3,111 | 20.74 s | 11.00 s |
-| Mean | 402.6 | 2.68 s | 1.42 s |
-
-At the measured 150 tokens/s:
-
-- **36.4%** of tables require more than 2 seconds for decode alone;
-- **14.6%** require more than 5 seconds;
-- **5.0%** require more than 10 seconds;
-- **1.5%** require more than 20 seconds.
-
-Even at the impossible 283 tokens/s bandwidth roof, **20.9%** of tables still require more than 2 seconds for decode alone.
-
-## Encoder and fixed work
-
-Decode is not the complete request.
-
-At approximately **8,000 real vision tokens/s**, the vision encoder adds:
-
-| Statistic | Vision time |
+| Metric | Result |
 |---|---:|
-| Mean | 0.295 s |
-| Median | 0.299 s |
-| P90 | 0.500 s |
-| P99 | 0.508 s |
+| Dataset | OmniDocBench v1.6 |
+| Pages | 1,651 |
+| Hardware | 1 × Ascend 310P3 |
+| End-to-end throughput | **0.7 pages/s** |
+| Official Overall accuracy | **95.5%** |
 
-The current image-size cap makes the upper vision-time tail relatively flat. The output-token distribution causes the large total-latency tail.
+This is a good aggregate throughput result. It does not mean that one submitted page finishes in `1 / 0.7 = 1.43` seconds.
 
-Adding only vision execution to measured 150-token/s decode gives this optimistic compute estimate:
-
-| Percentile | Decode + vision |
-|---|---:|
-| Median | 1.73 s |
-| P75 | 3.39 s |
-| P90 | 6.84 s |
-| P95 | 10.48 s |
-| P99 | 21.10 s |
-| Maximum | 21.23 s |
-| Mean | 2.98 s |
-
-These values still exclude HTTP, image decoding, prompt preparation, text prefill, scheduling, result serialization, and queueing. These costs should be added as time, not represented as a fixed `0.5x` scaling factor. Queueing latency also depends on server load and has no fixed upper bound.
-
-## Why 0.7 pages/s and high page latency can both be true
+## 2. Latency is not throughput
 
 Throughput and latency measure different properties.
 
-- **Throughput** measures how many pages the whole server completes per second under concurrent work.
-- **Latency** measures how long one request waits from submission to completion.
-- A page can contain many OCR crops.
-- The page cannot finish before its slowest required crop finishes.
-- Batching improves aggregate throughput because one decoder-weight pass advances many crops.
-- Batching does not make a single isolated crop generate 64 tokens during one decode step.
+- **Throughput** measures how many pages the server completes per second while it processes many crops concurrently.
+- **Latency** measures how long one request takes from submission to completion.
+- One page can contain many OCR crops.
+- A page cannot finish before its slowest required crop finishes.
+- Decode batching loads the model weights once and advances many active crops during the same iteration. This improves total throughput.
+- One isolated table at batch size 1 cannot use this cross-request weight amortization.
 
-Thus, a server can sustain approximately 0.7 pages/s while individual complex pages take many seconds to finish.
+The server can therefore sustain approximately **0.7 pages/s** while a large individual table takes many seconds.
 
-## What would be required for P99 below 2 seconds?
+## 3. CBG latency requirement
 
-A P99 table requires 3,091 decode steps. Decode alone would need:
+The CBG team requested:
+
+> **P99 table latency below 2 seconds.**
+
+To evaluate this requirement, we must first know how many output tokens each table needs. Autoregressive generation produces one new token per decode iteration for each active request.
+
+## 4. Output-token distribution for OmniDocBench v1.6 tables
+
+The following distribution comes from all **665 table crops** in OmniDocBench v1.6.
+
+`Output tokens` includes the first token produced during prefill. Therefore:
 
 \[
-\frac{3{,}091\ \text{tokens}}{2\ \text{s}}
-= 1{,}546\ \text{tokens/s}
+\text{decode iterations} = \text{output tokens} - 1
 \]
 
-This is:
+| Statistic | Output tokens | Decode iterations |
+|---|---:|---:|
+| Minimum | 10 | 9 |
+| Median | 212 | 211 |
+| P75 | 452 | 451 |
+| P90 | 952 | 951 |
+| P95 | 1,497 | 1,496 |
+| P99 | 3,092 | 3,091 |
+| Maximum | 3,112 | 3,111 |
+| Mean | 403.6 | 402.6 |
 
-- **10.3 times** the measured 150 tokens/s;
-- **5.5 times** the ideal FP16 weight-bandwidth roof.
+Of the 665 tables, **657 ended with EOS** and **8 reached the KV-cache capacity**. The KV-limited tables are part of the observed P99 tail. However, the hardware conclusion does not depend only on those eight cases: P90 and P95 also require more throughput than one 310P3 can theoretically provide in FP16.
 
-The target therefore cannot be reached by ordinary kernel tuning. It requires a fundamental change, such as:
+## 5. Decode throughput required for latency below 2 seconds
 
-- a much smaller decoder;
-- substantially fewer generated tokens;
-- a different output representation;
-- aggressive weight quantization together with a much faster decode path;
-- a device with much more memory bandwidth;
-- or a latency contract below P99, such as median or P75.
+For the observed P99 table:
 
-## Source and scope
+\[
+\text{required decode throughput}
+= \frac{3{,}091\ \text{decode iterations}}{2\ \text{s}}
+= \mathbf{1{,}546\ tokens/s}
+\]
 
-- Dataset: 665 OmniDocBench table crops from the production table-API result.
-- Checkpoint: `PaddleOCR-VL-1.6`.
-- Weight count: calculated directly from `model.safetensors` tensor shapes.
-- Decode speed: measured batch-size-1 310P result, approximately 150 tokens/s.
-- Memory-bandwidth source: [Huawei Atlas 300I Duo specifications](https://support.huawei.com/enterprise/en/doc/EDOC1100285916?section=j00e), which report 408 GB/s for the two-processor card.
-- Scope: isolated table OCR on one 310P processor. Queueing under concurrent production load is separate.
+The lower percentiles also require high batch-size-1 throughput:
+
+| Target | Decode iterations | Throughput required for 2 s |
+|---|---:|---:|
+| P90 | 951 | 476 tok/s |
+| P95 | 1,496 | 748 tok/s |
+| P99 | 3,091 | **1,546 tok/s** |
+
+These numbers allow only two seconds for decode. They leave no time for image loading, preprocessing, vision encoding, text prefill, HTTP, scheduling, or result serialization.
+
+## 6. There is a physical problem: memory bandwidth
+
+Batch-size-1 decode is primarily limited by model-weight memory traffic.
+
+The relevant hardware bandwidths are:
+
+| Device | Memory bandwidth | Source |
+|---|---:|---|
+| Ascend 310P3 | **204 GB/s per processor** | Atlas 300I Duo specifies 408 GB/s across two processors |
+| Ascend 910B2 environment | **1.6 TB/s** | 64 GB Atlas 300I A2 specification |
+
+Sources:
+
+- [Huawei Atlas 300I Duo specifications](https://support.huawei.com/enterprise/en/doc/EDOC1100285916?section=j00e)
+- [Huawei Atlas accelerator-card specifications](https://www.hiascend.com/hardware/accelerator-card)
+
+## 7. Why one output token requires reading the decoder weights
+
+Autoregressive decoding runs the complete text transformer and language-model head once for each new output token.
+
+The exact PaddleOCR-VL 1.6 checkpoint contains:
+
+| Decode component | Parameters | FP16 weight bytes |
+|---|---:|---:|
+| Text transformer layers | 254,840,832 | 509.7 MB |
+| Language-model head | 105,906,176 | 211.8 MB |
+| **Total used for every decode iteration** | **360,747,008** | **721.5 MB** |
+
+The complete decoder checkpoint also contains an input embedding table. It is not included here because one decode iteration reads only the selected embedding row, not the complete table.
+
+The active 721.5 MB weight set is much larger than on-chip cache. At batch size 1, producing one new token therefore requires loading approximately **721.5 MB of FP16 decoder weights from device memory at least once**.
+
+This gives a simple bandwidth roof:
+
+\[
+\text{peak decode tokens/s}
+\leq \frac{\text{memory bandwidth}}{\text{FP16 decoder weight bytes per token}}
+\]
+
+This is an optimistic upper bound. It assumes:
+
+- 100% memory-bandwidth utilization;
+- every weight byte is transferred exactly once;
+- zero KV-cache and activation traffic;
+- zero attention, normalization, RoPE, vector-operation, and argmax cost;
+- zero kernel-launch and host overhead.
+
+No real implementation can meet all these assumptions.
+
+## 8. Theoretical peak and measured batch-size-1 decode throughput
+
+### Ascend 310P3
+
+\[
+\frac{204\ \text{GB/s}}{0.7215\ \text{GB/token}}
+= \mathbf{283\ tokens/s}
+\]
+
+### Ascend 910B2
+
+\[
+\frac{1{,}600\ \text{GB/s}}{0.7215\ \text{GB/token}}
+= \mathbf{2{,}218\ tokens/s}
+\]
+
+### Comparison with measured results
+
+| Device | Theoretical FP16 roof | Measured B1 decode | Measured fraction of roof | P99 decode time at measured speed |
+|---|---:|---:|---:|---:|
+| Ascend 310P3 | 283 tok/s | **150 tok/s** | 53% | **20.6 s** |
+| Ascend 910B2 | 2,218 tok/s | **750 tok/s** | 34% | **4.12 s** |
+
+Even the impossible 310P3 roof gives:
+
+\[
+\frac{3{,}091}{283} = 10.9\ \text{s}
+\]
+
+The requested P99 throughput of 1,546 tokens/s is:
+
+- **10.3 times** the measured 310P3 result;
+- **5.5 times** the 310P3 physical FP16 roof;
+- **2.1 times** the measured 910B2 result;
+- approximately 70% of the impossible 910B2 bandwidth roof, before any other work.
+
+## 9. Conclusion
+
+For the current 360.7M-active-parameter FP16 decoder:
+
+- **P99 below 2 seconds is physically impossible on one Ascend 310P3.**
+- Ordinary kernel tuning cannot bridge a 5.5× gap beyond the memory-bandwidth roof.
+- The current 150 tok/s result already reaches approximately 53% of that ideal roof.
+- The current 910B2 path is much faster, but its measured 750 tok/s still gives more than four seconds of P99 decode time before encoder and service overhead.
+
+Meeting the requirement needs a fundamental change, such as:
+
+- fewer generated tokens or a more compact table representation;
+- a substantially smaller decoder;
+- lower-bit decoder weights with a genuinely faster low-bit execution path;
+- hardware with much more memory bandwidth;
+- or a less strict latency percentile.
+
+## Data and calculation scope
+
+- Dataset: OmniDocBench v1.6.
+- Table population: 665 ground-truth table crops.
+- Model: PaddleOCR-VL 1.6.
+- Parameter counts: calculated directly from the production `model.safetensors` tensor shapes.
+- Decode results: warmed batch-size-1 measurements, approximately 150 tok/s on 310P3 and 750 tok/s on 910B2.
+- Latency calculations are decode-only unless stated otherwise. Production queueing can increase latency further.
