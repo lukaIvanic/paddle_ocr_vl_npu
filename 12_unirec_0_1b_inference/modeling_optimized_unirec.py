@@ -860,10 +860,14 @@ class LocalDecoderLayer(nn.Module):
         cross_attention_mask: torch.Tensor,
         self_attention_backend: str = "eager",
         self_attention_mask: torch.Tensor | None = None,
+        staged_prefetch: tuple[tuple[torch.Tensor, ...], tuple[torch.Tensor, ...]] | None = None,
     ) -> torch.Tensor:
         if self_attention_backend not in LOCAL_UNIREC_SELF_ATTN_BACKENDS:
             raise ValueError(f"Unsupported Local UniRec self-attention backend: {self_attention_backend}")
 
+        if staged_prefetch is not None:
+            # Warm this layer's MLP weights while attention runs.
+            _npu_prefetch_all(staged_prefetch[0], hidden_states)
         residual = hidden_states
         hidden_states = self.self_attn_layer_norm(hidden_states)
         query_states, key_states, value_states = self.self_attn.project_states(hidden_states)
@@ -914,6 +918,9 @@ class LocalDecoderLayer(nn.Module):
             cross_attention_mask=cross_attention_mask,
             attention_backend=self_attention_backend,
         )
+        if staged_prefetch is not None and staged_prefetch[1]:
+            # Warm the next layer's attention weights while the MLP runs.
+            _npu_prefetch_all(staged_prefetch[1], hidden_states)
         return self.apply_ffn(hidden_states)
 
     def forward(
@@ -1111,6 +1118,7 @@ class LocalUniRecDecoder(nn.Module):
         cross_attention_mask: torch.Tensor,
         self_attention_backend: str = "eager",
         self_attention_mask: torch.Tensor | None = None,
+        staged_prefetch: bool = False,
     ) -> torch.Tensor:
         hidden_states = self.build_cached_decoder_input_hidden_states(decoder_input_ids, cache_position)
         if self_attention_backend == "increfa_all":
@@ -1131,7 +1139,19 @@ class LocalUniRecDecoder(nn.Module):
                     cache_len=key_cache[0].shape[2],
                     device=hidden_states.device,
                 )
-        for layer_idx, layer in enumerate(self.layers):
+        layer_list = list(self.layers)
+        for layer_idx, layer in enumerate(layer_list):
+            layer_prefetch = None
+            if staged_prefetch:
+                next_layer = (
+                    layer_list[layer_idx + 1]
+                    if layer_idx + 1 < len(layer_list)
+                    else None
+                )
+                layer_prefetch = (
+                    (layer.fc1.weight, layer.fc2.weight),
+                    _layer_attention_weights(next_layer) if next_layer is not None else (),
+                )
             hidden_states = layer.forward_cached(
                 hidden_states=hidden_states,
                 cache_position=cache_position,
@@ -1143,12 +1163,33 @@ class LocalUniRecDecoder(nn.Module):
                 cross_attention_mask=cross_attention_mask,
                 self_attention_backend=self_attention_backend,
                 self_attention_mask=self_attention_mask,
+                staged_prefetch=layer_prefetch,
             )
 
         return self.layer_norm(hidden_states)
 
 
-LOCAL_UNIREC_PREFETCH_MODES = ("none", "weights", "weights_kv")
+LOCAL_UNIREC_PREFETCH_MODES = ("none", "weights", "weights_kv", "staged")
+
+
+def _npu_prefetch_all(tensors: tuple[torch.Tensor, ...], dependency: torch.Tensor) -> None:
+    for tensor in tensors:
+        torch_npu.npu_prefetch(
+            tensor, dependency, tensor.numel() * tensor.element_size()
+        )
+
+
+def _layer_attention_weights(layer: "LocalUniRecDecoderLayer") -> tuple[torch.Tensor, ...]:
+    attn = layer.self_attn
+    if attn.qkv_weight is not None:
+        qkv: tuple[torch.Tensor, ...] = (attn.qkv_weight,)
+    else:
+        qkv = (attn.q_proj.weight, attn.k_proj.weight, attn.v_proj.weight)
+    return qkv + (
+        attn.out_proj.weight,
+        layer.encoder_attn.q_proj.weight,
+        layer.encoder_attn.out_proj.weight,
+    )
 
 
 def prefetch_decode_weights(model: "LocalUniRecModel", dependency: torch.Tensor) -> None:
@@ -1223,7 +1264,7 @@ class LocalUniRecCachedDecodeStepModule(nn.Module):
         cross_value_cache: tuple[torch.Tensor, ...],
         cross_attention_mask: torch.Tensor,
     ) -> torch.Tensor:
-        if self.prefetch_mode != "none":
+        if self.prefetch_mode in ("weights", "weights_kv"):
             prefetch_decode_weights(self.model, decoder_input_ids)
             if self.prefetch_mode == "weights_kv":
                 prefetch_decode_kv_caches(
@@ -1243,6 +1284,7 @@ class LocalUniRecCachedDecodeStepModule(nn.Module):
             cross_value_cache=cross_value_cache,
             cross_attention_mask=cross_attention_mask,
             self_attention_backend=self.self_attention_backend,
+            staged_prefetch=self.prefetch_mode == "staged",
         )
 
 
@@ -1393,6 +1435,7 @@ class LocalUniRecModel(nn.Module):
         cross_attention_mask: torch.Tensor,
         self_attention_backend: str = "eager",
         self_attention_mask: torch.Tensor | None = None,
+        staged_prefetch: bool = False,
     ) -> torch.Tensor:
         decoder_output = self.decoder.forward_cached(
             decoder_input_ids=decoder_input_ids,
@@ -1405,6 +1448,7 @@ class LocalUniRecModel(nn.Module):
             cross_attention_mask=cross_attention_mask,
             self_attention_backend=self_attention_backend,
             self_attention_mask=self_attention_mask,
+            staged_prefetch=staged_prefetch,
         )
         return LocalDecoderAttention.apply_linear_3d(self.lm_head, decoder_output)
 

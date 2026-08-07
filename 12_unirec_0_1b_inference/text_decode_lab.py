@@ -72,12 +72,14 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--prefetch-mode",
-        choices=("none", "weights", "weights_kv"),
+        choices=("none", "weights", "weights_kv", "staged"),
         default="none",
         help=(
-            "Issue bulk npu_prefetch at decode-step start: weights prefetches "
-            "every decode weight tensor; weights_kv additionally prefetches "
-            "both KV caches. per_step mask mode only."
+            "npu_prefetch strategy: weights/weights_kv issue one bulk "
+            "prefetch at step start; staged warms each layer's MLP weights "
+            "during its attention and the next layer's attention weights "
+            "during its MLP, leaving the LM head as an unprefetched control. "
+            "per_step mask mode only."
         ),
     )
     parser.add_argument(
