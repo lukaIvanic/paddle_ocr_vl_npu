@@ -1946,7 +1946,7 @@ class OptimizedUniRecRunner:
     ) -> tuple[nn.Module, dict[str, Any]]:
         if mask_mode not in ("per_step", "persistent"):
             raise ValueError(f"Unsupported decode mask mode: {mask_mode}")
-        if graph_mode not in ("ge", "acl", "npugraph"):
+        if graph_mode not in ("ge", "acl", "npugraph", "npugraph_ex", "npugraph_ex_full"):
             raise ValueError(f"Unsupported decode graph mode: {graph_mode}")
         if prefetch_mode not in LOCAL_UNIREC_PREFETCH_MODES:
             raise ValueError(f"Unsupported decode prefetch mode: {prefetch_mode}")
@@ -1972,6 +1972,48 @@ class OptimizedUniRecRunner:
                 self_attention_backend=self_attention_backend,
                 prefetch_mode=prefetch_mode,
             )
+        if graph_mode in ("npugraph_ex", "npugraph_ex_full"):
+            # TorchAir's npugraph_ex backend: FX-level optimization passes
+            # plus ACLGraph capture/replay dispatch - the supported successor
+            # to the deprecated reduce-overhead mode. The _full variant adds
+            # static-shape kernel compilation (installs per-shape binaries
+            # into the CANN opp tree, auto-uninstalled at exit), SuperKernel
+            # binary fusion, and frozen parameter addresses.
+            options = None
+            if graph_mode == "npugraph_ex_full":
+                options = {
+                    "static_kernel_compile": True,
+                    "super_kernel_optimize": True,
+                    "frozen_parameter": True,
+                }
+            compiled = torch.compile(
+                module,
+                backend="npugraph_ex",
+                dynamic=compile_dynamic,
+                fullgraph=True,
+                options=options,
+            )
+            compile_meta = {
+                "compile_api": "torch.compile",
+                "backend": "npugraph_ex",
+                "graph_mode": graph_mode,
+                "options": dict(options) if options else None,
+                "fullgraph": True,
+                "dynamic": bool(compile_dynamic),
+                "torchair_ge_cache": False,
+                "torchair_cache_dir": None,
+                "mask_mode": mask_mode,
+                "qkv_fused": bool(self.qkv_fused),
+                "weights_nz": bool(self.weights_nz),
+                "prefetch_mode": prefetch_mode,
+                "static_self_kv_len": int(LOCAL_UNIREC_STATIC_CACHE_LEN),
+                "static_cross_kv_len": None if cross_cache_len is None else int(cross_cache_len),
+                "self_attention_backend": self_attention_backend,
+                "batch_size": int(batch_size),
+            }
+            self._compiled_decode_modules[cache_key] = compiled
+            self._compiled_decode_metadata[cache_key] = compile_meta
+            return compiled, compile_meta
         if graph_mode == "npugraph":
             # Direct torch.npu.NPUGraph capture/replay: no torch.compile, no
             # torchair, no GE. The caller captures the eager module once over

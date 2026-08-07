@@ -72,7 +72,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--graph-mode",
-        choices=("ge", "acl", "npugraph", "ge_capture"),
+        choices=("ge", "acl", "npugraph", "ge_capture", "npugraph_ex", "npugraph_ex_full"),
         default="ge",
         help=(
             "ge executes the compiled decode step through the GE graph "
@@ -83,7 +83,21 @@ def parse_args() -> argparse.Namespace:
             "replayed per step over static buffers; ge_capture attempts the "
             "hybrid - capturing calls to the GE-compiled step into an "
             "NPUGraph, combining GE's fused device graph with replay "
-            "dispatch (may fail if GE submission is not stream-capturable)."
+            "dispatch (may fail if GE submission is not stream-capturable); "
+            "npugraph_ex uses TorchAir's supported FX+ACLGraph backend, and "
+            "npugraph_ex_full adds static-kernel compile, SuperKernel, and "
+            "frozen_parameter."
+        ),
+    )
+    parser.add_argument(
+        "--static-kernel",
+        action="store_true",
+        help=(
+            "For --graph-mode npugraph: before capture, run one eager step "
+            "under StaticKernelCompiler so aclnn selects static-shape kernel "
+            "binaries compiled for these exact shapes. Installs a kernel "
+            "package into the shared CANN opp tree (auto-uninstalled at "
+            "clean exit; uninstall path recorded in the result)."
         ),
     )
     parser.add_argument(
@@ -528,6 +542,31 @@ def run_npugraph_lane(
     def reset(seed: int) -> None:
         reset_state_(state, runner, seed=seed, cache_position=args.cache_position)
 
+    static_kernel_meta = None
+    if args.static_kernel and args.graph_mode == "npugraph":
+        # Static-shape kernel compilation: dump the step's op shapes, compile
+        # per-shape binaries with op_compiler, install, and reselect aclnn
+        # kernels. Subsequent eager calls - and the capture below - pick up
+        # the static kernels.
+        from torch_npu._inductor import npu_static_kernel as nsk
+
+        build_root = (args.cache_dir.expanduser().resolve() / "static_kernel_build")
+        build_root.mkdir(parents=True, exist_ok=True)
+        progress("static_kernel_begin", backend=backend, build_dir=str(build_root))
+        sk_started = time.perf_counter()
+        with nsk.StaticKernelCompiler(build_dir=str(build_root)):
+            logits = module(*call_args(state))
+            torch.argmax(logits[:, -1, :].float(), dim=-1, keepdim=True)
+            synchronize_device(runner.device)
+        synchronize_device(runner.device)
+        static_kernel_meta = {
+            "build_dir": str(build_root),
+            "compile_s": time.perf_counter() - sk_started,
+            "uninstall_path": nsk._uninstall_path,
+        }
+        progress("static_kernel_end", backend=backend, **static_kernel_meta)
+        reset(7)
+
     ge_first_call_s = None
     capture_stream = None
     if args.graph_mode == "ge_capture":
@@ -629,6 +668,7 @@ def run_npugraph_lane(
         "compile": compile_meta,
         "first_call_s": capture_s,
         "ge_prewarm_s": ge_first_call_s,
+        "static_kernel": static_kernel_meta,
         "replay_checks": replay_checks,
         "measure": {
             "steps": args.measure_steps,
