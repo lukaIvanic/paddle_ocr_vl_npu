@@ -85,19 +85,13 @@ The NPU hardware bandwidths are:
 
 ## 7. Why one output token requires reading the decoder weights
 
-Autoregressive decoding runs the complete text transformer and language-model head once for each new output token.
+Autoregressive decoding runs the complete decode model once for each new output token.
 
 The exact PaddleOCR-VL 1.6 checkpoint contains:
 
 | Decode component | Parameters | FP16 weight bytes |
 |---|---:|---:|
-| Text transformer layers | 254,840,832 | 509.7 MB |
-| Language-model head | 105,906,176 | 211.8 MB |
-| **Total used for every decode iteration** | **360,747,008** | **721.5 MB** |
-
-The complete decoder checkpoint also contains an input embedding table. It is not included here because one decode iteration reads only the selected embedding row, not the complete table.
-
-The active 721.5 MB weight set is much larger than on-chip cache. At batch size 1, producing one new token therefore requires loading approximately **721.5 MB of FP16 decoder weights from device memory at least once**.
+| Decode model | 360,747,008 | 721.5 MB |
 
 This gives a simple bandwidth roof:
 
