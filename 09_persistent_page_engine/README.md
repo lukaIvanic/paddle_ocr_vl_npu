@@ -1168,6 +1168,21 @@ python scripts/run_omnidocbench_table_api.py \
   --output-dir tmp/table_api_images
 ```
 
+For a strict table-latency benchmark, run one HTTP request at a time against a
+compiled B1 recognizer. The wrapper starts the B1 API, runs all OmniDocBench
+table annotations sequentially, evaluates Page-TEDS, and reports mean, P50,
+P75, P90, P95, P99, and maximum end-to-end HTTP latency:
+
+```sh
+bash scripts/run_omnidocbench_table_b1_latency.sh \
+  tmp/09_persistent_page_engine/table_b1_latency
+```
+
+Model setup and graph-cache loading finish before the first measured request.
+The latency distribution includes crop PNG transfer, API queuing, crop
+preprocessing, vision prefill, text prefill, decode, detokenization, and the HTTP
+response. It excludes server startup and TEDS evaluation.
+
 Image mode sends the original file bytes. Image decode, resize, normalization,
 prompt selection, vision preparation, MRoPE construction, and inference stay
 inside the API worker. The caller supplies an already-cropped image and its
