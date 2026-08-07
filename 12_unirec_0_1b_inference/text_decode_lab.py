@@ -338,12 +338,18 @@ def capture_npugraph(
     device: str,
     *,
     warmup_iters: int = 3,
+    capture_stream: Any = None,
 ) -> tuple[Any, torch.Tensor, float]:
     """Capture one full decode step into a torch.npu.NPUGraph.
 
     The captured region is forward + argmax + in-place next_token/cache_position
     advance, so a replay consumes zero host-side tensor work. Returns the graph,
     the static logits buffer, and capture wall seconds (including warmup).
+
+    capture_stream pins both warmup and capture to one caller-owned stream.
+    The GE executor binds to the stream of its first call and refuses to run
+    on any other, so capturing a GE-compiled callable requires warming and
+    capturing on the same stream.
     """
     import torch_npu
 
@@ -357,7 +363,7 @@ def capture_npugraph(
         return logits
 
     started = time.perf_counter()
-    side_stream = torch_npu.npu.Stream()
+    side_stream = capture_stream if capture_stream is not None else torch_npu.npu.Stream()
     side_stream.wait_stream(torch_npu.npu.current_stream())
     with torch_npu.npu.stream(side_stream):
         for _ in range(warmup_iters):
@@ -365,8 +371,12 @@ def capture_npugraph(
     torch_npu.npu.current_stream().wait_stream(side_stream)
     synchronize_device(device)
     graph = torch_npu.npu.NPUGraph()
-    with torch_npu.npu.graph(graph):
-        static_logits = one_step()
+    if capture_stream is not None:
+        with torch_npu.npu.graph(graph, stream=capture_stream):
+            static_logits = one_step()
+    else:
+        with torch_npu.npu.graph(graph):
+            static_logits = one_step()
     synchronize_device(device)
     return graph, static_logits, time.perf_counter() - started
 
@@ -519,21 +529,31 @@ def run_npugraph_lane(
         reset_state_(state, runner, seed=seed, cache_position=args.cache_position)
 
     ge_first_call_s = None
+    capture_stream = None
     if args.graph_mode == "ge_capture":
         # Compile/load the GE graph eagerly before any stream capture so the
-        # capture records only steady-state submission.
+        # capture records only steady-state submission. The GE executor binds
+        # to the stream of its first call and refuses any other, so the
+        # prewarm, warmup, and capture all run on one caller-owned stream.
+        import torch_npu
+
         compile_meta = dict(compile_meta)
         compile_meta["graph_mode"] = "ge_capture"
+        capture_stream = torch_npu.npu.Stream()
         progress("ge_capture_prewarm_begin", backend=backend)
         first_started = time.perf_counter()
-        module(*call_args(state))
+        capture_stream.wait_stream(torch_npu.npu.current_stream())
+        with torch_npu.npu.stream(capture_stream):
+            module(*call_args(state))
         synchronize_device(runner.device)
         ge_first_call_s = time.perf_counter() - first_started
         progress("ge_capture_prewarm_end", backend=backend, seconds=ge_first_call_s)
         reset(7)
 
     progress("npugraph_capture_begin", backend=backend)
-    graph, static_logits, capture_s = capture_npugraph(module, state, runner.device)
+    graph, static_logits, capture_s = capture_npugraph(
+        module, state, runner.device, capture_stream=capture_stream
+    )
     progress("npugraph_capture_end", backend=backend, seconds=capture_s)
 
     reset(7)
