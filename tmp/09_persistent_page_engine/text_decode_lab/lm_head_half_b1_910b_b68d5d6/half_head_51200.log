@@ -1,0 +1,2 @@
+.DECODE_PROFILE mean_ms=1.1628 raw_tok_s=860.0 active_tok_s=860.0
+output=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/lm_head_half_b1_910b_b68d5d6/half_head_51200.json
