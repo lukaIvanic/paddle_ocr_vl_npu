@@ -72,7 +72,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--graph-mode",
-        choices=("ge", "acl", "npugraph"),
+        choices=("ge", "acl", "npugraph", "ge_capture"),
         default="ge",
         help=(
             "ge executes the compiled decode step through the GE graph "
@@ -80,7 +80,10 @@ def parse_args() -> argparse.Namespace:
             "ACLGraph capture/replay for dispatch; npugraph bypasses "
             "torch.compile entirely and captures the eager decode step "
             "(forward + argmax + state advance) into a torch.npu.NPUGraph "
-            "replayed per step over static buffers."
+            "replayed per step over static buffers; ge_capture attempts the "
+            "hybrid - capturing calls to the GE-compiled step into an "
+            "NPUGraph, combining GE's fused device graph with replay "
+            "dispatch (may fail if GE submission is not stream-capturable)."
         ),
     )
     parser.add_argument(
@@ -436,14 +439,59 @@ def profile_replay_timing(
     }
 
 
+def profile_replay_lane(
+    *,
+    backend: str,
+    graph: Any,
+    state: dict[str, Any],
+    device: str,
+    output_root: Path,
+    steps: int,
+    metric: str,
+) -> dict[str, Any]:
+    import torch_npu.profiler as npu_prof
+
+    profile_dir = output_root / f"profile_replay_{backend}_{metric}"
+    shutil.rmtree(profile_dir, ignore_errors=True)
+    profile_dir.mkdir(parents=True, exist_ok=True)
+
+    schedule = npu_prof.schedule(wait=0, warmup=0, active=1, repeat=1)
+    synchronize_device(device)
+    started = time.perf_counter()
+    with npu_prof.profile(
+        activities=[npu_prof.ProfilerActivity.CPU, npu_prof.ProfilerActivity.NPU],
+        schedule=schedule,
+        experimental_config=profiler_config(metric),
+        on_trace_ready=npu_prof.tensorboard_trace_handler(
+            str(profile_dir), analyse_flag=True
+        ),
+        record_shapes=True,
+        profile_memory=False,
+        with_stack=False,
+    ) as profiler:
+        with torch.profiler.record_function(f"unirec.decode.replay.{backend}"):
+            replay_steps(graph, state, steps)
+        synchronize_device(device)
+        profiler.step()
+    synchronize_device(device)
+    return {
+        "profile_dir": str(profile_dir),
+        "profile_steps": int(steps),
+        "profile_wall_s": time.perf_counter() - started,
+        "metric": metric,
+    }
+
+
 def run_npugraph_lane(
     *,
     runner: OptimizedUniRecRunner,
     backend: str,
     args: argparse.Namespace,
     lane_state: Any,
+    output_root: Path,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     compile_meta: dict[str, Any]
+    underlying_mode = "ge" if args.graph_mode == "ge_capture" else "npugraph"
     module, compile_meta = runner._compile_decode_module(
         backend="torchair",
         self_attention_backend=backend,
@@ -452,12 +500,26 @@ def run_npugraph_lane(
         batch_size=args.batch_size,
         mask_mode=args.mask_mode,
         prefetch_mode=args.prefetch_mode,
-        graph_mode="npugraph",
+        graph_mode=underlying_mode,
     )
     state = lane_state(backend, 7)
 
     def reset(seed: int) -> None:
         reset_state_(state, runner, seed=seed, cache_position=args.cache_position)
+
+    ge_first_call_s = None
+    if args.graph_mode == "ge_capture":
+        # Compile/load the GE graph eagerly before any stream capture so the
+        # capture records only steady-state submission.
+        compile_meta = dict(compile_meta)
+        compile_meta["graph_mode"] = "ge_capture"
+        progress("ge_capture_prewarm_begin", backend=backend)
+        first_started = time.perf_counter()
+        module(*call_args(state))
+        synchronize_device(runner.device)
+        ge_first_call_s = time.perf_counter() - first_started
+        progress("ge_capture_prewarm_end", backend=backend, seconds=ge_first_call_s)
+        reset(7)
 
     progress("npugraph_capture_begin", backend=backend)
     graph, static_logits, capture_s = capture_npugraph(module, state, runner.device)
@@ -499,17 +561,26 @@ def run_npugraph_lane(
             backend=backend,
             **compiled_timing["production_like_d2h"],
         )
+    compiled_profile = None
     if args.profile_compiled_steps > 0:
-        progress(
-            "compiled_profile_skipped",
+        progress("compiled_profile_begin", backend=backend)
+        reset(19)
+        compiled_profile = profile_replay_lane(
             backend=backend,
-            reason="npugraph lane does not implement --profile-compiled-steps yet",
+            graph=graph,
+            state=state,
+            device=runner.device,
+            output_root=output_root,
+            steps=args.profile_compiled_steps,
+            metric=args.profile_metric,
         )
+        progress("compiled_profile_end", backend=backend, **compiled_profile)
 
     raw_tokens = args.batch_size * args.measure_steps
     lane = {
         "compile": compile_meta,
         "first_call_s": capture_s,
+        "ge_prewarm_s": ge_first_call_s,
         "measure": {
             "steps": args.measure_steps,
             "decode_s": measured_s,
@@ -518,7 +589,7 @@ def run_npugraph_lane(
             "batch_s": args.measure_steps / measured_s,
         },
         "compiled_timing": compiled_timing,
-        "compiled_profile": None,
+        "compiled_profile": compiled_profile,
     }
     return lane, validation
 
@@ -753,12 +824,13 @@ def main() -> None:
     validations: dict[str, Any] = {}
     for backend in args.backends:
         progress("lane_begin", backend=backend)
-        if args.graph_mode == "npugraph":
+        if args.graph_mode in ("npugraph", "ge_capture"):
             lanes[backend], validations[backend] = run_npugraph_lane(
                 runner=runner,
                 backend=backend,
                 args=args,
                 lane_state=lane_state,
+                output_root=output.parent,
             )
             progress(
                 "lane_end",
