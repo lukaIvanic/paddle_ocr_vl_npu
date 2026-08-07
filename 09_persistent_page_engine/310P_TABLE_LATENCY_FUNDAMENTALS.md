@@ -11,10 +11,14 @@ The measured full-benchmark result was approximately:
 | Dataset | OmniDocBench v1.6 |
 | Pages | 1,651 |
 | Hardware | 1 × Ascend 310P3 |
+| HTTP concurrency | ×64 |
 | End-to-end throughput | **0.7 pages/s** |
+| Text-block Edit distance | **0.0507** |
+| Table Page-TEDS | **0.9444** |
+| Formula Page-CDM | **0.9741** |
 | Official Overall accuracy | **95.5%** |
 
-This is a good aggregate throughput result. It does not mean that one submitted page finishes in `1 / 0.7 = 1.43` seconds.
+Although **throughput** is 0.7 page/s, this does not mean latency per page is `<= 1 / 0.7 = 1.43` seconds.
 
 ## 2. Latency is not throughput
 
