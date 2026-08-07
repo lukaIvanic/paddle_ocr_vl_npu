@@ -425,7 +425,9 @@ def _benchmark_job(job: tuple, args: argparse.Namespace) -> dict[str, Any]:
         "output_tokens": response["generated_tokens_including_eos"],
         "worker_wall_s": response["worker_wall_s"],
         "http_wall_s": response["http_wall_s"],
+        "timing_s": response.get("timing_s", {}),
         "device_stage_s": response.get("device_stage_s", {}),
+        "rates": response.get("rates", {}),
         "vision": response.get("vision", {}),
         "text_prefill": response.get("text_prefill", {}),
     }
@@ -631,8 +633,14 @@ def _distribution(values: list[float]) -> dict[str, float]:
     values = sorted(values)
     percentile = lambda q: values[min(len(values) - 1, math.ceil(q * len(values)) - 1)]
     return {
-        "mean": sum(values) / len(values), "p50": percentile(0.5),
-        "p95": percentile(0.95), "max": values[-1],
+        "min": values[0],
+        "mean": sum(values) / len(values),
+        "p50": percentile(0.50),
+        "p75": percentile(0.75),
+        "p90": percentile(0.90),
+        "p95": percentile(0.95),
+        "p99": percentile(0.99),
+        "max": values[-1],
     }
 
 
@@ -648,6 +656,9 @@ def _summary(
     worker = [float(record["worker_wall_s"]) for record in records]
     overhead = [max(0.0, left - right) for left, right in zip(http, worker)]
     stage_names = sorted({name for record in records for name in record["device_stage_s"]})
+    timing_names = sorted({
+        name for record in records for name in record.get("timing_s", {})
+    })
     result = {
         "crop_type": crop_type,
         "crops": len(records),
@@ -657,6 +668,31 @@ def _summary(
         "http_latency_s": _distribution(http),
         "worker_latency_s": _distribution(worker),
         "http_wrapper_overhead_s": {"sum": sum(overhead), **_distribution(overhead)},
+        "request_timing_s": {
+            name: _distribution([
+                float(record.get("timing_s", {}).get(name, 0.0))
+                for record in records
+            ])
+            for name in timing_names
+        },
+        "device_stage_latency_s": {
+            name: _distribution([
+                float(record["device_stage_s"].get(name, 0.0))
+                for record in records
+            ])
+            for name in stage_names
+        },
+        "token_distributions": {
+            "input_tokens": _distribution([
+                float(record["input_tokens"]) for record in records
+            ]),
+            "output_tokens_including_eos": _distribution([
+                float(record["output_tokens"]) for record in records
+            ]),
+            "projected_image_tokens": _distribution([
+                float(record["projected_image_tokens"]) for record in records
+            ]),
+        },
         "input_tokens": sum(record["input_tokens"] for record in records),
         "output_tokens_including_eos": sum(record["output_tokens"] for record in records),
         "stop_reasons": dict(Counter(record["stop_reason"] for record in records)),
@@ -773,6 +809,14 @@ def _run_omnidocbench(args: argparse.Namespace) -> None:
         f"- Generation wall time: {generation_wall_s:.3f} s\n"
         f"- Throughput: {summary['crops_per_s']:.3f} crops/s\n"
         f"- Stop reasons: {summary['stop_reasons']}\n"
+        "\n## End-to-end HTTP latency\n\n"
+        f"- Mean: {summary['http_latency_s']['mean']:.3f} s\n"
+        f"- P50: {summary['http_latency_s']['p50']:.3f} s\n"
+        f"- P75: {summary['http_latency_s']['p75']:.3f} s\n"
+        f"- P90: {summary['http_latency_s']['p90']:.3f} s\n"
+        f"- P95: {summary['http_latency_s']['p95']:.3f} s\n"
+        f"- P99: {summary['http_latency_s']['p99']:.3f} s\n"
+        f"- Maximum: {summary['http_latency_s']['max']:.3f} s\n"
     )
     if args.crop_type == "table":
         markdown += (
