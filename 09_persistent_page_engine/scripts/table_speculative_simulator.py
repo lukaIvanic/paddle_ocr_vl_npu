@@ -39,7 +39,7 @@ def parse_args() -> argparse.Namespace:
         "--matchers",
         default=(
             "suffix_global_a1,suffix_monotonic_a1,suffix_monotonic_a2,"
-            "suffix_monotonic_a4,oracle_global,oracle_monotonic"
+            "suffix_monotonic_a4,oracle_global"
         ),
     )
     parser.add_argument("--max-anchor-tokens", type=int, default=64)
@@ -165,35 +165,64 @@ def suffix_candidate(
     return best[1] if best else None
 
 
-def oracle_candidate(
-    remaining_target: list[int],
-    draft: list[int],
-    positions_by_token: dict[int, list[int]],
-    state: MatcherState,
-    block_size: int,
-    backtrack_tokens: int,
-    monotonic: bool,
-) -> Candidate | None:
-    lower_bound = max(0, state.cursor - backtrack_tokens) if monotonic else 0
-    best: tuple[tuple[int, int, int], Candidate] | None = None
-    if not remaining_target:
-        return None
-    for start in positions_by_token.get(remaining_target[0], ()):
-        if start < lower_bound:
-            continue
-        candidate_tokens = tuple(draft[start : start + block_size])
-        if not candidate_tokens:
-            continue
-        accepted = lcp(candidate_tokens, remaining_target)
-        forward = int(start >= state.cursor)
-        distance = abs(start - state.cursor)
-        score = (accepted, forward, -distance)
-        candidate = Candidate(start, candidate_tokens, 0)
-        if best is None or score > best[0]:
-            best = (score, candidate)
-    if best is None or best[0][0] == 0:
-        return None
-    return best[1]
+def oracle_start_matches(target: list[int], draft: list[int]) -> list[tuple[int, int]]:
+    """Return (longest match, draft start) for every target start in linear time."""
+    transitions: list[dict[int, int]] = [{}]
+    links = [-1]
+    lengths = [0]
+    first_positions = [-1]
+    last = 0
+    for position, token in enumerate(reversed(draft)):
+        current = len(transitions)
+        transitions.append({})
+        lengths.append(lengths[last] + 1)
+        links.append(0)
+        first_positions.append(position)
+        parent = last
+        while parent >= 0 and token not in transitions[parent]:
+            transitions[parent][token] = current
+            parent = links[parent]
+        if parent < 0:
+            links[current] = 0
+        else:
+            successor = transitions[parent][token]
+            if lengths[parent] + 1 == lengths[successor]:
+                links[current] = successor
+            else:
+                clone = len(transitions)
+                transitions.append(dict(transitions[successor]))
+                lengths.append(lengths[parent] + 1)
+                links.append(links[successor])
+                first_positions.append(first_positions[successor])
+                while parent >= 0 and transitions[parent].get(token) == successor:
+                    transitions[parent][token] = clone
+                    parent = links[parent]
+                links[successor] = clone
+                links[current] = clone
+        last = current
+
+    result = [(0, 0)] * len(target)
+    state = 0
+    matched = 0
+    draft_length = len(draft)
+    for reverse_index, token in enumerate(reversed(target)):
+        while state and token not in transitions[state]:
+            state = links[state]
+            matched = min(matched, lengths[state])
+        if token in transitions[state]:
+            state = transitions[state][token]
+            matched += 1
+        else:
+            state = 0
+            matched = 0
+        target_start = len(target) - reverse_index - 1
+        draft_start = (
+            draft_length - first_positions[state] - 1
+            if matched
+            else 0
+        )
+        result[target_start] = (matched, draft_start)
+    return result
 
 
 def simulate(
@@ -208,10 +237,8 @@ def simulate(
     if not target:
         raise ValueError("target must not be empty")
     state = MatcherState()
-    positions_by_token: defaultdict[int, list[int]] = defaultdict(list)
     continuations_by_preceding_token: defaultdict[int, list[int]] = defaultdict(list)
     for index, token in enumerate(draft):
-        positions_by_token[token].append(index)
         if index + 1 < len(draft):
             continuations_by_preceding_token[token].append(index + 1)
     position = 1  # The full-table prefill produces token zero.
@@ -229,18 +256,21 @@ def simulate(
     is_oracle = matcher_parts[0] == "oracle"
     monotonic = "monotonic" in matcher_parts
     minimum_anchor = int(matcher_parts[-1][1:]) if matcher_parts[-1].startswith("a") else 1
+    oracle_matches = oracle_start_matches(target, draft) if is_oracle else []
 
     while position < len(target):
         prefix = target[:position]
         if is_oracle:
-            candidate = oracle_candidate(
-                target[position:],
-                draft,
-                positions_by_token,
-                state,
-                block_size,
-                backtrack_tokens,
-                monotonic,
+            match_length, draft_start = oracle_matches[position]
+            candidate_length = min(match_length, block_size)
+            candidate = (
+                Candidate(
+                    draft_start,
+                    tuple(draft[draft_start : draft_start + candidate_length]),
+                    0,
+                )
+                if candidate_length
+                else None
             )
         else:
             candidate = suffix_candidate(
