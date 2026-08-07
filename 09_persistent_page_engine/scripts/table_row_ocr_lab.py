@@ -159,7 +159,13 @@ def stitch_rows(row_results: list[dict[str, Any]]) -> tuple[str, dict[str, int]]
             width += int(colspan.group(1)) if colspan else 1
         widths.append(width)
     table_width = max(widths, default=0)
-    if table_width:
+    distinct_widths = set(widths)
+    dominant_width_rows = sum(width == table_width for width in widths)
+    coherent_rectangular_width = bool(table_width) and (
+        len(distinct_widths) <= 2
+        and dominant_width_rows * 2 >= len(widths)
+    )
+    if coherent_rectangular_width:
         padded_rows = []
         for row, width in zip(html_rows, widths):
             missing = table_width - width
@@ -175,6 +181,8 @@ def stitch_rows(row_results: list[dict[str, Any]]) -> tuple[str, dict[str, int]]
         kinds["rows_padded_to_table_width"] = sum(
             width < table_width for width in widths
         )
+    else:
+        kinds["rows_padded_to_table_width"] = 0
     return "<table>" + "".join(fragments) + "</table>", dict(kinds)
 
 
