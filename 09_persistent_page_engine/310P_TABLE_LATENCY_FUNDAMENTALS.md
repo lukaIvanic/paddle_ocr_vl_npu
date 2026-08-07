@@ -79,13 +79,8 @@ The relevant hardware bandwidths are:
 
 | Device | Memory bandwidth | Source |
 |---|---:|---|
-| Ascend 310P3 | **204 GB/s per processor** | Atlas 300I Duo specifies 408 GB/s across two processors |
-| Ascend 910B2 environment | **1.6 TB/s** | 64 GB Atlas 300I A2 specification |
-
-Sources:
-
-- [Huawei Atlas 300I Duo specifications](https://support.huawei.com/enterprise/en/doc/EDOC1100285916?section=j00e)
-- [Huawei Atlas accelerator-card specifications](https://www.hiascend.com/hardware/accelerator-card)
+| Ascend 310P3 | **204 GB/s per processor** | [Atlas 300I Duo specifies 408 GB/s across two processors](https://support.huawei.com/enterprise/en/doc/EDOC1100285916?section=j00e) |
+| Ascend 910B2 environment | **1.6 TB/s** | [64 GB Atlas 300I A2 specification](https://www.hiascend.com/hardware/accelerator-card) |
 
 ## 7. Why one output token requires reading the decoder weights
 
