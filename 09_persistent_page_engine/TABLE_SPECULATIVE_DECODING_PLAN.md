@@ -19,23 +19,27 @@ clear result and explicit approval to continue.
 
 ## Phase 1 — Natural row splitting and visual validation
 
-Status: **in progress**
+Status: **semi-complete**
 
 Develop multiple CPU strategies for ruled, borderless, sparse, dense, merged,
 and multi-line tables. Show representative table crops with proposed boundaries
 and row crops. Record failure modes. The output is a natural-row description;
 later scheduling policy is separate.
 
-Exit gate: the reviewed strategies preserve table content without cutting text
-and provide useful row boundaries across the important table classes.
+Visual review is complete enough to continue. Final validation moves into Phase
+2: OCR every proposed row, stitch the outputs, and measure Page-TEDS. Phase 1
+remains semi-complete until that experiment shows which splitting strategies
+preserve useful table structure.
 
 ## Phase 2 — Precomputed row drafts
 
 Status: **pending**
 
-Run all row/band vision and text prefills, then generate draft outputs with
-concurrent decode. Measure time, token counts, malformed or degenerate outputs,
-draft-to-full-output similarity, and naive stitched Page-TEDS.
+First run a small manually reviewed table set. Then run all OmniDocBench v1.6
+tables for every Phase 1 split mode. Run all row/band vision and text prefills,
+then generate draft outputs with concurrent decode. Measure per-table and corpus
+wall time, input vision tokens, text-prefill tokens, output tokens, malformed or
+degenerate outputs, draft-to-full-output similarity, and stitched Page-TEDS.
 
 Exit gate: draft artifacts are complete, reproducible, and sufficiently useful
 to justify target-side speculative verification work.
@@ -63,4 +67,3 @@ tokens per verification step and final table latency while preserving the Phase
 
 Exit gate: full 665-table latency and Page-TEDS comparison against the committed
 B1 baseline.
-
