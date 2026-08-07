@@ -40,6 +40,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--validation-steps", type=int, default=8)
     parser.add_argument("--profile-steps", type=int, default=2)
     parser.add_argument(
+        "--profile-compiled-steps",
+        type=int,
+        default=0,
+        help=(
+            "Profile the compiled decode graph at kernel level for each "
+            "selected lane. Runs inside the lane loop on the warmed graph."
+        ),
+    )
+    parser.add_argument(
         "--backends",
         nargs="+",
         choices=("eager", "increfa", "increfa_all"),
@@ -322,6 +331,49 @@ def profile_eager_lane(
     }
 
 
+def profile_compiled_lane(
+    *,
+    backend: str,
+    fn: Any,
+    state: dict[str, Any],
+    device: str,
+    output_root: Path,
+    steps: int,
+    metric: str,
+) -> dict[str, Any]:
+    import torch_npu.profiler as npu_prof
+
+    profile_dir = output_root / f"profile_compiled_{backend}_{metric}"
+    shutil.rmtree(profile_dir, ignore_errors=True)
+    profile_dir.mkdir(parents=True, exist_ok=True)
+
+    schedule = npu_prof.schedule(wait=0, warmup=0, active=1, repeat=1)
+    synchronize_device(device)
+    started = time.perf_counter()
+    with npu_prof.profile(
+        activities=[npu_prof.ProfilerActivity.CPU, npu_prof.ProfilerActivity.NPU],
+        schedule=schedule,
+        experimental_config=profiler_config(metric),
+        on_trace_ready=npu_prof.tensorboard_trace_handler(
+            str(profile_dir), analyse_flag=True
+        ),
+        record_shapes=True,
+        profile_memory=False,
+        with_stack=False,
+    ) as profiler:
+        with torch.profiler.record_function(f"unirec.decode.compiled.{backend}"):
+            run_steps(fn, state, steps)
+        synchronize_device(device)
+        profiler.step()
+    synchronize_device(device)
+    return {
+        "profile_dir": str(profile_dir),
+        "profile_steps": int(steps),
+        "profile_wall_s": time.perf_counter() - started,
+        "metric": metric,
+    }
+
+
 @torch.inference_mode()
 def main() -> None:
     args = parse_args()
@@ -426,6 +478,27 @@ def main() -> None:
                 backend=backend,
                 **compiled_timing["production_like_d2h"],
             )
+        compiled_profile = None
+        if args.profile_compiled_steps > 0:
+            progress("compiled_profile_begin", backend=backend)
+            profile_state = make_state(
+                runner,
+                batch_size=args.batch_size,
+                self_cache_length=args.self_cache_length,
+                cross_cache_length=args.cross_cache_length,
+                cache_position=args.cache_position,
+                seed=19,
+            )
+            compiled_profile = profile_compiled_lane(
+                backend=backend,
+                fn=compiled,
+                state=profile_state,
+                device=runner.device,
+                output_root=output.parent,
+                steps=args.profile_compiled_steps,
+                metric=args.profile_metric,
+            )
+            progress("compiled_profile_end", backend=backend, **compiled_profile)
         raw_tokens = args.batch_size * args.measure_steps
         lanes[backend] = {
             "compile": compile_meta,
@@ -438,6 +511,7 @@ def main() -> None:
                 "batch_s": args.measure_steps / measured_s,
             },
             "compiled_timing": compiled_timing,
+            "compiled_profile": compiled_profile,
         }
         progress("lane_end", backend=backend, raw_tok_s=raw_tokens / measured_s)
 
