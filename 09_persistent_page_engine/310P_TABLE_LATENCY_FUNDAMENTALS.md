@@ -2,36 +2,27 @@
 
 ## 1. Measured end-to-end result
 
-We evaluated the complete PaddleOCR-VL 1.6 page pipeline on **OmniDocBench v1.6** using one **Ascend 310P3**.
+We created our custom PaddleOCR-VL 1.6 e2e page pipeline, and evaluated on **OmniDocBench v1.6** using **1 x Ascend 310P3**.
 
 The measured full-benchmark result was approximately:
 
-| Metric | Result |
-|---|---:|
-| Dataset | OmniDocBench v1.6 |
-| Pages | 1,651 |
-| Hardware | 1 × Ascend 310P3 |
-| HTTP concurrency | ×64 |
-| End-to-end throughput | **0.7 pages/s** |
-| Text-block Edit Distance | 94.9 |
-| Table Page-TEDS | 94.4 |
-| Formula Page-CDM | 97.4 |
+| Metric                    | Result |
+|---------------------------|---:|
+| Dataset                   | OmniDocBench v1.6 |
+| Pages                     | 1,651 |
+| Hardware                  | 1 × Ascend 310P3 |
+| Concurrency               | ×64 |
+| End-to-end throughput     | **0.7 pages/s** |
+| Text-block Edit Distance  | 94.9 |
+| Table Page-TEDS           | 94.4 |
+| Formula Page-CDM          | 97.4 |
 | Official Overall accuracy | **95.59** |
 
-Although **throughput** is 0.7 page/s, this does not mean latency per page is `<= 1 / 0.7 = 1.43` seconds.
+Although **throughput** is 0.7 page/s, this does not mean latency per page is `1 / 0.7 = 1.43` seconds.
 
 ## 2. Latency is not throughput
 
-Throughput and latency measure different properties.
-
-- **Throughput** measures how many pages the server completes per second while it processes many crops concurrently.
-- **Latency** measures how long one request takes from submission to completion.
-- One page can contain many OCR crops.
-- A page cannot finish before its slowest required crop finishes.
-- Decode batching loads the model weights once and advances many active crops during the same iteration. This improves total throughput.
-- One isolated table at batch size 1 cannot use this cross-request weight amortization.
-
-The server can therefore sustain approximately **0.7 pages/s** while a large individual table takes many seconds.
+Concurrency is good for the throughput metric. If you give us 70 pages, we will return OCR in <=100 seconds for all of them. However, each page may return at for example 30s, 60s, 80s. This would mean >>10s latency per page.
 
 ## 3. CBG latency requirement
 
@@ -39,9 +30,10 @@ The CBG team requested:
 
 > **P99 table latency below 2 seconds.**
 
-To evaluate this requirement, we must first know how many output tokens each table needs. Autoregressive generation produces one new token per decode iteration for each active request.
+The metric would be all tables from OmniDocBench v1.6.
+To evaluate this requirement, we must first know how many output tokens each table needs.
 
-## 4. Decode-token distribution for OmniDocBench v1.6 tables
+## 4. Output-token distribution for OmniDocBench v1.6 tables
 
 The following distribution comes from all **665 table crops** in OmniDocBench v1.6.
 
@@ -49,16 +41,17 @@ The following distribution comes from all **665 table crops** in OmniDocBench v1
 |---|---:|
 | Minimum | 9 |
 | Median | 211 |
+| Mean | 402.6 |
 | P75 | 451 |
 | P90 | 951 |
 | P95 | 1,496 |
 | P99 | 3,091 |
 | Maximum | 3,111 |
-| Mean | 402.6 |
 
-## 5. Decode throughput required for latency below 2 seconds
 
-For the observed P99 table:
+## 5. Decode speed required for latency below 2 seconds
+
+If we wanted to achieve P99 <2 seconds, it is clear we need to produce 3000+ output tokens in that time:
 
 $$
 \frac{3{,}091\ \text{tokens}}{2\ \text{seconds}}
@@ -75,11 +68,15 @@ The lower percentiles also require high batch-size-1 throughput:
 
 These numbers allow only two seconds for decode. They leave no time for image loading, preprocessing, vision encoding, text prefill, HTTP, scheduling, or result serialization.
 
-## 6. There is a physical problem: memory bandwidth
+## 6. What is theoretically possible?
 
-Batch-size-1 decode is primarily limited by model-weight memory traffic.
+If we want to minimize latency, we should use 1x concurrency. That way, multiple tables won't fight for the same pipeline resources.
 
-The relevant hardware bandwidths are:
+This means we want batch size 1 (B1) decoding.
+
+To understand limits of B1 decoding, we look at the following fact: for one output token, the NPU needs to load all model weights from HBM to L2 cache. So if we know our NPU memory bandwidth, and model size, we can get peak theoretical tok/s for B1 decoding.
+
+The NPU hardware bandwidths are:
 
 | Device | Memory bandwidth | Source |
 |---|---:|---|
