@@ -30,7 +30,7 @@ The CBG team requested:
 
 > **P99 table latency below 2 seconds.**
 
-The measurement would be all tables from OmniDocBench v1.6.
+The measurement would be all **tables** (not pages) from OmniDocBench v1.6.
 To evaluate this requirement, we must first know how many output tokens each table needs.
 
 The following distribution comes from all **665 table crops** in OmniDocBench v1.6:
@@ -56,7 +56,7 @@ $$
 = 1{,}546\ \text{tokens/second}
 $$
 
-The lower percentiles also require high batch-size-1 throughput:
+The lower percentiles also require high throughput:
 
 | Target | Decode tokens | Throughput required for 2 s |
 |---|---:|---:|
@@ -64,7 +64,7 @@ The lower percentiles also require high batch-size-1 throughput:
 | P95 | 1,496 | 748 tok/s |
 | P99 | 3,091 | **1,546 tok/s** |
 
-These numbers allow only two seconds for decode. They leave no time for image loading, preprocessing, vision encoding, text prefill, HTTP, scheduling, or result serialization.
+These numbers allow only two seconds for decode. Although decode is the biggest bottleneck - they leave no time for image loading, preprocessing, vision encoding, text prefill, HTTP, scheduling, or result serialization.
 
 ### 5. What is theoretically possible?
 
@@ -73,7 +73,7 @@ If we want to minimize latency, we should use 1x concurrency. That way, multiple
 This means we want batch size 1 (B1) decoding.
 
 To understand limits of B1 decoding, we look at the following fact: for one output token, the NPU needs to load all model weights from HBM to L2 cache. So if we know our NPU memory bandwidth, and model size, we can get peak theoretical tok/s for B1 decoding.
-Why is memory-transfer the bottleneck? It is a simple matter of truth for all acceleration devices that at B1 compute is much faster than memory transfer, and is never in the critical path.
+> **Note:** Why is memory-transfer the bottleneck? It is a simple matter of truth for all acceleration devices that at B1 compute is much faster than memory transfer, and is never in the critical path.
 
 The NPU hardware bandwidths are:
 
@@ -161,5 +161,4 @@ Meeting the requirement needs a fundamental change, such as:
 - speculative decoding;
 - using 910B instead of 310P;
 - different OCR model;
-
 
