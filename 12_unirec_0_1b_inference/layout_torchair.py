@@ -37,7 +37,9 @@ def _generate_anchors(self, spatial_shapes=None, grid_size=0.05, device="cpu", d
     valid_components = (anchors > 1e-2).to(torch.int32) * (anchors < 1 - 1e-2).to(torch.int32)
     valid_mask = valid_components.sum(dim=-1, keepdim=True) == 4
     anchors = torch.log(anchors / (1 - anchors))
-    replacement = torch.tensor(torch.finfo(dtype).max, dtype=dtype, device=device)
+    # Ascend 310P rejects torch.where when one branch is a 0-D device tensor.
+    # Materialize the broadcast explicitly. This is algebraically identical.
+    replacement = torch.full_like(anchors, torch.finfo(dtype).max)
     return torch.where(valid_mask, anchors, replacement), valid_mask
 
 

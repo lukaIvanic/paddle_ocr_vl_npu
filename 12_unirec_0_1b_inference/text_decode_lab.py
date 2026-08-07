@@ -71,6 +71,16 @@ def parse_args() -> argparse.Namespace:
         default="pipe",
     )
     parser.add_argument(
+        "--prefetch-mode",
+        choices=("none", "weights", "weights_kv"),
+        default="none",
+        help=(
+            "Issue bulk npu_prefetch at decode-step start: weights prefetches "
+            "every decode weight tensor; weights_kv additionally prefetches "
+            "both KV caches. per_step mask mode only."
+        ),
+    )
+    parser.add_argument(
         "--lm-head-rows",
         type=int,
         default=0,
@@ -493,6 +503,7 @@ def main() -> None:
             cross_cache_len=args.cross_cache_length,
             batch_size=args.batch_size,
             mask_mode=args.mask_mode,
+            prefetch_mode=args.prefetch_mode,
         )
         state = lane_state(backend, 7)
         progress("first_call_begin", backend=backend)

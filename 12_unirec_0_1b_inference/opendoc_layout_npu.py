@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+import types
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -158,6 +159,16 @@ class PPDocLayoutV2NpuAdapter:
         started = time.perf_counter()
         self.processor = AutoImageProcessor.from_pretrained(self.model_path)
         self.model = AutoModelForObjectDetection.from_pretrained(self.model_path)
+        # Transformers 5.5.4 passes a 0-D device tensor to torch.where in
+        # PPDocLayoutV2Model.generate_anchors. Ascend 310P rejects that
+        # broadcast form. Bind the shape-explicit, equivalent implementation
+        # for eager and compiled execution alike.
+        from layout_torchair import _generate_anchors
+
+        self.model.model.generate_anchors = types.MethodType(
+            _generate_anchors,
+            self.model.model,
+        )
         self.model.eval().to(device=self.device, dtype=self.dtype)
         torch.npu.synchronize()
         self.compiled_runtime = None

@@ -1148,13 +1148,69 @@ class LocalUniRecDecoder(nn.Module):
         return self.layer_norm(hidden_states)
 
 
+LOCAL_UNIREC_PREFETCH_MODES = ("none", "weights", "weights_kv")
+
+
+def prefetch_decode_weights(model: "LocalUniRecModel", dependency: torch.Tensor) -> None:
+    """Issue npu_prefetch for every decode-step weight tensor.
+
+    Bulk prefetch anchored on an immediately available graph input, so the
+    HBM-to-L2 fills can overlap the early step computation. Prefetched data
+    stays ordinary evictable cache content.
+    """
+    for layer in model.decoder.layers:
+        attn = layer.self_attn
+        tensors = []
+        if attn.qkv_weight is not None:
+            tensors.append(attn.qkv_weight)
+        else:
+            tensors.extend((attn.q_proj.weight, attn.k_proj.weight, attn.v_proj.weight))
+        tensors.extend(
+            (
+                attn.out_proj.weight,
+                layer.encoder_attn.q_proj.weight,
+                layer.encoder_attn.out_proj.weight,
+                layer.fc1.weight,
+                layer.fc2.weight,
+            )
+        )
+        for tensor in tensors:
+            torch_npu.npu_prefetch(
+                tensor, dependency, tensor.numel() * tensor.element_size()
+            )
+    head_weight = model.lm_head.weight
+    torch_npu.npu_prefetch(
+        head_weight, dependency, head_weight.numel() * head_weight.element_size()
+    )
+
+
+def prefetch_decode_kv_caches(
+    dependency: torch.Tensor,
+    *cache_groups: tuple[torch.Tensor, ...],
+) -> None:
+    for group in cache_groups:
+        for tensor in group:
+            torch_npu.npu_prefetch(
+                tensor, dependency, tensor.numel() * tensor.element_size()
+            )
+
+
 class LocalUniRecCachedDecodeStepModule(nn.Module):
-    def __init__(self, model: "LocalUniRecModel", *, self_attention_backend: str = "eager"):
+    def __init__(
+        self,
+        model: "LocalUniRecModel",
+        *,
+        self_attention_backend: str = "eager",
+        prefetch_mode: str = "none",
+    ):
         super().__init__()
         if self_attention_backend not in LOCAL_UNIREC_SELF_ATTN_BACKENDS:
             raise ValueError(f"Unsupported Local UniRec self-attention backend: {self_attention_backend}")
+        if prefetch_mode not in LOCAL_UNIREC_PREFETCH_MODES:
+            raise ValueError(f"Unsupported Local UniRec prefetch mode: {prefetch_mode}")
         self.model = model
         self.self_attention_backend = self_attention_backend
+        self.prefetch_mode = prefetch_mode
 
     def forward(
         self,
@@ -1167,6 +1223,16 @@ class LocalUniRecCachedDecodeStepModule(nn.Module):
         cross_value_cache: tuple[torch.Tensor, ...],
         cross_attention_mask: torch.Tensor,
     ) -> torch.Tensor:
+        if self.prefetch_mode != "none":
+            prefetch_decode_weights(self.model, decoder_input_ids)
+            if self.prefetch_mode == "weights_kv":
+                prefetch_decode_kv_caches(
+                    decoder_input_ids,
+                    self_key_cache,
+                    self_value_cache,
+                    cross_key_cache,
+                    cross_value_cache,
+                )
         return self.model.forward_cached_logits(
             decoder_input_ids=decoder_input_ids,
             cache_position=cache_position,
@@ -1782,14 +1848,20 @@ class OptimizedUniRecRunner:
         cross_cache_len: int | None,
         batch_size: int,
         mask_mode: str = "per_step",
+        prefetch_mode: str = "none",
     ) -> tuple[nn.Module, dict[str, Any]]:
         if mask_mode not in ("per_step", "persistent"):
             raise ValueError(f"Unsupported decode mask mode: {mask_mode}")
+        if prefetch_mode not in LOCAL_UNIREC_PREFETCH_MODES:
+            raise ValueError(f"Unsupported decode prefetch mode: {prefetch_mode}")
+        if prefetch_mode != "none" and mask_mode == "persistent":
+            raise ValueError("Prefetch modes are wired for per_step decode only")
         normalized_cross_cache_len = "none" if cross_cache_len is None else str(int(cross_cache_len))
         cache_key = (
             f"{backend}:self_attn={self_attention_backend}:dynamic={int(compile_dynamic)}:"
             f"self_kv={LOCAL_UNIREC_STATIC_CACHE_LEN}:cross_kv={normalized_cross_cache_len}:"
-            f"batch={int(batch_size)}:mask={mask_mode}:qkv_fused={int(self.qkv_fused)}"
+            f"batch={int(batch_size)}:mask={mask_mode}:qkv_fused={int(self.qkv_fused)}:"
+            f"prefetch={prefetch_mode}"
         )
         cached = self._compiled_decode_modules.get(cache_key)
         if cached is not None:
@@ -1799,7 +1871,11 @@ class OptimizedUniRecRunner:
                 self.model, self_attention_backend=self_attention_backend
             )
         else:
-            module = LocalUniRecCachedDecodeStepModule(self.model, self_attention_backend=self_attention_backend)
+            module = LocalUniRecCachedDecodeStepModule(
+                self.model,
+                self_attention_backend=self_attention_backend,
+                prefetch_mode=prefetch_mode,
+            )
         if backend == "torchair":
             if not self.device.startswith("npu"):
                 raise ValueError("backend=torchair requires an NPU device")
@@ -1836,6 +1912,8 @@ class OptimizedUniRecRunner:
                     shape_name += f"_mask_{mask_mode}"
                 if self.qkv_fused:
                     shape_name += "_qkvfused"
+                if prefetch_mode != "none":
+                    shape_name += f"_prefetch_{prefetch_mode}"
                 shape_cache_dir = self.compile_cache_dir / shape_name
                 shape_cache_dir.mkdir(parents=True, exist_ok=True)
                 cache_compile, cache_compile_import_path = import_torchair_cache_compile()
@@ -1870,6 +1948,7 @@ class OptimizedUniRecRunner:
             {
                 "mask_mode": mask_mode,
                 "qkv_fused": bool(self.qkv_fused),
+                "prefetch_mode": prefetch_mode,
                 "static_self_kv_len": int(LOCAL_UNIREC_STATIC_CACHE_LEN),
                 "static_cross_kv_len": None if cross_cache_len is None else int(cross_cache_len),
                 "self_attention_backend": self_attention_backend,
