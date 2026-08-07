@@ -87,6 +87,17 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--weight-format",
+        choices=("nd", "nz"),
+        default="nd",
+        help=(
+            "nz casts decode-path weights (fused QKV, out/cross-Q "
+            "projections, MLP, LM head) to FRACTAL_NZ before compile or "
+            "capture - the internal format GE uses, measured ~85%% faster "
+            "for the same eager matmuls at M=1."
+        ),
+    )
+    parser.add_argument(
         "--prefetch-mode",
         choices=("none", "weights", "weights_kv", "staged"),
         default="none",
@@ -808,6 +819,9 @@ def main() -> None:
     if args.qkv_projection == "fused":
         runner.fuse_decoder_self_qkv()
         progress("qkv_fused")
+    if args.weight_format == "nz":
+        cast_count = runner.cast_decoder_weights_nz()
+        progress("weights_nz", tensors=cast_count)
 
     def lane_state(backend: str, seed: int) -> dict[str, Any]:
         return make_state(

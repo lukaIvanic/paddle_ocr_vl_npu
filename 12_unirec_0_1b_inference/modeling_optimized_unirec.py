@@ -1702,6 +1702,7 @@ class OptimizedUniRecRunner:
                 raise RuntimeError("NPU execution requires torch_npu")
             torch_npu.npu.config.allow_internal_format = False
         self.qkv_fused = False
+        self.weights_nz = False
         self.model = self._load_model().to(self.device)
         self.model.eval()
         synchronize_device(self.device)
@@ -1722,6 +1723,54 @@ class OptimizedUniRecRunner:
         for layer in self.model.decoder.layers:
             layer.self_attn.fuse_qkv_projections()
         self.qkv_fused = True
+
+    def cast_decoder_weights_nz(self) -> int:
+        """Cast decode-step matmul weights to FRACTAL_NZ internal format.
+
+        GE stores weights NZ after compile; eager aclnn matmul over the same
+        ND weights measured ~85% slower at M=1, so eager/replay lanes cast the
+        decode-path weights up front. Leaves allow_internal_format enabled so
+        the NZ inputs are consumed directly instead of transdata'd back per
+        call. Call after fuse_decoder_self_qkv and before any decode compile
+        or capture. Only the tensors read by the decode step are cast: fused
+        (or separate) self QKV, self/cross out projections, cross Q, the MLP,
+        and the LM head.
+        """
+        if torch_npu is None:
+            raise RuntimeError("NZ weight cast requires torch_npu")
+        if self._compiled_decode_modules:
+            raise RuntimeError(
+                "Cast weights before compiling decode modules; compiled "
+                "graphs already traced the ND weights"
+            )
+        torch_npu.npu.config.allow_internal_format = True
+        acl_format_fractal_nz = 29
+        cast_count = 0
+
+        def cast(tensor: torch.Tensor) -> torch.Tensor:
+            nonlocal cast_count
+            cast_count += 1
+            return torch_npu.npu_format_cast(tensor, acl_format_fractal_nz)
+
+        for layer in self.model.decoder.layers:
+            self_attn = layer.self_attn
+            if self_attn.qkv_weight is not None:
+                self_attn.qkv_weight = cast(self_attn.qkv_weight)
+            else:
+                for linear in (self_attn.q_proj, self_attn.k_proj, self_attn.v_proj):
+                    linear.weight.data = cast(linear.weight.data)
+            for linear in (
+                self_attn.out_proj,
+                layer.encoder_attn.q_proj,
+                layer.encoder_attn.out_proj,
+                layer.fc1,
+                layer.fc2,
+            ):
+                linear.weight.data = cast(linear.weight.data)
+        self.model.lm_head.weight.data = cast(self.model.lm_head.weight.data)
+        synchronize_device(self.device)
+        self.weights_nz = True
+        return cast_count
 
     def _load_model(self) -> LocalUniRecModel:
         model = LocalUniRecModel(self.config).to(dtype=self.dtype)
@@ -1908,7 +1957,7 @@ class OptimizedUniRecRunner:
             f"{backend}:self_attn={self_attention_backend}:dynamic={int(compile_dynamic)}:"
             f"self_kv={LOCAL_UNIREC_STATIC_CACHE_LEN}:cross_kv={normalized_cross_cache_len}:"
             f"batch={int(batch_size)}:mask={mask_mode}:qkv_fused={int(self.qkv_fused)}:"
-            f"prefetch={prefetch_mode}:graph={graph_mode}"
+            f"prefetch={prefetch_mode}:graph={graph_mode}:wnz={int(self.weights_nz)}"
         )
         cached = self._compiled_decode_modules.get(cache_key)
         if cached is not None:
@@ -1937,6 +1986,7 @@ class OptimizedUniRecRunner:
                 "torchair_cache_dir": None,
                 "mask_mode": mask_mode,
                 "qkv_fused": bool(self.qkv_fused),
+                "weights_nz": bool(self.weights_nz),
                 "prefetch_mode": prefetch_mode,
                 "static_self_kv_len": int(LOCAL_UNIREC_STATIC_CACHE_LEN),
                 "static_cross_kv_len": None if cross_cache_len is None else int(cross_cache_len),
@@ -1980,6 +2030,7 @@ class OptimizedUniRecRunner:
                     {
                         "mask_mode": mask_mode,
                         "qkv_fused": bool(self.qkv_fused),
+                        "weights_nz": bool(self.weights_nz),
                         "prefetch_mode": prefetch_mode,
                         "static_self_kv_len": int(LOCAL_UNIREC_STATIC_CACHE_LEN),
                         "static_cross_kv_len": None if cross_cache_len is None else int(cross_cache_len),
@@ -2017,6 +2068,8 @@ class OptimizedUniRecRunner:
                     shape_name += f"_mask_{mask_mode}"
                 if self.qkv_fused:
                     shape_name += "_qkvfused"
+                if self.weights_nz:
+                    shape_name += "_wnz"
                 if prefetch_mode != "none":
                     shape_name += f"_prefetch_{prefetch_mode}"
                 shape_cache_dir = self.compile_cache_dir / shape_name
@@ -2053,6 +2106,7 @@ class OptimizedUniRecRunner:
             {
                 "mask_mode": mask_mode,
                 "qkv_fused": bool(self.qkv_fused),
+                "weights_nz": bool(self.weights_nz),
                 "prefetch_mode": prefetch_mode,
                 "static_self_kv_len": int(LOCAL_UNIREC_STATIC_CACHE_LEN),
                 "static_cross_kv_len": None if cross_cache_len is None else int(cross_cache_len),
