@@ -90,6 +90,19 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--ge-tuning",
+        nargs="*",
+        default=[],
+        choices=("frozen_parameter", "ref_data", "single_stream", "tiling_schedule"),
+        help=(
+            "GE-mode tuning knobs from the TorchAir advanced docs: "
+            "frozen_parameter fixes weight input addresses (host dispatch), "
+            "ref_data avoids copies for in-place KV scatter, single_stream "
+            "removes inter-stream switching, tiling_schedule sinks tiling to "
+            "device (fused attention ops only, so increfa lanes)."
+        ),
+    )
+    parser.add_argument(
         "--static-kernel",
         action="store_true",
         help=(
@@ -974,6 +987,7 @@ def main() -> None:
             mask_mode=args.mask_mode,
             prefetch_mode=args.prefetch_mode,
             graph_mode=args.graph_mode,
+            ge_tuning=tuple(args.ge_tuning),
         )
         # npugraph_ex keys captured graphs by input address: advance state in
         # place so every step presents the same tensor addresses.

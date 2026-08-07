@@ -1943,6 +1943,7 @@ class OptimizedUniRecRunner:
         mask_mode: str = "per_step",
         prefetch_mode: str = "none",
         graph_mode: str = "ge",
+        ge_tuning: tuple[str, ...] = (),
     ) -> tuple[nn.Module, dict[str, Any]]:
         if mask_mode not in ("per_step", "persistent"):
             raise ValueError(f"Unsupported decode mask mode: {mask_mode}")
@@ -1952,12 +1953,20 @@ class OptimizedUniRecRunner:
             raise ValueError(f"Unsupported decode prefetch mode: {prefetch_mode}")
         if prefetch_mode != "none" and mask_mode == "persistent":
             raise ValueError("Prefetch modes are wired for per_step decode only")
+        allowed_ge_tuning = ("frozen_parameter", "ref_data", "single_stream", "tiling_schedule")
+        ge_tuning = tuple(sorted(ge_tuning))
+        for knob in ge_tuning:
+            if knob not in allowed_ge_tuning:
+                raise ValueError(f"Unsupported GE tuning knob: {knob}")
+        if ge_tuning and graph_mode != "ge":
+            raise ValueError("GE tuning knobs apply to graph_mode=ge only")
         normalized_cross_cache_len = "none" if cross_cache_len is None else str(int(cross_cache_len))
         cache_key = (
             f"{backend}:self_attn={self_attention_backend}:dynamic={int(compile_dynamic)}:"
             f"self_kv={LOCAL_UNIREC_STATIC_CACHE_LEN}:cross_kv={normalized_cross_cache_len}:"
             f"batch={int(batch_size)}:mask={mask_mode}:qkv_fused={int(self.qkv_fused)}:"
-            f"prefetch={prefetch_mode}:graph={graph_mode}:wnz={int(self.weights_nz)}"
+            f"prefetch={prefetch_mode}:graph={graph_mode}:wnz={int(self.weights_nz)}:"
+            f"getune={','.join(ge_tuning) or 'none'}"
         )
         cached = self._compiled_decode_modules.get(cache_key)
         if cached is not None:
@@ -2091,6 +2100,18 @@ class OptimizedUniRecRunner:
                 self._compiled_decode_metadata[cache_key] = compile_meta
                 return compiled, compile_meta
             cfg.mode.value = "max-autotune"
+            # GE tuning knobs from the TorchAir advanced-features docs.
+            if "frozen_parameter" in ge_tuning:
+                cfg.experimental_config.frozen_parameter = True
+            if "ref_data" in ge_tuning:
+                cfg.experimental_config.enable_ref_data = True
+            if "tiling_schedule" in ge_tuning:
+                # Tiling sink to device AI CPU; only fused attention ops
+                # (e.g. IncreFlashAttention) support it, so this is inert
+                # for the pure-eager lane.
+                cfg.experimental_config.tiling_schedule_optimize = True
+            if "single_stream" in ge_tuning:
+                cfg.ge_config.enable_single_stream = True
             if self.compile_cache_dir is None:
                 compiled = torch.compile(
                     module,
@@ -2121,6 +2142,8 @@ class OptimizedUniRecRunner:
                     shape_name += "_wnz"
                 if prefetch_mode != "none":
                     shape_name += f"_prefetch_{prefetch_mode}"
+                if ge_tuning:
+                    shape_name += "_getune_" + "_".join(ge_tuning)
                 shape_cache_dir = self.compile_cache_dir / shape_name
                 shape_cache_dir.mkdir(parents=True, exist_ok=True)
                 cache_compile, cache_compile_import_path = import_torchair_cache_compile()
@@ -2156,6 +2179,7 @@ class OptimizedUniRecRunner:
                 "mask_mode": mask_mode,
                 "qkv_fused": bool(self.qkv_fused),
                 "weights_nz": bool(self.weights_nz),
+                "ge_tuning": list(ge_tuning),
                 "prefetch_mode": prefetch_mode,
                 "static_self_kv_len": int(LOCAL_UNIREC_STATIC_CACHE_LEN),
                 "static_cross_kv_len": None if cross_cache_len is None else int(cross_cache_len),
