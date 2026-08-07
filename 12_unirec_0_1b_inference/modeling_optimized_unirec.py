@@ -1979,14 +1979,20 @@ class OptimizedUniRecRunner:
             # static-shape kernel compilation (installs per-shape binaries
             # into the CANN opp tree, auto-uninstalled at exit), SuperKernel
             # binary fusion, and frozen parameter addresses.
-            options = None
+            # clone_input=False: by default npugraph_ex defensively copies
+            # every input tensor into its own static buffers each call (~24 KV
+            # caches per step). The lab's steppers keep input addresses stable,
+            # so the clones are pure overhead. Requires address-stable calls.
+            options: dict[str, Any] = {"clone_input": False}
             if graph_mode == "npugraph_ex_full":
                 # super_kernel_optimize is omitted: it needs libascendsk.so,
                 # which is absent from the blue-zone CANN 9.0.0 install.
-                options = {
-                    "static_kernel_compile": True,
-                    "frozen_parameter": True,
-                }
+                options.update(
+                    {
+                        "static_kernel_compile": True,
+                        "frozen_parameter": True,
+                    }
+                )
             compiled = torch.compile(
                 module,
                 backend="npugraph_ex",
