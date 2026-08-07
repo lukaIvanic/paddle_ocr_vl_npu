@@ -77,10 +77,10 @@ To understand limits of B1 decoding, we look at the following fact: for one outp
 
 The NPU hardware bandwidths are:
 
-| Device | Memory bandwidth | Source |
-|---|---:|---|
-| Ascend 310P3 | **204 GB/s per processor** | [Atlas 300I Duo specifies 408 GB/s across two processors](https://support.huawei.com/enterprise/en/doc/EDOC1100285916?section=j00e) |
-| Ascend 910B2 environment | **1.6 TB/s** | [64 GB Atlas 300I A2 specification](https://www.hiascend.com/hardware/accelerator-card) |
+| Device | Memory bandwidth | Source                                                                                                                     |
+|---|---:|----------------------------------------------------------------------------------------------------------------------------|
+| Ascend 310P3 | **204 GB/s per processor** | [Atlas 300I Duo specifies 408 GB/s across two processors](https://www.hiascend.com/hardware/accelerator-card?tag=300I-duo) |
+| Ascend 910B2 environment | **1.6 TB/s** | [64 GB Atlas 300I A2 specification](https://www.hiascend.com/hardware/accelerator-card?tag=300I-A2)                        |
 
 ### 6. Why one output token requires reading the decoder weights
 
