@@ -1893,9 +1893,12 @@ class OptimizedUniRecRunner:
         batch_size: int,
         mask_mode: str = "per_step",
         prefetch_mode: str = "none",
+        graph_mode: str = "ge",
     ) -> tuple[nn.Module, dict[str, Any]]:
         if mask_mode not in ("per_step", "persistent"):
             raise ValueError(f"Unsupported decode mask mode: {mask_mode}")
+        if graph_mode not in ("ge", "acl"):
+            raise ValueError(f"Unsupported decode graph mode: {graph_mode}")
         if prefetch_mode not in LOCAL_UNIREC_PREFETCH_MODES:
             raise ValueError(f"Unsupported decode prefetch mode: {prefetch_mode}")
         if prefetch_mode != "none" and mask_mode == "persistent":
@@ -1905,7 +1908,7 @@ class OptimizedUniRecRunner:
             f"{backend}:self_attn={self_attention_backend}:dynamic={int(compile_dynamic)}:"
             f"self_kv={LOCAL_UNIREC_STATIC_CACHE_LEN}:cross_kv={normalized_cross_cache_len}:"
             f"batch={int(batch_size)}:mask={mask_mode}:qkv_fused={int(self.qkv_fused)}:"
-            f"prefetch={prefetch_mode}"
+            f"prefetch={prefetch_mode}:graph={graph_mode}"
         )
         cached = self._compiled_decode_modules.get(cache_key)
         if cached is not None:
@@ -1929,6 +1932,41 @@ class OptimizedUniRecRunner:
             from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
 
             cfg = CompilerConfig()
+            if graph_mode == "acl":
+                # TorchAir ACLGraph capture/replay path: same traced module,
+                # dispatched via graph replay instead of GE graph execution.
+                # cache_compile/ge_cache are GE-specific, so compile directly.
+                cfg.mode.value = "reduce-overhead"
+                compiled = torch.compile(
+                    module,
+                    backend=torchair.get_npu_backend(compiler_config=cfg),
+                    dynamic=compile_dynamic,
+                    fullgraph=True,
+                )
+                compile_meta = {
+                    "compile_api": "torch.compile",
+                    "backend": "torchair",
+                    "graph_mode": "acl",
+                    "compiler_mode": "reduce-overhead",
+                    "fullgraph": True,
+                    "dynamic": bool(compile_dynamic),
+                    "torchair_ge_cache": False,
+                    "torchair_cache_dir": None,
+                }
+                compile_meta.update(
+                    {
+                        "mask_mode": mask_mode,
+                        "qkv_fused": bool(self.qkv_fused),
+                        "prefetch_mode": prefetch_mode,
+                        "static_self_kv_len": int(LOCAL_UNIREC_STATIC_CACHE_LEN),
+                        "static_cross_kv_len": None if cross_cache_len is None else int(cross_cache_len),
+                        "self_attention_backend": self_attention_backend,
+                        "batch_size": int(batch_size),
+                    }
+                )
+                self._compiled_decode_modules[cache_key] = compiled
+                self._compiled_decode_metadata[cache_key] = compile_meta
+                return compiled, compile_meta
             cfg.mode.value = "max-autotune"
             if self.compile_cache_dir is None:
                 compiled = torch.compile(

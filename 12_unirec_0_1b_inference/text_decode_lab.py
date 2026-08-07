@@ -71,6 +71,16 @@ def parse_args() -> argparse.Namespace:
         default="pipe",
     )
     parser.add_argument(
+        "--graph-mode",
+        choices=("ge", "acl"),
+        default="ge",
+        help=(
+            "ge executes the compiled decode step through the GE graph "
+            "engine (cache_compile); acl uses TorchAir reduce-overhead "
+            "ACLGraph capture/replay for dispatch."
+        ),
+    )
+    parser.add_argument(
         "--prefetch-mode",
         choices=("none", "weights", "weights_kv", "staged"),
         default="none",
@@ -506,6 +516,7 @@ def main() -> None:
             batch_size=args.batch_size,
             mask_mode=args.mask_mode,
             prefetch_mode=args.prefetch_mode,
+            graph_mode=args.graph_mode,
         )
         state = lane_state(backend, 7)
         progress("first_call_begin", backend=backend)
