@@ -264,6 +264,7 @@ def simulate(
     maximum_anchor: int,
     backtrack_tokens: int,
     continuation_index: dict[int, dict[tuple[int, ...], list[int]]],
+    precomputed_oracle_matches: list[tuple[int, int]] | None = None,
 ) -> dict[str, Any]:
     if not target:
         raise ValueError("target must not be empty")
@@ -283,7 +284,13 @@ def simulate(
     is_oracle = matcher_parts[0] == "oracle"
     monotonic = "monotonic" in matcher_parts
     minimum_anchor = int(matcher_parts[-1][1:]) if matcher_parts[-1].startswith("a") else 1
-    oracle_matches = oracle_start_matches(target, draft) if is_oracle else []
+    oracle_matches = (
+        precomputed_oracle_matches
+        if is_oracle and precomputed_oracle_matches is not None
+        else oracle_start_matches(target, draft)
+        if is_oracle
+        else []
+    )
 
     while position < len(target):
         prefix = target[:position]
@@ -487,6 +494,11 @@ def main() -> None:
         tokens = target_tokens(target_record)
         flat_draft, _row_for_token = flatten_drafts(draft_record, tokens[-1])
         continuation_index = build_continuation_index(flat_draft, args.max_anchor_tokens)
+        precomputed_oracle_matches = (
+            oracle_start_matches(tokens, flat_draft)
+            if any(matcher.startswith("oracle") for matcher in matchers)
+            else None
+        )
         target_real_vision = int(target_record["metrics"]["real_vision_tokens"])
         draft_real_vision = int(draft_record["metrics"]["real_vision_tokens"])
         draft_output_tokens = int(draft_record["metrics"]["output_tokens_including_eos"])
@@ -503,6 +515,7 @@ def main() -> None:
                     args.max_anchor_tokens,
                     args.backtrack_tokens,
                     continuation_index,
+                    precomputed_oracle_matches,
                 )
                 baseline_target_vision_s = target_real_vision / args.vision_tok_per_s
                 baseline_target_decode_s = len(tokens) / args.target_decode_tok_per_s
