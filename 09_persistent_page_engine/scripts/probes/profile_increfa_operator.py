@@ -18,6 +18,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cache-length", type=int, required=True)
     parser.add_argument("--position", type=int, required=True)
+    parser.add_argument("--device-index", type=int, default=0)
     parser.add_argument("--warmup", type=int, default=5)
     parser.add_argument("--repeats", type=int, default=20)
     parser.add_argument("--seed", type=int, default=7)
@@ -38,7 +39,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if not torch.npu.is_available():
         raise RuntimeError("an Ascend NPU is required")
 
-    device = torch.device("npu:0")
+    device = torch.device(f"npu:{args.device_index}")
     dtype = torch.float16
     torch.npu.set_compile_mode(jit_compile=False)
     torch.manual_seed(args.seed)
@@ -92,6 +93,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "input_layout": "BNSD",
             "dtype": "fp16",
             "inner_precise": 1,
+            "device_index": args.device_index,
             "warmup": args.warmup,
             "repeats": args.repeats,
         },
