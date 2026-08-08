@@ -281,6 +281,23 @@ better on 57 tables, equal on 46, and worse on 40. Improvements save 973 calls;
 regressions add 369. Two page-279 tables provide 522 of the saved calls, so the
 aggregate win is real but partly concentrated.
 
+### CPU cost
+
+The lab times only each matcher simulation. It excludes tokenizer loading,
+JSON parsing, and report writing.
+
+| Cohort | Current | Reversible | Column + width patch |
+|---|---:|---:|---:|
+| All 665, CPU ms/table | 5.162 | 4.835 | 6.029 |
+| All 665, CPU us/target call | 80.372 | 78.935 | 99.778 |
+| Latency above 1 s, CPU ms/table | 15.841 | 14.666 | 18.173 |
+| Latency above 1 s, CPU us/target call | 88.384 | 87.343 | 111.026 |
+
+The selected matcher adds 0.867 ms per table over the current matcher on the
+complete corpus and 2.332 ms per table on the slow cohort. At 750 target tokens
+per second, its added 19-23 us per target call is approximately 1.5-1.7% of
+one model iteration. This CPU cost does not erase the reduction in target calls.
+
 The free-running fuzzy beam is not a good replacement. It can recover weak
 anchors, but it also overrides reliable exact locations and makes too many
 short proposals. The hybrid limits that damage, but still loses to the simpler
