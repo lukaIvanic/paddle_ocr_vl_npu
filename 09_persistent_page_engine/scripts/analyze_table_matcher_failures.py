@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 import re
 from typing import Any
+import unicodedata
 
 from table_speculative_simulator import (
     MatcherState,
@@ -59,6 +60,36 @@ def token_kind(piece: str) -> str:
     if any(ch.isalpha() for ch in text):
         return "text"
     return "punctuation"
+
+
+def normalized_piece(piece: str) -> str:
+    return unicodedata.normalize("NFKC", piece.replace("▁", " ")).strip().lower()
+
+
+def unanchored_cause(
+    target_piece: str,
+    draft_piece: str,
+    at_band_start: bool,
+) -> str:
+    if at_band_start:
+        return "draft_band_start"
+    target_kind = token_kind(target_piece)
+    draft_kind = token_kind(draft_piece)
+    if normalized_piece(target_piece) == normalized_piece(draft_piece):
+        return "format_or_unicode_equivalent"
+    if target_kind == "table_structure" and draft_kind == "table_structure":
+        return "different_structure_token"
+    if "table_structure" in {target_kind, draft_kind}:
+        return "structure_content_boundary"
+    if "whitespace" in {target_kind, draft_kind} or "punctuation" in {target_kind, draft_kind}:
+        return "punctuation_or_whitespace"
+    if "numeric" in {target_kind, draft_kind}:
+        return "numeric_content"
+    if "math_or_latex" in {target_kind, draft_kind}:
+        return "math_or_latex"
+    if "cjk" in {target_kind, draft_kind}:
+        return "cjk_content"
+    return "text_content"
 
 
 def row_index(row_for_token: list[int], position: int) -> int | None:
@@ -138,9 +169,18 @@ def analyze_table(
 ) -> dict[str, Any]:
     target = target_tokens(target_record)
     draft, row_for_token = flatten_drafts(draft_record, target[-1])
+    band_starts: list[int] = []
+    band_cursor = 0
+    for row in sorted(draft_record.get("rows") or [], key=lambda item: item["row_index"]):
+        band_starts.append(band_cursor)
+        row_tokens = [int(value) for value in row.get("token_ids") or ()]
+        if row_tokens and row_tokens[-1] == target[-1]:
+            row_tokens.pop()
+        band_cursor += len(row_tokens)
     index = build_continuation_index(draft, max_anchor)
     oracle = oracle_start_matches(target, draft)
     pieces = tokenizer.convert_ids_to_tokens(target)
+    draft_pieces = tokenizer.convert_ids_to_tokens(draft)
     state = MatcherState()
     position = 1
     events: list[dict[str, Any]] = []
@@ -158,6 +198,9 @@ def analyze_table(
     post_mismatch_recovery: Counter[str] = Counter()
     cursor_progress_lost: Counter[str] = Counter()
     row_direction: Counter[str] = Counter()
+    unanchored_causes: Counter[str] = Counter()
+    unanchored_cause_lost: Counter[str] = Counter()
+    unanchored_pairs: Counter[str] = Counter()
 
     while position < len(target):
         prefix = target[:position]
@@ -234,6 +277,14 @@ def analyze_table(
                     anchor_relation["anchors_equal"] += 1
                 else:
                     anchor_relation["oracle_anchor_longer"] += 1
+            else:
+                at_band_start = oracle_row is not None and oracle_start == band_starts[oracle_row]
+                target_previous = pieces[position - 1] if position else "<start>"
+                draft_previous = draft_pieces[oracle_start - 1] if oracle_start else "<start>"
+                cause = unanchored_cause(target_previous, draft_previous, at_band_start)
+                unanchored_causes[cause] += 1
+                unanchored_cause_lost[cause] += lost
+                unanchored_pairs[f"{target_previous} -> {draft_previous}"] += 1
             if candidate is not None and oracle_row is not None:
                 selected_row = row_index(row_for_token, candidate.start)
                 if selected_row is not None:
@@ -319,6 +370,9 @@ def analyze_table(
         "post_mismatch_recovery": dict(post_mismatch_recovery),
         "lost_tokens_by_cursor_progress": dict(cursor_progress_lost),
         "lost_tokens_by_selected_vs_oracle_band": dict(row_direction),
+        "unanchored_prefix_causes": dict(unanchored_causes),
+        "unanchored_prefix_cause_lost_tokens": dict(unanchored_cause_lost),
+        "unanchored_previous_token_pairs": dict(unanchored_pairs.most_common(40)),
         "worst_events": sorted(events, key=lambda row: (row["lost_tokens"], row["oracle_accept"]), reverse=True)[:12],
         "target_text": target_record["rows"][0].get("raw_text") or target_record["rows"][0].get("text"),
         "draft_row_texts": [
@@ -375,6 +429,9 @@ def main() -> None:
             "post_mismatch_recovery",
             "lost_tokens_by_cursor_progress",
             "lost_tokens_by_selected_vs_oracle_band",
+            "unanchored_prefix_causes",
+            "unanchored_prefix_cause_lost_tokens",
+            "unanchored_previous_token_pairs",
         )
     }
     for table in tables:
