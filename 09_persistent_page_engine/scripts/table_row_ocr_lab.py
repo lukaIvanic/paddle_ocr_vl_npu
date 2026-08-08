@@ -38,7 +38,7 @@ from table_row_split_lab import (
     orient_row_draft_image,
     read_jsonl,
     trim_blank_margin,
-    uniform_eight_proposals,
+    uniform_proposals,
 )
 
 
@@ -54,6 +54,8 @@ DEFAULT_STRATEGIES = ("ruled", "whitespace", "row_edge", "hybrid", "selected")
 SUPPORTED_STRATEGIES = DEFAULT_STRATEGIES + (
     "uniform_8",
     "uniform_8_snapped",
+    "uniform_16",
+    "uniform_16_snapped",
     "whole",
 )
 TR_PATTERN = re.compile(r"<tr\b[^>]*>.*?</tr\s*>", re.IGNORECASE | re.DOTALL)
@@ -333,11 +335,22 @@ def prepare_strategy_inputs(
         whole_image, whole_trim_box = row_image, row_trim_box
 
     split_started = time.perf_counter()
-    if row_strategies and row_strategies <= {"uniform_8", "uniform_8_snapped"}:
-        proposals = {
-            proposal.name: proposal
-            for proposal in uniform_eight_proposals(row_image)
+    uniform_strategies = {
+        "uniform_8",
+        "uniform_8_snapped",
+        "uniform_16",
+        "uniform_16_snapped",
+    }
+    if row_strategies and row_strategies <= uniform_strategies:
+        proposals = {}
+        requested_counts = {
+            int(strategy.split("_")[1]) for strategy in row_strategies
         }
+        for count in sorted(requested_counts):
+            proposals.update(
+                (proposal.name, proposal)
+                for proposal in uniform_proposals(row_image, rows=count)
+            )
     elif row_strategies:
         proposals = {proposal.name: proposal for proposal in analyze(row_image)}
     else:

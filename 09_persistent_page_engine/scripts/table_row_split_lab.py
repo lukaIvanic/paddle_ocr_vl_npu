@@ -461,7 +461,7 @@ def uniform_split(height: int, rows: int = 8) -> SplitProposal:
         name=f"uniform_{rows}",
         boundaries=boundaries,
         diagnostics={
-            "requested_rows": 8,
+            "requested_rows": int(rows),
             "rows": rows,
             "height": height,
         },
@@ -575,7 +575,7 @@ def snap_uniform_boundaries(
         ),
         "boundary_details": details,
     }
-    return SplitProposal("uniform_8_snapped", tuple(snapped), diagnostics)
+    return SplitProposal(f"{proposal.name}_snapped", tuple(snapped), diagnostics)
 
 
 def select_split(
@@ -719,19 +719,28 @@ def _scale_proposal(
     return SplitProposal(proposal.name, boundaries, diagnostics)
 
 
-def uniform_eight_proposals(image: Image.Image) -> tuple[SplitProposal, SplitProposal]:
+def uniform_proposals(
+    image: Image.Image,
+    rows: int,
+) -> tuple[SplitProposal, SplitProposal]:
     """Build uniform and snapped-uniform proposals without other detectors."""
 
     max_detection_dimension = 1800
     scale = min(1.0, max_detection_dimension / max(image.size))
     detection_height = round(image.height * scale)
     uniform = _scale_proposal(
-        uniform_split(detection_height, rows=8),
+        uniform_split(detection_height, rows=rows),
         detection_height,
         image.height,
         scale,
     )
     return uniform, snap_uniform_boundaries(image, uniform)
+
+
+def uniform_eight_proposals(image: Image.Image) -> tuple[SplitProposal, SplitProposal]:
+    """Compatibility wrapper for the established eight-band strategy."""
+
+    return uniform_proposals(image, rows=8)
 
 
 def analyze(image: Image.Image) -> tuple[SplitProposal, ...]:
