@@ -48,6 +48,7 @@ class DecodeOptimizationConfig:
     packed_qkv: bool = False
     rms_norm: str = "manual"
     rotary: str = "manual"
+    rotary_factors: str = "mrope"
     packed_mlp: bool = False
     npu_swiglu: bool = False
     add_rms_norm: bool = False
@@ -173,6 +174,26 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         packed_qkv=True,
         rms_norm="npu",
         rotary="npu_apply",
+        add_rms_norm=True,
+        stage_aware_weight_prefetch=True,
+    ),
+    "combined_apply_prefetch_scalar_rope": DecodeOptimizationConfig(
+        name="combined_apply_prefetch_scalar_rope",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        rotary_factors="scalar",
+        add_rms_norm=True,
+        stage_aware_weight_prefetch=True,
+    ),
+    "combined_apply_prefetch_rope_lut": DecodeOptimizationConfig(
+        name="combined_apply_prefetch_rope_lut",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        rotary_factors="lookup",
         add_rms_norm=True,
         stage_aware_weight_prefetch=True,
     ),
@@ -458,6 +479,69 @@ def _prepare_multimodal_rotary_factors(
             .contiguous()
         )
     return prepared[0], prepared[1]
+
+
+def _prepare_scalar_rotary_factors(
+    rotary_emb: nn.Module,
+    inputs_embeds: torch.Tensor,
+    position: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Build decode RoPE factors directly from the one shared MRoPE axis."""
+    freqs = (
+        position.reshape(-1, 1).float()
+        * rotary_emb.inv_freq.reshape(1, -1).float()
+    )
+    emb = torch.cat((freqs, freqs), dim=-1)
+    return (
+        emb.cos().to(dtype=inputs_embeds.dtype).view(
+            inputs_embeds.shape[0], 1, 1, -1
+        ),
+        emb.sin().to(dtype=inputs_embeds.dtype).view(
+            inputs_embeds.shape[0], 1, 1, -1
+        ),
+    )
+
+
+def _lookup_scalar_rotary_factors(
+    rotary_emb: nn.Module,
+    position: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Select packed cosine/sine rows from the persistent decode RoPE LUT."""
+    selected = torch.index_select(
+        rotary_emb.decode_rope_factor_lut,
+        1,
+        position.reshape(-1).to(dtype=torch.int64),
+    )
+    cos = selected[0].unsqueeze(1).unsqueeze(1)
+    sin = selected[1].unsqueeze(1).unsqueeze(1)
+    return cos, sin
+
+
+def prepare_decode_rope_factor_lut(
+    model: "LocalPaddleOCRVLForConditionalGeneration",
+    optimization: str | DecodeOptimizationConfig,
+    *,
+    cache_length: int,
+    dtype: torch.dtype,
+) -> None:
+    """Create the final decode cos/sin table once, outside the graph."""
+    config = resolve_decode_optimization(optimization)
+    if config.rotary_factors != "lookup":
+        return
+    rotary_emb = model.model.rotary_emb
+    positions = torch.arange(
+        int(cache_length),
+        device=rotary_emb.inv_freq.device,
+        dtype=torch.float32,
+    )
+    freqs = positions.reshape(-1, 1) * rotary_emb.inv_freq.reshape(1, -1).float()
+    emb = torch.cat((freqs, freqs), dim=-1)
+    factor_lut = torch.stack((emb.cos(), emb.sin()), dim=0).to(dtype=dtype)
+    rotary_emb.register_buffer(
+        "decode_rope_factor_lut",
+        factor_lut.contiguous(),
+        persistent=False,
+    )
 
 
 def _project_decode_qkv(
@@ -938,19 +1022,38 @@ def run_text_decode_transformer(
             "unsupported IncreFA length mode: "
             f"{optimization.increfa_length_mode!r}"
         )
-    position_ids = cache_position.view(batch_size, 1) + rope_deltas.to(
+    decode_position = cache_position.view(batch_size, 1) + rope_deltas.to(
         device=inputs_embeds.device, dtype=torch.int64
     )
-    position_ids = position_ids.unsqueeze(0).expand(3, -1, -1)
-    position_embeddings = text_model.rotary_emb(inputs_embeds, position_ids)
-    prepared_factors = (
-        _prepare_multimodal_rotary_factors(
-            position_embeddings,
-            text_model.layers[0].self_attn.mrope_section,
+    if optimization.rotary_factors == "mrope":
+        position_ids = decode_position.unsqueeze(0).expand(3, -1, -1)
+        position_embeddings = text_model.rotary_emb(inputs_embeds, position_ids)
+        prepared_factors = (
+            _prepare_multimodal_rotary_factors(
+                position_embeddings,
+                text_model.layers[0].self_attn.mrope_section,
+            )
+            if optimization.hoist_mrope
+            else None
         )
-        if optimization.hoist_mrope
-        else None
-    )
+    elif optimization.rotary_factors == "scalar":
+        prepared_factors = _prepare_scalar_rotary_factors(
+            text_model.rotary_emb,
+            inputs_embeds,
+            decode_position,
+        )
+        position_embeddings = prepared_factors
+    elif optimization.rotary_factors == "lookup":
+        prepared_factors = _lookup_scalar_rotary_factors(
+            text_model.rotary_emb,
+            decode_position,
+        )
+        position_embeddings = prepared_factors
+    else:
+        raise ValueError(
+            "unsupported decode rotary-factor mode: "
+            f"{optimization.rotary_factors!r}"
+        )
     hidden_states = inputs_embeds
     if optimization.name == "baseline":
         for layer_idx, layer in enumerate(text_model.layers):
@@ -1289,6 +1392,7 @@ def compile_text_decode_stage(
             "packed_qkv": optimization.packed_qkv,
             "rms_norm": optimization.rms_norm,
             "rotary": optimization.rotary,
+            "rotary_factors": optimization.rotary_factors,
             "packed_mlp": optimization.packed_mlp,
             "npu_swiglu": optimization.npu_swiglu,
             "add_rms_norm": optimization.add_rms_norm,
@@ -1383,6 +1487,12 @@ class TextDecodeRuntime:
         self.optimization = prepare_decode_optimization_modules(
             model,
             optimization,
+        )
+        prepare_decode_rope_factor_lut(
+            model,
+            self.optimization,
+            cache_length=cache_length,
+            dtype=dtype,
         )
         prepare_decode_weight_prefetch(model, self.optimization)
         self.stage = TextDecodeStage(
