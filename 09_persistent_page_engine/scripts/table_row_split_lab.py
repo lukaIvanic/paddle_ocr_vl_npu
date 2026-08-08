@@ -468,6 +468,116 @@ def uniform_split(height: int, rows: int = 8) -> SplitProposal:
     )
 
 
+def _snap_boundary_feature(ink_mask: np.ndarray, y: int) -> dict[str, float | str]:
+    """Classify one horizontal cut using the exact reviewed snap prototype."""
+
+    height, _width = ink_mask.shape
+    y = max(0, min(height - 1, int(y)))
+    strip = ink_mask[max(0, y - 2) : min(height, y + 3)]
+    dark_fraction = float(strip.mean())
+    maximum_row_coverage = float(strip.mean(axis=1).max())
+    if maximum_row_coverage >= 0.35:
+        kind = "horizontal_rule"
+    elif dark_fraction <= 0.012 and maximum_row_coverage <= 0.025:
+        kind = "blank_gap"
+    else:
+        kind = "ink_crossing"
+    return {
+        "kind": kind,
+        "dark_fraction": dark_fraction,
+        "maximum_row_coverage": maximum_row_coverage,
+    }
+
+
+def snap_uniform_boundaries(
+    image: Image.Image,
+    proposal: SplitProposal,
+) -> SplitProposal:
+    """Move uniform cuts to nearby rules or low-ink separator rows."""
+
+    gray = np.asarray(image.convert("L"))
+    _threshold, binary = cv2.threshold(
+        gray,
+        0,
+        255,
+        cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU,
+    )
+    ink_mask = binary > 0
+    height, _width = ink_mask.shape
+    nominal_band_height = height / max(1, len(proposal.boundaries) - 1)
+    radius = max(3, min(18, int(round(nominal_band_height * 0.25))))
+    snapped = [0]
+    details: list[dict[str, float | int | str]] = []
+
+    for index, old_boundary in enumerate(proposal.boundaries[1:-1], start=1):
+        old_boundary = int(old_boundary)
+        lower = max(snapped[-1] + 3, old_boundary - radius)
+        upper = min(height - 3, old_boundary + radius)
+        candidates = []
+        for y in range(lower, upper + 1):
+            feature = _snap_boundary_feature(ink_mask, y)
+            normalized_move = abs(y - old_boundary) / max(radius, 1)
+            base_score = (
+                -1.0 - float(feature["maximum_row_coverage"])
+                if feature["kind"] == "horizontal_rule"
+                else float(feature["dark_fraction"])
+            )
+            score = base_score + 0.012 * normalized_move * normalized_move
+            candidates.append((score, abs(y - old_boundary), y, feature))
+
+        old_feature = _snap_boundary_feature(ink_mask, old_boundary)
+        if not candidates:
+            new_boundary = max(snapped[-1] + 1, min(height - 1, old_boundary))
+            new_feature = _snap_boundary_feature(ink_mask, new_boundary)
+        else:
+            best = min(candidates, key=lambda item: (item[0], item[1]))
+            old_base_score = (
+                -1.0 - float(old_feature["maximum_row_coverage"])
+                if old_feature["kind"] == "horizontal_rule"
+                else float(old_feature["dark_fraction"])
+            )
+            if (
+                best[3]["kind"] != "horizontal_rule"
+                and old_base_score - best[0] < 0.003
+            ):
+                new_boundary = old_boundary
+                new_feature = old_feature
+            else:
+                new_boundary = int(best[2])
+                new_feature = best[3]
+
+        snapped.append(new_boundary)
+        details.append(
+            {
+                "index": index,
+                "old_y": old_boundary,
+                "new_y": new_boundary,
+                "delta_px": new_boundary - old_boundary,
+                "old_kind": str(old_feature["kind"]),
+                "new_kind": str(new_feature["kind"]),
+                "old_dark_fraction": float(old_feature["dark_fraction"]),
+                "new_dark_fraction": float(new_feature["dark_fraction"]),
+                "search_radius_px": radius,
+            }
+        )
+
+    snapped.append(height)
+    diagnostics = {
+        "source": proposal.name,
+        "rows": len(snapped) - 1,
+        "search_radius_px": radius,
+        "changed_boundaries": sum(detail["delta_px"] != 0 for detail in details),
+        "ink_crossings_before": sum(
+            detail["old_kind"] == "ink_crossing" for detail in details
+        ),
+        "ink_crossings_after": sum(
+            detail["new_kind"] == "ink_crossing" for detail in details
+        ),
+        "boundary_details": details,
+    }
+    return SplitProposal("uniform_8_snapped", tuple(snapped), diagnostics)
+
+
 def select_split(
     ruled: SplitProposal,
     whitespace: SplitProposal,
@@ -631,7 +741,7 @@ def analyze(image: Image.Image) -> tuple[SplitProposal, ...]:
     hybrid = hybrid_split(text_binary, horizontal, vertical, ruled)
     selected = select_split(ruled, whitespace, row_edge)
     uniform_8 = uniform_split(detection_image.height, rows=8)
-    return tuple(
+    proposals = tuple(
         _scale_proposal(
             proposal,
             detection_image.height,
@@ -640,6 +750,7 @@ def analyze(image: Image.Image) -> tuple[SplitProposal, ...]:
         )
         for proposal in (ruled, whitespace, row_edge, hybrid, selected, uniform_8)
     )
+    return (*proposals, snap_uniform_boundaries(image, proposals[-1]))
 
 
 COLORS = {
@@ -649,6 +760,7 @@ COLORS = {
     "hybrid": (15, 150, 80),
     "selected": (230, 125, 20),
     "uniform_8": (30, 155, 145),
+    "uniform_8_snapped": (20, 120, 105),
 }
 
 
