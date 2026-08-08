@@ -717,18 +717,6 @@ def main() -> None:
                     {"name": f"beam_patch_b{width}_w{weight:g}", "kind": "beam", "beam_width": width, "column_weight": weight, "patch": True},
                 ]
             )
-
-    if args.matchers:
-        requested_matchers = {
-            value.strip() for value in args.matchers.split(",") if value.strip()
-        }
-        configurations = [
-            config for config in configurations if config["name"] in requested_matchers
-        ]
-        found_matchers = {config["name"] for config in configurations}
-        missing_matchers = requested_matchers - found_matchers
-        if missing_matchers:
-            raise ValueError(f"unknown matchers: {sorted(missing_matchers)}")
         for threshold in hybrid_thresholds:
             configurations.extend(
                 [
@@ -748,6 +736,18 @@ def main() -> None:
                     },
                 ]
             )
+
+    if args.matchers:
+        requested_matchers = {
+            value.strip() for value in args.matchers.split(",") if value.strip()
+        }
+        configurations = [
+            config for config in configurations if config["name"] in requested_matchers
+        ]
+        found_matchers = {config["name"] for config in configurations}
+        missing_matchers = requested_matchers - found_matchers
+        if missing_matchers:
+            raise ValueError(f"unknown matchers: {sorted(missing_matchers)}")
 
     detailed: list[dict[str, Any]] = []
     request_ids = sorted(
