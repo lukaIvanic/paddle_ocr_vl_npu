@@ -21,6 +21,13 @@ from table_speculative_simulator import (
     suffix_candidate,
     target_tokens,
 )
+from table_matcher_strategy_lab import (
+    TargetStructure,
+    build_filtered_anchor_index,
+    filtered_pool_candidate,
+    observe_structure,
+    rows_with_metadata,
+)
 
 
 STRUCTURE_TOKENS = {"<ecel>", "<fcel>", "<xcel>", "<lcel>", "<ucel>", "<nl>"}
@@ -38,6 +45,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-anchor-tokens", type=int, default=64)
     parser.add_argument("--backtrack-tokens", type=int, default=8)
     parser.add_argument("--manual-tables", type=int, default=10)
+    parser.add_argument(
+        "--matcher",
+        choices=("current", "ecel_normalized_no_cursor"),
+        default="current",
+    )
     return parser.parse_args()
 
 
@@ -107,6 +119,41 @@ def indexed_anchor_details(
     return 0, 0
 
 
+def filtered_anchor_details(
+    normalized_prefix: list[int],
+    index: Any,
+) -> tuple[int, int]:
+    for length in sorted(
+        (value for value in index.by_length if value <= len(normalized_prefix)),
+        reverse=True,
+    ):
+        positions = index.by_length[length].get(
+            tuple(normalized_prefix[-length:]), ()
+        )
+        if positions:
+            return length, len(positions)
+    return 0, 0
+
+
+def filtered_preceding_match(
+    normalized_prefix: list[int],
+    index: Any,
+    continuation: int,
+    maximum: int,
+) -> int:
+    normalized_position = index.normalized_before[continuation]
+    matched = 0
+    while (
+        matched < maximum
+        and matched < len(normalized_prefix)
+        and matched < normalized_position
+        and normalized_prefix[-matched - 1]
+        == index.normalized_draft[normalized_position - matched - 1]
+    ):
+        matched += 1
+    return matched
+
+
 def compact_decode(tokenizer: Any, tokens: list[int] | tuple[int, ...], limit: int = 180) -> str:
     text = tokenizer.decode(list(tokens), skip_special_tokens=False)
     text = text.replace("\n", "\\n")
@@ -166,17 +213,39 @@ def analyze_table(
     block_size: int,
     max_anchor: int,
     backtrack: int,
+    matcher: str,
 ) -> dict[str, Any]:
     target = target_tokens(target_record)
-    draft, row_for_token = flatten_drafts(draft_record, target[-1])
-    band_starts: list[int] = []
-    band_cursor = 0
-    for row in sorted(draft_record.get("rows") or [], key=lambda item: item["row_index"]):
-        band_starts.append(band_cursor)
-        row_tokens = [int(value) for value in row.get("token_ids") or ()]
-        if row_tokens and row_tokens[-1] == target[-1]:
-            row_tokens.pop()
-        band_cursor += len(row_tokens)
+    ecel_token = tokenizer.convert_tokens_to_ids("<ecel>")
+    cell_tokens = {
+        tokenizer.convert_tokens_to_ids(token)
+        for token in ("<fcel>", "<ecel>", "<lcel>", "<ucel>", "<xcel>")
+    }
+    newline_token = tokenizer.convert_tokens_to_ids("<nl>")
+    metadata = None
+    filtered_index = None
+    normalized_prefix: list[int] = []
+    structure = TargetStructure()
+    if matcher == "ecel_normalized_no_cursor":
+        draft, metadata, band_starts = rows_with_metadata(
+            draft_record, target[-1], cell_tokens, newline_token
+        )
+        row_for_token = [item.band for item in metadata]
+        filtered_index = build_filtered_anchor_index(draft, ecel_token, max_anchor)
+        if target[0] != ecel_token:
+            normalized_prefix.append(target[0])
+        observe_structure(structure, target[0], cell_tokens, newline_token)
+    else:
+        draft, row_for_token = flatten_drafts(draft_record, target[-1])
+        band_starts = []
+    if not band_starts:
+        band_cursor = 0
+        for row in sorted(draft_record.get("rows") or [], key=lambda item: item["row_index"]):
+            band_starts.append(band_cursor)
+            row_tokens = [int(value) for value in row.get("token_ids") or ()]
+            if row_tokens and row_tokens[-1] == target[-1]:
+                row_tokens.pop()
+            band_cursor += len(row_tokens)
     index = build_continuation_index(draft, max_anchor)
     oracle = oracle_start_matches(target, draft)
     pieces = tokenizer.convert_ids_to_tokens(target)
@@ -204,20 +273,43 @@ def analyze_table(
 
     while position < len(target):
         prefix = target[:position]
-        candidate = suffix_candidate(
-            prefix,
-            draft,
-            index,
-            state,
-            block_size,
-            1,
-            max_anchor,
-            backtrack,
-            False,
-        )
+        if matcher == "ecel_normalized_no_cursor":
+            assert metadata is not None and filtered_index is not None
+            candidate = filtered_pool_candidate(
+                normalized_prefix,
+                draft,
+                metadata,
+                filtered_index,
+                0,
+                block_size,
+                max_anchor,
+                structure,
+                cell_tokens,
+                0.25,
+                True,
+                False,
+            )
+        else:
+            candidate = suffix_candidate(
+                prefix,
+                draft,
+                index,
+                state,
+                block_size,
+                1,
+                max_anchor,
+                backtrack,
+                False,
+            )
         oracle_length, oracle_start = oracle[position]
         oracle_accept = min(oracle_length, block_size)
-        indexed_anchor, ambiguity = indexed_anchor_details(prefix, index)
+        if matcher == "ecel_normalized_no_cursor":
+            assert filtered_index is not None
+            indexed_anchor, ambiguity = filtered_anchor_details(
+                normalized_prefix, filtered_index
+            )
+        else:
+            indexed_anchor, ambiguity = indexed_anchor_details(prefix, index)
         if candidate is None:
             practical_accept = 0
             proposed = 0
@@ -231,7 +323,13 @@ def analyze_table(
             selected = row_index(row_for_token, candidate.start)
             if selected is not None:
                 selected_rows[selected] += 1
-        oracle_anchor = preceding_match(prefix, draft, oracle_start, max_anchor) if oracle_accept else 0
+        if oracle_accept and matcher == "ecel_normalized_no_cursor":
+            assert filtered_index is not None
+            oracle_anchor = filtered_preceding_match(
+                normalized_prefix, filtered_index, oracle_start, max_anchor
+            )
+        else:
+            oracle_anchor = preceding_match(prefix, draft, oracle_start, max_anchor) if oracle_accept else 0
         oracle_row = row_index(row_for_token, oracle_start) if oracle_accept else None
         if oracle_row is not None:
             oracle_rows[oracle_row] += 1
@@ -338,7 +436,7 @@ def analyze_table(
                 "oracle_context": compact_decode(tokenizer, draft[oracle_start : oracle_start + block_size]),
             }
             events.append(event)
-        if candidate is not None:
+        if candidate is not None and matcher != "ecel_normalized_no_cursor":
             correction_matches_draft = (
                 position + practical_accept < len(target)
                 and candidate.start + practical_accept < len(draft)
@@ -348,10 +446,18 @@ def analyze_table(
                 state.cursor = max(state.cursor, candidate.start + practical_accept)
             if correction_matches_draft:
                 state.cursor = max(state.cursor, candidate.start + practical_accept + 1)
-        position += min(len(target) - position, practical_accept + 1)
+        emitted = min(len(target) - position, practical_accept + 1)
+        if matcher == "ecel_normalized_no_cursor":
+            for emitted_position in range(position, position + emitted):
+                token = target[emitted_position]
+                observe_structure(structure, token, cell_tokens, newline_token)
+                if token != ecel_token:
+                    normalized_prefix.append(token)
+        position += emitted
 
     return {
         "request_id": target_record["request_id"],
+        "matcher": matcher,
         "page_name": target_record.get("page_name"),
         "target_tokens": len(target),
         "draft_tokens": len(draft),
@@ -411,6 +517,7 @@ def main() -> None:
         analyze_table(
             targets[request_id], drafts[request_id], tokenizer,
             args.block_size, args.max_anchor_tokens, args.backtrack_tokens,
+            args.matcher,
         )
         for request_id in selected_ids
     ]
@@ -451,6 +558,7 @@ def main() -> None:
             "latency_threshold_s": args.latency_threshold_s,
             "tables": len(tables),
             "block_size": args.block_size,
+            "matcher": args.matcher,
         },
         "totals": dict(total),
         "rates_percent": {
@@ -491,7 +599,7 @@ def main() -> None:
     lines = [
         "# Table matcher failure analysis",
         "",
-        f"Cohort: {len(tables)} tables with measured B1 latency > {args.latency_threshold_s:.3f} s. K={args.block_size}.",
+        f"Matcher: `{args.matcher}`. Cohort: {len(tables)} tables with measured B1 latency > {args.latency_threshold_s:.3f} s. K={args.block_size}.",
         "",
         "## Headline",
         "",
