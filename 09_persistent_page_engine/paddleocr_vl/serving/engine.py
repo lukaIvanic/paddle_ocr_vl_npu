@@ -976,6 +976,28 @@ class ContinuousRecognizer:
             self.text_pack_buckets,
         )
 
+    @torch.inference_mode()
+    def prefill_one(self, request: RecognitionRequest) -> PrefilledRecognition:
+        """Run the faithful crop frontend and prefill without entering decode.
+
+        Specialized B1 target runtimes use this seam to consume the same
+        prepared image, prompt, vision, projector, text-prefill, and private-KV
+        result as the normal scheduler. The returned state owns one cache lease;
+        its consumer must eventually call ``take_device_state`` and release it.
+        """
+
+        submitted_at = time.perf_counter()
+        prepared = self._prepare_cpu(request, submitted_at)
+        group = self._prepared_group([(prepared, 0.0)])
+        staged = self._stage_prefill_group(group)
+        inflight = self._enqueue_staged_prefill_group(staged)
+        finalized = self._finalize_prefill_group(inflight)
+        if len(finalized) != 1:
+            raise RuntimeError(
+                f"single-crop prefill produced {len(finalized)} states"
+            )
+        return finalized[0]
+
     @staticmethod
     def _ready_from_prefilled(state: PrefilledRecognition) -> ReadyDecodeRequest:
         cache, rope_deltas, cache_position, first_token_tensor, cache_release = (
