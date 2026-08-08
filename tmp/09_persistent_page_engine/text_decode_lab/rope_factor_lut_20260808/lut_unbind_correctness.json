@@ -1,0 +1,322 @@
+{
+  "schema_version": 1,
+  "kind": "text_decode_lab_result",
+  "configuration": {
+    "mode": "correctness",
+    "corpus": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/corpus_256p_b32_kv4096_7899d40.json",
+    "corpus_sha256": "7d5510d09eaf948ff1ce81793918c9496fd7d8587c9d62ea6cfff34c9d025c18",
+    "batch_size": 1,
+    "cache_length": 1024,
+    "dtype": "fp16",
+    "backend": "torchair",
+    "decode_optimization": "combined_apply_prefetch_rope_lut",
+    "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_torchair",
+    "synthetic_lm_head_size": null,
+    "active_slots": 1,
+    "profile_position": 1024,
+    "tail_positions": [
+      64,
+      80,
+      113
+    ],
+    "tail_canary_value": 0.25,
+    "profile_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/npu_profiles",
+    "profile_metric": "pipe",
+    "warmup": 3,
+    "repeats": 20,
+    "overflow_policy": "exclude",
+    "allow_compile": true
+  },
+  "corpus_contract": {
+    "ordering": "items are stored in exact production request-source order",
+    "tokens": "token_ids include the prefill-produced first token and the final EOS/length token exactly as recorded",
+    "scheduler_lifetime": "active_decode_iterations includes production's one queue-depth-one completion look-ahead iteration",
+    "cache_capacity": "replay_required_cache_tokens includes every recorded graph write, including the queue-depth-one look-ahead; production_guard_min_cache_tokens records the source runner's prompt + configured max_new_tokens - 1 admission guard",
+    "device_replay": "recorded request lifetimes drive completion while the real decode arena, graph, D2H token path, admission, and refill machinery run"
+  },
+  "result": {
+    "contract": {
+      "inputs": "recorded token paths and prompt positions",
+      "prompt_kv_values": "independent zero prefixes",
+      "rope_deltas": "zeros",
+      "comparison": "baseline eager production stage versus selected compiled optimization",
+      "selected_optimization": "combined_apply_prefetch_rope_lut",
+      "integration_gate": "real-crop end-to-end token parity remains required before promoting a decode optimization"
+    },
+    "selected_request_ids": [
+      "page_000080_block_000003"
+    ],
+    "steps": 16,
+    "batch_size": 1,
+    "logits": {
+      "max_abs": 0.1171875,
+      "mean_abs": 0.008325038938829214,
+      "argmax_matches": 16,
+      "argmax_total": 16,
+      "argmax_fraction": 1.0
+    },
+    "written_kv": {
+      "max_abs": 0.0498046875,
+      "mean_abs": 0.001718669352056976
+    },
+    "per_step": [
+      {
+        "step": 0,
+        "logit_max_abs": 0.0546875,
+        "logit_mean_abs": 0.008864341303706169,
+        "argmax_matches": 1,
+        "kv_written_max_abs": 0.01953125,
+        "kv_written_mean_abs": 0.0014786631412183244
+      },
+      {
+        "step": 1,
+        "logit_max_abs": 0.05078125,
+        "logit_mean_abs": 0.006848372519016266,
+        "argmax_matches": 1,
+        "kv_written_max_abs": 0.0234375,
+        "kv_written_mean_abs": 0.0012694440665654838
+      },
+      {
+        "step": 2,
+        "logit_max_abs": 0.044921875,
+        "logit_mean_abs": 0.005686016753315926,
+        "argmax_matches": 1,
+        "kv_written_max_abs": 0.018798828125,
+        "kv_written_mean_abs": 0.0015784874946499865
+      },
+      {
+        "step": 3,
+        "logit_max_abs": 0.0458984375,
+        "logit_mean_abs": 0.005829773843288422,
+        "argmax_matches": 1,
+        "kv_written_max_abs": 0.021331787109375,
+        "kv_written_mean_abs": 0.001439199336649229
+      },
+      {
+        "step": 4,
+        "logit_max_abs": 0.046875,
+        "logit_mean_abs": 0.005851047113537788,
+        "argmax_matches": 1,
+        "kv_written_max_abs": 0.0185546875,
+        "kv_written_mean_abs": 0.0015440627984288666
+      },
+      {
+        "step": 5,
+        "logit_max_abs": 0.064453125,
+        "logit_mean_abs": 0.007149318233132362,
+        "argmax_matches": 1,
+        "kv_written_max_abs": 0.0245361328125,
+        "kv_written_mean_abs": 0.0015067691306790544
+      },
+      {
+        "step": 6,
+        "logit_max_abs": 0.040283203125,
+        "logit_mean_abs": 0.01008981466293335,
+        "argmax_matches": 1,
+        "kv_written_max_abs": 0.01904296875,
+        "kv_written_mean_abs": 0.001412097299988899
+      },
+      {
+        "step": 7,
+        "logit_max_abs": 0.1171875,
+        "logit_mean_abs": 0.01663193479180336,
+        "argmax_matches": 1,
+        "kv_written_max_abs": 0.0369873046875,
+        "kv_written_mean_abs": 0.002894707263395604
+      },
+      {
+        "step": 8,
+        "logit_max_abs": 0.0576171875,
+        "logit_mean_abs": 0.006185329053550959,
+        "argmax_matches": 1,
+        "kv_written_max_abs": 0.0172119140625,
+        "kv_written_mean_abs": 0.0015670257723993724
+      },
+      {
+        "step": 9,
+        "logit_max_abs": 0.048828125,
+        "logit_mean_abs": 0.01006041094660759,
+        "argmax_matches": 1,
+        "kv_written_max_abs": 0.01953125,
+        "kv_written_mean_abs": 0.0017216706182807684
+      },
+      {
+        "step": 10,
+        "logit_max_abs": 0.04736328125,
+        "logit_mean_abs": 0.0066544231958687305,
+        "argmax_matches": 1,
+        "kv_written_max_abs": 0.0224609375,
+        "kv_written_mean_abs": 0.001703618391830888
+      },
+      {
+        "step": 11,
+        "logit_max_abs": 0.046875,
+        "logit_mean_abs": 0.00974617712199688,
+        "argmax_matches": 1,
+        "kv_written_max_abs": 0.02783203125,
+        "kv_written_mean_abs": 0.0017506166348337298
+      },
+      {
+        "step": 12,
+        "logit_max_abs": 0.0654296875,
+        "logit_mean_abs": 0.012093480676412582,
+        "argmax_matches": 1,
+        "kv_written_max_abs": 0.02685546875,
+        "kv_written_mean_abs": 0.0021897751010126537
+      },
+      {
+        "step": 13,
+        "logit_max_abs": 0.0517578125,
+        "logit_mean_abs": 0.005950042512267828,
+        "argmax_matches": 1,
+        "kv_written_max_abs": 0.02734375,
+        "kv_written_mean_abs": 0.0017408645815319484
+      },
+      {
+        "step": 14,
+        "logit_max_abs": 0.028076171875,
+        "logit_mean_abs": 0.004995929077267647,
+        "argmax_matches": 1,
+        "kv_written_max_abs": 0.01171875,
+        "kv_written_mean_abs": 0.0012643574090260598
+      },
+      {
+        "step": 15,
+        "logit_max_abs": 0.078125,
+        "logit_mean_abs": 0.010564208030700684,
+        "argmax_matches": 1,
+        "kv_written_max_abs": 0.0498046875,
+        "kv_written_mean_abs": 0.002437350592420747
+      }
+    ]
+  },
+  "setup": {
+    "total_s": 31.988510627066717,
+    "model_load_s": 10.472539807902649,
+    "lm_head_setup_s": 2.7040019631385803e-05,
+    "weight_format_s": 5.823348012054339,
+    "runtime_setup_s": 14.640267170965672,
+    "weight_format": {
+      "requested_mode": "decode_nz",
+      "mode": "decode_nz",
+      "effective_mode": "decode_nz",
+      "target_format": "FRACTAL_NZ",
+      "target_format_code": 29,
+      "target_count": 145,
+      "cast_count": 145,
+      "converted_count": 145,
+      "already_nz_count": 0,
+      "converted_modules_sample": [
+        "model.layers.0.self_attn.q_proj",
+        "model.layers.0.self_attn.k_proj",
+        "model.layers.0.self_attn.v_proj",
+        "model.layers.0.self_attn.o_proj",
+        "model.layers.0.self_attn.decode_qkv_proj",
+        "model.layers.0.mlp.gate_proj",
+        "model.layers.0.mlp.up_proj",
+        "model.layers.0.mlp.down_proj",
+        "model.layers.1.self_attn.q_proj",
+        "model.layers.1.self_attn.k_proj",
+        "model.layers.1.self_attn.v_proj",
+        "model.layers.1.self_attn.o_proj",
+        "model.layers.1.self_attn.decode_qkv_proj",
+        "model.layers.1.mlp.gate_proj",
+        "model.layers.1.mlp.up_proj",
+        "model.layers.1.mlp.down_proj"
+      ],
+      "before_formats_sample": {
+        "model.layers.0.self_attn.q_proj": 2,
+        "model.layers.0.self_attn.k_proj": 2,
+        "model.layers.0.self_attn.v_proj": 2,
+        "model.layers.0.self_attn.o_proj": 2,
+        "model.layers.0.self_attn.decode_qkv_proj": 2,
+        "model.layers.0.mlp.gate_proj": 2,
+        "model.layers.0.mlp.up_proj": 2,
+        "model.layers.0.mlp.down_proj": 2,
+        "model.layers.1.self_attn.q_proj": 2,
+        "model.layers.1.self_attn.k_proj": 2,
+        "model.layers.1.self_attn.v_proj": 2,
+        "model.layers.1.self_attn.o_proj": 2,
+        "model.layers.1.self_attn.decode_qkv_proj": 2,
+        "model.layers.1.mlp.gate_proj": 2,
+        "model.layers.1.mlp.up_proj": 2,
+        "model.layers.1.mlp.down_proj": 2
+      },
+      "after_formats_sample": {
+        "model.layers.0.self_attn.q_proj": 29,
+        "model.layers.0.self_attn.k_proj": 29,
+        "model.layers.0.self_attn.v_proj": 29,
+        "model.layers.0.self_attn.o_proj": 29,
+        "model.layers.0.self_attn.decode_qkv_proj": 29,
+        "model.layers.0.mlp.gate_proj": 29,
+        "model.layers.0.mlp.up_proj": 29,
+        "model.layers.0.mlp.down_proj": 29,
+        "model.layers.1.self_attn.q_proj": 29,
+        "model.layers.1.self_attn.k_proj": 29,
+        "model.layers.1.self_attn.v_proj": 29,
+        "model.layers.1.self_attn.o_proj": 29,
+        "model.layers.1.self_attn.decode_qkv_proj": 29,
+        "model.layers.1.mlp.gate_proj": 29,
+        "model.layers.1.mlp.up_proj": 29,
+        "model.layers.1.mlp.down_proj": 29
+      },
+      "all_after_are_nz": true,
+      "fallback_reason": null,
+      "failures_sample": []
+    },
+    "runtime_metadata": {
+      "backend": "torchair",
+      "enabled": true,
+      "boundary": "token_embedding_text_transformer_lm_head_static_step",
+      "linear_weight_format": "decode_nz",
+      "decode_attention": "increfa",
+      "decode_cache_update": "npu_scatter",
+      "decode_optimization": "combined_apply_prefetch_rope_lut",
+      "decode_optimization_config": {
+        "hoist_mrope": true,
+        "packed_qkv": true,
+        "rms_norm": "npu",
+        "rotary": "npu_apply",
+        "rotary_factors": "lookup",
+        "packed_mlp": false,
+        "npu_swiglu": false,
+        "add_rms_norm": true,
+        "attention": "gqa",
+        "increfa_length_mode": "mask",
+        "stage_aware_weight_prefetch": true,
+        "post_scatter_kv_prefetch": false
+      },
+      "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_torchair/decode_nz_increfa_npu_scatter_optcombined_apply_prefetch_rope_lut_modeinference_dtypefloat16_bs1_cache1024_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src8a92a888589a",
+      "torchair_ge_cache": true,
+      "compile_api": "torchair.inference.cache_compile",
+      "cache_key_fields": {
+        "batch_size": 1,
+        "cache_length": 1024,
+        "dtype": "torch.float16",
+        "model_config_hash": "6d2211febbe9",
+        "torch": "2.10.0+cpu",
+        "torch_npu": "2.10.0",
+        "torchair": "unknown",
+        "decode_source_hash": "8a92a888589a",
+        "linear_weight_format": "decode_nz",
+        "decode_attention": "increfa",
+        "decode_cache_update": "npu_scatter",
+        "execution_mode": "inference",
+        "decode_optimization": "combined_apply_prefetch_rope_lut"
+      },
+      "cache_num_key_value_heads": 2,
+      "cache_allocated_bytes": 18874368
+    },
+    "runtime_setup_detail_s": {
+      "compile_wrapper": 0.0020145850721746683,
+      "compile_first_call": 14.58344984613359
+    },
+    "lm_head": {
+      "original_output_features": 103424,
+      "effective_output_features": 103424,
+      "synthetic": false,
+      "divisible_by_1024": true
+    },
+    "effective_cache_root": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_torchair"
+  }
+}
