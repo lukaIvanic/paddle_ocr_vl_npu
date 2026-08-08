@@ -201,37 +201,38 @@ def exact_pool_candidate(
     column_weight: float,
     patch: bool,
 ) -> Proposal | None:
-    positions: set[int] = set()
-    for indexed_anchor in continuation_index:
-        if indexed_anchor <= len(prefix):
-            positions.update(
-                continuation_index[indexed_anchor].get(tuple(prefix[-indexed_anchor:]), ())
-            )
-    best: tuple[tuple[float, int, int, int], Proposal] | None = None
-    for continuation in positions:
-        if continuation >= len(draft):
-            continue
-        tokens = tuple(draft[continuation : continuation + block_size])
-        if not tokens:
-            continue
-        anchor = preceding_match(prefix, draft, continuation, maximum_anchor)
-        structure_score = column_score(
-            target_structure,
-            tokens[0],
-            metadata[continuation],
-            cell_tokens,
-            column_weight,
-            patch,
+    usable_lengths = [length for length in continuation_index if length <= len(prefix)]
+    for indexed_anchor in sorted(usable_lengths, reverse=True):
+        positions = continuation_index[indexed_anchor].get(
+            tuple(prefix[-indexed_anchor:]), ()
         )
-        forward = int(continuation >= cursor)
-        distance = abs(continuation - cursor)
-        # Exact-prefix length remains authoritative. Structural information is
-        # only a tie-breaker between candidates with the same exact anchor.
-        score = (float(anchor), structure_score, forward, -distance)
-        proposal = Proposal(continuation, tokens, structure_score, anchor)
-        if best is None or score > best[0]:
-            best = (score, proposal)
-    return best[1] if best else None
+        best: tuple[tuple[float, float, int, int], Proposal] | None = None
+        for continuation in positions:
+            if continuation >= len(draft):
+                continue
+            tokens = tuple(draft[continuation : continuation + block_size])
+            if not tokens:
+                continue
+            anchor = preceding_match(prefix, draft, continuation, maximum_anchor)
+            structure_score = column_score(
+                target_structure,
+                tokens[0],
+                metadata[continuation],
+                cell_tokens,
+                column_weight,
+                patch,
+            )
+            forward = int(continuation >= cursor)
+            distance = abs(continuation - cursor)
+            # Exact-prefix length remains authoritative. Structural information
+            # only breaks ties between candidates with the same exact anchor.
+            score = (float(anchor), structure_score, forward, -distance)
+            proposal = Proposal(continuation, tokens, structure_score, anchor)
+            if best is None or score > best[0]:
+                best = (score, proposal)
+        if best is not None:
+            return best[1]
+    return None
 
 
 class BeamMatcher:
