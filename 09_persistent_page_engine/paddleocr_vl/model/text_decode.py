@@ -56,6 +56,7 @@ class DecodeOptimizationConfig:
     increfa_length_mode: str = "mask"
     stage_aware_weight_prefetch: bool = False
     post_scatter_kv_prefetch: bool = False
+    vector_add_rms_norm: bool = False
 
 
 DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
@@ -206,6 +207,17 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         rotary_factors="lookup",
         add_rms_norm=True,
         stage_aware_weight_prefetch=True,
+    ),
+    "combined_apply_prefetch_rope_lut_vector_norm": DecodeOptimizationConfig(
+        name="combined_apply_prefetch_rope_lut_vector_norm",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        rotary_factors="lookup",
+        add_rms_norm=True,
+        stage_aware_weight_prefetch=True,
+        vector_add_rms_norm=True,
     ),
     "combined_apply_prefetch_no_rope": DecodeOptimizationConfig(
         name="combined_apply_prefetch_no_rope",
@@ -706,6 +718,78 @@ def _decode_add_rms_norm(
     return normalized, summed
 
 
+@torch.library.custom_op(
+    "paddleocr_vl::vector_add_rms_norm",
+    mutates_args=(),
+)
+def _vector_add_rms_norm(
+    x: torch.Tensor,
+    residual: torch.Tensor,
+    weight: torch.Tensor,
+    epsilon: float,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Eager reference for the lab-only compiled VectorAddRmsNorm op."""
+    import torch_npu
+
+    return torch_npu.npu_add_rms_norm(x, residual, weight, epsilon)
+
+
+@_vector_add_rms_norm.register_fake
+def _vector_add_rms_norm_fake(
+    x: torch.Tensor,
+    residual: torch.Tensor,
+    weight: torch.Tensor,
+    epsilon: float,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    del residual, weight, epsilon
+    rstd_shape = (*x.shape[:-1], 1)
+    return (
+        torch.empty_like(x),
+        torch.empty(rstd_shape, dtype=torch.float32, device=x.device),
+        torch.empty_like(x),
+    )
+
+
+_VECTOR_ADD_RMS_NORM_CONVERTER_REGISTERED = False
+
+
+def _register_vector_add_rms_norm_converter() -> None:
+    """Lower the lab custom op to its installed CANN GE operator."""
+    global _VECTOR_ADD_RMS_NORM_CONVERTER_REGISTERED
+    if _VECTOR_ADD_RMS_NORM_CONVERTER_REGISTERED:
+        return
+
+    import importlib
+
+    torchair, _CompilerConfig = import_torchair()
+    converter_module = importlib.import_module(
+        f"{torchair.__name__}._ge_concrete_graph.fx2ge_converter"
+    )
+    ge_module = importlib.import_module(f"{torchair.__name__}.ge")
+    register_converter = converter_module.register_fx_node_ge_converter
+    ge_custom_op = ge_module.custom_op
+    op = torch.ops.paddleocr_vl.vector_add_rms_norm.default
+
+    @register_converter(op)
+    def _convert_vector_add_rms_norm(
+        x: Any,
+        residual: Any,
+        weight: Any,
+        epsilon: float,
+        meta_outputs: Any = None,
+    ) -> Any:
+        del meta_outputs
+        return ge_custom_op(
+            "VectorAddRmsNorm",
+            x,
+            residual,
+            weight,
+            float(epsilon),
+        )
+
+    _VECTOR_ADD_RMS_NORM_CONVERTER_REGISTERED = True
+
+
 def _decode_add_with_optional_rms_norm(
     x: torch.Tensor,
     residual: torch.Tensor,
@@ -715,6 +799,14 @@ def _decode_add_with_optional_rms_norm(
     if optimization.rms_norm == "identity":
         summed = x + residual
         return summed, summed
+    if optimization.vector_add_rms_norm:
+        normalized, _rstd, summed = _vector_add_rms_norm(
+            x,
+            residual,
+            norm.weight,
+            norm.variance_epsilon,
+        )
+        return normalized, summed
     return _decode_add_rms_norm(x, residual, norm)
 
 
@@ -1432,6 +1524,7 @@ def compile_text_decode_stage(
             "post_scatter_kv_prefetch": (
                 optimization.post_scatter_kv_prefetch
             ),
+            "vector_add_rms_norm": optimization.vector_add_rms_norm,
         },
     }
     if backend_name == "raw_eager":
@@ -1440,6 +1533,8 @@ def compile_text_decode_stage(
     if backend_name == "torchair":
         if device.type != "npu":
             raise ValueError("--backend torchair requires an NPU device.")
+        if optimization.vector_add_rms_norm:
+            _register_vector_add_rms_norm_converter()
         torchair, CompilerConfig = import_torchair()
         shape_cache_dir = torchair_cache_dir_for_shape(
             cache_root,
