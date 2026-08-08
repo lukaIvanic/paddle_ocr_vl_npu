@@ -58,6 +58,7 @@ SUPPORTED_STRATEGIES = DEFAULT_STRATEGIES + (
     "uniform_16_snapped",
     "whole",
 )
+UNIFORM_STRATEGY_PATTERN = re.compile(r"uniform_([1-9]\d*)(?:_snapped)?$")
 TR_PATTERN = re.compile(r"<tr\b[^>]*>.*?</tr\s*>", re.IGNORECASE | re.DOTALL)
 TD_PATTERN = re.compile(r"<td\b([^>]*)>", re.IGNORECASE)
 COLSPAN_PATTERN = re.compile(r"\bcolspan\s*=\s*['\"]?(\d+)", re.IGNORECASE)
@@ -335,16 +336,16 @@ def prepare_strategy_inputs(
         whole_image, whole_trim_box = row_image, row_trim_box
 
     split_started = time.perf_counter()
-    uniform_strategies = {
-        "uniform_8",
-        "uniform_8_snapped",
-        "uniform_16",
-        "uniform_16_snapped",
+    uniform_matches = {
+        strategy: UNIFORM_STRATEGY_PATTERN.fullmatch(strategy)
+        for strategy in row_strategies
     }
-    if row_strategies and row_strategies <= uniform_strategies:
+    if row_strategies and all(uniform_matches.values()):
         proposals = {}
         requested_counts = {
-            int(strategy.split("_")[1]) for strategy in row_strategies
+            int(match.group(1))
+            for match in uniform_matches.values()
+            if match is not None
         }
         for count in sorted(requested_counts):
             proposals.update(
@@ -631,7 +632,12 @@ def main() -> None:
     if args.decode_batch_size <= 0 or args.decode_batch_size & (args.decode_batch_size - 1):
         raise ValueError("--decode-batch-size must be a positive power of two")
     strategies = tuple(item.strip() for item in args.strategies.split(",") if item.strip())
-    unknown = set(strategies) - set(SUPPORTED_STRATEGIES)
+    unknown = {
+        strategy
+        for strategy in strategies
+        if strategy not in SUPPORTED_STRATEGIES
+        and UNIFORM_STRATEGY_PATTERN.fullmatch(strategy) is None
+    }
     if unknown:
         raise ValueError(f"unknown strategies: {sorted(unknown)}")
     args.output_dir.mkdir(parents=True, exist_ok=True)
