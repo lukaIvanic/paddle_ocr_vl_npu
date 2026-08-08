@@ -16,6 +16,7 @@ import time
 from typing import Any
 
 import torch
+from PIL import Image
 
 
 HERE = Path(__file__).resolve().parent
@@ -25,6 +26,7 @@ sys.path.insert(0, str(EXPERIMENT_ROOT))
 sys.path.insert(0, str(HERE))
 
 from paddleocr_vl.model.text_prefill import parse_text_buckets
+from paddleocr_vl.model.preprocessing import smart_resize
 from paddleocr_vl.model.vision_prefill import parse_vision_buckets
 from paddleocr_vl.serving.engine import ContinuousRecognizer
 from paddleocr_vl.serving.types import RecognitionRequest
@@ -106,6 +108,14 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--decode-batch-size", type=int, default=8)
     parser.add_argument("--row-overlap-px", type=int, default=3)
+    parser.add_argument(
+        "--resize-full-table-before-split",
+        action="store_true",
+        help=(
+            "Apply the recognizer pixel budget once to the full row-draft table, "
+            "then crop and pad rows without independently resizing each row."
+        ),
+    )
     parser.add_argument("--min-pixels", type=int, default=28224)
     parser.add_argument("--max-pixels", type=int, default=802816)
     parser.add_argument("--cache-length", type=int, default=4096)
@@ -258,6 +268,8 @@ def crop_rows(
     image: Any,
     boundaries: tuple[int, ...],
     overlap: int,
+    *,
+    pad_to_factor: int | None = None,
 ) -> list[tuple[int, int, Any]]:
     rows = []
     for index, (top, bottom) in enumerate(zip(boundaries, boundaries[1:])):
@@ -269,7 +281,15 @@ def crop_rows(
             crop_top = max(0, crop_top - missing // 2)
             crop_bottom = min(image.height, crop_top + minimum_height)
             crop_top = max(0, crop_bottom - minimum_height)
-        rows.append((crop_top, crop_bottom, image.crop((0, crop_top, image.width, crop_bottom))))
+        row = image.crop((0, crop_top, image.width, crop_bottom))
+        if pad_to_factor is not None:
+            padded_width = math.ceil(row.width / pad_to_factor) * pad_to_factor
+            padded_height = math.ceil(row.height / pad_to_factor) * pad_to_factor
+            if (padded_width, padded_height) != row.size:
+                padded = Image.new("RGB", (padded_width, padded_height), "white")
+                padded.paste(row, (0, 0))
+                row = padded
+        rows.append((crop_top, crop_bottom, row))
     return rows
 
 
@@ -277,18 +297,35 @@ def prepare_strategy_inputs(
     source: dict[str, Any],
     raw_image: Any,
     strategies: tuple[str, ...],
+    *,
+    resize_full_table_before_split: bool,
+    min_pixels: int,
+    max_pixels: int,
 ) -> tuple[dict[str, dict[str, Any]], int, list[int], float]:
     """Prepare row drafts independently from the unchanged whole-table target."""
 
+    row_strategies = set(strategies) - {"whole"}
     row_draft_source, rotation_cw = orient_row_draft_image(raw_image, source)
+    original_row_draft_size = list(row_draft_source.size)
+    if resize_full_table_before_split and row_strategies:
+        resized_height, resized_width = smart_resize(
+            row_draft_source.height,
+            row_draft_source.width,
+            factor=28,
+            min_pixels=min_pixels,
+            max_pixels=max_pixels,
+        )
+        row_draft_source = row_draft_source.resize(
+            (resized_width, resized_height),
+            resample=Image.Resampling.BICUBIC,
+        )
     row_image, row_trim_box = trim_blank_margin(row_draft_source)
-    if rotation_cw:
+    if resize_full_table_before_split or rotation_cw:
         whole_image, whole_trim_box = trim_blank_margin(raw_image)
     else:
         whole_image, whole_trim_box = row_image, row_trim_box
 
     split_started = time.perf_counter()
-    row_strategies = set(strategies) - {"whole"}
     if row_strategies and row_strategies <= {"uniform_8", "uniform_8_snapped"}:
         proposals = {
             proposal.name: proposal
@@ -313,6 +350,11 @@ def prepare_strategy_inputs(
             "image": whole_image if is_whole else row_image,
             "trim_box": whole_trim_box if is_whole else row_trim_box,
             "proposal": proposals[strategy],
+            "whole_table_resize": {
+                "enabled": resize_full_table_before_split and not is_whole,
+                "source_size": original_row_draft_size,
+                "resized_size": list(row_draft_source.size),
+            },
         }
     return prepared, rotation_cw, list(row_draft_source.size), split_s
 
@@ -360,7 +402,12 @@ def run_cross_table_schedule(
     for source in selected:
         raw_image = load_crop(source, args.images_dir)
         prepared, rotation_cw, row_draft_source_size, split_s = prepare_strategy_inputs(
-            source, raw_image, strategies
+            source,
+            raw_image,
+            strategies,
+            resize_full_table_before_split=args.resize_full_table_before_split,
+            min_pixels=args.min_pixels,
+            max_pixels=args.max_pixels,
         )
 
         for strategy in strategies:
@@ -369,7 +416,15 @@ def run_cross_table_schedule(
             trim_box = strategy_input["trim_box"]
             proposal = strategy_input["proposal"]
             row_crop_started = time.perf_counter()
-            rows = crop_rows(image, proposal.boundaries, args.row_overlap_px)
+            preserve_resized_geometry = (
+                args.resize_full_table_before_split and strategy != "whole"
+            )
+            rows = crop_rows(
+                image,
+                proposal.boundaries,
+                args.row_overlap_px,
+                pad_to_factor=28 if preserve_resized_geometry else None,
+            )
             row_crop_s = time.perf_counter() - row_crop_started
             key = (source["request_id"], strategy)
             contexts[key] = {
@@ -382,6 +437,7 @@ def run_cross_table_schedule(
                 "trim_box": list(trim_box),
                 "crop_size": list(image.size),
                 "proposal": proposal,
+                "whole_table_resize": strategy_input["whole_table_resize"],
                 "row_y": [(top, bottom) for top, bottom, _image in rows],
                 "split_s": split_s,
                 "row_crop_s": row_crop_s,
@@ -392,13 +448,18 @@ def run_cross_table_schedule(
                     f"{source['request_id']}:{strategy}:row_{row_index:04d}"
                 )
                 request_owner[request_id] = (key, row_index)
+                row_pixels = row_image.width * row_image.height
                 requests.append(
                     RecognitionRequest(
                         request_id=request_id,
                         crop=row_image,
                         prompt="Table Recognition:",
-                        min_pixels=args.min_pixels,
-                        max_pixels=args.max_pixels,
+                        min_pixels=(
+                            row_pixels if preserve_resized_geometry else args.min_pixels
+                        ),
+                        max_pixels=(
+                            row_pixels if preserve_resized_geometry else args.max_pixels
+                        ),
                         source_crop_size=row_image.size,
                     )
                 )
@@ -448,6 +509,7 @@ def run_cross_table_schedule(
                 "row_draft_source_size": context["row_draft_source_size"],
                 "trim_box_in_raw_crop": context["trim_box"],
                 "crop_size": context["crop_size"],
+                "whole_table_resize": context["whole_table_resize"],
                 "boundaries": list(context["proposal"].boundaries),
                 "gt_html": source["gt_html"],
                 "whole_table_prediction": source["pred_html"],
@@ -514,6 +576,7 @@ def run_cross_table_schedule(
         "configuration": {
             "decode_batch_size": args.decode_batch_size,
             "row_overlap_px": args.row_overlap_px,
+            "resize_full_table_before_split": args.resize_full_table_before_split,
             "strategies": list(strategies),
             "request_ids": [item["request_id"] for item in selected],
             "cross_table_schedule": True,
@@ -596,7 +659,12 @@ def main() -> None:
             continue
         raw_image = load_crop(source, args.images_dir)
         prepared, rotation_cw, row_draft_source_size, split_s = prepare_strategy_inputs(
-            source, raw_image, strategies
+            source,
+            raw_image,
+            strategies,
+            resize_full_table_before_split=args.resize_full_table_before_split,
+            min_pixels=args.min_pixels,
+            max_pixels=args.max_pixels,
         )
 
         for strategy in strategies:
@@ -607,20 +675,36 @@ def main() -> None:
             trim_box = strategy_input["trim_box"]
             proposal = strategy_input["proposal"]
             row_crop_started = time.perf_counter()
-            rows = crop_rows(image, proposal.boundaries, args.row_overlap_px)
+            preserve_resized_geometry = (
+                args.resize_full_table_before_split and strategy != "whole"
+            )
+            rows = crop_rows(
+                image,
+                proposal.boundaries,
+                args.row_overlap_px,
+                pad_to_factor=28 if preserve_resized_geometry else None,
+            )
             row_crop_s = time.perf_counter() - row_crop_started
             results: list[dict[str, Any]] = []
-            requests = [
-                RecognitionRequest(
-                    request_id=f"{source['request_id']}:{strategy}:row_{row_index:04d}",
-                    crop=row_image,
-                    prompt="Table Recognition:",
-                    min_pixels=args.min_pixels,
-                    max_pixels=args.max_pixels,
-                    source_crop_size=row_image.size,
+            requests = []
+            for row_index, (_top, _bottom, row_image) in enumerate(rows):
+                row_pixels = row_image.width * row_image.height
+                requests.append(
+                    RecognitionRequest(
+                        request_id=(
+                            f"{source['request_id']}:{strategy}:row_{row_index:04d}"
+                        ),
+                        crop=row_image,
+                        prompt="Table Recognition:",
+                        min_pixels=(
+                            row_pixels if preserve_resized_geometry else args.min_pixels
+                        ),
+                        max_pixels=(
+                            row_pixels if preserve_resized_geometry else args.max_pixels
+                        ),
+                        source_crop_size=row_image.size,
+                    )
                 )
-                for row_index, (_top, _bottom, row_image) in enumerate(rows)
-            ]
 
             recognition_started = time.perf_counter()
 
@@ -656,6 +740,7 @@ def main() -> None:
                 ),
                 "trim_box_in_raw_crop": list(trim_box),
                 "crop_size": list(image.size),
+                "whole_table_resize": strategy_input["whole_table_resize"],
                 "boundaries": list(proposal.boundaries),
                 "gt_html": source["gt_html"],
                 "whole_table_prediction": source["pred_html"],
@@ -705,6 +790,7 @@ def main() -> None:
         "configuration": {
             "decode_batch_size": args.decode_batch_size,
             "row_overlap_px": args.row_overlap_px,
+            "resize_full_table_before_split": args.resize_full_table_before_split,
             "strategies": list(strategies),
             "request_ids": list(request_ids),
             "recognizer": recognizer.configuration(),
