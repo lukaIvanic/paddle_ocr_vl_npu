@@ -468,6 +468,56 @@ def uniform_split(height: int, rows: int = 8) -> SplitProposal:
     )
 
 
+def group_natural_rows(
+    proposal: SplitProposal,
+    rows: int = 8,
+) -> SplitProposal:
+    """Group detected logical rows into at most ``rows`` contiguous bands.
+
+    Unlike bounded uniform snapping, this never cuts between two detected
+    natural boundaries.  It selects the detected boundary nearest each ideal
+    equal-height cut while preserving increasing, non-empty bands.
+    """
+
+    boundaries = tuple(int(value) for value in proposal.boundaries)
+    natural_rows = max(1, len(boundaries) - 1)
+    requested_rows = max(1, int(rows))
+    grouped_rows = min(requested_rows, natural_rows)
+    if grouped_rows == natural_rows:
+        selected = boundaries
+    else:
+        interior = list(boundaries[1:-1])
+        height = boundaries[-1]
+        selected_interior: list[int] = []
+        lower_index = 0
+        for group_index in range(1, grouped_rows):
+            remaining = grouped_rows - group_index
+            upper_index = len(interior) - remaining
+            ideal = group_index * height / grouped_rows
+            candidates = range(lower_index, upper_index + 1)
+            chosen_index = min(
+                candidates,
+                key=lambda index: (abs(interior[index] - ideal), index),
+            )
+            selected_interior.append(interior[chosen_index])
+            lower_index = chosen_index + 1
+        selected = (boundaries[0], *selected_interior, boundaries[-1])
+    diagnostics = dict(proposal.diagnostics)
+    diagnostics.update(
+        {
+            "source": proposal.name,
+            "natural_rows": natural_rows,
+            "requested_rows": requested_rows,
+            "rows": len(selected) - 1,
+        }
+    )
+    return SplitProposal(
+        name=f"{proposal.name}_grouped_{requested_rows}",
+        boundaries=selected,
+        diagnostics=diagnostics,
+    )
+
+
 def _snap_boundary_feature(ink_mask: np.ndarray, y: int) -> dict[str, float | str]:
     """Classify one horizontal cut using the reviewed snap prototype."""
 
@@ -774,7 +824,9 @@ def analyze(image: Image.Image) -> tuple[SplitProposal, ...]:
         )
         for proposal in (ruled, whitespace, row_edge, hybrid, selected, uniform_8)
     )
-    return (*proposals, snap_uniform_boundaries(image, proposals[-1]))
+    natural = proposals[:5]
+    grouped = tuple(group_natural_rows(proposal, rows=8) for proposal in natural)
+    return (*proposals, *grouped, snap_uniform_boundaries(image, proposals[-1]))
 
 
 COLORS = {
@@ -792,7 +844,10 @@ def draw_overlay(image: Image.Image, proposal: SplitProposal) -> Image.Image:
     result = image.convert("RGBA")
     tint = Image.new("RGBA", result.size, (0, 0, 0, 0))
     tint_draw = ImageDraw.Draw(tint)
-    base = COLORS[proposal.name]
+    base = COLORS.get(
+        proposal.name,
+        COLORS.get(proposal.name.rsplit("_grouped_", 1)[0], (80, 80, 80)),
+    )
     for index, (top, bottom) in enumerate(zip(proposal.boundaries, proposal.boundaries[1:])):
         if index % 2 == 0:
             tint_draw.rectangle((0, top, result.width, bottom), fill=(*base, 22))

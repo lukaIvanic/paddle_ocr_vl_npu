@@ -52,6 +52,11 @@ DEFAULT_REQUEST_IDS = (
 )
 DEFAULT_STRATEGIES = ("ruled", "whitespace", "row_edge", "hybrid", "selected")
 SUPPORTED_STRATEGIES = DEFAULT_STRATEGIES + (
+    "ruled_grouped_8",
+    "whitespace_grouped_8",
+    "row_edge_grouped_8",
+    "hybrid_grouped_8",
+    "selected_grouped_8",
     "uniform_8",
     "uniform_8_snapped",
     "uniform_16",
