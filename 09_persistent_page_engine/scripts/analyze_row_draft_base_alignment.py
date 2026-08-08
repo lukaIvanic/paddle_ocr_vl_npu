@@ -21,6 +21,7 @@ DISPLAY_TOKEN_PATTERN = re.compile(
     r"<(?:fcel|ecel|lcel|ucel|xcel|nl)>|"
     r"\\\([^)]*\\\)|\\\[[^]]*\\\]|\S+"
 )
+CONTENT_TOKEN_PATTERN = re.compile(r"\w+|[^\w\s]", re.UNICODE)
 
 
 def parse_args() -> argparse.Namespace:
@@ -45,6 +46,10 @@ def normalize_text(text: str) -> str:
 
 def content_text(text: str) -> str:
     return normalize_text(STRUCTURE_PATTERN.sub(" ", text))
+
+
+def content_tokens(text: str) -> list[str]:
+    return CONTENT_TOKEN_PATTERN.findall(content_text(text))
 
 
 def structure_tokens(text: str) -> list[str]:
@@ -112,8 +117,8 @@ def best_base_span(
         for start in range(first_start, last_start + 1):
             end = start + span_length
             base_text = "<nl>".join(base_rows[start:end]) + "<nl>"
-            raw_similarity = ratio(normalize_text(base_text), normalize_text(draft_text))
-            content_similarity = ratio(content_text(base_text), content_text(draft_text))
+            raw_similarity = ratio(display_tokens(base_text), display_tokens(draft_text))
+            content_similarity = ratio(content_tokens(base_text), content_tokens(draft_text))
             structure_similarity = ratio(
                 structure_tokens(base_text), structure_tokens(draft_text)
             )
