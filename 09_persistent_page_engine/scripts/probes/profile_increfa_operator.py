@@ -19,6 +19,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--cache-length", type=int, required=True)
     parser.add_argument("--position", type=int, required=True)
     parser.add_argument("--device-index", type=int, default=0)
+    parser.add_argument("--num-key-value-heads", type=int, default=2)
     parser.add_argument("--warmup", type=int, default=5)
     parser.add_argument("--repeats", type=int, default=20)
     parser.add_argument("--seed", type=int, default=7)
@@ -30,6 +31,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("--position must be inside --cache-length")
     if args.warmup < 0 or args.repeats <= 0:
         parser.error("--warmup must be non-negative and --repeats positive")
+    if args.num_key_value_heads <= 0 or 16 % args.num_key_value_heads != 0:
+        parser.error("--num-key-value-heads must be a positive divisor of 16")
     return args
 
 
@@ -47,7 +50,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         (1, 16, 1, 128), device=device, dtype=dtype
     ).contiguous()
     key = torch.randn(
-        (1, 2, args.cache_length, 128), device=device, dtype=dtype
+        (1, args.num_key_value_heads, args.cache_length, 128),
+        device=device,
+        dtype=dtype,
     ).contiguous()
     value = torch.randn_like(key).contiguous()
     positions = torch.arange(
@@ -65,7 +70,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             atten_mask=mask,
             actual_seq_lengths=None,
             num_heads=16,
-            num_key_value_heads=2,
+            num_key_value_heads=args.num_key_value_heads,
             input_layout="BNSD",
             scale_value=1.0 / math.sqrt(128.0),
             inner_precise=1,
@@ -86,7 +91,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "configuration": {
             "batch_size": 1,
             "query_heads": 16,
-            "key_value_heads": 2,
+            "key_value_heads": args.num_key_value_heads,
             "head_dim": 128,
             "cache_length": args.cache_length,
             "position": args.position,
