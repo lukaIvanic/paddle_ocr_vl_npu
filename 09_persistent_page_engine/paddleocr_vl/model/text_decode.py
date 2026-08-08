@@ -137,6 +137,24 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         add_rms_norm=True,
         attention="mha_cache",
     ),
+    "combined_apply_manual_attention": DecodeOptimizationConfig(
+        name="combined_apply_manual_attention",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        add_rms_norm=True,
+        attention="manual",
+    ),
+    "combined_apply_manual_attention_unscaled": DecodeOptimizationConfig(
+        name="combined_apply_manual_attention_unscaled",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        add_rms_norm=True,
+        attention="manual_unscaled",
+    ),
     "combined_apply_all": DecodeOptimizationConfig(
         name="combined_apply_all",
         hoist_mrope=True,
@@ -613,6 +631,58 @@ def _decode_attention(
             value_cache,
             additive_mask,
         )
+
+    if optimization.attention in ("manual", "manual_unscaled"):
+        # Lab-only decomposition of one-token GQA decode.  It deliberately
+        # exposes QK, score scaling, masking, softmax, and PV as separate graph
+        # operations so their kernels can be profiled against IncreFA.  The
+        # unscaled lane omits only the numerical 1/sqrt(head_dim) multiply; it
+        # is intentionally incorrect and exists only to measure that Vector
+        # operation's cost.
+        groups = int(attention.num_key_value_groups)
+        batch_size, kv_heads, kv_length, head_dim = key_cache.shape
+        query_heads = int(attention.num_heads)
+        key_manual = (
+            key_cache[:, :, None, :, :]
+            .expand(batch_size, kv_heads, groups, kv_length, head_dim)
+            .reshape(batch_size * query_heads, kv_length, head_dim)
+        )
+        value_manual = (
+            value_cache[:, :, None, :, :]
+            .expand(batch_size, kv_heads, groups, kv_length, head_dim)
+            .reshape(batch_size * query_heads, kv_length, head_dim)
+        )
+        query_manual = query_states.reshape(
+            batch_size * query_heads, 1, head_dim
+        )
+        scores = torch.bmm(
+            query_manual,
+            key_manual.transpose(1, 2),
+        ).view(batch_size, query_heads, 1, kv_length)
+        if optimization.attention == "manual":
+            scores = scores * float(attention.scaling)
+        if pse_shift is not None:
+            scores = scores + pse_shift
+        if attention_mask is not None:
+            scores = scores.masked_fill(
+                attention_mask,
+                torch.finfo(scores.dtype).min,
+            )
+        probabilities = torch.softmax(scores.float(), dim=-1).to(
+            dtype=query_states.dtype
+        )
+        attention_output = torch.bmm(
+            probabilities.reshape(
+                batch_size * query_heads, 1, kv_length
+            ),
+            value_manual,
+        ).view(batch_size, query_heads, 1, head_dim)
+        attention_output = (
+            attention_output.transpose(1, 2)
+            .contiguous()
+            .reshape(batch_size, 1, query_heads * head_dim)
+        )
+        return _linear_tokenwise(attention.o_proj, attention_output)
 
     import torch_npu
 
