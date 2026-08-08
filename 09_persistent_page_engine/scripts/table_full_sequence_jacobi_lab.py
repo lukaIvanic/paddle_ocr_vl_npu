@@ -92,6 +92,11 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--text-buckets", default="128,256,512,1024,1312")
     parser.add_argument("--allow-compile", action="store_true")
+    parser.add_argument(
+        "--defer-teds",
+        action="store_true",
+        help="Save HTML for scoring in the separate OmniDocBench environment.",
+    )
     return parser.parse_args()
 
 
@@ -360,13 +365,13 @@ class FullSequenceVerifier:
 
 def candidate_record(
     recognizer: Any,
-    scorer: TedsScorer,
+    scorer: TedsScorer | None,
     *,
     tokens: list[int],
     previous_tokens: list[int],
     gt_html: str,
     baseline_html: str,
-    baseline_teds: float,
+    baseline_teds: float | None,
     device_s: float,
     call_wall_s: float,
     cumulative_device_s: float,
@@ -375,9 +380,7 @@ def candidate_record(
 ) -> dict[str, Any]:
     text = recognizer.tokenizer.decode(tokens, skip_special_tokens=True)
     pred_html = normalize_recognition_text("table", text)
-    versus_gt = scorer.score(pred_html, gt_html)
-    versus_baseline = scorer.score(pred_html, baseline_html)
-    return {
+    result = {
         "token_ids": tokens,
         "generated_tokens": len(tokens),
         "text": text,
@@ -389,10 +392,21 @@ def candidate_record(
         "cumulative_device_s": cumulative_device_s,
         "cumulative_wall_s": cumulative_wall_s,
         "composed_pipeline_wall_s": fixed_s + cumulative_wall_s,
-        "versus_gt": versus_gt,
-        "teds_delta_from_baseline": versus_gt["teds"] - baseline_teds,
-        "versus_live_baseline": versus_baseline,
     }
+    if scorer is None:
+        result["teds_pending"] = True
+        return result
+    assert baseline_teds is not None
+    versus_gt = scorer.score(pred_html, gt_html)
+    versus_baseline = scorer.score(pred_html, baseline_html)
+    result.update(
+        {
+            "versus_gt": versus_gt,
+            "teds_delta_from_baseline": versus_gt["teds"] - baseline_teds,
+            "versus_live_baseline": versus_baseline,
+        }
+    )
+    return result
 
 
 @torch.inference_mode()
@@ -443,7 +457,7 @@ def main() -> None:
         f"first_call_s={verifier.runtime.metadata['compile_first_call_s']:.3f}",
         flush=True,
     )
-    scorer = TedsScorer(args.evaluator_root)
+    scorer = None if args.defer_teds else TedsScorer(args.evaluator_root)
 
     output_path = args.output_dir / "tables.jsonl"
     output_path.write_text("")
@@ -475,7 +489,14 @@ def main() -> None:
                 f"Q{args.query_length} represented output window"
             )
         baseline_html = normalize_recognition_text("table", baseline.text)
-        baseline_scores = scorer.score(baseline_html, str(target["gt_html"]))
+        baseline_scores = (
+            None
+            if scorer is None
+            else scorer.score(baseline_html, str(target["gt_html"]))
+        )
+        baseline_teds = (
+            None if baseline_scores is None else float(baseline_scores["teds"])
+        )
 
         prefill_started = time.perf_counter()
         prefilled = recognizer.prefill_one(request)
@@ -500,6 +521,7 @@ def main() -> None:
 
         table_record: dict[str, Any] = {
             "request_id": request_id,
+            "gt_html": str(target["gt_html"]),
             "prompt_length": position,
             "draft_generation_wall_s": draft_wall_s,
             "prefill_wall_s": prefill_wall_s,
@@ -536,7 +558,7 @@ def main() -> None:
                 previous_tokens=baseline_tokens,
                 gt_html=str(target["gt_html"]),
                 baseline_html=baseline_html,
-                baseline_teds=float(baseline_scores["teds"]),
+                baseline_teds=baseline_teds,
                 device_s=control_device_s,
                 call_wall_s=control_wall_s,
                 cumulative_device_s=control_device_s,
@@ -551,10 +573,12 @@ def main() -> None:
                 baseline_tokens,
             )
             control_record["quality_gate_pass"] = (
-                control_record["teds_delta_from_baseline"] >= -0.005
+                None
+                if scorer is None
+                else control_record["teds_delta_from_baseline"] >= -0.005
             )
             table_record["self_projection_control"] = control_record
-            if not control_record["quality_gate_pass"]:
+            if control_record["quality_gate_pass"] is False:
                 write_json(
                     args.output_dir / f"invalid_control_{request_id}.json",
                     table_record,
@@ -614,7 +638,7 @@ def main() -> None:
                         previous_tokens=previous,
                         gt_html=str(target["gt_html"]),
                         baseline_html=baseline_html,
-                        baseline_teds=float(baseline_scores["teds"]),
+                        baseline_teds=baseline_teds,
                         device_s=device_s,
                         call_wall_s=call_wall_s,
                         cumulative_device_s=cumulative_device_s,
@@ -640,16 +664,27 @@ def main() -> None:
             stream.write(json.dumps(table_record, ensure_ascii=False) + "\n")
         flat_k4 = table_record["seeds"]["flat_prefix"][-1]
         balanced_k4 = table_record["seeds"]["balanced_lane"][-1]
-        print(
-            f"FULL_JACOBI_RESULT table={table_index}/{len(args.request_id)} "
-            f"id={request_id} baseline_teds={baseline_scores['teds']:.6f} "
-            f"control_delta={table_record['self_projection_control']['teds_delta_from_baseline']:+.6f} "
-            f"flat_K{args.maximum_sweeps}={flat_k4['versus_gt']['teds']:.6f}/"
-            f"{flat_k4['composed_pipeline_wall_s']:.3f}s "
-            f"balanced_K{args.maximum_sweeps}={balanced_k4['versus_gt']['teds']:.6f}/"
-            f"{balanced_k4['composed_pipeline_wall_s']:.3f}s",
-            flush=True,
-        )
+        if scorer is None:
+            print(
+                f"FULL_JACOBI_RESULT table={table_index}/{len(args.request_id)} "
+                f"id={request_id} scoring=deferred "
+                f"control_exact={table_record['self_projection_control']['exact_live_baseline']} "
+                f"flat_K{args.maximum_sweeps}={flat_k4['composed_pipeline_wall_s']:.3f}s "
+                f"balanced_K{args.maximum_sweeps}={balanced_k4['composed_pipeline_wall_s']:.3f}s",
+                flush=True,
+            )
+        else:
+            assert baseline_scores is not None
+            print(
+                f"FULL_JACOBI_RESULT table={table_index}/{len(args.request_id)} "
+                f"id={request_id} baseline_teds={baseline_scores['teds']:.6f} "
+                f"control_delta={table_record['self_projection_control']['teds_delta_from_baseline']:+.6f} "
+                f"flat_K{args.maximum_sweeps}={flat_k4['versus_gt']['teds']:.6f}/"
+                f"{flat_k4['composed_pipeline_wall_s']:.3f}s "
+                f"balanced_K{args.maximum_sweeps}={balanced_k4['versus_gt']['teds']:.6f}/"
+                f"{balanced_k4['composed_pipeline_wall_s']:.3f}s",
+                flush=True,
+            )
 
     summary = {
         "configuration": {
@@ -659,11 +694,17 @@ def main() -> None:
             "cache_length": args.cache_length,
             "graph_cache_was_warm": cache_was_warm,
             "graph_metadata": verifier.runtime.metadata,
+            "teds_deferred": bool(args.defer_teds),
         },
         "tables": len(records),
-        "control_within_teds_gate": sum(
-            record["self_projection_control"]["teds_delta_from_baseline"] >= -0.005
-            for record in records
+        "control_within_teds_gate": (
+            None
+            if scorer is None
+            else sum(
+                record["self_projection_control"]["teds_delta_from_baseline"]
+                >= -0.005
+                for record in records
+            )
         ),
         "records": str(output_path),
     }
