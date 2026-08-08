@@ -433,6 +433,22 @@ def row_prior_candidate(
             ):
                 candidates.add(position)
 
+    # OTSL uses <fcel> for the first generated cell and often <ecel> at the
+    # equivalent target boundary.  Once the target has emitted a cell marker,
+    # continue after the corresponding draft marker instead of requiring those
+    # structurally equivalent marker IDs to match.
+    if prefix[-1] in cell_tokens and target_structure.column >= 0:
+        target_column = int(target_structure.column)
+        for position, (token, meta) in enumerate(zip(draft, metadata)):
+            if (
+                token in cell_tokens
+                and meta.column == target_column
+                and abs(meta.logical_row - target_row) <= row_window
+            ):
+                continuation = position + 1
+                if continuation < len(draft):
+                    candidates.add(continuation)
+
     best: tuple[tuple[float, int, float, int], Proposal] | None = None
     for continuation in candidates:
         tokens = tuple(draft[continuation : continuation + block_size])
