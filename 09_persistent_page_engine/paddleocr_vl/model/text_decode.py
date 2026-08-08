@@ -53,6 +53,7 @@ class DecodeOptimizationConfig:
     add_rms_norm: bool = False
     attention: str = "gqa"
     increfa_length_mode: str = "mask"
+    post_scatter_kv_prefetch: bool = False
 
 
 DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
@@ -136,6 +137,16 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         rotary="npu_apply",
         add_rms_norm=True,
         attention="mha_cache",
+    ),
+    "combined_apply_mha_cache_prefetch_kv": DecodeOptimizationConfig(
+        name="combined_apply_mha_cache_prefetch_kv",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        add_rms_norm=True,
+        attention="mha_cache",
+        post_scatter_kv_prefetch=True,
     ),
     "combined_apply_manual_attention": DecodeOptimizationConfig(
         name="combined_apply_manual_attention",
@@ -616,6 +627,23 @@ def _decode_attention(
         key_states,
         value_states,
     )
+    if optimization.post_scatter_kv_prefetch:
+        if key_cache.device.type != "npu":
+            raise ValueError(
+                "post-scatter K/V prefetch is an NPU-only decode lab path"
+            )
+        import torch_npu
+
+        torch_npu.npu_prefetch(
+            key_cache,
+            key_states,
+            int(key_cache.numel() * key_cache.element_size()),
+        )
+        torch_npu.npu_prefetch(
+            value_cache,
+            value_states,
+            int(value_cache.numel() * value_cache.element_size()),
+        )
     if query_states.device.type != "npu":
         additive_mask = attention_mask
         if additive_mask is not None and additive_mask.dtype == torch.bool:
