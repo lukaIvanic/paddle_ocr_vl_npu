@@ -177,6 +177,63 @@ row that exists exactly in band 0. No target suffix matches the draft context,
 so the practical matcher falls back one token at a time even though a long exact
 future continuation is available.
 
+## OTSL grammar and column information
+
+The recognizer emits a compact table grammar. Every marker is one model token.
+
+- `<fcel>` starts a normal filled cell.
+- `<ecel>` occupies an empty independent cell.
+- `<lcel>` continues the cell to the left through a column span.
+- `<ucel>` continues the cell above through a row span.
+- `<xcel>` continues a merged region through both axes.
+- `<nl>` ends the current table row.
+
+Column width is the number of cell-slot markers between two `<nl>` markers,
+including span continuations. On the 143-table cohort:
+
+- the target first row matches the target modal width in 139 tables;
+- all target rows have one consistent width in 132 tables;
+- draft modal width matches target modal width in 117 tables;
+- 2,916 of 3,761 draft logical rows have the exact target width;
+- 3,518 are within one slot and 3,607 are within two slots.
+
+Before target decode, draft consensus width is a useful soft hypothesis. Once
+the target produces its first `<nl>`, its own first-row width is the stronger
+constraint.
+
+A bounded structural patch lattice is therefore practical. For a draft row of
+width `C-1`, create the `C` possible empty-slot insertion paths. For `C+1`,
+create bounded deletion paths. These are proposal candidates only. The target
+model remains authoritative and rejects a wrong structural patch normally.
+
+## Why exact oracle continuations become unanchored
+
+For 41,369 call-local lost-token opportunities, the oracle continuation has no
+matching token immediately before it:
+
+| Prefix divergence | Lost opportunity tokens | Share |
+|---|---:|---:|
+| Numeric content | 8,791 | 21.3% |
+| Structure/content boundary | 7,258 | 17.5% |
+| Punctuation or whitespace | 7,065 | 17.1% |
+| Unicode-equivalent formatting | 4,968 | 12.0% |
+| Text content | 4,251 | 10.3% |
+| Math or LaTeX form | 3,707 | 9.0% |
+| Different OTSL structure token | 3,208 | 7.8% |
+| CJK content | 1,090 | 2.6% |
+| Start of a draft band | 1,031 | 2.5% |
+
+At least 56.9% is clearly structural or formatting divergence. Including math
+and LaTeX representation raises that share to 65.9%. Common exact-token
+differences include ASCII versus full-width punctuation, alternate minus and
+parenthesis characters, `<ucel>` versus `<nl>` or `<ecel>`, and equivalent
+LaTeX spellings.
+
+This is why exact contiguous suffix matching loses the correct location. An
+online approximate aligner can preserve state across one substitution,
+insertion, or deletion and then continue proposing the exact draft tokens that
+follow.
+
 ## Concentration
 
 - 128 of the 143 tables have at least one gap.
