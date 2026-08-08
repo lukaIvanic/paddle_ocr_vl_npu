@@ -259,7 +259,11 @@ def build_recognizer(args: argparse.Namespace) -> ContinuousRecognizer:
         text_torchair_cache_dir=args.text_cache_dir.resolve(),
         text_padding="bucket",
         text_packing="production_group",
-        text_pack_buckets=(128, 256, 384, 512, 768, 1024),
+        text_pack_buckets=tuple(
+            bucket
+            for bucket in (128, 256, 384, 512, 768, 1024)
+            if bucket <= args.cache_length
+        ),
         text_pack_max_members=32,
         text_packed_cache_dir=args.text_packed_cache_dir.resolve(),
         preprocessor_min_pixels=args.min_pixels,
