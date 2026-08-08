@@ -78,6 +78,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--backtrack", type=int, default=8)
     parser.add_argument("--minimum-latency-s", type=float, default=0.0)
     parser.add_argument("--limit", type=int)
+    parser.add_argument(
+        "--matchers",
+        help="Optional comma-separated configuration names to run.",
+    )
     return parser.parse_args()
 
 
@@ -713,6 +717,18 @@ def main() -> None:
                     {"name": f"beam_patch_b{width}_w{weight:g}", "kind": "beam", "beam_width": width, "column_weight": weight, "patch": True},
                 ]
             )
+
+    if args.matchers:
+        requested_matchers = {
+            value.strip() for value in args.matchers.split(",") if value.strip()
+        }
+        configurations = [
+            config for config in configurations if config["name"] in requested_matchers
+        ]
+        found_matchers = {config["name"] for config in configurations}
+        missing_matchers = requested_matchers - found_matchers
+        if missing_matchers:
+            raise ValueError(f"unknown matchers: {sorted(missing_matchers)}")
         for threshold in hybrid_thresholds:
             configurations.extend(
                 [
