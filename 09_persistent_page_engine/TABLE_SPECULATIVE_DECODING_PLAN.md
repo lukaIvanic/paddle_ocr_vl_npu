@@ -55,7 +55,7 @@ explicit request before Phase 3. It does not replace the Phase 3 runtime gate.
 
 ## Phase 3 — Draft-input speculative target runtime
 
-Status: **pending**
+Status: **complete**
 
 Implement a compiled target runtime that accepts precomputed draft tokens and
 verifies a fixed token block against the authoritative full-table context.
@@ -65,9 +65,18 @@ fallback, graph replay, timing, and baseline greedy-output parity.
 Exit gate: the target runtime is correct and measurable with synthetic perfect,
 partially correct, and incorrect drafts.
 
+The real B1 D16/KV4096 runtime is implemented. It reuses the authoritative
+full-table prefill cache, verifies fixed 16-token blocks, commits only accepted
+KV positions logically, and falls back to ordinary B1 decode. Rejected physical
+tail slots are masked and overwritten before use. A 16-table live comparison
+was token-exact and covered full acceptance, partial rejection, and fallback.
+The full 665-table run is 661/665 token exact. The four differences are bounded
+PromptFA-versus-IncreFA numerical choices; full Page-TEDS changes by -0.000236.
+See `TABLE_SPECULATIVE_RUNTIME_RESULTS.md`.
+
 ## Phase 4 — Draft matching and re-anchoring
 
-Status: **pending**
+Status: **first runtime candidate measured**
 
 Develop the candidate index, suffix matching, row-order tracking, re-anchoring,
 candidate ranking, and optional multi-candidate verification. Optimize accepted
@@ -76,3 +85,9 @@ tokens per verification step and final table latency while preserving the Phase
 
 Exit gate: full 665-table latency and Page-TEDS comparison against the committed
 B1 baseline.
+
+The column-aware exact matcher with reversible cursor, virtual width patch, and
+table-start prior is integrated. The full comparison is complete. It reduces
+target calls by 6.383x and improves P99 from 4.847 s to 3.720 s, but the draft
+cost makes aggregate corpus time 4.7% slower. The next work is a legal bypass
+for small tables and a confidence gate for pathological weak-anchor cases.

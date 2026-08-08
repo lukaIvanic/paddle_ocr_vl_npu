@@ -30,6 +30,7 @@ from paddleocr_vl.serving.table_speculative import (
     TableSpeculativeDecodeRuntime,
 )
 from paddleocr_vl.serving.types import RecognitionRequest
+from pipeline.layout_output import normalize_recognition_text
 from table_row_split_lab import load_crop
 
 
@@ -38,8 +39,9 @@ DEFAULT_TARGETS = Path(
     "whole/whole/tables.jsonl"
 )
 DEFAULT_DRAFTS = Path(
-    "tmp/09_persistent_page_engine/table_spec_full_d1e6d00/"
-    "ruled/ruled/tables.jsonl"
+    "tmp/09_persistent_page_engine/"
+    "table_row_per_table_kv768_pack2304_355db8b/"
+    "uniform_8_snapped/tables.jsonl"
 )
 DEFAULT_VISION_BUCKETS = "256,384,512,640,768,1408,1920,2048,2944,4096"
 DEFAULT_TEXT_BUCKETS = "128,256,512,1024,1312"
@@ -126,6 +128,30 @@ def first_difference(left: list[int], right: list[int]) -> int | None:
         if lhs != rhs:
             return index
     return None if len(left) == len(right) else min(len(left), len(right))
+
+
+def distribution(values: list[float]) -> dict[str, float]:
+    ordered = sorted(float(value) for value in values)
+    if not ordered:
+        return {}
+
+    def percentile(fraction: float) -> float:
+        index = min(
+            len(ordered) - 1,
+            max(0, int(fraction * len(ordered) - 1e-12)),
+        )
+        return ordered[index]
+
+    return {
+        "min": ordered[0],
+        "mean": sum(ordered) / len(ordered),
+        "p50": percentile(0.50),
+        "p75": percentile(0.75),
+        "p90": percentile(0.90),
+        "p95": percentile(0.95),
+        "p99": percentile(0.99),
+        "max": ordered[-1],
+    }
 
 
 def build_recognizer(args: argparse.Namespace) -> ContinuousRecognizer:
@@ -267,6 +293,7 @@ def main() -> None:
                 "wall_s": time.perf_counter() - baseline_started,
                 "token_ids": list(baseline.token_ids),
                 "text": baseline.text,
+                "pred_html": normalize_recognition_text("table", baseline.text),
                 "stop_reason": baseline.stop_reason,
                 "exact_saved_reference": list(baseline.token_ids) == reference_tokens,
                 "first_saved_difference": first_difference(
@@ -289,6 +316,17 @@ def main() -> None:
             matcher,
             max_new_tokens=args.max_new_tokens,
         )
+        draft_generation_wall_s = float(
+            (drafts[request_id].get("timing_s") or {}).get(
+                "table_row_ocr_e2e",
+                0.0,
+            )
+        )
+        saved_baseline_wall_s = float(
+            (target.get("timing_s") or {}).get("table_row_ocr_e2e", 0.0)
+        )
+        target_spec_wall_s = prefill_wall_s + spec_result.wall_s
+        composed_pipeline_wall_s = draft_generation_wall_s + target_spec_wall_s
         payload = {
             "request_id": request_id,
             "page_name": target["page_name"],
@@ -297,7 +335,18 @@ def main() -> None:
             "projected_image_tokens": int(prefilled.projected_image_tokens),
             "saved_reference_tokens": len(reference_tokens),
             "prefill_wall_s": prefill_wall_s,
+            "draft_generation_wall_s": draft_generation_wall_s,
+            "target_spec_wall_s": target_spec_wall_s,
+            "composed_pipeline_wall_s": composed_pipeline_wall_s,
+            "saved_baseline_wall_s": saved_baseline_wall_s,
+            "composed_speedup_vs_saved_baseline": (
+                saved_baseline_wall_s / composed_pipeline_wall_s
+                if composed_pipeline_wall_s > 0.0 and saved_baseline_wall_s > 0.0
+                else None
+            ),
             "speculative": spec_result.to_dict(),
+            "gt_html": target.get("gt_html"),
+            "pred_html": normalize_recognition_text("table", spec_result.text),
             "baseline": baseline_payload,
             "exact_saved_reference": spec_result.token_ids == reference_tokens,
             "first_saved_difference": first_difference(
@@ -329,6 +378,17 @@ def main() -> None:
         )
 
     run_wall_s = time.perf_counter() - run_started
+    generated_target_tokens = sum(
+        max(0, len(record["speculative"]["token_ids"]) - 1)
+        for record in records
+    )
+    composed_pipeline = [record["composed_pipeline_wall_s"] for record in records]
+    saved_baseline = [record["saved_baseline_wall_s"] for record in records]
+    per_table_speedup = [
+        record["composed_speedup_vs_saved_baseline"]
+        for record in records
+        if record["composed_speedup_vs_saved_baseline"] is not None
+    ]
     summary = {
         "status": "complete",
         "configuration": {
@@ -339,6 +399,10 @@ def main() -> None:
             "verifier_cache_was_warm": cache_hit,
             "targets": str(args.targets),
             "drafts": str(args.drafts),
+            "latency_composition": (
+                "saved measured draft generation wall plus live target "
+                "prefill and speculative decode wall"
+            ),
             "recognizer": recognizer.configuration(),
             "verifier": spec_runtime.verify.metadata,
         },
@@ -346,14 +410,54 @@ def main() -> None:
         "run_wall_s": run_wall_s,
         "tables": len(records),
         "exact_saved_reference": sum(record["exact_saved_reference"] for record in records),
-        "exact_live_baseline": sum(record["exact_live_baseline"] is True for record in records),
-        "target_calls": sum(record["speculative"]["target_calls"] for record in records),
-        "speculative_calls": sum(record["speculative"]["speculative_calls"] for record in records),
-        "fallback_calls": sum(record["speculative"]["fallback_calls"] for record in records),
-        "accepted_draft_tokens": sum(record["speculative"]["accepted_draft_tokens"] for record in records),
-        "proposed_draft_tokens": sum(record["speculative"]["proposed_draft_tokens"] for record in records),
+        "exact_live_baseline": sum(
+            record["exact_live_baseline"] is True for record in records
+        ),
+        "target_calls": sum(
+            record["speculative"]["target_calls"] for record in records
+        ),
+        "speculative_calls": sum(
+            record["speculative"]["speculative_calls"] for record in records
+        ),
+        "fully_accepted_speculative_calls": sum(
+            record["speculative"]["fully_accepted_speculative_calls"]
+            for record in records
+        ),
+        "rejected_speculative_calls": sum(
+            record["speculative"]["rejected_speculative_calls"]
+            for record in records
+        ),
+        "fallback_calls": sum(
+            record["speculative"]["fallback_calls"] for record in records
+        ),
+        "accepted_draft_tokens": sum(
+            record["speculative"]["accepted_draft_tokens"] for record in records
+        ),
+        "proposed_draft_tokens": sum(
+            record["speculative"]["proposed_draft_tokens"] for record in records
+        ),
+        "generated_target_tokens": generated_target_tokens,
         "spec_decode_wall_s": sum(record["speculative"]["wall_s"] for record in records),
         "prefill_wall_s": sum(record["prefill_wall_s"] for record in records),
+        "draft_generation_wall_s": sum(record["draft_generation_wall_s"] for record in records),
+        "composed_pipeline_wall_s": sum(composed_pipeline),
+        "saved_baseline_wall_s": sum(saved_baseline),
+        "target_call_reduction": (
+            generated_target_tokens
+            / sum(record["speculative"]["target_calls"] for record in records)
+        ),
+        "accepted_fraction_of_proposed": (
+            sum(record["speculative"]["accepted_draft_tokens"] for record in records)
+            / sum(record["speculative"]["proposed_draft_tokens"] for record in records)
+        ),
+        "composed_speedup_vs_saved_baseline": (
+            sum(saved_baseline) / sum(composed_pipeline)
+            if sum(composed_pipeline) > 0.0
+            else None
+        ),
+        "per_table_composed_wall_s": distribution(composed_pipeline),
+        "per_table_saved_baseline_wall_s": distribution(saved_baseline),
+        "per_table_composed_speedup": distribution(per_table_speedup),
         "records": str(output_path),
     }
     write_json(args.output_dir / "run_summary.json", summary)
@@ -361,6 +465,8 @@ def main() -> None:
         f"TABLE_SPEC_COMPLETE tables={len(records)} run_wall_s={run_wall_s:.3f} "
         f"exact_live={summary['exact_live_baseline']}/{len(records)} "
         f"exact_saved={summary['exact_saved_reference']}/{len(records)} "
+        f"call_reduction={summary['target_call_reduction']:.3f}x "
+        f"composed_speedup={summary['composed_speedup_vs_saved_baseline']:.3f}x "
         f"output={args.output_dir}",
         flush=True,
     )

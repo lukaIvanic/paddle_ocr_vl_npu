@@ -281,6 +281,8 @@ class TableSpecDecodeResult:
     stop_reason: str
     target_calls: int
     speculative_calls: int
+    fully_accepted_speculative_calls: int
+    rejected_speculative_calls: int
     fallback_calls: int
     proposed_draft_tokens: int
     accepted_draft_tokens: int
@@ -433,6 +435,8 @@ class TableSpeculativeDecodeRuntime:
         position = int(cache_position.detach().cpu().item())
         target_calls = 0
         speculative_calls = 0
+        fully_accepted_speculative_calls = 0
+        rejected_speculative_calls = 0
         fallback_calls = 0
         proposed = 0
         accepted = 0
@@ -514,6 +518,10 @@ class TableSpeculativeDecodeRuntime:
                         break
                     accepted_here += 1
                 accepted += accepted_here
+                if accepted_here == len(proposal_tokens):
+                    fully_accepted_speculative_calls += 1
+                else:
+                    rejected_speculative_calls += 1
                 emitted = list(proposal_tokens[:accepted_here])
                 emitted.append(int(targets[accepted_here]))
                 matcher.commit(
@@ -537,6 +545,8 @@ class TableSpeculativeDecodeRuntime:
             stop_reason=str(stop_reason),
             target_calls=target_calls,
             speculative_calls=speculative_calls,
+            fully_accepted_speculative_calls=fully_accepted_speculative_calls,
+            rejected_speculative_calls=rejected_speculative_calls,
             fallback_calls=fallback_calls,
             proposed_draft_tokens=proposed,
             accepted_draft_tokens=accepted,
