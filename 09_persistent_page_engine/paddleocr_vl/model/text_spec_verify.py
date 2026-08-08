@@ -78,17 +78,21 @@ def _update_spec_kv_cache_(
     if key_cache.device.type == "npu":
         import torch_npu
 
+        # The Ascend Scatter KV-cache template requires the indexed physical
+        # dimension to be dimension zero: indices.shape[0] must equal
+        # updates.shape[0]. Present S first while keeping an alias of the
+        # persistent [B,H,S,D] arena.
         torch_npu.scatter_update_(
-            key_cache,
+            key_cache.permute(2, 1, 0, 3),
             positions,
-            key_states.contiguous(),
-            2,
+            key_states.permute(2, 1, 0, 3).contiguous(),
+            0,
         )
         torch_npu.scatter_update_(
-            value_cache,
+            value_cache.permute(2, 1, 0, 3),
             positions,
-            value_states.contiguous(),
-            2,
+            value_states.permute(2, 1, 0, 3).contiguous(),
+            0,
         )
         return
     key_cache[:, :, positions, :] = key_states
@@ -225,6 +229,14 @@ def run_text_spec_verify_transformer(
         position_embeddings,
         text_model.layers[0].self_attn.mrope_section,
     )
+    if optimization.rotary == "npu_apply":
+        # _prepare_multimodal_rotary_factors returns BNSD factors. The public
+        # ApplyRotaryPosEmb BSND layout accepts [B,Q,1,D]; Q=1 made these two
+        # representations indistinguishable in the ordinary decode graph.
+        prepared_factors = (
+            prepared_factors[0].transpose(1, 2).contiguous(),
+            prepared_factors[1].transpose(1, 2).contiguous(),
+        )
 
     hidden_states = inputs_embeds
     residual: torch.Tensor | None = None
