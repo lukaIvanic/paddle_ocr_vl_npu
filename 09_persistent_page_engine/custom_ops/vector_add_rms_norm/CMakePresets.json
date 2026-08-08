@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "cmakeMinimumRequired": {"major": 3, "minor": 16, "patch": 0},
+  "configurePresets": [
+    {
+      "name": "default",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build_out",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "ENABLE_SOURCE_PACKAGE": true,
+        "ENABLE_BINARY_PACKAGE": true,
+        "ASCEND_COMPUTE_UNIT": "ascend910",
+        "ENABLE_TEST": false,
+        "vendor_name": "vector_rmsnorm",
+        "ASCEND_CANN_PACKAGE_PATH": "/usr/local/Ascend/cann-9.0.0",
+        "ASCEND_PYTHON_EXECUTABLE": "python3",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/build_out",
+        "ENABLE_CROSS_COMPILE": false,
+        "ASCEND_PACK_SHARED_LIBRARY": false
+      }
+    }
+  ]
+}
