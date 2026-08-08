@@ -176,6 +176,15 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         add_rms_norm=True,
         stage_aware_weight_prefetch=True,
     ),
+    "combined_apply_prefetch_no_rope": DecodeOptimizationConfig(
+        name="combined_apply_prefetch_no_rope",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="identity",
+        add_rms_norm=True,
+        stage_aware_weight_prefetch=True,
+    ),
     "combined_apply_prefetch_no_increfa": DecodeOptimizationConfig(
         name="combined_apply_prefetch_no_increfa",
         hoist_mrope=True,
@@ -504,6 +513,11 @@ def _apply_decode_rotary(
             key_states,
             position_embeddings,
         )
+    if optimization.rotary == "identity":
+        # Lab-only full-graph ablation. Keep dynamic Q/K tensors and remove
+        # only the rotary operation so unprofiled timing measures its actual
+        # marginal contribution to the compiled decode step.
+        return query_states, key_states
     cos, sin = prepared_factors
     if optimization.rotary == "manual":
         half = query_states.shape[-1] // 2
