@@ -364,16 +364,17 @@ def filtered_pool_candidate(
                 if current_band is not None
                 else 0
             )
-            score = (
-                (float(anchor), structure_score, forward, -distance)
-                if use_cursor
-                else (
+            if use_cursor:
+                score = (float(anchor), structure_score, forward, -distance)
+            elif current_band is not None:
+                score = (
                     float(anchor),
-                    -lane_distance if current_band is not None else -continuation,
+                    -lane_distance,
                     structure_score,
-                    -continuation if current_band is not None else 0,
+                    -continuation,
                 )
-            )
+            else:
+                score = (float(anchor), structure_score, -continuation, 0)
             proposal = Proposal(continuation, tokens, structure_score, anchor)
             if best is None or score > best[0]:
                 best = (score, proposal)
