@@ -15,11 +15,13 @@ import unicodedata
 
 from table_speculative_simulator import (
     DEFAULT_BLOCK_COSTS,
+    MatcherState,
     build_continuation_index,
     lcp,
     oracle_start_matches,
     preceding_match,
     simulate as baseline_simulate,
+    suffix_candidate,
     target_tokens,
 )
 
@@ -37,6 +39,7 @@ class Proposal:
     start: int
     tokens: tuple[int, ...]
     score: float
+    anchor_tokens: int = 0
 
 
 @dataclass
@@ -66,6 +69,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--block-size", type=int, default=16)
     parser.add_argument("--beam-widths", default="16,32,64")
     parser.add_argument("--column-weights", default="1,2,4")
+    parser.add_argument("--hybrid-thresholds", default="2,4,8")
     parser.add_argument("--maximum-anchor", type=int, default=64)
     parser.add_argument("--backtrack", type=int, default=8)
     parser.add_argument("--minimum-latency-s", type=float, default=0.0)
@@ -221,8 +225,10 @@ def exact_pool_candidate(
         )
         forward = int(continuation >= cursor)
         distance = abs(continuation - cursor)
-        score = (float(anchor) + structure_score, anchor, forward, -distance)
-        proposal = Proposal(continuation, tokens, score[0])
+        # Exact-prefix length remains authoritative. Structural information is
+        # only a tie-breaker between candidates with the same exact anchor.
+        score = (float(anchor), structure_score, forward, -distance)
+        proposal = Proposal(continuation, tokens, structure_score, anchor)
         if best is None or score > best[0]:
             best = (score, proposal)
     return best[1] if best else None
@@ -322,7 +328,7 @@ class BeamMatcher:
                 self.patch,
             )
             if best is None or score > best.score:
-                best = Proposal(position, tokens, score)
+                best = Proposal(position, tokens, score, 0)
         return best
 
 
@@ -362,6 +368,7 @@ def simulate_custom(
     proposed_tokens = 0
     weighted = 0.0
     accept_lengths: list[float] = []
+    uses_beam = matcher.startswith("beam") or matcher.startswith("hybrid")
     beam = (
         BeamMatcher(
             draft,
@@ -376,9 +383,10 @@ def simulate_custom(
             column_weight,
             patch,
         )
-        if matcher.startswith("beam")
+        if uses_beam
         else None
     )
+    exact_state = MatcherState()
     observe_structure(structure, target[0], cell_tokens, newline_token)
     if beam is not None:
         beam.observe(target[0], target_keys[0])
@@ -386,6 +394,29 @@ def simulate_custom(
     while position < len(target):
         if matcher.startswith("beam"):
             proposal = beam.propose() if beam is not None else None
+        elif matcher.startswith("hybrid"):
+            threshold = int(matcher.rsplit("a", 1)[1])
+            exact = suffix_candidate(
+                target[:position],
+                draft,
+                index,
+                exact_state,
+                block_size,
+                1,
+                maximum_anchor,
+                backtrack,
+                False,
+            )
+            exact_proposal = (
+                Proposal(exact.start, exact.tokens, float(exact.anchor_tokens), exact.anchor_tokens)
+                if exact is not None
+                else None
+            )
+            proposal = (
+                exact_proposal
+                if exact_proposal is not None and exact_proposal.anchor_tokens >= threshold
+                else (beam.propose() if beam is not None else exact_proposal)
+            )
         else:
             proposal = exact_pool_candidate(
                 target[:position],
@@ -414,6 +445,16 @@ def simulate_custom(
             weighted += block_cost
             if accepted:
                 cursor = proposal.start + accepted
+                exact_state.cursor = proposal.start + accepted
+        correction_matches_draft = (
+            proposal is not None
+            and position + accepted < len(target)
+            and proposal.start + accepted < len(draft)
+            and target[position + accepted] == draft[proposal.start + accepted]
+        )
+        if correction_matches_draft:
+            cursor = proposal.start + accepted + 1
+            exact_state.cursor = cursor
         emitted = min(len(target) - position, accepted + 1)
         for target_position in range(position, position + emitted):
             token = target[target_position]
@@ -492,6 +533,7 @@ def main() -> None:
     }
     beam_widths = [int(value) for value in args.beam_widths.split(",") if value]
     column_weights = [float(value) for value in args.column_weights.split(",") if value]
+    hybrid_thresholds = [int(value) for value in args.hybrid_thresholds.split(",") if value]
     configurations: list[dict[str, Any]] = [
         {"name": "current", "kind": "baseline", "baseline_matcher": "suffix_global_a1"},
         {"name": "reversible", "kind": "baseline", "baseline_matcher": "suffix_global_reversible_a1"},
@@ -513,6 +555,25 @@ def main() -> None:
                 [
                     {"name": f"beam_column_b{width}_w{weight:g}", "kind": "beam", "beam_width": width, "column_weight": weight, "patch": False},
                     {"name": f"beam_patch_b{width}_w{weight:g}", "kind": "beam", "beam_width": width, "column_weight": weight, "patch": True},
+                ]
+            )
+        for threshold in hybrid_thresholds:
+            configurations.extend(
+                [
+                    {
+                        "name": f"hybrid_b{width}_a{threshold}",
+                        "kind": f"hybrid_a{threshold}",
+                        "beam_width": width,
+                        "column_weight": 0.0,
+                        "patch": False,
+                    },
+                    {
+                        "name": f"hybrid_patch_b{width}_a{threshold}",
+                        "kind": f"hybrid_a{threshold}",
+                        "beam_width": width,
+                        "column_weight": min(column_weights, default=0.0),
+                        "patch": True,
+                    },
                 ]
             )
 
@@ -598,6 +659,7 @@ def main() -> None:
             "block_size": args.block_size,
             "beam_widths": beam_widths,
             "column_weights": column_weights,
+            "hybrid_thresholds": hybrid_thresholds,
         },
         "cohorts": {name: len(ids) for name, ids in cohorts.items()},
         "results": results,
