@@ -298,6 +298,19 @@ complete corpus and 2.332 ms per table on the slow cohort. At 750 target tokens
 per second, its added 19-23 us per target call is approximately 1.5-1.7% of
 one model iteration. This CPU cost does not erase the reduction in target calls.
 
+### Table-start prior
+
+The full-table model can begin with `<ecel>` while the first row-band draft
+begins with `<fcel>`. An exact suffix lookup then jumps to an unrelated later
+`<ecel>`. A grammar-scoped start prior proposes draft position zero only for
+this exact `(target <ecel>, draft <fcel>)` transition.
+
+Across all 665 tables, this changes reversible-matcher calls from 40,729 to
+40,667. It improves 48 tables, leaves 617 unchanged, and regresses none. On
+`page_000263_table_box_id_7`, it accepts the correct first 16 draft tokens and
+changes total calls from 803 to 801. The net gain is small because the original
+matcher recovers at target position three, but the fix is legal and safe.
+
 The free-running fuzzy beam is not a good replacement. It can recover weak
 anchors, but it also overrides reliable exact locations and makes too many
 short proposals. The hybrid limits that damage, but still loses to the simpler
