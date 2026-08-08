@@ -213,7 +213,10 @@ def balanced_seed(
     eos_token_id: int,
     draft_length: int,
 ) -> tuple[int, ...]:
-    newline = tokenizer.convert_tokens_to_ids("<nl>")
+    if hasattr(tokenizer, "token_to_id"):
+        newline = tokenizer.token_to_id("<nl>")
+    else:
+        newline = tokenizer.convert_tokens_to_ids("<nl>")
     if newline is None:
         raise ValueError("tokenizer does not contain <nl>")
     lanes = row_lanes(
