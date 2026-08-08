@@ -129,6 +129,7 @@ def rows_with_metadata(
     flat: list[int] = []
     metadata: list[PositionMeta] = []
     band_starts: list[int] = []
+    global_row = 0
     rows = sorted(record.get("rows") or [], key=lambda item: item["row_index"])
     for band_index, row_record in enumerate(rows):
         tokens = [int(value) for value in row_record.get("token_ids") or ()]
@@ -152,14 +153,15 @@ def rows_with_metadata(
             if token == newline_token:
                 logical_rows.append([])
         logical_rows = [row for row in logical_rows if row]
-        for logical_index, logical_tokens in enumerate(logical_rows):
+        for _logical_index, logical_tokens in enumerate(logical_rows):
             width = sum(token in cell_tokens for token in logical_tokens)
             column = -1
             for token in logical_tokens:
                 if token in cell_tokens:
                     column += 1
                 flat.append(token)
-                metadata.append(PositionMeta(band_index, logical_index, column, width))
+                metadata.append(PositionMeta(band_index, global_row, column, width))
+            global_row += 1
     return flat, metadata, band_starts
 
 
@@ -383,6 +385,82 @@ def filtered_pool_candidate(
     return None
 
 
+def row_prior_candidate(
+    prefix: list[int],
+    draft: list[int],
+    metadata: list[PositionMeta],
+    continuation_index: dict[int, dict[tuple[int, ...], list[int]]],
+    block_size: int,
+    maximum_anchor: int,
+    target_structure: TargetStructure,
+    cell_tokens: set[int],
+    column_weight: float,
+    row_window: int,
+) -> Proposal | None:
+    """Select a continuation near the target's observed logical OTSL row.
+
+    This matcher uses only already-emitted target structure.  It does not inspect
+    target future tokens.  Exact suffix length remains the first score term;
+    logical-row and column proximity break ties.  At a new target row, it may
+    also start the corresponding draft row without an anchor.
+    """
+    if not draft:
+        return None
+    target_row = int(target_structure.row)
+    usable_lengths = [length for length in continuation_index if length <= len(prefix)]
+    candidates: set[int] = set()
+    for indexed_anchor in sorted(usable_lengths, reverse=True):
+        positions = continuation_index[indexed_anchor].get(
+            tuple(prefix[-indexed_anchor:]), ()
+        )
+        candidates.update(
+            position
+            for position in positions
+            if position < len(metadata)
+            and abs(metadata[position].logical_row - target_row) <= row_window
+        )
+        if candidates:
+            break
+
+    # The first token of a logical row is a safe speculative starting point.
+    # A mismatch still emits only the target argmax, so this cannot change the
+    # target output.
+    if target_structure.column < 0:
+        for position, meta in enumerate(metadata):
+            if meta.logical_row == target_row and (
+                position == 0
+                or metadata[position - 1].logical_row != meta.logical_row
+            ):
+                candidates.add(position)
+
+    best: tuple[tuple[float, int, float, int], Proposal] | None = None
+    for continuation in candidates:
+        tokens = tuple(draft[continuation : continuation + block_size])
+        if not tokens:
+            continue
+        anchor = preceding_match(prefix, draft, continuation, maximum_anchor)
+        meta = metadata[continuation]
+        row_distance = abs(meta.logical_row - target_row)
+        structure_score = column_score(
+            target_structure,
+            tokens[0],
+            meta,
+            cell_tokens,
+            column_weight,
+            True,
+        )
+        score = (
+            float(anchor),
+            -row_distance,
+            structure_score,
+            -continuation,
+        )
+        proposal = Proposal(continuation, tokens, structure_score, anchor)
+        if best is None or score > best[0]:
+            best = (score, proposal)
+    return best[1] if best is not None else None
+
+
 class BeamMatcher:
     def __init__(
         self,
@@ -567,6 +645,19 @@ def simulate_custom(
             and (target[0], draft[0]) == start_prior_token_pair
         ):
             proposal = Proposal(0, tuple(draft[:block_size]), 0.0, 0)
+        elif matcher.startswith("row_prior_w"):
+            proposal = row_prior_candidate(
+                target[:position],
+                draft,
+                metadata,
+                index,
+                block_size,
+                maximum_anchor,
+                structure,
+                cell_tokens,
+                column_weight,
+                int(matcher.rsplit("w", 1)[1]),
+            )
         elif matcher == "filtered":
             if filtered_anchor_index is None:
                 raise ValueError("filtered matcher requires a filtered anchor index")
@@ -794,6 +885,24 @@ def main() -> None:
             "start_prior": True,
             "stitch_bands": True,
             "use_lane_order": True,
+        },
+        {
+            "name": "row_prior_w0",
+            "kind": "row_prior_w0",
+            "column_weight": 0.25,
+            "patch": True,
+        },
+        {
+            "name": "row_prior_w2",
+            "kind": "row_prior_w2",
+            "column_weight": 0.25,
+            "patch": True,
+        },
+        {
+            "name": "row_prior_w4",
+            "kind": "row_prior_w4",
+            "column_weight": 0.25,
+            "patch": True,
         },
     ]
     for weight in column_weights:
