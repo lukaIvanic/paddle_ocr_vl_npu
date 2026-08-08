@@ -82,6 +82,40 @@ def compact_decode(tokenizer: Any, tokens: list[int] | tuple[int, ...], limit: i
     return text if len(text) <= limit else text[: limit - 1] + "…"
 
 
+def edit_distance(left: list[int] | tuple[int, ...], right: list[int] | tuple[int, ...]) -> int:
+    previous = list(range(len(right) + 1))
+    for left_index, left_token in enumerate(left, start=1):
+        current = [left_index]
+        for right_index, right_token in enumerate(right, start=1):
+            current.append(
+                min(
+                    current[-1] + 1,
+                    previous[right_index] + 1,
+                    previous[right_index - 1] + int(left_token != right_token),
+                )
+            )
+        previous = current
+    return previous[-1]
+
+
+def magnitude_bucket(value: int) -> str:
+    if value == 0:
+        return "0"
+    if value == 1:
+        return "1"
+    if value <= 3:
+        return "2-3"
+    if value <= 7:
+        return "4-7"
+    if value <= 15:
+        return "8-15"
+    if value <= 31:
+        return "16-31"
+    if value <= 63:
+        return "32-63"
+    return "64+"
+
+
 def analyze_table(
     target_record: dict[str, Any],
     draft_record: dict[str, Any],
@@ -103,6 +137,13 @@ def analyze_table(
     category_lost: Counter[str] = Counter()
     selected_rows: Counter[int] = Counter()
     oracle_rows: Counter[int] = Counter()
+    position_deciles: Counter[str] = Counter()
+    gap_kinds: Counter[str] = Counter()
+    ambiguity_histogram: Counter[str] = Counter()
+    anchor_relation: Counter[str] = Counter()
+    edit_histogram: Counter[str] = Counter()
+    accept_histogram: Counter[str] = Counter()
+    post_mismatch_recovery: Counter[str] = Counter()
 
     while position < len(target):
         prefix = target[:position]
@@ -142,6 +183,7 @@ def analyze_table(
         totals["practical_accepted"] += practical_accept
         totals["oracle_local_accepted"] += oracle_accept
         totals["proposed"] += proposed
+        accept_histogram[magnitude_bucket(practical_accept)] += 1
         totals["oracle_opportunity_calls"] += int(oracle_accept > 0)
         totals["optimal_calls"] += int(practical_accept == oracle_accept)
         totals["gap_calls"] += int(lost > 0)
@@ -155,10 +197,38 @@ def analyze_table(
         )
         totals["ambiguous_gap_calls"] += int(lost > 0 and ambiguity > 1)
         if lost > 0:
+            position_deciles[f"{min(9, int(10 * position / max(1, len(target)))) * 10:02d}-{min(100, (min(9, int(10 * position / max(1, len(target)))) + 1) * 10):02d}%"] += lost
+            ambiguity_histogram[magnitude_bucket(ambiguity)] += 1
+            if candidate is None:
+                gap_kinds["no_suffix_candidate"] += 1
+            elif oracle_anchor == 0:
+                gap_kinds["oracle_has_no_prefix_anchor"] += 1
+            elif row_index(row_for_token, candidate.start) != oracle_row:
+                gap_kinds["wrong_band"] += 1
+            else:
+                gap_kinds["wrong_location_within_band"] += 1
+            if oracle_anchor > 0:
+                if selected_anchor > oracle_anchor:
+                    anchor_relation["selected_anchor_longer"] += 1
+                elif selected_anchor == oracle_anchor:
+                    anchor_relation["anchors_equal"] += 1
+                else:
+                    anchor_relation["oracle_anchor_longer"] += 1
             failure_position = min(position + practical_accept, len(target) - 1)
             category = token_kind(pieces[failure_position])
             category_events[category] += 1
             category_lost[category] += lost
+            if candidate is not None:
+                target_window = target[position : position + len(candidate.tokens)]
+                distance = edit_distance(candidate.tokens, target_window)
+                edit_histogram[magnitude_bucket(distance)] += 1
+                recovery = lcp(
+                    candidate.tokens[practical_accept + 1 :],
+                    target[position + practical_accept + 1 :],
+                )
+                post_mismatch_recovery[magnitude_bucket(recovery)] += 1
+                totals["one_edit_gap_calls"] += int(distance == 1)
+                totals["post_mismatch_recovery_ge4_calls"] += int(recovery >= 4)
             selected_context = (
                 compact_decode(tokenizer, draft[selected_start : selected_start + block_size])
                 if selected_start is not None
@@ -211,6 +281,13 @@ def analyze_table(
         "lost_token_categories": dict(category_lost),
         "selected_row_histogram": dict(selected_rows),
         "oracle_row_histogram": dict(oracle_rows),
+        "lost_tokens_by_target_decile": dict(position_deciles),
+        "gap_kinds": dict(gap_kinds),
+        "gap_anchor_ambiguity": dict(ambiguity_histogram),
+        "anchored_gap_anchor_relation": dict(anchor_relation),
+        "gap_candidate_edit_distance": dict(edit_histogram),
+        "practical_accept_length": dict(accept_histogram),
+        "post_mismatch_recovery": dict(post_mismatch_recovery),
         "worst_events": sorted(events, key=lambda row: (row["lost_tokens"], row["oracle_accept"]), reverse=True)[:12],
         "target_text": target_record["rows"][0].get("raw_text") or target_record["rows"][0].get("text"),
         "draft_row_texts": [
@@ -255,10 +332,24 @@ def main() -> None:
     total: Counter[str] = Counter()
     event_categories: Counter[str] = Counter()
     lost_categories: Counter[str] = Counter()
+    aggregate_histograms = {
+        key: Counter()
+        for key in (
+            "lost_tokens_by_target_decile",
+            "gap_kinds",
+            "gap_anchor_ambiguity",
+            "anchored_gap_anchor_relation",
+            "gap_candidate_edit_distance",
+            "practical_accept_length",
+            "post_mismatch_recovery",
+        )
+    }
     for table in tables:
         total.update(table["totals"])
         event_categories.update(table["failure_event_categories"])
         lost_categories.update(table["lost_token_categories"])
+        for key, counter in aggregate_histograms.items():
+            counter.update(table[key])
         table["measured_b1_worker_wall_s"] = latencies[table["request_id"]]
     ranked = sorted(
         tables,
@@ -282,6 +373,10 @@ def main() -> None:
         },
         "failure_event_categories": dict(event_categories.most_common()),
         "lost_token_categories": dict(lost_categories.most_common()),
+        "histograms": {
+            key: dict(counter)
+            for key, counter in aggregate_histograms.items()
+        },
         "worst_tables": [
             {
                 "request_id": row["request_id"],
