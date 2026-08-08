@@ -1,0 +1,13 @@
+{
+  "tables": 665,
+  "changed_tables": 4,
+  "sample_TEDS": 0.9442230629159427,
+  "page_TEDS": 0.9483446843604746,
+  "page_TEDS_structure_only": 0.9734658072249991,
+  "baseline_sample_TEDS": 0.9443850476547115,
+  "baseline_page_TEDS": 0.9485801898059835,
+  "baseline_page_TEDS_structure_only": 0.9738105448289195,
+  "sample_TEDS_delta": -0.0001619847387688278,
+  "page_TEDS_delta": -0.00023550544550887675,
+  "page_TEDS_structure_only_delta": -0.00034473760392039754
+}
