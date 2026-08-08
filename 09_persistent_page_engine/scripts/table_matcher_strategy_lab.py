@@ -43,6 +43,13 @@ class Proposal:
     anchor_tokens: int = 0
 
 
+@dataclass(frozen=True)
+class FilteredAnchorIndex:
+    normalized_draft: list[int]
+    normalized_before: list[int]
+    by_length: dict[int, dict[tuple[int, ...], list[int]]]
+
+
 @dataclass
 class TargetStructure:
     row: int = 0
@@ -237,6 +244,95 @@ def exact_pool_candidate(
     return None
 
 
+def build_filtered_anchor_index(
+    draft: list[int],
+    ignored_token: int,
+    maximum_anchor: int,
+) -> FilteredAnchorIndex:
+    normalized_draft: list[int] = []
+    normalized_before: list[int] = []
+    for token in draft:
+        normalized_before.append(len(normalized_draft))
+        if token != ignored_token:
+            normalized_draft.append(token)
+
+    lengths: list[int] = []
+    length = 1
+    while length <= maximum_anchor:
+        lengths.append(length)
+        length *= 2
+    by_length: dict[int, dict[tuple[int, ...], list[int]]] = {}
+    for anchor_length in lengths:
+        by_anchor: defaultdict[tuple[int, ...], list[int]] = defaultdict(list)
+        for continuation, normalized_position in enumerate(normalized_before):
+            if normalized_position < anchor_length:
+                continue
+            key = tuple(
+                normalized_draft[
+                    normalized_position - anchor_length : normalized_position
+                ]
+            )
+            by_anchor[key].append(continuation)
+        by_length[anchor_length] = dict(by_anchor)
+    return FilteredAnchorIndex(normalized_draft, normalized_before, by_length)
+
+
+def filtered_pool_candidate(
+    normalized_prefix: list[int],
+    draft: list[int],
+    metadata: list[PositionMeta],
+    index: FilteredAnchorIndex,
+    cursor: int,
+    block_size: int,
+    maximum_anchor: int,
+    target_structure: TargetStructure,
+    cell_tokens: set[int],
+    column_weight: float,
+    patch: bool,
+) -> Proposal | None:
+    usable_lengths = [
+        length for length in index.by_length if length <= len(normalized_prefix)
+    ]
+    for indexed_anchor in sorted(usable_lengths, reverse=True):
+        positions = index.by_length[indexed_anchor].get(
+            tuple(normalized_prefix[-indexed_anchor:]), ()
+        )
+        best: tuple[tuple[float, float, int, int], Proposal] | None = None
+        for continuation in positions:
+            if continuation >= len(draft):
+                continue
+            tokens = tuple(draft[continuation : continuation + block_size])
+            if not tokens:
+                continue
+            normalized_position = index.normalized_before[continuation]
+            anchor = 0
+            while (
+                anchor < maximum_anchor
+                and anchor < len(normalized_prefix)
+                and anchor < normalized_position
+                and normalized_prefix[-anchor - 1]
+                == index.normalized_draft[normalized_position - anchor - 1]
+            ):
+                anchor += 1
+            structure_score = column_score(
+                target_structure,
+                tokens[0],
+                metadata[continuation],
+                cell_tokens,
+                column_weight,
+                patch,
+            )
+            forward = int(continuation >= cursor)
+            distance = abs(continuation - cursor)
+            score = (float(anchor), structure_score, forward, -distance)
+            proposal = Proposal(continuation, tokens, structure_score, anchor)
+            if best is None or score > best[0]:
+                best = (score, proposal)
+        if best is not None:
+            return best[1]
+    return None
+
+
 class BeamMatcher:
     def __init__(
         self,
@@ -351,6 +447,8 @@ def simulate_custom(
     column_weight: float = 0.0,
     patch: bool = False,
     continuation_index: dict[int, dict[tuple[int, ...], list[int]]] | None = None,
+    ignored_anchor_token: int | None = None,
+    filtered_anchor_index: FilteredAnchorIndex | None = None,
 ) -> dict[str, Any]:
     index = continuation_index or build_continuation_index(draft, maximum_anchor)
     structure = TargetStructure()
@@ -395,12 +493,33 @@ def simulate_custom(
         else None
     )
     exact_state = MatcherState()
+    normalized_prefix = (
+        [target[0]]
+        if ignored_anchor_token is not None and target[0] != ignored_anchor_token
+        else []
+    )
     observe_structure(structure, target[0], cell_tokens, newline_token)
     if beam is not None:
         beam.observe(target[0], target_keys[0])
 
     while position < len(target):
-        if matcher.startswith("beam"):
+        if matcher == "filtered":
+            if filtered_anchor_index is None:
+                raise ValueError("filtered matcher requires a filtered anchor index")
+            proposal = filtered_pool_candidate(
+                normalized_prefix,
+                draft,
+                metadata,
+                filtered_anchor_index,
+                cursor,
+                block_size,
+                maximum_anchor,
+                structure,
+                cell_tokens,
+                column_weight,
+                patch,
+            )
+        elif matcher.startswith("beam"):
             proposal = beam.propose() if beam is not None else None
         elif matcher.startswith("hybrid"):
             threshold = int(matcher.rsplit("a", 1)[1])
@@ -467,6 +586,8 @@ def simulate_custom(
         for target_position in range(position, position + emitted):
             token = target[target_position]
             observe_structure(structure, token, cell_tokens, newline_token)
+            if ignored_anchor_token is not None and token != ignored_anchor_token:
+                normalized_prefix.append(token)
             if beam is not None:
                 beam.observe(token, target_keys[target_position])
         position += emitted
@@ -542,6 +663,7 @@ def main() -> None:
         tokenizer.convert_tokens_to_ids("<ecel>"),
         tokenizer.convert_tokens_to_ids("<fcel>"),
     )
+    ecel_token = tokenizer.convert_tokens_to_ids("<ecel>")
     targets = {row["request_id"]: row for row in read_jsonl(args.targets)}
     drafts = {row["request_id"]: row for row in read_jsonl(args.drafts)}
     latencies = {
@@ -560,6 +682,18 @@ def main() -> None:
             "baseline_matcher": "suffix_global_reversible_start_a1",
         },
         {"name": "oracle", "kind": "baseline", "baseline_matcher": "oracle_global"},
+        {
+            "name": "ecel_normalized",
+            "kind": "filtered",
+            "column_weight": 0.0,
+            "patch": False,
+        },
+        {
+            "name": "ecel_normalized_column_patch_w0.25",
+            "kind": "filtered",
+            "column_weight": 0.25,
+            "patch": True,
+        },
     ]
     for weight in column_weights:
         configurations.extend(
@@ -613,6 +747,9 @@ def main() -> None:
             drafts[request_id], target[-1], cell_tokens, newline_token
         )
         baseline_index = build_continuation_index(draft, args.maximum_anchor)
+        ecel_normalized_index = build_filtered_anchor_index(
+            draft, ecel_token, args.maximum_anchor
+        )
         oracle_matches = oracle_start_matches(target, draft)
         for config in configurations:
             matcher_started = time.perf_counter()
@@ -646,6 +783,8 @@ def main() -> None:
                     float(config.get("column_weight", 0.0)),
                     bool(config.get("patch", False)),
                     baseline_index,
+                    ecel_token if config["kind"] == "filtered" else None,
+                    ecel_normalized_index if config["kind"] == "filtered" else None,
                 )
             matcher_cpu_s = time.perf_counter() - matcher_started
             detailed.append(
