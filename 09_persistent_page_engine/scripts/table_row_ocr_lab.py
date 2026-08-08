@@ -107,6 +107,11 @@ def parse_args() -> argparse.Namespace:
         default=",".join(DEFAULT_STRATEGIES),
     )
     parser.add_argument("--decode-batch-size", type=int, default=8)
+    parser.add_argument(
+        "--vision-buckets",
+        default="256,384,512,640,768,1408,1920,2048,2304,2944,4096",
+    )
+    parser.add_argument("--vision-pack-target", type=int, default=768)
     parser.add_argument("--row-overlap-px", type=int, default=3)
     parser.add_argument(
         "--resize-full-table-before-split",
@@ -243,13 +248,11 @@ def build_recognizer(args: argparse.Namespace) -> ContinuousRecognizer:
         vision_promptfa_align_128=True,
         vision_mlp_intermediate_size=4352,
         vision_linear_weight_format="fractal_nz",
-        vision_buckets=parse_vision_buckets(
-            "256,384,512,640,768,1408,1920,2048,2944,4096"
-        ),
+        vision_buckets=parse_vision_buckets(args.vision_buckets),
         vision_torchair_cache_dir=args.vision_cache_dir.resolve(),
         vision_padding="bucket",
         vision_packing="greedy",
-        vision_pack_target=768,
+        vision_pack_target=args.vision_pack_target,
         vision_router_lookahead=32,
         text_backend="torchair",
         text_buckets=parse_text_buckets("1152"),
@@ -575,6 +578,8 @@ def run_cross_table_schedule(
     summary = {
         "configuration": {
             "decode_batch_size": args.decode_batch_size,
+            "vision_buckets": list(parse_vision_buckets(args.vision_buckets)),
+            "vision_pack_target": args.vision_pack_target,
             "row_overlap_px": args.row_overlap_px,
             "resize_full_table_before_split": args.resize_full_table_before_split,
             "strategies": list(strategies),
@@ -789,6 +794,8 @@ def main() -> None:
     summary = {
         "configuration": {
             "decode_batch_size": args.decode_batch_size,
+            "vision_buckets": list(parse_vision_buckets(args.vision_buckets)),
+            "vision_pack_target": args.vision_pack_target,
             "row_overlap_px": args.row_overlap_px,
             "resize_full_table_before_split": args.resize_full_table_before_split,
             "strategies": list(strategies),
