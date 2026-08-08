@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter, defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 import math
 from pathlib import Path
@@ -46,17 +46,13 @@ class Proposal:
 class TargetStructure:
     row: int = 0
     column: int = -1
-    completed_widths: list[int] | None = None
-
-    def __post_init__(self) -> None:
-        if self.completed_widths is None:
-            self.completed_widths = []
+    width_counts: Counter[int] = field(default_factory=Counter)
+    modal_width: int | None = None
+    modal_width_count: int = 0
 
     @property
     def width(self) -> int | None:
-        if not self.completed_widths:
-            return None
-        return Counter(self.completed_widths).most_common(1)[0][0]
+        return self.modal_width
 
 
 def parse_args() -> argparse.Namespace:
@@ -152,7 +148,12 @@ def observe_structure(
     if token in cell_tokens:
         state.column += 1
     if token == newline_token:
-        state.completed_widths.append(state.column + 1)
+        completed_width = state.column + 1
+        state.width_counts[completed_width] += 1
+        count = state.width_counts[completed_width]
+        if count > state.modal_width_count:
+            state.modal_width = completed_width
+            state.modal_width_count = count
         state.row += 1
         state.column = -1
 
@@ -348,18 +349,10 @@ def simulate_custom(
     beam_width: int = 32,
     column_weight: float = 0.0,
     patch: bool = False,
+    continuation_index: dict[int, dict[tuple[int, ...], list[int]]] | None = None,
 ) -> dict[str, Any]:
-    index = build_continuation_index(draft, maximum_anchor)
+    index = continuation_index or build_continuation_index(draft, maximum_anchor)
     structure = TargetStructure()
-    pieces = tokenizer.convert_ids_to_tokens(draft)
-    keys = [normalize_piece(piece) for piece in pieces]
-    normalized_index: defaultdict[str, list[int]] = defaultdict(list)
-    for position, key in enumerate(keys):
-        if key:
-            normalized_index[key].append(position)
-    target_pieces = tokenizer.convert_ids_to_tokens(target)
-    target_keys = [normalize_piece(piece) for piece in target_pieces]
-    frequency = Counter(draft)
     cursor = 0
     position = 1
     calls = 0
@@ -370,6 +363,19 @@ def simulate_custom(
     weighted = 0.0
     accept_lengths: list[float] = []
     uses_beam = matcher.startswith("beam") or matcher.startswith("hybrid")
+    keys: list[str] = []
+    target_keys: list[str] = []
+    normalized_index: defaultdict[str, list[int]] = defaultdict(list)
+    frequency: Counter[int] = Counter()
+    if uses_beam:
+        keys = [normalize_piece(piece) for piece in tokenizer.convert_ids_to_tokens(draft)]
+        for draft_position, key in enumerate(keys):
+            if key:
+                normalized_index[key].append(draft_position)
+        target_keys = [
+            normalize_piece(piece) for piece in tokenizer.convert_ids_to_tokens(target)
+        ]
+        frequency = Counter(draft)
     beam = (
         BeamMatcher(
             draft,
@@ -622,6 +628,7 @@ def main() -> None:
                     int(config.get("beam_width", 32)),
                     float(config.get("column_weight", 0.0)),
                     bool(config.get("patch", False)),
+                    baseline_index,
                 )
             detailed.append(
                 {
