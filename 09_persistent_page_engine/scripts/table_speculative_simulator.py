@@ -284,6 +284,7 @@ def simulate(
     is_oracle = matcher_parts[0] == "oracle"
     monotonic = "monotonic" in matcher_parts
     reversible = "reversible" in matcher_parts
+    start_prior = "start" in matcher_parts
     minimum_anchor = int(matcher_parts[-1][1:]) if matcher_parts[-1].startswith("a") else 1
     oracle_matches = (
         precomputed_oracle_matches
@@ -295,7 +296,13 @@ def simulate(
 
     while position < len(target):
         prefix = target[:position]
-        if is_oracle:
+        if start_prior and position == 1 and target[0] != draft[0]:
+            candidate = Candidate(
+                0,
+                tuple(draft[:block_size]),
+                0,
+            )
+        elif is_oracle:
             match_length, draft_start = oracle_matches[position]
             candidate_length = min(match_length, block_size)
             candidate = (

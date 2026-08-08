@@ -550,6 +550,11 @@ def main() -> None:
     configurations: list[dict[str, Any]] = [
         {"name": "current", "kind": "baseline", "baseline_matcher": "suffix_global_a1"},
         {"name": "reversible", "kind": "baseline", "baseline_matcher": "suffix_global_reversible_a1"},
+        {
+            "name": "start_prior",
+            "kind": "baseline",
+            "baseline_matcher": "suffix_global_reversible_start_a1",
+        },
         {"name": "oracle", "kind": "baseline", "baseline_matcher": "oracle_global"},
     ]
     for weight in column_weights:
