@@ -1,0 +1,7 @@
+progress source_tables=25/665 analyzed=5
+progress source_tables=125/665 analyzed=34
+progress source_tables=200/665 analyzed=71
+progress source_tables=250/665 analyzed=77
+progress source_tables=275/665 analyzed=86
+progress source_tables=575/665 analyzed=135
+complete tables=143 lanes=1144 output=tmp/09_persistent_page_engine/row_draft_base_alignment_gt1s_607ffac/alignment.json
