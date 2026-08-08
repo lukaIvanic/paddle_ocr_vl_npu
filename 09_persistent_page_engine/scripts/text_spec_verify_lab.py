@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compile and benchmark B1 text speculative verification by draft length."""
+"""Compile and benchmark text speculative verification by batch and draft length."""
 
 from __future__ import annotations
 
@@ -45,6 +45,7 @@ DEFAULT_OUTPUT = (
     / "tmp/09_persistent_page_engine/text_spec_verify_lab/results.json"
 )
 DEFAULT_DRAFT_LENGTHS = (1, 2, 4, 8, 16, 32, 64, 128, 256)
+DEFAULT_BATCH_SIZES = (1,)
 DECODE_OPTIMIZATION = "combined_apply_pse_sentinel"
 SPEC_OPTIMIZATION = "combined_apply"
 
@@ -53,7 +54,7 @@ def _parse_ints(raw: str) -> tuple[int, ...]:
     values = tuple(int(value.strip()) for value in raw.split(",") if value.strip())
     if not values or any(value <= 0 for value in values):
         raise argparse.ArgumentTypeError(
-            "draft lengths must be a non-empty list of positive integers"
+            "value must be a non-empty list of positive integers"
         )
     return values
 
@@ -69,6 +70,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--draft-lengths",
         type=_parse_ints,
         default=DEFAULT_DRAFT_LENGTHS,
+    )
+    parser.add_argument(
+        "--batch-sizes",
+        type=_parse_ints,
+        default=DEFAULT_BATCH_SIZES,
+        help="Comma-separated static speculative-verification batch sizes.",
     )
     parser.add_argument("--warmup", type=int, default=5)
     parser.add_argument("--repeats", type=int, default=30)
@@ -192,7 +199,12 @@ def main(argv: Sequence[str] | None = None) -> None:
         "kind": "text_spec_verify_draft_sweep",
         "status": "setup",
         "contract": {
-            "batch_size": 1,
+            # Keep the historical scalar contract for the default B1 run,
+            # while making multi-B sweeps explicit.
+            "batch_size": (
+                int(args.batch_sizes[0]) if len(args.batch_sizes) == 1 else None
+            ),
+            "batch_sizes": list(args.batch_sizes),
             "cache_length": int(args.cache_length),
             "profile_position": int(args.profile_position),
             "draft_lengths": list(args.draft_lengths),
@@ -312,129 +324,276 @@ def main(argv: Sequence[str] | None = None) -> None:
         init_mode="zeros",
     )
 
-    for lane_index, draft_length in enumerate(args.draft_lengths, start=1):
-        cache_dir = torchair_cache_dir_for_spec_shape(
-            args.cache_dir,
-            draft_length=draft_length,
-            cache_length=args.cache_length,
-            dtype=dtype,
-            device=device,
-            model_dir=model_dir,
-            linear_weight_format=linear_weight_format,
-            optimization=SPEC_OPTIMIZATION,
-        )
-        cache_hit = cache_dir.is_dir() and any(cache_dir.iterdir())
-        if not cache_hit and not args.allow_compile:
-            raise RuntimeError(
-                f"missing D{draft_length} graph cache; rerun with "
-                f"--allow-compile:\n  - {cache_dir}"
+    total_lanes = len(args.batch_sizes) * len(args.draft_lengths)
+    lane_index = 0
+    vocab_size = int(model.config.text_config.vocab_size)
+
+    for draft_length in args.draft_lengths:
+        query_length = int(draft_length + 1)
+        # A B1 graph is the exact-token reference for every batched row. If
+        # B1 is one of the measured lanes, that lane also owns this runtime.
+        b1_reference_runtime: TextSpecVerifyRuntime | None = None
+
+        for batch_size in args.batch_sizes:
+            lane_index += 1
+            cache_dir = torchair_cache_dir_for_spec_shape(
+                args.cache_dir,
+                batch_size=batch_size,
+                draft_length=draft_length,
+                cache_length=args.cache_length,
+                dtype=dtype,
+                device=device,
+                model_dir=model_dir,
+                linear_weight_format=linear_weight_format,
+                optimization=SPEC_OPTIMIZATION,
             )
-        print(
-            "SPEC_VERIFY_PROGRESS "
-            f"lane={lane_index}/{len(args.draft_lengths)} "
-            f"draft=D{draft_length} query={draft_length + 1} "
-            f"cache={'hit' if cache_hit else 'compile'} status=setup_begin",
-            flush=True,
-        )
-        lane_started = time.perf_counter()
-        runtime = TextSpecVerifyRuntime(
-            model,
-            device=device,
-            cache_root=args.cache_dir,
-            draft_length=draft_length,
-            cache_length=args.cache_length,
-            dtype=dtype,
-            model_dir=model_dir,
-            linear_weight_format=linear_weight_format,
-            optimization=SPEC_OPTIMIZATION,
-        )
-        input_ids = (
-            torch.arange(
-                1,
-                draft_length + 2,
+            cache_hit = cache_dir.is_dir() and any(cache_dir.iterdir())
+            if not cache_hit and not args.allow_compile:
+                raise RuntimeError(
+                    f"missing B{batch_size} D{draft_length} graph cache; "
+                    f"rerun with --allow-compile:\n  - {cache_dir}"
+                )
+            print(
+                "SPEC_VERIFY_PROGRESS "
+                f"lane={lane_index}/{total_lanes} "
+                f"batch=B{batch_size} draft=D{draft_length} "
+                f"query={query_length} "
+                f"cache={'hit' if cache_hit else 'compile'} "
+                "status=setup_begin",
+                flush=True,
+            )
+            lane_started = time.perf_counter()
+            runtime = TextSpecVerifyRuntime(
+                model,
+                batch_size=batch_size,
+                device=device,
+                cache_root=args.cache_dir,
+                draft_length=draft_length,
+                cache_length=args.cache_length,
+                dtype=dtype,
+                model_dir=model_dir,
+                linear_weight_format=linear_weight_format,
+                optimization=SPEC_OPTIMIZATION,
+            )
+            # Give every row a different deterministic sequence. This catches
+            # cross-row cache or indexing errors that identical rows can hide.
+            input_ids = (
+                torch.arange(
+                    1,
+                    batch_size * query_length + 1,
+                    device=device,
+                    dtype=torch.int64,
+                )
+                .remainder(vocab_size - 1)
+                .add(1)
+                .view(batch_size, query_length)
+            )
+            cache_position = torch.full(
+                (batch_size,),
+                args.profile_position,
                 device=device,
                 dtype=torch.int64,
             )
-            .remainder(int(model.config.text_config.vocab_size) - 1)
-            .add(1)
-            .view(1, draft_length + 1)
-        )
-        cache_position = torch.tensor(
-            [args.profile_position], device=device, dtype=torch.int64
-        )
-
-        _zero_cache(runtime.warm_cache)
-
-        def spec_step() -> torch.Tensor:
-            return runtime.fn(
-                input_ids,
-                cache_position,
-                rope_deltas,
-                *runtime.warm_cache.flat_tensors(),
+            spec_rope_deltas = torch.zeros(
+                (batch_size, 1), device=device, dtype=torch.int64
             )
 
-        durations, spec_targets, host_wall_s = _measure(
-            device,
-            spec_step,
-            warmup=args.warmup,
-            repeats=args.repeats,
-        )
+            _zero_cache(runtime.warm_cache)
 
-        # Teacher-forced serial decode is the like-for-like greedy target
-        # reference. Both paths begin with an all-zero synthetic prefix and
-        # receive the same D+1 token sequence.
-        _zero_cache(reference_cache)
-        serial_targets = []
-        for query_index in range(draft_length + 1):
-            position = torch.tensor(
-                [args.profile_position + query_index],
-                device=device,
-                dtype=torch.int64,
-            )
-            logits = decode_runtime.fn(
-                input_ids[:, query_index : query_index + 1],
-                position,
-                rope_deltas,
-                *reference_cache.flat_tensors(),
-            )
-            serial_targets.append(torch.argmax(logits, dim=-1))
-        serial_targets_tensor = torch.cat(serial_targets, dim=1)
-        synchronize(device)
-        spec_cpu = spec_targets.detach().cpu()
-        serial_cpu = serial_targets_tensor.detach().cpu()
-        exact_positions = int((spec_cpu == serial_cpu).sum().item())
-        target_count = int(spec_cpu.numel())
+            def spec_step() -> torch.Tensor:
+                return runtime.fn(
+                    input_ids,
+                    cache_position,
+                    spec_rope_deltas,
+                    *runtime.warm_cache.flat_tensors(),
+                )
 
-        lane_result = {
-            "draft_length": int(draft_length),
-            "query_length": int(draft_length + 1),
-            "fully_accepted_tokens_per_call": int(draft_length + 1),
-            "cache_was_warm": bool(cache_hit),
-            **_timing_summary(
+            durations, spec_targets, host_wall_s = _measure(
+                device,
+                spec_step,
+                warmup=args.warmup,
+                repeats=args.repeats,
+            )
+            # TorchAir can reuse graph-output storage across calls. Preserve
+            # the measured call before any B1 reference graph is invoked.
+            spec_targets = spec_targets.clone()
+
+            if batch_size == 1 and b1_reference_runtime is None:
+                b1_reference_runtime = runtime
+            if b1_reference_runtime is None:
+                b1_cache_dir = torchair_cache_dir_for_spec_shape(
+                    args.cache_dir,
+                    batch_size=1,
+                    draft_length=draft_length,
+                    cache_length=args.cache_length,
+                    dtype=dtype,
+                    device=device,
+                    model_dir=model_dir,
+                    linear_weight_format=linear_weight_format,
+                    optimization=SPEC_OPTIMIZATION,
+                )
+                b1_cache_hit = b1_cache_dir.is_dir() and any(
+                    b1_cache_dir.iterdir()
+                )
+                if not b1_cache_hit and not args.allow_compile:
+                    raise RuntimeError(
+                        "missing B1 correctness-reference graph cache; "
+                        f"rerun with --allow-compile:\n  - {b1_cache_dir}"
+                    )
+                b1_reference_runtime = TextSpecVerifyRuntime(
+                    model,
+                    batch_size=1,
+                    device=device,
+                    cache_root=args.cache_dir,
+                    draft_length=draft_length,
+                    cache_length=args.cache_length,
+                    dtype=dtype,
+                    model_dir=model_dir,
+                    linear_weight_format=linear_weight_format,
+                    optimization=SPEC_OPTIMIZATION,
+                )
+
+            # Compare every row against the same B1 graph using exact integer
+            # target IDs. Each reference call starts from an all-zero cache.
+            b1_targets = []
+            for row_index in range(batch_size):
+                _zero_cache(b1_reference_runtime.warm_cache)
+                row_targets = b1_reference_runtime.fn(
+                    input_ids[row_index : row_index + 1],
+                    cache_position[row_index : row_index + 1],
+                    spec_rope_deltas[row_index : row_index + 1],
+                    *b1_reference_runtime.warm_cache.flat_tensors(),
+                )
+                b1_targets.append(row_targets.clone())
+            b1_targets_tensor = torch.cat(b1_targets, dim=0)
+            synchronize(device)
+            spec_cpu = spec_targets.detach().cpu()
+            b1_cpu = b1_targets_tensor.detach().cpu()
+            agreement = spec_cpu == b1_cpu
+            exact_positions = int(agreement.sum().item())
+            target_count = int(agreement.numel())
+            per_row = []
+            mismatch_examples = []
+            for row_index in range(batch_size):
+                row_agreement = agreement[row_index]
+                row_exact = int(row_agreement.sum().item())
+                mismatch_positions = torch.nonzero(
+                    ~row_agreement, as_tuple=False
+                ).reshape(-1)
+                first_mismatch = (
+                    int(mismatch_positions[0].item())
+                    if int(mismatch_positions.numel()) > 0
+                    else None
+                )
+                per_row.append(
+                    {
+                        "row": int(row_index),
+                        "exact_positions": row_exact,
+                        "positions": query_length,
+                        "first_mismatch_position": first_mismatch,
+                    }
+                )
+                for mismatch_position in mismatch_positions[:4].tolist():
+                    if len(mismatch_examples) >= 16:
+                        break
+                    mismatch_examples.append(
+                        {
+                            "row": int(row_index),
+                            "position": int(mismatch_position),
+                            "batch_target_id": int(
+                                spec_cpu[row_index, mismatch_position].item()
+                            ),
+                            "b1_target_id": int(
+                                b1_cpu[row_index, mismatch_position].item()
+                            ),
+                        }
+                    )
+
+            # Preserve the historical B1 teacher-forced serial-decode check.
+            serial_agreement: dict[str, Any] | None = None
+            if batch_size == 1:
+                _zero_cache(reference_cache)
+                serial_targets = []
+                for query_index in range(query_length):
+                    position = torch.tensor(
+                        [args.profile_position + query_index],
+                        device=device,
+                        dtype=torch.int64,
+                    )
+                    logits = decode_runtime.fn(
+                        input_ids[:, query_index : query_index + 1],
+                        position,
+                        rope_deltas,
+                        *reference_cache.flat_tensors(),
+                    )
+                    serial_targets.append(torch.argmax(logits, dim=-1))
+                serial_targets_tensor = torch.cat(serial_targets, dim=1)
+                synchronize(device)
+                serial_cpu = serial_targets_tensor.detach().cpu()
+                serial_exact = int((spec_cpu == serial_cpu).sum().item())
+                serial_count = int(spec_cpu.numel())
+                serial_agreement = {
+                    "exact_positions": serial_exact,
+                    "positions": serial_count,
+                    "fraction": serial_exact / serial_count,
+                }
+
+            timing = _timing_summary(
                 durations,
-                recovered_tokens_per_call=draft_length + 1,
+                recovered_tokens_per_call=query_length,
                 host_wall_s=host_wall_s,
-            ),
-            "serial_decode_target_agreement": {
-                "exact_positions": exact_positions,
-                "positions": target_count,
-                "fraction": exact_positions / target_count,
-            },
-            "runtime": runtime.metadata,
-            "lane_wall_s": time.perf_counter() - lane_started,
-        }
-        result["spec_verify"].append(lane_result)
-        _write_progress(output_path, result)
-        print(
-            "SPEC_VERIFY_RESULT "
-            f"draft=D{draft_length} query={draft_length + 1} "
-            f"latency_ms={lane_result['latency_ms']['median']:.3f} "
-            f"effective_tok_s={lane_result['effective_recovered_tok_per_s']:.1f} "
-            f"target_match={exact_positions}/{target_count} "
-            f"lane_wall_s={lane_result['lane_wall_s']:.1f}",
-            flush=True,
-        )
-        del runtime
+            )
+            calls = len(durations)
+            physical_tokens_per_call = batch_size * query_length
+            lane_result = {
+                "batch_size": int(batch_size),
+                "draft_length": int(draft_length),
+                "query_length": query_length,
+                "fully_accepted_tokens_per_call": query_length,
+                "physical_verified_tokens_per_call": physical_tokens_per_call,
+                "physical_verified_tok_per_s": (
+                    calls * physical_tokens_per_call / timing["device_s"]
+                ),
+                "host_physical_verified_tok_per_s": (
+                    calls * physical_tokens_per_call / host_wall_s
+                ),
+                "cache_was_warm": bool(cache_hit),
+                **timing,
+                "batch_vs_b1_spec_target_agreement": {
+                    "comparison": "exact_token_id",
+                    "distinct_input_sequence_per_row": True,
+                    "exact_positions": exact_positions,
+                    "positions": target_count,
+                    "fraction": exact_positions / target_count,
+                    "exact_rows": sum(
+                        row["exact_positions"] == row["positions"]
+                        for row in per_row
+                    ),
+                    "rows": int(batch_size),
+                    "per_row": per_row,
+                    "mismatch_examples": mismatch_examples,
+                },
+                "serial_decode_target_agreement": serial_agreement,
+                "runtime": runtime.metadata,
+                "lane_wall_s": time.perf_counter() - lane_started,
+            }
+            result["spec_verify"].append(lane_result)
+            _write_progress(output_path, result)
+            print(
+                "SPEC_VERIFY_RESULT "
+                f"batch=B{batch_size} draft=D{draft_length} "
+                f"query={query_length} "
+                f"latency_ms={lane_result['latency_ms']['median']:.3f} "
+                f"winner_tok_s={lane_result['effective_recovered_tok_per_s']:.1f} "
+                f"physical_tok_s={lane_result['physical_verified_tok_per_s']:.1f} "
+                f"b1_target_match={exact_positions}/{target_count} "
+                f"lane_wall_s={lane_result['lane_wall_s']:.1f}",
+                flush=True,
+            )
+            del runtime
+
+        if b1_reference_runtime is not None:
+            del b1_reference_runtime
 
     result["status"] = "complete"
     result["setup"]["total_wall_s"] = time.perf_counter() - setup_started
