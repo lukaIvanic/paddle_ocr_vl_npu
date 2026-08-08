@@ -131,6 +131,15 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--min-pixels", type=int, default=28224)
     parser.add_argument("--max-pixels", type=int, default=802816)
+    parser.add_argument(
+        "--row-max-pixels",
+        type=int,
+        help=(
+            "Optional second pixel cap applied after splitting. This keeps "
+            "unusually tall natural-row crops within a small decode KV arena "
+            "without reducing the source table before boundary detection."
+        ),
+    )
     parser.add_argument("--cache-length", type=int, default=4096)
     parser.add_argument(
         "--decode-cache-dir",
@@ -285,6 +294,8 @@ def crop_rows(
     overlap: int,
     *,
     pad_to_factor: int | None = None,
+    min_pixels: int = 28224,
+    max_pixels: int | None = None,
 ) -> list[tuple[int, int, Any]]:
     rows = []
     for index, (top, bottom) in enumerate(zip(boundaries, boundaries[1:])):
@@ -297,6 +308,18 @@ def crop_rows(
             crop_bottom = min(image.height, crop_top + minimum_height)
             crop_top = max(0, crop_bottom - minimum_height)
         row = image.crop((0, crop_top, image.width, crop_bottom))
+        if max_pixels is not None and row.width * row.height > max_pixels:
+            resized_height, resized_width = smart_resize(
+                row.height,
+                row.width,
+                factor=28,
+                min_pixels=min(min_pixels, max_pixels),
+                max_pixels=max_pixels,
+            )
+            row = row.resize(
+                (resized_width, resized_height),
+                resample=Image.Resampling.BICUBIC,
+            )
         if pad_to_factor is not None:
             padded_width = math.ceil(row.width / pad_to_factor) * pad_to_factor
             padded_height = math.ceil(row.height / pad_to_factor) * pad_to_factor
@@ -450,6 +473,8 @@ def run_cross_table_schedule(
                 proposal.boundaries,
                 args.row_overlap_px,
                 pad_to_factor=28 if preserve_resized_geometry else None,
+                min_pixels=args.min_pixels,
+                max_pixels=args.row_max_pixels,
             )
             row_crop_s = time.perf_counter() - row_crop_started
             key = (source["request_id"], strategy)
@@ -604,6 +629,7 @@ def run_cross_table_schedule(
             "vision_buckets": list(parse_vision_buckets(args.vision_buckets)),
             "vision_pack_target": args.vision_pack_target,
             "row_overlap_px": args.row_overlap_px,
+            "row_max_pixels": args.row_max_pixels,
             "resize_full_table_before_split": args.resize_full_table_before_split,
             "strategies": list(strategies),
             "request_ids": [item["request_id"] for item in selected],
@@ -716,6 +742,8 @@ def main() -> None:
                 proposal.boundaries,
                 args.row_overlap_px,
                 pad_to_factor=28 if preserve_resized_geometry else None,
+                min_pixels=args.min_pixels,
+                max_pixels=args.row_max_pixels,
             )
             row_crop_s = time.perf_counter() - row_crop_started
             results: list[dict[str, Any]] = []
@@ -825,6 +853,7 @@ def main() -> None:
             "vision_buckets": list(parse_vision_buckets(args.vision_buckets)),
             "vision_pack_target": args.vision_pack_target,
             "row_overlap_px": args.row_overlap_px,
+            "row_max_pixels": args.row_max_pixels,
             "resize_full_table_before_split": args.resize_full_table_before_split,
             "strategies": list(strategies),
             "request_ids": list(request_ids),
