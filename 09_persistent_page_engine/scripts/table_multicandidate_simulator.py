@@ -18,6 +18,7 @@ import math
 from pathlib import Path
 import statistics
 import sys
+import time
 from typing import Any, Iterable
 
 
@@ -84,7 +85,19 @@ def ranked_candidates(
     if not prefix or not matcher.draft or limit <= 0:
         return []
 
-    candidates: list[tuple[tuple[float, float, int, int], DraftProposal]] = []
+    unique: dict[
+        tuple[int, ...],
+        tuple[tuple[float, float, int, int], DraftProposal],
+    ] = {}
+
+    def keep(
+        score: tuple[float, float, int, int],
+        proposal: DraftProposal,
+    ) -> None:
+        previous = unique.get(proposal.tokens)
+        if previous is None or score > previous[0]:
+            unique[proposal.tokens] = (score, proposal)
+
     if (
         len(prefix) == 1
         and prefix[0] == matcher.ecel_token
@@ -95,7 +108,7 @@ def ranked_candidates(
             tuple(matcher.draft[: matcher.block_size]),
             0,
         )
-        candidates.append(((0.0, 0.0, 1, 0), proposal))
+        keep((0.0, 0.0, 1, 0), proposal)
 
     usable = [length for length in matcher.index if length <= len(prefix)]
     for indexed_anchor in sorted(usable, reverse=True):
@@ -123,17 +136,15 @@ def ranked_candidates(
                 int(continuation >= matcher.cursor),
                 -abs(continuation - matcher.cursor),
             )
-            candidates.append(
-                (score, DraftProposal(continuation, tokens, anchor))
-            )
+            keep(score, DraftProposal(continuation, tokens, anchor))
+        # Exact-prefix length dominates every other score term. Once this
+        # anchor tier supplies K distinct token branches, shorter indexed
+        # anchors cannot enter the top-K set.
+        if len(unique) >= limit:
+            break
 
     # Different draft locations can contain the same token continuation.  They
     # are one target-verification branch, so retain only the best-ranked copy.
-    unique: dict[tuple[int, ...], tuple[tuple[float, float, int, int], DraftProposal]] = {}
-    for score, proposal in candidates:
-        previous = unique.get(proposal.tokens)
-        if previous is None or score > previous[0]:
-            unique[proposal.tokens] = (score, proposal)
     ordered = sorted(unique.values(), key=lambda item: item[0], reverse=True)
     return [
         RankedProposal(proposal, rank, score)
@@ -265,7 +276,9 @@ def main() -> None:
     }
     counts = [int(value) for value in args.candidate_counts.split(",") if value]
     detailed: list[dict[str, Any]] = []
-    for request_id in sorted(set(targets) & set(drafts)):
+    request_ids = sorted(set(targets) & set(drafts))
+    started = time.perf_counter()
+    for table_index, request_id in enumerate(request_ids, start=1):
         target = target_tokens(targets[request_id])
         for count in counts:
             detailed.append(
@@ -282,6 +295,13 @@ def main() -> None:
                         column_weight=args.column_weight,
                     ),
                 }
+            )
+        if table_index == 1 or table_index % 25 == 0 or table_index == len(request_ids):
+            elapsed = time.perf_counter() - started
+            print(
+                f"progress={table_index}/{len(request_ids)} "
+                f"elapsed_s={elapsed:.1f} tables_per_s={table_index / elapsed:.2f}",
+                flush=True,
             )
 
     result = {
