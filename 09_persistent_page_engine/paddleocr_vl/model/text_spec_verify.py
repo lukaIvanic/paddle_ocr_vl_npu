@@ -71,28 +71,27 @@ def _update_spec_kv_cache_(
     key_states: torch.Tensor,
     value_states: torch.Tensor,
 ) -> None:
-    positions = positions.to(
+    # torch_npu.scatter_update_ lowers to the dedicated Scatter KV-cache
+    # template. It takes one start index per batch row, while updates carries
+    # the full contiguous Q block written along the sequence axis.
+    start_positions = positions[:1].to(
         device=key_cache.device,
         dtype=torch.int64,
     ).contiguous()
     if key_cache.device.type == "npu":
         import torch_npu
 
-        # The Ascend Scatter KV-cache template requires the indexed physical
-        # dimension to be dimension zero: indices.shape[0] must equal
-        # updates.shape[0]. Present S first while keeping an alias of the
-        # persistent [B,H,S,D] arena.
         torch_npu.scatter_update_(
-            key_cache.permute(2, 1, 0, 3),
-            positions,
-            key_states.permute(2, 1, 0, 3).contiguous(),
-            0,
+            key_cache,
+            start_positions,
+            key_states.contiguous(),
+            2,
         )
         torch_npu.scatter_update_(
-            value_cache.permute(2, 1, 0, 3),
-            positions,
-            value_states.permute(2, 1, 0, 3).contiguous(),
-            0,
+            value_cache,
+            start_positions,
+            value_states.contiguous(),
+            2,
         )
         return
     key_cache[:, :, positions, :] = key_states
