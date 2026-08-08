@@ -333,16 +333,6 @@ def filtered_pool_candidate(
             tuple(normalized_prefix[-indexed_anchor:]), ()
         )
         best: tuple[tuple[float, float, int, int], Proposal] | None = None
-        if current_band is not None:
-            local_positions = [
-                continuation
-                for continuation in positions
-                if continuation < len(metadata)
-                and metadata[continuation].band in (current_band, current_band + 1)
-            ]
-            if not local_positions:
-                continue
-            positions = local_positions
         for continuation in positions:
             if continuation >= len(draft):
                 continue
@@ -379,8 +369,8 @@ def filtered_pool_candidate(
                 if use_cursor
                 else (
                     float(anchor),
-                    structure_score,
                     -lane_distance if current_band is not None else -continuation,
+                    structure_score,
                     -continuation if current_band is not None else 0,
                 )
             )
@@ -795,7 +785,7 @@ def main() -> None:
             "stitch_bands": True,
         },
         {
-            "name": "ecel_normalized_no_cursor_stitched_lane_column_patch_w0.25",
+            "name": "ecel_normalized_no_cursor_stitched_lane_prior_column_patch_w0.25",
             "kind": "filtered",
             "column_weight": 0.25,
             "patch": True,
