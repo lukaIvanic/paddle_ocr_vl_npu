@@ -197,6 +197,16 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         add_rms_norm=True,
         stage_aware_weight_prefetch=True,
     ),
+    "combined_apply_prefetch_rope_lut_no_norm": DecodeOptimizationConfig(
+        name="combined_apply_prefetch_rope_lut_no_norm",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="identity",
+        rotary="npu_apply",
+        rotary_factors="lookup",
+        add_rms_norm=True,
+        stage_aware_weight_prefetch=True,
+    ),
     "combined_apply_prefetch_no_rope": DecodeOptimizationConfig(
         name="combined_apply_prefetch_no_rope",
         hoist_mrope=True,
@@ -662,6 +672,8 @@ def _decode_rms_norm(
     hidden_states: torch.Tensor,
     optimization: DecodeOptimizationConfig,
 ) -> torch.Tensor:
+    if optimization.rms_norm == "identity":
+        return hidden_states
     if optimization.rms_norm == "manual":
         return norm(hidden_states)
     if optimization.rms_norm != "npu":
@@ -692,6 +704,18 @@ def _decode_add_rms_norm(
         norm.variance_epsilon,
     )
     return normalized, summed
+
+
+def _decode_add_with_optional_rms_norm(
+    x: torch.Tensor,
+    residual: torch.Tensor,
+    norm: nn.Module,
+    optimization: DecodeOptimizationConfig,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    if optimization.rms_norm == "identity":
+        summed = x + residual
+        return summed, summed
+    return _decode_add_rms_norm(x, residual, norm)
 
 
 def _decode_mlp(
@@ -1087,10 +1111,11 @@ def run_text_decode_transformer(
                 )
                 residual = hidden_states
             else:
-                attention_input, residual = _decode_add_rms_norm(
+                attention_input, residual = _decode_add_with_optional_rms_norm(
                     hidden_states,
                     residual,
                     layer.input_layernorm,
+                    optimization,
                 )
             attention_output = _decode_attention(
                 layer.self_attn,
@@ -1105,20 +1130,22 @@ def run_text_decode_transformer(
                 actual_seq_lengths,
                 optimization,
             )
-            mlp_input, residual = _decode_add_rms_norm(
+            mlp_input, residual = _decode_add_with_optional_rms_norm(
                 attention_output,
                 residual,
                 layer.post_attention_layernorm,
+                optimization,
             )
             hidden_states = _decode_mlp(
                 layer.mlp,
                 mlp_input,
                 optimization,
             )
-        hidden_states, _residual = _decode_add_rms_norm(
+        hidden_states, _residual = _decode_add_with_optional_rms_norm(
             hidden_states,
             residual,
             text_model.norm,
+            optimization,
         )
         return hidden_states
 
