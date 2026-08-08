@@ -20,6 +20,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--position", type=int, required=True)
     parser.add_argument("--device-index", type=int, default=0)
     parser.add_argument("--num-key-value-heads", type=int, default=2)
+    parser.add_argument(
+        "--repeat-gqa-kv",
+        action="store_true",
+        help="Build 16-head MHA K/V by repeating a two-head GQA cache.",
+    )
+    parser.add_argument(
+        "--check-gqa-reference",
+        action="store_true",
+        help="Compare repeated-KV MHA output with the equivalent GQA call.",
+    )
     parser.add_argument("--warmup", type=int, default=5)
     parser.add_argument("--repeats", type=int, default=20)
     parser.add_argument("--seed", type=int, default=7)
@@ -33,6 +43,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("--warmup must be non-negative and --repeats positive")
     if args.num_key_value_heads <= 0 or 16 % args.num_key_value_heads != 0:
         parser.error("--num-key-value-heads must be a positive divisor of 16")
+    if (args.repeat_gqa_kv or args.check_gqa_reference) and args.num_key_value_heads != 16:
+        parser.error("repeated-KV MHA controls require --num-key-value-heads 16")
     return args
 
 
@@ -49,12 +61,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     query = torch.randn(
         (1, 16, 1, 128), device=device, dtype=dtype
     ).contiguous()
-    key = torch.randn(
-        (1, args.num_key_value_heads, args.cache_length, 128),
+    source_key_value_heads = 2 if args.repeat_gqa_kv else args.num_key_value_heads
+    source_key = torch.randn(
+        (1, source_key_value_heads, args.cache_length, 128),
         device=device,
         dtype=dtype,
     ).contiguous()
-    value = torch.randn_like(key).contiguous()
+    source_value = torch.randn_like(source_key).contiguous()
+    if args.repeat_gqa_kv:
+        repeats_per_head = args.num_key_value_heads // source_key_value_heads
+        key = source_key.repeat_interleave(repeats_per_head, dim=1).contiguous()
+        value = source_value.repeat_interleave(repeats_per_head, dim=1).contiguous()
+    else:
+        key = source_key
+        value = source_value
     positions = torch.arange(
         args.cache_length, device=device, dtype=torch.int64
     )
@@ -62,19 +82,26 @@ def main(argv: Sequence[str] | None = None) -> int:
         1, 1, 1, args.cache_length
     ).contiguous()
 
-    def step() -> torch.Tensor:
+    def attention_step(
+        step_key: torch.Tensor,
+        step_value: torch.Tensor,
+        num_key_value_heads: int,
+    ) -> torch.Tensor:
         return torch_npu.npu_incre_flash_attention(
             query,
-            key,
-            value,
+            step_key,
+            step_value,
             atten_mask=mask,
             actual_seq_lengths=None,
             num_heads=16,
-            num_key_value_heads=args.num_key_value_heads,
+            num_key_value_heads=num_key_value_heads,
             input_layout="BNSD",
             scale_value=1.0 / math.sqrt(128.0),
             inner_precise=1,
         )
+
+    def step() -> torch.Tensor:
+        return attention_step(key, value, args.num_key_value_heads)
 
     output = None
     for _ in range(args.warmup):
@@ -85,6 +112,24 @@ def main(argv: Sequence[str] | None = None) -> int:
         output = step()
     torch.npu.synchronize()
     elapsed_s = time.perf_counter() - started
+    reference_comparison = None
+    if args.check_gqa_reference:
+        reference = attention_step(source_key, source_value, source_key_value_heads)
+        difference = (output.float() - reference.float()).abs()
+        reference_norm = torch.linalg.vector_norm(reference.float())
+        reference_comparison = {
+            "max_abs": difference.max().item(),
+            "mean_abs": difference.mean().item(),
+            "relative_l2": (
+                torch.linalg.vector_norm(difference) / reference_norm
+            ).item(),
+            "cosine_similarity": torch.nn.functional.cosine_similarity(
+                output.float().flatten(),
+                reference.float().flatten(),
+                dim=0,
+            ).item(),
+        }
+
     result = {
         "schema_version": 1,
         "kind": "direct_increfa_operator_profile",
@@ -92,6 +137,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "batch_size": 1,
             "query_heads": 16,
             "key_value_heads": args.num_key_value_heads,
+            "repeat_gqa_kv": args.repeat_gqa_kv,
             "head_dim": 128,
             "cache_length": args.cache_length,
             "position": args.position,
@@ -111,6 +157,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "shape": list(output.shape) if output is not None else None,
             "dtype": str(output.dtype) if output is not None else None,
         },
+        "gqa_reference_comparison": reference_comparison,
     }
     if args.output is not None:
         args.output.parent.mkdir(parents=True, exist_ok=True)
