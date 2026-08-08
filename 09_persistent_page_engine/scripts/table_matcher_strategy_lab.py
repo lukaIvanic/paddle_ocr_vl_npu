@@ -326,7 +326,7 @@ def filtered_pool_candidate(
                 continuation
                 for continuation in positions
                 if continuation < len(metadata)
-                and metadata[continuation].band_index in (current_band, current_band + 1)
+                and metadata[continuation].band in (current_band, current_band + 1)
             ]
             if not local_positions:
                 continue
@@ -358,7 +358,7 @@ def filtered_pool_candidate(
             forward = int(continuation >= cursor)
             distance = abs(continuation - cursor)
             lane_distance = (
-                abs(metadata[continuation].band_index - current_band)
+                abs(metadata[continuation].band - current_band)
                 if current_band is not None
                 else 0
             )
@@ -641,7 +641,7 @@ def simulate_custom(
                     )
                     current_band = max(
                         current_band,
-                        metadata[last_accepted].band_index,
+                        metadata[last_accepted].band,
                     )
         correction_matches_draft = (
             proposal is not None
