@@ -719,6 +719,21 @@ def _scale_proposal(
     return SplitProposal(proposal.name, boundaries, diagnostics)
 
 
+def uniform_eight_proposals(image: Image.Image) -> tuple[SplitProposal, SplitProposal]:
+    """Build uniform and snapped-uniform proposals without other detectors."""
+
+    max_detection_dimension = 1800
+    scale = min(1.0, max_detection_dimension / max(image.size))
+    detection_height = round(image.height * scale)
+    uniform = _scale_proposal(
+        uniform_split(detection_height, rows=8),
+        detection_height,
+        image.height,
+        scale,
+    )
+    return uniform, snap_uniform_boundaries(image, uniform)
+
+
 def analyze(image: Image.Image) -> tuple[SplitProposal, ...]:
     max_detection_dimension = 1800
     scale = min(1.0, max_detection_dimension / max(image.size))

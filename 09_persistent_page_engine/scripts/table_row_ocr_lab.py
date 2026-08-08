@@ -36,6 +36,7 @@ from table_row_split_lab import (
     orient_row_draft_image,
     read_jsonl,
     trim_blank_margin,
+    uniform_eight_proposals,
 )
 
 
@@ -287,11 +288,16 @@ def prepare_strategy_inputs(
         whole_image, whole_trim_box = row_image, row_trim_box
 
     split_started = time.perf_counter()
-    proposals = (
-        {proposal.name: proposal for proposal in analyze(row_image)}
-        if any(strategy != "whole" for strategy in strategies)
-        else {}
-    )
+    row_strategies = set(strategies) - {"whole"}
+    if row_strategies and row_strategies <= {"uniform_8", "uniform_8_snapped"}:
+        proposals = {
+            proposal.name: proposal
+            for proposal in uniform_eight_proposals(row_image)
+        }
+    elif row_strategies:
+        proposals = {proposal.name: proposal for proposal in analyze(row_image)}
+    else:
+        proposals = {}
     if "whole" in strategies:
         proposals["whole"] = SplitProposal(
             name="whole",
