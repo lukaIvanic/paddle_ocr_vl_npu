@@ -213,6 +213,7 @@ def exact_pool_candidate(
     cell_tokens: set[int],
     column_weight: float,
     patch: bool,
+    use_cursor: bool = True,
 ) -> Proposal | None:
     usable_lengths = [length for length in continuation_index if length <= len(prefix)]
     for indexed_anchor in sorted(usable_lengths, reverse=True):
@@ -239,7 +240,11 @@ def exact_pool_candidate(
             distance = abs(continuation - cursor)
             # Exact-prefix length remains authoritative. Structural information
             # only breaks ties between candidates with the same exact anchor.
-            score = (float(anchor), structure_score, forward, -distance)
+            score = (
+                (float(anchor), structure_score, forward, -distance)
+                if use_cursor
+                else (float(anchor), structure_score, -continuation, 0)
+            )
             proposal = Proposal(continuation, tokens, structure_score, anchor)
             if best is None or score > best[0]:
                 best = (score, proposal)
@@ -293,6 +298,7 @@ def filtered_pool_candidate(
     cell_tokens: set[int],
     column_weight: float,
     patch: bool,
+    use_cursor: bool = True,
 ) -> Proposal | None:
     usable_lengths = [
         length for length in index.by_length if length <= len(normalized_prefix)
@@ -328,7 +334,11 @@ def filtered_pool_candidate(
             )
             forward = int(continuation >= cursor)
             distance = abs(continuation - cursor)
-            score = (float(anchor), structure_score, forward, -distance)
+            score = (
+                (float(anchor), structure_score, forward, -distance)
+                if use_cursor
+                else (float(anchor), structure_score, -continuation, 0)
+            )
             proposal = Proposal(continuation, tokens, structure_score, anchor)
             if best is None or score > best[0]:
                 best = (score, proposal)
@@ -453,6 +463,7 @@ def simulate_custom(
     continuation_index: dict[int, dict[tuple[int, ...], list[int]]] | None = None,
     ignored_anchor_token: int | None = None,
     filtered_anchor_index: FilteredAnchorIndex | None = None,
+    use_cursor: bool = True,
 ) -> dict[str, Any]:
     index = continuation_index or build_continuation_index(draft, maximum_anchor)
     structure = TargetStructure()
@@ -522,6 +533,7 @@ def simulate_custom(
                 cell_tokens,
                 column_weight,
                 patch,
+                use_cursor,
             )
         elif matcher.startswith("beam"):
             proposal = beam.propose() if beam is not None else None
@@ -561,6 +573,7 @@ def simulate_custom(
                 cell_tokens,
                 column_weight,
                 patch,
+                use_cursor,
             )
         calls += 1
         if proposal is None:
@@ -698,6 +711,20 @@ def main() -> None:
             "column_weight": 0.25,
             "patch": True,
         },
+        {
+            "name": "no_cursor_column_patch_w0.25",
+            "kind": "column",
+            "column_weight": 0.25,
+            "patch": True,
+            "use_cursor": False,
+        },
+        {
+            "name": "ecel_normalized_no_cursor_column_patch_w0.25",
+            "kind": "filtered",
+            "column_weight": 0.25,
+            "patch": True,
+            "use_cursor": False,
+        },
     ]
     for weight in column_weights:
         configurations.extend(
@@ -801,6 +828,7 @@ def main() -> None:
                     baseline_index,
                     ecel_token if config["kind"] == "filtered" else None,
                     ecel_normalized_index if config["kind"] == "filtered" else None,
+                    bool(config.get("use_cursor", True)),
                 )
             matcher_cpu_s = time.perf_counter() - matcher_started
             detailed.append(
