@@ -55,14 +55,12 @@ def _query_positions(
     query_length: int,
 ) -> torch.Tensor:
     start = cache_position.reshape(-1).to(dtype=torch.int64)
-    if int(start.numel()) != 1:
-        raise ValueError("text speculative verification currently requires B=1")
     offsets = torch.arange(
         int(query_length),
         device=cache_position.device,
         dtype=torch.int64,
     )
-    return start + offsets
+    return start.view(-1, 1) + offsets.view(1, -1)
 
 
 def _update_spec_kv_cache_(
@@ -75,7 +73,7 @@ def _update_spec_kv_cache_(
     # torch_npu.scatter_update_ lowers to the dedicated Scatter KV-cache
     # template. It takes one start index per batch row, while updates carries
     # the full contiguous Q block written along the sequence axis.
-    start_positions = positions[:1].to(
+    start_positions = positions[:, 0].to(
         device=key_cache.device,
         dtype=torch.int64,
     ).contiguous()
@@ -95,8 +93,9 @@ def _update_spec_kv_cache_(
             2,
         )
         return
-    key_cache[:, :, positions, :] = key_states
-    value_cache[:, :, positions, :] = value_states
+    for batch_index in range(int(key_cache.shape[0])):
+        key_cache[batch_index, :, positions[batch_index], :] = key_states[batch_index]
+        value_cache[batch_index, :, positions[batch_index], :] = value_states[batch_index]
 
 
 def _spec_attention(
@@ -136,9 +135,12 @@ def _spec_attention(
         device=hidden_states.device,
         dtype=torch.int64,
     )
-    attention_mask = (
-        kv_positions.view(1, 1, 1, cache_length)
-        > positions.view(1, 1, -1, 1)
+    batch_size = int(hidden_states.shape[0])
+    attention_mask = kv_positions.view(1, 1, 1, cache_length) > positions.view(
+        batch_size,
+        1,
+        -1,
+        1,
     )
 
     if query_states.device.type != "npu":
@@ -147,17 +149,17 @@ def _spec_attention(
         query_heads = int(attention.num_heads)
         expanded_key = (
             key_cache[:, :, None, :, :]
-            .expand(1, kv_heads, groups, cache_length, head_dim)
-            .reshape(query_heads, cache_length, head_dim)
+            .expand(batch_size, kv_heads, groups, cache_length, head_dim)
+            .reshape(batch_size * query_heads, cache_length, head_dim)
         )
         expanded_value = (
             value_cache[:, :, None, :, :]
-            .expand(1, kv_heads, groups, cache_length, head_dim)
-            .reshape(query_heads, cache_length, head_dim)
+            .expand(batch_size, kv_heads, groups, cache_length, head_dim)
+            .reshape(batch_size * query_heads, cache_length, head_dim)
         )
-        query = query_states.reshape(query_heads, -1, head_dim)
+        query = query_states.reshape(batch_size * query_heads, -1, head_dim)
         scores = torch.bmm(query, expanded_key.transpose(1, 2)).view(
-            1, query_heads, query.shape[1], cache_length
+            batch_size, query_heads, query.shape[1], cache_length
         ) * float(attention.scaling)
         scores = scores.masked_fill(
             attention_mask,
@@ -167,9 +169,13 @@ def _spec_attention(
             query_states.dtype
         )
         attention_output = torch.bmm(
-            probabilities.reshape(query_heads, query.shape[1], cache_length),
+            probabilities.reshape(
+                batch_size * query_heads,
+                query.shape[1],
+                cache_length,
+            ),
             expanded_value,
-        ).view(1, query_heads, query.shape[1], head_dim)
+        ).view(batch_size, query_heads, query.shape[1], head_dim)
     else:
         import torch_npu
 
@@ -191,7 +197,11 @@ def _spec_attention(
     attention_output = (
         attention_output.transpose(1, 2)
         .contiguous()
-        .reshape(1, query_length, attention.num_heads * attention.head_dim)
+        .reshape(
+            batch_size,
+            query_length,
+            attention.num_heads * attention.head_dim,
+        )
     )
     return _linear_tokenwise(attention.o_proj, attention_output)
 
@@ -209,8 +219,8 @@ def run_text_spec_verify_transformer(
     """Run one B1 multi-token verification pass against a static KV arena."""
     optimization = resolve_decode_optimization(optimization)
     batch_size, query_length, _hidden = inputs_embeds.shape
-    if int(batch_size) != 1:
-        raise ValueError("text speculative verification currently requires B=1")
+    if int(cache_position.reshape(-1).numel()) != int(batch_size):
+        raise ValueError("cache_position must contain one position per batch row")
     if not optimization.add_rms_norm:
         raise ValueError(
             "text speculative verification requires the optimized add-RMS path"
@@ -219,7 +229,7 @@ def run_text_spec_verify_transformer(
         raise ValueError("text speculative verification currently requires MRoPE")
 
     positions = _query_positions(cache_position, int(query_length))
-    decode_positions = positions.view(1, query_length) + rope_deltas.to(
+    decode_positions = positions + rope_deltas.to(
         device=inputs_embeds.device,
         dtype=torch.int64,
     )
@@ -282,12 +292,13 @@ def run_text_spec_verify_transformer(
 
 
 class TextSpecVerifyStage(nn.Module):
-    """Static B1 verifier for exactly ``draft_length`` draft tokens."""
+    """Static batched verifier for exactly ``draft_length`` draft tokens."""
 
     def __init__(
         self,
         model: "LocalPaddleOCRVLForConditionalGeneration",
         *,
+        batch_size: int = 1,
         draft_length: int,
         optimization: str | DecodeOptimizationConfig = "combined_apply",
     ):
@@ -296,6 +307,9 @@ class TextSpecVerifyStage(nn.Module):
             raise ValueError("draft_length must be positive")
         self.model = model
         self.num_layers = int(model.config.text_config.num_hidden_layers)
+        self.batch_size = int(batch_size)
+        if self.batch_size <= 0:
+            raise ValueError("batch_size must be positive")
         self.draft_length = int(draft_length)
         self.query_length = self.draft_length + 1
         self.optimization = resolve_decode_optimization(optimization)
@@ -307,8 +321,11 @@ class TextSpecVerifyStage(nn.Module):
         rope_deltas: torch.Tensor,
         *flat_cache_tensors: torch.Tensor,
     ) -> torch.Tensor:
-        if int(input_ids.shape[0]) != 1:
-            raise ValueError("TextSpecVerifyStage requires batch size 1")
+        if int(input_ids.shape[0]) != self.batch_size:
+            raise ValueError(
+                f"expected batch size {self.batch_size}, "
+                f"got {int(input_ids.shape[0])}"
+            )
         if int(input_ids.shape[1]) != self.query_length:
             raise ValueError(
                 f"expected query length {self.query_length}, "
@@ -332,11 +349,12 @@ class TextSpecVerifyStage(nn.Module):
 
 def unique_spec_verify_forward(
     module: TextSpecVerifyStage,
+    batch_size: int,
     draft_length: int,
 ) -> Callable[..., torch.Tensor]:
     """Give each static D shape an independent TorchDynamo code identity."""
     original = module.forward.__func__
-    name = f"text_spec_verify_draft_{int(draft_length)}"
+    name = f"text_spec_verify_b{int(batch_size)}_draft_{int(draft_length)}"
     code = original.__code__.replace(co_name=name)
     function = types.FunctionType(
         code,
@@ -363,6 +381,7 @@ def spec_verify_source_hash() -> str:
 def torchair_cache_dir_for_spec_shape(
     cache_root: Path,
     *,
+    batch_size: int = 1,
     draft_length: int,
     cache_length: int,
     dtype: torch.dtype,
@@ -381,6 +400,7 @@ def torchair_cache_dir_for_spec_shape(
             f"opt{cache_key_part(optimization.name)}",
             f"mode{cache_key_part(TORCHAIR_EXECUTION_MODE)}",
             f"dtype{cache_key_part(dtype)}",
+            f"batch{int(batch_size)}",
             f"draft{int(draft_length)}",
             f"query{int(draft_length) + 1}",
             f"cache{int(cache_length)}",
@@ -401,6 +421,7 @@ class TextSpecVerifyRuntime:
         self,
         model: "LocalPaddleOCRVLForConditionalGeneration",
         *,
+        batch_size: int = 1,
         device: torch.device,
         cache_root: Path,
         draft_length: int,
@@ -410,6 +431,7 @@ class TextSpecVerifyRuntime:
         linear_weight_format: str,
         optimization: str | DecodeOptimizationConfig = "combined_apply",
     ):
+        self.batch_size = int(batch_size)
         self.draft_length = int(draft_length)
         self.query_length = self.draft_length + 1
         self.cache_length = int(cache_length)
@@ -419,15 +441,18 @@ class TextSpecVerifyRuntime:
         )
         self.stage = TextSpecVerifyStage(
             model,
+            batch_size=self.batch_size,
             draft_length=self.draft_length,
             optimization=self.optimization,
         ).eval()
         self.entrypoint = unique_spec_verify_forward(
             self.stage,
+            self.batch_size,
             self.draft_length,
         )
         cache_dir = torchair_cache_dir_for_spec_shape(
             cache_root,
+            batch_size=self.batch_size,
             draft_length=self.draft_length,
             cache_length=self.cache_length,
             dtype=dtype,
@@ -451,19 +476,23 @@ class TextSpecVerifyRuntime:
         wrapper_s = time.perf_counter() - started
 
         self.warm_cache = model.allocate_static_cache(
-            batch_size=1,
+            batch_size=self.batch_size,
             cache_length=self.cache_length,
             device=device,
             dtype=dtype,
             init_mode="zeros",
         )
         warm_input = torch.zeros(
-            (1, self.query_length),
+            (self.batch_size, self.query_length),
             device=device,
             dtype=torch.int64,
         )
-        warm_position = torch.ones((1,), device=device, dtype=torch.int64)
-        warm_rope = torch.zeros((1, 1), device=device, dtype=torch.int64)
+        warm_position = torch.ones(
+            (self.batch_size,), device=device, dtype=torch.int64
+        )
+        warm_rope = torch.zeros(
+            (self.batch_size, 1), device=device, dtype=torch.int64
+        )
         synchronize(device)
         started = time.perf_counter()
         self.fn(
@@ -476,7 +505,7 @@ class TextSpecVerifyRuntime:
         first_call_s = time.perf_counter() - started
         self.metadata: dict[str, Any] = {
             "boundary": "token_embedding_text_transformer_lm_head_argmax",
-            "batch_size": 1,
+            "batch_size": self.batch_size,
             "draft_length": self.draft_length,
             "query_length": self.query_length,
             "recoverable_tokens_if_fully_accepted": self.query_length,
