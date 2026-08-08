@@ -186,6 +186,18 @@ def expected_column(state: TargetStructure, next_token: int, cell_tokens: set[in
     return state.column + 1 if next_token in cell_tokens else state.column
 
 
+def logical_row_band_map(metadata: list[PositionMeta]) -> list[int]:
+    """Map joined logical-row positions onto their source draft lanes."""
+    rows_by_band: defaultdict[int, set[int]] = defaultdict(set)
+    for item in metadata:
+        if item.logical_row >= 0:
+            rows_by_band[item.band].add(item.logical_row)
+    result: list[int] = []
+    for band in sorted(rows_by_band):
+        result.extend([band] * len(rows_by_band[band]))
+    return result or [0]
+
+
 def column_score(
     state: TargetStructure,
     next_token: int,
@@ -503,7 +515,6 @@ def simulate_custom(
     index = continuation_index or build_continuation_index(draft, maximum_anchor)
     structure = TargetStructure()
     cursor = 0
-    current_band = 0
     position = 1
     calls = 0
     speculative_calls = 0
@@ -544,6 +555,8 @@ def simulate_custom(
         else None
     )
     exact_state = MatcherState()
+    structural_band = 0
+    row_band_map = logical_row_band_map(metadata) if use_lane_order else [0]
     normalized_prefix = (
         [target[0]]
         if ignored_anchor_token is not None and target[0] != ignored_anchor_token
@@ -554,6 +567,8 @@ def simulate_custom(
         beam.observe(target[0], target_keys[0])
 
     while position < len(target):
+        if use_lane_order:
+            structural_band = row_band_map[min(structure.row, len(row_band_map) - 1)]
         if (
             position == 1
             and start_prior_token_pair is not None
@@ -577,7 +592,7 @@ def simulate_custom(
                 column_weight,
                 patch,
                 use_cursor,
-                current_band if use_lane_order else None,
+                structural_band if use_lane_order else None,
             )
         elif matcher.startswith("beam"):
             proposal = beam.propose() if beam is not None else None
@@ -634,15 +649,6 @@ def simulate_custom(
             if accepted:
                 cursor = proposal.start + accepted
                 exact_state.cursor = proposal.start + accepted
-                if use_lane_order:
-                    last_accepted = min(
-                        proposal.start + accepted - 1,
-                        len(metadata) - 1,
-                    )
-                    current_band = max(
-                        current_band,
-                        metadata[last_accepted].band,
-                    )
         correction_matches_draft = (
             proposal is not None
             and position + accepted < len(target)
