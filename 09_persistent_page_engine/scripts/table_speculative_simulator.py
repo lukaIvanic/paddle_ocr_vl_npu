@@ -47,6 +47,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--vision-tok-per-s", type=float, default=30_000.0)
     parser.add_argument("--draft-decode-tok-per-s", type=float, default=6_000.0)
     parser.add_argument("--target-decode-tok-per-s", type=float, default=750.0)
+    parser.add_argument(
+        "--start-prior-token-pair",
+        help="Optional target_first,draft_first token IDs for the table-start prior.",
+    )
     return parser.parse_args()
 
 
@@ -265,6 +269,7 @@ def simulate(
     backtrack_tokens: int,
     continuation_index: dict[int, dict[tuple[int, ...], list[int]]],
     precomputed_oracle_matches: list[tuple[int, int]] | None = None,
+    start_prior_token_pair: tuple[int, int] | None = None,
 ) -> dict[str, Any]:
     if not target:
         raise ValueError("target must not be empty")
@@ -296,7 +301,12 @@ def simulate(
 
     while position < len(target):
         prefix = target[:position]
-        if start_prior and position == 1 and target[0] != draft[0]:
+        if (
+            start_prior
+            and position == 1
+            and start_prior_token_pair is not None
+            and (target[0], draft[0]) == start_prior_token_pair
+        ):
             candidate = Candidate(
                 0,
                 tuple(draft[:block_size]),
@@ -494,6 +504,13 @@ def main() -> None:
         for value in args.matchers.split(",")
         if value.strip()
     )
+    start_prior_token_pair = (
+        tuple(int(value) for value in args.start_prior_token_pair.split(","))
+        if args.start_prior_token_pair
+        else None
+    )
+    if start_prior_token_pair is not None and len(start_prior_token_pair) != 2:
+        raise ValueError("--start-prior-token-pair must contain target_first,draft_first")
     detailed: list[dict[str, Any]] = []
 
     for draft_record in drafts:
@@ -526,6 +543,7 @@ def main() -> None:
                     args.backtrack_tokens,
                     continuation_index,
                     precomputed_oracle_matches,
+                    start_prior_token_pair,
                 )
                 baseline_target_vision_s = target_real_vision / args.vision_tok_per_s
                 baseline_target_decode_s = len(tokens) / args.target_decode_tok_per_s

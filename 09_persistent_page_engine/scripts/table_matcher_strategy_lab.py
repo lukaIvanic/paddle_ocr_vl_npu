@@ -538,6 +538,10 @@ def main() -> None:
         for token in ("<fcel>", "<ecel>", "<lcel>", "<ucel>", "<xcel>")
     }
     newline_token = tokenizer.convert_tokens_to_ids("<nl>")
+    start_prior_token_pair = (
+        tokenizer.convert_tokens_to_ids("<ecel>"),
+        tokenizer.convert_tokens_to_ids("<fcel>"),
+    )
     targets = {row["request_id"]: row for row in read_jsonl(args.targets)}
     drafts = {row["request_id"]: row for row in read_jsonl(args.drafts)}
     latencies = {
@@ -623,6 +627,7 @@ def main() -> None:
                     args.backtrack,
                     baseline_index,
                     oracle_matches,
+                    start_prior_token_pair,
                 )
             else:
                 simulation = simulate_custom(
