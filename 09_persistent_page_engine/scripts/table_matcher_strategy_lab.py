@@ -10,6 +10,7 @@ import json
 import math
 from pathlib import Path
 import statistics
+import time
 from typing import Any, Iterable
 import unicodedata
 
@@ -491,13 +492,15 @@ def simulate_custom(
 
 
 def aggregate(rows: Iterable[dict[str, Any]]) -> dict[str, Any]:
-    simulations = [row["simulation"] for row in rows]
+    materialized = list(rows)
+    simulations = [row["simulation"] for row in materialized]
     baseline = sum(row["baseline_decode_iterations"] for row in simulations)
     calls = sum(row["target_calls"] for row in simulations)
     speculative = sum(row["speculative_calls"] for row in simulations)
     accepted = sum(row["accepted_draft_tokens"] for row in simulations)
     proposed = sum(row["proposed_draft_tokens"] for row in simulations)
     weighted = sum(row["weighted_target_forward_equivalents"] for row in simulations)
+    matcher_cpu_s = sum(row["matcher_cpu_s"] for row in materialized)
     return {
         "tables": len(simulations),
         "baseline_decode_iterations": baseline,
@@ -512,6 +515,9 @@ def aggregate(rows: Iterable[dict[str, Any]]) -> dict[str, Any]:
         "target_tokens_per_call": baseline / calls if calls else None,
         "weighted_target_forward_equivalents": weighted,
         "ideal_target_decode_speedup": baseline / weighted if weighted else None,
+        "matcher_cpu_s": matcher_cpu_s,
+        "matcher_cpu_ms_per_table": 1_000.0 * matcher_cpu_s / len(materialized) if materialized else None,
+        "matcher_cpu_us_per_target_call": 1_000_000.0 * matcher_cpu_s / calls if calls else None,
         "zero_accept_calls": sum(
             round(row["speculative_calls"] * (row["accept_length"]["p50"] == 0))
             for row in simulations
@@ -600,6 +606,7 @@ def main() -> None:
         baseline_index = build_continuation_index(draft, args.maximum_anchor)
         oracle_matches = oracle_start_matches(target, draft)
         for config in configurations:
+            matcher_started = time.perf_counter()
             if config["kind"] == "baseline":
                 simulation = baseline_simulate(
                     target,
@@ -630,12 +637,14 @@ def main() -> None:
                     bool(config.get("patch", False)),
                     baseline_index,
                 )
+            matcher_cpu_s = time.perf_counter() - matcher_started
             detailed.append(
                 {
                     "request_id": request_id,
                     "page_name": drafts[request_id].get("page_name"),
                     "matcher": config["name"],
                     "measured_b1_worker_wall_s": latencies.get(request_id),
+                    "matcher_cpu_s": matcher_cpu_s,
                     "simulation": simulation,
                 }
             )
@@ -688,8 +697,8 @@ def main() -> None:
                 "",
                 f"## {cohort} ({report['cohorts'][cohort]} tables)",
                 "",
-                "| matcher | accepted/call | coverage | target calls | decode speedup |",
-                "|---|---:|---:|---:|---:|",
+                "| matcher | accepted/call | coverage | target calls | decode speedup | CPU ms/table | CPU us/call |",
+                "|---|---:|---:|---:|---:|---:|---:|",
             ]
         )
         for matcher, metrics in sorted(
@@ -698,7 +707,9 @@ def main() -> None:
             lines.append(
                 f"| {matcher} | {metrics['accepted_tokens_per_speculative_call']:.3f} | "
                 f"{metrics['accepted_coverage_of_target_decode']:.4f} | {metrics['target_calls']:,} | "
-                f"{metrics['ideal_target_decode_speedup']:.3f}x |"
+                f"{metrics['ideal_target_decode_speedup']:.3f}x | "
+                f"{metrics['matcher_cpu_ms_per_table']:.3f} | "
+                f"{metrics['matcher_cpu_us_per_target_call']:.3f} |"
             )
     (args.output_dir / "report.md").write_text("\n".join(lines) + "\n")
     print(f"complete output={args.output_dir}", flush=True)

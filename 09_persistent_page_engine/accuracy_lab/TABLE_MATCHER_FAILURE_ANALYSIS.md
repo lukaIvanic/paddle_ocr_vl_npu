@@ -244,27 +244,59 @@ follow.
 Large tables deserve focused regression tests, but the failure is general and
 cannot be fixed with per-table rules.
 
+## Matcher strategy experiment
+
+All strategies were simulated from exact saved target and eight-band draft
+tokens. They use generated target-prefix tokens only. The oracle can inspect
+future target tokens and is an upper bound.
+
+### Complete 665-table corpus, K=16
+
+| Matcher | Accepted/call | Coverage | Target calls | Ideal target-decode speedup |
+|---|---:|---:|---:|---:|
+| Current exact suffix | 5.934 | 84.03% | 42,708 | 5.752x |
+| Reversible cursor | 6.317 | 84.77% | 40,729 | 6.034x |
+| Column-aware exact | 6.414 | 84.95% | 40,259 | 6.105x |
+| Column + virtual width patch | **6.429** | **84.98%** | **40,185** | **6.117x** |
+| Oracle | 10.210 | 90.42% | 25,616 | 9.556x |
+
+The virtual width patch changes candidate scoring only. It does not rewrite the
+draft output. Rows within two slots of the learned target width can align their
+candidate column through a bounded insertion/deletion hypothesis.
+
+### 143 tables with measured B1 latency above one second
+
+| Matcher | Accepted/call | Coverage | Target calls | Ideal target-decode speedup |
+|---|---:|---:|---:|---:|
+| Current exact suffix | 6.056 | 84.99% | 25,630 | 6.089x |
+| Reversible cursor | 6.567 | 85.93% | 24,011 | 6.503x |
+| Column + virtual width patch | **6.778** | **86.29%** | **23,407** | **6.672x** |
+| Hybrid exact/beam | 6.217 | 86.15% | 23,647 | 6.561x |
+| Free beam | 5.041 | 83.45% | 28,251 | 5.492x |
+| Oracle | 11.080 | 91.44% | 14,617 | 10.649x |
+
+The column-patch matcher removes 2,223 target calls versus the current matcher
+and 604 versus the reversible cursor. Against the reversible cursor, it is
+better on 57 tables, equal on 46, and worse on 40. Improvements save 973 calls;
+regressions add 369. Two page-279 tables provide 522 of the saved calls, so the
+aggregate win is real but partly concentrated.
+
+The free-running fuzzy beam is not a good replacement. It can recover weak
+anchors, but it also overrides reliable exact locations and makes too many
+short proposals. The hybrid limits that damage, but still loses to the simpler
+column-aware exact matcher.
+
 ## Recommended matcher direction
 
-The next matcher should preserve the eight draft streams separately and run an
-online, prefix-only alignment beam over `(band, token_offset)` states.
+Use the column-aware exact matcher with reversible cursor repair as the next
+runtime candidate. Keep exact-prefix length authoritative. Use learned OTSL
+column position and the bounded width hypothesis only to break candidate ties.
+Measure its CPU time inside the real decode scheduler before enabling it by
+default.
 
-The beam should:
-
-1. allow matches, substitutions, insertions, and deletions so one formatting
-   difference does not destroy location state;
-2. use band order as a soft prior, not a strict monotonic constraint;
-3. weight rare content tokens and structural boundaries more than `<fcel>`,
-   digits, and whitespace;
-4. let an accepted backward match repair the cursor;
-5. rank candidates using alignment score, band position, target progress, and
-   confidence margin instead of lexicographic anchor length;
-6. keep the current target model authoritative and use only generated prefix
-   tokens.
-
-The first implementation comparison should use the reversible cursor as the
-baseline. The primary metrics are target-model calls, accepted tokens per call,
-coverage, zero-accept calls, and the top-20 manual regression cases.
+Do not put the free beam in the runtime. Retain it as a research tool for the
+remaining oracle gap. A future beam should activate only when no reliable exact
+anchor exists and should have a confidence gate that can decline to propose.
 
 ## Artifacts
 
@@ -275,3 +307,9 @@ coverage, zero-accept calls, and the top-20 manual regression cases.
   `tmp/09_persistent_page_engine/table_matcher_analysis_gt1s_20260808/global_anchor_sweep`
 - Reversible cursor:
   `tmp/09_persistent_page_engine/table_matcher_analysis_gt1s_20260808/reversible_cursor`
+- Strategy lab:
+  `scripts/table_matcher_strategy_lab.py`
+- Complete exact/column comparison:
+  `tmp/09_persistent_page_engine/table_matcher_strategy_lab_20260808/full665_exact`
+- Slow-table beam comparison:
+  `tmp/09_persistent_page_engine/table_matcher_strategy_lab_20260808/full143`
