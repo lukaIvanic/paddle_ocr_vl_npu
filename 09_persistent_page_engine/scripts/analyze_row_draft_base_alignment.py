@@ -104,7 +104,12 @@ def best_base_span(
     )
     best: tuple[tuple[float, float, float, float], dict[str, Any]] | None = None
     for span_length in span_lengths:
-        for start in range(0, len(base_rows) - span_length + 1):
+        maximum_start = len(base_rows) - span_length
+        expected_start = round(expected_fraction * len(base_rows) - 0.5 * span_length)
+        search_radius = max(4, 2 * draft_row_count)
+        first_start = max(0, expected_start - search_radius)
+        last_start = min(maximum_start, expected_start + search_radius)
+        for start in range(first_start, last_start + 1):
             end = start + span_length
             base_text = "<nl>".join(base_rows[start:end]) + "<nl>"
             raw_similarity = ratio(normalize_text(base_text), normalize_text(draft_text))
@@ -199,7 +204,8 @@ def main() -> None:
     }
     analyzed: list[dict[str, Any]] = []
     category_counts: Counter[str] = Counter()
-    for request_id in sorted(set(targets) & set(drafts)):
+    request_ids = sorted(set(targets) & set(drafts))
+    for table_index, request_id in enumerate(request_ids, start=1):
         baseline_latency = latencies.get(request_id, 0.0)
         if baseline_latency < args.minimum_latency_s:
             continue
@@ -273,6 +279,12 @@ def main() -> None:
                 "lanes": lanes,
             }
         )
+        if table_index % 25 == 0:
+            print(
+                f"progress source_tables={table_index}/{len(request_ids)} "
+                f"analyzed={len(analyzed)}",
+                flush=True,
+            )
     similarities = [row["mean_combined_similarity"] for row in analyzed]
     report = {
         "inputs": {
