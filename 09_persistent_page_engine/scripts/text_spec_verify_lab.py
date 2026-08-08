@@ -122,24 +122,27 @@ def _measure(
     *,
     warmup: int,
     repeats: int,
-) -> tuple[list[float], torch.Tensor]:
+) -> tuple[list[float], torch.Tensor, float]:
     output: torch.Tensor | None = None
     for _ in range(warmup):
         output = fn()
     synchronize(device)
     timeline = DeviceTimeline(device)
+    wall_started = time.perf_counter()
     for index in range(repeats):
         output = timeline.measure(f"step_{index:04d}", fn)
     durations = list(timeline.resolve().values())
+    host_wall_s = time.perf_counter() - wall_started
     if output is None:
         raise AssertionError("measurement produced no output")
-    return durations, output
+    return durations, output, host_wall_s
 
 
 def _timing_summary(
     durations: list[float],
     *,
     recovered_tokens_per_call: int,
+    host_wall_s: float,
 ) -> dict[str, Any]:
     total_s = sum(durations)
     calls = len(durations)
@@ -153,9 +156,14 @@ def _timing_summary(
             "max": max(durations) * 1000.0,
         },
         "graph_calls_per_s": calls / total_s,
+        "host_wall_s": float(host_wall_s),
+        "host_graph_calls_per_s": calls / host_wall_s,
         "recovered_tokens_per_call": int(recovered_tokens_per_call),
         "effective_recovered_tok_per_s": (
             calls * int(recovered_tokens_per_call) / total_s
+        ),
+        "host_effective_recovered_tok_per_s": (
+            calls * int(recovered_tokens_per_call) / host_wall_s
         ),
     }
 
@@ -193,6 +201,8 @@ def main(argv: Sequence[str] | None = None) -> None:
             "decode_optimization": DECODE_OPTIMIZATION,
             "spec_optimization": SPEC_OPTIMIZATION,
             "spec_attention": "PromptFA GQA over persistent KV arena",
+            "warmup": int(args.warmup),
+            "repeats": int(args.repeats),
         },
         "setup": {},
         "decode_b1": None,
@@ -272,14 +282,18 @@ def main(argv: Sequence[str] | None = None) -> None:
         )
         return torch.argmax(logits, dim=-1)
 
-    durations, _decode_output = _measure(
+    durations, _decode_output, host_wall_s = _measure(
         device,
         decode_step,
         warmup=args.warmup,
         repeats=args.repeats,
     )
     result["decode_b1"] = {
-        **_timing_summary(durations, recovered_tokens_per_call=1),
+        **_timing_summary(
+            durations,
+            recovered_tokens_per_call=1,
+            host_wall_s=host_wall_s,
+        ),
         "runtime": decode_runtime.metadata,
     }
     print(
@@ -359,7 +373,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                 *runtime.warm_cache.flat_tensors(),
             )
 
-        durations, spec_targets = _measure(
+        durations, spec_targets, host_wall_s = _measure(
             device,
             spec_step,
             warmup=args.warmup,
@@ -399,6 +413,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             **_timing_summary(
                 durations,
                 recovered_tokens_per_call=draft_length + 1,
+                host_wall_s=host_wall_s,
             ),
             "serial_decode_target_agreement": {
                 "exact_positions": exact_positions,
