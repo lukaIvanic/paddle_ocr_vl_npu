@@ -124,16 +124,28 @@ def rows_with_metadata(
     eos_token: int,
     cell_tokens: set[int],
     newline_token: int,
+    stitch_bands: bool = False,
 ) -> tuple[list[int], list[PositionMeta], list[int]]:
     flat: list[int] = []
     metadata: list[PositionMeta] = []
     band_starts: list[int] = []
     rows = sorted(record.get("rows") or [], key=lambda item: item["row_index"])
     for band_index, row_record in enumerate(rows):
-        band_starts.append(len(flat))
         tokens = [int(value) for value in row_record.get("token_ids") or ()]
         if tokens and tokens[-1] == eos_token:
             tokens.pop()
+        # A row lane normally ends in <nl>. Repair only the broken lane
+        # boundaries; do not rewrite valid cell tokens or leading empty cells.
+        if (
+            stitch_bands
+            and flat
+            and tokens
+            and flat[-1] != newline_token
+            and tokens[0] in cell_tokens
+        ):
+            flat.append(newline_token)
+            metadata.append(PositionMeta(max(0, band_index - 1), -1, -1, 0))
+        band_starts.append(len(flat))
         logical_rows: list[list[int]] = [[]]
         for token in tokens:
             logical_rows[-1].append(token)
@@ -299,6 +311,7 @@ def filtered_pool_candidate(
     column_weight: float,
     patch: bool,
     use_cursor: bool = True,
+    current_band: int | None = None,
 ) -> Proposal | None:
     usable_lengths = [
         length for length in index.by_length if length <= len(normalized_prefix)
@@ -308,6 +321,16 @@ def filtered_pool_candidate(
             tuple(normalized_prefix[-indexed_anchor:]), ()
         )
         best: tuple[tuple[float, float, int, int], Proposal] | None = None
+        if current_band is not None:
+            local_positions = [
+                continuation
+                for continuation in positions
+                if continuation < len(metadata)
+                and metadata[continuation].band_index in (current_band, current_band + 1)
+            ]
+            if not local_positions:
+                continue
+            positions = local_positions
         for continuation in positions:
             if continuation >= len(draft):
                 continue
@@ -334,10 +357,20 @@ def filtered_pool_candidate(
             )
             forward = int(continuation >= cursor)
             distance = abs(continuation - cursor)
+            lane_distance = (
+                abs(metadata[continuation].band_index - current_band)
+                if current_band is not None
+                else 0
+            )
             score = (
                 (float(anchor), structure_score, forward, -distance)
                 if use_cursor
-                else (float(anchor), structure_score, -continuation, 0)
+                else (
+                    float(anchor),
+                    structure_score,
+                    -lane_distance if current_band is not None else -continuation,
+                    -continuation if current_band is not None else 0,
+                )
             )
             proposal = Proposal(continuation, tokens, structure_score, anchor)
             if best is None or score > best[0]:
@@ -464,10 +497,13 @@ def simulate_custom(
     ignored_anchor_token: int | None = None,
     filtered_anchor_index: FilteredAnchorIndex | None = None,
     use_cursor: bool = True,
+    start_prior_token_pair: tuple[int, int] | None = None,
+    use_lane_order: bool = False,
 ) -> dict[str, Any]:
     index = continuation_index or build_continuation_index(draft, maximum_anchor)
     structure = TargetStructure()
     cursor = 0
+    current_band = 0
     position = 1
     calls = 0
     speculative_calls = 0
@@ -518,7 +554,14 @@ def simulate_custom(
         beam.observe(target[0], target_keys[0])
 
     while position < len(target):
-        if matcher == "filtered":
+        if (
+            position == 1
+            and start_prior_token_pair is not None
+            and draft
+            and (target[0], draft[0]) == start_prior_token_pair
+        ):
+            proposal = Proposal(0, tuple(draft[:block_size]), 0.0, 0)
+        elif matcher == "filtered":
             if filtered_anchor_index is None:
                 raise ValueError("filtered matcher requires a filtered anchor index")
             proposal = filtered_pool_candidate(
@@ -534,6 +577,7 @@ def simulate_custom(
                 column_weight,
                 patch,
                 use_cursor,
+                current_band if use_lane_order else None,
             )
         elif matcher.startswith("beam"):
             proposal = beam.propose() if beam is not None else None
@@ -590,6 +634,15 @@ def simulate_custom(
             if accepted:
                 cursor = proposal.start + accepted
                 exact_state.cursor = proposal.start + accepted
+                if use_lane_order:
+                    last_accepted = min(
+                        proposal.start + accepted - 1,
+                        len(metadata) - 1,
+                    )
+                    current_band = max(
+                        current_band,
+                        metadata[last_accepted].band_index,
+                    )
         correction_matches_draft = (
             proposal is not None
             and position + accepted < len(target)
@@ -724,6 +777,26 @@ def main() -> None:
             "column_weight": 0.25,
             "patch": True,
             "use_cursor": False,
+            "start_prior": True,
+        },
+        {
+            "name": "ecel_normalized_no_cursor_stitched_column_patch_w0.25",
+            "kind": "filtered",
+            "column_weight": 0.25,
+            "patch": True,
+            "use_cursor": False,
+            "start_prior": True,
+            "stitch_bands": True,
+        },
+        {
+            "name": "ecel_normalized_no_cursor_stitched_lane_column_patch_w0.25",
+            "kind": "filtered",
+            "column_weight": 0.25,
+            "patch": True,
+            "use_cursor": False,
+            "start_prior": True,
+            "stitch_bands": True,
+            "use_lane_order": True,
         },
     ]
     for weight in column_weights:
@@ -789,9 +862,22 @@ def main() -> None:
         draft, metadata, _band_starts = rows_with_metadata(
             drafts[request_id], target[-1], cell_tokens, newline_token
         )
+        stitched_draft, stitched_metadata, _stitched_band_starts = rows_with_metadata(
+            drafts[request_id],
+            target[-1],
+            cell_tokens,
+            newline_token,
+            stitch_bands=True,
+        )
         baseline_index = build_continuation_index(draft, args.maximum_anchor)
         ecel_normalized_index = build_filtered_anchor_index(
             draft, ecel_token, args.maximum_anchor
+        )
+        stitched_baseline_index = build_continuation_index(
+            stitched_draft, args.maximum_anchor
+        )
+        stitched_ecel_normalized_index = build_filtered_anchor_index(
+            stitched_draft, ecel_token, args.maximum_anchor
         )
         oracle_matches = oracle_start_matches(target, draft)
         for config in configurations:
@@ -810,10 +896,21 @@ def main() -> None:
                     start_prior_token_pair,
                 )
             else:
+                use_stitched = bool(config.get("stitch_bands", False))
+                config_draft = stitched_draft if use_stitched else draft
+                config_metadata = stitched_metadata if use_stitched else metadata
+                config_baseline_index = (
+                    stitched_baseline_index if use_stitched else baseline_index
+                )
+                config_filtered_index = (
+                    stitched_ecel_normalized_index
+                    if use_stitched
+                    else ecel_normalized_index
+                )
                 simulation = simulate_custom(
                     target,
-                    draft,
-                    metadata,
+                    config_draft,
+                    config_metadata,
                     tokenizer,
                     config["kind"],
                     args.block_size,
@@ -825,10 +922,12 @@ def main() -> None:
                     int(config.get("beam_width", 32)),
                     float(config.get("column_weight", 0.0)),
                     bool(config.get("patch", False)),
-                    baseline_index,
+                    config_baseline_index,
                     ecel_token if config["kind"] == "filtered" else None,
-                    ecel_normalized_index if config["kind"] == "filtered" else None,
+                    config_filtered_index if config["kind"] == "filtered" else None,
                     bool(config.get("use_cursor", True)),
+                    start_prior_token_pair if config.get("start_prior") else None,
+                    bool(config.get("use_lane_order", False)),
                 )
             matcher_cpu_s = time.perf_counter() - matcher_started
             detailed.append(
