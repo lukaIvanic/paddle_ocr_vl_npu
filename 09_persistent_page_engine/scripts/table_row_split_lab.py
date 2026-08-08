@@ -469,7 +469,7 @@ def uniform_split(height: int, rows: int = 8) -> SplitProposal:
 
 
 def _snap_boundary_feature(ink_mask: np.ndarray, y: int) -> dict[str, float | str]:
-    """Classify one horizontal cut using the exact reviewed snap prototype."""
+    """Classify one horizontal cut using the reviewed snap prototype."""
 
     height, _width = ink_mask.shape
     y = max(0, min(height - 1, int(y)))
