@@ -11,8 +11,9 @@ from __future__ import annotations
 
 import hashlib
 import time
+import types
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 import torch
 from torch import nn
@@ -329,6 +330,26 @@ class TextSpecVerifyStage(nn.Module):
         return torch.argmax(logits, dim=-1)
 
 
+def unique_spec_verify_forward(
+    module: TextSpecVerifyStage,
+    draft_length: int,
+) -> Callable[..., torch.Tensor]:
+    """Give each static D shape an independent TorchDynamo code identity."""
+    original = module.forward.__func__
+    name = f"text_spec_verify_draft_{int(draft_length)}"
+    code = original.__code__.replace(co_name=name)
+    function = types.FunctionType(
+        code,
+        original.__globals__,
+        name,
+        original.__defaults__,
+        original.__closure__,
+    )
+    function.__annotations__ = dict(original.__annotations__)
+    function.__kwdefaults__ = original.__kwdefaults__
+    return types.MethodType(function, module)
+
+
 def spec_verify_source_hash() -> str:
     here = Path(__file__).resolve().parent
     digest = hashlib.sha1()
@@ -401,6 +422,10 @@ class TextSpecVerifyRuntime:
             draft_length=self.draft_length,
             optimization=self.optimization,
         ).eval()
+        self.entrypoint = unique_spec_verify_forward(
+            self.stage,
+            self.draft_length,
+        )
         cache_dir = torchair_cache_dir_for_spec_shape(
             cache_root,
             draft_length=self.draft_length,
@@ -416,7 +441,7 @@ class TextSpecVerifyRuntime:
         synchronize(device)
         started = time.perf_counter()
         self.fn = torchair.inference.cache_compile(
-            self.stage.forward,
+            self.entrypoint,
             config=CompilerConfig(),
             dynamic=False,
             cache_dir=str(cache_dir),
