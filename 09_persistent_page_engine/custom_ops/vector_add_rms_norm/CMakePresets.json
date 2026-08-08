@@ -10,7 +10,7 @@
         "CMAKE_BUILD_TYPE": {"type": "STRING", "value": "Release"},
         "ENABLE_SOURCE_PACKAGE": {"type": "BOOL", "value": "True"},
         "ENABLE_BINARY_PACKAGE": {"type": "BOOL", "value": "True"},
-        "ASCEND_COMPUTE_UNIT": {"type": "STRING", "value": "ascend910"},
+        "ASCEND_COMPUTE_UNIT": {"type": "STRING", "value": "ascend910b"},
         "ENABLE_TEST": {"type": "BOOL", "value": "False"},
         "vendor_name": {"type": "STRING", "value": "vector_rmsnorm"},
         "ASCEND_CANN_PACKAGE_PATH": {"type": "PATH", "value": "/usr/local/Ascend/cann-9.0.0"},
