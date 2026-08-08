@@ -116,6 +116,18 @@ def magnitude_bucket(value: int) -> str:
     return "64+"
 
 
+def signed_progress_bucket(value: float) -> str:
+    if value < -0.25:
+        return "cursor_>25%_behind"
+    if value < -0.10:
+        return "cursor_10-25%_behind"
+    if value <= 0.10:
+        return "cursor_within_10%"
+    if value <= 0.25:
+        return "cursor_10-25%_ahead"
+    return "cursor_>25%_ahead"
+
+
 def analyze_table(
     target_record: dict[str, Any],
     draft_record: dict[str, Any],
@@ -144,6 +156,8 @@ def analyze_table(
     edit_histogram: Counter[str] = Counter()
     accept_histogram: Counter[str] = Counter()
     post_mismatch_recovery: Counter[str] = Counter()
+    cursor_progress_lost: Counter[str] = Counter()
+    row_direction: Counter[str] = Counter()
 
     while position < len(target):
         prefix = target[:position]
@@ -197,6 +211,12 @@ def analyze_table(
         )
         totals["ambiguous_gap_calls"] += int(lost > 0 and ambiguity > 1)
         if lost > 0:
+            cursor_progress_lost[
+                signed_progress_bucket(
+                    state.cursor / max(1, len(draft))
+                    - position / max(1, len(target))
+                )
+            ] += lost
             position_deciles[f"{min(9, int(10 * position / max(1, len(target)))) * 10:02d}-{min(100, (min(9, int(10 * position / max(1, len(target)))) + 1) * 10):02d}%"] += lost
             ambiguity_histogram[magnitude_bucket(ambiguity)] += 1
             if candidate is None:
@@ -214,6 +234,15 @@ def analyze_table(
                     anchor_relation["anchors_equal"] += 1
                 else:
                     anchor_relation["oracle_anchor_longer"] += 1
+            if candidate is not None and oracle_row is not None:
+                selected_row = row_index(row_for_token, candidate.start)
+                if selected_row is not None:
+                    if selected_row < oracle_row:
+                        row_direction["selected_earlier_band"] += lost
+                    elif selected_row > oracle_row:
+                        row_direction["selected_later_band"] += lost
+                    else:
+                        row_direction["selected_same_band"] += lost
             failure_position = min(position + practical_accept, len(target) - 1)
             category = token_kind(pieces[failure_position])
             category_events[category] += 1
@@ -288,6 +317,8 @@ def analyze_table(
         "gap_candidate_edit_distance": dict(edit_histogram),
         "practical_accept_length": dict(accept_histogram),
         "post_mismatch_recovery": dict(post_mismatch_recovery),
+        "lost_tokens_by_cursor_progress": dict(cursor_progress_lost),
+        "lost_tokens_by_selected_vs_oracle_band": dict(row_direction),
         "worst_events": sorted(events, key=lambda row: (row["lost_tokens"], row["oracle_accept"]), reverse=True)[:12],
         "target_text": target_record["rows"][0].get("raw_text") or target_record["rows"][0].get("text"),
         "draft_row_texts": [
@@ -342,6 +373,8 @@ def main() -> None:
             "gap_candidate_edit_distance",
             "practical_accept_length",
             "post_mismatch_recovery",
+            "lost_tokens_by_cursor_progress",
+            "lost_tokens_by_selected_vs_oracle_band",
         )
     }
     for table in tables:
