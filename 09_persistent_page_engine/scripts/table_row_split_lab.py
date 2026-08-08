@@ -407,6 +407,22 @@ def row_edge_split(rgb: np.ndarray, text_binary: np.ndarray) -> SplitProposal:
     )
 
 
+def uniform_split(height: int, rows: int = 8) -> SplitProposal:
+    """Divide the crop into equal-height horizontal bands."""
+
+    rows = max(1, min(int(rows), height))
+    boundaries = tuple(round(index * height / rows) for index in range(rows + 1))
+    return SplitProposal(
+        name=f"uniform_{rows}",
+        boundaries=boundaries,
+        diagnostics={
+            "requested_rows": 8,
+            "rows": rows,
+            "height": height,
+        },
+    )
+
+
 def select_split(
     ruled: SplitProposal,
     whitespace: SplitProposal,
@@ -569,6 +585,7 @@ def analyze(image: Image.Image) -> tuple[SplitProposal, ...]:
     row_edge = row_edge_split(rgb, text_binary)
     hybrid = hybrid_split(text_binary, horizontal, vertical, ruled)
     selected = select_split(ruled, whitespace, row_edge)
+    uniform_8 = uniform_split(detection_image.height, rows=8)
     return tuple(
         _scale_proposal(
             proposal,
@@ -576,7 +593,7 @@ def analyze(image: Image.Image) -> tuple[SplitProposal, ...]:
             image.height,
             scale,
         )
-        for proposal in (ruled, whitespace, row_edge, hybrid, selected)
+        for proposal in (ruled, whitespace, row_edge, hybrid, selected, uniform_8)
     )
 
 
@@ -586,6 +603,7 @@ COLORS = {
     "row_edge": (170, 80, 190),
     "hybrid": (15, 150, 80),
     "selected": (230, 125, 20),
+    "uniform_8": (30, 155, 145),
 }
 
 

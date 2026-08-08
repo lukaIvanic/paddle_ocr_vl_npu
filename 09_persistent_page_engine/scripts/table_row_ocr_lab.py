@@ -47,7 +47,7 @@ DEFAULT_REQUEST_IDS = (
     "page_000290_table_box_id_1",   # complex multi-line
 )
 DEFAULT_STRATEGIES = ("ruled", "whitespace", "row_edge", "hybrid", "selected")
-SUPPORTED_STRATEGIES = DEFAULT_STRATEGIES + ("whole",)
+SUPPORTED_STRATEGIES = DEFAULT_STRATEGIES + ("uniform_8", "whole")
 TR_PATTERN = re.compile(r"<tr\b[^>]*>.*?</tr\s*>", re.IGNORECASE | re.DOTALL)
 TD_PATTERN = re.compile(r"<td\b([^>]*)>", re.IGNORECASE)
 COLSPAN_PATTERN = re.compile(r"\bcolspan\s*=\s*['\"]?(\d+)", re.IGNORECASE)
