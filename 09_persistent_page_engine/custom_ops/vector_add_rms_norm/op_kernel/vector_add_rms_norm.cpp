@@ -1,3 +1,9 @@
+/*
+ * The execution schedule in this lab kernel follows CANN 9.0's
+ * AddRmsNorm SingleN FP16 implementation.  The experiment changes only the
+ * reciprocal-RMS application: keep the scalar result on the Vector pipeline
+ * with Brcb instead of crossing Vector -> Scalar -> Vector through GetValue.
+ */
 #include "kernel_operator.h"
 #include "vector_add_rms_norm_tiling.h"
 
@@ -6,9 +12,9 @@ using namespace AscendC;
 namespace {
 constexpr uint32_t kHiddenSize = 1024;
 constexpr uint32_t kFp16Bytes = kHiddenSize * sizeof(half);
-constexpr uint32_t kFp32Bytes = kHiddenSize * sizeof(float);
 constexpr uint32_t kVectorMaskFp32 = 64;
 constexpr uint32_t kVectorRepeatsFp32 = kHiddenSize / kVectorMaskFp32;
+constexpr uint32_t kUbBytes = 4 * kHiddenSize * sizeof(float);
 constexpr float kEpsilon = 1.0e-5f;
 constexpr float kMeanScale = 1.0f / static_cast<float>(kHiddenSize);
 
@@ -29,96 +35,105 @@ public:
         yGm.SetGlobalBuffer(reinterpret_cast<__gm__ half*>(y), kHiddenSize);
         rstdGm.SetGlobalBuffer(reinterpret_cast<__gm__ float*>(rstd), 1);
         xGm.SetGlobalBuffer(reinterpret_cast<__gm__ half*>(x), kHiddenSize);
-
-        pipe->InitBuffer(x1Queue, 1, kFp16Bytes);
-        pipe->InitBuffer(x2Queue, 1, kFp16Bytes);
-        pipe->InitBuffer(gammaQueue, 1, kFp16Bytes);
-        pipe->InitBuffer(yQueue, 1, kFp16Bytes);
-        pipe->InitBuffer(xQueue, 1, kFp16Bytes);
-        pipe->InitBuffer(xFp32Buffer, kFp32Bytes);
-        pipe->InitBuffer(squareBuffer, kFp32Bytes);
-        pipe->InitBuffer(workBuffer, kFp32Bytes);
-        pipe->InitBuffer(rstdBuffer, 32);
+        pipe->InitBuffer(unitBuffer, kUbBytes);
     }
 
     __aicore__ inline void Process()
     {
-        CopyInputs();
+        LocalTensor<float> ub = unitBuffer.Get<float>();
+        LocalTensor<half> ubFp16 = ub.ReinterpretCast<half>();
+        LocalTensor<half> xLocal = ubFp16;
+        LocalTensor<half> auxiliaryFp16 = ubFp16[kHiddenSize];
+        LocalTensor<float> xFp32 = ub[kHiddenSize];
+        LocalTensor<float> square = ub[2 * kHiddenSize];
+        LocalTensor<float> work = ub[3 * kHiddenSize];
 
-        LocalTensor<half> x1Local = x1Queue.DeQue<half>();
-        LocalTensor<half> x2Local = x2Queue.DeQue<half>();
-        LocalTensor<half> gammaLocal = gammaQueue.DeQue<half>();
-        LocalTensor<half> xLocal = xQueue.AllocTensor<half>();
-        LocalTensor<half> yLocal = yQueue.AllocTensor<half>();
-        LocalTensor<float> xFp32 = xFp32Buffer.Get<float>();
-        LocalTensor<float> square = squareBuffer.Get<float>();
-        LocalTensor<float> work = workBuffer.Get<float>();
-        LocalTensor<float> rstdLocal = rstdBuffer.Get<float>();
+        DataCopy(xLocal, x1Gm, kHiddenSize);
+        event_t x1Ready = static_cast<event_t>(
+            GetTPipePtr()->FetchEventID(HardEvent::MTE2_V));
+        SetFlag<HardEvent::MTE2_V>(x1Ready);
+        DataCopy(auxiliaryFp16, x2Gm, kHiddenSize);
+        event_t x2Ready = static_cast<event_t>(
+            GetTPipePtr()->FetchEventID(HardEvent::MTE2_V));
+        SetFlag<HardEvent::MTE2_V>(x2Ready);
+        WaitFlag<HardEvent::MTE2_V>(x1Ready);
+        WaitFlag<HardEvent::MTE2_V>(x2Ready);
 
-        Add(xLocal, x1Local, x2Local, kHiddenSize);
+        Add(xLocal, xLocal, auxiliaryFp16, kHiddenSize);
         PipeBarrier<PIPE_V>();
+
+        // Reuse auxiliaryFp16 for gamma while Vector computes the norm.
+        event_t vectorAllowsGammaLoad = static_cast<event_t>(
+            GetTPipePtr()->FetchEventID(HardEvent::V_MTE2));
+        SetFlag<HardEvent::V_MTE2>(vectorAllowsGammaLoad);
+        WaitFlag<HardEvent::V_MTE2>(vectorAllowsGammaLoad);
+        DataCopy(auxiliaryFp16, gammaGm, kHiddenSize);
+        SetFlag<HardEvent::MTE2_V>(x2Ready);
+
+        // Store the fused residual in parallel with the remaining Vector work.
+        event_t vectorAllowsStore = static_cast<event_t>(
+            GetTPipePtr()->FetchEventID(HardEvent::V_MTE3));
+        SetFlag<HardEvent::V_MTE3>(vectorAllowsStore);
+        WaitFlag<HardEvent::V_MTE3>(vectorAllowsStore);
+        DataCopy(xGm, xLocal, kHiddenSize);
+        event_t residualStored = static_cast<event_t>(
+            GetTPipePtr()->FetchEventID(HardEvent::MTE3_V));
+        SetFlag<HardEvent::MTE3_V>(residualStored);
+
         Cast(xFp32, xLocal, RoundMode::CAST_NONE, kHiddenSize);
         PipeBarrier<PIPE_V>();
         Mul(square, xFp32, xFp32, kHiddenSize);
         PipeBarrier<PIPE_V>();
         Muls(square, square, kMeanScale, kHiddenSize);
         PipeBarrier<PIPE_V>();
-        ReduceSum(rstdLocal, square, work);
-        Adds(rstdLocal, rstdLocal, kEpsilon, 1);
+        ReduceSum(square, square, work);
+        Adds(square, square, kEpsilon, 1);
         PipeBarrier<PIPE_V>();
-        Sqrt(rstdLocal, rstdLocal, 1);
+        Sqrt(square, square, 1);
         Duplicate(work, 1.0f, 1);
         PipeBarrier<PIPE_V>();
-        Div(rstdLocal, work, rstdLocal, 1);
+        Div(square, work, square, 1);
         PipeBarrier<PIPE_V>();
 
-        // Keep the reciprocal RMS on the Vector pipeline.  The stock B1
-        // kernel crosses Vector -> Scalar with GetValue(), then Scalar ->
-        // Vector for Muls().  Brcb plus a zero-stride vector operand applies
-        // the same one-element value without either cross-pipeline wait.
-        Brcb(work, rstdLocal, 1, {1, 8});
+        // rstd is a real graph output even though the decoder ignores it.
+        SetFlag<HardEvent::V_MTE3>(vectorAllowsStore);
+        WaitFlag<HardEvent::V_MTE3>(vectorAllowsStore);
+        DataCopyParams rstdParams;
+        rstdParams.blockCount = 1;
+        rstdParams.blockLen = sizeof(float);
+        rstdParams.srcStride = 0;
+        rstdParams.dstStride = 0;
+        DataCopyPad(rstdGm, square, rstdParams);
+
+        // Experimental change from stock SingleN: no Vector -> Scalar
+        // GetValue and no Scalar -> Vector Muls parameter.
+        Brcb(work, square, 1, {1, 8});
         PipeBarrier<PIPE_V>();
         MultiplyBroadcast(xFp32, work);
-        Cast(yLocal, xFp32, RoundMode::CAST_NONE, kHiddenSize);
-        PipeBarrier<PIPE_V>();
-        Mul(yLocal, yLocal, gammaLocal, kHiddenSize);
-        PipeBarrier<PIPE_V>();
 
-        xQueue.EnQue(xLocal);
-        yQueue.EnQue(yLocal);
-        CopyOutputs(rstdLocal);
-
-        x1Queue.FreeTensor(x1Local);
-        x2Queue.FreeTensor(x2Local);
-        gammaQueue.FreeTensor(gammaLocal);
+        WaitFlag<HardEvent::MTE3_V>(residualStored);
+        Cast(xLocal, xFp32, RoundMode::CAST_NONE, kHiddenSize);
+        PipeBarrier<PIPE_V>();
+        WaitFlag<HardEvent::MTE2_V>(x2Ready);
+        Mul(xLocal, xLocal, auxiliaryFp16, kHiddenSize);
+        SetFlag<HardEvent::V_MTE3>(vectorAllowsStore);
+        WaitFlag<HardEvent::V_MTE3>(vectorAllowsStore);
+        DataCopy(yGm, xLocal, kHiddenSize);
     }
 
 private:
-    __aicore__ inline void CopyInputs()
-    {
-        LocalTensor<half> x1Local = x1Queue.AllocTensor<half>();
-        LocalTensor<half> x2Local = x2Queue.AllocTensor<half>();
-        LocalTensor<half> gammaLocal = gammaQueue.AllocTensor<half>();
-        DataCopy(x1Local, x1Gm, kHiddenSize);
-        DataCopy(x2Local, x2Gm, kHiddenSize);
-        DataCopy(gammaLocal, gammaGm, kHiddenSize);
-        x1Queue.EnQue(x1Local);
-        x2Queue.EnQue(x2Local);
-        gammaQueue.EnQue(gammaLocal);
-    }
-
     __aicore__ inline void ReduceSum(
         const LocalTensor<float>& dst,
         const LocalTensor<float>& src,
         const LocalTensor<float>& work)
     {
         BinaryRepeatParams params;
-        params.dstBlkStride = 1;
+        params.src0RepStride = 8;
         params.src0BlkStride = 1;
+        params.src1RepStride = 0;
         params.src1BlkStride = 1;
         params.dstRepStride = 0;
-        params.src0RepStride = 8;
-        params.src1RepStride = 0;
+        params.dstBlkStride = 1;
         Duplicate(work, 0.0f, kVectorMaskFp32);
         PipeBarrier<PIPE_V>();
         Add(
@@ -162,38 +177,13 @@ private:
         PipeBarrier<PIPE_V>();
     }
 
-    __aicore__ inline void CopyOutputs(const LocalTensor<float>& rstdLocal)
-    {
-        LocalTensor<half> xLocal = xQueue.DeQue<half>();
-        LocalTensor<half> yLocal = yQueue.DeQue<half>();
-        DataCopy(xGm, xLocal, kHiddenSize);
-        DataCopy(yGm, yLocal, kHiddenSize);
-        DataCopyParams rstdParams;
-        rstdParams.blockCount = 1;
-        rstdParams.blockLen = sizeof(float);
-        rstdParams.srcStride = 0;
-        rstdParams.dstStride = 0;
-        DataCopyPad(rstdGm, rstdLocal, rstdParams);
-        xQueue.FreeTensor(xLocal);
-        yQueue.FreeTensor(yLocal);
-    }
-
     GlobalTensor<half> x1Gm;
     GlobalTensor<half> x2Gm;
     GlobalTensor<half> gammaGm;
     GlobalTensor<half> yGm;
     GlobalTensor<float> rstdGm;
     GlobalTensor<half> xGm;
-
-    TQue<TPosition::VECIN, 1> x1Queue;
-    TQue<TPosition::VECIN, 1> x2Queue;
-    TQue<TPosition::VECIN, 1> gammaQueue;
-    TQue<TPosition::VECOUT, 1> yQueue;
-    TQue<TPosition::VECOUT, 1> xQueue;
-    TBuf<TPosition::VECCALC> xFp32Buffer;
-    TBuf<TPosition::VECCALC> squareBuffer;
-    TBuf<TPosition::VECCALC> workBuffer;
-    TBuf<TPosition::VECCALC> rstdBuffer;
+    TBuf<TPosition::VECCALC> unitBuffer;
 };
 }
 
