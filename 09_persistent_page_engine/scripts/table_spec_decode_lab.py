@@ -67,15 +67,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--limit", type=int, default=1)
     parser.add_argument("--all-tables", action="store_true")
     parser.add_argument("--draft-length", type=int, default=16)
-    parser.add_argument(
-        "--reuse-verifier-tail",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help=(
-            "Reuse uncommitted verifier predictions as the next exact-checked "
-            "Jacobi-style proposal."
-        ),
-    )
     parser.add_argument("--cache-length", type=int, default=4096)
     parser.add_argument("--max-new-tokens", type=int, default=4096)
     parser.add_argument("--min-pixels", type=int, default=28224)
@@ -324,7 +315,6 @@ def main() -> None:
             prefilled,
             matcher,
             max_new_tokens=args.max_new_tokens,
-            reuse_verifier_tail=args.reuse_verifier_tail,
         )
         draft_generation_wall_s = float(
             (drafts[request_id].get("timing_s") or {}).get(
@@ -346,7 +336,6 @@ def main() -> None:
             "saved_reference_tokens": len(reference_tokens),
             "prefill_wall_s": prefill_wall_s,
             "draft_generation_wall_s": draft_generation_wall_s,
-            "reuse_verifier_tail": args.reuse_verifier_tail,
             "target_spec_wall_s": target_spec_wall_s,
             "composed_pipeline_wall_s": composed_pipeline_wall_s,
             "saved_baseline_wall_s": saved_baseline_wall_s,
@@ -400,19 +389,10 @@ def main() -> None:
         for record in records
         if record["composed_speedup_vs_saved_baseline"] is not None
     ]
-    verifier_tail_proposed = sum(
-        record["speculative"]["verifier_tail_proposed_tokens"]
-        for record in records
-    )
-    verifier_tail_accepted = sum(
-        record["speculative"]["verifier_tail_accepted_tokens"]
-        for record in records
-    )
     summary = {
         "status": "complete",
         "configuration": {
             "draft_length": args.draft_length,
-            "reuse_verifier_tail": args.reuse_verifier_tail,
             "cache_length": args.cache_length,
             "max_new_tokens": args.max_new_tokens,
             "compare_baseline": args.compare_baseline,
@@ -455,16 +435,6 @@ def main() -> None:
         ),
         "proposed_draft_tokens": sum(
             record["speculative"]["proposed_draft_tokens"] for record in records
-        ),
-        "verifier_tail_calls": sum(
-            record["speculative"]["verifier_tail_calls"] for record in records
-        ),
-        "verifier_tail_proposed_tokens": verifier_tail_proposed,
-        "verifier_tail_accepted_tokens": verifier_tail_accepted,
-        "verifier_tail_accepted_fraction": (
-            verifier_tail_accepted / verifier_tail_proposed
-            if verifier_tail_proposed
-            else None
         ),
         "generated_target_tokens": generated_target_tokens,
         "spec_decode_wall_s": sum(record["speculative"]["wall_s"] for record in records),
