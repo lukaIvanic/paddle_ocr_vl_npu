@@ -283,6 +283,7 @@ def simulate(
     matcher_parts = matcher.split("_")
     is_oracle = matcher_parts[0] == "oracle"
     monotonic = "monotonic" in matcher_parts
+    reversible = "reversible" in matcher_parts
     minimum_anchor = int(matcher_parts[-1][1:]) if matcher_parts[-1].startswith("a") else 1
     oracle_matches = (
         precomputed_oracle_matches
@@ -339,9 +340,11 @@ def simulate(
             and target[position + accepted] == draft[candidate.start + accepted]
         )
         if accepted:
-            state.cursor = max(state.cursor, candidate.start + accepted)
+            accepted_cursor = candidate.start + accepted
+            state.cursor = accepted_cursor if reversible else max(state.cursor, accepted_cursor)
         if correction_matches_draft:
-            state.cursor = max(state.cursor, candidate.start + accepted + 1)
+            correction_cursor = candidate.start + accepted + 1
+            state.cursor = correction_cursor if reversible else max(state.cursor, correction_cursor)
         emitted = min(len(target) - position, accepted + 1)
         if len(trace) < 16:
             trace.append(
