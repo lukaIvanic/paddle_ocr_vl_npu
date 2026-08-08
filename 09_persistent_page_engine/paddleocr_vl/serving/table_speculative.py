@@ -286,6 +286,9 @@ class TableSpecDecodeResult:
     fallback_calls: int
     proposed_draft_tokens: int
     accepted_draft_tokens: int
+    verifier_tail_calls: int
+    verifier_tail_proposed_tokens: int
+    verifier_tail_accepted_tokens: int
     verifier_device_s: float
     fallback_device_s: float
     wall_s: float
@@ -419,6 +422,7 @@ class TableSpeculativeDecodeRuntime:
         matcher: TableDraftMatcher,
         *,
         max_new_tokens: int | None = None,
+        reuse_verifier_tail: bool = False,
     ) -> TableSpecDecodeResult:
         (
             cache,
@@ -440,6 +444,10 @@ class TableSpeculativeDecodeRuntime:
         fallback_calls = 0
         proposed = 0
         accepted = 0
+        verifier_tail: tuple[int, ...] = ()
+        verifier_tail_calls = 0
+        verifier_tail_proposed = 0
+        verifier_tail_accepted = 0
         verify_device_s = 0.0
         fallback_device_s = 0.0
         stop_reason: str | None = (
@@ -473,14 +481,22 @@ class TableSpeculativeDecodeRuntime:
 
         try:
             while stop_reason is None:
-                proposal = matcher.propose(token_ids)
+                using_verifier_tail = bool(reuse_verifier_tail and verifier_tail)
+                matcher_proposal = (
+                    None if using_verifier_tail else matcher.propose(token_ids)
+                )
+                proposal_tokens = (
+                    verifier_tail
+                    if using_verifier_tail
+                    else (() if matcher_proposal is None else matcher_proposal.tokens)
+                )
                 can_verify = (
-                    proposal is not None
-                    and bool(proposal.tokens)
+                    bool(proposal_tokens)
                     and position + self.query_length <= self.cache_length
                 )
                 cache_position.fill_(position)
                 if not can_verify:
+                    verifier_tail = ()
                     next_token, device_s = self._decode_call(
                         token_ids[-1],
                         cache_position,
@@ -499,8 +515,6 @@ class TableSpeculativeDecodeRuntime:
                     position += 1
                     continue
 
-                assert proposal is not None
-                proposal_tokens = proposal.tokens
                 targets, device_s = self._verify_call(
                     token_ids[-1],
                     proposal_tokens,
@@ -512,12 +526,17 @@ class TableSpeculativeDecodeRuntime:
                 speculative_calls += 1
                 verify_device_s += device_s
                 proposed += len(proposal_tokens)
+                if using_verifier_tail:
+                    verifier_tail_calls += 1
+                    verifier_tail_proposed += len(proposal_tokens)
                 accepted_here = 0
                 for draft_token, target_token in zip(proposal_tokens, targets):
                     if draft_token != target_token:
                         break
                     accepted_here += 1
                 accepted += accepted_here
+                if using_verifier_tail:
+                    verifier_tail_accepted += accepted_here
                 if accepted_here == len(proposal_tokens):
                     fully_accepted_speculative_calls += 1
                 else:
@@ -525,9 +544,14 @@ class TableSpeculativeDecodeRuntime:
                 emitted = list(proposal_tokens[:accepted_here])
                 emitted.append(int(targets[accepted_here]))
                 matcher.commit(
-                    proposal,
+                    None if using_verifier_tail else matcher_proposal,
                     accepted_draft_tokens=accepted_here,
                     emitted_tokens=emitted,
+                )
+                verifier_tail = (
+                    tuple(int(token) for token in targets[accepted_here + 1 :])
+                    if reuse_verifier_tail
+                    else ()
                 )
                 append_tokens(emitted)
                 position += accepted_here + 1
@@ -550,6 +574,9 @@ class TableSpeculativeDecodeRuntime:
             fallback_calls=fallback_calls,
             proposed_draft_tokens=proposed,
             accepted_draft_tokens=accepted,
+            verifier_tail_calls=verifier_tail_calls,
+            verifier_tail_proposed_tokens=verifier_tail_proposed,
+            verifier_tail_accepted_tokens=verifier_tail_accepted,
             verifier_device_s=verify_device_s,
             fallback_device_s=fallback_device_s,
             wall_s=time.perf_counter() - started,
