@@ -53,6 +53,7 @@ class DecodeOptimizationConfig:
     add_rms_norm: bool = False
     attention: str = "gqa"
     increfa_length_mode: str = "mask"
+    stage_aware_weight_prefetch: bool = False
     post_scatter_kv_prefetch: bool = False
 
 
@@ -165,6 +166,25 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         rotary="npu_apply",
         add_rms_norm=True,
         attention="manual_unscaled",
+    ),
+    "combined_apply_prefetch": DecodeOptimizationConfig(
+        name="combined_apply_prefetch",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        add_rms_norm=True,
+        stage_aware_weight_prefetch=True,
+    ),
+    "combined_apply_prefetch_no_increfa": DecodeOptimizationConfig(
+        name="combined_apply_prefetch_no_increfa",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        add_rms_norm=True,
+        attention="no_increfa",
+        stage_aware_weight_prefetch=True,
     ),
     "combined_apply_all": DecodeOptimizationConfig(
         name="combined_apply_all",
@@ -332,6 +352,31 @@ def prepare_decode_optimization_modules(
                 (mlp.gate_proj, mlp.up_proj)
             )
     return config
+
+
+def prepare_decode_weight_prefetch(
+    model: "LocalPaddleOCRVLForConditionalGeneration",
+    optimization: str | DecodeOptimizationConfig,
+) -> None:
+    """Install the proven stage-aware decode weight-prefetch schedule."""
+    config = resolve_decode_optimization(optimization)
+    if not config.stage_aware_weight_prefetch:
+        return
+    layers = model.model.layers
+    for index, layer in enumerate(layers):
+        layer.self_attn._decode_prefetch_current_mlp = (
+            layer.mlp.gate_proj.weight,
+            layer.mlp.up_proj.weight,
+            layer.mlp.down_proj.weight,
+        )
+        layer.mlp._decode_prefetch_next_attention = (
+            (
+                layers[index + 1].self_attn.decode_qkv_proj.weight,
+                layers[index + 1].self_attn.o_proj.weight,
+            )
+            if index + 1 < len(layers)
+            else (model.lm_head.weight,)
+        )
 
 
 def build_static_decode_bool_mask(
@@ -556,19 +601,30 @@ def _decode_mlp(
     optimization: DecodeOptimizationConfig,
 ) -> torch.Tensor:
     if not optimization.packed_mlp:
-        return mlp(hidden_states)
-    gate_up = _linear_tokenwise(
-        mlp.decode_gate_up_proj,
-        hidden_states,
-    )
-    if optimization.npu_swiglu:
+        output = mlp(hidden_states)
+    else:
+        gate_up = _linear_tokenwise(
+            mlp.decode_gate_up_proj,
+            hidden_states,
+        )
+        if optimization.npu_swiglu:
+            import torch_npu
+
+            activated = torch_npu.npu_swiglu(gate_up, dim=-1)
+        else:
+            gate, up = gate_up.chunk(2, dim=-1)
+            activated = torch.nn.functional.silu(gate) * up
+        output = _linear_tokenwise(mlp.down_proj, activated)
+    if optimization.stage_aware_weight_prefetch:
         import torch_npu
 
-        activated = torch_npu.npu_swiglu(gate_up, dim=-1)
-    else:
-        gate, up = gate_up.chunk(2, dim=-1)
-        activated = torch.nn.functional.silu(gate) * up
-    return _linear_tokenwise(mlp.down_proj, activated)
+        for weight in mlp._decode_prefetch_next_attention:
+            torch_npu.npu_prefetch(
+                weight,
+                output,
+                int(weight.numel() * weight.element_size()),
+            )
+    return output
 
 
 def _decode_attention(
@@ -584,6 +640,15 @@ def _decode_attention(
     actual_seq_lengths: list[int] | None,
     optimization: DecodeOptimizationConfig,
 ) -> torch.Tensor:
+    if optimization.stage_aware_weight_prefetch:
+        import torch_npu
+
+        for weight in attention._decode_prefetch_current_mlp:
+            torch_npu.npu_prefetch(
+                weight,
+                hidden_states,
+                int(weight.numel() * weight.element_size()),
+            )
     query_states, key_states, value_states = _project_decode_qkv(
         attention,
         hidden_states,
@@ -659,6 +724,19 @@ def _decode_attention(
             value_cache,
             additive_mask,
         )
+
+    if optimization.attention == "no_increfa":
+        # Lab-only full-graph ablation.  Keep QKV projection, RoPE, cache
+        # writes, and output projection, but substitute dynamic query data for
+        # the IncreFA result.  A dynamic substitute prevents TorchAir from
+        # constant-folding the downstream output projection.
+        batch = query_states.shape[0]
+        attention_output = (
+            query_states.transpose(1, 2)
+            .contiguous()
+            .reshape(batch, 1, attention.num_heads * attention.head_dim)
+        )
+        return _linear_tokenwise(attention.o_proj, attention_output)
 
     if optimization.attention in ("manual", "manual_unscaled"):
         # Lab-only decomposition of one-token GQA decode.  It deliberately
@@ -1202,6 +1280,12 @@ def compile_text_decode_stage(
             "add_rms_norm": optimization.add_rms_norm,
             "attention": optimization.attention,
             "increfa_length_mode": optimization.increfa_length_mode,
+            "stage_aware_weight_prefetch": (
+                optimization.stage_aware_weight_prefetch
+            ),
+            "post_scatter_kv_prefetch": (
+                optimization.post_scatter_kv_prefetch
+            ),
         },
     }
     if backend_name == "raw_eager":
@@ -1286,6 +1370,7 @@ class TextDecodeRuntime:
             model,
             optimization,
         )
+        prepare_decode_weight_prefetch(model, self.optimization)
         self.stage = TextDecodeStage(
             model,
             optimization=self.optimization,
