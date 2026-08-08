@@ -1,0 +1,2 @@
+.DECODE_PROFILE mean_ms=1.2293 raw_tok_s=813.5 active_tok_s=813.5
+output=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/manual_decode_attention_27149a8/increfa_throughput.json

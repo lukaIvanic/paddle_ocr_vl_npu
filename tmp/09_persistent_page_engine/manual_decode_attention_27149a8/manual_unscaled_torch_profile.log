@@ -1,0 +1,6 @@
+[2026-08-08 06:32:53] [WARNING] [3053722] profiler.py: Profiler won't be using warmup, this can skew profiler results
+[2026-08-08 06:32:54] [INFO] [3054346] profiler.py: Start parsing profiling data in sync mode at: /workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_manual_decode_attention_profiles_27149a8/manual_unscaled/b1_k1024_p900_pipe_20260808_063253/liteserver-c001-4_3053722_20260808063253431_ascend_pt
+|/-[2026-08-08 06:32:56] [INFO] [3054372] profiler.py: CANN profiling data parsed in a total time of 0:00:02.026247
+\[2026-08-08 06:32:57] [INFO] [3054346] profiler.py: All profiling data parsed in a total time of 0:00:03.420724
+DECODE_TORCH_PROFILE steps=3 metric=pipe profile_dir=/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_manual_decode_attention_profiles_27149a8/manual_unscaled/b1_k1024_p900_pipe_20260808_063253
+output=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/manual_decode_attention_27149a8/manual_unscaled_torch_profile.json

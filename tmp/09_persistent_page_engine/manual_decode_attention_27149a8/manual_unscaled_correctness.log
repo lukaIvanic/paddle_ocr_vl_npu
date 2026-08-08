@@ -1,0 +1,2 @@
+DECODE_CORRECTNESS steps=2 logit_mean_abs=2.043838 logit_max_abs=16.375000 argmax=0/2
+output=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/manual_decode_attention_27149a8/manual_unscaled_correctness.json

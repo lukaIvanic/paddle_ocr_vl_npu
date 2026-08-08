@@ -1,0 +1,2 @@
+.DECODE_PROFILE mean_ms=1.3573 raw_tok_s=736.7 active_tok_s=736.7
+output=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/manual_decode_attention_27149a8/manual_scaled_throughput.json

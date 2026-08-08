@@ -1,0 +1,207 @@
+{
+  "schema_version": 1,
+  "kind": "text_decode_lab_result",
+  "configuration": {
+    "mode": "correctness",
+    "corpus": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/corpus_256p_b32_kv4096_7899d40.json",
+    "corpus_sha256": "7d5510d09eaf948ff1ce81793918c9496fd7d8587c9d62ea6cfff34c9d025c18",
+    "batch_size": 1,
+    "cache_length": 1024,
+    "dtype": "fp16",
+    "backend": "torchair",
+    "decode_optimization": "combined_apply_manual_attention_unscaled",
+    "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_manual_decode_attention_27149a8/manual_unscaled",
+    "synthetic_lm_head_size": null,
+    "active_slots": 1,
+    "profile_position": 1024,
+    "tail_positions": [
+      64,
+      80,
+      113
+    ],
+    "tail_canary_value": 0.25,
+    "profile_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/npu_profiles",
+    "profile_metric": "pipe",
+    "warmup": 3,
+    "repeats": 20,
+    "overflow_policy": "exclude",
+    "allow_compile": false
+  },
+  "corpus_contract": {
+    "ordering": "items are stored in exact production request-source order",
+    "tokens": "token_ids include the prefill-produced first token and the final EOS/length token exactly as recorded",
+    "scheduler_lifetime": "active_decode_iterations includes production's one queue-depth-one completion look-ahead iteration",
+    "cache_capacity": "replay_required_cache_tokens includes every recorded graph write, including the queue-depth-one look-ahead; production_guard_min_cache_tokens records the source runner's prompt + configured max_new_tokens - 1 admission guard",
+    "device_replay": "recorded request lifetimes drive completion while the real decode arena, graph, D2H token path, admission, and refill machinery run"
+  },
+  "result": {
+    "contract": {
+      "inputs": "recorded token paths and prompt positions",
+      "prompt_kv_values": "independent zero prefixes",
+      "rope_deltas": "zeros",
+      "comparison": "baseline eager production stage versus selected compiled optimization",
+      "selected_optimization": "combined_apply_manual_attention_unscaled",
+      "integration_gate": "real-crop end-to-end token parity remains required before promoting a decode optimization"
+    },
+    "selected_request_ids": [
+      "page_000080_block_000003"
+    ],
+    "steps": 2,
+    "batch_size": 1,
+    "logits": {
+      "max_abs": 16.375,
+      "mean_abs": 2.0438377455909653,
+      "argmax_matches": 0,
+      "argmax_total": 2,
+      "argmax_fraction": 0.0
+    },
+    "written_kv": {
+      "max_abs": 12.9373779296875,
+      "mean_abs": 0.9144768762505717
+    },
+    "per_step": [
+      {
+        "step": 0,
+        "logit_max_abs": 14.23828125,
+        "logit_mean_abs": 2.3772528171539307,
+        "argmax_matches": 0,
+        "kv_written_max_abs": 12.9373779296875,
+        "kv_written_mean_abs": 0.9341821949670298
+      },
+      {
+        "step": 1,
+        "logit_max_abs": 16.375,
+        "logit_mean_abs": 1.7104228734970093,
+        "argmax_matches": 0,
+        "kv_written_max_abs": 12.0546875,
+        "kv_written_mean_abs": 0.8947715575341135
+      }
+    ]
+  },
+  "setup": {
+    "total_s": 17.33357000607066,
+    "model_load_s": 10.082960837054998,
+    "lm_head_setup_s": 2.4351058527827263e-05,
+    "weight_format_s": 5.8392499019391835,
+    "runtime_setup_s": 0.29781469190493226,
+    "weight_format": {
+      "requested_mode": "decode_nz",
+      "mode": "decode_nz",
+      "effective_mode": "decode_nz",
+      "target_format": "FRACTAL_NZ",
+      "target_format_code": 29,
+      "target_count": 145,
+      "cast_count": 145,
+      "converted_count": 145,
+      "already_nz_count": 0,
+      "converted_modules_sample": [
+        "model.layers.0.self_attn.q_proj",
+        "model.layers.0.self_attn.k_proj",
+        "model.layers.0.self_attn.v_proj",
+        "model.layers.0.self_attn.o_proj",
+        "model.layers.0.self_attn.decode_qkv_proj",
+        "model.layers.0.mlp.gate_proj",
+        "model.layers.0.mlp.up_proj",
+        "model.layers.0.mlp.down_proj",
+        "model.layers.1.self_attn.q_proj",
+        "model.layers.1.self_attn.k_proj",
+        "model.layers.1.self_attn.v_proj",
+        "model.layers.1.self_attn.o_proj",
+        "model.layers.1.self_attn.decode_qkv_proj",
+        "model.layers.1.mlp.gate_proj",
+        "model.layers.1.mlp.up_proj",
+        "model.layers.1.mlp.down_proj"
+      ],
+      "before_formats_sample": {
+        "model.layers.0.self_attn.q_proj": 2,
+        "model.layers.0.self_attn.k_proj": 2,
+        "model.layers.0.self_attn.v_proj": 2,
+        "model.layers.0.self_attn.o_proj": 2,
+        "model.layers.0.self_attn.decode_qkv_proj": 2,
+        "model.layers.0.mlp.gate_proj": 2,
+        "model.layers.0.mlp.up_proj": 2,
+        "model.layers.0.mlp.down_proj": 2,
+        "model.layers.1.self_attn.q_proj": 2,
+        "model.layers.1.self_attn.k_proj": 2,
+        "model.layers.1.self_attn.v_proj": 2,
+        "model.layers.1.self_attn.o_proj": 2,
+        "model.layers.1.self_attn.decode_qkv_proj": 2,
+        "model.layers.1.mlp.gate_proj": 2,
+        "model.layers.1.mlp.up_proj": 2,
+        "model.layers.1.mlp.down_proj": 2
+      },
+      "after_formats_sample": {
+        "model.layers.0.self_attn.q_proj": 29,
+        "model.layers.0.self_attn.k_proj": 29,
+        "model.layers.0.self_attn.v_proj": 29,
+        "model.layers.0.self_attn.o_proj": 29,
+        "model.layers.0.self_attn.decode_qkv_proj": 29,
+        "model.layers.0.mlp.gate_proj": 29,
+        "model.layers.0.mlp.up_proj": 29,
+        "model.layers.0.mlp.down_proj": 29,
+        "model.layers.1.self_attn.q_proj": 29,
+        "model.layers.1.self_attn.k_proj": 29,
+        "model.layers.1.self_attn.v_proj": 29,
+        "model.layers.1.self_attn.o_proj": 29,
+        "model.layers.1.self_attn.decode_qkv_proj": 29,
+        "model.layers.1.mlp.gate_proj": 29,
+        "model.layers.1.mlp.up_proj": 29,
+        "model.layers.1.mlp.down_proj": 29
+      },
+      "all_after_are_nz": true,
+      "fallback_reason": null,
+      "failures_sample": []
+    },
+    "runtime_metadata": {
+      "backend": "torchair",
+      "enabled": true,
+      "boundary": "token_embedding_text_transformer_lm_head_static_step",
+      "linear_weight_format": "decode_nz",
+      "decode_attention": "increfa",
+      "decode_cache_update": "npu_scatter",
+      "decode_optimization": "combined_apply_manual_attention_unscaled",
+      "decode_optimization_config": {
+        "hoist_mrope": true,
+        "packed_qkv": true,
+        "rms_norm": "npu",
+        "rotary": "npu_apply",
+        "packed_mlp": false,
+        "npu_swiglu": false,
+        "add_rms_norm": true,
+        "attention": "manual_unscaled",
+        "increfa_length_mode": "mask"
+      },
+      "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_manual_decode_attention_27149a8/manual_unscaled/decode_nz_increfa_npu_scatter_optcombined_apply_manual_attention_unscaled_modeinference_dtypefloat16_bs1_cache1024_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src9933d6b4d9b2",
+      "torchair_ge_cache": true,
+      "compile_api": "torchair.inference.cache_compile",
+      "cache_key_fields": {
+        "batch_size": 1,
+        "cache_length": 1024,
+        "dtype": "torch.float16",
+        "model_config_hash": "6d2211febbe9",
+        "torch": "2.10.0+cpu",
+        "torch_npu": "2.10.0",
+        "torchair": "unknown",
+        "decode_source_hash": "9933d6b4d9b2",
+        "linear_weight_format": "decode_nz",
+        "decode_attention": "increfa",
+        "decode_cache_update": "npu_scatter",
+        "execution_mode": "inference",
+        "decode_optimization": "combined_apply_manual_attention_unscaled"
+      },
+      "cache_num_key_value_heads": 2,
+      "cache_allocated_bytes": 18874368
+    },
+    "runtime_setup_detail_s": {
+      "compile_wrapper": 0.0017919999081641436,
+      "compile_first_call": 0.2732390339951962
+    },
+    "lm_head": {
+      "original_output_features": 103424,
+      "effective_output_features": 103424,
+      "synthetic": false,
+      "divisible_by_1024": true
+    },
+    "effective_cache_root": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_manual_decode_attention_27149a8/manual_unscaled"
+  }
+}
