@@ -60,12 +60,25 @@ def logical_rows(text: str) -> list[str]:
     return [row for row in text.split("<nl>") if row]
 
 
-def ratio(left: Any, right: Any) -> float:
+def multiset_dice(left: list[Any], right: list[Any]) -> float:
     if not left and not right:
         return 1.0
     if not left or not right:
         return 0.0
-    return SequenceMatcher(None, left, right, autojunk=False).ratio()
+    left_counts = Counter(left)
+    right_counts = Counter(right)
+    intersection = sum((left_counts & right_counts).values())
+    return 2.0 * intersection / (len(left) + len(right))
+
+
+def ratio(left: list[Any], right: list[Any]) -> float:
+    if left == right:
+        return 1.0
+    unigram = multiset_dice(left, right)
+    left_bigrams = list(zip(left, left[1:]))
+    right_bigrams = list(zip(right, right[1:]))
+    bigram = multiset_dice(left_bigrams, right_bigrams)
+    return 0.35 * unigram + 0.65 * bigram
 
 
 def display_tokens(text: str) -> list[str]:
@@ -226,7 +239,6 @@ def main() -> None:
             bottom = boundaries[min(row_index + 1, len(boundaries) - 1)]
             expected_fraction = (top + bottom) / (2.0 * table_height)
             alignment = best_base_span(base_rows, row["text"], expected_fraction)
-            base_diff, draft_diff = diff_segments(alignment["base_text"], row["text"])
             if alignment["content_similarity"] >= 0.98 and alignment["structure_similarity"] >= 0.98:
                 category = "near_exact"
             elif alignment["structure_similarity"] < 0.85:
@@ -245,8 +257,6 @@ def main() -> None:
                     "draft_text": row["text"],
                     "draft_token_count": len(row.get("token_ids") or ()),
                     "category": category,
-                    "base_diff": base_diff,
-                    "draft_diff": draft_diff,
                     **alignment,
                 }
             )
@@ -291,6 +301,14 @@ def main() -> None:
                 flush=True,
             )
     similarities = [row["mean_combined_similarity"] for row in analyzed]
+    selected = select_examples(analyzed, args.samples_per_tier)
+    for table in selected:
+        for lane in table["lanes"]:
+            base_diff, draft_diff = diff_segments(
+                lane["base_text"], lane["draft_text"]
+            )
+            lane["base_diff"] = base_diff
+            lane["draft_diff"] = draft_diff
     report = {
         "inputs": {
             "targets": str(args.targets),
@@ -307,7 +325,7 @@ def main() -> None:
             "p90_similarity": percentile(similarities, 0.90),
             "lane_categories": dict(category_counts),
         },
-        "selected": select_examples(analyzed, args.samples_per_tier),
+        "selected": selected,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2))
