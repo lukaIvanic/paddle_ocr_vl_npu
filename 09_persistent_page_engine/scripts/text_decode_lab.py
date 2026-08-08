@@ -62,7 +62,15 @@ MODES = (
     "replay",
     "correctness",
 )
-NPU_PROFILE_METRICS = ("pipe", "memory", "l2", "memory_access")
+NPU_PROFILE_METRICS = (
+    "pipe",
+    "memory",
+    "memory_l0",
+    "memory_ub",
+    "resource_conflict",
+    "l2",
+    "memory_access",
+)
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -252,6 +260,9 @@ def _npu_profiler_config(metric: str) -> Any:
     metrics = {
         "pipe": npu_prof.AiCMetrics.PipeUtilization,
         "memory": npu_prof.AiCMetrics.Memory,
+        "memory_l0": npu_prof.AiCMetrics.MemoryL0,
+        "memory_ub": npu_prof.AiCMetrics.MemoryUB,
+        "resource_conflict": npu_prof.AiCMetrics.ResourceConflictRatio,
         "l2": npu_prof.AiCMetrics.L2Cache,
         "memory_access": npu_prof.AiCMetrics.MemoryAccess,
     }
