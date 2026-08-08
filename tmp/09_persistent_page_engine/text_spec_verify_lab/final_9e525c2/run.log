@@ -1,0 +1,23 @@
+SPEC_VERIFY_PROGRESS stage=model_load status=begin
+SPEC_VERIFY_PROGRESS stage=model_load status=end seconds=11.030
+SPEC_VERIFY_PROGRESS lane=decode_b1 status=setup_begin
+SPEC_VERIFY_RESULT lane=decode_b1 latency_ms=1.187 tok_s=839.3
+SPEC_VERIFY_PROGRESS lane=1/9 draft=D1 query=2 cache=hit status=setup_begin
+SPEC_VERIFY_RESULT draft=D1 query=2 latency_ms=2.451 effective_tok_s=814.4 target_match=2/2 lane_wall_s=0.4
+SPEC_VERIFY_PROGRESS lane=2/9 draft=D2 query=3 cache=hit status=setup_begin
+SPEC_VERIFY_RESULT draft=D2 query=3 latency_ms=2.464 effective_tok_s=1215.3 target_match=3/3 lane_wall_s=0.4
+SPEC_VERIFY_PROGRESS lane=3/9 draft=D4 query=5 cache=hit status=setup_begin
+SPEC_VERIFY_RESULT draft=D4 query=5 latency_ms=2.482 effective_tok_s=2011.3 target_match=5/5 lane_wall_s=0.4
+SPEC_VERIFY_PROGRESS lane=4/9 draft=D8 query=9 cache=hit status=setup_begin
+SPEC_VERIFY_RESULT draft=D8 query=9 latency_ms=2.545 effective_tok_s=3528.5 target_match=9/9 lane_wall_s=0.4
+SPEC_VERIFY_PROGRESS lane=5/9 draft=D16 query=17 cache=hit status=setup_begin
+SPEC_VERIFY_RESULT draft=D16 query=17 latency_ms=2.799 effective_tok_s=6061.3 target_match=16/17 lane_wall_s=0.4
+SPEC_VERIFY_PROGRESS lane=6/9 draft=D32 query=33 cache=hit status=setup_begin
+SPEC_VERIFY_RESULT draft=D32 query=33 latency_ms=3.029 effective_tok_s=10876.4 target_match=32/33 lane_wall_s=0.5
+SPEC_VERIFY_PROGRESS lane=7/9 draft=D64 query=65 cache=hit status=setup_begin
+SPEC_VERIFY_RESULT draft=D64 query=65 latency_ms=3.421 effective_tok_s=18969.3 target_match=64/65 lane_wall_s=0.6
+SPEC_VERIFY_PROGRESS lane=8/9 draft=D128 query=129 cache=hit status=setup_begin
+SPEC_VERIFY_RESULT draft=D128 query=129 latency_ms=3.976 effective_tok_s=32402.3 target_match=127/129 lane_wall_s=0.6
+SPEC_VERIFY_PROGRESS lane=9/9 draft=D256 query=257 cache=hit status=setup_begin
+SPEC_VERIFY_RESULT draft=D256 query=257 latency_ms=4.417 effective_tok_s=58110.5 target_match=252/257 lane_wall_s=0.8
+SPEC_VERIFY_COMPLETE lanes=9 wall_s=22.7 output=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_spec_verify_lab/final_9e525c2/results.json
