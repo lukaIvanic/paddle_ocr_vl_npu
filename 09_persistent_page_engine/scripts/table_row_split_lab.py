@@ -8,12 +8,19 @@ import json
 import math
 import re
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from typing import Iterable
 
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
+
+
+EXPERIMENT_ROOT = Path(__file__).resolve().parent.parent
+ROW_DRAFT_ORIENTATION_GROUND_TRUTH = (
+    EXPERIMENT_ROOT / "accuracy_lab/table_row_orientation_ground_truth.json"
+)
 
 
 @dataclass(frozen=True)
@@ -109,6 +116,44 @@ def load_crop(record: dict, images_dir: Path) -> Image.Image:
     with Image.open(images_dir / record["page_name"]) as page:
         page = page.convert("RGB")
         return page.crop(tuple(record["bbox_xyxy"]))
+
+
+@lru_cache(maxsize=1)
+def row_draft_rotations_cw() -> dict[str, int]:
+    payload = json.loads(
+        ROW_DRAFT_ORIENTATION_GROUND_TRUTH.read_text(encoding="utf-8")
+    )
+    rotations = {
+        str(request_id): int(degrees)
+        for request_id, degrees in payload["rotations_cw"].items()
+    }
+    invalid = {
+        request_id: degrees
+        for request_id, degrees in rotations.items()
+        if degrees not in (0, 90, 180, 270)
+    }
+    if invalid:
+        raise ValueError(f"invalid row-draft rotations: {invalid}")
+    return rotations
+
+
+def row_draft_rotation_cw(record: dict) -> int:
+    return row_draft_rotations_cw().get(str(record["request_id"]), 0)
+
+
+def orient_row_draft_image(image: Image.Image, record: dict) -> tuple[Image.Image, int]:
+    """Orient only the row-draft copy; the whole-table target stays unchanged."""
+
+    rotation_cw = row_draft_rotation_cw(record)
+    transpose = {
+        0: None,
+        90: Image.Transpose.ROTATE_270,
+        180: Image.Transpose.ROTATE_180,
+        270: Image.Transpose.ROTATE_90,
+    }[rotation_cw]
+    if transpose is None:
+        return image, rotation_cw
+    return image.transpose(transpose), rotation_cw
 
 
 def trim_blank_margin(image: Image.Image) -> tuple[Image.Image, tuple[int, int, int, int]]:
@@ -706,7 +751,8 @@ def main() -> None:
     panels: list[tuple[str, Image.Image]] = []
     for index, record in enumerate(selected, start=1):
         raw_image = load_crop(record, args.images_dir)
-        image, trim_box = trim_blank_margin(raw_image)
+        row_draft_source, rotation_cw = orient_row_draft_image(raw_image, record)
+        image, trim_box = trim_blank_margin(row_draft_source)
         proposals = analyze(image)
         name = f"{index:02d}_{safe_name(record['request_id'])}"
         panel = sample_panel(record, image, proposals)
@@ -730,7 +776,9 @@ def main() -> None:
                 "page_name": record["page_name"],
                 "bbox_xyxy": record["bbox_xyxy"],
                 "raw_crop_size": list(raw_image.size),
-                "trim_box_in_raw_crop": list(trim_box),
+                "row_draft_rotation_cw": rotation_cw,
+                "row_draft_source_size": list(row_draft_source.size),
+                "trim_box_in_row_draft_source": list(trim_box),
                 "crop_size": list(image.size),
                 "output_tokens": record["output_tokens"],
                 "gt_rows_eval_only": len(

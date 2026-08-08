@@ -1,0 +1,20 @@
+{
+  "dataset": "OmniDocBench v1.6",
+  "scope": "row-draft crops only",
+  "default_rotation_cw": 0,
+  "provenance": "Manual review of all 665 table crops after detector-assisted triage",
+  "rotations_cw": {
+    "page_000216_table_box_id_0": 90,
+    "page_000255_table_box_id_2": 90,
+    "page_000260_table_box_id_0": 90,
+    "page_000261_table_box_id_3": 90,
+    "page_000270_table_box_id_0": 90,
+    "page_001270_table_box_id_1": 90,
+    "page_001271_table_4": 90,
+    "page_001272_table_1": 90,
+    "page_001273_table_8": 90,
+    "page_001274_table_4": 90,
+    "page_001275_table_3": 90,
+    "page_001276_table_2": 90
+  }
+}

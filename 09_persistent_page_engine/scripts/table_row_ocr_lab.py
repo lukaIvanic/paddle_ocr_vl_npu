@@ -33,6 +33,7 @@ from table_row_split_lab import (
     SplitProposal,
     analyze,
     load_crop,
+    orient_row_draft_image,
     read_jsonl,
     trim_blank_margin,
 )
@@ -267,6 +268,45 @@ def crop_rows(
     return rows
 
 
+def prepare_strategy_inputs(
+    source: dict[str, Any],
+    raw_image: Any,
+    strategies: tuple[str, ...],
+) -> tuple[dict[str, dict[str, Any]], int, list[int], float]:
+    """Prepare row drafts independently from the unchanged whole-table target."""
+
+    row_draft_source, rotation_cw = orient_row_draft_image(raw_image, source)
+    row_image, row_trim_box = trim_blank_margin(row_draft_source)
+    if rotation_cw:
+        whole_image, whole_trim_box = trim_blank_margin(raw_image)
+    else:
+        whole_image, whole_trim_box = row_image, row_trim_box
+
+    split_started = time.perf_counter()
+    proposals = (
+        {proposal.name: proposal for proposal in analyze(row_image)}
+        if any(strategy != "whole" for strategy in strategies)
+        else {}
+    )
+    if "whole" in strategies:
+        proposals["whole"] = SplitProposal(
+            name="whole",
+            boundaries=(0, whole_image.height),
+            diagnostics={"source": "unchanged_whole_table_crop"},
+        )
+    split_s = time.perf_counter() - split_started
+
+    prepared: dict[str, dict[str, Any]] = {}
+    for strategy in strategies:
+        is_whole = strategy == "whole"
+        prepared[strategy] = {
+            "image": whole_image if is_whole else row_image,
+            "trim_box": whole_trim_box if is_whole else row_trim_box,
+            "proposal": proposals[strategy],
+        }
+    return prepared, rotation_cw, list(row_draft_source.size), split_s
+
+
 def aggregate_result_tokens(results: list[dict[str, Any]]) -> dict[str, Any]:
     real_vision = sum(int(item["vision"].get("real_vision_tokens", 0)) for item in results)
     physical_vision = sum(int(item["vision"].get("physical_vision_tokens", 0)) for item in results)
@@ -309,23 +349,15 @@ def run_cross_table_schedule(
     prepare_started = time.perf_counter()
     for source in selected:
         raw_image = load_crop(source, args.images_dir)
-        image, trim_box = trim_blank_margin(raw_image)
-        split_started = time.perf_counter()
-        proposals = (
-            {proposal.name: proposal for proposal in analyze(image)}
-            if any(strategy != "whole" for strategy in strategies)
-            else {}
+        prepared, rotation_cw, row_draft_source_size, split_s = prepare_strategy_inputs(
+            source, raw_image, strategies
         )
-        if "whole" in strategies:
-            proposals["whole"] = SplitProposal(
-                name="whole",
-                boundaries=(0, image.height),
-                diagnostics={"source": "whole_table_crop"},
-            )
-        split_s = time.perf_counter() - split_started
 
         for strategy in strategies:
-            proposal = proposals[strategy]
+            strategy_input = prepared[strategy]
+            image = strategy_input["image"]
+            trim_box = strategy_input["trim_box"]
+            proposal = strategy_input["proposal"]
             row_crop_started = time.perf_counter()
             rows = crop_rows(image, proposal.boundaries, args.row_overlap_px)
             row_crop_s = time.perf_counter() - row_crop_started
@@ -333,6 +365,10 @@ def run_cross_table_schedule(
             contexts[key] = {
                 "source": source,
                 "raw_crop_size": list(raw_image.size),
+                "row_draft_rotation_cw": rotation_cw if strategy != "whole" else 0,
+                "row_draft_source_size": (
+                    row_draft_source_size if strategy != "whole" else list(raw_image.size)
+                ),
                 "trim_box": list(trim_box),
                 "crop_size": list(image.size),
                 "proposal": proposal,
@@ -398,6 +434,8 @@ def run_cross_table_schedule(
                 "annotation_index": source["annotation_index"],
                 "bbox_xyxy": source["bbox_xyxy"],
                 "raw_crop_size": context["raw_crop_size"],
+                "row_draft_rotation_cw": context["row_draft_rotation_cw"],
+                "row_draft_source_size": context["row_draft_source_size"],
                 "trim_box_in_raw_crop": context["trim_box"],
                 "crop_size": context["crop_size"],
                 "boundaries": list(context["proposal"].boundaries),
@@ -547,25 +585,17 @@ def main() -> None:
         ):
             continue
         raw_image = load_crop(source, args.images_dir)
-        image, trim_box = trim_blank_margin(raw_image)
-        split_started = time.perf_counter()
-        proposals = (
-            {proposal.name: proposal for proposal in analyze(image)}
-            if any(strategy != "whole" for strategy in strategies)
-            else {}
+        prepared, rotation_cw, row_draft_source_size, split_s = prepare_strategy_inputs(
+            source, raw_image, strategies
         )
-        if "whole" in strategies:
-            proposals["whole"] = SplitProposal(
-                name="whole",
-                boundaries=(0, image.height),
-                diagnostics={"source": "whole_table_crop"},
-            )
-        split_s = time.perf_counter() - split_started
 
         for strategy in strategies:
             if (source["request_id"], strategy) in completed:
                 continue
-            proposal = proposals[strategy]
+            strategy_input = prepared[strategy]
+            image = strategy_input["image"]
+            trim_box = strategy_input["trim_box"]
+            proposal = strategy_input["proposal"]
             row_crop_started = time.perf_counter()
             rows = crop_rows(image, proposal.boundaries, args.row_overlap_px)
             row_crop_s = time.perf_counter() - row_crop_started
@@ -610,6 +640,10 @@ def main() -> None:
                 "annotation_index": source["annotation_index"],
                 "bbox_xyxy": source["bbox_xyxy"],
                 "raw_crop_size": list(raw_image.size),
+                "row_draft_rotation_cw": rotation_cw if strategy != "whole" else 0,
+                "row_draft_source_size": (
+                    row_draft_source_size if strategy != "whole" else list(raw_image.size)
+                ),
                 "trim_box_in_raw_crop": list(trim_box),
                 "crop_size": list(image.size),
                 "boundaries": list(proposal.boundaries),
