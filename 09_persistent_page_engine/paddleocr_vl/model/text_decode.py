@@ -512,8 +512,9 @@ def _lookup_scalar_rotary_factors(
         1,
         position.reshape(-1).to(dtype=torch.int64),
     )
-    cos = selected[0].unsqueeze(1).unsqueeze(1)
-    sin = selected[1].unsqueeze(1).unsqueeze(1)
+    cos, sin = selected.unbind(dim=0)
+    cos = cos.unsqueeze(1).unsqueeze(1)
+    sin = sin.unsqueeze(1).unsqueeze(1)
     return cos, sin
 
 
