@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "kind": "gqa_grouped_two_aiv_block_experiment",
+  "date": "2026-08-09",
+  "decision": "reject_for_latency",
+  "environment": {
+    "device": "physical Ascend 910B2 NPU6",
+    "cann": "9.0.0",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "repo_commit_at_profile": "994dc8f",
+    "upstream_ops_transformer_commit": "afe72144f9f2ac8441929035795db88a111b30c5"
+  },
+  "grouped_package": {
+    "variant": "grouped_serial_control",
+    "topology": "one unsplit AIV block per KV group; eight query heads serial per block",
+    "requested_vector_core_attribute": 16,
+    "measured_block_num": 2,
+    "flash_decode": false,
+    "still_reloads_kv_per_query_head": true,
+    "package_sha256": "e0d0c34ddb3b9cfd368b8c657698eeb93787a307ee06b93fbca5a483a4040bd6",
+    "object_sha256": "d7c446d5cddff5d20e77208db19815cbbae9a81d8e3815eca42d5a1b25640d9f",
+    "json_sha256": "a42d3b5656b9084d17e7d20bea6fcd5eca9797f58f228d3c28ca67851d5ccf59"
+  },
+  "clean_eager_us": [
+    {"kv": 128, "grouped_mean": 162.58637019566126, "stock_mean": 50.73714460645403, "max_abs": 0.000244140625, "checks": true},
+    {"kv": 512, "grouped_mean": 168.15959930419922, "stock_mean": 52.018771171569824, "max_abs": 0.000030517578125, "checks": true},
+    {"kv": 1024, "grouped_mean": 174.75291115897042, "stock_mean": 56.15894249507359, "max_abs": 0.00006103515625, "checks": true},
+    {"kv": 1536, "grouped_mean": 165.9502465384347, "stock_mean": 54.89592892783029, "max_abs": 0.00006103515625, "checks": true},
+    {"kv": 2048, "grouped_mean": 189.43566186087472, "stock_mean": 49.35945783342634, "max_abs": 0.00006103515625, "checks": true}
+  ],
+  "matched_kv1024_pipe_profile_mean_us": {
+    "grouped_two_block": {
+      "tasks": 3,
+      "duration": 99.96,
+      "block_num": 2,
+      "aicore_time": 0.0,
+      "aiv_time": 99.24333333333334,
+      "aiv_vec_time": 90.83333333333333,
+      "aiv_scalar_time": 31.060666666666666,
+      "aiv_mte2_time": 34.784666666666666,
+      "cube_utilization_percent": 0.0
+    },
+    "current_sixteen_block": {
+      "tasks": 3,
+      "duration": 21.78,
+      "block_num": 16,
+      "aicore_time": 0.0,
+      "aiv_time": 20.086,
+      "aiv_vec_time": 11.398666666666665,
+      "aiv_scalar_time": 7.9816666666666665,
+      "aiv_mte2_time": 4.740333333333333,
+      "cube_utilization_percent": 0.0
+    }
+  },
+  "matched_kv1024_memory_access_profile_mean_kib": {
+    "unique_direct_input": 1029.0,
+    "grouped_two_block": {
+      "aiv_read_main_memory": 8255.666666666666,
+      "aiv_write_main_memory": 4.25,
+      "aiv_gm_to_ub": 8215.0,
+      "aiv_ub_to_gm": 4.0
+    },
+    "current_sixteen_block": {
+      "aiv_read_main_memory": 8442.458333333334,
+      "aiv_write_main_memory": 6.0,
+      "aiv_gm_to_ub": 8236.0,
+      "aiv_ub_to_gm": 4.0
+    }
+  },
+  "matched_b1_torchair_full_decoder": {
+    "shape": "B1, KV1024, position 768, FP16, full 18-layer decoder and LM head",
+    "warmup": 20,
+    "repeats": 200,
+    "grouped_two_block": {
+      "mean_step_ms": 2.658154685497284,
+      "median_step_ms": 2.6567299365997314,
+      "p95_step_ms": 2.660580921173096,
+      "throughput_tok_per_s": 376.20083039408274
+    },
+    "current_sixteen_block": {
+      "mean_step_ms": 1.363601695895195,
+      "median_step_ms": 1.3570299744606018,
+      "p95_step_ms": 1.394643032550812,
+      "throughput_tok_per_s": 733.3519773481266
+    },
+    "grouped_latency_increase_percent": 94.93629947066205,
+    "grouped_throughput_change_percent": -48.70119096774482
+  },
+  "copy_free_bound": {
+    "classification": "inference_from_measured_counters",
+    "scope": "same grouped serial vector algorithm with removable K/V copies set to zero",
+    "per_layer_task_saving_upper_bound_us": 9.126666666666665,
+    "eighteen_layer_step_saving_upper_bound_us": 164.27999999999997,
+    "full_step_latency_lower_bound_ms": 2.493874685497284,
+    "throughput_upper_bound_tok_per_s": 400.98245746481757,
+    "upper_bound_vs_current_throughput_percent": -45.32196409767519,
+    "caveat": "This is not a bound for a different vector algorithm; it is the bound for eliminating copies from the measured grouped-serial topology."
+  },
+  "remote_artifacts": {
+    "grouped_results": ".runtime_cache/paddle_gqa_grouped_serial_increfa_aiv/results/noflash_v2/",
+    "grouped_profiles": ".runtime_cache/paddle_gqa_grouped_serial_increfa_aiv/profiles/",
+    "current_results": ".runtime_cache/paddle_gqa_increfa_aiv/results/current16_eager_npu6/",
+    "current_profiles": ".runtime_cache/paddle_gqa_increfa_aiv/profiles/"
+  }
+}

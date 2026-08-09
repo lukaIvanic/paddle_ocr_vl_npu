@@ -982,7 +982,76 @@ work. See [AI CPU programming](https://www.hiascend.com/document/detail/en/cannc
 [GE parallel streams](https://www.hiascend.com/document/detail/en/canncommercial/850/API/ascendgraphapi/atlasgeapi_07_0142.html),
 and [profiling fields](https://www.hiascend.com/document/detail/en/canncommercial/850/devaids/profiling/atlasprofiling_16_0071.html).
 
-## 20. Repository references
+## 20. Test grouped-core ideas with a topology control first
+
+The B1 GQA kernel repeats each KV head across eight query heads. This suggests a
+reasonable optimization: assign one AIV block to each KV group, load K/V once,
+and process all eight query heads locally. Test the parallelism cost before
+writing the much larger shared-UB kernel.
+
+The retained `grouped_serial_control` does this structurally:
+
+- a separate vendor and cache namespace keep it independent from production;
+- the public operator contract and supported `vector_core_count=16` resource
+  attribute stay unchanged;
+- grouped host tiling sets one work item per KV group, so the profile must show
+  `Block Num=2`;
+- FlashDecode is disabled only for this package so long KV lengths do not split
+  back into query-head work items;
+- each block runs its eight query heads serially through the existing math and
+  load functions.
+
+The last point matters. This control measures the compute-parallelism penalty,
+but still reloads K/V per query head. Do not call it a shared-K/V kernel.
+
+On physical Ascend 910B2 NPU6, all eager rows from KV128 through KV2048 passed
+stock FP16 tolerance and the independent CPU FP32 reference. At KV1024, three
+custom-only pipe-profile calls measured:
+
+| Package | Blocks | Task | AIV vector | AIV scalar | AIV MTE2 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Current query-head parallel | 16 | 21.78 us | 11.40 us | 7.98 us | 4.74 us |
+| Grouped serial control | 2 | 99.96 us | 90.83 us | 31.06 us | 34.78 us |
+
+Both packages had zero AIC time/cycles and zero cube utilization. The grouped
+vector time was 7.97 times the current vector time. That near-eightfold result
+is the eight query heads becoming serial, not a launch-label artifact.
+
+The matched MemoryAccess profiles measured about the same total requested
+bytes: 8,215 KiB GM-to-UB for grouped and 8,236 KiB for current, while the
+unique direct Q/K/V/mask input is 1,029 KiB. Both paths therefore issue about
+eight times the unique bytes. Prior L2 profiling showed that most repeated
+requests hit cache, so requested bytes are not the same as HBM traffic.
+
+Use overlapping pipeline counters carefully. Vector, scalar, and MTE times
+cannot be added. For this grouped algorithm, deleting all removable copy work
+still cannot reduce the 99.96 us task below its measured 90.83 us vector lane.
+The matched real B1/KV1024 TorchAir decoder confirmed the impact:
+
+| Package | Mean step | Throughput |
+| --- | ---: | ---: |
+| Current 16-block GQA AIV | 1.3636 ms | 733.35 tok/s |
+| Grouped two-block control | 2.6582 ms | 376.20 tok/s |
+
+Across 18 attention layers, even subtracting the full 9.13 us gap between task
+duration and vector time gives an optimistic copy-only upper bound of 400.98
+tok/s. This remains 45.32% below current. Stop the shared-UB rewrite at this
+gate unless the proposed next design also changes vector arithmetic efficiency,
+not only copy count.
+
+This method is general:
+
+1. package a separately named or separately vendored topology control;
+2. retain the supported resource attribute and prove actual `Block Num` in the
+   profile;
+3. pass eager correctness before performance;
+4. compare vector and transfer lanes, remembering that they overlap;
+5. calculate the best-case removable-work bound;
+6. run the real TorchAir forward path only after the microkernel is understood;
+7. implement shared-UB dataflow only if that upper bound can beat the current
+   kernel.
+
+## 21. Repository references
 
 - [Current separate MHA AIV operator](paddle_mha_increfa_aiv/README.md)
 - [Reproducible package builder](paddle_mha_increfa_aiv/build.sh)
@@ -996,8 +1065,9 @@ and [profiling fields](https://www.hiascend.com/document/detail/en/canncommercia
 - [GQA graph op and TorchAir converter](../paddleocr_vl/model/gqa_increfa_aiv.py)
 - [GQA eager/TorchAir comparison probe](../scripts/probes/compare_paddle_gqa_increfa_aiv.py)
 - [GQA AIV B1 retained evidence](../../tmp/09_persistent_page_engine/gqa_aiv_b1_1d16f33/README.md)
+- [Two-AIV-block GQA experiment](../../tmp/09_persistent_page_engine/gqa_grouped_two_block_994dc8f/README.md)
 
-## 21. Official references
+## 22. Official references
 
 Verified while writing this handbook on 2026-08-09. Recheck them when changing
 CANN or torch-npu versions.

@@ -64,6 +64,12 @@ The builder pins upstream `ops-transformer` commit
 creates a detached build worktree, applies the six patches, compiles both
 required tiling keys, and installs a private vendor package.
 
+The production build applies six patches. Setting
+`PADDLE_GQA_EXPERIMENT_VARIANT=grouped_serial_control` adds patch 0007, uses a
+separate cache namespace and vendor, disables FlashDecode for that package, and
+launches one unsplit AIV block per KV group. Never source the production and
+grouped packages in the same process.
+
 ```sh
 cd /workspace/repos/paddle_ocr_vl_npu
 source npu-setup
@@ -159,6 +165,51 @@ three full steps, the 54 custom attention tasks averaged 16.282 us versus
 18.071 us for stock and saved 96.6 us in total. That kernel saving is consistent
 with the small same-device ABBA gain. Graph-level cadence remains large enough
 to dilute the kernel improvement and make whole-process scheduler timing noisy.
+
+## Rejected two-block grouped experiment
+
+We tested the proposal to give one AIV block to each of the two KV groups. The
+separate `grouped_serial_control` package keeps the supported resource attribute
+at 16, but its host tiler emits `Block Num=2`. Each block runs its eight query
+heads serially. FlashDecode is disabled only in this experimental package so
+KV2048 preserves the same two-block topology.
+
+The control passed stock tolerance and the independent FP32 reference at
+KV128, KV512, KV1024, KV1536, and KV2048. The KV1024 pipe profile measured:
+
+| Package | Blocks | Task | Vector | Scalar | MTE2 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Current query-head parallel | 16 | 21.78 us | 11.40 us | 7.98 us | 4.74 us |
+| Grouped serial control | 2 | 99.96 us | 90.83 us | 31.06 us | 34.78 us |
+
+Both rows had zero AIC time and zero cube utilization. The grouped vector lane
+was 7.97 times slower, almost exactly the eight serialized query heads.
+
+This first control deliberately preserves the per-head K/V load functions; it
+does not claim that K/V was loaded once. The matched MemoryAccess profile
+measured 8,215 KiB GM-to-UB for grouped and 8,236 KiB for current-16, versus
+1,029 KiB of unique direct input. Both therefore still issue about eight times
+the unique bytes.
+
+That profile gives the decision bound for a copy-only rewrite. Pipeline times
+overlap and must not be summed. With the current grouped vector algorithm, even
+free K/V copies cannot reduce a 99.96 us task below its 90.83 us vector lane.
+Across the 18 decoder layers, subtracting the entire remaining 9.13 us per task
+from the measured grouped full step gives this optimistic result:
+
+| B1/KV1024 TorchAir package | Mean step | Throughput |
+| --- | ---: | ---: |
+| Current 16-block | 1.3636 ms | 733.35 tok/s |
+| Grouped two-block | 2.6582 ms | 376.20 tok/s |
+| Grouped with copy-only ideal bound | at least 2.4939 ms | at most 400.98 tok/s |
+
+The measured grouped path lost 48.70% throughput. Even its copy-only upper bound
+remains 45.32% below current. We therefore reject the UB-resident shared-K/V
+rewrite for this serial vector algorithm. A genuinely different batched-head
+vector algorithm is a separate research question; this result does not bound
+that different algorithm.
+
+Retained evidence: [two-AIV-block GQA experiment](../../../tmp/09_persistent_page_engine/gqa_grouped_two_block_994dc8f/README.md).
 
 ## AIV-only proof
 
