@@ -76,6 +76,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--experimental-split-k32-pairwise-sync-control",
+        action="store_true",
+        help=(
+            "Identify the separately packaged two-way split-K variant whose "
+            "even worker reduces after waiting only for its paired producer. "
+            "It requires vector_core_count=32."
+        ),
+    )
+    parser.add_argument(
         "--experimental-split-k48-control",
         action="store_true",
         help=(
@@ -107,6 +116,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         int(args.experimental_grouped_serial_control)
         + int(args.experimental_grouped_half_control)
         + int(args.experimental_split_k32_control)
+        + int(args.experimental_split_k32_pairwise_sync_control)
         + int(args.experimental_split_k48_control)
         > 1
     ):
@@ -131,6 +141,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     if args.experimental_split_k32_control and args.vector_core_count != 32:
         parser.error(
             "--experimental-split-k32-control requires --vector-core-count 32"
+        )
+    if (
+        args.experimental_split_k32_pairwise_sync_control
+        and args.vector_core_count != 32
+    ):
+        parser.error(
+            "--experimental-split-k32-pairwise-sync-control requires "
+            "--vector-core-count 32"
         )
     if args.experimental_split_k48_control and args.vector_core_count != 48:
         parser.error(
@@ -448,9 +466,13 @@ def main(argv: Sequence[str] | None = None) -> int:
                     "split_k32_control"
                     if args.experimental_split_k32_control
                     else (
-                        "split_k48_control"
-                        if args.experimental_split_k48_control
-                        else "production"
+                        "split_k32_pairwise_sync_control"
+                        if args.experimental_split_k32_pairwise_sync_control
+                        else (
+                            "split_k48_control"
+                            if args.experimental_split_k48_control
+                            else "production"
+                        )
                     )
                 )
             )

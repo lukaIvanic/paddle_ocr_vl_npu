@@ -50,6 +50,14 @@ case "$EXPERIMENT_VARIANT" in
         VENDOR_NAME="paddle_gqa_split_k32_increfa_aiv"
         CACHE_NAMESPACE="paddle_gqa_split_k32_increfa_aiv"
         ;;
+    split_k32_pairwise_sync_control)
+        PATCH_PATHS+=(
+            "$CUSTOM_ROOT/patches/0009-force-split-k32-control.patch"
+            "$CUSTOM_ROOT/patches/0011-split-k32-pairwise-sync-control.patch"
+        )
+        VENDOR_NAME="paddle_gqa_split_k32_pairwise_sync_increfa_aiv"
+        CACHE_NAMESPACE="paddle_gqa_split_k32_pairwise_sync_increfa_aiv"
+        ;;
     split_k48_control)
         PATCH_PATHS+=("$CUSTOM_ROOT/patches/0010-force-split-k48-control.patch")
         VENDOR_NAME="paddle_gqa_split_k48_increfa_aiv"

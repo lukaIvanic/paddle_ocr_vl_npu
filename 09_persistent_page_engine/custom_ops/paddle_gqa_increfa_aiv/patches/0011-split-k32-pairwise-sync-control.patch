@@ -1,0 +1,77 @@
+diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
+--- a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
++++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
+@@ -2917,5 +2917,7 @@ void IFATiling::NormalCalcFDWorkSpace(const uint32_t actCoreNum) {
+         logSumExpSize = NUM2 * FDParamNums * (BYTE_BLOCK / blockTypeSize_);  // log和sum的存储空间一致，共需要2份内存
+         workspaceSize_ += static_cast<size_t>((accumOutSize + logSumExpSize)) * static_cast<size_t>(blockTypeSize_);
+-        if (socVersion_ == IfaSocVersion::SOC_ASCEND_310P) {
++        // The pairwise AIV control uses the same 32-byte-per-block flag
++        // layout as the public IBSet/IBWait API on Ascend 910B2.
++        {
+             workspaceSize_ += static_cast<size_t>(actCoreNum) * 32U; // 每个核SyncAll软同步需要32Byte记录状态
+         }
+diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
+--- a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
++++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
+@@ -125,3 +125,1 @@ private:
+-#if (__CCE_AICORE__ == 200)
+     GlobalTensor<int32_t> syncGlobal;
+-#endif
+@@ -740,7 +738,5 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::Init(
+         buffer_offset = buffer_offset + tilingData->splitKVParams.logSumExpSize * sizeof(float);
+-#if (__CCE_AICORE__ == 200)
+         syncGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(workspace + buffer_offset),
+                                    GetBlockNum() * BYTE_BLOCK / sizeof(int32_t));
+         buffer_offset = buffer_offset + GetBlockNum() * BYTE_BLOCK;
+-#endif
+     }
+@@ -1149,2 +1145,5 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::FlashDecodeComp
+-    uint32_t qHeadWorkIdx = tmpBlockIdx;
++    if ((tmpBlockIdx % splitKVNum) != 0U) {
++        return;
++    }
++    uint32_t qHeadWorkIdx = tmpBlockIdx / splitKVNum;
+     if (batchSize * qHeadNum <= qHeadWorkIdx) {
+@@ -1821,2 +1820,16 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::Process()
+ {
++    if constexpr (FLASH_DECODE) {
++        // IBSet requires zero-initialized flag slots. Framework workspaces are
++        // not guaranteed to be zeroed, so every block initializes its own
++        // 32-byte slot. This balanced pre-compute barrier replaces the
++        // imbalanced post-compute all-block rendezvous below.
++        LocalTensor<int32_t> syncLocal = inputQue2.AllocTensor<int32_t>();
++        Duplicate(syncLocal, 0, ONE_BLK_SIZE / sizeof(int32_t));
++        PipeBarrier<PIPE_V>();
++        DataCopy(syncGlobal[tmpBlockIdx * ONE_BLK_SIZE / sizeof(int32_t)], syncLocal,
++                 ONE_BLK_SIZE / sizeof(int32_t));
++        SyncAll();
++        inputQue2.FreeTensor(syncLocal);
++    }
++
+     if (g_coreType == AIV && tmpBlockIdx >= usedCoreNum) {
+@@ -1867,13 +1880,16 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::Process()
+
+     if constexpr (FLASH_DECODE) {
+-        // 多核同步
+-#if (__CCE_AICORE__ > 200)
+-        SyncAll();
+-#else
+-        LocalTensor<int32_t> workLocal = inputQue2.AllocTensor<int32_t>();
+-        SyncAll(syncGlobal, workLocal);
+-        inputQue2.FreeTensor(workLocal);
+-#endif
+-        FlashDecodeCompute();
++        LocalTensor<int32_t> syncLocal = inputQue2.AllocTensor<int32_t>();
++        if ((tmpBlockIdx % splitKVNum) == 0U) {
++            // IBWait starts with a PIPE_ALL barrier, so this reducer's own
++            // partial output is visible before it waits for its one partner.
++            IBWait(syncGlobal, syncLocal, tmpBlockIdx + 1U, 0);
++            FlashDecodeCompute();
++        } else {
++            // IBSet drains this producer's pipelines before publishing the
++            // flag. No reducer waits on unrelated query-head workers.
++            IBSet(syncGlobal, syncLocal, tmpBlockIdx, 0);
++        }
++        inputQue2.FreeTensor(syncLocal);
+     }
+ }
