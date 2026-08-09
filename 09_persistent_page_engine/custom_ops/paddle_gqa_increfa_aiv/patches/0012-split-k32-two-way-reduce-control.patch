@@ -1,0 +1,63 @@
+diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
+--- a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
++++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
+@@ -1042,47 +1042,18 @@ IncreFlashAttentionAttenAllVecNew<IFAT>::ComputeScaleValue(LocalTensor<T> &lseM
+-    Duplicate(lseMaxUb, -FLOAT_MAX, FP32_ONE_BLOCK_SIZE);
+-    Duplicate(lseSumUb, FLOAT_ZERO, FP32_ONE_BLOCK_SIZE);
++    // This private package is only used by the forced 32-block topology:
++    // exactly two sequence partitions for every query head. Compute the two
++    // normalized weights directly instead of materializing global LSE and
++    // then subtracting and exponentiating a second time.
++    constexpr uint32_t secondPartOffset = FP32_ONE_BLOCK_SIZE;
++    Max(lseMaxUb, lseLocal, lseLocal[secondPartOffset], FP32_ONE_BLOCK_SIZE);
+     PipeBarrier<PIPE_V>();
+-    for (uint32_t i = 0; i < actualCombineLoopSize; ++i) {
+-        Max(lseMaxUb, lseMaxUb, lseLocal[i * FP32_ONE_BLOCK_SIZE], FP32_ONE_BLOCK_SIZE);
+-        PipeBarrier<PIPE_V>();
+-    }
+-    for (uint32_t i = 0; i < actualCombineLoopSize; ++i) {
+-        Sub(lseExpUb[i * FP32_ONE_BLOCK_SIZE], lseLocal[i * FP32_ONE_BLOCK_SIZE], lseMaxUb,
+-            FP32_ONE_BLOCK_SIZE);
+-        PipeBarrier<PIPE_V>();
+-    }
+-    Exp(lseExpUb, lseExpUb, actualCombineLoopSize * FP32_ONE_BLOCK_SIZE);
++    Sub(lseExpUb, lseLocal, lseMaxUb, FP32_ONE_BLOCK_SIZE);
++    Sub(lseExpUb[secondPartOffset], lseLocal[secondPartOffset], lseMaxUb, FP32_ONE_BLOCK_SIZE);
+     PipeBarrier<PIPE_V>();
+-    for (uint32_t i = 0; i < actualCombineLoopSize; ++i) {
+-        Add(lseSumUb, lseSumUb, lseExpUb[i * FP32_ONE_BLOCK_SIZE], FP32_ONE_BLOCK_SIZE);
+-        PipeBarrier<PIPE_V>();
+-    }
+-    Log(lseSumUb, lseSumUb, FP32_ONE_BLOCK_SIZE);
++    Exp(lseExpUb, lseExpUb, 2U * FP32_ONE_BLOCK_SIZE);
+     PipeBarrier<PIPE_V>();
+-    Add(lseSumUb, lseSumUb, lseMaxUb, FP32_ONE_BLOCK_SIZE);
++    Add(lseSumUb, lseExpUb, lseExpUb[secondPartOffset], FP32_ONE_BLOCK_SIZE);
+     PipeBarrier<PIPE_V>();
+-    if (softmaxLseFlag) {
+-#if (__CCE_AICORE__ > 200)
+-        LocalTensor<float> softmaxlseUb = outputQue1.template AllocTensor<float>();
+-        DataCopy(softmaxlseUb, lseSumUb, FP32_ONE_BLOCK_SIZE);
+-        outputQue1.EnQue(softmaxlseUb);
+-        outputQue1.DeQue<float>();
+-
+-        DataCopyExtParams intriParams1;
+-        intriParams1.blockLen = sizeof(float);
+-        intriParams1.blockCount = 1U;
+-        intriParams1.srcStride = 0;
+-        intriParams1.dstStride = 0;
+-        uint64_t qHeadIndex = bIdx * qHeadNum + n2Idx * gSize + gIdx;
+-        DataCopyPad(softmaxLseGm[qHeadIndex], softmaxlseUb, intriParams1);
+-        outputQue1.FreeTensor(softmaxlseUb);
+-#endif
+-    }
+-    for (uint32_t i = 0; i < actualCombineLoopSize; ++i) {
+-        Sub(lseExpUb[i * FP32_ONE_BLOCK_SIZE], lseLocal[i * FP32_ONE_BLOCK_SIZE], lseSumUb,
+-            FP32_ONE_BLOCK_SIZE);
+-        PipeBarrier<PIPE_V>();
+-    }
+-    Exp(lseExpUb, lseExpUb, actualCombineLoopSize * FP32_ONE_BLOCK_SIZE);
++    Div(lseExpUb, lseExpUb, lseSumUb, FP32_ONE_BLOCK_SIZE);
++    Div(lseExpUb[secondPartOffset], lseExpUb[secondPartOffset], lseSumUb, FP32_ONE_BLOCK_SIZE);
+     PipeBarrier<PIPE_V>();
+ }
