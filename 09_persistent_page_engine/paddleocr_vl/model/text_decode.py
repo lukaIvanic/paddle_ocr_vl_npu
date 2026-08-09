@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -1497,6 +1498,13 @@ class TextDecodeStage(torch.nn.Module):
         self.model = model
         self.num_layers = int(model.config.text_config.num_hidden_layers)
         self.optimization = resolve_decode_optimization(optimization)
+        self._super_kernel_scope = None
+        if self.optimization.super_kernel_scope:
+            torchair, _CompilerConfig = import_torchair()
+            scope_module = importlib.import_module(
+                f"{torchair.__name__}.scope"
+            )
+            self._super_kernel_scope = scope_module.super_kernel
 
     def _forward_impl(
         self,
@@ -1536,8 +1544,9 @@ class TextDecodeStage(torch.nn.Module):
                 *flat_cache_tensors,
             )
 
-        torchair, _CompilerConfig = import_torchair()
-        with torchair.scope.super_kernel(
+        if self._super_kernel_scope is None:
+            raise RuntimeError("TorchAir SuperKernel scope was not initialized")
+        with self._super_kernel_scope(
             "paddle_decoder_b1_megakernel",
             "feed-sync-all=1:stream-fusion=0:strict-scope-check=abort",
         ):
