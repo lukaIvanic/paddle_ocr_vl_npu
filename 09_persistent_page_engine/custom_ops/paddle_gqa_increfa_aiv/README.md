@@ -20,6 +20,10 @@ torch 2.10.0, and torch-npu 2.10.0.
 - A same-device ABBA B1/KV1024 full-decoder benchmark improved mean throughput
   from 795.31 to 811.14 tok/s, or 1.99%. The gain is small, so this operator
   remains an explicit experimental preset rather than the production default.
+- A separately packaged forced split-K control launches 32 actual AIV blocks at
+  KV1024. Its same-device 16/32/32/16 full-decoder sequence measured 778.38
+  versus 829.59 tok/s on average, a 6.58% 32-block advantage. This result is
+  promising but has not replaced the 16-block preset.
 
 ## Narrow contract
 
@@ -34,13 +38,16 @@ torch 2.10.0, and torch-npu 2.10.0.
 | Actual lengths and PSE | none |
 | Attention | GQA, 16 query heads and 2 KV heads |
 | Precision | `inner_precise=1` |
-| Requested AIV cores | 16 in the real B1 preset |
+| Requested AIV cores | 16 in the retained preset; 32 in a separate split-K control |
 
-The all-vector pipeline assigns one query-head work item to each AIV core. A
-request below 16 is rejected because it deadlocks the recovered pipeline. At
-the production KV1536 shape, requests of 16, 32, and 48 all reduce to an actual
-16-block non-split launch. At KV2048, 32 and 48 enable extra FlashDecode splits,
-but the clean TorchAir sweep did not beat 16 cores.
+The normal all-vector pipeline assigns one query-head work item to each AIV
+core. A request below 16 is rejected because it deadlocks the recovered
+pipeline. Under the upstream heuristic, KV1536 requests of 16, 32, and 48 all
+reduce to an actual 16-block non-split launch. At KV2048, 32 and 48 enable extra
+FlashDecode splits, but the original clean TorchAir sweep did not beat 16
+cores. The separate `split_k32_control` host tiler forces two disjoint sequence
+partitions per query head at KV1024 so the requested 32 cores become 32 actual
+blocks.
 
 ## Identity ledger
 
@@ -74,6 +81,13 @@ Setting `PADDLE_GQA_EXPERIMENT_VARIANT=grouped_half_control` applies patches
 0007 and 0008 in another private vendor. It emits two four-query-head work
 items per KV group, for four actual AIV blocks. This is a retained topology
 control, not a production preset.
+
+Setting `PADDLE_GQA_EXPERIMENT_VARIANT=split_k32_control` applies patch 0009
+in the private `paddle_gqa_split_k32_increfa_aiv` vendor. It keeps all 16 query
+heads parallel and forces two 512-token sequence partitions for each head at
+KV1024, for 32 actual AIV blocks. Use the matching
+`combined_apply_gqa_aiv_b1_split_k32_control` model preset. Never source it and
+the retained package in one process.
 
 ```sh
 cd /workspace/repos/paddle_ocr_vl_npu
@@ -236,6 +250,73 @@ not bound that different algorithm.
 Retained evidence: [two-AIV-block GQA experiment](../../../tmp/09_persistent_page_engine/gqa_grouped_two_block_994dc8f/README.md)
 and [four-AIV-block GQA experiment](../../../tmp/09_persistent_page_engine/gqa_grouped_four_block_ca152b5/README.md).
 
+## Forced 32-core split-K control
+
+Requesting 32 cores was not enough at the real KV1024 shape. The upstream GQA
+FlashDecode heuristic only split the sequence at KV2048 or longer, so the
+request silently remained a 16-block launch. Patch 0009 adds a narrowly gated
+B1 all-vector control: when the requested core count is exactly twice the 16
+query-head work items, it calls the existing `SplitBNS` path with two disjoint
+sequence partitions. The existing minimum of 512 tokens per partition remains
+active.
+
+On physical Ascend 910B2 NPU6, the KV1024/valid-769 profile proved `Block
+Num=32`. Every detailed row had nonzero AIV counters and zero AIC time, cycles,
+MAC time, and cube utilization. Eager and TorchAir both passed stock FP16
+tolerance and the independent CPU FP32 reference; the maximum stock/custom
+absolute difference was `1.2207e-4`.
+
+The matched direct pipe profiles explain what 32-way splitting changes:
+
+| KV1024 package | Blocks | Task | Vector | Scalar | MTE2 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Retained query-head parallel | 16 | 21.78 us | 11.40 us | 7.98 us | 4.74 us |
+| Forced two-way split-K | 32 | 22.63 us | 6.18 us | 8.56 us | 4.19 us |
+
+The vector lane fell by 45.8%, close to the intended two-way split. Total task
+time did not fall in this bounded eager profile because scalar work,
+FlashDecode synchronization, and final reduction became the critical path.
+Pipeline counters overlap and must not be added.
+
+The split does not duplicate the full K/V transfer. Each paired core reads one
+non-overlapping 512-token half. The MemoryAccess profile measured 8,282 KiB of
+GM-to-UB requests for 32 blocks versus 8,236 KiB for 16 blocks: only 46 KiB or
+0.56% more, not twice as much. The total remains about eight times the 1,029
+KiB of unique direct input because the current algorithm still reads a KV head
+for each of its eight query heads.
+
+The kernel already performs UB prefetch at tile granularity. Its main VECIN
+queue allocates two 32 KiB buffers with `InitBuffer(inputQue2, 2, ...)`, which
+enables AscendC double buffering. `ProcessVec1` starts `CopyValueToUb` for V
+before vector softmax. A full per-core half cannot stay in UB: 512 FP16 tokens
+at D128 require 128 KiB for K and another 128 KiB for V, before softmax,
+workspace, and output buffers. The kernel therefore streams double-buffered
+tiles. Graph-level `torch_npu.npu_prefetch` is a different mechanism: the
+installed API documents L2-cache prefetch, not placement in a selected core's
+UB.
+
+The real B1 TorchAir test used the full 18-layer decoder and LM head, physical
+KV1024, initial position 768, 20 warmups, and 200 measured steps per lane. One
+NPU6 was selected before the `16 -> 32 -> 32 -> 16` sequence:
+
+| Lane | Blocks | Mean step | Median | P95 | Throughput |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| A | 16 | 1.3509 ms | 1.3261 ms | 1.4046 ms | 740.23 tok/s |
+| B | 32 | 1.2411 ms | 1.2350 ms | 1.2755 ms | 805.76 tok/s |
+| C | 32 | 1.1718 ms | 1.1704 ms | 1.1737 ms | 853.41 tok/s |
+| D | 16 | 1.2247 ms | 1.2231 ms | 1.2270 ms | 816.53 tok/s |
+| 16-block mean | 16 | 1.2878 ms | - | - | 778.38 tok/s |
+| 32-block mean | 32 | 1.2064 ms | - | - | 829.59 tok/s |
+
+Both pairwise comparisons favored 32 blocks. The arithmetic lane means show
+6.32% lower latency and 6.58% higher throughput. Cadence drift across the four
+processes was material, so retain the full sequence rather than reporting only
+the best 853.41 tok/s lane. The 32-block control is now the best measured B1
+variant on this device, but it remains experimental until repeated across more
+same-device sequences.
+
+Retained evidence: [forced 32-core split-K experiment](../../../tmp/09_persistent_page_engine/gqa_split_k32_8a1041f/README.md).
+
 ## AIV-only proof
 
 The package reports two `MIX` kernels with `taskRation: "0:1"` and no
@@ -267,11 +348,15 @@ metadata together.
 - Mask required; PSE and actual-length tensors are not supported.
 - Fewer than 16 AIV cores are unsafe for the recovered one-work-item-per-core
   pipeline and are rejected.
-- The custom path remains opt-in because the measured full-decoder gain is only
-  about two percent and was sensitive to physical-device/run conditions.
-- The next useful experiment is to explain or remove the per-layer graph-level
-  cadence around the hard-sync `MIX_AIV_1_0` envelope. More vector cores do not
-  address that bottleneck at KV1024/KV1536.
+- The retained 16-block path remains opt-in because its measured full-decoder
+  gain is only about two percent and was sensitive to physical-device/run
+  conditions. The separate 32-block result also needs repetition.
+- The forced 32-block control improves the real B1 mean in one same-device
+  sequence, but its direct task is now limited by scalar work and split-K
+  synchronization/reduction rather than vector arithmetic.
+- The next useful experiments are repeated 16/32 same-device sequences and a
+  reduction-focused profile. External `npu_prefetch` can warm L2, but cannot
+  replace the kernel's per-core GM-to-UB double buffering.
 
 See [the repository custom-operator handbook](../ASCEND_CUSTOM_OPERATOR_HANDBOOK.md)
 for the full build, eager, TorchAir, profiling, and evidence workflow.

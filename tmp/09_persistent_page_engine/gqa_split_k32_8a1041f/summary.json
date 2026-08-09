@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "date": "2026-08-09",
+  "repository_commit": "8a1041fa1741de2dccbc0519ec810c3ab09ef69a",
+  "hardware": {
+    "soc": "Ascend 910B2",
+    "physical_device": 6,
+    "cann": "9.0.0",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0"
+  },
+  "contract": {
+    "batch_size": 1,
+    "q_shape": [1, 16, 1, 128],
+    "kv_shape": [1, 2, 1024, 128],
+    "valid_kv_length": 769,
+    "dtype": "fp16",
+    "layout": "BNSD",
+    "mask_dtype": "bool",
+    "requested_vector_cores": 32,
+    "actual_blocks": 32,
+    "mapping": "16 query heads x 2 disjoint 512-token sequence partitions"
+  },
+  "package": {
+    "variant": "split_k32_control",
+    "vendor": "paddle_gqa_split_k32_increfa_aiv",
+    "upstream_commit": "afe72144f9f2ac8441929035795db88a111b30c5",
+    "package_sha256": "3302c24ffa5cf1490db9ecfe39cdb99e41fa3ccd0051c53288962729bff359ca",
+    "object_sha256": "ecbeca46a7cf39c01b6f9ecf1dacc451d3d475395c0c8db927dea00b8822aa9a",
+    "metadata_sha256": "2e47b39b25a2555fcc0265e8bac155519be249c8052359f512021632cca31cad"
+  },
+  "correctness": {
+    "eager_passed": true,
+    "torchair_passed": true,
+    "stock_custom_max_abs": 0.0001220703125,
+    "independent_fp32_custom_max_abs": 0.000064328,
+    "aic_time_us": 0,
+    "aic_cycles": 0,
+    "cube_utilization_percent": 0,
+    "aiv_nonzero": true
+  },
+  "kv1024_pipe_profile_us": {
+    "retained_16": {
+      "blocks": 16,
+      "task": 21.78,
+      "vector": 11.40,
+      "scalar": 7.98,
+      "mte2": 4.74
+    },
+    "forced_32": {
+      "blocks": 32,
+      "task_samples": [24.36, 21.72, 21.80],
+      "task_mean": 22.626,
+      "vector_mean": 6.181,
+      "scalar_mean": 8.562,
+      "mte2_mean": 4.189,
+      "mte3_mean": 0.373
+    }
+  },
+  "memory_access_kib": {
+    "retained_16_gm_to_ub": 8236,
+    "forced_32_gm_to_ub": 8282,
+    "increase_kib": 46,
+    "increase_percent": 0.5585,
+    "unique_direct_input": 1029,
+    "forced_32_ub_to_gm": 24
+  },
+  "full_b1_torchair": {
+    "order": ["retained_16", "forced_32", "forced_32", "retained_16"],
+    "cache_length": 1024,
+    "initial_position": 768,
+    "warmup": 20,
+    "repeats": 200,
+    "full_lm_head": true,
+    "lanes": [
+      {
+        "name": "A",
+        "blocks": 16,
+        "compile_first_call_s": 12.99928669212386,
+        "mean_ms": 1.350923098921776,
+        "median_ms": 1.3260800242424011,
+        "p95_ms": 1.4045880079269408,
+        "tok_per_s": 740.2345853721347
+      },
+      {
+        "name": "B",
+        "blocks": 32,
+        "compile_first_call_s": 12.358962108846754,
+        "mean_ms": 1.2410608047246934,
+        "median_ms": 1.235010027885437,
+        "p95_ms": 1.2754620254039764,
+        "tok_per_s": 805.762293187425
+      },
+      {
+        "name": "C",
+        "blocks": 32,
+        "compile_first_call_s": 0.22846754314377904,
+        "mean_ms": 1.1717721033096313,
+        "median_ms": 1.170390009880066,
+        "p95_ms": 1.1736690402030945,
+        "tok_per_s": 853.40826699623
+      },
+      {
+        "name": "D",
+        "blocks": 16,
+        "compile_first_call_s": 0.2520438439678401,
+        "mean_ms": 1.2246913039684295,
+        "median_ms": 1.2230499982833862,
+        "p95_ms": 1.2269570350646972,
+        "tok_per_s": 816.532294105175
+      }
+    ],
+    "mean_by_blocks": {
+      "16": {
+        "mean_ms": 1.2878072014451028,
+        "tok_per_s": 778.3834397386548
+      },
+      "32": {
+        "mean_ms": 1.2064164540171624,
+        "tok_per_s": 829.5852800918275
+      }
+    },
+    "forced_32_vs_retained_16": {
+      "latency_change_percent": -6.3201,
+      "throughput_change_percent": 6.5780
+    },
+    "peak_allocation_delta_bytes_all_lanes": 624128
+  },
+  "prefetch": {
+    "kernel_local": "two approximately 32 KiB inputQue2 buffers enable GM-to-UB double buffering",
+    "graph_level_npu_prefetch": "L2-cache prefetch, not selected-core UB placement",
+    "one_core_partition_k_plus_v_bytes": 262144
+  },
+  "remote_artifacts": {
+    "build": ".runtime_cache/paddle_gqa_split_k32_increfa_aiv/builds/20260809T185123Z/",
+    "eager_pipe_result": ".runtime_cache/paddle_gqa_split_k32_increfa_aiv/results/k32_kv1024_v768_pipe.json",
+    "eager_memory_result": ".runtime_cache/paddle_gqa_split_k32_increfa_aiv/results/k32_kv1024_v768_memory_access.json",
+    "torchair_result": ".runtime_cache/paddle_gqa_split_k32_increfa_aiv/results/torchair_k32_kv1024_v768.json",
+    "eager_pipe_profile": ".runtime_cache/paddle_gqa_split_k32_increfa_aiv/profiles/k32_kv1024_v768_pipe/",
+    "eager_memory_profile": ".runtime_cache/paddle_gqa_split_k32_increfa_aiv/profiles/k32_kv1024_v768_memory_access/",
+    "full_b1": ".runtime_cache/paddle_gqa_split_k32_increfa_aiv/real_b1_8a1041f/"
+  }
+}

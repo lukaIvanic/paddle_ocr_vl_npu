@@ -18,8 +18,9 @@ lanes. A 310P result needs a separate run and a separate report.
 
 ## Current validated state
 
-The implementation was last verified on 2026-08-09 at commit `b4d0a75` on a
-physical Ascend 910B2.
+The retained 16-block implementation was verified on 2026-08-09 at commit
+`b4d0a75`; the forced 32-block split-K control was added and verified at commit
+`8a1041f`. Both ran on a physical Ascend 910B2.
 
 - The independent B1 GQA operator works through direct PyTorch eager and
   TorchAir under the name `PaddleGqaIncreFlashAttentionAiv`.
@@ -33,6 +34,10 @@ physical Ascend 910B2.
 - One controlled same-device NPU6 ABBA run measured 795.31 tok/s stock and
   811.14 tok/s custom. This 1.99% result is promising but small and
   device-sensitive, so it is not yet a production-default decision.
+- A separate KV1024 split-K package proves an actual 32-AIV-block launch. Its
+  same-device `16 -> 32 -> 32 -> 16` full-decoder sequence averaged 778.38 and
+  829.59 tok/s respectively, a 6.58% advantage for 32 blocks. The retained
+  16-block preset remains unchanged while this result is repeated.
 - Whole attention on AI CPU is correct but 29.9x to 553.1x slower than stock
   IncreFA. Do not use AI CPU for QK, softmax, or AV.
 
@@ -913,7 +918,9 @@ less step latency. A separate NPU3 pair had the opposite sign, so physical
 device and run order must remain part of the evidence. The matched full profile
 showed the custom attention kernels themselves were faster—16.282 us versus
 18.071 us average across 54 tasks. The next optimization target is still
-graph-level cadence or hard-sync scheduling, not more vector cores.
+graph-level cadence or hard-sync scheduling. At this stage, requesting more
+cores at KV1024 did not change the actual 16-block launch; Section 21 records
+the later forced-split control that made the 32-core question measurable.
 
 After the exploratory preset was renamed, the Blue Zone checkout pulled exact
 commit `b4d0a75` and ran `combined_apply_gqa_aiv_b1` on physical NPU6 with B1,
@@ -1069,7 +1076,87 @@ This method is general:
 7. implement shared-UB dataflow only if that upper bound can beat the current
    kernel.
 
-## 21. Repository references
+## 21. Prove and measure a requested 32-core launch
+
+A resource attribute is an upper bound or input to host tiling. It is not proof
+that the device launched that many blocks. In the recovered GQA tiler,
+requesting 32 cores at KV1024 originally still emitted the 16 query-head work
+items. The upstream FlashDecode heuristic did not split GQA until KV2048.
+
+Use a separately packaged tiling control when the experiment needs a topology
+that the production heuristic cannot emit. Patch 0009 does this only for the
+B1 all-vector contract when `coreNum == 2 * queryHeadWorkItems`. It enables the
+existing split-K path and retains its minimum 512-token partition. At KV1024,
+the mapping is 16 query heads times two disjoint 512-token sequence partitions.
+
+The proof order is:
+
+1. require the matching 32-core resource attribute in the isolated probe;
+2. build into a separate vendor and cache namespace;
+3. pass candidate-first eager parity and the independent FP32 reference;
+4. inspect profiler `Block Num`, not the requested attribute;
+5. prove AIC time/cycles/MAC/cube utilization remain zero;
+6. measure GM-to-UB requests before assuming split-K duplicates data;
+7. profile the real TorchAir forward after the microkernel gates pass.
+
+The KV1024/valid-769 control passed eager and TorchAir correctness on physical
+Ascend910B2 NPU6. The profile reported `Block Num=32`, nonzero AIV counters,
+and zero AIC execution. The bounded pipe rows were:
+
+| Package | Blocks | Task | AIV vector | AIV scalar | AIV MTE2 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Retained query-head parallel | 16 | 21.78 us | 11.40 us | 7.98 us | 4.74 us |
+| Forced two-way split-K | 32 | 22.63 us | 6.18 us | 8.56 us | 4.19 us |
+
+The vector lane fell by 45.8%. The total profiled task did not fall because the
+scalar lane, inter-core synchronization, and FlashDecode combination became
+the limit. These pipeline counters overlap; do not add them.
+
+Split-K also did not double data transfer. The paired cores own disjoint
+sequence halves. The MemoryAccess profile measured 8,282 KiB GM-to-UB for the
+32-block package versus 8,236 KiB for 16 blocks, an increase of 46 KiB or
+0.56%. The extra traffic is query, partial-output/workspace, and reduction
+traffic. It is not a second copy of all K/V data.
+
+Keep two kinds of prefetch separate:
+
+- **Kernel-local UB staging.** The all-vector kernel uses
+  `InitBuffer(inputQue2, 2, 32_KiB)`. Huawei documents `num=2` as enabling
+  double buffering. The kernel starts the V `CopyValueToUb` before vector
+  softmax, so MTE2 and vector work can overlap at tile granularity.
+- **Graph-level `torch_npu.npu_prefetch`.** The installed torch-npu API
+  describes preloading into L2 cache. It does not place a tensor into a chosen
+  AIV core's UB. Treat it as a separate L2-warming experiment.
+
+A whole 512-token FP16 K/V partition at D128 is about 256 KiB per core: 128 KiB
+for K plus 128 KiB for V. This excludes softmax, output, and workspace storage.
+The kernel's two main input tiles total about 64 KiB, so it streams tiles and
+cannot keep the whole partition resident in UB.
+
+The real 18-layer B1 TorchAir sequence used physical KV1024, initial position
+768, 20 warmups, and 200 measured steps per lane:
+
+| Lane | Actual blocks | Mean step | Throughput |
+| --- | ---: | ---: | ---: |
+| A | 16 | 1.3509 ms | 740.23 tok/s |
+| B | 32 | 1.2411 ms | 805.76 tok/s |
+| C | 32 | 1.1718 ms | 853.41 tok/s |
+| D | 16 | 1.2247 ms | 816.53 tok/s |
+| 16-block arithmetic mean | 16 | 1.2878 ms | 778.38 tok/s |
+| 32-block arithmetic mean | 32 | 1.2064 ms | 829.59 tok/s |
+
+Both pairwise comparisons favored 32 blocks. The lane means show 6.32% lower
+latency and 6.58% higher throughput. The process cadence also drifted enough
+that the best single 853.41 tok/s row is not a baseline. Retain the ABBA order,
+all four distributions, physical NPU, cache state, and first-call times.
+
+This control changes the next optimization question. The vector arithmetic now
+scales, transfer does not double, and full B1 latency improves. The next target
+is the partial-softmax/output combine and its `SyncAll`, followed by repeated
+same-device 16/32 sequences. Do not expect an external L2 prefetch call to
+remove a UB-local reduction or synchronization limit.
+
+## 22. Repository references
 
 - [Current separate MHA AIV operator](paddle_mha_increfa_aiv/README.md)
 - [Reproducible package builder](paddle_mha_increfa_aiv/build.sh)
@@ -1085,8 +1172,9 @@ This method is general:
 - [GQA AIV B1 retained evidence](../../tmp/09_persistent_page_engine/gqa_aiv_b1_1d16f33/README.md)
 - [Two-AIV-block GQA experiment](../../tmp/09_persistent_page_engine/gqa_grouped_two_block_994dc8f/README.md)
 - [Four-AIV-block GQA experiment](../../tmp/09_persistent_page_engine/gqa_grouped_four_block_ca152b5/README.md)
+- [Forced 32-AIV-block split-K experiment](../../tmp/09_persistent_page_engine/gqa_split_k32_8a1041f/README.md)
 
-## 22. Official references
+## 23. Official references
 
 Verified while writing this handbook on 2026-08-09. Recheck them when changing
 CANN or torch-npu versions.
@@ -1097,5 +1185,7 @@ CANN or torch-npu versions.
 - [AscendC kernel task types](https://www.hiascend.com/document/detail/en/canncommercial/850/API/ascendcopapi/atlasascendc_api_07_0218.html)
 - [AscendC `SyncAll`](https://www.hiascend.com/document/detail/en/canncommercial/800/apiref/ascendcopapi/atlasascendc_api_07_0204.html)
 - [AscendC `CalcTschBlockDim`](https://www.hiascend.com/document/detail/en/canncommercial/800/apiref/ascendcopapi/atlasascendc_api_07_1033.html)
+- [AscendC `InitBuffer` and double buffering](https://www.hiascend.com/document/detail/en/canncommercial/850/API/ascendcopapi/atlasascendc_api_07_0110.html)
+- [AscendC `TQue` buffer limits](https://www.hiascend.com/document/detail/en/CANNCommunityEdition/900/API/ascendcopapi/atlasascendc_api_07_0137.html)
 - [AscendC `msobjdump`](https://www.hiascend.com/document/detail/en/canncommercial/850/opdevg/Ascendcopdevg/atlas_ascendc_10_0103.html)
 - [Open `ops-transformer` IncreFlashAttention V4 API](https://gitcode.com/cann/ops-transformer/blob/master/attention/incre_flash_attention/docs/aclnnIncreFlashAttentionV4.md)
