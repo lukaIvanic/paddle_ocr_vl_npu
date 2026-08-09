@@ -129,23 +129,23 @@ summary = {
     "tilingKey": tiling_key,
     "kernelType": kernel.get("kernelType"),
     "crossCoreSync": kernel.get("crossCoreSync"),
-    "taskRation": kernel.get("taskRation"),
+    "taskRation": kernel.get("taskRation", metadata.get("taskRation")),
 }
 print("AIV_ONLY_KERNEL_METADATA=" + json.dumps(summary, sort_keys=True))
 if tiling_key != 11000000000100000:
     raise SystemExit("unexpected tiling key")
-if metadata.get("coreType") != "VectorCore" or metadata.get("core_type") != "AIV":
-    raise SystemExit("compiler metadata does not describe an AIV-only kernel")
-if metadata.get("magic") != "RT_DEV_BINARY_MAGIC_ELF_AIVEC":
-    raise SystemExit("kernel binary is not tagged as AIVEC")
-if kernel.get("kernelType", "").startswith("MIX"):
-    raise SystemExit("per-kernel metadata still describes a mixed-core kernel")
-if metadata.get("intercoreSync") not in (0, None):
-    raise SystemExit("AIV-only metadata unexpectedly enables inter-core-type synchronization")
-if kernel.get("crossCoreSync") not in (0, None):
-    raise SystemExit("AIV-only kernel unexpectedly enables cross-core-type synchronization")
-if kernel.get("taskRation") not in (None, ""):
-    raise SystemExit("AIV-only kernel unexpectedly has a mixed-core task ratio")
+if metadata.get("coreType") not in ("MIX", "MIX_AIV"):
+    raise SystemExit("compiler metadata does not describe a MIX_AIV launch")
+if metadata.get("magic") != "RT_DEV_BINARY_MAGIC_ELF":
+    raise SystemExit("MIX_AIV kernel binary has unexpected ELF magic")
+if kernel.get("kernelType") not in (None, "", "MIX_AIV"):
+    raise SystemExit("per-kernel metadata is not vector-only MIX_AIV")
+if metadata.get("intercoreSync") != 1:
+    raise SystemExit("MIX_AIV hard-sync runtime contract is missing")
+if kernel.get("crossCoreSync") not in (None, 1):
+    raise SystemExit("MIX_AIV kernel has an unexpected cross-core sync value")
+if kernel.get("taskRation", metadata.get("taskRation")) != "0:1":
+    raise SystemExit("MIX_AIV package does not have a zero-cube 0:1 task ratio")
 PY
 
 restore_source
