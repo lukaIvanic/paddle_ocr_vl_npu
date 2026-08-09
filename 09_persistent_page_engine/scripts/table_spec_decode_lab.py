@@ -76,8 +76,8 @@ def parse_args() -> argparse.Namespace:
         default="greedy",
         help=(
             "Experimental live-logit token-ID selection. "
-            "prefer_math_open_top2 selects the exact \\( token whenever it "
-            "is rank 1 or 2 at the start of a table cell."
+            "Non-greedy modes are currently generation-only and are rejected "
+            "by speculative verification."
         ),
     )
     parser.add_argument("--min-pixels", type=int, default=28224)
@@ -174,7 +174,7 @@ def build_recognizer(args: argparse.Namespace) -> ContinuousRecognizer:
         batch_size=1,
         cache_length=args.cache_length,
         max_new_tokens=args.max_new_tokens,
-        token_selection=args.token_selection,
+        token_selection=getattr(args, "token_selection", "greedy"),
         torchair_cache_dir=args.decode_cache_dir.resolve(),
         vision_backend="torchair",
         vision_attention="prompt_flash_attention",

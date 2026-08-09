@@ -122,8 +122,8 @@ def parse_args() -> argparse.Namespace:
         default="greedy",
         help=(
             "Experimental live-logit token-ID selection. "
-            "prefer_math_open_top2 selects the exact \\( token whenever it "
-            "is rank 1 or 2 at the start of a table cell."
+            "non_nested suppresses rank-2 \\( while math is open; "
+            "first_override permits only the first rank-2 override per table."
         ),
     )
     parser.add_argument(

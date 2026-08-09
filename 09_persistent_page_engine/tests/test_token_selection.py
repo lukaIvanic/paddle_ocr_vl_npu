@@ -25,7 +25,7 @@ class TokenSelectionTest(unittest.TestCase):
         logits = torch.tensor([[1.0, 5.0, 4.0]])
         selected = select_token_ids(
             logits,
-            mode="prefer_math_open_top2",
+            mode="prefer_math_open_top2_first_override",
             preferred_token_id=1,
         )
         self.assertEqual(selected.tolist(), [1])
@@ -34,7 +34,7 @@ class TokenSelectionTest(unittest.TestCase):
         logits = torch.tensor([[1.0, 5.0, 4.0]])
         selected = select_token_ids(
             logits,
-            mode="prefer_math_open_top2",
+            mode="prefer_math_open_top2_first_override",
             preferred_token_id=2,
         )
         self.assertEqual(selected.tolist(), [2])
@@ -43,7 +43,7 @@ class TokenSelectionTest(unittest.TestCase):
         logits = torch.tensor([[3.0, 5.0, 4.0]])
         selected = select_token_ids(
             logits,
-            mode="prefer_math_open_top2",
+            mode="prefer_math_open_top2_first_override",
             preferred_token_id=0,
         )
         self.assertEqual(selected.tolist(), [1])
@@ -57,7 +57,7 @@ class TokenSelectionTest(unittest.TestCase):
         )
         selected = select_token_ids(
             logits,
-            mode="prefer_math_open_top2",
+            mode="prefer_math_open_top2_first_override",
             preferred_token_id=2,
             policy_mask=torch.tensor([True, False]),
         )

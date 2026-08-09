@@ -12,6 +12,8 @@ import torch
 from ..model.text_decode import LocalPaddleOCRVLStaticCache
 from ..model.token_selection import (
     TOKEN_SELECTION_GREEDY,
+    TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_FIRST_OVERRIDE,
+    TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_NON_NESTED,
     select_token_ids,
 )
 from .repetition import ExactCycleTracker, RepetitionEvidence
@@ -183,7 +185,7 @@ class DecodeArena:
         eos_token_id: int,
         token_selection: str = TOKEN_SELECTION_GREEDY,
         preferred_token_id: int | None = None,
-        cell_start_token_ids: Iterable[int] = (),
+        math_close_token_id: int | None = None,
         timeline: TimelineRecorder | None = None,
     ) -> None:
         self.cache = cache
@@ -194,7 +196,9 @@ class DecodeArena:
         self.preferred_token_id = (
             None if preferred_token_id is None else int(preferred_token_id)
         )
-        self.cell_start_token_ids = tuple(int(value) for value in cell_start_token_ids)
+        self.math_close_token_id = (
+            None if math_close_token_id is None else int(math_close_token_id)
+        )
         self.timeline = timeline
         self.next_token = torch.full(
             (self.batch_size, 1),
@@ -222,6 +226,16 @@ class DecodeArena:
             device=self.device,
             dtype=torch.bool,
         )
+        self.token_selection_override_used = torch.zeros(
+            (self.batch_size,),
+            device=self.device,
+            dtype=torch.bool,
+        )
+        self.token_selection_math_open = torch.zeros(
+            (self.batch_size,),
+            device=self.device,
+            dtype=torch.bool,
+        )
         self.slots: list[DecodeSlotState | None] = [None] * self.batch_size
         self._epochs = [0] * self.batch_size
         self._decode_event_spans: list[_DeviceSpanRecord] = []
@@ -241,6 +255,8 @@ class DecodeArena:
         self.rope_deltas.zero_()
         self.active_mask.zero_()
         self.token_selection_policy_mask.zero_()
+        self.token_selection_override_used.zero_()
+        self.token_selection_math_open.zero_()
 
     @property
     def num_active(self) -> int:
@@ -440,6 +456,8 @@ class DecodeArena:
             self.token_selection_policy_mask[slot_index].fill_(
                 bool(ready.token_selection_policy_active)
             )
+            self.token_selection_override_used[slot_index].fill_(False)
+            self.token_selection_math_open[slot_index].fill_(False)
 
         started = time.perf_counter()
         self._measure_enqueue(
@@ -485,6 +503,8 @@ class DecodeArena:
         self.slots[slot_index] = None
         self.active_mask[slot_index].fill_(False)
         self.token_selection_policy_mask[slot_index].fill_(False)
+        self.token_selection_override_used[slot_index].fill_(False)
+        self.token_selection_math_open[slot_index].fill_(False)
         self.next_token[slot_index].fill_(self.eos_token_id)
         self.cache_position[slot_index].zero_()
         self.rope_deltas[slot_index].zero_()
@@ -528,20 +548,62 @@ class DecodeArena:
                 self.rope_deltas,
                 *self.cache.flat_tensors(),
             )
-            cell_start_mask = torch.zeros_like(
-                self.token_selection_policy_mask,
-                dtype=torch.bool,
-            )
-            for token_id in self.cell_start_token_ids:
-                cell_start_mask |= self.next_token[:, 0] == int(token_id)
-            return select_token_ids(
+            if self.preferred_token_id is not None:
+                self.token_selection_math_open.copy_(
+                    torch.where(
+                        self.next_token[:, 0] == int(self.preferred_token_id),
+                        torch.ones_like(self.token_selection_math_open),
+                        self.token_selection_math_open,
+                    )
+                )
+            if self.math_close_token_id is not None:
+                self.token_selection_math_open.copy_(
+                    torch.where(
+                        self.next_token[:, 0] == int(self.math_close_token_id),
+                        torch.zeros_like(self.token_selection_math_open),
+                        self.token_selection_math_open,
+                    )
+                )
+            if (
+                self.token_selection
+                == TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_NON_NESTED
+            ):
+                policy_mask = (
+                    self.token_selection_policy_mask
+                    & ~self.token_selection_math_open
+                )
+            elif (
+                self.token_selection
+                == TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_FIRST_OVERRIDE
+            ):
+                policy_mask = (
+                    self.token_selection_policy_mask
+                    & ~self.token_selection_override_used
+                )
+            else:
+                policy_mask = torch.zeros_like(
+                    self.token_selection_policy_mask,
+                    dtype=torch.bool,
+                )
+            selected = select_token_ids(
                 logits[:, -1, :].float(),
                 mode=self.token_selection,
                 preferred_token_id=self.preferred_token_id,
-                policy_mask=(
-                    self.token_selection_policy_mask & cell_start_mask
-                ),
-            ).view(-1, 1)
+                policy_mask=policy_mask,
+            )
+            greedy = torch.argmax(logits[:, -1, :].float(), dim=-1)
+            if self.preferred_token_id is None:
+                override = torch.zeros_like(policy_mask)
+            else:
+                override = (
+                    policy_mask
+                    & (selected == int(self.preferred_token_id))
+                    & (greedy != int(self.preferred_token_id))
+                )
+            self.token_selection_override_used.copy_(
+                self.token_selection_override_used | override
+            )
+            return selected.view(-1, 1)
 
         request_ids = tuple(
             slot.ready.request_id for slot in self.slots if slot is not None

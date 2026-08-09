@@ -38,6 +38,8 @@ from ..model.text_decode import (
 from ..model.token_selection import (
     TOKEN_SELECTION_CHOICES,
     TOKEN_SELECTION_GREEDY,
+    TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_FIRST_OVERRIDE,
+    TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_NON_NESTED,
 )
 from ..model.preprocessing import (
     apply_pixel_overrides,
@@ -734,6 +736,10 @@ class ContinuousRecognizer:
         if math_open_token_id is None:
             raise ValueError("recognizer tokenizer does not contain the exact \\( token")
         self.math_open_token_id = int(math_open_token_id)
+        math_close_token_id = self.tokenizer.token_to_id(r"\)")
+        if math_close_token_id is None:
+            raise ValueError("recognizer tokenizer does not contain the exact \\) token")
+        self.math_close_token_id = int(math_close_token_id)
         table_cell_pieces = ("<fcel>", "<ecel>", "<lcel>", "<ucel>", "<xcel>")
         table_cell_token_ids = [
             self.tokenizer.token_to_id(piece) for piece in table_cell_pieces
@@ -933,7 +939,7 @@ class ContinuousRecognizer:
             eos_token_id=int(self.model.config.eos_token_id),
             token_selection=self.token_selection,
             preferred_token_id=self.math_open_token_id,
-            cell_start_token_ids=self.table_cell_token_ids,
+            math_close_token_id=self.math_close_token_id,
             timeline=self.timeline,
         )
         self.decode_scheduler = ContinuousDecodeScheduler(
@@ -3110,8 +3116,16 @@ class ContinuousRecognizer:
                 "scope": "table_prompt_only",
                 "preferred_token_id": self.math_open_token_id,
                 "preferred_token_piece": r"\(",
-                "cell_start_token_ids": list(self.table_cell_token_ids),
-                "rule": "select_preferred_token_when_rank_le_2_at_cell_start",
+                "math_close_token_id": self.math_close_token_id,
+                "rule": {
+                    TOKEN_SELECTION_GREEDY: "ordinary_argmax",
+                    TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_NON_NESTED: (
+                        "prefer_rank2_math_open_only_outside_open_math_region"
+                    ),
+                    TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_FIRST_OVERRIDE: (
+                        "prefer_rank2_math_open_on_first_override_only"
+                    ),
+                }[self.token_selection],
             },
             "decode_attention": DECODE_ATTENTION if self.device.type == "npu" else "manual",
             "decode_cache_update": DECODE_CACHE_UPDATE if self.device.type == "npu" else "per_row_copy",

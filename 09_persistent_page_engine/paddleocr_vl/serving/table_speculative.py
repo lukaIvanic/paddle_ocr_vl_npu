@@ -10,7 +10,7 @@ from typing import Any, Iterable
 import torch
 
 from ..model.text_spec_verify import TextSpecVerifyRuntime
-from ..model.token_selection import select_token_ids
+from ..model.token_selection import TOKEN_SELECTION_GREEDY, select_token_ids
 from .engine import PrefilledRecognition
 from .repetition import ExactCycleTracker
 
@@ -319,6 +319,11 @@ class TableSpeculativeDecodeRuntime:
     ) -> None:
         if int(recognizer.batch_size) != 1:
             raise ValueError("table speculative decode currently requires B1")
+        if recognizer.token_selection != TOKEN_SELECTION_GREEDY:
+            raise NotImplementedError(
+                "first-override token selection is generation-only until the "
+                "speculative verifier carries its per-request used state"
+            )
         self.recognizer = recognizer
         self.device = recognizer.device
         self.draft_length = int(draft_length)
