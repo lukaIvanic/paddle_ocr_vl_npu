@@ -11,6 +11,7 @@ PATCH_PATHS=(
     "$CUSTOM_ROOT/patches/0001-mha-aiv-launch.patch"
     "$CUSTOM_ROOT/patches/0002-separate-tiling-data-registration.patch"
     "$CUSTOM_ROOT/patches/0003-separate-tiling-template-registration.patch"
+    "$CUSTOM_ROOT/patches/0004-restore-composite-tiling-schema.patch"
 )
 SOURCE_ROOT="${INCREFA_SOURCE_ROOT:-$PROJECT_ROOT/.runtime_cache/increfa_aiv_source}"
 EXPECTED_SOURCE_COMMIT="afe72144f9f2ac8441929035795db88a111b30c5"
@@ -217,6 +218,24 @@ for symbol in \
     aclnnPaddleMhaIncreFlashAttentionAiv; do
     if ! grep -q " T $symbol$" <<<"$OP_API_SYMBOLS"; then
         echo "ERROR: installed op-api library does not export $symbol" >&2
+        exit 4
+    fi
+done
+
+mapfile -t TILING_LIBS < <(find \
+    "$INSTALL_ROOT/vendors/$INSTALLED_VENDOR_NAME/op_impl/ai_core/tbe/op_tiling/lib" \
+    -maxdepth 2 -type f -name 'libcust_opmaster_rt2.0.so' -print)
+if [[ "${#TILING_LIBS[@]}" != "1" ]]; then
+    echo "ERROR: expected one installed host tiling library" >&2
+    exit 4
+fi
+TILING_SCHEMA_STRINGS="$(strings "${TILING_LIBS[0]}")"
+for schema_name in \
+    IncreFlashAttentionTilingDataOp \
+    IncreFlashAttentionTilingDataPrefixOp \
+    PaddleMhaIncreFlashAttentionAiv; do
+    if ! grep -qx "$schema_name" <<<"$TILING_SCHEMA_STRINGS"; then
+        echo "ERROR: installed host tiler lacks schema $schema_name" >&2
         exit 4
     fi
 done

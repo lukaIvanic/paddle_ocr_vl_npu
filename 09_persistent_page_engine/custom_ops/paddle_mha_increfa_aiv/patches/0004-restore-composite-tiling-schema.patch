@@ -1,0 +1,30 @@
+diff --git a/attention/paddle_mha_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.h b/attention/paddle_mha_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.h
+--- a/attention/paddle_mha_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.h
++++ b/attention/paddle_mha_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.h
+@@ -42 +42 @@
+-REGISTER_TILING_DATA_CLASS(PaddleMhaIncreFlashAttentionAivInitOutputParamsOp, IncreFlashAttentionInitOutputParams)
++REGISTER_TILING_DATA_CLASS(IncreFlashAttentionInitOutputParamsOp, IncreFlashAttentionInitOutputParams)
+@@ -88 +88 @@
+-REGISTER_TILING_DATA_CLASS(PaddleMhaIncreFlashAttentionAivBaseParamsOp, IncreFlashAttentionBaseParams)
++REGISTER_TILING_DATA_CLASS(IncreFlashAttentionBaseParamsOp, IncreFlashAttentionBaseParams)
+@@ -95 +95 @@
+-REGISTER_TILING_DATA_CLASS(PaddleMhaIncreFlashAttentionAivCoreParamsOp, IncreFlashAttentionCoreParams);
++REGISTER_TILING_DATA_CLASS(IncreFlashAttentionCoreParamsOp, IncreFlashAttentionCoreParams);
+@@ -112 +112 @@
+-REGISTER_TILING_DATA_CLASS(PaddleMhaIncreFlashAttentionAivSplitCoreParamsOp, IncreFlashAttentionSplitCoreParams);
++REGISTER_TILING_DATA_CLASS(IncreFlashAttentionSplitCoreParamsOp, IncreFlashAttentionSplitCoreParams);
+@@ -125 +125 @@
+-REGISTER_TILING_DATA_CLASS(PaddleMhaIncreFlashAttentionAivSingleCoreParamsOp, IncreFlashAttentionSingleCoreParams)
++REGISTER_TILING_DATA_CLASS(IncreFlashAttentionSingleCoreParamsOp, IncreFlashAttentionSingleCoreParams)
+@@ -131 +131 @@
+-REGISTER_TILING_DATA_CLASS(PaddleMhaIncreFlashAttentionAivSingleCoreTensorSizeOp, IncreFlashAttentionSingleCoreTensorSize)
++REGISTER_TILING_DATA_CLASS(IncreFlashAttentionSingleCoreTensorSizeOp, IncreFlashAttentionSingleCoreTensorSize)
+@@ -139 +139 @@
+-REGISTER_TILING_DATA_CLASS(PaddleMhaIncreFlashAttentionAivSplitKVParamsOp, IncreFlashAttentionSplitKVParams)
++REGISTER_TILING_DATA_CLASS(IncreFlashAttentionSplitKVParamsOp, IncreFlashAttentionSplitKVParams)
+@@ -152 +152 @@
+-REGISTER_TILING_DATA_CLASS(PaddleMhaIncreFlashAttentionAivTilingDataOp, IncreFlashAttentionTilingData)
++REGISTER_TILING_DATA_CLASS(IncreFlashAttentionTilingDataOp, IncreFlashAttentionTilingData)
+@@ -166 +166 @@
+-REGISTER_TILING_DATA_CLASS(PaddleMhaIncreFlashAttentionAivTilingDataPrefixOp, IncreFlashAttentionTilingDataPrefix)
++REGISTER_TILING_DATA_CLASS(IncreFlashAttentionTilingDataPrefixOp, IncreFlashAttentionTilingDataPrefix)

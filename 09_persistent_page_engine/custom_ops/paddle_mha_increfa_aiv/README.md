@@ -61,6 +61,12 @@ The upstream package wrapper recreates its CMake output and recompiles bundled
 host tools such as Protobuf. Treat that multi-minute package construction as a
 build-stage cost, never as TorchAir first-call or steady operator latency.
 
+The top-level tiling-data registration uses the separate GE operator name. Its
+nested structure registrations retain the upstream structure names because
+CANN static graph compilation resolves nested members by their C++ structure
+type, such as `IncreFlashAttentionTilingDataOp`. Those names are data-schema
+identities, not callable operator identities.
+
 The reused all-vector implementation still needs AIV-to-AIV `SyncAll()`. The
 kernel therefore uses CANN's hard-sync `MIX_AIV_1_0` envelope. Package gates
 require a `0:1` task ratio, the `_mix_aiv` function, no `_mix_aic` function,
