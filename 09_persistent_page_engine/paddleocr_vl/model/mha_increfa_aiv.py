@@ -75,7 +75,11 @@ def register_mha_increfa_aiv_converter() -> None:
         f"{torchair.__name__}._ge_concrete_graph.fx2ge_converter"
     )
     ge_module = importlib.import_module(f"{torchair.__name__}.ge")
-    ge_attr = importlib.import_module(f"{torchair.__name__}.ge.attr")
+    # TorchAir's compatibility layer validates attributes against the public
+    # ``torchair.ge.attr`` module, even when import_torchair() had to use the
+    # vendored ``torch_npu.dynamo.torchair`` fallback.  Importing attr through
+    # the vendored name creates a second _Attr class and fails that check.
+    ge_attr = importlib.import_module("torchair.ge.attr")
     register_converter = converter_module.register_fx_node_ge_converter
     ge_custom_op = ge_module.custom_op
     op = torch.ops.paddleocr_vl.mha_incre_flash_attention_aiv.default
