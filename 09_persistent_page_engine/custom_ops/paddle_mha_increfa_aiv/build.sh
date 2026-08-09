@@ -224,7 +224,7 @@ done
 
 mapfile -t TILING_LIBS < <(find \
     "$INSTALL_ROOT/vendors/$INSTALLED_VENDOR_NAME/op_impl/ai_core/tbe/op_tiling/lib" \
-    -maxdepth 2 -type f -name 'libcust_opmaster_rt2.0.so' -print)
+    -maxdepth 3 -type f -name 'libcust_opmaster_rt2.0.so' -print)
 if [[ "${#TILING_LIBS[@]}" != "1" ]]; then
     echo "ERROR: expected one installed host tiling library" >&2
     exit 4
