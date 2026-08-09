@@ -6,10 +6,12 @@ CANN's `IncreFlashAttention` registration.
 The identity is explicit at every layer:
 
 ```text
-PyTorch: paddleocr_vl::mha_incre_flash_attention_aiv
-GE/CANN: PaddleMhaIncreFlashAttentionAiv
-kernel:  paddle_mha_incre_flash_attention_aiv
-vendor:  paddle_mha_increfa_aiv
+PyTorch/TorchAir: paddleocr_vl::mha_incre_flash_attention_aiv
+PyTorch eager:    paddleocr_vl_npu::paddle_mha_incre_flash_attention_aiv_eager
+GE/CANN:          PaddleMhaIncreFlashAttentionAiv
+aclnn eager:      aclnnInnerPaddleMhaIncreFlashAttentionAiv
+kernel:           paddle_mha_incre_flash_attention_aiv
+vendor:           paddle_mha_increfa_aiv
 ```
 
 The eager PyTorch custom-op body calls stock
@@ -17,6 +19,13 @@ The eager PyTorch custom-op body calls stock
 TorchAir compilation, its converter emits only
 `PaddleMhaIncreFlashAttentionAiv`. The stock PyTorch op still emits stock
 `IncreFlashAttention`; there is no same-name package selection or fallback.
+
+The separate C++ extension is the direct-eager lane. It registers a distinct
+`PrivateUse1` implementation and enqueues the package-generated
+`aclnnInnerPaddleMhaIncreFlashAttentionAiv` API. It has no TorchAir converter
+and no Python stock-op fallback. The internal aclnn name is package-generated;
+a public narrow aclnn wrapper remains a packaging improvement, not a condition
+for measuring direct eager execution.
 
 ## Deliberately narrow contract
 
@@ -58,7 +67,7 @@ kernel therefore uses CANN's hard-sync `MIX_AIV_1_0` envelope. Package gates
 require a `0:1` task ratio, the `_mix_aiv` function, no `_mix_aic` function,
 inter-core synchronization metadata, and the one expected tiling key.
 
-## Build and isolated PyTorch comparison
+## Build and isolated PyTorch comparisons
 
 Run on Blue Zone after pulling the local commit:
 
@@ -68,7 +77,31 @@ bash 09_persistent_page_engine/custom_ops/paddle_mha_increfa_aiv/build.sh
 ```
 
 The runner prints `PADDLE_MHA_INCREFA_AIV_SET_ENV`. Source that exact file, then
-run the comparison through PyTorch/TorchAir:
+build the direct-eager PyTorch extension:
+
+```sh
+source <PADDLE_MHA_INCREFA_AIV_SET_ENV>
+bash \
+  09_persistent_page_engine/custom_ops/paddle_mha_increfa_aiv/pytorch_extension/build.sh
+```
+
+Run the direct-eager comparison first. This invokes the separate vendor op and
+stock IncreFA directly from PyTorch without TorchAir:
+
+```sh
+source <PADDLE_MHA_INCREFA_AIV_SET_ENV>
+/usr/local/python3.12.13/bin/python3 \
+  09_persistent_page_engine/scripts/probes/compare_paddle_mha_increfa_aiv_eager.py \
+  --output .runtime_cache/paddle_mha_increfa_aiv/compare_eager.json
+```
+
+The direct-eager probe compares full outputs at KV128/KV512/KV2048, records
+first-use separately, and reports non-profiled repeated NPU-event and host-wall
+timing. Its result includes the PyTorch dispatcher table and asserts that the
+separate op has a `PrivateUse1` implementation.
+
+Only after that passes, run the graph-integration comparison through
+PyTorch/TorchAir:
 
 ```sh
 source <PADDLE_MHA_INCREFA_AIV_SET_ENV>
@@ -79,7 +112,7 @@ PYTHONPATH=09_persistent_page_engine:$PYTHONPATH \
   --cache-root .runtime_cache/paddle_mha_increfa_aiv/torchair_compare
 ```
 
-The probe compiles stock and custom operators under different graph-cache
+The TorchAir probe compiles stock and custom operators under different graph-cache
 directories in the same process, compares full outputs at KV128/KV512/KV2048,
 and reports non-profiled repeated timing. First-call compile/cache-load time is
 recorded separately from steady operator timing.
