@@ -16,6 +16,31 @@ The central rule is simple:
 This workflow is authoritative for the local authoring and Blue Zone 910B
 lanes. A 310P result needs a separate run and a separate report.
 
+## Current validated state
+
+The implementation was last verified on 2026-08-09 at commit `b4d0a75` on a
+physical Ascend 910B2.
+
+- The independent B1 GQA operator works through direct PyTorch eager and
+  TorchAir under the name `PaddleGqaIncreFlashAttentionAiv`.
+- The final model preset is `combined_apply_gqa_aiv_b1`. It requests 16 AIV
+  cores and fails closed outside B1/TorchAir. Stock IncreFA remains the default.
+- KV128, KV512, masked KV1536, and KV2048 pass stock tolerance and an
+  independent CPU FP32 reference. A real 374-token OCR generation matches
+  token IDs, text, and EOS exactly.
+- Runtime counters prove zero AIC execution and nonzero AIV execution. The CANN
+  task-type label alone is not reliable for this question.
+- One controlled same-device NPU6 ABBA run measured 795.31 tok/s stock and
+  811.14 tok/s custom. This 1.99% result is promising but small and
+  device-sensitive, so it is not yet a production-default decision.
+- Whole attention on AI CPU is correct but 29.9x to 553.1x slower than stock
+  IncreFA. Do not use AI CPU for QK, softmax, or AV.
+
+The compact result bundle is
+[GQA AIV B1 evidence](../../tmp/09_persistent_page_engine/gqa_aiv_b1_1d16f33/README.md).
+The build and operator-specific commands are in the
+[GQA AIV operator README](paddle_gqa_increfa_aiv/README.md).
+
 ## 1. Evidence vocabulary
 
 Keep four kinds of statements separate:
@@ -96,7 +121,7 @@ performance number.
 | 0 | Is the machine state trustworthy? | commit, source hash, selected physical NPU, process state | source drift or device ambiguity exists |
 | 1 | What exact contract are we implementing? | shape/dtype/layout/attribute table | production and test contracts are conflated |
 | 2 | Is the package structurally independent? | unique names, exported symbols, selected object proof | stock name or fallback remains possible |
-| 3 | Is the intended kernel binary present? | one key, metadata, ELF symbols, package hashes | cube symbol or unexpected key remains |
+| 3 | Is the intended kernel binary present? | exact required key set, metadata, ELF symbols, package hashes | cube symbol or unexpected key remains |
 | 4 | Does direct eager produce the right tensor? | full-output parity and hashes | numerical parity fails |
 | 5 | What does direct eager cost? | non-profiled repeated NPU and host timings | first-use or profiler time is mixed into steady time |
 | 6 | What does the kernel body do? | isolated profiler trace | helper kernels or unexpected data transforms appear |
@@ -857,6 +882,20 @@ KV2048, the extra counts create real FlashDecode splits, but 16 had the best
 clean custom mean. The production-facing experimental preset therefore requests
 16 cores and is explicitly B1/TorchAir-only.
 
+The core-count evidence must be interpreted through the actual launch, not the
+requested attribute:
+
+| Shape | Requested cores | Actual behavior | Decision |
+| --- | ---: | --- | --- |
+| masked KV1536 | 16 | 16-block non-split | keep |
+| masked KV1536 | 32 | same 16-block non-split | no additional parallelism |
+| masked KV1536 | 48 | same 16-block non-split | no additional parallelism |
+| KV2048 | 16 | one query-head work item per core | fastest clean custom mean |
+| KV2048 | 32 or 48 | real FlashDecode splits | slower than the 16-core custom row |
+
+Do not select a core count from separate-process timing alone. First confirm
+`Block Num`, tiling key, and split count in the profiler export.
+
 Correctness is complete for the narrow contract. Direct eager and TorchAir pass
 at KV128, KV512, masked KV1536, and KV2048 against stock tolerance and an
 independent CPU FP32 reference. A 374-token real OCR generation is token-,
@@ -875,6 +914,12 @@ device and run order must remain part of the evidence. The matched full profile
 showed the custom attention kernels themselves were faster—16.282 us versus
 18.071 us average across 54 tasks. The next optimization target is still
 graph-level cadence or hard-sync scheduling, not more vector cores.
+
+After the exploratory preset was renamed, the Blue Zone checkout pulled exact
+commit `b4d0a75` and ran `combined_apply_gqa_aiv_b1` on physical NPU6 with B1,
+KV1024, and the real full decoder. The short 20-step smoke completed at 741.08
+tok/s. This is only final-name and graph-wiring validation; it is not a
+replacement for the four-lane 200-step ABBA performance result.
 
 ### Build-time classification learned from GQA
 
@@ -910,6 +955,22 @@ The KV2048 profile reported about 28.76 ms per AI CPU task, while host
 The achieved rate was below 0.7 GFLOP/s and the minimum tensor-byte rate below
 0.1 GB/s. Do not move QK, softmax, or AV to AI CPU.
 
+The more detailed scaling evidence is:
+
+| KV | Achieved GMAC/s | Achieved GFLOP/s | Minimum tensor-byte rate |
+| ---: | ---: | ---: | ---: |
+| 128 | 0.340 | 0.680 | 0.090 GB/s |
+| 512 | 0.304 | 0.609 | 0.077 GB/s |
+| 2048 | 0.294 | 0.588 | 0.074 GB/s |
+
+At KV2048, process memory moved from 108,284 KiB to 116,404 KiB during the
+profile. Direct input and output allocation was 2,107,392 bytes and score
+workspace was 8 KiB. The exported run-level counters sampled 26.983 MB/s HBM
+read, 14.768 MB/s HBM write, and 39,509.63 MB/s LLC read at a 75.926% hit rate.
+Treat these as profiler samples for the whole run, not per-operator theoretical
+bandwidth. The direct `.aicpu` launch did not emit `aicpu_*.csv`, so no
+compute/memcpy/framework split is claimed.
+
 The realistic AI CPU lane is small branch-heavy metadata, state, scheduler, or
 tiling work, and only when it removes a host synchronization or overlaps on a
 separate stream. A classic GE AICPU package still needs separate integration
@@ -934,6 +995,7 @@ and [profiling fields](https://www.hiascend.com/document/detail/en/canncommercia
 - [Current separate GQA AIV operator](paddle_gqa_increfa_aiv/README.md)
 - [GQA graph op and TorchAir converter](../paddleocr_vl/model/gqa_increfa_aiv.py)
 - [GQA eager/TorchAir comparison probe](../scripts/probes/compare_paddle_gqa_increfa_aiv.py)
+- [GQA AIV B1 retained evidence](../../tmp/09_persistent_page_engine/gqa_aiv_b1_1d16f33/README.md)
 
 ## 21. Official references
 
