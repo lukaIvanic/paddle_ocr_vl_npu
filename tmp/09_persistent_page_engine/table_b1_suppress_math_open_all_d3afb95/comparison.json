@@ -1,0 +1,44 @@
+{
+  "candidate_commit": "d3afb95",
+  "candidate_policy": "suppress_math_open_greedy",
+  "suppressed_token_id": 47536,
+  "suppressed_token_piece": "\\(",
+  "tables": 665,
+  "table_pages": 458,
+  "saved_baseline": {
+    "commit": "04fbc8e",
+    "page_TEDS": 0.9545542081254185,
+    "sample_TEDS": 0.9497333828910292,
+    "page_TEDS_structure_only": 0.9781432023044314
+  },
+  "candidate": {
+    "page_TEDS": 0.9535963032512585,
+    "sample_TEDS": 0.9494393021977534,
+    "page_TEDS_structure_only": 0.9779858074144134,
+    "teds_timeout_count": 0,
+    "teds_error_count": 0
+  },
+  "candidate_minus_saved_baseline": {
+    "page_TEDS": -0.0009579048741600324,
+    "sample_TEDS": -0.0002940806932758497,
+    "page_TEDS_structure_only": -0.0001573948900180926
+  },
+  "prediction_text": {
+    "changed_tables": 88,
+    "unchanged_tables": 577
+  },
+  "per_table_TEDS": {
+    "better": 37,
+    "equal": 592,
+    "worse": 36,
+    "mean_delta": -0.000294080693275848,
+    "median_delta": 0.0
+  },
+  "native_id_smoke": {
+    "request_id": "page_000271_table_box_id_1",
+    "output_tokens": 3094,
+    "token_47536_count": 0,
+    "stop_reason": "kv_cache_full"
+  },
+  "decision": "do not globally suppress token ID 47536 in B1"
+}

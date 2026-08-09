@@ -1,0 +1,6 @@
+commit=d3afb95
+device=Ascend 910B2 physical NPU 6 logical npu:0
+dataset=/workspace/datasets/OmniDocBench/OmniDocBench.json
+dataset_json_sha256=a45cd84b04ad8b793e775089640e6b681209abea33ead54c1828ddca35fae496
+dataset_images_sha256=58feeb96c60fcfab12ba4348c4e093ceaf1b707658dbfd0e08c24d7821d4c221
+command=TOKEN_SELECTION=suppress_math_open_greedy PORT=8791 TEDS_WORKERS=12 TEDS_TIMEOUT_S=120 bash 09_persistent_page_engine/scripts/run_omnidocbench_table_b1_latency.sh tmp/09_persistent_page_engine/table_b1_suppress_math_open_all_d3afb95
