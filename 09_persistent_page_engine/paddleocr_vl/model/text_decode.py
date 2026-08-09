@@ -1621,7 +1621,8 @@ class TextDecodeStage(torch.nn.Module):
             raise RuntimeError("TorchAir SuperKernel scope was not initialized")
         with self._super_kernel_scope(
             "paddle_decoder_b1_megakernel",
-            "feed-sync-all=1:stream-fusion=0:strict-scope-check=abort",
+            "feed-sync-all=1:stream-fusion=0:strict-scope-check=abort:"
+            "preload-code=none:early-start=0",
         ):
             return self._forward_impl(
                 input_ids,
