@@ -1,6 +1,6 @@
 [
   {
-    "op": "PaddleDecodeQkvSplit",
+    "op": "PaddleDecodeQkvSplitV2",
     "input_desc": [
       {"name": "qkv", "param_type": "required", "format": ["ND"], "type": ["fp16"]}
     ],

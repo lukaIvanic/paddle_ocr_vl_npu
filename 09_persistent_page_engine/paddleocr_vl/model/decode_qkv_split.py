@@ -10,7 +10,7 @@ import torch
 from .compile_utils import import_torchair
 
 
-GE_OP_NAME = "PaddleDecodeQkvSplit"
+GE_OP_NAME = "PaddleDecodeQkvSplitV2"
 PYTORCH_OP_NAME = "paddleocr_vl::decode_qkv_split"
 
 

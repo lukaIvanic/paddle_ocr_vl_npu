@@ -93,7 +93,7 @@ private:
 };
 }
 
-extern "C" __global__ __aicore__ void paddle_decode_qkv_split(
+extern "C" __global__ __aicore__ void paddle_decode_qkv_split_v2(
     GM_ADDR qkv,
     GM_ADDR query,
     GM_ADDR key,

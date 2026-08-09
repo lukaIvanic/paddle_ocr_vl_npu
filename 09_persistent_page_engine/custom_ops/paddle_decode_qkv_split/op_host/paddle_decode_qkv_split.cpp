@@ -58,9 +58,9 @@ static ge::graphStatus InferDataType(gert::InferDataTypeContext* context)
 }
 
 namespace ops {
-class PaddleDecodeQkvSplit : public OpDef {
+class PaddleDecodeQkvSplitV2 : public OpDef {
 public:
-    explicit PaddleDecodeQkvSplit(const char* name) : OpDef(name)
+    explicit PaddleDecodeQkvSplitV2(const char* name) : OpDef(name)
     {
         this->Input("qkv").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
@@ -76,5 +76,5 @@ public:
     }
 };
 
-OP_ADD(PaddleDecodeQkvSplit);
+OP_ADD(PaddleDecodeQkvSplitV2);
 }
