@@ -46,7 +46,7 @@ diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_
 +        OP_LOGI(ifaContext_->opName, "GQA AIV vector core cap: %u.", aivNum_);
 +    }
      IsFdBalanceCase();
-@@ -3493,5 +3504,13 @@ ge::graphStatus IFATiling::CalcNumBlocks()
+@@ -3493,6 +3504,13 @@ ge::graphStatus IFATiling::CalcNumBlocks()
              }
          }
      }
