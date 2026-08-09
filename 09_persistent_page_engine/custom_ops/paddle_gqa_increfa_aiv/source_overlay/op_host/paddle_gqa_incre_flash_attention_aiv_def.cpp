@@ -41,7 +41,7 @@ public:
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
 
         this->Attr("num_heads").AttrType(REQUIRED).Int(16);
-        this->Attr("scale_value").AttrType(OPTIONAL).Float(0.08838834764831845);
+        this->Attr("scale_value").AttrType(OPTIONAL).Float(0.0883883461F);
         this->Attr("input_layout").AttrType(OPTIONAL).String("BNSD");
         this->Attr("num_key_value_heads").AttrType(OPTIONAL).Int(2);
         this->Attr("block_size").AttrType(OPTIONAL).Int(0);
