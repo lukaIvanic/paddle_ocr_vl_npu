@@ -39,6 +39,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--extension-root", type=Path, default=DEFAULT_EXTENSION_ROOT)
+    parser.add_argument(
+        "--lanes",
+        choices=("both", "stock", "custom"),
+        default="both",
+        help="Run both parity lanes or isolate one eager dispatch path.",
+    )
     parser.add_argument("--kv-lengths", type=parse_lengths, default=(128, 512, 2048))
     parser.add_argument("--warmup", type=int, default=20)
     parser.add_argument("--blocks", type=int, default=7)
@@ -182,6 +188,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "same_name_override": False,
             "dispatch_table": dispatch_table,
         },
+        "lanes": args.lanes,
         "contract": {
             "batch_size": 1,
             "query_heads": QUERY_HEADS,
@@ -232,61 +239,60 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             inputs = (query, key, value, mask)
 
-            started = time.perf_counter()
-            stock_output = stock(*inputs)
-            torch.npu.synchronize()
-            stock_first_call_s = time.perf_counter() - started
-            started = time.perf_counter()
-            custom_output = custom(*inputs)
-            torch.npu.synchronize()
-            custom_first_call_s = time.perf_counter() - started
+            case: dict[str, Any] = {
+                "kv_length": kv_length,
+                "first_call_s": {},
+                "timing": {},
+                "output_sha256": {},
+                "parity": None,
+            }
+            outputs: dict[str, torch.Tensor] = {}
+            lane_steps = (
+                (("stock", stock), ("custom", custom))
+                if args.lanes == "both"
+                else ((args.lanes, stock if args.lanes == "stock" else custom),)
+            )
+            for lane_name, lane_step in lane_steps:
+                started = time.perf_counter()
+                output = lane_step(*inputs)
+                torch.npu.synchronize()
+                case["first_call_s"][lane_name] = time.perf_counter() - started
+                output, timing = time_step(
+                    lane_step,
+                    inputs,
+                    warmup=args.warmup,
+                    blocks=args.blocks,
+                    repeats_per_block=args.repeats_per_block,
+                )
+                output_cpu = output.float().cpu().contiguous()
+                outputs[lane_name] = output_cpu
+                case["timing"][lane_name] = timing
+                case["output_sha256"][lane_name] = tensor_sha256(output_cpu)
 
-            stock_output, stock_timing = time_step(
-                stock,
-                inputs,
-                warmup=args.warmup,
-                blocks=args.blocks,
-                repeats_per_block=args.repeats_per_block,
-            )
-            custom_output, custom_timing = time_step(
-                custom,
-                inputs,
-                warmup=args.warmup,
-                blocks=args.blocks,
-                repeats_per_block=args.repeats_per_block,
-            )
-            stock_cpu = stock_output.float().cpu().contiguous()
-            custom_cpu = custom_output.float().cpu().contiguous()
-            difference = (stock_cpu - custom_cpu).abs()
-            result["cases"].append(
-                {
-                    "kv_length": kv_length,
-                    "first_call_s": {
-                        "stock": stock_first_call_s,
-                        "custom": custom_first_call_s,
-                    },
-                    "parity": {
-                        "exact": bool(torch.equal(stock_cpu, custom_cpu)),
-                        "allclose_atol_0_rtol_0": bool(
-                            torch.allclose(
-                                stock_cpu, custom_cpu, atol=0.0, rtol=0.0
-                            )
-                        ),
-                        "max_abs": float(difference.max()),
-                        "mean_abs": float(difference.mean()),
-                        "stock_sha256": tensor_sha256(stock_cpu),
-                        "custom_sha256": tensor_sha256(custom_cpu),
-                    },
-                    "timing": {"stock": stock_timing, "custom": custom_timing},
+            if args.lanes == "both":
+                stock_cpu = outputs["stock"]
+                custom_cpu = outputs["custom"]
+                difference = (stock_cpu - custom_cpu).abs()
+                case["parity"] = {
+                    "exact": bool(torch.equal(stock_cpu, custom_cpu)),
+                    "allclose_atol_0_rtol_0": bool(
+                        torch.allclose(stock_cpu, custom_cpu, atol=0.0, rtol=0.0)
+                    ),
+                    "max_abs": float(difference.max()),
+                    "mean_abs": float(difference.mean()),
+                    "stock_sha256": case["output_sha256"]["stock"],
+                    "custom_sha256": case["output_sha256"]["custom"],
                 }
-            )
+            result["cases"].append(case)
 
-    result["all_exact"] = all(
-        case["parity"]["exact"] for case in result["cases"]
+    result["all_exact"] = (
+        all(case["parity"]["exact"] for case in result["cases"])
+        if args.lanes == "both"
+        else None
     )
     args.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(result, indent=2), flush=True)
-    if not result["all_exact"]:
+    if args.lanes == "both" and not result["all_exact"]:
         raise SystemExit("separate eager operator did not match stock exactly")
     return 0
 
