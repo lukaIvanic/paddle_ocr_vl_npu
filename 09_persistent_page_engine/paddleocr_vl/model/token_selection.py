@@ -58,7 +58,7 @@ def select_token_ids(
         ).squeeze(-1)
         preferred_probability = probabilities[..., int(preferred_token_id)]
         eligible = (
-            (preferred_probability >= 0.5 * top_probability)
+            (preferred_probability >= 0.3 * top_probability)
             & (preferred_probability > 0.10)
         )
     else:

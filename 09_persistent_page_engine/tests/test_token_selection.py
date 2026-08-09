@@ -73,7 +73,7 @@ class TokenSelectionTest(unittest.TestCase):
         self.assertEqual(selected.tolist(), [1])
 
     def test_probability_policy_rejects_low_relative_probability(self) -> None:
-        logits = torch.tensor([[2.0, 1.2, -10.0]])
+        logits = torch.tensor([[2.0, 0.7, -10.0]])
         selected = select_token_ids(
             logits,
             mode="prefer_math_open_probability_near_top",

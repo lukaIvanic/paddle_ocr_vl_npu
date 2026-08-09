@@ -3158,7 +3158,7 @@ class ContinuousRecognizer:
                         "prefer_rank2_math_open_on_first_override_only"
                     ),
                     TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP: (
-                        "prefer_math_open_when_probability_gt_0.10_and_at_least_half_top1"
+                        "prefer_math_open_when_probability_gt_0.10_and_at_least_0.3_top1"
                     ),
                 }[self.token_selection],
             },
