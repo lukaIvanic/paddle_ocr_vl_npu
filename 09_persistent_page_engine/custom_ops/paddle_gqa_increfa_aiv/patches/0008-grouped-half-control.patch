@@ -9,7 +9,7 @@ diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_
 diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
 --- a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
 +++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
-@@ -545,4 +545,8 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::GetBN2id(const u
+@@ -545,4 +545,7 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::GetBN2id(const u
 -        uint32_t kvGroupWorkIdx = beforeBlockSplitBn2Nums + bn2Indx;
 -        bIdx = kvGroupWorkIdx / kvHeadNum;
 -        n2Idx = kvGroupWorkIdx % kvHeadNum;
