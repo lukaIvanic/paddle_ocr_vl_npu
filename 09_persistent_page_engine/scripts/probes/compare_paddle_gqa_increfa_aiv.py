@@ -94,6 +94,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--experimental-split-k32-local-partial-reduce-control",
+        action="store_true",
+        help=(
+            "Identify the separately packaged two-way split-K variant whose "
+            "even reducer keeps partition 0 in UB and loads only partition 1. "
+            "It requires vector_core_count=32."
+        ),
+    )
+    parser.add_argument(
         "--experimental-split-k48-control",
         action="store_true",
         help=(
@@ -127,6 +136,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         + int(args.experimental_split_k32_control)
         + int(args.experimental_split_k32_pairwise_sync_control)
         + int(args.experimental_split_k32_two_way_reduce_control)
+        + int(args.experimental_split_k32_local_partial_reduce_control)
         + int(args.experimental_split_k48_control)
         > 1
     ):
@@ -166,6 +176,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     ):
         parser.error(
             "--experimental-split-k32-two-way-reduce-control requires "
+            "--vector-core-count 32"
+        )
+    if (
+        args.experimental_split_k32_local_partial_reduce_control
+        and args.vector_core_count != 32
+    ):
+        parser.error(
+            "--experimental-split-k32-local-partial-reduce-control requires "
             "--vector-core-count 32"
         )
     if args.experimental_split_k48_control and args.vector_core_count != 48:
@@ -490,9 +508,13 @@ def main(argv: Sequence[str] | None = None) -> int:
                             "split_k32_two_way_reduce_control"
                             if args.experimental_split_k32_two_way_reduce_control
                             else (
-                                "split_k48_control"
-                                if args.experimental_split_k48_control
-                                else "production"
+                                "split_k32_local_partial_reduce_control"
+                                if args.experimental_split_k32_local_partial_reduce_control
+                                else (
+                                    "split_k48_control"
+                                    if args.experimental_split_k48_control
+                                    else "production"
+                                )
                             )
                         )
                     )

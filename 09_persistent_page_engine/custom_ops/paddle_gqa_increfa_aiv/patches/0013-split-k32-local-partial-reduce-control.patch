@@ -1,0 +1,47 @@
+diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
+--- a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
++++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
+@@ -1082,22 +1082,12 @@
+-        Duplicate(bmm2ResUb, FLOAT_ZERO, headDimAlign);
+-        PipeBarrier<PIPE_V>();
+-
+-        uint32_t singleCombineCnt = BUFFER_SIZE_BYTE_32K / sizeof(T) / headDimAlign;
+-        if (singleCombineCnt > actualCombineLoopSize) {
+-            singleCombineCnt = actualCombineLoopSize;
+-        }
+-        for (uint32_t i = 0, actDealCnt = singleCombineCnt; i < actualCombineLoopSize; i += singleCombineCnt) {
+-            if (i + singleCombineCnt > actualCombineLoopSize) {
+-                actDealCnt = actualCombineLoopSize - i;
+-            }
+-            LocalTensor<T> accumOutLocal = inputQue2.template AllocTensor<T>();
+-            CopyIn<T>(accumOutLocal, accumOutGm, combineAccumOutOffset + i * headDim, actDealCnt, headDimAlign,
+-                      headDim);
+-            inputQue2.template EnQue(accumOutLocal);
+-            inputQue2.DeQue<T>();
+-            RowMuls(accumOutLocal, accumOutLocal, lseExpUb[i * FP32_ONE_BLOCK_SIZE], actDealCnt, headDimAlign, headDim);
+-            PipeBarrier<PIPE_V>();
+-            ColumnSum(accumOutLocal, actDealCnt, headDimAlign);
+-            Add(bmm2ResUb, bmm2ResUb, accumOutLocal, headDim);
+-            inputQue2.FreeTensor(accumOutLocal);
+-        }
++        // The even worker retains partition 0 in UB across SyncAll().
++        RowMuls(bmm2ResUb, bmm2ResUb, lseExpUb, 1, headDimAlign, headDim);
++        PipeBarrier<PIPE_V>();
++
++        LocalTensor<T> partnerOutLocal = inputQue2.template AllocTensor<T>();
++        CopyIn<T>(partnerOutLocal, accumOutGm, combineAccumOutOffset + headDim, 1, headDimAlign, headDim);
++        inputQue2.template EnQue(partnerOutLocal);
++        inputQue2.DeQue<T>();
++        RowMuls(partnerOutLocal, partnerOutLocal, lseExpUb[FP32_ONE_BLOCK_SIZE], 1, headDimAlign, headDim);
++        PipeBarrier<PIPE_V>();
++        Add(bmm2ResUb, bmm2ResUb, partnerOutLocal, headDim);
++        inputQue2.FreeTensor(partnerOutLocal);
+@@ -1122,1 +1112,1 @@
+-    uint32_t qHeadWorkIdx = tmpBlockIdx;
++    uint32_t qHeadWorkIdx = tmpBlockIdx / splitKVNum;
+@@ -1863,1 +1853,4 @@
+-        FlashDecodeCompute();
++        // Worker layout is (q0p0, q0p1, q1p0, q1p1, ...).
++        if ((tmpBlockIdx % splitKVNum) == 0U) {
++            FlashDecodeCompute();
++        }

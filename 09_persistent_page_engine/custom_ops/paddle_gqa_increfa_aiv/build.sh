@@ -66,6 +66,15 @@ case "$EXPERIMENT_VARIANT" in
         VENDOR_NAME="paddle_gqa_split_k32_two_way_reduce_increfa_aiv"
         CACHE_NAMESPACE="paddle_gqa_split_k32_two_way_reduce_increfa_aiv"
         ;;
+    split_k32_local_partial_reduce_control)
+        PATCH_PATHS+=(
+            "$CUSTOM_ROOT/patches/0009-force-split-k32-control.patch"
+            "$CUSTOM_ROOT/patches/0012-split-k32-two-way-reduce-control.patch"
+            "$CUSTOM_ROOT/patches/0013-split-k32-local-partial-reduce-control.patch"
+        )
+        VENDOR_NAME="paddle_gqa_split_k32_local_partial_reduce_increfa_aiv"
+        CACHE_NAMESPACE="paddle_gqa_split_k32_local_partial_reduce_increfa_aiv"
+        ;;
     split_k48_control)
         PATCH_PATHS+=("$CUSTOM_ROOT/patches/0010-force-split-k48-control.patch")
         VENDOR_NAME="paddle_gqa_split_k48_increfa_aiv"
