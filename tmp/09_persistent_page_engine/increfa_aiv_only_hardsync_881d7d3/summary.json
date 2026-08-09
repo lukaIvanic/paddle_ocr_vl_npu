@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "experiment": "increfa_fp16_mha_flashdecode_zero_cube_hardsync",
+  "date_utc": "2026-08-09",
+  "project_commit": "881d7d3",
+  "package_source_commit": "a63741c",
+  "recovered_upstream_commit": "afe72144f9f2ac8441929035795db88a111b30c5",
+  "hardware": {
+    "chip": "Ascend 910B2",
+    "physical_npu": 6,
+    "logical_device": "npu:0"
+  },
+  "configuration": {
+    "tiling_key": 11000000000100000,
+    "dtype": "fp16",
+    "layout": "BNSD",
+    "batch_size": 1,
+    "query_heads": 16,
+    "key_value_heads": 16,
+    "head_dim": 128,
+    "masked": true,
+    "actual_seq_lengths": null,
+    "inner_precise": 1,
+    "scale_value": 0.08838834764831843
+  },
+  "zero_cube_package": {
+    "task_declaration": "KERNEL_TYPE_MIX_AIV_1_0",
+    "core_type": "MIX",
+    "legacy_kernel_type_label": "MIX_AIC",
+    "task_ratio": "0:1",
+    "intercore_sync": 1,
+    "cross_core_sync": 1,
+    "elf_function": "mix_aiv_only",
+    "elf_has_mix_aic_function": false,
+    "kernel_json_sha256": "729f9de6f1973a8c834092c4cb8634919a515f9c6d83deed6c83ae31f28075db",
+    "kernel_object_sha256": "9af7837f31fabeb060c7b61dfb3a6a63d9c23ea505bd201e7892a36edcd3d8b0"
+  },
+  "bare_aivec_diagnostics": {
+    "block_dim_48": {
+      "passed": false,
+      "error_code": 507035,
+      "fault_pc_offset": "0x42cc",
+      "fault_class": "UB D-cache bus error"
+    },
+    "block_dim_1": {
+      "passed": false,
+      "error_code": 507035,
+      "fault_pc_offset": "0x42cc",
+      "fault_class": "UB D-cache bus error"
+    },
+    "inference": "Bare AIVEC lacks the hard-sync runtime contract required by this vector program."
+  },
+  "selection_proof": {
+    "method": "Rename the fixed-key object in a disposable install and explicitly point ASCEND_CUSTOM_OPP_PATH at that install.",
+    "negative_exit_code": 1,
+    "runtime_error_code": 161002,
+    "failure": "Failed to stat the renamed custom fixed-key object.",
+    "silent_stock_fallback": false
+  },
+  "correctness": {
+    "reference": "stock CANN IncreFA",
+    "kv_lengths": [128, 512, 2048],
+    "elements_per_case": 2048,
+    "all_cases_exact": true,
+    "max_abs": 0.0
+  },
+  "benchmark": {
+    "profiled": false,
+    "comparison": "validated mixed 1:2 control versus zero-cube hard-sync 0:1",
+    "order": ["mixed_1", "hardsync_1", "hardsync_2", "mixed_2", "hardsync_3", "mixed_3", "mixed_4", "hardsync_4"],
+    "fresh_processes_per_implementation": 4,
+    "warmup_calls_per_process_per_kv": 5000,
+    "blocks_per_process_per_kv": 9,
+    "calls_per_block": 2000,
+    "aggregation": "median of process block medians",
+    "results": [
+      {
+        "kv_length": 128,
+        "mixed_process_medians_us": [51.193111419677734, 49.69187927246094, 49.067020416259766, 52.9367790222168],
+        "hardsync_process_medians_us": [51.0011100769043, 48.73590087890625, 49.21358871459961, 49.29998016357422],
+        "mixed_median_of_medians_us": 50.442495346069336,
+        "hardsync_median_of_medians_us": 49.256784439086914,
+        "hardsync_over_mixed_latency_ratio": 0.9764938094587183,
+        "latency_reduction_percent": 2.35061905412817
+      },
+      {
+        "kv_length": 512,
+        "mixed_process_medians_us": [52.39221954345703, 50.330841064453125, 49.69142150878906, 53.79193115234375],
+        "hardsync_process_medians_us": [52.267879486083984, 50.0672607421875, 50.023399353027344, 49.80857849121094],
+        "mixed_median_of_medians_us": 51.36153030395508,
+        "hardsync_median_of_medians_us": 50.04533004760742,
+        "hardsync_over_mixed_latency_ratio": 0.9743738115169379,
+        "latency_reduction_percent": 2.56261884830621
+      },
+      {
+        "kv_length": 2048,
+        "mixed_process_medians_us": [51.733360290527344, 49.447601318359375, 49.496639251708984, 53.67654037475586],
+        "hardsync_process_medians_us": [52.11314010620117, 50.1697883605957, 50.790809631347656, 50.41242980957031],
+        "mixed_median_of_medians_us": 50.614999771118164,
+        "hardsync_median_of_medians_us": 50.601619720458984,
+        "hardsync_over_mixed_latency_ratio": 0.9997356504846452,
+        "latency_reduction_percent": 0.02643495153548
+      }
+    ],
+    "all_process_outputs_exact": true
+  },
+  "conclusion": "The zero-cube 0:1 launch is correct and removes a small fixed launch cost at KV128 and KV512. It does not materially change KV2048 latency."
+}
