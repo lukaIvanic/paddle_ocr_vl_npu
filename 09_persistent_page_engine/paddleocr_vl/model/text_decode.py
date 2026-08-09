@@ -510,13 +510,15 @@ def prepare_decode_weight_prefetch(
 def build_static_decode_bool_mask(
     cache_position: torch.Tensor,
     cache_length: int,
+    kv_positions: torch.Tensor | None = None,
 ) -> torch.Tensor:
     cache_position = cache_position.reshape(-1).to(dtype=torch.int64)
-    kv_positions = torch.arange(
-        int(cache_length),
-        device=cache_position.device,
-        dtype=torch.int64,
-    )
+    if kv_positions is None:
+        kv_positions = torch.arange(
+            int(cache_length),
+            device=cache_position.device,
+            dtype=torch.int64,
+        )
     return (
         kv_positions.unsqueeze(0) > cache_position.unsqueeze(1)
     ).view(cache_position.shape[0], 1, 1, int(cache_length))
@@ -1164,6 +1166,7 @@ def run_text_decode_transformer(
     value_caches: tuple[torch.Tensor, ...],
     cache_length: int,
     attention_mask: torch.Tensor | None = None,
+    static_kv_positions: torch.Tensor | None = None,
     optimization: str | DecodeOptimizationConfig = "baseline",
 ) -> torch.Tensor:
     """Execute the complete one-token transformer decode stage."""
@@ -1186,7 +1189,9 @@ def run_text_decode_transformer(
         )
     if attention_mask is None:
         attention_mask = build_static_decode_bool_mask(
-            cache_position, cache_length
+            cache_position,
+            cache_length,
+            kv_positions=static_kv_positions,
         )
     pse_shift: torch.Tensor | None = None
     actual_seq_lengths: list[int] | None = None
@@ -1493,6 +1498,8 @@ class TextDecodeStage(torch.nn.Module):
         self,
         model: LocalPaddleOCRVLForConditionalGeneration,
         optimization: str | DecodeOptimizationConfig = "baseline",
+        *,
+        cache_length: int | None = None,
     ):
         super().__init__()
         self.model = model
@@ -1500,6 +1507,20 @@ class TextDecodeStage(torch.nn.Module):
         self.optimization = resolve_decode_optimization(optimization)
         self._super_kernel_scope = None
         if self.optimization.super_kernel_scope:
+            if cache_length is None:
+                raise ValueError(
+                    "the Paddle decoder SuperKernel requires cache_length"
+                )
+            parameter = next(model.parameters())
+            self.register_buffer(
+                "_super_kernel_kv_positions",
+                torch.arange(
+                    int(cache_length),
+                    device=parameter.device,
+                    dtype=torch.int64,
+                ),
+                persistent=False,
+            )
             torchair, _CompilerConfig = import_torchair()
             scope_module = importlib.import_module(
                 f"{torchair.__name__}.scope"
@@ -1525,6 +1546,11 @@ class TextDecodeStage(torch.nn.Module):
             value_caches=value_caches,
             cache_length=int(key_caches[0].shape[2]),
             attention_mask=None,
+            static_kv_positions=(
+                self._super_kernel_kv_positions
+                if self.optimization.super_kernel_scope
+                else None
+            ),
             optimization=self.optimization,
         )
         return _linear_tokenwise(self.model.lm_head, hidden_states[:, -1:, :])
@@ -1781,6 +1807,7 @@ class TextDecodeRuntime:
         self.stage = TextDecodeStage(
             model,
             optimization=self.optimization,
+            cache_length=cache_length,
         ).eval()
         self.cache_num_key_value_heads = (
             int(model.config.text_config.num_attention_heads)
