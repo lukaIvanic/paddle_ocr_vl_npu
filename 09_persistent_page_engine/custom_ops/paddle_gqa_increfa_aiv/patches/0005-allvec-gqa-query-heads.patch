@@ -1,0 +1,115 @@
+diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
+--- a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
++++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
+@@ -2332,6 +2332,14 @@ ge::graphStatus IFATiling::SplitUnbalanced() {
+         gMax_ = antiQuantFlag_ ? 128U : 256U; // 伪量化场景下，g切32，非伪量化场景切64
+     }
+ 
++    // The all-vector kernel assigns one work item to each query head.  This
++    // exposes the G axis to the existing BN splitter instead of serializing a
++    // full GQA group on one vector core.
++    if (perfMode_ == IfaPerfMode::BMM_ALL_BY_VEC) {
++        groupSplitSize_ = 1U;
++        gOuter_ = nNumOfQInOneGroup_;
++    }
++
+     if (ropeFlag_ || gqaMtpFlag_) {
+         if (inputLayout_ == IfaLayout::BSH_BSND || (gqaKvNZFlag_ && inputLayout_ == IfaLayout::TND)) {
+             s1SplitSize_ = gMax_ / nNumOfQInOneGroup_;
+@@ -2586,7 +2594,7 @@ ge::graphStatus IFATiling::SplitBNS()
+     blockSplitBn2Range_ = 1U;
+     tailSplitedBatchRange_ = 1U;
+ 
+-    uint32_t bn = batchSize_ * numKvHeads_;
++    uint32_t bn = batchSize_ * numKvHeads_ * gOuter_;
+     kvSplitPart_ = coreNum_ / bn;
+     while (((maxActualseq_ / kvSplitPart_) < 512U) && (kvSplitPart_ > 1U)) { // 512, 经验值
+         kvSplitPart_--;
+diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
+--- a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
++++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
+@@ -195,5 +195,6 @@ protected:
+     uint32_t bIdx = 0U;
+     uint32_t n2Idx = 0U;
++    uint32_t gIdx = 0U;
+     uint32_t formerCoreNum = 0U;
+     uint32_t usedCoreNum = 0U;
+     uint64_t batchSize = 0U;
+@@ -492,21 +493,22 @@ template <typename IFAT>
+ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::InitAllZeroOutput(uint32_t bIdx)
+ {
+-    uint32_t copySize = gSize * headDim;
+-    matmul::InitOutput<OUT_T>(attentionOutGm[(bIdx * kvHeadNum + n2Idx) * copySize], copySize, 0);
++    uint32_t copySize = headDim;
++    uint64_t qHeadIndex = bIdx * qHeadNum + n2Idx * gSize + gIdx;
++    matmul::InitOutput<OUT_T>(attentionOutGm[qHeadIndex * headDim], copySize, 0);
+ 
+ #if (__CCE_AICORE__ > 200)
+     if (softmaxLseFlag) {
+         LocalTensor<T> softmaxlseOut = outputQue1.template AllocTensor<T>();
+         float minf = -3.40E+38;
+-        Duplicate(softmaxlseOut, minf, gSize);
++        Duplicate(softmaxlseOut, minf, 1U);
+         outputQue1.EnQue(softmaxlseOut);
+         outputQue1.DeQue();
+         DataCopyExtParams intriParams;
+-        intriParams.blockLen = sizeof(float) * gSize;
++        intriParams.blockLen = sizeof(float);
+         intriParams.srcStride = 0;
+         intriParams.blockCount = 1;
+         intriParams.dstStride = 0;
+-        DataCopyPad(softmaxLseGm[(bIdx * kvHeadNum + n2Idx) * gSize], softmaxlseOut, intriParams);
++        DataCopyPad(softmaxLseGm[qHeadIndex], softmaxlseOut, intriParams);
+         outputQue1.FreeTensor(softmaxlseOut);
+     }
+ #endif
+@@ -531,11 +533,18 @@ template <typename IFAT>
+ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::GetBN2id(const uint32_t bn2Indx)
+ {
++    uint32_t qHeadWorkIdx;
+     if constexpr (FLASH_DECODE) {
+-        bIdx = tmpBlockIdx / (kvHeadNum * splitKVNum);
+-        n2Idx = (tmpBlockIdx / splitKVNum) % kvHeadNum;
++        qHeadWorkIdx = tmpBlockIdx / splitKVNum;
++        bIdx = qHeadWorkIdx / qHeadNum;
++        uint32_t qHeadInBatch = qHeadWorkIdx % qHeadNum;
++        n2Idx = qHeadInBatch / gSize;
++        gIdx = qHeadInBatch % gSize;
+         s2Idx = tmpBlockIdx % splitKVNum;
+     } else {
+-        bIdx = (beforeBlockSplitBn2Nums + bn2Indx) / kvHeadNum;
+-        n2Idx = (beforeBlockSplitBn2Nums + bn2Indx) % kvHeadNum;
++        qHeadWorkIdx = beforeBlockSplitBn2Nums + bn2Indx;
++        bIdx = qHeadWorkIdx / qHeadNum;
++        uint32_t qHeadInBatch = qHeadWorkIdx % qHeadNum;
++        n2Idx = qHeadInBatch / gSize;
++        gIdx = qHeadInBatch % gSize;
+     }
+ }
+@@ -796,7 +805,7 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::CalculateBN2Offset()
+             tensorBCoreOffset += s2Idx * sInnerLoopSize * headDim * kvHeadNum;
+         }
+         // B,1,N2,G,D
+-        tensorACoreOffset = bIdx * qHeadNum * headDim + n2Idx * gSize * headDim;
++        tensorACoreOffset = bIdx * qHeadNum * headDim + (n2Idx * gSize + gIdx) * headDim;
+     } else {
+         // B,N2,S2,D
+         tensorBCoreOffset =
+@@ -811,6 +820,6 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::CalculateBN2Offset()
+             tensorBCoreOffset += s2Idx * sInnerLoopSize * headDim;
+         }
+         // B,N2,G,1,D
+-        tensorACoreOffset = bIdx * qHeadNum * headDim + n2Idx * gSize * headDim;
++        tensorACoreOffset = bIdx * qHeadNum * headDim + (n2Idx * gSize + gIdx) * headDim;
+     }
+ }
+@@ -862,7 +871,8 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::CalculateBN2Params()
+ 
+     if (pseShiftFlag) {
+         pseShiftCoreOffset = (pseShiftB != 1) ? (bIdx * qHeadNum * pseShiftS + n2Idx * gSize * pseShiftS) :
+-                                                (n2Idx * pseShiftS * gSize);
++                                                (n2Idx * pseShiftS * gSize);
++        pseShiftCoreOffset += gIdx * pseShiftS;
+ 
+         if constexpr (FLASH_DECODE) {
+             pseShiftCoreOffset += sInnerLoopSize * s2Idx ;

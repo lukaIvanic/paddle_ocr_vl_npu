@@ -197,7 +197,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     outputs: dict[str, torch.Tensor] = {}
     timings: dict[str, Any] = {}
     with torch.inference_mode():
-        for name, step in (("stock", stock_step), ("custom", custom_step)):
+        # Run the independent operator first.  An earlier GQA kernel left most
+        # output heads unwritten; running stock first let the NPU allocator reuse
+        # stock-filled memory and briefly hid that bug in the eager lane.
+        for name, step in (("custom", custom_step), ("stock", stock_step)):
             started = time.perf_counter()
             output = step(*inputs)
             torch.npu.synchronize()

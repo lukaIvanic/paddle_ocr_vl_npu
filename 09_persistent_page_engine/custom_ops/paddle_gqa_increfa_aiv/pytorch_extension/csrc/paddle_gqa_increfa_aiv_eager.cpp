@@ -55,6 +55,10 @@ at::Tensor paddle_gqa_incre_flash_attention_aiv_eager(
     check_contract(query, key, value, atten_mask, num_heads, num_key_value_heads,
                    inner_precise, vector_core_count);
     at::Tensor output = at_npu::native::OpPreparation::apply_tensor_without_format(query);
+    // Poison-protect the validation lane: the upstream all-vector GQA bug left
+    // most query heads unwritten, and allocator reuse could otherwise retain a
+    // preceding stock result and create a false exact match.
+    output.zero_();
     at::TensorList key_tensors = key;
     at::TensorList value_tensors = value;
     const c10::optional<at::Tensor> no_tensor = c10::nullopt;
@@ -105,4 +109,3 @@ TORCH_LIBRARY_IMPL(paddleocr_vl_npu, Meta, m)
     m.impl("paddle_gqa_incre_flash_attention_aiv_eager",
            &paddleocr_vl_npu::paddle_gqa_incre_flash_attention_aiv_meta);
 }
-
