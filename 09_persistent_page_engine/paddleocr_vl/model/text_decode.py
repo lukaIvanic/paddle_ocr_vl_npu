@@ -137,8 +137,8 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         add_rms_norm=True,
         attention="mha_repeat",
     ),
-    "combined_apply_gqa_aiv_b1_c16": DecodeOptimizationConfig(
-        name="combined_apply_gqa_aiv_b1_c16",
+    "combined_apply_gqa_aiv_b1": DecodeOptimizationConfig(
+        name="combined_apply_gqa_aiv_b1",
         hoist_mrope=True,
         packed_qkv=True,
         rms_norm="npu",
@@ -146,26 +146,6 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         add_rms_norm=True,
         attention="gqa_aiv",
         gqa_aiv_vector_core_count=16,
-    ),
-    "combined_apply_gqa_aiv_b1_c32": DecodeOptimizationConfig(
-        name="combined_apply_gqa_aiv_b1_c32",
-        hoist_mrope=True,
-        packed_qkv=True,
-        rms_norm="npu",
-        rotary="npu_apply",
-        add_rms_norm=True,
-        attention="gqa_aiv",
-        gqa_aiv_vector_core_count=32,
-    ),
-    "combined_apply_gqa_aiv_b1_c48": DecodeOptimizationConfig(
-        name="combined_apply_gqa_aiv_b1_c48",
-        hoist_mrope=True,
-        packed_qkv=True,
-        rms_norm="npu",
-        rotary="npu_apply",
-        add_rms_norm=True,
-        attention="gqa_aiv",
-        gqa_aiv_vector_core_count=48,
     ),
     "combined_apply_mha_cache": DecodeOptimizationConfig(
         name="combined_apply_mha_cache",

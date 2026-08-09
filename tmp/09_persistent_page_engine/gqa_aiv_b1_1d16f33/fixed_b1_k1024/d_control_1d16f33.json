@@ -1,0 +1,197 @@
+{
+  "schema_version": 1,
+  "kind": "text_decode_lab_result",
+  "configuration": {
+    "mode": "profile",
+    "corpus": null,
+    "corpus_sha256": null,
+    "batch_size": 1,
+    "cache_length": 1024,
+    "dtype": "fp16",
+    "backend": "torchair",
+    "decode_optimization": "combined_apply",
+    "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_text_decode_lab_gqa_aiv",
+    "synthetic_lm_head_size": null,
+    "active_slots": 1,
+    "profile_position": 768,
+    "tail_positions": [
+      64,
+      80,
+      113
+    ],
+    "tail_canary_value": 0.25,
+    "profile_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/text_decode_lab/npu_profiles",
+    "profile_metric": "pipe",
+    "warmup": 20,
+    "repeats": 200,
+    "overflow_policy": "error",
+    "allow_compile": true
+  },
+  "corpus_contract": {
+    "corpus_used": false,
+    "scope": "synthetic full-decoder throughput profile"
+  },
+  "result": {
+    "shape": {
+      "batch_size": 1,
+      "cache_length": 1024,
+      "active_slots": 1,
+      "initial_cache_position": 768
+    },
+    "warmup": 20,
+    "repeats": 200,
+    "device_s": {
+      "full_production_step": 0.2519314397573471,
+      "model_and_argmax": 0.24970044028758998,
+      "post_graph_state_update": 0.0022309994697571334
+    },
+    "latency_ms": {
+      "mean": 1.2596571987867355,
+      "median": 1.2580400109291077,
+      "p95": 1.2618050456047056,
+      "min": 1.2502599954605103,
+      "max": 1.5780800580978394
+    },
+    "throughput": {
+      "raw_physical_tok_per_s": 793.8667765826848,
+      "active_tok_per_s": 793.8667765826848,
+      "graph_calls_per_s": 793.8667765826848
+    },
+    "memory_bytes": {
+      "baseline_allocated": 1988188672,
+      "peak_delta": 624128
+    },
+    "host_wall_s": 0.25347963790409267
+  },
+  "setup": {
+    "total_s": 18.21665587485768,
+    "model_load_s": 10.385691161965951,
+    "lm_head_setup_s": 3.159092739224434e-05,
+    "weight_format_s": 6.284242175053805,
+    "runtime_setup_s": 0.25637690792791545,
+    "weight_format": {
+      "requested_mode": "decode_nz",
+      "mode": "decode_nz",
+      "effective_mode": "decode_nz",
+      "target_format": "FRACTAL_NZ",
+      "target_format_code": 29,
+      "target_count": 145,
+      "cast_count": 145,
+      "converted_count": 145,
+      "already_nz_count": 0,
+      "converted_modules_sample": [
+        "model.layers.0.self_attn.q_proj",
+        "model.layers.0.self_attn.k_proj",
+        "model.layers.0.self_attn.v_proj",
+        "model.layers.0.self_attn.o_proj",
+        "model.layers.0.self_attn.decode_qkv_proj",
+        "model.layers.0.mlp.gate_proj",
+        "model.layers.0.mlp.up_proj",
+        "model.layers.0.mlp.down_proj",
+        "model.layers.1.self_attn.q_proj",
+        "model.layers.1.self_attn.k_proj",
+        "model.layers.1.self_attn.v_proj",
+        "model.layers.1.self_attn.o_proj",
+        "model.layers.1.self_attn.decode_qkv_proj",
+        "model.layers.1.mlp.gate_proj",
+        "model.layers.1.mlp.up_proj",
+        "model.layers.1.mlp.down_proj"
+      ],
+      "before_formats_sample": {
+        "model.layers.0.self_attn.q_proj": 2,
+        "model.layers.0.self_attn.k_proj": 2,
+        "model.layers.0.self_attn.v_proj": 2,
+        "model.layers.0.self_attn.o_proj": 2,
+        "model.layers.0.self_attn.decode_qkv_proj": 2,
+        "model.layers.0.mlp.gate_proj": 2,
+        "model.layers.0.mlp.up_proj": 2,
+        "model.layers.0.mlp.down_proj": 2,
+        "model.layers.1.self_attn.q_proj": 2,
+        "model.layers.1.self_attn.k_proj": 2,
+        "model.layers.1.self_attn.v_proj": 2,
+        "model.layers.1.self_attn.o_proj": 2,
+        "model.layers.1.self_attn.decode_qkv_proj": 2,
+        "model.layers.1.mlp.gate_proj": 2,
+        "model.layers.1.mlp.up_proj": 2,
+        "model.layers.1.mlp.down_proj": 2
+      },
+      "after_formats_sample": {
+        "model.layers.0.self_attn.q_proj": 29,
+        "model.layers.0.self_attn.k_proj": 29,
+        "model.layers.0.self_attn.v_proj": 29,
+        "model.layers.0.self_attn.o_proj": 29,
+        "model.layers.0.self_attn.decode_qkv_proj": 29,
+        "model.layers.0.mlp.gate_proj": 29,
+        "model.layers.0.mlp.up_proj": 29,
+        "model.layers.0.mlp.down_proj": 29,
+        "model.layers.1.self_attn.q_proj": 29,
+        "model.layers.1.self_attn.k_proj": 29,
+        "model.layers.1.self_attn.v_proj": 29,
+        "model.layers.1.self_attn.o_proj": 29,
+        "model.layers.1.self_attn.decode_qkv_proj": 29,
+        "model.layers.1.mlp.gate_proj": 29,
+        "model.layers.1.mlp.up_proj": 29,
+        "model.layers.1.mlp.down_proj": 29
+      },
+      "all_after_are_nz": true,
+      "fallback_reason": null,
+      "failures_sample": []
+    },
+    "runtime_metadata": {
+      "backend": "torchair",
+      "enabled": true,
+      "boundary": "token_embedding_text_transformer_lm_head_static_step",
+      "linear_weight_format": "decode_nz",
+      "decode_attention": "increfa",
+      "decode_cache_update": "npu_scatter",
+      "decode_optimization": "combined_apply",
+      "decode_optimization_config": {
+        "hoist_mrope": true,
+        "packed_qkv": true,
+        "rms_norm": "npu",
+        "rotary": "npu_apply",
+        "rotary_factors": "mrope",
+        "packed_mlp": false,
+        "npu_swiglu": false,
+        "add_rms_norm": true,
+        "attention": "gqa",
+        "increfa_length_mode": "mask",
+        "stage_aware_weight_prefetch": false,
+        "post_scatter_kv_prefetch": false,
+        "vector_add_rms_norm": false,
+        "gqa_aiv_vector_core_count": 0
+      },
+      "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_text_decode_lab_gqa_aiv/decode_nz_increfa_npu_scatter_optcombined_apply_modeinference_dtypefloat16_bs1_cache1024_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_srcdae2872e9fea",
+      "torchair_ge_cache": true,
+      "compile_api": "torchair.inference.cache_compile",
+      "cache_key_fields": {
+        "batch_size": 1,
+        "cache_length": 1024,
+        "dtype": "torch.float16",
+        "model_config_hash": "6d2211febbe9",
+        "torch": "2.10.0+cpu",
+        "torch_npu": "2.10.0",
+        "torchair": "unknown",
+        "decode_source_hash": "dae2872e9fea",
+        "linear_weight_format": "decode_nz",
+        "decode_attention": "increfa",
+        "decode_cache_update": "npu_scatter",
+        "execution_mode": "inference",
+        "decode_optimization": "combined_apply"
+      },
+      "cache_num_key_value_heads": 2,
+      "cache_allocated_bytes": 18874368
+    },
+    "runtime_setup_detail_s": {
+      "compile_wrapper": 0.002094336086884141,
+      "compile_first_call": 0.22666580183431506
+    },
+    "lm_head": {
+      "original_output_features": 103424,
+      "effective_output_features": 103424,
+      "synthetic": false,
+      "divisible_by_1024": true
+    },
+    "effective_cache_root": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_text_decode_lab_gqa_aiv"
+  }
+}

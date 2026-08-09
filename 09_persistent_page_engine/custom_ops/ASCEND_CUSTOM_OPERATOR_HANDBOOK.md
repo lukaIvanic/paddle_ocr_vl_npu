@@ -824,10 +824,9 @@ baselines, and which explanation is inferred.
 - [ ] Runs are interleaved across fresh processes.
 - [ ] Commit, physical NPU, exact command, and artifacts are retained.
 
-## 18. Current next step: a separate GQA AIV operator
+## 18. Completed GQA AIV implementation
 
-The current MHA operator is a completed research lane, not the production
-replacement. The next operator should receive a new identity, provisionally:
+The separate GQA operator is now implemented under this identity:
 
 ```text
 PyTorch graph: paddleocr_vl::gqa_incre_flash_attention_aiv
@@ -838,25 +837,91 @@ kernel:        paddle_gqa_incre_flash_attention_aiv
 vendor:        paddle_gqa_increfa_aiv
 ```
 
-These are proposed names, not implemented interfaces.
+The implementation exposed every query head as one all-vector work item and
+fixed the non-split and FlashDecode workspace/output offsets. Two bugs are worth
+remembering:
 
-The GQA work must not reuse the MHA fixed key merely because Q, K, and V are
-FP16. It must first establish:
+1. The first GQA port computed one query head per KV group. An eager output
+   allocator reused stock-filled memory and briefly hid the unwritten heads.
+   Always run the candidate first, initialize output defensively, compare every
+   head, and retain output hashes.
+2. The FlashDecode port launched all 16 requested AIV blocks, but an internal
+   guard still used `batch * kvHeads * splits`. Only the first two blocks wrote
+   workspace. Runtime launch logs disproved the initial launch-count hypothesis;
+   changing the guard to `batch * queryHeads * splits` fixed KV2048.
 
-1. which upstream tiling path handles 16Q/2KV on 910B;
-2. whether that path already performs all matrix work on vector cores;
-3. how its G-axis split and UB allocation work;
-4. whether FlashDecode reduction still requires hard `SyncAll`;
-5. the correct launch core counts and workspace;
-6. exact eager parity at KV128, KV512, KV1280, and KV2048;
-7. one-shape-per-process TorchAir behavior;
-8. real 18-layer B1 generation without cache expansion.
+The recovered pipeline supports only one GQA query-head work item per AIV core.
+Requests below 16 timed out and are now rejected. For the real KV1536 cache,
+requests of 16, 32, or 48 all become the same 16-block non-split launch. At
+KV2048, the extra counts create real FlashDecode splits, but 16 had the best
+clean custom mean. The production-facing experimental preset therefore requests
+16 cores and is explicitly B1/TorchAir-only.
 
-The official design's non-GQA restriction is an important blocker, not a
-stopper. It means the next task is genuine GQA kernel/tiling development rather
-than packaging the existing MHA key under another attribute value.
+Correctness is complete for the narrow contract. Direct eager and TorchAir pass
+at KV128, KV512, masked KV1536, and KV2048 against stock tolerance and an
+independent CPU FP32 reference. A 374-token real OCR generation is token-,
+text-, and EOS-exact.
 
-## 19. Repository references
+The runtime is also proven AIV-only. The installed object has no `_mix_aic`
+function, metadata uses `taskRation: "0:1"`, and the profile has zero AIC time,
+cycles, MAC time, and cube utilization with nonzero AIV time and cycles. CANN
+may still label the task `MIX_AIC`; never use that label without the counters.
+
+Performance is a small experimental win, not yet a production decision. A
+same-device NPU6 ABBA sequence of four 200-step B1/KV1024 runs measured 795.31
+tok/s stock and 811.14 tok/s custom on average: 1.99% more throughput and 1.95%
+less step latency. A separate NPU3 pair had the opposite sign, so physical
+device and run order must remain part of the evidence. The matched full profile
+showed the custom attention kernels themselves were faster—16.282 us versus
+18.071 us average across 54 tasks. The next optimization target is still
+graph-level cadence or hard-sync scheduling, not more vector cores.
+
+### Build-time classification learned from GQA
+
+The final two-key AscendC object compiled in about 9 seconds. The fresh package
+command took about 4 minutes 53 seconds because the upstream wrapper rebuilt
+Abseil, protobuf, libprotoc, ONNX plugins, and package scaffolding. Isolated
+TorchAir first calls were 4.7 to 17.0 seconds. Classify these as three different
+events:
+
+- kernel compilation;
+- host/package construction;
+- TorchAir graph compile or cache load.
+
+Do not optimize or report them under one “compile time” number.
+
+## 19. AICPU research boundary
+
+A whole B1 GQA attention kernel is technically feasible on AI CPU, but it is
+not competitive. The independent direct `.aicpu` implementation used FP16
+storage, FP32 accumulation, one AI CPU task, and the same 16Q/2KV/D128 contract.
+It matched stock and an independent CPU reference.
+
+Measured on a physical Ascend 910B2:
+
+| KV | AICPU | Stock IncreFA | Slowdown |
+| ---: | ---: | ---: | ---: |
+| 128 | 1.541 ms | 51.486 us | 29.9x |
+| 512 | 6.889 ms | 51.915 us | 132.7x |
+| 2048 | 28.535 ms | 51.596 us | 553.1x |
+
+The KV2048 profile reported about 28.76 ms per AI CPU task, while host
+`LaunchKernelV2` averaged 7.28 us. Device execution, not dispatch, dominates.
+The achieved rate was below 0.7 GFLOP/s and the minimum tensor-byte rate below
+0.1 GB/s. Do not move QK, softmax, or AV to AI CPU.
+
+The realistic AI CPU lane is small branch-heavy metadata, state, scheduler, or
+tiling work, and only when it removes a host synchronization or overlaps on a
+separate stream. A classic GE AICPU package still needs separate integration
+work: its custom scheduler saw an empty `custSoPath`/`LD_LIBRARY_PATH`, while
+the direct `.aicpu` route bypassed that lookup and proved device execution.
+
+Huawei describes AI CPU as device-side Arm64 for non-matrix and complex-branch
+work. See [AI CPU programming](https://www.hiascend.com/document/detail/en/canncommercial/850/opdevg/Ascendcopdevg/atlas_ascendc_10_00049.html),
+[GE parallel streams](https://www.hiascend.com/document/detail/en/canncommercial/850/API/ascendgraphapi/atlasgeapi_07_0142.html),
+and [profiling fields](https://www.hiascend.com/document/detail/en/canncommercial/850/devaids/profiling/atlasprofiling_16_0071.html).
+
+## 20. Repository references
 
 - [Current separate MHA AIV operator](paddle_mha_increfa_aiv/README.md)
 - [Reproducible package builder](paddle_mha_increfa_aiv/build.sh)
@@ -866,8 +931,11 @@ than packaging the existing MHA key under another attribute value.
 - [AIV hard-sync result](../../tmp/09_persistent_page_engine/increfa_aiv_only_hardsync_881d7d3/README.md)
 - [Real B1 MHA-cache result](../../tmp/09_persistent_page_engine/increfa_real_forward_b1_mha_cache_5ca3482/README.md)
 - [Backend-control result](../../tmp/09_persistent_page_engine/paddle_mha_increfa_aiv_backend_controls_485d8fc/README.md)
+- [Current separate GQA AIV operator](paddle_gqa_increfa_aiv/README.md)
+- [GQA graph op and TorchAir converter](../paddleocr_vl/model/gqa_increfa_aiv.py)
+- [GQA eager/TorchAir comparison probe](../scripts/probes/compare_paddle_gqa_increfa_aiv.py)
 
-## 20. Official references
+## 21. Official references
 
 Verified while writing this handbook on 2026-08-09. Recheck them when changing
 CANN or torch-npu versions.
