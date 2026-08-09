@@ -70,6 +70,11 @@ separate cache namespace and vendor, disables FlashDecode for that package, and
 launches one unsplit AIV block per KV group. Never source the production and
 grouped packages in the same process.
 
+Setting `PADDLE_GQA_EXPERIMENT_VARIANT=grouped_half_control` applies patches
+0007 and 0008 in another private vendor. It emits two four-query-head work
+items per KV group, for four actual AIV blocks. This is a retained topology
+control, not a production preset.
+
 ```sh
 cd /workspace/repos/paddle_ocr_vl_npu
 source npu-setup
@@ -166,7 +171,7 @@ three full steps, the 54 custom attention tasks averaged 16.282 us versus
 with the small same-device ABBA gain. Graph-level cadence remains large enough
 to dilute the kernel improvement and make whole-process scheduler timing noisy.
 
-## Rejected two-block grouped experiment
+## Grouped-core topology sweep
 
 We tested the proposal to give one AIV block to each of the two KV groups. The
 separate `grouped_serial_control` package keeps the supported resource attribute
@@ -174,22 +179,30 @@ at 16, but its host tiler emits `Block Num=2`. Each block runs its eight query
 heads serially. FlashDecode is disabled only in this experimental package so
 KV2048 preserves the same two-block topology.
 
+We then tested the requested doubled-core control. The separate
+`grouped_half_control` package emits two work items per KV group. Its profile
+shows `Block Num=4`, and each block runs one contiguous four-head slice. It is
+still the existing per-head algorithm: it does not share one K/V load across
+the four heads.
+
 The control passed stock tolerance and the independent FP32 reference at
 KV128, KV512, KV1024, KV1536, and KV2048. The KV1024 pipe profile measured:
 
 | Package | Blocks | Task | Vector | Scalar | MTE2 |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Current query-head parallel | 16 | 21.78 us | 11.40 us | 7.98 us | 4.74 us |
+| Half-group control | 4 | 54.83 us | 45.45 us | 18.10 us | 17.93 us |
 | Grouped serial control | 2 | 99.96 us | 90.83 us | 31.06 us | 34.78 us |
 
-Both rows had zero AIC time and zero cube utilization. The grouped vector lane
-was 7.97 times slower, almost exactly the eight serialized query heads.
+All rows had zero AIC time and zero cube utilization. Doubling from two to four
+blocks reduced task time by 45.14%, but four blocks remained 2.52 times slower
+than the current 16-block kernel.
 
-This first control deliberately preserves the per-head K/V load functions; it
-does not claim that K/V was loaded once. The matched MemoryAccess profile
+These controls deliberately preserve the per-head K/V load functions; they do
+not claim that K/V was loaded once. The matched MemoryAccess profile
 measured 8,215 KiB GM-to-UB for grouped and 8,236 KiB for current-16, versus
-1,029 KiB of unique direct input. Both therefore still issue about eight times
-the unique bytes.
+1,029 KiB of unique direct input. The four-block control measured 8,218 KiB.
+All three therefore still issue about eight times the unique bytes.
 
 That profile gives the decision bound for a copy-only rewrite. Pipeline times
 overlap and must not be summed. With the current grouped vector algorithm, even
@@ -200,16 +213,22 @@ from the measured grouped full step gives this optimistic result:
 | B1/KV1024 TorchAir package | Mean step | Throughput |
 | --- | ---: | ---: |
 | Current 16-block | 1.3636 ms | 733.35 tok/s |
+| Half-group four-block | 1.8382 ms | 544.00 tok/s |
 | Grouped two-block | 2.6582 ms | 376.20 tok/s |
-| Grouped with copy-only ideal bound | at least 2.4939 ms | at most 400.98 tok/s |
+| Two-block copy-only ideal bound | at least 2.4939 ms | at most 400.98 tok/s |
 
-The measured grouped path lost 48.70% throughput. Even its copy-only upper bound
-remains 45.32% below current. We therefore reject the UB-resident shared-K/V
-rewrite for this serial vector algorithm. A genuinely different batched-head
-vector algorithm is a separate research question; this result does not bound
-that different algorithm.
+Four blocks improved throughput by 44.60% over two blocks, but remained 25.82%
+below current. The matched eager call boundary was almost flat at 173.30,
+171.55, and 170.32 us for 2, 4, and 16 blocks because ACLNN/eager overhead hid
+the task-level difference. The real compiled decoder exposed the accumulated
+18-layer cost.
 
-Retained evidence: [two-AIV-block GQA experiment](../../../tmp/09_persistent_page_engine/gqa_grouped_two_block_994dc8f/README.md).
+We therefore keep 16-way query-head parallelism. A genuinely different
+batched-head vector algorithm is a separate research question; this sweep does
+not bound that different algorithm.
+
+Retained evidence: [two-AIV-block GQA experiment](../../../tmp/09_persistent_page_engine/gqa_grouped_two_block_994dc8f/README.md)
+and [four-AIV-block GQA experiment](../../../tmp/09_persistent_page_engine/gqa_grouped_four_block_ca152b5/README.md).
 
 ## AIV-only proof
 
