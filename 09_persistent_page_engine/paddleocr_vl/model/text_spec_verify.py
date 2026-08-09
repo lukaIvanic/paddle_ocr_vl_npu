@@ -395,6 +395,16 @@ def spec_verify_source_hash() -> str:
     return digest.hexdigest()[:12]
 
 
+def bounded_spec_cache_component(shape_key: str, *, max_bytes: int = 240) -> str:
+    """Keep one cache path component below common filesystem limits."""
+
+    encoded = str(shape_key).encode("utf-8")
+    if len(encoded) <= int(max_bytes):
+        return str(shape_key)
+    digest = hashlib.sha1(encoded).hexdigest()[:20]
+    return f"text_spec_verify_key{digest}"
+
+
 def torchair_cache_dir_for_spec_shape(
     cache_root: Path,
     *,
@@ -435,7 +445,7 @@ def torchair_cache_dir_for_spec_shape(
             f"src{spec_verify_source_hash()}",
         ]
     )
-    return cache_root.expanduser().resolve() / shape_key
+    return cache_root.expanduser().resolve() / bounded_spec_cache_component(shape_key)
 
 
 class TextSpecVerifyRuntime:
