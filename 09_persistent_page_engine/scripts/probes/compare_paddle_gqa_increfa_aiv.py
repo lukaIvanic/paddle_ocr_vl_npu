@@ -213,6 +213,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     per_head_max_abs = difference.amax(dim=(0, 2, 3)).tolist()
     per_head_mean_abs = difference.mean(dim=(0, 2, 3)).tolist()
     per_head_custom_absmax = outputs["custom"].abs().amax(dim=(0, 2, 3)).tolist()
+    pairwise_head_mean_abs = (
+        outputs["custom"].transpose(0, 1)[:, None]
+        - outputs["stock"].transpose(0, 1)[None, :]
+    ).abs().mean(dim=(2, 3, 4))
+    pairwise_best_mean_abs, pairwise_best_stock_head = pairwise_head_mean_abs.min(dim=1)
     result = {
         "schema_version": 1,
         "kind": "separate_paddle_gqa_increfa_aiv_comparison",
@@ -251,6 +256,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             "per_query_head_max_abs": [float(value) for value in per_head_max_abs],
             "per_query_head_mean_abs": [float(value) for value in per_head_mean_abs],
             "per_query_head_custom_absmax": [float(value) for value in per_head_custom_absmax],
+            "custom_head_best_stock_head": [int(value) for value in pairwise_best_stock_head.tolist()],
+            "custom_head_best_stock_mean_abs": [float(value) for value in pairwise_best_mean_abs.tolist()],
             "custom_zero_fraction": float((outputs["custom"] == 0).float().mean()),
             "stock_sample": outputs["stock"].reshape(-1)[:16].tolist(),
             "custom_sample": outputs["custom"].reshape(-1)[:16].tolist(),
