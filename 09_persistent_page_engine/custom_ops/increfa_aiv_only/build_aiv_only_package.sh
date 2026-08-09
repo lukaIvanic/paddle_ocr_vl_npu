@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+
+# The CANN and ATB set_env scripts sourced by npu-setup can contain harmless
+# nonzero intermediate commands. Source them before enabling errexit so Bash
+# does not terminate this runner in the middle of npu-setup.
+source npu-setup
 set -euo pipefail
 
 PROJECT_ROOT="$(git rev-parse --show-toplevel)"
@@ -54,7 +59,6 @@ done
 git -C "$SOURCE_ROOT" apply "$PATCH_PATH"
 PATCH_APPLIED=1
 
-source npu-setup
 cd "$SOURCE_ROOT"
 PYTHONPATH="$PYTHON_SITE" \
 PATH="$PROJECT_ROOT/.runtime_cache/increfa_bin:$PATH" \
