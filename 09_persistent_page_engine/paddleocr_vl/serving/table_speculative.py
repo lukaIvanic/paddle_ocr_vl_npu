@@ -639,6 +639,9 @@ class TableSpeculativeDecodeRuntime:
                 device=logits.device,
                 dtype=torch.bool,
             ),
+            legacy_policy_mask=torch.ones(
+                (1,), device=logits.device, dtype=torch.bool
+            ),
         ).view(-1, 1)
         end.record()
         self.host_decode_target.copy_(sampled, non_blocking=True)

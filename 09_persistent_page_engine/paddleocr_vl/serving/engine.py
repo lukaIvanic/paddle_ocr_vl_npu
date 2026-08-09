@@ -2534,10 +2534,18 @@ class ContinuousRecognizer:
                             mode=self.token_selection,
                             preferred_token_id=self.math_open_token_id,
                             alternate_preferred_token_id=self.math_slash_token_id,
-                            policy_mask=packed_policy_mask,
+                            policy_mask=(
+                                torch.zeros_like(packed_policy_mask)
+                                if self.token_selection
+                                == TOKEN_SELECTION_PREFER_MATH_OPEN_ADJUSTERS_COMBINED
+                                else packed_policy_mask
+                            ),
+                            legacy_policy_mask=packed_policy_mask,
                         )
-                        if self.token_selection
-                        == TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP
+                        if self.token_selection in (
+                            TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP,
+                            TOKEN_SELECTION_PREFER_MATH_OPEN_ADJUSTERS_COMBINED,
+                        )
                         else torch.argmax(logits.float(), dim=-1)
                     ),
                 )
@@ -2648,10 +2656,18 @@ class ContinuousRecognizer:
                         mode=self.token_selection,
                         preferred_token_id=self.math_open_token_id,
                         alternate_preferred_token_id=self.math_slash_token_id,
-                        policy_mask=prefill_policy_mask,
+                        policy_mask=(
+                            torch.zeros_like(prefill_policy_mask)
+                            if self.token_selection
+                            == TOKEN_SELECTION_PREFER_MATH_OPEN_ADJUSTERS_COMBINED
+                            else prefill_policy_mask
+                        ),
+                        legacy_policy_mask=prefill_policy_mask,
                     ).unsqueeze(-1)
-                    if self.token_selection
-                    == TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP
+                    if self.token_selection in (
+                        TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP,
+                        TOKEN_SELECTION_PREFER_MATH_OPEN_ADJUSTERS_COMBINED,
+                    )
                     else torch.argmax(
                         logits[:, -1, :].float(),
                         dim=-1,

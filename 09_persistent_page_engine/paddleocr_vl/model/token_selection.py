@@ -38,6 +38,7 @@ def select_token_ids(
     preferred_token_id: int | None = None,
     alternate_preferred_token_id: int | None = None,
     policy_mask: torch.Tensor | None = None,
+    legacy_policy_mask: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Select one token ID per logits row without decoding or re-encoding text.
 
@@ -106,7 +107,23 @@ def select_token_ids(
                 (probabilities[..., int(preferred_token_id)] >= 0.3 * top_probability)
                 & (probabilities[..., int(preferred_token_id)] > 0.10)
             )
-            selected = torch.where(legacy_primary, preferred, selected)
+            variant_selected = selected
+            if policy_mask is not None:
+                variant_selected = torch.where(
+                    policy_mask.to(device=greedy.device, dtype=torch.bool),
+                    variant_selected,
+                    greedy,
+                )
+            legacy_mask = (
+                torch.ones_like(greedy, dtype=torch.bool)
+                if legacy_policy_mask is None
+                else legacy_policy_mask.to(device=greedy.device, dtype=torch.bool)
+            )
+            return torch.where(
+                legacy_mask & legacy_primary,
+                preferred,
+                variant_selected,
+            )
         if policy_mask is not None:
             selected = torch.where(
                 policy_mask.to(device=selected.device, dtype=torch.bool),

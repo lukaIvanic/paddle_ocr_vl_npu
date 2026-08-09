@@ -368,6 +368,7 @@ class TextSpecVerifyStage(nn.Module):
             preferred_token_id=self.preferred_token_id,
             alternate_preferred_token_id=self.alternate_preferred_token_id,
             policy_mask=cell_start_mask,
+            legacy_policy_mask=torch.ones_like(input_ids, dtype=torch.bool),
         )
 
 

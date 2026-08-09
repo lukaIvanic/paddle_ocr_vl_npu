@@ -129,6 +129,18 @@ class TokenSelectionTest(unittest.TestCase):
         )
         self.assertEqual(selected.tolist(), [2])
 
+    def test_combined_policy_applies_legacy_outside_variant_mask(self) -> None:
+        logits = torch.tensor([[2.0, 1.8, 1.6, -10.0]])
+        selected = select_token_ids(
+            logits,
+            mode="prefer_math_open_adjusters_combined",
+            preferred_token_id=2,
+            alternate_preferred_token_id=3,
+            policy_mask=torch.tensor([False]),
+            legacy_policy_mask=torch.tensor([True]),
+        )
+        self.assertEqual(selected.tolist(), [2])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -620,6 +620,7 @@ class DecodeArena:
                 preferred_token_id=self.preferred_token_id,
                 alternate_preferred_token_id=self.alternate_preferred_token_id,
                 policy_mask=policy_mask,
+                legacy_policy_mask=self.token_selection_policy_mask,
             )
             greedy = torch.argmax(logits[:, -1, :].float(), dim=-1)
             if self.preferred_token_id is None:
