@@ -1,0 +1,25 @@
+diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
+--- a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
++++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
+@@ -2348,0 +2349,15 @@
++    // Experimental B1 GQA three-way split-K control.  The production
++    // SplitBNS heuristic keeps at least 512 S2 tokens per partition, so a
++    // 48-core request at KV1024 otherwise falls back to the same two-way,
++    // 32-block launch.  This private package evaluates three disjoint S2
++    // partitions per query head without changing the retained packages.
++    const uint32_t queryHeadWorkItems = batchSize_ * numKvHeads_ * gOuter_;
++    if (perfMode_ == IfaPerfMode::BMM_ALL_BY_VEC &&
++        coreNum_ == queryHeadWorkItems * 3U) {
++        OP_LOGI(ifaContext_->opName, "Force experimental three-way GQA split-K.");
++        splitKVFlag_ = true;
++        kvSplit_ += 2U;
++        return SplitBNS();
++    }
++
+@@ -2619,2 +2634,5 @@ ge::graphStatus IFATiling::SplitBNS()
+-    while (((maxActualseq_ / kvSplitPart_) < 512U) && (kvSplitPart_ > 1U)) { // 512, 经验值
++    // The isolated split-k48 control permits three roughly 341-token
++    // partitions at KV1024.  The production and split-k32 packages retain
++    // the upstream 512-token heuristic.
++    while (((maxActualseq_ / kvSplitPart_) < 256U) && (kvSplitPart_ > 1U)) {
+         kvSplitPart_--;

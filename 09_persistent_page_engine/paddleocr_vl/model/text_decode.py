@@ -157,6 +157,16 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         attention="gqa_aiv",
         gqa_aiv_vector_core_count=32,
     ),
+    "combined_apply_gqa_aiv_b1_split_k48_control": DecodeOptimizationConfig(
+        name="combined_apply_gqa_aiv_b1_split_k48_control",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        add_rms_norm=True,
+        attention="gqa_aiv",
+        gqa_aiv_vector_core_count=48,
+    ),
     "combined_apply_mha_cache": DecodeOptimizationConfig(
         name="combined_apply_mha_cache",
         hoist_mrope=True,

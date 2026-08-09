@@ -74,6 +74,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "production graph operator package."
         ),
     )
+    parser.add_argument(
+        "--experimental-split-k48-control",
+        action="store_true",
+        help=(
+            "Identify the separately packaged forced three-way split-K "
+            "research variant. It requires vector_core_count=48 and does "
+            "not change the production graph operator package."
+        ),
+    )
     parser.add_argument("--warmup", type=int, default=20)
     parser.add_argument("--blocks", type=int, default=7)
     parser.add_argument("--repeats-per-block", type=int, default=200)
@@ -97,6 +106,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         int(args.experimental_grouped_serial_control)
         + int(args.experimental_grouped_half_control)
         + int(args.experimental_split_k32_control)
+        + int(args.experimental_split_k48_control)
         > 1
     ):
         parser.error("select at most one experimental control")
@@ -120,6 +130,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     if args.experimental_split_k32_control and args.vector_core_count != 32:
         parser.error(
             "--experimental-split-k32-control requires --vector-core-count 32"
+        )
+    if args.experimental_split_k48_control and args.vector_core_count != 48:
+        parser.error(
+            "--experimental-split-k48-control requires --vector-core-count 48"
         )
     if args.warmup < 0 or args.blocks <= 0 or args.repeats_per_block <= 0:
         parser.error("invalid timing counts")
@@ -423,7 +437,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                 else (
                     "split_k32_control"
                     if args.experimental_split_k32_control
-                    else "production"
+                    else (
+                        "split_k48_control"
+                        if args.experimental_split_k48_control
+                        else "production"
+                    )
                 )
             )
         ),
