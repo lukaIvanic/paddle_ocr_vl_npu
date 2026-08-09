@@ -126,11 +126,11 @@ if [[ ! -s "$KERNEL_OBJECT" || ! -s "$PACKAGE_PATH" ]]; then
 fi
 
 symbols="$(readelf -Ws "$KERNEL_OBJECT")"
-if [[ "$(grep -c '_mix_aiv$' <<<"$symbols")" != "2" ]]; then
+if [[ "$(awk '$4 == "FUNC" && $8 ~ /_mix_aiv$/ { count += 1 } END { print count + 0 }' <<<"$symbols")" != "2" ]]; then
     echo "ERROR: $KERNEL_OBJECT does not contain both MIX_AIV functions" >&2
     exit 3
 fi
-if grep -q '_mix_aic$' <<<"$symbols"; then
+if awk '$4 == "FUNC" && $8 ~ /_mix_aic$/ { found = 1 } END { exit !found }' <<<"$symbols"; then
     echo "ERROR: $KERNEL_OBJECT still contains a cube function" >&2
     exit 3
 fi
