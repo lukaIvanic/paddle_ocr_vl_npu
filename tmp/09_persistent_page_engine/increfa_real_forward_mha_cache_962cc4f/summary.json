@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "experiment": "increfa_zero_cube_real_forward_mha_cache",
+  "date_utc": "2026-08-09",
+  "project_commit": "962cc4fd92ff16fe4c2551b9ae29c337213e2afa",
+  "hardware": {
+    "chip": "Ascend 910B2",
+    "physical_npu": 6,
+    "logical_device": "npu:0"
+  },
+  "boundary": {
+    "custom_key": "FP16 MHA",
+    "decode_optimization": "combined_apply_mha_cache",
+    "production_default": "combined_apply GQA",
+    "production_gqa_result": false,
+    "reason": "The fixed custom package does not cover the production GQA key."
+  },
+  "configuration": {
+    "dtype": "fp16",
+    "layout": "BNSD",
+    "batch_size": 16,
+    "cache_length": 4096,
+    "query_heads": 16,
+    "stored_key_value_heads": 16,
+    "head_dim": 128,
+    "control_task_ratio": "1:2",
+    "candidate_task_ratio": "0:1",
+    "candidate_source_commit": "a63741c"
+  },
+  "real_generation": {
+    "script": "09_persistent_page_engine/scripts/text_decode_real_generation.py",
+    "warmup_processes_per_implementation": 1,
+    "measured_processes_per_implementation": 4,
+    "order": [
+      "mixed_1",
+      "hardsync_1",
+      "hardsync_2",
+      "mixed_2",
+      "hardsync_3",
+      "mixed_3",
+      "mixed_4",
+      "hardsync_4"
+    ],
+    "graph_calls_per_process": 374,
+    "effective_tokens_per_process": 5968,
+    "generated_tokens_per_request_including_eos": 374,
+    "request_count": 16,
+    "token_sha256": "6dfe54351979fbfa7903999f941b761a32c9a00c29128b0f75d0270da3c93f56",
+    "all_token_ids_exact": true,
+    "all_text_exact": true,
+    "all_stop_reasons_exact": true,
+    "mixed": {
+      "model_and_argmax_device_s": [
+        3.0321577053070046,
+        3.057428503036496,
+        3.0744470090866085,
+        3.030324240684512
+      ],
+      "continuous_decode_wall_s": [
+        3.0792700520250946,
+        3.0930945437867194,
+        3.1207168211694807,
+        3.0678515827748924
+      ],
+      "run_wall_s": [
+        5.426803281996399,
+        5.416997225023806,
+        5.482901856070384,
+        5.36011799890548
+      ],
+      "effective_decode_tok_per_s": [
+        1938.1216649300115,
+        1929.4592892377868,
+        1912.3811425361905,
+        1945.3353068018707
+      ],
+      "median_model_and_argmax_device_s": 3.04479310417175,
+      "median_run_wall_s": 5.421900253510103,
+      "median_effective_decode_tok_per_s": 1933.790477083899
+    },
+    "zero_cube_hardsync": {
+      "model_and_argmax_device_s": [
+        3.113053660392761,
+        3.091861687660215,
+        3.092474319458008,
+        3.124045190811158
+      ],
+      "continuous_decode_wall_s": [
+        3.148754307301715,
+        3.13076438033022,
+        3.1322248335927725,
+        3.164768129121512
+      ],
+      "run_wall_s": [
+        5.493246241007,
+        5.502132541965693,
+        5.504543873015791,
+        5.548583372030407
+      ],
+      "effective_decode_tok_per_s": [
+        1895.3527069929446,
+        1906.2437395466088,
+        1905.3549208836625,
+        1885.7621653490992
+      ],
+      "median_model_and_argmax_device_s": 3.1027639899253847,
+      "median_run_wall_s": 5.503338207490742,
+      "median_effective_decode_tok_per_s": 1900.3538139383036
+    },
+    "candidate_device_latency_change_percent": 1.9039351368146162,
+    "candidate_run_wall_change_percent": 1.5020186682319858,
+    "candidate_effective_throughput_change_percent": -1.729073730677222
+  },
+  "steady_full_decoder_profile": {
+    "script": "09_persistent_page_engine/scripts/text_decode_lab.py",
+    "mode": "profile",
+    "initial_cache_position": 1279,
+    "warmup_steps_per_process": 20,
+    "measured_steps_per_process": 100,
+    "processes_per_implementation": 2,
+    "order": [
+      "mixed_1",
+      "hardsync_1",
+      "hardsync_2",
+      "mixed_2"
+    ],
+    "mixed_process_mean_ms": [
+      8.117699213027954,
+      8.047960586547852
+    ],
+    "zero_cube_process_mean_ms": [
+      8.22140736579895,
+      8.263600587844849
+    ],
+    "mixed_mean_of_process_means_ms": 8.082829899787903,
+    "zero_cube_mean_of_process_means_ms": 8.242503976821899,
+    "candidate_latency_change_percent": 1.9754724398961532,
+    "candidate_throughput_change_percent": -1.9383861229760102
+  },
+  "conclusion": "The zero-cube hard-sync package is exact but consistently slower in the real B16 full-decoder lane. Reject it as a forward-pass performance optimization."
+}
