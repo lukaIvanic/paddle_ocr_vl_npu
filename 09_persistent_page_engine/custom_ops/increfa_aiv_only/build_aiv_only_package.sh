@@ -91,19 +91,29 @@ kernels = metadata.get("kernelList", [])
 if len(kernels) != 1:
     raise SystemExit(f"expected one fixed-key kernel, got {len(kernels)}")
 kernel = kernels[0]
+kernel_name = kernel.get("kernelName", "")
+tiling_key = kernel.get("tilingKey")
+if tiling_key is None and kernel_name.rsplit("_", 1)[-1].isdigit():
+    tiling_key = int(kernel_name.rsplit("_", 1)[-1])
 summary = {
     "coreType": metadata.get("coreType"),
+    "core_type": metadata.get("core_type"),
     "intercoreSync": metadata.get("intercoreSync"),
-    "tilingKey": kernel.get("tilingKey"),
+    "magic": metadata.get("magic"),
+    "tilingKey": tiling_key,
     "kernelType": kernel.get("kernelType"),
     "crossCoreSync": kernel.get("crossCoreSync"),
     "taskRation": kernel.get("taskRation"),
 }
 print("AIV_ONLY_KERNEL_METADATA=" + json.dumps(summary, sort_keys=True))
-if kernel.get("tilingKey") != 11000000000100000:
+if tiling_key != 11000000000100000:
     raise SystemExit("unexpected tiling key")
-if metadata.get("coreType") == "MIX" or kernel.get("kernelType", "").startswith("MIX"):
-    raise SystemExit("compiler metadata still describes a mixed-core kernel")
+if metadata.get("coreType") != "VectorCore" or metadata.get("core_type") != "AIV":
+    raise SystemExit("compiler metadata does not describe an AIV-only kernel")
+if metadata.get("magic") != "RT_DEV_BINARY_MAGIC_ELF_AIVEC":
+    raise SystemExit("kernel binary is not tagged as AIVEC")
+if kernel.get("kernelType", "").startswith("MIX"):
+    raise SystemExit("per-kernel metadata still describes a mixed-core kernel")
 if metadata.get("intercoreSync") not in (0, None):
     raise SystemExit("AIV-only metadata unexpectedly enables inter-core-type synchronization")
 if kernel.get("crossCoreSync") not in (0, None):
