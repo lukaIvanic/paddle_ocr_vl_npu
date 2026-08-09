@@ -64,6 +64,13 @@
     "four_vs_sixteen_throughput_percent": -25.819793496635324
   },
   "torchair_compile_first_call_s": 24.027341491077095,
+  "four_block_copy_free_ideal_bound": {
+    "scope": "subtract every microsecond above measured vector time across 18 attention layers",
+    "mean_step_ms_at_least": 1.6692384981012345,
+    "throughput_tok_per_s_at_most": 599.075567174795,
+    "throughput_vs_sixteen_block_percent": -18.30995406310738,
+    "caveat": "pipeline times overlap; this is more generous than a real copy-only rewrite"
+  },
   "decision": "retain_sixteen_block_production",
   "remote_artifacts": {
     "four_block_build": ".runtime_cache/paddle_gqa_grouped_half_increfa_aiv/builds/grouped_half_v2/",

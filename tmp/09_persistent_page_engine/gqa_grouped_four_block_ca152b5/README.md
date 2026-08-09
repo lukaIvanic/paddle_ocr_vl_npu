@@ -63,6 +63,12 @@ The MemoryAccess profile shows why this is not K/V reuse:
 Unique direct Q/K/V/mask input is 1,029 KiB. All variants request about eight
 times those unique bytes because K/V is still loaded once per query head.
 
+Even if true sharing removed every microsecond above the four-block 45.45 us
+vector lane, subtracting that best-case gap across 18 layers gives 1.6692 ms,
+or at most 599.08 tok/s. This intentionally overstates the benefit because
+scalar and transfer pipelines overlap. The bound is still 18.31% below the
+current 16-block throughput.
+
 The clean eager ACLNN call boundary measured 173.30, 171.55, and 170.32 us for
 2, 4, and 16 blocks. Fixed call overhead hides the task-level difference. The
 compiled 18-layer B1 decoder exposes it.

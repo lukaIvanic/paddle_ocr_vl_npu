@@ -214,6 +214,7 @@ from the measured grouped full step gives this optimistic result:
 | --- | ---: | ---: |
 | Current 16-block | 1.3636 ms | 733.35 tok/s |
 | Half-group four-block | 1.8382 ms | 544.00 tok/s |
+| Four-block copy-free ideal bound | at least 1.6692 ms | at most 599.08 tok/s |
 | Grouped two-block | 2.6582 ms | 376.20 tok/s |
 | Two-block copy-only ideal bound | at least 2.4939 ms | at most 400.98 tok/s |
 
@@ -222,6 +223,11 @@ below current. The matched eager call boundary was almost flat at 173.30,
 171.55, and 170.32 us for 2, 4, and 16 blocks because ACLNN/eager overhead hid
 the task-level difference. The real compiled decoder exposed the accumulated
 18-layer cost.
+
+Even deleting every microsecond above the four-block 45.45 us vector lane gives
+an optimistic ceiling of 599.08 tok/s. This is still 18.31% below current and
+is more generous than a real copy-only rewrite because scalar and transfer
+pipelines overlap.
 
 We therefore keep 16-way query-head parallelism. A genuinely different
 batched-head vector algorithm is a separate research question; this sweep does

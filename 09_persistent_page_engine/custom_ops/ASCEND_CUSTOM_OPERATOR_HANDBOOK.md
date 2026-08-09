@@ -1037,6 +1037,7 @@ The matched real B1/KV1024 TorchAir decoder confirmed the impact:
 | --- | ---: | ---: |
 | Current 16-block GQA AIV | 1.3636 ms | 733.35 tok/s |
 | Half-group four-block control | 1.8382 ms | 544.00 tok/s |
+| Four-block copy-free ideal bound | at least 1.6692 ms | at most 599.08 tok/s |
 | Grouped two-block control | 2.6582 ms | 376.20 tok/s |
 
 Four blocks improved full-decoder throughput by 44.60% over two blocks, but
@@ -1044,6 +1045,11 @@ remained 25.82% below current. At the eager ACLNN boundary, the same variants
 measured 173.30, 171.55, and 170.32 us for 2, 4, and 16 blocks. Fixed eager
 overhead masks most of the kernel difference, so the compiled 18-layer forward
 pass is the decision metric.
+
+For the four-block control, subtracting every microsecond above its 45.45 us
+vector lane from all 18 attention layers gives an optimistic ceiling of 599.08
+tok/s. That remains 18.31% below current. This is deliberately more generous
+than a real copy-only rewrite because pipeline counters overlap.
 
 Across 18 attention layers, even subtracting the full 9.13 us gap between task
 duration and vector time gives an optimistic copy-only upper bound of 400.98
