@@ -63,6 +63,17 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     compare_parser.add_argument("--atol", type=float, default=0.0)
     compare_parser.add_argument("--rtol", type=float, default=0.0)
 
+    aggregate_parser = subparsers.add_parser("aggregate")
+    aggregate_parser.add_argument(
+        "--stock", type=Path, action="append", required=True
+    )
+    aggregate_parser.add_argument(
+        "--custom", type=Path, action="append", required=True
+    )
+    aggregate_parser.add_argument("--output", type=Path, required=True)
+    aggregate_parser.add_argument("--atol", type=float, default=0.0)
+    aggregate_parser.add_argument("--rtol", type=float, default=0.0)
+
     args = parser.parse_args(argv)
     if args.command == "run":
         if args.warmup < 0:
@@ -360,12 +371,148 @@ def compare_command(args: argparse.Namespace) -> int:
     return 0 if result["all_cases_allclose"] else 1
 
 
+def load_runs(paths: Sequence[Path]) -> list[tuple[Path, dict[str, Any]]]:
+    return [
+        (path, json.loads(path.read_text(encoding="utf-8"))) for path in paths
+    ]
+
+
+def indexed_cases(run: dict[str, Any]) -> dict[int, dict[str, Any]]:
+    return {case["kv_length"]: case for case in run["cases"]}
+
+
+def process_timing_summary(
+    runs: Sequence[tuple[Path, dict[str, Any]]],
+    *,
+    kv_length: int,
+    metric: str,
+) -> dict[str, Any]:
+    process_rows = []
+    all_blocks = []
+    for path, run in runs:
+        timing = indexed_cases(run)[kv_length]["timing"]
+        block_values = timing[metric]
+        all_blocks.extend(block_values)
+        process_rows.append(
+            {
+                "path": str(path),
+                "label": run["label"],
+                "block_summary": timing_summary(block_values),
+            }
+        )
+    process_medians = [row["block_summary"]["median"] for row in process_rows]
+    process_means = [row["block_summary"]["mean"] for row in process_rows]
+    return {
+        "processes": process_rows,
+        "process_medians_us_per_call": process_medians,
+        "process_means_us_per_call": process_means,
+        "median_of_process_medians_us_per_call": float(
+            statistics.median(process_medians)
+        ),
+        "median_of_process_means_us_per_call": float(
+            statistics.median(process_means)
+        ),
+        "all_blocks_summary_us_per_call": timing_summary(all_blocks),
+    }
+
+
+def aggregate_command(args: argparse.Namespace) -> int:
+    stock_runs = load_runs(args.stock)
+    custom_runs = load_runs(args.custom)
+    if len(stock_runs) != len(custom_runs):
+        raise ValueError("the number of stock and custom processes must match")
+
+    all_runs = stock_runs + custom_runs
+    reference_cases = indexed_cases(stock_runs[0][1])
+    reference_lengths = set(reference_cases)
+    output_checks = []
+    for implementation, runs in (("stock", stock_runs), ("custom", custom_runs)):
+        for path, run in runs:
+            cases = indexed_cases(run)
+            if set(cases) != reference_lengths:
+                raise ValueError(f"KV-length set differs in {path}")
+            for kv_length in sorted(reference_lengths):
+                check = compare_vectors(
+                    reference_cases[kv_length]["output_values_fp32"],
+                    cases[kv_length]["output_values_fp32"],
+                    atol=args.atol,
+                    rtol=args.rtol,
+                )
+                check.update(
+                    {
+                        "implementation": implementation,
+                        "path": str(path),
+                        "label": run["label"],
+                        "kv_length": kv_length,
+                    }
+                )
+                output_checks.append(check)
+
+    configurations = [run["configuration"] for _, run in all_runs]
+    configuration_match = all(item == configurations[0] for item in configurations)
+    cases = []
+    for kv_length in sorted(reference_lengths):
+        case: dict[str, Any] = {"kv_length": kv_length, "timing": {}}
+        for metric in (
+            "npu_event_us_per_call",
+            "host_wall_us_per_call",
+        ):
+            stock_summary = process_timing_summary(
+                stock_runs, kv_length=kv_length, metric=metric
+            )
+            custom_summary = process_timing_summary(
+                custom_runs, kv_length=kv_length, metric=metric
+            )
+            stock_median = stock_summary[
+                "median_of_process_medians_us_per_call"
+            ]
+            custom_median = custom_summary[
+                "median_of_process_medians_us_per_call"
+            ]
+            case["timing"][metric] = {
+                "stock": stock_summary,
+                "custom": custom_summary,
+                "custom_over_stock_latency_ratio": custom_median / stock_median,
+                "stock_over_custom_speed_ratio": stock_median / custom_median,
+            }
+        cases.append(case)
+
+    all_cases_allclose = all(item["allclose"] for item in output_checks)
+    all_cases_exact = all(
+        item["exact_count"] == item["element_count"] for item in output_checks
+    )
+    result = {
+        "schema_version": 1,
+        "kind": "custom_increfa_reproduction_aggregate",
+        "aggregation_policy": (
+            "median of each process block medians; all processes retained"
+        ),
+        "stock_processes": [str(path) for path, _ in stock_runs],
+        "custom_processes": [str(path) for path, _ in custom_runs],
+        "process_count_per_implementation": len(stock_runs),
+        "configuration_match": configuration_match,
+        "configuration": configurations[0],
+        "atol": args.atol,
+        "rtol": args.rtol,
+        "all_cases_allclose": all_cases_allclose,
+        "all_cases_exact": all_cases_exact,
+        "output_checks": output_checks,
+        "cases": cases,
+    }
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(result, indent=2), flush=True)
+    return 0 if configuration_match and all_cases_allclose else 1
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     if args.command == "run":
         return run_command(args)
     if args.command == "compare":
         return compare_command(args)
+    if args.command == "aggregate":
+        return aggregate_command(args)
     raise AssertionError(args.command)
 
 
