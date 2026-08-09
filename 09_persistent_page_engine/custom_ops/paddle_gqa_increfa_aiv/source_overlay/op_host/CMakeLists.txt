@@ -1,3 +1,5 @@
+add_op_to_compiled_list()
+
 if(BUILD_OPEN_PROJECT)
     set(
         paddle_gqa_incre_flash_attention_aiv_depends
@@ -24,4 +26,3 @@ if(NOT BUILD_OPS_RTY_KERNEL)
         ACLNNTYPE aclnn_inner
     )
 endif()
-
