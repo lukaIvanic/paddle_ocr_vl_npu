@@ -12,6 +12,8 @@ PATCH_PATH="$PROJECT_ROOT/09_persistent_page_engine/custom_ops/increfa_aiv_only/
 EXPECTED_SOURCE_COMMIT="afe72144f9f2ac8441929035795db88a111b30c5"
 ENTRY_REL="attention/incre_flash_attention/op_kernel/incre_flash_attention_arch32.h"
 EXPECTED_ENTRY_SHA256="20cb2397d84cf5d5386ebc09b6aa79eacfd3f32d956309c1b4e7f3e2690ef63b"
+HOST_TILER_REL="attention/incre_flash_attention/op_host/incre_flash_attention_tiling.cpp"
+EXPECTED_HOST_TILER_SHA256="c84dbe37632ed428c080918ce4ca124d43640fbcfd05e69c212b9453f2b46a74"
 TILING_KEY="11000000000100000"
 VENDOR_NAME="paddle_increfa_aiv_only"
 RUN_ID="${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
@@ -20,6 +22,7 @@ PRESERVE_ROOT="$PROJECT_ROOT/.runtime_cache/increfa_build_preserved/$RUN_ID"
 PYTHON_BIN="/usr/local/python3.12.13/bin/python3"
 PYTHON_SITE="/usr/local/python3.12.13/lib/python3.12/site-packages"
 ENTRY_PATH="$SOURCE_ROOT/$ENTRY_REL"
+HOST_TILER_PATH="$SOURCE_ROOT/$HOST_TILER_REL"
 PATCH_APPLIED=0
 
 restore_source() {
@@ -45,6 +48,10 @@ if [[ -n "$(git -C "$SOURCE_ROOT" status --short --untracked-files=no)" ]]; then
 fi
 if [[ "$(sha256sum "$ENTRY_PATH" | awk '{print $1}')" != "$EXPECTED_ENTRY_SHA256" ]]; then
     echo "ERROR: pristine entry-file hash differs; inspect before patching" >&2
+    exit 2
+fi
+if [[ "$(sha256sum "$HOST_TILER_PATH" | awk '{print $1}')" != "$EXPECTED_HOST_TILER_SHA256" ]]; then
+    echo "ERROR: pristine host-tiler hash differs; inspect before patching" >&2
     exit 2
 fi
 
@@ -79,7 +86,7 @@ fi
 
 cp -p "$KERNEL_JSON" "$RUN_ROOT/kernel_metadata.json"
 cp -p "$PACKAGE_PATH" "$RUN_ROOT/"
-sha256sum "$ENTRY_PATH" "$KERNEL_JSON" "$PACKAGE_PATH" | tee "$RUN_ROOT/sha256.txt"
+sha256sum "$ENTRY_PATH" "$HOST_TILER_PATH" "$KERNEL_JSON" "$PACKAGE_PATH" | tee "$RUN_ROOT/sha256.txt"
 
 "$PYTHON_BIN" - "$KERNEL_JSON" <<'PY'
 import json
@@ -126,6 +133,10 @@ restore_source
 trap - EXIT
 if [[ "$(sha256sum "$ENTRY_PATH" | awk '{print $1}')" != "$EXPECTED_ENTRY_SHA256" ]]; then
     echo "ERROR: source restoration hash check failed" >&2
+    exit 4
+fi
+if [[ "$(sha256sum "$HOST_TILER_PATH" | awk '{print $1}')" != "$EXPECTED_HOST_TILER_SHA256" ]]; then
+    echo "ERROR: host-tiler restoration hash check failed" >&2
     exit 4
 fi
 
