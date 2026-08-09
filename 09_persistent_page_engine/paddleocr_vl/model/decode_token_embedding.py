@@ -52,8 +52,11 @@ def register_decode_token_embedding_converter() -> None:
     ge_module = importlib.import_module(f"{torchair.__name__}.ge")
     ge_attr = importlib.import_module(f"{torchair.__name__}.ge.attr")
     register_converter = converter_module.register_fx_node_ge_converter
-    ge_custom_op = ge_module.custom_op
     ge_const = ge_module.Const
+    compat_ir = importlib.import_module(
+        f"{torchair.__name__}._ge_concrete_graph.compat_ir"
+    )
+    ge_op = compat_ir.ge_op
     op = torch.ops.paddleocr_vl.decode_token_embedding.default
 
     @register_converter(op)
@@ -63,8 +66,8 @@ def register_decode_token_embedding_converter() -> None:
         meta_outputs: Any = None,
     ) -> Any:
         del meta_outputs
-        return ge_custom_op(
-            GE_OP_NAME,
+        return ge_op(
+            op_type=GE_OP_NAME,
             inputs={
                 "x": weight,
                 "indices": input_ids,
