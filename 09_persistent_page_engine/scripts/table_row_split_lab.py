@@ -793,6 +793,107 @@ def uniform_eight_proposals(image: Image.Image) -> tuple[SplitProposal, SplitPro
     return uniform_proposals(image, rows=8)
 
 
+def adaptive_max_snapped_proposal(
+    image: Image.Image,
+    *,
+    max_rows: int = 32,
+    minimum_rows: int = 2,
+) -> SplitProposal:
+    """Use the maximum selected natural-row count, then snap every cut.
+
+    This is intentionally different from the older adaptive row-count policy.
+    It does not divide an estimated row-work score by a target number of rows
+    per band, and it does not round the result to a power of two.  A table can
+    therefore produce U3, U13, U27, and so on.  The recognizer's fixed active
+    decode batch is independent from this request count.
+
+    The image-only ``selected`` proposal chooses ruled, whitespace, or row-edge
+    evidence according to the established detector contract.  We retain all of
+    those natural bands up to ``max_rows``.  When there are more, grouping uses
+    only existing natural boundaries.  Every retained interior boundary then
+    passes through the reviewed snap routine.  Boundaries that still cross ink
+    after snapping are removed, unless doing so would leave fewer than
+    ``minimum_rows`` bands; in that case a snapped uniform fallback supplies the
+    requested minimum.
+    """
+
+    if max_rows < 1:
+        raise ValueError("max_rows must be positive")
+    if minimum_rows < 1:
+        raise ValueError("minimum_rows must be positive")
+    minimum_rows = min(int(minimum_rows), int(max_rows), max(1, image.height))
+    max_rows = min(int(max_rows), max(1, image.height))
+
+    proposals = {proposal.name: proposal for proposal in analyze(image)}
+    selected = proposals["selected"]
+    detected_rows = max(1, len(selected.boundaries) - 1)
+    if detected_rows > max_rows:
+        bounded = group_natural_rows(selected, rows=max_rows)
+        cap_mode = "grouped_at_existing_natural_boundaries"
+    else:
+        bounded = selected
+        cap_mode = "all_selected_natural_boundaries"
+
+    if len(bounded.boundaries) - 1 < minimum_rows:
+        bounded = uniform_split(image.height, rows=minimum_rows)
+        cap_mode = "snapped_uniform_minimum_fallback"
+
+    snapped = snap_uniform_boundaries(image, bounded)
+    details = list(snapped.diagnostics.get("boundary_details", []))
+    safe_boundaries = [0]
+    removed_ink_crossings: list[int] = []
+    for boundary, detail in zip(snapped.boundaries[1:-1], details):
+        if detail.get("new_kind") == "ink_crossing":
+            removed_ink_crossings.append(int(boundary))
+            continue
+        safe_boundaries.append(int(boundary))
+    safe_boundaries.append(image.height)
+
+    if len(safe_boundaries) - 1 < minimum_rows:
+        fallback = snap_uniform_boundaries(
+            image,
+            uniform_split(image.height, rows=minimum_rows),
+        )
+        final_boundaries = fallback.boundaries
+        fallback_details = fallback.diagnostics.get("boundary_details", [])
+        fallback_used = True
+    else:
+        final_boundaries = tuple(safe_boundaries)
+        fallback_details = []
+        fallback_used = False
+
+    diagnostics = {
+        "source": selected.name,
+        "selected_source": selected.diagnostics.get("selected_source"),
+        "selection_reason": selected.diagnostics.get("selection_reason"),
+        "detected_natural_rows": detected_rows,
+        "max_rows": max_rows,
+        "minimum_rows": minimum_rows,
+        "cap_mode": cap_mode,
+        "rows_before_snap": len(bounded.boundaries) - 1,
+        "rows_after_snap_safety": len(final_boundaries) - 1,
+        "removed_ink_crossing_count": len(removed_ink_crossings),
+        "removed_ink_crossing_y": removed_ink_crossings,
+        "snapped_changed_boundaries": snapped.diagnostics.get(
+            "changed_boundaries", 0
+        ),
+        "snap_ink_crossings_before": snapped.diagnostics.get(
+            "ink_crossings_before", 0
+        ),
+        "snap_ink_crossings_after": snapped.diagnostics.get(
+            "ink_crossings_after", 0
+        ),
+        "snap_boundary_details": details,
+        "minimum_fallback_used": fallback_used,
+        "minimum_fallback_boundary_details": fallback_details,
+    }
+    return SplitProposal(
+        name=f"adaptive_max_{max_rows}_snapped",
+        boundaries=tuple(int(value) for value in final_boundaries),
+        diagnostics=diagnostics,
+    )
+
+
 def analyze(image: Image.Image) -> tuple[SplitProposal, ...]:
     max_detection_dimension = 1800
     scale = min(1.0, max_detection_dimension / max(image.size))
