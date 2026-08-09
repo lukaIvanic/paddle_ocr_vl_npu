@@ -123,10 +123,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--row-overlap-px", type=int, default=3)
     parser.add_argument(
         "--resize-full-table-before-split",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
+        default=True,
         help=(
-            "Apply the recognizer pixel budget once to the full row-draft table, "
-            "then crop and pad rows without independently resizing each row."
+            "Apply the recognizer pixel budget once to the full row-draft table "
+            "before boundary analysis, then crop and pad rows without independently "
+            "resizing each row (default: enabled)."
         ),
     )
     parser.add_argument("--min-pixels", type=int, default=28224)
