@@ -12,6 +12,7 @@
 #include <torch/library.h>
 
 #include "npu_cpp_extension.h"
+#include "op_plugin/utils/op_api_common.h"
 
 namespace paddleocr_vl_npu {
 namespace {
