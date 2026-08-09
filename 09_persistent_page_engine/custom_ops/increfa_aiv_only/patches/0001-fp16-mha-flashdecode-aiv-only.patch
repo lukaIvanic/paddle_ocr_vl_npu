@@ -1,27 +1,21 @@
 diff --git a/attention/incre_flash_attention/op_kernel/incre_flash_attention_arch32.h b/attention/incre_flash_attention/op_kernel/incre_flash_attention_arch32.h
 --- a/attention/incre_flash_attention/op_kernel/incre_flash_attention_arch32.h
 +++ b/attention/incre_flash_attention/op_kernel/incre_flash_attention_arch32.h
-@@ -213,7 +213,11 @@ inline __aicore__ void incre_flash_attention_FIAS_arch32(
+@@ -213,7 +213,7 @@ inline __aicore__ void incre_flash_attention_FIAS_arch32(
      __gm__ uint8_t *dequantScaleQuery, __gm__ uint8_t *attentionOut, __gm__ uint8_t *softmaxLse,
      __gm__ uint8_t *workspace, __gm__ uint8_t *tiling)
  {
-+#if TILING_KEY_VAR == QF16_KVF16_OUTF16_ANTIPERCHANNEL_FLASHDECODING_VALL_TILING
+-    KERNEL_TASK_TYPE_DEFAULT(KERNEL_TYPE_MIX_AIC_1_2);
 +    KERNEL_TASK_TYPE_DEFAULT(KERNEL_TYPE_AIV_ONLY);
-+#else
-     KERNEL_TASK_TYPE_DEFAULT(KERNEL_TYPE_MIX_AIC_1_2);
-+#endif
      TPipe tPipe;
  
      /*
-@@ -221,7 +225,11 @@ inline __aicore__ void incre_flash_attention_FIAS_arch32(
+@@ -221,7 +221,7 @@ inline __aicore__ void incre_flash_attention_FIAS_arch32(
      **/
      __gm__ uint8_t *user = GetUserWorkspace(workspace);
  #if (__CCE_AICORE__ > 200)
-+#if TILING_KEY_VAR == QF16_KVF16_OUTF16_ANTIPERCHANNEL_FLASHDECODING_VALL_TILING
+-    KERNEL_TASK_TYPE_DEFAULT(KERNEL_TYPE_MIX_AIC_1_2);
 +    KERNEL_TASK_TYPE_DEFAULT(KERNEL_TYPE_AIV_ONLY);
-+#else
-     KERNEL_TASK_TYPE_DEFAULT(KERNEL_TYPE_MIX_AIC_1_2);
-+#endif
  #endif
  
  #if (ORIG_DTYPE_QUERY == DT_FLOAT16) && (ORIG_DTYPE_ATTENTION_OUT == DT_FLOAT16) && (ORIG_DTYPE_KEY == DT_FLOAT16)

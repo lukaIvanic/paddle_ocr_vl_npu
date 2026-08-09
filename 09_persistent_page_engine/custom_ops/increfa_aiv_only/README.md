@@ -25,8 +25,14 @@ crossCoreSync=1
 ```
 
 The patch changes the two default task-type declarations to
-`KERNEL_TYPE_AIV_ONLY` only when the compiler specializes the selected key.
-All other tiling keys retain the upstream mixed task type.
+`KERNEL_TYPE_AIV_ONLY` while the build is restricted to the single selected
+tiling key. The generated package therefore contains no other key whose task
+type could be affected.
+
+The task-type extractor does not reliably resolve a preprocessor-conditioned
+`KERNEL_TASK_TYPE_DEFAULT`: an earlier guarded attempt compiled successfully but
+still emitted `MIX_AIC` metadata. The fixed-key build uses an unconditional
+default and rejects mixed metadata before reporting success.
 
 ## Important boundaries
 

@@ -102,8 +102,14 @@ summary = {
 print("AIV_ONLY_KERNEL_METADATA=" + json.dumps(summary, sort_keys=True))
 if kernel.get("tilingKey") != 11000000000100000:
     raise SystemExit("unexpected tiling key")
-if metadata.get("coreType") == "MIX" or kernel.get("kernelType") == "MIX_AIC":
+if metadata.get("coreType") == "MIX" or kernel.get("kernelType", "").startswith("MIX"):
     raise SystemExit("compiler metadata still describes a mixed-core kernel")
+if metadata.get("intercoreSync") not in (0, None):
+    raise SystemExit("AIV-only metadata unexpectedly enables inter-core-type synchronization")
+if kernel.get("crossCoreSync") not in (0, None):
+    raise SystemExit("AIV-only kernel unexpectedly enables cross-core-type synchronization")
+if kernel.get("taskRation") not in (None, ""):
+    raise SystemExit("AIV-only kernel unexpectedly has a mixed-core task ratio")
 PY
 
 restore_source
