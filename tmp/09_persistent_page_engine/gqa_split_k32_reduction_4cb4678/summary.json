@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "kind": "gqa_split_k32_reduction_optimization_summary",
+  "repository_commit": "4cb4678",
+  "environment": {
+    "device": "Ascend910B2",
+    "physical_npu": 6,
+    "cann": "9.0.0",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "dtype": "fp16",
+    "shape": "B1_16Q_2KV_D128_KV1024_valid769"
+  },
+  "direct_pipe_us": {
+    "current": {"task": 22.63, "vector": 6.18, "scalar": 8.56, "mte2": 4.19, "mte3": 0.37},
+    "pairwise_sync": {"task": 26.14, "aiv": 22.225, "vector": 6.244, "scalar": 7.684, "mte2": 5.010, "mte3": 0.646},
+    "two_way_reduce": {"task": 22.507, "aiv": 19.834, "vector": 6.125, "scalar": 6.107, "mte2": 4.987, "mte3": 0.445},
+    "local_partial_reduce": {"task": 20.900, "aiv": 18.349, "vector": 6.107, "scalar": 6.842, "mte2": 3.268, "mte3": 0.398}
+  },
+  "correctness": {
+    "required_checks_passed": true,
+    "stock_fp16_max_abs": 0.0001220703125,
+    "independent_fp32_custom_max_abs": 0.00006432831287384033,
+    "custom_output_sha256": "528b43dcb991fe89715c61668d4c60aef22f8810ca8943a0ca57e05174b4158f"
+  },
+  "compiled_attention": {
+    "calls": 54,
+    "steps": 3,
+    "current_avg_task_us": 13.380,
+    "local_partial_avg_task_us": 13.319,
+    "local_partial_total_time_us": 719.24,
+    "task_change_percent": -0.456,
+    "estimated_attention_saving_us_per_token": 1.098,
+    "actual_blocks": 32,
+    "aic_time_us": 0,
+    "cube_utilization_percent": 0
+  },
+  "warm_b1_baba": {
+    "current": {
+      "mean_latency_ms": 1.16987274736166,
+      "mean_tok_per_s": 854.8051345326916
+    },
+    "local_partial": {
+      "mean_latency_ms": 1.1850825020670892,
+      "mean_tok_per_s": 843.8231621443448
+    },
+    "candidate_latency_change_percent": 1.30013,
+    "candidate_throughput_change_percent": -1.28474,
+    "peak_allocation_delta_bytes": 624128
+  },
+  "packages": {
+    "pairwise_sync": {
+      "commit": "a117a80",
+      "json_sha256": "9156840c39bd447985a599c7e3f024bf117475f7c09e827b95140c1e61ea9510",
+      "object_sha256": "1a3d05a332bd4eda6206c3f2b75afbd25afde099d077a685a89b4d0a500871bc",
+      "package_sha256": "b813d5e63feeab8a11fc956b759ac927afa11ec25303883167f02b40669f2534"
+    },
+    "two_way_reduce": {
+      "commit": "66c7923",
+      "json_sha256": "778f614832801228fcbc8631cc10ff6d42050527731b8a9b2c304f4db2e81956",
+      "object_sha256": "afaac4c15dc4de6af9aaabec79e4e7cf3b3c35d813b02ee87a2ae01bc565fe29",
+      "package_sha256": "28a829e53a4114a842ae62560449504d33ee18a9063a4e61123306e261d69b8b"
+    },
+    "local_partial_reduce": {
+      "commit": "4cb4678",
+      "json_sha256": "7d13a7848c6b5cd1ba31ee6188705f680f6d1592fdcdb668ca7a2ce7cb6349b2",
+      "object_sha256": "ff0667de9cf68ba4926234a9bd05220bd75c91d319763cd9570f42df8ab68ad6",
+      "package_sha256": "9559c4d05324966d33f3a9fe906d20201a2720c75d5677c157536606e0b91302"
+    }
+  },
+  "remote_artifacts": {
+    "pairwise_root": ".runtime_cache/paddle_gqa_split_k32_pairwise_sync_increfa_aiv/",
+    "two_way_root": ".runtime_cache/paddle_gqa_split_k32_two_way_reduce_increfa_aiv/",
+    "local_partial_root": ".runtime_cache/paddle_gqa_split_k32_local_partial_reduce_increfa_aiv/",
+    "local_partial_eager_result": ".runtime_cache/paddle_gqa_split_k32_local_partial_reduce_increfa_aiv/results/eager_kv1024_v769_pipe.json",
+    "local_partial_torchair_result": ".runtime_cache/paddle_gqa_split_k32_local_partial_reduce_increfa_aiv/results/torchair_kv1024_v769.json",
+    "local_partial_full_profile": ".runtime_cache/paddle_gqa_split_k32_local_partial_reduce_increfa_aiv/real_b1_4cb4678/profile_local_pipe/b1_k1024_p768_pipe_20260809_212917/",
+    "full_b1_abba": ".runtime_cache/paddle_gqa_split_k32_local_partial_reduce_increfa_aiv/real_b1_4cb4678/abba/",
+    "full_b1_baba": ".runtime_cache/paddle_gqa_split_k32_local_partial_reduce_increfa_aiv/real_b1_4cb4678/baba200/"
+  },
+  "decision": "retain_current_split_k32; local_partial_is_direct_only_win_without_end_to_end_speedup"
+}

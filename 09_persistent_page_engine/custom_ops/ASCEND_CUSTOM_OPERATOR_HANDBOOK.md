@@ -1223,7 +1223,54 @@ known-stalling topology.
 
 Retained evidence: [forced 48-core experiment](../../tmp/09_persistent_page_engine/gqa_split_k48_eeac988/README.md).
 
-## 24. Repository references
+## 24. Gate direct-kernel wins in the compiled graph
+
+The split-K32 reduction experiments show why an eager task improvement is not
+enough. Three separately named controls were measured at B1/KV1024:
+
+| Control | Direct task | Vector | Scalar | MTE2 | Full-graph task |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Current | 22.63 us | 6.18 us | 8.56 us | 4.19 us | 13.380 us |
+| Pairwise signal | 26.14 us | 6.24 us | 7.68 us | 5.01 us | gated out |
+| Two-way algebra | 22.51 us | 6.13 us | 6.11 us | 4.99 us | gated out |
+| Local partial in UB | 20.90 us | 6.11 us | 6.84 us | 3.27 us | 13.319 us |
+
+The local-partial control is a valid direct optimization. The even worker of
+each pair is also the correct query-head reducer. It retains partition 0 in
+`bmm2ResUb`, scales it in place, and loads only partition 1. This removes one
+512-byte GM reload and the generic two-row accumulation path per query head.
+The direct task fell by 7.64%.
+
+The real graph changed by only 0.061 us per attention call. Across 18 layers,
+that is about 1.10 us per token. The static graph has better scheduling and
+cache locality than the isolated ACLNN boundary, so the workspace traffic is
+mostly hidden. The warm-cache full B1 sequence did not improve: current
+averaged 854.81 tok/s and the control averaged 843.82 tok/s.
+
+Apply this gate to future micro-optimizations:
+
+1. pass candidate-first eager parity and independent reference checks;
+2. prove actual blocks and zero AIC execution;
+3. compare direct pipeline counters;
+4. profile the same operator inside the compiled production graph;
+5. multiply the compiled per-call delta by the real layer count;
+6. run a reverse-order warm-cache B1 sequence;
+7. promote only if the real graph and B1 distribution agree.
+
+Do not multiply the eager delta by layer count when a compiled per-call result
+exists. Here that would predict about 31 us per token, while the compiled
+profile showed only about 1 us.
+
+The pairwise synchronization control adds another rule. `IBSet`/`IBWait` flags
+live in GM workspace, and arbitrary workspace is not guaranteed to start at
+zero. A safe per-call initialization required a balanced `SyncAll()` before
+compute, so the pairwise control moved the global rendezvous instead of
+removing it and became 15.5% slower. Do not omit initialization unless an
+external owner provides a race-free generation protocol.
+
+Retained evidence: [split-K32 reduction controls](../../tmp/09_persistent_page_engine/gqa_split_k32_reduction_4cb4678/README.md).
+
+## 25. Repository references
 
 - [Current separate MHA AIV operator](paddle_mha_increfa_aiv/README.md)
 - [Reproducible package builder](paddle_mha_increfa_aiv/build.sh)
@@ -1242,8 +1289,9 @@ Retained evidence: [forced 48-core experiment](../../tmp/09_persistent_page_engi
 - [Forced 32-AIV-block split-K experiment](../../tmp/09_persistent_page_engine/gqa_split_k32_8a1041f/README.md)
 - [Lower-KV and split-K bottleneck experiment](../../tmp/09_persistent_page_engine/gqa_split_k32_lower_kv_eeac988/README.md)
 - [Forced 48-AIV-block split-K experiment](../../tmp/09_persistent_page_engine/gqa_split_k48_eeac988/README.md)
+- [Split-K32 reduction controls](../../tmp/09_persistent_page_engine/gqa_split_k32_reduction_4cb4678/README.md)
 
-## 25. Official references
+## 26. Official references
 
 Verified while writing this handbook on 2026-08-09. Recheck them when changing
 CANN or torch-npu versions.

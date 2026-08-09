@@ -89,6 +89,17 @@ KV1024, for 32 actual AIV blocks. Use the matching
 `combined_apply_gqa_aiv_b1_split_k32_control` model preset. Never source it and
 the retained package in one process.
 
+The reduction experiments are also separate packages:
+
+- `split_k32_pairwise_sync_control` applies patches 0009 and 0011;
+- `split_k32_two_way_reduce_control` applies patches 0009 and 0012;
+- `split_k32_local_partial_reduce_control` applies patches 0009, 0012, and
+  0013.
+
+Use only the matching `combined_apply_gqa_aiv_b1_*` preset and package in one
+process. These variants are research controls. None replaces the current
+split-K32 package.
+
 ```sh
 cd /workspace/repos/paddle_ocr_vl_npu
 source npu-setup
@@ -360,6 +371,48 @@ KV768. The opposite small differences are process cadence noise; both lanes
 launched 16 blocks.
 
 Retained evidence: [lower-KV and bottleneck experiment](../../../tmp/09_persistent_page_engine/gqa_split_k32_lower_kv_eeac988/README.md).
+
+## Split-K reduction controls
+
+Three independent packages tested the reduction target identified above.
+
+| Control | Direct task | Direct vector | Direct scalar | Direct MTE2 | Full-graph task |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Current split-K32 | 22.63 us | 6.18 us | 8.56 us | 4.19 us | 13.380 us |
+| Pairwise `IBSet`/`IBWait` | 26.14 us | 6.24 us | 7.68 us | 5.01 us | not run |
+| Specialized two-way algebra | 22.51 us | 6.13 us | 6.11 us | 4.99 us | not run |
+| UB-resident local partial | 20.90 us | 6.11 us | 6.84 us | 3.27 us | 13.319 us |
+
+The safe pairwise control needed a balanced initialization `SyncAll()` because
+operator workspace is not guaranteed to start at zero. It then used one
+producer signal and one reducer wait per `(2q, 2q+1)` pair. This moved the
+global rendezvous to the start of the call but did not remove it. The task was
+15.5% slower, so it did not enter the full decoder.
+
+The specialized two-way control removed the generic N-way log-sum-exp combine.
+It cut scalar-pipeline work but did not materially reduce task time because
+MTE2 increased.
+
+The strongest control remapped reduction to even worker blocks. Worker `2q`
+already holds query head `q`, partition 0 in UB after `SyncAll()`. It scales
+that vector in place and loads only partition 1. This reduced the isolated task
+by 7.64%, passed eager and TorchAir correctness, and stayed AIV-only.
+
+It was not an end-to-end win. In the real compiled graph, 54 attention calls
+averaged 13.319 us versus 13.380 us for the current package. The saving is only
+about 1.10 us across all 18 layers. A warm-cache B1 reverse-order sequence
+measured 843.82 tok/s for the control and 854.81 tok/s for current. Keep the
+current split-K32 package as the best B1 implementation.
+
+This result changes the bottleneck conclusion: the eager boundary made the GM
+workspace combine look more expensive than it is inside TorchAir. In the hot
+static graph, that traffic is cached or overlapped. Copy-only reduction edits
+now have a very small end-to-end ceiling. A material gain needs a different
+main-vector topology, synchronization initialized outside the hot call without
+a stale-flag race, attention fusion, or optimization of the larger
+non-attention part of the decoder.
+
+Retained evidence: [split-K32 reduction controls](../../../tmp/09_persistent_page_engine/gqa_split_k32_reduction_4cb4678/README.md).
 
 ## Forced 48-core split-K control
 
