@@ -37,6 +37,14 @@ case "$EXPERIMENT_VARIANT" in
         VENDOR_NAME="paddle_gqa_grouped_serial_increfa_aiv"
         CACHE_NAMESPACE="paddle_gqa_grouped_serial_increfa_aiv"
         ;;
+    grouped_half_control)
+        PATCH_PATHS+=(
+            "$CUSTOM_ROOT/patches/0007-grouped-serial-control.patch"
+            "$CUSTOM_ROOT/patches/0008-grouped-half-control.patch"
+        )
+        VENDOR_NAME="paddle_gqa_grouped_half_increfa_aiv"
+        CACHE_NAMESPACE="paddle_gqa_grouped_half_increfa_aiv"
+        ;;
     *)
         echo "ERROR: unsupported PADDLE_GQA_EXPERIMENT_VARIANT=$EXPERIMENT_VARIANT" >&2
         exit 2

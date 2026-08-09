@@ -55,6 +55,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "not change the production graph op."
         ),
     )
+    parser.add_argument(
+        "--experimental-grouped-half-control",
+        action="store_true",
+        help=(
+            "Allow the separately packaged four-core half-group research "
+            "variant. Eager-only; the supported 16-core resource attribute is "
+            "retained while grouped tiling launches four AIV blocks. This does "
+            "not change the production graph op."
+        ),
+    )
     parser.add_argument("--warmup", type=int, default=20)
     parser.add_argument("--blocks", type=int, default=7)
     parser.add_argument("--repeats-per-block", type=int, default=200)
@@ -74,12 +84,26 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         and not 1 <= args.valid_kv_length <= args.kv_length
     ):
         parser.error("--valid-kv-length must be in [1, --kv-length]")
-    if args.experimental_grouped_serial_control:
+    if (
+        int(args.experimental_grouped_serial_control)
+        + int(args.experimental_grouped_half_control)
+        > 1
+    ):
+        parser.error("select at most one experimental grouped control")
+    if (
+        args.experimental_grouped_serial_control
+        or args.experimental_grouped_half_control
+    ):
         if args.backend != "eager" or args.vector_core_count != QUERY_HEADS:
+            option = (
+                "--experimental-grouped-serial-control"
+                if args.experimental_grouped_serial_control
+                else "--experimental-grouped-half-control"
+            )
             parser.error(
-                "--experimental-grouped-serial-control requires --backend eager "
+                f"{option} requires --backend eager "
                 "and --vector-core-count 16; grouped tiling, not this resource "
-                "attribute, reduces the launched AIV blocks to 2"
+                "attribute, reduces the launched AIV block count"
             )
     elif not QUERY_HEADS <= args.vector_core_count <= 48:
         parser.error("--vector-core-count must be in [16, 48]")
@@ -379,7 +403,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         "experiment_variant": (
             "grouped_serial_control"
             if args.experimental_grouped_serial_control
-            else "production"
+            else (
+                "grouped_half_control"
+                if args.experimental_grouped_half_control
+                else "production"
+            )
         ),
         "contract": {
             "batch_size": 1, "query_heads": QUERY_HEADS,
