@@ -1059,6 +1059,7 @@ def adaptive_cutfit_snapped_proposal(
     image: Image.Image,
     *,
     max_rows: int = 32,
+    body_context_rows: int = 3,
     detector_proposals: dict[str, SplitProposal] | None = None,
 ) -> SplitProposal:
     """Search U1..U32 and select the best safe header-aware cut layout.
@@ -1072,9 +1073,9 @@ def adaptive_cutfit_snapped_proposal(
     header plus one character-height of context.
 
     Row count is capped by a context budget: the first band reserves about two
-    detected visual rows and every later band reserves about three.  This keeps
-    the search from turning a visually safe separator after every logical row
-    into a structurally context-starved OCR request.
+    detected visual rows and every later band reserves ``body_context_rows``.
+    This keeps the search from turning a visually safe separator after every
+    logical row into a structurally context-starved OCR request.
     """
 
     max_rows = max(1, min(int(max_rows), image.height))
@@ -1115,7 +1116,7 @@ def adaptive_cutfit_snapped_proposal(
     robust_rows = int(np.median(row_votes))
     visual_rows = max(robust_rows, round(0.55 * source_rows["row_edge"]))
     header_context_rows = 2
-    body_context_rows = 3
+    body_context_rows = max(1, int(body_context_rows))
     context_cap = (
         1
         if visual_rows <= header_context_rows

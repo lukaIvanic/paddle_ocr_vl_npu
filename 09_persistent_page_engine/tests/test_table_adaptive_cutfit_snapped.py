@@ -45,6 +45,21 @@ def test_cutfit_reserves_more_than_one_body_band_for_header_context() -> None:
     assert proposal.diagnostics["selected_first_band_weight"] > 1.0
 
 
+def test_dense_cutfit_keeps_header_context_but_uses_more_bands() -> None:
+    image = ruled_table(25)
+    regular = adaptive_cutfit_snapped_proposal(image, max_rows=32)
+    dense = adaptive_cutfit_snapped_proposal(
+        image,
+        max_rows=32,
+        body_context_rows=2,
+    )
+
+    assert len(dense.boundaries) > len(regular.boundaries)
+    assert len(dense.boundaries) - 1 == 12
+    assert dense.boundaries[1] >= dense.diagnostics["header_guard_y"]
+    assert dense.diagnostics["selected_crossings"] == 0
+
+
 def test_cutfit_uses_whole_table_when_no_row_evidence_exists() -> None:
     image = Image.new("RGB", (640, 120), "white")
 

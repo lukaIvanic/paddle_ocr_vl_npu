@@ -65,6 +65,7 @@ SUPPORTED_STRATEGIES = DEFAULT_STRATEGIES + (
     "uniform_16",
     "uniform_16_snapped",
     "adaptive_cutfit_32_header_snapped",
+    "adaptive_cutfit_dense_32_header_snapped",
     "adaptive_max_32_snapped",
     "whole",
 )
@@ -408,6 +409,18 @@ def prepare_strategy_inputs(
             )
             proposals["adaptive_cutfit_32_header_snapped"] = SplitProposal(
                 name="adaptive_cutfit_32_header_snapped",
+                boundaries=adaptive.boundaries,
+                diagnostics=adaptive.diagnostics,
+            )
+        if "adaptive_cutfit_dense_32_header_snapped" in row_strategies:
+            adaptive = adaptive_cutfit_snapped_proposal(
+                row_image,
+                max_rows=32,
+                body_context_rows=2,
+                detector_proposals=proposals,
+            )
+            proposals["adaptive_cutfit_dense_32_header_snapped"] = SplitProposal(
+                name="adaptive_cutfit_dense_32_header_snapped",
                 boundaries=adaptive.boundaries,
                 diagnostics=adaptive.diagnostics,
             )
