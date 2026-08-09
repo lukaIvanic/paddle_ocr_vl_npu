@@ -158,6 +158,54 @@ class WrapperRescueTest(unittest.TestCase):
         )
         self.assertIsNone(candidate)
 
+    def test_formula_previous_mode_accepts_wrapper_only_content_match(self) -> None:
+        matcher = TableDraftMatcher(
+            {
+                "rows": [
+                    {
+                        "row_index": 0,
+                        "token_ids": [
+                            FCEL,
+                            MATH_OPEN,
+                            LOG,
+                            SIZE,
+                            MATH_CLOSE,
+                            FCEL,
+                            SLASH,
+                            PAREN_MINUS,
+                            ZERO,
+                            EOS,
+                        ],
+                    }
+                ]
+            },
+            self.tokenizer,
+            eos_token_id=EOS,
+            block_size=16,
+        )
+        proposal = DraftProposal(6, tuple(matcher.draft[6:]), 1)
+        candidate = wrapper_rescue_candidate(
+            [FCEL, LOG, SIZE, FCEL],
+            matcher,
+            proposal,
+            accepted_before_rejection=0,
+            tokenizer=self.tokenizer,
+            formula_previous_only=True,
+        )
+        self.assertIsNotNone(candidate)
+
+        candidate = wrapper_rescue_candidate(
+            [FCEL, MATH_OPEN, LOG, SIZE, MATH_CLOSE, FCEL],
+            matcher,
+            proposal,
+            accepted_before_rejection=0,
+            tokenizer=self.tokenizer,
+            formula_previous_only=True,
+        )
+        self.assertIsNotNone(candidate)
+        assert candidate is not None
+        self.assertEqual(candidate.previous_cell_match, "formula_content")
+
 
 if __name__ == "__main__":
     unittest.main()

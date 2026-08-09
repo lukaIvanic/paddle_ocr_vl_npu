@@ -15,6 +15,7 @@ from ..model.token_selection import (
     TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP,
     TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_FIRST_OVERRIDE,
     TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_NON_NESTED,
+    TOKEN_SELECTION_PREFER_MATH_OPEN_VARIANTS_TOP2_P10,
     select_token_ids,
 )
 from .repetition import ExactCycleTracker, RepetitionEvidence
@@ -186,6 +187,8 @@ class DecodeArena:
         eos_token_id: int,
         token_selection: str = TOKEN_SELECTION_GREEDY,
         preferred_token_id: int | None = None,
+        alternate_preferred_token_id: int | None = None,
+        cell_start_token_ids: Iterable[int] = (),
         math_close_token_id: int | None = None,
         timeline: TimelineRecorder | None = None,
     ) -> None:
@@ -197,6 +200,12 @@ class DecodeArena:
         self.preferred_token_id = (
             None if preferred_token_id is None else int(preferred_token_id)
         )
+        self.alternate_preferred_token_id = (
+            None
+            if alternate_preferred_token_id is None
+            else int(alternate_preferred_token_id)
+        )
+        self.cell_start_token_ids = tuple(int(value) for value in cell_start_token_ids)
         self.math_close_token_id = (
             None if math_close_token_id is None else int(math_close_token_id)
         )
@@ -586,6 +595,17 @@ class DecodeArena:
                 == TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP
             ):
                 policy_mask = self.token_selection_policy_mask
+            elif (
+                self.token_selection
+                == TOKEN_SELECTION_PREFER_MATH_OPEN_VARIANTS_TOP2_P10
+            ):
+                cell_start_mask = torch.zeros_like(
+                    self.token_selection_policy_mask,
+                    dtype=torch.bool,
+                )
+                for token_id in self.cell_start_token_ids:
+                    cell_start_mask |= self.next_token[:, 0] == int(token_id)
+                policy_mask = self.token_selection_policy_mask & cell_start_mask
             else:
                 policy_mask = torch.zeros_like(
                     self.token_selection_policy_mask,
@@ -595,6 +615,7 @@ class DecodeArena:
                 logits[:, -1, :].float(),
                 mode=self.token_selection,
                 preferred_token_id=self.preferred_token_id,
+                alternate_preferred_token_id=self.alternate_preferred_token_id,
                 policy_mask=policy_mask,
             )
             greedy = torch.argmax(logits[:, -1, :].float(), dim=-1)

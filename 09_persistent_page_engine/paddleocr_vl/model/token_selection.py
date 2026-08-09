@@ -15,11 +15,15 @@ TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_FIRST_OVERRIDE = (
 TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP = (
     "prefer_math_open_probability_near_top"
 )
+TOKEN_SELECTION_PREFER_MATH_OPEN_VARIANTS_TOP2_P10 = (
+    "prefer_math_open_variants_top2_p10"
+)
 TOKEN_SELECTION_CHOICES = (
     TOKEN_SELECTION_GREEDY,
     TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_NON_NESTED,
     TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_FIRST_OVERRIDE,
     TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP,
+    TOKEN_SELECTION_PREFER_MATH_OPEN_VARIANTS_TOP2_P10,
 )
 
 
@@ -28,6 +32,7 @@ def select_token_ids(
     *,
     mode: str = TOKEN_SELECTION_GREEDY,
     preferred_token_id: int | None = None,
+    alternate_preferred_token_id: int | None = None,
     policy_mask: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Select one token ID per logits row without decoding or re-encoding text.
@@ -61,6 +66,38 @@ def select_token_ids(
             (preferred_probability >= 0.3 * top_probability)
             & (preferred_probability > 0.10)
         )
+    elif mode == TOKEN_SELECTION_PREFER_MATH_OPEN_VARIANTS_TOP2_P10:
+        if alternate_preferred_token_id is None:
+            raise ValueError(f"{mode} requires alternate_preferred_token_id")
+        probabilities = torch.softmax(scores, dim=-1)
+        top2 = torch.topk(scores, k=2, dim=-1).indices
+        primary_eligible = (
+            (top2 == int(preferred_token_id)).any(dim=-1)
+            & (probabilities[..., int(preferred_token_id)] > 0.10)
+        )
+        alternate_eligible = (
+            (top2 == int(alternate_preferred_token_id)).any(dim=-1)
+            & (probabilities[..., int(alternate_preferred_token_id)] > 0.10)
+        )
+        use_alternate = alternate_eligible & (
+            ~primary_eligible
+            | (
+                scores[..., int(alternate_preferred_token_id)]
+                > scores[..., int(preferred_token_id)]
+            )
+        )
+        selected = torch.where(
+            use_alternate,
+            torch.full_like(greedy, int(alternate_preferred_token_id)),
+            torch.where(primary_eligible, preferred, greedy),
+        )
+        if policy_mask is not None:
+            selected = torch.where(
+                policy_mask.to(device=selected.device, dtype=torch.bool),
+                selected,
+                greedy,
+            )
+        return selected
     else:
         top2 = torch.topk(scores, k=2, dim=-1).indices
         eligible = (top2 == int(preferred_token_id)).any(dim=-1)

@@ -4,13 +4,18 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass, field
+import re
 import time
 from typing import Any, Iterable
 
 import torch
 
 from ..model.text_spec_verify import TextSpecVerifyRuntime
-from ..model.token_selection import TOKEN_SELECTION_GREEDY, select_token_ids
+from ..model.token_selection import (
+    TOKEN_SELECTION_GREEDY,
+    TOKEN_SELECTION_PREFER_MATH_OPEN_VARIANTS_TOP2_P10,
+    select_token_ids,
+)
 from .engine import PrefilledRecognition
 from .repetition import ExactCycleTracker
 
@@ -167,6 +172,16 @@ def _outer_math_wrapper_key(tokenizer: Any, tokens: tuple[int, ...]) -> str:
     return text
 
 
+def _formula_content_key(text: str) -> str:
+    """Remove only common formula presentation syntax for a decoded-ID guard."""
+
+    value = text.replace(r"\(", "").replace(r"\)", "").replace("$", "")
+    value = re.sub(r"\^\{\{(\*+)\}\}", r"\1", value)
+    value = re.sub(r"\^\{(\*+)\}", r"\1", value)
+    value = value.replace("{", "").replace("}", "")
+    return "".join(value.split())
+
+
 def _target_position(
     tokens: list[int],
     *,
@@ -196,6 +211,7 @@ def wrapper_rescue_candidate(
     *,
     accepted_before_rejection: int,
     tokenizer: Any,
+    formula_previous_only: bool = False,
 ) -> WrapperRescueCandidate | None:
     """Return a strict previous-cell-aligned draft math-open candidate.
 
@@ -236,7 +252,21 @@ def wrapper_rescue_candidate(
     )
     if previous_target is None or previous_draft is None:
         return None
-    if previous_target == previous_draft:
+    previous_target_text = str(
+        tokenizer.decode(list(previous_target), skip_special_tokens=False)
+    )
+    previous_draft_text = str(
+        tokenizer.decode(list(previous_draft), skip_special_tokens=False)
+    )
+    if formula_previous_only:
+        if not any(marker in previous_draft_text for marker in (r"\(", "$", "^")):
+            return None
+        if _formula_content_key(previous_target_text) != _formula_content_key(
+            previous_draft_text
+        ):
+            return None
+        previous_cell_match = "formula_content"
+    elif previous_target == previous_draft:
         previous_cell_match = "exact_ids"
     elif _outer_math_wrapper_key(
         tokenizer, previous_target
@@ -481,10 +511,14 @@ class TableSpeculativeDecodeRuntime:
         cache_root: Any,
         wrapper_rescue: bool = False,
         wrapper_rescue_top_k: int = 3,
+        wrapper_rescue_formula_previous: bool = False,
     ) -> None:
         if int(recognizer.batch_size) != 1:
             raise ValueError("table speculative decode currently requires B1")
-        if recognizer.token_selection != TOKEN_SELECTION_GREEDY:
+        if recognizer.token_selection not in (
+            TOKEN_SELECTION_GREEDY,
+            TOKEN_SELECTION_PREFER_MATH_OPEN_VARIANTS_TOP2_P10,
+        ):
             raise NotImplementedError(
                 "non-greedy token selection is generation-only until the "
                 "speculative verifier implements the identical policy"
@@ -497,6 +531,7 @@ class TableSpeculativeDecodeRuntime:
         self.eos_token_id = int(recognizer.model.config.eos_token_id)
         self.wrapper_rescue = bool(wrapper_rescue)
         self.wrapper_rescue_top_k = int(wrapper_rescue_top_k)
+        self.wrapper_rescue_formula_previous = bool(wrapper_rescue_formula_previous)
         if self.wrapper_rescue_top_k <= 0:
             raise ValueError("wrapper_rescue_top_k must be positive")
         self.verify = TextSpecVerifyRuntime(
@@ -511,6 +546,7 @@ class TableSpeculativeDecodeRuntime:
             optimization="combined_apply",
             token_selection=recognizer.token_selection,
             preferred_token_id=recognizer.math_open_token_id,
+            alternate_preferred_token_id=recognizer.math_slash_token_id,
             cell_start_token_ids=recognizer.table_cell_token_ids,
         )
         self.host_input = torch.empty(
@@ -595,6 +631,7 @@ class TableSpeculativeDecodeRuntime:
             logits[:, -1, :].float(),
             mode=self.recognizer.token_selection,
             preferred_token_id=self.recognizer.math_open_token_id,
+            alternate_preferred_token_id=self.recognizer.math_slash_token_id,
             policy_mask=torch.tensor(
                 [int(current_token) in self.recognizer.table_cell_token_ids],
                 device=logits.device,
@@ -773,6 +810,7 @@ class TableSpeculativeDecodeRuntime:
                         proposal,
                         accepted_before_rejection=accepted_here,
                         tokenizer=self.recognizer.tokenizer,
+                        formula_previous_only=self.wrapper_rescue_formula_previous,
                     )
                 if rescue_candidate is not None:
                     probe_position = position + accepted_here
@@ -866,6 +904,7 @@ class TableSpeculativeDecodeRuntime:
             wrapper_rescue={
                 "enabled": self.wrapper_rescue,
                 "top_k": self.wrapper_rescue_top_k,
+                "formula_previous_only": self.wrapper_rescue_formula_previous,
                 "used": wrapper_rescue_used,
                 "probe_calls": wrapper_rescue_probes,
                 "forced_tokens": int(wrapper_rescue_used),

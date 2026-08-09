@@ -78,6 +78,12 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--wrapper-rescue-top-k", type=int, default=3)
+    parser.add_argument(
+        "--wrapper-rescue-formula-previous",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Require the previous draft cell to be formula-like with matching content.",
+    )
     parser.add_argument("--cache-length", type=int, default=4096)
     parser.add_argument("--max-new-tokens", type=int, default=4096)
     parser.add_argument(
@@ -267,6 +273,7 @@ def main() -> None:
         optimization="combined_apply",
         token_selection=args.token_selection,
         preferred_token_id=recognizer.math_open_token_id,
+        alternate_preferred_token_id=recognizer.math_slash_token_id,
         cell_start_token_ids=recognizer.table_cell_token_ids,
     )
     cache_hit = spec_cache.is_dir() and any(spec_cache.iterdir())
@@ -286,6 +293,7 @@ def main() -> None:
         cache_root=args.decode_cache_dir.resolve(),
         wrapper_rescue=args.wrapper_rescue,
         wrapper_rescue_top_k=args.wrapper_rescue_top_k,
+        wrapper_rescue_formula_previous=args.wrapper_rescue_formula_previous,
     )
     setup_s = time.perf_counter() - setup_started
     print(

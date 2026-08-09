@@ -99,6 +99,26 @@ class TokenSelectionTest(unittest.TestCase):
         )
         self.assertEqual(selected.tolist(), [2])
 
+    def test_variant_policy_selects_rank_two_slash_above_ten_percent(self) -> None:
+        logits = torch.tensor([[2.0, 0.375, -2.5]])
+        selected = select_token_ids(
+            logits,
+            mode="prefer_math_open_variants_top2_p10",
+            preferred_token_id=2,
+            alternate_preferred_token_id=1,
+        )
+        self.assertEqual(selected.tolist(), [1])
+
+    def test_variant_policy_rejects_rank_two_slash_below_ten_percent(self) -> None:
+        logits = torch.tensor([[3.0, 0.7, -2.5]])
+        selected = select_token_ids(
+            logits,
+            mode="prefer_math_open_variants_top2_p10",
+            preferred_token_id=2,
+            alternate_preferred_token_id=1,
+        )
+        self.assertEqual(selected.tolist(), [0])
+
 
 if __name__ == "__main__":
     unittest.main()

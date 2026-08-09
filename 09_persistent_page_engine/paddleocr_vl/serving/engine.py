@@ -41,6 +41,7 @@ from ..model.token_selection import (
     TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP,
     TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_FIRST_OVERRIDE,
     TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_NON_NESTED,
+    TOKEN_SELECTION_PREFER_MATH_OPEN_VARIANTS_TOP2_P10,
     select_token_ids,
 )
 from ..model.preprocessing import (
@@ -738,6 +739,10 @@ class ContinuousRecognizer:
         if math_open_token_id is None:
             raise ValueError("recognizer tokenizer does not contain the exact \\( token")
         self.math_open_token_id = int(math_open_token_id)
+        math_slash_token_id = self.tokenizer.token_to_id("\\")
+        if math_slash_token_id is None:
+            raise ValueError("recognizer tokenizer does not contain the exact \\ token")
+        self.math_slash_token_id = int(math_slash_token_id)
         math_close_token_id = self.tokenizer.token_to_id(r"\)")
         if math_close_token_id is None:
             raise ValueError("recognizer tokenizer does not contain the exact \\) token")
@@ -941,6 +946,8 @@ class ContinuousRecognizer:
             eos_token_id=int(self.model.config.eos_token_id),
             token_selection=self.token_selection,
             preferred_token_id=self.math_open_token_id,
+            alternate_preferred_token_id=self.math_slash_token_id,
+            cell_start_token_ids=self.table_cell_token_ids,
             math_close_token_id=self.math_close_token_id,
             timeline=self.timeline,
         )
@@ -2525,6 +2532,7 @@ class ContinuousRecognizer:
                             logits.float(),
                             mode=self.token_selection,
                             preferred_token_id=self.math_open_token_id,
+                            alternate_preferred_token_id=self.math_slash_token_id,
                             policy_mask=packed_policy_mask,
                         )
                         if self.token_selection
@@ -2638,6 +2646,7 @@ class ContinuousRecognizer:
                         logits[:, -1, :].float(),
                         mode=self.token_selection,
                         preferred_token_id=self.math_open_token_id,
+                        alternate_preferred_token_id=self.math_slash_token_id,
                         policy_mask=prefill_policy_mask,
                     ).unsqueeze(-1)
                     if self.token_selection
@@ -3148,6 +3157,8 @@ class ContinuousRecognizer:
                 "scope": "table_prompt_only",
                 "preferred_token_id": self.math_open_token_id,
                 "preferred_token_piece": r"\(",
+                "alternate_preferred_token_id": self.math_slash_token_id,
+                "alternate_preferred_token_piece": "\\",
                 "math_close_token_id": self.math_close_token_id,
                 "rule": {
                     TOKEN_SELECTION_GREEDY: "ordinary_argmax",
@@ -3159,6 +3170,9 @@ class ContinuousRecognizer:
                     ),
                     TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP: (
                         "prefer_math_open_when_probability_gt_0.10_and_at_least_0.3_top1"
+                    ),
+                    TOKEN_SELECTION_PREFER_MATH_OPEN_VARIANTS_TOP2_P10: (
+                        "at_cell_start_prefer_backslash_or_math_open_in_top2_when_probability_gt_0.10"
                     ),
                 }[self.token_selection],
             },
