@@ -12,7 +12,6 @@
 #include <torch/library.h>
 
 #include "npu_cpp_extension.h"
-#include "op_plugin/utils/op_api_common.h"
 
 namespace paddleocr_vl_npu {
 namespace {
@@ -82,7 +81,7 @@ at::Tensor paddle_mha_incre_flash_attention_aiv_eager(
     char input_layout[kLayoutCapacity] = {};
     std::strncpy(input_layout, "BNSD", kLayoutCapacity - 1);
 
-    EXEC_NPU_NO_FORMAT_CHECK_CMD(
+    EXEC_NPU_CMD_EXT(
         aclnnInnerPaddleMhaIncreFlashAttentionAiv,
         query,
         key_tensors,
