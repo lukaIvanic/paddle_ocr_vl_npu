@@ -35,6 +35,11 @@ from ..model.text_decode import (
     cast_decode_linear_weights_to_nz,
     prepare_decode_optimization_modules,
 )
+from ..model.token_selection import (
+    TOKEN_SELECTION_CHOICES,
+    TOKEN_SELECTION_GREEDY,
+    select_token_ids,
+)
 from ..model.preprocessing import (
     apply_pixel_overrides,
     build_inputs,
@@ -526,6 +531,7 @@ class ContinuousRecognizer:
         diagnostic_prefill_kv_request_ids: Iterable[str] | None = None,
         decode_optimization: str = DEFAULT_DECODE_OPTIMIZATION,
         recognition_input_fingerprints: bool = False,
+        token_selection: str = TOKEN_SELECTION_GREEDY,
     ):
         # TorchAir guards tensor dispatch-key sets. Build and warm every graph
         # under the same inference-mode contract used by run(),
@@ -566,6 +572,12 @@ class ContinuousRecognizer:
         torch.npu.set_compile_mode(jit_compile=False)
         self.decode_backend = decode_backend
         self.decode_optimization = str(decode_optimization)
+        self.token_selection = str(token_selection)
+        if self.token_selection not in TOKEN_SELECTION_CHOICES:
+            raise ValueError(
+                "token_selection must be one of "
+                f"{TOKEN_SELECTION_CHOICES}, got {self.token_selection!r}"
+            )
         self.timeline = timeline
         self.scheduler_progress = bool(scheduler_progress)
         self.scheduler_progress_events = (
@@ -719,6 +731,10 @@ class ContinuousRecognizer:
             str(self.model_dir / "tokenizer.json")
         )
         self.tokenizer = Tokenizer.from_file(str(self.model_dir / "tokenizer.json"))
+        math_open_token_id = self.tokenizer.token_to_id(r"\(")
+        if math_open_token_id is None:
+            raise ValueError("recognizer tokenizer does not contain the exact \\( token")
+        self.math_open_token_id = int(math_open_token_id)
         frontend_setup_s = time.perf_counter() - runtime_started
 
         synchronize(self.device)
@@ -907,6 +923,8 @@ class ContinuousRecognizer:
             device=self.device,
             batch_size=self.batch_size,
             eos_token_id=int(self.model.config.eos_token_id),
+            token_selection=self.token_selection,
+            preferred_token_id=self.math_open_token_id,
             timeline=self.timeline,
         )
         self.decode_scheduler = ContinuousDecodeScheduler(
@@ -1012,6 +1030,10 @@ class ContinuousRecognizer:
             first_token_tensor=first_token_tensor,
             first_token=state.first_token,
             prompt_length=state.input_tokens,
+            token_selection_policy_active=(
+                self.token_selection != TOKEN_SELECTION_GREEDY
+                and ContinuousRecognizer._is_table_prompt(state.prompt)
+            ),
             cache_release=cache_release,
         )
 
@@ -2136,6 +2158,40 @@ class ContinuousRecognizer:
             timings=timings,
         )
 
+    @staticmethod
+    def _is_table_prompt(prompt: str) -> bool:
+        return str(prompt).strip() == "Table Recognition:"
+
+    def _select_generation_tokens(
+        self,
+        logits: torch.Tensor,
+        prompts: Iterable[str],
+    ) -> torch.Tensor:
+        prompt_list = [str(prompt) for prompt in prompts]
+        expected = (
+            int(logits.shape[-2])
+            if logits.ndim >= 3
+            else int(logits.shape[0])
+        )
+        if len(prompt_list) != expected:
+            raise ValueError(
+                "token-selection prompt count does not match logits rows: "
+                f"prompts={len(prompt_list)} logits_rows={expected}"
+            )
+        policy_mask = torch.tensor(
+            [self._is_table_prompt(prompt) for prompt in prompt_list],
+            device=logits.device,
+            dtype=torch.bool,
+        )
+        if logits.ndim >= 3:
+            policy_mask = policy_mask.view(1, -1)
+        return select_token_ids(
+            logits,
+            mode=self.token_selection,
+            preferred_token_id=self.math_open_token_id,
+            policy_mask=policy_mask,
+        )
+
     @torch.inference_mode()
     def _enqueue_staged_prefill_group(
         self,
@@ -2467,9 +2523,11 @@ class ContinuousRecognizer:
                 )
                 packed_tokens = device_timeline.measure(
                     f"{prefix}:prefill_argmax",
-                    lambda logits=logits: torch.argmax(
-                        logits.float(),
-                        dim=-1,
+                    lambda logits=logits, indices=indices: (
+                        self._select_generation_tokens(
+                            logits.float(),
+                            [text_inputs[index].prepared.prompt for index in indices],
+                        )
                     ),
                 )
                 pack_padding = (
@@ -2568,11 +2626,10 @@ class ContinuousRecognizer:
             )
             next_token = device_timeline.measure(
                 self._group_stage_key(member_index, "prefill_argmax"),
-                lambda logits=logits: torch.argmax(
+                lambda logits=logits, item=item: self._select_generation_tokens(
                     logits[:, -1, :].float(),
-                    dim=-1,
-                    keepdim=True,
-                ),
+                    [item.prepared.prompt],
+                ).view(-1, 1),
             )
             text_route = {
                 **text_route,
@@ -3068,6 +3125,13 @@ class ContinuousRecognizer:
             "dtype": str(self.dtype),
             "decode_backend": self.decode_backend,
             "decode_optimization": self.decode_optimization,
+            "token_selection": {
+                "mode": self.token_selection,
+                "scope": "table_prompt_only",
+                "preferred_token_id": self.math_open_token_id,
+                "preferred_token_piece": r"\(",
+                "rule": "select_preferred_token_when_rank_le_2",
+            },
             "decode_attention": DECODE_ATTENTION if self.device.type == "npu" else "manual",
             "decode_cache_update": DECODE_CACHE_UPDATE if self.device.type == "npu" else "per_row_copy",
             "cache_length": self.cache_length,

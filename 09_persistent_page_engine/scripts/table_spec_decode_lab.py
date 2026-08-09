@@ -23,6 +23,7 @@ sys.path.insert(0, str(HERE))
 
 from paddleocr_vl.model.text_prefill import parse_text_buckets
 from paddleocr_vl.model.text_spec_verify import torchair_cache_dir_for_spec_shape
+from paddleocr_vl.model.token_selection import TOKEN_SELECTION_CHOICES
 from paddleocr_vl.model.vision_prefill import parse_vision_buckets
 from paddleocr_vl.serving.engine import ContinuousRecognizer
 from paddleocr_vl.serving.table_speculative import (
@@ -69,6 +70,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--draft-length", type=int, default=16)
     parser.add_argument("--cache-length", type=int, default=4096)
     parser.add_argument("--max-new-tokens", type=int, default=4096)
+    parser.add_argument(
+        "--token-selection",
+        choices=TOKEN_SELECTION_CHOICES,
+        default="greedy",
+        help=(
+            "Experimental live-logit token-ID selection. "
+            "prefer_math_open_top2 selects the exact \\( token whenever it "
+            "is rank 1 or 2."
+        ),
+    )
     parser.add_argument("--min-pixels", type=int, default=28224)
     parser.add_argument("--max-pixels", type=int, default=802816)
     parser.add_argument("--vision-buckets", default=DEFAULT_VISION_BUCKETS)
@@ -163,6 +174,7 @@ def build_recognizer(args: argparse.Namespace) -> ContinuousRecognizer:
         batch_size=1,
         cache_length=args.cache_length,
         max_new_tokens=args.max_new_tokens,
+        token_selection=args.token_selection,
         torchair_cache_dir=args.decode_cache_dir.resolve(),
         vision_backend="torchair",
         vision_attention="prompt_flash_attention",
@@ -243,6 +255,8 @@ def main() -> None:
         model_dir=recognizer.model_dir,
         linear_weight_format=str(recognizer.weight_format["effective_mode"]),
         optimization="combined_apply",
+        token_selection=args.token_selection,
+        preferred_token_id=recognizer.math_open_token_id,
     )
     cache_hit = spec_cache.is_dir() and any(spec_cache.iterdir())
     if not cache_hit and not args.allow_compile:

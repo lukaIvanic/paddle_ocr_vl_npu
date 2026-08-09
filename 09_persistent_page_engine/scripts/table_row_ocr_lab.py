@@ -26,6 +26,7 @@ sys.path.insert(0, str(EXPERIMENT_ROOT))
 sys.path.insert(0, str(HERE))
 
 from paddleocr_vl.model.text_prefill import parse_text_buckets
+from paddleocr_vl.model.token_selection import TOKEN_SELECTION_CHOICES
 from paddleocr_vl.model.preprocessing import smart_resize
 from paddleocr_vl.model.vision_prefill import parse_vision_buckets
 from paddleocr_vl.serving.engine import ContinuousRecognizer
@@ -115,6 +116,16 @@ def parse_args() -> argparse.Namespace:
         default=",".join(DEFAULT_STRATEGIES),
     )
     parser.add_argument("--decode-batch-size", type=int, default=8)
+    parser.add_argument(
+        "--token-selection",
+        choices=TOKEN_SELECTION_CHOICES,
+        default="greedy",
+        help=(
+            "Experimental live-logit token-ID selection. "
+            "prefer_math_open_top2 selects the exact \\( token whenever it "
+            "is rank 1 or 2, for Table Recognition requests only."
+        ),
+    )
     parser.add_argument(
         "--vision-buckets",
         default="256,384,512,640,768,1408,1920,2048,2304,2944,4096",
@@ -261,6 +272,7 @@ def build_recognizer(args: argparse.Namespace) -> ContinuousRecognizer:
         batch_size=args.decode_batch_size,
         cache_length=args.cache_length,
         max_new_tokens=args.cache_length,
+        token_selection=args.token_selection,
         torchair_cache_dir=args.decode_cache_dir.resolve(),
         vision_backend="torchair",
         vision_attention="prompt_flash_attention",

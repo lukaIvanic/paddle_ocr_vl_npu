@@ -39,6 +39,7 @@ from .text_decode import (
     prepare_decode_optimization_modules,
     resolve_decode_optimization,
 )
+from .token_selection import TOKEN_SELECTION_GREEDY, select_token_ids
 from utils.timing import synchronize
 
 if TYPE_CHECKING:
@@ -301,6 +302,8 @@ class TextSpecVerifyStage(nn.Module):
         batch_size: int = 1,
         draft_length: int,
         optimization: str | DecodeOptimizationConfig = "combined_apply",
+        token_selection: str = TOKEN_SELECTION_GREEDY,
+        preferred_token_id: int | None = None,
     ):
         super().__init__()
         if int(draft_length) <= 0:
@@ -313,6 +316,10 @@ class TextSpecVerifyStage(nn.Module):
         self.draft_length = int(draft_length)
         self.query_length = self.draft_length + 1
         self.optimization = resolve_decode_optimization(optimization)
+        self.token_selection = str(token_selection)
+        self.preferred_token_id = (
+            None if preferred_token_id is None else int(preferred_token_id)
+        )
 
     def forward(
         self,
@@ -344,7 +351,11 @@ class TextSpecVerifyStage(nn.Module):
             optimization=self.optimization,
         )
         logits = _linear_tokenwise(self.model.lm_head, hidden_states)
-        return torch.argmax(logits, dim=-1)
+        return select_token_ids(
+            logits,
+            mode=self.token_selection,
+            preferred_token_id=self.preferred_token_id,
+        )
 
 
 def unique_spec_verify_forward(
@@ -389,6 +400,8 @@ def torchair_cache_dir_for_spec_shape(
     model_dir: Path,
     linear_weight_format: str = DECODE_LINEAR_WEIGHT_FORMAT,
     optimization: str | DecodeOptimizationConfig = "combined_apply",
+    token_selection: str = TOKEN_SELECTION_GREEDY,
+    preferred_token_id: int | None = None,
 ) -> Path:
     optimization = resolve_decode_optimization(optimization)
     shape_key = "_".join(
@@ -398,6 +411,8 @@ def torchair_cache_dir_for_spec_shape(
             SPEC_VERIFY_ATTENTION,
             SPEC_VERIFY_CACHE_UPDATE,
             f"opt{cache_key_part(optimization.name)}",
+            f"select{cache_key_part(token_selection)}",
+            f"preferred{preferred_token_id if preferred_token_id is not None else 'none'}",
             f"mode{cache_key_part(TORCHAIR_EXECUTION_MODE)}",
             f"dtype{cache_key_part(dtype)}",
             f"batch{int(batch_size)}",
@@ -430,6 +445,8 @@ class TextSpecVerifyRuntime:
         model_dir: Path,
         linear_weight_format: str,
         optimization: str | DecodeOptimizationConfig = "combined_apply",
+        token_selection: str = TOKEN_SELECTION_GREEDY,
+        preferred_token_id: int | None = None,
     ):
         self.batch_size = int(batch_size)
         self.draft_length = int(draft_length)
@@ -439,11 +456,17 @@ class TextSpecVerifyRuntime:
             model,
             optimization,
         )
+        self.token_selection = str(token_selection)
+        self.preferred_token_id = (
+            None if preferred_token_id is None else int(preferred_token_id)
+        )
         self.stage = TextSpecVerifyStage(
             model,
             batch_size=self.batch_size,
             draft_length=self.draft_length,
             optimization=self.optimization,
+            token_selection=self.token_selection,
+            preferred_token_id=self.preferred_token_id,
         ).eval()
         self.entrypoint = unique_spec_verify_forward(
             self.stage,
@@ -460,6 +483,8 @@ class TextSpecVerifyRuntime:
             model_dir=model_dir,
             linear_weight_format=linear_weight_format,
             optimization=self.optimization,
+            token_selection=self.token_selection,
+            preferred_token_id=self.preferred_token_id,
         )
         cache_dir.mkdir(parents=True, exist_ok=True)
         torchair, CompilerConfig = import_torchair()
@@ -513,6 +538,8 @@ class TextSpecVerifyRuntime:
             "attention": SPEC_VERIFY_ATTENTION,
             "cache_update": SPEC_VERIFY_CACHE_UPDATE,
             "optimization": self.optimization.name,
+            "token_selection": self.token_selection,
+            "preferred_token_id": self.preferred_token_id,
             "torchair_cache_dir": str(cache_dir),
             "compile_wrapper_s": float(wrapper_s),
             "compile_first_call_s": float(first_call_s),

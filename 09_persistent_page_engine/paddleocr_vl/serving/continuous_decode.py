@@ -10,6 +10,10 @@ from typing import Any, Callable, Iterable, Protocol
 import torch
 
 from ..model.text_decode import LocalPaddleOCRVLStaticCache
+from ..model.token_selection import (
+    TOKEN_SELECTION_GREEDY,
+    select_token_ids,
+)
 from .repetition import ExactCycleTracker, RepetitionEvidence
 from utils.timing import stream_synchronize, synchronize
 from utils.timeline import TimelineRecorder
@@ -25,6 +29,7 @@ class ReadyDecodeRequest:
     first_token_tensor: torch.Tensor | None
     first_token: int
     prompt_length: int
+    token_selection_policy_active: bool = False
     cache_release: Callable[[], None] | None = None
 
     def release_device_state(self) -> None:
@@ -176,12 +181,18 @@ class DecodeArena:
         device: torch.device,
         batch_size: int,
         eos_token_id: int,
+        token_selection: str = TOKEN_SELECTION_GREEDY,
+        preferred_token_id: int | None = None,
         timeline: TimelineRecorder | None = None,
     ) -> None:
         self.cache = cache
         self.device = device
         self.batch_size = int(batch_size)
         self.eos_token_id = int(eos_token_id)
+        self.token_selection = str(token_selection)
+        self.preferred_token_id = (
+            None if preferred_token_id is None else int(preferred_token_id)
+        )
         self.timeline = timeline
         self.next_token = torch.full(
             (self.batch_size, 1),
@@ -204,6 +215,11 @@ class DecodeArena:
             device=self.device,
             dtype=torch.bool,
         )
+        self.token_selection_policy_mask = torch.zeros(
+            (self.batch_size,),
+            device=self.device,
+            dtype=torch.bool,
+        )
         self.slots: list[DecodeSlotState | None] = [None] * self.batch_size
         self._epochs = [0] * self.batch_size
         self._decode_event_spans: list[_DeviceSpanRecord] = []
@@ -222,6 +238,7 @@ class DecodeArena:
         self.cache_position.zero_()
         self.rope_deltas.zero_()
         self.active_mask.zero_()
+        self.token_selection_policy_mask.zero_()
 
     @property
     def num_active(self) -> int:
@@ -418,6 +435,9 @@ class DecodeArena:
             )
             self.next_token[slot_index : slot_index + 1].copy_(source_first_token)
             self.active_mask[slot_index].fill_(True)
+            self.token_selection_policy_mask[slot_index].fill_(
+                bool(ready.token_selection_policy_active)
+            )
 
         started = time.perf_counter()
         self._measure_enqueue(
@@ -462,6 +482,7 @@ class DecodeArena:
             raise RuntimeError(f"decode slot {slot_index} is already free")
         self.slots[slot_index] = None
         self.active_mask[slot_index].fill_(False)
+        self.token_selection_policy_mask[slot_index].fill_(False)
         self.next_token[slot_index].fill_(self.eos_token_id)
         self.cache_position[slot_index].zero_()
         self.rope_deltas[slot_index].zero_()
@@ -505,11 +526,12 @@ class DecodeArena:
                 self.rope_deltas,
                 *self.cache.flat_tensors(),
             )
-            return torch.argmax(
+            return select_token_ids(
                 logits[:, -1, :].float(),
-                dim=-1,
-                keepdim=True,
-            )
+                mode=self.token_selection,
+                preferred_token_id=self.preferred_token_id,
+                policy_mask=self.token_selection_policy_mask,
+            ).view(-1, 1)
 
         request_ids = tuple(
             slot.ready.request_id for slot in self.slots if slot is not None
