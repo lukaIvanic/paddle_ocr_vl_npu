@@ -1357,6 +1357,15 @@ The first strict SuperKernel probes established a useful failure ladder:
   AscendIR wrapper nor a usable FP16 kernel registration. The graph therefore
   gives the lookup an explicit PyTorch identity and lowers it to the independent
   B1/S1/H1024 `PaddleDecodeTokenEmbedding` AscendC operator.
+- Stock `MatMul` was the next boundary. The installed implementation selected
+  for that GE identity is TBE/TIK, so strict SuperKernel compilation rejects
+  it even when its input weight is FRACTAL_NZ. CANN 9.0 also ships the separate
+  AscendC `MatMulV3` implementation. An explicit `decode_linear_matmul_v3`
+  PyTorch identity can lower a no-bias B1 Linear to `MatMulV3` with
+  `transpose_x2=true`. The isolated `[1,1024] x [2560,1024]` test passed strict
+  SuperKernel checking with verified weight format code 29 and was bit-exact
+  against stock Linear. Reuse this identity for the 91 decoder linears instead
+  of copying or simplifying CANN's tuned Cube implementation.
 
 These failures are compatibility inventory, not reasons to relax the scope.
 Do not change strict checking to `bypass`: that can make a run appear successful
@@ -1387,3 +1396,17 @@ Relevant official references:
 - [TorchAir in-graph SuperKernel scope and strict checking](https://www.hiascend.com/document/detail/zh/Pytorch/730/modthirdparty/torchairuseguide/torchair_00050.html)
 - [AscendC `SetNextTaskStart`](https://www.hiascend.com/document/detail/en/CANNCommunityEdition/900/API/ascendcopapi/atlasascendc_api_07_00087.html)
 - [AscendC `REGIST_MATMUL_OBJ`](https://www.hiascend.com/document/detail/en/canncommercial/800/apiref/ascendcopapi/atlasascendc_api_07_0628.html)
+- [AscendC Matmul tiling workflow](https://www.hiascend.com/document/detail/en/canncommercial/850/API/ascendcopapi/atlasascendc_api_07_0671.html)
+- [Official multi-core Matmul sample](https://gitee.com/ascend/samples/blob/fe15fa852f308350496ea8447be08c839fb09f4f/operator/ascendc/0_introduction/10_matmul_frameworklaunch/README.md)
+
+When adding a custom OPP to an existing TorchAir command, preserve CANN's
+Python module paths. Prepend the repo package instead of replacing
+`PYTHONPATH`:
+
+```sh
+export PYTHONPATH="$PWD/09_persistent_page_engine:${PYTHONPATH}"
+```
+
+Replacing `PYTHONPATH` with only the repo directory makes GE's custom-TBE
+store fail during initialization with `ModuleNotFoundError: No module named
+'tbe'`.

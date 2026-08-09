@@ -25,6 +25,10 @@ from .decode_token_embedding import (
     decode_token_embedding,
     register_decode_token_embedding_converter,
 )
+from .decode_linear_matmul_v3 import (
+    decode_linear_matmul_v3,
+    register_decode_linear_matmul_v3_converter,
+)
 from .config import PaddleOCRTextConfig
 from .gqa_increfa_aiv import (
     gqa_incre_flash_attention_aiv,
@@ -69,6 +73,7 @@ class DecodeOptimizationConfig:
     gqa_aiv_vector_core_count: int = 0
     super_kernel_scope: bool = False
     ascendc_token_embedding: bool = False
+    ascendc_linear: bool = False
 
 
 DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
@@ -126,6 +131,7 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         add_rms_norm=True,
         super_kernel_scope=True,
         ascendc_token_embedding=True,
+        ascendc_linear=True,
     ),
     "combined_apply_pse_sentinel": DecodeOptimizationConfig(
         name="combined_apply_pse_sentinel",
@@ -428,7 +434,13 @@ class LocalPaddleOCRVLStaticCache:
 def _linear_tokenwise(linear: nn.Linear, x: torch.Tensor) -> torch.Tensor:
     """Apply a Linear through a compiler-safe 2-D token matrix."""
     leading_shape = x.shape[:-1]
-    output = linear(x.reshape(-1, x.shape[-1]))
+    token_matrix = x.reshape(-1, x.shape[-1])
+    if getattr(linear, "_decode_use_matmul_v3", False):
+        if linear.bias is not None:
+            raise ValueError("the B1 MatMulV3 decode path requires no bias")
+        output = decode_linear_matmul_v3(token_matrix, linear.weight)
+    else:
+        output = linear(token_matrix)
     return output.reshape(*leading_shape, output.shape[-1])
 
 
@@ -485,6 +497,20 @@ def prepare_decode_optimization_modules(
             mlp.decode_gate_up_proj = _packed_linear(
                 (mlp.gate_proj, mlp.up_proj)
             )
+    if config.ascendc_linear:
+        linear_modules = [
+            module
+            for module in model.model.modules()
+            if isinstance(module, nn.Linear)
+        ]
+        linear_modules.append(model.lm_head)
+        for linear in linear_modules:
+            if linear.bias is not None:
+                raise ValueError(
+                    "the Paddle B1 MatMulV3 mega-kernel path requires "
+                    "bias-free decoder linears"
+                )
+            linear._decode_use_matmul_v3 = True
     return config
 
 
@@ -1622,6 +1648,7 @@ def decode_source_hash() -> str:
         "text_decode.py",
         "gqa_increfa_aiv.py",
         "decode_token_embedding.py",
+        "decode_linear_matmul_v3.py",
     ):
         path = here / name
         digest.update(name.encode("utf-8"))
@@ -1726,6 +1753,7 @@ def compile_text_decode_stage(
             ),
             "super_kernel_scope": optimization.super_kernel_scope,
             "ascendc_token_embedding": optimization.ascendc_token_embedding,
+            "ascendc_linear": optimization.ascendc_linear,
         },
     }
     if backend_name == "raw_eager":
@@ -1741,6 +1769,8 @@ def compile_text_decode_stage(
             register_gqa_increfa_aiv_converter()
         if optimization.ascendc_token_embedding:
             register_decode_token_embedding_converter()
+        if optimization.ascendc_linear:
+            register_decode_linear_matmul_v3_converter()
         shape_cache_dir = torchair_cache_dir_for_shape(
             cache_root,
             batch_size=batch_size,
