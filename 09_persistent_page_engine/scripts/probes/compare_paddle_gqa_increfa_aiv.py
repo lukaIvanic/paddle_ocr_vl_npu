@@ -58,6 +58,13 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--warmup", type=int, default=20)
     parser.add_argument("--blocks", type=int, default=7)
     parser.add_argument("--repeats-per-block", type=int, default=200)
+    parser.add_argument("--profile-dir", type=Path)
+    parser.add_argument(
+        "--profile-metric",
+        choices=("pipe", "memory", "l2", "memory_access"),
+        default="pipe",
+    )
+    parser.add_argument("--profile-calls", type=int, default=3)
     parser.add_argument("--seed", type=int, default=20260809)
     args = parser.parse_args(argv)
     if args.kv_length <= 0:
@@ -78,6 +85,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("--vector-core-count must be in [16, 48]")
     if args.warmup < 0 or args.blocks <= 0 or args.repeats_per_block <= 0:
         parser.error("invalid timing counts")
+    if args.profile_calls <= 0:
+        parser.error("--profile-calls must be positive")
+    if args.profile_dir is not None and args.backend != "eager":
+        parser.error("--profile-dir currently supports only --backend eager")
     if args.backend == "torchair" and args.cache_root is None:
         parser.error("--cache-root is required for TorchAir")
     return args
@@ -172,6 +183,58 @@ def compile_step(module: torch.nn.Module, cache_dir: Path) -> Callable[..., torc
     )
 
 
+def profile_step(
+    step: Callable[..., torch.Tensor],
+    inputs: tuple[torch.Tensor, ...],
+    *,
+    output_dir: Path,
+    metric: str,
+    calls: int,
+) -> dict[str, Any]:
+    """Capture a bounded custom-op-only torch-npu profile."""
+    import torch_npu.profiler as npu_prof
+
+    metrics = {
+        "pipe": npu_prof.AiCMetrics.PipeUtilization,
+        "memory": npu_prof.AiCMetrics.Memory,
+        "l2": npu_prof.AiCMetrics.L2Cache,
+        "memory_access": npu_prof.AiCMetrics.MemoryAccess,
+    }
+    output_dir = output_dir.expanduser().resolve()
+    if output_dir.exists():
+        raise FileExistsError(f"profile directory already exists: {output_dir}")
+    output_dir.mkdir(parents=True)
+    step(*inputs)
+    torch.npu.synchronize()
+    with npu_prof.profile(
+        activities=[npu_prof.ProfilerActivity.CPU, npu_prof.ProfilerActivity.NPU],
+        schedule=npu_prof.schedule(wait=0, warmup=0, active=1, repeat=1),
+        experimental_config=npu_prof._ExperimentalConfig(
+            profiler_level=npu_prof.ProfilerLevel.Level1,
+            aic_metrics=metrics[metric],
+            l2_cache=metric == "l2",
+            export_type=npu_prof.ExportType.Text,
+        ),
+        on_trace_ready=npu_prof.tensorboard_trace_handler(
+            str(output_dir), analyse_flag=True
+        ),
+        record_shapes=True,
+        profile_memory=False,
+        with_stack=False,
+    ) as profiler:
+        for _ in range(calls):
+            step(*inputs)
+        torch.npu.synchronize()
+        profiler.step()
+    return {
+        "path": str(output_dir),
+        "metric": metric,
+        "custom_calls": calls,
+        "profiled_lane": "custom_only",
+        "timing_interpretation": "profile_overhead_excluded_from_clean_timing",
+    }
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     import torch_npu
@@ -260,6 +323,17 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             outputs[name] = output.float().cpu().contiguous()
 
+    profile_metadata = None
+    if args.profile_dir is not None:
+        with torch.inference_mode():
+            profile_metadata = profile_step(
+                custom_step,
+                inputs,
+                output_dir=args.profile_dir,
+                metric=args.profile_metric,
+                calls=args.profile_calls,
+            )
+
     reference = fp32_reference(q, k, v, mask)
     difference = (outputs["stock"] - outputs["custom"]).abs()
     stock_reference_difference = (outputs["stock"] - reference).abs()
@@ -326,6 +400,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         },
         "first_call_s": first_call_s,
         "timing": timings,
+        "profile": profile_metadata,
         "output_sha256": {name: tensor_sha256(value) for name, value in outputs.items()},
         "parity": {
             "exact": exact,
