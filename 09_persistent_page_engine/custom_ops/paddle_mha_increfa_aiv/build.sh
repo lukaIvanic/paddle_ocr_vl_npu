@@ -23,6 +23,8 @@ HOST_TILER_REL="$UPSTREAM_OP_REL/op_host/incre_flash_attention_tiling.cpp"
 EXPECTED_HOST_TILER_SHA256="c84dbe37632ed428c080918ce4ca124d43640fbcfd05e69c212b9453f2b46a74"
 MHA_AIV_TILING_KEY="11000000000100000"
 VENDOR_NAME="paddle_mha_increfa_aiv"
+# ops-transformer appends this fixed suffix to the installed vendor directory.
+INSTALLED_VENDOR_NAME="${VENDOR_NAME}_transformer"
 RUN_ID="${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
 RUN_ROOT="$PROJECT_ROOT/.runtime_cache/paddle_mha_increfa_aiv/builds/$RUN_ID"
 PYTHON_BIN="/usr/local/python3.12.13/bin/python3"
@@ -199,7 +201,7 @@ sha256sum "$KERNEL_JSON" "$KERNEL_OBJECT" "$PACKAGE_PATH" \
 
 INSTALL_ROOT="$RUN_ROOT/installed"
 "$PACKAGE_PATH" --quiet --install-path="$INSTALL_ROOT"
-SET_ENV_PATH="$INSTALL_ROOT/vendors/$VENDOR_NAME/bin/set_env.bash"
+SET_ENV_PATH="$INSTALL_ROOT/vendors/$INSTALLED_VENDOR_NAME/bin/set_env.bash"
 if [[ ! -s "$SET_ENV_PATH" ]]; then
     echo "ERROR: installed package did not produce $SET_ENV_PATH" >&2
     exit 4
