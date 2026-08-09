@@ -1152,13 +1152,12 @@ def adaptive_cutfit_snapped_proposal(
                 header_guard_y * (rows - 1)
                 / max(1.0, image.height - header_guard_y)
             )
-            weights = tuple(sorted({
-                1.25,
-                1.50,
-                1.75,
-                2.00,
-                round(max(1.0, min(3.0, required_weight)), 3),
-            }))
+            # One image-derived header weight is enough for each U.  Searching
+            # several near-duplicate weights multiplied CPU split latency
+            # without changing the selected real-table U distribution.
+            weights = (
+                round(max(1.50, min(3.0, required_weight)), 3),
+            )
         candidates: list[tuple[SplitProposal, float, str]] = []
         for first_weight in weights:
             nominal = _header_weighted_uniform_split(
