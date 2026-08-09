@@ -38,8 +38,10 @@ from ..model.text_decode import (
 from ..model.token_selection import (
     TOKEN_SELECTION_CHOICES,
     TOKEN_SELECTION_GREEDY,
+    TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP,
     TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_FIRST_OVERRIDE,
     TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_NON_NESTED,
+    select_token_ids,
 )
 from ..model.preprocessing import (
     apply_pixel_overrides,
@@ -2508,11 +2510,26 @@ class ContinuousRecognizer:
                     f"{prefix}:prefill_lm_head",
                     lambda valid_hidden=valid_hidden: self.model.lm_head(valid_hidden),
                 )
+                packed_policy_mask = torch.tensor(
+                    [
+                        self._is_table_prompt(text_inputs[index].prepared.prompt)
+                        for index in indices
+                    ],
+                    device=logits.device,
+                    dtype=torch.bool,
+                ).unsqueeze(0)
                 packed_tokens = device_timeline.measure(
                     f"{prefix}:prefill_argmax",
-                    lambda logits=logits: torch.argmax(
-                        logits.float(),
-                        dim=-1,
+                    lambda logits=logits, packed_policy_mask=packed_policy_mask: (
+                        select_token_ids(
+                            logits.float(),
+                            mode=self.token_selection,
+                            preferred_token_id=self.math_open_token_id,
+                            policy_mask=packed_policy_mask,
+                        )
+                        if self.token_selection
+                        == TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP
+                        else torch.argmax(logits.float(), dim=-1)
                     ),
                 )
                 pack_padding = (
@@ -2609,12 +2626,27 @@ class ContinuousRecognizer:
                     last_hidden_state
                 ),
             )
+            prefill_policy_mask = torch.tensor(
+                [self._is_table_prompt(item.prepared.prompt)],
+                device=logits.device,
+                dtype=torch.bool,
+            )
             next_token = device_timeline.measure(
                 self._group_stage_key(member_index, "prefill_argmax"),
-                lambda logits=logits: torch.argmax(
-                    logits[:, -1, :].float(),
-                    dim=-1,
-                    keepdim=True,
+                lambda logits=logits, prefill_policy_mask=prefill_policy_mask: (
+                    select_token_ids(
+                        logits[:, -1, :].float(),
+                        mode=self.token_selection,
+                        preferred_token_id=self.math_open_token_id,
+                        policy_mask=prefill_policy_mask,
+                    ).unsqueeze(-1)
+                    if self.token_selection
+                    == TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP
+                    else torch.argmax(
+                        logits[:, -1, :].float(),
+                        dim=-1,
+                        keepdim=True,
+                    )
                 ),
             )
             text_route = {
@@ -3124,6 +3156,9 @@ class ContinuousRecognizer:
                     ),
                     TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_FIRST_OVERRIDE: (
                         "prefer_rank2_math_open_on_first_override_only"
+                    ),
+                    TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP: (
+                        "prefer_math_open_when_probability_gt_0.10_and_at_least_half_top1"
                     ),
                 }[self.token_selection],
             },

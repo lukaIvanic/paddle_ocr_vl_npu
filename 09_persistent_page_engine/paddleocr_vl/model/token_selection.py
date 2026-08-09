@@ -12,10 +12,14 @@ TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_NON_NESTED = (
 TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_FIRST_OVERRIDE = (
     "prefer_math_open_top2_first_override"
 )
+TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP = (
+    "prefer_math_open_probability_near_top"
+)
 TOKEN_SELECTION_CHOICES = (
     TOKEN_SELECTION_GREEDY,
     TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_NON_NESTED,
     TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_FIRST_OVERRIDE,
+    TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP,
 )
 
 
@@ -45,14 +49,22 @@ def select_token_ids(
     if int(scores.shape[-1]) < 2:
         raise ValueError("top-2 token selection requires a vocabulary of at least 2")
 
-    top2 = torch.topk(scores, k=2, dim=-1).indices
-    greedy = top2[..., 0]
+    greedy = torch.argmax(scores, dim=-1)
     preferred = torch.full_like(greedy, int(preferred_token_id))
-    selected = torch.where(
-        (top2 == int(preferred_token_id)).any(dim=-1),
-        preferred,
-        greedy,
-    )
+    if mode == TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP:
+        probabilities = torch.softmax(scores, dim=-1)
+        top_probability = probabilities.gather(
+            -1, greedy.unsqueeze(-1)
+        ).squeeze(-1)
+        preferred_probability = probabilities[..., int(preferred_token_id)]
+        eligible = (
+            (preferred_probability >= 0.5 * top_probability)
+            & (preferred_probability > 0.10)
+        )
+    else:
+        top2 = torch.topk(scores, k=2, dim=-1).indices
+        eligible = (top2 == int(preferred_token_id)).any(dim=-1)
+    selected = torch.where(eligible, preferred, greedy)
     if policy_mask is not None:
         selected = torch.where(
             policy_mask.to(device=selected.device, dtype=torch.bool),

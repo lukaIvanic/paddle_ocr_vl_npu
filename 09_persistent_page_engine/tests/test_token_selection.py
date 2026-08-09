@@ -63,6 +63,42 @@ class TokenSelectionTest(unittest.TestCase):
         )
         self.assertEqual(selected.tolist(), [2, 1])
 
+    def test_probability_policy_selects_close_preferred_token(self) -> None:
+        logits = torch.tensor([[2.0, 1.4, -10.0]])
+        selected = select_token_ids(
+            logits,
+            mode="prefer_math_open_probability_near_top",
+            preferred_token_id=1,
+        )
+        self.assertEqual(selected.tolist(), [1])
+
+    def test_probability_policy_rejects_low_relative_probability(self) -> None:
+        logits = torch.tensor([[2.0, 1.2, -10.0]])
+        selected = select_token_ids(
+            logits,
+            mode="prefer_math_open_probability_near_top",
+            preferred_token_id=1,
+        )
+        self.assertEqual(selected.tolist(), [0])
+
+    def test_probability_policy_rejects_low_global_probability(self) -> None:
+        logits = torch.zeros((1, 20))
+        selected = select_token_ids(
+            logits,
+            mode="prefer_math_open_probability_near_top",
+            preferred_token_id=19,
+        )
+        self.assertEqual(selected.tolist(), [0])
+
+    def test_probability_policy_can_select_qualified_rank_three(self) -> None:
+        logits = torch.tensor([[0.0, -0.2, -0.6, -10.0]])
+        selected = select_token_ids(
+            logits,
+            mode="prefer_math_open_probability_near_top",
+            preferred_token_id=2,
+        )
+        self.assertEqual(selected.tolist(), [2])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -321,8 +321,8 @@ class TableSpeculativeDecodeRuntime:
             raise ValueError("table speculative decode currently requires B1")
         if recognizer.token_selection != TOKEN_SELECTION_GREEDY:
             raise NotImplementedError(
-                "first-override token selection is generation-only until the "
-                "speculative verifier carries its per-request used state"
+                "non-greedy token selection is generation-only until the "
+                "speculative verifier implements the identical policy"
             )
         self.recognizer = recognizer
         self.device = recognizer.device

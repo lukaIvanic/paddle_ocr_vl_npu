@@ -12,6 +12,7 @@ import torch
 from ..model.text_decode import LocalPaddleOCRVLStaticCache
 from ..model.token_selection import (
     TOKEN_SELECTION_GREEDY,
+    TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP,
     TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_FIRST_OVERRIDE,
     TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_NON_NESTED,
     select_token_ids,
@@ -580,6 +581,11 @@ class DecodeArena:
                     self.token_selection_policy_mask
                     & ~self.token_selection_override_used
                 )
+            elif (
+                self.token_selection
+                == TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP
+            ):
+                policy_mask = self.token_selection_policy_mask
             else:
                 policy_mask = torch.zeros_like(
                     self.token_selection_policy_mask,
