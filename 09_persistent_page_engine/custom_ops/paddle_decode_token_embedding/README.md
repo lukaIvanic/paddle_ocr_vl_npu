@@ -26,3 +26,10 @@ paddle_decode_token_embedding/bin/set_env.bash
 
 Use a new TorchAir cache key after every rebuild. Validate the operator by
 itself before accepting it as a subkernel of the full decoder SuperKernel.
+
+```sh
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
+  09_persistent_page_engine/scripts/probes/compare_paddle_decode_token_embedding.py \
+  --cache-dir .runtime_cache/paddle_decode_token_embedding_probe \
+  --output tmp/09_persistent_page_engine/paddle_decode_token_embedding_probe.json
+```
