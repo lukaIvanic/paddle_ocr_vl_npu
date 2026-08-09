@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "experiment": "increfa_zero_cube_b1_real_forward_mha_cache",
+  "date_utc": "2026-08-09",
+  "project_commit": "5ca3482edba2e0a6b6fec9071e65a27033a95cbd",
+  "hardware": {
+    "chip": "Ascend 910B2",
+    "physical_npu": 6,
+    "logical_device": "npu:0"
+  },
+  "boundary": {
+    "validated_custom_workload": "FP16 MHA",
+    "decode_optimization": "combined_apply_mha_cache",
+    "production_default": "combined_apply GQA",
+    "direct_production_gqa_probe_attempted": true,
+    "reason": "The mixed package executed GQA exactly, but the zero-cube package hung after graph compilation."
+  },
+  "configuration": {
+    "dtype": "fp16",
+    "layout": "BNSD",
+    "batch_size": 1,
+    "cache_length": 4096,
+    "query_heads": 16,
+    "stored_key_value_heads": 16,
+    "head_dim": 128,
+    "control_task_ratio": "1:2",
+    "candidate_task_ratio": "0:1",
+    "candidate_source_commit": "a63741c"
+  },
+  "real_generation": {
+    "script": "09_persistent_page_engine/scripts/text_decode_real_generation.py",
+    "warmup_processes_per_implementation": 1,
+    "measured_processes_per_implementation": 4,
+    "order": [
+      "mixed_1",
+      "hardsync_1",
+      "hardsync_2",
+      "mixed_2",
+      "hardsync_3",
+      "mixed_3",
+      "mixed_4",
+      "hardsync_4"
+    ],
+    "graph_calls_per_process": 374,
+    "effective_tokens_per_process": 373,
+    "generated_tokens_including_eos": 374,
+    "request_count": 1,
+    "token_sha256": "6dfe54351979fbfa7903999f941b761a32c9a00c29128b0f75d0270da3c93f56",
+    "all_token_ids_exact": true,
+    "all_text_exact": true,
+    "all_stop_reasons_exact": true,
+    "mixed": {
+      "model_and_argmax_device_s": [
+        0.6459710799455644,
+        0.6355771205425268,
+        0.6340905197858802,
+        0.6475710408687593
+      ],
+      "effective_decode_tok_per_s": [
+        563.9951794152232,
+        572.5195092280519,
+        571.5265895374066,
+        561.9057077102555
+      ],
+      "median_model_and_argmax_device_s": 0.6407741002440456,
+      "median_continuous_decode_wall_s": 0.6569956111488864,
+      "median_run_wall_s": 1.1840407990384847,
+      "median_effective_decode_tok_per_s": 567.7608844763149,
+      "median_effective_device_tok_per_s": 582.1467149100265
+    },
+    "zero_cube_hardsync": {
+      "model_and_argmax_device_s": [
+        0.6488576211929316,
+        0.6636053198575973,
+        0.6596293395757672,
+        0.6488153797388074
+      ],
+      "effective_decode_tok_per_s": [
+        562.3036482238459,
+        546.6054423948608,
+        551.1741311704006,
+        562.3634950832278
+      ],
+      "median_model_and_argmax_device_s": 0.6542434803843493,
+      "median_continuous_decode_wall_s": 0.6700398973189294,
+      "median_run_wall_s": 1.1965710460208356,
+      "median_effective_decode_tok_per_s": 556.7388896971233,
+      "median_effective_device_tok_per_s": 570.1627769178193
+    },
+    "candidate_device_latency_change_percent": 2.1020481531906166,
+    "candidate_run_wall_change_percent": 1.0582614207657715,
+    "candidate_effective_throughput_change_percent": -1.9413092871584325
+  },
+  "steady_full_decoder_profile": {
+    "script": "09_persistent_page_engine/scripts/text_decode_lab.py",
+    "mode": "profile",
+    "initial_cache_position": 1279,
+    "warmup_steps_per_process": 200,
+    "measured_steps_per_process": 2000,
+    "processes_per_implementation": 6,
+    "mixed_process_mean_ms": [
+      1.6331398805975914,
+      1.5981890906095506,
+      1.5969767796993255,
+      1.6209452092647552,
+      1.619166621029377,
+      1.6039785987734794
+    ],
+    "zero_cube_process_mean_ms": [
+      1.6342808591723443,
+      1.6637031992673874,
+      1.645727269768715,
+      1.6335866494178772,
+      1.6389609099030495,
+      1.640926110327244
+    ],
+    "mixed_median_process_mean_ms": 1.6115726099014283,
+    "zero_cube_median_process_mean_ms": 1.6399435101151467,
+    "candidate_median_latency_change_percent": 1.760448151042593,
+    "mixed_median_throughput_tok_per_s": 620.5256895880095,
+    "zero_cube_median_throughput_tok_per_s": 609.7773202755866,
+    "candidate_median_throughput_change_percent": -1.7321392962085347,
+    "candidate_mean_latency_change_percent": 1.9104761058601705
+  },
+  "isolated_operator_actual_kv": {
+    "script": "09_persistent_page_engine/scripts/probes/compare_custom_increfa.py",
+    "processes_per_implementation": 4,
+    "warmup_calls_per_process_per_kv": 5000,
+    "blocks_per_process_per_kv": 9,
+    "calls_per_block": 2000,
+    "results": [
+      {
+        "kv_length": 1024,
+        "mixed_us": 50.4640998840332,
+        "zero_cube_us": 50.23932456970215,
+        "candidate_latency_change_percent": -0.44541627582298515
+      },
+      {
+        "kv_length": 1280,
+        "mixed_us": 50.863094329833984,
+        "zero_cube_us": 50.33314895629883,
+        "candidate_latency_change_percent": -1.0419054926123827
+      },
+      {
+        "kv_length": 1408,
+        "mixed_us": 51.23703384399414,
+        "zero_cube_us": 50.704551696777344,
+        "candidate_latency_change_percent": -1.0392524845175277
+      }
+    ],
+    "all_outputs_exact": true
+  },
+  "production_gqa_probe": {
+    "decode_optimization": "combined_apply",
+    "batch_size": 1,
+    "mixed_control": {
+      "completed": true,
+      "token_exact": true,
+      "graph_calls": 374,
+      "effective_tokens": 373,
+      "model_and_argmax_device_s": 0.5495544596910472,
+      "effective_device_tok_per_s": 678.7316405542338,
+      "continuous_decode_wall_s": 0.9903822320047766,
+      "effective_decode_tok_per_s": 376.62226557210795,
+      "slot_admission_device_s": 0.4291654357910156,
+      "run_wall_s": 1.5178441570606083
+    },
+    "zero_cube_hardsync": {
+      "completed": false,
+      "graph_compiled": true,
+      "compiled_artifacts_last_modified": "2026-08-09T09:20:23",
+      "runtime_observation_seconds": 617,
+      "main_thread_cpu_percent": 96.5,
+      "runtime_recycle_thread": "RT_RECYCLE_6",
+      "runtime_recycle_thread_cpu_percent": 54.4,
+      "failure": "Post-compile runtime hang; process interrupted after more than ten minutes."
+    },
+    "npu_recovered_after_interrupt": true
+  },
+  "conclusion": "At B1 the zero-cube package speeds up isolated IncreFA by up to 1.04% but slows the complete MHA decoder forward by about 1.8 to 2.1%. The mixed custom package reaches 678.7 effective device tok/s in production GQA, but the zero-cube GQA graph hangs at runtime after successful compilation. The current package is not a usable latency optimization."
+}
