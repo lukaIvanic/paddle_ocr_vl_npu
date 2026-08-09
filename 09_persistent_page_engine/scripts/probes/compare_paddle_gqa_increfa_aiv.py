@@ -210,6 +210,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     difference = (outputs["stock"] - outputs["custom"]).abs()
     exact = bool(torch.equal(outputs["stock"], outputs["custom"]))
+    per_head_max_abs = difference.amax(dim=(0, 2, 3)).tolist()
+    per_head_mean_abs = difference.mean(dim=(0, 2, 3)).tolist()
+    per_head_custom_absmax = outputs["custom"].abs().amax(dim=(0, 2, 3)).tolist()
     result = {
         "schema_version": 1,
         "kind": "separate_paddle_gqa_increfa_aiv_comparison",
@@ -245,6 +248,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             "allclose_atol_0_rtol_0": bool(torch.allclose(outputs["stock"], outputs["custom"], atol=0, rtol=0)),
             "max_abs": float(difference.max()),
             "mean_abs": float(difference.mean()),
+            "per_query_head_max_abs": [float(value) for value in per_head_max_abs],
+            "per_query_head_mean_abs": [float(value) for value in per_head_mean_abs],
+            "per_query_head_custom_absmax": [float(value) for value in per_head_custom_absmax],
+            "custom_zero_fraction": float((outputs["custom"] == 0).float().mean()),
+            "stock_sample": outputs["stock"].reshape(-1)[:16].tolist(),
+            "custom_sample": outputs["custom"].reshape(-1)[:16].tolist(),
         },
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
