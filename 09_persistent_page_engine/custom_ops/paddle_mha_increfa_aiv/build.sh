@@ -99,6 +99,9 @@ fi
 OP_ROOT="$BUILD_SOURCE_ROOT/$CUSTOM_OP_REL"
 cp -p "$OVERLAY_ROOT/CMakeLists.txt" "$OP_ROOT/CMakeLists.txt"
 cp -p "$OVERLAY_ROOT/op_host/CMakeLists.txt" "$OP_ROOT/op_host/CMakeLists.txt"
+rm -f "$OP_ROOT/op_host/aclnn_paddle_mha_incre_flash_attention_aiv.cpp"
+mkdir -p "$OP_ROOT/op_host/op_api"
+cp -p "$OVERLAY_ROOT/op_host/op_api/"* "$OP_ROOT/op_host/op_api/"
 cp -p "$OVERLAY_ROOT/op_host/"*.cpp "$OP_ROOT/op_host/"
 cp -p "$OVERLAY_ROOT/op_kernel/"*.cpp "$OP_ROOT/op_kernel/"
 for patch_path in "${PATCH_PATHS[@]}"; do

@@ -2,12 +2,11 @@
  * Public aclnn surface for the separately named Paddle MHA AIV operator.
  *
  * The generated aclnnInner API owns validation, tiling, executor creation,
- * and launch.  This narrow public wrapper gives external PyTorch extensions a
- * stable, independently named API and lets torch-npu use its normal executor
- * cache path instead of dispatching the generated internal name directly.
+ * and launch. This wrapper gives external PyTorch extensions a stable,
+ * independently named API on the standard op-api packaging surface.
  */
 
-#include "aclnn/aclnn_base.h"
+#include "aclnn_paddle_mha_incre_flash_attention_aiv.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,8 +44,7 @@ extern aclnnStatus aclnnInnerPaddleMhaIncreFlashAttentionAiv(
     aclOpExecutor *executor,
     const aclrtStream stream);
 
-__attribute__((visibility("default"))) aclnnStatus
-aclnnPaddleMhaIncreFlashAttentionAivGetWorkspaceSize(
+aclnnStatus aclnnPaddleMhaIncreFlashAttentionAivGetWorkspaceSize(
     const aclTensor *query,
     const aclTensorList *key,
     const aclTensorList *value,
@@ -99,8 +97,7 @@ aclnnPaddleMhaIncreFlashAttentionAivGetWorkspaceSize(
         executor);
 }
 
-__attribute__((visibility("default"))) aclnnStatus
-aclnnPaddleMhaIncreFlashAttentionAiv(
+aclnnStatus aclnnPaddleMhaIncreFlashAttentionAiv(
     void *workspace,
     uint64_t workspaceSize,
     aclOpExecutor *executor,
