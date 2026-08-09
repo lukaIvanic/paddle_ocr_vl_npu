@@ -15,14 +15,18 @@ from paddleocr_vl.model.compile_utils import import_torchair
 from paddleocr_vl.model.decode_qkv_split import (
     GE_OP_NAME,
     PYTORCH_OP_NAME,
+    decode_key_slice,
     decode_qkv_split,
+    decode_query_slice,
+    decode_value_slice,
     register_decode_qkv_split_converter,
 )
 
 
 class CustomQkvSplit(torch.nn.Module):
-    def __init__(self, strict_scope: bool) -> None:
+    def __init__(self, strict_scope: bool, component: str) -> None:
         super().__init__()
+        self.component = component
         self.scope = None
         if strict_scope:
             scope_module = __import__("torchair.scope", fromlist=["super_kernel"])
@@ -30,12 +34,18 @@ class CustomQkvSplit(torch.nn.Module):
 
     def _forward_impl(
         self, qkv: torch.Tensor
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        if self.component == "query":
+            return decode_query_slice(qkv)
+        if self.component == "key":
+            return decode_key_slice(qkv)
+        if self.component == "value":
+            return decode_value_slice(qkv)
         return decode_qkv_split(qkv)
 
     def forward(
         self, qkv: torch.Tensor
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         if self.scope is None:
             return self._forward_impl(qkv)
         with self.scope(
@@ -50,6 +60,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--cache-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--strict-scope", action="store_true")
+    parser.add_argument(
+        "--component",
+        choices=("all", "query", "key", "value"),
+        default="all",
+    )
     return parser.parse_args()
 
 
@@ -76,7 +91,7 @@ def main() -> int:
     torchair, CompilerConfig = import_torchair()
     args.cache_dir.mkdir(parents=True, exist_ok=True)
     step = torchair.inference.cache_compile(
-        CustomQkvSplit(args.strict_scope).forward,
+        CustomQkvSplit(args.strict_scope, args.component).forward,
         config=CompilerConfig(),
         dynamic=False,
         cache_dir=str(args.cache_dir),
@@ -87,11 +102,21 @@ def main() -> int:
     torch.npu.synchronize()
     first_call_s = time.perf_counter() - started
 
+    names = ("query", "key", "value")
+    if args.component == "all":
+        outputs = output
+        references = reference
+    else:
+        selected = names.index(args.component)
+        outputs = (output,)
+        references = (reference[selected],)
+        names = (args.component,)
+
     comparisons = {}
     all_exact = True
     output_layouts = {}
     for name, actual, expected in zip(
-        ("query", "key", "value"), output, reference, strict=True
+        names, outputs, references, strict=True
     ):
         actual_cpu = actual.float().cpu()
         expected_cpu = expected.float().cpu()
@@ -114,38 +139,40 @@ def main() -> int:
         }
         all_exact = all_exact and exact
 
-    actual_query = output[0].float().cpu().flatten()
-    expected_query = reference[0].float().cpu().flatten()
-    expected_key = reference[1].float().cpu().flatten()
-    expected_value = reference[2].float().cpu().flatten()
-    region_diagnostics = {
-        "query_prefix_256_equals_expected_key": bool(
-            torch.equal(actual_query[:256], expected_key)
-        ),
-        "query_prefix_256_equals_expected_value": bool(
-            torch.equal(actual_query[:256], expected_value)
-        ),
-        "query_prefix_256_equals_expected_query": bool(
-            torch.equal(actual_query[:256], expected_query[:256])
-        ),
-        "query_tail_1792_equals_expected_query": bool(
-            torch.equal(actual_query[256:], expected_query[256:])
-        ),
-        "pointer_deltas_bytes": {
-            "key_minus_query": (
-                output_layouts["key"]["data_ptr"]
-                - output_layouts["query"]["data_ptr"]
+    region_diagnostics = None
+    if args.component == "all":
+        actual_query = outputs[0].float().cpu().flatten()
+        expected_query = reference[0].float().cpu().flatten()
+        expected_key = reference[1].float().cpu().flatten()
+        expected_value = reference[2].float().cpu().flatten()
+        region_diagnostics = {
+            "query_prefix_256_equals_expected_key": bool(
+                torch.equal(actual_query[:256], expected_key)
             ),
-            "value_minus_query": (
-                output_layouts["value"]["data_ptr"]
-                - output_layouts["query"]["data_ptr"]
+            "query_prefix_256_equals_expected_value": bool(
+                torch.equal(actual_query[:256], expected_value)
             ),
-            "value_minus_key": (
-                output_layouts["value"]["data_ptr"]
-                - output_layouts["key"]["data_ptr"]
+            "query_prefix_256_equals_expected_query": bool(
+                torch.equal(actual_query[:256], expected_query[:256])
             ),
-        },
-    }
+            "query_tail_1792_equals_expected_query": bool(
+                torch.equal(actual_query[256:], expected_query[256:])
+            ),
+            "pointer_deltas_bytes": {
+                "key_minus_query": (
+                    output_layouts["key"]["data_ptr"]
+                    - output_layouts["query"]["data_ptr"]
+                ),
+                "value_minus_query": (
+                    output_layouts["value"]["data_ptr"]
+                    - output_layouts["query"]["data_ptr"]
+                ),
+                "value_minus_key": (
+                    output_layouts["value"]["data_ptr"]
+                    - output_layouts["key"]["data_ptr"]
+                ),
+            },
+        }
 
     result = {
         "kind": "paddle_decode_qkv_split_torchair_probe",
@@ -154,6 +181,7 @@ def main() -> int:
             "qkv_shape": list(qkv.shape),
             "dtype": str(qkv.dtype),
             "strict_scope": args.strict_scope,
+            "component": args.component,
         },
         "environment": {
             "device": torch.npu.get_device_name(0),

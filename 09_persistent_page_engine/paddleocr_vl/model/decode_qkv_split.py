@@ -111,10 +111,29 @@ def register_decode_qkv_split_converter() -> None:
 def decode_qkv_split(
     qkv: torch.Tensor,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    if qkv.shape != (1, 1, 2560) or qkv.dtype != torch.float16:
-        raise ValueError("decode_qkv_split requires FP16 qkv[1,1,2560]")
+    _validate_qkv(qkv)
     return (
         _decode_query_slice(qkv),
         _decode_key_slice(qkv),
         _decode_value_slice(qkv),
     )
+
+
+def _validate_qkv(qkv: torch.Tensor) -> None:
+    if qkv.shape != (1, 1, 2560) or qkv.dtype != torch.float16:
+        raise ValueError("decode_qkv_split requires FP16 qkv[1,1,2560]")
+
+
+def decode_query_slice(qkv: torch.Tensor) -> torch.Tensor:
+    _validate_qkv(qkv)
+    return _decode_query_slice(qkv)
+
+
+def decode_key_slice(qkv: torch.Tensor) -> torch.Tensor:
+    _validate_qkv(qkv)
+    return _decode_key_slice(qkv)
+
+
+def decode_value_slice(qkv: torch.Tensor) -> torch.Tensor:
+    _validate_qkv(qkv)
+    return _decode_value_slice(qkv)
