@@ -106,66 +106,66 @@ bash build.sh --pkg --soc=ascend910b --vendor_name="$VENDOR_NAME" \
 
 KERNEL_DIR="$BUILD_SOURCE_ROOT/build/binary/ascend910b/bin/$CUSTOM_OP_SNAKE"
 mapfile -t KERNEL_JSONS < <(find "$KERNEL_DIR" -maxdepth 1 -type f -name "${CUSTOM_OP_GE}_*.json" -print | sort)
-if [[ "${#KERNEL_JSONS[@]}" != "2" ]]; then
-    echo "ERROR: expected two $CUSTOM_OP_GE kernel JSON files, got ${#KERNEL_JSONS[@]}" >&2
+if [[ "${#KERNEL_JSONS[@]}" != "1" ]]; then
+    echo "ERROR: expected one two-key $CUSTOM_OP_GE kernel bundle, got ${#KERNEL_JSONS[@]}" >&2
     printf '%s\n' "${KERNEL_JSONS[@]}" >&2
     exit 3
 fi
+KERNEL_JSON="${KERNEL_JSONS[0]}"
+KERNEL_OBJECT="${KERNEL_JSON%.json}.o"
 PACKAGE_PATH="$BUILD_SOURCE_ROOT/build_out/cann-ops-transformer-${VENDOR_NAME}_linux-aarch64.run"
-if [[ ! -s "$PACKAGE_PATH" ]]; then
-    echo "ERROR: package is missing" >&2
+if [[ ! -s "$KERNEL_OBJECT" || ! -s "$PACKAGE_PATH" ]]; then
+    echo "ERROR: two-key operator object or package is missing" >&2
     exit 3
 fi
 
-for json_path in "${KERNEL_JSONS[@]}"; do
-    object_path="${json_path%.json}.o"
-    [[ -s "$object_path" ]] || { echo "ERROR: missing $object_path" >&2; exit 3; }
-    symbols="$(readelf -Ws "$object_path")"
-    grep -q '_mix_aiv$' <<<"$symbols" || { echo "ERROR: $object_path lacks MIX_AIV" >&2; exit 3; }
-    if grep -q '_mix_aic$' <<<"$symbols"; then
-        echo "ERROR: $object_path still contains a cube function" >&2
-        exit 3
-    fi
-done
+symbols="$(readelf -Ws "$KERNEL_OBJECT")"
+if [[ "$(grep -c '_mix_aiv$' <<<"$symbols")" != "2" ]]; then
+    echo "ERROR: $KERNEL_OBJECT does not contain both MIX_AIV functions" >&2
+    exit 3
+fi
+if grep -q '_mix_aic$' <<<"$symbols"; then
+    echo "ERROR: $KERNEL_OBJECT still contains a cube function" >&2
+    exit 3
+fi
 
-"$PYTHON_BIN" - "${KERNEL_JSONS[@]}" <<'PY'
+"$PYTHON_BIN" - "$KERNEL_JSON" <<'PY'
 import json
 import sys
 
 expected = {11000000000000000, 11000000000100000}
+path = sys.argv[1]
+metadata = json.load(open(path, encoding="utf-8"))
+kernels = metadata.get("kernelList", [])
+if len(kernels) != 2:
+    raise SystemExit(f"{path}: expected two fixed-key kernels, got {len(kernels)}")
 seen = set()
-for path in sys.argv[1:]:
-    metadata = json.load(open(path, encoding="utf-8"))
-    kernels = metadata.get("kernelList", [])
-    if len(kernels) != 1:
-        raise SystemExit(f"{path}: expected one fixed-key kernel")
-    kernel = kernels[0]
+summaries = []
+for kernel in kernels:
     key = kernel.get("tilingKey")
     if key is None:
         suffix = kernel.get("kernelName", "").rsplit("_", 1)[-1]
         key = int(suffix) if suffix.isdigit() else None
     task_ratio = kernel.get("taskRation", metadata.get("taskRation"))
-    summary = {
-        "path": path,
+    summaries.append({
         "coreType": metadata.get("coreType"),
         "intercoreSync": metadata.get("intercoreSync"),
         "tilingKey": key,
         "taskRation": task_ratio,
-    }
-    print("PADDLE_GQA_INCREFA_AIV_KERNEL_METADATA=" + json.dumps(summary, sort_keys=True))
+    })
     if metadata.get("coreType") not in ("MIX", "MIX_AIV") or task_ratio != "0:1":
         raise SystemExit(f"{path}: not a zero-cube MIX_AIV kernel")
-    if metadata.get("magic") != "RT_DEV_BINARY_MAGIC_ELF":
-        raise SystemExit(f"{path}: unexpected ELF metadata")
-    if metadata.get("intercoreSync") != 1:
-        raise SystemExit(f"{path}: hard-sync runtime contract is missing")
     seen.add(key)
+print("PADDLE_GQA_INCREFA_AIV_KERNEL_METADATA=" + json.dumps(summaries, sort_keys=True))
+if metadata.get("magic") != "RT_DEV_BINARY_MAGIC_ELF":
+    raise SystemExit(f"{path}: unexpected ELF metadata")
+if metadata.get("intercoreSync") != 1:
+    raise SystemExit(f"{path}: hard-sync runtime contract is missing")
 if seen != expected:
     raise SystemExit(f"unexpected tiling keys: {seen}")
 PY
 
-cp -p "${KERNEL_JSONS[@]}" "$PACKAGE_PATH" "$RUN_ROOT/"
-for json_path in "${KERNEL_JSONS[@]}"; do cp -p "${json_path%.json}.o" "$RUN_ROOT/"; done
+cp -p "$KERNEL_JSON" "$KERNEL_OBJECT" "$PACKAGE_PATH" "$RUN_ROOT/"
 sha256sum "$RUN_ROOT"/*.json "$RUN_ROOT"/*.o "$PACKAGE_PATH" | tee "$RUN_ROOT/sha256.txt"
 
 INSTALL_ROOT="$RUN_ROOT/installed"
