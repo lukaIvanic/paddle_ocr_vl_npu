@@ -183,6 +183,7 @@ class DecodeArena:
         eos_token_id: int,
         token_selection: str = TOKEN_SELECTION_GREEDY,
         preferred_token_id: int | None = None,
+        cell_start_token_ids: Iterable[int] = (),
         timeline: TimelineRecorder | None = None,
     ) -> None:
         self.cache = cache
@@ -193,6 +194,7 @@ class DecodeArena:
         self.preferred_token_id = (
             None if preferred_token_id is None else int(preferred_token_id)
         )
+        self.cell_start_token_ids = tuple(int(value) for value in cell_start_token_ids)
         self.timeline = timeline
         self.next_token = torch.full(
             (self.batch_size, 1),
@@ -526,11 +528,19 @@ class DecodeArena:
                 self.rope_deltas,
                 *self.cache.flat_tensors(),
             )
+            cell_start_mask = torch.zeros_like(
+                self.token_selection_policy_mask,
+                dtype=torch.bool,
+            )
+            for token_id in self.cell_start_token_ids:
+                cell_start_mask |= self.next_token[:, 0] == int(token_id)
             return select_token_ids(
                 logits[:, -1, :].float(),
                 mode=self.token_selection,
                 preferred_token_id=self.preferred_token_id,
-                policy_mask=self.token_selection_policy_mask,
+                policy_mask=(
+                    self.token_selection_policy_mask & cell_start_mask
+                ),
             ).view(-1, 1)
 
         request_ids = tuple(

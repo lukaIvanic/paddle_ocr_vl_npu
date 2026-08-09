@@ -38,7 +38,6 @@ from ..model.text_decode import (
 from ..model.token_selection import (
     TOKEN_SELECTION_CHOICES,
     TOKEN_SELECTION_GREEDY,
-    select_token_ids,
 )
 from ..model.preprocessing import (
     apply_pixel_overrides,
@@ -735,6 +734,15 @@ class ContinuousRecognizer:
         if math_open_token_id is None:
             raise ValueError("recognizer tokenizer does not contain the exact \\( token")
         self.math_open_token_id = int(math_open_token_id)
+        table_cell_pieces = ("<fcel>", "<ecel>", "<lcel>", "<ucel>", "<xcel>")
+        table_cell_token_ids = [
+            self.tokenizer.token_to_id(piece) for piece in table_cell_pieces
+        ]
+        if any(token_id is None for token_id in table_cell_token_ids):
+            raise ValueError("recognizer tokenizer is missing a table cell token")
+        self.table_cell_token_ids = tuple(
+            int(token_id) for token_id in table_cell_token_ids if token_id is not None
+        )
         frontend_setup_s = time.perf_counter() - runtime_started
 
         synchronize(self.device)
@@ -925,6 +933,7 @@ class ContinuousRecognizer:
             eos_token_id=int(self.model.config.eos_token_id),
             token_selection=self.token_selection,
             preferred_token_id=self.math_open_token_id,
+            cell_start_token_ids=self.table_cell_token_ids,
             timeline=self.timeline,
         )
         self.decode_scheduler = ContinuousDecodeScheduler(
@@ -2164,36 +2173,6 @@ class ContinuousRecognizer:
     def _is_table_prompt(prompt: str) -> bool:
         return str(prompt).strip() == "Table Recognition:"
 
-    def _select_generation_tokens(
-        self,
-        logits: torch.Tensor,
-        prompts: Iterable[str],
-    ) -> torch.Tensor:
-        prompt_list = [str(prompt) for prompt in prompts]
-        expected = (
-            int(logits.shape[-2])
-            if logits.ndim >= 3
-            else int(logits.shape[0])
-        )
-        if len(prompt_list) != expected:
-            raise ValueError(
-                "token-selection prompt count does not match logits rows: "
-                f"prompts={len(prompt_list)} logits_rows={expected}"
-            )
-        policy_mask = torch.tensor(
-            [self._is_table_prompt(prompt) for prompt in prompt_list],
-            device=logits.device,
-            dtype=torch.bool,
-        )
-        if logits.ndim >= 3:
-            policy_mask = policy_mask.view(1, -1)
-        return select_token_ids(
-            logits,
-            mode=self.token_selection,
-            preferred_token_id=self.math_open_token_id,
-            policy_mask=policy_mask,
-        )
-
     @torch.inference_mode()
     def _enqueue_staged_prefill_group(
         self,
@@ -2525,11 +2504,9 @@ class ContinuousRecognizer:
                 )
                 packed_tokens = device_timeline.measure(
                     f"{prefix}:prefill_argmax",
-                    lambda logits=logits, indices=indices: (
-                        self._select_generation_tokens(
-                            logits.float(),
-                            [text_inputs[index].prepared.prompt for index in indices],
-                        )
+                    lambda logits=logits: torch.argmax(
+                        logits.float(),
+                        dim=-1,
                     ),
                 )
                 pack_padding = (
@@ -2628,10 +2605,11 @@ class ContinuousRecognizer:
             )
             next_token = device_timeline.measure(
                 self._group_stage_key(member_index, "prefill_argmax"),
-                lambda logits=logits, item=item: self._select_generation_tokens(
+                lambda logits=logits: torch.argmax(
                     logits[:, -1, :].float(),
-                    [item.prepared.prompt],
-                ).view(-1, 1),
+                    dim=-1,
+                    keepdim=True,
+                ),
             )
             text_route = {
                 **text_route,
@@ -3132,7 +3110,8 @@ class ContinuousRecognizer:
                 "scope": "table_prompt_only",
                 "preferred_token_id": self.math_open_token_id,
                 "preferred_token_piece": r"\(",
-                "rule": "select_preferred_token_when_rank_le_2",
+                "cell_start_token_ids": list(self.table_cell_token_ids),
+                "rule": "select_preferred_token_when_rank_le_2_at_cell_start",
             },
             "decode_attention": DECODE_ATTENTION if self.device.type == "npu" else "manual",
             "decode_cache_update": DECODE_CACHE_UPDATE if self.device.type == "npu" else "per_row_copy",

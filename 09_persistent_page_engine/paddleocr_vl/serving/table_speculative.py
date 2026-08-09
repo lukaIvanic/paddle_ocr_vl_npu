@@ -337,6 +337,7 @@ class TableSpeculativeDecodeRuntime:
             optimization="combined_apply",
             token_selection=recognizer.token_selection,
             preferred_token_id=recognizer.math_open_token_id,
+            cell_start_token_ids=recognizer.table_cell_token_ids,
         )
         self.host_input = torch.empty(
             (1, self.query_length), dtype=torch.int64, pin_memory=True
@@ -411,6 +412,11 @@ class TableSpeculativeDecodeRuntime:
             logits[:, -1, :].float(),
             mode=self.recognizer.token_selection,
             preferred_token_id=self.recognizer.math_open_token_id,
+            policy_mask=torch.tensor(
+                [int(current_token) in self.recognizer.table_cell_token_ids],
+                device=logits.device,
+                dtype=torch.bool,
+            ),
         ).view(-1, 1)
         end.record()
         self.host_decode_target.copy_(sampled, non_blocking=True)

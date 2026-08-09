@@ -77,7 +77,7 @@ def parse_args() -> argparse.Namespace:
         help=(
             "Experimental live-logit token-ID selection. "
             "prefer_math_open_top2 selects the exact \\( token whenever it "
-            "is rank 1 or 2."
+            "is rank 1 or 2 at the start of a table cell."
         ),
     )
     parser.add_argument("--min-pixels", type=int, default=28224)
@@ -257,6 +257,7 @@ def main() -> None:
         optimization="combined_apply",
         token_selection=args.token_selection,
         preferred_token_id=recognizer.math_open_token_id,
+        cell_start_token_ids=recognizer.table_cell_token_ids,
     )
     cache_hit = spec_cache.is_dir() and any(spec_cache.iterdir())
     if not cache_hit and not args.allow_compile:

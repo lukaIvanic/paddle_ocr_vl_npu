@@ -123,7 +123,7 @@ def parse_args() -> argparse.Namespace:
         help=(
             "Experimental live-logit token-ID selection. "
             "prefer_math_open_top2 selects the exact \\( token whenever it "
-            "is rank 1 or 2, for Table Recognition requests only."
+            "is rank 1 or 2 at the start of a table cell."
         ),
     )
     parser.add_argument(
