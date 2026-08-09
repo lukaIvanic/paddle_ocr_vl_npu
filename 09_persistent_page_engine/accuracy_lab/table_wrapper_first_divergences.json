@@ -1,0 +1,41 @@
+{
+  "description": "Manually reviewed first whole-cell \\( wrapper-scope divergences in the original B1 P95 latency cohort. Cell coordinates are zero-based logical OTSL row and column indices in the saved generated-ID streams.",
+  "cases": [
+    {
+      "request_id": "page_000271_table_box_id_1",
+      "base_cell": [2, 2],
+      "draft_cell": [0, 2, 2],
+      "manual_note": "B1 wraps 80.71 \\pm 0.73 as one formula; U2 lane 1 emits the same cell without outer delimiters."
+    },
+    {
+      "request_id": "page_001276_table_2",
+      "base_cell": [0, 8],
+      "draft_cell": [0, 0, 8],
+      "manual_note": "B1 wraps the complete TA header; U2 lane 1 wraps only the unit subexpression."
+    },
+    {
+      "request_id": "page_000277_table_box_id_1",
+      "base_cell": [22, 7],
+      "draft_cell": [1, 0, 7],
+      "manual_note": "B1 leaves the value unwrapped and wraps only \\pm; U2 lane 2 wraps the complete value cell."
+    },
+    {
+      "request_id": "page_000279_table_box_id_0",
+      "base_cell": [3, 3],
+      "draft_cell": [0, 3, 3],
+      "manual_note": "B1 emits a plain coefficient/stars/parentheses cell; U2 lane 1 uses an outer formula wrapper, superscript stars, and a literal line-break marker."
+    },
+    {
+      "request_id": "page_000273_table_box_id_1",
+      "base_cell": [26, 2],
+      "draft_cell": [1, 0, 2],
+      "manual_note": "B1 wraps the full 22 \\pm 25% cell; U2 lane 2 wraps only \\pm."
+    },
+    {
+      "request_id": "page_000279_table_box-fy04hrwa",
+      "base_cell": [2, 2],
+      "draft_cell": [0, 2, 2],
+      "manual_note": "B1 emits a plain coefficient/stars/parentheses cell; U2 lane 1 wraps the coefficient and uses superscript stars plus a literal line-break marker."
+    }
+  ]
+}
