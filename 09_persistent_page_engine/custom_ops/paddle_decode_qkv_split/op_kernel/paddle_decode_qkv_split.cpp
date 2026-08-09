@@ -31,34 +31,42 @@ public:
     __aicore__ inline void Process()
     {
         LocalTensor<half> local = copyBuffer.Get<half>();
-        const event_t inputReady = static_cast<event_t>(
-            GetTPipePtr()->FetchEventID(HardEvent::MTE2_MTE3));
-        const event_t outputStored = static_cast<event_t>(
-            GetTPipePtr()->FetchEventID(HardEvent::MTE3_MTE2));
 
         DataCopy(local, qkvGm, kQueryElements);
-        SetFlag<HardEvent::MTE2_MTE3>(inputReady);
-        WaitFlag<HardEvent::MTE2_MTE3>(inputReady);
+        const event_t queryInputReady = static_cast<event_t>(
+            GetTPipePtr()->FetchEventID(HardEvent::MTE2_MTE3));
+        SetFlag<HardEvent::MTE2_MTE3>(queryInputReady);
+        WaitFlag<HardEvent::MTE2_MTE3>(queryInputReady);
         DataCopy(queryGm, local, kQueryElements);
-        SetFlag<HardEvent::MTE3_MTE2>(outputStored);
-        WaitFlag<HardEvent::MTE3_MTE2>(outputStored);
+        const event_t queryStored = static_cast<event_t>(
+            GetTPipePtr()->FetchEventID(HardEvent::MTE3_MTE2));
+        SetFlag<HardEvent::MTE3_MTE2>(queryStored);
+        WaitFlag<HardEvent::MTE3_MTE2>(queryStored);
 
         DataCopy(local, qkvGm[kQueryElements], kKeyValueElements);
-        SetFlag<HardEvent::MTE2_MTE3>(inputReady);
-        WaitFlag<HardEvent::MTE2_MTE3>(inputReady);
+        const event_t keyInputReady = static_cast<event_t>(
+            GetTPipePtr()->FetchEventID(HardEvent::MTE2_MTE3));
+        SetFlag<HardEvent::MTE2_MTE3>(keyInputReady);
+        WaitFlag<HardEvent::MTE2_MTE3>(keyInputReady);
         DataCopy(keyGm, local, kKeyValueElements);
-        SetFlag<HardEvent::MTE3_MTE2>(outputStored);
-        WaitFlag<HardEvent::MTE3_MTE2>(outputStored);
+        const event_t keyStored = static_cast<event_t>(
+            GetTPipePtr()->FetchEventID(HardEvent::MTE3_MTE2));
+        SetFlag<HardEvent::MTE3_MTE2>(keyStored);
+        WaitFlag<HardEvent::MTE3_MTE2>(keyStored);
 
         DataCopy(
             local,
             qkvGm[kQueryElements + kKeyValueElements],
             kKeyValueElements);
-        SetFlag<HardEvent::MTE2_MTE3>(inputReady);
-        WaitFlag<HardEvent::MTE2_MTE3>(inputReady);
+        const event_t valueInputReady = static_cast<event_t>(
+            GetTPipePtr()->FetchEventID(HardEvent::MTE2_MTE3));
+        SetFlag<HardEvent::MTE2_MTE3>(valueInputReady);
+        WaitFlag<HardEvent::MTE2_MTE3>(valueInputReady);
         DataCopy(valueGm, local, kKeyValueElements);
-        SetFlag<HardEvent::MTE3_MTE2>(outputStored);
-        WaitFlag<HardEvent::MTE3_MTE2>(outputStored);
+        const event_t valueStored = static_cast<event_t>(
+            GetTPipePtr()->FetchEventID(HardEvent::MTE3_MTE2));
+        SetFlag<HardEvent::MTE3_MTE2>(valueStored);
+        WaitFlag<HardEvent::MTE3_MTE2>(valueStored);
     }
 
 private:
