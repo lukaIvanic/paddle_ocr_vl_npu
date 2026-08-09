@@ -45,6 +45,11 @@ case "$EXPERIMENT_VARIANT" in
         VENDOR_NAME="paddle_gqa_grouped_half_increfa_aiv"
         CACHE_NAMESPACE="paddle_gqa_grouped_half_increfa_aiv"
         ;;
+    split_k32_control)
+        PATCH_PATHS+=("$CUSTOM_ROOT/patches/0009-force-split-k32-control.patch")
+        VENDOR_NAME="paddle_gqa_split_k32_increfa_aiv"
+        CACHE_NAMESPACE="paddle_gqa_split_k32_increfa_aiv"
+        ;;
     *)
         echo "ERROR: unsupported PADDLE_GQA_EXPERIMENT_VARIANT=$EXPERIMENT_VARIANT" >&2
         exit 2

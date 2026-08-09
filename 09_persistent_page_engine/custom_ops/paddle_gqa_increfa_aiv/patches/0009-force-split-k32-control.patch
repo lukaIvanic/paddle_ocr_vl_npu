@@ -1,0 +1,19 @@
+diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
+--- a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
++++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
+@@ -2348,0 +2349,15 @@
++    // Experimental B1 GQA split-K control.  The production heuristic enables
++    // GQA flash-decode only at S2 >= 2048, so requesting 32 vector cores at
++    // KV1024 otherwise still launches only the 16 query-head work items.
++    // This separately packaged control forces exactly two disjoint S2
++    // partitions per query head when the requested core count permits that
++    // mapping.  SplitBNS retains its >=512-token-per-partition guard.
++    const uint32_t queryHeadWorkItems = batchSize_ * numKvHeads_ * gOuter_;
++    if (perfMode_ == IfaPerfMode::BMM_ALL_BY_VEC &&
++        coreNum_ == queryHeadWorkItems * 2U) {
++        OP_LOGI(ifaContext_->opName, "Force experimental two-way GQA split-K.");
++        splitKVFlag_ = true;
++        kvSplit_++;
++        return SplitBNS();
++    }
++

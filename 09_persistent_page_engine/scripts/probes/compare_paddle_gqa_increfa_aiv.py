@@ -65,6 +65,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "not change the production graph op."
         ),
     )
+    parser.add_argument(
+        "--experimental-split-k32-control",
+        action="store_true",
+        help=(
+            "Identify the separately packaged forced two-way split-K research "
+            "variant. It requires vector_core_count=32 and does not change the "
+            "production graph operator package."
+        ),
+    )
     parser.add_argument("--warmup", type=int, default=20)
     parser.add_argument("--blocks", type=int, default=7)
     parser.add_argument("--repeats-per-block", type=int, default=200)
@@ -87,9 +96,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     if (
         int(args.experimental_grouped_serial_control)
         + int(args.experimental_grouped_half_control)
+        + int(args.experimental_split_k32_control)
         > 1
     ):
-        parser.error("select at most one experimental grouped control")
+        parser.error("select at most one experimental control")
     if (
         args.experimental_grouped_serial_control
         or args.experimental_grouped_half_control
@@ -107,6 +117,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             )
     elif not QUERY_HEADS <= args.vector_core_count <= 48:
         parser.error("--vector-core-count must be in [16, 48]")
+    if args.experimental_split_k32_control and args.vector_core_count != 32:
+        parser.error(
+            "--experimental-split-k32-control requires --vector-core-count 32"
+        )
     if args.warmup < 0 or args.blocks <= 0 or args.repeats_per_block <= 0:
         parser.error("invalid timing counts")
     if args.profile_calls <= 0:
@@ -406,7 +420,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             else (
                 "grouped_half_control"
                 if args.experimental_grouped_half_control
-                else "production"
+                else (
+                    "split_k32_control"
+                    if args.experimental_split_k32_control
+                    else "production"
+                )
             )
         ),
         "contract": {
