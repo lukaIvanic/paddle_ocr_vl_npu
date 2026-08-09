@@ -14,6 +14,7 @@ from ..model.text_spec_verify import TextSpecVerifyRuntime
 from ..model.token_selection import (
     TOKEN_SELECTION_GREEDY,
     TOKEN_SELECTION_PREFER_MATH_OPEN_VARIANTS_TOP2_P10,
+    TOKEN_SELECTION_PREFER_MATH_OPEN_ADJUSTERS_COMBINED,
     select_token_ids,
 )
 from .engine import PrefilledRecognition
@@ -518,6 +519,7 @@ class TableSpeculativeDecodeRuntime:
         if recognizer.token_selection not in (
             TOKEN_SELECTION_GREEDY,
             TOKEN_SELECTION_PREFER_MATH_OPEN_VARIANTS_TOP2_P10,
+            TOKEN_SELECTION_PREFER_MATH_OPEN_ADJUSTERS_COMBINED,
         ):
             raise NotImplementedError(
                 "non-greedy token selection is generation-only until the "

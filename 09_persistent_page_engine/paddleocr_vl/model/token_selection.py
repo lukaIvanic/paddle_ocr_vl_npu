@@ -18,12 +18,16 @@ TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP = (
 TOKEN_SELECTION_PREFER_MATH_OPEN_VARIANTS_TOP2_P10 = (
     "prefer_math_open_variants_top2_p10"
 )
+TOKEN_SELECTION_PREFER_MATH_OPEN_ADJUSTERS_COMBINED = (
+    "prefer_math_open_adjusters_combined"
+)
 TOKEN_SELECTION_CHOICES = (
     TOKEN_SELECTION_GREEDY,
     TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_NON_NESTED,
     TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_FIRST_OVERRIDE,
     TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP,
     TOKEN_SELECTION_PREFER_MATH_OPEN_VARIANTS_TOP2_P10,
+    TOKEN_SELECTION_PREFER_MATH_OPEN_ADJUSTERS_COMBINED,
 )
 
 
@@ -66,7 +70,10 @@ def select_token_ids(
             (preferred_probability >= 0.3 * top_probability)
             & (preferred_probability > 0.10)
         )
-    elif mode == TOKEN_SELECTION_PREFER_MATH_OPEN_VARIANTS_TOP2_P10:
+    elif mode in (
+        TOKEN_SELECTION_PREFER_MATH_OPEN_VARIANTS_TOP2_P10,
+        TOKEN_SELECTION_PREFER_MATH_OPEN_ADJUSTERS_COMBINED,
+    ):
         if alternate_preferred_token_id is None:
             raise ValueError(f"{mode} requires alternate_preferred_token_id")
         probabilities = torch.softmax(scores, dim=-1)
@@ -91,6 +98,15 @@ def select_token_ids(
             torch.full_like(greedy, int(alternate_preferred_token_id)),
             torch.where(primary_eligible, preferred, greedy),
         )
+        if mode == TOKEN_SELECTION_PREFER_MATH_OPEN_ADJUSTERS_COMBINED:
+            top_probability = probabilities.gather(
+                -1, greedy.unsqueeze(-1)
+            ).squeeze(-1)
+            legacy_primary = (
+                (probabilities[..., int(preferred_token_id)] >= 0.3 * top_probability)
+                & (probabilities[..., int(preferred_token_id)] > 0.10)
+            )
+            selected = torch.where(legacy_primary, preferred, selected)
         if policy_mask is not None:
             selected = torch.where(
                 policy_mask.to(device=selected.device, dtype=torch.bool),

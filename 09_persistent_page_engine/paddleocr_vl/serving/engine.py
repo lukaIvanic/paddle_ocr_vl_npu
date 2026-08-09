@@ -42,6 +42,7 @@ from ..model.token_selection import (
     TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_FIRST_OVERRIDE,
     TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_NON_NESTED,
     TOKEN_SELECTION_PREFER_MATH_OPEN_VARIANTS_TOP2_P10,
+    TOKEN_SELECTION_PREFER_MATH_OPEN_ADJUSTERS_COMBINED,
     select_token_ids,
 )
 from ..model.preprocessing import (
@@ -3173,6 +3174,9 @@ class ContinuousRecognizer:
                     ),
                     TOKEN_SELECTION_PREFER_MATH_OPEN_VARIANTS_TOP2_P10: (
                         "at_cell_start_prefer_backslash_or_math_open_in_top2_when_probability_gt_0.10"
+                    ),
+                    TOKEN_SELECTION_PREFER_MATH_OPEN_ADJUSTERS_COMBINED: (
+                        "cell_start_union_of_probability30_math_open_and_top2_p10_backslash_variants"
                     ),
                 }[self.token_selection],
             },

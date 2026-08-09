@@ -119,6 +119,16 @@ class TokenSelectionTest(unittest.TestCase):
         )
         self.assertEqual(selected.tolist(), [0])
 
+    def test_combined_policy_keeps_legacy_qualified_rank_three_math_open(self) -> None:
+        logits = torch.tensor([[2.0, 1.8, 1.6, -10.0]])
+        selected = select_token_ids(
+            logits,
+            mode="prefer_math_open_adjusters_combined",
+            preferred_token_id=2,
+            alternate_preferred_token_id=3,
+        )
+        self.assertEqual(selected.tolist(), [2])
+
 
 if __name__ == "__main__":
     unittest.main()

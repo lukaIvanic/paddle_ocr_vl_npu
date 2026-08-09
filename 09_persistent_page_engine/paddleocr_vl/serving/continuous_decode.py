@@ -16,6 +16,7 @@ from ..model.token_selection import (
     TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_FIRST_OVERRIDE,
     TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_NON_NESTED,
     TOKEN_SELECTION_PREFER_MATH_OPEN_VARIANTS_TOP2_P10,
+    TOKEN_SELECTION_PREFER_MATH_OPEN_ADJUSTERS_COMBINED,
     select_token_ids,
 )
 from .repetition import ExactCycleTracker, RepetitionEvidence
@@ -596,8 +597,10 @@ class DecodeArena:
             ):
                 policy_mask = self.token_selection_policy_mask
             elif (
-                self.token_selection
-                == TOKEN_SELECTION_PREFER_MATH_OPEN_VARIANTS_TOP2_P10
+                self.token_selection in (
+                    TOKEN_SELECTION_PREFER_MATH_OPEN_VARIANTS_TOP2_P10,
+                    TOKEN_SELECTION_PREFER_MATH_OPEN_ADJUSTERS_COMBINED,
+                )
             ):
                 cell_start_mask = torch.zeros_like(
                     self.token_selection_policy_mask,
